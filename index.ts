@@ -1,5 +1,7 @@
 import {GCell, GEntry, GRecord, GTable, SymbolTable, make_record, make_entry, make_one_record_table} from "./transducers"
 
+// This file is just for fooling around; tests are run in the tests/ directory and 
+// the library is imported not by node at all, but in sheets_addon/
 
 var parser1 = make_record([
   ["text", "foo"],

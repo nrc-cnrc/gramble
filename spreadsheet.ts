@@ -1,4 +1,4 @@
-import {GCell, GEntry, GRecord, GTable, SymbolTable} from "./transducers"
+import {GCell, GEntry, GRecord, GTable, SymbolTable, GPosition} from "./transducers"
 
 /**
  * Determines whether a line is empty
@@ -132,6 +132,7 @@ class TableFunction extends GFunction {
         if (this._symbol == undefined) {
             throw new Error("Attempted to call table function without active symbol");
         }
+
         for (const cell of cells) {
             const key = this.get_param(cell.col);
             if (key == undefined) {
@@ -139,6 +140,9 @@ class TableFunction extends GFunction {
             }
             const new_entry = new GEntry(key, cell);
             record.push(new_entry);
+        }
+        if (!symbol_table.has_symbol(this._symbol.text)) {
+            throw new Error("Symbol " + this._symbol.text + " not found in symbol table");
         }
         symbol_table.add_to_symbol(this._symbol.text, record);
     }
@@ -166,6 +170,7 @@ const BUILT_IN_FUNCTIONS: string[] = [
     "or",
 ]
 
+
 export class Project {
 
     //private _cells: Cell[][] = [];
@@ -173,8 +178,36 @@ export class Project {
 
     private _current_function: GFunction | undefined = undefined;
     private _current_symbol: GCell | undefined = undefined;
+    //private _position_map: Map<[string, number, number],GEntry> = new Map();
 
     private _symbol_table = new SymbolTable();
+
+    public has_symbol(name: string): boolean {
+        return this._symbol_table.has_symbol(name);
+    }
+
+    public all_symbols(): string[] {
+        return this._symbol_table.all_symbol_names();
+    }
+
+    public generate(symbol_name: string): GTable {
+        if (!this._symbol_table.has_symbol(symbol_name)) {
+            throw new Error("Cannot find symbol " + symbol_name + " in symbol table");
+        }
+
+        const parser = this._symbol_table.get(symbol_name);
+        return parser.generate(this._symbol_table);
+    }
+
+    public sample(symbol_name: string, n_results: number = 1): GTable {
+        if (!this._symbol_table.has_symbol(symbol_name)) {
+            throw new Error("Cannot find symbol " + symbol_name + " in symbol table");
+        }
+
+        const parser = this._symbol_table.get(symbol_name);
+        return parser.sample(this._symbol_table, n_results);
+    }
+
 
     private add_row(cells: GCell[], highlighter: IHighlighter): void {
         if (cells.length == 0) {
@@ -199,6 +232,7 @@ export class Project {
             if (BUILT_IN_FUNCTIONS.indexOf(first_cell_text) < 0) {
                 // it's not a built-in function/keyword, so treat it as a new symbol
                 this._current_symbol = first_cell;
+                this._symbol_table.new_symbol(first_cell_text);
             }
             this._current_function = make_function(first_cell, this._current_symbol, highlighter);
             this._current_function.add_params(cells.slice(1), highlighter);

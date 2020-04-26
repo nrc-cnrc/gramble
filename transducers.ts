@@ -82,7 +82,10 @@ export class GCell extends GPosition {
 
 
 interface ITransducer {
-    parse(input: GTable, symbol_table: SymbolTable): GTable;
+    parse(input: GTable, 
+        symbol_table: SymbolTable,
+        randomize: boolean,
+        max_results: number): GTable;
 }
 
 /**
@@ -129,12 +132,15 @@ export class GEntry implements ITransducer {
         return new GEntry(this.key.clone(), new GCell(this.value.text + s));
     }
 
-    public parse(input: GTable, symbol_table: SymbolTable): GTable {
+    public parse(input: GTable, 
+                symbol_table: SymbolTable, 
+                randomize: boolean = false,
+                max_results: number = -1): GTable {
 
         if (this.key.text == 'var') {
             // we're a VariableParser
             const parser = symbol_table.get(this._value.text);
-            return parser.parse(input, symbol_table);
+            return parser.parse(input, symbol_table, randomize, max_results);
         }
 
         var result_table = new GTable();
@@ -203,30 +209,49 @@ export class GRecord implements ITransducer, Iterable<GEntry> {
         return this._entries[Symbol.iterator]();
     }
 
-    public map_key(f: (s: string) => string): GRecord {
+    public keys(): string[] {
+        return this._entries.map(entry => {
+            return entry.key.text;
+        });
+    }
+
+    public values(): string[] {
+        return this._entries.map(entry => {
+            return entry.value.text;
+        });
+    }
+
+    public map(f: (e: GEntry) => GEntry): GRecord {
         const result = new GRecord();
-        for (const entry of this) {
-            result.push(entry.map_key(f));
-        }
+        result._entries = this._entries.map(f);
         return result;
     }
 
+    public map_key(f: (s: string) => string): GRecord {
+        return this.map(entry => {
+            return entry.map_key(f);
+        });
+    }
+
+    /**
+     * Tests whether there are unconsumed remnants
+     * @returns true if any entry is incomplete (represents an unconsumed remnant)
+     */
     public is_incomplete(): boolean {
-        for (const entry of this) {
-            if (entry.is_incomplete()) {
-                return true;
-            }
-        }
-        return false;
+        return this._entries.some(entry => {
+            return entry.is_incomplete();
+        });
     }
 
     public trim(): GRecord {
+        return this.filter(entry => {
+            return !entry.key.text.startsWith("_");
+        })
+    }
+
+    public filter(f: (e: GEntry) => boolean): GRecord {
         var result = new GRecord();
-        for (const entry of this) {
-            if (!entry.key.text.startsWith("_")) {
-                result.push(entry);
-            }
-        }
+        result._entries = this._entries.filter(f);
         return result;
     }
 
@@ -260,11 +285,17 @@ export class GRecord implements ITransducer, Iterable<GEntry> {
         this._entries.push(entry);
     }
 
-    public parse(input: GTable, symbol_table: SymbolTable): GTable {
+    public parse(input: GTable, 
+        symbol_table: SymbolTable, 
+        randomize: boolean = false,
+        max_results: number = -1): GTable {
     
         for (const child of this) {
             const new_results = new GTable();
-            for (const result2 of child.parse(input, symbol_table)) {
+            for (const result2 of child.parse(input, symbol_table, randomize, max_results)) {
+                if (max_results > 0 && new_results.length > max_results) {
+                    break;
+                }
                 new_results.push(result2);
             }
             input = new_results;
@@ -281,13 +312,19 @@ export function make_entry(key: string, value: string): GEntry {
     return new GEntry(new GCell(key), new GCell(value));
 }
 
-export function make_one_entry_record(key: string, value:string) {
+export function make_one_entry_record(key: string, value:string): GRecord {
     return make_record([[key,value]]);
 }
 
 export function make_one_record_table(entries: [string, string][]): GTable {
     var result = new GTable();
     result.push(make_record(entries));
+    return result;
+}
+
+export function make_one_entry_table(key: string, value: string): GTable {
+    var result = new GTable();
+    result.push(make_one_entry_record(key, value));
     return result;
 }
 
@@ -303,6 +340,28 @@ export function make_record(entries: [string, string][]): GRecord {
         result.push(entry);
     }
     return result;
+}
+
+function shuffle<T>(ar: T[]): T[] {
+    ar = [...ar];
+    var currentIndex = ar.length;
+    var temporaryValue: T;
+    var randomIndex: number;
+  
+    // While there remain elements to shuffle...
+    while (0 !== currentIndex) {
+  
+      // Pick a remaining element...
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+  
+      // And swap it with the current element.
+      temporaryValue = ar[currentIndex];
+      ar[currentIndex] = ar[randomIndex];
+      ar[randomIndex] = temporaryValue;
+    }
+  
+    return ar;
 }
 
 export class GTable implements ITransducer, Iterable<GRecord> {
@@ -325,19 +384,44 @@ export class GTable implements ITransducer, Iterable<GRecord> {
         return this._records.length;
     }
 
-    public map_key(f: (s: string) => string): GTable {
+    public truncate(max_records: number): GTable {
         const result = new GTable();
-        for (const child of this) {
-            result.push(child.map_key(f));
+        for (const record of this) {
+            result.push(record);
+            if (result.length >= max_records) {
+                break;
+            }
         }
         return result;
     }
 
-    public parse(input: GTable, symbol_table: SymbolTable): GTable {
+    public map_key(f: (s: string) => string): GTable {
+        return this.map(record => {
+            return record.map_key(f);
+        });
+    }
+
+    public map(f: (r: GRecord) => GRecord): GTable {
+        const result = new GTable();
+        result._records = this._records.map(f);
+        return result;
+    }
+
+    public parse(input: GTable, 
+                symbol_table: SymbolTable, 
+                randomize: boolean = false,
+                max_results: number = -1): GTable {
         var results = new GTable();
-        for (const child of this) {
-            for (const result of child.parse(input, symbol_table)) {
+        var children = this._records;
+        if (randomize) {
+            children = shuffle(children);
+        }
+        for (const child of children) {
+            for (const result of child.parse(input, symbol_table, randomize, max_results)) {
                 results.push(result);
+                if (max_results > 0 && results.length > max_results) {
+                    return results.truncate(max_results);
+                }
             }
         }
         return results;
@@ -352,19 +436,46 @@ export class GTable implements ITransducer, Iterable<GRecord> {
      * @param symbol_table 
      * @returns parse 
      */
-    public full_parse(input: GTable, symbol_table: SymbolTable): GTable {
+    public full_parse(input: GTable, 
+                        symbol_table: SymbolTable,
+                        randomize: boolean = false,
+                        max_results: number = -1): GTable {
 
         // add _ to the beginning of each tier string in the input
         input = input.map_key(function(s: string) { return "_" + s; });
-        console.log("input = "+input);
         var results = new GTable();
-
-        for (const result of this.parse(input, symbol_table)) {
+        for (const result of this.parse(input, symbol_table, randomize, max_results)) {
             if (!result.is_incomplete()) {
                 results.push(result.trim());
             }
         }
         return results;
+    }
+
+    public generate(symbol_table: SymbolTable): GTable {
+        const input = make_one_entry_table('','');
+        return this.full_parse(input, symbol_table);
+    }
+    
+    public sample(symbol_table: SymbolTable, n_results: number = 1): GTable {
+        const input = make_one_entry_table('','');
+        var num_failures = 0;
+        var max_failures = 100 * n_results;
+        var result = new GTable();
+
+        while (result.length < n_results) {
+            const sample_result = this.full_parse(input, symbol_table, true, 1);
+            if (sample_result.length == 0) {
+                num_failures++;
+            }
+            if (num_failures > max_failures) {
+                throw new Error("Failing to sample from grammar; try generating to see if has any output at all.");
+            }
+            for (const record of sample_result) {
+                result.push(record);
+            }
+        }
+        return result;
     }
 
     public toString(): string {
@@ -378,6 +489,10 @@ export class SymbolTable {
 
     public new_symbol(name: string) {
         this._symbols.set(name, new GTable());
+    }
+
+    public all_symbol_names(): string[] {
+        return Array.from(this._symbols.keys());
     }
 
     public has_symbol(name: string): boolean {
@@ -395,7 +510,7 @@ export class SymbolTable {
     public add_to_symbol(name: string, record: GRecord) {
         var table = this._symbols.get(name);
         if (table == undefined) {
-            return;
+            throw new Error("Cannot find symbol " + name + " in symbol table");
         }
         table.push(record);
     }

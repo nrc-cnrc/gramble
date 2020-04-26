@@ -5,6 +5,9 @@ import 'mocha';
 const text_input = make_one_record_table([["_text", "foobar"]]);
 const gloss_input = make_one_record_table([["_gloss", "jump-1SG"]]);
 const raw_text_input = make_one_record_table([["text", "foobar"]]);
+const raw_gloss_input = make_one_record_table([["gloss", "jump-1SG"]]);
+const bad_text_input = make_one_record_table([["text", "moobar"]]);
+
 const symbol_table = new SymbolTable();
 
 const entry_parser = make_entry("text", "foo");
@@ -43,8 +46,13 @@ symbol_table.add_to_symbol('SUFFIX', make_record([
 ]));
 symbol_table.add_to_symbol('SUFFIX', make_record([
     ["text", "ar"],
+    ["gloss", "-3SG.PAST"]
+]));
+symbol_table.add_to_symbol('SUFFIX', make_record([
+    ["text", "ar"],
     ["gloss", "-3PL.PAST"]
 ]));
+
 
 const table_parser_with_var = make_one_record_table([
     ["var", "ROOT"],
@@ -112,7 +120,6 @@ describe('Ambiguous GTable transducer, from text to gloss', function() {
     });
 });
 
-
 describe('Unambiguous GTable transducer, from gloss to text', function() {
     const result = table_parser.parse(gloss_input, symbol_table);
     it('should have 1 result', function() {
@@ -138,18 +145,62 @@ describe('Ambiguous GTable transducer, full_parse', function() {
 });
 
 
+describe('Ambiguous GTable transducer, full_parsing an unparseable input', function() {
+    const result = table_parser.full_parse(bad_text_input, symbol_table);
+    it('should have 0 results', function() {
+        expect(result.length).to.equal(0);
+    });
+});
+
+
 describe('Ambiguous GTable transducer using variables', function() {
     const result = table_parser_with_var.full_parse(raw_text_input, symbol_table);
+    it('should have 2 results', function() {
+        expect(result.length).to.equal(3);
+    });
+    it('should have "jump-1SG" as its first gloss output', function() {
+        expect(result.records[0].get("gloss")).to.equal("jump-1SG");
+    });
+    it('should have "run-3SG.PAST" as its second gloss output', function() {
+        expect(result.records[1].get("gloss")).to.equal("run-3SG.PAST");
+    });
+    it('should have "run-3PL.PAST" as its second gloss output', function() {
+        expect(result.records[2].get("gloss")).to.equal("run-3PL.PAST");
+    });
+});
+
+describe('Unambiguous GTable transducer, with vars, gloss->text', function() {
+    const result = table_parser_with_var.full_parse(raw_gloss_input, symbol_table);
+    it('should have 1 result', function() {
+        expect(result.length).to.equal(1);
+    });
+    it('should have "foobar" as its text output', function() {
+        expect(result.records[0].get("text")).to.equal("foobar");
+    });
+});
+
+describe('Ambiguous GTable transducer, with max_results=1', function() {
+    const result = table_parser_with_var.full_parse(raw_text_input, symbol_table, false, 1);
+    it('should have 1 result', function() {
+        expect(result.length).to.equal(1);
+    });
+    it('should have "jump-1SG" as its first gloss output', function() {
+        expect(result.records[0].get("gloss")).to.equal("jump-1SG");
+    });
+});
+
+
+describe('Ambiguous GTable transducer, with max_results=2', function() {
+    const result = table_parser_with_var.full_parse(raw_text_input, symbol_table, false, 2);
     it('should have 2 results', function() {
         expect(result.length).to.equal(2);
     });
     it('should have "jump-1SG" as its first gloss output', function() {
         expect(result.records[0].get("gloss")).to.equal("jump-1SG");
     });
-    it('should have "run-3PL.PAST" as its second gloss output', function() {
-        expect(result.records[1].get("gloss")).to.equal("run-3PL.PAST");
+    it('should have "run-3SG.PAST" as its second gloss output', function() {
+        expect(result.records[1].get("gloss")).to.equal("run-3SG.PAST");
     });
 });
-
 
 
