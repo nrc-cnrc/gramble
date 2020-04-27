@@ -27,13 +27,14 @@ export interface IHighlighter {
     //headers: GCell[];
     //highlights: [GCell, string][];
 
-    mark_error(sheet: string, row: number, col: number, msg: string, level: "error"|"warning"): void;
+    mark_error(sheet: string, row: number, col: number, msg: string, level: "error"|"warning"|"info"): void;
     mark_tier(sheet: string, row: number, col: number, tier: string): void;
     mark_comment(sheet: string, row: number, col: number): void;
     mark_header(sheet: string, row: number, col: number, tier: string): void;
     mark_command(sheet: string, row: number, col: number): void;
     set_color(tier_name: string, color: string): void;
     highlight(): void;
+    alert(msg: string): void;
 }
 
 const REQUIRED_COLORS: string[] = [
@@ -105,7 +106,17 @@ abstract class GFunction {
         return result;
     }
 
-    public abstract call(cells: GCell[], symbol_table: SymbolTable): void;
+    public associate_params(cells: GCell[]): GRecord {
+        var record = new GRecord();
+        for (const cell of cells) {
+            const key = this.get_param(cell.col);
+            const new_entry = new GEntry(key, cell);
+            record.push(new_entry);
+        }
+        return record;
+    }
+
+    public abstract call(cells: GCell[], project: Project): void;
 
     /**
      * Many functions assign or append their results to the most recently declared symbol.
@@ -127,32 +138,40 @@ class TableFunction extends GFunction {
         this.set_symbol(symbol);
     }
 
-    public call(cells: GCell[], symbol_table: SymbolTable): void {
-        var record = new GRecord();
+    public call(cells: GCell[], project: Project): void {
         if (this._symbol == undefined) {
             throw new Error("Attempted to call table function without active symbol");
         }
-
-        for (const cell of cells) {
-            const key = this.get_param(cell.col);
-            if (key == undefined) {
-                throw new Error("Attempted to call table function with argument not corresponding to any param");
-            }
-            const new_entry = new GEntry(key, cell);
-            record.push(new_entry);
-        }
-        if (!symbol_table.has_symbol(this._symbol.text)) {
-            throw new Error("Symbol " + this._symbol.text + " not found in symbol table");
-        }
-        symbol_table.add_to_symbol(this._symbol.text, record);
+        const record = this.associate_params(cells);
+        project.add_record_to_symbol(this._symbol.text, record);
     }
 }
+
+class TestFunction extends GFunction {
+
+    public constructor(name: GCell, symbol: GCell | undefined) {
+        super(name);
+        if (symbol == undefined) {
+            return;
+        }
+        this.set_symbol(symbol);
+    }
+
+    public call(cells: GCell[], project: Project): void {
+        if (this._symbol == undefined) {
+            throw new Error("Attempted to call table function without active symbol");
+        }
+        const record = this.associate_params(cells);
+        project.add_test_to_symbol(this._symbol.text, record);
+    }
+}
+
 
 function make_function(name: GCell, 
                        current_symbol: GCell | undefined, 
                        highlighter: IHighlighter): GFunction {
 
-    if (name.text == 'or') {
+    if (name.text == 'add') {
 
         if (current_symbol == undefined) {
             highlighter.mark_error(name.sheet, name.row, name.col, 
@@ -160,6 +179,13 @@ function make_function(name: GCell,
                 " If you don't assign it to a symbol, it will be ignored.", "warning");
         }
         return new TableFunction(name, current_symbol);
+    } else if (name.text == "test") {
+        if (current_symbol == undefined) {
+            highlighter.mark_error(name.sheet, name.row, name.col, 
+                "This test command is not preceded by a symbol. " +
+                " Tests without a symbol will not execute", "warning");
+        }
+        return new TestFunction(name, current_symbol);
     }
 
     // it's not a reserved word, so it's a new symbol
@@ -167,7 +193,8 @@ function make_function(name: GCell,
 }
 
 const BUILT_IN_FUNCTIONS: string[] = [
-    "or",
+    "add",
+    "test"
 ]
 
 
@@ -181,6 +208,7 @@ export class Project {
     //private _position_map: Map<[string, number, number],GEntry> = new Map();
 
     private _symbol_table = new SymbolTable();
+    private _test_table = new SymbolTable();
 
     public has_symbol(name: string): boolean {
         return this._symbol_table.has_symbol(name);
@@ -188,6 +216,22 @@ export class Project {
 
     public all_symbols(): string[] {
         return this._symbol_table.all_symbol_names();
+    }
+
+    public add_record_to_symbol(name: string, record: GRecord) {
+        this._symbol_table.add_to_symbol(name, record);
+    }
+
+    public add_test_to_symbol(name: string, record: GRecord) {
+        this._test_table.add_to_symbol(name, record);
+    }
+    
+    public parse(symbol_name: string, input: GTable): GTable {
+        if (!this._symbol_table.has_symbol(symbol_name)) {
+            throw new Error("Cannot find symbol " + symbol_name + " in symbol table");
+        }
+        const parser = this._symbol_table.get(symbol_name);
+        return parser.full_parse(input, this._symbol_table);
     }
 
     public generate(symbol_name: string): GTable {
@@ -208,6 +252,93 @@ export class Project {
         return parser.sample(this._symbol_table, n_results);
     }
 
+    public contains_result(result_table: GTable, test: GEntry) {
+        for (const result_record of result_table) {
+            for (const result_entry of result_record) {
+                if (result_entry.key.text != test.key.text) {
+                    continue;
+                }
+                if (result_entry.value.text == test.value.text) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public equals_result(result_table: GTable, test: GEntry) {
+        var found = false;
+        for (const result_record of result_table) {
+            for (const result_entry of result_record) {
+                if (result_entry.key.text != test.key.text) {
+                    continue;
+                }
+                if (result_entry.value.text == test.value.text) {
+                    found = true;
+                    continue;
+                }
+                return false;
+
+            }
+        }
+        return found;
+    }
+
+
+    public run_tests(highlighter: IHighlighter): void {
+        for (const symbol_name of this._test_table.all_symbol_names()) {
+            const test_table = this._test_table.get(symbol_name);
+            for (const record of test_table) {
+                const input_record = new GRecord();
+                const contains_record = new GRecord();
+                const equals_record = new GRecord();
+                
+                for (const entry of record) {
+                    var parts = entry.key.text.split(" ");
+                    if (parts.length != 2) {
+                        highlighter.mark_error(entry.key.sheet, entry.key.row, entry.key.col,
+                            "Invalid test tier: " + entry.key.text, "error");
+                        continue;
+                    }
+                    const command = parts[0].trim();
+                    const tier = parts[1].trim();
+                    if (command == "input") {
+                        input_record.push(new GEntry(new GCell(tier), entry.value));
+                    } else if (command == "contains") {
+                        contains_record.push(new GEntry(new GCell(tier), entry.value));
+                    } else if (command == "equals") {
+                        equals_record.push(new GEntry(new GCell(tier), entry.value));
+                    }
+                }
+                
+                const input = new GTable();
+                input.push(input_record);
+                const result = this.parse(symbol_name, input);
+                
+                for (const test of contains_record) {
+                    if (!this.contains_result(result, test)) {
+                        highlighter.mark_error(test.value.sheet, test.value.row, test.value.col,
+                            "Result does not contain specified value. " + 
+                            "Actual value: \n" + result.toString(), "error");
+                    } else {
+                        highlighter.mark_error(test.value.sheet, test.value.row, test.value.col,
+                            "Result contains specified value: \n" + result.toString(), "info");
+                    }
+                }
+
+                for (const test of equals_record) {
+                    if (!this.equals_result(result, test)) {
+                        highlighter.mark_error(test.value.sheet, test.value.row, test.value.col,
+                            "Result does not equal specified value. " + 
+                            "Actual value: \n" + result.toString(), "error");
+                    } else {
+                        highlighter.mark_error(test.value.sheet, test.value.row, test.value.col,
+                            "Result equals specified value: \n" + result.toString(), "info");
+                    }
+                }
+            }
+        }
+    }
 
     private add_row(cells: GCell[], highlighter: IHighlighter): void {
         if (cells.length == 0) {
@@ -233,6 +364,7 @@ export class Project {
                 // it's not a built-in function/keyword, so treat it as a new symbol
                 this._current_symbol = first_cell;
                 this._symbol_table.new_symbol(first_cell_text);
+                this._test_table.new_symbol(first_cell_text);
             }
             this._current_function = make_function(first_cell, this._current_symbol, highlighter);
             this._current_function.add_params(cells.slice(1), highlighter);
@@ -272,7 +404,7 @@ export class Project {
             args.push(cell);
         }
 
-        this._current_function.call(args, this._symbol_table);
+        this._current_function.call(args, this);
     }
 
     public add_sheet(sheet_name: string, 

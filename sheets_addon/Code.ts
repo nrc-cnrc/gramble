@@ -41,8 +41,9 @@ function meanAngleDeg(a: number[]): number {
 
 const DEFAULT_SATURATION = 0.1;
 const DEFAULT_VALUE = 1.0;
-const ERROR_COLOR: string = "#FF0000";
-const WARNING_COLOR: string = "#EEDD00";
+const MESSAGE_COLOR_ERROR: string = "#DD3333";
+const MESSAGE_COLOR_WARNING: string = "#DDDD33";
+const MESSAGE_COLOR_INFO: string = "#33DD33";
 const NAMED_COLORS: Map<string, number> = new Map([
     ["red", 0],
     ["orange", 30],
@@ -61,7 +62,7 @@ const NAMED_COLORS: Map<string, number> = new Map([
 
 class GoogleSheetsHighlighter implements IHighlighter {
 
-    private _error_cells: [string, number, number, string, "error" | "warning"][] = [];
+    private _error_cells: [string, number, number, string, "error"|"warning"|"info"][] = [];
     private _comment_cells: [string, number, number][] = [];
     private _command_cells: [string, number, number][] = [];
     private _header_cells: [string, number, number, string][] = [];
@@ -69,6 +70,10 @@ class GoogleSheetsHighlighter implements IHighlighter {
     private _named_colors: Map<string, number> = new Map();
     private _calculated_colors: Map<string, number> = new Map();
 
+    public alert(msg: any): void {
+        let ui = SpreadsheetApp.getUi();
+        ui.alert(msg);
+    }
 
     private HSVtoRGB(h: number, s: number, v: number): [number, number, number] {
         var r: number, g: number, b: number, i: number, 
@@ -144,7 +149,9 @@ class GoogleSheetsHighlighter implements IHighlighter {
         var hues: number[] = [];
         var subnames = tier_name.split(",");
         for (let i = 0; i < subnames.length; i++) {
-            const subname = subnames[i].trim().toLowerCase();
+            var subname = subnames[i].trim().toLowerCase();
+            var subname_parts = subname.split(" ");
+            subname = subname_parts[subname_parts.length-1];
             if (this._named_colors.has(subname)) {
                 var hue = this._named_colors.get(subname);
             } else {
@@ -171,7 +178,7 @@ class GoogleSheetsHighlighter implements IHighlighter {
                     row: number, 
                     col: number, 
                     msg: string, 
-                    level: "error" | "warning"): void {
+                    level: "error" | "warning" | "info"): void {
         this._error_cells.push([sheet, row, col, msg, level]);
     }
 
@@ -249,9 +256,11 @@ class GoogleSheetsHighlighter implements IHighlighter {
             }
             let cell = sheet.getRange(row + 1, col + 1);
             if (level == "error") {
-                cell.setBackground(ERROR_COLOR);
-            } else {            
-                cell.setBackground(WARNING_COLOR);
+                cell.setBackground(MESSAGE_COLOR_ERROR);
+            } else if (level == "warning") {    
+                cell.setBackground(MESSAGE_COLOR_WARNING);
+            } else {
+                cell.setBackground(MESSAGE_COLOR_INFO);
             }
             cell.setNote(msg);
             cell.setFontColor(null);
@@ -556,6 +565,14 @@ function GrambleHighlighting(): void {
     highlighter.highlight();
 }
 
+
+function GrambleTest(): void {
+    const highlighter = new GoogleSheetsHighlighter();
+    const project = make_project(highlighter);
+    project.run_tests(highlighter);
+    highlighter.highlight();
+}
+
 function GrambleComment(): void {
     var spreadsheet = SpreadsheetApp.getActive();
     var sheet = spreadsheet.getActiveSheet();
@@ -604,6 +621,7 @@ function onOpen(): void {
     var ui = SpreadsheetApp.getUi();
     ui.createMenu('Gramble')
         .addItem('Highlight', 'GrambleHighlighting')
+        .addItem('Run Tests', 'GrambleTest')
         .addSeparator()
         .addItem('Comment', 'GrambleComment')
         .addItem('Uncomment', 'GrambleUncomment')
