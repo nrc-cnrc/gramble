@@ -364,7 +364,7 @@ function code_from_table(symbol_name: string, table: GTable): string[][] {
             keys = new_keys;
         } else if (keys.toString() != new_keys.toString()) {
             results.push([]);
-            results.push(["or"].concat(new_keys));
+            results.push(["and"].concat(new_keys));
             keys = new_keys;
         }
         results.push([""].concat(record.values()));

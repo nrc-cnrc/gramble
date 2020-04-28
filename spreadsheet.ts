@@ -21,12 +21,15 @@ function is_line_empty(row: string[]): boolean {
 }
 
 
+/**
+ * IHighlighter
+ * 
+ * To make an editor (e.g. Google Sheets) "smart" about Gramble, you implement this interface.  Most
+ * of the public-facing methods of the Project edifice take an IHighlighter instance as an argument.
+ * When parsing a spreadsheet, executing a unit test, etc., the Parser will notify the IHighlighter instance
+ * that particular cells are errors, comments, column headers, etc.
+ */
 export interface IHighlighter {
-    //errors: [GCell, string][];
-    //comments: GCell[];
-    //headers: GCell[];
-    //highlights: [GCell, string][];
-
     mark_error(sheet: string, row: number, col: number, msg: string, level: "error"|"warning"|"info"): void;
     mark_tier(sheet: string, row: number, col: number, tier: string): void;
     mark_comment(sheet: string, row: number, col: number): void;
@@ -59,10 +62,14 @@ function is_valid_color(color_name: string): boolean {
     return true;
 }
 
-
-var RESERVED_WORDS: string[] = [ "grammar", "apply" ];
-
-
+/**
+ * GFunction
+ * 
+ * A GFunction is what is created when the programmer places text in the first column of the
+ * sheet.  GFunctions guide the interpretation of following rows, both the name of the function that
+ * should be executed (e.g. "add" a record to a symbol or add a "test" to a symbol) and the interpretation
+ * of positional arguments (e.g. that the third column should be "text", the second column should be "down", etc.)
+ */
 abstract class GFunction {
     protected _name: GCell;
     protected _symbol: GCell | undefined;
@@ -198,14 +205,21 @@ const BUILT_IN_FUNCTIONS: string[] = [
 ]
 
 
+/**
+ * Project
+ * 
+ * A project represents a possibly multi-sheet program (e.g. one that exists across
+ * multiple worksheets inside a single spreadsheet).  You pass unstructured sheets to it
+ * (in the form of string[][] representing the cells of that sheet) and it parses them into
+ * parsers and manages the symbol table.
+ * 
+ * It also serves as an Edifice (in the 
+ * design pattern sense) for clients: rather than asking for a parser object and calling parse()
+ * on it directly, you just have a Project instance and call parse(symbol_name, input).
+ */
 export class Project {
-
-    //private _cells: Cell[][] = [];
-    //private _current_symbol: GCell | null = null;
-
     private _current_function: GFunction | undefined = undefined;
     private _current_symbol: GCell | undefined = undefined;
-    //private _position_map: Map<[string, number, number],GEntry> = new Map();
 
     private _symbol_table = new SymbolTable();
     private _test_table = new SymbolTable();
@@ -263,6 +277,10 @@ export class Project {
                 }
             }
         }
+        
+        if (test.value.text.length == 0) {
+            return true;  // if there's no output, and no output is expected, we're good!
+        }
         return false;
     }
 
@@ -280,6 +298,9 @@ export class Project {
                 return false;
 
             }
+        }
+        if (!found && test.value.text.length == 0) {
+            return true;  // if there's no output, and no output is expected, we're good!
         }
         return found;
     }
@@ -315,24 +336,24 @@ export class Project {
                 input.push(input_record);
                 const result = this.parse(symbol_name, input);
                 
-                for (const test of contains_record) {
-                    if (!this.contains_result(result, test)) {
-                        highlighter.mark_error(test.value.sheet, test.value.row, test.value.col,
+                for (const test_entry of contains_record) {
+                    if (!this.contains_result(result, test_entry)) {
+                        highlighter.mark_error(test_entry.value.sheet, test_entry.value.row, test_entry.value.col,
                             "Result does not contain specified value. " + 
                             "Actual value: \n" + result.toString(), "error");
                     } else {
-                        highlighter.mark_error(test.value.sheet, test.value.row, test.value.col,
+                        highlighter.mark_error(test_entry.value.sheet, test_entry.value.row, test_entry.value.col,
                             "Result contains specified value: \n" + result.toString(), "info");
                     }
                 }
 
-                for (const test of equals_record) {
-                    if (!this.equals_result(result, test)) {
-                        highlighter.mark_error(test.value.sheet, test.value.row, test.value.col,
+                for (const test_entry of equals_record) {
+                    if (!this.equals_result(result, test_entry)) {
+                        highlighter.mark_error(test_entry.value.sheet, test_entry.value.row, test_entry.value.col,
                             "Result does not equal specified value. " + 
                             "Actual value: \n" + result.toString(), "error");
                     } else {
-                        highlighter.mark_error(test.value.sheet, test.value.row, test.value.col,
+                        highlighter.mark_error(test_entry.value.sheet, test_entry.value.row, test_entry.value.col,
                             "Result equals specified value: \n" + result.toString(), "info");
                     }
                 }
