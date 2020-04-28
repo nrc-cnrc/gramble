@@ -93,7 +93,9 @@ interface ITransducer {
  * 
  * An entry represents a key:value pair.
  * 
- * When interpreted as a transducer, a Record is treated as a Literal.
+ * When interpreted as a transducer, a Record is by default treated as a literal parser, although
+ * with a special or complex tier name (e.g. "var", "apply text", etc.) it could have a special 
+ * interpretation.
  */
 export class GEntry implements ITransducer {
 
@@ -120,8 +122,11 @@ export class GEntry implements ITransducer {
         return new GEntry(this._key, this._value.map(f));
     }
 
-    public is_incomplete(): boolean {
-        return this._key.text.startsWith("_") && this._value.text.length > 0;
+    public is_incomplete(tier: string = ""): boolean {
+        if (tier.length == 0) {
+            return this._key.text.startsWith("_") && this._value.text.length > 0;
+        }
+        return this._key.text == "_" + tier && this._value.text.length > 0;
     }
 
     public toString(): string {
@@ -132,16 +137,42 @@ export class GEntry implements ITransducer {
         return new GEntry(this.key.clone(), new GCell(this.value.text + s));
     }
 
-    public parse(input: GTable, 
-                symbol_table: SymbolTable, 
-                randomize: boolean = false,
-                max_results: number = -1): GTable {
+    public parse_as_apply(input: GTable, 
+                        symbol_table: SymbolTable, 
+                        apply_to_tier: string,
+                        input_tier: string = "up",
+                        output_tier: string = "down"): GTable {
+        
+        const parser = symbol_table.get(this._value.text);
+        input = input.map_key(s => {  // remaps all apply_to_tier keys to input_tier keys for processing
+                                      // e.g., from "surf":"foo" to "_up":"foo".
+            return (s == apply_to_tier) ? "_" + input_tier : s;  
+        })
 
-        if (this.key.text == 'var') {
-            // we're a VariableParser
-            const parser = symbol_table.get(this._value.text);
-            return parser.parse(input, symbol_table, randomize, max_results);
-        }
+        var results = parser.apply_conversion(input, symbol_table, input_tier, output_tier);
+            
+        results = results.map_key(s => {
+            return (s == output_tier) ? apply_to_tier : s;
+        }).filter_key(s => {
+            return s != input_tier;
+        });
+
+        return results;
+    }
+
+    public parse_as_variable(input: GTable, 
+        symbol_table: SymbolTable, 
+        randomize: boolean = false,
+        max_results: number = -1): GTable {
+
+        const parser = symbol_table.get(this._value.text);
+        return parser.parse(input, symbol_table, randomize, max_results);
+    }
+
+    public parse_as_literal(input: GTable, 
+        symbol_table: SymbolTable, 
+        randomize: boolean = false,
+        max_results: number = -1): GTable {
 
         var result_table = new GTable();
 
@@ -185,6 +216,46 @@ export class GEntry implements ITransducer {
         
         return result_table;
     }
+
+    public parse(input: GTable, 
+                symbol_table: SymbolTable, 
+                randomize: boolean = false,
+                max_results: number = -1): GTable {
+
+        if (this._value.text == "") {
+            return input;
+        }
+
+        var keys = split_trim_lower(this._key.text);
+
+        // a GEntry could be interpreted a variety of ways depending on the string in its tier
+        if (keys.length == 0) {
+            throw new Error("Attempt to call a parser with no tier.");
+        }
+
+        if (keys.length == 1 && keys[0] == 'var') {
+            // we're a VariableParser
+            return this.parse_as_variable(input, symbol_table, randomize, max_results);
+        }
+        
+        if (keys.length == 2 && keys[0] == 'downward') {
+            return this.parse_as_apply(input, symbol_table, keys[1], "up", "down");
+        } 
+
+        if (keys.length == 2 && keys[0] == 'upward') {
+            return this.parse_as_apply(input, symbol_table, "_" + keys[1], "down", "up");
+        } 
+
+        if (keys.length > 2) {
+            throw new Error("Attempt to call a parser with no tier.");
+        }
+
+        return this.parse_as_literal(input, symbol_table, randomize, max_results);
+    }
+}
+
+function split_trim_lower(s: string, delim: string = " "): string[] {
+    return s.split(delim).map(x => { return x.trim().toLowerCase() });
 }
 
 /**
@@ -221,6 +292,33 @@ export class GRecord implements ITransducer, Iterable<GEntry> {
         });
     }
 
+    public step_one_character(in_tier: string, out_tier: string): GRecord {
+        var temp = new GRecord();
+        var c = "";
+        for (const entry of this) {
+            if (entry.key.text == "_" + in_tier && entry.value.text.length > 0) {
+                c = entry.value.text[0];
+                temp.push(new GEntry(entry.key, new GCell(entry.value.text.slice(1))));
+                continue;
+            }
+            temp.push(entry);
+        }
+        var result = new GRecord();
+        for (const entry of temp) {
+            if (entry.key.text != out_tier) {
+                result.push(entry);
+                continue;
+            }
+            result.push(entry.concat(c));
+        }
+
+        if (!result.has(out_tier)) {
+            result.push(make_entry(out_tier, c));
+        }
+
+        return result;
+    }
+
     public map(f: (e: GEntry) => GEntry): GRecord {
         const result = new GRecord();
         result._entries = this._entries.map(f);
@@ -233,13 +331,22 @@ export class GRecord implements ITransducer, Iterable<GEntry> {
         });
     }
 
+    public filter_key(f: (s: string) => boolean): GRecord {
+        const result = new GRecord();
+        result._entries = this._entries.filter(entry => {
+            return f(entry.key.text);
+        });
+        return result;
+    }
+
     /**
      * Tests whether there are unconsumed remnants
-     * @returns true if any entry is incomplete (represents an unconsumed remnant)
+     * @param tier The tier to check; any tier if empty
+     * @returns true if any entry is incomplete (represents an unconsumed remnant) alonged the named tier
      */
-    public is_incomplete(): boolean {
+    public is_incomplete(tier: string = ""): boolean {
         return this._entries.some(entry => {
-            return entry.is_incomplete();
+            return entry.is_incomplete(tier);
         });
     }
 
@@ -405,6 +512,47 @@ export class GTable implements ITransducer, Iterable<GRecord> {
         const result = new GTable();
         result._records = this._records.map(f);
         return result;
+    }
+
+    public filter_key(f: (s: string) => boolean): GTable {
+        return this.map(record => {
+            return record.filter_key(f);
+        });
+    }
+    
+    public apply_conversion(input: GTable, 
+                            symbol_table: SymbolTable, 
+                            input_tier: string = "up",
+                            output_tier: string = "down"): GTable {
+        var results = new GTable();
+        for (const input_record of input) {
+            
+            if (!input_record.is_incomplete(input_tier)) {  // only parse incomplete ones, or else recurse forever
+                results.push(input_record);
+                continue;
+            }
+
+            var input_table = new GTable();
+            input_table.push(input_record);
+            var output_table = this.parse(input_table, symbol_table);
+            
+            if (output_table.length == 0) {
+                var remnant_table = new GTable();
+                var stepped_input = input_record.step_one_character(input_tier, output_tier);
+                remnant_table.push(stepped_input);
+            } else {
+                var remnant_table = output_table;
+            }
+
+            for (const recursed_record of this.apply_conversion(remnant_table, 
+                                                                symbol_table,
+                                                                input_tier,
+                                                                output_tier)) {
+                results.push(recursed_record);
+            }
+            
+        }
+        return results;
     }
 
     public parse(input: GTable, 

@@ -1,3 +1,3 @@
-cp ../transducers.ts ../spreadsheet.ts .
+cp ./transducers.ts ./spreadsheet.ts ./sheets_addon/
 clasp push
-rm transducers.ts spreadsheet.ts
+rm ./sheets_addon/transducers.ts ./sheets_addon/spreadsheet.ts
