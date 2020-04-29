@@ -1,7 +1,7 @@
 Gramble
 =======
 
-> /ˈgɹæmˌbɫ̣/ (_GRAMM-bl_)
+> /ˈɡɹæmˌbɫ̣/ (_GRAMM-bl_)
 
 Write your grammar as a spreadsheet!
 
