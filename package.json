@@ -1,12 +1,16 @@
 {
   "name": "gramble",
   "version": "0.0.1",
-  "description": "Typescript interpreter for Gramble language",
+  "description": "Typescript interpreter for the Gramble language",
   "main": "index.js",
   "scripts": {
-    "test": "mocha -r ts-node/register tests/*.ts"
+    "test": "mocha -r ts-node/register tests/*.ts",
+    "build": "tsc"
   },
   "author": "Patrick Littell",
+  "contributors": [
+    "Eddie Antonio Santos <Eddie.Santos@nrc-cnrc.gc.ca>"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@types/chai": "^4.2.11",
