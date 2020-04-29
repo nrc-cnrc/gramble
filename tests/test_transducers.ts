@@ -5,6 +5,7 @@ import 'mocha';
 const text_input = make_one_record_table([["_text", "foobar"]]);
 const gloss_input = make_one_record_table([["_gloss", "jump-1SG"]]);
 const raw_text_input = make_one_record_table([["text", "foobar"]]);
+const raw_text_no_suffix = make_one_record_table([["text", "foo"]]);
 const raw_gloss_input = make_one_record_table([["gloss", "jump-1SG"]]);
 const bad_text_input = make_one_record_table([["text", "moobar"]]);
 
@@ -58,6 +59,20 @@ const table_parser_with_var = make_one_record_table([
     ["var", "ROOT"],
     ["var", "SUFFIX"]
 ]);
+
+const maybe_indicative_parser = make_one_record_table([
+    ["text", "foo"],
+    ["gloss", "jump"],
+    ["maybe gloss", "-INDIC"],
+    ["text", "bar"],
+    ["gloss", "-1SG"]
+]);
+
+const maybe_suffix_parser = make_one_record_table([
+    ["var", "ROOT"],
+    ["maybe var", "SUFFIX"]
+]);
+
 
 
 describe('Simple GEntry parser', function() {
@@ -155,7 +170,7 @@ describe('Ambiguous GTable transducer, full_parsing an unparseable input', funct
 
 describe('Ambiguous GTable transducer using variables', function() {
     const result = table_parser_with_var.full_parse(raw_text_input, symbol_table);
-    it('should have 2 results', function() {
+    it('should have 3 results', function() {
         expect(result.length).to.equal(3);
     });
     it('should have "jump-1SG" as its first gloss output', function() {
@@ -164,7 +179,7 @@ describe('Ambiguous GTable transducer using variables', function() {
     it('should have "run-3SG.PAST" as its second gloss output', function() {
         expect(result.records[1].get("gloss")).to.equal("run-3SG.PAST");
     });
-    it('should have "run-3PL.PAST" as its second gloss output', function() {
+    it('should have "run-3PL.PAST" as its third gloss output', function() {
         expect(result.records[2].get("gloss")).to.equal("run-3PL.PAST");
     });
 });
@@ -190,10 +205,36 @@ describe('Ambiguous GTable transducer, with max_results=1', function() {
 });
 
 
-describe('Ambiguous GTable transducer, with max_results=2', function() {
-    const result = table_parser_with_var.full_parse(raw_text_input, symbol_table, false, 2);
+describe('Maybe parser with optional indicative gloss', function() {
+    const result = maybe_indicative_parser.full_parse(raw_text_input, symbol_table, false, 2);
     it('should have 2 results', function() {
         expect(result.length).to.equal(2);
+    });
+    it('should have "jump-INDIC-1SG" as its first gloss output', function() {
+        expect(result.records[0].get("gloss")).to.equal("jump-INDIC-1SG");
+    });
+    it('should have "jump-1SG" as its second gloss output', function() {
+        expect(result.records[1].get("gloss")).to.equal("jump-1SG");
+    });
+});
+
+
+
+describe('Maybe parser with optional suffix, parsing input with no suffix', function() {
+    const result = maybe_suffix_parser.full_parse(raw_text_no_suffix, symbol_table);
+    it('should have 1 result', function() {
+        expect(result.length).to.equal(1);
+    });
+    it('should have "jump" as its first gloss output', function() {
+        expect(result.records[0].get("gloss")).to.equal("jump");
+    });
+});
+
+
+describe('Maybe parser with optional suffix, parsing input with suffix', function() {
+    const result = maybe_suffix_parser.full_parse(raw_text_input, symbol_table);
+    it('should have 3 results', function() {
+        expect(result.length).to.equal(3);
     });
     it('should have "jump-1SG" as its first gloss output', function() {
         expect(result.records[0].get("gloss")).to.equal("jump-1SG");
@@ -201,6 +242,7 @@ describe('Ambiguous GTable transducer, with max_results=2', function() {
     it('should have "run-3SG.PAST" as its second gloss output', function() {
         expect(result.records[1].get("gloss")).to.equal("run-3SG.PAST");
     });
+    it('should have "run-3PL.PAST" as its third gloss output', function() {
+        expect(result.records[2].get("gloss")).to.equal("run-3PL.PAST");
+    });
 });
-
-

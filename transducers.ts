@@ -82,10 +82,146 @@ export class GCell extends GPosition {
 
 
 interface ITransducer {
-    parse(input: GTable, 
+    transduce(input: GRecord, 
         symbol_table: SymbolTable,
         randomize: boolean,
-        max_results: number): GTable;
+        max_results: number): GRecord[];
+}
+
+class VarTransducer implements ITransducer {
+
+    private _value: GCell;
+    
+    public constructor(value: GCell) {
+        this._value = value;
+    }
+
+    public transduce(input: GRecord, symbol_table: SymbolTable, randomize=false, max_results=-1): GRecord[] {
+        const parser = symbol_table.get(this._value.text);
+        var input_table = new GTable();
+        input_table.push(input);
+        const result_table = parser.parse(input_table, symbol_table, randomize, max_results);
+        return result_table.records;
+    }
+}
+
+class AlternationTransducer implements ITransducer {
+
+    private _children: ITransducer[];
+
+    public constructor(children: ITransducer[]) {
+        this._children = children;
+    }
+
+    public transduce(input: GRecord, symbol_table: SymbolTable, randomize=false, max_results=-1): GRecord[] {
+        const results: GRecord[] = [];
+        var children = [...this._children];
+        if (randomize) {
+            children = shuffle(children);
+        }
+        for (const child of children) {
+            for (const result of child.transduce(input, symbol_table, randomize, max_results)) {
+                results.push(result);
+                if (max_results > 0 && results.length > max_results) {
+                    return results.slice(0, max_results);
+                }
+            }
+        }
+        return results;
+    }
+}
+
+class NullParser implements ITransducer {
+    
+    public transduce(input: GRecord, symbol_table: SymbolTable, randomize=false, max_results=-1): GRecord[] {
+        return [input];
+    }
+}
+
+class MaybeTransducer implements ITransducer {
+
+    private _alternation: ITransducer;
+    
+    public constructor(child: ITransducer) {
+        this._alternation = new AlternationTransducer([child, new NullParser()]);
+    }
+
+    public transduce(input: GRecord, symbol_table: SymbolTable, randomize=false, max_results=-1): GRecord[] {
+        return this._alternation.transduce(input, symbol_table, randomize, max_results);
+    }
+}
+
+class AtomicTransducer implements ITransducer {
+
+    private _key: GCell;
+    private _value: GCell;
+
+    public constructor(key: GCell, value: GCell) {
+        this._key = key;
+        this._value = value;
+    }
+
+    public transduce(input: GRecord, symbol_table: SymbolTable, randomize=false, max_results=-1): GRecord[] {
+
+        var result_record = new GRecord();
+        var my_tier_found = false;
+
+        // the result is going to be each entry in the input, with the target string
+        // parsed off every tier of the appropriate name.  if any tier with a matching 
+        // name doesn't begin with this, then the whole thing fails.
+        for (const entry of input) {
+
+            if (entry.key.text == this._key.text) {
+                result_record.push(entry.concat(this._value.text));
+                my_tier_found = true;
+                continue;
+            }
+
+            if (entry.key.text != "_" + this._key.text) {
+                result_record.push(entry);
+                continue;  // not what we're looking for, move along 
+            }
+
+            if (!entry.value.text.startsWith(this._value.text)) {
+                // parse failed! 
+                return [];
+            }
+
+            const remnant_str = entry.value.text.slice(this._value.text.length);
+            const remnant_cell = new GCell(remnant_str);
+            const remnant_entry = new GEntry(entry.key, remnant_cell);
+            result_record.push(remnant_entry);
+        }
+
+        if (!my_tier_found) {
+            result_record.push(new GEntry(this._key, this._value));
+        }
+    
+        return [result_record];
+    }
+}
+
+function make_transducer(key: GCell, value: GCell): ITransducer {
+    const keys = split_trim_lower(key.text);
+    if (keys.length == 0) {
+        throw new Error("Attempt to call a parser with no tier.");
+    }
+    if (keys.length >= 2 && keys[0] == "maybe") {
+        const remnant = keys.slice(1).join(" ");
+        const child_key = new GCell(remnant, key.sheet, key.row, key.col);
+        const child = make_transducer(child_key, value);
+        return new MaybeTransducer(child);
+    }
+
+    if (keys.length > 1) {
+        throw new Error("Not a valid tier name: " + key.text);
+    }
+
+    if (keys[0] == "var") {
+        return new VarTransducer(value);
+    } 
+    
+    return new AtomicTransducer(key, value);
 }
 
 /**
@@ -97,7 +233,7 @@ interface ITransducer {
  * with a special or complex tier name (e.g. "var", "apply text", etc.) it could have a special 
  * interpretation.
  */
-export class GEntry implements ITransducer {
+export class GEntry {
 
     private _key: GCell;
     private _value: GCell;
@@ -160,63 +296,6 @@ export class GEntry implements ITransducer {
         return results;
     }
 
-    public parse_as_variable(input: GTable, 
-        symbol_table: SymbolTable, 
-        randomize: boolean = false,
-        max_results: number = -1): GTable {
-
-        const parser = symbol_table.get(this._value.text);
-        return parser.parse(input, symbol_table, randomize, max_results);
-    }
-
-    public parse_as_literal(input: GTable, 
-        symbol_table: SymbolTable, 
-        randomize: boolean = false,
-        max_results: number = -1): GTable {
-
-        var result_table = new GTable();
-
-        outer_loop: for (const input_record of input) {
-            var result_record = new GRecord();
-            var my_tier_found = false;
-
-            // the result is going to be each entry in the input, with the target string
-            // parsed off every tier of the appropriate name.  if any tier with a matching 
-            // name doesn't begin with this, then the whole thing fails.
-            for (const entry of input_record) {
-
-                if (entry.key.text == this.key.text) {
-                    result_record.push(entry.concat(this.value.text));
-                    my_tier_found = true;
-                    continue;
-                }
-
-                if (entry.key.text != "_" + this.key.text) {
-                    result_record.push(entry);
-                    continue;  // not what we're looking for, move along 
-                }
-
-                if (!entry.value.text.startsWith(this.value.text)) {
-                    // parse failed! 
-                    continue outer_loop;
-                }
-
-                const remnant_str = entry.value.text.slice(this.value.text.length);
-                const remnant_cell = new GCell(remnant_str);
-                const remnant_entry = new GEntry(entry.key, remnant_cell);
-                result_record.push(remnant_entry);
-            }
-
-            if (!my_tier_found) {
-                result_record.push(this.clone());
-            }
-
-            result_table.push(result_record);
-        }
-        
-        return result_table;
-    }
-
     public parse(input: GTable, 
                 symbol_table: SymbolTable, 
                 randomize: boolean = false,
@@ -232,11 +311,6 @@ export class GEntry implements ITransducer {
         if (keys.length == 0) {
             throw new Error("Attempt to call a parser with no tier.");
         }
-
-        if (keys.length == 1 && keys[0] == 'var') {
-            // we're a VariableParser
-            return this.parse_as_variable(input, symbol_table, randomize, max_results);
-        }
         
         if (keys.length == 2 && keys[0] == 'downward') {
             return this.parse_as_apply(input, symbol_table, keys[1], "up", "down");
@@ -246,11 +320,15 @@ export class GEntry implements ITransducer {
             return this.parse_as_apply(input, symbol_table, "_" + keys[1], "down", "up");
         } 
 
-        if (keys.length > 2) {
-            throw new Error("Attempt to call a parser with no tier.");
-        }
+        var result_table = new GTable();
 
-        return this.parse_as_literal(input, symbol_table, randomize, max_results);
+        var transducer = make_transducer(this._key, this._value);
+        for (const input_record of input) {
+            for (const result_record of transducer.transduce(input_record, symbol_table, randomize, max_results)) {
+                result_table.push(result_record);
+            }
+        }
+        return result_table;
     }
 }
 
@@ -268,7 +346,7 @@ function split_trim_lower(s: string, delim: string = " "): string[] {
  * in order.
  */
 
-export class GRecord implements ITransducer, Iterable<GEntry> {
+export class GRecord implements Iterable<GEntry> {
 
     private _entries : GEntry[] = [];
 
@@ -471,7 +549,7 @@ function shuffle<T>(ar: T[]): T[] {
     return ar;
 }
 
-export class GTable implements ITransducer, Iterable<GRecord> {
+export class GTable implements Iterable<GRecord> {
 
     private _records : GRecord[] = [];
 
@@ -559,6 +637,7 @@ export class GTable implements ITransducer, Iterable<GRecord> {
                 symbol_table: SymbolTable, 
                 randomize: boolean = false,
                 max_results: number = -1): GTable {
+
         var results = new GTable();
         var children = this._records;
         if (randomize) {
@@ -573,6 +652,7 @@ export class GTable implements ITransducer, Iterable<GRecord> {
             }
         }
         return results;
+
     }
 
     /**
