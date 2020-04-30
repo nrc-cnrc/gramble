@@ -358,16 +358,17 @@ function code_from_table(symbol_name: string, table: GTable): string[][] {
     var keys: string[] = [];
 
     for (const record of table) {
-        const new_keys = record.keys();
+
+        const new_keys = record.map(([key, value]) => key.text);
+        const values = record.map(([key, value]) => value.text);
         if (keys.length == 0) {
             results.push([symbol_name].concat(new_keys));
-            keys = new_keys;
         } else if (keys.toString() != new_keys.toString()) {
             results.push([]);
             results.push(["and"].concat(new_keys));
-            keys = new_keys;
         }
-        results.push([""].concat(record.values()));
+        keys = new_keys;
+        results.push([""].concat(values));
     }
 
     return results;
@@ -427,11 +428,11 @@ function create_html_from_table(table: GTable, highlighter: IHighlighter): strin
         var keys: string[] = [];
         var keys_and_colors: [string, string][] = [];
         var values_and_colors: [string, string][] = [];
-        for (const entry of record) {
-            keys.push(entry.key.text);
-            const color = highlighter.get_color(entry.key.text)
-            keys_and_colors.push([entry.key.text, color]);
-            values_and_colors.push([entry.value.text, color]);
+        for (const [key, value] of record) {
+            keys.push(key.text);
+            const color = highlighter.get_color(key.text)
+            keys_and_colors.push([key.text, color]);
+            values_and_colors.push([value.text, color]);
         }
         if (keys.toString() != previous_keys.toString()) {
             result += '<td style="padding: 5px"> </td></tr><tr>'; // leave an emtpy row

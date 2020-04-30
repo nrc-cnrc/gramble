@@ -66,29 +66,17 @@ export class GCell extends GPosition {
         super(sheet_name, row_idx, col_idx);
         this._text = text;
     }
-
-    public append(text: string): void {
-        this._text += text;
-    }
-
-    public map(f: (s: string) => string): GCell {
-        return new GCell(f(this.text), this._sheet, this._row, this._col);
-    }
-
-    public clone(): GCell {
-        return new GCell(this._text, this._sheet, this._row, this._col);
-    }
 }
 
 
-interface ITransducer {
+interface Transducer {
     transduce(input: GRecord, 
         symbol_table: SymbolTable,
         randomize: boolean,
         max_results: number): GRecord[];
 }
 
-class VarTransducer implements ITransducer {
+class VarTransducer implements Transducer {
 
     private _value: GCell;
     
@@ -97,19 +85,21 @@ class VarTransducer implements ITransducer {
     }
 
     public transduce(input: GRecord, symbol_table: SymbolTable, randomize=false, max_results=-1): GRecord[] {
-        const parser = symbol_table.get(this._value.text);
-        var input_table = new GTable();
-        input_table.push(input);
-        const result_table = parser.parse(input_table, symbol_table, randomize, max_results);
-        return result_table.records;
+        if (this._value.text.length == 0) {
+            return [input];
+        }
+        const table = symbol_table.get(this._value.text);
+        const transducer = transducer_from_table(table);
+        
+        return transducer.transduce(input, symbol_table, randomize, max_results);
     }
 }
 
-class AlternationTransducer implements ITransducer {
+class AlternationTransducer implements Transducer {
 
-    private _children: ITransducer[];
+    private _children: Transducer[];
 
-    public constructor(children: ITransducer[]) {
+    public constructor(children: Transducer[]) {
         this._children = children;
     }
 
@@ -131,27 +121,107 @@ class AlternationTransducer implements ITransducer {
     }
 }
 
-class NullParser implements ITransducer {
+class NullParser implements Transducer {
     
     public transduce(input: GRecord, symbol_table: SymbolTable, randomize=false, max_results=-1): GRecord[] {
         return [input];
     }
 }
 
-class MaybeTransducer implements ITransducer {
+class MaybeTransducer implements Transducer {
 
-    private _alternation: ITransducer;
+    private _child: Transducer;
     
-    public constructor(child: ITransducer) {
-        this._alternation = new AlternationTransducer([child, new NullParser()]);
+    public constructor(child: Transducer) {
+        this._child = new AlternationTransducer([child, new NullParser()]);
     }
 
     public transduce(input: GRecord, symbol_table: SymbolTable, randomize=false, max_results=-1): GRecord[] {
-        return this._alternation.transduce(input, symbol_table, randomize, max_results);
+        return this._child.transduce(input, symbol_table, randomize, max_results);
     }
 }
 
-class AtomicTransducer implements ITransducer {
+class UpdownTransducer implements Transducer {
+
+    private _key: GCell;
+    private _value: GCell;
+    private _input_tier: string;
+    private _output_tier: string;
+
+    public constructor(key: GCell, value: GCell, input_tier: string, output_tier: string) {
+        this._key = key;
+        this._value = value;
+        this._input_tier = input_tier;
+        this._output_tier = output_tier;
+    }
+    
+    public apply_conversion(converter: Transducer,
+        input: GRecord, 
+        symbol_table: SymbolTable, 
+        input_tier: string = "up",
+        output_tier: string = "down"): GRecord[] {
+        
+        const record_is_complete = !input.some(([key, value]) => {
+            return key.text == "_" + input_tier && value.text.length > 0;
+        });
+
+        if (record_is_complete) {  // only parse incomplete ones, or else recurse forever
+            return [input];
+        }
+
+        var outputs = converter.transduce(input, symbol_table, false, -1);
+
+        if (outputs.length == 0) {
+            outputs = [ step_one_character(input, input_tier, output_tier) ];
+        } 
+
+        var results = [];
+        for (const output of outputs) {
+            for (const recursed_record of this.apply_conversion(converter, output, 
+                                                    symbol_table,
+                                                    input_tier,
+                                                    output_tier)) {
+                results.push(recursed_record);
+            }
+        }
+        return results;
+    }
+
+    public transduce(input: GRecord, symbol_table: SymbolTable, randomize=false, max_results=-1): GRecord[] {
+
+        if (this._value.text.length == 0) {
+            return [input];
+        }
+
+        input = map_keys_in_record(input, s => {   // map the target tier to the input for conversion, e.g. "_up"
+            return (s == this._key.text) ? "_" + this._input_tier : s;  
+        })
+
+        const parser = symbol_table.get(this._value.text);
+        const transducer = transducer_from_table(parser);
+        
+        var results: GRecord[] = [];
+
+        for (var result of this.apply_conversion(transducer, input, symbol_table, this._input_tier, this._output_tier)) {
+            result = map_keys_in_record(result, s => {  // map the output tier, e.g. "down", to the target tier
+                return (s == this._output_tier) ? this._key.text : s;
+            }).filter(([key, value]) => {               // and filter out leftover tiers from the conversion, e.g. "in" and "_in"
+                return key.text != this._input_tier && key.text != "_" + this._input_tier
+            })
+            results.push(result);
+        }
+        return results;
+    }
+}
+
+export type GEntry = [GCell, GCell];
+
+function concat_entry([key, value]: GEntry, s: string): GEntry {
+    return [key, new GCell(value.text + s, value.sheet, value.row, value.col)];
+}
+
+
+class LiteralTransducer implements Transducer {
 
     private _key: GCell;
     private _value: GCell;
@@ -163,53 +233,112 @@ class AtomicTransducer implements ITransducer {
 
     public transduce(input: GRecord, symbol_table: SymbolTable, randomize=false, max_results=-1): GRecord[] {
 
-        var result_record = new GRecord();
+        if (this._value.text.length == 0) {
+            return [input];
+        }
+
+        var result_record: GRecord = [];
         var my_tier_found = false;
 
         // the result is going to be each entry in the input, with the target string
         // parsed off every tier of the appropriate name.  if any tier with a matching 
         // name doesn't begin with this, then the whole thing fails.
-        for (const entry of input) {
+        for (const [key, value] of input) {
 
-            if (entry.key.text == this._key.text) {
-                result_record.push(entry.concat(this._value.text));
+            if (key.text == this._key.text) {
+                result_record.push(concat_entry([key, value], this._value.text))
                 my_tier_found = true;
                 continue;
             }
 
-            if (entry.key.text != "_" + this._key.text) {
-                result_record.push(entry);
+            if (key.text != "_" + this._key.text) {
+                result_record.push([key, value]);
                 continue;  // not what we're looking for, move along 
             }
 
-            if (!entry.value.text.startsWith(this._value.text)) {
+            if (!value.text.startsWith(this._value.text)) {
                 // parse failed! 
                 return [];
             }
 
-            const remnant_str = entry.value.text.slice(this._value.text.length);
-            const remnant_cell = new GCell(remnant_str);
-            const remnant_entry = new GEntry(entry.key, remnant_cell);
-            result_record.push(remnant_entry);
+            const remnant_str = value.text.slice(this._value.text.length);
+            const remnant_cell = new GCell(remnant_str, value.sheet, value.row, value.col);
+            result_record.push([key, remnant_cell]);
         }
 
         if (!my_tier_found) {
-            result_record.push(new GEntry(this._key, this._value));
+            result_record.push([this._key, this._value]);
         }
     
         return [result_record];
     }
 }
 
-function make_transducer(key: GCell, value: GCell): ITransducer {
+
+class ConcatenationTransducer implements Transducer {
+
+    private _children: Transducer[];
+
+    public constructor(public children: Transducer[]) {
+        this._children = children;
+    }
+
+    public transduce(input: GRecord, symbol_table: SymbolTable, randomize=false, max_results=-1): GRecord[] {
+
+        var results = [input];
+        for (const child of this._children) {
+            var new_results: GRecord[] = [];
+            midloop: for (const result1 of results) {
+                for (const result2 of child.transduce(result1, symbol_table, randomize, max_results)) {
+                    new_results.push(result2);
+                    if (max_results > 0 && new_results.length > max_results) {
+                        break midloop;
+                    }
+                }
+            }
+            results = new_results;
+        }  
+        return results;
+    }
+}
+
+function transducer_from_entry([key, value]: [GCell, GCell]): Transducer {
+
+    const comma_separated_tiers = split_trim_lower(key.text, ",");
+
+    if (comma_separated_tiers.length > 1) {
+        var children = comma_separated_tiers.map(tier => {
+            const new_key = new GCell(tier, key.sheet, key.col, key.row);
+            return transducer_from_entry([new_key, value]);
+        });
+        return new ConcatenationTransducer(children);
+    }
+
     const keys = split_trim_lower(key.text);
     if (keys.length == 0) {
         throw new Error("Attempt to call a parser with no tier.");
     }
-    if (keys.length >= 2 && keys[0] == "maybe") {
+
+    if (keys[0] == "upward") {
+        if (keys.length > 2) {
+            throw new Error("Invalid tier name: " + key.text);
+        }
+        const remnant = new GCell("_" + keys[1], key.sheet, key.row, key.col);
+        return new UpdownTransducer(remnant, value, "down", "up");
+    }
+ 
+    if (keys[0] == "downward") {
+        if (keys.length > 2) {
+            throw new Error("Invalid tier name: " + key.text);
+        }
+        const remnant = new GCell(keys[1], key.sheet, key.row, key.col);
+        return new UpdownTransducer(remnant, value, "up", "down");
+    }
+
+    if (keys[0] == "maybe") {
         const remnant = keys.slice(1).join(" ");
         const child_key = new GCell(remnant, key.sheet, key.row, key.col);
-        const child = make_transducer(child_key, value);
+        const child = transducer_from_entry([child_key, value]);
         return new MaybeTransducer(child);
     }
 
@@ -221,311 +350,71 @@ function make_transducer(key: GCell, value: GCell): ITransducer {
         return new VarTransducer(value);
     } 
     
-    return new AtomicTransducer(key, value);
+    return new LiteralTransducer(key, value);
 }
 
-/**
- * GEntry
- * 
- * An entry represents a key:value pair.
- * 
- * When interpreted as a transducer, a Record is by default treated as a literal parser, although
- * with a special or complex tier name (e.g. "var", "apply text", etc.) it could have a special 
- * interpretation.
- */
-export class GEntry {
-
-    private _key: GCell;
-    private _value: GCell;
-
-    public constructor(key: GCell, value: GCell) {
-        this._key = key;
-        this._value = value;
-    }
-
-    public get key(): GCell { return this._key; }
-    public get value(): GCell { return this._value; }
-    
-    public clone(): GEntry {
-        return new GEntry(this._key.clone(), this._value.clone());
-    }
-
-    public map_key(f: (s: string) => string): GEntry {
-        return new GEntry(this._key.map(f), this._value);
-    }
-
-    public map_value(f: (s: string) => string): GEntry {
-        return new GEntry(this._key, this._value.map(f));
-    }
-
-    public is_incomplete(tier: string = ""): boolean {
-        if (tier.length == 0) {
-            return this._key.text.startsWith("_") && this._value.text.length > 0;
-        }
-        return this._key.text == "_" + tier && this._value.text.length > 0;
-    }
-
-    public toString(): string {
-        return this._key.toString() + ":" + this._value.toString();
-    }
-
-    public concat(s: string) {
-        return new GEntry(this.key.clone(), new GCell(this.value.text + s));
-    }
-
-    public parse_as_apply(input: GTable, 
-                        symbol_table: SymbolTable, 
-                        apply_to_tier: string,
-                        input_tier: string = "up",
-                        output_tier: string = "down"): GTable {
-        
-        const parser = symbol_table.get(this._value.text);
-        input = input.map_key(s => {  // remaps all apply_to_tier keys to input_tier keys for processing
-                                      // e.g., from "surf":"foo" to "_up":"foo".
-            return (s == apply_to_tier) ? "_" + input_tier : s;  
-        })
-
-        var results = parser.apply_conversion(input, symbol_table, input_tier, output_tier);
-            
-        results = results.map_key(s => {
-            return (s == output_tier) ? apply_to_tier : s;
-        }).filter_key(s => {
-            return s != input_tier;
-        });
-
-        return results;
-    }
-
-    public parse(input: GTable, 
-                symbol_table: SymbolTable, 
-                randomize: boolean = false,
-                max_results: number = -1): GTable {
-
-        if (this._value.text == "") {
-            return input;
-        }
-
-        var keys = split_trim_lower(this._key.text);
-
-        // a GEntry could be interpreted a variety of ways depending on the string in its tier
-        if (keys.length == 0) {
-            throw new Error("Attempt to call a parser with no tier.");
-        }
-        
-        if (keys.length == 2 && keys[0] == 'downward') {
-            return this.parse_as_apply(input, symbol_table, keys[1], "up", "down");
-        } 
-
-        if (keys.length == 2 && keys[0] == 'upward') {
-            return this.parse_as_apply(input, symbol_table, "_" + keys[1], "down", "up");
-        } 
-
-        var result_table = new GTable();
-
-        var transducer = make_transducer(this._key, this._value);
-        for (const input_record of input) {
-            for (const result_record of transducer.transduce(input_record, symbol_table, randomize, max_results)) {
-                result_table.push(result_record);
-            }
-        }
-        return result_table;
-    }
+function transducer_from_record(record: GRecord) {
+    return new ConcatenationTransducer(record.map(transducer_from_entry));
 }
+
+function transducer_from_table(table: GTable) {
+    return new AlternationTransducer(table.map(transducer_from_record));
+}
+
 
 function split_trim_lower(s: string, delim: string = " "): string[] {
-    return s.split(delim).map(x => { return x.trim().toLowerCase() });
+    return s.split(delim).map(x => x.trim().toLowerCase());
 }
 
-/**
- * Record
- * 
- * A Record represnts a list of GEntries (key:value pairs); it's typically used as a dictionary 
- * but keep in mind it's ordered and also allows repeat keys.
- * 
- * When interpreted as a transducer, a Record is treated as a Concatenation of its entries,
- * in order.
- */
 
-export class GRecord implements Iterable<GEntry> {
+export type GRecord = GEntry[];
 
-    private _entries : GEntry[] = [];
-
-    public get entries(): GEntry[] {
-        return this._entries;
-    }
-
-    public [Symbol.iterator](): Iterator<GEntry> {
-        return this._entries[Symbol.iterator]();
-    }
-
-    public keys(): string[] {
-        return this._entries.map(entry => {
-            return entry.key.text;
-        });
-    }
-
-    public values(): string[] {
-        return this._entries.map(entry => {
-            return entry.value.text;
-        });
-    }
-
-    public step_one_character(in_tier: string, out_tier: string): GRecord {
-        var temp = new GRecord();
-        var c = "";
-        for (const entry of this) {
-            if (entry.key.text == "_" + in_tier && entry.value.text.length > 0) {
-                c = entry.value.text[0];
-                temp.push(new GEntry(entry.key, new GCell(entry.value.text.slice(1))));
-                continue;
-            }
-            temp.push(entry);
+export function get_tier(record: GRecord, tier: string): string {
+    for (const [key, value] of record) {
+        if (key.text == tier) {
+            return value.text;
         }
-        var result = new GRecord();
-        for (const entry of temp) {
-            if (entry.key.text != out_tier) {
-                result.push(entry);
-                continue;
-            }
-            result.push(entry.concat(c));
-        }
-
-        if (!result.has(out_tier)) {
-            result.push(make_entry(out_tier, c));
-        }
-
-        return result;
     }
-
-    public map(f: (e: GEntry) => GEntry): GRecord {
-        const result = new GRecord();
-        result._entries = this._entries.map(f);
-        return result;
-    }
-
-    public map_key(f: (s: string) => string): GRecord {
-        return this.map(entry => {
-            return entry.map_key(f);
-        });
-    }
-
-    public filter_key(f: (s: string) => boolean): GRecord {
-        const result = new GRecord();
-        result._entries = this._entries.filter(entry => {
-            return f(entry.key.text);
-        });
-        return result;
-    }
-
-    /**
-     * Tests whether there are unconsumed remnants
-     * @param tier The tier to check; any tier if empty
-     * @returns true if any entry is incomplete (represents an unconsumed remnant) alonged the named tier
-     */
-    public is_incomplete(tier: string = ""): boolean {
-        return this._entries.some(entry => {
-            return entry.is_incomplete(tier);
-        });
-    }
-
-    public trim(): GRecord {
-        return this.filter(entry => {
-            return !entry.key.text.startsWith("_");
-        })
-    }
-
-    public filter(f: (e: GEntry) => boolean): GRecord {
-        var result = new GRecord();
-        result._entries = this._entries.filter(f);
-        return result;
-    }
-
-    public has(tier: string): boolean {
-        for (const entry of this) {
-            if (entry.key.text == tier) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public get(tier: string): string {
-        for (const entry of this) {
-            if (entry.key.text == tier) {
-                return entry.value.text;
-            }
-        }
-        throw new Error("Key not found: " + tier);
-    }
-
-    public clone(): GRecord {
-        var result = new GRecord();
-        for (const entry of this) {
-            result.push(entry.clone());
-        }
-        return result;
-    }
-
-    public push(entry: GEntry): void {
-        this._entries.push(entry);
-    }
-
-    public parse(input: GTable, 
-        symbol_table: SymbolTable, 
-        randomize: boolean = false,
-        max_results: number = -1): GTable {
-    
-        for (const child of this) {
-            const new_results = new GTable();
-            for (const result2 of child.parse(input, symbol_table, randomize, max_results)) {
-                if (max_results > 0 && new_results.length > max_results) {
-                    break;
-                }
-                new_results.push(result2);
-            }
-            input = new_results;
-        }
-        return input;
-    }
-
-    public toString(): string {
-        return this._entries.join(", ");
-    }
+    return "";
 }
 
-export function make_entry(key: string, value: string): GEntry {
-    return new GEntry(new GCell(key), new GCell(value));
+function map_keys_in_record(input: GRecord, f: (s: string) => string): GRecord {
+    return input.map(([key, value]) => {
+        const new_key = new GCell(f(key.text), key.sheet, key.row, key.col);
+        return [new_key, value];
+    });
 }
 
-export function make_one_entry_record(key: string, value:string): GRecord {
-    return make_record([[key,value]]);
-}
+function step_one_character(input: GRecord, in_tier: string, out_tier: string): GRecord {
+    var temp: GRecord = []; 
+    var c = "";
+    for (const [key, value] of input) {
+        if (key.text == "_" + in_tier && value.text.length > 0) {
+            c = value.text[0];
+            const remnant = new GCell(value.text.slice(1), value.sheet, value.row, value.col);
+            temp.push([key, remnant]);
+            continue;
+        }
+        temp.push([key, value]);
+    }
+    var result: GRecord = []; 
+    var found_out_tier = false;
+    for (const [key, value] of temp) {
+        if (key.text != out_tier) {
+            result.push([key, value]);
+            continue;
+        }
+        result.push(concat_entry([key, value], c));
+        found_out_tier = true;
+    }
 
-export function make_one_record_table(entries: [string, string][]): GTable {
-    var result = new GTable();
-    result.push(make_record(entries));
+    if (!found_out_tier) {
+        result.push([new GCell(out_tier), new GCell(c)]);
+    }
+
     return result;
 }
 
-export function make_one_entry_table(key: string, value: string): GTable {
-    var result = new GTable();
-    result.push(make_one_entry_record(key, value));
-    return result;
-}
-
-/**
- * Convenience function for making a GRecord from [key,value] pairs.
- * @param entries Array of [key,value] pairs.
- * @returns record 
- */
-export function make_record(entries: [string, string][]): GRecord {
-    var result = new GRecord();
-    for (const [key, value] of entries) {
-        const entry = new GEntry(new GCell(key), new GCell(value));
-        result.push(entry);
-    }
-    return result;
-}
 
 function shuffle<T>(ar: T[]): T[] {
     ar = [...ar];
@@ -549,110 +438,22 @@ function shuffle<T>(ar: T[]): T[] {
     return ar;
 }
 
-export class GTable implements Iterable<GRecord> {
+export type GTable = GRecord[];
 
-    private _records : GRecord[] = [];
+export type SymbolTable = Map<string, GTable>;
 
-    public get records(): GRecord[] {
-        return this._records;
-    }
+export function make_table(cells: [string, string][][]): GTable {
+    return cells.map(record =>
+        record.map(([key, value]) => [new GCell(key), new GCell(value)])
+    );
+}
 
-    public [Symbol.iterator](): Iterator<GRecord> {
-        return this._records[Symbol.iterator]();
-    }
+export class GGrammar {
 
-    public push(record: GRecord) {
-        this._records.push(record);
-    }
+    private _table: GTable;
 
-    public get length(): number {
-        return this._records.length;
-    }
-
-    public truncate(max_records: number): GTable {
-        const result = new GTable();
-        for (const record of this) {
-            result.push(record);
-            if (result.length >= max_records) {
-                break;
-            }
-        }
-        return result;
-    }
-
-    public map_key(f: (s: string) => string): GTable {
-        return this.map(record => {
-            return record.map_key(f);
-        });
-    }
-
-    public map(f: (r: GRecord) => GRecord): GTable {
-        const result = new GTable();
-        result._records = this._records.map(f);
-        return result;
-    }
-
-    public filter_key(f: (s: string) => boolean): GTable {
-        return this.map(record => {
-            return record.filter_key(f);
-        });
-    }
-    
-    public apply_conversion(input: GTable, 
-                            symbol_table: SymbolTable, 
-                            input_tier: string = "up",
-                            output_tier: string = "down"): GTable {
-        var results = new GTable();
-        for (const input_record of input) {
-            
-            if (!input_record.is_incomplete(input_tier)) {  // only parse incomplete ones, or else recurse forever
-                results.push(input_record);
-                continue;
-            }
-
-            var input_table = new GTable();
-            input_table.push(input_record);
-            var output_table = this.parse(input_table, symbol_table);
-            
-            if (output_table.length == 0) {
-                var remnant_table = new GTable();
-                var stepped_input = input_record.step_one_character(input_tier, output_tier);
-                remnant_table.push(stepped_input);
-            } else {
-                var remnant_table = output_table;
-            }
-
-            for (const recursed_record of this.apply_conversion(remnant_table, 
-                                                                symbol_table,
-                                                                input_tier,
-                                                                output_tier)) {
-                results.push(recursed_record);
-            }
-            
-        }
-        return results;
-    }
-
-    public parse(input: GTable, 
-                symbol_table: SymbolTable, 
-                randomize: boolean = false,
-                max_results: number = -1): GTable {
-
-        var results = new GTable();
-        var children = this._records;
-        if (randomize) {
-            children = shuffle(children);
-        }
-        for (const child of children) {
-            for (const result of child.parse(input, symbol_table, randomize, max_results)) {
-                results.push(result);
-                if (max_results > 0 && results.length > max_results) {
-                    return results.truncate(max_results);
-                }
-            }
-        }
-        return results;
-
+    public constructor(table: GTable) {
+        this._table = table;
     }
 
     /**
@@ -664,35 +465,44 @@ export class GTable implements Iterable<GRecord> {
      * @param symbol_table 
      * @returns parse 
      */
-    public full_parse(input: GTable, 
+    public transduce(input: GTable, 
                         symbol_table: SymbolTable,
                         randomize: boolean = false,
                         max_results: number = -1): GTable {
 
+        const transducer = transducer_from_table(this._table);
+
         // add _ to the beginning of each tier string in the input
-        input = input.map_key(function(s: string) { return "_" + s; });
-        var results = new GTable();
-        for (const result of this.parse(input, symbol_table, randomize, max_results)) {
-            if (!result.is_incomplete()) {
-                results.push(result.trim());
+        //input = input.map_key(function(s: string) { return "_" + s; });
+        var results: GTable = [];
+        for (var input_record of input) {
+            input_record = map_keys_in_record(input_record, s => "_" + s);
+            for (const result of transducer.transduce(input_record, symbol_table, randomize, max_results)) {
+                const result_is_complete = !result.some(([key, value]) => {
+                    return key.text.startsWith("_") && value.text.length > 0;
+                });
+                if (result_is_complete) {
+                    results.push(result.filter(([key, value]) => value.text.length > 0));
+                }
             }
         }
         return results;
     }
 
-    public generate(symbol_table: SymbolTable): GTable {
-        const input = make_one_entry_table('','');
-        return this.full_parse(input, symbol_table);
+    public generate(symbol_table: SymbolTable,
+                    randomize: boolean = false,
+                    max_results: number = -1): GTable {
+        const input: GTable = make_table([[["",""]]]) // make an empty input to transduce from
+        return this.transduce(input, symbol_table, randomize, max_results);
     }
     
     public sample(symbol_table: SymbolTable, n_results: number = 1): GTable {
-        const input = make_one_entry_table('','');
         var num_failures = 0;
         var max_failures = 100 * n_results;
-        var result = new GTable();
+        var result: GTable = [];
 
         while (result.length < n_results) {
-            const sample_result = this.full_parse(input, symbol_table, true, 1);
+            const sample_result = this.generate(symbol_table, true, 1);
             if (sample_result.length == 0) {
                 num_failures++;
             }
@@ -704,42 +514,5 @@ export class GTable implements Iterable<GRecord> {
             }
         }
         return result;
-    }
-
-    public toString(): string {
-        return this._records.join("\n");
-    }
-}
-
-export class SymbolTable {
-
-    private _symbols : Map<string, GTable> = new Map();
-
-    public new_symbol(name: string) {
-        this._symbols.set(name, new GTable());
-    }
-
-    public all_symbol_names(): string[] {
-        return Array.from(this._symbols.keys());
-    }
-
-    public has_symbol(name: string): boolean {
-        return this._symbols.has(name);
-    }
-
-    public get(name: string): GTable {
-        const table = this._symbols.get(name);
-        if (table == undefined) {
-            throw new Error("Cannot find symbol " + name + " in symbol table");
-        } 
-        return table;
-    }
-
-    public add_to_symbol(name: string, record: GRecord) {
-        var table = this._symbols.get(name);
-        if (table == undefined) {
-            throw new Error("Cannot find symbol " + name + " in symbol table");
-        }
-        table.push(record);
     }
 }

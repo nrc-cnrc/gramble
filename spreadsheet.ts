@@ -1,4 +1,4 @@
-import {GCell, GEntry, GRecord, GTable, SymbolTable, GPosition} from "./transducers"
+import {GCell, GEntry, GRecord, GTable, SymbolTable, GGrammar} from "./transducers"
 
 /**
  * Determines whether a line is empty
@@ -114,11 +114,10 @@ abstract class GFunction {
     }
 
     public associate_params(cells: GCell[]): GRecord {
-        var record = new GRecord();
+        var record: GRecord = []; 
         for (const cell of cells) {
             const key = this.get_param(cell.col);
-            const new_entry = new GEntry(key, cell);
-            record.push(new_entry);
+            record.push([key, cell]);
         }
         return record;
     }
@@ -221,85 +220,93 @@ export class Project {
     private _current_function: GFunction | undefined = undefined;
     private _current_symbol: GCell | undefined = undefined;
 
-    private _symbol_table = new SymbolTable();
-    private _test_table = new SymbolTable();
+    private _symbol_table: Map<string, GTable> = new Map();
+    private _test_table: Map<string, GTable> = new Map();
 
     public has_symbol(name: string): boolean {
-        return this._symbol_table.has_symbol(name);
+        return this._symbol_table.has(name);
     }
 
-    public all_symbols(): string[] {
-        return this._symbol_table.all_symbol_names();
+    public all_symbols(): Iterator<string> {
+        return this._symbol_table.keys();
     }
 
     public add_record_to_symbol(name: string, record: GRecord) {
-        this._symbol_table.add_to_symbol(name, record);
+        if (!this._symbol_table.has(name)) {
+            throw new Error("Cannot find symbol " + name + " in symbol table");
+        }
+        this._symbol_table.get(name).push(record);
     }
 
     public add_test_to_symbol(name: string, record: GRecord) {
-        this._test_table.add_to_symbol(name, record);
+        if (!this._test_table.has(name)) {
+            throw new Error("Cannot find symbol " + name + " in test table");
+        }
+        this._test_table.get(name).push(record);
     }
     
     public parse(symbol_name: string, input: GTable): GTable {
-        if (!this._symbol_table.has_symbol(symbol_name)) {
+        if (!this._symbol_table.has(symbol_name)) {
             throw new Error("Cannot find symbol " + symbol_name + " in symbol table");
         }
-        const parser = this._symbol_table.get(symbol_name);
-        return parser.full_parse(input, this._symbol_table);
+        const table = this._symbol_table.get(symbol_name);
+        const parser = new GGrammar(table);
+        return parser.transduce(input, this._symbol_table);
     }
 
     public generate(symbol_name: string): GTable {
-        if (!this._symbol_table.has_symbol(symbol_name)) {
+        if (!this._symbol_table.has(symbol_name)) {
             throw new Error("Cannot find symbol " + symbol_name + " in symbol table");
         }
 
-        const parser = this._symbol_table.get(symbol_name);
+        const table = this._symbol_table.get(symbol_name);
+        const parser = new GGrammar(table);
         return parser.generate(this._symbol_table);
     }
 
     public sample(symbol_name: string, n_results: number = 1): GTable {
-        if (!this._symbol_table.has_symbol(symbol_name)) {
+        if (!this._symbol_table.has(symbol_name)) {
             throw new Error("Cannot find symbol " + symbol_name + " in symbol table");
         }
 
-        const parser = this._symbol_table.get(symbol_name);
+        const table = this._symbol_table.get(symbol_name);
+        const parser = new GGrammar(table);
         return parser.sample(this._symbol_table, n_results);
     }
 
-    public contains_result(result_table: GTable, test: GEntry) {
+    public contains_result(result_table: GTable, [target_key, target_value]: GEntry) {
         for (const result_record of result_table) {
-            for (const result_entry of result_record) {
-                if (result_entry.key.text != test.key.text) {
+            for (const [result_key, result_value] of result_record) {
+                if (result_key.text != target_key.text) {
                     continue;
                 }
-                if (result_entry.value.text == test.value.text) {
+                if (result_value.text == target_value.text) {
                     return true;
                 }
             }
         }
         
-        if (test.value.text.length == 0) {
+        if (target_value.text.length == 0) {
             return true;  // if there's no output, and no output is expected, we're good!
         }
         return false;
     }
 
-    public equals_result(result_table: GTable, test: GEntry) {
+    public equals_result(result_table: GTable, [target_key, target_value]: GEntry) {
         var found = false;
         for (const result_record of result_table) {
-            for (const result_entry of result_record) {
-                if (result_entry.key.text != test.key.text) {
+            for (const [key, value] of result_record) {
+                if (key.text != target_key.text) {
                     continue;
                 }
-                if (result_entry.value.text == test.value.text) {
+                if (value.text == target_value.text) {
                     found = true;
                     continue;
                 }
                 return false;
-
             }
         }
-        if (!found && test.value.text.length == 0) {
+        if (!found && target_value.text.length == 0) {
             return true;  // if there's no output, and no output is expected, we're good!
         }
         return found;
@@ -307,53 +314,52 @@ export class Project {
 
 
     public run_tests(highlighter: IHighlighter): void {
-        for (const symbol_name of this._test_table.all_symbol_names()) {
-            const test_table = this._test_table.get(symbol_name);
+        for (const [symbol_name, test_table] of this._test_table.entries()) {
             for (const record of test_table) {
-                const input_record = new GRecord();
-                const contains_record = new GRecord();
-                const equals_record = new GRecord();
+                const input_record: GRecord = []; 
+                const contains_record: GRecord = []; 
+                const equals_record: GRecord = []; 
                 
-                for (const entry of record) {
-                    var parts = entry.key.text.split(" ");
+                for (const [key, value] of record) {
+                    var parts = key.text.split(" ");
                     if (parts.length != 2) {
-                        highlighter.mark_error(entry.key.sheet, entry.key.row, entry.key.col,
-                            "Invalid test tier: " + entry.key.text, "error");
+                        highlighter.mark_error(key.sheet, key.row, key.col,
+                            "Invalid test tier: " + key.text, "error");
                         continue;
                     }
                     const command = parts[0].trim();
                     const tier = parts[1].trim();
                     if (command == "input") {
-                        input_record.push(new GEntry(new GCell(tier), entry.value));
+                        input_record.push([new GCell(tier), value]);
                     } else if (command == "contains") {
-                        contains_record.push(new GEntry(new GCell(tier), entry.value));
+                        contains_record.push([new GCell(tier), value]);
                     } else if (command == "equals") {
-                        equals_record.push(new GEntry(new GCell(tier), entry.value));
+                        equals_record.push([new GCell(tier), value]);
                     }
                 }
                 
-                const input = new GTable();
+                const input: GTable = [];
                 input.push(input_record);
                 const result = this.parse(symbol_name, input);
                 
-                for (const test_entry of contains_record) {
-                    if (!this.contains_result(result, test_entry)) {
-                        highlighter.mark_error(test_entry.value.sheet, test_entry.value.row, test_entry.value.col,
+                for (const [target_key, target_value] of contains_record) {
+                    if (!this.contains_result(result, [target_key, target_value])) {
+                        highlighter.mark_error(target_value.sheet, target_value.row, target_value.col,
                             "Result does not contain specified value. " + 
                             "Actual value: \n" + result.toString(), "error");
                     } else {
-                        highlighter.mark_error(test_entry.value.sheet, test_entry.value.row, test_entry.value.col,
+                        highlighter.mark_error(target_value.sheet, target_value.row, target_value.col,
                             "Result contains specified value: \n" + result.toString(), "info");
                     }
                 }
 
-                for (const test_entry of equals_record) {
-                    if (!this.equals_result(result, test_entry)) {
-                        highlighter.mark_error(test_entry.value.sheet, test_entry.value.row, test_entry.value.col,
+                for (const [target_key, target_value] of equals_record) {
+                    if (!this.equals_result(result, [target_key, target_value])) {
+                        highlighter.mark_error(target_value.sheet, target_value.row, target_value.col,
                             "Result does not equal specified value. " + 
                             "Actual value: \n" + result.toString(), "error");
                     } else {
-                        highlighter.mark_error(test_entry.value.sheet, test_entry.value.row, test_entry.value.col,
+                        highlighter.mark_error(target_value.sheet, target_value.row, target_value.col,
                             "Result equals specified value: \n" + result.toString(), "info");
                     }
                 }
@@ -384,8 +390,8 @@ export class Project {
             if (BUILT_IN_FUNCTIONS.indexOf(first_cell_text) < 0) {
                 // it's not a built-in function/keyword, so treat it as a new symbol
                 this._current_symbol = first_cell;
-                this._symbol_table.new_symbol(first_cell_text);
-                this._test_table.new_symbol(first_cell_text);
+                this._symbol_table.set(first_cell_text, []);
+                this._test_table.set(first_cell_text, []);
             }
             this._current_function = make_function(first_cell, this._current_symbol, highlighter);
             this._current_function.add_params(cells.slice(1), highlighter);
