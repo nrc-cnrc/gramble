@@ -1,3 +1,7 @@
+export type GEntry = [GCell, GCell];
+export type GRecord = GEntry[];
+export type GTable = GRecord[];
+export type SymbolTable = Map<string, GTable>;
 
 export class GPosition {
 
@@ -109,11 +113,12 @@ class AlternationTransducer implements Transducer {
         if (randomize) {
             children = shuffle(children);
         }
+
         for (const child of children) {
             for (const result of child.transduce(input, symbol_table, randomize, max_results)) {
                 results.push(result);
-                if (max_results > 0 && results.length > max_results) {
-                    return results.slice(0, max_results);
+                if (max_results > 0 && results.length == max_results) {
+                    return results;
                 }
             }
         }
@@ -155,36 +160,28 @@ class UpdownTransducer implements Transducer {
         this._output_tier = output_tier;
     }
     
-    public apply_conversion(converter: Transducer,
+    public apply_conversion(transducer: Transducer,
         input: GRecord, 
         symbol_table: SymbolTable, 
-        input_tier: string = "up",
-        output_tier: string = "down"): GRecord[] {
+        randomize: boolean = false): GRecord[] {
         
         const record_is_complete = !input.some(([key, value]) => {
-            return key.text == "_" + input_tier && value.text.length > 0;
+            return key.text == "_" + this._input_tier && value.text.length > 0;
         });
 
         if (record_is_complete) {  // only parse incomplete ones, or else recurse forever
             return [input];
         }
 
-        var outputs = converter.transduce(input, symbol_table, false, -1);
+        var outputs = transducer.transduce(input, symbol_table, randomize, -1);
 
         if (outputs.length == 0) {
-            outputs = [ step_one_character(input, input_tier, output_tier) ];
+            outputs = [ step_one_character(input, this._input_tier, this._output_tier) ];
         } 
 
-        var results = [];
-        for (const output of outputs) {
-            for (const recursed_record of this.apply_conversion(converter, output, 
-                                                    symbol_table,
-                                                    input_tier,
-                                                    output_tier)) {
-                results.push(recursed_record);
-            }
-        }
-        return results;
+        var results: GTable[] = outputs.map(output => this.apply_conversion(transducer, output, symbol_table));
+
+        return [].concat(...results);
     }
 
     public transduce(input: GRecord, symbol_table: SymbolTable, randomize=false, max_results=-1): GRecord[] {
@@ -202,7 +199,7 @@ class UpdownTransducer implements Transducer {
         
         var results: GRecord[] = [];
 
-        for (var result of this.apply_conversion(transducer, input, symbol_table, this._input_tier, this._output_tier)) {
+        for (var result of this.apply_conversion(transducer, input, symbol_table, randomize)) {
             result = map_keys_in_record(result, s => {  // map the output tier, e.g. "down", to the target tier
                 return (s == this._output_tier) ? this._key.text : s;
             }).filter(([key, value]) => {               // and filter out leftover tiers from the conversion, e.g. "in" and "_in"
@@ -213,8 +210,6 @@ class UpdownTransducer implements Transducer {
         return results;
     }
 }
-
-export type GEntry = [GCell, GCell];
 
 function concat_entry([key, value]: GEntry, s: string): GEntry {
     return [key, new GCell(value.text + s, value.sheet, value.row, value.col)];
@@ -367,16 +362,6 @@ function split_trim_lower(s: string, delim: string = " "): string[] {
 }
 
 
-export type GRecord = GEntry[];
-
-export function get_tier(record: GRecord, tier: string): string {
-    for (const [key, value] of record) {
-        if (key.text == tier) {
-            return value.text;
-        }
-    }
-    return "";
-}
 
 function map_keys_in_record(input: GRecord, f: (s: string) => string): GRecord {
     return input.map(([key, value]) => {
@@ -438,9 +423,6 @@ function shuffle<T>(ar: T[]): T[] {
     return ar;
 }
 
-export type GTable = GRecord[];
-
-export type SymbolTable = Map<string, GTable>;
 
 export function make_table(cells: [string, string][][]): GTable {
     return cells.map(record =>
