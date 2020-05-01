@@ -1,4 +1,4 @@
-import {GCell, GEntry, GRecord, GTable, SymbolTable, GGrammar} from "./transducers"
+import {GCell, GEntry, GRecord, GTable, GGrammar} from "./transducers"
 
 /**
  * Determines whether a line is empty

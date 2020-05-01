@@ -1,4 +1,4 @@
-import {GTable, SymbolTable, make_table, GGrammar} from "../transducers"
+import {make_table, GGrammar} from "../transducers"
 import 'mocha';
 import {test_num_results, test_output} from "./test_util"
 
@@ -131,6 +131,12 @@ describe('Ambiguous GTable transducer, transduce', function() {
 
 describe('Ambiguous GTable transducer, full_parsing an unparseable input', function() {
     const result = ambiguous_foobar_parser.transduce(bad_text_input, symbol_table);
+    test_num_results(result, 0);
+});
+
+
+describe('Ambiguous GTable transducer, full_parsing an incomplete input', function() {
+    const result = ambiguous_foobar_parser.transduce(text_no_suffix, symbol_table);
     test_num_results(result, 0);
 });
 
