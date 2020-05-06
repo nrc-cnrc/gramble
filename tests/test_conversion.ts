@@ -1,5 +1,4 @@
-import {GGrammar, SymbolTable, make_table} from "../transducers"
-import { expect } from 'chai';
+import {GGrammar, make_table} from "../transducers"
 import 'mocha';
 import {test_num_results, test_output} from "./test_util"
 
@@ -87,7 +86,6 @@ describe('Ambiguous converter, input "diiablo"', function() {
 }); */
 
 describe('Foobar generator with oo->o reduction', function() {
-    console.log('Foobar generator with oo->o reduction');
     const result = oo_reduction_parser.transduce(gloss_input, symbol_table);
     test_num_results(result, 1);
     test_output(result, 0, "text", "fobar");
@@ -96,7 +94,6 @@ describe('Foobar generator with oo->o reduction', function() {
 
 
 describe('Fobar parser with oo->o reduction', function() {
-    console.log('Fobar parser with oo->o reduction');
     const result = oo_reduction_parser.transduce(text_input, symbol_table);
     test_num_results(result, 1);
     test_output(result, 0, "gloss", "jump-1SG");
@@ -104,7 +101,6 @@ describe('Fobar parser with oo->o reduction', function() {
 });
 
 describe('Fobar parser with oo->o reduction, but applied to "foobar"', function() {
-    console.log('Fobar parser with oo->o reduction, but applied to "foobar"');
     const result = oo_reduction_parser.transduce(text_input_bad, symbol_table);
     test_num_results(result, 0);
 });
