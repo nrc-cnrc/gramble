@@ -1,8 +1,9 @@
 import { getEnabledCategories } from "trace_events";
+import { RandomPicker } from "./util";
 
 export type GEntry = [GCell, GCell];
 export type GRecord = GEntry[];
-export type GParse = [GRecord, GRecord];
+export type GParse = [GRecord, number, GRecord];
 export type GTable = GRecord[];
 export type SymbolTable = Map<string, GTable>;
 
@@ -76,64 +77,80 @@ export class GCell extends GPosition {
 }
 
 
-interface Transducer {
-    transduce(input: GParse,
-        randomize: boolean,
-        max_results: number): GParse[];
+class Transducer {
+    
+    public transduce(input: GParse, randomize=false, max_results=-1): GParse[] {
+        return [input];
+    }
+
+    public get_prob(): number {
+        return 1.0
+    }
 }
 
-class VarTransducer implements Transducer {
+class VarTransducer extends Transducer {
 
-    private _value: GCell;
-    private _symbol_table: SymbolTable;
     
-    public constructor(value: GCell, symbol_table: SymbolTable) {
-        this._value = value;
-        this._symbol_table = symbol_table;
+    public constructor(
+        private value: GCell, 
+        private symbol_table: SymbolTable) {
+
+        super();
     }
 
     public transduce(input: GParse, randomize=false, max_results=-1): GParse[] {
-        if (this._value.text.length == 0) {
+        if (this.value.text.length == 0) {
             return [input];
         }
-        const table = this._symbol_table.get(this._value.text);
+        const table = this.symbol_table.get(this.value.text);
         if (table == undefined) {
-            throw new Error(`Could not find symbol: ${this._value.text}`);
+            throw new Error(`Could not find symbol: ${this.value.text}`);
         }
-        const transducer = transducer_from_table(table, this._symbol_table);
+        const transducer = transducer_from_table(table, this.symbol_table);
         return transducer.transduce(input, randomize, max_results);
     }
 }
 
-class FinalTransducer implements Transducer {
 
-    public transduce([input, past_output]: GParse, randomize=false, max_results=-1): GParse[] {
+class FinalTransducer extends Transducer {
+
+    public transduce([input, logprob, past_output]: GParse, randomize=false, max_results=-1): GParse[] {
         const input_is_consumed = !input.some(([key, value]) => value.text.length > 0 );
         if (input_is_consumed) {
-            return [[input, past_output]];
+            return [[input, logprob, past_output]];
         }
         return [];
     }
 }
 
-class AlternationTransducer implements Transducer {
+class AlternationTransducer extends Transducer {
 
-    private _children: Transducer[];
+    private children_and_weights: Array<[Transducer, number]> = [];
 
-    public constructor(children: Transducer[]) {
-        this._children = children;
-    }
+    public constructor(children: Transducer[]
+    ) {
+        super();
+        var weights = children.map(child => child.get_prob());
+        const weight_sum = weights.reduce((a,b) => a + b, 0);
+        weights = weights.map(w => w / weight_sum);
+
+        this.children_and_weights = children.map((child, i) => [child, weights[i]]);
+    } 
 
     public transduce(input: GParse, randomize=false, max_results=-1): GParse[] {
         const results: GParse[] = [];
-        var children = [...this._children];
+
         if (randomize) {
-            children = shuffle(children);
+            var items: Iterable<[Transducer, number]> = new RandomPicker([...this.children_and_weights]);
+        } else {
+            var items: Iterable<[Transducer, number]> = this.children_and_weights;
         }
 
-        for (const child of children) {
-            for (const result of child.transduce(input, randomize, max_results)) {
-                results.push(result);
+        for (var [child, prob] of items) {
+
+            for (var [new_input, logprob, output] of child.transduce(input, randomize, max_results)) {
+                logprob += Math.log(prob);
+                results.push([new_input, logprob, output]);
                 if (max_results > 0 && results.length == max_results) {
                     return results;
                 }
@@ -143,60 +160,62 @@ class AlternationTransducer implements Transducer {
     }
 }
 
-class NullParser implements Transducer {
-    
-    public transduce(input: GParse, randomize=false, max_results=-1): GParse[] {
-        return [input];
+class ProbTransducer extends Transducer {
+
+    public constructor(
+        private p: number
+    ) { 
+        super();
+    }
+
+    public get_prob(): number {
+        return this.p;
     }
 }
 
-class MaybeTransducer implements Transducer {
+class MaybeTransducer extends Transducer {
 
-    private _child: Transducer;
+    private child: Transducer;
     
     public constructor(child: Transducer) {
-        this._child = new AlternationTransducer([child, new NullParser()]);
+        super();
+        this.child = new AlternationTransducer([child, new Transducer()]);
     }
 
     public transduce(input: GParse, randomize=false, max_results=-1): GParse[] {
-        return this._child.transduce(input, randomize, max_results);
+        return this.child.transduce(input, randomize, max_results);
     }
 }
 
-class UpdownTransducer implements Transducer {
+class UpdownTransducer extends Transducer {
 
-    private _key: GCell;
-    private _value: GCell;
-    private _input_tier: string;
-    private _output_tier: string;
-    private _symbol_table: SymbolTable;
-    private _direction: string;
+    private input_tier: string;
+    private output_tier: string;
 
-    public constructor(key: GCell, 
-                        value: GCell, 
-                        symbol_table: SymbolTable, 
-                        direction: "upward"|"downward") {
-        this._key = key;
-        this._value = value;
-        this._direction = direction;
+    public constructor(
+        private key: GCell, 
+        private value: GCell, 
+        private symbol_table: SymbolTable, 
+        private direction: "upward"|"downward"
+    ) {
+        super();
         if (direction == "upward") {
-            this._input_tier = "down";
-            this._output_tier = "up";
+            this.input_tier = "down";
+            this.output_tier = "up";
         } else {
-            this._input_tier = "up";
-            this._output_tier = "down";
+            this.input_tier = "up";
+            this.output_tier = "down";
         }
-        this._symbol_table = symbol_table;
     }
     
     public apply_conversion(transducer: Transducer,
         parse: GParse,  
         randomize: boolean = false): GParse[] {
         
-        const [input, past_output] = parse;
+        const [input, logprob, past_output] = parse;
 
         const record_is_complete = !input.some(([key, value]) => {
-            return key.text == this._input_tier && value.text.length > 0; 
+            return key.text == this.input_tier && value.text.length > 0; 
         });
 
         if (record_is_complete) {  // only parse incomplete ones, or else recurse forever
@@ -205,7 +224,7 @@ class UpdownTransducer implements Transducer {
     
         var outputs = transducer.transduce(parse, randomize, -1);
         if (outputs.length == 0) {
-            outputs = [ step_one_character(parse, this._input_tier, this._output_tier) ];
+            outputs = [ step_one_character(parse, this.input_tier, this.output_tier) ];
         } 
         
         var results: GParse[][] = outputs.map(output => this.apply_conversion(transducer, output));
@@ -216,44 +235,43 @@ class UpdownTransducer implements Transducer {
 
     public transduce(parse: GParse, randomize=false, max_results=-1): GParse[] {
 
-        if (this._value.text.length == 0) {
+        if (this.value.text.length == 0) {
             return [parse];
         }
-        var [input, past_output] = parse;
+        var [input, logprob, past_output] = parse;
 
-        var wheat: GEntry[] = [];
-        var chaff: GEntry[] = [];
-        var input_source =  this._direction == "upward" ? input : past_output;
+        var wheat: GRecord = [];
+        var chaff: GRecord = [];
+        var input_source =  this.direction == "upward" ? input : past_output;
         for (const [key, value] of input_source) {
-            if (key.text == this._key.text) {
-                wheat.push([new GCell(this._input_tier), value]);
+            if (key.text == this.key.text) {
+                wheat.push([new GCell(this.input_tier), value]);
                 continue;
             }
             chaff.push([key, value]);
         }
 
-        const parser = this._symbol_table.get(this._value.text);
+        const parser = this.symbol_table.get(this.value.text);
         if (parser == undefined) {
-            throw new Error(`Could not find symbol: ${this._value.text}`);
+            throw new Error(`Could not find symbol: ${this.value.text}`);
         }
-
-        const transducer = transducer_from_table(parser, this._symbol_table);
+        const transducer = transducer_from_table(parser, this.symbol_table);
         
         var results: GParse[] = [];
 
-        for (var [remnant, output] of this.apply_conversion(transducer, [wheat, []], randomize)) {
+        for (var [remnant, new_logprob, output] of this.apply_conversion(transducer, [wheat, logprob, []], randomize)) {
             
             for (const [key, value] of output) {
-                if (key.text == this._output_tier) {
-                    chaff.push([this._key, value]); // probably want to change this to the original key eventually,
+                if (key.text == this.output_tier) {
+                    chaff.push([this.key, value]); // probably want to change this to the original key eventually,
                                                     // so that phonology doesn't mess up origin tracing.
                 }
             }
 
-            if (this._direction == "upward") {
-                results.push([chaff, past_output]);
+            if (this.direction == "upward") {
+                results.push([chaff, new_logprob, past_output]);
             } else {
-                results.push([input, chaff]);
+                results.push([input, new_logprob, chaff]);
             }
         }
         
@@ -266,23 +284,22 @@ function concat_entry([key, value]: GEntry, s: string): GEntry {
 }
 
 
-class LiteralTransducer implements Transducer {
+class LiteralTransducer extends Transducer {
 
-    private _key: GCell;
-    private _value: GCell;
-
-    public constructor(key: GCell, value: GCell) {
-        this._key = key;
-        this._value = value;
+    public constructor(
+        public key: GCell, 
+        public value: GCell
+    ) {
+        super();
     }
 
     public transduce(parse: GParse, randomize=false, max_results=-1): GParse[] {
 
-        if (this._value.text.length == 0) {
+        if (this.value.text.length == 0) {
             return [parse];
         }
 
-        const [input, past_output] = parse;
+        const [input, logprob, past_output] = parse;
 
         var consumed_input: GRecord = [];
         var output: GRecord = [];
@@ -290,26 +307,26 @@ class LiteralTransducer implements Transducer {
         var my_tier_found = false;
 
         for (const [key, value] of input) {
-            if (key.text != this._key.text) { // not what we're looking for, move along
+            if (key.text != this.key.text) { // not what we're looking for, move along
                 consumed_input.push([key, value]);
                 continue; 
             }
-            if (!value.text.startsWith(this._value.text)) { // parse failed!
+            if (!value.text.startsWith(this.value.text)) { // parse failed!
                 return [];
             }
 
-            const remnant_str = value.text.slice(this._value.text.length);
+            const remnant_str = value.text.slice(this.value.text.length);
             const remnant_cell = new GCell(remnant_str, value.sheet, value.row, value.col);
             consumed_input.push([key, remnant_cell]);
         }
 
         for (const [key, value] of past_output) {
-            if (key.text != this._key.text) { 
+            if (key.text != this.key.text) { 
                 output.push([key, value]);
                 continue;
             }
 
-            const new_str = value.text + this._value.text;
+            const new_str = value.text + this.value.text;
             const new_cell = new GCell(new_str, value.sheet, value.row, value.col);
             output.push([key, new_cell]);
             my_tier_found = true;
@@ -317,26 +334,27 @@ class LiteralTransducer implements Transducer {
         }
 
         if (!my_tier_found) {
-            output.push([this._key, this._value]);
+            output.push([this.key, this.value]);
         }
     
-        return [[consumed_input, output]];
+        return [[consumed_input, logprob, output]];
     }
 }
 
 
-class ConcatenationTransducer implements Transducer {
+class ConcatenationTransducer extends Transducer {
 
-    private _children: Transducer[];
 
-    public constructor(public children: Transducer[]) {
-        this._children = children;
+    public constructor(
+        public children: Transducer[]
+    ) {
+        super();
     }
 
     public transduce(input: GParse, randomize=false, max_results=-1): GParse[] {
 
         var results = [input];
-        for (const child of this._children) {
+        for (const child of this.children) {
             var new_results: GParse[] = [];
             midloop: for (const result1 of results) {
                 for (const result2 of child.transduce(result1, randomize, max_results)) {
@@ -349,6 +367,10 @@ class ConcatenationTransducer implements Transducer {
             results = new_results;
         }  
         return results;
+    }
+
+    public get_prob(): number {
+        return this.children.reduce((prod, child) => prod * child.get_prob(), 1.0);
     }
 }
 
@@ -399,6 +421,11 @@ function transducer_from_entry([key, value]: [GCell, GCell], symbol_table: Symbo
     if (keys[0] == "var") {
         return new VarTransducer(value, symbol_table);
     } 
+
+    if (keys[0] == "p") {
+        const p = parseFloat(value.text);
+        return new ProbTransducer(p);
+    }
     
     return new LiteralTransducer(key, value);
 }
@@ -419,15 +446,16 @@ function split_trim_lower(s: string, delim: string = " "): string[] {
 }
 
 
-
+/*
 function map_keys_in_record(input: GRecord, f: (s: string) => string): GRecord {
     return input.map(([key, value]) => {
         const new_key = new GCell(f(key.text), key.sheet, key.row, key.col);
         return [new_key, value];
     });
 }
+*/
 
-function step_one_character([input, past_output]: GParse, in_tier: string, out_tier: string): GParse {
+function step_one_character([input, logprob, past_output]: GParse, in_tier: string, out_tier: string): GParse {
     var consumed_input: GRecord = []; 
     var c = "";
     for (const [key, value] of input) {
@@ -453,7 +481,7 @@ function step_one_character([input, past_output]: GParse, in_tier: string, out_t
     if (!found_out_tier) {
         output.push([new GCell(out_tier), new GCell(c)]);
     }
-    return [consumed_input, output];
+    return [consumed_input, logprob, output];
 }
 
 
@@ -478,7 +506,6 @@ function shuffle<T>(ar: T[]): T[] {
   
     return ar;
 }
-
 
 export function make_table(cells: [string, string][][]): GTable {
     return cells.map(record =>
@@ -510,19 +537,12 @@ export class GGrammar {
 
         const transducer = new ConcatenationTransducer([ transducer_from_table(this._table, symbol_table),
                                                     new FinalTransducer() ]);
-
-        // add _ to the beginning of each tier string in the input
-        //input = input.map_key(function(s: string) { return "_" + s; });
         var results: GTable = [];
         for (var input_record of input) {
-            //input_record = map_keys_in_record(input_record, s => "_" + s);
-
-            var input_parse: GParse = [input_record, []];
-            for (const [remnant, output] of transducer.transduce(input_parse, randomize, max_results)) {
-                /* const result_is_complete = !remnant.some(([key, value]) => value.text.length > 0 );
-                if (result_is_complete) {
-                    results.push(output);
-                } */
+            var input_parse: GParse = [input_record, 0.0, []];
+            for (const [remnant, logprob, output] of transducer.transduce(input_parse, randomize, max_results)) {
+                var prob: string = Math.exp(logprob).toString();
+                output.push([new GCell("p"), new GCell(prob)])
                 results.push(output);
             }
         }
