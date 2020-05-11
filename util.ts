@@ -2,7 +2,7 @@
 
 
 
-export class RandomPicker<T> implements Iterable<[T, number]> {
+export class RandomPicker<T> implements Iterable<[T, number] | undefined> {
 
     private sum_of_weights: number = 0;
 
@@ -41,10 +41,14 @@ export class RandomPicker<T> implements Iterable<[T, number]> {
         throw new Error("Somehow didn't pick an item; something's wrong.")
     }
 
-    public next(): IteratorResult<[T, number]> {
+    public next(): IteratorResult<[T, number] | undefined > {
         if (this.items.length == 0) {
             return { done: true, value: undefined };
         }
-        return { done: false, value: this.pop() };
+        const popped = this.pop();
+        if (popped == undefined) {
+            throw new Error("Somehow didn't pick an item; something's wrong.")
+        }
+        return { done: false, value: popped };
     }
 }

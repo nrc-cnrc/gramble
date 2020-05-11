@@ -1,6 +1,8 @@
 Gramble
 =======
 
+[![Build Status](https://travis-ci.org/littell/gramble_ts.svg?branch=master)](https://travis-ci.org/littell/gramble_ts)
+
 > /ˈɡɹæmˌbɫ̣/ (_GRAMM-bl_)
 
 Write your grammar as a spreadsheet!

@@ -103,6 +103,9 @@ class VarTransducer extends Transducer {
             return [input];
         }
         const table = this.symbol_table.get(this.value.text);
+        if (table == undefined) {
+            throw new Error(`Could not find symbol: ${this.value.text}`);
+        }
         const transducer = transducer_from_table(table, this.symbol_table);
         return transducer.transduce(input, randomize, max_results);
     }
@@ -138,13 +141,16 @@ class AlternationTransducer extends Transducer {
         const results: GParse[] = [];
 
         if (randomize) {
-            var items: Iterable<[Transducer, number]> = new RandomPicker([...this.children_and_weights]);
+            var items: Iterable<[Transducer, number] | undefined > = new RandomPicker([...this.children_and_weights]);
         } else {
-            var items: Iterable<[Transducer, number]> = this.children_and_weights;
+            var items: Iterable<[Transducer, number] | undefined > = this.children_and_weights;
         }
 
-        for (var [child, prob] of items) {
-
+        for (var item  of items) {
+            if (item == undefined) {
+                throw new Error("Received an undefined output from RandomPicker.")
+            }
+            const [child, prob] = item;
             for (var [new_input, logprob, output] of child.transduce(input, randomize, max_results)) {
                 logprob += Math.log(prob);
                 results.push([new_input, logprob, output]);
@@ -228,7 +234,8 @@ class UpdownTransducer extends Transducer {
         
         var results: GParse[][] = outputs.map(output => this.apply_conversion(transducer, output));
 
-        return [].concat(...results);
+        // Flatten the results array:
+        return Array.prototype.concat.apply([], results);
     }
 
     public transduce(parse: GParse, randomize=false, max_results=-1): GParse[] {
@@ -238,8 +245,8 @@ class UpdownTransducer extends Transducer {
         }
         var [input, logprob, past_output] = parse;
 
-        var wheat = [];
-        var chaff = [];
+        var wheat: GRecord = [];
+        var chaff: GRecord = [];
         var input_source =  this.direction == "upward" ? input : past_output;
         for (const [key, value] of input_source) {
             if (key.text == this.key.text) {
@@ -249,9 +256,10 @@ class UpdownTransducer extends Transducer {
             chaff.push([key, value]);
         }
 
-        console.log("converting " + this.direction + ", original input = " + wheat);
-
         const parser = this.symbol_table.get(this.value.text);
+        if (parser == undefined) {
+            throw new Error(`Could not find symbol: ${this.value.text}`);
+        }
         const transducer = transducer_from_table(parser, this.symbol_table);
         
         var results: GParse[] = [];
@@ -265,8 +273,6 @@ class UpdownTransducer extends Transducer {
                 }
             }
 
-            console.log("final output = " + chaff);
-            console.log();
             if (this.direction == "upward") {
                 results.push([chaff, new_logprob, past_output]);
             } else {
@@ -281,7 +287,6 @@ class UpdownTransducer extends Transducer {
 function concat_entry([key, value]: GEntry, s: string): GEntry {
     return [key, new GCell(value.text + s, value.sheet, value.row, value.col)];
 } */
-
 
 class LiteralTransducer extends Transducer {
 
@@ -306,8 +311,6 @@ class LiteralTransducer extends Transducer {
         var needle = this.value.text;
 
         for (const [key, value] of input) {
-            
-
             if (key.text != this.key.text) { // not what we're looking for, move along
                 consumed_input.push([key, value]);
                 continue; 
@@ -457,7 +460,7 @@ function transducer_from_record(record: GRecord, symbol_table: SymbolTable) {
     return new ConcatenationTransducer(children);
 }
 
-function transducer_from_table(table: GTable, symbol_table) {
+function transducer_from_table(table: GTable, symbol_table: SymbolTable) {
     const children = table.map(record => transducer_from_record(record, symbol_table));
     return new AlternationTransducer(children);
 }

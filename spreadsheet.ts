@@ -1,4 +1,4 @@
-import {GCell, GEntry, GRecord, GTable, GGrammar} from "./transducers"
+import {GCell, GEntry, GRecord, GTable, GGrammar, SymbolTable} from "./transducers"
 
 /**
  * Determines whether a line is empty
@@ -261,44 +261,31 @@ export class Project {
     }
 
     public add_record_to_symbol(name: string, record: GRecord) {
-        if (!this._symbol_table.has(name)) {
-            throw new Error("Cannot find symbol " + name + " in symbol table");
-        }
-        this._symbol_table.get(name).push(record);
+        getTableOrThrow(this._symbol_table, name).push(record);
     }
 
     public add_test_to_symbol(name: string, record: GRecord) {
-        if (!this._test_table.has(name)) {
-            throw new Error("Cannot find symbol " + name + " in test table");
-        }
-        this._test_table.get(name).push(record);
+        getTableOrThrow(
+            this._test_table,
+            name,
+            `Cannot find symbol ${name} in test table`
+        ).push(record);
     }
     
     public parse(symbol_name: string, input: GTable): GTable {
-        if (!this._symbol_table.has(symbol_name)) {
-            throw new Error("Cannot find symbol " + symbol_name + " in symbol table");
-        }
-        const table = this._symbol_table.get(symbol_name);
+        const table = getTableOrThrow(this._symbol_table, symbol_name);
         const parser = new GGrammar(table);
         return parser.transduce(input, this._symbol_table);
     }
 
     public generate(symbol_name: string): GTable {
-        if (!this._symbol_table.has(symbol_name)) {
-            throw new Error("Cannot find symbol " + symbol_name + " in symbol table");
-        }
-
-        const table = this._symbol_table.get(symbol_name);
+        const table = getTableOrThrow(this._symbol_table, symbol_name);
         const parser = new GGrammar(table);
         return parser.generate(this._symbol_table);
     }
 
     public sample(symbol_name: string, n_results: number = 1): GTable {
-        if (!this._symbol_table.has(symbol_name)) {
-            throw new Error("Cannot find symbol " + symbol_name + " in symbol table");
-        }
-
-        const table = this._symbol_table.get(symbol_name);
+        const table = getTableOrThrow(this._symbol_table, symbol_name);
         const parser = new GGrammar(table);
         return parser.sample(this._symbol_table, n_results);
     }
@@ -482,4 +469,19 @@ export class Project {
         }
     }
 
+}
+
+
+/**
+ * Utility: fetch the item from the table or throw the appropriate error.
+ *
+ * @param msg the error message to print
+ */
+function getTableOrThrow(table: SymbolTable, name: string, msg = `Cannot find symbol ${name} in symbol table`): GTable {
+    const maybeTable = table.get(name);
+    if (maybeTable == undefined) {
+        throw new Error(msg);
+    }
+
+    return maybeTable;
 }

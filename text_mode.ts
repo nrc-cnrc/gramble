@@ -2,7 +2,7 @@ import {Project} from "./spreadsheet"
 
 const parse = require('csv-parse')
 
-const output = []
+const output: string[] = []
 // Create the parser
 const parser = parse({
   delimiter: ':',
@@ -20,7 +20,7 @@ parser.on('readable', function(){
 })
 
 // Catch any error
-parser.on('error', function(err){
+parser.on('error', function(err: Error){
   console.error(err.message)
 })
 
