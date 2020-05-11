@@ -141,13 +141,16 @@ class AlternationTransducer extends Transducer {
         const results: GParse[] = [];
 
         if (randomize) {
-            var items: Iterable<[Transducer, number]> = new RandomPicker([...this.children_and_weights]);
+            var items: Iterable<[Transducer, number] | undefined > = new RandomPicker([...this.children_and_weights]);
         } else {
-            var items: Iterable<[Transducer, number]> = this.children_and_weights;
+            var items: Iterable<[Transducer, number] | undefined > = this.children_and_weights;
         }
 
-        for (var [child, prob] of items) {
-
+        for (var item  of items) {
+            if (item == undefined) {
+                throw new Error("Received an undefined output from RandomPicker.")
+            }
+            const [child, prob] = item;
             for (var [new_input, logprob, output] of child.transduce(input, randomize, max_results)) {
                 logprob += Math.log(prob);
                 results.push([new_input, logprob, output]);
