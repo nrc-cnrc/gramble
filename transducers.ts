@@ -97,6 +97,9 @@ class VarTransducer implements Transducer {
             return [input];
         }
         const table = this._symbol_table.get(this._value.text);
+        if (table == undefined) {
+            throw new Error(`Could not find symbol: ${this._value.text}`);
+        }
         const transducer = transducer_from_table(table, this._symbol_table);
         return transducer.transduce(input, randomize, max_results);
     }
@@ -207,7 +210,8 @@ class UpdownTransducer implements Transducer {
         
         var results: GParse[][] = outputs.map(output => this.apply_conversion(transducer, output));
 
-        return [].concat(...results);
+        // Flatten the results array:
+        return Array.prototype.concat.apply([], results);
     }
 
     public transduce(parse: GParse, randomize=false, max_results=-1): GParse[] {
@@ -217,8 +221,8 @@ class UpdownTransducer implements Transducer {
         }
         var [input, past_output] = parse;
 
-        var wheat = [];
-        var chaff = [];
+        var wheat: GEntry[] = [];
+        var chaff: GEntry[] = [];
         var input_source =  this._direction == "upward" ? input : past_output;
         for (const [key, value] of input_source) {
             if (key.text == this._key.text) {
@@ -229,6 +233,10 @@ class UpdownTransducer implements Transducer {
         }
 
         const parser = this._symbol_table.get(this._value.text);
+        if (parser == undefined) {
+            throw new Error(`Could not find symbol: ${this._value.text}`);
+        }
+
         const transducer = transducer_from_table(parser, this._symbol_table);
         
         var results: GParse[] = [];
@@ -400,7 +408,7 @@ function transducer_from_record(record: GRecord, symbol_table: SymbolTable) {
     return new ConcatenationTransducer(children);
 }
 
-function transducer_from_table(table: GTable, symbol_table) {
+function transducer_from_table(table: GTable, symbol_table: SymbolTable) {
     const children = table.map(record => transducer_from_record(record, symbol_table));
     return new AlternationTransducer(children);
 }

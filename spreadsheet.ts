@@ -1,4 +1,4 @@
-import {GCell, GEntry, GRecord, GTable, GGrammar} from "./transducers"
+import {GCell, GEntry, GRecord, GTable, GGrammar, SymbolTable} from "./transducers"
 
 /**
  * Determines whether a line is empty
@@ -235,14 +235,14 @@ export class Project {
         if (!this._symbol_table.has(name)) {
             throw new Error("Cannot find symbol " + name + " in symbol table");
         }
-        this._symbol_table.get(name).push(record);
+        (<GTable>this._symbol_table.get(name)).push(record);
     }
 
     public add_test_to_symbol(name: string, record: GRecord) {
         if (!this._test_table.has(name)) {
             throw new Error("Cannot find symbol " + name + " in test table");
         }
-        this._test_table.get(name).push(record);
+        (<GTable>this._test_table.get(name)).push(record);
     }
     
     public parse(symbol_name: string, input: GTable): GTable {
@@ -250,7 +250,8 @@ export class Project {
             throw new Error("Cannot find symbol " + symbol_name + " in symbol table");
         }
         const table = this._symbol_table.get(symbol_name);
-        const parser = new GGrammar(table);
+
+        const parser = new GGrammar(table as GTable);
         return parser.transduce(input, this._symbol_table);
     }
 
@@ -260,7 +261,7 @@ export class Project {
         }
 
         const table = this._symbol_table.get(symbol_name);
-        const parser = new GGrammar(table);
+        const parser = new GGrammar(table as GTable);
         return parser.generate(this._symbol_table);
     }
 
@@ -270,7 +271,7 @@ export class Project {
         }
 
         const table = this._symbol_table.get(symbol_name);
-        const parser = new GGrammar(table);
+        const parser = new GGrammar(table as GTable);
         return parser.sample(this._symbol_table, n_results);
     }
 
