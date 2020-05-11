@@ -1,10 +1,11 @@
-import {make_table, GGrammar} from "../transducers"
+import {make_table, GEntry, transducer_from_entry, GGrammar, GCell, GRecord} from "../transducers"
 import 'mocha';
 import {test_num_results, test_output} from "./test_util"
 
 //const text_input = make_one_record_table([["_text", "foobar"]]);
 //const gloss_input = make_one_record_table([["_gloss", "jump-1SG"]]);
 const text_input = make_table([[["text", "foobar"]]]);
+const text_incomplete = make_table([[["text", "fo"]]]);
 const text_no_suffix = make_table([[["text", "foo"]]]);
 const gloss_input = make_table([[["gloss", "jump-1SG"]]]);
 const root_input = make_table([[["root", "foo"]]]);
@@ -12,6 +13,13 @@ const bad_text_input = make_table([[["text", "moobar"]]]);
 
 const symbol_table = new Map();
 
+/*
+const entry: GEntry = [new GCell("text"), new GCell("foo")];
+const record: GRecord = [[new GCell("text"), new GCell("foobar")]];
+const tr = transducer_from_entry(entry, symbol_table);
+const result = tr.transduce([record, 1.0, []], false, -1);
+console.log(result.toString());
+*/
 
 const ambiguous_foobar_parser = new GGrammar(make_table([
     [["text", "foo"], ["gloss", "jump"], ["text", "bar"], ["gloss", "-1SG"]],
@@ -124,6 +132,7 @@ describe('Unambiguous GTable transducer, from gloss to text', function() {
 describe('Ambiguous GTable transducer, transduce', function() {
     const result = ambiguous_foobar_parser.transduce(text_input, symbol_table);
     test_num_results(result, 2);
+    console.log(result.toString());
     test_output(result, 0, "gloss", "jump-1SG");
     test_output(result, 1, "gloss", "run-3PL.PAST");
 });
@@ -135,7 +144,13 @@ describe('Ambiguous GTable transducer, full_parsing an unparseable input', funct
 });
 
 
-describe('Ambiguous GTable transducer, full_parsing an incomplete input', function() {
+
+describe('Ambiguous GTable transducer, full_parsing an incomplete input "fo"', function() {
+    const result = ambiguous_foobar_parser.transduce(text_incomplete, symbol_table);
+    test_num_results(result, 0);
+});
+
+describe('Ambiguous GTable transducer, full_parsing an incomplete input "foo"', function() {
     const result = ambiguous_foobar_parser.transduce(text_no_suffix, symbol_table);
     test_num_results(result, 0);
 });

@@ -1,4 +1,4 @@
-import {IHighlighter, Project} from "./spreadsheet"
+import {DevEnvironment, Project} from "./spreadsheet"
 import {GTable} from "./transducers"
 
 /*
@@ -60,7 +60,7 @@ const NAMED_COLORS: Map<string, number> = new Map([
 ]);
 
 
-class GoogleSheetsHighlighter implements IHighlighter {
+class GoogleSheetsHighlighter implements DevEnvironment {
 
     private _error_cells: [string, number, number, string, "error"|"warning"|"info"][] = [];
     private _comment_cells: [string, number, number][] = [];
@@ -329,7 +329,7 @@ class GoogleSheetsHighlighter implements IHighlighter {
     }
 }
 
-function make_project(highlighter: IHighlighter): Project {
+function make_project(highlighter: DevEnvironment): Project {
     var spreadsheet = SpreadsheetApp.getActive();
     var project = new Project();
 
@@ -420,7 +420,7 @@ function new_sheet_from_table(new_symbol_name: string, old_symbol_name: string, 
     return new_sheet;
 }
 
-function create_html_from_table(table: GTable, highlighter: IHighlighter): string {
+function create_html_from_table(table: GTable, highlighter: DevEnvironment): string {
     var result = '<table style="margin: auto">';
     var previous_keys: string[] = [];
     for (const record of table) {

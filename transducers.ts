@@ -61,7 +61,7 @@ export class GCell extends GPosition {
      */
     public get text(): string { return this._text; }
 
-    public toString(): string { return this._text; }
+    public toString(): string { return this._text + "(" + this._row + ")"; }
     /**
      * Creates an instance of GCell.
      * 
@@ -219,7 +219,9 @@ class UpdownTransducer extends Transducer {
             return [parse];
         }
     
+        console.log("input = " + input.toString());
         var outputs = transducer.transduce(parse, randomize, -1);
+        console.log("output = " + outputs.toString());
         if (outputs.length == 0) {
             outputs = [ step_one_character(parse, this.input_tier, this.output_tier) ];
         } 
@@ -247,6 +249,8 @@ class UpdownTransducer extends Transducer {
             chaff.push([key, value]);
         }
 
+        console.log("converting " + this.direction + ", original input = " + wheat);
+
         const parser = this.symbol_table.get(this.value.text);
         const transducer = transducer_from_table(parser, this.symbol_table);
         
@@ -261,20 +265,22 @@ class UpdownTransducer extends Transducer {
                 }
             }
 
+            console.log("final output = " + chaff);
+            console.log();
             if (this.direction == "upward") {
                 results.push([chaff, new_logprob, past_output]);
             } else {
                 results.push([input, new_logprob, chaff]);
             }
         }
-        
         return results;
     }
 }
 
+/*
 function concat_entry([key, value]: GEntry, s: string): GEntry {
     return [key, new GCell(value.text + s, value.sheet, value.row, value.col)];
-}
+} */
 
 
 class LiteralTransducer extends Transducer {
@@ -295,24 +301,47 @@ class LiteralTransducer extends Transducer {
         const [input, logprob, past_output] = parse;
 
         var consumed_input: GRecord = [];
-        var output: GRecord = [];
 
-        var my_tier_found = false;
+        var tier_found_in_input = false;
+        var needle = this.value.text;
 
         for (const [key, value] of input) {
+            
+
             if (key.text != this.key.text) { // not what we're looking for, move along
                 consumed_input.push([key, value]);
                 continue; 
             }
-            if (!value.text.startsWith(this.value.text)) { // parse failed!
-                return [];
+            tier_found_in_input = true;
+        
+            for (var i = 0; i < value.text.length; i++) {
+                if (needle.length == 0) {
+                    break;
+                }
+
+                if (value.text[i] != needle[0]) {
+                    return [];
+                }
+
+                // it's a match
+                needle = needle.slice(1);
+
             }
 
-            const remnant_str = value.text.slice(this.value.text.length);
-            const remnant_cell = new GCell(remnant_str, value.sheet, value.row, value.col);
-            consumed_input.push([key, remnant_cell]);
+            if (needle.length == 0) {
+                const remnant_str = value.text.slice(i);
+                const remnant_cell = new GCell(remnant_str, value.sheet, value.row, value.col);
+                consumed_input.push([key, remnant_cell]);
+            }
         }
 
+        if (tier_found_in_input && needle.length > 0) {
+            return [];
+        }
+
+        var output = [...past_output];
+        output.push([this.key, this.value]);
+        /*
         for (const [key, value] of past_output) {
             if (key.text != this.key.text) { 
                 output.push([key, value]);
@@ -328,8 +357,8 @@ class LiteralTransducer extends Transducer {
 
         if (!my_tier_found) {
             output.push([this.key, this.value]);
-        }
-    
+        } */
+
         return [[consumed_input, logprob, output]];
     }
 }
@@ -367,7 +396,7 @@ class ConcatenationTransducer extends Transducer {
     }
 }
 
-function transducer_from_entry([key, value]: [GCell, GCell], symbol_table: SymbolTable): Transducer {
+export function transducer_from_entry([key, value]: [GCell, GCell], symbol_table: SymbolTable): Transducer {
 
     const comma_separated_tiers = split_trim_lower(key.text, ",");
 
@@ -450,17 +479,24 @@ function map_keys_in_record(input: GRecord, f: (s: string) => string): GRecord {
 
 function step_one_character([input, logprob, past_output]: GParse, in_tier: string, out_tier: string): GParse {
     var consumed_input: GRecord = []; 
-    var c = "";
+    var output: GRecord = [... past_output];
+    var c_found = false;
+
+    console.log("  input = " + input);
     for (const [key, value] of input) {
-        if (key.text == in_tier && value.text.length > 0) {
-            c = value.text[0];
+        if (!c_found && key.text == in_tier && value.text.length > 0) {
+            const c = value.text[0];
             const remnant = new GCell(value.text.slice(1), value.sheet, value.row, value.col);
             consumed_input.push([key, remnant]);
+            const new_output_entry: GEntry = [new GCell(out_tier), new GCell(c, value.sheet, value.row, value.col)]
+            output.push(new_output_entry);
+            c_found = true;
             continue;
         }
         consumed_input.push([key, value]);
     }
-    var output: GRecord = []; 
+    console.log("  consumed input = " + consumed_input);
+    /* 
     var found_out_tier = false;
     for (const [key, value] of past_output) {
         if (key.text != out_tier) {
@@ -469,11 +505,12 @@ function step_one_character([input, logprob, past_output]: GParse, in_tier: stri
         }
         output.push(concat_entry([key, value], c));
         found_out_tier = true;
-    }
+    } 
 
     if (!found_out_tier) {
         output.push([new GCell(out_tier), new GCell(c)]);
-    }
+    } */
+
     return [consumed_input, logprob, output];
 }
 

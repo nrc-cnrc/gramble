@@ -22,14 +22,14 @@ function is_line_empty(row: string[]): boolean {
 
 
 /**
- * IHighlighter
+ * DevEnvironment
  * 
  * To make an editor (e.g. Google Sheets) "smart" about Gramble, you implement this interface.  Most
  * of the public-facing methods of the Project edifice take an IHighlighter instance as an argument.
  * When parsing a spreadsheet, executing a unit test, etc., the Parser will notify the IHighlighter instance
  * that particular cells are errors, comments, column headers, etc.
  */
-export interface IHighlighter {
+export interface DevEnvironment {
     mark_error(sheet: string, row: number, col: number, msg: string, level: "error"|"warning"|"info"): void;
     mark_tier(sheet: string, row: number, col: number, tier: string): void;
     mark_comment(sheet: string, row: number, col: number): void;
@@ -38,6 +38,35 @@ export interface IHighlighter {
     set_color(tier_name: string, color: string): void;
     highlight(): void;
     alert(msg: string): void;
+}
+
+export class TextDevEnvironment {
+
+    private errorMessages: string[] = [];
+
+    public mark_tier(sheet: string, row: number, col: number, tier: string): void {}
+    public mark_comment(sheet: string, row: number, col: number): void {}
+    public mark_header(sheet: string, row: number, col: number, tier: string): void {}
+    public mark_command(sheet: string, row: number, col: number): void {}
+    public set_color(tier_name: string, color: string): void {}
+    public highlight(): void {}
+
+    mark_error(sheet: string, 
+            row: number, 
+            col: number, 
+            msg: string, 
+            level: "error"|"warning"|"info"): void {
+
+        this.errorMessages.push(level.toUpperCase() + ", row " + (row+1) + ", column " + (col+1) + ": " + msg);
+    }
+
+    public get errors(): string[] {
+        return this.errorMessages;
+    }
+
+    public alert(msg: string): void {
+        console.log(msg);
+    }
 }
 
 const REQUIRED_COLORS: string[] = [
@@ -80,7 +109,7 @@ abstract class GFunction {
         this._name = name;
     }
 
-    public add_params(cells: GCell[], highlighter: IHighlighter): void {
+    public add_params(cells: GCell[], highlighter: DevEnvironment): void {
 
         var cell_buffer: GCell[] = [];
 
@@ -175,7 +204,7 @@ class TestFunction extends GFunction {
 
 function make_function(name: GCell, 
                        current_symbol: GCell | undefined, 
-                       highlighter: IHighlighter): GFunction {
+                       highlighter: DevEnvironment): GFunction {
 
     if (name.text == 'add') {
 
@@ -313,7 +342,7 @@ export class Project {
     }
 
 
-    public run_tests(highlighter: IHighlighter): void {
+    public run_tests(highlighter: DevEnvironment): void {
         for (const [symbol_name, test_table] of this._test_table.entries()) {
             for (const record of test_table) {
                 const input_record: GRecord = []; 
@@ -367,7 +396,7 @@ export class Project {
         }
     }
 
-    private add_row(cells: GCell[], highlighter: IHighlighter): void {
+    private add_row(cells: GCell[], highlighter: DevEnvironment): void {
         if (cells.length == 0) {
             // if it's empty (shouldn't happen, but just in case)
             return;
@@ -436,7 +465,7 @@ export class Project {
 
     public add_sheet(sheet_name: string, 
                     cells: string[][], 
-                    highlighter: IHighlighter): void {
+                    highlighter: DevEnvironment): void {
         for (var [row_idx, row] of cells.entries()) {
             
             if (is_line_empty(row)) {
@@ -452,4 +481,5 @@ export class Project {
             this.add_row(row_results, highlighter);
         }
     }
+
 }
