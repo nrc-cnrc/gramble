@@ -1,4 +1,3 @@
-import { getEnabledCategories } from "trace_events";
 import { RandomPicker } from "./util";
 
 export type GEntry = [GCell, GCell];
