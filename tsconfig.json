@@ -4,12 +4,17 @@
       "module": "commonjs",
       "outDir": "dist",
       "sourceMap": true,
-      "strict": true
+      "strict": true,
+      "types": [
+        "chai",
+        "mocha",
+        "node"
+      ]
     },
     "include": [
       "*.ts"
     ],
     "exclude": [
       "node_modules"
-    ]
+    ],
   }
