@@ -1,4 +1,4 @@
-import {GTable, make_table, flatten_to_json, getTierAsString} from "./transducers"
+import {GTable, makeTable, flattenToJSON, getTierAsString} from "./transducers"
 import {Project, TextDevEnvironment} from "./spreadsheet"
 import {parse as papaparse, ParseResult} from 'papaparse';
 import {createReadStream, createWriteStream, existsSync} from 'fs';
@@ -35,16 +35,16 @@ class TextProject extends Project {
 
     public addText(text: string, rownum: number, filename: string) {
         papaparse(text, { delimiter: this.delim, 
-            complete: (line) => this.addRow(line, rownum, filename)
+            complete: (line) => this.addParsedRow(line, rownum, filename)
         });
     }
 
-    public addRow(row: ParseResult, rownum: number, filename: string) {
+    public addParsedRow(row: ParseResult, rownum: number, filename: string) {
         for (const data of row.data as string[][]) {  // should always only be one of these
-            this.add_row(data, filename, rownum, this.env);
+            this.addRow(data, filename, rownum, this.env);
         }
         for (const error of row.errors) {
-            this.env.mark_error(filename, rownum, -1, error.message, "error");
+            this.env.markError(filename, rownum, -1, error.message, "error");
         }
     }
 
@@ -57,7 +57,7 @@ class TextProject extends Project {
                         symbolName: string = "MAIN"): Promise<void> {
 
         return fromStream(inputStream, (error: Error | any, line: string, rownum: number) => {
-            const input: GTable = make_table([[[asTier, line.trim()]]]);
+            const input: GTable = makeTable([[[asTier, line.trim()]]]);
             const result = super.parse(symbolName, input, randomize, maxResults);
             this.writeToOutput(outputStream, result, outputTier);
         });
@@ -72,7 +72,7 @@ class TextProject extends Project {
 
         return fromStream(inputStream, (error: Error | any, line: string, rownum: number) => {
             for (const token of line.split(" ")) {
-                const input: GTable = make_table([[[asTier, token.trim()]]]);
+                const input: GTable = makeTable([[[asTier, token.trim()]]]);
                 const result = super.parse(symbolName, input, randomize, 1);
                 outputStream.write(getTierAsString(result, outputTier) + " ");
             }
@@ -101,7 +101,7 @@ class TextProject extends Project {
         if (outputTier != undefined) {
             outputStream.write(getTierAsString(result, outputTier) + "\n");
         } else {
-            outputStream.write(flatten_to_json(result) + "\n");
+            outputStream.write(flattenToJSON(result) + "\n");
         }
     }
 }

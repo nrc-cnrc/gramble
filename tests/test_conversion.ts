@@ -1,4 +1,4 @@
-import {transducer_from_table, make_table} from "../transducers"
+import {transducerFromTable, makeTable} from "../transducers"
 import 'mocha';
 import {test_num_results, test_output} from "./test_util"
 
@@ -33,12 +33,12 @@ const diablo = make_one_entry_table("_up", "diablo");
 const diiablo = make_one_entry_table("_up", "diiablo");
 */
 
-symbol_table.set("reduce_oo", make_table([[
+symbol_table.set("reduce_oo", makeTable([[
     ["up", "oo"],
     ["down", "o"]
 ]]));
 
-const oo_reduction_parser = transducer_from_table(make_table([[
+const oo_reduction_parser = transducerFromTable(makeTable([[
     ["upward text", "reduce_oo"],
     ["text", "foo"],
     ["gloss", "jump"],
@@ -47,14 +47,14 @@ const oo_reduction_parser = transducer_from_table(make_table([[
     ["downward text", "reduce_oo"]
 ]]), symbol_table);
 
-const gloss_input = make_table([[
+const gloss_input = makeTable([[
     ["gloss", "jump-1SG"],
 ]])
-const text_input = make_table([[
+const text_input = makeTable([[
     ["text", "fobar"],
 ]]);
 
-const text_input_bad = make_table([[
+const text_input_bad = makeTable([[
     ["text", "foobar"],
 ]]);
 

@@ -2,36 +2,36 @@ import {RandomPicker} from "../util"
 import { expect } from 'chai';
 import 'mocha';
 import {test_num_results, test_output} from "./test_util";
-import {transducer_from_table, make_table} from "../transducers"
+import {transducerFromTable, makeTable} from "../transducers"
 
 const symbol_table = new Map();
-const text_input = make_table([[["text", "foobar"]]]);
-const empty_input = make_table([[["", ""]]]);
+const text_input = makeTable([[["text", "foobar"]]]);
+const empty_input = makeTable([[["", ""]]]);
 
-symbol_table.set('ROOT', make_table([
+symbol_table.set('ROOT', makeTable([
     [["text", "foo"], ["gloss", "jump"]],
     [["text", "foob"], ["gloss", "run"]]
 ]));
 
-symbol_table.set('SUFFIX', make_table([
+symbol_table.set('SUFFIX', makeTable([
     [["text", "bar"], ["gloss", "-1SG"]],
     [["text", "ar"], ["gloss", "-3SG.PAST"]],
     [["text", "tar"], ["gloss", "-3PL.PAST"]]
 ]));
 
-const ambiguous_parser_with_var = transducer_from_table(make_table([
+const ambiguous_parser_with_var = transducerFromTable(makeTable([
     [["var", "ROOT"], ["var", "SUFFIX"]]
 ]), symbol_table);
 
 
-symbol_table.set('SUFFIX_PROBS', make_table([
+symbol_table.set('SUFFIX_PROBS', makeTable([
     [["text", "bar"], ["gloss", "-1SG"], ["p", "0.0"]],
     [["text", "ar"], ["gloss", "-3SG.PAST"], ["p", "1.0"]],
     [["text", "tar"], ["gloss", "-3PL.PAST"], ["p", "0.5"]]
 ]));
 
 
-const ambiguous_parser_with_probs = transducer_from_table(make_table([
+const ambiguous_parser_with_probs = transducerFromTable(makeTable([
     [["var", "ROOT"], ["var", "SUFFIX_PROBS"]]
 ]), symbol_table);
 

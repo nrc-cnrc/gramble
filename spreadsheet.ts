@@ -1,4 +1,4 @@
-import {GCell, GEntry, GRecord, GTable, SymbolTable, transducer_from_table} from "./transducers"
+import {GCell, GEntry, GRecord, GTable, SymbolTable, transducerFromTable} from "./transducers"
 
 /**
  * Determines whether a line is empty
@@ -6,13 +6,13 @@ import {GCell, GEntry, GRecord, GTable, SymbolTable, transducer_from_table} from
  * @returns True if the line is empty
  */
 
-function is_line_empty(row: string[]): boolean {
+function isLineEmpty(row: string[]): boolean {
     if (row.length == 0) {
         return true;
     }
 
-    for (let cell_text of row) {
-        if (cell_text.trim().length != 0) {
+    for (let cellText of row) {
+        if (cellText.trim().length != 0) {
             return false;
         }
     }
@@ -30,12 +30,12 @@ function is_line_empty(row: string[]): boolean {
  * that particular cells are errors, comments, column headers, etc.
  */
 export interface DevEnvironment {
-    mark_error(sheet: string, row: number, col: number, msg: string, level: "error"|"warning"|"info"): void;
-    mark_tier(sheet: string, row: number, col: number, tier: string): void;
-    mark_comment(sheet: string, row: number, col: number): void;
-    mark_header(sheet: string, row: number, col: number, tier: string): void;
-    mark_command(sheet: string, row: number, col: number): void;
-    set_color(tier_name: string, color: string): void;
+    markError(sheet: string, row: number, col: number, msg: string, level: "error"|"warning"|"info"): void;
+    markTier(sheet: string, row: number, col: number, tier: string): void;
+    markComment(sheet: string, row: number, col: number): void;
+    markHeader(sheet: string, row: number, col: number, tier: string): void;
+    markCommand(sheet: string, row: number, col: number): void;
+    setColor(tierName: string, color: string): void;
     highlight(): void;
     alert(msg: string): void;
 }
@@ -44,13 +44,13 @@ export class TextDevEnvironment {
 
     private errorMessages: [string, number, number, string, "error"|"warning"|"info"][] = [];
 
-    public mark_tier(sheet: string, row: number, col: number, tier: string): void {}
-    public mark_comment(sheet: string, row: number, col: number): void {}
-    public mark_header(sheet: string, row: number, col: number, tier: string): void {}
-    public mark_command(sheet: string, row: number, col: number): void {}
-    public set_color(tier_name: string, color: string): void {}
+    public markTier(sheet: string, row: number, col: number, tier: string): void {}
+    public markComment(sheet: string, row: number, col: number): void {}
+    public markHeader(sheet: string, row: number, col: number, tier: string): void {}
+    public markCommand(sheet: string, row: number, col: number): void {}
+    public setColor(tierName: string, color: string): void {}
 
-    public mark_error(sheet: string, 
+    public markError(sheet: string, 
             row: number, 
             col: number, 
             msg: string, 
@@ -61,12 +61,12 @@ export class TextDevEnvironment {
 
     public highlight(): void {
         for (const error of this.errorMessages) {
-            const row_str = (error[1] == -1) ? "unknown" : (error[1] + 1).toString();
-            const col_str = (error[2] == -1) ? "unknown" : (error[2] + 1).toString();
+            const rowStr = (error[1] == -1) ? "unknown" : (error[1] + 1).toString();
+            const colStr = (error[2] == -1) ? "unknown" : (error[2] + 1).toString();
             console.error(error[4].toUpperCase() + 
                             ": " + error[0] + 
-                            ", row " + row_str + 
-                            ", column " + col_str + 
+                            ", row " + rowStr + 
+                            ", column " + colStr + 
                             ": " + error[3]);
         }
 
@@ -85,12 +85,12 @@ const REQUIRED_COLORS: string[] = [
 ];
 
 
-function is_valid_color(color_name: string): boolean {
-    if (color_name.trim().length == 0) {
+function isValidColor(colorName: string): boolean {
+    if (colorName.trim().length == 0) {
         return false;
     }
 
-    for (let subcolor of color_name.split("-")) {
+    for (let subcolor of colorName.split("-")) {
         if (REQUIRED_COLORS.indexOf(subcolor.trim()) < 0) {
             return false;
         }
@@ -108,52 +108,51 @@ function is_valid_color(color_name: string): boolean {
  * of positional arguments (e.g. that the third column should be "text", the second column should be "down", etc.)
  */
 abstract class GFunction {
-    protected _name: GCell;
-    protected _symbol: GCell | undefined;
-    protected _params: GCell[] = [];
-    protected _columns: Map<number, GCell> = new Map();
 
-    public constructor(name: GCell) {
-        this._name = name;
-    }
+    public constructor(
+        protected name: GCell,
+        protected symbol: GCell | undefined = undefined,
+        protected params: GCell[] = [],
+        protected columns: Map<number, GCell> = new Map()
+    ) {}
 
-    public add_params(cells: GCell[], highlighter: DevEnvironment): void {
+    public addParams(cells: GCell[], highlighter: DevEnvironment): void {
 
-        var cell_buffer: GCell[] = [];
+        var cellBuffer: GCell[] = [];
 
         for (let cell of cells) {
-            cell_buffer.push(cell);
+            cellBuffer.push(cell);
             if (cell.text.length == 0) {
                 continue;
             }
 
-            for (const param of cell_buffer) {
-                highlighter.mark_header(cell.sheet, cell.row, cell.col, cell.text);
+            for (const param of cellBuffer) {
+                highlighter.markHeader(cell.sheet, cell.row, cell.col, cell.text);
                 if (param.text.length == 0) {
                     continue;
                 }
-                this._params.push(param);
-                this._columns.set(param.col, param);
+                this.params.push(param);
+                this.columns.set(param.col, param);
             }
         }
     }
 
-    public has_column(col_idx: number): boolean {
-        return this._columns.has(col_idx);
+    public hasColumn(col: number): boolean {
+        return this.columns.has(col);
     }
 
-    public get_param(col_idx: number): GCell {
-        const result =  this._columns.get(col_idx);
+    public getParam(col: number): GCell {
+        const result =  this.columns.get(col);
         if (result == undefined) {
-            throw new RangeError("Column index " + col_idx + " not found");
+            throw new RangeError("Column index " + col + " not found");
         }
         return result;
     }
 
-    public associate_params(cells: GCell[]): GRecord {
+    public associateParams(cells: GCell[]): GRecord {
         var record: GRecord = []; 
         for (const cell of cells) {
-            const key = this.get_param(cell.col);
+            const key = this.getParam(cell.col);
             record.push([key, cell]);
         }
         return record;
@@ -165,8 +164,8 @@ abstract class GFunction {
      * Many functions assign or append their results to the most recently declared symbol.
      * @param GCell 
      */
-    public set_symbol(symbol: GCell) {
-        this._symbol = symbol;
+    public setSymbol(symbol: GCell) {
+        this.symbol = symbol;
     }
 }
 
@@ -178,15 +177,15 @@ class TableFunction extends GFunction {
         if (symbol == undefined) {
             return;
         }
-        this.set_symbol(symbol);
+        this.setSymbol(symbol);
     }
 
     public call(cells: GCell[], project: Project): void {
-        if (this._symbol == undefined) {
+        if (this.symbol == undefined) {
             throw new Error("Attempted to call table function without active symbol");
         }
-        const record = this.associate_params(cells);
-        project.add_record_to_symbol(this._symbol.text, record);
+        const record = this.associateParams(cells);
+        project.addRecordToSymbol(this.symbol.text, record);
     }
 }
 
@@ -197,38 +196,38 @@ class TestFunction extends GFunction {
         if (symbol == undefined) {
             return;
         }
-        this.set_symbol(symbol);
+        this.setSymbol(symbol);
     }
 
     public call(cells: GCell[], project: Project): void {
-        if (this._symbol == undefined) {
+        if (this.symbol == undefined) {
             throw new Error("Attempted to call table function without active symbol");
         }
-        const record = this.associate_params(cells);
-        project.add_test_to_symbol(this._symbol.text, record);
+        const record = this.associateParams(cells);
+        project.addTestToSymbol(this.symbol.text, record);
     }
 }
 
 
-function make_function(name: GCell, 
-                       current_symbol: GCell | undefined, 
+function makeFunction(name: GCell, 
+                       currentSymbol: GCell | undefined, 
                        highlighter: DevEnvironment): GFunction {
 
     if (name.text == 'add') {
 
-        if (current_symbol == undefined) {
-            highlighter.mark_error(name.sheet, name.row, name.col, 
+        if (currentSymbol == undefined) {
+            highlighter.markError(name.sheet, name.row, name.col, 
                 "This command is not preceded by a symbol. " +
                 " If you don't assign it to a symbol, it will be ignored.", "warning");
         }
-        return new TableFunction(name, current_symbol);
+        return new TableFunction(name, currentSymbol);
     } else if (name.text == "test") {
-        if (current_symbol == undefined) {
-            highlighter.mark_error(name.sheet, name.row, name.col, 
+        if (currentSymbol == undefined) {
+            highlighter.markError(name.sheet, name.row, name.col, 
                 "This test command is not preceded by a symbol. " +
                 " Tests without a symbol will not execute", "warning");
         }
-        return new TestFunction(name, current_symbol);
+        return new TestFunction(name, currentSymbol);
     }
 
     // it's not a reserved word, so it's a new symbol
@@ -251,138 +250,138 @@ const BUILT_IN_FUNCTIONS: string[] = [
  * 
  * It also serves as an Edifice (in the 
  * design pattern sense) for clients: rather than asking for a parser object and calling parse()
- * on it directly, you just have a Project instance and call parse(symbol_name, input).
+ * on it directly, you just have a Project instance and call parse(symbolName, input).
  */
 export class Project {
-    protected _current_function: GFunction | undefined = undefined;
-    protected _current_symbol: GCell | undefined = undefined;
-    protected _symbol_table: Map<string, GTable> = new Map();
-    protected _test_table: Map<string, GTable> = new Map();
+    protected currentFunction: GFunction | undefined = undefined;
+    protected currentSymbol: GCell | undefined = undefined;
+    protected symbolTable: Map<string, GTable> = new Map();
+    protected testTable: Map<string, GTable> = new Map();
 
-    public has_symbol(name: string): boolean {
-        return this._symbol_table.has(name);
+    public hasSymbol(name: string): boolean {
+        return this.symbolTable.has(name);
     }
 
-    public all_symbols(): Iterator<string> {
-        return this._symbol_table.keys();
+    public allSymbols(): Iterator<string> {
+        return this.symbolTable.keys();
     }
 
-    public add_record_to_symbol(name: string, record: GRecord) {
-        getTableOrThrow(this._symbol_table, name).push(record);
+    public addRecordToSymbol(name: string, record: GRecord) {
+        getTableOrThrow(this.symbolTable, name).push(record);
     }
 
-    public add_test_to_symbol(name: string, record: GRecord) {
+    public addTestToSymbol(name: string, record: GRecord) {
         getTableOrThrow(
-            this._test_table,
+            this.testTable,
             name,
             `Cannot find symbol ${name} in test table`
         ).push(record);
     }
     
-    public parse(symbol_name: string, input: GTable, randomize: boolean = false, maxResults: number = -1): GTable {
-        const table = getTableOrThrow(this._symbol_table, symbol_name);
-        const parser = transducer_from_table(table, this._symbol_table);
+    public parse(symbolName: string, input: GTable, randomize: boolean = false, maxResults: number = -1): GTable {
+        const table = getTableOrThrow(this.symbolTable, symbolName);
+        const parser = transducerFromTable(table, this.symbolTable);
         return parser.transduceFinal(input, randomize, maxResults);
     }
 
-    public generate(symbol_name: string, randomize: boolean = false, maxResults: number = -1): GTable {
-        const table = getTableOrThrow(this._symbol_table, symbol_name);
-        const parser = transducer_from_table(table, this._symbol_table);
+    public generate(symbolName: string, randomize: boolean = false, maxResults: number = -1): GTable {
+        const table = getTableOrThrow(this.symbolTable, symbolName);
+        const parser = transducerFromTable(table, this.symbolTable);
         return parser.generate(randomize, maxResults);
     }
 
-    public sample(symbol_name: string, n_results: number = 1): GTable {
-        const table = getTableOrThrow(this._symbol_table, symbol_name);
-        const parser = transducer_from_table(table, this._symbol_table);
-        return parser.sample(n_results);
+    public sample(symbolName: string, maxResults: number = 1): GTable {
+        const table = getTableOrThrow(this.symbolTable, symbolName);
+        const parser = transducerFromTable(table, this.symbolTable);
+        return parser.sample(maxResults);
     }
 
-    public contains_result(result_table: GTable, [target_key, target_value]: GEntry) {
-        for (const result_record of result_table) {
-            for (const [result_key, result_value] of result_record) {
-                if (result_key.text != target_key.text) {
+    public containsResult(resultTable: GTable, [targetKey, targetValue]: GEntry) {
+        for (const resultRecord of resultTable) {
+            for (const [resultKey, resultValue] of resultRecord) {
+                if (resultKey.text != targetKey.text) {
                     continue;
                 }
-                if (result_value.text == target_value.text) {
+                if (resultValue.text == targetValue.text) {
                     return true;
                 }
             }
         }
         
-        if (target_value.text.length == 0) {
+        if (targetValue.text.length == 0) {
             return true;  // if there's no output, and no output is expected, we're good!
         }
         return false;
     }
 
-    public equals_result(result_table: GTable, [target_key, target_value]: GEntry) {
+    public equalsResult(resultTable: GTable, [targetKey, targetValue]: GEntry) {
         var found = false;
-        for (const result_record of result_table) {
-            for (const [key, value] of result_record) {
-                if (key.text != target_key.text) {
+        for (const resultRecord of resultTable) {
+            for (const [key, value] of resultRecord) {
+                if (key.text != targetKey.text) {
                     continue;
                 }
-                if (value.text == target_value.text) {
+                if (value.text == targetValue.text) {
                     found = true;
                     continue;
                 }
                 return false;
             }
         }
-        if (!found && target_value.text.length == 0) {
+        if (!found && targetValue.text.length == 0) {
             return true;  // if there's no output, and no output is expected, we're good!
         }
         return found;
     }
 
 
-    public run_tests(highlighter: DevEnvironment): void {
-        for (const [symbol_name, test_table] of this._test_table.entries()) {
-            for (const record of test_table) {
-                const input_record: GRecord = []; 
-                const contains_record: GRecord = []; 
-                const equals_record: GRecord = []; 
+    public runTests(highlighter: DevEnvironment): void {
+        for (const [symbolName, testTable] of this.testTable.entries()) {
+            for (const record of testTable) {
+                const inputRecord: GRecord = []; 
+                const containsRecord: GRecord = []; 
+                const equalsRecord: GRecord = []; 
                 
                 for (const [key, value] of record) {
                     var parts = key.text.split(" ");
                     if (parts.length != 2) {
-                        highlighter.mark_error(key.sheet, key.row, key.col,
+                        highlighter.markError(key.sheet, key.row, key.col,
                             "Invalid test tier: " + key.text, "error");
                         continue;
                     }
                     const command = parts[0].trim();
                     const tier = parts[1].trim();
                     if (command == "input") {
-                        input_record.push([new GCell(tier), value]);
+                        inputRecord.push([new GCell(tier), value]);
                     } else if (command == "contains") {
-                        contains_record.push([new GCell(tier), value]);
+                        containsRecord.push([new GCell(tier), value]);
                     } else if (command == "equals") {
-                        equals_record.push([new GCell(tier), value]);
+                        equalsRecord.push([new GCell(tier), value]);
                     }
                 }
                 
                 const input: GTable = [];
-                input.push(input_record);
-                const result = this.parse(symbol_name, input);
+                input.push(inputRecord);
+                const result = this.parse(symbolName, input);
                 
-                for (const [target_key, target_value] of contains_record) {
-                    if (!this.contains_result(result, [target_key, target_value])) {
-                        highlighter.mark_error(target_value.sheet, target_value.row, target_value.col,
+                for (const [targetKey, targetValue] of containsRecord) {
+                    if (!this.containsResult(result, [targetKey, targetValue])) {
+                        highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
                             "Result does not contain specified value. " + 
                             "Actual value: \n" + result.toString(), "error");
                     } else {
-                        highlighter.mark_error(target_value.sheet, target_value.row, target_value.col,
+                        highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
                             "Result contains specified value: \n" + result.toString(), "info");
                     }
                 }
 
-                for (const [target_key, target_value] of equals_record) {
-                    if (!this.equals_result(result, [target_key, target_value])) {
-                        highlighter.mark_error(target_value.sheet, target_value.row, target_value.col,
+                for (const [targetKey, targetValue] of equalsRecord) {
+                    if (!this.equalsResult(result, [targetKey, targetValue])) {
+                        highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
                             "Result does not equal specified value. " + 
                             "Actual value: \n" + result.toString(), "error");
                     } else {
-                        highlighter.mark_error(target_value.sheet, target_value.row, target_value.col,
+                        highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
                             "Result equals specified value: \n" + result.toString(), "info");
                     }
                 }
@@ -390,53 +389,53 @@ export class Project {
         }
     }
 
-    protected add_row(cell_texts: string[], sheetName: string, row_idx: number, devEnv: DevEnvironment): void {
+    protected addRow(cellTexts: string[], sheetName: string, rowIdx: number, devEnv: DevEnvironment): void {
 
         
-        if (is_line_empty(cell_texts)) {
+        if (isLineEmpty(cellTexts)) {
             return;
         }
 
         const cells: GCell[] = [];
-        for (const [colnum, text] of cell_texts.entries()) {
-            const cell = new GCell(text.trim(), sheetName, row_idx, colnum);
+        for (const [colnum, text] of cellTexts.entries()) {
+            const cell = new GCell(text.trim(), sheetName, rowIdx, colnum);
             cells.push(cell);
         }
 
-        let first_cell = cells[0]
-        let first_cell_text = first_cell.text;
+        let firstCell = cells[0]
+        let firstCellText = firstCell.text;
 
-        if (first_cell_text.startsWith('#')) {  // the row's a comment
+        if (firstCellText.startsWith('#')) {  // the row's a comment
             for (const cell of cells) {
                 if (cell.text.length == 0) {
                     continue;
                 }
-                devEnv.mark_comment(cell.sheet, cell.row, cell.col);
+                devEnv.markComment(cell.sheet, cell.row, cell.col);
             }
             return;
         }
 
-        if (first_cell_text.length > 0) {
-            if (BUILT_IN_FUNCTIONS.indexOf(first_cell_text) < 0) {
+        if (firstCellText.length > 0) {
+            if (BUILT_IN_FUNCTIONS.indexOf(firstCellText) < 0) {
                 // it's not a built-in function/keyword, so treat it as a new symbol
-                this._current_symbol = first_cell;
-                this._symbol_table.set(first_cell_text, []);
-                this._test_table.set(first_cell_text, []);
+                this.currentSymbol = firstCell;
+                this.symbolTable.set(firstCellText, []);
+                this.testTable.set(firstCellText, []);
             }
-            this._current_function = make_function(first_cell, this._current_symbol, devEnv);
-            this._current_function.add_params(cells.slice(1), devEnv);
-            devEnv.mark_command(first_cell.sheet, first_cell.row, first_cell.col);
+            this.currentFunction = makeFunction(firstCell, this.currentSymbol, devEnv);
+            this.currentFunction.addParams(cells.slice(1), devEnv);
+            devEnv.markCommand(firstCell.sheet, firstCell.row, firstCell.col);
             return;
         }
 
         // if none of the above are true, this row represents args to the previous function
 
         // first make sure there IS a function active
-        if (this._current_function == undefined) {
+        if (this.currentFunction == undefined) {
             // shouldn't have args when there's no function.  mark them all as errors
             for (const cell of cells.slice(1)) { 
                 if (cell.text.length > 0) {
-                    devEnv.mark_error(cell.sheet, cell.row, cell.col, 
+                    devEnv.markError(cell.sheet, cell.row, cell.col, 
                         "Unclear what this cell is here for. " + 
                         "Did you forget a function?", "warning");
                 }
@@ -447,30 +446,30 @@ export class Project {
         var args: GCell[] = [];  // a place to hold valid args; don't want to call the function
                                  // with args that (e.g.) don't correspond to a parameter
         for (const cell of cells.slice(1)) { 
-            if (!this._current_function.has_column(cell.col)) {
+            if (!this.currentFunction.hasColumn(cell.col)) {
                 if (cell.text.length > 0) {
-                    devEnv.mark_error(cell.sheet, cell.row, cell.col, 
+                    devEnv.markError(cell.sheet, cell.row, cell.col, 
                         "This cell does not appear to belong to a column. " + 
                         "Did you forget a column header above?", "warning");
                     
                 }
                 continue;
             }
-            const param = this._current_function.get_param(cell.col);
-            devEnv.mark_tier(cell.sheet, cell.row, cell.col, param.text);
+            const param = this.currentFunction.getParam(cell.col);
+            devEnv.markTier(cell.sheet, cell.row, cell.col, param.text);
             args.push(cell);
         }
 
-        this._current_function.call(args, this);
+        this.currentFunction.call(args, this);
     }
 
-    public add_sheet(sheet_name: string, 
+    public addSheet(sheetName: string, 
                     cells: string[][], 
                     highlighter: DevEnvironment): void {
-        for (var [row_idx, row] of cells.entries()) {
+        for (var [rowIdx, row] of cells.entries()) {
             
 
-            this.add_row(row, sheet_name, row_idx, highlighter);
+            this.addRow(row, sheetName, rowIdx, highlighter);
         }
     }
 

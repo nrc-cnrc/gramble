@@ -1,15 +1,15 @@
-import {make_table, transducer_from_table} from "../transducers"
+import {makeTable, transducerFromTable} from "../transducers"
 import 'mocha';
 import {test_num_results, test_output} from "./test_util"
 
 //const text_input = make_one_record_table([["_text", "foobar"]]);
 //const gloss_input = make_one_record_table([["_gloss", "jump-1SG"]]);
-const text_input = make_table([[["text", "foobar"]]]);
-const text_incomplete = make_table([[["text", "fo"]]]);
-const text_no_suffix = make_table([[["text", "foo"]]]);
-const gloss_input = make_table([[["gloss", "jump-1SG"]]]);
-const root_input = make_table([[["root", "foo"]]]);
-const bad_text_input = make_table([[["text", "moobar"]]]);
+const text_input = makeTable([[["text", "foobar"]]]);
+const text_incomplete = makeTable([[["text", "fo"]]]);
+const text_no_suffix = makeTable([[["text", "foo"]]]);
+const gloss_input = makeTable([[["gloss", "jump-1SG"]]]);
+const root_input = makeTable([[["root", "foo"]]]);
+const bad_text_input = makeTable([[["text", "moobar"]]]);
 
 const symbol_table = new Map();
 
@@ -21,36 +21,36 @@ const result = tr.transduce([record, 1.0, []], false, -1);
 console.log(result.toString());
 */
 
-const ambiguous_foobar_parser = transducer_from_table(make_table([
+const ambiguous_foobar_parser = transducerFromTable(makeTable([
     [["text", "foo"], ["gloss", "jump"], ["text", "bar"], ["gloss", "-1SG"]],
     [["text", "foob"], ["gloss", "run"], ["text", "ar"], ["gloss", "-3PL.PAST"]]
 ]), symbol_table);
 
-symbol_table.set('ROOT', make_table([
+symbol_table.set('ROOT', makeTable([
     [["text", "foo"], ["gloss", "jump"]],
     [["text", "foob"], ["gloss", "run"]]
 ]));
 
-symbol_table.set('SUFFIX', make_table([
+symbol_table.set('SUFFIX', makeTable([
     [["text", "bar"], ["gloss", "-1SG"]],
     [["text", "ar"], ["gloss", "-3SG.PAST"]],
     [["text", "ar"], ["gloss", "-3PL.PAST"]]
 ]));
 
 
-const ambiguous_parser_with_var = transducer_from_table(make_table([
+const ambiguous_parser_with_var = transducerFromTable(makeTable([
     [["var", "ROOT"], ["var", "SUFFIX"]]
 ]), symbol_table);
 
-const maybe_indicative_parser = transducer_from_table(make_table([
+const maybe_indicative_parser = transducerFromTable(makeTable([
     [["text", "foo"], ["gloss", "jump"], ["maybe gloss", "-INDIC"], ["text", "bar"], ["gloss", "-1SG"]]
 ]), symbol_table);
 
-const maybe_suffix_parser = transducer_from_table(make_table([
+const maybe_suffix_parser = transducerFromTable(makeTable([
     [["var", "ROOT"], ["maybe var", "SUFFIX"]]
 ]), symbol_table);
 
-const conjoined_foobar_parser = transducer_from_table(make_table([
+const conjoined_foobar_parser = transducerFromTable(makeTable([
     [["text, root", "foo"], ["gloss", "jump"], ["text", "bar"], ["gloss", "-1SG"]],
     [["text, root", "foob"], ["gloss", "run"], ["text", "ar"], ["gloss", "-3PL.PAST"]]
 ]), symbol_table);
@@ -130,7 +130,6 @@ describe('Unambiguous GTable transducer, from gloss to text', function() {
 describe('Ambiguous GTable transducer, transduce', function() {
     const result = ambiguous_foobar_parser.transduceFinal(text_input);
     test_num_results(result, 2);
-    console.log(result.toString());
     test_output(result, 0, "gloss", "jump-1SG");
     test_output(result, 1, "gloss", "run-3PL.PAST");
 });

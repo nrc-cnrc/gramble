@@ -52,3 +52,43 @@ export class RandomPicker<T> implements Iterable<[T, number] | undefined> {
         return { done: false, value: popped };
     }
 }
+
+
+/*
+function shuffle<T>(ar: T[]): T[] {
+    ar = [...ar];
+    var currentIndex = ar.length;
+    var temporaryValue: T;
+    var randomIndex: number;
+  
+    // While there remain elements to shuffle...
+    while (0 !== currentIndex) {
+  
+      // Pick a remaining element...
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+  
+      // And swap it with the current element.
+      temporaryValue = ar[currentIndex];
+      ar[currentIndex] = ar[randomIndex];
+      ar[randomIndex] = temporaryValue;
+    }
+  
+    return ar;
+}
+*/
+
+
+export function winnow<T>(items: T[], f: (item: T) => boolean): [T[], T[]] {
+    const trueResults : T[] = [];
+    const falseResults : T[] = [];
+    for (const item of items) {
+        if (f(item)) {
+            trueResults.push(item);
+            continue;
+        }
+        falseResults.push(item);
+        continue;
+    }
+    return [trueResults, falseResults];
+}
