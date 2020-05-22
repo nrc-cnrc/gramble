@@ -1,5 +1,6 @@
 import { getEnabledCategories } from "trace_events";
 import { RandomPicker } from "./util";
+import { stringify } from "querystring";
 
 export type GEntry = [GCell, GCell];
 export type GRecord = GEntry[];
@@ -76,6 +77,43 @@ export class GCell extends GPosition {
     }
 }
 
+export function table_to_json(table: GTable): [string, string, string, number, number][][] {
+    return table.map((record) => {
+        return record.map(([key, value]) => {
+            return [key.text, value.text, value.sheet, value.row, value.col];
+        });
+    });
+}
+
+
+export function flatten_to_json(table: GTable): string {
+    const results = table.map((record) => {
+        const result: any = {};
+        for (const [key, value] of record) {
+            if (result.hasOwnProperty(key.text)) {
+                result[key.text] += value.text;
+            } else {
+                result[key.text] = value.text;
+            }
+        }
+        return result;
+    });
+    return JSON.stringify(results);
+}
+
+export function getTierAsString(table: GTable, tier: string, delim: string = ", "): string {
+    const results = table.map(record => {
+        var result = "";
+        for (const [key, value] of record) {
+            if (key.text == tier) {     
+                result = result + value.text;
+            }
+        }
+        return result;
+    });
+    return results.join(delim);
+}
+
 
 class Transducer {
     
@@ -85,6 +123,67 @@ class Transducer {
 
     public get_prob(): number {
         return 1.0
+    }
+
+    public transduceMany(inputs: GParse[], randomize=false, max_results=-1): GParse[] {
+        const results : GParse[] = [];
+        for (const input of inputs) {
+            for (const result of this.transduce(input, randomize, max_results)) {
+                results.push(result);
+            }
+        } 
+        return results;
+    }
+    
+    /**
+     * This is the main function that interfaces will call; it takes an
+     * input table and, at the end, discards results with unconsumed input.
+     * 
+     * @param input 
+     * @param symbol_table 
+     * @returns parse 
+     */
+    public transduceFinal(input: GTable, 
+                        randomize: boolean = false,
+                        max_results: number = -1): GTable {
+
+        var transducer = new FinalTransducer(this);
+        var results: GTable = [];
+        for (var input_record of input) {
+            var input_parse: GParse = [input_record, 0.0, []];
+            for (const [remnant, logprob, output] of transducer.transduce(input_parse, randomize, max_results)) {
+                var prob: string = Math.exp(logprob).toString();
+                output.push([new GCell("p"), new GCell(prob)])
+                results.push(output);
+            }
+        }
+        return results;
+    }
+
+    public generate(randomize: boolean = false,
+                    max_results: number = -1): GTable {
+        const input: GTable = make_table([[["",""]]]) // make an empty input to transduce from
+        return this.transduceFinal(input, randomize, max_results);
+    }
+    
+    public sample(n_results: number = 1): GTable {
+        var num_failures = 0;
+        var max_failures = 100 * n_results;
+        var result: GTable = [];
+
+        while (result.length < n_results) {
+            const sample_result = this.generate(true, 1);
+            if (sample_result.length == 0) {
+                num_failures++;
+            }
+            if (num_failures > max_failures) {
+                throw new Error("Failing to sample from grammar; try generating to see if has any output at all.");
+            }
+            for (const record of sample_result) {
+                result.push(record);
+            }
+        }
+        return result;
     }
 }
 
@@ -111,15 +210,108 @@ class VarTransducer extends Transducer {
     }
 }
 
+class InputTransducer extends Transducer {
+
+    public constructor(
+        private child: Transducer
+    ) {
+        super();
+    }
+
+    public transduce([input, logprob, past_output]: GParse, randomize=false, max_results=-1): GParse[] {
+        const results : GParse[] = [];
+        const trivial_input : GRecord = make_record([["",""]]) // make an empty input to transduce from
+        for (const [_, newprob, output] of this.child.transduce([trivial_input, logprob, past_output], randomize, max_results)) {
+            const new_input = [... input, ... output];
+            results.push([new_input, newprob, []]);
+        }
+        return results;
+    }
+}
+
+function winnow<T>(items: T[], f: (item: T) => boolean): [T[], T[]] {
+    const trueResults : T[] = [];
+    const falseResults : T[] = [];
+    for (const item of items) {
+        if (f(item)) {
+            trueResults.push(item);
+            continue;
+        }
+        falseResults.push(item);
+        continue;
+    }
+    return [trueResults, falseResults];
+}
+
+function map_keys(items: GRecord, inKey: string, outKey: string): GRecord {
+    return items.map(([key, value]) => {
+        if (key.text != inKey) {
+            return [key, value];
+        }
+        return [new GCell(outKey, key.sheet, key.row, key.col), value];
+    })
+}
+
+/**
+ * ShiftTransducer
+ * 
+ * "shift" is a unary transducer that simply copies the value on an input tier into an output tier.
+ * E.g., "shift surf":"gloss" would copy "surf" tier of the input into the "gloss" tier of the output.
+ * Often will be used for the same tier, e.g. "shift surf":"surf".
+ */
+class ShiftTransducer extends Transducer {
+
+    public constructor(
+        private toTier: GCell,
+        private fromTier: GCell
+    ) {
+        super();
+    }
+
+    public transduce([input, logprob, past_output]: GParse, randomize=false, max_results=-1): GParse[] {
+        var [output, remnant] = winnow(input, ([key, value]) => key.text == this.fromTier.text); // split entries into relevant and irrelevant
+        output = map_keys(output, this.fromTier.text, this.toTier.text);
+        return [[remnant, logprob, [...past_output, ...output]]];
+    }
+}
 
 class FinalTransducer extends Transducer {
 
+    public constructor(
+        private child: Transducer
+    ) {
+        super();
+    }
+
+    public transduce(inputParses: GParse, randomize=false, max_results=-1): GParse[] {
+        return this.child.transduce(inputParses, randomize, max_results).filter(([remnant, p, o]) => {
+            return !remnant.some(([key, value]) => value.text.length > 0 );
+        });
+    }
+}
+
+class JoinTransducer extends Transducer {
+
+    public constructor(
+        private tier: GCell,
+        private delim: GCell
+    ) {
+        super();
+    }
+
     public transduce([input, logprob, past_output]: GParse, randomize=false, max_results=-1): GParse[] {
-        const input_is_consumed = !input.some(([key, value]) => value.text.length > 0 );
-        if (input_is_consumed) {
-            return [[input, logprob, past_output]];
-        }
-        return [];
+        const parts: string[] = [];
+        const output = past_output.filter(([key, value]) => {
+            if (key.text == this.tier.text) {
+                parts.push(value.text);
+                return false;
+            }
+            return true;
+        });
+        const flattenedString = parts.join(this.delim.text);
+        const flattenedCell = new GCell(flattenedString, this.delim.sheet, this.delim.row, this.delim.col);
+        output.push([this.tier, flattenedCell]);
+        return [[input, logprob, output]];
     }
 }
 
@@ -192,6 +384,7 @@ class MaybeTransducer extends Transducer {
 
 class UpdownTransducer extends Transducer {
 
+    private transducer: Transducer;
     private input_tier: string;
     private output_tier: string;
 
@@ -209,11 +402,17 @@ class UpdownTransducer extends Transducer {
             this.input_tier = "up";
             this.output_tier = "down";
         }
+        
+        const table = this.symbol_table.get(this.value.text);
+        if (table == undefined) {
+            throw new Error(`Could not find symbol: ${this.value.text}`);
+        }
+        this.transducer = transducer_from_table(table, this.symbol_table);
     }
     
-    public apply_conversion(transducer: Transducer,
-        parse: GParse,  
-        randomize: boolean = false): GParse[] {
+    public apply_conversion(parse: GParse,  
+            randomize: boolean = false,
+            maxResults: number = -1): GParse[] {
         
         const [input, logprob, past_output] = parse;
 
@@ -225,16 +424,12 @@ class UpdownTransducer extends Transducer {
             return [parse];
         }
     
-        console.log("input = " + input.toString());
-        var outputs = transducer.transduce(parse, randomize, -1);
-        console.log("output = " + outputs.toString());
+        var outputs = this.transducer.transduce(parse, randomize, maxResults);
         if (outputs.length == 0) {
             outputs = [ step_one_character(parse, this.input_tier, this.output_tier) ];
         } 
         
-        var results: GParse[][] = outputs.map(output => this.apply_conversion(transducer, output));
-
-        // Flatten the results array:
+        var results: GParse[][] = outputs.map(output => this.apply_conversion(output, randomize, maxResults));
         return Array.prototype.concat.apply([], results);
     }
 
@@ -256,27 +451,22 @@ class UpdownTransducer extends Transducer {
             chaff.push([key, value]);
         }
 
-        const parser = this.symbol_table.get(this.value.text);
-        if (parser == undefined) {
-            throw new Error(`Could not find symbol: ${this.value.text}`);
-        }
-        const transducer = transducer_from_table(parser, this.symbol_table);
         
         var results: GParse[] = [];
 
-        for (var [remnant, new_logprob, output] of this.apply_conversion(transducer, [wheat, logprob, []], randomize)) {
-            
+        for (var [remnant, new_logprob, output] of this.apply_conversion([wheat, logprob, []], randomize, max_results)) {
+            const result = [...chaff];
             for (const [key, value] of output) {
                 if (key.text == this.output_tier) {
-                    chaff.push([this.key, value]); // probably want to change this to the original key eventually,
+                    result.push([this.key, value]); // probably want to change this to the original key eventually,
                                                     // so that phonology doesn't mess up origin tracing.
                 }
             }
 
             if (this.direction == "upward") {
-                results.push([chaff, new_logprob, past_output]);
+                results.push([result, new_logprob, past_output]);
             } else {
-                results.push([input, new_logprob, chaff]);
+                results.push([input, new_logprob, result]);
             }
         }
         return results;
@@ -432,12 +622,43 @@ export function transducer_from_entry([key, value]: [GCell, GCell], symbol_table
         return new UpdownTransducer(remnant, value, symbol_table, "downward");
     }
 
+    if (keys[0] == "join") {
+        if (keys.length > 2) {
+            throw new Error("Invalid tier name: " + key.text);
+        }
+        const remnant = new GCell(keys[1], key.sheet, key.row, key.col);
+        return new JoinTransducer(remnant, value);
+    }
+
+    if (keys[0] == "shift") {
+        if (keys.length > 2) {
+            throw new Error("Invalid tier name: " + key.text);
+        }
+        const remnant = new GCell(keys[1], key.sheet, key.row, key.col);
+        return new ShiftTransducer(remnant, value);
+    }
+
     if (keys[0] == "maybe") {
         const remnant = keys.slice(1).join(" ");
         const child_key = new GCell(remnant, key.sheet, key.row, key.col);
         const child = transducer_from_entry([child_key, value], symbol_table);
         return new MaybeTransducer(child);
     }
+
+    if (keys[0] == "input") {
+        const remnant = keys.slice(1).join(" ");
+        const child_key = new GCell(remnant, key.sheet, key.row, key.col);
+        const child = transducer_from_entry([child_key, value], symbol_table);
+        return new InputTransducer(child);
+    }
+
+    if (keys[0] == "final") {
+        const remnant = keys.slice(1).join(" ");
+        const child_key = new GCell(remnant, key.sheet, key.row, key.col);
+        const child = transducer_from_entry([child_key, value], symbol_table);
+        return new FinalTransducer(child);
+    }
+
 
     if (keys.length > 1) {
         throw new Error("Not a valid tier name: " + key.text);
@@ -460,7 +681,7 @@ function transducer_from_record(record: GRecord, symbol_table: SymbolTable) {
     return new ConcatenationTransducer(children);
 }
 
-function transducer_from_table(table: GTable, symbol_table: SymbolTable) {
+export function transducer_from_table(table: GTable, symbol_table: SymbolTable) {
     const children = table.map(record => transducer_from_record(record, symbol_table));
     return new AlternationTransducer(children);
 }
@@ -485,7 +706,6 @@ function step_one_character([input, logprob, past_output]: GParse, in_tier: stri
     var output: GRecord = [... past_output];
     var c_found = false;
 
-    console.log("  input = " + input);
     for (const [key, value] of input) {
         if (!c_found && key.text == in_tier && value.text.length > 0) {
             const c = value.text[0];
@@ -498,7 +718,7 @@ function step_one_character([input, logprob, past_output]: GParse, in_tier: stri
         }
         consumed_input.push([key, value]);
     }
-    console.log("  consumed input = " + consumed_input);
+
     /* 
     var found_out_tier = false;
     for (const [key, value] of past_output) {
@@ -517,7 +737,7 @@ function step_one_character([input, logprob, past_output]: GParse, in_tier: stri
     return [consumed_input, logprob, output];
 }
 
-
+/*
 function shuffle<T>(ar: T[]): T[] {
     ar = [...ar];
     var currentIndex = ar.length;
@@ -539,73 +759,15 @@ function shuffle<T>(ar: T[]): T[] {
   
     return ar;
 }
+*/
+
+export function make_record(cells: [string, string][]): GRecord {
+    return cells.map(([key, value]) => [new GCell(key), new GCell(value)])
+}
+
 
 export function make_table(cells: [string, string][][]): GTable {
     return cells.map(record =>
         record.map(([key, value]) => [new GCell(key), new GCell(value)])
     );
-}
-
-export class GGrammar {
-
-    private _table: GTable;
-
-    public constructor(table: GTable) {
-        this._table = table;
-    }
-
-    /**
-     * This is the main function that interfaces will call; it takes an
-     * undoctered input table (e.g. with input tiers just being strings like "text"
-     * rather than "_text") and, at the end, discards results with unconsumed input.
-     * 
-     * @param input 
-     * @param symbol_table 
-     * @returns parse 
-     */
-    public transduce(input: GTable, 
-                        symbol_table: SymbolTable,
-                        randomize: boolean = false,
-                        max_results: number = -1): GTable {
-
-        const transducer = new ConcatenationTransducer([ transducer_from_table(this._table, symbol_table),
-                                                    new FinalTransducer() ]);
-        var results: GTable = [];
-        for (var input_record of input) {
-            var input_parse: GParse = [input_record, 0.0, []];
-            for (const [remnant, logprob, output] of transducer.transduce(input_parse, randomize, max_results)) {
-                var prob: string = Math.exp(logprob).toString();
-                output.push([new GCell("p"), new GCell(prob)])
-                results.push(output);
-            }
-        }
-        return results;
-    }
-
-    public generate(symbol_table: SymbolTable,
-                    randomize: boolean = false,
-                    max_results: number = -1): GTable {
-        const input: GTable = make_table([[["",""]]]) // make an empty input to transduce from
-        return this.transduce(input, symbol_table, randomize, max_results);
-    }
-    
-    public sample(symbol_table: SymbolTable, n_results: number = 1): GTable {
-        var num_failures = 0;
-        var max_failures = 100 * n_results;
-        var result: GTable = [];
-
-        while (result.length < n_results) {
-            const sample_result = this.generate(symbol_table, true, 1);
-            if (sample_result.length == 0) {
-                num_failures++;
-            }
-            if (num_failures > max_failures) {
-                throw new Error("Failing to sample from grammar; try generating to see if has any output at all.");
-            }
-            for (const record of sample_result) {
-                result.push(record);
-            }
-        }
-        return result;
-    }
 }

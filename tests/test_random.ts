@@ -2,7 +2,7 @@ import {RandomPicker} from "../util"
 import { expect } from 'chai';
 import 'mocha';
 import {test_num_results, test_output} from "./test_util";
-import {GGrammar, make_table} from "../transducers"
+import {transducer_from_table, make_table} from "../transducers"
 
 const symbol_table = new Map();
 const text_input = make_table([[["text", "foobar"]]]);
@@ -19,9 +19,9 @@ symbol_table.set('SUFFIX', make_table([
     [["text", "tar"], ["gloss", "-3PL.PAST"]]
 ]));
 
-const ambiguous_parser_with_var = new GGrammar(make_table([
+const ambiguous_parser_with_var = transducer_from_table(make_table([
     [["var", "ROOT"], ["var", "SUFFIX"]]
-]));
+]), symbol_table);
 
 
 symbol_table.set('SUFFIX_PROBS', make_table([
@@ -31,9 +31,9 @@ symbol_table.set('SUFFIX_PROBS', make_table([
 ]));
 
 
-const ambiguous_parser_with_probs = new GGrammar(make_table([
+const ambiguous_parser_with_probs = transducer_from_table(make_table([
     [["var", "ROOT"], ["var", "SUFFIX_PROBS"]]
-]));
+]), symbol_table);
 
 
 describe('Random picker', function() {
@@ -56,19 +56,19 @@ describe('Random picker', function() {
 
 
 describe('Random transducer, with max_results=1', function() {
-    const result = ambiguous_parser_with_var.transduce(text_input, symbol_table, true, 1);
+    const result = ambiguous_parser_with_var.transduceFinal(text_input, true, 1);
     test_num_results(result, 1);
 });
 
 
 describe('Random generator, with max_results=1', function() {
-    const result = ambiguous_parser_with_var.transduce(empty_input, symbol_table, true, 1);
+    const result = ambiguous_parser_with_var.transduceFinal(empty_input, true, 1);
     test_num_results(result, 1);
 });
 
 
 describe('Random transducer with weights', function() {
-    const result = ambiguous_parser_with_probs.transduce(text_input, symbol_table, true);
+    const result = ambiguous_parser_with_probs.transduceFinal(text_input, true);
     var nonzero_results = [];
     for (const record of result) {
         for (const [key, value] of record) {

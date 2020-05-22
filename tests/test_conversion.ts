@@ -1,4 +1,4 @@
-import {GGrammar, make_table} from "../transducers"
+import {transducer_from_table, make_table} from "../transducers"
 import 'mocha';
 import {test_num_results, test_output} from "./test_util"
 
@@ -38,14 +38,14 @@ symbol_table.set("reduce_oo", make_table([[
     ["down", "o"]
 ]]));
 
-const oo_reduction_parser = new GGrammar(make_table([[
+const oo_reduction_parser = transducer_from_table(make_table([[
     ["upward text", "reduce_oo"],
     ["text", "foo"],
     ["gloss", "jump"],
     ["text", "bar"],
     ["gloss", "-1SG"],
     ["downward text", "reduce_oo"]
-]]))
+]]), symbol_table);
 
 const gloss_input = make_table([[
     ["gloss", "jump-1SG"],
@@ -86,7 +86,7 @@ describe('Ambiguous converter, input "diiablo"', function() {
 }); */
 
 describe('Foobar generator with oo->o reduction', function() {
-    const result = oo_reduction_parser.transduce(gloss_input, symbol_table);
+    const result = oo_reduction_parser.transduceFinal(gloss_input);
     test_num_results(result, 1);
     test_output(result, 0, "text", "fobar");
     test_output(result, 0, "gloss", "jump-1SG");
@@ -94,13 +94,13 @@ describe('Foobar generator with oo->o reduction', function() {
 
 
 describe('Fobar parser with oo->o reduction', function() {
-    const result = oo_reduction_parser.transduce(text_input, symbol_table);
+    const result = oo_reduction_parser.transduceFinal(text_input);
     test_num_results(result, 1);
     test_output(result, 0, "gloss", "jump-1SG");
     test_output(result, 0, "text", "fobar");
 });
 
 describe('Fobar parser with oo->o reduction, but applied to "foobar"', function() {
-    const result = oo_reduction_parser.transduce(text_input_bad, symbol_table);
+    const result = oo_reduction_parser.transduceFinal(text_input_bad);
     test_num_results(result, 0);
 });

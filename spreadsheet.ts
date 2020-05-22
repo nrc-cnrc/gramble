@@ -1,4 +1,4 @@
-import {GCell, GEntry, GRecord, GTable, GGrammar, SymbolTable} from "./transducers"
+import {GCell, GEntry, GRecord, GTable, SymbolTable, transducer_from_table} from "./transducers"
 
 /**
  * Determines whether a line is empty
@@ -42,26 +42,34 @@ export interface DevEnvironment {
 
 export class TextDevEnvironment {
 
-    private errorMessages: string[] = [];
+    private errorMessages: [string, number, number, string, "error"|"warning"|"info"][] = [];
 
     public mark_tier(sheet: string, row: number, col: number, tier: string): void {}
     public mark_comment(sheet: string, row: number, col: number): void {}
     public mark_header(sheet: string, row: number, col: number, tier: string): void {}
     public mark_command(sheet: string, row: number, col: number): void {}
     public set_color(tier_name: string, color: string): void {}
-    public highlight(): void {}
 
-    mark_error(sheet: string, 
+    public mark_error(sheet: string, 
             row: number, 
             col: number, 
             msg: string, 
             level: "error"|"warning"|"info"): void {
 
-        this.errorMessages.push(level.toUpperCase() + ", row " + (row+1) + ", column " + (col+1) + ": " + msg);
+        this.errorMessages.push([sheet, row, col, msg, level]);
     }
 
-    public get errors(): string[] {
-        return this.errorMessages;
+    public highlight(): void {
+        for (const error of this.errorMessages) {
+            const row_str = (error[1] == -1) ? "unknown" : (error[1] + 1).toString();
+            const col_str = (error[2] == -1) ? "unknown" : (error[2] + 1).toString();
+            console.error(error[4].toUpperCase() + 
+                            ": " + error[0] + 
+                            ", row " + row_str + 
+                            ", column " + col_str + 
+                            ": " + error[3]);
+        }
+
     }
 
     public alert(msg: string): void {
@@ -246,11 +254,10 @@ const BUILT_IN_FUNCTIONS: string[] = [
  * on it directly, you just have a Project instance and call parse(symbol_name, input).
  */
 export class Project {
-    private _current_function: GFunction | undefined = undefined;
-    private _current_symbol: GCell | undefined = undefined;
-
-    private _symbol_table: Map<string, GTable> = new Map();
-    private _test_table: Map<string, GTable> = new Map();
+    protected _current_function: GFunction | undefined = undefined;
+    protected _current_symbol: GCell | undefined = undefined;
+    protected _symbol_table: Map<string, GTable> = new Map();
+    protected _test_table: Map<string, GTable> = new Map();
 
     public has_symbol(name: string): boolean {
         return this._symbol_table.has(name);
@@ -272,22 +279,22 @@ export class Project {
         ).push(record);
     }
     
-    public parse(symbol_name: string, input: GTable): GTable {
+    public parse(symbol_name: string, input: GTable, randomize: boolean = false, maxResults: number = -1): GTable {
         const table = getTableOrThrow(this._symbol_table, symbol_name);
-        const parser = new GGrammar(table);
-        return parser.transduce(input, this._symbol_table);
+        const parser = transducer_from_table(table, this._symbol_table);
+        return parser.transduceFinal(input, randomize, maxResults);
     }
 
-    public generate(symbol_name: string): GTable {
+    public generate(symbol_name: string, randomize: boolean = false, maxResults: number = -1): GTable {
         const table = getTableOrThrow(this._symbol_table, symbol_name);
-        const parser = new GGrammar(table);
-        return parser.generate(this._symbol_table);
+        const parser = transducer_from_table(table, this._symbol_table);
+        return parser.generate(randomize, maxResults);
     }
 
     public sample(symbol_name: string, n_results: number = 1): GTable {
         const table = getTableOrThrow(this._symbol_table, symbol_name);
-        const parser = new GGrammar(table);
-        return parser.sample(this._symbol_table, n_results);
+        const parser = transducer_from_table(table, this._symbol_table);
+        return parser.sample(n_results);
     }
 
     public contains_result(result_table: GTable, [target_key, target_value]: GEntry) {
@@ -383,21 +390,28 @@ export class Project {
         }
     }
 
-    private add_row(cells: GCell[], highlighter: DevEnvironment): void {
-        if (cells.length == 0) {
-            // if it's empty (shouldn't happen, but just in case)
+    protected add_row(cell_texts: string[], sheetName: string, row_idx: number, devEnv: DevEnvironment): void {
+
+        
+        if (is_line_empty(cell_texts)) {
             return;
         }
 
+        const cells: GCell[] = [];
+        for (const [colnum, text] of cell_texts.entries()) {
+            const cell = new GCell(text.trim(), sheetName, row_idx, colnum);
+            cells.push(cell);
+        }
+
         let first_cell = cells[0]
-        let first_cell_text = first_cell.text.trim();
+        let first_cell_text = first_cell.text;
 
         if (first_cell_text.startsWith('#')) {  // the row's a comment
             for (const cell of cells) {
                 if (cell.text.length == 0) {
                     continue;
                 }
-                highlighter.mark_comment(cell.sheet, cell.row, cell.col);
+                devEnv.mark_comment(cell.sheet, cell.row, cell.col);
             }
             return;
         }
@@ -409,9 +423,9 @@ export class Project {
                 this._symbol_table.set(first_cell_text, []);
                 this._test_table.set(first_cell_text, []);
             }
-            this._current_function = make_function(first_cell, this._current_symbol, highlighter);
-            this._current_function.add_params(cells.slice(1), highlighter);
-            highlighter.mark_command(first_cell.sheet, first_cell.row, first_cell.col);
+            this._current_function = make_function(first_cell, this._current_symbol, devEnv);
+            this._current_function.add_params(cells.slice(1), devEnv);
+            devEnv.mark_command(first_cell.sheet, first_cell.row, first_cell.col);
             return;
         }
 
@@ -422,7 +436,7 @@ export class Project {
             // shouldn't have args when there's no function.  mark them all as errors
             for (const cell of cells.slice(1)) { 
                 if (cell.text.length > 0) {
-                    highlighter.mark_error(cell.sheet, cell.row, cell.col, 
+                    devEnv.mark_error(cell.sheet, cell.row, cell.col, 
                         "Unclear what this cell is here for. " + 
                         "Did you forget a function?", "warning");
                 }
@@ -435,7 +449,7 @@ export class Project {
         for (const cell of cells.slice(1)) { 
             if (!this._current_function.has_column(cell.col)) {
                 if (cell.text.length > 0) {
-                    highlighter.mark_error(cell.sheet, cell.row, cell.col, 
+                    devEnv.mark_error(cell.sheet, cell.row, cell.col, 
                         "This cell does not appear to belong to a column. " + 
                         "Did you forget a column header above?", "warning");
                     
@@ -443,7 +457,7 @@ export class Project {
                 continue;
             }
             const param = this._current_function.get_param(cell.col);
-            highlighter.mark_tier(cell.sheet, cell.row, cell.col, param.text);
+            devEnv.mark_tier(cell.sheet, cell.row, cell.col, param.text);
             args.push(cell);
         }
 
@@ -455,17 +469,8 @@ export class Project {
                     highlighter: DevEnvironment): void {
         for (var [row_idx, row] of cells.entries()) {
             
-            if (is_line_empty(row)) {
-                continue;
-            }
 
-            let row_results: GCell[] = [];
-            for (var [col_idx, text] of row.entries()) {
-                const cell = new GCell(text.trim(), sheet_name, row_idx, col_idx)
-                row_results.push(cell);
-            }
-
-            this.add_row(row_results, highlighter);
+            this.add_row(row, sheet_name, row_idx, highlighter);
         }
     }
 

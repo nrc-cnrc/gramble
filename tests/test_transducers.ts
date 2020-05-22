@@ -1,4 +1,4 @@
-import {make_table, GEntry, transducer_from_entry, GGrammar, GCell, GRecord} from "../transducers"
+import {make_table, transducer_from_table} from "../transducers"
 import 'mocha';
 import {test_num_results, test_output} from "./test_util"
 
@@ -21,10 +21,10 @@ const result = tr.transduce([record, 1.0, []], false, -1);
 console.log(result.toString());
 */
 
-const ambiguous_foobar_parser = new GGrammar(make_table([
+const ambiguous_foobar_parser = transducer_from_table(make_table([
     [["text", "foo"], ["gloss", "jump"], ["text", "bar"], ["gloss", "-1SG"]],
     [["text", "foob"], ["gloss", "run"], ["text", "ar"], ["gloss", "-3PL.PAST"]]
-]));
+]), symbol_table);
 
 symbol_table.set('ROOT', make_table([
     [["text", "foo"], ["gloss", "jump"]],
@@ -38,24 +38,22 @@ symbol_table.set('SUFFIX', make_table([
 ]));
 
 
-const ambiguous_parser_with_var = new GGrammar(make_table([
+const ambiguous_parser_with_var = transducer_from_table(make_table([
     [["var", "ROOT"], ["var", "SUFFIX"]]
-]));
+]), symbol_table);
 
-const maybe_indicative_parser = new GGrammar(make_table([
+const maybe_indicative_parser = transducer_from_table(make_table([
     [["text", "foo"], ["gloss", "jump"], ["maybe gloss", "-INDIC"], ["text", "bar"], ["gloss", "-1SG"]]
-]));
+]), symbol_table);
 
-const maybe_suffix_parser = new GGrammar(make_table([
+const maybe_suffix_parser = transducer_from_table(make_table([
     [["var", "ROOT"], ["maybe var", "SUFFIX"]]
-]));
+]), symbol_table);
 
-const conjoined_foobar_parser = new GGrammar(make_table([
+const conjoined_foobar_parser = transducer_from_table(make_table([
     [["text, root", "foo"], ["gloss", "jump"], ["text", "bar"], ["gloss", "-1SG"]],
     [["text, root", "foob"], ["gloss", "run"], ["text", "ar"], ["gloss", "-3PL.PAST"]]
-]));
-
-
+]), symbol_table);
 
 /*
 describe('Simple GEntry parser', function() {
@@ -130,7 +128,7 @@ describe('Unambiguous GTable transducer, from gloss to text', function() {
 }); */
 
 describe('Ambiguous GTable transducer, transduce', function() {
-    const result = ambiguous_foobar_parser.transduce(text_input, symbol_table);
+    const result = ambiguous_foobar_parser.transduceFinal(text_input);
     test_num_results(result, 2);
     console.log(result.toString());
     test_output(result, 0, "gloss", "jump-1SG");
@@ -139,25 +137,25 @@ describe('Ambiguous GTable transducer, transduce', function() {
 
 
 describe('Ambiguous GTable transducer, full_parsing an unparseable input', function() {
-    const result = ambiguous_foobar_parser.transduce(bad_text_input, symbol_table);
+    const result = ambiguous_foobar_parser.transduceFinal(bad_text_input);
     test_num_results(result, 0);
 });
 
 
 
 describe('Ambiguous GTable transducer, full_parsing an incomplete input "fo"', function() {
-    const result = ambiguous_foobar_parser.transduce(text_incomplete, symbol_table);
+    const result = ambiguous_foobar_parser.transduceFinal(text_incomplete);
     test_num_results(result, 0);
 });
 
 describe('Ambiguous GTable transducer, full_parsing an incomplete input "foo"', function() {
-    const result = ambiguous_foobar_parser.transduce(text_no_suffix, symbol_table);
+    const result = ambiguous_foobar_parser.transduceFinal(text_no_suffix);
     test_num_results(result, 0);
 });
 
 
 describe('Ambiguous GTable transducer using variables', function() {
-    const result = ambiguous_parser_with_var.transduce(text_input, symbol_table);
+    const result = ambiguous_parser_with_var.transduceFinal(text_input);
     test_num_results(result, 3);
     test_output(result, 0, "gloss", "jump-1SG");
     test_output(result, 1, "gloss", "run-3SG.PAST");
@@ -165,20 +163,20 @@ describe('Ambiguous GTable transducer using variables', function() {
 });
 
 describe('Unambiguous GTable transducer, with vars, gloss->text', function() {
-    const result = ambiguous_parser_with_var.transduce(gloss_input, symbol_table);
+    const result = ambiguous_parser_with_var.transduceFinal(gloss_input);
     test_num_results(result, 1);
     test_output(result, 0, "text", "foobar");
 });
 
 describe('Ambiguous GTable transducer, with max_results=1', function() {
-    const result = ambiguous_parser_with_var.transduce(text_input, symbol_table, false, 1);
+    const result = ambiguous_parser_with_var.transduceFinal(text_input, false, 1);
     test_num_results(result, 1);
     test_output(result, 0, "gloss", "jump-1SG");
 });
 
 
 describe('Maybe parser with optional indicative gloss', function() {
-    const result = maybe_indicative_parser.transduce(text_input, symbol_table, false, 2);
+    const result = maybe_indicative_parser.transduceFinal(text_input, false, 2);
     test_num_results(result, 2);
     test_output(result, 0, "gloss", "jump-INDIC-1SG");
     test_output(result, 1, "gloss", "jump-1SG");
@@ -186,14 +184,14 @@ describe('Maybe parser with optional indicative gloss', function() {
 
 
 describe('Maybe parser with optional suffix, parsing input with no suffix', function() {
-    const result = maybe_suffix_parser.transduce(text_no_suffix, symbol_table);
+    const result = maybe_suffix_parser.transduceFinal(text_no_suffix);
     test_num_results(result, 1);
     test_output(result, 0, "gloss", "jump");
 });
 
 
 describe('Maybe parser with optional suffix, parsing input with suffix', function() {
-    const result = maybe_suffix_parser.transduce(text_input, symbol_table);
+    const result = maybe_suffix_parser.transduceFinal(text_input);
     test_num_results(result, 3);
     test_output(result, 0, "gloss", "jump-1SG");
     test_output(result, 1, "gloss", "run-3SG.PAST");
@@ -202,20 +200,20 @@ describe('Maybe parser with optional suffix, parsing input with suffix', functio
 
 
 describe('Conjoined foobar transducer, transducing from text', function() {
-    const result = conjoined_foobar_parser.transduce(text_input, symbol_table);
+    const result = conjoined_foobar_parser.transduceFinal(text_input);
     test_num_results(result, 2);
     test_output(result, 0, "root", "foo");
     test_output(result, 1, "root", "foob");
 });
 
 describe('Conjoined foobar transducer, transducing from gloss', function() {
-    const result = conjoined_foobar_parser.transduce(gloss_input, symbol_table);
+    const result = conjoined_foobar_parser.transduceFinal(gloss_input);
     test_num_results(result, 1);
     test_output(result, 0, "root", "foo");
 });
 
 describe('Conjoined foobar transducer, transducing from root', function() {
-    const result = conjoined_foobar_parser.transduce(root_input, symbol_table);
+    const result = conjoined_foobar_parser.transduceFinal(root_input);
     test_num_results(result, 1);
     test_output(result, 0, "text", "foobar");
     test_output(result, 0, "gloss", "jump-1SG");
