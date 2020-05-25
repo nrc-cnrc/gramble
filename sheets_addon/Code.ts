@@ -318,13 +318,13 @@ class GoogleSheetsHighlighter implements DevEnvironment {
 function makeProject(highlighter: DevEnvironment): Project {
     var spreadsheet = SpreadsheetApp.getActive();
     var project = new Project();
-
-    for (let sheet of spreadsheet.getSheets()) {
-        var sheetName = sheet.getName();
-        var range = sheet.getDataRange();
-        var cells = range.getDisplayValues();
-        project.add_sheet(sheetName, cells, highlighter);
-    }
+    var sheet = spreadsheet.getActiveSheet();
+    //for (let sheet of spreadsheet.getSheets()) {
+    var sheetName = sheet.getName();
+    var range = sheet.getDataRange();
+    var cells = range.getDisplayValues();
+    project.addSheet(sheetName, cells, highlighter);
+    //}
 
     return project;
 }
@@ -377,7 +377,7 @@ function setDataInSheet(sheet: Sheet, row: number, col: number, data: string[][]
     sheet.autoResizeColumns(1, width)
 }
 
-function newSheet_from_table(newSymbolName: string, oldSymbolName: string, table: GTable): Sheet {
+function newSheetFromTable(newSymbolName: string, oldSymbolName: string, table: GTable): Sheet {
     var activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
 
     var newSheet = activeSpreadsheet.getSheetByName(newSymbolName);
@@ -416,7 +416,7 @@ function createHTMLFromTable(table: GTable, highlighter: DevEnvironment): string
         var valuesAndColors: [string, string][] = [];
         for (const [key, value] of record) {
             keys.push(key.text);
-            const color = highlighter.get_color(key.text)
+            const color = highlighter.getColor(key.text)
             keysAndColors.push([key.text, color]);
             valuesAndColors.push([value.text, color]);
         }
@@ -437,8 +437,8 @@ function createHTMLFromTable(table: GTable, highlighter: DevEnvironment): string
     return result;
 }
 
-function showDialog(html_string: string, title: string = ""): void {
-    var html = HtmlService.createHtmlOutput(html_string)
+function showDialog(htmlString: string, title: string = ""): void {
+    var html = HtmlService.createHtmlOutput(htmlString)
         .setWidth(600)
         .setHeight(400);
     SpreadsheetApp.getUi()
@@ -457,22 +457,22 @@ function GrambleSample(): void {
     const highlighter = new GoogleSheetsHighlighter();
     const project = makeProject(highlighter);
 
-    const cell_text = range.getCell(1,1).getValue().trim();
+    const cellText = range.getCell(1,1).getValue().trim();
 
-    if (cell_text.length == 0) {
+    if (cellText.length == 0) {
         alert("Choose a cell containing a symbol name. " +  
-        " Available symbols are " + project.all_symbols().join(", "));
+        " Available symbols are " + project.allSymbols().join(", "));
         return;
     }
 
-    if (!project.has_symbol(cell_text)) {
-        alert("The symbol [" + cell_text + "] has not been defined. " + 
-            " Available symbols are " + project.all_symbols().join(", "));
+    if (!project.hasSymbol(cellText)) {
+        alert("The symbol [" + cellText + "] has not been defined. " + 
+            " Available symbols are " + project.allSymbols().join(", "));
         return;
     }
-    const result = project.sample(cell_text, 10);
-    const html_string = createHTMLFromTable(result, highlighter);
-    showDialog(html_string, "Results of " + cell_text);
+    const result = project.sample(cellText, 10);
+    const htmlString = createHTMLFromTable(result, highlighter);
+    showDialog(htmlString, "Results of " + cellText);
 
 }
 
@@ -487,22 +487,22 @@ function GrambleGenerate(): void {
     const highlighter = new GoogleSheetsHighlighter();
     const project = makeProject(highlighter);
 
-    const cell_text = range.getCell(1,1).getValue().trim();
+    const cellText = range.getCell(1,1).getValue().trim();
 
-    if (cell_text.length == 0) {
+    if (cellText.length == 0) {
         alert("Choose a cell containing a symbol name. " +  
-        " Available symbols are " + project.all_symbols().join(", "));
+        " Available symbols are " + project.allSymbols().join(", "));
         return;
     }
 
-    if (!project.has_symbol(cell_text)) {
-        alert("The symbol [" + cell_text + "] has not been defined. " + 
-            " Available symbols are " + project.all_symbols().join(", "));
+    if (!project.hasSymbol(cellText)) {
+        alert("The symbol [" + cellText + "] has not been defined. " + 
+            " Available symbols are " + project.allSymbols().join(", "));
         return;
     }
-    const result = project.generate(cell_text);
+    const result = project.generate(cellText);
     const html_string = createHTMLFromTable(result, highlighter);
-    showDialog(html_string, "Results of " + cell_text);
+    showDialog(html_string, "Results of " + cellText);
 
 }
 
@@ -518,28 +518,28 @@ function GrambleGenerateToSheet(): void {
     const highlighter = new GoogleSheetsHighlighter();
     const project = makeProject(highlighter);
 
-    const cell_text = range.getCell(1,1).getValue().trim();
+    const cellText = range.getCell(1,1).getValue().trim();
 
-    if (cell_text.length == 0) {
+    if (cellText.length == 0) {
         alert("Choose a cell containing a symbol name. " +  
-        " Available symbols are " + project.all_symbols().join(", "));
+        " Available symbols are " + project.allSymbols().join(", "));
         return;
     }
 
-    if (!project.has_symbol(cell_text)) {
-        alert("The symbol [" + cell_text + "] has not been defined. " + 
-            " Available symbols are " + project.all_symbols().join(", "));
+    if (!project.hasSymbol(cellText)) {
+        alert("The symbol [" + cellText + "] has not been defined. " + 
+            " Available symbols are " + project.allSymbols().join(", "));
         return;
     }
-    const result = project.generate(cell_text);
+    const result = project.generate(cellText);
 
-    const newSymbolName = cell_text + "_results_1";
-    const newSheet = newSheet_from_table(newSymbolName, cell_text, result);
+    const newSymbolName = cellText + "_results_1";
+    const newSheet = newSheetFromTable(newSymbolName, cellText, result);
     
     var sheetName = newSheet.getName();
     var new_range = newSheet.getDataRange();
     var cells = new_range.getDisplayValues();
-    project.add_sheet(sheetName, cells, highlighter);
+    project.addSheet(sheetName, cells, highlighter);
     highlighter.highlight();
 
     newSheet.activate();
