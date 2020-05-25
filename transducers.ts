@@ -18,8 +18,8 @@ export class GPosition {
      */
     public constructor(
         public sheet: string = "",
+        public row: number = -1,
         public col: number = -1,
-        public row: number = -1
     ) {}
 }
 
@@ -138,7 +138,7 @@ class Transducer {
         for (var inputRecord of input) {
             var inputParse: GParse = [inputRecord, 0.0, []];
             for (const [remnant, logprob, output] of transducer.transduce(inputParse, randomize, maxResults)) {
-                var prob: string = Math.exp(logprob).toString();
+                var prob: string = Math.exp(logprob).toPrecision(3);
                 output.push([new GCell("p"), new GCell(prob)])
                 results.push(output);
             }

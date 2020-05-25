@@ -262,8 +262,8 @@ export class Project {
         return this.symbolTable.has(name);
     }
 
-    public allSymbols(): Iterator<string> {
-        return this.symbolTable.keys();
+    public allSymbols(): string[] {
+        return [... this.symbolTable.keys()];
     }
 
     public addRecordToSymbol(name: string, record: GRecord) {
@@ -397,8 +397,8 @@ export class Project {
         }
 
         const cells: GCell[] = [];
-        for (const [colnum, text] of cellTexts.entries()) {
-            const cell = new GCell(text.trim(), sheetName, rowIdx, colnum);
+        for (const [colIdx, text] of cellTexts.entries()) {
+            const cell = new GCell(text.trim(), sheetName, rowIdx, colIdx);
             cells.push(cell);
         }
 
@@ -466,13 +466,11 @@ export class Project {
     public addSheet(sheetName: string, 
                     cells: string[][], 
                     highlighter: DevEnvironment): void {
-        for (var [rowIdx, row] of cells.entries()) {
-            
 
+        for (var [rowIdx, row] of cells.entries()) {
             this.addRow(row, sheetName, rowIdx, highlighter);
         }
     }
-
 }
 
 
