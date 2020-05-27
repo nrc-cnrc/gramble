@@ -1,0 +1,41 @@
+{
+  "name": "@gramble/cli",
+  "version": "0.0.0",
+  "description": "Command line interface to Gramble",
+  "keywords": [
+    "gramble",
+    "cli",
+    "table",
+    "grammar",
+    "tsv",
+    "csv"
+  ],
+  "author": "Patrick Littell",
+  "contributors": [
+    "Eddie Antonio Santos <Eddie.Santos@nrc-cnrc.gc.ca>"
+  ],
+  "homepage": "https://github.com/littell/gramble_ts#readme",
+  "license": "MIT",
+  "directories": {
+    "lib": "dist",
+    "test": "tests"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/littell/gramble_ts.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "test": "true"
+  },
+  "bugs": {
+    "url": "https://github.com/littell/gramble_ts/issues"
+  }
+}
