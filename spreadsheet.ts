@@ -1,4 +1,4 @@
-import {GCell, GEntry, GRecord, GTable, SymbolTable, transducerFromTable} from "./transducers"
+import {GCell, GEntry, GRecord, GTable, SymbolTable, transducerFromTable, tableToMap, flattenToText} from "./transducers"
 
 /**
  * Determines whether a line is empty
@@ -297,12 +297,13 @@ export class Project {
     }
 
     public containsResult(resultTable: GTable, [targetKey, targetValue]: GEntry) {
-        for (const resultRecord of resultTable) {
-            for (const [resultKey, resultValue] of resultRecord) {
-                if (resultKey.text != targetKey.text) {
+        const resultMaps = tableToMap(resultTable);
+        for (const resultMap of resultMaps) {
+            for (const [resultKey, resultValue] of resultMap.entries()) {
+                if (resultKey != targetKey.text) {
                     continue;
                 }
-                if (resultValue.text == targetValue.text) {
+                if (resultValue == targetValue.text) {
                     return true;
                 }
             }
@@ -316,12 +317,13 @@ export class Project {
 
     public equalsResult(resultTable: GTable, [targetKey, targetValue]: GEntry) {
         var found = false;
-        for (const resultRecord of resultTable) {
-            for (const [key, value] of resultRecord) {
-                if (key.text != targetKey.text) {
+        const resultMaps = tableToMap(resultTable);
+        for (const resultMap of resultMaps) {
+            for (const [key, value] of resultMap.entries()) {
+                if (key != targetKey.text) {
                     continue;
                 }
-                if (value.text == targetValue.text) {
+                if (value == targetValue.text) {
                     found = true;
                     continue;
                 }
@@ -368,10 +370,10 @@ export class Project {
                     if (!this.containsResult(result, [targetKey, targetValue])) {
                         highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
                             "Result does not contain specified value. " + 
-                            "Actual value: \n" + result.toString(), "error");
+                            "Actual value: \n" + flattenToText(result), "error");
                     } else {
                         highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
-                            "Result contains specified value: \n" + result.toString(), "info");
+                            "Result contains specified value: \n" + flattenToText(result), "info");
                     }
                 }
 
@@ -379,10 +381,10 @@ export class Project {
                     if (!this.equalsResult(result, [targetKey, targetValue])) {
                         highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
                             "Result does not equal specified value. " + 
-                            "Actual value: \n" + result.toString(), "error");
+                            "Actual value: \n" + flattenToText(result), "error");
                     } else {
                         highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
-                            "Result equals specified value: \n" + result.toString(), "info");
+                            "Result equals specified value: \n" + flattenToText(result), "info");
                     }
                 }
             }

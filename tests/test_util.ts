@@ -1,16 +1,34 @@
 import { expect } from 'chai';
-import { GTable, GCell, GEntry } from '../transducers';
+import { GTable, GParse, GCell, GEntry } from '../transducers';
 
-export function test_num_results(result: GTable, expected_num: number) {
+export function testNumResults(result: any[], expected_num: number) {
     it("should have " + expected_num + " result(s)", function() {
         expect(result.length).to.equal(expected_num);
     });
 }
 
-export function test_output(result: GTable, result_num: number, tier: string, target: string) {
+export function testOutput(result: GTable, result_num: number, tier: string, target: string) {
     it("should have " + target + " as " + tier + " output " + (result_num + 1), function() {
         const record = result[result_num];
         const text = record.filter(([k, v]) => k.text == tier).map(([k, v]) => v.text).join("");
+        expect(text).to.equal(target);
+    });
+}
+
+
+export function testParseOutput(result: GParse[], result_num: number, tier: string, target: string) {
+    it("should have " + target + " as " + tier + " output " + (result_num + 1), function() {
+        const [remnant, logprob, output]: GParse = result[result_num];
+        const text = output.filter(([k, v]) => k.text == tier).map(([k, v]) => v.text).join("");
+        expect(text).to.equal(target);
+    });
+}
+
+
+export function testParseRemnant(result: GParse[], result_num: number, tier: string, target: string) {
+    it("should have " + target + " as " + tier + " remnant " + (result_num + 1), function() {
+        const [remnant, logprob, output]: GParse = result[result_num];
+        const text = remnant.filter(([k, v]) => k.text == tier).map(([k, v]) => v.text).join("");
         expect(text).to.equal(target);
     });
 }

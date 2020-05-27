@@ -1,6 +1,6 @@
 import {transducerFromTable, makeTable} from "../transducers"
 import 'mocha';
-import {test_num_results, test_output} from "./test_util"
+import {testNumResults, testOutput} from "./test_util"
 
 const symbol_table = new Map();
 
@@ -87,20 +87,20 @@ describe('Ambiguous converter, input "diiablo"', function() {
 
 describe('Foobar generator with oo->o reduction', function() {
     const result = oo_reduction_parser.transduceFinal(gloss_input);
-    test_num_results(result, 1);
-    test_output(result, 0, "text", "fobar");
-    test_output(result, 0, "gloss", "jump-1SG");
+    testNumResults(result, 1);
+    testOutput(result, 0, "text", "fobar");
+    testOutput(result, 0, "gloss", "jump-1SG");
 });
 
 
 describe('Fobar parser with oo->o reduction', function() {
     const result = oo_reduction_parser.transduceFinal(text_input);
-    test_num_results(result, 1);
-    test_output(result, 0, "gloss", "jump-1SG");
-    test_output(result, 0, "text", "fobar");
+    testNumResults(result, 1);
+    testOutput(result, 0, "gloss", "jump-1SG");
+    testOutput(result, 0, "text", "fobar");
 });
 
 describe('Fobar parser with oo->o reduction, but applied to "foobar"', function() {
     const result = oo_reduction_parser.transduceFinal(text_input_bad);
-    test_num_results(result, 0);
+    testNumResults(result, 0);
 });

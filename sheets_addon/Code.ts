@@ -556,7 +556,7 @@ function GrambleHighlighting(): void {
 function GrambleTest(): void {
     const highlighter = new GoogleSheetsHighlighter();
     const project = makeProject(highlighter);
-    project.run_tests(highlighter);
+    project.runTests(highlighter);
     highlighter.highlight();
 }
 

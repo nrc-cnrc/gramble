@@ -1,7 +1,7 @@
 import {RandomPicker} from "../util"
 import { expect } from 'chai';
 import 'mocha';
-import {test_num_results, test_output} from "./test_util";
+import {testNumResults, testOutput} from "./test_util";
 import {transducerFromTable, makeTable} from "../transducers"
 
 const symbol_table = new Map();
@@ -57,13 +57,13 @@ describe('Random picker', function() {
 
 describe('Random transducer, with max_results=1', function() {
     const result = ambiguous_parser_with_var.transduceFinal(text_input, true, 1);
-    test_num_results(result, 1);
+    testNumResults(result, 1);
 });
 
 
 describe('Random generator, with max_results=1', function() {
     const result = ambiguous_parser_with_var.transduceFinal(empty_input, true, 1);
-    test_num_results(result, 1);
+    testNumResults(result, 1);
 });
 
 
@@ -72,13 +72,13 @@ describe('Random transducer with weights', function() {
     var nonzero_results = [];
     for (const record of result) {
         for (const [key, value] of record) {
-            if (key.text == "p" && value.text != "0") {
+            if (key.text == "p" && parseFloat(value.text) != 0) {
                 nonzero_results.push(record);
                 continue;
             }
         }
     }
-    test_num_results(nonzero_results, 1);
-    test_output(nonzero_results, 0, "gloss", "run-3SG.PAST");
+    testNumResults(nonzero_results, 1);
+    testOutput(nonzero_results, 0, "gloss", "run-3SG.PAST");
 });
     
