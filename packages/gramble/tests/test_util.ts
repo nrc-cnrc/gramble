@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { GTable, GCell, GEntry } from '../transducers';
+import { GTable, GCell, GEntry } from '../src/transducers';
 
 export function test_num_results(result: GTable, expected_num: number) {
     it("should have " + expected_num + " result(s)", function() {

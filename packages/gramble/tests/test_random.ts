@@ -1,8 +1,8 @@
-import {RandomPicker} from "../util"
+import {RandomPicker} from "../src/util"
 import { expect } from 'chai';
 import 'mocha';
 import {test_num_results, test_output} from "./test_util";
-import {transducerFromTable, makeTable} from "../transducers"
+import {transducerFromTable, makeTable} from "../src/transducers"
 
 const symbol_table = new Map();
 const text_input = makeTable([[["text", "foobar"]]]);

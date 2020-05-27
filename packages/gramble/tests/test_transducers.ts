@@ -1,4 +1,4 @@
-import {makeTable, transducerFromTable} from "../transducers"
+import {makeTable, transducerFromTable} from "../src/transducers"
 import 'mocha';
 import {test_num_results, test_output} from "./test_util"
 
