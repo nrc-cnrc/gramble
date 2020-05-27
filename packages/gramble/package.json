@@ -52,16 +52,9 @@
     "typescript": "^3.5.3"
   },
   "dependencies": {
-    "@types/command-line-args": "^5.0.0",
-    "@types/command-line-usage": "^5.0.1",
-    "@types/minimist": "^1.2.0",
-    "@types/papaparse": "^5.0.3",
-    "command-line-args": "^5.1.1",
-    "command-line-usage": "^6.1.0",
     "csv": "^5.3.2",
     "csv-parser": "^2.3.2",
     "esm": "^3.2.25",
-    "papaparse": "^5.2.0",
     "xmlhttprequest": "^1.8.0"
   }
 }
