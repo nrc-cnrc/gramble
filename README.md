@@ -36,6 +36,13 @@ The TypeScript code must be compiled:
 
     npm run build
 
+### Running
+
+To use the Gramble on the command line (using the latest version in this
+repo), use the following:
+
+    npx gramble
+
 ### Testing
 
     npm test
