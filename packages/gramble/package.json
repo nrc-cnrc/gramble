@@ -1,0 +1,38 @@
+{
+  "name": "@gramble/gramble",
+  "version": "0.0.0",
+  "description": "TypeScript interpreter for the Gramble language.",
+  "keywords": [
+    "table",
+    "grammar",
+    "language",
+    "fst"
+  ],
+  "author": "Patrick Littell",
+  "contributors": [
+    "Eddie Antonio Santos <Eddie.Santos@nrc-cnrc.gc.ca>"
+  ]
+  "homepage": "https://github.com/littell/gramble_ts",
+  "license": "MIT",
+  "main": "lib/gramble.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "files": [
+    "lib"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/littell/gramble_ts.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: run tests from root\" && exit 1"
+  },
+  "bugs": {
+    "url": "https://github.com/littell/gramble_ts/issues"
+  }
+}
