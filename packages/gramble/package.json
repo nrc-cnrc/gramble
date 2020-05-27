@@ -14,13 +14,13 @@
   ],
   "homepage": "https://github.com/littell/gramble_ts",
   "license": "MIT",
-  "main": "lib/gramble.js",
+  "main": "dist/index.js",
   "directories": {
-    "lib": "lib",
+    "lib": "dist",
     "test": "tests"
   },
   "files": [
-    "lib"
+    "dist"
   ],
   "publishConfig": {
     "access": "public"
