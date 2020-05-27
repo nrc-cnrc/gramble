@@ -2,14 +2,5 @@
   "packages": [
     "packages/*"
   ],
-  "hoist": [
-    "@types/chai",
-    "@types/mocha",
-    "@types/node",
-    "chai",
-    "mocha",
-    "ts-node",
-    "typescript"
-  ],
   "version": "0.0.0"
 }
