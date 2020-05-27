@@ -6,6 +6,7 @@
   "scripts": {
     "build": "npm run bootstrap",
     "bootstrap": "lerna bootstrap",
+    "install:bin": "ln -sf ../../packages/gramble-cli/bin/index.js node_modules/.bin/gramble",
     "test": "lerna exec npm test"
   },
   "author": "Patrick Littell",
