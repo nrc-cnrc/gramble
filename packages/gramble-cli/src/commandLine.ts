@@ -1,5 +1,4 @@
-import {GTable, makeTable, flattenToJSON, getTierAsString} from "./transducers"
-import {Project, TextDevEnvironment} from "./spreadsheet"
+import {GTable, makeTable, flattenToJSON, getTierAsString, Project, TextDevEnvironment} from "@gramble/gramble"
 import {parse as papaparse, ParseResult} from 'papaparse';
 import {createReadStream, createWriteStream, existsSync} from 'fs';
 
@@ -7,7 +6,6 @@ import {parse as filenameParse} from 'path';
 import {Readable, Writable} from 'stream';
 
 import {fromStream} from "./fileIO"
-//import * as parseArgs from 'minimist';
 
 import * as commandLineArgs from "command-line-args";
 import * as commandLineUsage from "command-line-usage";

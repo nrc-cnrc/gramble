@@ -1,20 +1,24 @@
 {
-  "name": "@gramble/gramble",
+  "name": "@gramble/cli",
   "version": "0.0.0",
-  "description": "TypeScript interpreter for the Gramble language.",
+  "description": "Command line interface to Gramble",
   "keywords": [
+    "gramble",
+    "cli",
     "table",
     "grammar",
-    "language",
-    "fst"
+    "tsv",
+    "csv"
   ],
   "author": "Patrick Littell",
   "contributors": [
     "Eddie Antonio Santos <Eddie.Santos@nrc-cnrc.gc.ca>"
   ],
-  "homepage": "https://github.com/littell/gramble_ts",
+  "homepage": "https://github.com/littell/gramble_ts#readme",
   "license": "MIT",
-  "main": "dist/index.js",
+  "bin": {
+    "gramble": "./bin/index.js"
+  },
   "directories": {
     "lib": "dist",
     "test": "tests"
@@ -32,29 +36,24 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
-    "test": "mocha -r ts-node/register tests/*.ts"
+    "test": "true"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",
+    "@types/command-line-args": "^5.0.0",
+    "@types/command-line-usage": "^5.0.1",
     "@types/mocha": "^7.0.2",
     "@types/node": "^14.0.5",
-    "chai": "^4.2.0",
-    "cross-env": "^5.2.0",
-    "https-proxy-agent": ">=2.2.3",
-    "lerna": "^3.22.0",
-    "minimist": "^1.2.5",
-    "mocha": "^7.1.2",
-    "nyc": "^14.1.1",
-    "ts-node": "^8.3.0",
+    "@types/papaparse": "^5.0.3",
     "typescript": "^3.5.3"
   },
   "dependencies": {
-    "csv": "^5.3.2",
-    "csv-parser": "^2.3.2",
-    "esm": "^3.2.25",
-    "xmlhttprequest": "^1.8.0"
+    "@gramble/gramble": "^0.0.0",
+    "command-line-args": "^5.1.1",
+    "command-line-usage": "^6.1.0",
+    "papaparse": "^5.2.0"
   }
 }

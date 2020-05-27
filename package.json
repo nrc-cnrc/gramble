@@ -8,6 +8,9 @@
     "bootstrap": "lerna bootstrap",
     "test": "lerna exec npm test"
   },
+  "bin": {
+    "gramble": "./packages/gramble-cli/bin/index.js"
+  },
   "author": "Patrick Littell",
   "contributors": [
     "Eddie Antonio Santos <Eddie.Santos@nrc-cnrc.gc.ca>"
