@@ -37,5 +37,8 @@
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"
+  },
+  "devDependencies": {
+    "typescript": "^3.5.3"
   }
 }
