@@ -9,6 +9,14 @@ export type GParse = [GRecord, number, GRecord];
 export type GTable = GRecord[];
 export type SymbolTable = Map<string, GTable>;
 
+export class ParseOptions {
+    constructor(
+        public randomize: boolean = false,
+        public maxResults: number = -1,
+        public parseLeftward: boolean = true
+    ) { }
+}
+
 export class GPosition {
 
     /**
@@ -72,20 +80,34 @@ export function tableToJSON(table: GTable): [string, string, string, number, num
     });
 }
 
-
-export function flattenToJSON(table: GTable): string {
-    const results = table.map((record) => {
-        const result: any = {};
+export function tableToMap(table: GTable): Map<string, string>[] {
+    return table.map((record) => {
+        const result: Map<string, string> = new Map();
         for (const [key, value] of record) {
-            if (result.hasOwnProperty(key.text)) {
-                result[key.text] += value.text;
+            if (result.has(key.text)) {
+                result.set(key.text, result.get(key.text) + value.text)
             } else {
-                result[key.text] = value.text;
+                result.set(key.text, value.text);
             }
         }
         return result;
     });
-    return JSON.stringify(results);
+}
+
+export function flattenToJSON(table: GTable): string {
+    return JSON.stringify(tableToMap(table));
+}
+
+export function flattenToText(table: GTable): string {
+    const results : string[] = [];
+    for (const map of tableToMap(table)) {
+        const subResults : string[] = [];
+        for (const [key, value] of map.entries()) {
+            subResults.push(key + ": " + value);
+        }    
+        results.push(subResults.join(", "));
+    }
+    return results.join("\n");
 }
 
 export function getTierAsString(table: GTable, tier: string, delim: string = ", "): string {
@@ -104,7 +126,7 @@ export function getTierAsString(table: GTable, tier: string, delim: string = ", 
 
 class Transducer {
     
-    public transduce(input: GParse, randomize=false, maxResults=-1): GParse[] {
+    public transduce(input: GParse, options: ParseOptions): GParse[] {
         return [input];
     }
 
@@ -112,6 +134,7 @@ class Transducer {
         return 1.0
     }
 
+    /*
     public transduceMany(inputs: GParse[], randomize=false, maxResults=-1): GParse[] {
         const results : GParse[] = [];
         for (const input of inputs) {
@@ -120,7 +143,7 @@ class Transducer {
             }
         } 
         return results;
-    }
+    } */
     
     /**
      * This is the main function that interfaces will call; it takes an
@@ -136,9 +159,11 @@ class Transducer {
 
         var transducer = new FinalTransducer(this);
         var results: GTable = [];
+        var options = new ParseOptions(randomize, maxResults);
+
         for (var inputRecord of input) {
             var inputParse: GParse = [inputRecord, 0.0, []];
-            for (const [remnant, logprob, output] of transducer.transduce(inputParse, randomize, maxResults)) {
+            for (const [remnant, logprob, output] of transducer.transduce(inputParse, options)) {
                 var prob: string = Math.exp(logprob).toPrecision(3);
                 output.push([new GCell("p"), new GCell(prob)])
                 results.push(output);
@@ -184,7 +209,7 @@ class VarTransducer extends Transducer {
         super();
     }
 
-    public transduce(input: GParse, randomize=false, maxResults=-1): GParse[] {
+    public transduce(input: GParse, options: ParseOptions): GParse[] {
         if (this.value.text.length == 0) {
             return [input];
         }
@@ -193,7 +218,7 @@ class VarTransducer extends Transducer {
             throw new Error(`Could not find symbol: ${this.value.text}`);
         }
         const transducer = transducerFromTable(table, this.symbolTable);
-        return transducer.transduce(input, randomize, maxResults);
+        return transducer.transduce(input, options);
     }
 }
 
@@ -205,10 +230,10 @@ class InputTransducer extends Transducer {
         super();
     }
 
-    public transduce([input, logprob, pastOutput]: GParse, randomize=false, maxResults=-1): GParse[] {
+    public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
         const results : GParse[] = [];
         const trivialInput : GRecord = makeRecord([["",""]]) // make an empty input to transduce from
-        for (const [rem, newprob, output] of this.child.transduce([trivialInput, logprob, pastOutput], randomize, maxResults)) {
+        for (const [rem, newprob, output] of this.child.transduce([trivialInput, logprob, pastOutput], options)) {
             const newInput = [... input, ... output];
             results.push([newInput, newprob, []]);
         }
@@ -232,7 +257,7 @@ class ShiftTransducer extends Transducer {
         super();
     }
 
-    public transduce([input, logprob, pastOutput]: GParse, randomize=false, maxResults=-1): GParse[] {
+    public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
         var [output, remnant] = winnow(input, ([key, value]) => key.text == this.fromTier.text); // split entries into relevant and irrelevant
         output = mapKeys(output, this.fromTier.text, this.toTier.text);
         return [[remnant, logprob, [...pastOutput, ...output]]];
@@ -247,8 +272,8 @@ class FinalTransducer extends Transducer {
         super();
     }
 
-    public transduce(inputParses: GParse, randomize=false, maxResults=-1): GParse[] {
-        return this.child.transduce(inputParses, randomize, maxResults).filter(([remnant, p, o]) => {
+    public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
+        return this.child.transduce(inputParse, options).filter(([remnant, p, o]) => {
             return !remnant.some(([key, value]) => value.text.length > 0 );
         });
     }
@@ -263,7 +288,7 @@ class JoinTransducer extends Transducer {
         super();
     }
 
-    public transduce([input, logprob, pastOutput]: GParse, randomize=false, maxResults=-1): GParse[] {
+    public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
         const parts: string[] = [];
         const output = pastOutput.filter(([key, value]) => {
             if (key.text == this.tier.text) {
@@ -279,6 +304,25 @@ class JoinTransducer extends Transducer {
     }
 }
 
+class BeforeTransducer extends Transducer {
+
+    public constructor(
+        private child: Transducer
+    ) {
+        super();
+    }
+
+    public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
+        const results = this.child.transduce(inputParse, options);
+        if (results.length > 0) {
+            return [inputParse];
+        }
+        return [];
+    }
+}
+
+
+
 class AlternationTransducer extends Transducer {
 
     private childrenAndWeights: Array<[Transducer, number]> = [];
@@ -293,10 +337,10 @@ class AlternationTransducer extends Transducer {
         this.childrenAndWeights = children.map((child, i) => [child, weights[i]]);
     } 
 
-    public transduce(input: GParse, randomize=false, maxResults=-1): GParse[] {
+    public transduce(input: GParse, options: ParseOptions): GParse[] {
         const results: GParse[] = [];
 
-        if (randomize) {
+        if (options.randomize) {
             var items: Iterable<[Transducer, number] | undefined > = new RandomPicker([...this.childrenAndWeights]);
         } else {
             var items: Iterable<[Transducer, number] | undefined > = this.childrenAndWeights;
@@ -307,10 +351,10 @@ class AlternationTransducer extends Transducer {
                 throw new Error("Received an undefined output from RandomPicker.")
             }
             const [child, prob] = item;
-            for (var [remnant, logprob, output] of child.transduce(input, randomize, maxResults)) {
+            for (var [remnant, logprob, output] of child.transduce(input, options)) {
                 logprob += Math.log(prob);
                 results.push([remnant, logprob, output]);
-                if (maxResults > 0 && results.length == maxResults) {
+                if (options.maxResults > 0 && results.length == options.maxResults) {
                     return results;
                 }
             }
@@ -341,8 +385,8 @@ class MaybeTransducer extends Transducer {
         this.child = new AlternationTransducer([child, new Transducer()]);
     }
 
-    public transduce(input: GParse, randomize=false, maxResults=-1): GParse[] {
-        return this.child.transduce(input, randomize, maxResults);
+    public transduce(input: GParse, options: ParseOptions): GParse[] {
+        return this.child.transduce(input, options);
     }
 }
 
@@ -374,9 +418,7 @@ class UpdownTransducer extends Transducer {
         this.transducer = transducerFromTable(table, this.symbolTable);
     }
     
-    public applyConversion(parse: GParse,  
-            randomize: boolean = false,
-            maxResults: number = -1): GParse[] {
+    public applyConversion(parse: GParse, options: ParseOptions): GParse[] {
         
         const [input, logprob, pastOutput] = parse;
 
@@ -388,16 +430,16 @@ class UpdownTransducer extends Transducer {
             return [parse];
         }
     
-        var outputs = this.transducer.transduce(parse, randomize, maxResults);
+        var outputs = this.transducer.transduce(parse, options);
         if (outputs.length == 0) {
             outputs = [ stepOneCharacter(parse, this.inputTier, this.outputTier) ];
         } 
         
-        var results: GParse[][] = outputs.map(output => this.applyConversion(output, randomize, maxResults));
+        var results: GParse[][] = outputs.map(output => this.applyConversion(output, options));
         return Array.prototype.concat.apply([], results);
     }
 
-    public transduce(parse: GParse, randomize=false, maxResults=-1): GParse[] {
+    public transduce(parse: GParse, options: ParseOptions): GParse[] {
 
         if (this.value.text.length == 0) {
             return [parse];
@@ -418,7 +460,7 @@ class UpdownTransducer extends Transducer {
         
         var results: GParse[] = [];
 
-        for (var [remnant, newprob, output] of this.applyConversion([wheat, logprob, []], randomize, maxResults)) {
+        for (var [remnant, newprob, output] of this.applyConversion([wheat, logprob, []], options)) {
             const result = [...chaff];
             for (const [key, value] of output) {
                 if (key.text == this.outputTier) {
@@ -446,7 +488,7 @@ class LiteralTransducer extends Transducer {
         super();
     }
 
-    public transduce(parse: GParse, randomize=false, maxResults=-1): GParse[] {
+    public transduce(parse: GParse, options: ParseOptions): GParse[] {
 
         if (this.value.text.length == 0) {
             return [parse];
@@ -459,35 +501,54 @@ class LiteralTransducer extends Transducer {
         var tierFoundInInput = false;
         var needle = this.value.text;
 
-        for (const [key, value] of input) {
+        const inputEntries = options.parseLeftward ? input : input.reverse();
+
+        for (const [key, value] of inputEntries) {
             if (key.text != this.key.text) { // not what we're looking for, move along
                 consumedInput.push([key, value]);
                 continue; 
             }
             tierFoundInInput = true;
         
-            for (var i = 0; i < value.text.length; i++) {
+            if (options.parseLeftward) {
+                for (var i = 0; i < value.text.length; i++) {
+                    if (needle.length == 0) {
+                        break;
+                    }
+                    if (value.text[i] != needle[0]) {
+                        return [];
+                    }
+                    needle = needle.slice(1);
+                }
+
                 if (needle.length == 0) {
-                    break;
+                    const remnantCell = new GCell(value.text.slice(i), value.sheet, value.row, value.col);
+                    consumedInput.push([key, remnantCell]);
+                }
+            } else {
+                for (var i = value.text.length - 1; i >= 0; i--) {
+                    if (needle.length == 0) {
+                        break;
+                    }
+                    if (value.text[i] != needle[needle.length-1]) {
+                        return [];
+                    }
+                    needle = needle.slice(0, needle.length-1);
                 }
 
-                if (value.text[i] != needle[0]) {
-                    return [];
+                if (needle.length == 0) {
+                    const remnantCell = new GCell(value.text.slice(0,i+1), value.sheet, value.row, value.col);
+                    consumedInput.push([key, remnantCell]);
                 }
-
-                // it's a match
-                needle = needle.slice(1);
-
-            }
-
-            if (needle.length == 0) {
-                const remnantCell = new GCell(value.text.slice(i), value.sheet, value.row, value.col);
-                consumedInput.push([key, remnantCell]);
             }
         }
 
         if (tierFoundInInput && needle.length > 0) {
             return [];
+        }
+
+        if (!options.parseLeftward) {
+            consumedInput = consumedInput.reverse();
         }
 
         var output = [...pastOutput];
@@ -507,15 +568,18 @@ class ConcatenationTransducer extends Transducer {
         super();
     }
 
-    public transduce(input: GParse, randomize=false, maxResults=-1): GParse[] {
+    public transduce(input: GParse, options: ParseOptions): GParse[] {
 
         var results = [input];
-        for (const child of this.children) {
+
+        var children = options.parseLeftward ? this.children : this.children.reverse();
+
+        for (const child of children) {
             var newResults: GParse[] = [];
             midloop: for (const result1 of results) {
-                for (const result2 of child.transduce(result1, randomize, maxResults)) {
+                for (const result2 of child.transduce(result1, options)) {
                     newResults.push(result2);
-                    if (maxResults > 0 && newResults.length > maxResults) {
+                    if (options.maxResults > 0 && newResults.length > options.maxResults) {
                         break midloop;
                     }
                 }
@@ -584,6 +648,13 @@ export function transducerFromEntry([key, value]: [GCell, GCell], symbolTable: S
         const childKey = new GCell(remnant, key.sheet, key.row, key.col);
         const child = transducerFromEntry([childKey, value], symbolTable);
         return new MaybeTransducer(child);
+    }
+
+    if (keys[0] == "before") {
+        const remnant = keys.slice(1).join(" ");
+        const childKey = new GCell(remnant, key.sheet, key.row, key.col);
+        const child = transducerFromEntry([childKey, value], symbolTable);
+        return new BeforeTransducer(child);
     }
 
     if (keys[0] == "input") {
@@ -655,13 +726,14 @@ function stepOneCharacter([input, logprob, pastOutput]: GParse, inTier: string, 
 }
 
 
-export function makeRecord(cells: [string, string][]): GRecord {
-    return cells.map(([key, value]) => [new GCell(key), new GCell(value)])
+export function makeEntry(key: string, value: string): GEntry {
+    return [new GCell(key), new GCell(value)];
 }
 
+export function makeRecord(cells: [string, string][]): GRecord {
+    return cells.map(([key, value]) => makeEntry(key, value));
+}
 
 export function makeTable(cells: [string, string][][]): GTable {
-    return cells.map(record =>
-        record.map(([key, value]) => [new GCell(key), new GCell(value)])
-    );
+    return cells.map(makeRecord);
 }
