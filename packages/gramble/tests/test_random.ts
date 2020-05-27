@@ -67,7 +67,7 @@ describe('Random generator, with max_results=1', function() {
 });
 
 
-describe.skip('Random transducer with weights', function() {
+describe('Random transducer with weights', function() {
     const result = ambiguous_parser_with_probs.transduceFinal(text_input, true);
     var nonzero_results = [];
     for (const record of result) {
