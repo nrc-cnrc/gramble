@@ -43,15 +43,15 @@
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",
-    "@types/mocha": "^7.0.2",
-    "@types/node": "^14.0.5",
     "@types/command-line-args": "^5.0.0",
     "@types/command-line-usage": "^5.0.1",
+    "@types/mocha": "^7.0.2",
+    "@types/node": "^14.0.5",
+    "@types/papaparse": "^5.0.3",
     "typescript": "^3.5.3"
   },
   "dependencies": {
     "@gramble/gramble": "^0.0.0",
-    "@types/papaparse": "^5.0.3",
     "command-line-args": "^5.1.1",
     "command-line-usage": "^6.1.0",
     "papaparse": "^5.2.0"
