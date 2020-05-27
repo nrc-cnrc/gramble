@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha -r ts-node/register tests/*.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "bootstrap": "lerna bootstrap"
   },
   "author": "Patrick Littell",
   "contributors": [
@@ -19,6 +20,7 @@
     "chai": "^4.2.0",
     "cross-env": "^5.2.0",
     "https-proxy-agent": ">=2.2.3",
+    "lerna": "^3.22.0",
     "minimist": "^1.2.5",
     "mocha": "^7.1.2",
     "nyc": "^14.1.1",
