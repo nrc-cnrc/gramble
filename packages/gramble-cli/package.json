@@ -17,7 +17,7 @@
   "homepage": "https://github.com/littell/gramble_ts#readme",
   "license": "MIT",
   "bin": {
-    "gramble": "./dist/commandLine.js"
+    "gramble": "./bin/index.js"
   },
   "directories": {
     "lib": "dist",
