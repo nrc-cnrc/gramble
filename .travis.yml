@@ -6,4 +6,6 @@ node_js:
 - 10
 - 12
 - 14
-install: npm run bootstrap
+install:
+ - npm ci
+ - npm run bootstrap
