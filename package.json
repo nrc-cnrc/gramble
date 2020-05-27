@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npm run bootstrap",
     "bootstrap": "lerna bootstrap",
-    "test": "lerna run npm test"
+    "test": "lerna exec npm test"
   },
   "author": "Patrick Littell",
   "contributors": [
