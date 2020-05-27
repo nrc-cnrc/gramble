@@ -1,4 +1,4 @@
-import {GGrammar, make_table} from "../transducers"
+import {transducerFromTable, makeTable} from "../transducers"
 import 'mocha';
 import {test_num_results, test_output} from "./test_util"
 
@@ -33,28 +33,28 @@ const diablo = make_one_entry_table("_up", "diablo");
 const diiablo = make_one_entry_table("_up", "diiablo");
 */
 
-symbol_table.set("reduce_oo", make_table([[
+symbol_table.set("reduce_oo", makeTable([[
     ["up", "oo"],
     ["down", "o"]
 ]]));
 
-const oo_reduction_parser = new GGrammar(make_table([[
+const oo_reduction_parser = transducerFromTable(makeTable([[
     ["upward text", "reduce_oo"],
     ["text", "foo"],
     ["gloss", "jump"],
     ["text", "bar"],
     ["gloss", "-1SG"],
     ["downward text", "reduce_oo"]
-]]))
+]]), symbol_table);
 
-const gloss_input = make_table([[
+const gloss_input = makeTable([[
     ["gloss", "jump-1SG"],
 ]])
-const text_input = make_table([[
+const text_input = makeTable([[
     ["text", "fobar"],
 ]]);
 
-const text_input_bad = make_table([[
+const text_input_bad = makeTable([[
     ["text", "foobar"],
 ]]);
 
@@ -86,7 +86,7 @@ describe('Ambiguous converter, input "diiablo"', function() {
 }); */
 
 describe('Foobar generator with oo->o reduction', function() {
-    const result = oo_reduction_parser.transduce(gloss_input, symbol_table);
+    const result = oo_reduction_parser.transduceFinal(gloss_input);
     test_num_results(result, 1);
     test_output(result, 0, "text", "fobar");
     test_output(result, 0, "gloss", "jump-1SG");
@@ -94,13 +94,13 @@ describe('Foobar generator with oo->o reduction', function() {
 
 
 describe('Fobar parser with oo->o reduction', function() {
-    const result = oo_reduction_parser.transduce(text_input, symbol_table);
+    const result = oo_reduction_parser.transduceFinal(text_input);
     test_num_results(result, 1);
     test_output(result, 0, "gloss", "jump-1SG");
     test_output(result, 0, "text", "fobar");
 });
 
 describe('Fobar parser with oo->o reduction, but applied to "foobar"', function() {
-    const result = oo_reduction_parser.transduce(text_input_bad, symbol_table);
+    const result = oo_reduction_parser.transduceFinal(text_input_bad);
     test_num_results(result, 0);
 });
