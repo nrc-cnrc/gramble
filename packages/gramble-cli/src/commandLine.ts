@@ -10,6 +10,10 @@ import {fromStream} from "./fileIO"
 import * as commandLineArgs from "command-line-args";
 import * as commandLineUsage from "command-line-usage";
 
+// Status code of an invalide usage invocation:
+// See: man 3 sysexits
+const EXIT_USAGE = 64;
+
 class TextProject extends Project {
 
     private delim: string = "\t";
@@ -105,8 +109,7 @@ class TextProject extends Project {
 
 function fileExistsOrFail(filename: string) {
     if (!existsSync(filename)) {
-        console.error(`Error: Cannot find file ${filename}`);
-        process.exit(1);
+        usageError(`Cannot find file ${filename}`);
     }
 }
 
@@ -135,6 +138,8 @@ const commandDefinition = [
 ]
 const command = commandLineArgs(commandDefinition, { stopAtFirstUnknown: true })
 const argv = command._unknown || []
+// TODO: determine from argv?
+const programName = 'gramble';
 
 
 /* second - parse the generate command options */
@@ -186,13 +191,11 @@ if (command.command === 'generate') {
     const outputStream = getOutputStream(options.output);
 
     if (options.itier == undefined) {
-        console.error("Error: If you are parsing from a text file, you must specify what tier the text is on, e.g. --itier gloss")
-        process.exit(1);
+        usageError("If you are parsing from a text file, you must specify what tier the text is on, e.g. --itier gloss");
     } 
     if (options.tokenize) {
         if (options.otier == undefined) {
-            console.error("Error: If you are parsing tokenized, you must specify what tier the output text should be taken from, e.g. --otier gloss")
-            process.exit(1);
+            usageError("If you are parsing tokenized, you must specify what tier the output text should be taken from, e.g. --otier gloss")
         }
         proj.addFile(options.source)
         .then(() => env.highlight())
@@ -202,4 +205,9 @@ if (command.command === 'generate') {
         .then(() => env.highlight())
         .then(() => proj.parseStream(inputStream, outputStream, options.itier, options.random, options.max, options.otier));
     }
+}
+
+function usageError(message: string): never {
+    console.error(`${programName}: Error: ${message}`);
+    process.exit(EXIT_USAGE);
 }
