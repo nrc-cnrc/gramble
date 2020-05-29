@@ -94,8 +94,23 @@ export function tableToMap(table: GTable): Map<string, string>[] {
     });
 }
 
+export function tableToObjs(table: GTable): {[key: string]: string}[] {
+    return table.map((record) => {
+        const result: {[key: string]: string} = {};
+        for (const [key, value] of record) {
+            if (key.text in result) {
+                result[key.text] += value.text;
+            } else {
+                result[key.text] = value.text;
+            }
+        }
+        return result;
+    });
+}
+
+
 export function flattenToJSON(table: GTable): string {
-    return JSON.stringify(tableToMap(table));
+    return JSON.stringify(tableToObjs(table));
 }
 
 export function flattenToText(table: GTable): string {
@@ -179,6 +194,9 @@ class Transducer {
     }
     
     public sample(maxResults: number = 1): GTable {
+        if (maxResults == -1) {
+            maxResults = 1;
+        }
         var numFailures = 0;
         var maxFailures = 100 * maxResults;
         var result: GTable = [];

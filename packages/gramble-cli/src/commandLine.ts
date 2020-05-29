@@ -79,12 +79,11 @@ class TextProject extends Project {
     }
 
     public generateStream(outputStream: Writable, 
-                            randomize: boolean = false,
                             maxResults: number = -1,
                          outputTier: string | undefined = undefined,
                             symbolName: string = "MAIN"): void {
-        const result = super.generate(symbolName, randomize, maxResults);
-        this.writeToOutput(outputStream, result, outputTier);
+        const result = super.generate(symbolName, false, maxResults);
+        this.writeToOutput(outputStream, result, outputTier, "\n");
     }
     
     public sampleStream(outputStream: Writable, 
@@ -92,12 +91,12 @@ class TextProject extends Project {
                         outputTier: string | undefined = undefined,
                         symbolName: string = "MAIN"): void {
         const result = super.sample(symbolName, maxResults);
-        this.writeToOutput(outputStream, result, outputTier);
+        this.writeToOutput(outputStream, result, outputTier, "\n");
     }
 
-    public writeToOutput(outputStream: Writable, result: GTable, outputTier: string | undefined = undefined) {
+    public writeToOutput(outputStream: Writable, result: GTable, outputTier: string | undefined = undefined, delim: string = ", ") {
         if (outputTier != undefined) {
-            outputStream.write(getTierAsString(result, outputTier) + "\n");
+            outputStream.write(getTierAsString(result, outputTier, delim) + "\n");
         } else {
             outputStream.write(flattenToJSON(result) + "\n");
         }
@@ -111,8 +110,103 @@ function fileExistsOrFail(filename: string) {
     }
 }
 
+function getInputStream(input: string | undefined): Readable {
+    if (input == undefined) {
+        return process.stdin;
+    }
+    fileExistsOrFail(input);
+    return createReadStream(input, "utf8");
+}
+
+function getOutputStream(output: string | undefined): Writable {
+    if (output == undefined) {
+        return process.stdout;
+    }
+    fileExistsOrFail(output);
+    return createWriteStream(output, "utf8");
+}
+
 const env = new TextDevEnvironment();
 const proj = new TextProject(env);
+
+/* first - parse the main command */
+const commandDefinition = [
+    { name: 'command', defaultOption: true }
+]
+const command = commandLineArgs(commandDefinition, { stopAtFirstUnknown: true })
+const argv = command._unknown || []
+
+
+/* second - parse the generate command options */
+if (command.command === 'generate') {
+
+    const definitions = [
+      { name: 'source', defaultOption: true, type: String },
+      { name: 'output', alias: "o", type: String },
+      { name: 'otier', type: String },
+      { name: 'max', alias: 'm', type: Number, defaultValue: -1 }
+    ]
+    const options = commandLineArgs(definitions, { argv })
+    fileExistsOrFail(options.source);
+    const outputStream = getOutputStream(options.output);
+    proj.addFile(options.source)
+        .then(() => env.highlight())
+        .then(() => proj.generateStream(outputStream, options.max, options.otier));
+
+} else if (command.command === 'sample') {
+
+    const definitions = [
+      { name: 'source', defaultOption: true, type: String },
+      { name: 'output', alias: "o", type: String },
+      { name: 'otier', type: String },
+      { name: 'max', alias: 'm', type: Number, defaultValue: -1 }
+    ]
+    const options = commandLineArgs(definitions, { argv })
+    fileExistsOrFail(options.source);
+    const outputStream = getOutputStream(options.output);
+    proj.addFile(options.source)
+        .then(() => env.highlight())
+        .then(() => proj.sampleStream(outputStream, options.max, options.otier));
+} else if (command.command === 'parse') {
+
+    const definitions = [
+        { name: 'source', defaultOption: true, type: String },
+        { name: 'input', alias: 'i', type: String },
+        { name: 'output', alias: "o", type: String },
+        { name: 'itier', type: String },
+        { name: 'otier', type: String },
+        { name: 'random', alias: 'r', type: Boolean, defaultValue: false },
+        { name: 'max', alias: 'm', type: Number, defaultValue: -1 },
+        { name: 'tokenize', alias: 't', type: Boolean, defaultValue: false }
+    ]
+    const options = commandLineArgs(definitions, { argv });
+    fileExistsOrFail(options.source);
+
+    const inputStream = getInputStream(options.input);
+    const outputStream = getOutputStream(options.output);
+
+    if (options.itier == undefined) {
+        console.error("Error: If you are parsing from a text file, you must specify what tier the text is on, e.g. --itier gloss")
+        process.exit(1);
+    } 
+    if (options.tokenize) {
+        if (options.otier == undefined) {
+            console.error("Error: If you are parsing tokenized, you must specify what tier the output text should be taken from, e.g. --otier gloss")
+            process.exit(1);
+        }
+        proj.addFile(options.source)
+        .then(() => env.highlight())
+        .then(() => proj.parseStreamTokenized(inputStream, outputStream, options.itier, options.random, options.otier));      
+    } else {
+        proj.addFile(options.source)
+        .then(() => env.highlight())
+        .then(() => proj.parseStream(inputStream, outputStream, options.itier, options.random, options.max, options.otier));
+    }
+}
+
+
+
+/*
 
 const options = commandLineArgs([
     { name: 'source', defaultOption: true, type: String },
@@ -120,18 +214,18 @@ const options = commandLineArgs([
     { name: 'output', alias: "o", type: String },
     { name: 'itier', type: String },
     { name: 'otier', type: String },
-    { name: 'generate', alias: 'g', type: Boolean, defaultValue: false },
-    { name: 'sample', alias: 's', type: Boolean, defaultValue: false },
     { name: 'random', alias: 'r', type: Boolean, defaultValue: false },
     { name: 'max', alias: 'm', type: Number, defaultValue: -1 },
     { name: 'tokenize', alias: 't', type: Boolean, defaultValue: false }
 ])
 
 
-if (options.source == undefined) {
-    console.error("Error: At least one source file must be provided");
+if (options.command == undefined) {
+    console.error("Error: At least one command and source file must be provided");
     process.exit(1);
 }
+
+if (options.command )
               
 fileExistsOrFail(options.source);
 
@@ -178,3 +272,5 @@ if (options.generate) {
         .then(() => proj.parseStream(inputStream, outputStream, inputTier, options.random, options.max, options.otier));
     }
 }
+
+*/
