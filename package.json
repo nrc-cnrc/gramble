@@ -7,10 +7,11 @@
     "build": "npm run bootstrap",
     "bootstrap": "lerna bootstrap",
     "bootstrap:hoist": "lerna bootstrap --hoist",
+    "postinstall": "node ./libexec/postinstall.js",
     "test": "lerna exec npm test"
   },
   "bin": {
-    "gramble": "./packages/gramble-cli/bin/index.js"
+    "gramble": "./packages/gramble-cli/run-locally"
   },
   "author": "Patrick Littell",
   "contributors": [
