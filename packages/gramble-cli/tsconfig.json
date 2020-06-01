@@ -7,7 +7,9 @@
     "types": [
       "chai",
       "mocha",
-      "node"
+      "node",
+      "command-line-args",
+      "command-line-usage"
     ]
   },
   "include": [
