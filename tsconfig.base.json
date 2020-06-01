@@ -5,7 +5,11 @@
     "sourceMap": true,
     "declaration": true,
     "strict": true,
-    "composite": true
+    "composite": true,
+    "baseUrl": "./packages",
+    "paths": {
+      "@gramble/*": ["./*/src"]
+    }
   }
 }
 
