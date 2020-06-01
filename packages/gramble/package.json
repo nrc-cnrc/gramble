@@ -15,6 +15,7 @@
   "homepage": "https://github.com/littell/gramble_ts",
   "license": "MIT",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "directories": {
     "lib": "dist",
     "test": "tests"
