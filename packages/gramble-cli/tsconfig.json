@@ -1,10 +1,9 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
-    "outDir": "dist",
-    "sourceMap": true,
-    "strict": true,
+    "rootDir": "./src",
+    "outDir":"./dist",
+    "tsBuildInfoFile": "../../.build-cache/gramble-cli.tsbuildinfo",
     "types": [
       "chai",
       "mocha",
@@ -12,9 +11,9 @@
     ]
   },
   "include": [
-    "src/**/*.ts"
+    "src"
   ],
-  "exclude": [
-    "node_modules"
+  "references": [
+	{ "path": "../gramble" }
   ]
 }
