@@ -180,7 +180,7 @@ const commands: {[name: string]: Command} = {
           { name: 'otier', type: String,
             typeLabel: '{underline tier}', description: 'only output {underline tier}, instead of JSON' },
           { name: 'max', alias: 'm', type: Number, defaultValue: -1,
-            typeLabel: '{underline n}',  description: 'generate at most {underline n} terms', },
+              typeLabel: '{underline n}',  description: 'generate at most {underline n} terms [default: unlimited]', },
         ],
 
         run(options: commandLineArgs.CommandLineOptions) {
@@ -257,7 +257,7 @@ const sections = [
     {
         header: "Synopsis",
         content: [
-            `$ ${programName} <command>`,
+            `$ ${programName} {underline command}`,
         ]
     },
     {
