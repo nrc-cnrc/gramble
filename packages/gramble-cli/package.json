@@ -1,6 +1,6 @@
 {
   "name": "@gramble/cli",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Command line interface to Gramble",
   "keywords": [
     "gramble",
@@ -51,7 +51,7 @@
     "typescript": "^3.5.3"
   },
   "dependencies": {
-    "@gramble/gramble": "^0.0.0",
+    "@gramble/gramble": "^0.0.1",
     "command-line-args": "^5.1.1",
     "command-line-usage": "^6.1.0",
     "papaparse": "^5.2.0",

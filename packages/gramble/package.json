@@ -1,6 +1,6 @@
 {
   "name": "@gramble/gramble",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "TypeScript interpreter for the Gramble language.",
   "keywords": [
     "table",
