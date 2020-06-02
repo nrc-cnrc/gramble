@@ -145,6 +145,7 @@ const programName = 'gramble';
 
 interface Command {
     run(): void;
+    options?: commandLineArgs.OptionDefinition[];
 }
 
 const commands: {[name: string]: Command} = {
@@ -154,14 +155,15 @@ const commands: {[name: string]: Command} = {
         },
     },
     generate: {
+        options: [
+          { name: 'source', defaultOption: true, type: String },
+          { name: 'output', alias: "o", type: String },
+          { name: 'otier', type: String },
+          { name: 'max', alias: 'm', type: Number, defaultValue: -1 }
+        ],
+
         run() {
-            const definitions = [
-              { name: 'source', defaultOption: true, type: String },
-              { name: 'output', alias: "o", type: String },
-              { name: 'otier', type: String },
-              { name: 'max', alias: 'm', type: Number, defaultValue: -1 }
-            ]
-            const options = commandLineArgs(definitions, { argv })
+            const options = commandLineArgs(commands.generate.options as commandLineArgs.OptionDefinition[], { argv })
 
             fileExistsOrFail(options.source);
 
