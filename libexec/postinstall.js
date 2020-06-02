@@ -31,5 +31,13 @@ let symlinkPath = path.join(bindir, packageName);
 
 console.log(`creating symlink: ${symlinkPath} -> ${symlinkValue} (${absolutePathToBin})`);
 
-fs.unlinkSync(symlinkPath);
+try {
+  fs.unlinkSync(symlinkPath);
+} catch (error) {
+  // Ignore trying to delete a file that doesn't exist
+  if (error.code !== 'ENOENT') {
+    throw error;
+  }
+}
+
 fs.symlinkSync(symlinkValue, symlinkPath);
