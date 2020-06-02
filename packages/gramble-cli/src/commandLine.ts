@@ -1,3 +1,5 @@
+#!/usr/bin/env ts-node-script
+
 import {GTable, makeTable, flattenToJSON, getTierAsString, Project, TextDevEnvironment} from "@gramble/gramble"
 import {parse as papaparse, ParseResult} from 'papaparse';
 import {createReadStream, createWriteStream, existsSync} from 'fs';
