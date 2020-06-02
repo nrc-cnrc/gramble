@@ -144,12 +144,13 @@ const argv = command._unknown || []
 const programName = 'gramble';
 
 interface Command {
-    run(): void;
-    options?: commandLineArgs.OptionDefinition[];
+    run(options: commandLineArgs.CommandLineOptions): void;
+    options: commandLineArgs.OptionDefinition[];
 }
 
 const commands: {[name: string]: Command} = {
     help: {
+        options: [],
         run() {
             printUsage();
         },
@@ -162,9 +163,7 @@ const commands: {[name: string]: Command} = {
           { name: 'max', alias: 'm', type: Number, defaultValue: -1 }
         ],
 
-        run() {
-            const options = commandLineArgs(commands.generate.options as commandLineArgs.OptionDefinition[], { argv })
-
+        run(options: commandLineArgs.CommandLineOptions) {
             fileExistsOrFail(options.source);
 
             const outputStream = getOutputStream(options.output);
@@ -200,7 +199,9 @@ const sections = [
 
 /* second - parse the generate command options */
 if (command.command in commands) {
-    commands[command.command].run();
+    const cmd = commands[command.command];
+    const options = commandLineArgs(cmd.options, { argv })
+    commands[command.command].run(options);
 } else if (command.command === 'sample') {
 
     const definitions = [
