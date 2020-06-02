@@ -155,6 +155,7 @@ const commands: {[name: string]: Command} = {
             printUsage();
         },
     },
+
     generate: {
         options: [
           { name: 'source', defaultOption: true, type: String },
@@ -171,8 +172,7 @@ const commands: {[name: string]: Command} = {
                 .then(() => env.highlight())
                 .then(() => proj.generateStream(outputStream, options.max, options.otier));
         }
-    }
-
+    },
 };
 
 const sections = [
