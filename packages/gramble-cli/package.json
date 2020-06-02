@@ -36,7 +36,7 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
-    "test": "true"
+    "test": "./run-locally help"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"
