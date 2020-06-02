@@ -145,7 +145,7 @@ const programName = 'gramble';
 
 interface Command {
     run(options: commandLineArgs.CommandLineOptions): void;
-    synopsis: string;
+    synopsis: string | string[];
     options: commandLineArgs.OptionDefinition[] & commandLineUsage.OptionList;
 }
 
@@ -158,10 +158,16 @@ const commands: {[name: string]: Command} = {
             if (options.command) {
                 let command = commands[options.command]
                 let optionList = command.options;
-                let synopsis = command.synopsis;
+                let synopses;
+                if (typeof command.synopsis == 'string') {
+                    synopses = [command.synopsis]
+                } else {
+                    synopses = command.synopsis;
+                }
+
                 let hide = optionList.filter(n => n.defaultOption).map(o => o.name);
                 let sections = [
-                    { header: 'Synopsis', content: `${programName} ${synopsis}` },
+                    { header: 'Synopsis', content: synopses.map(line => `${programName} ${line}`) },
                     { header: 'Options', optionList, hide }
                 ];
                 console.log(commandLineUsage(sections));
@@ -213,7 +219,7 @@ const commands: {[name: string]: Command} = {
     },
 
     sample: {
-        synopsis: 'sample {underline file}',
+        synopsis: 'sample [--output|-o {underline file}] {underline source}',
         options: [
             {
                 name: 'source',
@@ -224,16 +230,22 @@ const commands: {[name: string]: Command} = {
                 name: 'output',
                 alias: "o",
                 type: String,
+                typeLabel: '{underline file}',
+                description: 'write output to {underline file}',
             },
             {
                 name: 'otier',
                 type: String,
+                typeLabel: '{underline tier}',
+                description: 'only output {underline tier}, instead of JSON',
             },
             {
                 name: 'max',
                 alias: 'm',
                 type: Number,
                 defaultValue: -1,
+                typeLabel: '{underline n}',
+                // TODO: what does this actually do?
             }
         ],
 
@@ -247,7 +259,10 @@ const commands: {[name: string]: Command} = {
     },
 
     parse: {
-        synopsis: 'parse {underline file}',
+        synopsis: [
+            'parse --itier={underline tier} [--otier={underline tier}] [--random] [--max={underline n}] {underline source}',
+            'parse --tokenize --itier={underline tier} --otier={underline tier} [--random] {underline source}',
+        ],
         options: [
             {
                 name: 'source',
@@ -258,37 +273,48 @@ const commands: {[name: string]: Command} = {
                 name: 'input',
                 alias: 'i',
                 type: String,
+                typeLabel: '{underline file}',
+                description: 'read input from {underline file}',
             },
             {
                 name: 'output',
                 alias: "o",
                 type: String,
+                typeLabel: '{underline file}',
+                description: 'write output to {underline file}',
             },
             {
                 name: 'itier',
                 type: String,
+                typeLabel: '{underline tier}',
+                description: 'what tier to match the input against (e.g., text, gloss, etc.)',
             },
             {
                 name: 'otier',
                 type: String,
+                typeLabel: '{underline tier}',
+                description: 'only output {underline tier}, instead of JSON',
             },
             {
                 name: 'random',
                 alias: 'r',
                 type: Boolean,
                 defaultValue: false,
+                // TODO: not sure about this one
             },
             {
                 name: 'max',
                 alias: 'm',
                 type: Number,
                 defaultValue: -1,
+                // TODO: not sure about this one either
             },
             {
                 name: 'tokenize',
                 alias: 't',
                 type: Boolean,
                 defaultValue: false,
+                // TODO: not sure about this one
             }
         ],
 
@@ -301,6 +327,7 @@ const commands: {[name: string]: Command} = {
             if (options.itier == undefined) {
                 usageError("If you are parsing from a text file, you must specify what tier the text is on, e.g. --itier gloss");
             }
+
             if (options.tokenize) {
                 if (options.otier == undefined) {
                     usageError("If you are parsing tokenized, you must specify what tier the output text should be taken from, e.g. --otier gloss")
