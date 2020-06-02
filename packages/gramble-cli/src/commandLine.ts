@@ -189,6 +189,42 @@ const commands: {[name: string]: Command} = {
                 .then(() => proj.sampleStream(outputStream, options.max, options.otier));
         }
     },
+
+    parse: {
+        options: [
+            { name: 'source', defaultOption: true, type: String },
+            { name: 'input', alias: 'i', type: String },
+            { name: 'output', alias: "o", type: String },
+            { name: 'itier', type: String },
+            { name: 'otier', type: String },
+            { name: 'random', alias: 'r', type: Boolean, defaultValue: false },
+            { name: 'max', alias: 'm', type: Number, defaultValue: -1 },
+            { name: 'tokenize', alias: 't', type: Boolean, defaultValue: false }
+        ],
+
+        run(options) {
+            fileExistsOrFail(options.source);
+
+            const inputStream = getInputStream(options.input);
+            const outputStream = getOutputStream(options.output);
+
+            if (options.itier == undefined) {
+                usageError("If you are parsing from a text file, you must specify what tier the text is on, e.g. --itier gloss");
+            }
+            if (options.tokenize) {
+                if (options.otier == undefined) {
+                    usageError("If you are parsing tokenized, you must specify what tier the output text should be taken from, e.g. --otier gloss")
+                }
+                proj.addFile(options.source)
+                .then(() => env.highlight())
+                .then(() => proj.parseStreamTokenized(inputStream, outputStream, options.itier, options.random, options.otier));
+            } else {
+                proj.addFile(options.source)
+                .then(() => env.highlight())
+                .then(() => proj.parseStream(inputStream, outputStream, options.itier, options.random, options.max, options.otier));
+            }
+        }
+    }
 };
 
 const sections = [
@@ -218,39 +254,6 @@ if (command.command in commands) {
     const cmd = commands[command.command];
     const options = commandLineArgs(cmd.options, { argv })
     commands[command.command].run(options);
-} else if (command.command === 'parse') {
-
-    const definitions = [
-        { name: 'source', defaultOption: true, type: String },
-        { name: 'input', alias: 'i', type: String },
-        { name: 'output', alias: "o", type: String },
-        { name: 'itier', type: String },
-        { name: 'otier', type: String },
-        { name: 'random', alias: 'r', type: Boolean, defaultValue: false },
-        { name: 'max', alias: 'm', type: Number, defaultValue: -1 },
-        { name: 'tokenize', alias: 't', type: Boolean, defaultValue: false }
-    ]
-    const options = commandLineArgs(definitions, { argv });
-    fileExistsOrFail(options.source);
-
-    const inputStream = getInputStream(options.input);
-    const outputStream = getOutputStream(options.output);
-
-    if (options.itier == undefined) {
-        usageError("If you are parsing from a text file, you must specify what tier the text is on, e.g. --itier gloss");
-    }
-    if (options.tokenize) {
-        if (options.otier == undefined) {
-            usageError("If you are parsing tokenized, you must specify what tier the output text should be taken from, e.g. --otier gloss")
-        }
-        proj.addFile(options.source)
-        .then(() => env.highlight())
-        .then(() => proj.parseStreamTokenized(inputStream, outputStream, options.itier, options.random, options.otier));
-    } else {
-        proj.addFile(options.source)
-        .then(() => env.highlight())
-        .then(() => proj.parseStream(inputStream, outputStream, options.itier, options.random, options.max, options.otier));
-}
 } else {
     console.error(`${programName}: invalid command: ${command.command}`);
     printUsage();
