@@ -127,7 +127,7 @@ function getOutputStream(output: string | undefined): Writable {
     if (output == undefined) {
         return process.stdout;
     }
-    fileExistsOrFail(output);
+
     return createWriteStream(output, "utf8");
 }
 
@@ -146,13 +146,21 @@ const programName = 'gramble';
 interface Command {
     run(options: commandLineArgs.CommandLineOptions): void;
     options: commandLineArgs.OptionDefinition[];
+    help: commandLineUsage.Section[] | commandLineUsage.Content | commandLineUsage.OptionList;
 }
 
 const commands: {[name: string]: Command} = {
     help: {
-        options: [],
-        run() {
-            printUsage();
+        options: [{ name: 'command', defaultOption: true }],
+        help: [],
+
+        run(options) {
+            if (options.command) {
+                let sections = commands[options.command].help;
+                console.log(commandLineUsage(sections));
+            } else {
+                printUsage();
+            }
         },
     },
 
@@ -162,6 +170,20 @@ const commands: {[name: string]: Command} = {
           { name: 'output', alias: "o", type: String },
           { name: 'otier', type: String },
           { name: 'max', alias: 'm', type: Number, defaultValue: -1 }
+        ],
+        help: [
+            {
+                header: 'Synopsis',
+                content: `${programName} generate [--max={underline n}][--otier={underline tier}] [--output|-o {underline file}] {underline source}`
+            },
+            {
+                header: 'Options',
+                optionList: [
+                    { name: 'max', typeLabel: '{underline n}', description: 'generate at most {underline n} terms' },
+                    { name: 'otier', typeLabel: '{underline tier}', description: 'only output {underline tier}, instead of JSON' },
+                    { name: 'output', typeLabel: '{underline file}', description: 'write output to {underline file}' },
+                ],
+            }
         ],
 
         run(options: commandLineArgs.CommandLineOptions) {
@@ -181,6 +203,8 @@ const commands: {[name: string]: Command} = {
           { name: 'otier', type: String },
           { name: 'max', alias: 'm', type: Number, defaultValue: -1 }
         ],
+        help: [],
+
         run(options) {
             fileExistsOrFail(options.source);
             const outputStream = getOutputStream(options.output);
@@ -201,6 +225,7 @@ const commands: {[name: string]: Command} = {
             { name: 'max', alias: 'm', type: Number, defaultValue: -1 },
             { name: 'tokenize', alias: 't', type: Boolean, defaultValue: false }
         ],
+        help: [],
 
         run(options) {
             fileExistsOrFail(options.source);
