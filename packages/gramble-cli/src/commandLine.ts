@@ -145,18 +145,25 @@ const programName = 'gramble';
 
 interface Command {
     run(options: commandLineArgs.CommandLineOptions): void;
-    options: commandLineArgs.OptionDefinition[];
-    help: commandLineUsage.Section[] | commandLineUsage.Content | commandLineUsage.OptionList;
+    synopsis: string;
+    options: commandLineArgs.OptionDefinition[] & commandLineUsage.OptionList;
 }
 
 const commands: {[name: string]: Command} = {
     help: {
+        synopsis: `help [{underline command}]`,
         options: [{ name: 'command', defaultOption: true }],
-        help: [],
 
         run(options) {
             if (options.command) {
-                let sections = commands[options.command].help;
+                let command = commands[options.command]
+                let optionList = command.options;
+                let synopsis = command.synopsis;
+                let hide = optionList.filter(n => n.defaultOption).map(o => o.name);
+                let sections = [
+                    { header: 'Synopsis', content: `${programName} ${synopsis}` },
+                    { header: 'Options', optionList, hide }
+                ];
                 console.log(commandLineUsage(sections));
             } else {
                 printUsage();
@@ -165,25 +172,15 @@ const commands: {[name: string]: Command} = {
     },
 
     generate: {
+        synopsis: `generate [--max={underline n}][--otier={underline tier}] [--output|-o {underline file}] {underline source}`,
         options: [
           { name: 'source', defaultOption: true, type: String },
-          { name: 'output', alias: "o", type: String },
-          { name: 'otier', type: String },
-          { name: 'max', alias: 'm', type: Number, defaultValue: -1 }
-        ],
-        help: [
-            {
-                header: 'Synopsis',
-                content: `${programName} generate [--max={underline n}][--otier={underline tier}] [--output|-o {underline file}] {underline source}`
-            },
-            {
-                header: 'Options',
-                optionList: [
-                    { name: 'max', typeLabel: '{underline n}', description: 'generate at most {underline n} terms' },
-                    { name: 'otier', typeLabel: '{underline tier}', description: 'only output {underline tier}, instead of JSON' },
-                    { name: 'output', typeLabel: '{underline file}', description: 'write output to {underline file}' },
-                ],
-            }
+          { name: 'output', alias: "o", type: String,
+            typeLabel: '{underline file}', description: 'write output to {underline file}' ,},
+          { name: 'otier', type: String,
+            typeLabel: '{underline tier}', description: 'only output {underline tier}, instead of JSON' },
+          { name: 'max', alias: 'm', type: Number, defaultValue: -1,
+            typeLabel: '{underline n}',  description: 'generate at most {underline n} terms', },
         ],
 
         run(options: commandLineArgs.CommandLineOptions) {
@@ -197,13 +194,13 @@ const commands: {[name: string]: Command} = {
     },
 
     sample: {
+        synopsis: 'sample {underline file}',
         options: [
           { name: 'source', defaultOption: true, type: String },
           { name: 'output', alias: "o", type: String },
           { name: 'otier', type: String },
           { name: 'max', alias: 'm', type: Number, defaultValue: -1 }
         ],
-        help: [],
 
         run(options) {
             fileExistsOrFail(options.source);
@@ -215,6 +212,7 @@ const commands: {[name: string]: Command} = {
     },
 
     parse: {
+        synopsis: 'parse {underline file}',
         options: [
             { name: 'source', defaultOption: true, type: String },
             { name: 'input', alias: 'i', type: String },
@@ -225,7 +223,6 @@ const commands: {[name: string]: Command} = {
             { name: 'max', alias: 'm', type: Number, defaultValue: -1 },
             { name: 'tokenize', alias: 't', type: Boolean, defaultValue: false }
         ],
-        help: [],
 
         run(options) {
             fileExistsOrFail(options.source);
