@@ -173,6 +173,22 @@ const commands: {[name: string]: Command} = {
                 .then(() => proj.generateStream(outputStream, options.max, options.otier));
         }
     },
+
+    sample: {
+        options: [
+          { name: 'source', defaultOption: true, type: String },
+          { name: 'output', alias: "o", type: String },
+          { name: 'otier', type: String },
+          { name: 'max', alias: 'm', type: Number, defaultValue: -1 }
+        ],
+        run(options) {
+            fileExistsOrFail(options.source);
+            const outputStream = getOutputStream(options.output);
+            proj.addFile(options.source)
+                .then(() => env.highlight())
+                .then(() => proj.sampleStream(outputStream, options.max, options.otier));
+        }
+    },
 };
 
 const sections = [
@@ -202,20 +218,6 @@ if (command.command in commands) {
     const cmd = commands[command.command];
     const options = commandLineArgs(cmd.options, { argv })
     commands[command.command].run(options);
-} else if (command.command === 'sample') {
-
-    const definitions = [
-      { name: 'source', defaultOption: true, type: String },
-      { name: 'output', alias: "o", type: String },
-      { name: 'otier', type: String },
-      { name: 'max', alias: 'm', type: Number, defaultValue: -1 }
-    ]
-    const options = commandLineArgs(definitions, { argv })
-    fileExistsOrFail(options.source);
-    const outputStream = getOutputStream(options.output);
-    proj.addFile(options.source)
-        .then(() => env.highlight())
-        .then(() => proj.sampleStream(outputStream, options.max, options.otier));
 } else if (command.command === 'parse') {
 
     const definitions = [
