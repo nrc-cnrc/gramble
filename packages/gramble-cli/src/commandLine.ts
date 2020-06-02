@@ -26,7 +26,7 @@ class TextProject extends Project {
         super();
     }
 
-    public addFile(filename: string): Promise<void> { 
+    public addFile(filename: string): Promise<void> {
 
         if (filenameParse(filename).ext.toLowerCase() == ".csv") {
             this.delim = ",";
@@ -38,7 +38,7 @@ class TextProject extends Project {
     }
 
     public addText(text: string, rownum: number, filename: string) {
-        papaparse(text, { delimiter: this.delim, 
+        papaparse(text, { delimiter: this.delim,
             complete: (line) => this.addParsedRow(line, rownum, filename)
         });
     }
@@ -52,11 +52,11 @@ class TextProject extends Project {
         }
     }
 
-    public parseStream(inputStream: Readable, 
+    public parseStream(inputStream: Readable,
                         outputStream: Writable,
-                        asTier: string, 
+                        asTier: string,
                         randomize: boolean = false,
-                        maxResults: number = -1, 
+                        maxResults: number = -1,
                         outputTier: string | undefined = undefined,
                         symbolName: string = "MAIN"): Promise<void> {
 
@@ -67,9 +67,9 @@ class TextProject extends Project {
         });
     }
 
-    public parseStreamTokenized(inputStream: Readable, 
+    public parseStreamTokenized(inputStream: Readable,
         outputStream: Writable,
-        asTier: string, 
+        asTier: string,
         randomize: boolean = false,
         outputTier: string,
         symbolName: string = "MAIN"): Promise<void> {
@@ -84,15 +84,15 @@ class TextProject extends Project {
         });
     }
 
-    public generateStream(outputStream: Writable, 
+    public generateStream(outputStream: Writable,
                             maxResults: number = -1,
                          outputTier: string | undefined = undefined,
                             symbolName: string = "MAIN"): void {
         const result = super.generate(symbolName, false, maxResults);
         this.writeToOutput(outputStream, result, outputTier, "\n");
     }
-    
-    public sampleStream(outputStream: Writable, 
+
+    public sampleStream(outputStream: Writable,
                         maxResults: number = 1,
                         outputTier: string | undefined = undefined,
                         symbolName: string = "MAIN"): void {
@@ -216,14 +216,14 @@ if (command.command === 'generate') {
 
     if (options.itier == undefined) {
         usageError("If you are parsing from a text file, you must specify what tier the text is on, e.g. --itier gloss");
-    } 
+    }
     if (options.tokenize) {
         if (options.otier == undefined) {
             usageError("If you are parsing tokenized, you must specify what tier the output text should be taken from, e.g. --otier gloss")
         }
         proj.addFile(options.source)
         .then(() => env.highlight())
-        .then(() => proj.parseStreamTokenized(inputStream, outputStream, options.itier, options.random, options.otier));      
+        .then(() => proj.parseStreamTokenized(inputStream, outputStream, options.itier, options.random, options.otier));
     } else {
         proj.addFile(options.source)
         .then(() => env.highlight())
