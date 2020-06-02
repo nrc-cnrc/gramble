@@ -174,13 +174,32 @@ const commands: {[name: string]: Command} = {
     generate: {
         synopsis: `generate [--max={underline n}][--otier={underline tier}] [--output|-o {underline file}] {underline source}`,
         options: [
-          { name: 'source', defaultOption: true, type: String },
-          { name: 'output', alias: "o", type: String,
-            typeLabel: '{underline file}', description: 'write output to {underline file}' ,},
-          { name: 'otier', type: String,
-            typeLabel: '{underline tier}', description: 'only output {underline tier}, instead of JSON' },
-          { name: 'max', alias: 'm', type: Number, defaultValue: -1,
-              typeLabel: '{underline n}',  description: 'generate at most {underline n} terms [default: unlimited]', },
+            {
+                name: 'source',
+                type: String,
+                defaultOption: true,
+            },
+            {
+                name: 'output',
+                alias: "o",
+                type: String,
+                typeLabel: '{underline file}',
+                description: 'write output to {underline file}',
+            },
+            {
+                name: 'otier',
+                type: String,
+                typeLabel: '{underline tier}',
+                description: 'only output {underline tier}, instead of JSON',
+            },
+            {
+                name: 'max',
+                alias: 'm',
+                type: Number,
+                defaultValue: -1,
+                typeLabel: '{underline n}',
+                description: 'generate at most {underline n} terms [default: unlimited]',
+            },
         ],
 
         run(options: commandLineArgs.CommandLineOptions) {
@@ -196,10 +215,26 @@ const commands: {[name: string]: Command} = {
     sample: {
         synopsis: 'sample {underline file}',
         options: [
-          { name: 'source', defaultOption: true, type: String },
-          { name: 'output', alias: "o", type: String },
-          { name: 'otier', type: String },
-          { name: 'max', alias: 'm', type: Number, defaultValue: -1 }
+            {
+                name: 'source',
+                type: String,
+                defaultOption: true,
+            },
+            {
+                name: 'output',
+                alias: "o",
+                type: String,
+            },
+            {
+                name: 'otier',
+                type: String,
+            },
+            {
+                name: 'max',
+                alias: 'm',
+                type: Number,
+                defaultValue: -1,
+            }
         ],
 
         run(options) {
@@ -214,14 +249,47 @@ const commands: {[name: string]: Command} = {
     parse: {
         synopsis: 'parse {underline file}',
         options: [
-            { name: 'source', defaultOption: true, type: String },
-            { name: 'input', alias: 'i', type: String },
-            { name: 'output', alias: "o", type: String },
-            { name: 'itier', type: String },
-            { name: 'otier', type: String },
-            { name: 'random', alias: 'r', type: Boolean, defaultValue: false },
-            { name: 'max', alias: 'm', type: Number, defaultValue: -1 },
-            { name: 'tokenize', alias: 't', type: Boolean, defaultValue: false }
+            {
+                name: 'source',
+                type: String,
+                defaultOption: true,
+            },
+            {
+                name: 'input',
+                alias: 'i',
+                type: String,
+            },
+            {
+                name: 'output',
+                alias: "o",
+                type: String,
+            },
+            {
+                name: 'itier',
+                type: String,
+            },
+            {
+                name: 'otier',
+                type: String,
+            },
+            {
+                name: 'random',
+                alias: 'r',
+                type: Boolean,
+                defaultValue: false,
+            },
+            {
+                name: 'max',
+                alias: 'm',
+                type: Number,
+                defaultValue: -1,
+            },
+            {
+                name: 'tokenize',
+                alias: 't',
+                type: Boolean,
+                defaultValue: false,
+            }
         ],
 
         run(options) {
