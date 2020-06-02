@@ -143,6 +143,18 @@ const argv = command._unknown || []
 // TODO: determine from argv?
 const programName = 'gramble';
 
+interface Command {
+    run(): void;
+}
+
+const commands: {[name: string]: Command} = {
+    help:{
+        run() {
+            printUsage();
+        },
+    }
+};
+
 const sections = [
     {
         header: programName,
@@ -165,9 +177,10 @@ const sections = [
     }
 ];
 
-
 /* second - parse the generate command options */
-if (command.command === 'generate') {
+if (command.command in commands) {
+    commands[command.command].run();
+} else if (command.command === 'generate') {
 
     const definitions = [
       { name: 'source', defaultOption: true, type: String },
@@ -229,8 +242,6 @@ if (command.command === 'generate') {
         .then(() => env.highlight())
         .then(() => proj.parseStream(inputStream, outputStream, options.itier, options.random, options.max, options.otier));
 }
-} else if (command.command === "help") {
-    printUsage();
 } else {
     console.error(`${programName}: invalid command: ${command.command}`);
     printUsage();
