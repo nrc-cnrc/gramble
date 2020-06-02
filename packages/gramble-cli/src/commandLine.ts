@@ -1,4 +1,4 @@
-import {GTable, makeTable, flattenToJSON, getTierAsString, Project, TextDevEnvironment} from "@gramble/gramble/src"
+import {GTable, makeTable, flattenToJSON, getTierAsString, Project, TextDevEnvironment} from "@gramble/gramble"
 import {parse as papaparse, ParseResult} from 'papaparse';
 import {createReadStream, createWriteStream, existsSync} from 'fs';
 
@@ -141,6 +141,28 @@ const argv = command._unknown || []
 // TODO: determine from argv?
 const programName = 'gramble';
 
+const sections = [
+    {
+        header: programName,
+        content: "the grammar table parser/generator/sampler"
+    },
+    {
+        header: "Synopsis",
+        content: [
+            `$ ${programName} <command>`,
+        ]
+    },
+    {
+        header: "Commands",
+        content: [
+            { name: "generate", summary: "produces outputs from the grammar" },
+            { name: "help", summary: "display this message and exit" },
+            { name: "parse", summary: "attempt to parse input against the grammar" },
+            { name: "sample", summary: "sample outputs from the grammar" },
+        ]
+    }
+];
+
 
 /* second - parse the generate command options */
 if (command.command === 'generate') {
@@ -204,10 +226,21 @@ if (command.command === 'generate') {
         proj.addFile(options.source)
         .then(() => env.highlight())
         .then(() => proj.parseStream(inputStream, outputStream, options.itier, options.random, options.max, options.otier));
-    }
+}
+} else if (command.command === "help") {
+    printUsage();
+} else {
+    console.error(`${programName}: invalid command: ${command.command}`);
+    printUsage();
+    process.exit(EXIT_USAGE);
 }
 
 function usageError(message: string): never {
     console.error(`${programName}: Error: ${message}`);
     process.exit(EXIT_USAGE);
+}
+
+function printUsage() {
+    let usage = commandLineUsage(sections);
+    console.log(usage);
 }
