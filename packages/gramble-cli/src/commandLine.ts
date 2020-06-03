@@ -127,7 +127,6 @@ function getOutputStream(output: string | undefined): Writable {
     if (output == undefined) {
         return process.stdout;
     }
-
     return createWriteStream(output, "utf8");
 }
 
