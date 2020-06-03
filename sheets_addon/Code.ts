@@ -1,5 +1,5 @@
 import {DevEnvironment, Project} from "./spreadsheet"
-import {GTable} from "./transducers"
+import {GTable, tableToMap} from "./transducers"
 
 
 
@@ -339,14 +339,14 @@ function commentsForNewSheet(symbolName: string): string[][] {
     return results;
 }
 
-function codeFromTable(symbolName: string, table: GTable): string[][] {
+function codeFromTable(symbolName: string, table: Map<string, string>[]): string[][] {
     var results: string[][] = [];
     var keys: string[] = [];
 
     for (const record of table) {
 
-        const newKeys = record.map(([key, value]) => key.text);
-        const values = record.map(([key, value]) => value.text);
+        const newKeys = Array.from(record.entries()).map(([key, value]) => key);
+        const values = Array.from(record.entries()).map(([key, value]) => value);
         if (keys.length == 0) {
             results.push([symbolName].concat(newKeys));
         } else if (keys.toString() != newKeys.toString()) {
@@ -377,12 +377,13 @@ function setDataInSheet(sheet: Sheet, row: number, col: number, data: string[][]
     sheet.autoResizeColumns(1, width)
 }
 
-function newSheetFromTable(newSymbolName: string, oldSymbolName: string, table: GTable): Sheet {
+function newSheetFromTable(newSymbolName: string, oldSymbolName: string, table: Map<string, string>[]): Sheet {
     var activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
 
     var newSheet = activeSpreadsheet.getSheetByName(newSymbolName);
     
     while (newSheet != null) {
+        /* Keep incrementing the sheet name until you find an unused one */
         var sheetNameParts = newSymbolName.split("_");
         var lastPart = sheetNameParts[sheetNameParts.length-1];
         var num = 0;
@@ -406,7 +407,7 @@ function newSheetFromTable(newSymbolName: string, oldSymbolName: string, table: 
     return newSheet;
 }
 
-function createHTMLFromTable(table: GTable, highlighter: DevEnvironment): string {
+function createHTMLFromTable(table: Map<string, string>[], highlighter: DevEnvironment): string {
     var result = '<table style="margin: auto">';
     var previousKeys: string[] = [];
     for (const record of table) {
@@ -414,11 +415,11 @@ function createHTMLFromTable(table: GTable, highlighter: DevEnvironment): string
         var keys: string[] = [];
         var keysAndColors: [string, string][] = [];
         var valuesAndColors: [string, string][] = [];
-        for (const [key, value] of record) {
-            keys.push(key.text);
-            const color = highlighter.getColor(key.text)
-            keysAndColors.push([key.text, color]);
-            valuesAndColors.push([value.text, color]);
+        for (const [key, value] of record.entries()) {
+            keys.push(key);
+            const color = highlighter.getColor(key)
+            keysAndColors.push([key, color]);
+            valuesAndColors.push([value, color]);
         }
         if (keys.toString() != previousKeys.toString()) {
             result += '<td style="padding: 5px"> </td></tr><tr>'; // leave an emtpy row
@@ -471,7 +472,8 @@ function GrambleSample(): void {
         return;
     }
     const result = project.sample(cellText, 10);
-    const htmlString = createHTMLFromTable(result, highlighter);
+    const resultMaps = tableToMap(result);
+    const htmlString = createHTMLFromTable(resultMaps, highlighter);
     showDialog(htmlString, "Results of " + cellText);
 
 }
@@ -501,7 +503,8 @@ function GrambleGenerate(): void {
         return;
     }
     const result = project.generate(cellText);
-    const html_string = createHTMLFromTable(result, highlighter);
+    const resultMaps = tableToMap(result);
+    const html_string = createHTMLFromTable(resultMaps, highlighter);
     showDialog(html_string, "Results of " + cellText);
 
 }
@@ -532,9 +535,9 @@ function GrambleGenerateToSheet(): void {
         return;
     }
     const result = project.generate(cellText);
-
+    const resultMaps = tableToMap(result);
     const newSymbolName = cellText + "_results_1";
-    const newSheet = newSheetFromTable(newSymbolName, cellText, result);
+    const newSheet = newSheetFromTable(newSymbolName, cellText, resultMaps);
     
     var sheetName = newSheet.getName();
     var new_range = newSheet.getDataRange();
