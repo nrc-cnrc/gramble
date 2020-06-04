@@ -27,10 +27,20 @@ function meanAngleDeg(a: number[]): number {
 
 
 const DEFAULT_SATURATION = 0.1;
+const EXTRA_PASTEL = 0.05;
 const DEFAULT_VALUE = 1.0;
-const MESSAGE_COLOR_ERROR: string = "#DD3333";
-const MESSAGE_COLOR_WARNING: string = "#DDDD33";
-const MESSAGE_COLOR_INFO: string = "#33DD33";
+const VAR_FOREGROUND_COLOR = "#000077";
+const BLACK_COLOR = "#000000";
+
+type NoteType = "error" | "warning" | "message";
+
+const NOTE_COLORS: Map<NoteType, string> = new Map([
+    ["error", "#FF9999"],
+    ["warning", "#FFCC99"],
+    ["info", "#99FF99"]
+]);
+
+const COMMENT_FONT_COLOR: string = "#449944";
 const NAMED_COLORS: Map<string, number> = new Map([
     ["red", 0],
     ["orange", 30],
@@ -46,16 +56,119 @@ const NAMED_COLORS: Map<string, number> = new Map([
     ["burgundy", 330],
 ]);
 
+function letterFromNumber(n: number): string {
+    var letter = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(n % 26)
+    var concat = Math.round(n / 26);
+    return concat > 0 ? letterFromNumber(concat-1) + letter : letter;
+};
+
+abstract class Styler {
+    
+    protected cells: string[] = [];
+
+
+    public addCell(row: number, col: number): void {
+        const a1Notation = letterFromNumber(col) + (row+1).toString();
+        this.cells.push(a1Notation);
+    }
+
+    public applyToSheet(sheet: Sheet) {
+        if (this.cells.length == 0) return;
+        const cells = sheet.getRangeList(this.cells);
+        this.apply(cells);
+    }
+
+    protected abstract apply(cells: RangeList): void;
+}
+
+class ItalicStyler extends Styler {
+
+    protected apply(cells: RangeList): void { 
+        cells.setFontStyle("italic");
+    }
+}
+
+class BoldStyler extends Styler {
+
+    protected apply(cells: RangeList): void { 
+        cells.setFontWeight("bold");
+    }
+}
+
+class NoteStyler extends Styler {
+
+    public constructor(
+        private msg: string,
+        private color: string,
+    ) { 
+        super();
+    }
+
+    protected apply(cells: RangeList): void { 
+        cells.setNote(this.msg);
+        cells.setBackground(this.color);
+    }
+    
+}
+
+class BorderStyler extends Styler {
+
+    protected apply(cells: RangeList): void { 
+        cells.setBorder(true, false, true, false, false, false);
+    }
+}
+
+class CenterStyler extends Styler {
+
+    protected apply(cells: RangeList): void { 
+        cells.setHorizontalAlignment("center");
+    }
+    
+}
+
+class FontColorStyler extends Styler {
+
+    public constructor(
+        private color: string
+    ) { 
+        super();
+    }
+
+    protected apply(cells: RangeList): void { 
+        cells.setFontColor(this.color);
+    }
+}
+
+class BackgroundColorStyler extends Styler {
+
+    public constructor(
+        private color: string
+    ) { 
+        super();
+    }
+
+    protected apply(cells: RangeList): void { 
+        cells.setBackground(this.color);
+    }
+}
 
 class GoogleSheetsHighlighter implements DevEnvironment {
 
-    private errorCells: [string, number, number, string, "error"|"warning"|"info"][] = [];
-    private commentCells: [string, number, number][] = [];
-    private commandCells: [string, number, number][] = [];
-    private headerCells: [string, number, number, string][] = [];
-    private tierCells: [string, number, number, string][] = [];
+    //private errorCells: [string, number, number, string, "error"|"warning"|"info"][] = [];
+   // private commentCells: [string, number, number][] = [];
+    //private commandCells: [string, number, number][] = [];
+    //private headerCells: [string, number, number, string][] = [];
+    //private tierCells: [string, number, number, string][] = [];
     private namedColors: Map<string, number> = new Map();
     private calculatedColors: Map<string, number> = new Map();
+
+    private bgColorStylers: Map<string, BackgroundColorStyler> = new Map();
+    private fontColorStylers: Map<string, FontColorStyler> = new Map();
+    private italicStyler: ItalicStyler = new ItalicStyler();
+    private noteStylers: Map<string, NoteStyler> = new Map();
+    private borderStyler: BorderStyler = new BorderStyler();
+    private boldStyler: BoldStyler = new BoldStyler();
+    private centerStyler: CenterStyler = new CenterStyler();
 
     public alert(msg: any): void {
         let ui = SpreadsheetApp.getUi();
@@ -131,7 +244,7 @@ class GoogleSheetsHighlighter implements DevEnvironment {
     }
     
 
-    private getColor(tierName: string): string {
+    private getBackgroundColor(tierName: string, saturation: number = DEFAULT_SATURATION): string {
         var hues: number[] = [];
         var subnames = tierName.split(",");
         for (let i = 0; i < subnames.length; i++) {
@@ -156,162 +269,109 @@ class GoogleSheetsHighlighter implements DevEnvironment {
             }
         }
         const averageHue = meanAngleDeg(hues);
-        const [r, g, b] = this.HSVtoRGB(averageHue, DEFAULT_SATURATION, DEFAULT_VALUE);
+        const [r, g, b] = this.HSVtoRGB(averageHue, saturation, DEFAULT_VALUE);
         return "#" + r.toString(16) + g.toString(16) + b.toString(16);
+    }
+
+    private getForegroundColor(tierName: string): string {
+        var subnames = tierName.split(",");
+        for (const subname of subnames) {
+            const subnameParts = subname.trim().toLowerCase().split(" ");
+            const lastName = subnameParts[subnameParts.length-1];
+            if (lastName == "var") {
+                return VAR_FOREGROUND_COLOR;
+            }
+        }
+        return BLACK_COLOR;
     }
 
     public markError(sheet: string, 
                     row: number, 
                     col: number, 
                     msg: string, 
-                    level: "error" | "warning" | "info"): void {
-        this.errorCells.push([sheet, row, col, msg, level]);
+                    level: NoteType): void {
+
+        const color = NOTE_COLORS.get(level);
+        alert(color);
+        if (color == undefined) {
+            throw new Error("Color undefined: " + level);
+        }
+        if (!this.noteStylers.has(msg)) {
+            this.noteStylers.set(msg, new NoteStyler(msg, color));
+        }
+        this.noteStylers.get(msg)?.addCell(row, col);
     }
 
     public markComment(sheet: string, row: number, col: number): void {
-        this.commentCells.push([sheet, row, col]);
+        if (!this.fontColorStylers.has(COMMENT_FONT_COLOR)) {
+            this.fontColorStylers.set(COMMENT_FONT_COLOR, new FontColorStyler(COMMENT_FONT_COLOR));
+        }
+        this.fontColorStylers.get(COMMENT_FONT_COLOR)?.addCell(row, col);
+        this.italicStyler.addCell(row, col);
     }
 
     public markHeader(sheet: string, row: number, col: number, tier: string): void {
-        this.headerCells.push([sheet, row, col, tier]);
+        const color = this.getBackgroundColor(tier, 0.15);
+        if (!this.bgColorStylers.has(color)) {
+            this.bgColorStylers.set(color, new BackgroundColorStyler(color));
+        }
+        this.bgColorStylers.get(color)?.addCell(row, col);
+        this.borderStyler.addCell(row, col);
+        this.boldStyler.addCell(row, col);
+        this.centerStyler.addCell(row, col);
     }
 
     public markTier(sheet: string, row: number, col: number, tier: string): void {
-        this.tierCells.push([sheet, row, col, tier]);
+        const bgColor = this.getBackgroundColor(tier, 0.1);
+        if (!this.bgColorStylers.has(bgColor)) {
+            this.bgColorStylers.set(bgColor, new BackgroundColorStyler(bgColor));
+        }
+        this.bgColorStylers.get(bgColor)?.addCell(row, col);
+        const fgColor = this.getForegroundColor(tier);
+        if (!this.fontColorStylers.has(fgColor)) {
+            this.fontColorStylers.set(fgColor, new FontColorStyler(fgColor));
+        }
+        this.fontColorStylers.get(fgColor)?.addCell(row, col);
+        if (fgColor == VAR_FOREGROUND_COLOR) {
+            this.boldStyler.addCell(row, col);
+        }
+        this.centerStyler.addCell(row, col);
     }
 
     public markCommand(sheet: string, row: number, col: number): void {
-        this.commandCells.push([sheet, row, col]);
-    }
-
-    protected highlightHeaders(currentSheet: string): void {
-        var spreadsheet = SpreadsheetApp.getActive();
-        var rangeNotationsByColor: Map<string,string[]> = new Map();
-
-        for (const [sheetName, row, col, tier] of this.headerCells) {
-            if (sheetName != currentSheet) {
-                continue;
-            }
-            const color = this.getColor(tier);
-            let sheet = spreadsheet.getSheetByName(sheetName);
-            if (sheet == undefined) {
-                continue;
-            }
-            let cell = sheet.getRange(row + 1, col + 1);
-            if (!rangeNotationsByColor.has(color)) {
-                rangeNotationsByColor.set(color, []);
-            }
-            rangeNotationsByColor.get(color).push(cell.getA1Notation());
-        }
-        
-        for (const [color, ranges] of rangeNotationsByColor.entries()) {
-            const sheet = spreadsheet.getSheetByName(currentSheet);
-            const cells = sheet.getRangeList(ranges);
-            cells.setBorder(true, false, true, false, false, false);
-            cells.setBackground(color);
-            cells.setFontStyle("normal");
-            cells.setFontWeight("bold");
-            cells.setFontColor(null);
-        }
-    }
-
-    
-    protected highlightCommands(currentSheet: string): void {
-        var spreadsheet = SpreadsheetApp.getActive();
-        for (const [sheetName, row, col] of this.commandCells) {
-            let sheet = spreadsheet.getSheetByName(sheetName);
-            if (sheet == undefined) {
-                continue;
-            }
-            let cell = sheet.getRange(row + 1, col + 1);
-            cell.setBorder(false, false, false, false, false, false);
-            cell.setBackground(null);
-            cell.setFontStyle("normal");
-            cell.setFontWeight("bold");
-            cell.setFontColor(null);
-        }
-    }
-
-
-    protected highlightErrors(currentSheet: string): void {
-        var spreadsheet = SpreadsheetApp.getActive();
-        for (const [sheetName, row, col, msg, level] of this.errorCells) {
-            let sheet = spreadsheet.getSheetByName(sheetName);
-            if (sheet == undefined) {
-                continue;
-            }
-            let cell = sheet.getRange(row + 1, col + 1);
-            if (level == "error") {
-                cell.setBackground(MESSAGE_COLOR_ERROR);
-            } else if (level == "warning") {    
-                cell.setBackground(MESSAGE_COLOR_WARNING);
-            } else {
-                cell.setBackground(MESSAGE_COLOR_INFO);
-            }
-            cell.setNote(msg);
-            cell.setFontColor(null);
-        }
-    }
-
-    protected highlightComments(currentSheet: string): void {
-        var spreadsheet = SpreadsheetApp.getActive();
-        for (const [sheetName, row, col] of this.commentCells) {
-            let sheet = spreadsheet.getSheetByName(sheetName);
-            if (sheet == undefined) {
-                continue;
-            }
-            let cell = sheet.getRange(row + 1, col + 1);
-            cell.setFontColor("#449944");
-            cell.setFontStyle("italic");
-            cell.setBorder(false, false, false, false, false, false);
-            cell.setBackground(null);
-            cell.setFontWeight("normal");
-        }
+        this.boldStyler.addCell(row, col);
+        this.centerStyler.addCell(row, col);
     }
     
-    protected highlightTiers(currentSheet: string): void {
-        var spreadsheet = SpreadsheetApp.getActive();
-        
-        var rangeNotationsByColor: Map<string,string[]> = new Map();
-
-        for (const [sheetName, row, col, tier] of this.tierCells) {
-            if (sheetName != currentSheet) {
-                continue;
-            }
-            const color = this.getColor(tier);
-            let sheet = spreadsheet.getSheetByName(sheetName);
-            if (sheet == undefined) {
-                continue;
-            }
-            let cell = sheet.getRange(row + 1, col + 1);
-            if (!rangeNotationsByColor.has(color)) {
-                rangeNotationsByColor.set(color, []);
-            }
-            rangeNotationsByColor.get(color).push(cell.getA1Notation());
+    public markSymbol(sheet: string, row: number, col: number): void {
+        this.boldStyler.addCell(row, col);
+        this.centerStyler.addCell(row, col);
+        if (!this.fontColorStylers.has(VAR_FOREGROUND_COLOR)) {
+            this.fontColorStylers.set(VAR_FOREGROUND_COLOR, new FontColorStyler(VAR_FOREGROUND_COLOR));
         }
-        for (const [color, ranges] of rangeNotationsByColor.entries()) {
-            const sheet = spreadsheet.getSheetByName(currentSheet);
-            const cells = sheet.getRangeList(ranges);
-            cells.setBackground(color);
-            cells.setFontColor(null);
-            cells.setBorder(false, false, false, false, false, false);
-            cells.setFontStyle("normal");
-            cells.setFontWeight("normal");
-        }
+        this.fontColorStylers.get(VAR_FOREGROUND_COLOR)?.addCell(row, col);
     }
 
     public highlight(): void {
 
         var spreadsheet = SpreadsheetApp.getActive();
         var sheet = spreadsheet.getActiveSheet();
-        var sheetName = sheet.getName();
         sheet.clearNotes();
         sheet.clearFormats();
-        this.highlightComments(sheetName);
-        this.highlightCommands(sheetName);
-        this.highlightHeaders(sheetName);
-        this.highlightTiers(sheetName);
-        this.highlightErrors(sheetName);
+        for (const styler of this.bgColorStylers.values()) {
+            styler.applyToSheet(sheet);
+        }
+        for (const styler of this.fontColorStylers.values()) {
+            styler.applyToSheet(sheet);
+        }
+        this.italicStyler.applyToSheet(sheet);
+        this.boldStyler.applyToSheet(sheet);
+        this.borderStyler.applyToSheet(sheet);
+        this.centerStyler.applyToSheet(sheet);
+        
+        for (const styler of this.noteStylers.values()) {
+            styler.applyToSheet(sheet);
+        }
     }
 }
 
@@ -319,13 +379,10 @@ function makeProject(highlighter: DevEnvironment): Project {
     var spreadsheet = SpreadsheetApp.getActive();
     var project = new Project();
     var sheet = spreadsheet.getActiveSheet();
-    //for (let sheet of spreadsheet.getSheets()) {
     var sheetName = sheet.getName();
     var range = sheet.getDataRange();
     var cells = range.getDisplayValues();
     project.addSheet(sheetName, cells, highlighter);
-    //}
-
     return project;
 }
 
@@ -417,7 +474,7 @@ function createHTMLFromTable(table: Map<string, string>[], highlighter: DevEnvir
         var valuesAndColors: [string, string][] = [];
         for (const [key, value] of record.entries()) {
             keys.push(key);
-            const color = highlighter.getColor(key)
+            const color = highlighter.getBackgroundColor(key)
             keysAndColors.push([key, color]);
             valuesAndColors.push([value, color]);
         }
@@ -543,8 +600,6 @@ function GrambleGenerateToSheet(): void {
     var new_range = newSheet.getDataRange();
     var cells = new_range.getDisplayValues();
     project.addSheet(sheetName, cells, highlighter);
-    highlighter.highlight();
-
     newSheet.activate();
 
 }

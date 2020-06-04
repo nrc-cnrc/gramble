@@ -244,7 +244,7 @@ const commands: {[name: string]: Command} = {
                 type: Number,
                 defaultValue: -1,
                 typeLabel: '{underline n}',
-                // TODO: what does this actually do?
+                description: 'restrict number of outputs for each word',
             }
         ],
 
@@ -299,21 +299,21 @@ const commands: {[name: string]: Command} = {
                 alias: 'r',
                 type: Boolean,
                 defaultValue: false,
-                // TODO: not sure about this one
+                description: 'sample randomly from possible outputs',
             },
             {
                 name: 'max',
                 alias: 'm',
                 type: Number,
                 defaultValue: -1,
-                // TODO: not sure about this one either
+                description: 'restrict number of outputs for each word',
             },
             {
                 name: 'tokenize',
                 alias: 't',
                 type: Boolean,
                 defaultValue: false,
-                // TODO: not sure about this one
+                description: 'parse lines as whitespace-separated tokens, rather than the whole line',
             }
         ],
 

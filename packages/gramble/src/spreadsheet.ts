@@ -35,6 +35,7 @@ export interface DevEnvironment {
     markComment(sheet: string, row: number, col: number): void;
     markHeader(sheet: string, row: number, col: number, tier: string): void;
     markCommand(sheet: string, row: number, col: number): void;
+    markSymbol(sheet: string, row: number, col: number): void;
     setColor(tierName: string, color: string): void;
     highlight(): void;
     alert(msg: string): void;
@@ -48,6 +49,7 @@ export class TextDevEnvironment {
     public markComment(sheet: string, row: number, col: number): void {}
     public markHeader(sheet: string, row: number, col: number, tier: string): void {}
     public markCommand(sheet: string, row: number, col: number): void {}
+    public markSymbol(sheet: string, row: number, col: number): void {}
     public setColor(tierName: string, color: string): void {}
 
     public markError(sheet: string, 
@@ -423,10 +425,12 @@ export class Project {
                 this.currentSymbol = firstCell;
                 this.symbolTable.set(firstCellText, []);
                 this.testTable.set(firstCellText, []);
+                devEnv.markSymbol(firstCell.sheet, firstCell.row, firstCell.col);
+            } else {
+                devEnv.markCommand(firstCell.sheet, firstCell.row, firstCell.col);
             }
             this.currentFunction = makeFunction(firstCell, this.currentSymbol, devEnv);
             this.currentFunction.addParams(cells.slice(1), devEnv);
-            devEnv.markCommand(firstCell.sheet, firstCell.row, firstCell.col);
             return;
         }
 
