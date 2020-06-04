@@ -13,7 +13,8 @@ export class ParseOptions {
     constructor(
         public randomize: boolean = false,
         public maxResults: number = -1,
-        public parseLeftward: boolean = true
+        public parseLeftward: boolean = true,
+        public accelerate: boolean = false
     ) { }
 }
 
@@ -149,6 +150,10 @@ class Transducer {
         return 1.0
     }
 
+    public firstChar(tier: string): (string|undefined)[] {
+        return [];
+    }
+
     /*
     public transduceMany(inputs: GParse[], randomize=false, maxResults=-1): GParse[] {
         const results : GParse[] = [];
@@ -218,8 +223,9 @@ class Transducer {
 }
 
 class VarTransducer extends Transducer {
-
     
+    private transducer : Transducer | undefined = undefined;
+
     public constructor(
         private value: GCell, 
         private symbolTable: SymbolTable) {
@@ -227,16 +233,23 @@ class VarTransducer extends Transducer {
         super();
     }
 
+    public getTransducer(): Transducer {
+        if (this.transducer == undefined) {
+            const table = this.symbolTable.get(this.value.text);
+            if (table == undefined) {
+                throw new Error(`Could not find symbol: ${this.value.text}`);
+            }
+            this.transducer = transducerFromTable(table, this.symbolTable);
+        }
+        return this.transducer;
+    }
+
     public transduce(input: GParse, options: ParseOptions): GParse[] {
         if (this.value.text.length == 0) {
             return [input];
         }
-        const table = this.symbolTable.get(this.value.text);
-        if (table == undefined) {
-            throw new Error(`Could not find symbol: ${this.value.text}`);
-        }
-        const transducer = transducerFromTable(table, this.symbolTable);
-        return transducer.transduce(input, options);
+
+        return this.getTransducer().transduce(input, options);
     }
 }
 
@@ -290,6 +303,10 @@ class FinalTransducer extends Transducer {
         super();
     }
 
+    public firstChar(tier: string): (string|undefined)[] {
+        return this.child.firstChar(tier);
+    }
+
     public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
         return this.child.transduce(inputParse, options).filter(([remnant, p, o]) => {
             return !remnant.some(([key, value]) => value.text.length > 0 );
@@ -328,6 +345,10 @@ class BeforeTransducer extends Transducer {
         private child: Transducer
     ) {
         super();
+    }
+
+    public firstChar(tier: string): (string|undefined)[] {
+        return this.child.firstChar(tier);
     }
 
     public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
@@ -410,7 +431,7 @@ class MaybeTransducer extends Transducer {
 
 class UpdownTransducer extends Transducer {
 
-    private transducer: Transducer;
+    private transducer: Transducer | undefined = undefined;
     private inputTier: string;
     private outputTier: string;
 
@@ -428,13 +449,19 @@ class UpdownTransducer extends Transducer {
             this.inputTier = "up";
             this.outputTier = "down";
         }
-        
-        const table = this.symbolTable.get(this.value.text);
-        if (table == undefined) {
-            throw new Error(`Could not find symbol: ${this.value.text}`);
-        }
-        this.transducer = transducerFromTable(table, this.symbolTable);
     }
+    
+    public getTransducer(): Transducer {
+        if (this.transducer == undefined) {
+            const table = this.symbolTable.get(this.value.text);
+            if (table == undefined) {
+                throw new Error(`Could not find symbol: ${this.value.text}`);
+            }
+            this.transducer = transducerFromTable(table, this.symbolTable);
+        }
+        return this.transducer;
+    }
+
     
     public applyConversion(parse: GParse, options: ParseOptions): GParse[] {
         
@@ -448,7 +475,7 @@ class UpdownTransducer extends Transducer {
             return [parse];
         }
     
-        var outputs = this.transducer.transduce(parse, options);
+        var outputs = this.getTransducer().transduce(parse, options);
         if (outputs.length == 0) {
             outputs = [ stepOneCharacter(parse, this.inputTier, this.outputTier) ];
         } 
