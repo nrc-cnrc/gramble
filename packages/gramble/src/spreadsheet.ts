@@ -280,22 +280,22 @@ export class Project {
         ).push(record);
     }
     
-    public parse(symbolName: string, input: GTable, randomize: boolean = false, maxResults: number = -1): GTable {
+    public parse(symbolName: string, input: GTable, randomize: boolean = false, maxResults: number = -1, devEnv: DevEnvironment): GTable {
         const table = getTableOrThrow(this.symbolTable, symbolName);
-        const parser = transducerFromTable(table, this.symbolTable);
-        return parser.transduceFinal(input, randomize, maxResults);
+        const parser = transducerFromTable(table, this.symbolTable, devEnv);
+        return parser.transduceFinal(input, randomize, maxResults, devEnv);
     }
 
-    public generate(symbolName: string, randomize: boolean = false, maxResults: number = -1): GTable {
+    public generate(symbolName: string, randomize: boolean = false, maxResults: number = -1, devEnv: DevEnvironment): GTable {
         const table = getTableOrThrow(this.symbolTable, symbolName);
-        const parser = transducerFromTable(table, this.symbolTable);
-        return parser.generate(randomize, maxResults);
+        const parser = transducerFromTable(table, this.symbolTable, devEnv);
+        return parser.generate(randomize, maxResults, devEnv);
     }
 
-    public sample(symbolName: string, maxResults: number = 1): GTable {
+    public sample(symbolName: string, maxResults: number = 1, devEnv: DevEnvironment): GTable {
         const table = getTableOrThrow(this.symbolTable, symbolName);
-        const parser = transducerFromTable(table, this.symbolTable);
-        return parser.sample(maxResults);
+        const parser = transducerFromTable(table, this.symbolTable, devEnv);
+        return parser.sample(maxResults, devEnv);
     }
 
     public containsResult(resultTable: GTable, [targetKey, targetValue]: GEntry) {
@@ -366,7 +366,7 @@ export class Project {
                 
                 const input: GTable = [];
                 input.push(inputRecord);
-                const result = this.parse(symbolName, input);
+                const result = this.parse(symbolName, input, false, -1, highlighter);
                 
                 for (const [targetKey, targetValue] of containsRecord) {
                     if (!this.containsResult(result, [targetKey, targetValue])) {

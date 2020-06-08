@@ -3,7 +3,9 @@ import { expect } from 'chai';
 import 'mocha';
 import {testNumResults, testOutput} from "./test_util";
 import {transducerFromTable, makeTable} from "../src/transducers"
+import {TextDevEnvironment} from "../src/spreadsheet";
 
+const devEnv = new TextDevEnvironment();
 const symbol_table = new Map();
 const text_input = makeTable([[["text", "foobar"]]]);
 const empty_input = makeTable([[["", ""]]]);
@@ -21,7 +23,7 @@ symbol_table.set('SUFFIX', makeTable([
 
 const ambiguous_parser_with_var = transducerFromTable(makeTable([
     [["var", "ROOT"], ["var", "SUFFIX"]]
-]), symbol_table);
+]), symbol_table, devEnv);
 
 
 symbol_table.set('SUFFIX_PROBS', makeTable([
@@ -33,7 +35,7 @@ symbol_table.set('SUFFIX_PROBS', makeTable([
 
 const ambiguous_parser_with_probs = transducerFromTable(makeTable([
     [["var", "ROOT"], ["var", "SUFFIX_PROBS"]]
-]), symbol_table);
+]), symbol_table, devEnv);
 
 
 describe('Random picker', function() {
@@ -56,19 +58,19 @@ describe('Random picker', function() {
 
 
 describe('Random transducer, with max_results=1', function() {
-    const result = ambiguous_parser_with_var.transduceFinal(text_input, true, 1);
+    const result = ambiguous_parser_with_var.transduceFinal(text_input, true, 1, devEnv);
     testNumResults(result, 1);
 });
 
 
 describe('Random generator, with max_results=1', function() {
-    const result = ambiguous_parser_with_var.transduceFinal(empty_input, true, 1);
+    const result = ambiguous_parser_with_var.transduceFinal(empty_input, true, 1, devEnv);
     testNumResults(result, 1);
 });
 
 
 describe('Random transducer with weights', function() {
-    const result = ambiguous_parser_with_probs.transduceFinal(text_input, true);
+    const result = ambiguous_parser_with_probs.transduceFinal(text_input, true, -1, devEnv);
     var nonzero_results = [];
     for (const record of result) {
         for (const [key, value] of record) {

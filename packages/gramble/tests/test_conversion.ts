@@ -1,7 +1,9 @@
 import {transducerFromTable, makeTable} from "../src/transducers"
 import 'mocha';
 import {testNumResults, testOutput} from "./test_util"
+import {TextDevEnvironment} from "../src/spreadsheet";
 
+const devEnv = new TextDevEnvironment();
 const symbol_table = new Map();
 
 /*
@@ -45,7 +47,7 @@ const oo_reduction_parser = transducerFromTable(makeTable([[
     ["text", "bar"],
     ["gloss", "-1SG"],
     ["downward text", "reduce_oo"]
-]]), symbol_table);
+]]), symbol_table, devEnv);
 
 const gloss_input = makeTable([[
     ["gloss", "jump-1SG"],
@@ -86,7 +88,7 @@ describe('Ambiguous converter, input "diiablo"', function() {
 }); */
 
 describe('Foobar generator with oo->o reduction', function() {
-    const result = oo_reduction_parser.transduceFinal(gloss_input);
+    const result = oo_reduction_parser.transduceFinal(gloss_input, false, -1, devEnv);
     testNumResults(result, 1);
     testOutput(result, 0, "text", "fobar");
     testOutput(result, 0, "gloss", "jump-1SG");
@@ -94,13 +96,13 @@ describe('Foobar generator with oo->o reduction', function() {
 
 
 describe('Fobar parser with oo->o reduction', function() {
-    const result = oo_reduction_parser.transduceFinal(text_input);
+    const result = oo_reduction_parser.transduceFinal(text_input, false, -1, devEnv);
     testNumResults(result, 1);
     testOutput(result, 0, "gloss", "jump-1SG");
     testOutput(result, 0, "text", "fobar");
 });
 
 describe('Fobar parser with oo->o reduction, but applied to "foobar"', function() {
-    const result = oo_reduction_parser.transduceFinal(text_input_bad);
+    const result = oo_reduction_parser.transduceFinal(text_input_bad, false, -1, devEnv);
     testNumResults(result, 0);
 });

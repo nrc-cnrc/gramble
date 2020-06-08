@@ -15,7 +15,8 @@ export class ParseOptions {
         public randomize: boolean = false,
         public maxResults: number = -1,
         public parseLeftward: boolean = true,
-        public accelerate: boolean = false
+        public accelerate: boolean = false,
+        public devEnv: DevEnvironment
     ) { }
 }
 
@@ -176,11 +177,12 @@ class Transducer {
      */
     public transduceFinal(input: GTable, 
                         randomize: boolean = false,
-                        maxResults: number = -1): GTable {
+                        maxResults: number = -1,
+                        devEnv: DevEnvironment): GTable {
 
         var transducer = new FinalTransducer(this);
         var results: GTable = [];
-        var options = new ParseOptions(randomize, maxResults);
+        var options = new ParseOptions(randomize, maxResults, true, false, devEnv);
 
         for (var inputRecord of input) {
             var inputParse: GParse = [inputRecord, 0.0, []];
@@ -194,12 +196,14 @@ class Transducer {
     }
 
     public generate(randomize: boolean = false,
-                    maxResults: number = -1): GTable {
+                    maxResults: number = -1, 
+                    devEnv: DevEnvironment): GTable {
         const input: GTable = makeTable([[["",""]]]) // make an empty input to transduce from
-        return this.transduceFinal(input, randomize, maxResults);
+        return this.transduceFinal(input, randomize, maxResults, devEnv);
     }
     
-    public sample(maxResults: number = 1): GTable {
+    public sample(maxResults: number = 1, 
+        devEnv: DevEnvironment): GTable {
         if (maxResults == -1) {
             maxResults = 1;
         }
@@ -208,7 +212,7 @@ class Transducer {
         var result: GTable = [];
 
         while (result.length < maxResults) {
-            const sampleResult = this.generate(true, 1);
+            const sampleResult = this.generate(true, 1, devEnv);
             if (sampleResult.length == 0) {
                 numFailures++;
             }
@@ -234,13 +238,13 @@ class VarTransducer extends Transducer {
         super();
     }
 
-    public getTransducer(): Transducer {
+    public getTransducer(devEnv: DevEnvironment): Transducer {
         if (this.transducer == undefined) {
             const table = this.symbolTable.get(this.value.text);
             if (table == undefined) {
                 throw new Error(`Could not find symbol: ${this.value.text}`);
             }
-            this.transducer = transducerFromTable(table, this.symbolTable);
+            this.transducer = transducerFromTable(table, this.symbolTable, devEnv);
         }
         return this.transducer;
     }
@@ -250,7 +254,7 @@ class VarTransducer extends Transducer {
             return [input];
         }
 
-        return this.getTransducer().transduce(input, options);
+        return this.getTransducer(options.devEnv).transduce(input, options);
     }
 }
 
@@ -452,13 +456,13 @@ class UpdownTransducer extends Transducer {
         }
     }
     
-    public getTransducer(): Transducer {
+    public getTransducer(devEnv: DevEnvironment): Transducer {
         if (this.transducer == undefined) {
             const table = this.symbolTable.get(this.value.text);
             if (table == undefined) {
                 throw new Error(`Could not find symbol: ${this.value.text}`);
             }
-            this.transducer = transducerFromTable(table, this.symbolTable);
+            this.transducer = transducerFromTable(table, this.symbolTable, devEnv);
         }
         return this.transducer;
     }
@@ -476,7 +480,7 @@ class UpdownTransducer extends Transducer {
             return [parse];
         }
     
-        var outputs = this.getTransducer().transduce(parse, options);
+        var outputs = this.getTransducer(options.devEnv).transduce(parse, options);
         if (outputs.length == 0) {
             outputs = [ stepOneCharacter(parse, this.inputTier, this.outputTier) ];
         } 

@@ -1,23 +1,26 @@
 import {makeTable, makeEntry, makeRecord, GParse, transducerFromEntry, transducerFromTable, ParseOptions} from "../src/transducers"
+import {TextDevEnvironment} from "../src/spreadsheet";
+
 import 'mocha';
 import {testNumResults, testOutput, testParseOutput, testParseRemnant} from "./test_util"
 
 
 const symbolTable = new Map();
-const defaultOptions = new ParseOptions();
-const reverseOptions = new ParseOptions(false, -1, false);
+const devEnv = new TextDevEnvironment();
+const defaultOptions = new ParseOptions(false, -1, true, false, devEnv);
+const reverseOptions = new ParseOptions(false, -1, false, false, devEnv);
 
-const fooParser = transducerFromEntry(makeEntry("text", "foo"), symbolTable);
+const fooParser = transducerFromEntry(makeEntry("text", "foo"), symbolTable, devEnv);
 const fooInput = makeRecord([["text", "foo"]]);
 const foobarInput = makeRecord([["text", "foobar"]]);
 
-const barParser = transducerFromEntry(makeEntry("text", "bar"), symbolTable);
+const barParser = transducerFromEntry(makeEntry("text", "bar"), symbolTable, devEnv);
 
 symbolTable.set('ROOT', makeTable([
     [["text", "foo"]]
 ]));
 
-const varParser = transducerFromEntry(makeEntry("var", "ROOT"), symbolTable);
+const varParser = transducerFromEntry(makeEntry("var", "ROOT"), symbolTable, devEnv);
 
 
 describe('Simple GEntry parser, no remnant', function() {
