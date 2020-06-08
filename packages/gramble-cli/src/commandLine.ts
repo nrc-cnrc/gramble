@@ -62,7 +62,7 @@ class TextProject extends Project {
 
         return fromStream(inputStream, (error: Error | any, line: string, rownum: number) => {
             const input: GTable = makeTable([[[asTier, line.trim()]]]);
-            const result = super.parse(symbolName, input, randomize, maxResults);
+            const result = super.parse(symbolName, input, randomize, maxResults, this.env);
             this.writeToOutput(outputStream, result, outputTier);
         });
     }
@@ -77,7 +77,7 @@ class TextProject extends Project {
         return fromStream(inputStream, (error: Error | any, line: string, rownum: number) => {
             for (const token of line.split(" ")) {
                 const input: GTable = makeTable([[[asTier, token.trim()]]]);
-                const result = super.parse(symbolName, input, randomize, 1);
+                const result = super.parse(symbolName, input, randomize, 1, this.env);
                 outputStream.write(getTierAsString(result, outputTier) + " ");
             }
             outputStream.write("\n");
@@ -88,7 +88,7 @@ class TextProject extends Project {
                             maxResults: number = -1,
                          outputTier: string | undefined = undefined,
                             symbolName: string = "MAIN"): void {
-        const result = super.generate(symbolName, false, maxResults);
+        const result = super.generate(symbolName, false, maxResults, this.env);
         this.writeToOutput(outputStream, result, outputTier, "\n");
     }
 
@@ -96,7 +96,7 @@ class TextProject extends Project {
                         maxResults: number = 1,
                         outputTier: string | undefined = undefined,
                         symbolName: string = "MAIN"): void {
-        const result = super.sample(symbolName, maxResults);
+        const result = super.sample(symbolName, maxResults, this.env);
         this.writeToOutput(outputStream, result, outputTier, "\n");
     }
 
