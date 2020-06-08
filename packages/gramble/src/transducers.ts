@@ -1,5 +1,6 @@
 import { RandomPicker, winnow } from "./util";
 import { getEnabledCategories } from "trace_events";
+import { DevEnvironment } from "./spreadsheet";
 //import { getEnabledCategories } from "trace_events";
 //import { stringify } from "querystring";
 
@@ -639,14 +640,16 @@ class ConcatenationTransducer extends Transducer {
     }
 }
 
-export function transducerFromEntry([key, value]: [GCell, GCell], symbolTable: SymbolTable): Transducer {
+export function transducerFromEntry([key, value]: [GCell, GCell], 
+                                        symbolTable: SymbolTable,
+                                        devEnv: DevEnvironment): Transducer {
 
     const commaSeparatedTiers = splitTrimLower(key.text, ",");
 
     if (commaSeparatedTiers.length > 1) {
         var children = commaSeparatedTiers.map(tier => {
             const newKey = new GCell(tier, key.sheet, key.col, key.row);
-            return transducerFromEntry([newKey, value], symbolTable);
+            return transducerFromEntry([newKey, value], symbolTable, devEnv);
         });
         return new ConcatenationTransducer(children);
     }
@@ -658,7 +661,9 @@ export function transducerFromEntry([key, value]: [GCell, GCell], symbolTable: S
 
     if (keys[0] == "upward") {
         if (keys.length > 2) {
-            throw new Error("Invalid tier name: " + key.text);
+            devEnv.markError(key.sheet, key.row, key.col, 
+                "Invalid tier name: " + key.text, "error");
+            return new Transducer();
         }
         const remnant = new GCell(keys[1], key.sheet, key.row, key.col);
         return new UpdownTransducer(remnant, value, symbolTable, "upward");
@@ -666,7 +671,9 @@ export function transducerFromEntry([key, value]: [GCell, GCell], symbolTable: S
  
     if (keys[0] == "downward") {
         if (keys.length > 2) {
-            throw new Error("Invalid tier name: " + key.text);
+            devEnv.markError(key.sheet, key.row, key.col, 
+                "Invalid tier name: " + key.text, "error");
+            return new Transducer();
         }
         const remnant = new GCell(keys[1], key.sheet, key.row, key.col);
         return new UpdownTransducer(remnant, value, symbolTable, "downward");
@@ -674,7 +681,9 @@ export function transducerFromEntry([key, value]: [GCell, GCell], symbolTable: S
 
     if (keys[0] == "join") {
         if (keys.length > 2) {
-            throw new Error("Invalid tier name: " + key.text);
+            devEnv.markError(key.sheet, key.row, key.col, 
+                "Invalid tier name: " + key.text, "error");
+            return new Transducer();
         }
         const remnant = new GCell(keys[1], key.sheet, key.row, key.col);
         return new JoinTransducer(remnant, value);
@@ -682,7 +691,9 @@ export function transducerFromEntry([key, value]: [GCell, GCell], symbolTable: S
 
     if (keys[0] == "shift") {
         if (keys.length > 2) {
-            throw new Error("Invalid tier name: " + key.text);
+            devEnv.markError(key.sheet, key.row, key.col, 
+                "Invalid tier name: " + key.text, "error");
+            return new Transducer();
         }
         const remnant = new GCell(keys[1], key.sheet, key.row, key.col);
         return new ShiftTransducer(remnant, value);
@@ -691,34 +702,36 @@ export function transducerFromEntry([key, value]: [GCell, GCell], symbolTable: S
     if (keys[0] == "maybe") {
         const remnant = keys.slice(1).join(" ");
         const childKey = new GCell(remnant, key.sheet, key.row, key.col);
-        const child = transducerFromEntry([childKey, value], symbolTable);
+        const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
         return new MaybeTransducer(child);
     }
 
     if (keys[0] == "before") {
         const remnant = keys.slice(1).join(" ");
         const childKey = new GCell(remnant, key.sheet, key.row, key.col);
-        const child = transducerFromEntry([childKey, value], symbolTable);
+        const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
         return new BeforeTransducer(child);
     }
 
     if (keys[0] == "input") {
         const remnant = keys.slice(1).join(" ");
         const childKey = new GCell(remnant, key.sheet, key.row, key.col);
-        const child = transducerFromEntry([childKey, value], symbolTable);
+        const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
         return new InputTransducer(child);
     }
 
     if (keys[0] == "final") {
         const remnant = keys.slice(1).join(" ");
         const childKey = new GCell(remnant, key.sheet, key.row, key.col);
-        const child = transducerFromEntry([childKey, value], symbolTable);
+        const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
         return new FinalTransducer(child);
     }
 
 
     if (keys.length > 1) {
-        throw new Error("Not a valid tier name: " + key.text);
+        devEnv.markError(key.sheet, key.row, key.col, 
+            "Invalid tier name: " + key.text, "error");
+        return new Transducer();
     }
 
     if (keys[0] == "var") {
@@ -733,13 +746,13 @@ export function transducerFromEntry([key, value]: [GCell, GCell], symbolTable: S
     return new LiteralTransducer(key, value);
 }
 
-function transducerFromRecord(record: GRecord, symbolTable: SymbolTable) {
-    const children = record.map(entry => transducerFromEntry(entry, symbolTable));
+function transducerFromRecord(record: GRecord, symbolTable: SymbolTable, devEnv: DevEnvironment) {
+    const children = record.map(entry => transducerFromEntry(entry, symbolTable, devEnv));
     return new ConcatenationTransducer(children);
 }
 
-export function transducerFromTable(table: GTable, symbolTable: SymbolTable) {
-    const children = table.map(record => transducerFromRecord(record, symbolTable));
+export function transducerFromTable(table: GTable, symbolTable: SymbolTable, devEnv: DevEnvironment) {
+    const children = table.map(record => transducerFromRecord(record, symbolTable, devEnv));
     return new AlternationTransducer(children);
 }
 

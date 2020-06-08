@@ -292,7 +292,6 @@ class GoogleSheetsHighlighter implements DevEnvironment {
                     level: NoteType): void {
 
         const color = NOTE_COLORS.get(level);
-        alert(color);
         if (color == undefined) {
             throw new Error("Color undefined: " + level);
         }

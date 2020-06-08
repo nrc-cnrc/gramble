@@ -1,0 +1,21 @@
+<html>
+    <head>
+        <title>Gramble by Examble</title>
+        <script src="papaparse.min.js"></script>
+    </head>
+    <body>
+        <object id="grammar" onload="parseCSV()" width="0" height="0" display="none" type="text/plain" data="sample.txt"></object>
+        <script>
+            function parseCSV() {
+                var input = document.getElementById('grammar').contentDocument.body.childNodes[0].innerHTML;   
+			    var results = Papa.parse(input);
+                console.log("Synchronous results:", results);
+                if (results.errors.length > 0) {
+                    alert("Errors: \n" + result.errors.join("\n"));
+                    return;
+                }
+            }
+
+        </script>
+    </body>
+</html>
