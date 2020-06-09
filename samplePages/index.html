@@ -5,42 +5,44 @@
     </head>
     <body>
         <script>
-            window.onload = function() {
+            window.onload = async function() {
 
                 // there are four convenience methods for making a client-side grammar.
                 //  -- fromURL takes an URL and a function(error, grammar) callback
                 //  -- fromEmbed takes the id of an <object> tag into which the text is embedded, and the same callback as above
-                //  -- fromURLPromise is a promisified version of fromURL
-                //  -- fromEmbedPromise is a promisified version of fromEmbed
-
-                gramble.fromURLPromise("sample.txt")
-                .then(function(grammar) {
+                //  -- fromURLAsync is a promisified version of fromURL
+                //  -- fromEmbedAsync is a promisified version of fromEmbed
+                
+                try {
+                    let grammar = await gramble.fromURLAsync("sample.txt");
 
                     var results = grammar.sample();  // results in a list of lists of { tier, text, sheet, row, col } objects.
-                    alert(JSON.stringify(results));  // it'll be a little too much detail for simple applications
+                                                     // it'll be a little too much detail for simple applications
                                                      // but the row numbers can be used to align elements between tiers.
-                                                     // (since alternation is only expressed by row, any thing that shares
-                                                     // a row co-alternates.)
+                                                     // (since alternation is only expressed by row, any elements that share
+                                                     // a row co-alternate.)
 
                     results = grammar.flatten(results); // flattened so that the object keys are the names of tiers and 
-                    alert(JSON.stringify(results));     // the values are the plain text in that tier, for when all you really
+                                                        // the values are the plain text in that tier, for when all you really
                                                         // need is the plain text.
-                                                        
-                }).catch(function(error) {
-                    alert(error.message);
-                });
-            };
 
-            // parsing/generating a particular input would be: 
-            //      results = grammar.parse({ text: "foobar" });
-            // or
-            //      results = grammar.parse({ gloss: "run-1SG" });
-            // or
-            //      results = grammar.parse({ root: "run", "subj": "1SG" });
-            // etc.
-        
-            // generating the entire paradigm:
-            // results = grammar.generate();
+                    alert(JSON.stringify(results)); 
+                    
+                } catch(err) {
+                    alert(err);
+                }
+
+                // parsing/generating a particular input would be: 
+                //      results = grammar.parse({ text: "foobar" });
+                // or
+                //      results = grammar.parse({ gloss: "run-1SG" });
+                // or
+                //      results = grammar.parse({ root: "run", subj: "1SG" });
+                // etc.
+            
+                // generating the entire paradigm:
+                // results = grammar.generate();
+            };
 
 
         </script>

@@ -83,7 +83,7 @@ export function fromEmbed(elementID: string, callback: (error: any, project: Cli
     });
 }
 
-export const fromEmbedPromise = promisify(fromEmbed);
+export const fromEmbedAsync = promisify(fromEmbed);
 
 export function fromURL(url: string, callback: (error: any, project: ClientSideProject) => void): void {
     //var input = document.getElementById('grammar').contentDocument.body.childNodes[0].innerHTML;  
@@ -94,4 +94,4 @@ export function fromURL(url: string, callback: (error: any, project: ClientSideP
     });
 }
 
-export const fromURLPromise = promisify(fromURL);
+export const fromURLAsync = promisify(fromURL);
