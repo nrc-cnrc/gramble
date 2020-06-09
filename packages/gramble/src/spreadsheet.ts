@@ -1,4 +1,4 @@
-import {GCell, GEntry, GRecord, GTable, SymbolTable, transducerFromTable, tableToMap, flattenToText} from "./transducers"
+import {GCell, GEntry, GRecord, GTable, SymbolTable, transducerFromTable, tableToMap, flattenToText, objToTable} from "./transducers"
 
 /**
  * Determines whether a line is empty
@@ -25,8 +25,8 @@ function isLineEmpty(row: string[]): boolean {
  * DevEnvironment
  * 
  * To make an editor (e.g. Google Sheets) "smart" about Gramble, you implement this interface.  Most
- * of the public-facing methods of the Project edifice take an IHighlighter instance as an argument.
- * When parsing a spreadsheet, executing a unit test, etc., the Parser will notify the IHighlighter instance
+ * of the public-facing methods of the Project edifice take an DevEnvironment instance as an argument.
+ * When parsing a spreadsheet, executing a unit test, etc., the Parser will notify the DevEnvironment instance
  * that particular cells are errors, comments, column headers, etc.
  */
 export interface DevEnvironment {
@@ -40,6 +40,47 @@ export interface DevEnvironment {
     highlight(): void;
     alert(msg: string): void;
 }
+
+export class BrowserDevEnvironment {
+
+    private errorMessages: [string, number, number, string, "error"|"warning"|"info"][] = [];
+    public markTier(sheet: string, row: number, col: number, tier: string): void {}
+    public markComment(sheet: string, row: number, col: number): void {}
+    public markHeader(sheet: string, row: number, col: number, tier: string): void {}
+    public markCommand(sheet: string, row: number, col: number): void {}
+    public markSymbol(sheet: string, row: number, col: number): void {}
+    public setColor(tierName: string, color: string): void {}
+
+    public markError(sheet: string, 
+            row: number, 
+            col: number, 
+            msg: string, 
+            level: "error"|"warning"|"info"): void {
+
+        this.errorMessages.push([sheet, row, col, msg, level]);
+    }
+
+    public highlight(): void {
+        var errors : string[] = [];
+        for (const error of this.errorMessages) {
+            const rowStr = (error[1] == -1) ? "unknown" : (error[1] + 1).toString();
+            const colStr = (error[2] == -1) ? "unknown" : (error[2] + 1).toString();
+            errors.push(error[4].toUpperCase() + 
+                            ": " + error[0] + 
+                            ", row " + rowStr + 
+                            ", column " + colStr + 
+                            ": " + error[3]);
+        }
+        if (errors.length > 0) {
+            alert("ERRORS: \n" + errors.join("\n"));
+        }
+    }
+
+    public alert(msg: string): void {
+        alert(msg);
+    }
+}
+
 
 export class TextDevEnvironment {
 
@@ -278,6 +319,11 @@ export class Project {
             name,
             `Cannot find symbol ${name} in test table`
         ).push(record);
+    }
+
+    public parseObj(input: {[key: string]: string}, symbolName: string, randomize: boolean = false, maxResults: number = -1, devEnv:DevEnvironment): GTable {
+        const table = objToTable(input);
+        return this.parse(symbolName, table, randomize, maxResults, devEnv);
     }
     
     public parse(symbolName: string, input: GTable, randomize: boolean = false, maxResults: number = -1, devEnv: DevEnvironment): GTable {

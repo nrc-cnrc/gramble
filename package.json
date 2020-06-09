@@ -20,6 +20,10 @@
   "license": "MIT",
   "devDependencies": {
     "lerna": "^3.22.0",
+    "tinyify": "^2.5.2",
     "ts-node": "^8.10.2"
+  },
+  "dependencies": {
+    "@types/papaparse": "^5.0.3"
   }
 }

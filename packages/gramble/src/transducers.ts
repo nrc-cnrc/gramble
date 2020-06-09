@@ -111,6 +111,13 @@ export function tableToObjs(table: GTable): {[key: string]: string}[] {
     });
 }
 
+export function objToTable(obj: { [key: string]: string; }): GTable {
+    const record : GRecord = [];
+    for (const key in obj) {
+        record.push([new GCell(key), new GCell(obj[key])]);
+    }
+    return [record];
+}
 
 export function flattenToJSON(table: GTable): string {
     return JSON.stringify(tableToObjs(table));
