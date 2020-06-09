@@ -1,11 +1,45 @@
 # `@gramble/cli`
 
-> Run your gramble spreadsheets!
+> Run your Gramble spreadsheets!
 
-## Usage
+Install
+-------
 
-```shell
-$ gramble --itier=<tier> [--tokenize --otier=<tier>] [--random] [--input=<file>] [--output=<file>] <source>...
-$ gramble --generate [--otier=<tier>] [--output=<file>] <source>...
-$ gramble --sample [--max=<count>] [--otier=<tier>] [--output=<file>] <source>...
-```
+    npm install -g @gramble/cli
+
+Usage
+-----
+
+Gramble has a few subcommands:
+
+ 1. generate
+ 2. parse
+ 3. sample
+
+For general help, type
+
+    gramble help
+
+For help for a **specific command**, type
+
+    gramble help <command>
+
+
+### Generate
+
+Generate all words from your Gramble grammar:
+
+    gramble generate [--max=n][--otier=tier] [--output|-o file] <source>
+
+### Parse
+
+Parse or analyze forms using your Gramble grammar:
+
+    gramble parse --itier=tier [--otier=tier] [--random] [--max=n] <source>
+    gramble parse --tokenize --itier=tier --otier=tier [--random] <source>
+
+### Sample
+
+Sample a few words from your Gramble grammar:
+
+    gramble sample [--output|-o file] <source>
