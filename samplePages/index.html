@@ -6,7 +6,16 @@
     <body>
         <script>
             window.onload = function() {
-                gramble.fromURL("sample.txt", function(grammar) {
+
+                // there are four convenience methods for making a client-side grammar.
+                //  -- fromURL takes an URL and a function(error, grammar) callback
+                //  -- fromEmbed takes the id of an <object> tag into which the text is embedded, and the same callback as above
+                //  -- fromURLPromise is a promisified version of fromURL
+                //  -- fromEmbedPromise is a promisified version of fromEmbed
+
+                gramble.fromURLPromise("sample.txt")
+                .then(function(grammar) {
+
                     var results = grammar.sample();  // results in a list of lists of { tier, text, sheet, row, col } objects.
                     alert(JSON.stringify(results));  // it'll be a little too much detail for simple applications
                                                      // but the row numbers can be used to align elements between tiers.
@@ -16,6 +25,9 @@
                     results = grammar.flatten(results); // flattened so that the object keys are the names of tiers and 
                     alert(JSON.stringify(results));     // the values are the plain text in that tier, for when all you really
                                                         // need is the plain text.
+                                                        
+                }).catch(function(error) {
+                    alert(error.message);
                 });
             };
 
@@ -29,6 +41,7 @@
         
             // generating the entire paradigm:
             // results = grammar.generate();
+
 
         </script>
     </body>
