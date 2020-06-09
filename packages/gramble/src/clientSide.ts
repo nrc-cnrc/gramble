@@ -19,19 +19,49 @@ export class ClientSideProject {
         callback(this);
     }
 
+    
     public parse(input: {[key: string]: string}, symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): {[key: string]: string}[][] {
         const table = objToTable(input);
         const results = this.project.parse(symbolName, table, randomize, maxResults, this.devEnv);
-        return results.map(record => {
-            return record.map(([key, value]) => {
-                return { tier: key.text, 
-                        text: value.text,
-                        sheet: value.sheet, 
-                        row: value.row.toString(),
-                        column: value.col.toString() };
-            });
+        return toObj(results);
+    }
+
+    public sample(symbolName: string = 'MAIN', maxResults: number = 1): {[key: string]: string}[][] {
+        const results = this.project.sample(symbolName, maxResults, this.devEnv);
+        return toObj(results);
+    }
+
+    public generate(symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): {[key: string]: string}[][] {
+        const results = this.project.generate(symbolName, randomize, maxResults, this.devEnv);
+        return toObj(results);
+    }
+
+    public flatten(input: {[key: string]: string}[][]): {[key: string]: string}[] {
+        return input.map(record => {
+            var result: {[key: string]: string} = {};
+            for (const entry of record) {
+                if (entry.tier in result) {
+                    result[entry.tier] += entry.text;
+                } else {
+                    result[entry.tier] = entry.text;
+                }
+            }
+            return result;
         });
     }
+
+}
+
+function toObj(table: GTable): {[key:string]:string}[][] {
+    return table.map(record => {
+        return record.map(([key, value]) => {
+            return { tier: key.text, 
+                    text: value.text,
+                    sheet: value.sheet, 
+                    row: value.row.toString(),
+                    column: value.col.toString() };
+        });
+    });
 }
 
 

@@ -321,11 +321,6 @@ export class Project {
         ).push(record);
     }
 
-    public parseObj(input: {[key: string]: string}, symbolName: string, randomize: boolean = false, maxResults: number = -1, devEnv:DevEnvironment): GTable {
-        const table = objToTable(input);
-        return this.parse(symbolName, table, randomize, maxResults, devEnv);
-    }
-    
     public parse(symbolName: string, input: GTable, randomize: boolean = false, maxResults: number = -1, devEnv: DevEnvironment): GTable {
         const table = getTableOrThrow(this.symbolTable, symbolName);
         const parser = transducerFromTable(table, this.symbolTable, devEnv);

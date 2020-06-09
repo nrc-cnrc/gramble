@@ -5,14 +5,31 @@
     </head>
     <body>
         <script>
-            var URL = "sample.txt";
             window.onload = function() {
-                gramble.fromURL(URL, function(p) {
-                    var input = { gloss: "run-1SG" };
-                    results = p.parse(input);
-                    alert(JSON.stringify(results));
+                gramble.fromURL("sample.txt", function(grammar) {
+                    var results = grammar.sample();  // results in a list of lists of { tier, text, sheet, row, col } objects.
+                    alert(JSON.stringify(results));  // it'll be a little too much detail for simple applications
+                                                     // but the row numbers can be used to align elements between tiers.
+                                                     // (since alternation is only expressed by row, any thing that shares
+                                                     // a row co-alternates.)
+
+                    results = grammar.flatten(results); // flattened so that the object keys are the names of tiers and 
+                    alert(JSON.stringify(results));     // the values are the plain text in that tier, for when all you really
+                                                        // need is the plain text.
                 });
-            }
+            };
+
+            // parsing/generating a particular input would be: 
+            //      results = grammar.parse({ text: "foobar" });
+            // or
+            //      results = grammar.parse({ gloss: "run-1SG" });
+            // or
+            //      results = grammar.parse({ root: "run", "subj": "1SG" });
+            // etc.
+        
+            // generating the entire paradigm:
+            // results = grammar.generate();
+
         </script>
     </body>
 </html>

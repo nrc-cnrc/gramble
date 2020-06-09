@@ -97,6 +97,7 @@ export function tableToMap(table: GTable): Map<string, string>[] {
     });
 }
 
+
 export function tableToObjs(table: GTable): {[key: string]: string}[] {
     return table.map((record) => {
         const result: {[key: string]: string} = {};
