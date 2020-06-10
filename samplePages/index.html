@@ -8,7 +8,7 @@
             window.onload = async function() {
 
                 // there are four convenience methods for making a client-side grammar.
-                //  -- fromURL takes an URL and a function(error, grammar) callback
+                //  -- fromURL takes an URL and a callback function(error, grammar).
                 //  -- fromEmbed takes the id of an <object> tag into which the text is embedded, and the same callback as above
                 //  -- fromURLAsync is a promisified version of fromURL
                 //  -- fromEmbedAsync is a promisified version of fromEmbed
@@ -27,7 +27,7 @@
                                                         // need is the plain text.
 
                     alert(JSON.stringify(results)); 
-                    
+
                 } catch(err) {
                     alert(err);
                 }
@@ -41,7 +41,7 @@
                 // etc.
             
                 // generating the entire paradigm:
-                // results = grammar.generate();
+                //      results = grammar.generate();
             };
 
 

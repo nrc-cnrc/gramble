@@ -1,4 +1,4 @@
-import {GCell, GEntry, GRecord, GTable, SymbolTable, transducerFromTable, tableToMap, flattenToText, objToTable} from "./transducers"
+import {GCell, GEntry, GRecord, GTable, Transducer, transducerFromTable, tableToMap, flattenToText, objToTable} from "./transducers"
 
 /**
  * Determines whether a line is empty
@@ -301,6 +301,8 @@ export class Project {
     protected symbolTable: Map<string, GTable> = new Map();
     protected testTable: Map<string, GTable> = new Map();
 
+    protected transducerTable: Map<string, Transducer> = new Map();
+
     public hasSymbol(name: string): boolean {
         return this.symbolTable.has(name);
     }
@@ -321,22 +323,27 @@ export class Project {
         ).push(record);
     }
 
-    public parse(symbolName: string, input: GTable, randomize: boolean = false, maxResults: number = -1, devEnv: DevEnvironment): GTable {
-        const table = getTableOrThrow(this.symbolTable, symbolName);
-        const parser = transducerFromTable(table, this.symbolTable, devEnv);
-        return parser.transduceFinal(input, randomize, maxResults, devEnv);
+    public getTransducer(name: string): Transducer {
+        const result = this.transducerTable.get(name);
+        if (result == undefined) {
+            throw new Error(`Could not find symbol: ${name}`);
+        }
+        return result;
     }
 
-    public generate(symbolName: string, randomize: boolean = false, maxResults: number = -1, devEnv: DevEnvironment): GTable {
-        const table = getTableOrThrow(this.symbolTable, symbolName);
-        const parser = transducerFromTable(table, this.symbolTable, devEnv);
-        return parser.generate(randomize, maxResults, devEnv);
+    public parse(symbolName: string, input: GTable, randomize: boolean = false, maxResults: number = -1): GTable {
+        const transducer = this.getTransducer(symbolName);
+        return transducer.transduceFinal(input, randomize, maxResults);
     }
 
-    public sample(symbolName: string, maxResults: number = 1, devEnv: DevEnvironment): GTable {
-        const table = getTableOrThrow(this.symbolTable, symbolName);
-        const parser = transducerFromTable(table, this.symbolTable, devEnv);
-        return parser.sample(maxResults, devEnv);
+    public generate(symbolName: string, randomize: boolean = false, maxResults: number = -1): GTable {
+        const transducer = this.getTransducer(symbolName);
+        return transducer.generate(randomize, maxResults);
+    }
+
+    public sample(symbolName: string, maxResults: number = 1): GTable {
+        const transducer = this.getTransducer(symbolName);
+        return transducer.sample(maxResults);
     }
 
     public containsResult(resultTable: GTable, [targetKey, targetValue]: GEntry) {
@@ -407,7 +414,7 @@ export class Project {
                 
                 const input: GTable = [];
                 input.push(inputRecord);
-                const result = this.parse(symbolName, input, false, -1, highlighter);
+                const result = this.parse(symbolName, input, false, -1);
                 
                 for (const [targetKey, targetValue] of containsRecord) {
                     if (!this.containsResult(result, [targetKey, targetValue])) {
@@ -512,12 +519,18 @@ export class Project {
 
     public addSheet(sheetName: string, 
                     cells: string[][], 
-                    highlighter: DevEnvironment): void {
+                    devEnv: DevEnvironment): void {
 
         for (var [rowIdx, row] of cells.entries()) {
-            this.addRow(row, sheetName, rowIdx, highlighter);
+            this.addRow(row, sheetName, rowIdx, devEnv);
+        }
+
+        for (const [name, table] of this.symbolTable.entries()) {
+            const transducer : Transducer = transducerFromTable(table, this.transducerTable, devEnv);
+            this.transducerTable.set(name, transducer);
         }
     }
+
 }
 
 
@@ -526,11 +539,11 @@ export class Project {
  *
  * @param msg the error message to print
  */
-function getTableOrThrow(table: SymbolTable, name: string, msg = `Cannot find symbol ${name} in symbol table`): GTable {
+function getTableOrThrow(table: Map<string, GTable>, name: string, msg = `Cannot find symbol ${name} in symbol table`): GTable {
     const maybeTable = table.get(name);
     if (maybeTable == undefined) {
         throw new Error(msg);
     }
 
     return maybeTable;
-}
+} 

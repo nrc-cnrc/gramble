@@ -1,4 +1,4 @@
-import {makeTable, makeEntry, makeRecord, GParse, transducerFromEntry, transducerFromTable, ParseOptions} from "../src/transducers"
+import {makeTable, Transducer, makeEntry, makeRecord, GParse, transducerFromEntry, transducerFromTable, ParseOptions} from "../src/transducers"
 import {TextDevEnvironment} from "../src/spreadsheet";
 import 'mocha';
 import {testNumResults, testOutput, testParseOutput} from "./test_util"
@@ -15,41 +15,41 @@ const glossInput = makeTable([[["gloss", "jump-1SG"]]]);
 const rootInput = makeTable([[["root", "foo"]]]);
 const badTextInput = makeTable([[["text", "moobar"]]]);
 
-const symbolTable = new Map();
+const transducerTable : Map<string, Transducer> = new Map();
 
 const ambiguous_foobar_parser = transducerFromTable(makeTable([
     [["text", "foo"], ["gloss", "jump"], ["text", "bar"], ["gloss", "-1SG"]],
     [["text", "foob"], ["gloss", "run"], ["text", "ar"], ["gloss", "-3PL.PAST"]]
-]), symbolTable, devEnv);
+]), transducerTable, devEnv);
 
-symbolTable.set('ROOT', makeTable([
+transducerTable.set('ROOT', transducerFromTable(makeTable([
     [["text", "foo"], ["gloss", "jump"]],
     [["text", "foob"], ["gloss", "run"]]
-]));
+]), transducerTable, devEnv));
 
-symbolTable.set('SUFFIX', makeTable([
+transducerTable.set('SUFFIX', transducerFromTable(makeTable([
     [["text", "bar"], ["gloss", "-1SG"]],
     [["text", "ar"], ["gloss", "-3SG.PAST"]],
     [["text", "ar"], ["gloss", "-3PL.PAST"]]
-]));
+]), transducerTable, devEnv));
 
 
 const ambiguous_parser_with_var = transducerFromTable(makeTable([
     [["var", "ROOT"], ["var", "SUFFIX"]]
-]), symbolTable, devEnv);
+]), transducerTable, devEnv);
 
 const maybe_indicative_parser = transducerFromTable(makeTable([
     [["text", "foo"], ["gloss", "jump"], ["maybe gloss", "-INDIC"], ["text", "bar"], ["gloss", "-1SG"]]
-]), symbolTable, devEnv);
+]), transducerTable, devEnv);
 
 const maybe_suffix_parser = transducerFromTable(makeTable([
     [["var", "ROOT"], ["maybe var", "SUFFIX"]]
-]), symbolTable, devEnv);
+]), transducerTable, devEnv);
 
 const conjoined_foobar_parser = transducerFromTable(makeTable([
     [["text, root", "foo"], ["gloss", "jump"], ["text", "bar"], ["gloss", "-1SG"]],
     [["text, root", "foob"], ["gloss", "run"], ["text", "ar"], ["gloss", "-3PL.PAST"]]
-]), symbolTable, devEnv);
+]), transducerTable, devEnv);
 
 
 
@@ -112,7 +112,7 @@ describe('Unambiguous GTable transducer, from gloss to text', function() {
 }); */
 
 describe('Ambiguous GTable transducer, transduce', function() {
-    const result = ambiguous_foobar_parser.transduceFinal(textInput, false, -1, devEnv);
+    const result = ambiguous_foobar_parser.transduceFinal(textInput, false, -1);
     testNumResults(result, 2);
     testOutput(result, 0, "gloss", "jump-1SG");
     testOutput(result, 1, "gloss", "run-3PL.PAST");
@@ -120,25 +120,25 @@ describe('Ambiguous GTable transducer, transduce', function() {
 
 
 describe('Ambiguous GTable transducer, full_parsing an unparseable input', function() {
-    const result = ambiguous_foobar_parser.transduceFinal(badTextInput, false, -1, devEnv);
+    const result = ambiguous_foobar_parser.transduceFinal(badTextInput, false, -1);
     testNumResults(result, 0);
 });
 
 
 
 describe('Ambiguous GTable transducer, full_parsing an incomplete input "fo"', function() {
-    const result = ambiguous_foobar_parser.transduceFinal(textIncomplete, false, -1, devEnv);
+    const result = ambiguous_foobar_parser.transduceFinal(textIncomplete, false, -1);
     testNumResults(result, 0);
 });
 
 describe('Ambiguous GTable transducer, full_parsing an incomplete input "foo"', function() {
-    const result = ambiguous_foobar_parser.transduceFinal(textNoSuffix, false, -1, devEnv);
+    const result = ambiguous_foobar_parser.transduceFinal(textNoSuffix, false, -1);
     testNumResults(result, 0);
 });
 
 
 describe('Ambiguous GTable transducer using variables', function() {
-    const result = ambiguous_parser_with_var.transduceFinal(textInput, false, -1, devEnv);
+    const result = ambiguous_parser_with_var.transduceFinal(textInput, false, -1);
     testNumResults(result, 3);
     testOutput(result, 0, "gloss", "jump-1SG");
     testOutput(result, 1, "gloss", "run-3SG.PAST");
@@ -146,20 +146,20 @@ describe('Ambiguous GTable transducer using variables', function() {
 });
 
 describe('Unambiguous GTable transducer, with vars, gloss->text', function() {
-    const result = ambiguous_parser_with_var.transduceFinal(glossInput, false, -1, devEnv);
+    const result = ambiguous_parser_with_var.transduceFinal(glossInput, false, -1);
     testNumResults(result, 1);
     testOutput(result, 0, "text", "foobar");
 });
 
 describe('Ambiguous GTable transducer, with max_results=1', function() {
-    const result = ambiguous_parser_with_var.transduceFinal(textInput, false, 1, devEnv);
+    const result = ambiguous_parser_with_var.transduceFinal(textInput, false, 1);
     testNumResults(result, 1);
     testOutput(result, 0, "gloss", "jump-1SG");
 });
 
 
 describe('Maybe parser with optional indicative gloss', function() {
-    const result = maybe_indicative_parser.transduceFinal(textInput, false, 2, devEnv);
+    const result = maybe_indicative_parser.transduceFinal(textInput, false, 2);
     testNumResults(result, 2);
     testOutput(result, 0, "gloss", "jump-INDIC-1SG");
     testOutput(result, 1, "gloss", "jump-1SG");
@@ -167,14 +167,14 @@ describe('Maybe parser with optional indicative gloss', function() {
 
 
 describe('Maybe parser with optional suffix, parsing input with no suffix', function() {
-    const result = maybe_suffix_parser.transduceFinal(textNoSuffix, false, -1, devEnv);
+    const result = maybe_suffix_parser.transduceFinal(textNoSuffix, false, -1);
     testNumResults(result, 1);
     testOutput(result, 0, "gloss", "jump");
 });
 
 
 describe('Maybe parser with optional suffix, parsing input with suffix', function() {
-    const result = maybe_suffix_parser.transduceFinal(textInput, false, -1, devEnv);
+    const result = maybe_suffix_parser.transduceFinal(textInput, false, -1);
     testNumResults(result, 3);
     testOutput(result, 0, "gloss", "jump-1SG");
     testOutput(result, 1, "gloss", "run-3SG.PAST");
@@ -183,20 +183,20 @@ describe('Maybe parser with optional suffix, parsing input with suffix', functio
 
 
 describe('Conjoined foobar transducer, transducing from text', function() {
-    const result = conjoined_foobar_parser.transduceFinal(textInput, false, -1, devEnv);
+    const result = conjoined_foobar_parser.transduceFinal(textInput, false, -1);
     testNumResults(result, 2);
     testOutput(result, 0, "root", "foo");
     testOutput(result, 1, "root", "foob");
 });
 
 describe('Conjoined foobar transducer, transducing from gloss', function() {
-    const result = conjoined_foobar_parser.transduceFinal(glossInput, false, -1, devEnv);
+    const result = conjoined_foobar_parser.transduceFinal(glossInput, false, -1);
     testNumResults(result, 1);
     testOutput(result, 0, "root", "foo");
 });
 
 describe('Conjoined foobar transducer, transducing from root', function() {
-    const result = conjoined_foobar_parser.transduceFinal(rootInput, false, -1, devEnv);
+    const result = conjoined_foobar_parser.transduceFinal(rootInput, false, -1);
     testNumResults(result, 1);
     testOutput(result, 0, "text", "foobar");
     testOutput(result, 0, "gloss", "jump-1SG");

@@ -24,17 +24,17 @@ export class ClientSideProject {
     
     public parse(input: {[key: string]: string}, symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): {[key: string]: string}[][] {
         const table = objToTable(input);
-        const results = this.project.parse(symbolName, table, randomize, maxResults, this.devEnv);
+        const results = this.project.parse(symbolName, table, randomize, maxResults);
         return toObj(results);
     }
 
     public sample(symbolName: string = 'MAIN', maxResults: number = 1): {[key: string]: string}[][] {
-        const results = this.project.sample(symbolName, maxResults, this.devEnv);
+        const results = this.project.sample(symbolName, maxResults);
         return toObj(results);
     }
 
     public generate(symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): {[key: string]: string}[][] {
-        const results = this.project.generate(symbolName, randomize, maxResults, this.devEnv);
+        const results = this.project.generate(symbolName, randomize, maxResults);
         return toObj(results);
     }
 
