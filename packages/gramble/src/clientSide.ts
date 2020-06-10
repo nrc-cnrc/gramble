@@ -5,9 +5,8 @@ import {promisify} from 'es6-promisify';
 
 export {GTable, makeTable, flattenToJSON, getTierAsString, Project, BrowserDevEnvironment};
 
-export class ClientSideProject {
+export class ClientSideProject extends Project {
 
-    protected project : Project = new Project();
     protected devEnv : DevEnvironment = new BrowserDevEnvironment();
 
     public addParseResults(results: ParseResult, url: string, callback: (error: any, project: ClientSideProject) => void): void {
@@ -16,56 +15,13 @@ export class ClientSideProject {
             callback(error, this);
             return;
         }
-        this.project.addSheet(url, results.data, this.devEnv);
+        this.addSheet(url, results.data, this.devEnv);
         this.devEnv.highlight();
         callback(null, this);
     }
 
-    
-    public parse(input: {[key: string]: string}, symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): {[key: string]: string}[][] {
-        const table = objToTable(input);
-        const results = this.project.parse(table, symbolName, randomize, maxResults);
-        return toObj(results);
-    }
-
-    public sample(symbolName: string = 'MAIN', maxResults: number = 1): {[key: string]: string}[][] {
-        const results = this.project.sample(symbolName, maxResults);
-        return toObj(results);
-    }
-
-    public generate(symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): {[key: string]: string}[][] {
-        const results = this.project.generate(symbolName, randomize, maxResults);
-        return toObj(results);
-    }
-
-    public flatten(input: {[key: string]: string}[][]): {[key: string]: string}[] {
-        return input.map(record => {
-            var result: {[key: string]: string} = {};
-            for (const entry of record) {
-                if (entry.tier in result) {
-                    result[entry.tier] += entry.text;
-                } else {
-                    result[entry.tier] = entry.text;
-                }
-            }
-            return result;
-        });
-    }
 
 }
-
-function toObj(table: GTable): {[key:string]:string}[][] {
-    return table.map(record => {
-        return record.map(([key, value]) => {
-            return { tier: key.text, 
-                    text: value.text,
-                    sheet: value.sheet, 
-                    row: value.row.toString(),
-                    column: value.col.toString() };
-        });
-    });
-}
-
 
 export function fromEmbed(elementID: string, callback: (error: any, project: ClientSideProject) => void): void {
     const project = new ClientSideProject();

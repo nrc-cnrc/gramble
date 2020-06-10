@@ -283,6 +283,18 @@ const BUILT_IN_FUNCTIONS: string[] = [
 ]
 
 
+function toObj(table: GTable): {[key:string]:string}[][] {
+    return table.map(record => {
+        return record.map(([key, value]) => {
+            return { tier: key.text, 
+                    text: value.text,
+                    sheet: value.sheet, 
+                    row: value.row.toString(),
+                    column: value.col.toString() };
+        });
+    });
+}
+
 /**
  * Project
  * 
@@ -331,29 +343,47 @@ export class Project {
         return result;
     }
 
-    public parse(input: GTable, symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): GTable {
+    public parse(input: {[key: string]: string}, symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): {[key: string]: string}[][] {
+        const table = objToTable(input);
         const transducer = this.getTransducer(symbolName);
-        return transducer.transduceFinal(input, randomize, maxResults);
+        const results = transducer.transduceFinal(table, randomize, maxResults);
+        return toObj(results);
     }
 
-    public generate(symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): GTable {
+    public generate(symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): {[key: string]: string}[][] {
         const transducer = this.getTransducer(symbolName);
-        return transducer.generate(randomize, maxResults);
+        const results =  transducer.generate(randomize, maxResults);
+        return toObj(results);
     }
 
-    public sample(symbolName: string = 'MAIN', maxResults: number = 1): GTable {
+    public sample(symbolName: string = 'MAIN', maxResults: number = 1): {[key: string]: string}[][] {
         const transducer = this.getTransducer(symbolName);
-        return transducer.sample(maxResults);
+        const results =  transducer.sample(maxResults);
+        return toObj(results);
     }
 
-    public containsResult(resultTable: GTable, [targetKey, targetValue]: GEntry) {
-        const resultMaps = tableToMap(resultTable);
-        for (const resultMap of resultMaps) {
-            for (const [resultKey, resultValue] of resultMap.entries()) {
-                if (resultKey != targetKey.text) {
+    
+    public flatten(input: {[key: string]: string}[][]): {[key: string]: string}[] {
+        return input.map(record => {
+            var result: {[key: string]: string} = {};
+            for (const entry of record) {
+                if (entry.tier in result) {
+                    result[entry.tier] += entry.text;
+                } else {
+                    result[entry.tier] = entry.text;
+                }
+            }
+            return result;
+        });
+    }
+
+    public containsResult(resultTable: {[key: string]: string}[], [targetKey, targetValue]: GEntry) {
+        for (const resultMap of resultTable) {
+            for (const key in resultMap) {
+                if (key != targetKey.text) {
                     continue;
                 }
-                if (resultValue == targetValue.text) {
+                if (resultMap[key] == targetValue.text) {
                     return true;
                 }
             }
@@ -365,15 +395,14 @@ export class Project {
         return false;
     }
 
-    public equalsResult(resultTable: GTable, [targetKey, targetValue]: GEntry) {
+    public equalsResult(resultTable: {[key: string]: string}[], [targetKey, targetValue]: GEntry) {
         var found = false;
-        const resultMaps = tableToMap(resultTable);
-        for (const resultMap of resultMaps) {
-            for (const [key, value] of resultMap.entries()) {
+        for (const resultMap of resultTable) {
+            for (const key in resultMap) {
                 if (key != targetKey.text) {
                     continue;
                 }
-                if (value == targetValue.text) {
+                if (resultMap[key] == targetValue.text) {
                     found = true;
                     continue;
                 }
@@ -390,7 +419,7 @@ export class Project {
     public runTests(highlighter: DevEnvironment): void {
         for (const [symbolName, testTable] of this.testTable.entries()) {
             for (const record of testTable) {
-                const inputRecord: GRecord = []; 
+                const inputRecord: {[key: string]: string} = {}; 
                 const containsRecord: GRecord = []; 
                 const equalsRecord: GRecord = []; 
                 
@@ -404,7 +433,7 @@ export class Project {
                     const command = parts[0].trim();
                     const tier = parts[1].trim();
                     if (command == "input") {
-                        inputRecord.push([new GCell(tier), value]);
+                        inputRecord[tier] = value.text;
                     } else if (command == "contains") {
                         containsRecord.push([new GCell(tier), value]);
                     } else if (command == "equals") {
@@ -412,29 +441,28 @@ export class Project {
                     }
                 }
                 
-                const input: GTable = [];
-                input.push(inputRecord);
-                const result = this.parse(input, symbolName, false, -1);
+                const result = this.parse(inputRecord, symbolName, false, -1);
+                const resultFlattened = this.flatten(result);
                 
                 for (const [targetKey, targetValue] of containsRecord) {
-                    if (!this.containsResult(result, [targetKey, targetValue])) {
+                    if (!this.containsResult(resultFlattened, [targetKey, targetValue])) {
                         highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
                             "Result does not contain specified value. " + 
-                            "Actual value: \n" + flattenToText(result), "error");
+                            "Actual value: \n" + resultFlattened, "error");
                     } else {
                         highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
-                            "Result contains specified value: \n" + flattenToText(result), "info");
+                            "Result contains specified value: \n" + resultFlattened, "info");
                     }
                 }
 
                 for (const [targetKey, targetValue] of equalsRecord) {
-                    if (!this.equalsResult(result, [targetKey, targetValue])) {
+                    if (!this.equalsResult(resultFlattened, [targetKey, targetValue])) {
                         highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
                             "Result does not equal specified value. " + 
-                            "Actual value: \n" + flattenToText(result), "error");
+                            "Actual value: \n" + resultFlattened, "error");
                     } else {
                         highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
-                            "Result equals specified value: \n" + flattenToText(result), "info");
+                            "Result equals specified value: \n" + resultFlattened, "info");
                     }
                 }
             }
