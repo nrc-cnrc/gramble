@@ -162,6 +162,8 @@ export class Transducer {
         return [];
     }
 
+    public checkVars(devEnv: DevEnvironment): void {}
+
     /*
     public transduceMany(inputs: GParse[], randomize=false, maxResults=-1): GParse[] {
         const results : GParse[] = [];
@@ -229,15 +231,35 @@ export class Transducer {
     }
 }
 
+class UnaryTransducer extends Transducer {
+
+    public constructor(
+        protected child: Transducer
+    ) {
+        super();
+    }
+
+    public checkVars(devEnv: DevEnvironment): void {
+        this.child.checkVars(devEnv);
+    }
+}
+
 class VarTransducer extends Transducer {
     
-    private transducer : Transducer | undefined = undefined;
+    //private transducer : Transducer | undefined = undefined;
 
     public constructor(
         private value: GCell, 
         private symbolTable: Map<string, Transducer>) {
 
         super();
+    }
+
+    public checkVars(devEnv: DevEnvironment): void {
+        if (!this.symbolTable.has(this.value.text)) {
+            devEnv.markError(this.value.sheet, this.value.row, this.value.col, 
+                `${this.value.text} is in a var column, but there is no variable of this name.`, "error");
+        }
     }
 
     public transduce(input: GParse, options: ParseOptions): GParse[] {
@@ -252,13 +274,7 @@ class VarTransducer extends Transducer {
     }
 }
 
-class InputTransducer extends Transducer {
-
-    public constructor(
-        private child: Transducer
-    ) {
-        super();
-    }
+class InputTransducer extends UnaryTransducer {
 
     public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
         const results : GParse[] = [];
@@ -294,13 +310,7 @@ class ShiftTransducer extends Transducer {
     }
 }
 
-class FinalTransducer extends Transducer {
-
-    public constructor(
-        private child: Transducer
-    ) {
-        super();
-    }
+class FinalTransducer extends UnaryTransducer {
 
     public firstChar(tier: string): (string|undefined)[] {
         return this.child.firstChar(tier);
@@ -338,13 +348,7 @@ class JoinTransducer extends Transducer {
     }
 }
 
-class BeforeTransducer extends Transducer {
-
-    public constructor(
-        private child: Transducer
-    ) {
-        super();
-    }
+class BeforeTransducer extends UnaryTransducer {
 
     public firstChar(tier: string): (string|undefined)[] {
         return this.child.firstChar(tier);
@@ -374,6 +378,12 @@ class AlternationTransducer extends Transducer {
 
         this.childrenAndWeights = children.map((child, i) => [child, weights[i]]);
     } 
+
+    public checkVars(devEnv: DevEnvironment): void {
+        for (const [child, weight] of this.childrenAndWeights) {
+            child.checkVars(devEnv);
+        }
+    }
 
     public transduce(input: GParse, options: ParseOptions): GParse[] {
         const results: GParse[] = [];
@@ -414,13 +424,11 @@ class ProbTransducer extends Transducer {
     }
 }
 
-class MaybeTransducer extends Transducer {
+class MaybeTransducer extends UnaryTransducer {
 
-    private child: Transducer;
     
     public constructor(child: Transducer) {
-        super();
-        this.child = new AlternationTransducer([child, new Transducer()]);
+        super(new AlternationTransducer([child, new Transducer()]));
     }
 
     public transduce(input: GParse, options: ParseOptions): GParse[] {
@@ -450,7 +458,12 @@ class UpdownTransducer extends Transducer {
         }
     }
     
-
+    public checkVars(devEnv: DevEnvironment): void {
+        if (!this.symbolTable.has(this.value.text)) {
+            devEnv.markError(this.value.sheet, this.value.row, this.value.col, 
+                `${this.value.text} is in a var column, but there is no variable of this name.`, "error");
+        }
+    }
     
     public applyConversion(parse: GParse, options: ParseOptions): GParse[] {
         
@@ -605,6 +618,13 @@ class ConcatenationTransducer extends Transducer {
         public children: Transducer[]
     ) {
         super();
+    }
+
+    
+    public checkVars(devEnv: DevEnvironment): void {
+        for (const child of this.children) {
+            child.checkVars(devEnv);
+        }
     }
 
     public transduce(input: GParse, options: ParseOptions): GParse[] {

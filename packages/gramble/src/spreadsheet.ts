@@ -529,6 +529,10 @@ export class Project {
             const transducer : Transducer = transducerFromTable(table, this.transducerTable, devEnv);
             this.transducerTable.set(name, transducer);
         }
+
+        for (const transducer of this.transducerTable.values()) {
+            transducer.checkVars(devEnv);
+        }
     }
 
 }
