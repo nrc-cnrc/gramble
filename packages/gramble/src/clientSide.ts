@@ -24,7 +24,7 @@ export class ClientSideProject {
     
     public parse(input: {[key: string]: string}, symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): {[key: string]: string}[][] {
         const table = objToTable(input);
-        const results = this.project.parse(symbolName, table, randomize, maxResults);
+        const results = this.project.parse(table, symbolName, randomize, maxResults);
         return toObj(results);
     }
 

@@ -62,7 +62,7 @@ class TextProject extends Project {
 
         return fromStream(inputStream, (error: Error | any, line: string, rownum: number) => {
             const input: GTable = makeTable([[[asTier, line.trim()]]]);
-            const result = super.parse(symbolName, input, randomize, maxResults);
+            const result = super.parse(input, symbolName, randomize, maxResults);
             this.writeToOutput(outputStream, result, outputTier);
         });
     }
@@ -77,7 +77,7 @@ class TextProject extends Project {
         return fromStream(inputStream, (error: Error | any, line: string, rownum: number) => {
             for (const token of line.split(" ")) {
                 const input: GTable = makeTable([[[asTier, token.trim()]]]);
-                const result = super.parse(symbolName, input, randomize, 1);
+                const result = super.parse(input, symbolName, randomize, 1);
                 outputStream.write(getTierAsString(result, outputTier) + " ");
             }
             outputStream.write("\n");

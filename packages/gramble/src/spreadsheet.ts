@@ -331,17 +331,17 @@ export class Project {
         return result;
     }
 
-    public parse(symbolName: string, input: GTable, randomize: boolean = false, maxResults: number = -1): GTable {
+    public parse(input: GTable, symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): GTable {
         const transducer = this.getTransducer(symbolName);
         return transducer.transduceFinal(input, randomize, maxResults);
     }
 
-    public generate(symbolName: string, randomize: boolean = false, maxResults: number = -1): GTable {
+    public generate(symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): GTable {
         const transducer = this.getTransducer(symbolName);
         return transducer.generate(randomize, maxResults);
     }
 
-    public sample(symbolName: string, maxResults: number = 1): GTable {
+    public sample(symbolName: string = 'MAIN', maxResults: number = 1): GTable {
         const transducer = this.getTransducer(symbolName);
         return transducer.sample(maxResults);
     }
@@ -414,7 +414,7 @@ export class Project {
                 
                 const input: GTable = [];
                 input.push(inputRecord);
-                const result = this.parse(symbolName, input, false, -1);
+                const result = this.parse(input, symbolName, false, -1);
                 
                 for (const [targetKey, targetValue] of containsRecord) {
                     if (!this.containsResult(result, [targetKey, targetValue])) {
