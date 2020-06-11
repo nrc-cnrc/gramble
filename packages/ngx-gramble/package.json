@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "prepare": "ng build ngx-gramble",
     "test": "ng test -- --watch=false --code-coverage --browsers ChromeHeadless",
     "lint": "ng lint",
     "e2e": "ng e2e"
