@@ -5,7 +5,9 @@
     "@angular/common": "^9.1.11",
     "@angular/core": "^9.1.11",
     "@gramble/gramble": "^0.0.1",
-    "rxjs": "^6.5.5"
+    "rxjs": "^6.5.5",
+    "jexcel": "^4.2.0",
+    "@types/jexcel": "^3.9.1"
   },
   "dependencies": {
     "tslib": "^1.10.0"

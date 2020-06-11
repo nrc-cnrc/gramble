@@ -16,6 +16,5 @@ export class AppComponent {
     this.data$ = this.grambleService.gramble$.pipe(
       map(x => x.generate())
     )
-    this.data$.subscribe(x => console.log(x))
   }
 }
