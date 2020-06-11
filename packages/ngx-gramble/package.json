@@ -1,10 +1,10 @@
 {
-  "name": "ngx-gramble",
+  "name": "@gramble/ngx-gramble",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build ngx-gramble",
     "prepare": "ng build ngx-gramble",
     "test": "ng test -- --watch=false --code-coverage --browsers ChromeHeadless",
     "lint": "ng lint",

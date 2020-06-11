@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { NgxGrambleService } from 'ngx-gramble';
+import { NgxGrambleService } from '@gramble/ngx-gramble';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 

@@ -16,7 +16,7 @@
       "dom"
     ],
     "paths": {
-      "ngx-gramble": [
+      "@gramble/ngx-gramble": [
         "dist/ngx-gramble/ngx-gramble",
         "dist/ngx-gramble"
       ],

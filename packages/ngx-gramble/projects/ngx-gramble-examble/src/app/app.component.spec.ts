@@ -1,6 +1,6 @@
 import { TestBed, async } from '@angular/core/testing';
 import { AppComponent } from './app.component';
-import { NgxGrambleComponent } from 'ngx-gramble';
+import { NgxGrambleComponent } from '@gramble/ngx-gramble';
 
 describe('AppComponent', () => {
   beforeEach(async(() => {
