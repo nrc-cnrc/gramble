@@ -8,15 +8,13 @@ export type GEntry = [GCell, GCell];
 export type GRecord = GEntry[];
 export type GParse = [GRecord, number, GRecord];
 export type GTable = GRecord[];
-export type SymbolTable = Map<string, GTable>;
 
 export class ParseOptions {
     constructor(
         public randomize: boolean = false,
         public maxResults: number = -1,
         public parseLeftward: boolean = true,
-        public accelerate: boolean = false,
-        public devEnv: DevEnvironment
+        public accelerate: boolean = false
     ) { }
 }
 
@@ -150,7 +148,7 @@ export function getTierAsString(table: GTable, tier: string, delim: string = ", 
 }
 
 
-class Transducer {
+export class Transducer {
     
     public transduce(input: GParse, options: ParseOptions): GParse[] {
         return [input];
@@ -163,6 +161,8 @@ class Transducer {
     public firstChar(tier: string): (string|undefined)[] {
         return [];
     }
+
+    public checkVars(devEnv: DevEnvironment): void {}
 
     /*
     public transduceMany(inputs: GParse[], randomize=false, maxResults=-1): GParse[] {
@@ -180,17 +180,15 @@ class Transducer {
      * input table and, at the end, discards results with unconsumed input.
      * 
      * @param input 
-     * @param symbolTable 
      * @returns parse 
      */
     public transduceFinal(input: GTable, 
                         randomize: boolean = false,
-                        maxResults: number = -1,
-                        devEnv: DevEnvironment): GTable {
+                        maxResults: number = -1): GTable {
 
         var transducer = new FinalTransducer(this);
         var results: GTable = [];
-        var options = new ParseOptions(randomize, maxResults, true, false, devEnv);
+        var options = new ParseOptions(randomize, maxResults, true, false);
 
         for (var inputRecord of input) {
             var inputParse: GParse = [inputRecord, 0.0, []];
@@ -204,14 +202,12 @@ class Transducer {
     }
 
     public generate(randomize: boolean = false,
-                    maxResults: number = -1, 
-                    devEnv: DevEnvironment): GTable {
+                    maxResults: number = -1): GTable {
         const input: GTable = makeTable([[["",""]]]) // make an empty input to transduce from
-        return this.transduceFinal(input, randomize, maxResults, devEnv);
+        return this.transduceFinal(input, randomize, maxResults);
     }
     
-    public sample(maxResults: number = 1, 
-        devEnv: DevEnvironment): GTable {
+    public sample(maxResults: number = 1): GTable {
         if (maxResults == -1) {
             maxResults = 1;
         }
@@ -220,7 +216,7 @@ class Transducer {
         var result: GTable = [];
 
         while (result.length < maxResults) {
-            const sampleResult = this.generate(true, 1, devEnv);
+            const sampleResult = this.generate(true, 1);
             if (sampleResult.length == 0) {
                 numFailures++;
             }
@@ -235,44 +231,50 @@ class Transducer {
     }
 }
 
+class UnaryTransducer extends Transducer {
+
+    public constructor(
+        protected child: Transducer
+    ) {
+        super();
+    }
+
+    public checkVars(devEnv: DevEnvironment): void {
+        this.child.checkVars(devEnv);
+    }
+}
+
 class VarTransducer extends Transducer {
     
-    private transducer : Transducer | undefined = undefined;
+    //private transducer : Transducer | undefined = undefined;
 
     public constructor(
         private value: GCell, 
-        private symbolTable: SymbolTable) {
+        private symbolTable: Map<string, Transducer>) {
 
         super();
     }
 
-    public getTransducer(devEnv: DevEnvironment): Transducer {
-        if (this.transducer == undefined) {
-            const table = this.symbolTable.get(this.value.text);
-            if (table == undefined) {
-                throw new Error(`Could not find symbol: ${this.value.text}`);
-            }
-            this.transducer = transducerFromTable(table, this.symbolTable, devEnv);
+    public checkVars(devEnv: DevEnvironment): void {
+        if (!this.symbolTable.has(this.value.text)) {
+            devEnv.markError(this.value.sheet, this.value.row, this.value.col, 
+                `${this.value.text} is in a var column, but there is no variable of this name.`, "error");
         }
-        return this.transducer;
     }
 
     public transduce(input: GParse, options: ParseOptions): GParse[] {
         if (this.value.text.length == 0) {
             return [input];
         }
-
-        return this.getTransducer(options.devEnv).transduce(input, options);
+        const transducer = this.symbolTable.get(this.value.text);
+        if (transducer == undefined) {
+            throw new Error(`Could not find symbol: ${this.value.text}`);
+        }
+        return transducer.transduce(input, options);
     }
 }
 
-class InputTransducer extends Transducer {
-
-    public constructor(
-        private child: Transducer
-    ) {
-        super();
-    }
+class InputTransducer extends UnaryTransducer {
 
     public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
         const results : GParse[] = [];
@@ -308,13 +310,7 @@ class ShiftTransducer extends Transducer {
     }
 }
 
-class FinalTransducer extends Transducer {
-
-    public constructor(
-        private child: Transducer
-    ) {
-        super();
-    }
+class FinalTransducer extends UnaryTransducer {
 
     public firstChar(tier: string): (string|undefined)[] {
         return this.child.firstChar(tier);
@@ -352,13 +348,7 @@ class JoinTransducer extends Transducer {
     }
 }
 
-class BeforeTransducer extends Transducer {
-
-    public constructor(
-        private child: Transducer
-    ) {
-        super();
-    }
+class BeforeTransducer extends UnaryTransducer {
 
     public firstChar(tier: string): (string|undefined)[] {
         return this.child.firstChar(tier);
@@ -388,6 +378,12 @@ class AlternationTransducer extends Transducer {
 
         this.childrenAndWeights = children.map((child, i) => [child, weights[i]]);
     } 
+
+    public checkVars(devEnv: DevEnvironment): void {
+        for (const [child, weight] of this.childrenAndWeights) {
+            child.checkVars(devEnv);
+        }
+    }
 
     public transduce(input: GParse, options: ParseOptions): GParse[] {
         const results: GParse[] = [];
@@ -428,13 +424,11 @@ class ProbTransducer extends Transducer {
     }
 }
 
-class MaybeTransducer extends Transducer {
+class MaybeTransducer extends UnaryTransducer {
 
-    private child: Transducer;
     
     public constructor(child: Transducer) {
-        super();
-        this.child = new AlternationTransducer([child, new Transducer()]);
+        super(new AlternationTransducer([child, new Transducer()]));
     }
 
     public transduce(input: GParse, options: ParseOptions): GParse[] {
@@ -444,14 +438,14 @@ class MaybeTransducer extends Transducer {
 
 class UpdownTransducer extends Transducer {
 
-    private transducer: Transducer | undefined = undefined;
+    //private transducer: Transducer | undefined = undefined;
     private inputTier: string;
     private outputTier: string;
 
     public constructor(
         private key: GCell, 
         private value: GCell, 
-        private symbolTable: SymbolTable, 
+        private symbolTable: Map<string, Transducer>, 
         private direction: "upward"|"downward"
     ) {
         super();
@@ -464,17 +458,12 @@ class UpdownTransducer extends Transducer {
         }
     }
     
-    public getTransducer(devEnv: DevEnvironment): Transducer {
-        if (this.transducer == undefined) {
-            const table = this.symbolTable.get(this.value.text);
-            if (table == undefined) {
-                throw new Error(`Could not find symbol: ${this.value.text}`);
-            }
-            this.transducer = transducerFromTable(table, this.symbolTable, devEnv);
+    public checkVars(devEnv: DevEnvironment): void {
+        if (!this.symbolTable.has(this.value.text)) {
+            devEnv.markError(this.value.sheet, this.value.row, this.value.col, 
+                `${this.value.text} is in a var column, but there is no variable of this name.`, "error");
         }
-        return this.transducer;
     }
-
     
     public applyConversion(parse: GParse, options: ParseOptions): GParse[] {
         
@@ -488,7 +477,12 @@ class UpdownTransducer extends Transducer {
             return [parse];
         }
     
-        var outputs = this.getTransducer(options.devEnv).transduce(parse, options);
+        const transducer = this.symbolTable.get(this.value.text);
+        if (transducer == undefined) {
+            throw new Error(`Could not find symbol: ${this.value.text}`);
+        }
+
+        var outputs = transducer.transduce(parse, options);
         if (outputs.length == 0) {
             outputs = [ stepOneCharacter(parse, this.inputTier, this.outputTier) ];
         } 
@@ -626,6 +620,13 @@ class ConcatenationTransducer extends Transducer {
         super();
     }
 
+    
+    public checkVars(devEnv: DevEnvironment): void {
+        for (const child of this.children) {
+            child.checkVars(devEnv);
+        }
+    }
+
     public transduce(input: GParse, options: ParseOptions): GParse[] {
 
         var results = [input];
@@ -653,7 +654,7 @@ class ConcatenationTransducer extends Transducer {
 }
 
 export function transducerFromEntry([key, value]: [GCell, GCell], 
-                                        symbolTable: SymbolTable,
+                                        symbolTable: Map<string, Transducer>,
                                         devEnv: DevEnvironment): Transducer {
 
     const commaSeparatedTiers = splitTrimLower(key.text, ",");
@@ -758,12 +759,12 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
     return new LiteralTransducer(key, value);
 }
 
-function transducerFromRecord(record: GRecord, symbolTable: SymbolTable, devEnv: DevEnvironment) {
+function transducerFromRecord(record: GRecord, symbolTable: Map<string, Transducer>, devEnv: DevEnvironment) {
     const children = record.map(entry => transducerFromEntry(entry, symbolTable, devEnv));
     return new ConcatenationTransducer(children);
 }
 
-export function transducerFromTable(table: GTable, symbolTable: SymbolTable, devEnv: DevEnvironment) {
+export function transducerFromTable(table: GTable, symbolTable: Map<string, Transducer>, devEnv: DevEnvironment) {
     const children = table.map(record => transducerFromRecord(record, symbolTable, devEnv));
     return new AlternationTransducer(children);
 }

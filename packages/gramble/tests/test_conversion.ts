@@ -1,10 +1,10 @@
-import {transducerFromTable, makeTable} from "../src/transducers"
+import {transducerFromTable, Transducer, makeTable} from "../src/transducers"
 import 'mocha';
 import {testNumResults, testOutput} from "./test_util"
 import {TextDevEnvironment} from "../src/spreadsheet";
 
 const devEnv = new TextDevEnvironment();
-const symbol_table = new Map();
+const transducerTable : Map<string, Transducer> = new Map();
 
 /*
 const hiatus_conversion = new GTable();
@@ -35,10 +35,10 @@ const diablo = make_one_entry_table("_up", "diablo");
 const diiablo = make_one_entry_table("_up", "diiablo");
 */
 
-symbol_table.set("reduce_oo", makeTable([[
+transducerTable.set("reduce_oo", transducerFromTable(makeTable([[
     ["up", "oo"],
     ["down", "o"]
-]]));
+]]), transducerTable, devEnv));
 
 const oo_reduction_parser = transducerFromTable(makeTable([[
     ["upward text", "reduce_oo"],
@@ -47,7 +47,7 @@ const oo_reduction_parser = transducerFromTable(makeTable([[
     ["text", "bar"],
     ["gloss", "-1SG"],
     ["downward text", "reduce_oo"]
-]]), symbol_table, devEnv);
+]]), transducerTable, devEnv);
 
 const gloss_input = makeTable([[
     ["gloss", "jump-1SG"],
@@ -88,7 +88,7 @@ describe('Ambiguous converter, input "diiablo"', function() {
 }); */
 
 describe('Foobar generator with oo->o reduction', function() {
-    const result = oo_reduction_parser.transduceFinal(gloss_input, false, -1, devEnv);
+    const result = oo_reduction_parser.transduceFinal(gloss_input, false, -1);
     testNumResults(result, 1);
     testOutput(result, 0, "text", "fobar");
     testOutput(result, 0, "gloss", "jump-1SG");
@@ -96,13 +96,13 @@ describe('Foobar generator with oo->o reduction', function() {
 
 
 describe('Fobar parser with oo->o reduction', function() {
-    const result = oo_reduction_parser.transduceFinal(text_input, false, -1, devEnv);
+    const result = oo_reduction_parser.transduceFinal(text_input, false, -1);
     testNumResults(result, 1);
     testOutput(result, 0, "gloss", "jump-1SG");
     testOutput(result, 0, "text", "fobar");
 });
 
 describe('Fobar parser with oo->o reduction, but applied to "foobar"', function() {
-    const result = oo_reduction_parser.transduceFinal(text_input_bad, false, -1, devEnv);
+    const result = oo_reduction_parser.transduceFinal(text_input_bad, false, -1);
     testNumResults(result, 0);
 });

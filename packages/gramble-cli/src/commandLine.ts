@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node-script
 
-import {GTable, makeTable, flattenToJSON, getTierAsString, Project, TextDevEnvironment} from "@gramble/gramble"
+import {GTable, makeTable, Project, TextDevEnvironment} from "@gramble/gramble"
 import {parse as papaparse, ParseResult} from 'papaparse';
 import {createReadStream, createWriteStream, existsSync} from 'fs';
 
@@ -61,9 +61,10 @@ class TextProject extends Project {
                         symbolName: string = "MAIN"): Promise<void> {
 
         return fromStream(inputStream, (error: Error | any, line: string, rownum: number) => {
-            const input: GTable = makeTable([[[asTier, line.trim()]]]);
-            const result = super.parse(symbolName, input, randomize, maxResults, this.env);
-            this.writeToOutput(outputStream, result, outputTier);
+            const input = { asTier : line.trim() };
+            const result = this.parse(input, symbolName, randomize, maxResults);
+            const resultFlattened = this.flatten(result);
+            this.writeToOutput(outputStream, resultFlattened, outputTier);
         });
     }
 
@@ -76,9 +77,11 @@ class TextProject extends Project {
 
         return fromStream(inputStream, (error: Error | any, line: string, rownum: number) => {
             for (const token of line.split(" ")) {
-                const input: GTable = makeTable([[[asTier, token.trim()]]]);
-                const result = super.parse(symbolName, input, randomize, 1, this.env);
-                outputStream.write(getTierAsString(result, outputTier) + " ");
+                const input = { asTier : token.trim() };
+                const result = this.parse(input, symbolName, randomize, 1);
+                const resultFlattened = this.flatten(result);
+                const tierResults = resultFlattened.map((o) => o[outputTier]).join(" ");
+                outputStream.write(tierResults + " ");
             }
             outputStream.write("\n");
         });
@@ -88,23 +91,29 @@ class TextProject extends Project {
                             maxResults: number = -1,
                          outputTier: string | undefined = undefined,
                             symbolName: string = "MAIN"): void {
-        const result = super.generate(symbolName, false, maxResults, this.env);
-        this.writeToOutput(outputStream, result, outputTier, "\n");
+        const result = this.generate(symbolName, false, maxResults);
+        const resultFlattened = this.flatten(result);
+        this.writeToOutput(outputStream, resultFlattened, outputTier, "\n");
     }
 
     public sampleStream(outputStream: Writable,
                         maxResults: number = 1,
                         outputTier: string | undefined = undefined,
                         symbolName: string = "MAIN"): void {
-        const result = super.sample(symbolName, maxResults, this.env);
-        this.writeToOutput(outputStream, result, outputTier, "\n");
+        const result = this.sample(symbolName, maxResults);
+        const resultFlattened = this.flatten(result);
+        this.writeToOutput(outputStream, resultFlattened, outputTier, "\n");
     }
 
-    public writeToOutput(outputStream: Writable, result: GTable, outputTier: string | undefined = undefined, delim: string = ", ") {
+    public writeToOutput(outputStream: Writable, 
+                        result: {[key: string]: string}[], 
+                        outputTier: string | undefined = undefined, 
+                        delim: string = ", ") {
         if (outputTier != undefined) {
-            outputStream.write(getTierAsString(result, outputTier, delim) + "\n");
+            const tierResults = result.map((o) => o[outputTier]).join(delim);
+            outputStream.write(tierResults + "\n");
         } else {
-            outputStream.write(flattenToJSON(result) + "\n");
+            outputStream.write(JSON.stringify(result) + "\n");
         }
     }
 }
