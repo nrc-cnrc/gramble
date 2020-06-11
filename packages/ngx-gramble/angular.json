@@ -1,0 +1,164 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "ngx-gramble": {
+      "projectType": "library",
+      "root": "projects/ngx-gramble",
+      "sourceRoot": "projects/ngx-gramble/src",
+      "prefix": "ngx",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-ng-packagr:build",
+          "options": {
+            "tsConfig": "projects/ngx-gramble/tsconfig.lib.json",
+            "project": "projects/ngx-gramble/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/ngx-gramble/tsconfig.lib.prod.json"
+            }
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/ngx-gramble/src/test.ts",
+            "tsConfig": "projects/ngx-gramble/tsconfig.spec.json",
+            "karmaConfig": "projects/ngx-gramble/karma.conf.js"
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/ngx-gramble/tsconfig.lib.json",
+              "projects/ngx-gramble/tsconfig.spec.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        }
+      }
+    },
+    "ngx-gramble-examble": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "projects/ngx-gramble-examble",
+      "sourceRoot": "projects/ngx-gramble-examble/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/ngx-gramble-examble",
+            "index": "projects/ngx-gramble-examble/src/index.html",
+            "main": "projects/ngx-gramble-examble/src/main.ts",
+            "polyfills": "projects/ngx-gramble-examble/src/polyfills.ts",
+            "tsConfig": "projects/ngx-gramble-examble/tsconfig.app.json",
+            "aot": true,
+            "assets": [
+              "projects/ngx-gramble-examble/src/favicon.ico",
+              "projects/ngx-gramble-examble/src/assets"
+            ],
+            "styles": [
+              "projects/ngx-gramble-examble/src/styles.css"
+            ],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "projects/ngx-gramble-examble/src/environments/environment.ts",
+                  "with": "projects/ngx-gramble-examble/src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": false,
+              "extractCss": true,
+              "namedChunks": false,
+              "extractLicenses": true,
+              "vendorChunk": false,
+              "buildOptimizer": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "10kb"
+                }
+              ]
+            }
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "ngx-gramble-examble:build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "ngx-gramble-examble:build:production"
+            }
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "ngx-gramble-examble:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/ngx-gramble-examble/src/test.ts",
+            "polyfills": "projects/ngx-gramble-examble/src/polyfills.ts",
+            "tsConfig": "projects/ngx-gramble-examble/tsconfig.spec.json",
+            "karmaConfig": "projects/ngx-gramble-examble/karma.conf.js",
+            "assets": [
+              "projects/ngx-gramble-examble/src/favicon.ico",
+              "projects/ngx-gramble-examble/src/assets"
+            ],
+            "styles": [
+              "projects/ngx-gramble-examble/src/styles.css"
+            ],
+            "scripts": []
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/ngx-gramble-examble/tsconfig.app.json",
+              "projects/ngx-gramble-examble/tsconfig.spec.json",
+              "projects/ngx-gramble-examble/e2e/tsconfig.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        },
+        "e2e": {
+          "builder": "@angular-devkit/build-angular:protractor",
+          "options": {
+            "protractorConfig": "projects/ngx-gramble-examble/e2e/protractor.conf.js",
+            "devServerTarget": "ngx-gramble-examble:serve"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "ngx-gramble-examble:serve:production"
+            }
+          }
+        }
+      }
+    }},
+  "defaultProject": "ngx-gramble"
+}
