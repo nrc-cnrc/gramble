@@ -343,22 +343,31 @@ export class Project {
         return result;
     }
 
-    public parse(input: {[key: string]: string}, symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): {[key: string]: string}[][] {
+    public parse(input: {[key: string]: string}, 
+                symbolName: string = 'MAIN', 
+                randomize: boolean = false, 
+                maxResults: number = -1,
+                accelerate: boolean = true): {[key: string]: string}[][] {
         const table = objToTable(input);
         const transducer = this.getTransducer(symbolName);
-        const results = transducer.transduceFinal(table, randomize, maxResults);
+        const results = transducer.transduceFinal(table, randomize, maxResults, accelerate);
         return toObj(results);
     }
 
-    public generate(symbolName: string = 'MAIN', randomize: boolean = false, maxResults: number = -1): {[key: string]: string}[][] {
+    public generate(symbolName: string = 'MAIN', 
+                randomize: boolean = false, 
+                maxResults: number = -1,
+                accelerate: boolean = true): {[key: string]: string}[][] {
         const transducer = this.getTransducer(symbolName);
-        const results =  transducer.generate(randomize, maxResults);
+        const results =  transducer.generate(randomize, maxResults, accelerate);
         return toObj(results);
     }
 
-    public sample(symbolName: string = 'MAIN', maxResults: number = 1): {[key: string]: string}[][] {
+    public sample(symbolName: string = 'MAIN', 
+                maxResults: number = 1,
+                accelerate: boolean = true): {[key: string]: string}[][] {
         const transducer = this.getTransducer(symbolName);
-        const results =  transducer.sample(maxResults);
+        const results =  transducer.sample(maxResults, accelerate);
         return toObj(results);
     }
 
@@ -553,6 +562,10 @@ export class Project {
             this.addRow(row, sheetName, rowIdx, devEnv);
         }
 
+        this.compile(devEnv);
+    }
+
+    public compile(devEnv: DevEnvironment): void {
         for (const [name, table] of this.symbolTable.entries()) {
             const transducer : Transducer = transducerFromTable(table, this.transducerTable, devEnv);
             this.transducerTable.set(name, transducer);
@@ -562,7 +575,6 @@ export class Project {
             transducer.checkVars(devEnv);
         }
     }
-
 }
 
 
