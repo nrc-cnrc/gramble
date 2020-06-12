@@ -1,24 +1,14 @@
 # NgxGramble
 
-This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 9.1.11.
+@gramble/ngx-gramble is a thin Angular layer over the Gramble typescript library.
 
-## Code scaffolding
+There 
 
-Run `ng generate component component-name --project ngx-gramble` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module --project ngx-gramble`.
-> Note: Don't forget to add `--project ngx-gramble` or else it will be added to the default project in your `angular.json` file. 
+## Getting Started
 
-## Build
+1. Install the package in your Angular project `npm install @gramble/ngx-gramble --save`. Install any missing peer dependencies.
+2. Import the package into the module you want to use Gramble in: `import { NgxGrambleModule } from '@gramble/ngx-gramble';`
+3. Add `NgxGrambleModule` to your module's imports array
+4. Add `"./node_modules/jexcel/dist/jexcel.css"` to your `angular.json` styles.
 
-Run `ng build ngx-gramble` to build the project. The build artifacts will be stored in the `dist/` directory.
-
-## Publishing
-
-After building your library with `ng build ngx-gramble`, go to the dist folder `cd dist/ngx-gramble` and run `npm publish`.
-
-## Running unit tests
-
-Run `ng test ngx-gramble` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+You can now import both the `NgxGrambleService` and `NgxGrambleComponent` for use in your application.
