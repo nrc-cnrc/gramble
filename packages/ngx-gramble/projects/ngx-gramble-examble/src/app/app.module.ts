@@ -1,6 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import { NgxGrambleModule } from 'ngx-gramble';
+import { NgxGrambleModule } from '@gramble/ngx-gramble';
 
 import { AppComponent } from './app.component';
 
