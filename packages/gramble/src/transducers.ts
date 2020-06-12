@@ -158,8 +158,8 @@ export class Transducer {
         return 1.0
     }
 
-    public firstChar(tier: string): (string|undefined)[] {
-        return [];
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        return undefined;
     }
 
     public checkVars(devEnv: DevEnvironment): void {}
@@ -184,11 +184,12 @@ export class Transducer {
      */
     public transduceFinal(input: GTable, 
                         randomize: boolean = false,
-                        maxResults: number = -1): GTable {
+                        maxResults: number = -1,
+                        accelerate: boolean = true): GTable {
 
         var transducer = new FinalTransducer(this);
         var results: GTable = [];
-        var options = new ParseOptions(randomize, maxResults, true, false);
+        var options = new ParseOptions(randomize, maxResults, true, accelerate);
 
         for (var inputRecord of input) {
             var inputParse: GParse = [inputRecord, 0.0, []];
@@ -202,12 +203,14 @@ export class Transducer {
     }
 
     public generate(randomize: boolean = false,
-                    maxResults: number = -1): GTable {
+                    maxResults: number = -1,
+                    accelerate: boolean = true): GTable {
         const input: GTable = makeTable([[["",""]]]) // make an empty input to transduce from
-        return this.transduceFinal(input, randomize, maxResults);
+        return this.transduceFinal(input, randomize, maxResults, accelerate);
     }
     
-    public sample(maxResults: number = 1): GTable {
+    public sample(maxResults: number = 1,
+                    accelerate: boolean = true): GTable {
         if (maxResults == -1) {
             maxResults = 1;
         }
@@ -216,7 +219,7 @@ export class Transducer {
         var result: GTable = [];
 
         while (result.length < maxResults) {
-            const sampleResult = this.generate(true, 1);
+            const sampleResult = this.generate(true, 1, accelerate);
             if (sampleResult.length == 0) {
                 numFailures++;
             }
@@ -256,10 +259,24 @@ class VarTransducer extends Transducer {
     }
 
     public checkVars(devEnv: DevEnvironment): void {
+        if (this.value.text == '') {
+            return;
+        }
         if (!this.symbolTable.has(this.value.text)) {
             devEnv.markError(this.value.sheet, this.value.row, this.value.col, 
                 `${this.value.text} is in a var column, but there is no variable of this name.`, "error");
         }
+    }
+    
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        if (this.value.text.length == 0) {
+            return undefined;
+        }
+        const transducer = this.symbolTable.get(this.value.text);
+        if (transducer == undefined) {
+            throw new Error(`Could not find symbol: ${this.value.text}`);
+        }
+        return transducer.compatibleWithFirstChar(tier, c);
     }
 
     public transduce(input: GParse, options: ParseOptions): GParse[] {
@@ -275,6 +292,10 @@ class VarTransducer extends Transducer {
 }
 
 class InputTransducer extends UnaryTransducer {
+
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        return undefined;
+    }
 
     public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
         const results : GParse[] = [];
@@ -303,6 +324,11 @@ class ShiftTransducer extends Transducer {
         super();
     }
 
+    
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        return true;
+    }
+
     public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
         var [output, remnant] = winnow(input, ([key, value]) => key.text == this.fromTier.text); // split entries into relevant and irrelevant
         output = mapKeys(output, this.fromTier.text, this.toTier.text);
@@ -312,8 +338,9 @@ class ShiftTransducer extends Transducer {
 
 class FinalTransducer extends UnaryTransducer {
 
-    public firstChar(tier: string): (string|undefined)[] {
-        return this.child.firstChar(tier);
+    
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        return true;
     }
 
     public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
@@ -331,6 +358,12 @@ class JoinTransducer extends Transducer {
     ) {
         super();
     }
+
+    
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        return true;
+    }
+
 
     public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
         const parts: string[] = [];
@@ -350,8 +383,8 @@ class JoinTransducer extends Transducer {
 
 class BeforeTransducer extends UnaryTransducer {
 
-    public firstChar(tier: string): (string|undefined)[] {
-        return this.child.firstChar(tier);
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        return this.child.compatibleWithFirstChar(tier, c);
     }
 
     public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
@@ -364,10 +397,39 @@ class BeforeTransducer extends UnaryTransducer {
 }
 
 
+class ProbTransducer extends Transducer {
+
+    private p: number;
+    public constructor(value: GCell, devEnv: DevEnvironment) { 
+        super();
+        if (value.text == "") {
+            this.p = 1.0;
+        }
+        try {
+            this.p = parseFloat(value.text);
+            if (this.p < 0) {
+                devEnv.markError(value.sheet, value.row, value.col, 
+                    `${value.text} is not a valid value for p; only numbers can be p values.`, "error");
+                this.p = 1.0;
+            }
+        } catch (err) {
+            devEnv.markError(value.sheet, value.row, value.col, 
+                `${value.text} is not a valid value for p; only numbers can be p values.`, "error");
+            this.p = 1.0;
+        }
+    }
+
+    public getProb(): number {
+        return this.p;
+    }
+
+}
+
 
 class AlternationTransducer extends Transducer {
 
     private childrenAndWeights: Array<[Transducer, number]> = [];
+    private relevantChildren: Map<string, Array<[Transducer, number]>> = new Map();
 
     public constructor(children: Transducer[]
     ) {
@@ -379,21 +441,71 @@ class AlternationTransducer extends Transducer {
         this.childrenAndWeights = children.map((child, i) => [child, weights[i]]);
     } 
 
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        var canBeUndefined = false;
+        for (const [child, weight] of this.childrenAndWeights) {
+            var result = child.compatibleWithFirstChar(tier, c);
+            if (result == true) {
+                return true;
+            }
+            if (result == undefined) {
+                canBeUndefined = true;
+            }
+        }
+        if (canBeUndefined) {
+            return undefined;
+        }
+        return false;
+    }
+
     public checkVars(devEnv: DevEnvironment): void {
         for (const [child, weight] of this.childrenAndWeights) {
             child.checkVars(devEnv);
         }
     }
 
-    public transduce(input: GParse, options: ParseOptions): GParse[] {
-        const results: GParse[] = [];
+    public firstCharOfInput(input: GRecord): [string, string] | undefined {
+        for (const [key, value] of input) {
+            if (value.text == "") {
+                continue;
+            }
+            return [key.text, value.text[0]];
+        }
+        return undefined
+    }
 
-        if (options.randomize) {
-            var items: Iterable<[Transducer, number] | undefined > = new RandomPicker([...this.childrenAndWeights]);
-        } else {
-            var items: Iterable<[Transducer, number] | undefined > = this.childrenAndWeights;
+    public transduce(input: GParse, options: ParseOptions): GParse[] {
+        
+        var relevantChildrenAndWeights: [Transducer, number][] | undefined = this.childrenAndWeights;
+
+        if (options.accelerate) {
+            const [inputRecord, logprob, previousOutput] = input;
+            const firstCharPair = this.firstCharOfInput(inputRecord);
+            if (firstCharPair != undefined) {
+                var firstCharStr = firstCharPair.join(":::");
+                relevantChildrenAndWeights = this.relevantChildren.get(firstCharStr);
+                if (relevantChildrenAndWeights == undefined) {
+                    relevantChildrenAndWeights = [];
+                    const [tier, c] = firstCharPair;
+                    for (const [child, weight] of this.childrenAndWeights) {
+                        if (child.compatibleWithFirstChar(tier, c) == false) {
+                            continue;
+                        }
+                        relevantChildrenAndWeights.push([child, weight]);
+                    }
+                    this.relevantChildren.set(firstCharStr, relevantChildrenAndWeights);
+                }
+            }
         }
 
+        if (options.randomize) {
+            var items: Iterable<[Transducer, number] | undefined > = new RandomPicker([...relevantChildrenAndWeights]);
+        } else {
+            var items: Iterable<[Transducer, number] | undefined > = relevantChildrenAndWeights;
+        }
+
+
+        const results: GParse[] = [];
         for (var item  of items) {
             if (item == undefined) {
                 throw new Error("Received an undefined output from RandomPicker.")
@@ -411,28 +523,26 @@ class AlternationTransducer extends Transducer {
     }
 }
 
-class ProbTransducer extends Transducer {
-
-    public constructor(
-        private p: number
-    ) { 
-        super();
-    }
-
-    public getProb(): number {
-        return this.p;
-    }
-}
-
 class MaybeTransducer extends UnaryTransducer {
+    
+    private alternation : AlternationTransducer;
+    public constructor(child: Transducer) {
+        super(child);
+        this.alternation = new AlternationTransducer([child, new Transducer()]);
+    }
 
     
-    public constructor(child: Transducer) {
-        super(new AlternationTransducer([child, new Transducer()]));
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        const result = this.alternation.compatibleWithFirstChar(tier, c);
+        if (result == true) {
+            return true;
+        }
+        return undefined;
+        
     }
 
     public transduce(input: GParse, options: ParseOptions): GParse[] {
-        return this.child.transduce(input, options);
+        return this.alternation.transduce(input, options);
     }
 }
 
@@ -457,8 +567,17 @@ class UpdownTransducer extends Transducer {
             this.outputTier = "down";
         }
     }
+
+    
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        return true;
+    }
+
     
     public checkVars(devEnv: DevEnvironment): void {
+        if (this.value.text == '') {
+            return;
+        }
         if (!this.symbolTable.has(this.value.text)) {
             devEnv.markError(this.value.sheet, this.value.row, this.value.col, 
                 `${this.value.text} is in a var column, but there is no variable of this name.`, "error");
@@ -538,6 +657,19 @@ class LiteralTransducer extends Transducer {
         public value: GCell
     ) {
         super();
+    }
+
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        if (this.value.text == "") {
+            return undefined;
+        }
+        if (this.key.text != tier) {
+            return undefined;
+        }
+        if (this.value.text.startsWith(c)) {
+            return true;
+        }
+        return false;
     }
 
     public transduce(parse: GParse, options: ParseOptions): GParse[] {
@@ -620,7 +752,16 @@ class ConcatenationTransducer extends Transducer {
         super();
     }
 
-    
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        for (const child of this.children) {
+            var result = child.compatibleWithFirstChar(tier, c);
+            if (result != undefined) {
+                return result;
+            }
+        }
+        return true;
+    }
+
     public checkVars(devEnv: DevEnvironment): void {
         for (const child of this.children) {
             child.checkVars(devEnv);
@@ -752,8 +893,7 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
     } 
 
     if (keys[0] == "p") {
-        const p = parseFloat(value.text);
-        return new ProbTransducer(p);
+        return new ProbTransducer(value, devEnv);
     }
     
     return new LiteralTransducer(key, value);

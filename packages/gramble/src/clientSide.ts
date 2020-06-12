@@ -3,8 +3,6 @@ import {Project, BrowserDevEnvironment, DevEnvironment} from "./spreadsheet"
 import {parse as papaparse, ParseResult} from 'papaparse';
 import {promisify} from 'es6-promisify';
 
-export {GTable, makeTable, flattenToJSON, getTierAsString, Project, BrowserDevEnvironment};
-
 export class ClientSideProject extends Project {
 
     protected devEnv : DevEnvironment = new BrowserDevEnvironment();
@@ -19,8 +17,6 @@ export class ClientSideProject extends Project {
         this.devEnv.highlight();
         callback(null, this);
     }
-
-
 }
 
 export function fromEmbed(elementID: string, callback: (error: any, project: ClientSideProject) => void): void {

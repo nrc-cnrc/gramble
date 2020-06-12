@@ -61,8 +61,8 @@ class TextProject extends Project {
                         symbolName: string = "MAIN"): Promise<void> {
 
         return fromStream(inputStream, (error: Error | any, line: string, rownum: number) => {
-            const input = { asTier : line.trim() };
-            const result = this.parse(input, symbolName, randomize, maxResults);
+            const input = { [asTier] : line.trim() };
+            const result = this.parse(input, symbolName, randomize, maxResults, true);
             const resultFlattened = this.flatten(result);
             this.writeToOutput(outputStream, resultFlattened, outputTier);
         });
@@ -77,8 +77,16 @@ class TextProject extends Project {
 
         return fromStream(inputStream, (error: Error | any, line: string, rownum: number) => {
             for (const token of line.split(" ")) {
-                const input = { asTier : token.trim() };
-                const result = this.parse(input, symbolName, randomize, 1);
+                if (token.startsWith('&') && token.endsWith(';')) {
+                    outputStream.write(token + " ");
+                    continue;
+                }
+                if (token[0] !== token[0].toLowerCase()) {
+                    outputStream.write(token + " ");
+                    continue;
+                }
+                const input = { [asTier] : token.trim() };
+                const result = this.parse(input, symbolName, randomize, 1, true);
                 const resultFlattened = this.flatten(result);
                 const tierResults = resultFlattened.map((o) => o[outputTier]).join(" ");
                 outputStream.write(tierResults + " ");
@@ -91,7 +99,7 @@ class TextProject extends Project {
                             maxResults: number = -1,
                          outputTier: string | undefined = undefined,
                             symbolName: string = "MAIN"): void {
-        const result = this.generate(symbolName, false, maxResults);
+        const result = this.generate(symbolName, false, maxResults, true);
         const resultFlattened = this.flatten(result);
         this.writeToOutput(outputStream, resultFlattened, outputTier, "\n");
     }
@@ -100,7 +108,7 @@ class TextProject extends Project {
                         maxResults: number = 1,
                         outputTier: string | undefined = undefined,
                         symbolName: string = "MAIN"): void {
-        const result = this.sample(symbolName, maxResults);
+        const result = this.sample(symbolName, maxResults, true);
         const resultFlattened = this.flatten(result);
         this.writeToOutput(outputStream, resultFlattened, outputTier, "\n");
     }
@@ -221,6 +229,7 @@ const commands: {[name: string]: Command} = {
 
             const outputStream = getOutputStream(options.output);
             proj.addFile(options.source)
+                .then(() => proj.compile(env))
                 .then(() => env.highlight())
                 .then(() => proj.generateStream(outputStream, options.max, options.otier));
         }
@@ -261,6 +270,7 @@ const commands: {[name: string]: Command} = {
             fileExistsOrFail(options.source);
             const outputStream = getOutputStream(options.output);
             proj.addFile(options.source)
+                .then(() => proj.compile(env))
                 .then(() => env.highlight())
                 .then(() => proj.sampleStream(outputStream, options.max, options.otier));
         }
@@ -341,10 +351,12 @@ const commands: {[name: string]: Command} = {
                     usageError("If you are parsing tokenized, you must specify what tier the output text should be taken from, e.g. --otier gloss")
                 }
                 proj.addFile(options.source)
+                .then(() => proj.compile(env))
                 .then(() => env.highlight())
                 .then(() => proj.parseStreamTokenized(inputStream, outputStream, options.itier, options.random, options.otier));
             } else {
                 proj.addFile(options.source)
+                .then(() => proj.compile(env))
                 .then(() => env.highlight())
                 .then(() => proj.parseStream(inputStream, outputStream, options.itier, options.random, options.max, options.otier));
             }
