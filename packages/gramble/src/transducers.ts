@@ -570,9 +570,24 @@ class UpdownTransducer extends Transducer {
 
     
     public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
-        return true;
-    }
 
+        if (this.direction == "downward") {
+            return undefined;
+        }
+
+        if (this.value.text.length == 0) {
+            return undefined;
+        }
+        const transducer = this.symbolTable.get(this.value.text);
+        if (transducer == undefined) {
+            throw new Error(`Could not find symbol: ${this.value.text}`);
+        }
+        const result = transducer.compatibleWithFirstChar(tier, c);
+        if (result == false) {
+            return undefined;
+        }
+        return result;
+    }
     
     public checkVars(devEnv: DevEnvironment): void {
         if (this.value.text == '') {
