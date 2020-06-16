@@ -829,7 +829,7 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
     }
 
     if (keys[0] == "upward") {
-        if (keys.length > 2) {
+        if (keys.length != 2) {
             devEnv.markError(key.sheet, key.row, key.col, 
                 "Invalid tier name: " + key.text, "error");
             return new Transducer();
@@ -839,7 +839,7 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
     }
  
     if (keys[0] == "downward") {
-        if (keys.length > 2) {
+        if (keys.length != 2) {
             devEnv.markError(key.sheet, key.row, key.col, 
                 "Invalid tier name: " + key.text, "error");
             return new Transducer();
@@ -849,7 +849,7 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
     }
 
     if (keys[0] == "join") {
-        if (keys.length > 2) {
+        if (keys.length != 2) {
             devEnv.markError(key.sheet, key.row, key.col, 
                 "Invalid tier name: " + key.text, "error");
             return new Transducer();
@@ -859,7 +859,7 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
     }
 
     if (keys[0] == "shift") {
-        if (keys.length > 2) {
+        if (keys.length != 2) {
             devEnv.markError(key.sheet, key.row, key.col, 
                 "Invalid tier name: " + key.text, "error");
             return new Transducer();
@@ -869,6 +869,11 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
     }
 
     if (keys[0] == "maybe") {
+        if (keys.length < 2) {
+            devEnv.markError(key.sheet, key.row, key.col, 
+                "Invalid tier name: " + key.text, "error");
+            return new Transducer();
+        }
         const remnant = keys.slice(1).join(" ");
         const childKey = new GCell(remnant, key.sheet, key.row, key.col);
         const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
@@ -876,6 +881,11 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
     }
 
     if (keys[0] == "before") {
+        if (keys.length < 2) {
+            devEnv.markError(key.sheet, key.row, key.col, 
+                "Invalid tier name: " + key.text, "error");
+            return new Transducer();
+        }
         const remnant = keys.slice(1).join(" ");
         const childKey = new GCell(remnant, key.sheet, key.row, key.col);
         const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
@@ -883,6 +893,11 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
     }
 
     if (keys[0] == "input") {
+        if (keys.length < 2) {
+            devEnv.markError(key.sheet, key.row, key.col, 
+                "Invalid tier name: " + key.text, "error");
+            return new Transducer();
+        }
         const remnant = keys.slice(1).join(" ");
         const childKey = new GCell(remnant, key.sheet, key.row, key.col);
         const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
@@ -890,6 +905,11 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
     }
 
     if (keys[0] == "final") {
+        if (keys.length < 2) {
+            devEnv.markError(key.sheet, key.row, key.col, 
+                "Invalid tier name: " + key.text, "error");
+            return new Transducer();
+        }
         const remnant = keys.slice(1).join(" ");
         const childKey = new GCell(remnant, key.sheet, key.row, key.col);
         const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
