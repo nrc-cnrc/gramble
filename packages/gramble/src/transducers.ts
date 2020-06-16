@@ -737,7 +737,7 @@ class LiteralTransducer extends Transducer {
 
                 if (needle.length == 0) {
                     const remnantCell = new GCell(value.text.slice(0,i+1), value.sheet, value.row, value.col);
-                    consumedInput.push([key, remnantCell]);
+                    consumedInput.unshift([key, remnantCell]);
                 }
             }
         }
@@ -746,12 +746,17 @@ class LiteralTransducer extends Transducer {
             return [];
         }
 
-        if (!options.parseLeftward) {
+        /* if (!options.parseLeftward) {
             consumedInput = consumedInput.reverse();
-        }
+        } */
 
         var output = [...pastOutput];
-        output.push([this.key, this.value]);
+        
+        if (options.parseLeftward) {
+            output.push([this.key, this.value]);
+        } else {
+            output.unshift([this.key, this.value]);
+        }
 
         return [[consumedInput, logprob, output]];
     }
