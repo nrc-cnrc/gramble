@@ -13,7 +13,7 @@ export class ParseOptions {
     constructor(
         public randomize: boolean = false,
         public maxResults: number = -1,
-        public parseLeftward: boolean = true,
+        public parseLeftToRight: boolean = true,
         public accelerate: boolean = false
     ) { }
 }
@@ -388,6 +388,12 @@ class BeforeTransducer extends UnaryTransducer {
     }
 
     public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
+        const childOptions: ParseOptions = {
+            randomize: false,
+            maxResults: 1,
+            parseLeftToRight: true,
+            accelerate: options.accelerate
+        }
         const results = this.child.transduce(inputParse, options);
         if (results.length > 0) {
             return [inputParse];
@@ -396,6 +402,28 @@ class BeforeTransducer extends UnaryTransducer {
     }
 }
 
+class AfterTransducer extends UnaryTransducer {
+
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        return this.child.compatibleWithFirstChar(tier, c);
+    }
+
+    public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
+        const [input, logprob, pastOutput] = inputParse;
+        const childParse: GParse = [pastOutput, 1.0, []];
+        const childOptions: ParseOptions = {
+            randomize: false,
+            maxResults: 1,
+            parseLeftToRight: false,
+            accelerate: options.accelerate
+        }
+        const results = this.child.transduce(childParse, childOptions);
+        if (results.length > 0) {
+            return [inputParse];
+        }
+        return [];
+    }
+}
 
 class ProbTransducer extends Transducer {
 
@@ -700,7 +728,7 @@ class LiteralTransducer extends Transducer {
         var tierFoundInInput = false;
         var needle = this.value.text;
 
-        const inputEntries = options.parseLeftward ? input : input.reverse();
+        const inputEntries = options.parseLeftToRight ? input : input.reverse();
 
         for (const [key, value] of inputEntries) {
             if (key.text != this.key.text) { // not what we're looking for, move along
@@ -709,7 +737,7 @@ class LiteralTransducer extends Transducer {
             }
             tierFoundInInput = true;
         
-            if (options.parseLeftward) {
+            if (options.parseLeftToRight) {
                 for (var i = 0; i < value.text.length; i++) {
                     if (needle.length == 0) {
                         break;
@@ -752,7 +780,7 @@ class LiteralTransducer extends Transducer {
 
         var output = [...pastOutput];
         
-        if (options.parseLeftward) {
+        if (options.parseLeftToRight) {
             output.push([this.key, this.value]);
         } else {
             output.unshift([this.key, this.value]);
@@ -792,7 +820,7 @@ class ConcatenationTransducer extends Transducer {
 
         var results = [input];
 
-        var children = options.parseLeftward ? this.children : this.children.reverse();
+        var children = options.parseLeftToRight ? this.children : this.children.reverse();
 
         for (const child of children) {
             var newResults: GParse[] = [];
@@ -828,115 +856,103 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
         return new ConcatenationTransducer(children);
     }
 
-    const keys = splitTrimLower(key.text);
-    if (keys.length == 0) {
+    const keyTokens = splitTrimLower(key.text);
+    if (keyTokens.length == 0) {
         throw new Error("Attempt to call a parser with no tier.");
     }
 
-    if (keys[0] == "upward") {
-        if (keys.length != 2) {
+    if (keyTokens[0] == "upward") {
+        if (keyTokens.length != 2) {
             devEnv.markError(key.sheet, key.row, key.col, 
                 "Invalid tier name: " + key.text, "error");
             return new Transducer();
         }
-        const remnant = new GCell(keys[1], key.sheet, key.row, key.col);
+        const remnant = new GCell(keyTokens[1], key.sheet, key.row, key.col);
         return new UpdownTransducer(remnant, value, symbolTable, "upward");
     }
  
-    if (keys[0] == "downward") {
-        if (keys.length != 2) {
+    if (keyTokens[0] == "downward") {
+        if (keyTokens.length != 2) {
             devEnv.markError(key.sheet, key.row, key.col, 
                 "Invalid tier name: " + key.text, "error");
             return new Transducer();
         }
-        const remnant = new GCell(keys[1], key.sheet, key.row, key.col);
+        const remnant = new GCell(keyTokens[1], key.sheet, key.row, key.col);
         return new UpdownTransducer(remnant, value, symbolTable, "downward");
     }
 
-    if (keys[0] == "join") {
-        if (keys.length != 2) {
+    if (keyTokens[0] == "join") {
+        if (keyTokens.length != 2) {
             devEnv.markError(key.sheet, key.row, key.col, 
                 "Invalid tier name: " + key.text, "error");
             return new Transducer();
         }
-        const remnant = new GCell(keys[1], key.sheet, key.row, key.col);
+        const remnant = new GCell(keyTokens[1], key.sheet, key.row, key.col);
         return new JoinTransducer(remnant, value);
     }
 
-    if (keys[0] == "shift") {
-        if (keys.length != 2) {
+    if (keyTokens[0] == "shift") {
+        if (keyTokens.length != 2) {
             devEnv.markError(key.sheet, key.row, key.col, 
                 "Invalid tier name: " + key.text, "error");
             return new Transducer();
         }
-        const remnant = new GCell(keys[1], key.sheet, key.row, key.col);
+        const remnant = new GCell(keyTokens[1], key.sheet, key.row, key.col);
         return new ShiftTransducer(remnant, value);
     }
 
-    if (keys[0] == "maybe") {
-        if (keys.length < 2) {
-            devEnv.markError(key.sheet, key.row, key.col, 
-                "Invalid tier name: " + key.text, "error");
-            return new Transducer();
-        }
-        const remnant = keys.slice(1).join(" ");
-        const childKey = new GCell(remnant, key.sheet, key.row, key.col);
-        const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
-        return new MaybeTransducer(child);
+    if (keyTokens[0] == "maybe") {
+        return makeUnaryTransducer(keyTokens, key, value, MaybeTransducer, symbolTable, devEnv);
     }
 
-    if (keys[0] == "before") {
-        if (keys.length < 2) {
-            devEnv.markError(key.sheet, key.row, key.col, 
-                "Invalid tier name: " + key.text, "error");
-            return new Transducer();
-        }
-        const remnant = keys.slice(1).join(" ");
-        const childKey = new GCell(remnant, key.sheet, key.row, key.col);
-        const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
-        return new BeforeTransducer(child);
+    if (keyTokens[0] == "before") {
+        return makeUnaryTransducer(keyTokens, key, value, BeforeTransducer, symbolTable, devEnv);
     }
 
-    if (keys[0] == "input") {
-        if (keys.length < 2) {
-            devEnv.markError(key.sheet, key.row, key.col, 
-                "Invalid tier name: " + key.text, "error");
-            return new Transducer();
-        }
-        const remnant = keys.slice(1).join(" ");
-        const childKey = new GCell(remnant, key.sheet, key.row, key.col);
-        const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
-        return new InputTransducer(child);
+    if (keyTokens[0] == "after") {
+        return makeUnaryTransducer(keyTokens, key, value, AfterTransducer, symbolTable, devEnv);
     }
 
-    if (keys[0] == "final") {
-        if (keys.length < 2) {
-            devEnv.markError(key.sheet, key.row, key.col, 
-                "Invalid tier name: " + key.text, "error");
-            return new Transducer();
-        }
-        const remnant = keys.slice(1).join(" ");
-        const childKey = new GCell(remnant, key.sheet, key.row, key.col);
-        const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
-        return new FinalTransducer(child);
+    if (keyTokens[0] == "input") {
+        return makeUnaryTransducer(keyTokens, key, value, InputTransducer, symbolTable, devEnv);
     }
 
+    if (keyTokens[0] == "final") {
+        return makeUnaryTransducer(keyTokens, key, value, FinalTransducer, symbolTable, devEnv);
+    }
 
-    if (keys.length > 1) {
+    if (keyTokens.length > 1) {
         devEnv.markError(key.sheet, key.row, key.col, 
             "Invalid tier name: " + key.text, "error");
         return new Transducer();
     }
 
-    if (keys[0] == "var") {
+    if (keyTokens[0] == "var") {
         return new VarTransducer(value, symbolTable);
     } 
 
-    if (keys[0] == "p") {
+    if (keyTokens[0] == "p") {
         return new ProbTransducer(value, devEnv);
     }
     
     return new LiteralTransducer(key, value);
+}
+
+function makeUnaryTransducer(keyTokens: string[], 
+                            key: GCell, 
+                            value: GCell, 
+                            constructor: new (child: Transducer) => Transducer, 
+                            symbolTable: Map<string, Transducer>, 
+                            devEnv: DevEnvironment) {
+    if (keyTokens.length < 2) {
+        devEnv.markError(key.sheet, key.row, key.col, 
+            "Invalid tier name: " + key.text, "error");
+        return new Transducer();
+    }
+    const remnant = keyTokens.slice(1).join(" ");
+    const childKey = new GCell(remnant, key.sheet, key.row, key.col);
+    const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
+    return new constructor(child);
 }
 
 function transducerFromRecord(record: GRecord, symbolTable: Map<string, Transducer>, devEnv: DevEnvironment) {
@@ -987,4 +1003,13 @@ export function makeRecord(cells: [string, string][]): GRecord {
 
 export function makeTable(cells: [string, string][][]): GTable {
     return cells.map(makeRecord);
+}
+
+function record_has_key(record: GRecord, key: string): boolean {
+    for (const [k, v] of record) {
+        if (k.text == key) { 
+            return true;
+        }
+    }
+    return false;
 }
