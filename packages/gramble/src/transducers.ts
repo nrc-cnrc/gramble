@@ -164,7 +164,7 @@ export class Transducer {
         return undefined;
     }
 
-    public checkVars(devEnv: DevEnvironment): void {}
+    public sanityCheck(devEnv: DevEnvironment): void {}
 
     /*
     public transduceMany(inputs: GParse[], randomize=false, maxResults=-1): GParse[] {
@@ -244,8 +244,8 @@ class UnaryTransducer extends Transducer {
         super();
     }
 
-    public checkVars(devEnv: DevEnvironment): void {
-        this.child.checkVars(devEnv);
+    public sanityCheck(devEnv: DevEnvironment): void {
+        this.child.sanityCheck(devEnv);
     }
 }
 
@@ -260,7 +260,7 @@ class VarTransducer extends Transducer {
         super();
     }
 
-    public checkVars(devEnv: DevEnvironment): void {
+    public sanityCheck(devEnv: DevEnvironment): void {
         if (this.value.text == '') {
             return;
         }
@@ -427,9 +427,14 @@ class AlternationTransducer extends Transducer {
         return false;
     }
 
-    public checkVars(devEnv: DevEnvironment): void {
+    public sanityCheck(devEnv: DevEnvironment): void {
+        if (this.childrenAndWeights.length == 0) {
+
+
+        }
+
         for (const [child, weight] of this.childrenAndWeights) {
-            child.checkVars(devEnv);
+            child.sanityCheck(devEnv);
         }
     }
 
@@ -540,7 +545,6 @@ class UpdownTransducer extends Transducer {
         protected direction: "upward"|"downward"
     ) {
         super();
-        console.log(key, value, symbolTable, direction);
         if (direction == "upward") {
             this.inputTier = "down";
             this.outputTier = "up";
@@ -571,7 +575,7 @@ class UpdownTransducer extends Transducer {
         return result;
     }
     
-    public checkVars(devEnv: DevEnvironment): void {
+    public sanityCheck(devEnv: DevEnvironment): void {
         if (this.value.text == '') {
             return;
         }
@@ -857,9 +861,9 @@ class ConcatenationTransducer extends Transducer {
         return true;
     }
 
-    public checkVars(devEnv: DevEnvironment): void {
+    public sanityCheck(devEnv: DevEnvironment): void {
         for (const child of this.children) {
-            child.checkVars(devEnv);
+            child.sanityCheck(devEnv);
         }
     }
 
@@ -960,7 +964,6 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
         var tierStructure = parseTier(key.text);
         return transducerFromTier(tierStructure, key, value, symbolTable, devEnv);
     } catch (err) {
-        console.log("error: " + err.toString())
         devEnv.markError(key.sheet, key.row, key.col, err.toString(), "error");
         return new Transducer();  // if the tier is erroneous, return a trivial parser
                                   // so that the grammar can still execute

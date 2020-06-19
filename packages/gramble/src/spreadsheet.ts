@@ -98,7 +98,6 @@ export class TextDevEnvironment {
             col: number, 
             msg: string, 
             level: "error"|"warning"|"info"): void {
-
         this.errorMessages.push([sheet, row, col, msg, level]);
     }
 
@@ -354,6 +353,14 @@ export class Project {
         return toObj(results);
     }
 
+    public parseFlatten(input: {[key: string]: string}, 
+                symbolName: string = 'MAIN', 
+                randomize: boolean = false, 
+                maxResults: number = -1,
+                accelerate: boolean = true): {[key: string]: string}[] {
+        return this.flatten(this.parse(input, symbolName, randomize, maxResults, accelerate));
+}
+
     public generate(symbolName: string = 'MAIN', 
                 randomize: boolean = false, 
                 maxResults: number = -1,
@@ -556,24 +563,28 @@ export class Project {
 
     public addSheet(sheetName: string, 
                     cells: string[][], 
-                    devEnv: DevEnvironment): void {
+                    devEnv: DevEnvironment): Project {
 
         for (var [rowIdx, row] of cells.entries()) {
             this.addRow(row, sheetName, rowIdx, devEnv);
         }
 
         this.compile(devEnv);
+
+        return this;
     }
 
-    public compile(devEnv: DevEnvironment): void {
+    public compile(devEnv: DevEnvironment): Project {
         for (const [name, table] of this.symbolTable.entries()) {
             const transducer : Transducer = transducerFromTable(table, this.transducerTable, devEnv);
             this.transducerTable.set(name, transducer);
         }
 
         for (const transducer of this.transducerTable.values()) {
-            transducer.checkVars(devEnv);
+            transducer.sanityCheck(devEnv);
         }
+
+        return this;
     }
 }
 

@@ -32,3 +32,13 @@ export function testParseRemnant(result: GParse[], result_num: number, tier: str
         expect(text).to.equal(target);
     });
 }
+
+
+export function testFlattenedOutput(result: {[key: string]: string}[], result_num: number, tier: string, target: string) {
+    it("should have " + target + " as " + tier + " output " + (result_num + 1), function() {
+        expect(result.length).to.be.greaterThan(result_num);
+        const record = result[result_num];
+        expect(record).to.haveOwnProperty(tier);
+        expect(record[tier]).to.equal(target);
+    });
+}
