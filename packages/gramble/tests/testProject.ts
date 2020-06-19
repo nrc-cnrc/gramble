@@ -8,9 +8,6 @@ function cellSplit(s: string): string[][] {
     return s.split("\n").map((line) => line.split(","));
 }
 
-
-
-
 /** 
  * Simple project
  */
@@ -53,6 +50,19 @@ describe('Project with no variables, full_parsing an incomplete input "foo"', fu
     const result = ambiguousProject.parseFlatten({text: "foo"});
     testNumResults(result, 0);
 });
+
+describe('Project with no variables, gloss->text', function() {
+    const result = ambiguousProject.parseFlatten({gloss: "jump-1SG"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "text", "foobar");
+});
+
+describe('Project with no variables, with max_results=1', function() {
+    const result = ambiguousProject.parseFlatten({text: "foobar"}, 'MAIN', false, 1);
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "gloss", "jump-1SG");
+});
+
 
 /**
  * Flat grammar
@@ -105,6 +115,19 @@ describe('Flat project, full_parsing an incomplete input "foo"', function() {
     testNumResults(result, 0);
 });
 
+
+describe('Flat project, gloss->text', function() {
+    const result = flatProject.parseFlatten({gloss: "jump-1SG"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "text", "foobar");
+});
+
+describe('Flat project, with max_results=1', function() {
+    const result = flatProject.parseFlatten({text: "foobar"}, 'MAIN', false, 1);
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "gloss", "jump-1SG");
+});
+
 /**
  * Hierarchical grammar
  */
@@ -155,4 +178,97 @@ describe('Hierarchical project, full_parsing an incomplete input "fo"', function
 describe('Hierarchical project, full_parsing an incomplete input "foo"', function() {
     const result = hierarchicalProject.parseFlatten({text: "foo"});
     testNumResults(result, 0);
+});
+
+
+describe('Hierarchical project, gloss->text', function() {
+    const result = hierarchicalProject.parseFlatten({gloss: "jump-1SG"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "text", "foobar");
+});
+
+describe('Hierarchical project, with max_results=1', function() {
+    const result = hierarchicalProject.parseFlatten({text: "foobar"}, 'MAIN', false, 1);
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "gloss", "jump-1SG");
+});
+
+/**
+ * Testing "maybe <literal>" tier
+ */
+
+const maybeGlossGrammar = cellSplit(`
+MAIN, text, gloss, maybe gloss, text, gloss
+    , foo, jump, -INDIC, bar, -1SG
+`);
+
+const maybeGlossProject = new Project().addSheet("testSheet", maybeGlossGrammar, devEnv);
+
+describe('Maybe <literal> parser', function() {
+    const result = maybeGlossProject.parseFlatten({text: "foobar"});
+    testNumResults(result, 2);
+    testFlattenedOutput(result, 0, "gloss", "jump-INDIC-1SG");
+    testFlattenedOutput(result, 1, "gloss", "jump-1SG");
+});
+
+/**
+ * Testing "maybe <var>" tier
+ */
+
+const maybeVarGrammar = cellSplit(`
+ROOT,    text,   gloss
+     ,   foo,     jump
+
+SUFFIX,  text,   gloss
+      ,  bar,    -1SG
+MAIN,   var,    maybe var
+    ,   ROOT,   SUFFIX
+`)
+
+const maybeVarProject = new Project().addSheet("testSheet", maybeVarGrammar, devEnv);
+
+describe('Maybe <var> parser, parsing input with no suffix', function() {
+    const result = maybeVarProject.parseFlatten({text: "foo"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "gloss", "jump");
+});
+
+
+describe('Maybe <var> parser, parsing input with suffix', function() {
+    const result = maybeVarProject.parseFlatten({text: "foobar"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "gloss", "jump-1SG");
+});
+
+/**
+ * "x/y" tier parser
+ */
+
+const slashGrammar = cellSplit(`
+MAIN,   text/root, gloss, text, gloss
+    ,    foo,    jump, bar, -1SG
+    ,    foob, run, ar, -3PL.PAST
+`);
+
+const slashProject = new Project().addSheet("testSheet", slashGrammar, devEnv);
+
+
+describe('Project with text/root tier, transducing from text', function() {
+    const result =  slashProject.parseFlatten({text: "foobar"});
+    testNumResults(result, 2);
+    testFlattenedOutput(result, 0, "root", "foo");
+    testFlattenedOutput(result, 1, "root", "foob");
+});
+
+describe('Project with text/root tier, transducing from gloss', function() {
+    const result =  slashProject.parseFlatten({gloss: "jump-1SG"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "root", "foo");
+});
+
+describe('Project with text/root tier, transducing from root', function() {
+    const result =  slashProject.parseFlatten({root: "foo"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "text", "foobar");
+    testFlattenedOutput(result, 0, "gloss", "jump-1SG");
 });

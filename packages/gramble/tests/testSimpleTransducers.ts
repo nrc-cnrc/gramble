@@ -40,16 +40,6 @@ describe('Simple GEntry parser, with remnant', function() {
     testParseRemnant(result, 0, "text", "bar");
 }); 
 
-
-describe('Simple GEntry parser, in reverse', function() {
-    const input : GParse = [foobarInput, 1.0, []];
-    const result = barParser.transduce(input, reverseOptions);
-    testNumResults(result, 1);
-    testParseOutput(result, 0, "text", "bar");
-    testParseRemnant(result, 0, "text", "foo");
-}); 
-
-
 describe('Simple var parser, no remnant', function() {
     const input : GParse = [fooInput, 1.0, []];
     const result = varParser.transduce(input, defaultOptions);
