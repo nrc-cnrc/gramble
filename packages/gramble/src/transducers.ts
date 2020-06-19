@@ -1,6 +1,8 @@
-import { RandomPicker, winnow } from "./util";
-import { getEnabledCategories } from "trace_events";
 import { DevEnvironment } from "./spreadsheet";
+import { RandomPicker, winnow } from "./util";
+
+import { Tier, parseTier, UnaryTier, CommentTier, BinaryTier } from "./tierParser";
+
 //import { getEnabledCategories } from "trace_events";
 //import { stringify } from "querystring";
 
@@ -308,33 +310,6 @@ class InputTransducer extends UnaryTransducer {
     }
 }
 
-/**
- * ShiftTransducer
- * 
- * "shift" is a unary transducer that simply copies the value on an input tier into an output tier.
- * E.g., "shift surf":"gloss" would copy "surf" tier of the input into the "gloss" tier of the output.
- * Often will be used for the same tier, e.g. "shift surf":"surf".
- */
-class ShiftTransducer extends Transducer {
-
-    public constructor(
-        private toTier: GCell,
-        private fromTier: GCell
-    ) {
-        super();
-    }
-
-    
-    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
-        return true;
-    }
-
-    public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
-        var [output, remnant] = winnow(input, ([key, value]) => key.text == this.fromTier.text); // split entries into relevant and irrelevant
-        output = mapKeys(output, this.fromTier.text, this.toTier.text);
-        return [[remnant, logprob, [...pastOutput, ...output]]];
-    }
-}
 
 class FinalTransducer extends UnaryTransducer {
 
@@ -347,37 +322,6 @@ class FinalTransducer extends UnaryTransducer {
         return this.child.transduce(inputParse, options).filter(([remnant, p, o]) => {
             return !remnant.some(([key, value]) => value.text.length > 0 );
         });
-    }
-}
-
-class JoinTransducer extends Transducer {
-
-    public constructor(
-        private tier: GCell,
-        private delim: GCell
-    ) {
-        super();
-    }
-
-    
-    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
-        return true;
-    }
-
-
-    public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
-        const parts: string[] = [];
-        const output = pastOutput.filter(([key, value]) => {
-            if (key.text == this.tier.text) {
-                parts.push(value.text);
-                return false;
-            }
-            return true;
-        });
-        const flattenedString = parts.join(this.delim.text);
-        const flattenedCell = new GCell(flattenedString, this.delim.sheet, this.delim.row, this.delim.col);
-        output.push([this.tier, flattenedCell]);
-        return [[input, logprob, output]];
     }
 }
 
@@ -428,22 +372,19 @@ class AfterTransducer extends UnaryTransducer {
 class ProbTransducer extends Transducer {
 
     private p: number;
-    public constructor(value: GCell, devEnv: DevEnvironment) { 
+    public constructor(value: GCell) { 
         super();
         if (value.text == "") {
             this.p = 1.0;
         }
         try {
             this.p = parseFloat(value.text);
-            if (this.p < 0) {
-                devEnv.markError(value.sheet, value.row, value.col, 
-                    `${value.text} is not a valid value for p; only numbers can be p values.`, "error");
-                this.p = 1.0;
-            }
         } catch (err) {
-            devEnv.markError(value.sheet, value.row, value.col, 
-                `${value.text} is not a valid value for p; only numbers can be p values.`, "error");
-            this.p = 1.0;
+            throw new Error(`${value.text} is not a valid value for p; only numbers can be p values.`);
+        }
+
+        if (this.p < 0) {
+            throw new Error(`${value.text} is not a valid value for p; only positive numbers can be p values.`);
         }
     }
 
@@ -574,19 +515,32 @@ class MaybeTransducer extends UnaryTransducer {
     }
 }
 
+
+/***********************
+ * One-tier transducers
+ * 
+ * These are unary transducers whose only argument can be an atomic tier name,
+ * e.g. "shift text", rather than a potentially complex tier name (e.g. 
+ * "shift text/gloss" or "shift maybe text").
+ * 
+ * Their constructors take a tier cell, a value cell, and a symbol table.
+ */
+
+
 class UpdownTransducer extends Transducer {
 
     //private transducer: Transducer | undefined = undefined;
-    private inputTier: string;
-    private outputTier: string;
+    protected inputTier: string;
+    protected outputTier: string;
 
     public constructor(
-        private key: GCell, 
-        private value: GCell, 
-        private symbolTable: Map<string, Transducer>, 
-        private direction: "upward"|"downward"
+        protected key: GCell, 
+        protected value: GCell, 
+        protected symbolTable: Map<string, Transducer>, 
+        protected direction: "upward"|"downward"
     ) {
         super();
+        console.log(key, value, symbolTable, direction);
         if (direction == "upward") {
             this.inputTier = "down";
             this.outputTier = "up";
@@ -627,7 +581,7 @@ class UpdownTransducer extends Transducer {
         }
     }
     
-    public applyConversion(parse: GParse, options: ParseOptions): GParse[] {
+    protected applyConversion(parse: GParse, options: ParseOptions): GParse[] {
         
         const [input, logprob, pastOutput] = parse;
 
@@ -692,6 +646,99 @@ class UpdownTransducer extends Transducer {
         return results;
     }
 }
+
+class UpTransducer extends UpdownTransducer {
+
+    public constructor(
+        key: GCell,
+        value: GCell,
+        symbolTable: Map<string, Transducer>
+    ) {
+        super(key, value, symbolTable, "upward");
+    }
+}
+
+
+class DownTransducer extends UpdownTransducer {
+
+    public constructor(
+        key: GCell,
+        value: GCell,
+        symbolTable: Map<string, Transducer>
+    ) {
+        super(key, value, symbolTable, "downward");
+    }
+}
+
+
+class JoinTransducer extends Transducer {
+
+    public constructor(
+        private tier: GCell,
+        private delim: GCell,
+        symbolTable: Map<string, Transducer>
+    ) {
+        super();
+    }
+
+    
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        return true;
+    }
+
+
+    public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
+        const parts: string[] = [];
+        const output = pastOutput.filter(([key, value]) => {
+            if (key.text == this.tier.text) {
+                parts.push(value.text);
+                return false;
+            }
+            return true;
+        });
+        const flattenedString = parts.join(this.delim.text);
+        const flattenedCell = new GCell(flattenedString, this.delim.sheet, this.delim.row, this.delim.col);
+        output.push([this.tier, flattenedCell]);
+        return [[input, logprob, output]];
+    }
+}
+
+
+/**
+ * ShiftTransducer
+ * 
+ * "shift" is a unary transducer that simply copies the value on an input tier into an output tier.
+ * E.g., "shift surf":"gloss" would copy "surf" tier of the input into the "gloss" tier of the output.
+ * Often will be used for the same tier, e.g. "shift surf":"surf".
+ */
+class ShiftTransducer extends Transducer {
+
+    public constructor(
+        private toTier: GCell,
+        private fromTier: GCell,
+        symbolTable: Map<string, Transducer>
+    ) {
+        super();
+    }
+
+    
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        return true;
+    }
+
+    public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
+        var [output, remnant] = winnow(input, ([key, value]) => key.text == this.fromTier.text); // split entries into relevant and irrelevant
+        output = mapKeys(output, this.fromTier.text, this.toTier.text);
+        return [[remnant, logprob, [...pastOutput, ...output]]];
+    }
+}
+
+
+/******************
+ * Atomic transducers
+ *
+ */
+
 
 class LiteralTransducer extends Transducer {
 
@@ -842,117 +889,82 @@ class ConcatenationTransducer extends Transducer {
     }
 }
 
+const UNARY_CONSTRUCTORS: {[key: string]: new (child: Transducer) => Transducer} = {
+    "maybe": MaybeTransducer,
+    "input": InputTransducer,
+    "before": BeforeTransducer,
+    "after": AfterTransducer,
+    "final": FinalTransducer
+}
+
+
+const ONE_TIER_CONSTRUCTORS: {[key: string]: new (tier: GCell, 
+                        value: GCell, symbolTable: Map<string, Transducer>) => Transducer} = {
+    "shift": ShiftTransducer,
+    "join": JoinTransducer,
+    "upward": UpTransducer,
+    "downward": DownTransducer
+}
+
+function transducerFromTier(tier: Tier, 
+                            key: GCell, 
+                            value: GCell, 
+                            symbolTable: Map<string, Transducer>,
+                            devEnv: DevEnvironment): Transducer {
+
+    if (UNARY_CONSTRUCTORS[tier.name] != undefined) {
+        const constructor = UNARY_CONSTRUCTORS[tier.name];
+        const childTier = (tier as UnaryTier).child;
+        const childTransducer = transducerFromTier(childTier, key, value, symbolTable, devEnv);
+        return new constructor(childTransducer);
+    }                  
+
+    if (ONE_TIER_CONSTRUCTORS[tier.name] != undefined) {
+        const constructor = ONE_TIER_CONSTRUCTORS[tier.name];
+        const childTier = (tier as UnaryTier).child;
+        const tierCell = new GCell(childTier.name, key.sheet, key.row, key.col);
+        return new constructor(tierCell, value, symbolTable);
+    }
+
+    if (tier.name == "%") {  // it's a commented-out tier
+        return new Transducer();
+    }
+
+    if (tier.name == "/") {
+        const child1Tier = (tier as BinaryTier).child1;
+        const child2Tier = (tier as BinaryTier).child2;
+        const child1Transducer = transducerFromTier(child1Tier, key, value, symbolTable, devEnv);
+        const child2Transducer = transducerFromTier(child2Tier, key, value, symbolTable, devEnv);
+        return new ConcatenationTransducer([child1Transducer, child2Transducer]);
+    }
+
+
+    if (tier.name == "p") {
+        return new ProbTransducer(value);
+    }
+
+    if (tier.name == "var") {
+        return new VarTransducer(value, symbolTable);
+    }
+
+    const tierCell = new GCell(tier.name, key.sheet, key.row, key.col);
+    return new LiteralTransducer(tierCell, value);
+
+}
+
 export function transducerFromEntry([key, value]: [GCell, GCell], 
                                         symbolTable: Map<string, Transducer>,
                                         devEnv: DevEnvironment): Transducer {
 
-    const commaSeparatedTiers = splitTrimLower(key.text, ",");
-
-    if (commaSeparatedTiers.length > 1) {
-        var children = commaSeparatedTiers.map(tier => {
-            const newKey = new GCell(tier, key.sheet, key.col, key.row);
-            return transducerFromEntry([newKey, value], symbolTable, devEnv);
-        });
-        return new ConcatenationTransducer(children);
+    try {
+        var tierStructure = parseTier(key.text);
+        return transducerFromTier(tierStructure, key, value, symbolTable, devEnv);
+    } catch (err) {
+        console.log("error: " + err.toString())
+        devEnv.markError(key.sheet, key.row, key.col, err.toString(), "error");
+        return new Transducer();  // if the tier is erroneous, return a trivial parser
+                                  // so that the grammar can still execute
     }
-
-    const keyTokens = splitTrimLower(key.text);
-    if (keyTokens.length == 0) {
-        throw new Error("Attempt to call a parser with no tier.");
-    }
-
-    if (keyTokens[0] == "upward") {
-        if (keyTokens.length != 2) {
-            devEnv.markError(key.sheet, key.row, key.col, 
-                "Invalid tier name: " + key.text, "error");
-            return new Transducer();
-        }
-        const remnant = new GCell(keyTokens[1], key.sheet, key.row, key.col);
-        return new UpdownTransducer(remnant, value, symbolTable, "upward");
-    }
- 
-    if (keyTokens[0] == "downward") {
-        if (keyTokens.length != 2) {
-            devEnv.markError(key.sheet, key.row, key.col, 
-                "Invalid tier name: " + key.text, "error");
-            return new Transducer();
-        }
-        const remnant = new GCell(keyTokens[1], key.sheet, key.row, key.col);
-        return new UpdownTransducer(remnant, value, symbolTable, "downward");
-    }
-
-    if (keyTokens[0] == "join") {
-        if (keyTokens.length != 2) {
-            devEnv.markError(key.sheet, key.row, key.col, 
-                "Invalid tier name: " + key.text, "error");
-            return new Transducer();
-        }
-        const remnant = new GCell(keyTokens[1], key.sheet, key.row, key.col);
-        return new JoinTransducer(remnant, value);
-    }
-
-    if (keyTokens[0] == "shift") {
-        if (keyTokens.length != 2) {
-            devEnv.markError(key.sheet, key.row, key.col, 
-                "Invalid tier name: " + key.text, "error");
-            return new Transducer();
-        }
-        const remnant = new GCell(keyTokens[1], key.sheet, key.row, key.col);
-        return new ShiftTransducer(remnant, value);
-    }
-
-    if (keyTokens[0] == "maybe") {
-        return makeUnaryTransducer(keyTokens, key, value, MaybeTransducer, symbolTable, devEnv);
-    }
-
-    if (keyTokens[0] == "before") {
-        return makeUnaryTransducer(keyTokens, key, value, BeforeTransducer, symbolTable, devEnv);
-    }
-
-    if (keyTokens[0] == "after") {
-        return makeUnaryTransducer(keyTokens, key, value, AfterTransducer, symbolTable, devEnv);
-    }
-
-    if (keyTokens[0] == "input") {
-        return makeUnaryTransducer(keyTokens, key, value, InputTransducer, symbolTable, devEnv);
-    }
-
-    if (keyTokens[0] == "final") {
-        return makeUnaryTransducer(keyTokens, key, value, FinalTransducer, symbolTable, devEnv);
-    }
-
-    if (keyTokens.length > 1) {
-        devEnv.markError(key.sheet, key.row, key.col, 
-            "Invalid tier name: " + key.text, "error");
-        return new Transducer();
-    }
-
-    if (keyTokens[0] == "var") {
-        return new VarTransducer(value, symbolTable);
-    } 
-
-    if (keyTokens[0] == "p") {
-        return new ProbTransducer(value, devEnv);
-    }
-    
-    return new LiteralTransducer(key, value);
-}
-
-function makeUnaryTransducer(keyTokens: string[], 
-                            key: GCell, 
-                            value: GCell, 
-                            constructor: new (child: Transducer) => Transducer, 
-                            symbolTable: Map<string, Transducer>, 
-                            devEnv: DevEnvironment) {
-    if (keyTokens.length < 2) {
-        devEnv.markError(key.sheet, key.row, key.col, 
-            "Invalid tier name: " + key.text, "error");
-        return new Transducer();
-    }
-    const remnant = keyTokens.slice(1).join(" ");
-    const childKey = new GCell(remnant, key.sheet, key.row, key.col);
-    const child = transducerFromEntry([childKey, value], symbolTable, devEnv);
-    return new constructor(child);
 }
 
 function transducerFromRecord(record: GRecord, symbolTable: Map<string, Transducer>, devEnv: DevEnvironment) {

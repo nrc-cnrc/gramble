@@ -47,8 +47,8 @@ const maybe_suffix_parser = transducerFromTable(makeTable([
 ]), transducerTable, devEnv);
 
 const conjoined_foobar_parser = transducerFromTable(makeTable([
-    [["text, root", "foo"], ["gloss", "jump"], ["text", "bar"], ["gloss", "-1SG"]],
-    [["text, root", "foob"], ["gloss", "run"], ["text", "ar"], ["gloss", "-3PL.PAST"]]
+    [["text/root", "foo"], ["gloss", "jump"], ["text", "bar"], ["gloss", "-1SG"]],
+    [["text/root", "foob"], ["gloss", "run"], ["text", "ar"], ["gloss", "-3PL.PAST"]]
 ]), transducerTable, devEnv);
 
 
