@@ -270,3 +270,48 @@ describe('Project with text/root tier, transducing from root', function() {
     testFlattenedOutput(result, 0, "gloss", "jump-1SG");
 });
 
+
+/**
+ * "x/y" tier parser
+ */
+
+const grammarWithEmptyCell = cellSplit(`
+VROOT, text, gloss
+    , foo, jump
+
+VSTEM, var, text, gloss
+    , VROOT, bar, -1SG
+    , VROOT,    , .3PL
+
+MAIN, var
+    , VSTEM
+`);
+
+const projectWithEmptyCell = new Project().addSheet("testSheet", grammarWithEmptyCell, devEnv);
+
+
+describe('Project with empty cell, transducing from text', function() {
+    const result =  projectWithEmptyCell.parseFlatten({text: "foobar"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "gloss", "jump-1SG");
+});
+
+
+describe('Project with empty cell, transducing from text', function() {
+    const result =  projectWithEmptyCell.parseFlatten({text: "foo"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "gloss", "jump.3PL");
+});
+
+
+describe('Project with empty cell, transducing from gloss', function() {
+    const result =  projectWithEmptyCell.parseFlatten({gloss: "jump-1SG"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "text", "foobar");
+});
+
+describe('Project with empty cell, transducing from gloss', function() {
+    const result =  projectWithEmptyCell.parseFlatten({gloss: "jump.3PL"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "text", "foo");
+});

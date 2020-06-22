@@ -768,11 +768,21 @@ class LiteralTransducer extends Transducer {
 
     public transduce(parse: GParse, options: ParseOptions): GParse[] {
 
+        const [input, logprob, pastOutput] = parse;
+
         if (this.value.text.length == 0) {
-            return [parse];
+            
+            var output = [...pastOutput];
+            
+            if (options.parseLeftToRight) {
+                output.push([this.key, this.value]);
+            } else {
+                output.unshift([this.key, this.value]);
+            }
+
+            return [[input, logprob, output]];
         }
 
-        const [input, logprob, pastOutput] = parse;
 
         var consumedInput: GRecord = [];
 
