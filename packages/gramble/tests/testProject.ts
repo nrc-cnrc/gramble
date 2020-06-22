@@ -1,12 +1,9 @@
 import {Project, TextDevEnvironment} from "../src/spreadsheet";
 import 'mocha';
-import {testNumResults, testFlattenedOutput} from "./test_util"
+import {testNumResults, testFlattenedOutput, cellSplit} from "./test_util"
 
 const devEnv = new TextDevEnvironment();
 
-function cellSplit(s: string): string[][] {
-    return s.split("\n").map((line) => line.split(","));
-}
 
 /** 
  * Simple project
@@ -272,3 +269,4 @@ describe('Project with text/root tier, transducing from root', function() {
     testFlattenedOutput(result, 0, "text", "foobar");
     testFlattenedOutput(result, 0, "gloss", "jump-1SG");
 });
+

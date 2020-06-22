@@ -1,6 +1,10 @@
 import { expect } from 'chai';
 import { GTable, GParse, GCell, GEntry } from '../src/transducers';
 
+export function cellSplit(s: string): string[][] {
+    return s.split("\n").map((line) => line.split(","));
+}
+
 export function testNumResults(result: any[], expected_num: number) {
     it("should have " + expected_num + " result(s)", function() {
         expect(result.length).to.equal(expected_num);

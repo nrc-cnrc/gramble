@@ -370,6 +370,13 @@ export class Project {
         return toObj(results);
     }
 
+    public generateFlatten(symbolName: string = 'MAIN', 
+                randomize: boolean = false, 
+                maxResults: number = -1,
+                accelerate: boolean = true): {[key: string]: string}[] {
+        return this.flatten(this.generate(symbolName, randomize, maxResults, accelerate));
+    }
+
     public sample(symbolName: string = 'MAIN', 
                 maxResults: number = 1,
                 accelerate: boolean = true): {[key: string]: string}[][] {

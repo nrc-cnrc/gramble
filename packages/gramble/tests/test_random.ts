@@ -1,42 +1,15 @@
 import {RandomPicker} from "../src/util"
 import { expect } from 'chai';
 import 'mocha';
-import {testNumResults, testOutput} from "./test_util";
+import {testNumResults, testOutput, cellSplit, testFlattenedOutput} from "./test_util";
 import {transducerFromTable, Transducer, makeTable} from "../src/transducers"
-import {TextDevEnvironment} from "../src/spreadsheet";
+import {Project, TextDevEnvironment} from "../src/spreadsheet";
 
 const devEnv = new TextDevEnvironment();
-const transducerTable : Map<string, Transducer> = new Map();
-const text_input = makeTable([[["text", "foobar"]]]);
-const empty_input = makeTable([[["", ""]]]);
 
-transducerTable.set('ROOT', transducerFromTable(makeTable([
-    [["text", "foo"], ["gloss", "jump"]],
-    [["text", "foob"], ["gloss", "run"]]
-]), transducerTable, devEnv));
-
-transducerTable.set('SUFFIX', transducerFromTable(makeTable([
-    [["text", "bar"], ["gloss", "-1SG"]],
-    [["text", "ar"], ["gloss", "-3SG.PAST"]],
-    [["text", "tar"], ["gloss", "-3PL.PAST"]]
-]), transducerTable, devEnv));
-
-const ambiguous_parser_with_var = transducerFromTable(makeTable([
-    [["var", "ROOT"], ["var", "SUFFIX"]]
-]), transducerTable, devEnv);
-
-
-transducerTable.set('SUFFIX_PROBS', transducerFromTable(makeTable([
-    [["text", "bar"], ["gloss", "-1SG"], ["p", "0.0"]],
-    [["text", "ar"], ["gloss", "-3SG.PAST"], ["p", "1.0"]],
-    [["text", "tar"], ["gloss", "-3PL.PAST"], ["p", "0.5"]]
-]), transducerTable, devEnv));
-
-
-const ambiguous_parser_with_probs = transducerFromTable(makeTable([
-    [["var", "ROOT"], ["var", "SUFFIX_PROBS"]]
-]), transducerTable, devEnv);
-
+/**
+ * Testing the random picker
+ */
 
 describe('Random picker', function() {
     const items: Array<[string, number]> = [ ["foo", 0.2], ["moo", 0.2], ["loo", 0.6] ];
@@ -56,31 +29,75 @@ describe('Random picker', function() {
     });
 });
 
+/**
+ * Random parsing from an ambiguous grammar
+ */
+
+const flatGrammar = cellSplit(`
+    VROOT, text, gloss
+        , foo, jump
+        , foob, run
+
+    TENSE, text, gloss
+        , bar, -1SG
+        , ar, -3SG.PAST
+        , tar, -3PL.PAST
+
+    MAIN, var, var
+    , VROOT, TENSE
+`);
+
+
+const flatProject = new Project().addSheet("testSheet", flatGrammar, devEnv);
 
 describe('Random transducer, with max_results=1', function() {
-    const result = ambiguous_parser_with_var.transduceFinal(text_input, true, 1);
+    const result = flatProject.parseFlatten({text: "foobar"}, "MAIN", true, 1);
     testNumResults(result, 1);
 });
 
 
 describe('Random generator, with max_results=1', function() {
-    const result = ambiguous_parser_with_var.transduceFinal(empty_input, true, 1);
+    const result = flatProject.generateFlatten('MAIN', true, 1);
     testNumResults(result, 1);
 });
 
+/**
+ * The flat grammar with explicit probabilities for some rows
+ */
+
+const probGrammar = cellSplit(`
+    VROOT, text, gloss
+        , foo, jump
+        , foob, run
+
+    TENSE, text, gloss, p
+        , bar, -1SG, 0.0
+        , ar, -3PL.PAST, 1.0
+        , tar, -3PL.PAST, 0.5
+
+    MAIN, var, var
+    , VROOT, TENSE
+`);
+
+
+const probProject = new Project().addSheet("testSheet", probGrammar, devEnv);
+
 
 describe('Random transducer with weights', function() {
-    const result = ambiguous_parser_with_probs.transduceFinal(text_input, true, -1);
-    var nonzero_results = [];
-    for (const record of result) {
-        for (const [key, value] of record) {
-            if (key.text == "p" && parseFloat(value.text) != 0) {
+
+    const results = probProject.parseFlatten({text: "foobar"});
+    testNumResults(results, 2);
+
+    // there will be two results, but one of which has probability zero
+    var nonzero_results: {[key: string]: string}[] = [];
+    for (const record of results) {
+        for (const key in record) {
+            if (key == "p" && parseFloat(record.p) != 0) {
                 nonzero_results.push(record);
-                continue;
             }
         }
     }
     testNumResults(nonzero_results, 1);
-    testOutput(nonzero_results, 0, "gloss", "run-3SG.PAST");
+    testFlattenedOutput(nonzero_results, 0, "gloss", "run-3SG.PAST");
 });
     
