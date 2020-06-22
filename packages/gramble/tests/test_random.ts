@@ -72,7 +72,7 @@ const probGrammar = cellSplit(`
 
     TENSE, text, gloss, p
         , bar, -1SG, 0.0
-        , ar, -3PL.PAST, 1.0
+        , ar, -3SG.PAST, 1.0
         , tar, -3PL.PAST, 0.5
 
     MAIN, var, var
