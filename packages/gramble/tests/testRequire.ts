@@ -179,3 +179,49 @@ describe('Requirement grammar with multiple requirements, generating all imperat
     const result = impProject3.parseFlatten({imp: "imp", irr: "real"});
     testNumResults(result, 0);
 });
+
+
+const impGrammar4 = cellSplit(`
+    VROOT, text, gloss, alt imp
+        , obi, jump, indic|imp
+        , apara, run, indic
+        , aparo, run, imp
+
+    INDIC_STEM, var, text, gloss
+        , VROOT, bar, -1SG
+        , VROOT, ta, -2SG
+        , VROOT, ga, -3SG
+
+    IMP_STEM, var, text, gloss
+        , VROOT, sa, -IMP
+
+    MAIN, require imp, var
+        , indic      , INDIC_STEM
+        , imp        , IMP_STEM
+`);
+
+const impProject4 = new Project().addSheet("testSheet", impGrammar4, devEnv);
+
+describe('Requirement grammar with alt cells, Using "input imp: indic" to constrain parse path', function() {
+    const result = impProject4.parseFlatten({text: "obita"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "gloss", "jump-2SG");
+});
+
+describe('Requirement grammar with alt cells, Using "input imp: imp" to constrain parse path', function() {
+    const result = impProject4.parseFlatten({text: "obisa"});
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "gloss", "jump-IMP");
+});
+
+
+describe('Requirement grammar with alt cells, generating all non-imperative forms', function() {
+    const result = impProject4.parseFlatten({imp: "indic"});
+    console.log(result);
+    testNumResults(result, 6);
+});
+
+describe('Requirement grammar with alt cells, generating all imperative forms', function() {
+    const result = impProject4.parseFlatten({imp: "imp"});
+    testNumResults(result, 2);
+});

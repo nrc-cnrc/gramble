@@ -1002,6 +1002,29 @@ class SlashTransducer extends ConcatenationTransducer {
     }
 }
 
+
+class AltTransducer extends AlternationTransducer {
+
+    public constructor(
+        tier: Tier,
+        key: GCell, 
+        value: GCell,
+        symbolTable: Map<string, Transducer>,
+        devEnv: DevEnvironment
+    ) {
+        const childTier = (tier as UnaryTier).child;
+        const childTransducers: Transducer[] = [];
+        for (var s of value.text.split("|")) {
+            s = s.trim();
+            const childValue = new GCell(s, value.sheet, value.row, value.col);
+            const childTransducer = transducerFromTier(childTier, key, childValue, symbolTable, devEnv);
+            childTransducers.push(childTransducer);
+        }
+        super(childTransducers);
+    }
+}
+
+
 const TRANSDUCER_CONSTRUCTORS: {[key: string]: new (
     tier: Tier,
     key: GCell, 
@@ -1019,6 +1042,7 @@ const TRANSDUCER_CONSTRUCTORS: {[key: string]: new (
     "join": JoinTransducer,
     "upward": UpTransducer,
     "downward": DownTransducer,
+    "alt": AltTransducer,
     "%": CommentTransducer,
     "p": ProbTransducer,
     "var": VarTransducer,
