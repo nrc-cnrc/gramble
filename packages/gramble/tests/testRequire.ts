@@ -92,25 +92,25 @@ const impGrammar2 = cellSplit(`
 const impProject2 = new Project().addSheet("testSheet", impGrammar2, devEnv);
 
 
-describe('Using "input imp: <empty>" to constrain parse path', function() {
+describe('Requirement grammar with empty cells, Using "input imp: <empty>" to constrain parse path', function() {
     const result = impProject2.parseFlatten({text: "obata"});
     testNumResults(result, 1);
     testFlattenedOutput(result, 0, "gloss", "jump-2SG");
 });
 
-describe('Using "input imp: imp" to constrain parse path (vs empty)', function() {
+describe('Requirement grammar with empty cells, Using "input imp: imp" to constrain parse path (vs empty)', function() {
     const result = impProject2.parseFlatten({text: "obisa"});
     testNumResults(result, 1);
     testFlattenedOutput(result, 0, "gloss", "jump-IMP");
 });
 
 
-describe('Using "input imp: <empty>" to constrain parse path, impossible parse', function() {
+describe('Requirement grammar with empty cells, Using "input imp: <empty>" to constrain parse path, impossible parse', function() {
     const result = impProject2.parseFlatten({text: "obasa"});
     testNumResults(result, 0);
 });
 
-describe('Using "input imp: imp" to constrain parse path (vs empty), impossible parse', function() {
+describe('Requirement grammar with empty cells, Using "input imp: imp" to constrain parse path (vs empty), impossible parse', function() {
     const result = impProject2.parseFlatten({text: "obita"});
     testNumResults(result, 0);
 });
