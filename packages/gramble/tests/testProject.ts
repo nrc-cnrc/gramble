@@ -272,7 +272,7 @@ describe('Project with text/root tier, transducing from root', function() {
 
 
 /**
- * "x/y" tier parser
+ * Testing to make sure empty cells in the grammar work
  */
 
 const grammarWithEmptyCell = cellSplit(`

@@ -293,19 +293,26 @@ class VarTransducer extends Transducer {
     }
 }
 
-class InputTransducer extends UnaryTransducer {
+class RequireTransducer extends UnaryTransducer {
 
     public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
         return undefined;
     }
 
     public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
-        const results : GParse[] = [];
-        const trivialInput : GRecord = makeRecord([["",""]]) // make an empty input to transduce from
+
+        const results : GParse[] = []; 
+        for (const [rem, newprob, output] of this.child.transduce([input, logprob, []], options)) {
+            const newInput: GRecord = [...output, ...rem];
+            results.push([newInput, logprob, pastOutput]);
+        }
+
+        /*const trivialInput : GRecord = makeRecord([["",""]]) // make an empty input to transduce from
         for (const [rem, newprob, output] of this.child.transduce([trivialInput, logprob, pastOutput], options)) {
             const newInput = [... input, ... output];
             results.push([newInput, newprob, []]);
         }
+        */
         return results;
     }
 }
@@ -438,7 +445,7 @@ class AlternationTransducer extends Transducer {
         }
     }
 
-    public firstCharOfInput(input: GRecord): [string, string] | undefined {
+    protected firstCharOfInput(input: GRecord): [string, string] | undefined {
         for (const [key, value] of input) {
             if (value.text == "") {
                 continue;
@@ -905,7 +912,7 @@ class ConcatenationTransducer extends Transducer {
 
 const UNARY_CONSTRUCTORS: {[key: string]: new (child: Transducer) => Transducer} = {
     "maybe": MaybeTransducer,
-    "input": InputTransducer,
+    "require": RequireTransducer,
     "before": BeforeTransducer,
     "after": AfterTransducer,
     "final": FinalTransducer

@@ -34,7 +34,7 @@ export class BinaryTier extends Tier {
 type TierParser = (input: string[]) => Generator<[Tier, string[]], void, boolean | undefined>;
 
 const SYMBOL = [ "(", ")", "%", "/"];
-export const UNARY_RESERVED = [ "maybe", "input", "before", "after", "final" ];
+export const UNARY_RESERVED = [ "maybe", "require", "before", "after", "final" ];
 export const ONE_TIER_RESERVED = [ "join", "shift", "upward", "downward" ];
 const ALL_RESERVED = SYMBOL.concat(UNARY_RESERVED);
 
