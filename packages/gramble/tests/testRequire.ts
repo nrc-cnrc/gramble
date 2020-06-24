@@ -217,7 +217,6 @@ describe('Requirement grammar with alt cells, Using "input imp: imp" to constrai
 
 describe('Requirement grammar with alt cells, generating all non-imperative forms', function() {
     const result = impProject4.parseFlatten({imp: "indic"});
-    console.log(result);
     testNumResults(result, 6);
 });
 

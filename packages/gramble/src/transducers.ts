@@ -903,6 +903,12 @@ class VarTransducer extends Transducer {
             return;
         }
         if (!this.symbolTable.has(this.value.text)) {
+            if (this.value.text.indexOf("|") != -1) {
+                devEnv.markError(this.value.sheet, this.value.row, this.value.col,
+                    `${this.value.text} is in a var column, but there is no variable of this name.  ` +
+                    "Did you mean 'alt var' above?", "error");
+                return;
+            }
             devEnv.markError(this.value.sheet, this.value.row, this.value.col, 
                 `${this.value.text} is in a var column, but there is no variable of this name.`, "error");
         }

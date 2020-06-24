@@ -385,6 +385,11 @@ export class Project {
         return toObj(results);
     }
 
+    public sampleFlatten(symbolName: string = 'MAIN', 
+                maxResults: number = -1,
+                accelerate: boolean = true): {[key: string]: string}[] {
+        return this.flatten(this.sample(symbolName, maxResults, accelerate));
+    }
     
     public flatten(input: {[key: string]: string}[][]): {[key: string]: string}[] {
         return input.map(record => {

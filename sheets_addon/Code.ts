@@ -152,7 +152,7 @@ class BackgroundColorStyler extends Styler {
     }
 }
 
-class GoogleSheetsHighlighter implements DevEnvironment {
+class GoogleSheetsDevEnvironment implements DevEnvironment {
 
     //private errorCells: [string, number, number, string, "error"|"warning"|"info"][] = [];
    // private commentCells: [string, number, number][] = [];
@@ -374,14 +374,14 @@ class GoogleSheetsHighlighter implements DevEnvironment {
     }
 }
 
-function makeProject(highlighter: DevEnvironment): Project {
+function makeProject(devEnv: DevEnvironment): Project {
     var spreadsheet = SpreadsheetApp.getActive();
     var project = new Project();
     var sheet = spreadsheet.getActiveSheet();
     var sheetName = sheet.getName();
     var range = sheet.getDataRange();
     var cells = range.getDisplayValues();
-    project.addSheet(sheetName, cells, highlighter);
+    project.addSheet(sheetName, cells, devEnv);
     return project;
 }
 
@@ -395,14 +395,17 @@ function commentsForNewSheet(symbolName: string): string[][] {
     return results;
 }
 
-function codeFromTable(symbolName: string, table: Map<string, string>[]): string[][] {
+function codeFromTable(symbolName: string, table: {[key: string]:string}[]): string[][] {
     var results: string[][] = [];
     var keys: string[] = [];
 
     for (const record of table) {
-
-        const newKeys = Array.from(record.entries()).map(([key, value]) => key);
-        const values = Array.from(record.entries()).map(([key, value]) => value);
+        const newKeys: string[] = [];
+        const values: string[] = [];
+        for (const key in record) {
+            newKeys.push(key);
+            values.push(record[key]);
+        }
         if (keys.length == 0) {
             results.push([symbolName].concat(newKeys));
         } else if (keys.toString() != newKeys.toString()) {
@@ -433,7 +436,7 @@ function setDataInSheet(sheet: Sheet, row: number, col: number, data: string[][]
     sheet.autoResizeColumns(1, width)
 }
 
-function newSheetFromTable(newSymbolName: string, oldSymbolName: string, table: Map<string, string>[]): Sheet {
+function newSheetFromTable(newSymbolName: string, oldSymbolName: string, table: {[key: string]:string}[]): Sheet {
     var activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
 
     var newSheet = activeSpreadsheet.getSheetByName(newSymbolName);
@@ -463,7 +466,7 @@ function newSheetFromTable(newSymbolName: string, oldSymbolName: string, table: 
     return newSheet;
 }
 
-function createHTMLFromTable(table: Map<string, string>[], highlighter: DevEnvironment): string {
+function createHTMLFromTable(table: {[key: string]:string}[], devEnv: DevEnvironment): string {
     var result = '<table style="margin: auto">';
     var previousKeys: string[] = [];
     for (const record of table) {
@@ -471,9 +474,13 @@ function createHTMLFromTable(table: Map<string, string>[], highlighter: DevEnvir
         var keys: string[] = [];
         var keysAndColors: [string, string][] = [];
         var valuesAndColors: [string, string][] = [];
-        for (const [key, value] of record.entries()) {
+        for (const key in record) {
+            if (!record.hasOwnProperty(key)) {
+                continue;
+            }
             keys.push(key);
-            const color = highlighter.getBackgroundColor(key)
+            const value = record[key];
+            const color = devEnv.getBackgroundColor(key)
             keysAndColors.push([key, color]);
             valuesAndColors.push([value, color]);
         }
@@ -511,8 +518,8 @@ function GrambleSample(): void {
         return;
     }
 
-    const highlighter = new GoogleSheetsHighlighter();
-    const project = makeProject(highlighter);
+    const devEnv = new GoogleSheetsDevEnvironment();
+    const project = makeProject(devEnv);
 
     const cellText = range.getCell(1,1).getValue().trim();
 
@@ -527,9 +534,9 @@ function GrambleSample(): void {
             " Available symbols are " + project.allSymbols().join(", "));
         return;
     }
-    const result = project.sample(cellText, 10);
-    const resultMaps = tableToMap(result);
-    const htmlString = createHTMLFromTable(resultMaps, highlighter);
+    const result = project.sampleFlatten(cellText, 10);
+    console.log(result);
+    const htmlString = createHTMLFromTable(result, devEnv);
     showDialog(htmlString, "Results of " + cellText);
 
 }
@@ -542,8 +549,8 @@ function GrambleGenerate(): void {
         return;
     }
 
-    const highlighter = new GoogleSheetsHighlighter();
-    const project = makeProject(highlighter);
+    const devEnv = new GoogleSheetsDevEnvironment();
+    const project = makeProject(devEnv);
 
     const cellText = range.getCell(1,1).getValue().trim();
 
@@ -558,9 +565,8 @@ function GrambleGenerate(): void {
             " Available symbols are " + project.allSymbols().join(", "));
         return;
     }
-    const result = project.generate(cellText);
-    const resultMaps = tableToMap(result);
-    const html_string = createHTMLFromTable(resultMaps, highlighter);
+    const result = project.generateFlatten(cellText);
+    const html_string = createHTMLFromTable(result, devEnv);
     showDialog(html_string, "Results of " + cellText);
 
 }
@@ -574,8 +580,8 @@ function GrambleGenerateToSheet(): void {
         return;
     }
 
-    const highlighter = new GoogleSheetsHighlighter();
-    const project = makeProject(highlighter);
+    const devEnv = new GoogleSheetsDevEnvironment();
+    const project = makeProject(devEnv);
 
     const cellText = range.getCell(1,1).getValue().trim();
 
@@ -590,31 +596,34 @@ function GrambleGenerateToSheet(): void {
             " Available symbols are " + project.allSymbols().join(", "));
         return;
     }
-    const result = project.generate(cellText);
-    const resultMaps = tableToMap(result);
+    const result = project.generateFlatten(cellText);
     const newSymbolName = cellText + "_results_1";
-    const newSheet = newSheetFromTable(newSymbolName, cellText, resultMaps);
+    const newSheet = newSheetFromTable(newSymbolName, cellText, result);
     
     var sheetName = newSheet.getName();
     var new_range = newSheet.getDataRange();
     var cells = new_range.getDisplayValues();
-    project.addSheet(sheetName, cells, highlighter);
-    newSheet.activate();
 
+    const newDevEnv = new GoogleSheetsDevEnvironment();
+    const newProject = makeProject(newDevEnv);
+    newProject.addSheet(sheetName, cells, newDevEnv);
+    
+    newSheet.activate();
+    newDevEnv.highlight();
 }
 
 function GrambleHighlighting(): void {
-    const highlighter = new GoogleSheetsHighlighter();
-    const project = makeProject(highlighter);
-    highlighter.highlight();
+    const devEnv = new GoogleSheetsDevEnvironment();
+    const project = makeProject(devEnv);
+    devEnv.highlight();
 }
 
 
 function GrambleTest(): void {
-    const highlighter = new GoogleSheetsHighlighter();
-    const project = makeProject(highlighter);
-    project.runTests(highlighter);
-    highlighter.highlight();
+    const devEnv = new GoogleSheetsDevEnvironment();
+    const project = makeProject(devEnv);
+    project.runTests(devEnv);
+    devEnv.highlight();
 }
 
 function GrambleComment(): void {
