@@ -1,12 +1,13 @@
-import { GPosition } from "./util";
+import { GPosition, NULL_POS} from "./util";
 
-export class Tier { 
+export class Tier extends GPosition { 
     
     public constructor(
-        public name: string,
-        public pos: GPosition,
-    ) { }
-
+        public text: string,
+        pos: GPosition = NULL_POS,
+    ) { 
+        super(pos.sheet, pos.row, pos.col);
+    }
 }
 
 export class CommentTier extends Tier { }

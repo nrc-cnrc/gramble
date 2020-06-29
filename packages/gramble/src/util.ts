@@ -16,6 +16,9 @@ export class GPosition {
     ) {}
 }
 
+
+export const NULL_POS: GPosition = { sheet: "", row: -1, col: -1 };
+
 export class RandomPicker<T> implements Iterable<[T, number] | undefined> {
 
     private sum_of_weights: number = 0;

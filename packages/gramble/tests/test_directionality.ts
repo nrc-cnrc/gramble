@@ -32,7 +32,7 @@ const varParser = transducerFromEntry(makeEntry("var", "ROOT"), transducerTable,
 
 describe('Simple GEntry parser, in reverse', function() {
     const input : GParse = [foobarInput, 1.0, []];
-    const result = barParser.transduce(input, reverseOptions);
+    const result = [...barParser.transduce(input, reverseOptions)];
     testNumResults(result, 1);
     testParseOutput(result, 0, "text", "bar");
     testParseRemnant(result, 0, "text", "foo");
@@ -41,7 +41,7 @@ describe('Simple GEntry parser, in reverse', function() {
 
 describe('Ambiguous GTable transducer, transduce', function() {
     const input : GParse = [foobarInput, 1.0, []];
-    const result = foobarParser.transduce(input, reverseOptions);
+    const result = [...foobarParser.transduce(input, reverseOptions)];
     testNumResults(result, 2);
     testParseOutput(result, 0, "gloss", "jump-1SG");
     testParseOutput(result, 1, "gloss", "run-3PL.PAST");

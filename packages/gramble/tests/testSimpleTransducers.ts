@@ -26,7 +26,7 @@ const varParser = transducerFromEntry(makeEntry("var", "ROOT"), transducerTable,
 
 describe('Simple GEntry parser, no remnant', function() {
     const input : GParse = [fooInput, 1.0, []];
-    const result = fooParser.transduce(input, defaultOptions);
+    const result = [...fooParser.transduce(input, defaultOptions)];
     testNumResults(result, 1);
     testParseOutput(result, 0, "text", "foo");
     testParseRemnant(result, 0, "text", "");
@@ -34,7 +34,7 @@ describe('Simple GEntry parser, no remnant', function() {
 
 describe('Simple GEntry parser, with remnant', function() {
     const input : GParse = [foobarInput, 1.0, []];
-    const result = fooParser.transduce(input, defaultOptions);
+    const result = [...fooParser.transduce(input, defaultOptions)];
     testNumResults(result, 1);
     testParseOutput(result, 0, "text", "foo");
     testParseRemnant(result, 0, "text", "bar");
@@ -42,7 +42,7 @@ describe('Simple GEntry parser, with remnant', function() {
 
 describe('Simple var parser, no remnant', function() {
     const input : GParse = [fooInput, 1.0, []];
-    const result = varParser.transduce(input, defaultOptions);
+    const result = [...varParser.transduce(input, defaultOptions)];
     testNumResults(result, 1);
     testParseOutput(result, 0, "text", "foo");
     testParseRemnant(result, 0, "text", "");
@@ -50,7 +50,7 @@ describe('Simple var parser, no remnant', function() {
 
 describe('Simple var parser, with remnant', function() {
     const input : GParse = [foobarInput, 1.0, []];
-    const result = varParser.transduce(input, defaultOptions);
+    const result = [...varParser.transduce(input, defaultOptions)];
     testNumResults(result, 1);
     testParseOutput(result, 0, "text", "foo");
     testParseRemnant(result, 0, "text", "bar");

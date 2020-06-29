@@ -1,15 +1,18 @@
 import { DevEnvironment } from "./spreadsheet";
-import { RandomPicker, winnow, GPosition } from "./util";
+import { RandomPicker, winnow, GPosition, NULL_POS } from "./util";
 
 import { Tier, parseTier, UnaryTier, CommentTier, BinaryTier } from "./tierParser";
 
 //import { getEnabledCategories } from "trace_events";
 //import { stringify } from "querystring";
 
-export type GEntry = [GCell, GCell];
+export type GEntry = [Tier, GCell];
 export type GRecord = GEntry[];
 export type GParse = [GRecord, number, GRecord];
 export type GTable = GRecord[];
+
+type Gen<T> = Generator<T, void, boolean | undefined>;
+type ParseGenerator = Gen<GParse>;
 
 export class ParseOptions {
     constructor(
@@ -46,18 +49,19 @@ export class GCell extends GPosition {
      * @param col The column index, starting from 0
      * @param text The text that is in the cell
      */
-    constructor(text: string, sheetName: string = "", row: number = -1, col: number = -1) {
-        super(sheetName, row, col);
+    constructor(text: string, pos: GPosition = NULL_POS) {
+        super(pos.sheet, pos.row, pos.col);
         this.text = text;
     }
 }
+
 
 export function mapKeys(items: GRecord, inKey: string, outKey: string): GRecord {
     return items.map(([key, value]) => {
         if (key.text != inKey) {
             return [key, value];
         }
-        return [new GCell(outKey, key.sheet, key.row, key.col), value];
+        return [new GCell(outKey, key), value];
     })
 }
 
@@ -142,8 +146,13 @@ export class Transducer {
         public tier: Tier,
     ) { }
 
+    /*
     public transduce(input: GParse, options: ParseOptions): GParse[] {
-        return [input];
+        return [...this.transduceGen(input, options)];
+    } */
+
+    public *transduce(input: GParse, options: ParseOptions): ParseGenerator {
+        yield input;
     }
 
     public getProb(): number {
@@ -266,6 +275,7 @@ class RequireTransducer extends UnaryTransducer {
         return undefined;
     }
 
+    /*
     public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
 
         const results : GParse[] = []; 
@@ -275,6 +285,13 @@ class RequireTransducer extends UnaryTransducer {
         }
 
         return results;
+    } */
+
+    public *transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): ParseGenerator {
+        for (const [rem, newprob, output] of this.child.transduce([input, logprob, []], options)) {
+            const newInput: GRecord = [...output, ...rem];
+            yield [newInput, logprob, pastOutput];
+        }
     }
 }
 
@@ -286,10 +303,19 @@ class FinalTransducer extends UnaryTransducer {
         return true;
     }
 
+    /*
     public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
         return this.child.transduce(inputParse, options).filter(([remnant, p, o]) => {
             return !remnant.some(([key, value]) => value.text.length > 0 );
         });
+    } */
+
+    public *transduce(inputParse: GParse, options: ParseOptions): ParseGenerator {
+        for (const [remnant, p, output] of this.child.transduce(inputParse, options)) {
+            if (!remnant.some(([key, value]) => value.text.length > 0)) {
+                yield [remnant, p, output];
+            }
+        }
     }
 }
 
@@ -299,6 +325,7 @@ class BeforeTransducer extends UnaryTransducer {
         return this.child.compatibleWithFirstChar(tier, c);
     }
 
+    /*
     public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
         const childOptions: ParseOptions = {
             randomize: false,
@@ -311,7 +338,21 @@ class BeforeTransducer extends UnaryTransducer {
             return [inputParse];
         }
         return [];
+    } */
+
+    public *transduce(inputParse: GParse, options: ParseOptions): ParseGenerator {
+        const childOptions: ParseOptions = {
+            randomize: false,
+            maxResults: 1,
+            parseLeftToRight: true,
+            accelerate: options.accelerate
+        }
+        const results = [...this.child.transduce(inputParse, options)];
+        if (results.length > 0) {
+            yield inputParse;
+        }
     }
+
 }
 
 class AfterTransducer extends UnaryTransducer {
@@ -320,6 +361,7 @@ class AfterTransducer extends UnaryTransducer {
         return this.child.compatibleWithFirstChar(tier, c);
     }
 
+    /*
     public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
         const [input, logprob, pastOutput] = inputParse;
         const childParse: GParse = [[...pastOutput], 1.0, []];
@@ -334,6 +376,19 @@ class AfterTransducer extends UnaryTransducer {
             return [inputParse];
         }
         return [];
+    } */
+
+    public *transduce(inputParse: GParse, options: ParseOptions): ParseGenerator {
+        const childOptions: ParseOptions = {
+            randomize: false,
+            maxResults: 1,
+            parseLeftToRight: true,
+            accelerate: options.accelerate
+        }
+        const results = [... this.child.transduce(inputParse, options)];
+        if (results.length > 0) {
+            yield inputParse;
+        }
     }
 }
 
@@ -357,7 +412,7 @@ class NotTransducer extends UnaryTransducer {
     public sanityCheck(devEnv: DevEnvironment): void {
         this.child.sanityCheck(devEnv);
         if (!(this.child instanceof BeforeTransducer || this.child instanceof AfterTransducer)) {
-            devEnv.markError(this.tier.pos.sheet, this.tier.pos.row, this.tier.pos.col, 
+            devEnv.markError(this.tier.sheet, this.tier.row, this.tier.col, 
                 "A 'not' combinator should only be applied to 'before' and 'after'." +  
                  " Applying it to other kinds of combinators might lead to unexpected results.", "warning");
         }
@@ -371,6 +426,7 @@ class NotTransducer extends UnaryTransducer {
         return undefined;
     }
 
+    /*
     public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
         if (this.trivial) {
             return [inputParse];
@@ -380,8 +436,19 @@ class NotTransducer extends UnaryTransducer {
             return [];
         }
         return [inputParse];
-    }
+    } */
 
+    public *transduce(inputParse: GParse, options: ParseOptions): ParseGenerator {
+        if (this.trivial) {
+            yield inputParse;
+            return;
+        }
+        const results = [...this.child.transduce(inputParse, options)];
+        if (results.length > 0) {
+            return;
+        }
+        yield inputParse;
+    }
 }
 
 
@@ -435,9 +502,60 @@ class AlternationTransducer extends Transducer {
             }
             return [key.text, value.text[0]];
         }
-        return undefined
+        return undefined;
     }
 
+    public *transduce(input: GParse, options: ParseOptions): ParseGenerator {
+
+        var relevantChildrenAndWeights: [Transducer, number][] | undefined = this.childrenAndWeights;
+
+        if (options.accelerate) {
+            const [inputRecord, logprob, previousOutput] = input;
+            const firstCharPair = this.firstCharOfInput(inputRecord);
+            if (firstCharPair != undefined) {
+                var firstCharStr = firstCharPair.join(":::");
+                relevantChildrenAndWeights = this.relevantChildren.get(firstCharStr);
+                if (relevantChildrenAndWeights == undefined) {
+                    relevantChildrenAndWeights = [];
+                    const [tier, c] = firstCharPair;
+                    for (const [child, weight] of this.childrenAndWeights) {
+                        if (child.compatibleWithFirstChar(tier, c) == false) {
+                            continue;
+                        }
+                        relevantChildrenAndWeights.push([child, weight]);
+                    }
+                    this.relevantChildren.set(firstCharStr, relevantChildrenAndWeights);
+                }
+            }
+        }
+
+        if (options.randomize) {
+            var items: Iterable<[Transducer, number] | undefined > = new RandomPicker([...relevantChildrenAndWeights]);
+        } else {
+            var items: Iterable<[Transducer, number] | undefined > = relevantChildrenAndWeights;
+        }
+
+
+        const results: GParse[] = [];
+        var resultsFound = 0;
+
+        for (var item  of items) {
+            if (item == undefined) {
+                throw new Error("Received an undefined output from RandomPicker.")
+            }
+            const [child, prob] = item;
+            for (var [remnant, logprob, output] of child.transduce(input, options)) {
+                logprob += Math.log(prob);
+                yield [remnant, logprob, output];
+                resultsFound++;
+                if (options.maxResults > 0 && resultsFound == options.maxResults) {
+                    return;
+                }
+            }
+        }
+    }
+
+    /*
     public transduce(input: GParse, options: ParseOptions): GParse[] {
         
         var relevantChildrenAndWeights: [Transducer, number][] | undefined = this.childrenAndWeights;
@@ -484,7 +602,7 @@ class AlternationTransducer extends Transducer {
             }
         }
         return results;
-    }
+    } */
 }
 
 class MaybeTransducer extends UnaryTransducer {
@@ -500,7 +618,6 @@ class MaybeTransducer extends UnaryTransducer {
         super(tier, value, symbolTable, devEnv);
         this.alternation = new AlternationTransducer([this.child, new Transducer(tier)]);
     }
-
     
     public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
         const result = this.alternation.compatibleWithFirstChar(tier, c);
@@ -511,8 +628,14 @@ class MaybeTransducer extends UnaryTransducer {
         
     }
 
+    /*
     public transduce(input: GParse, options: ParseOptions): GParse[] {
         return this.alternation.transduce(input, options);
+    } */
+
+    
+    public *transduce(input: GParse, options: ParseOptions): ParseGenerator {
+        yield* this.alternation.transduce(input, options);
     }
 }
 
@@ -544,7 +667,7 @@ class UpdownTransducer extends Transducer {
     ) {
         super(tier);
         const childTier = (tier as UnaryTier).child;
-        this.key = new GCell(childTier.name, tier.pos.sheet, tier.pos.row, tier.pos.col);
+        this.key = new GCell(childTier.text, tier);
 
         if (direction == "upward") {
             this.inputTier = "down";
@@ -603,7 +726,7 @@ class UpdownTransducer extends Transducer {
             throw new Error(`Could not find symbol: ${this.value.text}`);
         }
 
-        var outputs = transducer.transduce(parse, options);
+        var outputs = [...transducer.transduce(parse, options)];
         if (outputs.length == 0) {
             outputs = [ stepOneCharacter(parse, this.inputTier, this.outputTier) ];
         } 
@@ -612,6 +735,7 @@ class UpdownTransducer extends Transducer {
         return Array.prototype.concat.apply([], results);
     }
 
+    /*
     public transduce(parse: GParse, options: ParseOptions): GParse[] {
 
         if (this.value.text.length == 0) {
@@ -649,7 +773,47 @@ class UpdownTransducer extends Transducer {
             }
         }
         return results;
+    } */
+
+    
+    public *transduce(parse: GParse, options: ParseOptions): ParseGenerator {
+        if (this.value.text.length == 0) {
+            yield parse;
+            return;
+        }
+        var [input, logprob, pastOutput] = parse;
+
+        var wheat: GRecord = [];
+        var chaff: GRecord = [];
+        var inputSource =  this.direction == "upward" ? input : pastOutput;
+        for (const [key, value] of inputSource) {
+            if (key.text == this.key.text) {
+                wheat.push([new GCell(this.inputTier), value]);
+                continue;
+            }
+            chaff.push([key, value]);
+        }
+
+        
+        var results: GParse[] = [];
+
+        for (var [remnant, newprob, output] of this.applyConversion([wheat, logprob, []], options)) {
+            const result = [...chaff];
+            for (const [key, value] of output) {
+                if (key.text == this.outputTier) {
+                    result.push([this.key, value]); // probably want to change this to the original key eventually,
+                                                    // so that phonology doesn't mess up origin tracing.
+                }
+            }
+
+            if (this.direction == "upward") {
+                yield [result, newprob, pastOutput];
+            } else {
+                yield [input, newprob, result];
+            }
+        }
     }
+
 }
 
 class UpTransducer extends UpdownTransducer {
@@ -690,7 +854,7 @@ class JoinTransducer extends Transducer {
     ) {
         super(tier);
         const childTier = (tier as UnaryTier).child;
-        this.key = new GCell(childTier.name, tier.pos.sheet, tier.pos.row, tier.pos.col);
+        this.key = new GCell(childTier.text, tier);
     }
 
     
@@ -698,7 +862,7 @@ class JoinTransducer extends Transducer {
         return true;
     }
 
-
+    /*
     public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
         const parts: string[] = [];
         const output = pastOutput.filter(([key, value]) => {
@@ -709,9 +873,24 @@ class JoinTransducer extends Transducer {
             return true;
         });
         const flattenedString = parts.join(this.value.text);
-        const flattenedCell = new GCell(flattenedString, this.value.sheet, this.value.row, this.value.col);
+        const flattenedCell = new GCell(flattenedString, this.value);
         output.push([this.key, flattenedCell]);
         return [[input, logprob, output]];
+    } */
+    
+    public *transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): ParseGenerator {
+        const parts: string[] = [];
+        const output = pastOutput.filter(([key, value]) => {
+            if (key.text == this.key.text) {
+                parts.push(value.text);
+                return false;
+            }
+            return true;
+        });
+        const flattenedString = parts.join(this.value.text);
+        const flattenedCell = new GCell(flattenedString, this.value);
+        output.push([this.key, flattenedCell]);
+        yield [input, logprob, output];
     }
 }
 
@@ -725,8 +904,6 @@ class JoinTransducer extends Transducer {
  */
 class ShiftTransducer extends Transducer {
 
-    protected key: GCell;
-
     public constructor(
         tier: Tier,
         protected value: GCell, 
@@ -735,7 +912,6 @@ class ShiftTransducer extends Transducer {
     ) {
         super(tier);
         const childTier = (tier as UnaryTier).child;
-        this.key = new GCell(childTier.name, tier.pos.sheet, tier.pos.row, tier.pos.col);
     }
 
     
@@ -743,10 +919,18 @@ class ShiftTransducer extends Transducer {
         return true;
     }
 
+    /*
     public transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): GParse[] {
         var [output, remnant] = winnow(input, ([key, value]) => key.text == this.value.text); // split entries into relevant and irrelevant
-        output = mapKeys(output, this.value.text, this.key.text);
+        output = mapKeys(output, this.value.text, this.tier.text);
         return [[remnant, logprob, [...pastOutput, ...output]]];
+    } */
+
+    
+    public *transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): ParseGenerator {
+        var [output, remnant] = winnow(input, ([key, value]) => key.text == this.value.text); // split entries into relevant and irrelevant
+        output = mapKeys(output, this.value.text, this.tier.text);
+        yield [remnant, logprob, [...pastOutput, ...output]];
     }
 }
 
@@ -770,7 +954,7 @@ class LiteralTransducer extends Transducer {
         super(tier);
         // The key of a literal (e.g. its tier) is not always the same as the text of its
         // key cell, e.g. in the case of "maybe text", the literal parser here is "text".
-        this.key = new GCell(tier.name, tier.pos.sheet, tier.pos.row, tier.pos.col);
+        this.key = new GCell(tier.text, tier);
     }
 
     public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
@@ -786,6 +970,94 @@ class LiteralTransducer extends Transducer {
         return false;
     }
 
+
+    public *transduce(parse: GParse, options: ParseOptions): ParseGenerator {
+
+        const [input, logprob, pastOutput] = parse;
+
+        if (this.value.text.length == 0) {
+            
+            var output = [...pastOutput];
+            
+            if (options.parseLeftToRight) {
+                output.push([this.key, this.value]);
+            } else {
+                output.unshift([this.key, this.value]);
+            }
+
+            yield [input, logprob, output];
+            return;
+        }
+
+
+        var consumedInput: GRecord = [];
+
+        var tierFoundInInput = false;
+        var needle = this.value.text;
+
+        const inputEntries = options.parseLeftToRight ? input : input.reverse();
+
+        for (const [key, value] of inputEntries) {
+            if (key.text != this.key.text) { // not what we're looking for, move along
+                consumedInput.push([key, value]);
+                continue; 
+            }
+            tierFoundInInput = true;
+        
+            if (options.parseLeftToRight) {
+                for (var i = 0; i < value.text.length; i++) {
+                    if (needle.length == 0) {
+                        break;
+                    }
+                    if (value.text[i] != needle[0]) {
+                        return;
+                    }
+                    needle = needle.slice(1);
+                }
+
+                if (needle.length == 0) {
+                    const remnantCell = new GCell(value.text.slice(i), value);
+                    consumedInput.push([key, remnantCell]);
+                }
+            } else {
+                for (var i = value.text.length - 1; i >= 0; i--) {
+                    if (needle.length == 0) {
+                        break;
+                    }
+                    if (value.text[i] != needle[needle.length-1]) {
+                        return;
+                    }
+                    needle = needle.slice(0, needle.length-1);
+                }
+
+                if (needle.length == 0) {
+                    const remnantCell = new GCell(value.text.slice(0,i+1), value);
+                    consumedInput.unshift([key, remnantCell]);
+                }
+            }
+        }
+
+        if (tierFoundInInput && needle.length > 0) {
+            return;
+        }
+
+        /* if (!options.parseLeftward) {
+            consumedInput = consumedInput.reverse();
+        } */
+
+        var output = [...pastOutput];
+        
+        if (options.parseLeftToRight) {
+            output.push([this.key, this.value]);
+        } else {
+            output.unshift([this.key, this.value]);
+        }
+
+        yield [consumedInput, logprob, output];
+
+    }
+
+    /*
     public transduce(parse: GParse, options: ParseOptions): GParse[] {
 
         const [input, logprob, pastOutput] = parse;
@@ -830,7 +1102,7 @@ class LiteralTransducer extends Transducer {
                 }
 
                 if (needle.length == 0) {
-                    const remnantCell = new GCell(value.text.slice(i), value.sheet, value.row, value.col);
+                    const remnantCell = new GCell(value.text.slice(i), value);
                     consumedInput.push([key, remnantCell]);
                 }
             } else {
@@ -845,7 +1117,7 @@ class LiteralTransducer extends Transducer {
                 }
 
                 if (needle.length == 0) {
-                    const remnantCell = new GCell(value.text.slice(0,i+1), value.sheet, value.row, value.col);
+                    const remnantCell = new GCell(value.text.slice(0,i+1), value);
                     consumedInput.unshift([key, remnantCell]);
                 }
             }
@@ -855,9 +1127,6 @@ class LiteralTransducer extends Transducer {
             return [];
         }
 
-        /* if (!options.parseLeftward) {
-            consumedInput = consumedInput.reverse();
-        } */
 
         var output = [...pastOutput];
         
@@ -869,6 +1138,8 @@ class LiteralTransducer extends Transducer {
 
         return [[consumedInput, logprob, output]];
     }
+
+    */
 }
 
 
@@ -944,7 +1215,7 @@ class VarTransducer extends Transducer {
         }
         return transducer.compatibleWithFirstChar(tier, c);
     }
-
+    /*
     public transduce(input: GParse, options: ParseOptions): GParse[] {
         if (this.value.text.length == 0) {
             return [input];
@@ -954,6 +1225,21 @@ class VarTransducer extends Transducer {
             throw new Error(`Could not find symbol: ${this.value.text}`);
         }
         return transducer.transduce(input, options);
+    } */
+
+    
+    public *transduce(input: GParse, options: ParseOptions): ParseGenerator {
+        if (this.value.text.length == 0) {
+            yield input;
+            return;
+        }
+
+        const transducer = this.symbolTable.get(this.value.text);
+        if (transducer == undefined) {
+            throw new Error(`Could not find symbol: ${this.value.text}`);
+        }
+        yield* transducer.transduce(input, options);
+
     }
 }
 
@@ -985,7 +1271,7 @@ class ConcatenationTransducer extends Transducer {
         }
     }
 
-    public transduce(input: GParse, options: ParseOptions): GParse[] {
+    public *transduce(input: GParse, options: ParseOptions): ParseGenerator {
 
         var results = [input];
 
@@ -1003,7 +1289,9 @@ class ConcatenationTransducer extends Transducer {
             }
             results = newResults;
         }  
-        return results;
+        for (const result of results) {
+            yield result;
+        }
     }
 
     public getProb(): number {
@@ -1040,7 +1328,7 @@ class AltTransducer extends AlternationTransducer {
         const childTransducers: Transducer[] = [];
         for (var s of value.text.split("|")) {
             s = s.trim();
-            const childValue = new GCell(s, value.sheet, value.row, value.col);
+            const childValue = new GCell(s, value);
             const childTransducer = transducerFromTier(childTier, childValue, symbolTable, devEnv);
             childTransducers.push(childTransducer);
         }
@@ -1078,8 +1366,8 @@ function transducerFromTier(tier: Tier,
                             symbolTable: Map<string, Transducer>,
                             devEnv: DevEnvironment): Transducer {
 
-    if (TRANSDUCER_CONSTRUCTORS[tier.name] != undefined) {
-        const constructor = TRANSDUCER_CONSTRUCTORS[tier.name];
+    if (TRANSDUCER_CONSTRUCTORS[tier.text] != undefined) {
+        const constructor = TRANSDUCER_CONSTRUCTORS[tier.text];
         return new constructor(tier, value, symbolTable, devEnv);
     } 
 
@@ -1126,9 +1414,9 @@ function stepOneCharacter([input, logprob, pastOutput]: GParse, inTier: string, 
     for (const [key, value] of input) {
         if (!charFound && key.text == inTier && value.text.length > 0) {
             const c = value.text[0];
-            const remnant = new GCell(value.text.slice(1), value.sheet, value.row, value.col);
+            const remnant = new GCell(value.text.slice(1), value);
             consumedInput.push([key, remnant]);
-            const newOutputEntry: GEntry = [new GCell(outTier), new GCell(c, value.sheet, value.row, value.col)]
+            const newOutputEntry: GEntry = [new GCell(outTier), new GCell(c, value)]
             output.push(newOutputEntry);
             charFound = true;
             continue;
@@ -1141,7 +1429,7 @@ function stepOneCharacter([input, logprob, pastOutput]: GParse, inTier: string, 
 
 
 export function makeEntry(key: string, value: string): GEntry {
-    return [new GCell(key), new GCell(value)];
+    return [new Tier(key), new GCell(value)];
 }
 
 export function makeRecord(cells: [string, string][]): GRecord {
@@ -1151,7 +1439,7 @@ export function makeRecord(cells: [string, string][]): GRecord {
 export function makeTable(cells: [string, string][][]): GTable {
     return cells.map(makeRecord);
 }
-
+/*
 function record_has_key(record: GRecord, key: string): boolean {
     for (const [k, v] of record) {
         if (k.text == key) { 
@@ -1160,3 +1448,5 @@ function record_has_key(record: GRecord, key: string): boolean {
     }
     return false;
 }
+
+*/

@@ -1,4 +1,5 @@
 import {GCell, GEntry, GRecord, GTable, Transducer, transducerFromTable, tableToMap, flattenToText, objToTable} from "./transducers"
+import { GPosition } from "./util";
 
 /**
  * Determines whether a line is empty
@@ -506,7 +507,8 @@ export class Project {
 
         const cells: GCell[] = [];
         for (const [colIdx, text] of cellTexts.entries()) {
-            const cell = new GCell(text.trim(), sheetName, rowIdx, colIdx);
+            const pos = new GPosition(sheetName, rowIdx, colIdx);
+            const cell = new GCell(text.trim(), pos);
             cells.push(cell);
         }
 
