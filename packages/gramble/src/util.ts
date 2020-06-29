@@ -1,6 +1,20 @@
 
 
 
+export class GPosition {
+
+    /**
+     * Creates an instance of GPosition.
+     * @param sheetName What sheet this cell corresponds to 
+     * @param row The row index, starting from 0 
+     * @param col The column index, starting from 0
+     */
+    public constructor(
+        public sheet: string = "",
+        public row: number = -1,
+        public col: number = -1,
+    ) {}
+}
 
 export class RandomPicker<T> implements Iterable<[T, number] | undefined> {
 

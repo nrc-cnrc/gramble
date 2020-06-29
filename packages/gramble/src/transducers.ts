@@ -1,5 +1,5 @@
 import { DevEnvironment } from "./spreadsheet";
-import { RandomPicker, winnow } from "./util";
+import { RandomPicker, winnow, GPosition } from "./util";
 
 import { Tier, parseTier, UnaryTier, CommentTier, BinaryTier } from "./tierParser";
 
@@ -20,20 +20,6 @@ export class ParseOptions {
     ) { }
 }
 
-export class GPosition {
-
-    /**
-     * Creates an instance of GPosition.
-     * @param sheetName What sheet this cell corresponds to 
-     * @param row The row index, starting from 0 
-     * @param col The column index, starting from 0
-     */
-    public constructor(
-        public sheet: string = "",
-        public row: number = -1,
-        public col: number = -1,
-    ) {}
-}
 
 /**
  * Cell
@@ -152,6 +138,10 @@ export function getTierAsString(table: GTable, tier: string, delim: string = ", 
 
 export class Transducer {
     
+    public constructor(
+        public tier: Tier,
+    ) { }
+
     public transduce(input: GParse, options: ParseOptions): GParse[] {
         return [input];
     }
@@ -242,12 +232,11 @@ class CommentTransducer extends Transducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         protected value: GCell,
         protected symbolTable: Map<string, Transducer>,
         devEnv: DevEnvironment
     ) {
-        super();
+        super(tier);
     }
 }
 
@@ -257,14 +246,13 @@ class UnaryTransducer extends Transducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         protected value: GCell,
         protected symbolTable: Map<string, Transducer>,
         devEnv: DevEnvironment
     ) {
-        super();
+        super(tier);
         const childTier = (tier as UnaryTier).child;
-        this.child = transducerFromTier(childTier, key, value, symbolTable, devEnv);
+        this.child = transducerFromTier(childTier, value, symbolTable, devEnv);
     }
 
     public sanityCheck(devEnv: DevEnvironment): void {
@@ -286,12 +274,6 @@ class RequireTransducer extends UnaryTransducer {
             results.push([newInput, logprob, pastOutput]);
         }
 
-        /*const trivialInput : GRecord = makeRecord([["",""]]) // make an empty input to transduce from
-        for (const [rem, newprob, output] of this.child.transduce([trivialInput, logprob, pastOutput], options)) {
-            const newInput = [... input, ... output];
-            results.push([newInput, newprob, []]);
-        }
-        */
         return results;
     }
 }
@@ -340,7 +322,7 @@ class AfterTransducer extends UnaryTransducer {
 
     public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
         const [input, logprob, pastOutput] = inputParse;
-        const childParse: GParse = [pastOutput, 1.0, []];
+        const childParse: GParse = [[...pastOutput], 1.0, []];
         const childOptions: ParseOptions = {
             randomize: false,
             maxResults: 1,
@@ -356,6 +338,53 @@ class AfterTransducer extends UnaryTransducer {
 }
 
 
+class NotTransducer extends UnaryTransducer {
+
+    protected trivial: boolean = false;
+
+    public constructor(
+        tier: Tier,
+        value: GCell,
+        symbolTable: Map<string, Transducer>,
+        devEnv: DevEnvironment
+    ) {
+        super(tier, value, symbolTable, devEnv);
+        if (value.text.length == 0) {
+            this.trivial = true;
+        }
+    }
+
+    public sanityCheck(devEnv: DevEnvironment): void {
+        this.child.sanityCheck(devEnv);
+        if (!(this.child instanceof BeforeTransducer || this.child instanceof AfterTransducer)) {
+            devEnv.markError(this.tier.pos.sheet, this.tier.pos.row, this.tier.pos.col, 
+                "A 'not' combinator should only be applied to 'before' and 'after'." +  
+                 " Applying it to other kinds of combinators might lead to unexpected results.", "warning");
+        }
+    }
+
+    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+        var result = this.child.compatibleWithFirstChar(tier, c);
+        if (result == false) {
+            return true;
+        }
+        return undefined;
+    }
+
+    public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
+        if (this.trivial) {
+            return [inputParse];
+        }
+        const results = this.child.transduce(inputParse, options);
+        if (results.length > 0) {
+            return [];
+        }
+        return [inputParse];
+    }
+
+}
+
+
 class AlternationTransducer extends Transducer {
 
     private childrenAndWeights: Array<[Transducer, number]> = [];
@@ -363,7 +392,7 @@ class AlternationTransducer extends Transducer {
 
     public constructor(children: Transducer[]
     ) {
-        super();
+        super(children[0].tier);
         var weights = children.map(child => child.getProb());
         const weightSum = weights.reduce((a,b) => a + b, 0);
         weights = weights.map(w => w / weightSum);
@@ -464,13 +493,12 @@ class MaybeTransducer extends UnaryTransducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         protected value: GCell,
         protected symbolTable: Map<string, Transducer>,
         devEnv: DevEnvironment
     ) {
-        super(tier, key, value, symbolTable, devEnv);
-        this.alternation = new AlternationTransducer([this.child, new Transducer()]);
+        super(tier, value, symbolTable, devEnv);
+        this.alternation = new AlternationTransducer([this.child, new Transducer(tier)]);
     }
 
     
@@ -509,15 +537,14 @@ class UpdownTransducer extends Transducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         protected value: GCell, 
         protected symbolTable: Map<string, Transducer>, 
         devEnv: DevEnvironment,
         protected direction: "upward"|"downward"
     ) {
-        super();
+        super(tier);
         const childTier = (tier as UnaryTier).child;
-        this.key = new GCell(childTier.name, key.sheet, key.row, key.col);
+        this.key = new GCell(childTier.name, tier.pos.sheet, tier.pos.row, tier.pos.col);
 
         if (direction == "upward") {
             this.inputTier = "down";
@@ -629,12 +656,11 @@ class UpTransducer extends UpdownTransducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         value: GCell, 
         symbolTable: Map<string, Transducer>, 
         devEnv: DevEnvironment
     ) {
-        super(tier, key, value, symbolTable, devEnv, "upward");
+        super(tier, value, symbolTable, devEnv, "upward");
     }
 }
 
@@ -643,12 +669,11 @@ class DownTransducer extends UpdownTransducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         value: GCell, 
         symbolTable: Map<string, Transducer>, 
         devEnv: DevEnvironment
     ) {
-        super(tier, key, value, symbolTable, devEnv, "downward");
+        super(tier,  value, symbolTable, devEnv, "downward");
     }
 }
 
@@ -659,14 +684,13 @@ class JoinTransducer extends Transducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         protected value: GCell, 
         symbolTable: Map<string, Transducer>, 
         devEnv: DevEnvironment
     ) {
-        super();
+        super(tier);
         const childTier = (tier as UnaryTier).child;
-        this.key = new GCell(childTier.name, key.sheet, key.row, key.col);
+        this.key = new GCell(childTier.name, tier.pos.sheet, tier.pos.row, tier.pos.col);
     }
 
     
@@ -705,14 +729,13 @@ class ShiftTransducer extends Transducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         protected value: GCell, 
         symbolTable: Map<string, Transducer>, 
         devEnv: DevEnvironment
     ) {
-        super();
+        super(tier);
         const childTier = (tier as UnaryTier).child;
-        this.key = new GCell(childTier.name, key.sheet, key.row, key.col);
+        this.key = new GCell(childTier.name, tier.pos.sheet, tier.pos.row, tier.pos.col);
     }
 
     
@@ -740,15 +763,14 @@ class LiteralTransducer extends Transducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         public value: GCell,
         symbolTable: Map<string, Transducer>,
         devEnv: DevEnvironment
     ) {
-        super();
+        super(tier);
         // The key of a literal (e.g. its tier) is not always the same as the text of its
         // key cell, e.g. in the case of "maybe text", the literal parser here is "text".
-        this.key = new GCell(tier.name, key.sheet, key.row, key.col);
+        this.key = new GCell(tier.name, tier.pos.sheet, tier.pos.row, tier.pos.col);
     }
 
     public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
@@ -856,12 +878,11 @@ class ProbTransducer extends Transducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         value: GCell,
         symbolTable: Map<string, Transducer>,
         devEnv: DevEnvironment
     ) { 
-        super();
+        super(tier);
         if (value.text == "") {
             this.p = 1.0;
         }
@@ -889,13 +910,12 @@ class VarTransducer extends Transducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         protected value: GCell,
         protected symbolTable: Map<string, Transducer>,
         devEnv: DevEnvironment
     ) {
 
-        super();
+        super(tier);
     }
 
     public sanityCheck(devEnv: DevEnvironment): void {
@@ -946,7 +966,7 @@ class ConcatenationTransducer extends Transducer {
     public constructor(
         public children: Transducer[]
     ) {
-        super();
+        super(children[0].tier);
     }
 
     public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
@@ -995,15 +1015,14 @@ class SlashTransducer extends ConcatenationTransducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         value: GCell,
         symbolTable: Map<string, Transducer>,
         devEnv: DevEnvironment
     ) {
         const child1Tier = (tier as BinaryTier).child1;
         const child2Tier = (tier as BinaryTier).child2;
-        const child1Transducer = transducerFromTier(child1Tier, key, value, symbolTable, devEnv);
-        const child2Transducer = transducerFromTier(child2Tier, key, value, symbolTable, devEnv);
+        const child1Transducer = transducerFromTier(child1Tier, value, symbolTable, devEnv);
+        const child2Transducer = transducerFromTier(child2Tier, value, symbolTable, devEnv);
         super([child1Transducer, child2Transducer]);
     }
 }
@@ -1013,7 +1032,6 @@ class AltTransducer extends AlternationTransducer {
 
     public constructor(
         tier: Tier,
-        key: GCell, 
         value: GCell,
         symbolTable: Map<string, Transducer>,
         devEnv: DevEnvironment
@@ -1023,7 +1041,7 @@ class AltTransducer extends AlternationTransducer {
         for (var s of value.text.split("|")) {
             s = s.trim();
             const childValue = new GCell(s, value.sheet, value.row, value.col);
-            const childTransducer = transducerFromTier(childTier, key, childValue, symbolTable, devEnv);
+            const childTransducer = transducerFromTier(childTier, childValue, symbolTable, devEnv);
             childTransducers.push(childTransducer);
         }
         super(childTransducers);
@@ -1033,7 +1051,6 @@ class AltTransducer extends AlternationTransducer {
 
 const TRANSDUCER_CONSTRUCTORS: {[key: string]: new (
     tier: Tier,
-    key: GCell, 
     value: GCell,
     symbolTable: Map<string, Transducer>,
     devEnv: DevEnvironment
@@ -1049,6 +1066,7 @@ const TRANSDUCER_CONSTRUCTORS: {[key: string]: new (
     "upward": UpTransducer,
     "downward": DownTransducer,
     "alt": AltTransducer,
+    "not": NotTransducer,
     "%": CommentTransducer,
     "p": ProbTransducer,
     "var": VarTransducer,
@@ -1056,17 +1074,16 @@ const TRANSDUCER_CONSTRUCTORS: {[key: string]: new (
 }
 
 function transducerFromTier(tier: Tier, 
-                            key: GCell, 
                             value: GCell, 
                             symbolTable: Map<string, Transducer>,
                             devEnv: DevEnvironment): Transducer {
 
     if (TRANSDUCER_CONSTRUCTORS[tier.name] != undefined) {
         const constructor = TRANSDUCER_CONSTRUCTORS[tier.name];
-        return new constructor(tier, key, value, symbolTable, devEnv);
+        return new constructor(tier, value, symbolTable, devEnv);
     } 
 
-    return new LiteralTransducer(tier, key, value, symbolTable, devEnv);
+    return new LiteralTransducer(tier, value, symbolTable, devEnv);
 
 }
 
@@ -1075,11 +1092,12 @@ export function transducerFromEntry([key, value]: [GCell, GCell],
                                         devEnv: DevEnvironment): Transducer {
 
     try {
-        var tierStructure = parseTier(key.text);
-        return transducerFromTier(tierStructure, key, value, symbolTable, devEnv);
+        var tierStructure = parseTier(key.text, key);
+        return transducerFromTier(tierStructure, value, symbolTable, devEnv);
     } catch (err) {
         devEnv.markError(key.sheet, key.row, key.col, err.toString(), "error");
-        return new Transducer();  // if the tier is erroneous, return a trivial parser
+        const dummyTier = new Tier(key.text, key);
+        return new Transducer(dummyTier);  // if the tier is erroneous, return a trivial parser
                                   // so that the grammar can still execute
     }
 }
