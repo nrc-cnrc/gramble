@@ -1,4 +1,4 @@
-import {GTable, makeTable, flattenToJSON, getTierAsString, objToTable} from "./transducers"
+import {GTable, makeTable, getTierAsString} from "./transducers"
 import {Project, BrowserDevEnvironment, DevEnvironment} from "./spreadsheet"
 import {parse as papaparse, ParseResult} from 'papaparse';
 import {promisify} from 'es6-promisify';

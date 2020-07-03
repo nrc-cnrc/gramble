@@ -1,5 +1,6 @@
 
 
+export type Gen<T> = Generator<T, void, undefined>;
 
 export class GPosition {
 

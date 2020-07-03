@@ -8,8 +8,8 @@ import {testNumResults, testOutput, testParseOutput, testParseRemnant} from "./t
 
 const transducerTable : Map<string, Transducer> = new Map();
 const devEnv = new TextDevEnvironment();
-const defaultOptions = new ParseOptions(false, -1, true, false);
-const reverseOptions = new ParseOptions(false, -1, false, false);
+const defaultOptions = new ParseOptions(transducerTable, false, -1, true, false);
+const reverseOptions = new ParseOptions(transducerTable, false, -1, false, false);
 
 const fooParser = transducerFromEntry(makeEntry("text", "foo"), transducerTable, devEnv);
 const fooInput = makeRecord([["text", "foo"]]);

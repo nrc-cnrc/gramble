@@ -1,5 +1,6 @@
-import {GCell, GEntry, GRecord, GTable, Transducer, transducerFromTable, tableToMap, flattenToText, objToTable} from "./transducers"
+import {GCell, GEntry, GRecord, GTable, Literal, Etcetera, Transducer, transducerFromTable} from "./transducers"
 import { GPosition } from "./util";
+import { Tier } from "./tierParser";
 
 /**
  * Determines whether a line is empty
@@ -196,7 +197,7 @@ abstract class GFunction {
         var record: GRecord = []; 
         for (const cell of cells) {
             const key = this.getParam(cell.col);
-            record.push([key, cell]);
+            record.push(new Literal(key, cell));
         }
         return record;
     }
@@ -285,15 +286,36 @@ const BUILT_IN_FUNCTIONS: string[] = [
 
 function toObj(table: GTable): {[key:string]:string}[][] {
     return table.map(record => {
-        return record.map(([key, value]) => {
-            return { tier: key.text, 
-                    text: value.text,
-                    sheet: value.sheet, 
-                    row: value.row.toString(),
-                    column: value.col.toString() };
+        return record.map(entry => {
+            return { tier: entry.tier.text, 
+                    text: entry.value.text,
+                    sheet: entry.value.sheet, 
+                    row: entry.value.row.toString(),
+                    column: entry.value.col.toString() };
         });
     });
 }
+
+
+function objToTable(obj: { [key: string]: string; }): GTable {
+    const record : GRecord = [];
+    for (const key in obj) {
+        record.push(new Literal(new Tier(key), new GCell(obj[key])));
+    }
+    return [record];
+}
+
+
+function objToEtcTable(obj: { [key: string]: string; }): GTable {
+    const record : GRecord = [];
+    for (const key in obj) {
+        record.push(new Literal(new Tier(key), new GCell(obj[key])));
+        record.push(new Etcetera(new Tier(key), new GCell("*")));
+    }
+    return [record];
+}
+
+
 
 /**
  * Project
@@ -343,6 +365,27 @@ export class Project {
         return result;
     }
 
+    public complete(input: {[key: string]: string}, 
+                    symbolName: string = 'MAIN', 
+                    randomize: boolean = false, 
+                    maxResults: number = -1,
+                    accelerate: boolean = true): {[key: string]: string}[][] {
+        const table = objToEtcTable(input);
+        const transducer = this.getTransducer(symbolName);
+        const results = [...transducer.transduceFinal(table, this.transducerTable, randomize, maxResults, accelerate)];
+        return toObj(results);
+    }
+
+    
+    public completeFlatten(input: {[key: string]: string}, 
+                    symbolName: string = 'MAIN', 
+                    randomize: boolean = false, 
+                    maxResults: number = -1,
+                    accelerate: boolean = true): {[key: string]: string}[]  {
+        return this.flatten(this.complete(input, symbolName, randomize, maxResults, accelerate));
+    }
+
+
     public parse(input: {[key: string]: string}, 
                 symbolName: string = 'MAIN', 
                 randomize: boolean = false, 
@@ -350,7 +393,7 @@ export class Project {
                 accelerate: boolean = true): {[key: string]: string}[][] {
         const table = objToTable(input);
         const transducer = this.getTransducer(symbolName);
-        const results = transducer.transduceFinal(table, randomize, maxResults, accelerate);
+        const results = [...transducer.transduceFinal(table, this.transducerTable, randomize, maxResults, accelerate)];
         return toObj(results);
     }
 
@@ -367,7 +410,7 @@ export class Project {
                 maxResults: number = -1,
                 accelerate: boolean = true): {[key: string]: string}[][] {
         const transducer = this.getTransducer(symbolName);
-        const results =  transducer.generate(randomize, maxResults, accelerate);
+        const results = [...transducer.generate(this.transducerTable, randomize, maxResults, accelerate)];
         return toObj(results);
     }
 
@@ -382,7 +425,7 @@ export class Project {
                 maxResults: number = 1,
                 accelerate: boolean = true): {[key: string]: string}[][] {
         const transducer = this.getTransducer(symbolName);
-        const results =  transducer.sample(maxResults, accelerate);
+        const results = [...transducer.sample(this.transducerTable, maxResults, accelerate)];
         return toObj(results);
     }
 
@@ -406,39 +449,39 @@ export class Project {
         });
     }
 
-    public containsResult(resultTable: {[key: string]: string}[], [targetKey, targetValue]: GEntry) {
+    public containsResult(resultTable: {[key: string]: string}[], target: GEntry) {
         for (const resultMap of resultTable) {
             for (const key in resultMap) {
-                if (key != targetKey.text) {
+                if (key != target.tier.text) {
                     continue;
                 }
-                if (resultMap[key] == targetValue.text) {
+                if (resultMap[key] == target.value.text) {
                     return true;
                 }
             }
         }
         
-        if (targetValue.text.length == 0) {
+        if (target.value.text.length == 0) {
             return true;  // if there's no output, and no output is expected, we're good!
         }
         return false;
     }
 
-    public equalsResult(resultTable: {[key: string]: string}[], [targetKey, targetValue]: GEntry) {
+    public equalsResult(resultTable: {[key: string]: string}[], target: GEntry) {
         var found = false;
         for (const resultMap of resultTable) {
             for (const key in resultMap) {
-                if (key != targetKey.text) {
+                if (key != target.tier.text) {
                     continue;
                 }
-                if (resultMap[key] == targetValue.text) {
+                if (resultMap[key] == target.value.text) {
                     found = true;
                     continue;
                 }
                 return false;
             }
         }
-        if (!found && targetValue.text.length == 0) {
+        if (!found && target.value.text.length == 0) {
             return true;  // if there's no output, and no output is expected, we're good!
         }
         return found;
@@ -452,45 +495,45 @@ export class Project {
                 const containsRecord: GRecord = []; 
                 const equalsRecord: GRecord = []; 
                 
-                for (const [key, value] of record) {
-                    var parts = key.text.split(" ");
+                for (const entry of record) {
+                    var parts = entry.tier.text.split(" ");
                     if (parts.length != 2) {
-                        highlighter.markError(key.sheet, key.row, key.col,
-                            "Invalid test tier: " + key.text, "error");
+                        highlighter.markError(entry.tier.sheet, entry.tier.row, entry.tier.col,
+                            "Invalid test tier: " + entry.tier.text, "error");
                         continue;
                     }
                     const command = parts[0].trim();
                     const tier = parts[1].trim();
                     if (command == "input") {
-                        inputRecord[tier] = value.text;
+                        inputRecord[tier] = entry.value.text;
                     } else if (command == "contains") {
-                        containsRecord.push([new GCell(tier), value]);
+                        containsRecord.push(new Literal(new Tier(tier), entry.value));
                     } else if (command == "equals") {
-                        equalsRecord.push([new GCell(tier), value]);
+                        equalsRecord.push(new Literal(new Tier(tier), entry.value));
                     }
                 }
                 
                 const result = this.parse(inputRecord, symbolName, false, -1);
                 const resultFlattened = this.flatten(result);
                 
-                for (const [targetKey, targetValue] of containsRecord) {
-                    if (!this.containsResult(resultFlattened, [targetKey, targetValue])) {
-                        highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
+                for (const target of containsRecord) {
+                    if (!this.containsResult(resultFlattened, target)) {
+                        highlighter.markError(target.value.sheet, target.value.row, target.value.col,
                             "Result does not contain specified value. " + 
                             "Actual value: \n" + resultFlattened, "error");
                     } else {
-                        highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
+                        highlighter.markError(target.value.sheet, target.value.row, target.value.col,
                             "Result contains specified value: \n" + resultFlattened, "info");
                     }
                 }
 
-                for (const [targetKey, targetValue] of equalsRecord) {
-                    if (!this.equalsResult(resultFlattened, [targetKey, targetValue])) {
-                        highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
+                for (const target of equalsRecord) {
+                    if (!this.equalsResult(resultFlattened, target)) {
+                        highlighter.markError(target.value.sheet, target.value.row, target.value.col,
                             "Result does not equal specified value. " + 
                             "Actual value: \n" + resultFlattened, "error");
                     } else {
-                        highlighter.markError(targetValue.sheet, targetValue.row, targetValue.col,
+                        highlighter.markError(target.value.sheet, target.value.row, target.value.col,
                             "Result equals specified value: \n" + resultFlattened, "info");
                     }
                 }
@@ -595,7 +638,7 @@ export class Project {
         }
 
         for (const transducer of this.transducerTable.values()) {
-            transducer.sanityCheck(devEnv);
+            transducer.sanityCheck(this.transducerTable, devEnv);
         }
 
         return this;

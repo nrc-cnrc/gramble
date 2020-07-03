@@ -1,4 +1,4 @@
-import { GPosition, NULL_POS} from "./util";
+import { GPosition, NULL_POS, Gen} from "./util";
 
 export class Tier extends GPosition { 
     
@@ -35,7 +35,7 @@ export class BinaryTier extends Tier {
     }
 }
 
-type TierParser = (input: string[], pos: GPosition) => Generator<[Tier, string[]], void, boolean | undefined>;
+type TierParser = (input: string[], pos: GPosition) => Gen<[Tier, string[]]>;
 
 const SYMBOL = [ "(", ")", "%", "/"];
 const UNARY_RESERVED = [ "maybe", "require", "before", "after", "final", "alt", "not" ];
@@ -46,7 +46,7 @@ const SUBEXPR = AltTierParser([Identifier, ParensTierParser]);
 const NON_COMMENT_EXPR = AltTierParser([UnaryTierParser, OneTierParser, SlashTierParser, SUBEXPR]);
 const EXPR = AltTierParser([CommentTierParser, NON_COMMENT_EXPR]);
 
-function* Identifier(input: string[], pos: GPosition): Generator<[Tier, string[]], void, boolean | undefined> {
+function* Identifier(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
     if (input.length == 0 || ALL_RESERVED.indexOf(input[0]) != -1) {
         return;
     }
@@ -62,7 +62,7 @@ function AltTierParser(children: TierParser[]): TierParser {
     }
 }
 
-function* OneTierParser(input: string[], pos: GPosition): Generator<[Tier, string[]], void, boolean | undefined> {
+function* OneTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
     if (input.length == 0 || ONE_TIER_RESERVED.indexOf(input[0]) == -1) {
         return;
     }
@@ -71,7 +71,7 @@ function* OneTierParser(input: string[], pos: GPosition): Generator<[Tier, strin
     }
 }
 
-function* UnaryTierParser(input: string[], pos: GPosition): Generator<[Tier, string[]], void, boolean | undefined> {
+function* UnaryTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
     if (input.length == 0 || UNARY_RESERVED.indexOf(input[0]) == -1) {
         return;
     }
@@ -81,7 +81,7 @@ function* UnaryTierParser(input: string[], pos: GPosition): Generator<[Tier, str
 }
 
 
-function* ParensTierParser(input: string[], pos: GPosition): Generator<[Tier, string[]], void, boolean | undefined> {
+function* ParensTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
     if (input.length == 0 || input[0] != "(") {
         return;
     }
@@ -95,7 +95,7 @@ function* ParensTierParser(input: string[], pos: GPosition): Generator<[Tier, st
     }
 }
 
-function* SlashTierParser(input: string[], pos: GPosition): Generator<[Tier, string[]], void, boolean | undefined> {
+function* SlashTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
     if (input.length == 0) {
         return;
     }
@@ -111,7 +111,7 @@ function* SlashTierParser(input: string[], pos: GPosition): Generator<[Tier, str
 
 }
 
-function* CommentTierParser(input: string[], pos: GPosition): Generator<[Tier, string[]], void, boolean | undefined> {
+function* CommentTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
 
     if (input.length == 0 || input[0] != "%") {
         return;
