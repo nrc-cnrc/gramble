@@ -26,6 +26,26 @@ describe('Project with no variables, parsing foobar', function() {
 });
 
 
+describe('Project with no variables, generating', function() {
+    const result = ambiguousProject.generateFlatten();
+    testNumResults(result, 2);
+    testFlattenedOutput(result, 0, "gloss", "jump-1SG");
+    testFlattenedOutput(result, 1, "gloss", "run-3PL.PAST");
+});
+
+
+describe('Project with no variables, generating 1', function() {
+    const result = ambiguousProject.generateFlatten('MAIN', false, 1, true);
+    testNumResults(result, 1);
+    testFlattenedOutput(result, 0, "gloss", "jump-1SG");
+});
+
+
+describe('Project with no variables, sampling', function() {
+    const result = ambiguousProject.sampleFlatten();
+    testNumResults(result, 1);
+}); 
+
 describe('Project with no variables, full_parsing unparseable input moobar', function() {
     const result = ambiguousProject.parseFlatten({text: "moobar"});
     testNumResults(result, 0);

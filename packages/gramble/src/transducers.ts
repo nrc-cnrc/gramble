@@ -1,6 +1,5 @@
+import { Gen, RandomPicker, winnow, GPos, NULL_POS } from "./util";
 import { DevEnvironment } from "./spreadsheet";
-import { Gen, RandomPicker, winnow, GPosition, NULL_POS } from "./util";
-
 import { Tier, parseTier, UnaryTier, CommentTier, BinaryTier } from "./tierParser";
 
 //import { getEnabledCategories } from "trace_events";
@@ -47,15 +46,22 @@ export class ParseOptions {
  * cell during debugging. 
  */
 
-export class GCell extends GPosition {
-
-    public text: string; 
+export class GCell implements GPos {
 
     public toString(): string { return this.text + "(" + this.row + ")"; }
 
-    constructor(text: string, pos: GPosition = NULL_POS) {
-        super(pos.sheet, pos.row, pos.col);
-        this.text = text;
+    
+    public sheet: string;
+    public row: number;
+    public col: number;
+
+    public constructor(
+        public text: string,
+        pos: GPos = { sheet: "", row: -1, col: -1 }
+    ) { 
+        this.sheet = pos.sheet;
+        this.row = pos.row;
+        this.col = pos.col;
     }
 }
 
@@ -264,7 +270,9 @@ export class NullTransducer implements Transducer {
         var maxFailures = 100 * maxResults;
         var resultsFound = 0;
 
+
         while (resultsFound < maxResults) {
+            
             const sampleResult = [...this.generate(symbolTable, true, 1, accelerate)];
             if (sampleResult.length == 0) {
                 numFailures++;
@@ -272,6 +280,7 @@ export class NullTransducer implements Transducer {
             if (numFailures > maxFailures) {
                 throw new Error("Failing to sample from grammar; try generating to see if has any output at all.");
             }
+            resultsFound++;
             yield* sampleResult;
         }
 

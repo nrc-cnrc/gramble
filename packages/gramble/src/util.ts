@@ -1,24 +1,15 @@
 
-
-export type Gen<T> = Generator<T, void, undefined>;
-
-export class GPosition {
-
-    /**
-     * Creates an instance of GPosition.
-     * @param sheetName What sheet this cell corresponds to 
-     * @param row The row index, starting from 0 
-     * @param col The column index, starting from 0
-     */
-    public constructor(
-        public sheet: string = "",
-        public row: number = -1,
-        public col: number = -1,
-    ) {}
+export interface GPos {
+        sheet: string,
+        row: number,
+        col: number
 }
 
 
-export const NULL_POS: GPosition = { sheet: "", row: -1, col: -1 };
+
+export type Gen<T> = Generator<T, void, undefined>;
+
+export const NULL_POS: GPos = { sheet: "", row: -1, col: -1 };
 
 export class RandomPicker<T> implements Iterable<[T, number] | undefined> {
 

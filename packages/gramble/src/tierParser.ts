@@ -1,12 +1,18 @@
-import { GPosition, NULL_POS, Gen} from "./util";
+import { GPos, NULL_POS, Gen} from "./util";
 
-export class Tier extends GPosition { 
+export class Tier implements GPos { 
     
+    public sheet: string;
+    public row: number;
+    public col: number;
+
     public constructor(
         public text: string,
-        pos: GPosition = NULL_POS,
+        pos: GPos = { sheet: "", row: -1, col: -1 }
     ) { 
-        super(pos.sheet, pos.row, pos.col);
+        this.sheet = pos.sheet;
+        this.row = pos.row;
+        this.col = pos.col;
     }
 }
 
@@ -16,7 +22,7 @@ export class UnaryTier extends Tier {
 
     public constructor(
         name: string,
-        pos: GPosition,
+        pos: GPos,
         public child: Tier
     ) { 
         super(name, pos);
@@ -27,7 +33,7 @@ export class UnaryTier extends Tier {
 export class BinaryTier extends Tier {
     public constructor(
         name: string,
-        pos: GPosition,
+        pos: GPos,
         public child1: Tier,
         public child2: Tier
     ) { 
@@ -35,7 +41,7 @@ export class BinaryTier extends Tier {
     }
 }
 
-type TierParser = (input: string[], pos: GPosition) => Gen<[Tier, string[]]>;
+type TierParser = (input: string[], pos: GPos) => Gen<[Tier, string[]]>;
 
 const SYMBOL = [ "(", ")", "%", "/"];
 const UNARY_RESERVED = [ "maybe", "require", "before", "after", "final", "alt", "not" ];
@@ -46,7 +52,7 @@ const SUBEXPR = AltTierParser([Identifier, ParensTierParser]);
 const NON_COMMENT_EXPR = AltTierParser([UnaryTierParser, OneTierParser, SlashTierParser, SUBEXPR]);
 const EXPR = AltTierParser([CommentTierParser, NON_COMMENT_EXPR]);
 
-function* Identifier(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
+function* Identifier(input: string[], pos: GPos): Gen<[Tier, string[]]> {
     if (input.length == 0 || ALL_RESERVED.indexOf(input[0]) != -1) {
         return;
     }
@@ -55,14 +61,14 @@ function* Identifier(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
 
 function AltTierParser(children: TierParser[]): TierParser {
     
-    return function*(input: string[], pos: GPosition) {
+    return function*(input: string[], pos: GPos) {
         for (const child of children) {
             yield* child(input, pos);
         }
     }
 }
 
-function* OneTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
+function* OneTierParser(input: string[], pos: GPos): Gen<[Tier, string[]]> {
     if (input.length == 0 || ONE_TIER_RESERVED.indexOf(input[0]) == -1) {
         return;
     }
@@ -71,7 +77,7 @@ function* OneTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]> 
     }
 }
 
-function* UnaryTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
+function* UnaryTierParser(input: string[], pos: GPos): Gen<[Tier, string[]]> {
     if (input.length == 0 || UNARY_RESERVED.indexOf(input[0]) == -1) {
         return;
     }
@@ -81,7 +87,7 @@ function* UnaryTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]
 }
 
 
-function* ParensTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
+function* ParensTierParser(input: string[], pos: GPos): Gen<[Tier, string[]]> {
     if (input.length == 0 || input[0] != "(") {
         return;
     }
@@ -95,7 +101,7 @@ function* ParensTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]
     }
 }
 
-function* SlashTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
+function* SlashTierParser(input: string[], pos: GPos): Gen<[Tier, string[]]> {
     if (input.length == 0) {
         return;
     }
@@ -111,7 +117,7 @@ function* SlashTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]
 
 }
 
-function* CommentTierParser(input: string[], pos: GPosition): Gen<[Tier, string[]]> {
+function* CommentTierParser(input: string[], pos: GPos): Gen<[Tier, string[]]> {
 
     if (input.length == 0 || input[0] != "%") {
         return;
@@ -120,7 +126,7 @@ function* CommentTierParser(input: string[], pos: GPosition): Gen<[Tier, string[
     yield [new CommentTier("%", pos), []];
 }
 
-export function parseTier(s: string, pos: GPosition): Tier {
+export function parseTier(s: string, pos: GPos): Tier {
     var pieces = s.split(/\s+|(\(|\)|\/)/);
     pieces = pieces.filter((s) => s !== undefined && s !== '');
     var result = [... EXPR(pieces, pos)];

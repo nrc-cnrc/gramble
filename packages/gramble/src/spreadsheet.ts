@@ -1,5 +1,5 @@
+import { GPos } from "./util";
 import {GCell, GEntry, GRecord, GTable, Literal, Etcetera, Transducer, transducerFromTable} from "./transducers"
-import { GPosition } from "./util";
 import { Tier } from "./tierParser";
 
 /**
@@ -550,8 +550,7 @@ export class Project {
 
         const cells: GCell[] = [];
         for (const [colIdx, text] of cellTexts.entries()) {
-            const pos = new GPosition(sheetName, rowIdx, colIdx);
-            const cell = new GCell(text.trim(), pos);
+            const cell = new GCell(text.trim(), { sheet: sheetName, row: rowIdx, col: colIdx });
             cells.push(cell);
         }
 
