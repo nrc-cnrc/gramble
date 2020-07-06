@@ -13,6 +13,10 @@ export interface GEntry {
     length(): number;
     slice(start: number, end: number | undefined): GEntry;
     isEmpty(): boolean;
+    validateResult(pastOutput: GRecord, 
+        futureOutput: GRecord, 
+        symbolTable: TransducerTable, 
+        accelerate: boolean): boolean;
 }
 
 export type GRecord = GEntry[];
@@ -135,8 +139,27 @@ export function getTierAsString(table: GTable, tier: string, delim: string = ", 
     return results.join(delim);
 }
 
+export interface Transducer {
+    getProb(): number;
+    transduce(input: GParse, options: ParseOptions): Gen<GParse>;
+    getRelevantTiers(): string[];
+    sanityCheck(symbolTable: TransducerTable, devEnv: DevEnvironment): void;
+    compatibleWithFirstChar(tier: string, c: string, symbolTable: TransducerTable): boolean | undefined;
+    transduceFinal(input: GTable, 
+        symbolTable: TransducerTable,
+        randomize: boolean,
+        maxResults: number,
+        accelerate: boolean): Gen<GRecord>;
+    generate(symbolTable: TransducerTable,
+            randomize: boolean,
+            maxResults: number,
+            accelerate: boolean): Gen<GRecord>;
+    sample(symbolTable: TransducerTable,
+                maxResults: number,
+                accelerate: boolean): Gen<GRecord>
+}
 
-export class Transducer {
+export class NullTransducer implements Transducer {
 
     /*
     public transduce(input: GParse, options: ParseOptions): GParse[] {
@@ -155,15 +178,18 @@ export class Transducer {
         return [];
     }
 
+    validateResult(pastOutput: GRecord, 
+        futureOutput: GRecord, 
+        symbolTable: TransducerTable, 
+        accelerate: boolean): boolean {
+        return true;
+    }
+
     public compatibleWithFirstChar(tier: string, c: string, symbolTable: TransducerTable): boolean | undefined {
         return undefined;
     }
 
     public sanityCheck(symbolTable: TransducerTable, devEnv: DevEnvironment): void {}
-
-    public validateResults(rightSide: GEntry[]): boolean {
-        return true;
-    }
 
     /*
     public transduceMany(inputs: GParse[], randomize=false, maxResults=-1): GParse[] {
@@ -196,13 +222,28 @@ export class Transducer {
             var inputParse: GParse = [inputRecord, 0.0, []];
             for (const [remnant, logprob, output] of this.transduce(inputParse, options)) {
                 if (remnant.some(entry => !entry.isEmpty())) {
-                    continue;
+                    continue; // if there's leftovers, keep going
+                }
+                if (!this.validateOutput(output, symbolTable, accelerate)) {
+                    continue; // if the output failed validation (e.g. had a failing "before"), keep going
                 }
                 var prob: string = Math.exp(logprob).toPrecision(3);
                 output.push(new Literal(new Tier("p"), new GCell(prob)));
                 yield output;
             }
         }
+    }
+
+    protected validateOutput(output: GRecord, symbolTable: TransducerTable, accelerate: boolean): boolean {
+        for (var i = 0; i < output.length; i++) {
+            const pastOutput = output.slice(0, i);
+            const op = output[i];
+            const futureOutput = output.slice(i+1);
+            if (!op.validateResult(pastOutput, futureOutput, symbolTable, accelerate)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public *generate(symbolTable: TransducerTable,
@@ -237,7 +278,7 @@ export class Transducer {
     }
 }
 
-class CellTransducer extends Transducer {
+class CellTransducer extends NullTransducer {
 
     constructor(
         public tier: Tier,
@@ -276,8 +317,8 @@ class UnaryTransducer extends CellTransducer {
 
 class RequireTransducer extends UnaryTransducer {
 
-    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
-        return undefined;
+    public compatibleWithFirstChar(tier: string, c: string, symbolTable: TransducerTable): boolean | undefined {
+        return this.child.compatibleWithFirstChar(tier, c, symbolTable);
     }
 
     /*
@@ -304,7 +345,7 @@ class RequireTransducer extends UnaryTransducer {
 class FinalTransducer extends UnaryTransducer {
 
     
-    public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
+    public compatibleWithFirstChar(tier: string, c: string, symbolTable: TransducerTable): boolean | undefined {
         return true;
     }
 
@@ -325,8 +366,73 @@ class FinalTransducer extends UnaryTransducer {
     }
 }
 
+class BeforeTransducer extends UnaryTransducer implements GEntry {
 
-class BeforeTransducer extends UnaryTransducer {
+
+    public value = new GCell("*");
+
+    public testChar(index: number, c: string): boolean {
+        return false;
+    }
+
+    public length(): number {
+        return 0;
+    }
+
+    public slice(start: number, end: number | undefined): GEntry {
+        return this;
+    }
+
+    public isEmpty(): boolean {
+        return true;
+    }
+
+    public validateResult(pastOutput: GRecord, 
+                        futureOutput: GRecord, 
+                        symbolTable: TransducerTable, 
+                        accelerate: boolean): boolean {
+        const childOptions: ParseOptions = {
+            symbolTable: symbolTable,
+            randomize: false,
+            maxResults: 1,
+            parseLeftToRight: true,
+            accelerate: accelerate
+        }
+        const input: GParse = [futureOutput, 0.0, pastOutput];
+        const results = [...this.child.transduce(input, childOptions)];
+        if (results.length > 0) {
+            return true;
+        }
+        return false;
+    }
+
+    public compatibleWithFirstChar(tier: string, c: string, symbolTable: TransducerTable): boolean | undefined {
+        return this.child.compatibleWithFirstChar(tier, c, symbolTable);
+    }
+
+    public *transduce([input, logprob, pastOutput]: GParse, options: ParseOptions): Gen<GParse> {
+        
+        /* if (this.child instanceof Literal) {
+            for (const [rem, newprob, output] of this.child.transduce([input, logprob, []], options)) {
+                const newInput: GRecord = [...output, ...rem];
+                for (const tier in this.getRelevantTiers()) {
+                    if (record_has_key(input, tier)) {
+                        continue;
+                    }
+                    newInput.push(new Etcetera(new Tier(tier)));
+                }
+                yield [newInput, logprob, pastOutput];
+            } 
+        } else { */
+            const output: GRecord = [...pastOutput, this];
+            yield [input, logprob, output];
+        /* } */
+    }
+}
+
+
+
+class BeforeTransducer2 extends UnaryTransducer {
 
     protected affectedTier : string;
     public constructor(
@@ -394,10 +500,15 @@ class BeforeTransducer extends UnaryTransducer {
 
 }
 
+function recordToString(record: GRecord): string {
+    return record.map(entry => entry.toString()).join(", ");
+}
+
 class AfterTransducer extends UnaryTransducer {
 
     public compatibleWithFirstChar(tier: string, c: string, symbolTable: TransducerTable): boolean | undefined {
-        return this.child.compatibleWithFirstChar(tier, c, symbolTable);
+        //return this.child.compatibleWithFirstChar(tier, c, symbolTable);
+        return undefined;
     }
 
     /*
@@ -425,7 +536,7 @@ class AfterTransducer extends UnaryTransducer {
             randomize: false,
             maxResults: 1,
             parseLeftToRight: false,
-            accelerate: options.accelerate
+            accelerate: false,
         }
         const results = [...this.child.transduce(childParse, childOptions)];
         if (results.length > 0) {
@@ -451,10 +562,9 @@ class NotTransducer extends UnaryTransducer {
 
     public sanityCheck(symbolTable: TransducerTable, devEnv: DevEnvironment): void {
         this.child.sanityCheck(symbolTable, devEnv);
-        if (!(this.child instanceof BeforeTransducer || this.child instanceof AfterTransducer)) {
+        if (this.child instanceof BeforeTransducer) {
             devEnv.markError(this.tier.sheet, this.tier.row, this.tier.col, 
-                "A 'not' combinator should only be applied to 'before' and 'after'." +  
-                 " Applying it to other kinds of combinators might lead to unexpected results.", "warning");
+                "To negate a before transducer, use 'before not' rather than 'not before'.", "error");
         }
     }
 
@@ -483,6 +593,7 @@ class NotTransducer extends UnaryTransducer {
             yield inputParse;
             return;
         }
+
         const results = [...this.child.transduce(inputParse, options)];
         if (results.length > 0) {
             return;
@@ -492,7 +603,7 @@ class NotTransducer extends UnaryTransducer {
 }
 
 
-class AlternationTransducer extends Transducer {
+class AlternationTransducer extends NullTransducer {
 
     private childrenAndWeights: Array<[Transducer, number]> = [];
     private relevantChildren: Map<string, Array<[Transducer, number]>> = new Map();
@@ -658,7 +769,7 @@ class MaybeTransducer extends UnaryTransducer {
         value: GCell,
     ) {
         super(tier, value);
-        this.alternation = new AlternationTransducer([this.child, new Transducer()]);
+        this.alternation = new AlternationTransducer([this.child, new NullTransducer()]);
     }
     
     public compatibleWithFirstChar(tier: string, c: string, symbolTable: TransducerTable): boolean | undefined {
@@ -1007,6 +1118,10 @@ export class Literal extends CellTransducer implements GEntry {
         return this.value.text.length == 0;
     }
 
+    public toString(): string {
+        return this.tier.text + ":" + this.value.text;
+    }
+
     public compatibleWithFirstChar(tier: string, c: string): boolean | undefined {
         if (this.value.text == "") {
             return undefined;
@@ -1290,9 +1405,10 @@ class VarTransducer extends CellTransducer {
 
 export class Etcetera implements GEntry {
 
+    public value = new GCell("*");
+
     public constructor(
         public tier: Tier,
-        public value: GCell
     ) { }
 
     public testChar(index: number, c: string): boolean {
@@ -1310,10 +1426,17 @@ export class Etcetera implements GEntry {
     public isEmpty(): boolean {
         return true;
     }
+
+    validateResult(pastOutput: GRecord, 
+        futureOutput: GRecord, 
+        symbolTable: TransducerTable, 
+        accelerate: boolean): boolean {
+        return true;
+    }
 }
 
 
-class ConcatenationTransducer extends Transducer {
+class ConcatenationTransducer extends NullTransducer {
 
 
     public constructor(
@@ -1455,7 +1578,7 @@ export function transducerFromEntry(entry: GEntry,
         return transducerFromTier(tierStructure, entry.value);
     } catch (err) {
         devEnv.markError(entry.tier.sheet, entry.tier.row, entry.tier.col, err.toString(), "error");
-        return new Transducer();  // if the tier is erroneous, return a trivial parser
+        return new NullTransducer();  // if the tier is erroneous, return a trivial parser
                                   // so that the grammar can still execute
     }
 }
@@ -1494,10 +1617,6 @@ function stepOneCharacter([input, logprob, pastOutput]: GParse, inTier: string, 
 
 export function makeEntry(key: string, value: string): GEntry {
     return new Literal(new Tier(key), new GCell(value));
-}
-
-export function makeEtcLiteral(key: string, value: string): GEntry {
-    return new Etcetera(new Tier(key), new GCell(value));
 }
 
 export function makeRecord(cells: [string, string][]): GRecord {

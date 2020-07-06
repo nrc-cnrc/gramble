@@ -310,7 +310,7 @@ function objToEtcTable(obj: { [key: string]: string; }): GTable {
     const record : GRecord = [];
     for (const key in obj) {
         record.push(new Literal(new Tier(key), new GCell(obj[key])));
-        record.push(new Etcetera(new Tier(key), new GCell("*")));
+        record.push(new Etcetera(new Tier(key)));
     }
     return [record];
 }

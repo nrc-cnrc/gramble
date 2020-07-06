@@ -18,6 +18,16 @@ const ambiguousGrammar = cellSplit(`
 
 const ambiguousProject = new Project().addSheet("testSheet", ambiguousGrammar, devEnv);
 
+describe('Project with no variables, parsing fo*', function() {
+    const result = ambiguousProject.completeFlatten({text: "fo"});
+    testNumResults(result, 2);
+    testFlattenedOutput(result, 0, "text", "foobar");
+    testFlattenedOutput(result, 0, "gloss", "jump-1SG");
+    testFlattenedOutput(result, 1, "text", "foobaz");
+    testFlattenedOutput(result, 1, "gloss", "run-3PL.PAST");
+});
+
+
 describe('Project with no variables, parsing foo*', function() {
     const result = ambiguousProject.completeFlatten({text: "foo"});
     testNumResults(result, 2);
@@ -27,6 +37,15 @@ describe('Project with no variables, parsing foo*', function() {
     testFlattenedOutput(result, 1, "gloss", "run-3PL.PAST");
 });
 
+
+describe('Project with no variables, parsing foob*', function() {
+    const result = ambiguousProject.completeFlatten({text: "foob"});
+    testNumResults(result, 2);
+    testFlattenedOutput(result, 0, "text", "foobar");
+    testFlattenedOutput(result, 0, "gloss", "jump-1SG");
+    testFlattenedOutput(result, 1, "text", "foobaz");
+    testFlattenedOutput(result, 1, "gloss", "run-3PL.PAST");
+});
 
 describe('Project with no variables, parsing foobar*', function() {
     const result = ambiguousProject.completeFlatten({text: "foobar"});
