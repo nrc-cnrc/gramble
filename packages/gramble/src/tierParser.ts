@@ -1,4 +1,8 @@
-import { GPos, NULL_POS, Gen} from "./util";
+import { GPos, Gen, meanAngleDeg, HSVtoRGB, RGBtoString} from "./util";
+
+
+const DEFAULT_SATURATION = 0.1;
+const DEFAULT_VALUE = 1.0;
 
 export class Tier implements GPos { 
     
@@ -26,9 +30,22 @@ export class Tier implements GPos {
         
         return (hash & 0xFF) / 255;
     }
+
+    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
+        return RGBtoString(...HSVtoRGB(this.hue, saturation, value));
+    }
 }
 
-export class CommentTier extends Tier { }
+export class CommentTier extends Tier { 
+
+    public get hue(): number {
+        return 0;
+    }
+
+    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string {
+        return "#FFFFFF";
+    }
+}
 
 export class UnaryTier extends Tier {
 
@@ -58,15 +75,16 @@ export class BinaryTier extends Tier {
 
     
     public get hue(): number {
-        return this.child1.hue;
+        return meanAngleDeg([this.child1.hue * 360, this.child2.hue * 360]) / 360;
     }
+
 }
 
 type TierParser = (input: string[], pos: GPos) => Gen<[Tier, string[]]>;
 
 const SYMBOL = [ "(", ")", "%", "/"];
 const UNARY_RESERVED = [ "maybe", "require", "before", "after", "final", "alt", "not" ];
-const ONE_TIER_RESERVED = [ "join", "shift", "upward", "downward" ];
+const ONE_TIER_RESERVED = [ "join", "shift", "upward", "downward", "input", "contains", "equals" ];
 const ALL_RESERVED = SYMBOL.concat(UNARY_RESERVED).concat(ONE_TIER_RESERVED);
 
 const SUBEXPR = AltTierParser([Identifier, ParensTierParser]);

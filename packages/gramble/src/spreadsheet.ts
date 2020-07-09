@@ -1,6 +1,6 @@
 import { GPos } from "./util";
 import {GCell, GEntry, GRecord, GTable, Literal, Etcetera, Transducer, transducerFromTable} from "./transducers"
-import { Tier } from "./tierParser";
+import { Tier, parseTier } from "./tierParser";
 
 /**
  * Determines whether a line is empty
@@ -318,6 +318,35 @@ function objToEtcTable(obj: { [key: string]: string; }): GTable {
 
 
 
+const VAR_FOREGROUND_COLOR = "#000077";
+const BLACK_COLOR = "#000000";
+
+
+const BG_COLOR_CACHE: {[key: string]: string} = {};
+
+export function getBackgroundColor(tierName: string, saturation: number): string {
+    if (!(tierName in BG_COLOR_CACHE)) {           
+        const tier = parseTier(tierName, {sheet: "", row: -1, col: -1});
+        const bgColor = tier.getColor(saturation);
+        BG_COLOR_CACHE[tierName] = bgColor;
+    }
+
+    return BG_COLOR_CACHE[tierName];
+}
+
+export function getForegroundColor(tierName: string): string {
+    var subnames = tierName.split("/");
+    for (const subname of subnames) {
+        const subnameParts = subname.trim().toLowerCase().split(" ");
+        const lastName = subnameParts[subnameParts.length-1];
+        if (lastName == "var") {
+            return VAR_FOREGROUND_COLOR;
+        }
+    }
+    return BLACK_COLOR;
+}
+
+
 /**
  * Project
  * 
@@ -337,6 +366,9 @@ export class Project {
     protected testTable: Map<string, GTable> = new Map();
 
     protected transducerTable: Map<string, Transducer> = new Map();
+
+    
+
 
     public hasSymbol(name: string): boolean {
         return this.symbolTable.has(name);

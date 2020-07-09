@@ -1,4 +1,4 @@
-import {DevEnvironment, Project} from "./spreadsheet";
+import {DevEnvironment, Project, getBackgroundColor} from "./spreadsheet";
 
 
 
@@ -7,31 +7,8 @@ function alert(msg: any): void {
     ui.alert(msg);
 }
 
-function sum(a: number[]): number {
-    var s = 0;
-    for (var i = 0; i < a.length; i++) s += a[i];
-    return s;
-} 
- 
-function degToRad(a: number): number {
-    return Math.PI / 180 * a;
-}
- 
-function meanAngleDeg(a: number[]): number {
-    return 180 / Math.PI * Math.atan2(
-        sum(a.map(degToRad).map(Math.sin)) / a.length,
-        sum(a.map(degToRad).map(Math.cos)) / a.length
-    );
-}
 
-
-const DEFAULT_SATURATION = 0.1;
-const EXTRA_PASTEL = 0.05;
-const DEFAULT_VALUE = 1.0;
-const VAR_FOREGROUND_COLOR = "#000077";
-const BLACK_COLOR = "#000000";
-
-type NoteType = "error" | "warning" | "message";
+type NoteType = "error" | "warning" | "info";
 
 const NOTE_COLORS: Map<NoteType, string> = new Map([
     ["error", "#FF9999"],
@@ -151,15 +128,7 @@ class BackgroundColorStyler extends Styler {
     }
 }
 
-class GoogleSheetsDevEnvironment implements DevEnvironment {
-
-    //private errorCells: [string, number, number, string, "error"|"warning"|"info"][] = [];
-   // private commentCells: [string, number, number][] = [];
-    //private commandCells: [string, number, number][] = [];
-    //private headerCells: [string, number, number, string][] = [];
-    //private tierCells: [string, number, number, string][] = [];
-    private namedColors: Map<string, number> = new Map();
-    private calculatedColors: Map<string, number> = new Map();
+class GoogleSheetsDevEnvironment {
 
     private bgColorStylers: Map<string, BackgroundColorStyler> = new Map();
     private fontColorStylers: Map<string, FontColorStyler> = new Map();
@@ -172,116 +141,6 @@ class GoogleSheetsDevEnvironment implements DevEnvironment {
     public alert(msg: any): void {
         let ui = SpreadsheetApp.getUi();
         ui.alert(msg);
-    }
-
-    private HSVtoRGB(h: number, s: number, v: number): [number, number, number] {
-        var r: number, g: number, b: number, i: number, 
-            f: number, p: number, q: number, t: number;
-        i = Math.floor(h * 6);
-        f = h * 6 - i;
-        p = v * (1 - s);
-        q = v * (1 - f * s);
-        t = v * (1 - (1 - f) * s);
-        r = 0;
-        g = 0;
-        b = 0;
-        switch (i % 6) {
-            case 0: r = v, g = t, b = p; break;
-            case 1: r = q, g = v, b = p; break;
-            case 2: r = p, g = v, b = t; break;
-            case 3: r = p, g = q, b = v; break;
-            case 4: r = t, g = p, b = v; break;
-            case 5: r = v, g = p, b = q; break;
-        }
-        r = Math.round(r * 255)
-        g = Math.round(g * 255)
-        b = Math.round(b * 255)
-        return [r, g, b];
-    }
-    
-    public setColor(tierName: string, colorName: string): void {
-        var hues: number[] = [];
-        var subcolors: string[] = colorName.split("-");
-        for (let subcolor of subcolors) {
-            subcolor = subcolor.trim().toLowerCase();
-            if (!NAMED_COLORS.has(subcolor)) {
-                // this is an error, but don't fail because of it
-                continue;
-            }
-            var hue = NAMED_COLORS.get(subcolor);
-            if (hue == undefined) {
-                continue; // shouldn't happen, just for linting
-            }
-            hues.push(hue);
-        }
-        /* red /= subcolors.length;
-        green /= subcolors.length;
-        blue /= subcolors.length; */
-
-        if (hues.length == 0) {
-            return; // this is an error, but just carry on
-        }
-
-        const averageHue = meanAngleDeg(hues) / 360;
-        this.namedColors.set(tierName, averageHue);
-    }
-
-    private setCalculatedColor(tierName: string): void {
-        var str = tierName + "extrasalt" // otherwise short strings are boring colors
-        var hash = 0; 
-
-        for (let i = 0; i < str.length; i++) { 
-            let char = str.charCodeAt(i); 
-            hash = ((hash << 5) - hash) + char; 
-            hash = hash & hash; 
-        } 
-        
-        const hue = (hash & 0xFF) / 255;
-        
-
-        this.calculatedColors.set(tierName, hue);
-    }
-    
-
-    private getBackgroundColor(tierName: string, saturation: number = DEFAULT_SATURATION): string {
-        var hues: number[] = [];
-        var subnames = tierName.split(",");
-        for (let i = 0; i < subnames.length; i++) {
-            var subname = subnames[i].trim().toLowerCase();
-            var subnameParts = subname.split(" ");
-            subname = subnameParts[subnameParts.length-1];
-            if (this.namedColors.has(subname)) {
-                var hue = this.namedColors.get(subname);
-            } else {
-                if (!this.calculatedColors.has(subname)) {
-                    this.setCalculatedColor(subname);
-                }
-                var hue = this.calculatedColors.get(subname);
-            }
-            if (hue == undefined) {
-                return "#EEEEEE";  // shouldn't happen, just for linting
-            }
-            hues.push(hue);
-
-            if (i == 0) { // the first color should dominate
-                hues.push(hue);
-            }
-        }
-        const averageHue = meanAngleDeg(hues);
-        const [r, g, b] = this.HSVtoRGB(averageHue, saturation, DEFAULT_VALUE);
-        return "#" + r.toString(16) + g.toString(16) + b.toString(16);
-    }
-
-    private getForegroundColor(tierName: string): string {
-        var subnames = tierName.split(",");
-        for (const subname of subnames) {
-            const subnameParts = subname.trim().toLowerCase().split(" ");
-            const lastName = subnameParts[subnameParts.length-1];
-            if (lastName == "var") {
-                return VAR_FOREGROUND_COLOR;
-            }
-        }
-        return BLACK_COLOR;
     }
 
     public markError(sheet: string, 
@@ -309,7 +168,7 @@ class GoogleSheetsDevEnvironment implements DevEnvironment {
     }
 
     public markHeader(sheet: string, row: number, col: number, tier: string): void {
-        const color = this.getBackgroundColor(tier, 0.15);
+        const color = getBackgroundColor(tier, 0.15);
         if (!this.bgColorStylers.has(color)) {
             this.bgColorStylers.set(color, new BackgroundColorStyler(color));
         }
@@ -320,19 +179,11 @@ class GoogleSheetsDevEnvironment implements DevEnvironment {
     }
 
     public markTier(sheet: string, row: number, col: number, tier: string): void {
-        const bgColor = this.getBackgroundColor(tier, 0.1);
+        const bgColor = getBackgroundColor(tier, 0.1);
         if (!this.bgColorStylers.has(bgColor)) {
             this.bgColorStylers.set(bgColor, new BackgroundColorStyler(bgColor));
         }
         this.bgColorStylers.get(bgColor)?.addCell(row, col);
-        const fgColor = this.getForegroundColor(tier);
-        if (!this.fontColorStylers.has(fgColor)) {
-            this.fontColorStylers.set(fgColor, new FontColorStyler(fgColor));
-        }
-        this.fontColorStylers.get(fgColor)?.addCell(row, col);
-        if (fgColor == VAR_FOREGROUND_COLOR) {
-            this.boldStyler.addCell(row, col);
-        }
         this.centerStyler.addCell(row, col);
     }
 
@@ -344,10 +195,6 @@ class GoogleSheetsDevEnvironment implements DevEnvironment {
     public markSymbol(sheet: string, row: number, col: number): void {
         this.boldStyler.addCell(row, col);
         this.centerStyler.addCell(row, col);
-        if (!this.fontColorStylers.has(VAR_FOREGROUND_COLOR)) {
-            this.fontColorStylers.set(VAR_FOREGROUND_COLOR, new FontColorStyler(VAR_FOREGROUND_COLOR));
-        }
-        this.fontColorStylers.get(VAR_FOREGROUND_COLOR)?.addCell(row, col);
     }
 
     public highlight(): void {
@@ -479,7 +326,7 @@ function createHTMLFromTable(table: {[key: string]:string}[], devEnv: DevEnviron
             }
             keys.push(key);
             const value = record[key];
-            const color = devEnv.getBackgroundColor(key)
+            const color = getBackgroundColor(key)
             keysAndColors.push([key, color]);
             valuesAndColors.push([value, color]);
         }
