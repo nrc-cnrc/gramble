@@ -14,6 +14,18 @@ export class Tier implements GPos {
         this.row = pos.row;
         this.col = pos.col;
     }
+
+    public get hue(): number {
+        const str = this.text + "extrasalt" // otherwise short strings are boring colors
+        var hash = 0; 
+
+        for (let i = 0; i < str.length; i++) { 
+            hash = ((hash << 5) - hash) + str.charCodeAt(i); 
+            hash = hash & hash; 
+        } 
+        
+        return (hash & 0xFF) / 255;
+    }
 }
 
 export class CommentTier extends Tier { }
@@ -28,6 +40,10 @@ export class UnaryTier extends Tier {
         super(name, pos);
     }
 
+    public get hue(): number {
+        return this.child.hue;
+    }
+
 }
 
 export class BinaryTier extends Tier {
@@ -38,6 +54,11 @@ export class BinaryTier extends Tier {
         public child2: Tier
     ) { 
         super(name, pos);
+    }
+
+    
+    public get hue(): number {
+        return this.child1.hue;
     }
 }
 

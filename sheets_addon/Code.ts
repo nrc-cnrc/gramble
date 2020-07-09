@@ -1,5 +1,4 @@
-import {DevEnvironment, Project} from "./spreadsheet"
-import {GTable, tableToMap} from "./transducers"
+import {DevEnvironment, Project} from "./spreadsheet";
 
 
 
@@ -670,6 +669,28 @@ function GrambleUncomment(): void {
     GrambleHighlighting();
 }
 
+function GrambleSidebar(): void {
+    var html = HtmlService.createTemplateFromFile('sidebar')
+        .evaluate()
+        .setTitle('Gramble Results')
+        .setWidth(800);
+    SpreadsheetApp.getUi() // Or DocumentApp or SlidesApp or FormApp.
+        .showSidebar(html);
+}
+
+function include(filename) {
+    return HtmlService.createHtmlOutputFromFile(filename)
+        .getContent();
+  }
+
+function getCurrentSheetData(): string[][] {
+    const spreadsheet = SpreadsheetApp.getActive();
+    const sheet = spreadsheet.getActiveSheet();
+    const range = sheet.getDataRange();
+    const cells = range.getDisplayValues() as string[][];
+    return cells;
+}
+
 function onOpen(): void {
     var ui = SpreadsheetApp.getUi();
     ui.createMenu('Gramble')
@@ -682,5 +703,7 @@ function onOpen(): void {
         .addItem('Sample 10', 'GrambleSample')
         .addItem('Generate all', 'GrambleGenerate')
         .addItem('Generate all to new sheet', 'GrambleGenerateToSheet')
+        .addSeparator()
+        .addItem('Show sidebar', 'GrambleSidebar')
         .addToUi();
 }

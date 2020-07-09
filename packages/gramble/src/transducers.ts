@@ -233,9 +233,10 @@ export class NullTransducer implements Transducer {
                 if (!this.validateOutput(output, symbolTable, accelerate)) {
                     continue; // if the output failed validation (e.g. had a failing "before"), keep going
                 }
+                const filteredOutput = output.filter(entry => !entry.isEmpty());
                 var prob: string = Math.exp(logprob).toPrecision(3);
-                output.push(new Literal(new Tier("p"), new GCell(prob)));
-                yield output;
+                filteredOutput.push(new Literal(new Tier("p"), new GCell(prob)));
+                yield filteredOutput;
             }
         }
     }

@@ -156,8 +156,8 @@ abstract class GFunction {
     public constructor(
         protected name: GCell,
         protected symbol: GCell | undefined = undefined,
-        protected params: GCell[] = [],
-        protected columns: Map<number, GCell> = new Map()
+        protected params: Tier[] = [],
+        protected columns: Map<number, Tier> = new Map()
     ) {}
 
     public addParams(cells: GCell[], highlighter: DevEnvironment): void {
@@ -175,8 +175,9 @@ abstract class GFunction {
                 if (param.text.length == 0) {
                     continue;
                 }
-                this.params.push(param);
-                this.columns.set(param.col, param);
+                const tier = new Tier(param.text, param);
+                this.params.push(tier);
+                this.columns.set(param.col, tier);
             }
         }
     }
@@ -185,7 +186,7 @@ abstract class GFunction {
         return this.columns.has(col);
     }
 
-    public getParam(col: number): GCell {
+    public getParam(col: number): Tier {
         const result =  this.columns.get(col);
         if (result == undefined) {
             throw new RangeError("Column index " + col + " not found");
@@ -403,7 +404,7 @@ export class Project {
                 maxResults: number = -1,
                 accelerate: boolean = true): {[key: string]: string}[] {
         return this.flatten(this.parse(input, symbolName, randomize, maxResults, accelerate));
-}
+    }
 
     public generate(symbolName: string = 'MAIN', 
                 randomize: boolean = false, 

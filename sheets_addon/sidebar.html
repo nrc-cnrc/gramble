@@ -1,0 +1,130 @@
+<html>
+    <head>
+        <title>Gramble by Examble</title>
+        <?!= include('gramble'); ?>
+    </head>
+    <body>
+        <script>
+
+            function scriptRunPromise() {
+                const gs = {};
+                const keys = Object.keys(google.script.run);
+                for (let i=0; i < keys.length; i++) {
+                    gs[keys[i]] = (function(key) {
+                    return function(...args) {
+                        return new Promise(function(resolve, reject) {
+                        google.script.run
+                            .withSuccessHandler(resolve)
+                            .withFailureHandler(reject)[key]
+                            .apply(google.script.run, args);
+                        });
+                    };
+                    })(keys[i]);
+                }
+                return gs;
+            }
+
+            async function reloadResults() {
+                var selector = document.getElementById("selectSymbol"); 
+                var symbolName = selector.value;
+
+                var tbl  = document.getElementById("resultsTable"); 
+                tbl.innerHTML = "";
+                tbl.style.fontFamily = "Helvetica";
+                tbl.style.fontSize = "12px";
+
+                var cells = await scriptRunPromise().getCurrentSheetData();
+                let grammar = await gramble.fromDataAsync(cells);
+
+                if (grammar.allSymbols().indexOf(symbolName) == -1) {
+                    tbl.innerHTML = "Unknown symbol: " + symbolName + ", check your source to make sure it's defined.";
+                    return;
+                } 
+
+                var results = grammar.sampleFlatten(symbolName, 10);
+                
+                for (var i = 0; i < results.length; i++){
+                    var record = results[i];
+                    
+                    var blankRow = tbl.insertRow();
+                    var blankCell = blankRow.insertCell();
+                    blankCell.appendChild(document.createTextNode(" "));
+                    blankRow.style.borderBottom = "1px solid black";
+                    for (key in record) {
+                        if (!record.hasOwnProperty(key)) {
+                            continue;
+                        }
+                        var tr = tbl.insertRow();
+                        var keyCell = tr.insertCell();
+                        keyCell.appendChild(document.createTextNode(key + ":"));
+                        var valueCell = tr.insertCell();
+                        valueCell.appendChild(document.createTextNode(record[key]));
+                    }
+                    var blankRow = tbl.insertRow();
+                    var blankCell = blankRow.insertCell();
+                    blankCell.appendChild(document.createTextNode(" "));
+                    blankRow.style.borderTop = "1px solid black";
+                }
+
+            }
+
+            async function reloadSymbols() {
+
+                var cells = await scriptRunPromise().getCurrentSheetData();
+                let grammar = await gramble.fromDataAsync(cells);
+
+
+                var select = document.getElementById("selectSymbol"); 
+                select.innerHTML = "";
+                
+                var options = grammar.allSymbols();
+                for (var i = 0; i < options.length; i++) {
+                    var option = options[i];
+                    var el = document.createElement('option');
+                    el.textContent = option;
+                    el.value = option;
+                    if (option == 'MAIN') {
+                        el.selected = true;
+                    }
+                    select.appendChild(el);
+                }
+                var reloader = document.createElement('option');
+                reloader.textContent = "(refresh symbols)";
+                reloader.value = "__reload__";
+                select.appendChild(reloader);
+
+            }
+
+            window.onload = async function() {
+                
+                try {
+                   
+                    await reloadSymbols();
+
+                    var selector = document.getElementById("selectSymbol");
+
+                    selector.onchange = async function(ev) {
+                        if (selector.value == '__reload__') {
+                            await reloadSymbols();
+                            return;
+                        }
+                        await reloadResults();
+                    };
+
+                    await reloadResults();
+
+
+                } catch(err) {
+                    alert(err);
+                }
+
+            };
+
+
+        </script>
+
+    <select id="selectSymbol"> </select>
+    <table id="resultsTable"> </table>
+
+    </body>
+</html>
