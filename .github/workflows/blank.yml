@@ -26,7 +26,7 @@ jobs:
       run: |
         npm ci
         npm run bootstrap
-        
+
     # Runs a single command using the runners shell
     - name: deploy to gh-pages
       env:
@@ -34,4 +34,5 @@ jobs:
       run: |
         git config --global user.email "actions@github.com"
         git config --global user.name "gh-actions"
+        echo "machine github.com login ${GIT_USER} password ${{ secrets.GITHUB_TOKEN }}" > ~/.netrc
         cd packages/gramble-docs && npx docusaurus deploy
