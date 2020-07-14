@@ -1,6 +1,7 @@
 import { GPos } from "./util";
 import {GCell, GEntry, GRecord, GTable, Literal, Etcetera, Transducer, transducerFromTable} from "./transducers"
 import { Tier, parseTier } from "./tierParser";
+import { ENETUNREACH } from "constants";
 
 /**
  * Determines whether a line is empty
@@ -346,6 +347,11 @@ export function getForegroundColor(tierName: string): string {
     return BLACK_COLOR;
 }
 
+function resultListToString(records: {[key: string]: string}[]): string {
+    return records.map(record => 
+        Object.entries(record).map(([k, v]) => 
+            k + ": " + v).join(", ")).join("\n");
+}
 
 /**
  * Project
@@ -547,16 +553,16 @@ export class Project {
                 }
                 
                 const result = this.parse(inputRecord, symbolName, false, -1);
-                const resultFlattened = this.flatten(result);
+                const resultFlattened = this.flatten(result)
                 
                 for (const target of containsRecord) {
                     if (!this.containsResult(resultFlattened, target)) {
                         highlighter.markError(target.value.sheet, target.value.row, target.value.col,
                             "Result does not contain specified value. " + 
-                            "Actual value: \n" + resultFlattened, "error");
+                            "Actual value: \n" + resultListToString(resultFlattened), "error");
                     } else {
                         highlighter.markError(target.value.sheet, target.value.row, target.value.col,
-                            "Result contains specified value: \n" + resultFlattened, "info");
+                            "Result contains specified value: \n" + resultListToString(resultFlattened), "info");
                     }
                 }
 
@@ -564,10 +570,10 @@ export class Project {
                     if (!this.equalsResult(resultFlattened, target)) {
                         highlighter.markError(target.value.sheet, target.value.row, target.value.col,
                             "Result does not equal specified value. " + 
-                            "Actual value: \n" + resultFlattened, "error");
+                            "Actual value: \n" + resultListToString(resultFlattened), "error");
                     } else {
                         highlighter.markError(target.value.sheet, target.value.row, target.value.col,
-                            "Result equals specified value: \n" + resultFlattened, "info");
+                            "Result equals specified value: \n" + resultListToString(resultFlattened), "info");
                     }
                 }
             }

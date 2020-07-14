@@ -1,7 +1,9 @@
 import {GTable, makeTable, getTierAsString} from "./transducers"
-import {Project, BrowserDevEnvironment, DevEnvironment} from "./spreadsheet"
+import {Project, BrowserDevEnvironment, DevEnvironment, getBackgroundColor} from "./spreadsheet"
 import {parse as papaparse, ParseResult} from 'papaparse';
 import {promisify} from 'es6-promisify';
+
+export {getBackgroundColor};
 
 export class ClientSideProject extends Project {
 

@@ -230,6 +230,9 @@ export class NullTransducer implements Transducer {
                 if (remnant.some(entry => !entry.isEmpty())) {
                     continue; // if there's leftovers, keep going
                 }
+                if (!this.testCongruence(inputRecord, output)) {
+                    continue; // something went wrong in the phonology
+                }
                 if (!this.validateOutput(output, symbolTable, accelerate)) {
                     continue; // if the output failed validation (e.g. had a failing "before"), keep going
                 }
@@ -239,6 +242,21 @@ export class NullTransducer implements Transducer {
                 yield filteredOutput;
             }
         }
+    }
+
+    protected testCongruence(inputRecord: GRecord, outputRecord: GRecord): boolean {
+        for (const entry of inputRecord) {
+            const [query, queryEtc] = get_field_from_record(inputRecord, entry.tier.text);
+            const [result, resultEtc ] = get_field_from_record(outputRecord, entry.tier.text);
+            
+            if (queryEtc && !result.startsWith(query)) {
+                return false;
+            }
+            if (!queryEtc && query != result) {
+                return false;
+            }
+        }
+        return true;
     }
 
     protected validateOutput(output: GRecord, symbolTable: TransducerTable, accelerate: boolean): boolean {
@@ -1646,3 +1664,17 @@ function record_has_key(record: GRecord, key: string): boolean {
     return false;
 }
 
+function get_field_from_record(record: GRecord, key: string): [string, boolean] {
+    var result = "";
+    var containsEtc = false;
+    for (const entry of record) {
+        if (entry instanceof Etcetera) {
+            containsEtc = true;
+            continue;
+        }
+        if (entry.tier.text == key) { 
+            result = result + entry.value.text;
+        }
+    }
+    return [result, containsEtc];
+}

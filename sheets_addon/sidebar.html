@@ -24,60 +24,92 @@
                 return gs;
             }
 
-            async function reloadResults() {
-                var selector = document.getElementById("selectSymbol"); 
-                var symbolName = selector.value;
+            var GRAMMAR = undefined;
 
-                var tbl  = document.getElementById("resultsTable"); 
-                tbl.innerHTML = "";
-                tbl.style.fontFamily = "Helvetica";
-                tbl.style.fontSize = "12px";
-
+            async function reloadGrammar() {
                 var cells = await scriptRunPromise().getCurrentSheetData();
-                let grammar = await gramble.fromDataAsync(cells);
+                GRAMMAR = await gramble.fromDataAsync(cells);
+            }
+            
+            function reloadResults() {
+                var symbolName = document.getElementById("selectSymbol").value;
 
-                if (grammar.allSymbols().indexOf(symbolName) == -1) {
+
+                if (GRAMMAR.allSymbols().indexOf(symbolName) == -1) {
                     tbl.innerHTML = "Unknown symbol: " + symbolName + ", check your source to make sure it's defined.";
                     return;
                 } 
 
-                var results = grammar.sampleFlatten(symbolName, 10);
-                
-                for (var i = 0; i < results.length; i++){
-                    var record = results[i];
-                    
-                    var blankRow = tbl.insertRow();
-                    var blankCell = blankRow.insertCell();
-                    blankCell.appendChild(document.createTextNode(" "));
-                    blankRow.style.borderBottom = "1px solid black";
-                    for (key in record) {
-                        if (!record.hasOwnProperty(key)) {
-                            continue;
-                        }
-                        var tr = tbl.insertRow();
-                        var keyCell = tr.insertCell();
-                        keyCell.appendChild(document.createTextNode(key + ":"));
-                        var valueCell = tr.insertCell();
-                        valueCell.appendChild(document.createTextNode(record[key]));
+                var results = [];
+                var text = "";
+                let val = document.getElementById("selectCommand").value;
+                if (val == "sample") {
+                    results = GRAMMAR.sampleFlatten(symbolName, 10);
+                } else if (val == "generate") {  
+                    results = GRAMMAR.generateFlatten(symbolName, false, 10);
+                } else if (val == "parse") {    
+                    text = document.getElementById("parseInput").value;
+                    if (text.length != 0) {  
+                        results = GRAMMAR.parseFlatten({text: text}, symbolName, false, 10);
                     }
-                    var blankRow = tbl.insertRow();
-                    var blankCell = blankRow.insertCell();
-                    blankCell.appendChild(document.createTextNode(" "));
-                    blankRow.style.borderTop = "1px solid black";
+                } /* else if (val == "complete") {
+                    text = document.getElementById("completeInput").value;
+                    console.log(text);
+                    if (text.length != 0) { 
+                        results = GRAMMAR.completeFlatten({text: text}, symbolName, false, 10);
+                        console.log(results);
+                    }
+                } */
+                
+                var tbl  = document.getElementById("resultsTable"); 
+                tbl.innerHTML = "";
+                for (var i = 0; i < results.length; i++) {
+                    displayRecord(results[i], tbl);
+                }
+
+            }
+
+            function displayRecord(record, table) {
+
+                var blankRow = table.insertRow();
+                var blankCell = blankRow.insertCell();
+                blankCell = blankRow.insertCell();
+                blankCell.appendChild(document.createTextNode("\u00A0"));
+                blankRow.style.borderBottom = "1px solid #999999";
+                for (key in record) {
+                    if (!record.hasOwnProperty(key)) {
+                        continue;
+                    }
+                    var tr = table.insertRow();
+                    tr.style.width = "100%";
+                    tr.style.borderBottom = "1px solid #999999";
+                    var keyCell = tr.insertCell();
+                    keyCell.appendChild(document.createTextNode(key + ":"));
+                    keyCell.style.textAlign = "center";
+                    keyCell.style.fontWeight = "bold";
+                    var valueCell = tr.insertCell();
+                    valueCell.appendChild(document.createTextNode(record[key]));
+
+                    try {
+                        var color = gramble.getBackgroundColor(key);
+                        tr.style.background = color;
+                        keyCell.style.background = color;
+                        keyCell.style.padding = "3px 2px";
+                        valueCell.style.background = color;
+                        valueCell.style.padding = "3px 2px";
+                    } catch(err) {
+                        console.log(err);
+                    }
+
                 }
 
             }
 
             async function reloadSymbols() {
-
-                var cells = await scriptRunPromise().getCurrentSheetData();
-                let grammar = await gramble.fromDataAsync(cells);
-
-
                 var select = document.getElementById("selectSymbol"); 
                 select.innerHTML = "";
-                
-                var options = grammar.allSymbols();
+
+                var options = GRAMMAR.allSymbols();
                 for (var i = 0; i < options.length; i++) {
                     var option = options[i];
                     var el = document.createElement('option');
@@ -88,30 +120,66 @@
                     }
                     select.appendChild(el);
                 }
-                var reloader = document.createElement('option');
-                reloader.textContent = "(refresh symbols)";
-                reloader.value = "__reload__";
-                select.appendChild(reloader);
+            }
+
+            async function changeCommand() {
+                document.getElementById("sampleDiv").style.display = "none";
+                document.getElementById("generateDiv").style.display = "none";
+                document.getElementById("parseDiv").style.display = "none";
+                //document.getElementById("completeDiv").style.display = "none";
+                let val = document.getElementById("selectCommand").value;
+                if (val == "sample") {
+                    document.getElementById("sampleDiv").style.display = "block";
+                } else if (val == "generate") {
+                    document.getElementById("generateDiv").style.display = "block";
+                } else if (val == "parse") {
+                    document.getElementById("parseDiv").style.display = "block";
+                } /* else if (val == "complete") {
+                    document.getElementById("completeDiv").style.display = "block";
+                } */
 
             }
 
             window.onload = async function() {
                 
                 try {
-                   
+                    await reloadGrammar();
                     await reloadSymbols();
+                    await changeCommand();
+                    await reloadResults();
 
                     var selector = document.getElementById("selectSymbol");
-
                     selector.onchange = async function(ev) {
-                        if (selector.value == '__reload__') {
-                            await reloadSymbols();
-                            return;
-                        }
                         await reloadResults();
                     };
 
-                    await reloadResults();
+                    document.getElementById("selectCommand").onchange = async function(ev) {
+                        changeCommand();   
+                        reloadResults();
+                    };
+                    
+
+                    var button = document.getElementById("reloadButton");
+                    button.onclick = async function(ev) {
+                        await reloadGrammar();
+                        await reloadSymbols();
+                        await reloadResults();
+                    }
+
+                    document.getElementById("sampleButton").onclick = async function(ev) {
+                        await reloadResults();
+                    }
+
+                    
+                    document.getElementById("parseInput").oninput = async function(ev) {
+                        await reloadResults();
+                    }
+
+                    /*
+                    document.getElementById("completeInput").oninput = async function(ev) {
+                        await reloadResults();
+                    } */
+
 
 
                 } catch(err) {
@@ -122,9 +190,22 @@
 
 
         </script>
+    <table>
+        <tr><td colspan="2"><button id="reloadButton" style="margin: 2px auto; padding: 5px; text-align: center;">Reload from source</button></td></tr>
+        <tr><td>Symbol:</td><td><select id="selectSymbol" style="margin: 2px auto; padding: 5px; text-align: center; text-align-last: center; font-weight: bold;"> </select></td></tr>
+        <tr><td>Command:</td><td><select id="selectCommand" style="margin: 2px auto; padding: 5px; text-align: center; text-align-last: center; font-weight: bold;">
+            <option value="sample" selected="selected">Sample</option>
+            <option value="generate">Generate</option>
+            <option value="parse">Parse</option>
+            <!-- <option value="complete">Complete</option> -->
+        </td></tr>
+    </table>
 
-    <select id="selectSymbol"> </select>
-    <table id="resultsTable"> </table>
+    <div id="sampleDiv" style="display: none"><button id="sampleButton">Resample</button></div>
+    <div id="generateDiv" style="display: none"><button id="generatePrevButton">&lt;</button><button id="generatePrevButton">&gt;</button></div>
+    <div id="parseDiv" style="display: none"><input type="text" id="parseInput"> </input></div>
+    <div id="completeDiv" style="display: none"><input type="text" id="completeInput"> </input></div>
+    <table id="resultsTable" style="width: 100%; padding: 5px; border-collapse: collapse; border-spacing: 0px; border: 0px; font-size: 10pt; font-family: sans-serif;"> </table>
 
     </body>
 </html>
