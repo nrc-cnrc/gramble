@@ -22,6 +22,11 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
+    - name: install
+      run: |
+        npm ci
+        npm run bootstrap
+        
     # Runs a single command using the runners shell
     - name: deploy to gh-pages
       env:
