@@ -1,10 +1,10 @@
-import {transducerFromTable, Transducer, makeTable} from "../src/transducers"
+import {transducerFromTable, NullTransducer, makeTable} from "../src/transducers"
 import 'mocha';
 import {testNumResults, testOutput} from "./test_util"
 import {TextDevEnvironment} from "../src/spreadsheet";
 
 const devEnv = new TextDevEnvironment();
-const transducerTable : Map<string, Transducer> = new Map();
+const transducerTable : Map<string, NullTransducer> = new Map();
 
 
 transducerTable.set("reduce_oo", transducerFromTable(makeTable([[

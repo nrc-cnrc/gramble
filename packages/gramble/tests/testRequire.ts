@@ -6,23 +6,23 @@ const devEnv = new TextDevEnvironment();
 
 
 const impGrammar = cellSplit(`
-    VROOT, text, gloss, imp
-        , oba, jump, indic
-        , obi, jump, imp
-        , apara, run, indic
-        , aparo, run, imp
+    VROOT, add, text, gloss, imp
+        , , oba, jump, indic
+        , , obi, jump, imp
+        , , apara, run, indic
+        , , aparo, run, imp
 
-    INDIC_STEM, var, text, gloss
-        , VROOT, bar, -1SG
-        , VROOT, ta, -2SG
-        , VROOT, ga, -3SG
+    INDIC_STEM, add, var, text, gloss
+        , , VROOT, bar, -1SG
+        , , VROOT, ta, -2SG
+        , , VROOT, ga, -3SG
 
-    IMP_STEM, var, text, gloss
-        , VROOT, sa, -IMP
+    IMP_STEM, add, var, text, gloss
+        , , VROOT, sa, -IMP
 
-    MAIN, require imp, var
-        , indic    , INDIC_STEM
-        , imp      , IMP_STEM
+    MAIN, add, require imp, var
+        , , indic    , INDIC_STEM
+        , , imp      , IMP_STEM
 `);
 
 const impProject = new Project().addSheet("testSheet", impGrammar, devEnv);
@@ -70,23 +70,23 @@ describe('Requirement grammar, generating all imperative forms', function() {
 
 
 const impGrammar2 = cellSplit(`
-    VROOT, text, gloss, imp
-        , oba, jump, 
-        , obi, jump, imp
-        , apara, run,  
-        , aparo, run, imp
+    VROOT, add, text, gloss, imp
+        , , oba, jump, 
+        , , obi, jump, imp
+        , , apara, run,  
+        , , aparo, run, imp
 
-    INDIC_STEM, var, text, gloss
-        , VROOT, bar, -1SG
-        , VROOT, ta, -2SG
-        , VROOT, ga, -3SG
+    INDIC_STEM, add, var, text, gloss
+        , , VROOT, bar, -1SG
+        , , VROOT, ta, -2SG
+        , , VROOT, ga, -3SG
 
-    IMP_STEM, var, text, gloss
-        , VROOT, sa, -IMP
+    IMP_STEM, add, var, text, gloss
+        , , VROOT, sa, -IMP
 
-    MAIN, require imp, var
-        ,          , INDIC_STEM
-        , imp      , IMP_STEM
+    MAIN, add, require imp, var
+        ,  ,        , INDIC_STEM
+        , , imp      , IMP_STEM
 `);
 
 const impProject2 = new Project().addSheet("testSheet", impGrammar2, devEnv);
@@ -122,26 +122,26 @@ describe('Requirement grammar with empty cells, generating all forms', function(
 });
 
 const impGrammar3 = cellSplit(`
-    VROOT, text, gloss, imp, irr
-        , obe, jump, indic, real
-        , obi, jump, imp, irr
-        , obo, jump, indic, irr
-        , apara, run, indic, real
-        , apare, run, imp, irr
-        , aparo, run, indic, irr
+    VROOT, add, text, gloss, imp, irr
+        , , obe, jump, indic, real
+        , , obi, jump, imp, irr
+        , , obo, jump, indic, irr
+        , , apara, run, indic, real
+        , , apare, run, imp, irr
+        , , aparo, run, indic, irr
 
-    INDIC_STEM, var, text, gloss
-        , VROOT, bar, -1SG
-        , VROOT, ta, -2SG
-        , VROOT, ga, -3SG
+    INDIC_STEM, add, var, text, gloss
+        , , VROOT, bar, -1SG
+        , , VROOT, ta, -2SG
+        , , VROOT, ga, -3SG
 
-    IMP_STEM, var, text, gloss
-        , VROOT, sa, -IMP
+    IMP_STEM, add, var, text, gloss
+        , , VROOT, sa, -IMP
 
-    MAIN, require imp, require irr, var
-        , indic      , irr        , INDIC_STEM
-        , indic      , real       , INDIC_STEM
-        , imp        , irr        , IMP_STEM
+    MAIN, add, require imp, require irr, var
+        , , indic      , irr        , INDIC_STEM
+        , , indic      , real       , INDIC_STEM
+        , , imp        , irr        , IMP_STEM
 `);
 
 
@@ -182,22 +182,22 @@ describe('Requirement grammar with multiple requirements, generating all imperat
 
 
 const impGrammar4 = cellSplit(`
-    VROOT, text, gloss, alt imp
-        , obi, jump, indic|imp
-        , apara, run, indic
-        , aparo, run, imp
+    VROOT, add, text, gloss, alt imp
+        , , obi, jump, indic|imp
+        , , apara, run, indic
+        , , aparo, run, imp
 
-    INDIC_STEM, var, text, gloss
-        , VROOT, bar, -1SG
-        , VROOT, ta, -2SG
-        , VROOT, ga, -3SG
+    INDIC_STEM, add, var, text, gloss
+        , , VROOT, bar, -1SG
+        , , VROOT, ta, -2SG
+        , , VROOT, ga, -3SG
 
-    IMP_STEM, var, text, gloss
-        , VROOT, sa, -IMP
+    IMP_STEM, add, var, text, gloss
+        , , VROOT, sa, -IMP
 
-    MAIN, require imp, var
-        , indic      , INDIC_STEM
-        , imp        , IMP_STEM
+    MAIN, add, require imp, var
+        , , indic      , INDIC_STEM
+        , , imp        , IMP_STEM
 `);
 
 const impProject4 = new Project().addSheet("testSheet", impGrammar4, devEnv);

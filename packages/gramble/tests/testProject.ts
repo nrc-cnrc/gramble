@@ -11,9 +11,9 @@ const devEnv = new TextDevEnvironment();
 
  
 const ambiguousGrammar = cellSplit(`
-    MAIN, text, gloss, text, gloss
-        , foo, jump, bar, -1SG
-        , foob, run, ar, -3PL.PAST
+    MAIN, add, text, gloss, text, gloss
+        ,    , foo, jump, bar, -1SG
+        ,    , foob, run, ar, -3PL.PAST
 `);
 
 const ambiguousProject = new Project().addSheet("testSheet", ambiguousGrammar, devEnv);
@@ -88,16 +88,16 @@ describe('Project with no variables, with max_results=1', function() {
 
  
 const flatGrammar = cellSplit(`
-    VROOT, text, gloss
-        , foo, jump
-        , foob, run
+    VROOT, add, text, gloss
+        ,     , foo, jump
+        ,     , foob, run
 
-    TENSE, text, gloss
-        , bar, -1SG
-        , ar, -3PL.PAST
+    TENSE, add, text, gloss
+        ,     , bar, -1SG
+        ,     , ar, -3PL.PAST
 
-    MAIN, var, var
-    , VROOT, TENSE
+    MAIN, add, var, var
+        ,    , VROOT, TENSE
 `);
 
 const flatProject = new Project().addSheet("testSheet", flatGrammar, devEnv);
@@ -151,16 +151,16 @@ describe('Flat project, with max_results=1', function() {
 
  
 const hierarchicalGrammar = cellSplit(`
-    VROOT, text, gloss
-        , foo, jump
-        , foob, run
+    VROOT, add, text, gloss
+        ,     ,foo, jump
+        , , foob, run
 
-    VSTEM, var, text, gloss
-        , VROOT, bar, -1SG
-        , VROOT, ar, -3PL.PAST
+    VSTEM, add, var, text, gloss
+        , , VROOT, bar, -1SG
+        , , VROOT, ar, -3PL.PAST
 
-    MAIN, var
-    , VSTEM
+    MAIN, add, var
+    , , VSTEM
 `);
 
 
@@ -215,8 +215,8 @@ describe('Hierarchical project, with max_results=1', function() {
  */
 
 const maybeGlossGrammar = cellSplit(`
-MAIN, text, gloss, maybe gloss, text, gloss
-    , foo, jump, -INDIC, bar, -1SG
+MAIN, add, text, gloss, maybe gloss, text, gloss
+    ,     , foo, jump, -INDIC, bar, -1SG
 `);
 
 const maybeGlossProject = new Project().addSheet("testSheet", maybeGlossGrammar, devEnv);
@@ -233,13 +233,13 @@ describe('Maybe <literal> parser', function() {
  */
 
 const maybeVarGrammar = cellSplit(`
-ROOT,    text,   gloss
-     ,   foo,     jump
+ROOT,  add,  text,   gloss
+     ,   ,  foo,     jump
 
-SUFFIX,  text,   gloss
-      ,  bar,    -1SG
-MAIN,   var,    maybe var
-    ,   ROOT,   SUFFIX
+SUFFIX,  add , text,   gloss
+      ,      , bar,    -1SG
+MAIN,  add,  var,    maybe var
+    ,     ,  ROOT,   SUFFIX
 `)
 
 const maybeVarProject = new Project().addSheet("testSheet", maybeVarGrammar, devEnv);
@@ -262,9 +262,9 @@ describe('Maybe <var> parser, parsing input with suffix', function() {
  */
 
 const slashGrammar = cellSplit(`
-MAIN,   text/root, gloss, text, gloss
-    ,    foo,    jump, bar, -1SG
-    ,    foob, run, ar, -3PL.PAST
+MAIN, add,   text/root, gloss, text, gloss
+    ,  ,  foo,    jump, bar, -1SG
+    ,   , foob, run, ar, -3PL.PAST
 `);
 
 const slashProject = new Project().addSheet("testSheet", slashGrammar, devEnv);
@@ -296,15 +296,15 @@ describe('Project with text/root tier, transducing from root', function() {
  */
 
 const grammarWithEmptyCell = cellSplit(`
-VROOT, text, gloss
-    , foo, jump
+VROOT,add,  text, gloss
+    ,    , foo, jump
 
-VSTEM, var, text, gloss
-    , VROOT, bar, -1SG
-    , VROOT,    , .3PL
+VSTEM, add,  var, text, gloss
+    ,  , VROOT, bar, -1SG
+    , , VROOT,    , .3PL
 
-MAIN, var
-    , VSTEM
+MAIN, add , var
+    ,   , VSTEM
 `);
 
 const projectWithEmptyCell = new Project().addSheet("testSheet", grammarWithEmptyCell, devEnv);

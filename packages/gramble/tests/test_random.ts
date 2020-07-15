@@ -2,7 +2,7 @@ import {RandomPicker} from "../src/util"
 import { expect } from 'chai';
 import 'mocha';
 import {testNumResults, testOutput, cellSplit, testFlattenedOutput} from "./test_util";
-import {transducerFromTable, Transducer, makeTable} from "../src/transducers"
+import {transducerFromTable, NullTransducer, makeTable} from "../src/transducers"
 import {Project, TextDevEnvironment} from "../src/spreadsheet";
 
 const devEnv = new TextDevEnvironment();
@@ -34,17 +34,17 @@ describe('Random picker', function() {
  */
 
 const flatGrammar = cellSplit(`
-    VROOT, text, gloss
-        , foo, jump
-        , foob, run
+    VROOT, add, text, gloss
+        , , foo, jump
+        , , foob, run
 
-    TENSE, text, gloss
-        , bar, -1SG
-        , ar, -3SG.PAST
-        , tar, -3PL.PAST
+    TENSE, add, text, gloss
+        , , bar, -1SG
+        , , ar, -3SG.PAST
+        , , tar, -3PL.PAST
 
-    MAIN, var, var
-    , VROOT, TENSE
+    MAIN, add, var, var
+        , , VROOT, TENSE
 `);
 
 
@@ -66,17 +66,17 @@ describe('Random generator, with max_results=1', function() {
  */
 
 const probGrammar = cellSplit(`
-    VROOT, text, gloss
-        , foo, jump
-        , foob, run
+    VROOT, add, text, gloss
+        , , foo, jump
+        , , foob, run
 
-    TENSE, text, gloss, p
-        , bar, -1SG, 0.0
-        , ar, -3SG.PAST, 1.0
-        , tar, -3PL.PAST, 0.5
+    TENSE, add, text, gloss, p
+        , , bar, -1SG, 0.0
+        , , ar, -3SG.PAST, 1.0
+        , , tar, -3PL.PAST, 0.5
 
-    MAIN, var, var
-    , VROOT, TENSE
+    MAIN, add, var, var
+    , , VROOT, TENSE
 `);
 
 

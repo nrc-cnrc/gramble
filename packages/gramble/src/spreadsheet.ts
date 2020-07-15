@@ -145,34 +145,33 @@ function isValidColor(colorName: string): boolean {
 }
 
 /**
- * GFunction
+ * GCommand
  * 
- * A GFunction is what is created when the programmer places text in the first column of the
- * sheet.  GFunctions guide the interpretation of following rows, both the name of the function that
+ * A GCommand is what is created when the programmer places text in the second column of the
+ * sheet.  GCommands guide the interpretation of following rows, both the name of the function that
  * should be executed (e.g. "add" a record to a symbol or add a "test" to a symbol) and the interpretation
- * of positional arguments (e.g. that the third column should be "text", the second column should be "down", etc.)
+ * of positional arguments (e.g. that the third column should be "text", the fourth column should be "down", etc.)
  */
-abstract class GFunction {
+abstract class GCommand {
+
+    protected columns: Map<number, Tier> = new Map();
+    protected params: Tier[] = [];
 
     public constructor(
         protected name: GCell,
-        protected symbol: GCell | undefined = undefined,
-        protected params: Tier[] = [],
-        protected columns: Map<number, Tier> = new Map()
-    ) {}
-
-    public addParams(cells: GCell[], highlighter: DevEnvironment): void {
-
+        protected symbol: GCell,
+        params: GCell[] = [],
+    ) {
         var cellBuffer: GCell[] = [];
 
-        for (let cell of cells) {
+        for (let cell of params) {
             cellBuffer.push(cell);
             if (cell.text.length == 0) {
                 continue;
             }
 
             for (const param of cellBuffer) {
-                highlighter.markHeader(cell.sheet, cell.row, cell.col, cell.text);
+                //highlighter.markHeader(cell.sheet, cell.row, cell.col, cell.text);
                 if (param.text.length == 0) {
                     continue;
                 }
@@ -206,83 +205,106 @@ abstract class GFunction {
 
     public abstract call(cells: GCell[], project: Project): void;
 
-    /**
-     * Many functions assign or append their results to the most recently declared symbol.
-     * @param GCell 
-     */
-    public setSymbol(symbol: GCell) {
-        this.symbol = symbol;
-    }
 }
 
-
-class TableFunction extends GFunction {
-
-    public constructor(name: GCell, symbol: GCell | undefined) {
-        super(name);
-        if (symbol == undefined) {
-            return;
-        }
-        this.setSymbol(symbol);
-    }
+class TableCommand extends GCommand {
 
     public call(cells: GCell[], project: Project): void {
-        if (this.symbol == undefined) {
-            throw new Error("Attempted to call table function without active symbol");
-        }
         const record = this.associateParams(cells);
         project.addRecordToSymbol(this.symbol.text, record);
     }
 }
 
-class TestFunction extends GFunction {
+class DummyCommand extends GCommand {
 
-    public constructor(name: GCell, symbol: GCell | undefined) {
-        super(name);
-        if (symbol == undefined) {
-            return;
-        }
-        this.setSymbol(symbol);
-    }
+    public call(cells: GCell[], project: Project): void { }
+}
+
+class TestCommand extends GCommand {
 
     public call(cells: GCell[], project: Project): void {
-        if (this.symbol == undefined) {
-            throw new Error("Attempted to call table function without active symbol");
-        }
         const record = this.associateParams(cells);
         project.addTestToSymbol(this.symbol.text, record);
     }
 }
 
+class NewTemplateCommand extends GCommand {
 
-function makeFunction(name: GCell, 
-                       currentSymbol: GCell | undefined, 
-                       highlighter: DevEnvironment): GFunction {
+    public call(cells: GCell[], project: Project): void {
+        const record = this.associateParams(cells);
+        project.addTemplateToSymbol(this.symbol.text, record);
+    }
+}
 
-    if (name.text == 'add') {
+class TemplateCommand extends GCommand {
 
-        if (currentSymbol == undefined) {
-            highlighter.markError(name.sheet, name.row, name.col, 
-                "This command is not preceded by a symbol. " +
-                " If you don't assign it to a symbol, it will be ignored.", "warning");
-        }
-        return new TableFunction(name, currentSymbol);
-    } else if (name.text == "test") {
-        if (currentSymbol == undefined) {
-            highlighter.markError(name.sheet, name.row, name.col, 
-                "This test command is not preceded by a symbol. " +
-                " Tests without a symbol will not execute", "warning");
-        }
-        return new TestFunction(name, currentSymbol);
+    public constructor(
+        name: GCell,
+        symbol: GCell,
+        params: GCell[] = [],
+    ) {
+        super(name, symbol, params);
     }
 
-    // it's not a reserved word, so it's a new symbol
-    return new TableFunction(name, name);
+    protected renderTemplate(template: GTable, record: GRecord): GTable {
+        for (const templateRow of template) {
+            const resultRow : GRecord = [];
+            for (const entry of templateRow) {
+                entry.value.text.match(/\$\{.*\}/g);
+
+            }
+        }
+        return [];
+    }
+
+    public call(cells: GCell[], project: Project): void {
+        const template = project.getTemplate(this.name.text);
+        const record = this.associateParams(cells);
+        
+
+    }
+
+}
+
+const COMMAND_CONSTRUCTORS: {[key: string]: new (name: GCell, 
+                                                symbol: GCell,
+                                                params: GCell[]) => GCommand} = {
+    
+    "add": TableCommand,
+    "test": TestCommand,
+    "template": NewTemplateCommand,
+}
+
+
+
+function makeCommand(commandCell: GCell, 
+                     currentSymbol: GCell | undefined, 
+                     params: GCell[], 
+                     highlighter: DevEnvironment): GCommand {
+
+    if (currentSymbol == undefined) {
+        highlighter.markError(commandCell.sheet, commandCell.row, commandCell.col, 
+            "This command is not preceded by a symbol. " +
+            " If you don't assign it to a symbol, it will be ignored.", "warning");
+        return new DummyCommand(commandCell, commandCell, params);
+    }
+
+    if (commandCell.text in COMMAND_CONSTRUCTORS) {
+        const constructor = COMMAND_CONSTRUCTORS[commandCell.text];
+        return new constructor(commandCell, currentSymbol, params);
+    }
+
+    highlighter.markError(commandCell.sheet, commandCell.row, commandCell.col,
+        `No command called ${commandCell.text}.  If you defined this elsewhere, ` +
+        "make sure that it appears above this cell.", "error");
+
+    return new DummyCommand(name, currentSymbol, params);
 }
 
 const BUILT_IN_FUNCTIONS: string[] = [
     "add",
-    "test"
+    "test",
+    "template"
 ]
 
 
@@ -366,13 +388,12 @@ function resultListToString(records: {[key: string]: string}[]): string {
  * on it directly, you just have a Project instance and call parse(symbolName, input).
  */
 export class Project {
-    protected currentFunction: GFunction | undefined = undefined;
+    protected currentFunction: GCommand | undefined = undefined;
     protected currentSymbol: GCell | undefined = undefined;
     protected symbolTable: Map<string, GTable> = new Map();
     protected testTable: Map<string, GTable> = new Map();
-
+    protected templateTable: Map<string, GTable> = new Map();
     protected transducerTable: Map<string, Transducer> = new Map();
-
     
 
 
@@ -396,8 +417,27 @@ export class Project {
         ).push(record);
     }
 
+    
+    public addTemplateToSymbol(name: string, record: GRecord) {
+        getTableOrThrow(
+            this.templateTable,
+            name,
+            `Cannot find symbol ${name} in template table`
+        ).push(record);
+    }
+
+
     public getTransducer(name: string): Transducer {
         const result = this.transducerTable.get(name);
+        if (result == undefined) {
+            throw new Error(`Could not find symbol: ${name}`);
+        }
+        return result;
+    }
+
+    
+    public getTemplate(name: string): GTable {
+        const result = this.templateTable.get(name);
         if (result == undefined) {
             throw new Error(`Could not find symbol: ${name}`);
         }
@@ -596,7 +636,7 @@ export class Project {
         let firstCell = cells[0]
         let firstCellText = firstCell.text;
 
-        if (firstCellText.startsWith('#')) {  // the row's a comment
+        if (firstCellText.startsWith('%')) {  // the row's a comment
             for (const cell of cells) {
                 if (cell.text.length == 0) {
                     continue;
@@ -606,22 +646,30 @@ export class Project {
             return;
         }
 
+        
+
         if (firstCellText.length > 0) {
-            if (BUILT_IN_FUNCTIONS.indexOf(firstCellText) < 0) {
-                // it's not a built-in function/keyword, so treat it as a new symbol
-                this.currentSymbol = firstCell;
-                this.symbolTable.set(firstCellText, []);
-                this.testTable.set(firstCellText, []);
-                devEnv.markSymbol(firstCell.sheet, firstCell.row, firstCell.col);
-            } else {
-                devEnv.markCommand(firstCell.sheet, firstCell.row, firstCell.col);
-            }
-            this.currentFunction = makeFunction(firstCell, this.currentSymbol, devEnv);
-            this.currentFunction.addParams(cells.slice(1), devEnv);
-            return;
+            // new symbol
+            this.currentSymbol = firstCell;
+            this.symbolTable.set(firstCellText, []);
+            this.testTable.set(firstCellText, []);
+            devEnv.markSymbol(firstCell.sheet, firstCell.row, firstCell.col);
+            //console.log(`Symbol ${firstCellText} found on line ${firstCell.row}`);
         }
 
-        // if none of the above are true, this row represents args to the previous function
+        if (cells.length > 1 && cells[1].text.length > 0) {
+            
+            //if (BUILT_IN_FUNCTIONS.indexOf(cells[1].text) != -1) {
+            devEnv.markCommand(cells[1].sheet, cells[1].row, cells[1].col);
+            this.currentFunction = makeCommand(cells[1], this.currentSymbol, cells.slice(2), devEnv);
+            //console.log(`Command ${cells[1].text} found on line ${cells[1].row}`);
+            //} else {
+            //    this.currentFunction = makeFunction(cells[1], this.currentSymbol, devEnv);
+            //    this.currentFunction.addParams(cells.slice(1), devEnv);
+            //    console.log(`Implicit command found on line ${cells[1].row}`);
+            //}
+            return;
+        }
 
         // first make sure there IS a function active
         if (this.currentFunction == undefined) {
@@ -638,7 +686,7 @@ export class Project {
 
         var args: GCell[] = [];  // a place to hold valid args; don't want to call the function
                                  // with args that (e.g.) don't correspond to a parameter
-        for (const cell of cells.slice(1)) { 
+        for (const cell of cells.slice(2)) { 
             if (!this.currentFunction.hasColumn(cell.col)) {
                 if (cell.text.length > 0) {
                     devEnv.markError(cell.sheet, cell.row, cell.col, 

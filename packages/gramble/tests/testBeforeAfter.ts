@@ -11,16 +11,16 @@ const devEnv = new TextDevEnvironment();
 
  
 const afterGrammar = cellSplit(`
-VROOT, text, gloss
-    , foo, jump
-    , foot, run
+VROOT, add, text, gloss
+    , , foo, jump
+    , , foot, run
 
-TENSE, not after text, after text, text, gloss
-     , t             ,           , bar , -1SG
-     ,               , t         , ar  , -1SG
+TENSE, add, not after text, after text, text, gloss
+     , , t             ,           , bar , -1SG
+     , ,               , t         , ar  , -1SG
 
-MAIN, var, var
-, VROOT, TENSE
+MAIN, add, var, var
+, , VROOT, TENSE
 `);
 
 const afterProject = new Project().addSheet("testSheet", afterGrammar, devEnv);
@@ -64,19 +64,19 @@ describe('Project with after transducers, parsing unparseable input moobar', fun
 
  
 const complexAfterGrammar = cellSplit(`
-V_OR_T, text
-      , t
-      , d
-VROOT, text, gloss
-    , foo, jump
-    , foot, run
+V_OR_T, add, text
+      ,,  t
+      , , d
+VROOT, add, text, gloss
+    , , foo, jump
+    , , foot, run
 
-TENSE, not after var, after var, text, gloss
-     , V_OR_T       ,           , bar , -1SG
-     ,              , V_OR_T    , ar  , -1SG
+TENSE, add, not after var, after var, text, gloss
+     , , V_OR_T       ,           , bar , -1SG
+     , ,              , V_OR_T    , ar  , -1SG
 
-MAIN, var, var
-, VROOT, TENSE
+MAIN, add, var, var
+    , , VROOT, TENSE
 `);
 
 const complexAfterProject = new Project().addSheet("testSheet", complexAfterGrammar, devEnv);
@@ -120,16 +120,16 @@ describe('Project with complex after transducers, parsing unparseable input moob
  
 const afterAltGrammar = cellSplit(`
 
-VROOT, text, gloss
-    , foo, jump
-    , foot, run
+VROOT, add, text, gloss
+    , , foo, jump
+    , , foot, run
 
-TENSE, not after alt text, after alt text, text, gloss
-     , t|d       ,           , bar , -1SG
-     ,              , t|d    , ar  , -1SG
+TENSE, add, not after alt text, after alt text, text, gloss
+     , , t|d       ,           , bar , -1SG
+     , ,              , t|d    , ar  , -1SG
 
-MAIN, var, var
-, VROOT, TENSE
+MAIN, add, var, var
+, , VROOT, TENSE
 `);
 
 const afterAltProject = new Project().addSheet("testSheet", afterAltGrammar, devEnv);
@@ -168,16 +168,16 @@ describe('Project with complex after transducers, parsing unparseable input moob
 
 const altAfterGrammar = cellSplit(`
 
-VROOT, text, gloss
-    , foo, jump
-    , foot, run
+VROOT, add, text, gloss
+    , , foo, jump
+    , , foot, run
 
-TENSE, not alt after text, alt after text, text, gloss
-     , t|d       ,           , bar , -1SG
-     ,              , t|d    , ar  , -1SG
+TENSE, add, not alt after text, alt after text, text, gloss
+     , , t|d       ,           , bar , -1SG
+     , ,              , t|d    , ar  , -1SG
 
-MAIN, var, var
-, VROOT, TENSE
+MAIN, add, var, var
+, , VROOT, TENSE
 `);
 
 
@@ -221,20 +221,20 @@ describe('Project with complex after transducers, parsing unparseable input moob
 
  
 const complexBeforeGrammar = cellSplit(`
-B_OR_G, text
-      , b
-      , g
+B_OR_G, add, text
+      , , b
+      , , g
 
-VROOT, text, gloss, before var, before not var
-    , foo, jump, B_OR_G,
-    , foot, run,  , B_OR_G
+VROOT, add, text, gloss, before var, before not var
+    , , foo, jump, B_OR_G,
+    , , foot, run,  , B_OR_G
 
-TENSE, text, gloss
-     , bar , -1SG
-     , ar  , -1SG
+TENSE, add, text, gloss
+     , , bar , -1SG
+     , , ar  , -1SG
 
-MAIN, var, var
-, VROOT, TENSE
+MAIN, add, var, var
+    , , VROOT, TENSE
 `);
 
 const complexBeforeProject = new Project().addSheet("testSheet", complexBeforeGrammar, devEnv);
@@ -266,16 +266,16 @@ describe('Project with complex transducers, parsing foobar', function() {
  
 const altBeforeGrammar = cellSplit(`
 
-VROOT, text, gloss, before alt text, before not alt text
-    , foo, jump, b|g,
-    , foot, run,  , b|g
+VROOT, add, text, gloss, before alt text, before not alt text
+    , , foo, jump, b|g,
+    , , foot, run,  , b|g
 
-TENSE, text, gloss
-     , bar , -1SG
-     , ar  , -1SG
+TENSE, add, text, gloss
+     , , bar , -1SG
+     , , ar  , -1SG
 
-MAIN, var, var
-, VROOT, TENSE
+MAIN, add, var, var
+    , , VROOT, TENSE
 `);
 
 const altBeforeProject = new Project().addSheet("testSheet", altBeforeGrammar, devEnv);

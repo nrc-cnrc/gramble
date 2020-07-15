@@ -11,9 +11,9 @@ const devEnv = new TextDevEnvironment();
 
  
 const ambiguousGrammar = cellSplit(`
-    MAIN, text, gloss, text, gloss
-        , foo, jump, bar, -1SG
-        , foob, run, az, -3PL.PAST
+    MAIN, add, text, gloss, text, gloss
+        , , foo, jump, bar, -1SG
+        , , foob, run, az, -3PL.PAST
 `);
 
 const ambiguousProject = new Project().addSheet("testSheet", ambiguousGrammar, devEnv);
