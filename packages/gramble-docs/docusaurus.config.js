@@ -1,5 +1,5 @@
 module.exports = {
-  title: 'My Site',
+  title: 'Gramble',
   tagline: 'The tagline of my site',
   url: 'https://littell.github.io',
   baseUrl: '/gramble_ts/',
