@@ -1,7 +1,8 @@
 import { GPos } from "./util";
-import {GCell, GEntry, GRecord, GTable, Literal, Etcetera, Transducer, transducerFromTable} from "./transducers"
+import {GCell, GEntry, GRecord, GTable, Literal, Etcetera, Transducer, transducerFromTable, get_field_from_record, record_has_key} from "./transducers"
 import { Tier, parseTier } from "./tierParser";
 import { ENETUNREACH } from "constants";
+import { generateKeyPairSync } from "crypto";
 
 /**
  * Determines whether a line is empty
@@ -247,21 +248,38 @@ class TemplateCommand extends GCommand {
     }
 
     protected renderTemplate(template: GTable, record: GRecord): GTable {
+        const results : GTable = [];
         for (const templateRow of template) {
             const resultRow : GRecord = [];
             for (const entry of templateRow) {
-                entry.value.text.match(/\$\{.*\}/g);
-
+                const val = entry.value.text.match(/\$\{(.*?)\}/g);
+                if (val == null) {
+                    resultRow.push(entry);
+                    continue;
+                }
+                var resultStr = entry.value.text;
+                for (const match of val) {
+                    const trimmedMatch = match.slice(2,match.length-1);
+                    if (!record_has_key(record, trimmedMatch)) {
+                        throw new Error(`Cannot find tier ${trimmedMatch} for template ${this.name.text}`);
+                    }
+                    const [replacement, etc] = get_field_from_record(record, trimmedMatch);
+                    resultStr = resultStr.replace(match, replacement);
+                }
+                const replacementCell = new GCell(resultStr, entry.value);
+                resultRow.push(new Literal(entry.tier, replacementCell));
             }
+            results.push(resultRow);
         }
-        return [];
+        return results;
     }
 
     public call(cells: GCell[], project: Project): void {
         const template = project.getTemplate(this.name.text);
-        const record = this.associateParams(cells);
-        
-
+        const inputRecord = this.associateParams(cells);
+        for (const record of this.renderTemplate(template, inputRecord)) {
+            project.addRecordToSymbol(this.symbol.text, record);
+        }
     }
 
 }
@@ -280,6 +298,7 @@ const COMMAND_CONSTRUCTORS: {[key: string]: new (name: GCell,
 function makeCommand(commandCell: GCell, 
                      currentSymbol: GCell | undefined, 
                      params: GCell[], 
+                     project: Project,
                      highlighter: DevEnvironment): GCommand {
 
     if (currentSymbol == undefined) {
@@ -292,6 +311,14 @@ function makeCommand(commandCell: GCell,
     if (commandCell.text in COMMAND_CONSTRUCTORS) {
         const constructor = COMMAND_CONSTRUCTORS[commandCell.text];
         return new constructor(commandCell, currentSymbol, params);
+    }
+
+    if (project.templateTable.has(commandCell.text)) {
+        const template = project.templateTable.get(commandCell.text);
+        if (template == undefined) {
+            new DummyCommand(commandCell, commandCell, params); 
+        }
+        return new TemplateCommand(commandCell, currentSymbol, params);
     }
 
     highlighter.markError(commandCell.sheet, commandCell.row, commandCell.col,
@@ -392,7 +419,7 @@ export class Project {
     protected currentSymbol: GCell | undefined = undefined;
     protected symbolTable: Map<string, GTable> = new Map();
     protected testTable: Map<string, GTable> = new Map();
-    protected templateTable: Map<string, GTable> = new Map();
+    public templateTable: Map<string, GTable> = new Map();
     protected transducerTable: Map<string, Transducer> = new Map();
     
 
@@ -636,7 +663,7 @@ export class Project {
         let firstCell = cells[0]
         let firstCellText = firstCell.text;
 
-        if (firstCellText.startsWith('%')) {  // the row's a comment
+        if (firstCellText.startsWith('%%')) {  // the row's a comment
             for (const cell of cells) {
                 if (cell.text.length == 0) {
                     continue;
@@ -647,12 +674,19 @@ export class Project {
         }
 
         
+        if (firstCellText.startsWith('%')) {  // the first cell's a comment
+            devEnv.markComment(cells[0].sheet, cells[0].row, cells[0].col);
+            cells[0].text = '';
+        }
+
+        
 
         if (firstCellText.length > 0) {
             // new symbol
             this.currentSymbol = firstCell;
             this.symbolTable.set(firstCellText, []);
             this.testTable.set(firstCellText, []);
+            this.templateTable.set(firstCellText, []);
             devEnv.markSymbol(firstCell.sheet, firstCell.row, firstCell.col);
             //console.log(`Symbol ${firstCellText} found on line ${firstCell.row}`);
         }
@@ -661,7 +695,7 @@ export class Project {
             
             //if (BUILT_IN_FUNCTIONS.indexOf(cells[1].text) != -1) {
             devEnv.markCommand(cells[1].sheet, cells[1].row, cells[1].col);
-            this.currentFunction = makeCommand(cells[1], this.currentSymbol, cells.slice(2), devEnv);
+            this.currentFunction = makeCommand(cells[1], this.currentSymbol, cells.slice(2), this, devEnv);
             //console.log(`Command ${cells[1].text} found on line ${cells[1].row}`);
             //} else {
             //    this.currentFunction = makeFunction(cells[1], this.currentSymbol, devEnv);
@@ -745,3 +779,4 @@ function getTableOrThrow(table: Map<string, GTable>, name: string, msg = `Cannot
 
     return maybeTable;
 } 
+

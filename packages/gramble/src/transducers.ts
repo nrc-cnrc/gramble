@@ -1560,10 +1560,7 @@ class AltTransducer extends AlternationTransducer {
 }
 
 
-const TRANSDUCER_CONSTRUCTORS: {[key: string]: new (
-    tier: Tier,
-    value: GCell,
-) => Transducer} = {
+const TRANSDUCER_CONSTRUCTORS: {[key: string]: new (tier: Tier, value: GCell) => Transducer} = {
     
     "maybe": MaybeTransducer,
     "require": RequireTransducer,
@@ -1655,7 +1652,7 @@ export function makeTable(cells: [string, string][][]): GTable {
     return cells.map(makeRecord);
 }
 
-function record_has_key(record: GRecord, key: string): boolean {
+export function record_has_key(record: GRecord, key: string): boolean {
     for (const entry of record) {
         if (entry.tier.text == key) { 
             return true;
@@ -1664,7 +1661,7 @@ function record_has_key(record: GRecord, key: string): boolean {
     return false;
 }
 
-function get_field_from_record(record: GRecord, key: string): [string, boolean] {
+export function get_field_from_record(record: GRecord, key: string): [string, boolean] {
     var result = "";
     var containsEtc = false;
     for (const entry of record) {
