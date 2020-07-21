@@ -1,6 +1,6 @@
 import { GPos } from "./util";
 import {GCell, GEntry, GRecord, GTable, Literal, Etcetera, Transducer, transducerFromTable, get_field_from_record, record_has_key} from "./transducers"
-import { Tier, parseTier } from "./tierParser";
+import { Tier, parseTier, CommentTier } from "./tierParser";
 import { ENETUNREACH } from "constants";
 import { generateKeyPairSync } from "crypto";
 
@@ -145,6 +145,90 @@ function isValidColor(colorName: string): boolean {
     return true;
 }
 
+type SymbolType = "table" | "template" | undefined;
+
+class GSymbol {
+
+    protected currentCommand: GCommand | undefined = undefined;
+    protected commandColumn: number = Number.POSITIVE_INFINITY; 
+                    // the number that the command occurs in, if the first 
+                    // cell in a row is after this, it's arguments to call that command
+
+    public tableType : SymbolType = undefined;
+
+    public table: GTable = [];
+    public tests: GTable = [];
+
+
+    public constructor(
+        protected name: GCell,
+    ) { }
+
+    public set command(c: GCommand | undefined) {
+        this.currentCommand = c;
+    }
+
+    public get command(): GCommand | undefined {
+        return this.currentCommand;
+    }
+
+    public addTableRow(record: GRecord): void {
+        if (this.tableType == "template") {
+            throw new Error("Added a table row to a template"); 
+        }
+        this.tableType = "table";
+        this.table.push(record);
+    }
+
+    public addTestRow(record: GRecord): void {
+        this.tests.push(record);
+    }
+
+    public addTemplateRow(record: GRecord): void {
+        if (this.tableType == "table") {
+            throw new Error("Added a template row to a table"); 
+        }
+        this.tableType = "template";
+        this.table.push(record);
+    }
+
+    public callCurrentCommand(args: GCell[], project: Project, devEnv: DevEnvironment): void {
+
+        // first make sure there IS a function active
+        if (this.currentCommand == undefined) {
+            // shouldn't have args when there's no function.  mark them all as errors
+            for (const cell of args) { 
+                if (cell.text.length > 0) {
+                    devEnv.markError(cell.sheet, cell.row, cell.col, 
+                        "Unclear what this cell is here for. " + 
+                        "Did you forget a function?", "warning");
+                }
+            }
+            return;
+        }
+
+        var argBuffer: GCell[] = [];  // a place to hold valid args; don't want to call the function
+                                        // with args that (e.g.) don't correspond to a parameter
+
+        for (const cell of args) { 
+            if (!this.currentCommand.hasColumn(cell.col)) {
+                if (cell.text.length > 0) {
+                    devEnv.markError(cell.sheet, cell.row, cell.col, 
+                        "This cell does not appear to belong to a column. " + 
+                        "Did you forget a column header above?", "warning");
+                    
+                }
+                continue;
+            }
+            const param = this.currentCommand.getParam(cell.col);
+            devEnv.markTier(cell.sheet, cell.row, cell.col, param.text);
+            argBuffer.push(cell);
+        }
+
+        this.currentCommand.call(argBuffer, project, devEnv);
+    }
+}
+
 /**
  * GCommand
  * 
@@ -160,8 +244,9 @@ abstract class GCommand {
 
     public constructor(
         protected name: GCell,
-        protected symbol: GCell,
+        protected symbol: GSymbol,
         params: GCell[] = [],
+        devEnv: DevEnvironment
     ) {
         var cellBuffer: GCell[] = [];
 
@@ -172,11 +257,11 @@ abstract class GCommand {
             }
 
             for (const param of cellBuffer) {
-                //highlighter.markHeader(cell.sheet, cell.row, cell.col, cell.text);
                 if (param.text.length == 0) {
                     continue;
                 }
                 const tier = new Tier(param.text, param);
+                devEnv.markHeader(cell.sheet, cell.row, cell.col, cell.text);
                 this.params.push(tier);
                 this.columns.set(param.col, tier);
             }
@@ -195,45 +280,86 @@ abstract class GCommand {
         return result;
     }
 
-    public associateParams(cells: GCell[]): GRecord {
+    public associateParams(cells: GCell[], parseTiers: boolean = false): GRecord {
         var record: GRecord = []; 
         for (const cell of cells) {
-            const key = this.getParam(cell.col);
+            var key = this.getParam(cell.col);
+            if (parseTiers) {
+                key = parseTier(key.text, key);
+            }
             record.push(new Literal(key, cell));
         }
         return record;
     }
 
-    public abstract call(cells: GCell[], project: Project): void;
+    public abstract call(cells: GCell[], project: Project, devEnv: DevEnvironment): void;
 
 }
 
 class TableCommand extends GCommand {
 
-    public call(cells: GCell[], project: Project): void {
+    public call(cells: GCell[], project: Project, devEnv: DevEnvironment): void {
         const record = this.associateParams(cells);
-        project.addRecordToSymbol(this.symbol.text, record);
+        if (this.symbol.tableType == "template") {
+            devEnv.markError(this.name.sheet, this.name.row, this.name.col,
+                "Attempting to add an ordinary table row to a template", "error");
+            return;
+        }
+        this.symbol.addTableRow(record);
+    }
+
+}
+
+abstract class RestrictedTiersCommand extends TableCommand {
+    public constructor(
+        protected name: GCell,
+        protected symbol: GSymbol,
+        params: GCell[] = [],
+        devEnv: DevEnvironment
+    ) {
+        super(name, symbol, params, devEnv);
+        const permissibleTiers = this.getPermissibleTiers();
+        for (const param of params) {
+            if (permissibleTiers.indexOf(param.text) == -1) {
+                devEnv.markError(param.sheet, param.row, param.col,
+                    `Parameter ${param.text} is invalid for command ${name.text}.`, "error");
+            }
+        }
+    }
+
+    public abstract getPermissibleTiers(): string[];
+}
+
+class TierCommand extends RestrictedTiersCommand {
+
+    public getPermissibleTiers(): string[] {
+        return ["name", "initial", "medial", "final"];
     }
 }
 
 class DummyCommand extends GCommand {
 
-    public call(cells: GCell[], project: Project): void { }
+    public call(cells: GCell[], project: Project, devEnv: DevEnvironment): void { }
 }
 
 class TestCommand extends GCommand {
 
-    public call(cells: GCell[], project: Project): void {
+    public call(cells: GCell[], project: Project, devEnv: DevEnvironment): void {
         const record = this.associateParams(cells);
-        project.addTestToSymbol(this.symbol.text, record);
+        this.symbol.addTestRow(record);
     }
 }
 
 class NewTemplateCommand extends GCommand {
 
-    public call(cells: GCell[], project: Project): void {
+    public call(cells: GCell[], project: Project, devEnv: DevEnvironment): void {
         const record = this.associateParams(cells);
-        project.addTemplateToSymbol(this.symbol.text, record);
+        if (this.symbol.tableType == "table") {
+            devEnv.markError(this.name.sheet, this.name.row, this.name.col,
+                "Attempting to add a template row to an ordinary table", "error");
+            return;
+        }
+        this.symbol.addTemplateRow(record);
     }
 }
 
@@ -241,15 +367,16 @@ class TemplateCommand extends GCommand {
 
     public constructor(
         name: GCell,
-        symbol: GCell,
+        symbol: GSymbol,
         params: GCell[] = [],
+        devEnv: DevEnvironment
     ) {
-        super(name, symbol, params);
+        super(name, symbol, params, devEnv);
     }
 
-    protected renderTemplate(template: GTable, record: GRecord): GTable {
+    protected renderTemplate(template: GSymbol, record: GRecord): GTable {
         const results : GTable = [];
-        for (const templateRow of template) {
+        for (const templateRow of template.table) {
             const resultRow : GRecord = [];
             for (const entry of templateRow) {
                 const val = entry.value.text.match(/\$\{(.*?)\}/g);
@@ -274,58 +401,62 @@ class TemplateCommand extends GCommand {
         return results;
     }
 
-    public call(cells: GCell[], project: Project): void {
-        const template = project.getTemplate(this.name.text);
+    public call(cells: GCell[], project: Project, devEnv: DevEnvironment): void {
+        const template = project.symbolTable.get(this.name.text);
+        if (template == undefined || template.tableType != "template") {
+            return;
+        }
         const inputRecord = this.associateParams(cells);
         for (const record of this.renderTemplate(template, inputRecord)) {
-            project.addRecordToSymbol(this.symbol.text, record);
+            this.symbol.addTableRow(record);
         }
     }
 
 }
 
 const COMMAND_CONSTRUCTORS: {[key: string]: new (name: GCell, 
-                                                symbol: GCell,
-                                                params: GCell[]) => GCommand} = {
+                                                symbol: GSymbol,
+                                                params: GCell[],
+                                                devEnv: DevEnvironment) => GCommand} = {
     
     "add": TableCommand,
     "test": TestCommand,
     "template": NewTemplateCommand,
+    "tier": TierCommand,
 }
 
 
 
 function makeCommand(commandCell: GCell, 
-                     currentSymbol: GCell | undefined, 
+                     currentSymbol: GSymbol, 
                      params: GCell[], 
                      project: Project,
-                     highlighter: DevEnvironment): GCommand {
+                     devEnv: DevEnvironment): GCommand {
 
-    if (currentSymbol == undefined) {
-        highlighter.markError(commandCell.sheet, commandCell.row, commandCell.col, 
-            "This command is not preceded by a symbol. " +
-            " If you don't assign it to a symbol, it will be ignored.", "warning");
-        return new DummyCommand(commandCell, commandCell, params);
-    }
 
     if (commandCell.text in COMMAND_CONSTRUCTORS) {
         const constructor = COMMAND_CONSTRUCTORS[commandCell.text];
-        return new constructor(commandCell, currentSymbol, params);
+        return new constructor(commandCell, currentSymbol, params, devEnv);
     }
 
-    if (project.templateTable.has(commandCell.text)) {
-        const template = project.templateTable.get(commandCell.text);
-        if (template == undefined) {
-            new DummyCommand(commandCell, commandCell, params); 
+    if (project.symbolTable.has(commandCell.text)) {
+        const template = project.symbolTable.get(commandCell.text);
+        if (template == undefined) {  // shouldn't occur
+            return new DummyCommand(commandCell, currentSymbol, params, devEnv); 
         }
-        return new TemplateCommand(commandCell, currentSymbol, params);
+        if (template.tableType != "template") {
+            devEnv.markError(commandCell.sheet, commandCell.row, commandCell.col,
+                `${commandCell.text} is not a template`, "error");
+            return new DummyCommand(commandCell, currentSymbol, params, devEnv); 
+        }
+        return new TemplateCommand(commandCell, currentSymbol, params, devEnv);
     }
 
-    highlighter.markError(commandCell.sheet, commandCell.row, commandCell.col,
+    devEnv.markError(commandCell.sheet, commandCell.row, commandCell.col,
         `No command called ${commandCell.text}.  If you defined this elsewhere, ` +
         "make sure that it appears above this cell.", "error");
 
-    return new DummyCommand(name, currentSymbol, params);
+    return new DummyCommand(commandCell, currentSymbol, params, devEnv);
 }
 
 const BUILT_IN_FUNCTIONS: string[] = [
@@ -373,27 +504,26 @@ const BLACK_COLOR = "#000000";
 
 
 const BG_COLOR_CACHE: {[key: string]: string} = {};
+const FG_COLOR_CACHE: {[key: string]: string} = {};
 
 export function getBackgroundColor(tierName: string, saturation: number): string {
     if (!(tierName in BG_COLOR_CACHE)) {           
         const tier = parseTier(tierName, {sheet: "", row: -1, col: -1});
-        const bgColor = tier.getColor(saturation);
-        BG_COLOR_CACHE[tierName] = bgColor;
+        const color = tier.getColor(saturation);
+        BG_COLOR_CACHE[tierName] = color;
     }
 
     return BG_COLOR_CACHE[tierName];
 }
 
 export function getForegroundColor(tierName: string): string {
-    var subnames = tierName.split("/");
-    for (const subname of subnames) {
-        const subnameParts = subname.trim().toLowerCase().split(" ");
-        const lastName = subnameParts[subnameParts.length-1];
-        if (lastName == "var") {
-            return VAR_FOREGROUND_COLOR;
-        }
+    if (!(tierName in FG_COLOR_CACHE)) {           
+        const tier = parseTier(tierName, {sheet: "", row: -1, col: -1});
+        const color = tier.getFgColor();
+        FG_COLOR_CACHE[tierName] = color;
     }
-    return BLACK_COLOR;
+
+    return FG_COLOR_CACHE[tierName];
 }
 
 function resultListToString(records: {[key: string]: string}[]): string {
@@ -415,11 +545,11 @@ function resultListToString(records: {[key: string]: string}[]): string {
  * on it directly, you just have a Project instance and call parse(symbolName, input).
  */
 export class Project {
-    protected currentFunction: GCommand | undefined = undefined;
-    protected currentSymbol: GCell | undefined = undefined;
-    protected symbolTable: Map<string, GTable> = new Map();
-    protected testTable: Map<string, GTable> = new Map();
-    public templateTable: Map<string, GTable> = new Map();
+    //protected currentCommand: GCommand | undefined = undefined;
+    protected currentSymbol: GSymbol | undefined = undefined;
+    public symbolTable: Map<string, GSymbol> = new Map();
+    //protected testTable: Map<string, GTable> = new Map();
+    //public templateTable: Map<string, GTable> = new Map();
     protected transducerTable: Map<string, Transducer> = new Map();
     
 
@@ -432,28 +562,6 @@ export class Project {
         return [... this.symbolTable.keys()];
     }
 
-    public addRecordToSymbol(name: string, record: GRecord) {
-        getTableOrThrow(this.symbolTable, name).push(record);
-    }
-
-    public addTestToSymbol(name: string, record: GRecord) {
-        getTableOrThrow(
-            this.testTable,
-            name,
-            `Cannot find symbol ${name} in test table`
-        ).push(record);
-    }
-
-    
-    public addTemplateToSymbol(name: string, record: GRecord) {
-        getTableOrThrow(
-            this.templateTable,
-            name,
-            `Cannot find symbol ${name} in template table`
-        ).push(record);
-    }
-
-
     public getTransducer(name: string): Transducer {
         const result = this.transducerTable.get(name);
         if (result == undefined) {
@@ -462,14 +570,6 @@ export class Project {
         return result;
     }
 
-    
-    public getTemplate(name: string): GTable {
-        const result = this.templateTable.get(name);
-        if (result == undefined) {
-            throw new Error(`Could not find symbol: ${name}`);
-        }
-        return result;
-    }
 
     public complete(input: {[key: string]: string}, 
                     symbolName: string = 'MAIN', 
@@ -595,7 +695,8 @@ export class Project {
 
 
     public runTests(highlighter: DevEnvironment): void {
-        for (const [symbolName, testTable] of this.testTable.entries()) {
+        for (const [symbolName, symbol] of this.symbolTable.entries()) {
+            const testTable = symbol.tests;
             for (const record of testTable) {
                 const inputRecord: {[key: string]: string} = {}; 
                 const containsRecord: GRecord = []; 
@@ -660,10 +761,8 @@ export class Project {
             cells.push(cell);
         }
 
-        let firstCell = cells[0]
-        let firstCellText = firstCell.text;
-
-        if (firstCellText.startsWith('%%')) {  // the row's a comment
+            
+        if (cells[0].text.startsWith('%%')) {  // the row's a comment
             for (const cell of cells) {
                 if (cell.text.length == 0) {
                     continue;
@@ -674,69 +773,48 @@ export class Project {
         }
 
         
-        if (firstCellText.startsWith('%')) {  // the first cell's a comment
+        if (cells[0].text.startsWith('%')) {  // the first cell's a comment
             devEnv.markComment(cells[0].sheet, cells[0].row, cells[0].col);
             cells[0].text = '';
         }
 
         
 
-        if (firstCellText.length > 0) {
-            // new symbol
-            this.currentSymbol = firstCell;
-            this.symbolTable.set(firstCellText, []);
-            this.testTable.set(firstCellText, []);
-            this.templateTable.set(firstCellText, []);
-            devEnv.markSymbol(firstCell.sheet, firstCell.row, firstCell.col);
-            //console.log(`Symbol ${firstCellText} found on line ${firstCell.row}`);
+        if (cells[0].text.length > 0) {
+            this.addSymbol(cells[0], devEnv);
+        }
+
+        
+        if (cells[1].text.startsWith('%')) {  // the first cell's a comment
+            devEnv.markComment(cells[1].sheet, cells[1].row, cells[1].col);
+            cells[1].text = '';
         }
 
         if (cells.length > 1 && cells[1].text.length > 0) {
-            
-            //if (BUILT_IN_FUNCTIONS.indexOf(cells[1].text) != -1) {
+            // new command
+
+            if (this.currentSymbol == undefined) {
+                devEnv.markError(cells[1].sheet, cells[1].row, cells[1].col,
+                    "This appears to be a command but no symbol precedes it", "error");
+                return;
+            }
+
             devEnv.markCommand(cells[1].sheet, cells[1].row, cells[1].col);
-            this.currentFunction = makeCommand(cells[1], this.currentSymbol, cells.slice(2), this, devEnv);
-            //console.log(`Command ${cells[1].text} found on line ${cells[1].row}`);
-            //} else {
-            //    this.currentFunction = makeFunction(cells[1], this.currentSymbol, devEnv);
-            //    this.currentFunction.addParams(cells.slice(1), devEnv);
-            //    console.log(`Implicit command found on line ${cells[1].row}`);
-            //}
+            this.currentSymbol.command = makeCommand(cells[1], this.currentSymbol, cells.slice(2), this, devEnv);
             return;
         }
 
-        // first make sure there IS a function active
-        if (this.currentFunction == undefined) {
-            // shouldn't have args when there's no function.  mark them all as errors
-            for (const cell of cells.slice(1)) { 
-                if (cell.text.length > 0) {
-                    devEnv.markError(cell.sheet, cell.row, cell.col, 
-                        "Unclear what this cell is here for. " + 
-                        "Did you forget a function?", "warning");
-                }
-            }
-            return;
+        if (this.currentSymbol != undefined) {
+            this.currentSymbol.callCurrentCommand(cells.slice(2), this, devEnv);
         }
-
-        var args: GCell[] = [];  // a place to hold valid args; don't want to call the function
-                                 // with args that (e.g.) don't correspond to a parameter
-        for (const cell of cells.slice(2)) { 
-            if (!this.currentFunction.hasColumn(cell.col)) {
-                if (cell.text.length > 0) {
-                    devEnv.markError(cell.sheet, cell.row, cell.col, 
-                        "This cell does not appear to belong to a column. " + 
-                        "Did you forget a column header above?", "warning");
-                    
-                }
-                continue;
-            }
-            const param = this.currentFunction.getParam(cell.col);
-            devEnv.markTier(cell.sheet, cell.row, cell.col, param.text);
-            args.push(cell);
-        }
-
-        this.currentFunction.call(args, this);
     }
+
+    public addSymbol(cell: GCell, devEnv: DevEnvironment): void {
+        this.currentSymbol = new GSymbol(cell);
+        this.symbolTable.set(cell.text, this.currentSymbol);
+        devEnv.markSymbol(cell.sheet, cell.row, cell.col);
+    }
+
 
     public addSheet(sheetName: string, 
                     cells: string[][], 
@@ -752,7 +830,11 @@ export class Project {
     }
 
     public compile(devEnv: DevEnvironment): Project {
-        for (const [name, table] of this.symbolTable.entries()) {
+        for (const [name, symbol] of this.symbolTable.entries()) {
+            if (symbol.tableType != "table") {
+                continue;
+            }
+            const table = symbol.table;
             const transducer : Transducer = transducerFromTable(table, this.transducerTable, devEnv);
             this.transducerTable.set(name, transducer);
         }

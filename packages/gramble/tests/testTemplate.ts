@@ -26,6 +26,7 @@ const templateGrammar = cellSplit(`
 `);
 
 const templateProject = new Project().addSheet("testSheet", templateGrammar, devEnv);
+devEnv.highlight();
 
 describe('Project with template, parsing foo', function() {
     const result = templateProject.parseFlatten({text: "foo"});

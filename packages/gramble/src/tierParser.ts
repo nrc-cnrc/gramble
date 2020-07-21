@@ -34,6 +34,10 @@ export class Tier implements GPos {
     public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
         return RGBtoString(...HSVtoRGB(this.hue, saturation, value));
     }
+
+    public getFgColor(): string {
+        return "#000000";
+    }
 }
 
 export class CommentTier extends Tier { 
@@ -44,6 +48,10 @@ export class CommentTier extends Tier {
 
     public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string {
         return "#FFFFFF";
+    }
+
+    public getFgColor(): string {
+        return "#449944";
     }
 }
 
@@ -83,7 +91,7 @@ export class BinaryTier extends Tier {
 type TierParser = (input: string[], pos: GPos) => Gen<[Tier, string[]]>;
 
 const SYMBOL = [ "(", ")", "%", "/"];
-const UNARY_RESERVED = [ "maybe", "require", "before", "after", "final", "alt", "not" ];
+const UNARY_RESERVED = [ "maybe", "require", "before", "after", "alt", "not" ];
 const ONE_TIER_RESERVED = [ "join", "shift", "upward", "downward", "input", "contains", "equals" ];
 const ALL_RESERVED = SYMBOL.concat(UNARY_RESERVED).concat(ONE_TIER_RESERVED);
 

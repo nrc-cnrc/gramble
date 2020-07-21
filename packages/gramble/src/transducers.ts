@@ -369,6 +369,7 @@ class RequireTransducer extends UnaryTransducer {
     }
 }
 
+/*
 
 class FinalTransducer extends UnaryTransducer {
 
@@ -376,13 +377,6 @@ class FinalTransducer extends UnaryTransducer {
     public compatibleWithFirstChar(tier: string, c: string, symbolTable: TransducerTable): boolean | undefined {
         return true;
     }
-
-    /*
-    public transduce(inputParse: GParse, options: ParseOptions): GParse[] {
-        return this.child.transduce(inputParse, options).filter(([remnant, p, o]) => {
-            return !remnant.some(([key, value]) => value.text.length > 0 );
-        });
-    } */
 
     public *transduce(inputParse: GParse, options: ParseOptions): Gen<GParse> {
         for (const [remnant, p, output] of this.child.transduce(inputParse, options)) {
@@ -392,7 +386,7 @@ class FinalTransducer extends UnaryTransducer {
             yield [remnant, p, output];
         }
     }
-}
+}  */
 
 class BeforeTransducer extends UnaryTransducer implements GEntry {
 
@@ -1566,7 +1560,7 @@ const TRANSDUCER_CONSTRUCTORS: {[key: string]: new (tier: Tier, value: GCell) =>
     "require": RequireTransducer,
     "before": BeforeTransducer,
     "after": AfterTransducer,
-    "final": FinalTransducer,
+    //"final": FinalTransducer,
     "shift": ShiftTransducer,
     "join": JoinTransducer,
     "upward": UpTransducer,
@@ -1599,8 +1593,8 @@ export function transducerFromEntry(entry: GEntry,
                                     devEnv: DevEnvironment): Transducer {
 
     try {
-        var tierStructure = parseTier(entry.tier.text, entry.tier);
-        return transducerFromTier(tierStructure, entry.value);
+        var parsedTier = parseTier(entry.tier.text, entry.tier);
+        return transducerFromTier(parsedTier, entry.value);
     } catch (err) {
         devEnv.markError(entry.tier.sheet, entry.tier.row, entry.tier.col, err.toString(), "error");
         return new NullTransducer();  // if the tier is erroneous, return a trivial parser
