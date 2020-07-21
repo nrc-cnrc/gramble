@@ -21,7 +21,7 @@ export function testOutput(result: GTable, result_num: number, tier: string, tar
 }
 
 export function testNoErrors(project: Project): void {
-    it("should have no errors", function() {
+    it("should have no syntax errors", function() {
         expect(project.getErrorMessages().length).to.equal(0);
     });
 }

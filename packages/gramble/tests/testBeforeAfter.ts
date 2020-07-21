@@ -1,6 +1,6 @@
 import {TextProject} from "../src/spreadsheet";
 import 'mocha';
-import {testNumResults, testFlattenedOutput, cellSplit} from "./test_util"
+import {testNumResults, testFlattenedOutput, testNoErrors, cellSplit} from "./test_util"
 
 
 /** 
@@ -22,6 +22,10 @@ MAIN, add, var, var
 `);
 
 const afterProject = new TextProject().addSheet("testSheet", afterGrammar);
+
+describe('Project with after transducers', function() {
+    testNoErrors(afterProject);
+});
 
 describe('Project with after transducers, generating', function() {
     const result = afterProject.generateFlatten();
@@ -79,6 +83,10 @@ MAIN, add, var, var
 
 const complexAfterProject = new TextProject().addSheet("testSheet", complexAfterGrammar);
 
+describe('Project with complex after transducers', function() {
+    testNoErrors(complexAfterProject);
+});
+
 describe('Project with complex after transducers, generating', function() {
     const result = complexAfterProject.generateFlatten();
     testNumResults(result, 2);
@@ -132,6 +140,10 @@ MAIN, add, var, var
 
 const afterAltProject = new TextProject().addSheet("testSheet", afterAltGrammar);
 
+describe('Project with complex after transducers', function() {
+    testNoErrors(afterAltProject);
+});
+
 describe('Project with complex after transducers, generating', function() {
     const result = afterAltProject.generateFlatten();
     testNumResults(result, 2);
@@ -180,6 +192,10 @@ MAIN, add, var, var
 
 
 const altAfterProject = new TextProject().addSheet("testSheet", altAfterGrammar);
+
+describe('Project with complex after transducers', function() {
+    testNoErrors(altAfterProject);
+});
 
 describe('Project with complex after transducers, generating', function() {
     const result = altAfterProject.generateFlatten();
@@ -237,6 +253,10 @@ MAIN, add, var, var
 
 const complexBeforeProject = new TextProject().addSheet("testSheet", complexBeforeGrammar);
 
+describe('Project with complex before transducers', function() {
+    testNoErrors(complexBeforeProject);
+});
+
 describe('Project with complex before transducers, generating', function() {
     const result = complexBeforeProject.generateFlatten();
     testNumResults(result, 2);
@@ -277,6 +297,11 @@ MAIN, add, var, var
 `);
 
 const altBeforeProject = new TextProject().addSheet("testSheet", altBeforeGrammar);
+
+
+describe('Project with complex before transducers', function() {
+    testNoErrors(altBeforeProject);
+});
 
 describe('Project with complex before transducers, generating', function() {
     const result = altBeforeProject.generateFlatten();

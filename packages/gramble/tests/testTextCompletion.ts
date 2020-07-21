@@ -1,6 +1,6 @@
 import {TextProject} from "../src/spreadsheet";
 import 'mocha';
-import {testNumResults, testFlattenedOutput, cellSplit} from "./test_util"
+import {testNumResults, testFlattenedOutput, cellSplit, testNoErrors} from "./test_util"
 
 
 /** 
@@ -15,6 +15,10 @@ const ambiguousGrammar = cellSplit(`
 `);
 
 const ambiguousProject = new TextProject().addSheet("testSheet", ambiguousGrammar);
+
+describe('Project with no variables', function() {
+    testNoErrors(ambiguousProject);
+});
 
 describe('Project with no variables, parsing fo*', function() {
     const result = ambiguousProject.completeFlatten({text: "fo"});

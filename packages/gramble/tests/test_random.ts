@@ -1,7 +1,7 @@
 import {RandomPicker} from "../src/util"
 import { expect } from 'chai';
 import 'mocha';
-import {testNumResults, testOutput, cellSplit, testFlattenedOutput} from "./test_util";
+import {testNumResults, testOutput, cellSplit, testFlattenedOutput, testNoErrors} from "./test_util";
 import {transducerFromTable, NullTransducer, makeTable} from "../src/transducers"
 import {TextProject} from "../src/spreadsheet";
 
@@ -49,6 +49,11 @@ const flatGrammar = cellSplit(`
 
 const flatProject = new TextProject().addSheet("testSheet", flatGrammar);
 
+
+describe('Random transducer', function() {
+    testNoErrors(flatProject);
+});
+
 describe('Random transducer, with max_results=1', function() {
     const result = flatProject.parseFlatten({text: "foobar"}, "MAIN", true, 1);
     testNumResults(result, 1);
@@ -83,6 +88,10 @@ const probProject = new TextProject().addSheet("testSheet", probGrammar);
 
 
 describe('Random transducer with weights', function() {
+    testNoErrors(probProject);
+});
+
+describe('Random transducer with weight, parsing foobar', function() {
 
     const results = probProject.parseFlatten({text: "foobar"});
     testNumResults(results, 2);

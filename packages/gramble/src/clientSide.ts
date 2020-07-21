@@ -10,6 +10,7 @@ export class ClientSideProject extends Project {
     public constructor() {
         super(new BrowserDevEnvironment());
     }
+    
     public addParseResults(results: ParseResult, url: string, callback: (error: any, project: ClientSideProject) => void): void {
         if (results.errors.length > 0) {
             const error = new Error("Error parsing CSV file: \n" + results.errors.join("\n"));

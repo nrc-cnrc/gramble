@@ -1,6 +1,6 @@
 import {TextProject} from "../src/spreadsheet";
 import 'mocha';
-import {testNumResults, testFlattenedOutput, cellSplit} from "./test_util"
+import {testNumResults, testFlattenedOutput, cellSplit, testNoErrors} from "./test_util"
 
 const impGrammar = cellSplit(`
     VROOT, add, text, gloss, imp
@@ -24,6 +24,9 @@ const impGrammar = cellSplit(`
 
 const impProject = new TextProject().addSheet("testSheet", impGrammar);
 
+describe('Requirement grammar', function() {
+    testNoErrors(impProject);
+});
 
 describe('Requirement grammar, Using "input imp: indic" to constrain parse path', function() {
     const result = impProject.parseFlatten({text: "obata"});
@@ -88,6 +91,9 @@ const impGrammar2 = cellSplit(`
 
 const impProject2 = new TextProject().addSheet("testSheet", impGrammar2);
 
+describe('Requirement grammar with empty cells', function() {
+    testNoErrors(impProject2);
+});
 
 describe('Requirement grammar with empty cells, Using "input imp: <empty>" to constrain parse path', function() {
     const result = impProject2.parseFlatten({text: "obata"});
@@ -144,6 +150,9 @@ const impGrammar3 = cellSplit(`
 
 const impProject3 = new TextProject().addSheet("testSheet", impGrammar3);
 
+describe('Requirement grammar with multiple requirements', function() {
+    testNoErrors(impProject3);
+});
 
 describe('Requirement grammar with multiple requirements, generating all forms', function() {
     const result = impProject3.generateFlatten();
@@ -198,6 +207,10 @@ const impGrammar4 = cellSplit(`
 `);
 
 const impProject4 = new TextProject().addSheet("testSheet", impGrammar4);
+
+describe('Requirement grammar with alt cells', function() {
+    testNoErrors(impProject4);
+});
 
 describe('Requirement grammar with alt cells, Using "input imp: indic" to constrain parse path', function() {
     const result = impProject4.parseFlatten({text: "obita"});

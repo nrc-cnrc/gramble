@@ -20,6 +20,10 @@ describe('Project with no variables', function() {
     testNoErrors(ambiguousProject);
 });
 
+describe('Project with no variables', function() {
+    testNoErrors(ambiguousProject);
+});
+
 describe('Project with no variables, parsing foobar', function() {
     const result = ambiguousProject.parseFlatten({text: "foobar"});
     testNumResults(result, 2);
@@ -104,6 +108,10 @@ const flatGrammar = cellSplit(`
 
 const flatProject = new TextProject().addSheet("testSheet", flatGrammar);
 
+describe('Flat project', function() {
+    testNoErrors(flatProject);
+});
+
 describe('Flat project, parsing foobar', function() {
     const result = flatProject.parseFlatten({text: "foobar"});
     testNumResults(result, 2);
@@ -169,6 +177,9 @@ const hierarchicalGrammar = cellSplit(`
 
 const hierarchicalProject = new TextProject().addSheet("testSheet", hierarchicalGrammar);
 
+describe('Hierarchical project', function() {
+    testNoErrors(hierarchicalProject);
+});
 
 describe('Hierarchical project, parsing foobar', function() {
     const result = hierarchicalProject.parseFlatten({text: "foobar"});
@@ -223,7 +234,12 @@ MAIN, add, text, gloss, maybe gloss, text, gloss
 
 const maybeGlossProject = new TextProject().addSheet("testSheet", maybeGlossGrammar);
 
+
 describe('Maybe <literal> parser', function() {
+    testNoErrors(maybeGlossProject);
+});
+
+describe('Maybe <literal> parser, parsing foobar', function() {
     const result = maybeGlossProject.parseFlatten({text: "foobar"});
     testNumResults(result, 2);
     testFlattenedOutput(result, 0, "gloss", "jump-INDIC-1SG");
@@ -245,6 +261,10 @@ MAIN,  add,  var,    maybe var
 `)
 
 const maybeVarProject = new TextProject().addSheet("testSheet", maybeVarGrammar);
+
+describe('Maybe <var> parser', function() {
+    testNoErrors(maybeVarProject);
+});
 
 describe('Maybe <var> parser, parsing input with no suffix', function() {
     const result = maybeVarProject.parseFlatten({text: "foo"});
@@ -271,6 +291,9 @@ MAIN, add,   text/root, gloss, text, gloss
 
 const slashProject = new TextProject().addSheet("testSheet", slashGrammar);
 
+describe('Project with text/root tier', function() {
+    testNoErrors(slashProject);
+});
 
 describe('Project with text/root tier, transducing from text', function() {
     const result =  slashProject.parseFlatten({text: "foobar"});
@@ -311,6 +334,9 @@ MAIN, add , var
 
 const projectWithEmptyCell = new TextProject().addSheet("testSheet", grammarWithEmptyCell);
 
+describe('Project with empty cell', function() {
+    testNoErrors(projectWithEmptyCell);
+});
 
 describe('Project with empty cell, transducing from text', function() {
     const result =  projectWithEmptyCell.parseFlatten({text: "foobar"});

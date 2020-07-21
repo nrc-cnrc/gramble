@@ -1,6 +1,6 @@
 import {TextProject} from "../src/spreadsheet";
 import 'mocha';
-import {testNumResults, testFlattenedOutput, cellSplit} from "./test_util"
+import {testNumResults, testFlattenedOutput, cellSplit, testNoErrors} from "./test_util"
 
 /** 
  * Simple project
@@ -23,6 +23,10 @@ const templateGrammar = cellSplit(`
 `);
 
 const templateProject = new TextProject().addSheet("testSheet", templateGrammar);
+
+describe('Project with template', function() {
+    testNoErrors(templateProject);
+});
 
 describe('Project with template, parsing foo', function() {
     const result = templateProject.parseFlatten({text: "foo"});
@@ -61,6 +65,10 @@ const templateGrammar2 = cellSplit(`
 
 const templateProject2 = new TextProject().addSheet("testSheet", templateGrammar2);
 
+describe('Template with variable and literal content in same cell', function() {
+    testNoErrors(templateProject2);
+});
+
 describe('Template with variable and literal content in same cell, parsing foo', function() {
     const result = templateProject2.parseFlatten({text: "foo"});
     testNumResults(result, 4);
@@ -97,6 +105,10 @@ const templateGrammar3 = cellSplit(`
 `);
 
 const templateProject3 = new TextProject().addSheet("testSheet", templateGrammar3);
+
+describe('Template with multiple variables in one cell', function() {
+    testNoErrors(templateProject3);
+});
 
 describe('Template with multiple variables in one cell, parsing foo', function() {
     const result = templateProject3.parseFlatten({text: "foo"});
