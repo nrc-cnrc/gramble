@@ -849,8 +849,6 @@ export class Project {
 
 export class TextProject extends Project {
 
-    private delim: string = "\t";
-
     public constructor() {
         super(new TextDevEnvironment());
     }

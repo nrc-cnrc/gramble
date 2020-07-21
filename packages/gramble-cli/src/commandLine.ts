@@ -20,12 +20,6 @@ class NodeTextProject extends TextProject {
 
     private delim: string = "\t";
 
-    public constructor(
-        protected env: TextDevEnvironment
-    ) {
-        super();
-    }
-
     public addFile(filename: string): Promise<void> {
 
         if (filenameParse(filename).ext.toLowerCase() == ".csv") {
@@ -45,10 +39,10 @@ class NodeTextProject extends TextProject {
 
     public addParsedRow(row: ParseResult, rownum: number, filename: string) {
         for (const data of row.data as string[][]) {  // should always only be one of these
-            this.addRow(data, filename, rownum, this.env);
+            this.addRow(data, filename, rownum);
         }
         for (const error of row.errors) {
-            this.env.markError(filename, rownum, -1, error.message, "error");
+            this.devEnv.markError(filename, rownum, -1, error.message, "error");
         }
     }
 
@@ -147,8 +141,7 @@ function getOutputStream(output: string | undefined): Writable {
     return createWriteStream(output, "utf8");
 }
 
-const env = new TextDevEnvironment();
-const proj = new NodeTextProject(env);
+const proj = new NodeTextProject();
 
 /* first - parse the main command */
 const commandDefinition = [
@@ -229,8 +222,8 @@ const commands: {[name: string]: Command} = {
 
             const outputStream = getOutputStream(options.output);
             proj.addFile(options.source)
-                .then(() => proj.compile(env))
-                .then(() => env.highlight())
+                .then(() => proj.compile())
+                .then(() => proj.devEnv.highlight())
                 .then(() => proj.generateStream(outputStream, options.max, options.otier));
         }
     },
@@ -270,8 +263,8 @@ const commands: {[name: string]: Command} = {
             fileExistsOrFail(options.source);
             const outputStream = getOutputStream(options.output);
             proj.addFile(options.source)
-                .then(() => proj.compile(env))
-                .then(() => env.highlight())
+                .then(() => proj.compile())
+                .then(() => proj.devEnv.highlight())
                 .then(() => proj.sampleStream(outputStream, options.max, options.otier));
         }
     },
@@ -351,13 +344,13 @@ const commands: {[name: string]: Command} = {
                     usageError("If you are parsing tokenized, you must specify what tier the output text should be taken from, e.g. --otier gloss")
                 }
                 proj.addFile(options.source)
-                .then(() => proj.compile(env))
-                .then(() => env.highlight())
+                .then(() => proj.compile())
+                .then(() => proj.devEnv.highlight())
                 .then(() => proj.parseStreamTokenized(inputStream, outputStream, options.itier, options.random, options.otier));
             } else {
                 proj.addFile(options.source)
-                .then(() => proj.compile(env))
-                .then(() => env.highlight())
+                .then(() => proj.compile())
+                .then(() => proj.devEnv.highlight())
                 .then(() => proj.parseStream(inputStream, outputStream, options.itier, options.random, options.max, options.otier));
             }
         }
