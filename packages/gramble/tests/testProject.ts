@@ -1,8 +1,6 @@
-import {Project, TextDevEnvironment} from "../src/spreadsheet";
+import {TextProject} from "../src/spreadsheet";
 import 'mocha';
-import {testNumResults, testFlattenedOutput, cellSplit} from "./test_util"
-
-const devEnv = new TextDevEnvironment();
+import {testNumResults, testFlattenedOutput, cellSplit, testNoErrors} from "./test_util"
 
 
 /** 
@@ -16,7 +14,11 @@ const ambiguousGrammar = cellSplit(`
         ,    , foob, run, ar, -3PL.PAST
 `);
 
-const ambiguousProject = new Project().addSheet("testSheet", ambiguousGrammar, devEnv);
+const ambiguousProject = new TextProject().addSheet("testSheet", ambiguousGrammar);
+
+describe('Project with no variables', function() {
+    testNoErrors(ambiguousProject);
+});
 
 describe('Project with no variables, parsing foobar', function() {
     const result = ambiguousProject.parseFlatten({text: "foobar"});
@@ -100,7 +102,7 @@ const flatGrammar = cellSplit(`
         ,    , VROOT, TENSE
 `);
 
-const flatProject = new Project().addSheet("testSheet", flatGrammar, devEnv);
+const flatProject = new TextProject().addSheet("testSheet", flatGrammar);
 
 describe('Flat project, parsing foobar', function() {
     const result = flatProject.parseFlatten({text: "foobar"});
@@ -165,7 +167,7 @@ const hierarchicalGrammar = cellSplit(`
 
 
 
-const hierarchicalProject = new Project().addSheet("testSheet", hierarchicalGrammar, devEnv);
+const hierarchicalProject = new TextProject().addSheet("testSheet", hierarchicalGrammar);
 
 
 describe('Hierarchical project, parsing foobar', function() {
@@ -219,7 +221,7 @@ MAIN, add, text, gloss, maybe gloss, text, gloss
     ,     , foo, jump, -INDIC, bar, -1SG
 `);
 
-const maybeGlossProject = new Project().addSheet("testSheet", maybeGlossGrammar, devEnv);
+const maybeGlossProject = new TextProject().addSheet("testSheet", maybeGlossGrammar);
 
 describe('Maybe <literal> parser', function() {
     const result = maybeGlossProject.parseFlatten({text: "foobar"});
@@ -242,7 +244,7 @@ MAIN,  add,  var,    maybe var
     ,     ,  ROOT,   SUFFIX
 `)
 
-const maybeVarProject = new Project().addSheet("testSheet", maybeVarGrammar, devEnv);
+const maybeVarProject = new TextProject().addSheet("testSheet", maybeVarGrammar);
 
 describe('Maybe <var> parser, parsing input with no suffix', function() {
     const result = maybeVarProject.parseFlatten({text: "foo"});
@@ -267,7 +269,7 @@ MAIN, add,   text/root, gloss, text, gloss
     ,   , foob, run, ar, -3PL.PAST
 `);
 
-const slashProject = new Project().addSheet("testSheet", slashGrammar, devEnv);
+const slashProject = new TextProject().addSheet("testSheet", slashGrammar);
 
 
 describe('Project with text/root tier, transducing from text', function() {
@@ -307,7 +309,7 @@ MAIN, add , var
     ,   , VSTEM
 `);
 
-const projectWithEmptyCell = new Project().addSheet("testSheet", grammarWithEmptyCell, devEnv);
+const projectWithEmptyCell = new TextProject().addSheet("testSheet", grammarWithEmptyCell);
 
 
 describe('Project with empty cell, transducing from text', function() {

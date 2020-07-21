@@ -1,4 +1,4 @@
-import {DevEnvironment, Project, getBackgroundColor} from "./spreadsheet";
+import {DevEnvironment, Project, getBackgroundColor, getForegroundColor} from "./spreadsheet";
 
 
 
@@ -131,7 +131,7 @@ class BackgroundColorStyler extends Styler {
 class GoogleSheetsDevEnvironment {
 
     private bgColorStylers: Map<string, BackgroundColorStyler> = new Map();
-    private fontColorStylers: Map<string, FontColorStyler> = new Map();
+    private fgColorStylers: Map<string, FontColorStyler> = new Map();
     private italicStyler: ItalicStyler = new ItalicStyler();
     private noteStylers: Map<string, NoteStyler> = new Map();
     private borderStyler: BorderStyler = new BorderStyler();
@@ -160,10 +160,10 @@ class GoogleSheetsDevEnvironment {
     }
 
     public markComment(sheet: string, row: number, col: number): void {
-        if (!this.fontColorStylers.has(COMMENT_FONT_COLOR)) {
-            this.fontColorStylers.set(COMMENT_FONT_COLOR, new FontColorStyler(COMMENT_FONT_COLOR));
+        if (!this.fgColorStylers.has(COMMENT_FONT_COLOR)) {
+            this.fgColorStylers.set(COMMENT_FONT_COLOR, new FontColorStyler(COMMENT_FONT_COLOR));
         }
-        this.fontColorStylers.get(COMMENT_FONT_COLOR)?.addCell(row, col);
+        this.fgColorStylers.get(COMMENT_FONT_COLOR)?.addCell(row, col);
         this.italicStyler.addCell(row, col);
     }
 
@@ -173,6 +173,11 @@ class GoogleSheetsDevEnvironment {
             this.bgColorStylers.set(color, new BackgroundColorStyler(color));
         }
         this.bgColorStylers.get(color)?.addCell(row, col);
+        const fgColor = getForegroundColor(tier);
+        if (!this.fgColorStylers.has(fgColor)) {
+            this.fgColorStylers.set(fgColor, new FontColorStyler(fgColor));
+        }
+        this.fgColorStylers.get(fgColor)?.addCell(row, col);
         this.borderStyler.addCell(row, col);
         this.boldStyler.addCell(row, col);
         this.centerStyler.addCell(row, col);
@@ -184,6 +189,11 @@ class GoogleSheetsDevEnvironment {
             this.bgColorStylers.set(bgColor, new BackgroundColorStyler(bgColor));
         }
         this.bgColorStylers.get(bgColor)?.addCell(row, col);
+        const fgColor = getForegroundColor(tier);
+        if (!this.fgColorStylers.has(fgColor)) {
+            this.fgColorStylers.set(fgColor, new FontColorStyler(fgColor));
+        }
+        this.fgColorStylers.get(fgColor)?.addCell(row, col);
         this.centerStyler.addCell(row, col);
     }
 
@@ -206,7 +216,7 @@ class GoogleSheetsDevEnvironment {
         for (const styler of this.bgColorStylers.values()) {
             styler.applyToSheet(sheet);
         }
-        for (const styler of this.fontColorStylers.values()) {
+        for (const styler of this.fgColorStylers.values()) {
             styler.applyToSheet(sheet);
         }
         this.italicStyler.applyToSheet(sheet);
@@ -222,12 +232,12 @@ class GoogleSheetsDevEnvironment {
 
 function makeProject(devEnv: DevEnvironment): Project {
     var spreadsheet = SpreadsheetApp.getActive();
-    var project = new Project();
+    var project = new Project(devEnv);
     var sheet = spreadsheet.getActiveSheet();
     var sheetName = sheet.getName();
     var range = sheet.getDataRange();
     var cells = range.getDisplayValues();
-    project.addSheet(sheetName, cells, devEnv);
+    project.addSheet(sheetName, cells);
     return project;
 }
 
@@ -468,7 +478,7 @@ function GrambleHighlighting(): void {
 function GrambleTest(): void {
     const devEnv = new GoogleSheetsDevEnvironment();
     const project = makeProject(devEnv);
-    project.runTests(devEnv);
+    project.runTests();
     devEnv.highlight();
 }
 

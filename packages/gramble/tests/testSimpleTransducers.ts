@@ -1,4 +1,4 @@
-import {makeTable, Transducer, makeEntry, makeRecord, GParse, transducerFromEntry, transducerFromTable, ParseOptions} from "../src/transducers"
+import {makeTable, NullTransducer, makeEntry, makeRecord, GParse, transducerFromEntry, transducerFromTable, ParseOptions} from "../src/transducers"
 import {TextDevEnvironment} from "../src/spreadsheet";
 
 import 'mocha';
@@ -6,7 +6,7 @@ import {testNumResults, testOutput, testParseOutput, testParseRemnant} from "./t
 
 
 
-const transducerTable : Map<string, Transducer> = new Map();
+const transducerTable : Map<string, NullTransducer> = new Map();
 const devEnv = new TextDevEnvironment();
 const defaultOptions = new ParseOptions(transducerTable, false, -1, true, false);
 const reverseOptions = new ParseOptions(transducerTable, false, -1, false, false);

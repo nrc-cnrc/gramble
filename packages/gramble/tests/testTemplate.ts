@@ -1,9 +1,6 @@
-import {Project, TextDevEnvironment} from "../src/spreadsheet";
+import {TextProject} from "../src/spreadsheet";
 import 'mocha';
 import {testNumResults, testFlattenedOutput, cellSplit} from "./test_util"
-
-const devEnv = new TextDevEnvironment();
-
 
 /** 
  * Simple project
@@ -25,8 +22,7 @@ const templateGrammar = cellSplit(`
         ,    , VERB
 `);
 
-const templateProject = new Project().addSheet("testSheet", templateGrammar, devEnv);
-devEnv.highlight();
+const templateProject = new TextProject().addSheet("testSheet", templateGrammar);
 
 describe('Project with template, parsing foo', function() {
     const result = templateProject.parseFlatten({text: "foo"});
@@ -63,7 +59,7 @@ const templateGrammar2 = cellSplit(`
         ,    , VERB
 `);
 
-const templateProject2 = new Project().addSheet("testSheet", templateGrammar2, devEnv);
+const templateProject2 = new TextProject().addSheet("testSheet", templateGrammar2);
 
 describe('Template with variable and literal content in same cell, parsing foo', function() {
     const result = templateProject2.parseFlatten({text: "foo"});
@@ -100,7 +96,7 @@ const templateGrammar3 = cellSplit(`
         ,    , VERB
 `);
 
-const templateProject3 = new Project().addSheet("testSheet", templateGrammar3, devEnv);
+const templateProject3 = new TextProject().addSheet("testSheet", templateGrammar3);
 
 describe('Template with multiple variables in one cell, parsing foo', function() {
     const result = templateProject3.parseFlatten({text: "foo"});

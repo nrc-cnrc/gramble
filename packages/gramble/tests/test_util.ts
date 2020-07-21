@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { GTable, GParse, GCell, GEntry } from '../src/transducers';
+import { Project } from '../src/spreadsheet';
 
 export function cellSplit(s: string): string[][] {
     return s.split("\n").map((line) => line.split(","));
@@ -16,6 +17,12 @@ export function testOutput(result: GTable, result_num: number, tier: string, tar
         const record = result[result_num];
         const text = record.filter(entry => entry.tier.text == tier).map(entry => entry.value.text).join("");
         expect(text).to.equal(target);
+    });
+}
+
+export function testNoErrors(project: Project): void {
+    it("should have no errors", function() {
+        expect(project.getErrorMessages().length).to.equal(0);
     });
 }
 

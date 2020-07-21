@@ -34,6 +34,8 @@ function isLineEmpty(row: string[]): boolean {
  * that particular cells are errors, comments, column headers, etc.
  */
 export interface DevEnvironment {
+    getErrorMessages(): [string, number, number, string, "error"|"warning"|"info"][];
+
     markError(sheet: string, row: number, col: number, msg: string, level: "error"|"warning"|"info"): void;
     markTier(sheet: string, row: number, col: number, tier: string): void;
     markComment(sheet: string, row: number, col: number): void;
@@ -48,6 +50,10 @@ export interface DevEnvironment {
 export class BrowserDevEnvironment {
 
     private errorMessages: [string, number, number, string, "error"|"warning"|"info"][] = [];
+
+    public getErrorMessages(): [string, number, number, string, "error"|"warning"|"info"][] {
+        return this.errorMessages;
+    }
     public markTier(sheet: string, row: number, col: number, tier: string): void {}
     public markComment(sheet: string, row: number, col: number): void {}
     public markHeader(sheet: string, row: number, col: number, tier: string): void {}
@@ -88,7 +94,11 @@ export class BrowserDevEnvironment {
 
 export class TextDevEnvironment {
 
-    private errorMessages: [string, number, number, string, "error"|"warning"|"info"][] = [];
+    public errorMessages: [string, number, number, string, "error"|"warning"|"info"][] = [];
+
+    public getErrorMessages(): [string, number, number, string, "error"|"warning"|"info"][] {
+        return this.errorMessages;
+    }
 
     public markTier(sheet: string, row: number, col: number, tier: string): void {}
     public markComment(sheet: string, row: number, col: number): void {}
@@ -145,7 +155,7 @@ function isValidColor(colorName: string): boolean {
     return true;
 }
 
-type SymbolType = "table" | "template" | undefined;
+type SymbolType = "table" | "template" | "tier";
 
 class GSymbol {
 
@@ -154,7 +164,7 @@ class GSymbol {
                     // the number that the command occurs in, if the first 
                     // cell in a row is after this, it's arguments to call that command
 
-    public tableType : SymbolType = undefined;
+    public tableType : SymbolType | undefined = undefined;
 
     public table: GTable = [];
     public tests: GTable = [];
@@ -172,11 +182,11 @@ class GSymbol {
         return this.currentCommand;
     }
 
-    public addTableRow(record: GRecord): void {
-        if (this.tableType == "template") {
-            throw new Error("Added a table row to a template"); 
+    public addRecord(record: GRecord, recordType: SymbolType): void {
+        if (this.tableType != undefined && this.tableType != recordType) {
+            throw new Error(`Added a ${recordType} row to a ${this.tableType} system.`);
         }
-        this.tableType = "table";
+        this.tableType = recordType;
         this.table.push(record);
     }
 
@@ -184,22 +194,14 @@ class GSymbol {
         this.tests.push(record);
     }
 
-    public addTemplateRow(record: GRecord): void {
-        if (this.tableType == "table") {
-            throw new Error("Added a template row to a table"); 
-        }
-        this.tableType = "template";
-        this.table.push(record);
-    }
-
-    public callCurrentCommand(args: GCell[], project: Project, devEnv: DevEnvironment): void {
+    public callCurrentCommand(args: GCell[], project: Project): void {
 
         // first make sure there IS a function active
         if (this.currentCommand == undefined) {
             // shouldn't have args when there's no function.  mark them all as errors
             for (const cell of args) { 
                 if (cell.text.length > 0) {
-                    devEnv.markError(cell.sheet, cell.row, cell.col, 
+                    project.devEnv.markError(cell.sheet, cell.row, cell.col, 
                         "Unclear what this cell is here for. " + 
                         "Did you forget a function?", "warning");
                 }
@@ -213,7 +215,7 @@ class GSymbol {
         for (const cell of args) { 
             if (!this.currentCommand.hasColumn(cell.col)) {
                 if (cell.text.length > 0) {
-                    devEnv.markError(cell.sheet, cell.row, cell.col, 
+                    project.devEnv.markError(cell.sheet, cell.row, cell.col, 
                         "This cell does not appear to belong to a column. " + 
                         "Did you forget a column header above?", "warning");
                     
@@ -221,11 +223,11 @@ class GSymbol {
                 continue;
             }
             const param = this.currentCommand.getParam(cell.col);
-            devEnv.markTier(cell.sheet, cell.row, cell.col, param.text);
+            project.devEnv.markTier(cell.sheet, cell.row, cell.col, param.text);
             argBuffer.push(cell);
         }
 
-        this.currentCommand.call(argBuffer, project, devEnv);
+        this.currentCommand.call(argBuffer, project);
     }
 }
 
@@ -292,20 +294,15 @@ abstract class GCommand {
         return record;
     }
 
-    public abstract call(cells: GCell[], project: Project, devEnv: DevEnvironment): void;
+    public abstract call(cells: GCell[], project: Project): void;
 
 }
 
 class TableCommand extends GCommand {
 
-    public call(cells: GCell[], project: Project, devEnv: DevEnvironment): void {
+    public call(cells: GCell[], project: Project): void {
         const record = this.associateParams(cells);
-        if (this.symbol.tableType == "template") {
-            devEnv.markError(this.name.sheet, this.name.row, this.name.col,
-                "Attempting to add an ordinary table row to a template", "error");
-            return;
-        }
-        this.symbol.addTableRow(record);
+        this.symbol.addRecord(record, "table");
     }
 
 }
@@ -320,6 +317,9 @@ abstract class RestrictedTiersCommand extends TableCommand {
         super(name, symbol, params, devEnv);
         const permissibleTiers = this.getPermissibleTiers();
         for (const param of params) {
+            if (param.text == "") {
+                continue;
+            }
             if (permissibleTiers.indexOf(param.text) == -1) {
                 devEnv.markError(param.sheet, param.row, param.col,
                     `Parameter ${param.text} is invalid for command ${name.text}.`, "error");
@@ -332,6 +332,11 @@ abstract class RestrictedTiersCommand extends TableCommand {
 
 class TierCommand extends RestrictedTiersCommand {
 
+    public call(cells: GCell[], project: Project): void {
+        const record = this.associateParams(cells);
+        this.symbol.addRecord(record, "tier");
+    }
+
     public getPermissibleTiers(): string[] {
         return ["name", "initial", "medial", "final"];
     }
@@ -339,12 +344,12 @@ class TierCommand extends RestrictedTiersCommand {
 
 class DummyCommand extends GCommand {
 
-    public call(cells: GCell[], project: Project, devEnv: DevEnvironment): void { }
+    public call(cells: GCell[], project: Project): void { }
 }
 
 class TestCommand extends GCommand {
 
-    public call(cells: GCell[], project: Project, devEnv: DevEnvironment): void {
+    public call(cells: GCell[], project: Project): void {
         const record = this.associateParams(cells);
         this.symbol.addTestRow(record);
     }
@@ -352,14 +357,14 @@ class TestCommand extends GCommand {
 
 class NewTemplateCommand extends GCommand {
 
-    public call(cells: GCell[], project: Project, devEnv: DevEnvironment): void {
+    public call(cells: GCell[], project: Project): void {
         const record = this.associateParams(cells);
         if (this.symbol.tableType == "table") {
-            devEnv.markError(this.name.sheet, this.name.row, this.name.col,
+            project.devEnv.markError(this.name.sheet, this.name.row, this.name.col,
                 "Attempting to add a template row to an ordinary table", "error");
             return;
         }
-        this.symbol.addTemplateRow(record);
+        this.symbol.addRecord(record, "template");
     }
 }
 
@@ -401,14 +406,14 @@ class TemplateCommand extends GCommand {
         return results;
     }
 
-    public call(cells: GCell[], project: Project, devEnv: DevEnvironment): void {
+    public call(cells: GCell[], project: Project): void {
         const template = project.symbolTable.get(this.name.text);
         if (template == undefined || template.tableType != "template") {
             return;
         }
         const inputRecord = this.associateParams(cells);
         for (const record of this.renderTemplate(template, inputRecord)) {
-            this.symbol.addTableRow(record);
+            this.symbol.addRecord(record, "table");
         }
     }
 
@@ -425,46 +430,36 @@ const COMMAND_CONSTRUCTORS: {[key: string]: new (name: GCell,
     "tier": TierCommand,
 }
 
-
-
 function makeCommand(commandCell: GCell, 
                      currentSymbol: GSymbol, 
                      params: GCell[], 
-                     project: Project,
-                     devEnv: DevEnvironment): GCommand {
+                     project: Project): GCommand {
 
 
     if (commandCell.text in COMMAND_CONSTRUCTORS) {
         const constructor = COMMAND_CONSTRUCTORS[commandCell.text];
-        return new constructor(commandCell, currentSymbol, params, devEnv);
+        return new constructor(commandCell, currentSymbol, params, project.devEnv);
     }
 
     if (project.symbolTable.has(commandCell.text)) {
         const template = project.symbolTable.get(commandCell.text);
         if (template == undefined) {  // shouldn't occur
-            return new DummyCommand(commandCell, currentSymbol, params, devEnv); 
+            return new DummyCommand(commandCell, currentSymbol, params, project.devEnv); 
         }
         if (template.tableType != "template") {
-            devEnv.markError(commandCell.sheet, commandCell.row, commandCell.col,
+            project.devEnv.markError(commandCell.sheet, commandCell.row, commandCell.col,
                 `${commandCell.text} is not a template`, "error");
-            return new DummyCommand(commandCell, currentSymbol, params, devEnv); 
+            return new DummyCommand(commandCell, currentSymbol, params, project.devEnv); 
         }
-        return new TemplateCommand(commandCell, currentSymbol, params, devEnv);
+        return new TemplateCommand(commandCell, currentSymbol, params, project.devEnv);
     }
 
-    devEnv.markError(commandCell.sheet, commandCell.row, commandCell.col,
+    project.devEnv.markError(commandCell.sheet, commandCell.row, commandCell.col,
         `No command called ${commandCell.text}.  If you defined this elsewhere, ` +
         "make sure that it appears above this cell.", "error");
 
-    return new DummyCommand(commandCell, currentSymbol, params, devEnv);
+    return new DummyCommand(commandCell, currentSymbol, params, project.devEnv);
 }
-
-const BUILT_IN_FUNCTIONS: string[] = [
-    "add",
-    "test",
-    "template"
-]
-
 
 function toObj(table: GTable): {[key:string]:string}[][] {
     return table.map(record => {
@@ -545,14 +540,15 @@ function resultListToString(records: {[key: string]: string}[]): string {
  * on it directly, you just have a Project instance and call parse(symbolName, input).
  */
 export class Project {
-    //protected currentCommand: GCommand | undefined = undefined;
+
+
     protected currentSymbol: GSymbol | undefined = undefined;
     public symbolTable: Map<string, GSymbol> = new Map();
-    //protected testTable: Map<string, GTable> = new Map();
-    //public templateTable: Map<string, GTable> = new Map();
     protected transducerTable: Map<string, Transducer> = new Map();
-    
 
+    public constructor(
+        public devEnv: DevEnvironment
+    ) { }
 
     public hasSymbol(name: string): boolean {
         return this.symbolTable.has(name);
@@ -694,7 +690,7 @@ export class Project {
     }
 
 
-    public runTests(highlighter: DevEnvironment): void {
+    public runTests(): void {
         for (const [symbolName, symbol] of this.symbolTable.entries()) {
             const testTable = symbol.tests;
             for (const record of testTable) {
@@ -705,7 +701,7 @@ export class Project {
                 for (const entry of record) {
                     var parts = entry.tier.text.split(" ");
                     if (parts.length != 2) {
-                        highlighter.markError(entry.tier.sheet, entry.tier.row, entry.tier.col,
+                        this.devEnv.markError(entry.tier.sheet, entry.tier.row, entry.tier.col,
                             "Invalid test tier: " + entry.tier.text, "error");
                         continue;
                     }
@@ -725,22 +721,22 @@ export class Project {
                 
                 for (const target of containsRecord) {
                     if (!this.containsResult(resultFlattened, target)) {
-                        highlighter.markError(target.value.sheet, target.value.row, target.value.col,
+                        this.devEnv.markError(target.value.sheet, target.value.row, target.value.col,
                             "Result does not contain specified value. " + 
                             "Actual value: \n" + resultListToString(resultFlattened), "error");
                     } else {
-                        highlighter.markError(target.value.sheet, target.value.row, target.value.col,
+                        this.devEnv.markError(target.value.sheet, target.value.row, target.value.col,
                             "Result contains specified value: \n" + resultListToString(resultFlattened), "info");
                     }
                 }
 
                 for (const target of equalsRecord) {
                     if (!this.equalsResult(resultFlattened, target)) {
-                        highlighter.markError(target.value.sheet, target.value.row, target.value.col,
+                        this.devEnv.markError(target.value.sheet, target.value.row, target.value.col,
                             "Result does not equal specified value. " + 
                             "Actual value: \n" + resultListToString(resultFlattened), "error");
                     } else {
-                        highlighter.markError(target.value.sheet, target.value.row, target.value.col,
+                        this.devEnv.markError(target.value.sheet, target.value.row, target.value.col,
                             "Result equals specified value: \n" + resultListToString(resultFlattened), "info");
                     }
                 }
@@ -748,7 +744,7 @@ export class Project {
         }
     }
 
-    protected addRow(cellTexts: string[], sheetName: string, rowIdx: number, devEnv: DevEnvironment): void {
+    protected addRow(cellTexts: string[], sheetName: string, rowIdx: number): void {
 
         
         if (isLineEmpty(cellTexts)) {
@@ -767,26 +763,26 @@ export class Project {
                 if (cell.text.length == 0) {
                     continue;
                 }
-                devEnv.markComment(cell.sheet, cell.row, cell.col);
+                this.devEnv.markComment(cell.sheet, cell.row, cell.col);
             }
             return;
         }
 
         
         if (cells[0].text.startsWith('%')) {  // the first cell's a comment
-            devEnv.markComment(cells[0].sheet, cells[0].row, cells[0].col);
+            this.devEnv.markComment(cells[0].sheet, cells[0].row, cells[0].col);
             cells[0].text = '';
         }
 
         
 
         if (cells[0].text.length > 0) {
-            this.addSymbol(cells[0], devEnv);
+            this.addSymbol(cells[0]);
         }
 
         
         if (cells[1].text.startsWith('%')) {  // the first cell's a comment
-            devEnv.markComment(cells[1].sheet, cells[1].row, cells[1].col);
+            this.devEnv.markComment(cells[1].sheet, cells[1].row, cells[1].col);
             cells[1].text = '';
         }
 
@@ -794,56 +790,69 @@ export class Project {
             // new command
 
             if (this.currentSymbol == undefined) {
-                devEnv.markError(cells[1].sheet, cells[1].row, cells[1].col,
+                this.devEnv.markError(cells[1].sheet, cells[1].row, cells[1].col,
                     "This appears to be a command but no symbol precedes it", "error");
                 return;
             }
 
-            devEnv.markCommand(cells[1].sheet, cells[1].row, cells[1].col);
-            this.currentSymbol.command = makeCommand(cells[1], this.currentSymbol, cells.slice(2), this, devEnv);
+            this.devEnv.markCommand(cells[1].sheet, cells[1].row, cells[1].col);
+            this.currentSymbol.command = makeCommand(cells[1], this.currentSymbol, cells.slice(2), this);
             return;
         }
 
         if (this.currentSymbol != undefined) {
-            this.currentSymbol.callCurrentCommand(cells.slice(2), this, devEnv);
+            this.currentSymbol.callCurrentCommand(cells.slice(2), this);
         }
     }
 
-    public addSymbol(cell: GCell, devEnv: DevEnvironment): void {
+    public addSymbol(cell: GCell): void {
         this.currentSymbol = new GSymbol(cell);
         this.symbolTable.set(cell.text, this.currentSymbol);
-        devEnv.markSymbol(cell.sheet, cell.row, cell.col);
+        this.devEnv.markSymbol(cell.sheet, cell.row, cell.col);
     }
 
 
     public addSheet(sheetName: string, 
-                    cells: string[][], 
-                    devEnv: DevEnvironment): Project {
+                    cells: string[][]): Project {
 
         for (var [rowIdx, row] of cells.entries()) {
-            this.addRow(row, sheetName, rowIdx, devEnv);
+            this.addRow(row, sheetName, rowIdx);
         }
 
-        this.compile(devEnv);
+        this.compile();
 
         return this;
     }
 
-    public compile(devEnv: DevEnvironment): Project {
+    public compile(): Project {
         for (const [name, symbol] of this.symbolTable.entries()) {
             if (symbol.tableType != "table") {
                 continue;
             }
             const table = symbol.table;
-            const transducer : Transducer = transducerFromTable(table, this.transducerTable, devEnv);
+            const transducer : Transducer = transducerFromTable(table, this.transducerTable, this.devEnv);
             this.transducerTable.set(name, transducer);
         }
 
         for (const transducer of this.transducerTable.values()) {
-            transducer.sanityCheck(this.transducerTable, devEnv);
+            transducer.sanityCheck(this.transducerTable, this.devEnv);
         }
 
         return this;
+    }
+ 
+    public getErrorMessages(): [string, number, number, string, "error"|"warning"|"info"][] {
+        return this.devEnv.getErrorMessages();
+    }
+}
+
+
+export class TextProject extends Project {
+
+    private delim: string = "\t";
+
+    public constructor() {
+        super(new TextDevEnvironment());
     }
 }
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node-script
 
-import {GTable, makeTable, Project, TextDevEnvironment} from "@gramble/gramble"
+import {GTable, makeTable, TextProject, TextDevEnvironment} from "@gramble/gramble"
 import {parse as papaparse, ParseResult} from 'papaparse';
 import {createReadStream, createWriteStream, existsSync} from 'fs';
 
@@ -12,11 +12,11 @@ import {fromStream} from "./fileIO"
 import * as commandLineArgs from "command-line-args";
 import * as commandLineUsage from "command-line-usage";
 
-// Status code of an invalide usage invocation:
+// Status code of an invalid usage invocation:
 // See: man 3 sysexits
 const EXIT_USAGE = 64;
 
-class TextProject extends Project {
+class NodeTextProject extends TextProject {
 
     private delim: string = "\t";
 
@@ -148,7 +148,7 @@ function getOutputStream(output: string | undefined): Writable {
 }
 
 const env = new TextDevEnvironment();
-const proj = new TextProject(env);
+const proj = new NodeTextProject(env);
 
 /* first - parse the main command */
 const commandDefinition = [

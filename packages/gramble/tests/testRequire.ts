@@ -1,9 +1,6 @@
-import {Project, TextDevEnvironment} from "../src/spreadsheet";
+import {TextProject} from "../src/spreadsheet";
 import 'mocha';
 import {testNumResults, testFlattenedOutput, cellSplit} from "./test_util"
-
-const devEnv = new TextDevEnvironment();
-
 
 const impGrammar = cellSplit(`
     VROOT, add, text, gloss, imp
@@ -25,7 +22,7 @@ const impGrammar = cellSplit(`
         , , imp      , IMP_STEM
 `);
 
-const impProject = new Project().addSheet("testSheet", impGrammar, devEnv);
+const impProject = new TextProject().addSheet("testSheet", impGrammar);
 
 
 describe('Requirement grammar, Using "input imp: indic" to constrain parse path', function() {
@@ -89,7 +86,7 @@ const impGrammar2 = cellSplit(`
         , , imp      , IMP_STEM
 `);
 
-const impProject2 = new Project().addSheet("testSheet", impGrammar2, devEnv);
+const impProject2 = new TextProject().addSheet("testSheet", impGrammar2);
 
 
 describe('Requirement grammar with empty cells, Using "input imp: <empty>" to constrain parse path', function() {
@@ -145,7 +142,7 @@ const impGrammar3 = cellSplit(`
 `);
 
 
-const impProject3 = new Project().addSheet("testSheet", impGrammar3, devEnv);
+const impProject3 = new TextProject().addSheet("testSheet", impGrammar3);
 
 
 describe('Requirement grammar with multiple requirements, generating all forms', function() {
@@ -200,7 +197,7 @@ const impGrammar4 = cellSplit(`
         , , imp        , IMP_STEM
 `);
 
-const impProject4 = new Project().addSheet("testSheet", impGrammar4, devEnv);
+const impProject4 = new TextProject().addSheet("testSheet", impGrammar4);
 
 describe('Requirement grammar with alt cells, Using "input imp: indic" to constrain parse path', function() {
     const result = impProject4.parseFlatten({text: "obita"});

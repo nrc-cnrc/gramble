@@ -3,9 +3,8 @@ import { expect } from 'chai';
 import 'mocha';
 import {testNumResults, testOutput, cellSplit, testFlattenedOutput} from "./test_util";
 import {transducerFromTable, NullTransducer, makeTable} from "../src/transducers"
-import {Project, TextDevEnvironment} from "../src/spreadsheet";
+import {TextProject} from "../src/spreadsheet";
 
-const devEnv = new TextDevEnvironment();
 
 /**
  * Testing the random picker
@@ -48,7 +47,7 @@ const flatGrammar = cellSplit(`
 `);
 
 
-const flatProject = new Project().addSheet("testSheet", flatGrammar, devEnv);
+const flatProject = new TextProject().addSheet("testSheet", flatGrammar);
 
 describe('Random transducer, with max_results=1', function() {
     const result = flatProject.parseFlatten({text: "foobar"}, "MAIN", true, 1);
@@ -80,7 +79,7 @@ const probGrammar = cellSplit(`
 `);
 
 
-const probProject = new Project().addSheet("testSheet", probGrammar, devEnv);
+const probProject = new TextProject().addSheet("testSheet", probGrammar);
 
 
 describe('Random transducer with weights', function() {

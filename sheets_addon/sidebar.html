@@ -44,7 +44,11 @@
                 var text = "";
                 let val = document.getElementById("selectCommand").value;
                 if (val == "sample") {
+                    
+                    console.log(`sampling from symbol ${symbolName}`);
                     results = GRAMMAR.sampleFlatten(symbolName, 10);
+                    console.log(`sampled from symbol ${symbolName}`);
+                    console.log(results);
                 } else if (val == "generate") {  
                     results = GRAMMAR.generateFlatten(symbolName, false, 10);
                 } else if (val == "parse") {    

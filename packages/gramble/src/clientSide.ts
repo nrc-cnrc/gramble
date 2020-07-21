@@ -7,15 +7,16 @@ export {getBackgroundColor};
 
 export class ClientSideProject extends Project {
 
-    public devEnv : DevEnvironment = new BrowserDevEnvironment();
-
+    public constructor() {
+        super(new BrowserDevEnvironment());
+    }
     public addParseResults(results: ParseResult, url: string, callback: (error: any, project: ClientSideProject) => void): void {
         if (results.errors.length > 0) {
             const error = new Error("Error parsing CSV file: \n" + results.errors.join("\n"));
             callback(error, this);
             return;
         }
-        this.addSheet(url, results.data, this.devEnv);
+        this.addSheet(url, results.data);
         this.devEnv.highlight();
         callback(null, this);
     }
@@ -68,7 +69,7 @@ export function fromTable(elementID: string, callback: (error:any, project: Clie
           });
     });
 
-    project.addSheet(elementID, cells as string[][], project.devEnv);
+    project.addSheet(elementID, cells as string[][]);
     callback(undefined, project);
 }
 
@@ -77,7 +78,7 @@ export const fromTableAsync = promisify(fromTable);
 
 export function fromData(cells: string[][], callback: (error:any, project: ClientSideProject) => void): void {
     const project = new ClientSideProject();
-    project.addSheet("CurrentSheet", cells, project.devEnv);
+    project.addSheet("CurrentSheet", cells);
     callback(undefined, project);
 }
 
