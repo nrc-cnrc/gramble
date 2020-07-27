@@ -8,32 +8,32 @@ import styles from './styles.module.css';
 
 const features = [
   {
-    title: <>Easy to Use</>,
+    title: <>Easy to read and write</>,
     imageUrl: 'img/undraw_docusaurus_mountain.svg',
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Gramble lets non-programmers develop rule-based linguistic programs,
+        without having to embark on a second career as a computer scientist.
       </>
     ),
   },
   {
-    title: <>Focus on What Matters</>,
+    title: <>Get the whole team involved</>,
     imageUrl: 'img/undraw_docusaurus_tree.svg',
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Gramble + Google Sheets means easy online collaboration. Everyone can edit the same
+        document at the same time. 
       </>
     ),
   },
   {
-    title: <>Powered by React</>,
+    title: <>Easy to embed in your site</>,
     imageUrl: 'img/undraw_docusaurus_react.svg',
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        Gramble is plain JavaScript, so it can easily embed in a webpage.  Node, React, and Apps Script
+        flavors are available as well!
       </>
     ),
   },

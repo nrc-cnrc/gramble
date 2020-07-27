@@ -1,6 +1,6 @@
 module.exports = {
   title: 'Gramble',
-  tagline: 'The tagline of my site',
+  tagline: 'A tabular language for linguistic programs',
   url: 'https://littell.github.io',
   baseUrl: '/gramble_ts/',
   favicon: 'img/favicon.ico',
@@ -8,12 +8,18 @@ module.exports = {
   projectName: 'gramble_ts', // Usually your repo name.
   themeConfig: {
     navbar: {
-      title: 'My Site',
+      title: 'Gramble',
       logo: {
         alt: 'My Site Logo',
         src: 'img/logo.svg',
       },
       links: [
+        {
+          to: 'gs/',
+          activeBasePath: 'gs',
+          label: 'Getting Started',
+          position: 'left',
+        },
         {
           to: 'docs/',
           activeBasePath: 'docs',
@@ -22,7 +28,7 @@ module.exports = {
         },
         {to: 'blog', label: 'Blog', position: 'left'},
         {
-          href: 'https://github.com/facebook/docusaurus',
+          href: 'https://github.com/littell/gramble_ts/',
           label: 'GitHub',
           position: 'right',
         },
