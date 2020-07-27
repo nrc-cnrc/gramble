@@ -83,7 +83,7 @@ export class BinaryTier extends Tier {
 
     
     public get hue(): number {
-        return meanAngleDeg([this.child1.hue * 360, this.child2.hue * 360]) / 360;
+        return (meanAngleDeg([this.child1.hue * 360, this.child2.hue * 360]) + 360) / 360;
     }
 
 }
