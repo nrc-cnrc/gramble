@@ -30,7 +30,8 @@ export class ParseOptions {
         public randomize: boolean = false,
         public maxResults: number = -1,
         public parseLeftToRight: boolean = true,
-        public accelerate: boolean = false
+        public accelerate: boolean = false,
+        //public tierDelimiter: {[key: string]: string},
     ) { }
 }
 

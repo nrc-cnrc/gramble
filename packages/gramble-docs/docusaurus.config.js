@@ -15,12 +15,6 @@ module.exports = {
       },
       links: [
         {
-          to: 'gs/',
-          activeBasePath: 'gs',
-          label: 'Getting Started',
-          position: 'left',
-        },
-        {
           to: 'docs/',
           activeBasePath: 'docs',
           label: 'Docs',
