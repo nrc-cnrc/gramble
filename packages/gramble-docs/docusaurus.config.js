@@ -15,7 +15,7 @@ module.exports = {
       },
       links: [
         {
-          to: 'docs/',
+          to: 'docs',
           activeBasePath: 'docs',
           label: 'Docs',
           position: 'left',
@@ -84,7 +84,7 @@ module.exports = {
       {
         docs: {
           // It is recommended to set document id as docs home page (`docs/` path).
-          homePageId: 'doc1',
+          homePageId: 'gs1',
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           editUrl:
