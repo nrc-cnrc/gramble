@@ -149,3 +149,17 @@ export function HSVtoRGB(h: number, s: number, v: number): [number, number, numb
 export function RGBtoString(r: number, g: number, b: number): string {
     return "#" + r.toString(16) + g.toString(16) + b.toString(16);
 }
+
+export function setIntersection<T>(s1: Set<T>, s2: Set<T>): Set<T> {
+    return new Set([...s1].filter(i => s2.has(i)));
+}
+
+export function setChain<T>(sets: Iterable<Set<T>>): Set<T> {
+    const results: Set<T> = new Set();
+    for (const set of sets) {
+        for (const item of set) {
+            results.add(item);
+        }
+    }
+    return results;
+}

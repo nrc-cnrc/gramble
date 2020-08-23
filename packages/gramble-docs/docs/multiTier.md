@@ -32,9 +32,7 @@ The order that the FST expects these elements isn't something that we can usuall
 
 You can probably see the issue: to order the input units, the user interface has to have some kind of language-specific ordering model that's potentially almost as complex as the FST itself.  But ideally, we shouldn't have to model the language *twice*... that information about morpheme ordering is already in the FST!  It's just that the FST software itself expects just one input representation and one output representation. 
 
-What we really need here is a system that allows *multiple* representations, un-ordered with respect to each other.  For example, we input ``go`` on the root tier, ``2`` on the object tier, ``PAST`` on the tense tier, and ``3`` on the subject tier.  We don't specify the relative order that these will actually occur in; we don't have to know in advance.  We just ask the system ``Give me the possible words where these elements occur on the appropriate tiers, whatever order they happen to come in``.
-
-
+What we really need here is a system that allows *multiple* input representations, un-ordered with respect to each other.  For example, we input ``go`` on the root tier, ``2`` on the object tier, ``PAST`` on the tense tier, and ``3`` on the subject tier.  We don't specify the relative order that these will actually occur in; we don't have to know in advance.  We just ask the system ``Give me the possible words where these elements occur on the appropriate tiers, whatever order they happen to come in``.
 
 So in conclusion, a lot of linguistic modeling tasks are inherently between multiple levels of representation.  When this is the case, but we can only choose two levels of representation to build into the FST, we often end up in a situation where aspects of the target language have to be modeled *outside* of the FST, whereas ideally everything about the language should be modeled in a single place.  
 
