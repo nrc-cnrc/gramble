@@ -1,5 +1,94 @@
 import { Gen, setChain } from "./util";
 import { assert } from "console";
+/**
+ * This is the parsing engine that underlies Gramble.
+ * It executes a multi-tape push-down state machine.
+ * 
+ *      - "Multi-tape" means that there are multiple "tapes"
+ *      (in the Turing machine sense) from/to which the machine
+ *      can read/write.  Like a finite-state transducer, the "heads"
+ *      on each tape can only move forward, and each tape is either
+ *      read-only or write-only.  Unlike a finite-state transducer,
+ *      we can have any number of tapes, not just two, and a machine
+ *      can read from or write to multiple tapes.  We don't specify
+ *      in advance what directions are possible; any combination of input
+ *      and output tapes is possible.
+ * 
+ *      - "Push-down" means that the machine has access to a stack,
+ *      making it possible to parse recursive grammars.  
+ *      
+ * The execution of this particular state machine is lazy, 
+ * in the sense that at no point is the entire machine ever 
+ * constructed, let alone made deterministic.  Each state 
+ * constructs successor states whenever necessary.
+ * 
+ * At each point, we can ask a state "What states can you get
+ * to by consuming character c off of tape t?", and also
+ * "What states can you get to without consuming any input?"
+ * 
+ * There are two kinds of objects described in this file.
+ * 
+ *   (a) Grammar components, like [SMLiteralComponent] or
+ *      [SMSequenceComponent], that describe the grammar
+ *      being parsed.
+ * 
+ *   (b) State components, which encapsulate a particular state
+ *      of parsing.  State components typically contain a reference
+ *      to a grammar component, any additional information necessary
+ *      to describe "where" they currently are within that component,
+ *      and a "breadcrumb" trail of past states from which outputs
+ *      can eventually be read.
+ * 
+ * To contrast this with an explicit state graph:
+ * 
+ *      - If we were constructing an explicit state graph, we might 
+ *      turn a Literal "foo" into a series of four nodes, and then
+ *      put "f", "o", and "o" on the edges between those nodes.  Then
+ *      when it comes times to parse, our "state" would consist of a 
+ *      reference to that node, and we would follow the edges (when
+ *      they match our input, of course) to new states.
+ * 
+ *      - Instead, our actual state object only consists of a pointer
+ *      to that original Literal object, and an index into that literal.
+ *      When it comes times to parse, we get text[index] from that literal,
+ *      and if it matches, generate a successor state that's basically the
+ *      same except with index+1.
+ * 
+ * This example is almost trivial, and it doesn't really matter which way
+ * we go for something as simple as a Literal.  But it pays off for complex
+ * components, like ones that allow recursion (we don't have to recurse 
+ * ahead of time, just when necessary), and intersections of two grammars 
+ * (we don't have to generate the complete intersection of the two grammars, 
+ * just the parts we can actually get to).
+ * 
+ * Each kind of grammar component is typically associated with a dedicated
+ * kind of state, which keeps the kind of information you need for parsing 
+ * that kind of component (e.g. indices and such).  Each component is 
+ * responsible for producing an appropriate first state for parsing 
+ * itself; e.g. [SMLiteralComponent.firstState] returns a [SMLiteralState] 
+ * with a reference to itself and the index 0.
+ * 
+ * States can contain other states; indeed this is how most of the real work
+ * of the grammar gets done.
+ * 
+ *      - The [SMIntersectionState], which is associated with 
+ *      [SMIntersectionComponent], contains two child states, each one
+ *      describing the current parse state of each grammar being
+ *      intersected.
+ * 
+ *      - The [SMEmbedState], which handles grammars embedded as symbols 
+ *      into other grammars, contains a child state describing where in 
+ *      the embedded grammar the current parse state is.  (This is actually 
+ *      the only place where we have a "stack"; from the point of view of 
+ *      the other components/states, we might as well be a non-push-down/
+ *      non-recursive automaton.) 
+ * 
+ *      - Actually, we handle concatenations like this as well, with the
+ *      [SMSequenceState] keeping an index into a sequence of child components, 
+ *      and its child state holding the current parse state with respect to the
+ *      child component at that index.  This is kinda overkill, but it 
+ *      simplified some other aspects of the algorithm.
+ */
 
 export type SymbolTable = {[key: string]: SMComponent};
 type StringDict = {[tier: string]: string};
@@ -80,6 +169,27 @@ class SMSubsequentOutput extends SMOutput {
 
 }
 
+/**
+ * SMComponent
+ * 
+ * The abstract base class for all grammar components (e.g.
+ * literals, concatenations, etc.).  Grammar components form 
+ * a tree: unions, sequences, intersections etc. contain other
+ * components as their children, with the leaf nodes being
+ * either literals [SMLiteralComponent] or symbols [SMEmbedComponent].
+ * 
+ * Components need to do two things: 
+ *    (a) they need to be able to provide inital states for 
+ *        state traversal, 
+ *    (b) they need to be able to say what tapes their grammar
+ *        can read or write to.
+ * 
+ * States typically retain references to the component that created
+ * them (or, if these states were created by previous states, the
+ * component that created their ultimate ancestor).  That way individual
+ * states don't have to keep track of information that doesn't change
+ * in lineages of states, things like what tiers can be affected.
+ */
 export abstract class SMComponent {
 
     constructor(
