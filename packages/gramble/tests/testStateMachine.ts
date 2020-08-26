@@ -1,48 +1,11 @@
-import {StringDict, LiteralState, State, ConcatState, UnionState, JoinState, EmbedState, SymbolTable, ProjectionState} from "../src/stateMachine"; 
 import { expect } from 'chai';
-import { Gen } from "../src/util";
+import {Literalizer, Seq, Uni, Join, Emb, Proj, StringDict} from "../src/parserInterface";
 
-
-function Lit(tier: string, text: string): State {
-    return new LiteralState(tier, text);
-}
-
-const Literalizer = (tier: string) => (text: string) => Lit(tier, text);
 const text = Literalizer("text");
 const unrelated = Literalizer("unrelated");
 const t1 = Literalizer("t1");
 const t2 = Literalizer("t2");
 const t3 = Literalizer("t3");
-
-function Seq(...children: State[]): State {
-    if (children.length == 0) {
-        throw new Error("Sequences must have at least 1 child");
-    }
-
-    if (children.length == 1) {
-        return children[0];
-    }
-
-    return new ConcatState(children[0], Seq(...children.slice(1)));
-}
-
-function Uni(...children: State[]): State {
-    return new UnionState(children);
-}
-
-
-function Join(child1: State, child2: State): State {
-    return new JoinState(child1, child2);
-}
-
-
-function Emb(symbolName: string, symbolTable: SymbolTable): State {
-    return new EmbedState(symbolName, symbolTable);
-}
-
-function Proj(child: State, ...tiers: string[]): State {
-    return new ProjectionState(child, new Set(tiers));
-}
 
 
 export function testNumOutputs(outputs: StringDict[], expected_num: number) {
@@ -58,7 +21,6 @@ export function testHasOutput(outputs: StringDict[], tier: string, target: strin
         expect(results).to.contain(target);
     });
 }
-
 
 export function testDoesntHaveOutput(outputs: StringDict[], tier: string, target: string) {
     it("should not have " + target + " on tier " + tier, function() {
