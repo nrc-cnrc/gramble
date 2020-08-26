@@ -1,14 +1,10 @@
-import {CellPos, SMState, SMOutput, SMComponent, SymbolTable, SMLiteralComponent, SMSequenceComponent, SMUnionComponent, SMEmbedComponent, SMNaturalJoinComponent} from "../src/stateMachine"; 
+import {StringDict, LiteralState, State, ConcatState, UnionState, JoinState, EmbedState, SymbolTable, ProjectionState} from "../src/stateMachine"; 
 import { expect } from 'chai';
 import { Gen } from "../src/util";
 
-var POS_COUNTER = 0;
-function newPos(): CellPos {
-    return new CellPos("A", 0, POS_COUNTER++)
-}
 
-function Lit(tier: string, text: string): SMComponent {
-    return new SMLiteralComponent(tier, text,  newPos());
+function Lit(tier: string, text: string): State {
+    return new LiteralState(tier, text);
 }
 
 const Literalizer = (tier: string) => (text: string) => Lit(tier, text);
@@ -18,35 +14,57 @@ const t1 = Literalizer("t1");
 const t2 = Literalizer("t2");
 const t3 = Literalizer("t3");
 
+function Seq(...children: State[]): State {
+    if (children.length == 0) {
+        throw new Error("Sequences must have at least 1 child");
+    }
 
-function Seq(...children: SMComponent[]): SMComponent {
-    return new SMSequenceComponent(children,  newPos());
+    if (children.length == 1) {
+        return children[0];
+    }
+
+    return new ConcatState(children[0], Seq(...children.slice(1)));
 }
 
-function Uni(...children: SMComponent[]): SMComponent {
-    return new SMUnionComponent(children,  newPos());
+function Uni(...children: State[]): State {
+    return new UnionState(children);
 }
 
-function Emb(symbolName: string, symbolTable: SymbolTable): SMComponent {
-    return new SMEmbedComponent(symbolName, symbolTable,  newPos());
+
+function Join(child1: State, child2: State): State {
+    return new JoinState(child1, child2);
 }
 
-function Join(child1: SMComponent, child2: SMComponent): SMComponent {
-    return new SMNaturalJoinComponent(child1, child2,  newPos());
+
+function Emb(symbolName: string, symbolTable: SymbolTable): State {
+    return new EmbedState(symbolName, symbolTable);
 }
 
-export function testNumOutputs(states: SMOutput[], expected_num: number) {
+function Proj(child: State, ...tiers: string[]): State {
+    return new ProjectionState(child, new Set(tiers));
+}
+
+
+export function testNumOutputs(outputs: StringDict[], expected_num: number) {
     it("should have " + expected_num + " result(s)", function() {
-        expect(states.length).to.equal(expected_num);
+        expect(outputs.length).to.equal(expected_num);
     });
 }
 
-export function testHasOutput(states: SMOutput[], tier: string, target: string) {
+export function testHasOutput(outputs: StringDict[], tier: string, target: string) {
     it("should have " + target + " on tier " + tier, function() {
-        var results = states.map(s => s.toObj())
-                            .filter(o => tier in o)
-                            .map(o => o[tier]);
+        var results = outputs.filter(o => tier in o)
+                             .map(o => o[tier]);
         expect(results).to.contain(target);
+    });
+}
+
+
+export function testDoesntHaveOutput(outputs: StringDict[], tier: string, target: string) {
+    it("should not have " + target + " on tier " + tier, function() {
+        var results = outputs.filter(o => tier in o)
+                             .map(o => o[tier]);
+        expect(results).to.not.contain(target);
     });
 }
 
@@ -56,7 +74,6 @@ describe('Literal text:hello', function() {
     testNumOutputs(outputs, 1);
     testHasOutput(outputs, "text", "hello");
 });
-
 
 describe('Sequence text:hello+test:world', function() {
     const grammar = Seq(text("hello"), text("world"));
@@ -98,7 +115,7 @@ describe('Alt text:hello|text:goodbye', function() {
 }); 
 
 
-describe('Sequence with alt: (text:hello|text:goodbye)+test:world', function() {
+describe('Sequence with alt: (text:hello|text:goodbye)+text:world', function() {
     const grammar = Seq(Uni(text("hello"), text("goodbye")), text("world"));
     const outputs = [...grammar.run()];
     testNumOutputs(outputs, 2);
@@ -106,40 +123,32 @@ describe('Sequence with alt: (text:hello|text:goodbye)+test:world', function() {
     testHasOutput(outputs, "text", "goodbyeworld");
 }); 
 
-describe('Symbol containing text:hello', function() {
-    const symbolTable = { "s": text("hello") };
-    const grammar = Emb("s", symbolTable);
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello");
-}); 
-
-
-describe('Symbol containing text:hello+text:world', function() {
-    const symbolTable = { "s": Seq(text("hello"), text("world")) };
-    const grammar = Emb("s", symbolTable);
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "helloworld");
-}); 
-
-
-describe('Symbol containing text:hello|text:goodbye', function() {
-    const symbolTable = { "s": Uni(text("hello"), text("goodbye")) };
-    const grammar = Emb("s", symbolTable);
+describe('Sequence with alt: text:say+(text:hello|text:goodbye)', function() {
+    const grammar = Seq(text("say"), Uni(text("hello"), text("goodbye")));
     const outputs = [...grammar.run()];
     testNumOutputs(outputs, 2);
-    testHasOutput(outputs, "text", "hello");
-    testHasOutput(outputs, "text", "goodbye");
+    testHasOutput(outputs, "text", "sayhello");
+    testHasOutput(outputs, "text", "saygoodbye");
 }); 
 
 
-describe('Joining t1:hi & t1:hi', function() {
+describe('Sequence with alt: (text:hello|text:goodbye)+(text:world|text:kitty)', function() {
+    const grammar = Seq(Uni(text("hello"), text("goodbye")), Uni(text("world"), text("kitty")));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 4);
+    testHasOutput(outputs, "text", "helloworld");
+    testHasOutput(outputs, "text", "goodbyeworld");
+    testHasOutput(outputs, "text", "hellokitty");
+    testHasOutput(outputs, "text", "goodbyekitty");
+}); 
+
+
+describe('Joining t1:hello & t1:hello', function() {
     const grammar = Join(text("hello"), text("hello"));
     const outputs = [...grammar.run()];
     testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
 });
-
 
 describe('Joining t1:hi & t1:hi+t2:bye', function() {
     const outputs = [...Join(t1("hi"), Seq(t1("hi"), t2("bye"))).run()];
@@ -147,19 +156,52 @@ describe('Joining t1:hi & t1:hi+t2:bye', function() {
     testHasOutput(outputs, "t2", "bye");
 }); 
 
-
 describe('Joining (t1:hi & t1:hi+t2:bye) & t2:bye+t3:yo', function() {
     const outputs = [...Join(Join(t1("hi"), Seq(t1("hi"), t2("bye"))), Seq(t2("bye"), t3("yo"))).run()];
     testNumOutputs(outputs, 1);
     testHasOutput(outputs, "t3", "yo");
 }); 
 
-describe('Joining two sequences', function() {
-    const outputs = [...Join(Seq(t1("hi"), t1("hi")), Seq(Seq(t1("hi"), t2("bye")), Seq(t1("hi"), t2("bye")))).run()];
+
+
+describe('Joining text:hello+text:world & text:hello+text:world', function() {
+    const outputs = [...Join(Seq(text("hello"), text("world")), Seq(text("hello"), text("world"))).run()];
     testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "t2", "byebye");
+    testHasOutput(outputs, "text", "helloworld");
 }); 
 
+describe('Joining t1:hello+t1:kitty & t1:hello+t2:goodbye+t1:kitty+t2:world', function() {
+    const outputs = [...Join(Seq(t1("hello"), t1("kitty")), Seq(t1("hello"), t2("goodbye"), t1("kitty"), t2("world"))).run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "goodbyeworld");
+}); 
+
+describe('Joining t1:hello+t1:kitty & (t1:hello+t1:kitty)+(t2:goodbye+t2:world)', function() {
+    const outputs = [...Join(Seq(t1("hello"), t1("kitty")), Seq(Seq(t1("hello"), t1("kitty")), Seq(t2("goodbye"), t2("world")))).run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "goodbyeworld");
+}); 
+
+
+describe('Joining t1:hello+t1:kitty & (t1:hello+t2:goodbye)+(t1:kitty+t2:world)', function() {
+    const outputs = [...Join(Seq(t1("hello"), t1("kitty")), Seq(Seq(t1("hello"), t2("goodbye")), Seq(t1("kitty"), t2("world")))).run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "goodbyeworld");
+}); 
+
+
+describe('Joining t1:hello+t1:kitty & (t1:hello+t2:goodbye)+(t2:world+t1:kitty)', function() {
+    const outputs = [...Join(Seq(t1("hello"), t1("kitty")), Seq(Seq(t1("hello"), t2("goodbye")), Seq(t2("world"), t1("kitty")))).run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "goodbyeworld");
+}); 
+
+
+describe('Joining t1:hello+t1:kitty & (t1:hello+t2:goodbye+t1:kitty)+t2:world)', function() {
+    const outputs = [...Join(Seq(t1("hello"), t1("kitty")), Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")), t2("world"))).run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "goodbyeworld");
+}); 
 
 describe('Joining an alternation & literal', function() {
     const outputs = [...Join(Uni(t1("hi"), t1("yo")), Seq(t1("hi"), t2("bye"))).run()];
@@ -167,20 +209,6 @@ describe('Joining an alternation & literal', function() {
     testHasOutput(outputs, "t2", "bye");
 }); 
 
-describe('Symbol of (t1:hi & t1:hi+t2:bye)', function() {
-    const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
-    const outputs = [...Emb("hi2bye", symbolTable).run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "t2", "bye");
-}); 
-
-describe('Joining sym(t1:hi & t1:hi+t2:bye) & t2:bye+t3:yo', function() {
-    const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
-    const grammar = Join(Emb("hi2bye", symbolTable), Seq(t2("bye"), t3("yo")));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "t3", "yo");
-}); 
 
 describe('Joining t1:hi & (t1:hi+t2:bye & t2:bye+t3:yo)', function() {
     const outputs = [...Join(t1("hi"), Join(Seq(t1("hi"), t2("bye")), Seq(t2("bye"), t3("yo")))).run()];
@@ -188,24 +216,9 @@ describe('Joining t1:hi & (t1:hi+t2:bye & t2:bye+t3:yo)', function() {
     testHasOutput(outputs, "t3", "yo");
 }); 
 
-describe('Joining t1:hi & sym(t1:hi+t2:bye & t2:bye+t3:yo)', function() {
-    const symbolTable = { "hi2yo": Join(Seq(t1("hi"), t2("bye")), Seq(t2("bye"), t3("yo")))};
-    const grammar = Join(t1("hi"), Emb("hi2yo", symbolTable));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "t3", "yo");
-}); 
 
 describe('Joining of (t1:hi & t1:hi+t2:bye)+t2:world', function() {
     const outputs = [...Seq(Join(t1("hi"), Seq(t1("hi"), t2("bye"))), t2("world")).run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "t2", "byeworld");
-}); 
-
-describe('Joining of sym(t1:hi & t1:hi+t2:bye)+t2:world', function() {
-    const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
-    const grammar = Seq(Emb("hi2bye", symbolTable), t2("world")); 
-    const outputs = [...grammar.run()];
     testNumOutputs(outputs, 1);
     testHasOutput(outputs, "t2", "byeworld");
 }); 
@@ -244,17 +257,17 @@ describe('Joining text:hello+unrelated:foo & text:hello+unrelated:foo', function
     testHasOutput(outputs, "unrelated", "foo");
 }); 
 
-describe('Joining text:hello & text:hello', function() {
-    const outputs = [...Join(text("hello"), text("hello")).run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello");
-}); 
-
 describe('Joining text:hello & text:hello+unrelated:foo', function() {
     const outputs = [...Join(text("hello"), Seq(text("hello"), unrelated("foo"))).run()];
     testNumOutputs(outputs, 1);
     testHasOutput(outputs, "unrelated", "foo");
 }); 
+
+describe('Joining text:hello & unrelated:foo+text:hello', function() {
+    const outputs = [...Join(text("hello"), Seq(unrelated("foo"),text("hello"))).run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "unrelated", "foo");
+});
 
 describe('Joining text:hello+unrelated:foo & text:hello', function() {
     const outputs = [...Join(Seq(text("hello"), unrelated("foo")), text("hello")).run()];
@@ -262,6 +275,11 @@ describe('Joining text:hello+unrelated:foo & text:hello', function() {
     testHasOutput(outputs, "unrelated", "foo");
 }); 
 
+describe('Joining +unrelated:foo+text:hello & text:hello', function() {
+    const outputs = [...Join(Seq(unrelated("foo"), text("hello")), text("hello")).run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "unrelated", "foo");
+}); 
 
 describe('Joining text:hello+unrelated:foo & text:hello+unrelated:bar', function() {
     const outputs = [...Join(Seq(text("hello"), unrelated("foo")), Seq(text("hello"), unrelated("bar"))).run()];
@@ -273,7 +291,6 @@ describe('Joining (text:hello|text:goodbye) & (text:goodbye|text:welcome)', func
     testNumOutputs(outputs, 1);
     testHasOutput(outputs, "text", "goodbye");
 }); 
-
 
 describe('Joining (text:goodbye|text:welcome) & (text:hello|text:goodbye)', function() {
     const outputs = [...Join(Uni(text("goodbye"),  text("welcome")), Uni(text("hello"), text("goodbye"))).run()];
@@ -316,4 +333,138 @@ describe('Joining to nested joining, leftward', function() {
 describe('Joining to nested joining, rightward', function() {
     const outputs = [...Join(text("goodbye"), Join(Uni(text("yo"), text("goodbye")), Join(Uni(text("hello"), text("goodbye")), Uni(text("goodbye"),  text("welcome"))))).run()];
     testNumOutputs(outputs, 1);
+}); 
+
+
+describe('Joining to a sequence of alternating sequences ', function() {
+    const outputs = [...Join(text("hello"), Seq(Uni(Seq(text("hello"),unrelated("hola")), Seq(text("goodbye"), unrelated("adios"))))).run()];
+    testNumOutputs(outputs, 1);
+}); 
+
+
+describe('Joining to a sequence of alternating sequences ', function() {
+    const outputs = [...Join(Seq(text("hello"), unrelated("adios")), Seq(Uni(Seq(text("hello"),unrelated("hola")), Seq(text("goodbye"), unrelated("adios"))))).run()];
+    testNumOutputs(outputs, 0);
+});
+
+describe('Joining to an alt of different tiers', function() {
+    const outputs = [...Join(text("hello"), Uni(text("hello"), unrelated("foo"))).run()];
+    testNumOutputs(outputs, 2);
+});
+
+/**
+ * Embedding tests
+ */
+
+describe('Symbol containing text:hello', function() {
+    const symbolTable = { "s": text("hello") };
+    const grammar = Emb("s", symbolTable);
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+}); 
+
+describe('Symbol containing text:hello+text:world', function() {
+    const symbolTable = { "s": Seq(text("hello"), text("world")) };
+    const grammar = Emb("s", symbolTable);
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "helloworld");
+}); 
+
+describe('Symbol containing text:hello|text:goodbye', function() {
+    const symbolTable = { "s": Uni(text("hello"), text("goodbye")) };
+    const grammar = Emb("s", symbolTable);
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 2);
+    testHasOutput(outputs, "text", "hello");
+    testHasOutput(outputs, "text", "goodbye");
+}); 
+
+describe('Symbol of (t1:hi & t1:hi+t2:bye)', function() {
+    const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
+    const outputs = [...Emb("hi2bye", symbolTable).run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "bye");
+}); 
+
+describe('Joining sym(t1:hi & t1:hi+t2:bye) & t2:bye+t3:yo', function() {
+    const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
+    const grammar = Join(Emb("hi2bye", symbolTable), Seq(t2("bye"), t3("yo")));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t3", "yo");
+}); 
+
+describe('Joining t1:hi & sym(t1:hi+t2:bye & t2:bye+t3:yo)', function() {
+    const symbolTable = { "hi2yo": Join(Seq(t1("hi"), t2("bye")), Seq(t2("bye"), t3("yo")))};
+    const grammar = Join(t1("hi"), Emb("hi2yo", symbolTable));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t3", "yo");
+});  
+
+describe('Joining of sym(t1:hi & t1:hi+t2:bye)+t2:world', function() {
+    const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
+    const grammar = Seq(Emb("hi2bye", symbolTable), t2("world")); 
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "byeworld");
+}); 
+
+/**
+ * Projection tests
+ */
+
+describe('Projection(text) of text:hello', function() {
+    const grammar = text("hello");
+    const outputs = [...Proj(grammar, "text").run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+}); 
+
+
+describe('Projection(text) of text:hello+unrelated:foo', function() {
+    const grammar = Seq(text("hello"), unrelated("foo"));
+    const outputs = [...Proj(grammar, "text").run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+    testDoesntHaveOutput(outputs, "unrelated", "foo");
+}); 
+
+
+describe('Proj(text, text:hello+unrelated:foo)+unrelated:bar', function() {
+    const grammar = Seq(Proj(Seq(text("hello"), unrelated("foo")),"text"), unrelated("bar"));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+    testHasOutput(outputs, "unrelated", "bar");
+    testDoesntHaveOutput(outputs, "unrelated", "foobar");
+    testDoesntHaveOutput(outputs, "unrelated", "foo");
+}); 
+
+
+describe('Proj(text, text:hello+unrelated:foo) & unrelated:bar', function() {
+    const grammar = Join(Proj(Seq(text("hello"), unrelated("foo")),"text"), unrelated("bar"));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+    testHasOutput(outputs, "unrelated", "bar");
+    testDoesntHaveOutput(outputs, "unrelated", "foobar");
+    testDoesntHaveOutput(outputs, "unrelated", "foo");
+}); 
+
+
+describe('Projection(text) of text:hello+unrelated:foo & text:hello+unrelated:foo', function() {
+    const grammar = Join(Seq(text("hello"), unrelated("foo")), Seq(text("hello"), unrelated("foo")));
+    const outputs = [...Proj(grammar, "text").run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+    testDoesntHaveOutput(outputs, "unrelated", "foo");
+}); 
+
+describe('Projection(text) of text:hello+unrelated:foo & text:hello+unrelated:bar', function() {
+    const grammar = Join(Seq(text("hello"), unrelated("foo")), Seq(text("hello"), unrelated("bar")));
+    const outputs = [...Proj(grammar, "text").run()];
+    testNumOutputs(outputs, 0);
 }); 
