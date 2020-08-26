@@ -83,6 +83,21 @@ describe('Sequence text:hello+test:world', function() {
 }); 
 
 
+describe('Sequence text:hello+test:<empty>', function() {
+    const grammar = Seq(text("hello"), text(""));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+}); 
+
+
+describe('Sequence test:<empty>+text:hello', function() {
+    const grammar = Seq(text(""), text("hello"));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+}); 
+
 describe('Sequence text:hello+text:,+test:world', function() {
     const grammar = Seq(text("hello"), text(", "), text("world"));
     const outputs = [...grammar.run()];
@@ -143,8 +158,71 @@ describe('Sequence with alt: (text:hello|text:goodbye)+(text:world|text:kitty)',
 }); 
 
 
-describe('Joining t1:hello & t1:hello', function() {
+describe('Joining text:hello & text:hello', function() {
     const grammar = Join(text("hello"), text("hello"));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+});
+
+
+describe('Joining text:hello & text:hello+text:<emtpy>', function() {
+    const grammar = Join(text("hello"), Seq(text("hello"), text("")));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+});
+
+
+describe('Joining text:hello & text:<emtpy>+text:hello', function() {
+    const grammar = Join(text("hello"), Seq(text(""), text("hello")));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+});
+
+
+describe('Joining text:<emtpy>+text:hello & text:hello', function() {
+    const grammar = Join(Seq(text(""), text("hello")), text("hello"));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+});
+
+
+describe('Joining text:hello+text:<emtpy> & text:hello', function() {
+    const grammar = Join(Seq(text("hello"), text("")), text("hello"));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+});
+
+describe('Joining Seq(text:hello) & text:hello', function() {
+    const grammar = Join(Seq(text("hello")), text("hello"));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+});
+
+
+describe('Joining text:hello & Seq(text:hello)', function() {
+    const grammar = Join(text("hello"), Seq(text("hello")));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+});
+
+
+describe('Joining Uni(text:hello) & text:hello', function() {
+    const grammar = Join(Uni(text("hello")), text("hello"));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+});
+
+
+describe('Joining text:hello & Uni(text:hello)', function() {
+    const grammar = Join(text("hello"), Uni(text("hello")));
     const outputs = [...grammar.run()];
     testNumOutputs(outputs, 1);
     testHasOutput(outputs, "text", "hello");

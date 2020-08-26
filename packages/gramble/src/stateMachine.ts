@@ -1,8 +1,9 @@
 import { Gen } from "./util";
+import { runInNewContext } from "vm";
 
 /**
  * This is the parsing engine that underlies Gramble.
- * It executes a multi-tape push-down state machine.
+ * It executes a multi-tape recursive state machine.
  * 
  *      - "Multi-tape" means that there are multiple "tapes"
  *      (in the Turing machine sense) from/to which the machine
@@ -13,8 +14,11 @@ import { Gen } from "./util";
  *      (In actual implementation we only write to tapes, because
  *      we actually implement "reading" from a tape as a join operation.)
  * 
- *      - "Push-down" means that the machine has access to a stack,
- *      making it possible to parse recursive grammars.  
+ *      - "Recursive" means that states can themselves contain states,
+ *      meaning that the machine can parse context-free languages rather
+ *      than just regular languages.  (Recursive and push-down automata
+ *      are equivalent, but I hesitate to call this "push-down" because 
+ *      states/transitions don't perform any operations to the stack.)
  *      
  * The execution of this particular state machine is lazy, 
  * in the sense that at no point is the entire machine ever 
@@ -25,6 +29,7 @@ import { Gen } from "./util";
 
 export type SymbolTable = {[key: string]: State};
 export type StringDict = {[key: string]: string};
+
 
 export abstract class State {
 
@@ -125,11 +130,7 @@ export class LiteralState extends State {
             return;
         }
         
-        if (this.text == "") {
-            return;
-        }
-
-        if (this.text[0] != target) {
+        if (this.text == "" || this.text[0] != target) {
             return;
         }
 
@@ -146,33 +147,34 @@ abstract class BinaryState extends State {
     ) {
         super();
     }
-    
 
+    public get id(): string {
+        return `${this.constructor.name}(${this.child1.id},${this.child2.id})`;
+    }
+    
     public get tiers(): Set<string> {
         return new Set([...this.child1.tiers, ...this.child2.tiers]);
     }
 
+    public accepting(): boolean {
+        return this.child1.accepting() && this.child2.accepting();
+    }
 }
 
-
 export class ConcatState extends BinaryState {
-
     
-    public get id(): string {
-        return `${this.child1.id}+${this.child2.id}`;
-    }
-    
-    public accepting(): boolean {
-        return false;
-    }
 
     public *query(prevOutput: StringDict): Gen<[StringDict, State]> {
         if (this.child1.accepting()) {
             yield* this.child2.query(prevOutput);
             return;
-        }
+        } 
 
         for (const [child1Output, child1Next] of this.child1.query(prevOutput)) {
+            if (child1Next.accepting()) {
+                yield [child1Output, this.child2];
+                continue;
+            }
             yield [child1Output, new ConcatState(child1Next, this.child2)];
         }
     }
@@ -187,7 +189,7 @@ export class ConcatState extends BinaryState {
             for (const child1next of this.child1.require(tier, target)) {
                 if (child1next.accepting()) {
                     yield this.child2;
-                    return;
+                    continue;
                 }
                 yield new ConcatState(child1next, this.child2);
             }
@@ -197,7 +199,7 @@ export class ConcatState extends BinaryState {
         for (const child2Next of this.child2.require(tier, target)) {
             if (child2Next.accepting()) {
                 yield this.child1;
-                return;
+                continue;
             } 
             yield new ConcatState(this.child1, child2Next);
         }
@@ -243,54 +245,49 @@ export class UnionState extends State {
     }
 }
 
-export class JoinState extends BinaryState {
+function *iterPriorityUnion<T>(iter1: Gen<T>, iter2: Gen<T>): Gen<T> {
 
-    public accepting(): boolean {
-        return this.child1.accepting() && this.child2.accepting();
+    var yieldedAlready = false;
+    for (const output of iter1) {
+        yield output;
+        yieldedAlready = true;
     }
 
-    public get id(): string {
-        return `(${this.child1.id}&${this.child2.id})`;
+    if (!yieldedAlready) {   
+        yield* iter2;
+    }
+}
+
+export class JoinState extends BinaryState {
+
+    public *queryLeftJoin(prevOutput: StringDict, 
+                          c1: State,
+                          c2: State): Gen<[StringDict, State]> {
+        for (const [o1, newChild1] of c1.query(prevOutput)) {
+            const tier = o1["__LAST_TIER__"];
+            const c = o1["__LAST_CHAR__"];
+
+            if (!("__LAST_TIER__" in o1) || !c2.tiers.has(tier)) {
+                yield [o1, new JoinState(newChild1, c2)];
+                continue;
+            }
+            
+            for (const newChild2 of c2.require(tier, c)) {
+                yield [o1, new JoinState(newChild1, newChild2)];
+            }
+        }
     }
 
     public *query(prevOutput: StringDict): Gen<[StringDict, State]> {
 
+        /*
         if (this.accepting()) {
             return;
-        }
+        } */
 
-        var emittedAlready = false;
-        for (const [o1, newChild1] of this.child1.query(prevOutput)) {
-            const tier = o1["__LAST_TIER__"];
-            const c = o1["__LAST_CHAR__"];
-
-            if (!("__LAST_TIER__" in o1) || !this.child2.tiers.has(tier)) {
-                yield [o1, new JoinState(newChild1, this.child2)];
-                emittedAlready = true;
-                continue;
-            }
-            
-            for (const newChild2 of this.child2.require(tier, c)) {
-                yield [o1, new JoinState(newChild1, newChild2)];
-                emittedAlready = true;
-            }
-        }
-
-        if (emittedAlready) {
-            return;
-        }
-        
-        for (const [o2, newChild2] of this.child2.query(prevOutput)) {
-            const tier = o2["__LAST_TIER__"];
-            const c = o2["__LAST_CHAR__"];
-            if (!("__LAST_TIER__" in o2) || !this.child1.tiers.has(tier)) {
-                yield [o2, new JoinState(this.child1, newChild2)];
-                continue;
-            }
-            for (const newChild1 of this.child1.require(tier, c)) {
-                yield [o2, new JoinState(newChild1, newChild2)];
-            }
-        }
+        const leftJoin = this.queryLeftJoin(prevOutput, this.child1, this.child2);
+        const rightJoin = this.queryLeftJoin(prevOutput, this.child2, this.child1);
+        yield* iterPriorityUnion(leftJoin, rightJoin);
     }
 
     public *require(tier: string, target: string): Gen<State> {
@@ -314,33 +311,20 @@ export class JoinState extends BinaryState {
     }
 }
 
+abstract class UnaryState extends State {
 
-export class EmbedState extends State {
-
-    constructor(
-        public symbolName: string,
-        public symbolTable: SymbolTable
-    ) { 
-        super();
-    }
-
-    public get id(): string {
-        return `${this.symbolName}`;
-    }
+    public abstract get child(): State;
 
     public get tiers(): Set<string> {
         return this.child.tiers;
     }
 
-    public get child(): State {
-        if (!(this.symbolName in this.symbolTable)) {
-            throw new Error(`Cannot find symbol name ${this.symbolName}`);
-        }
-        return this.symbolTable[this.symbolName];
+    public get id(): string {
+        return `${this.constructor.name}(${this.child.id})`;
     }
 
     public accepting(): boolean {
-        return false;
+        return this.child.accepting();
     }
 
     public *query(prevOutput: StringDict): Gen<[StringDict, State]> {
@@ -350,27 +334,39 @@ export class EmbedState extends State {
     public *require(tier: string, target: string): Gen<State> {
         yield* this.child.require(tier, target);
     }
+
 }
 
-
-export class ProjectionState extends State {
+export class EmbedState extends UnaryState {
 
     constructor(
-        public child: State,
-        public tiers: Set<string>
+        public symbolName: string,
+        public symbolTable: SymbolTable
     ) { 
         super();
     }
-    
-    public accepting(): boolean {
-        return this.child.accepting();
+
+    public get child(): State {
+        if (!(this.symbolName in this.symbolTable)) {
+            throw new Error(`Cannot find symbol name ${this.symbolName}`);
+        }
+        return this.symbolTable[this.symbolName];
+    }
+}
+
+export class ProjectionState extends UnaryState {
+
+    constructor(
+        public child: State,
+        protected _tiers: Set<string>
+    ) { 
+        super();
     }
 
-
-    public get id(): string {
-        return `PRJ:${[...this.tiers]}[${this.child.id}]`;
+    public get tiers(): Set<string> {
+        return this._tiers;
     }
-    
+
     public *query(output: StringDict): Gen<[StringDict, State]> {
 
         for (const [childOutput, childNext] of this.child.query(output)) {
