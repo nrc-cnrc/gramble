@@ -535,13 +535,14 @@ export class RenameState extends UnaryState {
 
     public calculateTiers(symbolStack: string[]): Set<string> {
         const results: Set<string> = new Set();
-        for (const tier in this.child.calculateTiers(symbolStack)) {
+        for (const tier of this.child.calculateTiers(symbolStack)) {
             if (tier == this.fromTier) {
                 results.add(this.toTier);
                 continue;
             }
             results.add(tier);
         }
+        console.log(`tiers = {${[...results]}}`);
         return results;
     }
 
@@ -549,13 +550,19 @@ export class RenameState extends UnaryState {
         symbols: CounterStack): Gen<[StringDict, State]> {
 
         for (const [childOutput, childNext] of this.child.query(prevOutput, symbols)) {
-            const myOutput: StringDict = {};
+            console.log(`child output = ${JSON.stringify(childOutput)}`);
+            const myOutput: StringDict = { [this.toTier]: ""};
+            Object.assign(myOutput, childOutput);
             for (const tier in childOutput) {
                 if (tier == this.fromTier) {
-                    myOutput[this.toTier] = childOutput[tier];
+                    myOutput[this.toTier] += childOutput[tier];
                     continue;
                 }
-                myOutput[tier] = childOutput[tier];
+            }
+            myOutput[`${this.toTier}.${this.fromTier}`] = myOutput[this.fromTier];
+            delete myOutput[this.fromTier];
+            if (myOutput["__LAST_TIER__"] == this.fromTier) {
+                myOutput["__LAST_TIER__"] = this.toTier;
             }
             yield [myOutput, new RenameState(childNext, this.fromTier, this.toTier)];
         }
@@ -564,13 +571,12 @@ export class RenameState extends UnaryState {
     public *require(tier: string, 
                     target: string,
                     symbols: CounterStack): Gen<State> {
-
-        if (tier == this.fromTier) {
-            tier = this.toTier;
+        if (tier == this.toTier) {
+            tier = this.fromTier;
         }
 
-        yield* this.child.require(tier, target, symbols);
+        for (const childNext of this.child.require(tier, target, symbols)) {
+            yield new RenameState(childNext, this.fromTier, this.toTier);
+        }
     }
-     
-
 }

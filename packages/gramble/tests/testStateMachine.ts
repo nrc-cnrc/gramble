@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import {Literalizer, Seq, Uni, Join, Emb, Proj, StringDict} from "../src/parserInterface";
+import {Literalizer, Seq, Uni, Join, Emb, Proj, StringDict, Rename} from "../src/parserInterface";
 
 const text = Literalizer("text");
 const unrelated = Literalizer("unrelated");
@@ -508,3 +508,74 @@ describe('Projection(text) of text:hello+unrelated:foo & text:hello+unrelated:ba
     const outputs = [...Proj(grammar, "text").run()];
     testNumOutputs(outputs, 0);
 }); 
+
+describe('Rename(t2/t1) of t1:hello', function() {
+    const outputs = [...Rename(t1("hello"), "t1", "t2").run()];
+    console.log(outputs);
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "hello");
+    testDoesntHaveOutput(outputs, "t1", "hello");
+});
+
+describe('Rename(t2/t1) of t1:hello+t2:foo', function() {
+    const outputs = [...Rename(Seq(t1("hello"),t2("foo")), "t1", "t2").run()];
+    console.log(outputs);
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "hellofoo");
+    testDoesntHaveOutput(outputs, "t1", "hello");
+    testDoesntHaveOutput(outputs, "t2", "foo");
+});
+
+describe('Rename(t2/t1) of t1:hello+t3:foo', function() {
+    const outputs = [...Rename(Seq(t1("hello"),t3("foo")), "t1", "t2").run()];
+    console.log(outputs);
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "hello");
+    testHasOutput(outputs, "t3", "foo");
+    testDoesntHaveOutput(outputs, "t1", "hello");
+});
+
+
+describe('Joining t1:hello & rename(t2/t1, t1:hello))', function() {
+    const grammar = Join(t2("hello"), Rename(t1("hello"), "t1", "t2"));
+    const outputs = [...grammar.run()];
+    console.log(outputs);
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "hello");
+    testDoesntHaveOutput(outputs, "t1", "hello");
+});
+
+describe('Joining rename(t2/t1, t1:hello)) & t1:hello', function() {
+    const grammar = Join(Rename(t1("hello"), "t1", "t2"), t2("hello"));
+    const outputs = [...grammar.run()];
+    console.log(outputs);
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "hello");
+    testDoesntHaveOutput(outputs, "t1", "hello");
+});
+
+describe('Joining rename(t2/t1, t1:hello+t3:foo)) & t1:hello', function() {
+    const grammar = Join(Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"), t2("hello"));
+    const outputs = [...grammar.run()];
+    console.log(outputs);
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "hello");
+    testHasOutput(outputs, "t3", "foo");
+    testDoesntHaveOutput(outputs, "t1", "hello");
+});
+
+describe('Joining rename(t2/t1, t1:hello+t3:foo)) & t1:hello+t3:bar', function() {
+    const grammar = Join(Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"), Seq(t2("hello"), t3("bar")));
+    const outputs = [...grammar.run()];
+    console.log(outputs);
+    testNumOutputs(outputs, 0);
+});
+
+describe('Joining t1:hello+t3:bar & rename(t2/t1, t1:hello+t3:foo))', function() {
+    const grammar = Join(Seq(t2("hello"), t3("bar")), Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"));
+    const outputs = [...grammar.run()];
+    console.log(outputs);
+    testNumOutputs(outputs, 0);
+});
+
+
