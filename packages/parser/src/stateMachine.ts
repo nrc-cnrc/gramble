@@ -542,7 +542,6 @@ export class RenameState extends UnaryState {
             }
             results.add(tier);
         }
-        console.log(`tiers = {${[...results]}}`);
         return results;
     }
 
@@ -550,7 +549,6 @@ export class RenameState extends UnaryState {
         symbols: CounterStack): Gen<[StringDict, State]> {
 
         for (const [childOutput, childNext] of this.child.query(prevOutput, symbols)) {
-            console.log(`child output = ${JSON.stringify(childOutput)}`);
             const myOutput: StringDict = { [this.toTier]: ""};
             Object.assign(myOutput, childOutput);
             for (const tier in childOutput) {
