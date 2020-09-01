@@ -2,104 +2,12 @@
 import { Seq, Uni, Join, Emb, Proj } from "../src/parserInterface";
 import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput } from './testUtils';
 
-
-describe('Literal text:hello', function() {
-    const grammar = text("hello");
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello");
-});
-
-describe('Sequence text:hello+test:world', function() {
-    const grammar = Seq(text("hello"), text("world"));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "helloworld");
-}); 
-
-
-describe('Sequence text:hello+test:<empty>', function() {
-    const grammar = Seq(text("hello"), text(""));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello");
-}); 
-
-
-describe('Sequence test:<empty>+text:hello', function() {
-    const grammar = Seq(text(""), text("hello"));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello");
-}); 
-
-describe('Sequence text:hello+text:,+test:world', function() {
-    const grammar = Seq(text("hello"), text(", "), text("world"));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello, world");
-}); 
-
-describe('Nested sequence (text:hello+text:,)+test:world', function() {
-    const grammar = Seq(Seq(text("hello"), text(", ")), text("world"));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello, world");
-}); 
-
-
-describe('Nested sequence text:hello+(text:,+test:world)', function() {
-    const grammar = Seq(text("hello"), Seq(text(", ")), text("world"));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello, world");
-}); 
-
-
-describe('Alt text:hello|text:goodbye', function() {
-    const grammar = Uni(text("hello"), text("goodbye"));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 2);
-    testHasOutput(outputs, "text", "hello");
-    testHasOutput(outputs, "text", "goodbye");
-}); 
-
-
-describe('Sequence with alt: (text:hello|text:goodbye)+text:world', function() {
-    const grammar = Seq(Uni(text("hello"), text("goodbye")), text("world"));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 2);
-    testHasOutput(outputs, "text", "helloworld");
-    testHasOutput(outputs, "text", "goodbyeworld");
-}); 
-
-describe('Sequence with alt: text:say+(text:hello|text:goodbye)', function() {
-    const grammar = Seq(text("say"), Uni(text("hello"), text("goodbye")));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 2);
-    testHasOutput(outputs, "text", "sayhello");
-    testHasOutput(outputs, "text", "saygoodbye");
-}); 
-
-
-describe('Sequence with alt: (text:hello|text:goodbye)+(text:world|text:kitty)', function() {
-    const grammar = Seq(Uni(text("hello"), text("goodbye")), Uni(text("world"), text("kitty")));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 4);
-    testHasOutput(outputs, "text", "helloworld");
-    testHasOutput(outputs, "text", "goodbyeworld");
-    testHasOutput(outputs, "text", "hellokitty");
-    testHasOutput(outputs, "text", "goodbyekitty");
-}); 
-
-
 describe('Joining text:hello & text:hello', function() {
     const grammar = Join(text("hello"), text("hello"));
     const outputs = [...grammar.run()];
     testNumOutputs(outputs, 1);
     testHasOutput(outputs, "text", "hello");
 });
-
 
 describe('Joining text:hello & text:hello+text:<emtpy>', function() {
     const grammar = Join(text("hello"), Seq(text("hello"), text("")));
@@ -174,7 +82,6 @@ describe('Joining (t1:hi & t1:hi+t2:bye) & t2:bye+t3:yo', function() {
     testNumOutputs(outputs, 1);
     testHasOutput(outputs, "t3", "yo");
 }); 
-
 
 
 describe('Joining text:hello+text:world & text:hello+text:world', function() {
@@ -364,120 +271,3 @@ describe('Joining to an alt of different tiers', function() {
     const outputs = [...Join(text("hello"), Uni(text("hello"), unrelated("foo"))).run()];
     testNumOutputs(outputs, 2);
 });
-
-/**
- * Embedding tests
- */
-
-describe('Symbol containing text:hello', function() {
-    const symbolTable = { "s": text("hello") };
-    const grammar = Emb("s", symbolTable);
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello");
-}); 
-
-describe('Symbol containing text:hello+text:world', function() {
-    const symbolTable = { "s": Seq(text("hello"), text("world")) };
-    const grammar = Emb("s", symbolTable);
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "helloworld");
-}); 
-
-describe('Symbol containing text:hello|text:goodbye', function() {
-    const symbolTable = { "s": Uni(text("hello"), text("goodbye")) };
-    const grammar = Emb("s", symbolTable);
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 2);
-    testHasOutput(outputs, "text", "hello");
-    testHasOutput(outputs, "text", "goodbye");
-}); 
-
-describe('Symbol of (t1:hi & t1:hi+t2:bye)', function() {
-    const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
-    const outputs = [...Emb("hi2bye", symbolTable).run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "t2", "bye");
-}); 
-
-describe('Joining sym(t1:hi & t1:hi+t2:bye) & t2:bye+t3:yo', function() {
-    const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
-    const grammar = Join(Emb("hi2bye", symbolTable), Seq(t2("bye"), t3("yo")));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "t3", "yo");
-}); 
-
-describe('Joining t1:hi & sym(t1:hi+t2:bye & t2:bye+t3:yo)', function() {
-    const symbolTable = { "hi2yo": Join(Seq(t1("hi"), t2("bye")), Seq(t2("bye"), t3("yo")))};
-    const grammar = Join(t1("hi"), Emb("hi2yo", symbolTable));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "t3", "yo");
-});  
-
-describe('Joining of sym(t1:hi & t1:hi+t2:bye)+t2:world', function() {
-    const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
-    const grammar = Seq(Emb("hi2bye", symbolTable), t2("world")); 
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "t2", "byeworld");
-}); 
-
-/**
- * Projection tests
- */
-
-describe('Projection(text) of text:hello', function() {
-    const grammar = text("hello");
-    const outputs = [...Proj(grammar, "text").run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello");
-}); 
-
-
-describe('Projection(text) of text:hello+unrelated:foo', function() {
-    const grammar = Seq(text("hello"), unrelated("foo"));
-    const outputs = [...Proj(grammar, "text").run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello");
-    testDoesntHaveOutput(outputs, "unrelated", "foo");
-}); 
-
-
-describe('Proj(text, text:hello+unrelated:foo)+unrelated:bar', function() {
-    const grammar = Seq(Proj(Seq(text("hello"), unrelated("foo")),"text"), unrelated("bar"));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello");
-    testHasOutput(outputs, "unrelated", "bar");
-    testDoesntHaveOutput(outputs, "unrelated", "foobar");
-    testDoesntHaveOutput(outputs, "unrelated", "foo");
-}); 
-
-
-describe('Proj(text, text:hello+unrelated:foo) & unrelated:bar', function() {
-    const grammar = Join(Proj(Seq(text("hello"), unrelated("foo")),"text"), unrelated("bar"));
-    const outputs = [...grammar.run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello");
-    testHasOutput(outputs, "unrelated", "bar");
-    testDoesntHaveOutput(outputs, "unrelated", "foobar");
-    testDoesntHaveOutput(outputs, "unrelated", "foo");
-}); 
-
-
-describe('Projection(text) of text:hello+unrelated:foo & text:hello+unrelated:foo', function() {
-    const grammar = Join(Seq(text("hello"), unrelated("foo")), Seq(text("hello"), unrelated("foo")));
-    const outputs = [...Proj(grammar, "text").run()];
-    testNumOutputs(outputs, 1);
-    testHasOutput(outputs, "text", "hello");
-    testDoesntHaveOutput(outputs, "unrelated", "foo");
-}); 
-
-describe('Projection(text) of text:hello+unrelated:foo & text:hello+unrelated:bar', function() {
-    const grammar = Join(Seq(text("hello"), unrelated("foo")), Seq(text("hello"), unrelated("bar")));
-    const outputs = [...Proj(grammar, "text").run()];
-    testNumOutputs(outputs, 0);
-}); 

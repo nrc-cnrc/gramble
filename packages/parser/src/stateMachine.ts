@@ -29,7 +29,48 @@ import { Emb } from "./parserInterface";
  */
 
 export type SymbolTable = {[key: string]: State};
+
+const ANY: string = "__ANY__";
+const NONE: string = "__NONE__";
+
 export type StringDict = {[key: string]: string};
+
+
+class Output {
+
+    constructor(
+    ) { }
+
+    public add(tier: string, text: string) {
+        return new SuccessiveOutput(tier, text, this);
+    }
+
+    public toObj(): StringDict {
+        return {};
+    }
+}
+
+class SuccessiveOutput extends Output {
+
+    constructor(
+        public tier: string,
+        public text: string,
+        public prev: Output
+    ) { 
+        super();
+    }
+
+    public toObj(): StringDict {
+        const result = this.prev.toObj();
+        if (!(this.tier in result)) {
+            result[this.tier] = "";
+        }
+        result[this.tier] += this.text;
+        return result;
+    }
+}
+
+
 
 class CounterStack {
 
@@ -67,26 +108,13 @@ export abstract class State {
 
     public abstract get id(): string;
     
-    private _tiers: Set<string> | undefined = undefined;
-
-    public get tiers(): Set<string> {
-        if (this._tiers == undefined) {
-            this._tiers = this.calculateTiers([]);
-        }
-        return this._tiers;
+    public accepting(): boolean {
+        return false;
     }
 
-    public abstract calculateTiers(symbolStack: string[]): Set<string>;
-
-    public abstract accepting(): boolean;
-
-    public abstract query(prevOutput: StringDict,
-                          symbols: CounterStack): 
-                Gen<[StringDict, State]>;
-
-    public abstract require(tier: string, 
-                            target: string,
-                            symbols: CounterStack): Gen<State>;
+    public abstract probe(tier: string, 
+        target: string,
+        symbols: CounterStack): Gen<[string, string, State]>;
 
         
     public *run(maxRecursion: number = 4): Gen<StringDict> {
@@ -95,8 +123,8 @@ export abstract class State {
 
     public *depthFirst(maxRecursion: number = 4): Gen<StringDict> {
 
-        const initialOutput: StringDict = {};
-        var stateStack: [StringDict, State][] = [[initialOutput, this]];
+        const initialOutput: Output = new Output();
+        var stateStack: [Output, State][] = [[initialOutput, this]];
         var symbolStack = new CounterStack(maxRecursion);
 
         for (var topPair; topPair = stateStack.pop(); ) {
@@ -104,18 +132,19 @@ export abstract class State {
             const [prevOutput, prevState] = topPair;
 
             if (prevState.accepting()) {
-                yield prevOutput;
+                yield prevOutput.toObj();
             }
 
-            for (const [newOutput, newState] of prevState.query(prevOutput, symbolStack)) {
-                stateStack.push([newOutput, newState]);
+            for (const [tier, c, newState] of prevState.probe(ANY, ANY, symbolStack)) {
+                const nextOutput = prevOutput.add(tier, c);
+                stateStack.push([nextOutput, newState]);
             }
         }
     }
 
     public *breadthFirst(maxRecursion: number = 4): Gen<StringDict> {
-        const initialOutput: StringDict = {};
-        var stateQueue: [StringDict, State][] = [[initialOutput, this]];
+        const initialOutput: Output = new Output();
+        var stateQueue: [Output, State][] = [[initialOutput, this]];
         var symbolStack = new CounterStack(maxRecursion);
 
         for (var i = 0; i < stateQueue.length; i++) {
@@ -123,13 +152,51 @@ export abstract class State {
             const [prevOutput, prevState] = stateQueue[i];
 
             if (prevState.accepting()) {
-                yield prevOutput;
+                yield prevOutput.toObj();
             }
 
-            for (const [newOutput, newState] of prevState.query(prevOutput, symbolStack)) {
-                stateQueue.push([newOutput, newState]);
+            for (const [tier, c, newState] of prevState.probe(ANY, ANY, symbolStack)) {
+                const nextOutput = prevOutput.add(tier, c);
+                stateQueue.push([nextOutput, newState]);
             }
         }
+    }
+}
+
+export class AnyCharState extends State {
+
+
+    constructor(
+        public tier: string,
+        public consumed: boolean = false
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        return '${this.tier}:(ANY)';
+    }
+
+    public accepting(): boolean {
+        return this.consumed;
+    }
+    
+    public *probe(tier: string, 
+        target: string,
+        symbols: CounterStack): Gen<[string, string, State]> {
+
+        if (tier != ANY && tier != this.tier) {      // If the probe asks for a specific tier
+            yield [tier, target, this];  // and it's not the tier we 
+            return;                                  // care about, stay in place
+        }
+        
+        if (this.accepting()) {
+            return;
+        }
+
+        const nextState = new AnyCharState(this.tier, true);
+        yield [this.tier, target, nextState];
+
     }
 }
 
@@ -146,45 +213,31 @@ export class LiteralState extends State {
         return `${this.tier}:${this.text}`;
     }
 
-    public calculateTiers(symbolStack: string[]): Set<string> {
-        return new Set([this.tier]);
-    }
-
     public accepting(): boolean {
         return this.text == "";
     }
 
-    public *query(prevOutput: StringDict,
-                    symbols: CounterStack): Gen<[StringDict, State]> {
-        if (this.text == "") {
-            return;
-        }
+    public *probe(tier: string, 
+        target: string,
+        symbols: CounterStack): Gen<[string, string, State]> {
 
-        const nextOutput: StringDict = { [this.tier]: "" };
-        Object.assign(nextOutput, prevOutput);
-        nextOutput[this.tier] += this.text[0];
-        nextOutput["__LAST_TIER__"] = this.tier;
-        nextOutput["__LAST_CHAR__"] = this.text[0];
-        const nextState = new LiteralState(this.tier, this.text.slice(1));
-        yield [nextOutput, nextState];
-    }
-
-
-    public *require(tier: string, 
-                    target: string,
-                    symbols: CounterStack): Gen<State> {
-        if (tier != this.tier) {
-            yield this;
+        // If the probe asks for a specific tier and it's not the tier we care about, stay in place
+        if (tier != ANY && tier != this.tier) {
+            yield [tier, target, this];
             return;
         }
         
-        if (this.text == "" || this.text[0] != target) {
-            return;
+        // If it is the tier we care about, and we don't match, fail
+        if (this.text == "" || (target != ANY && this.text[0] != target)) {
+            return; // failure
         }
 
-        const nextState = new LiteralState(this.tier, this.text.slice(1));
-        yield nextState;
+        // it's a match, or the target was __ANY__
+        const nextState = new LiteralState(this.tier, this.text.slice(1)); // success
+        yield [this.tier, this.text[0], nextState];
+
     }
+
 }
 
 abstract class BinaryState extends State {
@@ -199,11 +252,6 @@ abstract class BinaryState extends State {
     public get id(): string {
         return `${this.constructor.name}(${this.child1.id},${this.child2.id})`;
     }
-    
-    public calculateTiers(symbolStack: string[]): Set<string> {
-        return new Set([...this.child1.calculateTiers(symbolStack), 
-                        ...this.child2.calculateTiers(symbolStack)]);
-    }
 
     public accepting(): boolean {
         return this.child1.accepting() && this.child2.accepting();
@@ -211,52 +259,41 @@ abstract class BinaryState extends State {
 }
 
 export class ConcatState extends BinaryState {
-    
 
-    public *query(prevOutput: StringDict,
-                symbols: CounterStack): Gen<[StringDict, State]> {
-
-        if (this.child1.accepting()) {
-            yield* this.child2.query(prevOutput, symbols);
-            return;
-        } 
-
-        for (const [child1Output, child1Next] of this.child1.query(prevOutput, symbols)) {
-            if (child1Next.accepting()) {            
-                yield [child1Output, this.child2];
-                continue;
-            }
-            yield [child1Output, new ConcatState(child1Next, this.child2)];
-        }
-    }
-
-    public *require(tier: string, 
+    public *probe(tier: string, 
                     target: string,
-                    symbols: CounterStack): Gen<State> {
+                    symbols: CounterStack): Gen<[string, string, State]> {
+
         if (this.child1.accepting()) { 
-            yield* this.child2.require(tier, target, symbols);
+            yield* this.child2.probe(tier, target, symbols);
             return;
         } 
 
-        if (this.child1.tiers.has(tier)) {
-            for (const child1next of this.child1.require(tier, target, symbols)) {
-                if (child1next.accepting()) {
-                    yield this.child2;
-                    continue;
-                }
-                yield new ConcatState(child1next, this.child2);
-            }
-            return;
-        }
+        for (const [child1tier, child1text, child1next] of this.child1.probe(tier, target, symbols)) {
 
-        for (const child2Next of this.child2.require(tier, target, symbols)) {
-            if (child2Next.accepting()) {
-                yield this.child1;
+            if (child1next == this.child1) { 
+                // child1 didn't go anywhere, probably not interested in the requested tier
+                // move on to child2
+                for (const [c1tier, c1text, child2Next] of this.child2.probe(tier, target, symbols)) {
+                    if (child2Next.accepting()) {
+                        yield [c1tier, c1text, this.child1];
+                        continue;
+                    } 
+                    yield [c1tier, c1text, new ConcatState(this.child1, child2Next)];
+                }
                 continue;
-            } 
-            yield new ConcatState(this.child1, child2Next);
+            }
+
+            if (child1next.accepting()) {
+                yield [child1tier, child1text, this.child2];
+                continue;
+            }
+            yield [child1tier, child1text, new ConcatState(child1next, this.child2)];
         }
+        return;
+
     }
+
 }
 
 export class UnionState extends State {
@@ -267,36 +304,16 @@ export class UnionState extends State {
         super();
     }
 
-    public accepting(): boolean {
-        return false;
-    }
-
-    public calculateTiers(symbolStack: string[]): Set<string> {
-        const result: Set<string> = new Set();
-        for (const child of this.children) {
-            for (const tier of child.calculateTiers(symbolStack)) {
-                result.add(tier);
-            }
-        }
-        return result;
-    }
-
     public get id(): string {
         return `(${this.children.map(c => c.id).join("|")})`;
     }
 
-    public *query(prevOutput: StringDict,
-                symbols: CounterStack): Gen<[StringDict, State]> {
-        for (const child of this.children) {
-            yield* child.query(prevOutput, symbols);
-        }
-    }
-
-    public *require(tier: string, 
+    public *probe(tier: string, 
                     target: string,
-                    symbols: CounterStack): Gen<State> {
+                    symbols: CounterStack): Gen<[string, string, State]> {
+
         for (const child of this.children) {
-            yield* child.require(tier, target, symbols);
+            yield* child.probe(tier, target, symbols);
         }
     }
 }
@@ -316,68 +333,39 @@ function *iterPriorityUnion<T>(iter1: Gen<T>, iter2: Gen<T>): Gen<T> {
 
 export class JoinState extends BinaryState {
 
-    public *queryLeftJoin(prevOutput: StringDict, 
+    public *probeLeftJoin(tier: string,
+                          target: string,
                           c1: State,
                           c2: State,
-                          symbols: CounterStack): Gen<[StringDict, State]> {
-        for (const [o1, newChild1] of c1.query(prevOutput, symbols)) {
-            const tier = o1["__LAST_TIER__"];
-            const c = o1["__LAST_CHAR__"];
+                          symbols: CounterStack): Gen<[string, string, State]> {
+                              
+        for (const [c1tier, c1target, child1next] of c1.probe(tier, target, symbols)) {
 
-            if (!("__LAST_TIER__" in o1) || !c2.tiers.has(tier)) {
-                yield [o1, new JoinState(newChild1, c2)];
-                continue;
+            if (c1tier == NONE) {
+                yield [c1tier, c1target, new JoinState(child1next, c2)];
+                return;
             }
             
-            for (const newChild2 of c2.require(tier, c, symbols)) {
-                yield [o1, new JoinState(newChild1, newChild2)];
+            for (const [c2tier, c2target, child2next] of c2.probe(c1tier, c1target, symbols)) {
+                yield [c2tier, c2target, new JoinState(child1next, child2next)];
             }
-        }
+        } 
     }
 
-    public *query(prevOutput: StringDict,
-                symbols: CounterStack): Gen<[StringDict, State]> {
+    public *probe(tier: string, 
+                    target: string,
+                    symbols: CounterStack): Gen<[string, string, State]> {
 
-        /*
-        if (this.accepting()) {
-            return;
-        } */
-
-        const leftJoin = this.queryLeftJoin(prevOutput, this.child1, this.child2, symbols);
-        const rightJoin = this.queryLeftJoin(prevOutput, this.child2, this.child1, symbols);
+        const leftJoin = this.probeLeftJoin(tier, target, this.child1, this.child2, symbols);
+        const rightJoin = this.probeLeftJoin(tier, target, this.child2, this.child1, symbols);
         yield* iterPriorityUnion(leftJoin, rightJoin);
     }
 
-    public *require(tier: string, 
-                    target: string,
-                    symbols: CounterStack): Gen<State> {
-        
-        var child1nexts: Iterable<State> = [ this.child1 ];
-        var child2nexts: Iterable<State> = [ this.child2 ];
-
-        if (this.child1.tiers.has(tier)) {
-            child1nexts = this.child1.require(tier, target, symbols);
-        }
-        
-        if (this.child2.tiers.has(tier)) {
-            child2nexts = this.child2.require(tier, target, symbols);
-        }
-
-        for (const child1next of child1nexts) {
-            for (const child2next of child2nexts) {
-                yield new JoinState(child1next, child2next);
-            }
-        }
-    }
 }
 
 abstract class UnaryState extends State {
 
     public abstract get child(): State;
-
-    public calculateTiers(symbolStack: string[]): Set<string> {
-        return this.child.calculateTiers(symbolStack);
-    }
 
     public get id(): string {
         return `${this.constructor.name}(${this.child.id})`;
@@ -385,17 +373,6 @@ abstract class UnaryState extends State {
 
     public accepting(): boolean {
         return this.child.accepting();
-    }
-
-    public *query(prevOutput: StringDict,
-        symbols: CounterStack): Gen<[StringDict, State]> {
-        yield* this.child.query(prevOutput, symbols);
-    }
-
-    public *require(tier: string, 
-                    target: string,
-                    symbols: CounterStack): Gen<State> {
-        yield* this.child.require(tier, target, symbols);
     }
 }
 
@@ -407,13 +384,6 @@ export class EmbedState extends UnaryState {
         public _child: State | undefined = undefined
     ) { 
         super();
-    }
-    
-    public calculateTiers(symbolStack: string[]): Set<string> {
-        if (symbolStack.indexOf(this.symbolName) != -1) {
-            return new Set();
-        }
-        return this.child.calculateTiers([...symbolStack, this.symbolName]);
     }
     
     public get id(): string {
@@ -433,52 +403,20 @@ export class EmbedState extends UnaryState {
     public successor(newChild: State): EmbedState {
         return new EmbedState(this.symbolName, this.symbolTable, newChild);
     }
-    
-    public *query(prevOutput: StringDict,
-                    symbols: CounterStack): Gen<[StringDict, State]> {
+
+    public *probe(tier: string, 
+                target: string,
+                symbols: CounterStack): Gen<[string, string, State]> {
 
         if (symbols.exceedsMax(this.symbolName)) {
             return;
         }
 
         symbols = symbols.add(this.symbolName);
-
-        /* alternative way of doing it using outputs, 
-            could put this back later.
-
-        const symbolTier = `__SYM_${this.symbolName}`;
-        if (!(symbolTier in prevOutput)) {
-            prevOutput[symbolTier] = "";
-        }
-
-        if (prevOutput[symbolTier].length >= 1) {
-            return;
-        }
-
-        prevOutput[symbolTier] += "X";
-        */
-        
-        for (const [childOutput, childNext] of this.child.query(prevOutput, symbols)) {
-            //childOutput[symbolTier] = childOutput[symbolTier].slice(1);
-            yield [childOutput, this.successor(childNext)];
+        for (const [childTier, childTarget, childNext] of this.child.probe(tier, target, symbols)) {
+            yield [childTier, childTarget, this.successor(childNext)];
         }
     }
-
-    public *require(tier: string, 
-                    target: string,
-                    symbols: CounterStack): Gen<State> {
-        if (symbols.exceedsMax(this.symbolName)) {
-            return;
-        }
-
-        symbols = symbols.add(this.symbolName);
-        for (const childNext of this.child.require(tier, target, symbols)) {
-            yield this.successor(childNext);
-        }
-    }
-
-    
-
 }
 
 export class ProjectionState extends UnaryState {
@@ -490,35 +428,23 @@ export class ProjectionState extends UnaryState {
         super();
     }
 
-    public calculateTiers(symbolStack: string[]): Set<string> {
-        return this.tierRestriction;
-    }
+    public *probe(tier: string, 
+        target: string,
+        symbols: CounterStack): Gen<[string, string, State]> {
 
-    public *query(output: StringDict,
-                    symbols: CounterStack): Gen<[StringDict, State]> {
 
-        for (const [childOutput, childNext] of this.child.query(output, symbols)) {
-            const newOutput: StringDict = {};
-            for (const tier of this.tiers) {
-                if (!(tier in childOutput)) {
-                    continue;
-                }
-                newOutput[tier] = childOutput[tier];
-            }
-            if (this.tiers.has(childOutput["__LAST_TIER__"])) {
-                newOutput["__LAST_TIER__"] = childOutput["__LAST_TIER__"];
-                newOutput["__LAST_CHAR__"] = childOutput["__LAST_CHAR__"];
-            }
-            yield [newOutput, new ProjectionState(childNext, this.tiers)];
+        if (tier != ANY && !this.tierRestriction.has(tier)) {
+            // if it's not a tier without our restriction, go nowhere
+            yield [tier, target, this];
         }
-    }
 
-    public *require(tier: string, 
-                    target: string,
-                    symbols: CounterStack): Gen<State> {
+        for (var [childTier, childTarget, childNext] of this.child.probe(tier, target, symbols)) {
 
-        for (const nextState of this.child.require(tier, target, symbols)) {
-            yield new ProjectionState(nextState, this.tiers);
+            if (childTier != ANY && !this.tierRestriction.has(childTier)) {
+                childTier = NONE;
+                childTarget = NONE;
+            }
+            yield [childTier, childTarget, new ProjectionState(childNext, this.tierRestriction)];
         }
     }
 }
@@ -533,48 +459,19 @@ export class RenameState extends UnaryState {
         super();
     }
 
-    public calculateTiers(symbolStack: string[]): Set<string> {
-        const results: Set<string> = new Set();
-        for (const tier of this.child.calculateTiers(symbolStack)) {
-            if (tier == this.fromTier) {
-                results.add(this.toTier);
-                continue;
-            }
-            results.add(tier);
-        }
-        return results;
-    }
+    public *probe(tier: string, 
+                target: string,
+                symbols: CounterStack): Gen<[string, string, State]> {
 
-    public *query(prevOutput: StringDict,
-        symbols: CounterStack): Gen<[StringDict, State]> {
-
-        for (const [childOutput, childNext] of this.child.query(prevOutput, symbols)) {
-            const myOutput: StringDict = { [this.toTier]: ""};
-            Object.assign(myOutput, childOutput);
-            for (const tier in childOutput) {
-                if (tier == this.fromTier) {
-                    myOutput[this.toTier] += childOutput[tier];
-                    continue;
-                }
-            }
-            myOutput[`${this.toTier}.${this.fromTier}`] = myOutput[this.fromTier];
-            delete myOutput[this.fromTier];
-            if (myOutput["__LAST_TIER__"] == this.fromTier) {
-                myOutput["__LAST_TIER__"] = this.toTier;
-            }
-            yield [myOutput, new RenameState(childNext, this.fromTier, this.toTier)];
-        }
-    }
-
-    public *require(tier: string, 
-                    target: string,
-                    symbols: CounterStack): Gen<State> {
         if (tier == this.toTier) {
             tier = this.fromTier;
         }
-
-        for (const childNext of this.child.require(tier, target, symbols)) {
-            yield new RenameState(childNext, this.fromTier, this.toTier);
+    
+        for (var [childTier, childTarget, childNext] of this.child.probe(tier, target, symbols)) {
+            if (childTier == this.fromTier) {
+                childTier = this.toTier;
+            }
+            yield [childTier, childTarget, new RenameState(childNext, this.fromTier, this.toTier)];
         }
     }
 }

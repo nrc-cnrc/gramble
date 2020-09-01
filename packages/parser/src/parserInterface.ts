@@ -1,4 +1,4 @@
-import {State, ConcatState, UnionState, JoinState, SymbolTable, EmbedState, ProjectionState, LiteralState, StringDict, RenameState} from "./stateMachine";
+import {State, ConcatState, UnionState, JoinState, SymbolTable, EmbedState, ProjectionState, LiteralState, StringDict, RenameState, AnyCharState} from "./stateMachine";
 
 export {State, SymbolTable, StringDict};
 
@@ -42,4 +42,8 @@ export function Proj(child: State, ...tiers: string[]): State {
 
 export function Rename(child: State, fromTier: string, toTier: string): State {
     return new RenameState(child, fromTier, toTier);
+}
+
+export function Any(tier: string): State {
+    return new AnyCharState(tier);
 }

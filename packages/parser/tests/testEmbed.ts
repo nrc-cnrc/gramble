@@ -1,7 +1,66 @@
-import { expect } from 'chai';
-import {Literalizer, Seq, Uni, Join, Emb, Proj, StringDict, SymbolTable} from "../src/parserInterface";
-import { text, testNumOutputs, testHasOutput } from './testUtils';
+import {Seq, Uni, Join, Emb, SymbolTable} from "../src/parserInterface";
+import { text, testNumOutputs, testHasOutput, t1, t2, t3 } from './testUtils';
 
+
+/**
+ * Embedding tests
+ */
+
+describe('Symbol containing text:hello', function() {
+    const symbolTable = { "s": text("hello") };
+    const grammar = Emb("s", symbolTable);
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+}); 
+
+describe('Symbol containing text:hello+text:world', function() {
+    const symbolTable = { "s": Seq(text("hello"), text("world")) };
+    const grammar = Emb("s", symbolTable);
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "helloworld");
+}); 
+
+describe('Symbol containing text:hello|text:goodbye', function() {
+    const symbolTable = { "s": Uni(text("hello"), text("goodbye")) };
+    const grammar = Emb("s", symbolTable);
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 2);
+    testHasOutput(outputs, "text", "hello");
+    testHasOutput(outputs, "text", "goodbye");
+}); 
+
+describe('Symbol of (t1:hi & t1:hi+t2:bye)', function() {
+    const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
+    const outputs = [...Emb("hi2bye", symbolTable).run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "bye");
+}); 
+
+describe('Joining sym(t1:hi & t1:hi+t2:bye) & t2:bye+t3:yo', function() {
+    const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
+    const grammar = Join(Emb("hi2bye", symbolTable), Seq(t2("bye"), t3("yo")));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t3", "yo");
+}); 
+
+describe('Joining t1:hi & sym(t1:hi+t2:bye & t2:bye+t3:yo)', function() {
+    const symbolTable = { "hi2yo": Join(Seq(t1("hi"), t2("bye")), Seq(t2("bye"), t3("yo")))};
+    const grammar = Join(t1("hi"), Emb("hi2yo", symbolTable));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t3", "yo");
+});  
+
+describe('Joining of sym(t1:hi & t1:hi+t2:bye)+t2:world', function() {
+    const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
+    const grammar = Seq(Emb("hi2bye", symbolTable), t2("world")); 
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t2", "byeworld");
+}); 
 
 describe('Joining "helloworld" with right-recursive "hello+ world"', function() {
     const symbolTable: SymbolTable = {};
