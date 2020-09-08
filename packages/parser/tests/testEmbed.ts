@@ -54,6 +54,7 @@ describe('Joining t1:hi & sym(t1:hi+t2:bye & t2:bye+t3:yo)', function() {
     testHasOutput(outputs, "t3", "yo");
 });  
 
+
 describe('Joining of sym(t1:hi & t1:hi+t2:bye)+t2:world', function() {
     const symbolTable = { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) };
     const grammar = Seq(Emb("hi2bye", symbolTable), t2("world")); 

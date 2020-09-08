@@ -46,7 +46,7 @@ class Iter<T> implements Gen<T> {
     }
 
     public map2nd<T1, T2, ReturnType>(f: (a: T2) => ReturnType): Iter<[T1, ReturnType]> {
-        const gen = this.gen as Gen<[T1,T2]>;
+        const gen = this.gen as unknown as Gen<[T1,T2]>;
         return iter(gen).map(([a,b]) => [a, f(b)]);
     }
 

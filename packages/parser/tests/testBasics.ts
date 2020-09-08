@@ -3,8 +3,6 @@ import { Seq, Uni, Join, Emb, Proj } from "../src/parserInterface";
 import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput } from './testUtils';
 
 
-
-
 describe('Literal text:hello', function() {
     const grammar = text("hello");
     const outputs = [...grammar.run()];
@@ -19,14 +17,12 @@ describe('Sequence text:hello+test:world', function() {
     testHasOutput(outputs, "text", "helloworld");
 }); 
 
-
 describe('Sequence text:hello+test:<empty>', function() {
     const grammar = Seq(text("hello"), text(""));
     const outputs = [...grammar.run()];
     testNumOutputs(outputs, 1);
     testHasOutput(outputs, "text", "hello");
 }); 
-
 
 describe('Sequence test:<empty>+text:hello', function() {
     const grammar = Seq(text(""), text("hello"));

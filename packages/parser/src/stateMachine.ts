@@ -38,9 +38,6 @@ export type StringDict = {[key: string]: string};
 
 class Output {
 
-    constructor(
-    ) { }
-
     public add(tier: string, text: string) {
         return new SuccessiveOutput(tier, text, this);
     }
@@ -114,7 +111,7 @@ export abstract class State {
 
     public abstract probe(tier: string, 
         target: string,
-        symbols: CounterStack): Gen<[string, string, State]>;
+        symbols: CounterStack): Gen<[string, string, boolean, State]>;
 
         
     public *run(maxRecursion: number = 4): Gen<StringDict> {
@@ -135,7 +132,7 @@ export abstract class State {
                 yield prevOutput.toObj();
             }
 
-            for (const [tier, c, newState] of prevState.probe(ANY, ANY, symbolStack)) {
+            for (const [tier, c, matched, newState] of prevState.probe(ANY, ANY, symbolStack)) {
                 const nextOutput = prevOutput.add(tier, c);
                 stateStack.push([nextOutput, newState]);
             }
@@ -155,7 +152,7 @@ export abstract class State {
                 yield prevOutput.toObj();
             }
 
-            for (const [tier, c, newState] of prevState.probe(ANY, ANY, symbolStack)) {
+            for (const [tier, c, matched, newState] of prevState.probe(ANY, ANY, symbolStack)) {
                 const nextOutput = prevOutput.add(tier, c);
                 stateQueue.push([nextOutput, newState]);
             }
@@ -183,10 +180,10 @@ export class AnyCharState extends State {
     
     public *probe(tier: string, 
         target: string,
-        symbols: CounterStack): Gen<[string, string, State]> {
+        symbols: CounterStack): Gen<[string, string, boolean, State]> {
 
         if (tier != ANY && tier != this.tier) {      // If the probe asks for a specific tier
-            yield [tier, target, this];  // and it's not the tier we 
+            yield [tier, target, false, this];             // and it's not the tier we 
             return;                                  // care about, stay in place
         }
         
@@ -195,7 +192,7 @@ export class AnyCharState extends State {
         }
 
         const nextState = new AnyCharState(this.tier, true);
-        yield [this.tier, target, nextState];
+        yield [this.tier, target, true, nextState];
 
     }
 }
@@ -219,11 +216,12 @@ export class LiteralState extends State {
 
     public *probe(tier: string, 
         target: string,
-        symbols: CounterStack): Gen<[string, string, State]> {
+        symbols: CounterStack): Gen<[string, string,  boolean, State]> {
+
 
         // If the probe asks for a specific tier and it's not the tier we care about, stay in place
         if (tier != ANY && tier != this.tier) {
-            yield [tier, target, this];
+            yield [tier, target, false, this];
             return;
         }
         
@@ -234,7 +232,7 @@ export class LiteralState extends State {
 
         // it's a match, or the target was __ANY__
         const nextState = new LiteralState(this.tier, this.text.slice(1)); // success
-        yield [this.tier, this.text[0], nextState];
+        yield [this.tier, this.text[0], true, nextState];
 
     }
 
@@ -262,39 +260,33 @@ export class ConcatState extends BinaryState {
 
     public *probe(tier: string, 
                     target: string,
-                    symbols: CounterStack): Gen<[string, string, State]> {
+                    symbols: CounterStack): Gen<[string, string,  boolean, State]> {
 
-        if (this.child1.accepting()) { 
-            yield* this.child2.probe(tier, target, symbols);
-            return;
-        } 
+        var yieldedAlready = false;
 
-        for (const [child1tier, child1text, child1next] of this.child1.probe(tier, target, symbols)) {
+        for (const [child1tier, child1text, c1matched, child1next] of this.child1.probe(tier, target, symbols)) {
 
-            if (child1next == this.child1) { 
+            if (!c1matched) { 
                 // child1 didn't go anywhere, probably not interested in the requested tier
                 // move on to child2
-                for (const [c1tier, c1text, child2Next] of this.child2.probe(tier, target, symbols)) {
-                    if (child2Next.accepting()) {
-                        yield [c1tier, c1text, this.child1];
-                        continue;
-                    } 
-                    yield [c1tier, c1text, new ConcatState(this.child1, child2Next)];
+                for (const [c2tier, c2text, c2matched, child2Next] of this.child2.probe(tier, target, symbols)) {
+                    yield [c2tier, c2text, c2matched, new ConcatState(this.child1, child2Next)];
+                    yieldedAlready = true;
                 }
                 continue;
             }
 
-            if (child1next.accepting()) {
-                yield [child1tier, child1text, this.child2];
-                continue;
-            }
-            yield [child1tier, child1text, new ConcatState(child1next, this.child2)];
+            yield [child1tier, child1text, c1matched, new ConcatState(child1next, this.child2)];
         }
-        return;
+
+        if (!yieldedAlready && this.child1.accepting()) { 
+            yield* this.child2.probe(tier, target, symbols);
+        }  
 
     }
 
 }
+
 
 export class UnionState extends State {
 
@@ -310,7 +302,7 @@ export class UnionState extends State {
 
     public *probe(tier: string, 
                     target: string,
-                    symbols: CounterStack): Gen<[string, string, State]> {
+                    symbols: CounterStack): Gen<[string, string,  boolean, State]> {
 
         for (const child of this.children) {
             yield* child.probe(tier, target, symbols);
@@ -337,24 +329,24 @@ export class JoinState extends BinaryState {
                           target: string,
                           c1: State,
                           c2: State,
-                          symbols: CounterStack): Gen<[string, string, State]> {
+                          symbols: CounterStack): Gen<[string, string, boolean, State]> {
                               
-        for (const [c1tier, c1target, child1next] of c1.probe(tier, target, symbols)) {
+        for (const [c1tier, c1target, c1matched, c1next] of c1.probe(tier, target, symbols)) {
 
             if (c1tier == NONE) {
-                yield [c1tier, c1target, new JoinState(child1next, c2)];
-                return;
+                yield [c1tier, c1target, c1matched, new JoinState(c1next, c2)];
+                continue;
             }
             
-            for (const [c2tier, c2target, child2next] of c2.probe(c1tier, c1target, symbols)) {
-                yield [c2tier, c2target, new JoinState(child1next, child2next)];
+            for (const [c2tier, c2target, c2matched, c2next] of c2.probe(c1tier, c1target, symbols)) {
+                yield [c2tier, c2target, c1matched || c2matched, new JoinState(c1next, c2next)];
             }
         } 
     }
 
     public *probe(tier: string, 
                     target: string,
-                    symbols: CounterStack): Gen<[string, string, State]> {
+                    symbols: CounterStack): Gen<[string, string, boolean, State]> {
 
         const leftJoin = this.probeLeftJoin(tier, target, this.child1, this.child2, symbols);
         const rightJoin = this.probeLeftJoin(tier, target, this.child2, this.child1, symbols);
@@ -375,6 +367,57 @@ abstract class UnaryState extends State {
         return this.child.accepting();
     }
 }
+
+export class RepetitionState extends UnaryState {
+
+    constructor(
+        public child: State,
+        public minRepetitions: number = 0,
+        public maxRepetitions: number = Infinity,
+        public index: number = 0,
+        public initialChild: State,
+    ) { 
+        super();
+    }
+
+    public accepting(): boolean {
+        return this.index >= this.minRepetitions && 
+                this.index <= this.maxRepetitions;
+    }
+
+    public *probe(tier: string, 
+                    target: string,
+                    symbols: CounterStack): Gen<[string, string, boolean, State]> {
+
+        if (this.index > this.maxRepetitions) {
+            return;
+        }
+
+        for (const [childTier, childText, childMatched, childNext] of this.child.probe(tier, target, symbols)) {
+            if (!childMatched) { 
+                // child didn't go anywhere, probably not interested in the requested tier
+                // so we likewise don't go anywhere
+                yield [childTier, childText, false, this];
+                continue;
+            }
+
+            if (childNext.accepting()) {
+                // child is accepting, so our successor increases its index
+                // and starts again with child.
+                yield [childTier, childText, childMatched, new RepetitionState(this.initialChild, 
+                            this.minRepetitions, this.maxRepetitions, this.index+1, this.initialChild)];
+                continue;
+            }
+
+            yield [childTier, childText, childMatched, new RepetitionState(childNext, 
+                this.minRepetitions, this.maxRepetitions, this.index, this.initialChild)];
+        }
+        return;
+
+    }
+
+}
+
 
 export class EmbedState extends UnaryState {
 
@@ -406,15 +449,15 @@ export class EmbedState extends UnaryState {
 
     public *probe(tier: string, 
                 target: string,
-                symbols: CounterStack): Gen<[string, string, State]> {
+                symbols: CounterStack): Gen<[string, string, boolean, State]> {
 
         if (symbols.exceedsMax(this.symbolName)) {
             return;
         }
 
         symbols = symbols.add(this.symbolName);
-        for (const [childTier, childTarget, childNext] of this.child.probe(tier, target, symbols)) {
-            yield [childTier, childTarget, this.successor(childNext)];
+        for (const [childTier, childTarget, childMatched, childNext] of this.child.probe(tier, target, symbols)) {
+            yield [childTier, childTarget, childMatched, this.successor(childNext)];
         }
     }
 }
@@ -430,21 +473,21 @@ export class ProjectionState extends UnaryState {
 
     public *probe(tier: string, 
         target: string,
-        symbols: CounterStack): Gen<[string, string, State]> {
+        symbols: CounterStack): Gen<[string, string, boolean, State]> {
 
 
         if (tier != ANY && !this.tierRestriction.has(tier)) {
-            // if it's not a tier without our restriction, go nowhere
-            yield [tier, target, this];
+            // if it's not a tier we care about, go nowhere
+            yield [tier, target, false, this];
         }
 
-        for (var [childTier, childTarget, childNext] of this.child.probe(tier, target, symbols)) {
+        for (var [childTier, childTarget, childMatch, childNext] of this.child.probe(tier, target, symbols)) {
 
             if (childTier != ANY && !this.tierRestriction.has(childTier)) {
                 childTier = NONE;
                 childTarget = NONE;
             }
-            yield [childTier, childTarget, new ProjectionState(childNext, this.tierRestriction)];
+            yield [childTier, childTarget, childMatch, new ProjectionState(childNext, this.tierRestriction)];
         }
     }
 }
@@ -461,17 +504,17 @@ export class RenameState extends UnaryState {
 
     public *probe(tier: string, 
                 target: string,
-                symbols: CounterStack): Gen<[string, string, State]> {
+                symbols: CounterStack): Gen<[string, string, boolean, State]> {
 
         if (tier == this.toTier) {
             tier = this.fromTier;
         }
     
-        for (var [childTier, childTarget, childNext] of this.child.probe(tier, target, symbols)) {
+        for (var [childTier, childTarget, childMatched, childNext] of this.child.probe(tier, target, symbols)) {
             if (childTier == this.fromTier) {
                 childTier = this.toTier;
             }
-            yield [childTier, childTarget, new RenameState(childNext, this.fromTier, this.toTier)];
+            yield [childTier, childTarget, childMatched, new RenameState(childNext, this.fromTier, this.toTier)];
         }
     }
 }

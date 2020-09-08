@@ -2,6 +2,7 @@
 import { Seq, Uni, Join, Emb, Proj } from "../src/parserInterface";
 import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput } from './testUtils';
 
+
 describe('Joining text:hello & text:hello', function() {
     const grammar = Join(text("hello"), text("hello"));
     const outputs = [...grammar.run()];
@@ -102,7 +103,6 @@ describe('Joining t1:hello+t1:kitty & (t1:hello+t1:kitty)+(t2:goodbye+t2:world)'
     testHasOutput(outputs, "t2", "goodbyeworld");
 }); 
 
-
 describe('Joining t1:hello+t1:kitty & (t1:hello+t2:goodbye)+(t1:kitty+t2:world)', function() {
     const outputs = [...Join(Seq(t1("hello"), t1("kitty")), Seq(Seq(t1("hello"), t2("goodbye")), Seq(t1("kitty"), t2("world")))).run()];
     testNumOutputs(outputs, 1);
@@ -170,11 +170,19 @@ describe('Joining text:hello+text:world & text:hello', function() {
     testNumOutputs(outputs, 0);
 }); 
 
-describe('Joining text:hello+unrelated:foo & text:hello+unrelated:foo', function() {
-    const outputs = [...Join(Seq(text("hello"), unrelated("foo")), Seq(text("hello"), unrelated("foo"))).run()];
+describe('Joining text:hi+unrelated:world & text:hi+unrelated:world', function() {
+    const outputs = [...Join(Seq(text("hi"), unrelated("world")), Seq(text("hi"), unrelated("world"))).run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hi");
+    testHasOutput(outputs, "unrelated", "world");
+}); 
+
+
+describe('Joining unrelated:world+text:hello & text:hello+unrelated:world', function() {
+    const outputs = [...Join(Seq(unrelated("world"), text("hello")), Seq(text("hello"), unrelated("world"))).run()];
     testNumOutputs(outputs, 1);
     testHasOutput(outputs, "text", "hello");
-    testHasOutput(outputs, "unrelated", "foo");
+    testHasOutput(outputs, "unrelated", "world");
 }); 
 
 describe('Joining text:hello & text:hello+unrelated:foo', function() {

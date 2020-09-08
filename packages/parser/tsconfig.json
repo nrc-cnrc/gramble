@@ -3,14 +3,21 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
+    "sourceMap": true,
     "tsBuildInfoFile": "../../.build-cache/gramble.tsbuildinfo",
     "types": [
       "chai",
       "mocha",
       "node"
-    ]
+    ],
+    "target": "es6"
   },
   "include": [
-    "src"
-  ]
+    "src",
+  ],
+  "lib": [
+    "es2016",
+    "dom",
+    "es6"
+]
 }
