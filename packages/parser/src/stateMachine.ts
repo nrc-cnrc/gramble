@@ -401,8 +401,8 @@ export class RepetitionState extends UnaryState {
 
     public accepting(): boolean {
         return this.index >= this.minRepetitions && 
-                ((this.index <= this.maxRepetitions && this.child.accepting()) ||
-                this.index == 0);
+               this.index <= this.maxRepetitions && 
+               this.child.accepting();
     }
 
     public *probe(tier: string, 
@@ -416,7 +416,7 @@ export class RepetitionState extends UnaryState {
 
         var yieldedAlready = false;
 
-        if ((this.index == 0 || this.child.accepting())) {
+        if (this.child.accepting()) {
             // we just started, or the child is accepting, so our successor increases its index
             // and starts again with child.
             const successor = new RepetitionState(this.initialChild, 
