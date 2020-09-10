@@ -1,4 +1,4 @@
-import {State, ConcatState, UnionState, JoinState, SymbolTable, EmbedState, ProjectionState, LiteralState, StringDict, RenameState, AnyCharState, RepetitionState} from "./stateMachine";
+import {State, ConcatState, UnionState, JoinState, SymbolTable, EmbedState, ProjectionState, LiteralState, StringDict, RenameState, AnyCharState, RepetitionState, TrivialState} from "./stateMachine";
 export {State, SymbolTable, StringDict};
 
 export function Lit(tier: string, text: string): State {
@@ -48,7 +48,7 @@ export function Any(tier: string): State {
 }
 
 export function Rep(child: State, minReps=0, maxReps=Infinity) {
-    return new RepetitionState(child, minReps, maxReps, 0, child);
+    return new RepetitionState(new TrivialState(), minReps, maxReps, 0, child);
 }
 
 /*

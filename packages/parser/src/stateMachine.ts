@@ -401,8 +401,8 @@ export class RepetitionState extends UnaryState {
 
     public accepting(): boolean {
         return this.index >= this.minRepetitions && 
-               this.index <= this.maxRepetitions && 
-               this.child.accepting();
+            this.index <= this.maxRepetitions && 
+            this.child.accepting();
     }
 
     public *probe(tier: string, 
