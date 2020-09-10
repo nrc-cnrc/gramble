@@ -68,7 +68,6 @@ class SuccessiveOutput extends Output {
 }
 
 
-
 class CounterStack {
 
     constructor(
@@ -238,6 +237,26 @@ export class LiteralState extends State {
 
 }
 
+
+export class TrivialState extends State {
+
+    constructor() { 
+        super();
+    }
+
+    public get id(): string {
+        return "0";
+    }
+
+    public accepting(): boolean {
+        return true;
+    }
+
+    public *probe(tier: string, 
+        target: string,
+        symbols: CounterStack): Gen<[string, string,  boolean, State]> { }
+}
+
 abstract class BinaryState extends State {
 
     constructor(
@@ -382,7 +401,8 @@ export class RepetitionState extends UnaryState {
 
     public accepting(): boolean {
         return this.index >= this.minRepetitions && 
-                this.index <= this.maxRepetitions;
+                ((this.index <= this.maxRepetitions && this.child.accepting()) ||
+                this.index == 0);
     }
 
     public *probe(tier: string, 
@@ -392,30 +412,34 @@ export class RepetitionState extends UnaryState {
         if (this.index > this.maxRepetitions) {
             return;
         }
+        
+
+        var yieldedAlready = false;
+
+        if ((this.index == 0 || this.child.accepting())) {
+            // we just started, or the child is accepting, so our successor increases its index
+            // and starts again with child.
+            const successor = new RepetitionState(this.initialChild, 
+                        this.minRepetitions, this.maxRepetitions, this.index+1, this.initialChild);
+            yield* successor.probe(tier, target, symbols);
+            yieldedAlready = true;
+        }
+
+        if (yieldedAlready) {
+            return;
+        }
 
         for (const [childTier, childText, childMatched, childNext] of this.child.probe(tier, target, symbols)) {
-            if (!childMatched) { 
-                // child didn't go anywhere, probably not interested in the requested tier
-                // so we likewise don't go anywhere
+            if (!childMatched) { // child doesn't care, neither do we
                 yield [childTier, childText, false, this];
-                continue;
-            }
-
-            if (childNext.accepting()) {
-                // child is accepting, so our successor increases its index
-                // and starts again with child.
-                yield [childTier, childText, childMatched, new RepetitionState(this.initialChild, 
-                            this.minRepetitions, this.maxRepetitions, this.index+1, this.initialChild)];
                 continue;
             }
 
             yield [childTier, childText, childMatched, new RepetitionState(childNext, 
                 this.minRepetitions, this.maxRepetitions, this.index, this.initialChild)];
         }
-        return;
 
     }
-
 }
 
 
@@ -443,10 +467,6 @@ export class EmbedState extends UnaryState {
         return this._child;
     }
 
-    public successor(newChild: State): EmbedState {
-        return new EmbedState(this.symbolName, this.symbolTable, newChild);
-    }
-
     public *probe(tier: string, 
                 target: string,
                 symbols: CounterStack): Gen<[string, string, boolean, State]> {
@@ -457,7 +477,8 @@ export class EmbedState extends UnaryState {
 
         symbols = symbols.add(this.symbolName);
         for (const [childTier, childTarget, childMatched, childNext] of this.child.probe(tier, target, symbols)) {
-            yield [childTier, childTarget, childMatched, this.successor(childNext)];
+            const successor = new EmbedState(this.symbolName, this.symbolTable, childNext);
+            yield [childTier, childTarget, childMatched, successor];
         }
     }
 }
@@ -484,6 +505,7 @@ export class ProjectionState extends UnaryState {
         for (var [childTier, childTarget, childMatch, childNext] of this.child.probe(tier, target, symbols)) {
 
             if (childTier != ANY && !this.tierRestriction.has(childTier)) {
+                // even if our child yields content on a restricted tier, we don't let our own parent know about it
                 childTier = NONE;
                 childTarget = NONE;
             }

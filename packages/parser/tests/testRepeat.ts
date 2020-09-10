@@ -5,13 +5,13 @@ import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntH
 describe('Text with between 1 and 4 Os: text:o{1,4}', function() {
     const grammar = Rep(text("o"), 1, 4);
     const outputs = [...grammar.run()];
+    
     testNumOutputs(outputs, 4);
     testHasOutput(outputs, "text", "o");
     testHasOutput(outputs, "text", "oo");
     testHasOutput(outputs, "text", "ooo");
     testHasOutput(outputs, "text", "oooo");
 });
-
 
 describe('Hello with between 1 and 4 Os: text:hell+text:o{1,4}', function() {
     const grammar = Seq(text("hell"), Rep(text("o"), 1, 4));
@@ -91,6 +91,14 @@ describe('Joining hello with between 1 and 4 Hs and the same, with unrelated "wo
 });
 
 
-
-
-
+describe('Text with between 1 and 4 NAs: text:na{1,4}', function() {
+    const grammar = Rep(text("na"), 1, 4);
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 4);
+    testHasOutput(outputs, "text", "na");
+    testHasOutput(outputs, "text", "nana");
+    testHasOutput(outputs, "text", "nanana");
+    testHasOutput(outputs, "text", "nananana");
+    testDoesntHaveOutput(outputs, "text", "n");
+    testDoesntHaveOutput(outputs, "text", "nan");
+});
