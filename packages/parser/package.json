@@ -33,5 +33,9 @@
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"
+  },
+  "dependencies": {
+    "@types/chai": "^4.2.12",
+    "@types/mocha": "^8.0.3"
   }
 }
