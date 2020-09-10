@@ -421,8 +421,10 @@ export class RepetitionState extends UnaryState {
             // and starts again with child.
             const successor = new RepetitionState(this.initialChild, 
                         this.minRepetitions, this.maxRepetitions, this.index+1, this.initialChild);
-            yield* successor.probe(tier, target, symbols);
-            yieldedAlready = true;
+            for (const result of successor.probe(tier, target, symbols)) {
+                yield result;
+                yieldedAlready = true;
+            }
         }
 
         if (yieldedAlready) {
