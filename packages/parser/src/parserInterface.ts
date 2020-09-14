@@ -1,4 +1,4 @@
-import {State, ConcatState, UnionState, JoinState, SymbolTable, EmbedState, ProjectionState, LiteralState, StringDict, RenameState, AnyCharState, RepetitionState, TrivialState} from "./stateMachine";
+import {State, ConcatState, UnionState, JoinState, SymbolTable, EmbedState, ProjectionState, LiteralState, StringDict, RenameState, AnyCharState, RepetitionState, TrivialState, NegationState} from "./stateMachine";
 export {State, SymbolTable, StringDict};
 
 export function Lit(tier: string, text: string): State {
@@ -29,6 +29,10 @@ export function Uni(...children: State[]): State {
 
 export function Join(child1: State, child2: State): State {
     return new JoinState(child1, child2);
+}
+
+export function Not(child: State): State {
+    return new NegationState(child);
 }
 
 export function Emb(symbolName: string, symbolTable: SymbolTable): State {
