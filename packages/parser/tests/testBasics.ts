@@ -63,6 +63,15 @@ describe('Alt text:hello|text:goodbye', function() {
 }); 
 
 
+describe('Alt of different tiers: t1:hello|t2:goodbye', function() {
+    const grammar = Uni(t1("hello"), t2("goodbye"));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 2);
+    testHasOutput(outputs, "t1", "hello");
+    testHasOutput(outputs, "t2", "goodbye");
+}); 
+
+
 describe('Sequence with alt: (text:hello|text:goodbye)+text:world', function() {
     const grammar = Seq(Uni(text("hello"), text("goodbye")), text("world"));
     const outputs = [...grammar.run()];

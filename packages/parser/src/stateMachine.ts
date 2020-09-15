@@ -117,14 +117,67 @@ export abstract class State {
 
     public abstract get id(): string;
     
-    public accepting(): boolean {
+    public accepting(symbolStack: CounterStack): boolean {
         return false;
     }
 
-    public abstract probe(tier: string, 
+    public abstract ndQuery(tier: string, 
         target: BitSet,
         symbols: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]>;
+
+
+    /** This looks a bit complicated (and it kind of is) but what it's doing is forwarding the query
+     * ndQuery, then combining results such that they're all disjoint.  For example, say ndQuery yields
+     * two tokens X and Y, and they have no intersection.  Then we're good, we just yield those.  
+     * But if they do have an intersection, we need to return three states:
+     * 
+     *    X&Y (leading to the UnionState of the states X and Y would have led to)
+     *    X-Y (leading to the state X would have led to)
+     *    Y-X (leading to the state Y would have led to)
+     */ 
+
+    public *dQuery(tier: string, 
+        target: BitSet,
+        symbols: CounterStack,
+        vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
+
+        var results: [string, BitSet, boolean, State][] = [];
+        var nextStates = [... this.ndQuery(tier, target, symbols, vocab)];
+        
+        for (var [tier, bits, matched, next] of nextStates) {
+
+            if (tier == NO_TIER) {
+                results.push([tier, bits, matched, next]);
+                continue;
+            }
+
+            var newResults: [string, BitSet, boolean, State][] = [];
+            for (var [otherTier, otherBits, otherMatched, otherNext] of results) {
+                if (tier != otherTier) {
+                    newResults.push([otherTier, otherBits, otherMatched, otherNext]);
+                    continue;
+                }
+
+                const intersection = bits.and(otherBits);
+                if (!intersection.isEmpty()) {
+                    const union = new UnionState([next, otherNext]);
+                    newResults.push([tier, intersection, matched || otherMatched, union]); 
+                }
+                bits = bits.andNot(intersection)
+                otherBits = otherBits.andNot(intersection);
+                if (!otherBits.isEmpty()) {
+                    newResults.push([otherTier, otherBits, otherMatched, otherNext]);
+                }
+            }
+            results = newResults;
+            if (!bits.isEmpty()) {
+                results.push([tier, bits, matched, next]);
+            }
+        }
+        yield *results;
+
+    }
 
         
     public *run(maxRecursion: number = 4): Gen<StringDict> {
@@ -135,6 +188,7 @@ export abstract class State {
         return new BasicVocab();
     }
 
+    /*
     public *depthFirst(maxRecursion: number = 4): Gen<StringDict> {
 
         const vocab = this.getVocab([]);
@@ -151,12 +205,12 @@ export abstract class State {
                 yield* prevOutput.toObj(vocab);
             }
 
-            for (const [tier, c, matched, newState] of prevState.probe(ANY_TIER, ANY_CHAR, symbolStack, vocab)) {
+            for (const [tier, c, matched, newState] of prevState.ndQuery(ANY_TIER, ANY_CHAR, symbolStack, vocab)) {
                 const nextOutput = prevOutput.add(tier, c);
                 stateStack.push([nextOutput, newState]);
             }
         }
-    }
+    } */
 
     public *breadthFirst(maxRecursion: number = 4): Gen<StringDict> {
 
@@ -170,11 +224,11 @@ export abstract class State {
 
             const [prevOutput, prevState] = stateQueue[i];
 
-            if (prevState.accepting()) {
+            if (prevState.accepting(symbolStack)) {
                 yield* prevOutput.toObj(vocab);
             }
 
-            for (const [tier, c, matched, newState] of prevState.probe(ANY_TIER, ANY_CHAR, symbolStack, vocab)) {
+            for (const [tier, c, matched, newState] of prevState.dQuery(ANY_TIER, ANY_CHAR, symbolStack, vocab)) {
                 const nextOutput = prevOutput.add(tier, c);
                 stateQueue.push([nextOutput, newState]);
             }
@@ -196,12 +250,12 @@ export class AnyCharState extends State {
         return '${this.tier}:(ANY)';
     }
 
-    public accepting(): boolean {
+    public accepting(symbolStack: CounterStack): boolean {
         return this.consumed;
     }
     
     
-    public *probe(tier: string, 
+    public *ndQuery(tier: string, 
         target: BitSet,
         symbols: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
@@ -211,7 +265,7 @@ export class AnyCharState extends State {
             return;                                  // care about, stay in place
         }
         
-        if (this.accepting()) {
+        if (this.accepting(symbols)) {
             return;
         }
 
@@ -235,7 +289,7 @@ export class LiteralState extends State {
         return `${this.tape}:${this.text}`;
     }
 
-    public accepting(): boolean {
+    public accepting(symbolStack: CounterStack): boolean {
         return this.text == "";
     }
 
@@ -248,7 +302,7 @@ export class LiteralState extends State {
         return result;
     }
 
-    public *probe(tier: string, 
+    public *ndQuery(tier: string, 
             target: BitSet,
             symbols: CounterStack,
             vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
@@ -260,7 +314,7 @@ export class LiteralState extends State {
             return;
         }
         
-        if (this.accepting()) {
+        if (this.accepting(symbols)) {
             return; 
         }
 
@@ -289,11 +343,11 @@ export class TrivialState extends State {
         return "0";
     }
 
-    public accepting(): boolean {
+    public accepting(symbolStack: CounterStack): boolean {
         return true;
     }
 
-    public *probe(tier: string, 
+    public *ndQuery(tier: string, 
         target: BitSet,
         symbols: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> { }
@@ -320,26 +374,26 @@ abstract class BinaryState extends State {
         return `${this.constructor.name}(${this.child1.id},${this.child2.id})`;
     }
 
-    public accepting(): boolean {
-        return this.child1.accepting() && this.child2.accepting();
+    public accepting(symbolStack: CounterStack): boolean {
+        return this.child1.accepting(symbolStack) && this.child2.accepting(symbolStack);
     }
 }
 
 export class ConcatState extends BinaryState {
 
-    public *probe(tier: string, 
+    public *ndQuery(tier: string, 
         target: BitSet,
         symbols: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
         var yieldedAlready = false;
 
-        for (const [child1tier, child1text, c1matched, child1next] of this.child1.probe(tier, target, symbols, vocab)) {
+        for (const [child1tier, child1text, c1matched, child1next] of this.child1.dQuery(tier, target, symbols, vocab)) {
 
             if (!c1matched) { 
                 // child1 didn't go anywhere, probably not interested in the requested tier
                 // move on to child2
-                for (const [c2tier, c2text, c2matched, child2Next] of this.child2.probe(tier, target, symbols, vocab)) {
+                for (const [c2tier, c2text, c2matched, child2Next] of this.child2.dQuery(tier, target, symbols, vocab)) {
                     yield [c2tier, c2text, c2matched, new ConcatState(this.child1, child2Next)];
                     yieldedAlready = true;
                 }
@@ -349,8 +403,8 @@ export class ConcatState extends BinaryState {
             yield [child1tier, child1text, c1matched, new ConcatState(child1next, this.child2)];
         }
 
-        if (!yieldedAlready && this.child1.accepting()) { 
-            yield* this.child2.probe(tier, target, symbols, vocab);
+        if (!yieldedAlready && this.child1.accepting(symbols)) { 
+            yield* this.child2.dQuery(tier, target, symbols, vocab);
         }  
 
     }
@@ -370,6 +424,9 @@ export class UnionState extends State {
         return `(${this.children.map(c => c.id).join("|")})`;
     }
 
+    public accepting(symbolStack: CounterStack): boolean {
+        return this.children.some(c => c.accepting(symbolStack));
+    }
     
     public getVocab(stateStack: String[]): Vocab {
         const result = new BasicVocab();
@@ -380,13 +437,13 @@ export class UnionState extends State {
     }
 
 
-    public *probe(tier: string, 
+    public *ndQuery(tier: string, 
         target: BitSet,
         symbols: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
         for (const child of this.children) {
-            yield* child.probe(tier, target, symbols, vocab);
+            yield* child.dQuery(tier, target, symbols, vocab);
         }
     }
 }
@@ -413,20 +470,20 @@ export class JoinState extends BinaryState {
                           symbols: CounterStack,
                           vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
                               
-        for (const [c1tier, c1target, c1matched, c1next] of c1.probe(tier, target, symbols, vocab)) {
+        for (const [c1tier, c1target, c1matched, c1next] of c1.dQuery(tier, target, symbols, vocab)) {
 
             if (c1tier == NO_TIER) {
                 yield [c1tier, c1target, c1matched, new JoinState(c1next, c2)];
                 continue;
             }
             
-            for (const [c2tier, c2target, c2matched, c2next] of c2.probe(c1tier, c1target, symbols, vocab)) {
+            for (const [c2tier, c2target, c2matched, c2next] of c2.dQuery(c1tier, c1target, symbols, vocab)) {
                 yield [c2tier, c2target, c1matched || c2matched, new JoinState(c1next, c2next)];
             }
         } 
     }
 
-    public *probe(tier: string, 
+    public *ndQuery(tier: string, 
         target: BitSet,
         symbols: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
@@ -451,8 +508,8 @@ abstract class UnaryState extends State {
     }
 
 
-    public accepting(): boolean {
-        return this.child.accepting();
+    public accepting(symbolStack: CounterStack): boolean {
+        return this.child.accepting(symbolStack);
     }
 }
 
@@ -473,13 +530,13 @@ export class RepetitionState extends UnaryState {
         return this.initialChild.getVocab(stateStack);
     }
 
-    public accepting(): boolean {
+    public accepting(symbolStack: CounterStack): boolean {
         return this.index >= this.minRepetitions && 
             this.index <= this.maxRepetitions && 
-            this.child.accepting();
+            this.child.accepting(symbolStack);
     }
 
-    public *probe(tier: string, 
+    public *ndQuery(tier: string, 
         target: BitSet,
         symbols: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
@@ -491,12 +548,12 @@ export class RepetitionState extends UnaryState {
 
         var yieldedAlready = false;
 
-        if (this.child.accepting()) {
+        if (this.child.accepting(symbols)) {
             // we just started, or the child is accepting, so our successor increases its index
             // and starts again with child.
             const successor = new RepetitionState(this.initialChild, 
                         this.minRepetitions, this.maxRepetitions, this.index+1, this.initialChild);
-            for (const result of successor.probe(tier, target, symbols, vocab)) {
+            for (const result of successor.dQuery(tier, target, symbols, vocab)) {
                 yield result;
                 yieldedAlready = true;
             }
@@ -506,7 +563,7 @@ export class RepetitionState extends UnaryState {
             return;
         }
 
-        for (const [childTier, childText, childMatched, childNext] of this.child.probe(tier, target, symbols, vocab)) {
+        for (const [childTier, childText, childMatched, childNext] of this.child.dQuery(tier, target, symbols, vocab)) {
             if (!childMatched) { // child doesn't care, neither do we
                 yield [childTier, childText, false, this];
                 continue;
@@ -552,7 +609,17 @@ export class EmbedState extends UnaryState {
         return this._child;
     }
 
-    public *probe(tier: string, 
+    
+    public accepting(symbolStack: CounterStack): boolean {
+        if (symbolStack.exceedsMax(this.symbolName)) {
+            return false;
+        }
+        
+        symbolStack = symbolStack.add(this.symbolName);
+        return this.child.accepting(symbolStack);
+    }
+
+    public *ndQuery(tier: string, 
         target: BitSet,
         symbols: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
@@ -562,7 +629,7 @@ export class EmbedState extends UnaryState {
         }
 
         symbols = symbols.add(this.symbolName);
-        for (const [childTier, childTarget, childMatched, childNext] of this.child.probe(tier, target, symbols, vocab)) {
+        for (const [childTier, childTarget, childMatched, childNext] of this.child.ndQuery(tier, target, symbols, vocab)) {
             const successor = new EmbedState(this.symbolName, this.symbolTable, childNext);
             yield [childTier, childTarget, childMatched, successor];
         }
@@ -578,7 +645,7 @@ export class ProjectionState extends UnaryState {
         super();
     }
 
-    public *probe(tier: string, 
+    public *ndQuery(tier: string, 
         target: BitSet,
         symbols: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
@@ -589,7 +656,7 @@ export class ProjectionState extends UnaryState {
             yield [tier, target, false, this];
         }
 
-        for (var [childTier, childTarget, childMatch, childNext] of this.child.probe(tier, target, symbols, vocab)) {
+        for (var [childTier, childTarget, childMatch, childNext] of this.child.dQuery(tier, target, symbols, vocab)) {
 
             if (childTier != ANY_TIER && !this.tierRestriction.has(childTier)) {
                 // even if our child yields content on a restricted tier, we don't let our own parent know about it
@@ -616,7 +683,7 @@ export class RenameState extends UnaryState {
         return new BasicVocab().combine(childVocab);
     }
 
-    public *probe(tier: string, 
+    public *ndQuery(tier: string, 
         target: BitSet,
         symbols: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
@@ -627,7 +694,7 @@ export class RenameState extends UnaryState {
 
         const childVocab = new RenamedVocab(this.fromTier, this.toTier, vocab);
     
-        for (var [childTier, childTarget, childMatched, childNext] of this.child.probe(tier, target, symbols, childVocab)) {
+        for (var [childTier, childTarget, childMatched, childNext] of this.child.dQuery(tier, target, symbols, childVocab)) {
             if (childTier == this.fromTier) {
                 childTier = this.toTier;
             }
@@ -658,14 +725,14 @@ export class NegationState extends State {
         return this.child.getVocab(stateStack);
     }
 
-    public accepting(): boolean {
+    public accepting(symbolStack: CounterStack): boolean {
         if (this.child == undefined) {
             return true;
         }
-        return !this.child.accepting();
+        return !this.child.accepting(symbolStack);
     }
 
-    public *probe(tier: string, 
+    public *ndQuery(tier: string, 
         target: BitSet,
         symbols: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
@@ -680,7 +747,7 @@ export class NegationState extends State {
         var remainder = target.clone();
 
         for (const [childTier, childText, childMatched, childNext] of 
-                                this.child.probe(tier, target, symbols, vocab)) {
+                                this.child.dQuery(tier, target, symbols, vocab)) {
             remainder = remainder.andNot(childText);
             yield [childTier, childText, childMatched, new NegationState(childNext)];
         }

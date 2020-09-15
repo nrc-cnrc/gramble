@@ -76,9 +76,29 @@ describe('Join(t1:world & ~(t1:hello|t1:world)', function() {
 });
 
 describe('Join(~(t1:hello|t1:world) & t1:foo)', function() {
-    const outputs = [...Join(t1("foo"), Not(Uni(t1("hello"), t1("world")))).run()];
+    const outputs = [...Join(Not(Uni(t1("hello"), t1("world"))), t1("foo")).run()];
     testNumOutputs(outputs, 1);
     testHasOutput(outputs, "t1", "foo");
     testDoesntHaveOutput(outputs, "t1", "hello");
     testDoesntHaveOutput(outputs, "t1", "world");
 });
+
+
+describe('Join(~(t1:hello|t1:world) & t1:hello)', function() {
+    const outputs = [...Join(Not(Uni(t1("hello"), t1("world"))), t1("hello")).run()];
+    testNumOutputs(outputs, 0);
+});
+
+describe('Join(~(t1:hello|t1:help) & t1:hello)', function() {
+    const outputs = [...Join(Not(Uni(t1("hello"), t1("help"))), t1("hello")).run()];
+    testNumOutputs(outputs, 0);
+});
+
+
+/*
+describe('~(~t1:hello)', function() {
+    const outputs = [...Not(Not(t1("hello"))).run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "t1", "hello");
+});
+*/

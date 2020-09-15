@@ -2,7 +2,6 @@
 import { Seq, Uni, Join, Emb, Proj } from "../src/parserInterface";
 import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput } from './testUtils';
 
-
 describe('Joining text:hello & text:hello', function() {
     const grammar = Join(text("hello"), text("hello"));
     const outputs = [...grammar.run()];

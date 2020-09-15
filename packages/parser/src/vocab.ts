@@ -7,8 +7,8 @@ export abstract class Vocab {
     public abstract allChars(): Gen<[string, string]>;
     public abstract toBits(tape: string, char: string): BitSet;
     public abstract fromBits(tape: string, bits: BitSet): string[];
+    public abstract getTapes(): Gen<string>;
 
-    
     public combine(other: Vocab): Vocab {
         for (const [tape, char] of other.allChars()) {
             this.add(tape, char);
@@ -21,6 +21,10 @@ export class BasicVocab extends Vocab {
 
     public charToIndex: Map<string, Map<string, number>> = new Map();
     public indexToChar: Map<string, Map<number, string>> = new Map();
+
+    public *getTapes(): Gen<string> {
+        yield* this.charToIndex.keys();
+    }
 
     public add(tape: string, char: string): void {
 
@@ -77,7 +81,7 @@ export class BasicVocab extends Vocab {
         for (const index of bits.toArray()) {
             const char = indexToChar.get(index);
             if (char == undefined) {
-                break;  // this is crucial, btw, because BitSets are infinite and if
+                break;  // this is crucial, because BitSets are infinite and if
                         // one was created by inversion, it could iterate forever here.
             }
             result.push(char);
@@ -108,6 +112,16 @@ export class RenamedVocab extends Vocab {
         public childVocab: Vocab
     ) { 
         super();
+    }
+
+    public *getTapes(): Gen<string> {
+        for (const tape of this.childVocab.getTapes()) {
+            if (tape == this.fromTape) {
+                yield this.toTape;
+                continue;
+            }
+            yield this.fromTape;
+        }
     }
 
     public add(tape: string, char: string): void {
