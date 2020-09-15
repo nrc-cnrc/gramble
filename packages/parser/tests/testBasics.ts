@@ -1,5 +1,5 @@
 
-import { Seq, Uni, Join, Emb, Proj, Literalizer } from "../src/parserInterface";
+import { Seq, Uni } from "../src/stateMachine";
 import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput } from './testUtils';
 
 
@@ -98,3 +98,26 @@ describe('Sequence with alt: (text:hello|text:goodbye)+(text:world|text:kitty)',
     testHasOutput(outputs, "text", "hellokitty");
     testHasOutput(outputs, "text", "goodbyekitty");
 }); 
+
+/*
+describe('Sequence with priority union: (text:hello|text:goodbye) | (text:world|text:kitty)', function() {
+    const grammar = Seq(Pri(text("hello"), text("goodbye")), Pri(text("world"), text("kitty")));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "helloworld");
+}); 
+
+describe('Joining to a priority union: text:hello & (text:hello|text:help)', function() {
+    const grammar = Join(text("hello"), Pri(text("hello"), text("help")));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+}); 
+
+
+describe('Joining to a priority union: text:hello & (text:help|text:hello)', function() {
+    const grammar = Join(text("hello"), Pri(text("help"), text("hello")));
+    const outputs = [...grammar.run()];
+    testNumOutputs(outputs, 1);
+    testHasOutput(outputs, "text", "hello");
+}); */

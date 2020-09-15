@@ -1,4 +1,4 @@
-import { Seq, Uni, Join, Emb, Proj, Rep, Not } from "../src/parserInterface";
+import { Seq, Uni, Join, Emb, Proj, Rep, Not } from "../src/stateMachine";
 import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput } from './testUtils';
 import { NegationState } from "../src/stateMachine";
 

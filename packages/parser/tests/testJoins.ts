@@ -1,5 +1,5 @@
 
-import { Seq, Uni, Join, Emb, Proj } from "../src/parserInterface";
+import { Seq, Uni, Join, Emb, Proj } from "../src/stateMachine";
 import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput } from './testUtils';
 
 describe('Joining text:hello & text:hello', function() {

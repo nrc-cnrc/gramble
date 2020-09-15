@@ -1,7 +1,4 @@
 import { Gen } from "./util";
-import { runInNewContext } from "vm";
-import { Emb } from "./parserInterface";
-
 import { BitSet } from "bitset";
 import { Vocab, BasicVocab, RenamedVocab } from "./vocab";
 
@@ -33,8 +30,8 @@ import { Vocab, BasicVocab, RenamedVocab } from "./vocab";
 
 export type SymbolTable = {[key: string]: State};
 
-const ANY_TIER: string = "__ANY__";
-const NO_TIER: string = "__NONE__";
+const ANY_TAPE: string = "__ANY__";
+const NO_TAPE: string = "__NONE__";
 const ANY_CHAR: BitSet = new BitSet().flip();
 const NO_CHAR: BitSet = new BitSet();
 
@@ -43,8 +40,8 @@ export type StringDict = {[key: string]: string};
 
 class Output {
 
-    public add(tier: string, text: BitSet) {
-        return new SuccessiveOutput(tier, text, this);
+    public add(tape: string, text: BitSet) {
+        return new SuccessiveOutput(tape, text, this);
     }
 
     public *toObj(vocab: Vocab): Gen<StringDict> { 
@@ -55,7 +52,7 @@ class Output {
 class SuccessiveOutput extends Output {
 
     constructor(
-        public tier: string,
+        public tape: string,
         public text: BitSet,
         public prev: Output
     ) { 
@@ -64,16 +61,16 @@ class SuccessiveOutput extends Output {
 
     public *toObj(vocab: Vocab): Gen<StringDict> {
         for (const result of this.prev.toObj(vocab)) {
-            if (this.tier == NO_TIER) {
+            if (this.tape == NO_TAPE) {
                 yield result;
                 return;
             }
-            if (!(this.tier in result)) {
-                result[this.tier] = "";
+            if (!(this.tape in result)) {
+                result[this.tape] = "";
             }
-            const cs = vocab.fromBits(this.tier, this.text);
-            for (const c of vocab.fromBits(this.tier, this.text)) {
-                result[this.tier] += c;
+            const cs = vocab.fromBits(this.tape, this.text);
+            for (const c of vocab.fromBits(this.tape, this.text)) {
+                result[this.tape] += c;
                 yield result;
             }
         }
@@ -121,13 +118,13 @@ export abstract class State {
         return false;
     }
 
-    public abstract ndQuery(tier: string, 
+    public abstract ndQuery(tape: string, 
         target: BitSet,
-        symbols: CounterStack,
+        symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]>;
 
 
-    /** This looks a bit complicated (and it kind of is) but what it's doing is forwarding the query
+    /** This looks a bit complicated (and it kind of is) but what it's doing is handing off the query to
      * ndQuery, then combining results such that they're all disjoint.  For example, say ndQuery yields
      * two tokens X and Y, and they have no intersection.  Then we're good, we just yield those.  
      * But if they do have an intersection, we need to return three states:
@@ -137,42 +134,42 @@ export abstract class State {
      *    Y-X (leading to the state Y would have led to)
      */ 
 
-    public *dQuery(tier: string, 
+    public *dQuery(tape: string, 
         target: BitSet,
-        symbols: CounterStack,
+        symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
         var results: [string, BitSet, boolean, State][] = [];
-        var nextStates = [... this.ndQuery(tier, target, symbols, vocab)];
+        var nextStates = [... this.ndQuery(tape, target, symbolStack, vocab)];
         
-        for (var [tier, bits, matched, next] of nextStates) {
+        for (var [tape, bits, matched, next] of nextStates) {
 
-            if (tier == NO_TIER) {
-                results.push([tier, bits, matched, next]);
+            if (tape == NO_TAPE) {
+                results.push([tape, bits, matched, next]);
                 continue;
             }
 
             var newResults: [string, BitSet, boolean, State][] = [];
-            for (var [otherTier, otherBits, otherMatched, otherNext] of results) {
-                if (tier != otherTier) {
-                    newResults.push([otherTier, otherBits, otherMatched, otherNext]);
+            for (var [otherTape, otherBits, otherMatched, otherNext] of results) {
+                if (tape != otherTape) {
+                    newResults.push([otherTape, otherBits, otherMatched, otherNext]);
                     continue;
                 }
 
                 const intersection = bits.and(otherBits);
                 if (!intersection.isEmpty()) {
-                    const union = new UnionState([next, otherNext]);
-                    newResults.push([tier, intersection, matched || otherMatched, union]); 
+                    const union = new UnionState(next, otherNext);
+                    newResults.push([tape, intersection, matched || otherMatched, union]); 
                 }
                 bits = bits.andNot(intersection)
                 otherBits = otherBits.andNot(intersection);
                 if (!otherBits.isEmpty()) {
-                    newResults.push([otherTier, otherBits, otherMatched, otherNext]);
+                    newResults.push([otherTape, otherBits, otherMatched, otherNext]);
                 }
             }
             results = newResults;
             if (!bits.isEmpty()) {
-                results.push([tier, bits, matched, next]);
+                results.push([tape, bits, matched, next]);
             }
         }
         yield *results;
@@ -188,7 +185,7 @@ export abstract class State {
         return new BasicVocab();
     }
 
-    /*
+    
     public *depthFirst(maxRecursion: number = 4): Gen<StringDict> {
 
         const vocab = this.getVocab([]);
@@ -201,16 +198,16 @@ export abstract class State {
 
             const [prevOutput, prevState] = topPair;
 
-            if (prevState.accepting()) {
+            if (prevState.accepting(symbolStack)) {
                 yield* prevOutput.toObj(vocab);
             }
 
-            for (const [tier, c, matched, newState] of prevState.ndQuery(ANY_TIER, ANY_CHAR, symbolStack, vocab)) {
-                const nextOutput = prevOutput.add(tier, c);
+            for (const [tape, c, matched, newState] of prevState.ndQuery(ANY_TAPE, ANY_CHAR, symbolStack, vocab)) {
+                const nextOutput = prevOutput.add(tape, c);
                 stateStack.push([nextOutput, newState]);
             }
         }
-    } */
+    } 
 
     public *breadthFirst(maxRecursion: number = 4): Gen<StringDict> {
 
@@ -228,8 +225,8 @@ export abstract class State {
                 yield* prevOutput.toObj(vocab);
             }
 
-            for (const [tier, c, matched, newState] of prevState.dQuery(ANY_TIER, ANY_CHAR, symbolStack, vocab)) {
-                const nextOutput = prevOutput.add(tier, c);
+            for (const [tape, c, matched, newState] of prevState.dQuery(ANY_TAPE, ANY_CHAR, symbolStack, vocab)) {
+                const nextOutput = prevOutput.add(tape, c);
                 stateQueue.push([nextOutput, newState]);
             }
         }
@@ -240,37 +237,30 @@ export class AnyCharState extends State {
 
 
     constructor(
-        public tier: string,
-        public consumed: boolean = false
+        public tape: string
     ) {
         super();
     }
 
     public get id(): string {
-        return '${this.tier}:(ANY)';
-    }
-
-    public accepting(symbolStack: CounterStack): boolean {
-        return this.consumed;
+        return `${this.tape}:(ANY)`;
     }
     
-    
-    public *ndQuery(tier: string, 
+    public *ndQuery(tape: string, 
         target: BitSet,
-        symbols: CounterStack,
+        symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
-        if (tier != ANY_TIER && tier != this.tier) {      // If the probe asks for a specific tier
-            yield [tier, target, false, this];       // and it's not the tier we 
+        if (tape != ANY_TAPE && tape != this.tape) {      // If the probe asks for a specific tape
+            yield [tape, target, false, this];       // and it's not the tape we 
             return;                                  // care about, stay in place
         }
         
-        if (this.accepting(symbols)) {
+        if (this.accepting(symbolStack)) {
             return;
         }
 
-        const nextState = new AnyCharState(this.tier, true);
-        yield [this.tier, target, true, nextState];
+        yield [this.tape, target, true, new TrivialState()];
 
     }
 }
@@ -302,28 +292,24 @@ export class LiteralState extends State {
         return result;
     }
 
-    public *ndQuery(tier: string, 
+    public *ndQuery(tape: string, 
             target: BitSet,
-            symbols: CounterStack,
+            symbolStack: CounterStack,
             vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
 
-        // If the probe asks for a specific tier and it's not the tier we care about, stay in place
-        if (tier != ANY_TIER && tier != this.tape) {
-            yield [tier, target, false, this];
+        // If the probe asks for a specific tape and it's not the tape we care about, stay in place
+        if (tape != ANY_TAPE && tape != this.tape) {
+            yield [tape, target, false, this];
             return;
         }
         
-        if (this.accepting(symbols)) {
+        if (this.accepting(symbolStack)) {
             return; 
         }
 
         const myBits = vocab.toBits(this.tape, this.text[0]);
         const result = myBits.and(target);
-
-        if (result.isEmpty()) {
-            return;
-        }
 
         const nextState = new LiteralState(this.tape, this.text.slice(1)); // success
         yield [this.tape, result, true, nextState];
@@ -347,9 +333,9 @@ export class TrivialState extends State {
         return true;
     }
 
-    public *ndQuery(tier: string, 
+    public *ndQuery(tape: string, 
         target: BitSet,
-        symbols: CounterStack,
+        symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> { }
 }
 
@@ -381,30 +367,29 @@ abstract class BinaryState extends State {
 
 export class ConcatState extends BinaryState {
 
-    public *ndQuery(tier: string, 
+    public *ndQuery(tape: string, 
         target: BitSet,
-        symbols: CounterStack,
+        symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
         var yieldedAlready = false;
 
-        for (const [child1tier, child1text, c1matched, child1next] of this.child1.dQuery(tier, target, symbols, vocab)) {
+        for (const [c1tape, c1text, c1matched, c1next] of this.child1.dQuery(tape, target, symbolStack, vocab)) {
 
             if (!c1matched) { 
-                // child1 didn't go anywhere, probably not interested in the requested tier
-                // move on to child2
-                for (const [c2tier, c2text, c2matched, child2Next] of this.child2.dQuery(tier, target, symbols, vocab)) {
-                    yield [c2tier, c2text, c2matched, new ConcatState(this.child1, child2Next)];
+                // child1 not interested in the requested tape, move on to child2
+                for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack, vocab)) {
+                    yield [c2tape, c2text, c2matched, new ConcatState(this.child1, c2next)];
                     yieldedAlready = true;
                 }
                 continue;
             }
 
-            yield [child1tier, child1text, c1matched, new ConcatState(child1next, this.child2)];
+            yield [c1tape, c1text, c1matched, new ConcatState(c1next, this.child2)];
         }
 
-        if (!yieldedAlready && this.child1.accepting(symbols)) { 
-            yield* this.child2.dQuery(tier, target, symbols, vocab);
+        if (!yieldedAlready && this.child1.accepting(symbolStack)) { 
+            yield* this.child2.dQuery(tape, target, symbolStack, vocab);
         }  
 
     }
@@ -412,41 +397,51 @@ export class ConcatState extends BinaryState {
 }
 
 
-export class UnionState extends State {
-
-    constructor(
-        public children: State[]
-    ) {
-        super();
-    }
-
-    public get id(): string {
-        return `(${this.children.map(c => c.id).join("|")})`;
-    }
+export class UnionState extends BinaryState {
 
     public accepting(symbolStack: CounterStack): boolean {
-        return this.children.some(c => c.accepting(symbolStack));
-    }
-    
-    public getVocab(stateStack: String[]): Vocab {
-        const result = new BasicVocab();
-        for (const child of this.children) {
-            result.combine(child.getVocab(stateStack));
-        }
-        return result;
+        return this.child1.accepting(symbolStack) || this.child2.accepting(symbolStack);
     }
 
-
-    public *ndQuery(tier: string, 
+    public *ndQuery(tape: string, 
         target: BitSet,
-        symbols: CounterStack,
+        symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
-        for (const child of this.children) {
-            yield* child.dQuery(tier, target, symbols, vocab);
-        }
+        yield* this.child1.dQuery(tape, target, symbolStack, vocab);
+        yield* this.child2.dQuery(tape, target, symbolStack, vocab);
     }
+} 
+
+/**
+ * SemijoinState
+ * 
+ * This implements the left semijoin.  The full join is the priority union of the left and right
+ * semijoins.
+
+export class SemijoinState extends BinaryState {
+
+    public *ndQuery(tape: string, 
+        target: BitSet,
+        symbolStack: CounterStack,
+        vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
+
+        for (const [c1tape, c1target, c1matched, c1next] of this.child1.dQuery(tape, target, symbolStack, vocab)) {
+
+            if (c1tape == NO_TAPE) {
+                yield [c1tape, c1target, c1matched, Join(c1next, this.child2)];
+                continue;
+            }
+            
+            for (const [c2tape, c2target, c2matched, c2next] of this.child2.dQuery(c1tape, c1target, symbolStack, vocab)) {
+                yield [c2tape, c2target, c1matched || c2matched, Join(c1next, c2next)];
+            }
+        } 
+    }
+
 }
+
+ */
 
 function *iterPriorityUnion<T>(iter1: Gen<T>, iter2: Gen<T>): Gen<T> {
 
@@ -460,40 +455,39 @@ function *iterPriorityUnion<T>(iter1: Gen<T>, iter2: Gen<T>): Gen<T> {
         yield* iter2;
     }
 }
-
 export class JoinState extends BinaryState {
 
-    public *probeLeftJoin(tier: string,
+    public *queryLeftJoin(tape: string,
                           target: BitSet,
                           c1: State,
                           c2: State,
-                          symbols: CounterStack,
+                          symbolStack: CounterStack,
                           vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
                               
-        for (const [c1tier, c1target, c1matched, c1next] of c1.dQuery(tier, target, symbols, vocab)) {
+        for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, symbolStack, vocab)) {
 
-            if (c1tier == NO_TIER) {
-                yield [c1tier, c1target, c1matched, new JoinState(c1next, c2)];
+            if (c1tape == NO_TAPE) {
+                yield [c1tape, c1target, c1matched, new JoinState(c1next, c2)];
                 continue;
             }
             
-            for (const [c2tier, c2target, c2matched, c2next] of c2.dQuery(c1tier, c1target, symbols, vocab)) {
-                yield [c2tier, c2target, c1matched || c2matched, new JoinState(c1next, c2next)];
+            for (const [c2tape, c2target, c2matched, c2next] of c2.dQuery(c1tape, c1target, symbolStack, vocab)) {
+                yield [c2tape, c2target, c1matched || c2matched, new JoinState(c1next, c2next)];
             }
         } 
     }
 
-    public *ndQuery(tier: string, 
+    public *ndQuery(tape: string, 
         target: BitSet,
-        symbols: CounterStack,
+        symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
-        const leftJoin = this.probeLeftJoin(tier, target, this.child1, this.child2, symbols, vocab);
-        const rightJoin = this.probeLeftJoin(tier, target, this.child2, this.child1, symbols, vocab);
+        const leftJoin = this.queryLeftJoin(tape, target, this.child1, this.child2, symbolStack, vocab);
+        const rightJoin = this.queryLeftJoin(tape, target, this.child2, this.child1, symbolStack, vocab);
         yield* iterPriorityUnion(leftJoin, rightJoin);
     }
 
-}
+} 
 
 abstract class UnaryState extends State {
 
@@ -536,9 +530,9 @@ export class RepetitionState extends UnaryState {
             this.child.accepting(symbolStack);
     }
 
-    public *ndQuery(tier: string, 
+    public *ndQuery(tape: string, 
         target: BitSet,
-        symbols: CounterStack,
+        symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
         if (this.index > this.maxRepetitions) {
@@ -548,12 +542,12 @@ export class RepetitionState extends UnaryState {
 
         var yieldedAlready = false;
 
-        if (this.child.accepting(symbols)) {
+        if (this.child.accepting(symbolStack)) {
             // we just started, or the child is accepting, so our successor increases its index
             // and starts again with child.
             const successor = new RepetitionState(this.initialChild, 
                         this.minRepetitions, this.maxRepetitions, this.index+1, this.initialChild);
-            for (const result of successor.dQuery(tier, target, symbols, vocab)) {
+            for (const result of successor.dQuery(tape, target, symbolStack, vocab)) {
                 yield result;
                 yieldedAlready = true;
             }
@@ -563,13 +557,13 @@ export class RepetitionState extends UnaryState {
             return;
         }
 
-        for (const [childTier, childText, childMatched, childNext] of this.child.dQuery(tier, target, symbols, vocab)) {
+        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack, vocab)) {
             if (!childMatched) { // child doesn't care, neither do we
-                yield [childTier, childText, false, this];
+                yield [childTape, childText, false, this];
                 continue;
             }
 
-            yield [childTier, childText, childMatched, new RepetitionState(childNext, 
+            yield [childTape, childText, childMatched, new RepetitionState(childNext, 
                 this.minRepetitions, this.maxRepetitions, this.index, this.initialChild)];
         }
 
@@ -619,19 +613,19 @@ export class EmbedState extends UnaryState {
         return this.child.accepting(symbolStack);
     }
 
-    public *ndQuery(tier: string, 
+    public *ndQuery(tape: string, 
         target: BitSet,
-        symbols: CounterStack,
+        symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
-        if (symbols.exceedsMax(this.symbolName)) {
+        if (symbolStack.exceedsMax(this.symbolName)) {
             return;
         }
 
-        symbols = symbols.add(this.symbolName);
-        for (const [childTier, childTarget, childMatched, childNext] of this.child.ndQuery(tier, target, symbols, vocab)) {
+        symbolStack = symbolStack.add(this.symbolName);
+        for (const [childchildTape, childTarget, childMatched, childNext] of this.child.ndQuery(tape, target, symbolStack, vocab)) {
             const successor = new EmbedState(this.symbolName, this.symbolTable, childNext);
-            yield [childTier, childTarget, childMatched, successor];
+            yield [childchildTape, childTarget, childMatched, successor];
         }
     }
 }
@@ -640,30 +634,32 @@ export class ProjectionState extends UnaryState {
 
     constructor(
         public child: State,
-        public tierRestriction: Set<string>
+        public tapeRestriction: Set<string>
     ) { 
         super();
     }
 
-    public *ndQuery(tier: string, 
+    public *ndQuery(tape: string, 
         target: BitSet,
-        symbols: CounterStack,
+        symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
 
-        if (tier != ANY_TIER && !this.tierRestriction.has(tier)) {
-            // if it's not a tier we care about, go nowhere
-            yield [tier, target, false, this];
+        if (tape != ANY_TAPE && !this.tapeRestriction.has(tape)) {
+            // if it's not a tape we care about, go nowhere
+            yield [tape, target, false, this];
         }
 
-        for (var [childTier, childTarget, childMatch, childNext] of this.child.dQuery(tier, target, symbols, vocab)) {
+        for (var [childTape, childTarget, childMatch, childNext] of 
+                            this.child.dQuery(tape, target, symbolStack, vocab)) {
 
-            if (childTier != ANY_TIER && !this.tierRestriction.has(childTier)) {
-                // even if our child yields content on a restricted tier, we don't let our own parent know about it
-                childTier = NO_TIER;
+            if (childTape != ANY_TAPE && !this.tapeRestriction.has(childTape)) {
+                // even if our child yields content on a restricted tape, 
+                // we don't let our own parent know about it
+                childTape = NO_TAPE;
                 childTarget = NO_CHAR;
             }
-            yield [childTier, childTarget, childMatch, new ProjectionState(childNext, this.tierRestriction)];
+            yield [childTape, childTarget, childMatch, new ProjectionState(childNext, this.tapeRestriction)];
         }
     }
 }
@@ -672,33 +668,33 @@ export class RenameState extends UnaryState {
 
     constructor(
         public child: State,
-        public fromTier: string,
-        public toTier: string
+        public fromTape: string,
+        public toTape: string
     ) { 
         super();
     }
 
     public getVocab(stateStack: String[]): Vocab {
-        const childVocab = new RenamedVocab(this.fromTier, this.toTier, this.child.getVocab(stateStack));
+        const childVocab = new RenamedVocab(this.fromTape, this.toTape, this.child.getVocab(stateStack));
         return new BasicVocab().combine(childVocab);
     }
 
-    public *ndQuery(tier: string, 
+    public *ndQuery(tape: string, 
         target: BitSet,
-        symbols: CounterStack,
+        symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
-        if (tier == this.toTier) {
-            tier = this.fromTier;
+        if (tape == this.toTape) {
+            tape = this.fromTape;
         }
 
-        const childVocab = new RenamedVocab(this.fromTier, this.toTier, vocab);
+        const childVocab = new RenamedVocab(this.fromTape, this.toTape, vocab);
     
-        for (var [childTier, childTarget, childMatched, childNext] of this.child.dQuery(tier, target, symbols, childVocab)) {
-            if (childTier == this.fromTier) {
-                childTier = this.toTier;
+        for (var [childTape, childTarget, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack, childVocab)) {
+            if (childTape == this.fromTape) {
+                childTape = this.toTape;
             }
-            yield [childTier, childTarget, childMatched, new RenameState(childNext, this.fromTier, this.toTier)];
+            yield [childTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape)];
         }
     }
 }
@@ -732,33 +728,100 @@ export class NegationState extends State {
         return !this.child.accepting(symbolStack);
     }
 
-    public *ndQuery(tier: string, 
+    public *ndQuery(tape: string, 
         target: BitSet,
-        symbols: CounterStack,
+        symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
 
         if (this.child == undefined) {  // we've can't possibly match the child, so we're basically .* from now on
-            yield [tier, target, true, this]; 
+            yield [tape, target, true, this]; 
             return;
         }
-
         
         var remainder = target.clone();
 
-        for (const [childTier, childText, childMatched, childNext] of 
-                                this.child.dQuery(tier, target, symbols, vocab)) {
+        for (const [childTape, childText, childMatched, childNext] of 
+                                this.child.dQuery(tape, target, symbolStack, vocab)) {
             remainder = remainder.andNot(childText);
-            yield [childTier, childText, childMatched, new NegationState(childNext)];
+            yield [childTape, childText, childMatched, new NegationState(childNext)];
         }
 
         if (remainder.isEmpty()) {
             return;
         }
 
-        yield [tier, remainder, true, new NegationState(undefined)];
+        yield [tape, remainder, true, new NegationState(undefined)];
+    }
+}
+
+export function Lit(tier: string, text: string): State {
+    return new LiteralState(tier, text);
+}
+
+export function Literalizer(tier: string) {
+    return function(text: string) {
+        return Lit(tier, text);
+    }
+}
+
+export function Seq(...children: State[]): State {
+    if (children.length == 0) {
+        throw new Error("Sequences must have at least 1 child");
     }
 
+    if (children.length == 1) {
+        return children[0];
+    }
 
+    return new ConcatState(children[0], Seq(...children.slice(1)));
+}
 
+export function Uni(...children: State[]): State {
+    if (children.length == 0) {
+        throw new Error("Unions must have at least 1 child");
+    }
+
+    if (children.length == 1) {
+        return children[0];
+    }
+
+    return new UnionState(children[0], Uni(...children.slice(1)));
+}
+
+/*
+export function Pri(...children: State[]): State {
+    return new PriorityUnionState(children);
+} */
+
+export function Join(child1: State, child2: State): State {
+    return new JoinState(child1, child2);
+    /* const left = new SemijoinState(child1, child2);
+    const right = new SemijoinState(child2, child1);
+    return new PriorityUnionState([left, right]); */
+
+}
+
+export function Not(child: State): State {
+    return new NegationState(child);
+}
+
+export function Emb(symbolName: string, symbolTable: SymbolTable): State {
+    return new EmbedState(symbolName, symbolTable);
+}
+
+export function Proj(child: State, ...tiers: string[]): State {
+    return new ProjectionState(child, new Set(tiers));
+}
+
+export function Rename(child: State, fromTier: string, toTier: string): State {
+    return new RenameState(child, fromTier, toTier);
+}
+
+export function Any(tier: string): State {
+    return new AnyCharState(tier);
+}
+
+export function Rep(child: State, minReps=0, maxReps=Infinity) {
+    return new RepetitionState(new TrivialState(), minReps, maxReps, 0, child);
 }

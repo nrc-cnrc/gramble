@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import {Literalizer, Seq, Uni, Join, Emb, Proj, StringDict, Rename} from "../src/parserInterface";
+import {Literalizer, StringDict} from "../src/stateMachine";
 
 export const text = Literalizer("text");
 export const unrelated = Literalizer("unrelated");

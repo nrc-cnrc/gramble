@@ -1,4 +1,4 @@
-import {Seq, Uni, Join, Emb, SymbolTable} from "../src/parserInterface";
+import {Seq, Uni, Join, Emb, SymbolTable} from "../src/stateMachine";
 import { text, testNumOutputs, testHasOutput, t1, t2, t3 } from './testUtils';
 
 

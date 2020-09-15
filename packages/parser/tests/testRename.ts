@@ -1,4 +1,4 @@
-import { Rename, Seq, Join } from "../src/parserInterface";
+import { Rename, Seq, Join } from "../src/stateMachine";
 import { t1, testNumOutputs, testHasOutput, testDoesntHaveOutput, t2, t3 } from "./testUtils";
 
 describe('Rename(t2/t1) of t1:hello', function() {
