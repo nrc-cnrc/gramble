@@ -37,6 +37,23 @@ const NO_CHAR: BitSet = new BitSet();
 
 export type StringDict = {[key: string]: string};
 
+/**
+ * Output
+ * 
+ * The outputs of this algorithm are kept as tries, since that's the natural
+ * shape of a set of outputs from a non-deterministic parsing algorithm.  (E.g., if
+ * we've already output "fooba", and at the next state we could either output "r" or
+ * "z", then just having "r" and "z" point to that previous output is both less effort
+ * and less space than copying it twice and concatenating it.  Especially if "z" ends
+ * up being a false path and we end up discarding it; that would mean we had copied/
+ * concatenated for nothing.)  
+ * 
+ * Note that this isn't storing characters explicitly, but sets of characters implemented
+ * as a BitSet (e.g. if our alphabet were ABCDEF, then the set {B,D} would be the BitSet
+ * 010100).  So one Output object might correspond to multiple outputs, once we've finished
+ * parsing and the client asks for the results as an explicit dictionary of strings (using the
+ * function [Object.toObj]).  
+ */
 
 class Output {
 
@@ -77,6 +94,19 @@ class SuccessiveOutput extends Output {
     }
 }
 
+/**
+ * CounterStack
+ * 
+ * A convenience class that works roughly like Python's collections.Counter.
+ * We use it to make sure we don't recurse an impractical number of times, like
+ * infinitely.  
+ * 
+ * Infinite recursion is *correct* behavior, but because this system
+ * is meant to be embedded in a programming language meant for beginner programmers,
+ * we default to allowing four recursions before stopping recursion.  Advanced 
+ * programmers will be able to turn this off and allow infinite recursion, but they
+ * have to take an extra step to do so.
+ */
 
 class CounterStack {
 
@@ -109,6 +139,37 @@ class CounterStack {
         return JSON.stringify(this.stack);
     }
 }
+
+/**
+ * State
+ * 
+ * State is the basic class of the parser.  It encapsulate the current state of the parse; you can think
+ * of it like a pointer into the state graph, if we were to ever construct that graph, which we don't.
+ * Rather, a State encapsulates the *information* that that node would have represented.  
+ * 
+ * For example, imagine an automaton that recognizes the literal "hello".  We could implement this as an
+ * explicit graph of nodes, where each node leads to the next by consuming a particular letter (state 0 leads
+ * to 1 by consuming "h", state 1 leads to 2 by consuming "e", etc.).
+ * 
+ * Our pointer into this graph basically represents two pieces of information, what the word is ("hello") and 
+ * how far into it we are.  We could also represent this information as an object { text: string, index: number }.
+ * Rather than pre-compute each of these nodes, we can say that this object returns (upon matching) another 
+ * object {text: string, index: number+1}... until we exceed the length of the literal, of course.
+ * 
+ * This idea, in general, allows us to avoid creating explicit state graphs that can be exponentially huge, 
+ * although it comes with its own pitfalls.
+ * 
+ * For our purposes, a State is anything that can, upon being queried with a [tape, char] pair, return the possible
+ * successor states it can get to.  
+ * 
+ * Many kinds of States have to contain references to other states (like an 
+ * [EmbedState], which lets us embed grammars inside other grammars, keeps a point to the current parse state inside
+ * that embedded grammar).  The structure of State components ends up being roughly isomorphic to the grammar that it's
+ * parsing (e.g. if the grammar is (A+(B|C)), then the start State that we begin in will have the same structure,
+ * it'll be a [ConcatState] of (A and a [UnionState] of (B and C)).  Then as the parse goes on, the State will
+ * simplify bit-by-bit, like once A is recognized, the current state will just be one corresponding to B|C, and 
+ * if B fails, the current state will just be C.
+ */
 
 export abstract class State {
 
