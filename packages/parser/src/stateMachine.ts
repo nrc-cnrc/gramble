@@ -101,8 +101,9 @@ class SuccessiveOutput extends Output {
  * We use it to make sure we don't recurse an impractical number of times, like
  * infinitely.  
  * 
- * Infinite recursion is *correct* behavior, but because this system
- * is meant to be embedded in a programming language meant for beginner programmers,
+ * Infinite recursion is *correct* behavior for a grammar that's
+ * genuinely infinite, but because this system is meant to be embedded in a 
+ * programming language meant for beginner programmers,
  * we default to allowing four recursions before stopping recursion.  Advanced 
  * programmers will be able to turn this off and allow infinite recursion, but they
  * have to take an extra step to do so.
@@ -175,9 +176,37 @@ export abstract class State {
 
     public abstract get id(): string;
     
+    /**
+     * accepting 
+     * 
+     * Whether the state is accepting (i.e. indicates that we have achieved a complete parse).  (What is typically rendered as a "double circle"
+     * in a state machine.) Note that, since this is a recursive state machine, getting to an accepting state doesn't necessarily
+     * mean that the *entire* grammar has completed; we might just be in a subgrammar.  In this case, accepting() isn't the signal that we
+     * can stop parsing, just that we've reached a complete parse within the subgrammar.  For example, [ConcatState] checks whether its left
+     * child is accepting() to determine whether to move on and start parsing its right child.
+     * 
+     * @param symbolStack A [CounterStack] that keeps track of symbols, used for preventing infinite recursion.
+     * @returns true if the state is an accepting state (i.e., constitutes a complete parse) 
+     */
     public accepting(symbolStack: CounterStack): boolean {
         return false;
     }
+
+    /**
+     * The workhorse function of the parser, taking a <tape, char> pair and trying to match it to a transition
+     * (e.g., matching it to the next character of a [LiteralState]).  It yields all matching <tape, char> pairs, and the respective
+     * nextStates to which we should move upon a successful transition.
+     * 
+     * @param tape A string identifying what tape the target character(s) is on
+     * @param target A BitSet identifying what characters we need to match
+     * @param symbolStack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
+     * @param vocab A [Vocab] keeping track of the indices of particular characters in the target BitSet 
+     * @returns A tuple <tape, target, matched, nextState>, where:
+     *      * tape is the tape we matched on, 
+     *      * target is the intersection of the original target and our match,
+     *      * matched is whether we actually made a match or ignored it (for being on the wrong tape)
+     *      * nextState is the state the matched transition leads to
+     */
 
     public abstract ndQuery(tape: string, 
         target: BitSet,
@@ -185,14 +214,28 @@ export abstract class State {
         vocab: Vocab): Gen<[string, BitSet, boolean, State]>;
 
 
-    /** This looks a bit complicated (and it kind of is) but what it's doing is handing off the query to
-     * ndQuery, then combining results such that they're all disjoint.  For example, say ndQuery yields
-     * two tokens X and Y, and they have no intersection.  Then we're good, we just yield those.  
-     * But if they do have an intersection, we need to return three states:
+    /** 
+     * Queries the state so that the results are deterministic (or more accurately, so that all returned 
+     * transitions are disjoint).  (There can still be multiple results; when we query ANY:ANY, for example.)
+     * 
+     * This looks a bit complicated (and it kind of is) but what it's doing is handing off the query to
+     * ndQuery, then combining results so that there's no overlap in the BitSets.  For example, say ndQuery yields
+     * two tokens X and Y, and they have no intersection.  Then we're good, we just yield those.  But if they 
+     * do have an intersection, we need to return three paths:
      * 
      *    X&Y (leading to the UnionState of the states X and Y would have led to)
      *    X-Y (leading to the state X would have led to)
      *    Y-X (leading to the state Y would have led to)
+     * 
+     * @param tape A string identifying what tape the target character(s) is on
+     * @param target A BitSet identifying what characters we need to match
+     * @param symbolStack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
+     * @param vocab A [Vocab] keeping track of the indices of particular characters in the target BitSet 
+     * @returns A tuple <tape, target, matched, nextState>, where:
+     *      * tape is the tape we matched on, 
+     *      * target is the intersection of the original target and our match,
+     *      * matched is whether we actually made a match or ignored it (for being on the wrong tape)
+     *      * nextState is the state the matched transition leads to
      */ 
 
     public *dQuery(tape: string, 
@@ -270,26 +313,32 @@ export abstract class State {
         }
     } 
 
-    public *breadthFirst(maxRecursion: number = 4): Gen<StringDict> {
+    public *breadthFirst(maxRecursion: number = 4, maxChars: number = 1000): Gen<StringDict> {
 
         const vocab = this.getVocab([]);
 
         const initialOutput: Output = new Output();
         var stateQueue: [Output, State][] = [[initialOutput, this]];
         var symbolStack = new CounterStack(maxRecursion);
+        var chars = 0;
 
-        for (var i = 0; i < stateQueue.length; i++) {
+        while (stateQueue.length > 0 && chars < maxChars) {
+            var nextQueue: [Output, State][] = [];
+            for (var i = 0; i < stateQueue.length; i++) {
 
-            const [prevOutput, prevState] = stateQueue[i];
+                const [prevOutput, prevState] = stateQueue[i];
 
-            if (prevState.accepting(symbolStack)) {
-                yield* prevOutput.toObj(vocab);
+                if (prevState.accepting(symbolStack)) {
+                    yield* prevOutput.toObj(vocab);
+                }
+
+                for (const [tape, c, matched, newState] of prevState.dQuery(ANY_TAPE, ANY_CHAR, symbolStack, vocab)) {
+                    const nextOutput = prevOutput.add(tape, c);
+                    nextQueue.push([nextOutput, newState]);
+                }
             }
-
-            for (const [tape, c, matched, newState] of prevState.dQuery(ANY_TAPE, ANY_CHAR, symbolStack, vocab)) {
-                const nextOutput = prevOutput.add(tape, c);
-                stateQueue.push([nextOutput, newState]);
-            }
+            stateQueue = nextQueue;
+            chars++;
         }
     }
 }
@@ -806,10 +855,6 @@ export class NegationState extends State {
                                 this.child.dQuery(tape, target, symbolStack, vocab)) {
             remainder = remainder.andNot(childText);
             yield [childTape, childText, childMatched, new NegationState(childNext)];
-        }
-
-        if (remainder.isEmpty()) {
-            return;
         }
 
         yield [tape, remainder, true, new NegationState(undefined)];

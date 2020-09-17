@@ -94,11 +94,8 @@ describe('Join(~(t1:hello|t1:help) & t1:hello)', function() {
     testNumOutputs(outputs, 0);
 });
 
-
-/*
 describe('~(~t1:hello)', function() {
     const outputs = [...Not(Not(t1("hello"))).run()];
     testNumOutputs(outputs, 1);
     testHasOutput(outputs, "t1", "hello");
 });
-*/
