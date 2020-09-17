@@ -280,41 +280,15 @@ export abstract class State {
 
     }
 
-        
-    public *run(maxRecursion: number = 4): Gen<StringDict> {
-        yield* this.breadthFirst(maxRecursion);
-    }
-
-    public getVocab(stateStack: String[]): Vocab {
-        return new BasicVocab();
-    }
-
-    
-    public *depthFirst(maxRecursion: number = 4): Gen<StringDict> {
-
-        const vocab = this.getVocab([]);
-
-        const initialOutput: Output = new Output();
-        var stateStack: [Output, State][] = [[initialOutput, this]];
-        var symbolStack = new CounterStack(maxRecursion);
-
-        for (var topPair; topPair = stateStack.pop(); ) {
-
-            const [prevOutput, prevState] = topPair;
-
-            if (prevState.accepting(symbolStack)) {
-                yield* prevOutput.toObj(vocab);
-            }
-
-            for (const [tape, c, matched, newState] of prevState.ndQuery(ANY_TAPE, ANY_CHAR, symbolStack, vocab)) {
-                const nextOutput = prevOutput.add(tape, c);
-                stateStack.push([nextOutput, newState]);
-            }
-        }
-    } 
-
-    public *breadthFirst(maxRecursion: number = 4, maxChars: number = 1000): Gen<StringDict> {
-
+    /**
+     * Performs a breadth-first traversal of the graph.
+     * 
+     * @param [maxRecursion] The maximum number of times the grammar can recurse; for infinite recursion pass Infinity.
+     * @param [maxChars] The maximum number of steps any one traversal can take (usually == the total number of characters
+     *                    output to all tapes)
+     * @returns a generator of { tape: string } dictionaries, one for each successful traversal. 
+     */
+    public *generate(maxRecursion: number = 4, maxChars: number = 1000): Gen<StringDict> {
         const vocab = this.getVocab([]);
 
         const initialOutput: Output = new Output();
@@ -341,10 +315,24 @@ export abstract class State {
             chars++;
         }
     }
+
+    /**
+     * Collects all explicitly mentioned characters in the grammar for all tapes, and assigns 
+     * them to a unique index.
+     * 
+     * @param stateStack A [CounterState] keeping track of embedding symbols, to prevent inappropriate recursion
+     * @returns vocab 
+     */
+    public getVocab(stateStack: String[]): Vocab {
+        return new BasicVocab();
+    }
 }
 
-export class AnyCharState extends State {
-
+/**
+ * Abstract base class for both LiteralState and AnyCharState,
+ * since they share the same query algorithm template
+ */
+abstract class TextState extends State {
 
     constructor(
         public tape: string
@@ -352,61 +340,13 @@ export class AnyCharState extends State {
         super();
     }
 
-    public get id(): string {
-        return `${this.tape}:(ANY)`;
-    }
-    
-    public *ndQuery(tape: string, 
-        target: BitSet,
-        symbolStack: CounterStack,
-        vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
-
-        if (tape != ANY_TAPE && tape != this.tape) {      // If the probe asks for a specific tape
-            yield [tape, target, false, this];       // and it's not the tape we 
-            return;                                  // care about, stay in place
-        }
-        
-        if (this.accepting(symbolStack)) {
-            return;
-        }
-
-        yield [this.tape, target, true, new TrivialState()];
-
-    }
-}
-
-
-export class LiteralState extends State {
-
-    constructor(
-        public tape: string,
-        public text: string
-    ) { 
-        super();
-    }
-
-    public get id(): string {
-        return `${this.tape}:${this.text}`;
-    }
-
-    public accepting(symbolStack: CounterStack): boolean {
-        return this.text == "";
-    }
-
-    
-    public getVocab(stateStack: String[]): Vocab {
-        const result = new BasicVocab();
-        for (const c of this.text) {
-            result.add(this.tape, c);
-        }
-        return result;
-    }
+    protected abstract getBits(vocab: Vocab): BitSet;
+    protected abstract successor(): State;
 
     public *ndQuery(tape: string, 
-            target: BitSet,
-            symbolStack: CounterStack,
-            vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
-
+                    target: BitSet,
+                    symbolStack: CounterStack,
+                    vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
         // If the probe asks for a specific tape and it's not the tape we care about, stay in place
         if (tape != ANY_TAPE && tape != this.tape) {
@@ -418,17 +358,76 @@ export class LiteralState extends State {
             return; 
         }
 
-        const myBits = vocab.toBits(this.tape, this.text[0]);
-        const result = myBits.and(target);
-
-        const nextState = new LiteralState(this.tape, this.text.slice(1)); // success
+        const result = this.getBits(vocab).and(target);
+        const nextState = this.successor();
         yield [this.tape, result, true, nextState];
 
     }
 
 }
 
+/**
+ * The state that recognizes/emits any character on a specific tape; implements the "dot" in regular expressions.
+ */
+export class AnyCharState extends TextState {
 
+    public get id(): string {
+        return `${this.tape}:(ANY)`;
+    }
+    
+
+    protected getBits(vocab: Vocab): BitSet {
+        return ANY_CHAR;
+    }
+
+    protected successor(): State {
+        return new TrivialState();
+    }
+}
+
+/**
+ * Recognizese/emits a literal string on a particular tape.  Inside, it's just a string like "foo"; 
+ * upon successfully matching "f" we construct a successor state looking for "oo", and so on.
+ */
+export class LiteralState extends TextState {
+
+    constructor(
+        tape: string,
+        public text: string
+    ) { 
+        super(tape);
+    }
+
+    public get id(): string {
+        return `${this.tape}:${this.text}`;
+    }
+
+    public accepting(symbolStack: CounterStack): boolean {
+        return this.text == "";
+    }
+
+    public getVocab(stateStack: String[]): Vocab {
+        const result = new BasicVocab();
+        for (const c of this.text) {
+            result.add(this.tape, c);
+        }
+        return result;
+    }
+
+    protected getBits(vocab: Vocab): BitSet {
+        return vocab.toBits(this.tape, this.text[0]);
+    }
+
+    protected successor(): State {
+        return new LiteralState(this.tape, this.text.slice(1));
+    }
+
+}
+
+/**
+ * Recognizes the empty grammar.  This is occassionally useful in implementing other states (e.g. when
+ * you need a state that's accepting but won't go anywhere.
+ */
 export class TrivialState extends State {
 
     constructor() { 
@@ -449,6 +448,11 @@ export class TrivialState extends State {
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> { }
 }
 
+/**
+ * The abstract base class of all States with two state children (e.g. [JoinState], [ConcatState], [UnionState]).
+ * States that conceptually might have infinite children (like Union) we treat as right-recursive binary (see for
+ * example the helper function [Uni] which converts lists of states into right-braching UnionStates).
+ */
 abstract class BinaryState extends State {
 
     constructor(
@@ -475,6 +479,23 @@ abstract class BinaryState extends State {
     }
 }
 
+/**
+ * ConcatState represents the current state in a concatenation A+B of two grammars.  It
+ * is a [BinaryState], meaning it has two children; sequences ABCDEF are constructed as
+ * A+(B+(C+(D+(E+F)))).
+ * 
+ * The one thing that makes ConcatState a bit tricky is that they're the only part of the grammar
+ * where there is a precedence order, which in a naive implementation can lead to a deadlock situation.
+ * For example, if we have ConcatState(LiteralState("A","a"), LiteralState("B","b")), then the material
+ * on tape A needs to be emitted/matched before the material on tape B.  But then consider the opposite,
+ * ConcatState(LiteralState("B","b"), LiteralState("A","a")).  That grammar describes the same database,
+ * but looks for the material in opposite tape order.  If we join these two, the first is emitting on A and
+ * waiting for a match, but the second can't match it because it'll only get there later.  There are several
+ * possible solutions for this, but the simplest by far is to implement ConcatState so that it can always emit/match
+ * on any tape that any of its children refer to.  Basically, it goes through its children, and if child1
+ * returns but doesn't match (meaning it doesn't care about tape T), it asks child2.  Then it returns the 
+ * appropriate ConcatState consisting of the unmatched material.
+ */
 export class ConcatState extends BinaryState {
 
     public *ndQuery(tape: string, 
@@ -482,20 +503,24 @@ export class ConcatState extends BinaryState {
         symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
+        // We can yield from child2 if child1 is accepting, OR if child1 doesn't care about the requested tape,
+        // but if child1 is accepting AND doesn't care about the requested tape, we don't want to yield twice;
+        // that leads to duplicate results.  yieldedAlready is how we keep track of that.
         var yieldedAlready = false;
 
         for (const [c1tape, c1text, c1matched, c1next] of this.child1.dQuery(tape, target, symbolStack, vocab)) {
 
-            if (!c1matched) { 
-                // child1 not interested in the requested tape, move on to child2
-                for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack, vocab)) {
-                    yield [c2tape, c2text, c2matched, new ConcatState(this.child1, c2next)];
-                    yieldedAlready = true;
-                }
+            if (c1matched) {         
+                yield [c1tape, c1text, c1matched, new ConcatState(c1next, this.child2)];
                 continue;
             }
-
-            yield [c1tape, c1text, c1matched, new ConcatState(c1next, this.child2)];
+   
+            // child1 not interested in the requested tape, the first character on the tape must be
+            // (if it exists at all) in child2.
+            for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack, vocab)) {
+                yield [c2tape, c2text, c2matched, new ConcatState(this.child1, c2next)];
+                yieldedAlready = true;
+            }
         }
 
         if (!yieldedAlready && this.child1.accepting(symbolStack)) { 
@@ -599,6 +624,18 @@ export class JoinState extends BinaryState {
 
 } 
 
+/**
+ * Abstract base class for states with only one child state.  Typically, UnaryStates
+ * handle queries by forwarding on the query to their child, and doing something special
+ * before or after.  For example, [EmbedStates] do a check a stack of symbol names to see
+ * whether they've passed the allowable recursion limit, and [RenameState]s change what
+ * the different tapes are named.
+ * 
+ * Note that [UnaryState.child] is a getter, rather than storing an actual child.  This is
+ * because [EmbedState] doesn't actually store its child, it grabs it from a symbol table instead.
+ * (If it tried to take it as a param, or construct it during its own construction, this wouldn't 
+ * work, because the EmbedState's child can be that EmbedState itself.)
+ */
 abstract class UnaryState extends State {
 
     public abstract get child(): State;
@@ -616,7 +653,17 @@ abstract class UnaryState extends State {
         return this.child.accepting(symbolStack);
     }
 }
-
+/**
+ * RepetitionState implements the Kleene star, plus, question mark, and in general
+ * repetitions between N and M times.  (E.g. x{2,3} matching x two or three times.)
+ * 
+ * The slightly odd part of implementing RepetitionState, compared to other states, is that only
+ * RepetitionState needs to remember the initial state of its child.  That is, all the
+ * other UnaryStates only keep track of the current state of the child parse.  RepetitionState,
+ * however, needs to be able to *restart* the child.  To do that, it
+ * keeps around the original child state, so that it can construct its appropriate successor
+ * when the current child state is finished.
+ */
 export class RepetitionState extends UnaryState {
 
     constructor(
@@ -680,7 +727,19 @@ export class RepetitionState extends UnaryState {
     }
 }
 
-
+/**
+ * The parser that handles arbitrary subgrammars referred to by a symbol name; this is what makes
+ * recursion possible.
+ * 
+ * Like most such implementations, EmbedState's machinery serves to delay the construction of a child
+ * state, since this child may be the EmbedState itself, or refer to this EmbedState by indirect recursion.
+ * So instead of having a child at the start, it just has a symbol name and a reference to a symbol table.
+ * 
+ * The successor states of the EmbedState may have an explicit child, though: the successors of that initial
+ * child state.  (If we got the child from the symbol table every time, we'd just end up trying to match its 
+ * first letter again and again.)  We keep track of that through the _child member, which is initially undefined
+ * but which we specify when constructing EmbedState's successor.
+ */
 export class EmbedState extends UnaryState {
 
     constructor(
@@ -719,8 +778,7 @@ export class EmbedState extends UnaryState {
             return false;
         }
         
-        symbolStack = symbolStack.add(this.symbolName);
-        return this.child.accepting(symbolStack);
+        return this.child.accepting(symbolStack.add(this.symbolName));
     }
 
     public *ndQuery(tape: string, 
@@ -860,6 +918,9 @@ export class NegationState extends State {
         yield [tape, remainder, true, new NegationState(undefined)];
     }
 }
+
+
+/* CONVENIENCE FUNCTIONS FOR CONSTRUCTING GRAMMARS */
 
 export function Lit(tier: string, text: string): State {
     return new LiteralState(tier, text);
