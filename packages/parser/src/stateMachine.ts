@@ -97,8 +97,13 @@ class SuccessiveOutput extends Output {
 /**
  * CounterStack
  * 
- * A convenience class that works roughly like Python's collections.Counter.
- * We use it to make sure we don't recurse an impractical number of times, like
+ * A convenience class that works roughly like Python's collections.Counter.  Just
+ * note that add() is non-destructive; it returns a new Counter without changing the original.
+ * So use it like:
+ * 
+ *  * counter = counter.add("verb");
+ * 
+ * We use this to make sure we don't recurse an impractical number of times, like
  * infinitely.  
  * 
  * Infinite recursion is *correct* behavior for a grammar that's
@@ -245,7 +250,6 @@ export abstract class State {
 
         var results: [string, BitSet, boolean, State][] = [];
         var nextStates = [... this.ndQuery(tape, target, symbolStack, vocab)];
-        
         for (var [tape, bits, matched, next] of nextStates) {
 
             if (tape == NO_TAPE) {
@@ -335,7 +339,7 @@ export abstract class State {
 abstract class TextState extends State {
 
     constructor(
-        public tape: string
+        public tapeName: string
     ) {
         super();
     }
@@ -349,7 +353,7 @@ abstract class TextState extends State {
                     vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
         // If the probe asks for a specific tape and it's not the tape we care about, stay in place
-        if (tape != ANY_TAPE && tape != this.tape) {
+        if (tape != ANY_TAPE && tape != this.tapeName) {
             yield [tape, target, false, this];
             return;
         }
@@ -360,7 +364,7 @@ abstract class TextState extends State {
 
         const result = this.getBits(vocab).and(target);
         const nextState = this.successor();
-        yield [this.tape, result, true, nextState];
+        yield [this.tapeName, result, true, nextState];
 
     }
 
@@ -372,7 +376,7 @@ abstract class TextState extends State {
 export class AnyCharState extends TextState {
 
     public get id(): string {
-        return `${this.tape}:(ANY)`;
+        return `${this.tapeName}:(ANY)`;
     }
     
 
@@ -399,7 +403,7 @@ export class LiteralState extends TextState {
     }
 
     public get id(): string {
-        return `${this.tape}:${this.text}`;
+        return `${this.tapeName}:${this.text}`;
     }
 
     public accepting(symbolStack: CounterStack): boolean {
@@ -409,17 +413,17 @@ export class LiteralState extends TextState {
     public getVocab(stateStack: String[]): Vocab {
         const result = new BasicVocab();
         for (const c of this.text) {
-            result.add(this.tape, c);
+            result.add(this.tapeName, c);
         }
         return result;
     }
 
     protected getBits(vocab: Vocab): BitSet {
-        return vocab.toBits(this.tape, this.text[0]);
+        return vocab.toBits(this.tapeName, this.text[0]);
     }
 
     protected successor(): State {
-        return new LiteralState(this.tape, this.text.slice(1));
+        return new LiteralState(this.tapeName, this.text.slice(1));
     }
 
 }
@@ -798,6 +802,16 @@ export class EmbedState extends UnaryState {
     }
 }
 
+/**
+ * A state that implements Projection in the sense of relational algebra, only 
+ * exposing a subset of fields (read: tapes) of its child state.
+ * 
+ * Note that the child state itself still has and operates on those fields/tapes.
+ * For example, the Projection of a join can still fail when there's a conflict regarding
+ * field T, even if the Projection hides field T.  We can think of the Project as encapsulating
+ * the set of fields/tapes such that only a subset of its fields are exposed to the outside,
+ * rather than removing those fields/tapes.
+ */
 export class ProjectionState extends UnaryState {
 
     constructor(
@@ -832,6 +846,18 @@ export class ProjectionState extends UnaryState {
     }
 }
 
+/**
+ * Implements the Rename operation from relational algebra.
+ * 
+ * TODO: This implementation is a bit clunky and should probably be replaced by something more elegant 
+ * in future versions.  The annoyance is with vocabularies: the index that a particular
+ * letter has depends on what tape it's associated with, but rename renames tapes, so we have to in some
+ * way adapt the [Vocab] so that child states "see" the appropriate vocabulary even though they refer to it
+ * with a different name.  This is tedious and hard to reason about (like it's easy to get mixed up with
+ * whether you want to replace the fromTape with the toTape, or vice-versa, depending on what exactly you're
+ * doing).  It might be better to make the tier param of ndQuery an object that carries around
+ * a vocab, and can consistently handle renaming, rather than both change the tier strings and adapt the vocab.
+ */
 export class RenameState extends UnaryState {
 
     constructor(

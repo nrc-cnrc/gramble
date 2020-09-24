@@ -1,0 +1,41 @@
+{
+  "name": "parser",
+  "version": "0.0.2",
+  "description": "The parsing library that underlies Gramble",
+  "keywords": [
+    "parsing",
+    "automata",
+    "morphology"
+  ],
+  "author": "Patrick Littell <Patrick.Littell@nrc-cnrc.gc.ca>",
+  "homepage": "https://github.com/littell/gramble_ts#readme",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "directories": {
+    "lib": "dist",
+    "test": "tests"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/littell/gramble_ts.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "test": "mocha -r ts-node/register tests/*.ts"
+  },
+  "bugs": {
+    "url": "https://github.com/littell/gramble_ts/issues"
+  },
+  "dependencies": {
+    "@types/chai": "^4.2.12",
+    "@types/mocha": "^8.0.3"
+  }
+}
