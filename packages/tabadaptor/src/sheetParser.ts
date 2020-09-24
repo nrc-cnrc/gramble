@@ -75,7 +75,6 @@ class EnclosureComponent<T> extends TabComponent {
         // well, we could, but it makes a particular kind of syntax error
         // hard to spot
         if (this.lastChild == undefined) {
-            console.log(`Creating a table for ${this}`);
             this.lastChild = new TableComponent();
         }
         if (!(this.lastChild instanceof TableComponent)) {
@@ -283,7 +282,7 @@ export class SheetParser<T> {
                 try {
                     topEnclosure.addHeader(cell);
                 } catch (e) {
-                    console.log(e);
+                    //console.log(e);
                     errors.addError(position, 
                         `Cannot add a header to ${topEnclosure}; ` + 
                         "you need an operator like 'or', 'apply', etc.");

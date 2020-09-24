@@ -179,6 +179,14 @@ class CounterStack {
 
 export abstract class State {
 
+    /**
+     * Gets an id() for the state.  At the moment we're only using this
+     * for debugging purposes, but we may want to use it in the future
+     * as a unique identifier for a state in explicit graph construction.
+     * 
+     * If we do this, we should go through and make sure that IDs are actually
+     * unique; right now they're often not.
+     */
     public abstract get id(): string;
     
     /**
@@ -198,17 +206,25 @@ export abstract class State {
     }
 
     /**
+     * non-deterministic Query
+     * 
      * The workhorse function of the parser, taking a <tape, char> pair and trying to match it to a transition
      * (e.g., matching it to the next character of a [LiteralState]).  It yields all matching <tape, char> pairs, and the respective
      * nextStates to which we should move upon a successful transition.
+     * 
+     * Note that an ndQuery's results may "overlap" in the sense that you may get the same matched character
+     * twice (e.g., you might get two results "q", or a result "q" and a result "__ANY__" that includes "q").
+     * For some parts of the algorithm, this would be inappropriate (i.e., inside of a negation).  So rather
+     * than call ndQuery directly, call dQuery (detreministic Query), which calls ndQuery and then adjusts
+     * the results so that the results are disjoint.
      * 
      * @param tape A string identifying what tape the target character(s) is on
      * @param target A BitSet identifying what characters we need to match
      * @param symbolStack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
      * @param vocab A [Vocab] keeping track of the indices of particular characters in the target BitSet 
-     * @returns A tuple <tape, target, matched, nextState>, where:
+     * @returns A tuple <tape, match, matched, nextState>, where:
      *      * tape is the tape we matched on, 
-     *      * target is the intersection of the original target and our match,
+     *      * match is the intersection of the original target and our match,
      *      * matched is whether we actually made a match or ignored it (for being on the wrong tape)
      *      * nextState is the state the matched transition leads to
      */
@@ -220,6 +236,8 @@ export abstract class State {
 
 
     /** 
+     * deterministic Query
+     * 
      * Queries the state so that the results are deterministic (or more accurately, so that all returned 
      * transitions are disjoint).  (There can still be multiple results; when we query ANY:ANY, for example.)
      * 
@@ -236,9 +254,9 @@ export abstract class State {
      * @param target A BitSet identifying what characters we need to match
      * @param symbolStack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
      * @param vocab A [Vocab] keeping track of the indices of particular characters in the target BitSet 
-     * @returns A tuple <tape, target, matched, nextState>, where:
+     * @returns A tuple <tape, match, matched, nextState>, where:
      *      * tape is the tape we matched on, 
-     *      * target is the intersection of the original target and our match,
+     *      * match is the intersection of the original target and our match,
      *      * matched is whether we actually made a match or ignored it (for being on the wrong tape)
      *      * nextState is the state the matched transition leads to
      */ 
@@ -285,7 +303,14 @@ export abstract class State {
     }
 
     /**
-     * Performs a breadth-first traversal of the graph.
+     * Performs a breadth-first traversal of the graph.  This will be the function that most 
+     * clients will be calling.
+     * 
+     * Note that there's no corresponding "parse" function, only "generate".  To do parses, we
+     * join the grammar with a grammar corresponding to the query.  E.g., if we wanted to parse
+     * { text: "foo" } in grammar X, we would construct JoinState(LiteralState("text", "foo"), X).
+     * The reason for this is that it allows us a diverse collection of query types for free, by
+     * choosing an appropriate "query grammar" to join X with.
      * 
      * @param [maxRecursion] The maximum number of times the grammar can recurse; for infinite recursion pass Infinity.
      * @param [maxChars] The maximum number of steps any one traversal can take (usually == the total number of characters
@@ -334,7 +359,12 @@ export abstract class State {
 
 /**
  * Abstract base class for both LiteralState and AnyCharState,
- * since they share the same query algorithm template
+ * since they share the same query algorithm template.
+ * 
+ * In order to implement TextState, a descendant class must implement
+ * getBits() (returning the BitSet corresponding to the current state) and
+ * successor() (returning the state to which we would translate upon successful
+ * matching of the BitSet).
  */
 abstract class TextState extends State {
 
@@ -371,7 +401,8 @@ abstract class TextState extends State {
 }
 
 /**
- * The state that recognizes/emits any character on a specific tape; implements the "dot" in regular expressions.
+ * The state that recognizes/emits any character on a specific tape; 
+ * implements the "dot" in regular expressions.
  */
 export class AnyCharState extends TextState {
 
@@ -453,9 +484,12 @@ export class TrivialState extends State {
 }
 
 /**
- * The abstract base class of all States with two state children (e.g. [JoinState], [ConcatState], [UnionState]).
- * States that conceptually might have infinite children (like Union) we treat as right-recursive binary (see for
- * example the helper function [Uni] which converts lists of states into right-braching UnionStates).
+ * The abstract base class of all States with two state children 
+ * (e.g. [JoinState], [ConcatState], [UnionState]).
+ * States that conceptually might have infinite children (like Union) 
+ * we treat as right-recursive binary (see for
+ * example the helper function [Uni] which converts lists of
+ * states into right-braching UnionStates).
  */
 abstract class BinaryState extends State {
 
@@ -535,7 +569,13 @@ export class ConcatState extends BinaryState {
 
 }
 
-
+/**
+ * UnionStates are very simple, they just have a left child and a right child,
+ * and upon querying they yield from the first and then yield from the second.
+ * 
+ * So note that UnionStates are only around initally; they don't construct 
+ * successor UnionStates, their successors are just the successors of their children.
+ */
 export class UnionState extends BinaryState {
 
     public accepting(symbolStack: CounterStack): boolean {
@@ -582,6 +622,12 @@ export class SemijoinState extends BinaryState {
 
  */
 
+/**
+ * Convenience function that takes two generators, and yields from the
+ * second only if it can't yield from the first.  This is handy in situations
+ * like the implementation of join, where if we yielded from both we would
+ * constantly be yielding the same states.
+ */
 function *iterPriorityUnion<T>(iter1: Gen<T>, iter2: Gen<T>): Gen<T> {
 
     var yieldedAlready = false;
@@ -594,9 +640,25 @@ function *iterPriorityUnion<T>(iter1: Gen<T>, iter2: Gen<T>): Gen<T> {
         yield* iter2;
     }
 }
+
+/**
+ * The JoinState implements the natural join (in the relational algebra sense)
+ * for two automata. This is a fundamental operation in the parser, as we implement
+ * parsing as a traversal of a corresponding join state.  You can think of join(X,Y)
+ * as yielding from the intersection of X and Y on tapes that they share, and the product
+ * on tapes that they don't share.
+ * 
+ * The algorithm is simplified by the fact that join(X, Y) can be implemented the union
+ * of the left and right semijoins (or, put another way, the left semijoin of (X,Y) and 
+ * the left semijoin of (Y,X)).  The left semijoin (X,Y) just consists of querying X, then 
+ * taking the result of that and querying Y, and yielding the result of that.
+ * 
+ * Because the ordinary union of these would lead to the same states twice, we use the
+ * priority union instead.
+ */
 export class JoinState extends BinaryState {
 
-    public *queryLeftJoin(tape: string,
+    public *ndQueryLeft(tape: string,
                           target: BitSet,
                           c1: State,
                           c2: State,
@@ -605,7 +667,9 @@ export class JoinState extends BinaryState {
                               
         for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, symbolStack, vocab)) {
 
-            if (c1tape == NO_TAPE) {
+            if (c1tape == NO_TAPE) { 
+                // c1 contained a ProjectionState that hides the original tape; move on without
+                // asking c2 to match anything.
                 yield [c1tape, c1target, c1matched, new JoinState(c1next, c2)];
                 continue;
             }
@@ -621,8 +685,8 @@ export class JoinState extends BinaryState {
         symbolStack: CounterStack,
         vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
 
-        const leftJoin = this.queryLeftJoin(tape, target, this.child1, this.child2, symbolStack, vocab);
-        const rightJoin = this.queryLeftJoin(tape, target, this.child2, this.child1, symbolStack, vocab);
+        const leftJoin = this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack, vocab);
+        const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, symbolStack, vocab);
         yield* iterPriorityUnion(leftJoin, rightJoin);
     }
 
@@ -667,6 +731,9 @@ abstract class UnaryState extends State {
  * however, needs to be able to *restart* the child.  To do that, it
  * keeps around the original child state, so that it can construct its appropriate successor
  * when the current child state is finished.
+ * 
+ * Note that the below algorithm is fairly similar to [ConcatState]; in the future
+ * we might want to partially unify these the way we did [LiteralState] and [AnyCharState].
  */
 export class RepetitionState extends UnaryState {
 
@@ -893,6 +960,30 @@ export class RenameState extends UnaryState {
     }
 }
 
+/**
+ * Negation leads to problems, which is why many languages' regex modules
+ * don't allow negation of arbitrary parts of the grammar, only of operators
+ * like lookahead where negation is well-behaved.  However, negated parsers
+ * are genuinely used in linguistic programming (for, e.g., phonological
+ * constraints) and so we should have them.
+ * 
+ * Negation of an automaton requires two things:
+ * 
+ *  * the automaton is deterministic; we handle that by calling dQuery instead
+ *    of ndQuery.
+ * 
+ *  * the automaton doesn't have loops that are always accepting (because
+ *    those become loops that are never accepting, and the traversal of them
+ *    can go on forever).
+ * 
+ * The second one effectively requires construction and determinization of the
+ * graph, but that can take enormous space and because this is intended as a 
+ * programming language that is kind to beginners, we want grammars to always
+ * compile.  So we're going to probably end up with a patchwork of partial solutions,
+ * and beyond that guarantee that the traversal halts by simply capping the 
+ * maximum number of steps the automaton can take.  Not ideal, but should cover
+ * most reasonable use cases.
+ */
 export class NegationState extends State {
 
     constructor(

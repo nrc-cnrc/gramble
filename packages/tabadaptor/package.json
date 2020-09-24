@@ -1,5 +1,5 @@
 {
-  "name": "parser",
+  "name": "tabadaptor",
   "version": "0.0.2",
   "description": "The parsing library that underlies Gramble",
   "keywords": [

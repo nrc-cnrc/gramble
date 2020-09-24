@@ -1,11 +1,11 @@
-# `parser`
+# `tabadaptor`
 
 > TODO: description
 
 ## Usage
 
 ```
-const parser = require('parser');
+const tabadaptor = require('tabadaptor');
 
 // TODO: DEMONSTRATE API
 ```
