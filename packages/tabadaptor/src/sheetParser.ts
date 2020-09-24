@@ -14,7 +14,10 @@ class CellPosition {
 
 
 export abstract class TabComponent {
+    public abstract get text(): string;
     public abstract get position(): CellPosition;
+    public sibling: TabComponent | undefined = undefined;
+    public child: TabComponent | undefined = undefined;
 }
 
 class CellComponent extends TabComponent {
@@ -29,6 +32,7 @@ class CellComponent extends TabComponent {
     public toString(): string {
         return `${this.text}:${this.position}`;
     }
+
 }
 
 /**
@@ -51,10 +55,8 @@ class CellComponent extends TabComponent {
  *   X 0 0 0 0
  *     0 0 0 0 
  */
-class EnclosureComponent<T> extends TabComponent {
+export class EnclosureComponent<T> extends TabComponent {
 
-    public prevSibling: TabComponent | undefined = undefined;
-    public lastChild: TabComponent | undefined = undefined;
     public specRow: number = -1;
 
     constructor(
@@ -69,25 +71,29 @@ class EnclosureComponent<T> extends TabComponent {
         return this.startCell.position; 
     }
 
+    public get text(): string {
+        return this.startCell.text;
+    }
+
     
     public addHeader(header: CellComponent): void {
         // can only add a header if there aren't any child enclosures yet.
         // well, we could, but it makes a particular kind of syntax error
         // hard to spot
-        if (this.lastChild == undefined) {
-            this.lastChild = new TableComponent();
+        if (this.child == undefined) {
+            this.child = new TableComponent();
         }
-        if (!(this.lastChild instanceof TableComponent)) {
+        if (!(this.child instanceof TableComponent)) {
             throw new Error("Closure already has a child; cannot add a header to it.");
         }
-        this.lastChild.addHeader(header);
+        this.child.addHeader(header);
     }
     
     public addContent(cell: CellComponent): void {
-        if (!(this.lastChild instanceof TableComponent)) {
+        if (!(this.child instanceof TableComponent)) {
             throw new Error("Trying to add content to a non-table");
         }
-        this.lastChild.addContent(cell);
+        this.child.addContent(cell);
     }
 
     public compile(compiler: Compiler<T>): T {
@@ -95,8 +101,8 @@ class EnclosureComponent<T> extends TabComponent {
     }
 
     public addChildEnclosure(child: EnclosureComponent<T>): void {
-        child.prevSibling = this.lastChild;
-        this.lastChild = child;
+        child.sibling = this.child;
+        this.child = child;
     }
 
     public toString(): string {
@@ -117,6 +123,13 @@ class TableComponent<T> extends TabComponent {
             return new CellPosition("?",-1,-1);
         }
         return this.headers[0].position;
+    }
+
+    public get text(): string {
+        if (this.headers.length == 0) {
+            return "?";
+        }
+        return this.headers[0].text;
     }
 
     public addHeader(header: CellComponent): void {
@@ -200,7 +213,7 @@ export class ErrorAccumulator {
 export class SheetParser<T> {
 
     constructor(
-        reservedWords: string[] = []
+        public builtInOperators: string[] = []
     ) { }
 
     public compile(compiler: Compiler<T>, 
@@ -220,9 +233,22 @@ export class SheetParser<T> {
         return this.parseCells(sheetName, cells, errors);
     }
 
+    public getEnclosureOperators(cells: string[][]): Set<string> {
+        const results = new Set(this.builtInOperators);
+        for (const row of cells) {
+            if (row.length == 0) {
+                continue;
+            }
+            results.add(row[0]);
+        }
+        return results;
+    }
+
     public parseCells(sheetName: string, 
                 cells: string[][],
                 errors: ErrorAccumulator): EnclosureComponent<T> {
+
+        const enclosureOps = this.getEnclosureOperators(cells);
 
         // There's one big enclosure that encompasses the whole sheet, with startCell (-1,-1)
         const startCell = new CellComponent(sheetName, new CellPosition(sheetName));
@@ -265,7 +291,7 @@ export class SheetParser<T> {
                 }
 
                 // either we're still in the spec row, or there's no spec row yet
-                if (cellText.endsWith(":")) {
+                if (enclosureOps.has(cellText)) {
                     // it's the start of a new enclosure
                     const newEnclosure = new EnclosureComponent(cell, topEnclosure);
                     try {

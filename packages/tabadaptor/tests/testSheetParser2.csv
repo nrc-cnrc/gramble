@@ -1,12 +1,12 @@
 
-verb:, table:, text, gloss
+verb, table, text, gloss
     ,       , foo, run
 
-suffix:, table:, text, gloss
+suffix, table, text, gloss
     ,       , bar, -1SG
 
-word:, table:, var, var
+word, table, var, var
     ,       , verb, suffix 
     ,
-    , apply:, up, down
+    , apply, up, down
     ,      , foo, fo:
