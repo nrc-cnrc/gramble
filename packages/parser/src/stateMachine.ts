@@ -11,9 +11,7 @@ import { Vocab, BasicVocab, RenamedVocab } from "./vocab";
  *      can read/write.  Finite-state acceptors are one-tape automata,
  *      they read in from one tape and either succeed or fail.  Finite-
  *      state transducers are two-tape automata, reading from one and
- *      writing to another.  This system allows any number of tapes.  
- *      (In actual implementation we only write to tapes, because
- *      we actually implement "reading" from a tape as a join operation.)
+ *      writing to another.  This system allows any number of tapes.
  * 
  *      - "Recursive" means that states can themselves contain states,
  *      meaning that the machine can parse context-free languages rather
@@ -22,10 +20,8 @@ import { Vocab, BasicVocab, RenamedVocab } from "./vocab";
  *      states/transitions don't perform any operations to the stack.)
  *      
  * The execution of this particular state machine is lazy, 
- * in the sense that at no point is the entire machine ever 
- * constructed, let alone made deterministic.  Each state 
- * constructs successor states whenever necessary.
- * 
+ * in the sense that we don't necessarily construct the entire machine.
+ * Each state constructs successor states as necessary.
  */
 
 export type SymbolTable = {[key: string]: State};
@@ -131,10 +127,7 @@ class CounterStack {
     }
 
     public get(key: string): number {
-        if (key in this.stack) {
-            return this.stack[key];
-        }
-        return 0;
+        return (key in this.stack) ? this.stack[key] : 0;
     }
 
     public exceedsMax(key: string): boolean {
@@ -155,18 +148,16 @@ class CounterStack {
  * 
  * For example, imagine an automaton that recognizes the literal "hello".  We could implement this as an
  * explicit graph of nodes, where each node leads to the next by consuming a particular letter (state 0 leads
- * to 1 by consuming "h", state 1 leads to 2 by consuming "e", etc.).
- * 
- * Our pointer into this graph basically represents two pieces of information, what the word is ("hello") and 
+ * to 1 by consuming "h", state 1 leads to 2 by consuming "e", etc.).  Our pointer into this graph 
+ * basically represents two pieces of information, what the word is ("hello") and 
  * how far into it we are.  We could also represent this information as an object { text: string, index: number }.
  * Rather than pre-compute each of these nodes, we can say that this object returns (upon matching) another 
- * object {text: string, index: number+1}... until we exceed the length of the literal, of course.
- * 
- * This idea, in general, allows us to avoid creating explicit state graphs that can be exponentially huge, 
+ * object {text: string, index: number+1}... until we exceed the length of the literal, of course.  This 
+ * idea, in general, allows us to avoid creating explicit state graphs that can be exponentially huge, 
  * although it comes with its own pitfalls.
  * 
- * For our purposes, a State is anything that can, upon being queried with a [tape, char] pair, return the possible
- * successor states it can get to.  
+ * For our purposes, a State is anything that can, upon being queried with a [tape, char] pair, 
+ * return the possible successor states it can get to.  
  * 
  * Many kinds of States have to contain references to other states (like an 
  * [EmbedState], which lets us embed grammars inside other grammars, keeps a point to the current parse state inside
@@ -175,6 +166,13 @@ class CounterStack {
  * it'll be a [ConcatState] of (A and a [UnionState] of (B and C)).  Then as the parse goes on, the State will
  * simplify bit-by-bit, like once A is recognized, the current state will just be one corresponding to B|C, and 
  * if B fails, the current state will just be C.
+ * 
+ * For the purposes of the algorithm, there are three crucial functions of States:
+ * 
+ *  * ndQuery(tape, char): What states can this state get to, compatible with a given tape/character
+ *  * dQuery(tape, char): Calls ndQuery and rearranges the outputs so that any specific character can 
+ *                      only lead to one state.
+ *  * accepting(): Whether this state is a final state, meaning it consistutes a complete parse
  */
 
 export abstract class State {
@@ -349,6 +347,15 @@ export abstract class State {
      * Collects all explicitly mentioned characters in the grammar for all tapes, and assigns 
      * them to a unique index.
      * 
+     * Note that any particular invocation of getVocab() might not correspond to the
+     * vocab that we actually use when querying that state.  The getVocab() of a literal
+     * is just going to be the characters used in the literal, but the vocab that we
+     * pass in is going to be the vocab for the entire automaton.  If we were to compare
+     * those, it'd be nonsense, since characters would have different indices.  So this 
+     * is for calling a single time, before graph traversal, just to find out what
+     * our domain of characters is; we shouldn't be calling this in the middle
+     * of querying.
+     * 
      * @param stateStack A [CounterState] keeping track of embedding symbols, to prevent inappropriate recursion
      * @returns vocab 
      */
@@ -421,8 +428,10 @@ export class AnyCharState extends TextState {
 }
 
 /**
- * Recognizese/emits a literal string on a particular tape.  Inside, it's just a string like "foo"; 
- * upon successfully matching "f" we construct a successor state looking for "oo", and so on.
+ * Recognizese/emits a literal string on a particular tape.  
+ * Inside, it's just a string like "foo"; upon successfully 
+ * matching "f" we construct a successor state looking for 
+ * "oo", and so on.
  */
 export class LiteralState extends TextState {
 
@@ -460,8 +469,9 @@ export class LiteralState extends TextState {
 }
 
 /**
- * Recognizes the empty grammar.  This is occassionally useful in implementing other states (e.g. when
- * you need a state that's accepting but won't go anywhere.
+ * Recognizes the empty grammar.  This is occassionally 
+ * useful in implementing other states (e.g. when
+ * you need a state that's accepting but won't go anywhere).
  */
 export class TrivialState extends State {
 
@@ -499,14 +509,12 @@ abstract class BinaryState extends State {
     ) {
         super();
     }
-
     
     public getVocab(stateStack: String[]): Vocab {
         const result = this.child1.getVocab(stateStack);
         result.combine(this.child2.getVocab(stateStack));
         return result;
     }
-
 
     public get id(): string {
         return `${this.constructor.name}(${this.child1.id},${this.child2.id})`;
@@ -564,9 +572,7 @@ export class ConcatState extends BinaryState {
         if (!yieldedAlready && this.child1.accepting(symbolStack)) { 
             yield* this.child2.dQuery(tape, target, symbolStack, vocab);
         }  
-
     }
-
 }
 
 /**
@@ -721,6 +727,8 @@ abstract class UnaryState extends State {
         return this.child.accepting(symbolStack);
     }
 }
+
+
 /**
  * RepetitionState implements the Kleene star, plus, question mark, and in general
  * repetitions between N and M times.  (E.g. x{2,3} matching x two or three times.)
@@ -967,19 +975,36 @@ export class RenameState extends UnaryState {
  * are genuinely used in linguistic programming (for, e.g., phonological
  * constraints) and so we should have them.
  * 
- * Negation of an automaton requires two things:
+ * In general, we negate an automaton by:
+ * 
+ *  * turning all accepting states into non-accepting states and vice-versa, 
+ *    which we can do easily in the accepting() function.
+ * 
+ *  * introducing a new accepting state that the parse goes to if it "falls off"
+ *    the automaton (e.g., if the automaton recognizes "foo", and get "q", then
+ *    that's an acceptable negation, you need a state to accept that).  Here
+ *    we implement this state by having "undefined" in place of a child.
+ * 
+ * There are two snags that come up when (as we do) you try to avoid actually
+ * constructing the graph.
+ * 
+ * In general, negation of an automaton requires two things:
  * 
  *  * the automaton is deterministic; we handle that by calling dQuery instead
  *    of ndQuery.
  * 
- *  * the automaton doesn't have loops that are always accepting (because
- *    those become loops that are never accepting, and the traversal of them
- *    can go on forever).
+ *  * the automaton to be negated doesn't have loops that are always 
+ *    accepting (because those become loops that are never accepting, 
+ *    and the traversal of them can go on forever).  Or put another way,
+ *    a negated automaton can have useless states that will never lead
+ *    to an output, that would be properly pruned in a concrete & determinized
+ *    automaton, but that we can't be sure of when we evaluate the graph 
+ *    lazily because it's effectively "looking into the future".
  * 
- * The second one effectively requires construction and determinization of the
- * graph, but that can take enormous space and because this is intended as a 
- * programming language that is kind to beginners, we want grammars to always
- * compile.  So we're going to probably end up with a patchwork of partial solutions,
+ * So the second one effectively requires construction and determinization of the
+ * graph, but that can take enormous space... and because this is intended as a 
+ * programming language that is kind to beginners, we want a well-formed grammar to always
+ * successfully compile.  So we're going to probably end up with a patchwork of partial solutions,
  * and beyond that guarantee that the traversal halts by simply capping the 
  * maximum number of steps the automaton can take.  Not ideal, but should cover
  * most reasonable use cases.
