@@ -1,0 +1,12 @@
+
+verb, table, text, gloss
+    ,       , foo, run
+
+suffix, table, text, gloss
+    ,       , bar, -1SG
+
+word,       , table, var, var
+    ,       ,       , verb, suffix 
+    ,
+    , apply, up, down
+    ,      , foo, fo:
