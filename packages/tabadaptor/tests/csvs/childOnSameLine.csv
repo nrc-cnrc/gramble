@@ -2,11 +2,11 @@
 verb, table, text, gloss
     ,       , foo, run
 
-suffix, table, text, gloss
-    ,       , bar, -1SG
+suffix, table, text, gloss, table, var, var
+    ,       , bar, -1SG,         , verb, suffix
 
 word, table, var, var
-    ,       , verb, suffix 
+    ,       , verb, suffix,   
     ,
     , apply, up, down
     ,      , foo, fo:

@@ -101,6 +101,9 @@ export class EnclosureComponent<T> extends TabComponent {
     }
 
     public addChildEnclosure(child: EnclosureComponent<T>): void {
+        if (this.child instanceof TableComponent) {
+            throw new Error("Can't add a new child if the parent already has headers");
+        }
         child.sibling = this.child;
         this.child = child;
     }
@@ -295,12 +298,12 @@ export class SheetParser<T> {
                     // it's the start of a new enclosure
                     const newEnclosure = new EnclosureComponent(cell, topEnclosure);
                     try {
-                        topEnclosure.addChildEnclosure(newEnclosure);
+                        topEnclosure.addChildEnclosure(newEnclosure);     
+                        topEnclosure = newEnclosure;
                     } catch (e) {
                         errors.addError(position,
                             "This looks like an operator, but only a header can follow a header.");
                     }
-                    topEnclosure = newEnclosure;
                     continue;
                 } 
 
