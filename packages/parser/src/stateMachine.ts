@@ -1,6 +1,5 @@
 import { Gen } from "./util";
-import { BitSet } from "bitset";
-import { Tape, StringTape, RenamedTape, TapeCollection } from "./tapes";
+import { Tape, StringTape, RenamedTape, TapeCollection, Token, ANY_CHAR, NO_CHAR } from "./tapes";
 import { assert } from "chai";
 
 /**
@@ -26,12 +25,6 @@ import { assert } from "chai";
  */
 
 export type SymbolTable = {[key: string]: State};
-
-const ANY_TAPE: string = "__ANY__";
-const NO_TAPE: Tape = new TapeCollection();
-const ANY_CHAR: BitSet = new BitSet().flip();
-const NO_CHAR: BitSet = new BitSet();
-
 export type StringDict = {[key: string]: string};
 
 /**
@@ -43,18 +36,13 @@ export type StringDict = {[key: string]: string};
  * "z", then just having "r" and "z" point to that previous output is both less effort
  * and less space than copying it twice and concatenating it.  Especially if "z" ends
  * up being a false path and we end up discarding it; that would mean we had copied/
- * concatenated for nothing.)  
- * 
- * Note that this isn't storing characters explicitly, but sets of characters implemented
- * as a BitSet (e.g. if our alphabet were ABCDEF, then the set {B,D} would be the BitSet
- * 010100).  So one Output object might correspond to multiple outputs, once we've finished
- * parsing and the client asks for the results as an explicit dictionary of strings (using the
- * function [Object.toObj]).  
+ * concatenated for nothing.)   
  */
+
 
 class Output {
 
-    public add(tape: Tape, text: BitSet) {
+    public add(tape: Tape, text: Token) {
         return new SuccessiveOutput(tape, text, this);
     }
 
@@ -67,7 +55,7 @@ class SuccessiveOutput extends Output {
 
     constructor(
         public tape: Tape,
-        public text: BitSet,
+        public text: Token,
         public prev: Output
     ) { 
         super();
@@ -79,16 +67,68 @@ class SuccessiveOutput extends Output {
                 yield result;
                 return;
             }
-            if (!(this.tape.name in result)) {
-                result[this.tape.name] = "";
+            if (!(this.tape.tapeName in result)) {
+                result[this.tape.tapeName] = "";
             }
-            for (const c of this.tape.fromBits(this.tape.name, this.text)) {
-                result[this.tape.name] += c;
+            for (const c of this.tape.fromBits(this.tape.tapeName, this.text.bits)) {
+                result[this.tape.tapeName] += c;
                 yield result;
             }
         }
     }
 }
+
+
+ /*
+class SingleTapeOutput {
+
+    constructor(
+        public tape: Tape,
+        public token: Token,
+        public prev: SingleTapeOutput | undefined = undefined
+    ) { }
+
+    public add(tape: Tape, token: Token) {
+        if (tape.tapeName != this.tape.tapeName) {
+            throw new Error(`Incompatible tapes: ${tape.tapeName}, ${this.tape.tapeName}`);
+        }
+        return new SingleTapeOutput(tape, token, this);
+    }
+
+    public *getStrings(): Gen<string> {
+        var prevStrings = [""];
+        if (this.prev != undefined) {
+            prevStrings = [... this.prev.getStrings()];
+        }
+
+        for (const s of prevStrings) {
+            for (const c of this.tape.fromBits(this.tape.tapeName, this.token.bits)) {
+                yield s + c;
+            }
+        }
+    }
+
+}
+
+class MultiTapeOutput {
+
+    public singleTapeOutputs: Map<string, SingleTapeOutput> = new Map();
+
+    public add(tape: Tape, token: Token) {
+        const result = new MultiTapeOutput();
+        result.singleTapeOutputs = new Map(this.singleTapeOutputs);
+        const prev = this.singleTapeOutputs.get(tape.tapeName);
+        const newTape = new SingleTapeOutput(tape, token, prev);
+        result.singleTapeOutputs.set(tape.tapeName, newTape);
+        return result;
+    }
+
+    public *toObj(): Gen<StringDict> { 
+        for (const [tapeName, tape] of this.singleTapeOutputs) {
+
+        }
+    }
+}  */
 
 /**
  * CounterStack
@@ -216,10 +256,9 @@ export abstract class State {
      * than call ndQuery directly, call dQuery (detreministic Query), which calls ndQuery and then adjusts
      * the results so that the results are disjoint.
      * 
-     * @param tape A string identifying what tape the target character(s) is on
-     * @param target A BitSet identifying what characters we need to match
+     * @param tape A Tape object identifying the name/type/vocabulary of the relevant tape
+     * @param target A Token identifying what characters we need to match
      * @param symbolStack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
-     * @param vocab A [Vocab] keeping track of the indices of particular characters in the target BitSet 
      * @returns A tuple <tape, match, matched, nextState>, where:
      *      * tape is the tape we matched on, 
      *      * match is the intersection of the original target and our match,
@@ -228,8 +267,8 @@ export abstract class State {
      */
 
     public abstract ndQuery(tape: Tape, 
-        target: BitSet,
-        symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]>;
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]>;
 
 
     /** 
@@ -239,7 +278,7 @@ export abstract class State {
      * transitions are disjoint).  (There can still be multiple results; when we query ANY:ANY, for example.)
      * 
      * This looks a bit complicated (and it kind of is) but what it's doing is handing off the query to
-     * ndQuery, then combining results so that there's no overlap in the BitSets.  For example, say ndQuery yields
+     * ndQuery, then combining results so that there's no overlap between the tokens.  For example, say ndQuery yields
      * two tokens X and Y, and they have no intersection.  Then we're good, we just yield those.  But if they 
      * do have an intersection, we need to return three paths:
      * 
@@ -247,10 +286,9 @@ export abstract class State {
      *    X-Y (leading to the state X would have led to)
      *    Y-X (leading to the state Y would have led to)
      * 
-     * @param tape A string identifying what tape the target character(s) is on
-     * @param target A BitSet identifying what characters we need to match
+     * @param tape A Tape object identifying the name/type/vocabulary of the relevant tape
+     * @param target A Token identifying what characters we need to match
      * @param symbolStack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
-     * @param vocab A [Vocab] keeping track of the indices of particular characters in the target BitSet 
      * @returns A tuple <tape, match, matched, nextState>, where:
      *      * tape is the tape we matched on, 
      *      * match is the intersection of the original target and our match,
@@ -259,10 +297,10 @@ export abstract class State {
      */ 
 
     public *dQuery(tape: Tape, 
-        target: BitSet,
-        symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]> {
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
-        var results: [Tape, BitSet, boolean, State][] = [];
+        var results: [Tape, Token, boolean, State][] = [];
         var nextStates = [... this.ndQuery(tape, target, symbolStack)];
         for (var [tape, bits, matched, next] of nextStates) {
 
@@ -271,9 +309,9 @@ export abstract class State {
                 continue;
             }
 
-            var newResults: [Tape, BitSet, boolean, State][] = [];
+            var newResults: [Tape, Token, boolean, State][] = [];
             for (var [otherTape, otherBits, otherMatched, otherNext] of results) {
-                if (tape.name != otherTape.name) {
+                if (tape.tapeName != otherTape.tapeName) {
                     newResults.push([otherTape, otherBits, otherMatched, otherNext]);
                     continue;
                 }
@@ -331,7 +369,8 @@ export abstract class State {
                     yield* prevOutput.toObj();
                 }
 
-                for (const [tape, c, matched, newState] of prevState.dQuery(allTapes, ANY_CHAR, symbolStack)) {
+                for (const [tape, c, matched, newState] of 
+                            prevState.dQuery(allTapes, ANY_CHAR, symbolStack)) {
                     if (!matched) {
                         console.log("Warning, got all the way through without a match");
                         continue;
@@ -360,9 +399,9 @@ export abstract class State {
  * since they share the same query algorithm template.
  * 
  * In order to implement TextState, a descendant class must implement
- * getBits() (returning the BitSet corresponding to the current state) and
+ * firstToken() (giving the first token that needs to be matched) and
  * successor() (returning the state to which we would translate upon successful
- * matching of the BitSet).
+ * matching of the token).
  */
 abstract class TextState extends State {
 
@@ -372,12 +411,12 @@ abstract class TextState extends State {
         super();
     }
 
-    protected abstract getBits(tape: Tape): BitSet;
+    protected abstract firstToken(tape: Tape): Token;
     protected abstract successor(): State;
 
     public *ndQuery(tape: Tape, 
-                    target: BitSet,
-                    symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]> {
+                    target: Token,
+                    symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
@@ -389,8 +428,8 @@ abstract class TextState extends State {
             return; 
         }
 
-        const bits = this.getBits(matchedTape);
-        const result = matchedTape.times(bits, target);
+        const bits = this.firstToken(matchedTape);
+        const result = matchedTape.match(bits, target);
         const nextState = this.successor();
         yield [matchedTape, result, true, nextState];
 
@@ -409,8 +448,8 @@ export class AnyCharState extends TextState {
     }
     
 
-    protected getBits(tape: Tape): BitSet {
-        return tape.one();
+    protected firstToken(tape: Tape): Token {
+        return tape.any();
     }
 
     protected successor(): State {
@@ -428,7 +467,8 @@ export class LiteralState extends TextState {
 
     constructor(
         tape: string,
-        public text: string
+        public text: string,
+        protected tokens: Token[] = []
     ) { 
         super(tape);
     }
@@ -438,19 +478,21 @@ export class LiteralState extends TextState {
     }
 
     public accepting(symbolStack: CounterStack): boolean {
-        return this.text == "";
+        return this.tokens.length == 0;
     }
 
     public collectVocab(tapes: Tape, stateStack: String[]): void {
-        tapes.registerToken(this.tapeName, this.text);
+        this.tokens = tapes.tokenize(this.tapeName, this.text);
     }
 
-    protected getBits(tape: Tape): BitSet {
-        return tape.toBits(this.tapeName, this.text[0]);
+    protected firstToken(tape: Tape): Token {
+        return this.tokens[0];
     }
 
     protected successor(): State {
-        return new LiteralState(this.tapeName, this.text.slice(1));
+        const newTokens = this.tokens.slice(1);
+        const newText = newTokens.join("");
+        return new LiteralState(this.tapeName, newText, newTokens);
     }
 
 }
@@ -475,8 +517,8 @@ export class TrivialState extends State {
     }
 
     public *ndQuery(tape: Tape, 
-        target: BitSet,
-        symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]> { }
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> { }
 }
 
 /**
@@ -531,8 +573,8 @@ abstract class BinaryState extends State {
 export class ConcatState extends BinaryState {
 
     public *ndQuery(tape: Tape, 
-        target: BitSet,
-        symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]> {
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
         // We can yield from child2 if child1 is accepting, OR if child1 doesn't care about the requested tape,
         // but if child1 is accepting AND doesn't care about the requested tape, we don't want to yield twice;
@@ -574,8 +616,8 @@ export class UnionState extends BinaryState {
     }
 
     public *ndQuery(tape: Tape, 
-        target: BitSet,
-        symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]> {
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
         yield* this.child1.dQuery(tape, target, symbolStack);
         yield* this.child2.dQuery(tape, target, symbolStack);
@@ -649,14 +691,14 @@ function *iterPriorityUnion<T>(iter1: Gen<T>, iter2: Gen<T>): Gen<T> {
 export class JoinState extends BinaryState {
 
     public *ndQueryLeft(tape: Tape,
-                          target: BitSet,
+                          target: Token,
                           c1: State,
                           c2: State,
-                          symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]> {
+                          symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
                               
         for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, symbolStack)) {
 
-            if (c1tape.name == "__NO_TAPE__") { 
+            if (c1tape.tapeName == "__NO_TAPE__") { 
                 // c1 contained a ProjectionState that hides the original tape; move on without
                 // asking c2 to match anything.
                 yield [c1tape, c1target, c1matched, new JoinState(c1next, c2)];
@@ -670,8 +712,8 @@ export class JoinState extends BinaryState {
     }
 
     public *ndQuery(tape: Tape, 
-        target: BitSet,
-        symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]> {
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
         const leftJoin = this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack);
         const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, symbolStack);
@@ -750,8 +792,8 @@ export class RepetitionState extends UnaryState {
     }
 
     public *ndQuery(tape: Tape, 
-        target: BitSet,
-        symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]> {
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
         if (this.index > this.maxRepetitions) {
             return;
@@ -843,8 +885,8 @@ export class EmbedState extends UnaryState {
     }
 
     public *ndQuery(tape: Tape, 
-        target: BitSet,
-        symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]> {
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
         if (symbolStack.exceedsMax(this.symbolName)) {
             return;
@@ -878,10 +920,10 @@ export class ProjectionState extends UnaryState {
     }
 
     public *ndQuery(tape: Tape, 
-        target: BitSet,
-        symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]> {
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
-        if (tape.name != "__ANY_TAPE__" && !this.tapeRestriction.has(tape.name)) {
+        if (tape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(tape.tapeName)) {
             // if it's not a tape we care about, go nowhere
             yield [tape, target, false, this];
         }
@@ -889,7 +931,7 @@ export class ProjectionState extends UnaryState {
         for (var [childTape, childTarget, childMatch, childNext] of 
                             this.child.dQuery(tape, target, symbolStack)) {
 
-            if (childTape.name != "__ANY_TAPE__" && !this.tapeRestriction.has(childTape.name)) {
+            if (childTape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(childTape.tapeName)) {
                 // even if our child yields content on a restricted tape, 
                 // we don't let our own parent know about it
                 childTape = new TapeCollection();
@@ -920,11 +962,11 @@ export class RenameState extends UnaryState {
     }
 
     public *ndQuery(tape: Tape, 
-        target: BitSet,
-        symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]> {
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
 
-        if (tape.name == this.toTape || tape.name == "__ANY_TAPE__") {
+        if (tape.tapeName == this.toTape || tape.tapeName == "__ANY_TAPE__") {
             tape = new RenamedTape(tape, this.fromTape, this.toTape);
         }
     
@@ -1007,8 +1049,8 @@ export class NegationState extends State {
     }
 
     public *ndQuery(tape: Tape, 
-        target: BitSet,
-        symbolStack: CounterStack): Gen<[Tape, BitSet, boolean, State]> {
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
 
         if (this.child == undefined) {  // we've can't possibly match the child, so we're basically .* from now on
@@ -1016,7 +1058,7 @@ export class NegationState extends State {
             return;
         }
         
-        var remainder = target.clone();
+        var remainder = new Token(target.bits.clone());
 
         for (const [childTape, childText, childMatched, childNext] of 
                                 this.child.dQuery(tape, target, symbolStack)) {

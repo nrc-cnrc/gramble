@@ -278,3 +278,13 @@ describe('Joining to an alt of different tiers', function() {
     const outputs = [...Join(text("hello"), Uni(text("hello"), unrelated("foo"))).generate()];
     testNumOutputs(outputs, 2);
 });
+
+/*
+
+describe('Joining unrelated-tier alts in different directions', function() {
+    const outputs = [...Join(Uni(unrelated("foo"), text("hello")), Uni(text("hello"), unrelated("foo"))).generate()];
+    console.log(outputs);
+    testNumOutputs(outputs, 4);
+});
+
+*/
