@@ -3,33 +3,34 @@ import { Gen } from "./util";
 
 export abstract class Tape {
     
-    public abstract readonly name: string;
+    public abstract readonly tapeName: string;
     public abstract readonly numTapes: number;
+
+    public plus(str1: string, str2: string): string[] {
+        throw new Error(`Not implemented`);
+    }
+    
+    public times(str1: BitSet, str2: BitSet): BitSet {
+        throw new Error(`Not implemented`);
+    }
+
+    public one(): BitSet {
+        throw new Error(`Not implemented`);
+    }
+
     public abstract matchTape(tapeName: string): Tape | undefined;
-    public abstract add(tapeName: string, char: string): void;
-    public abstract allChars(): Gen<[string, string]>;
+    public abstract registerToken(tapeName: string, char: string): void;
     public abstract toBits(tapeName: string, char: string): BitSet;
     public abstract fromBits(tapeName: string, bits: BitSet): string[];
-
-    public combineVocab(other: Tape): Tape {
-        const result = new TapeCollection();
-        for (const [tapeName, char] of this.allChars()) {
-            result.add(tapeName, char);
-        }
-        for (const [tapeName, char] of other.allChars()) {
-            result.add(tapeName, char);
-        }
-        return result;
-    }
 }
 
-export class SingleTape extends Tape {
-
-    public strToIndex: Map<string, number> = new Map();
-    public indexToStr: Map<number, string> = new Map();
+export class StringTape extends Tape {
 
     constructor(
-        public name: string
+        public tapeName: string,
+        public value: BitSet[] = [],
+        public strToIndex: Map<string, number> = new Map(),
+        public indexToStr: Map<number, string> = new Map()
     ) { 
         super();
     }
@@ -39,33 +40,45 @@ export class SingleTape extends Tape {
     }
 
     public matchTape(tapeName: string): Tape | undefined {
-        return (tapeName == this.name) ? this : undefined;
+        return (tapeName == this.tapeName) ? this : undefined;
     }
 
-    public add(tapeName: string, char: string): void {
-
-        if (tapeName != this.name) {
-            throw new Error(`Trying to add a character from tape ${tapeName} to tape ${this.name}`);
-        }
-
-        if (this.strToIndex.has(char)) {
-            return;
-        }
-
-        const index = this.strToIndex.size;
-        this.strToIndex.set(char, index);
-        this.indexToStr.set(index, char);
+    public one(): BitSet {
+        return new BitSet().flip();
     }
 
-    public *allChars(): Gen<[string, string]> {
-        for (const char of this.strToIndex.keys()) {
-            yield [this.name, char];
+    public plus(str1: string, str2: string): string[] {
+        return [str1 + str2];
+    }
+    
+    public times(str1: BitSet, str2: BitSet): BitSet {
+        return str1.and(str2);
+    }
+
+    public tokenize(str: string): string[] {
+        return str.split("");
+    }
+
+    public registerToken(tapeName: string, str: string): void {
+
+        if (tapeName != this.tapeName) {
+            throw new Error(`Trying to add a character from tape ${tapeName} to tape ${this.tapeName}`);
+        }
+
+        for (const token of this.tokenize(str)) {
+            if (this.strToIndex.has(token)) {
+                continue;
+            }
+
+            const index = this.strToIndex.size;
+            this.strToIndex.set(token, index);
+            this.indexToStr.set(index, token);
         }
     }
     
     public toBits(tapeName: string, char: string): BitSet {
-        if (tapeName != this.name) {
-            throw new Error(`Trying to get bits on tape ${tapeName} from tape ${this.name}`);
+        if (tapeName != this.tapeName) {
+            throw new Error(`Trying to get bits on tape ${tapeName} from tape ${this.tapeName}`);
         }
         
         const result = new BitSet();
@@ -78,8 +91,8 @@ export class SingleTape extends Tape {
     }
 
     public fromBits(tapeName: string, bits: BitSet): string[] {
-        if (tapeName != this.name) {
-            throw new Error(`Trying to get bits on tape ${tapeName} from tape ${this.name}`);
+        if (tapeName != this.tapeName) {
+            throw new Error(`Trying to get bits on tape ${tapeName} from tape ${this.tapeName}`);
         }
 
         const result: string[] = [];
@@ -95,6 +108,20 @@ export class SingleTape extends Tape {
     }
 }
 
+class FlagTape extends StringTape {
+
+    public plus(oldResults: string, newResult: string): string[] {
+        if (oldResults == "" || oldResults == newResult) {
+            return [newResult];
+        }
+        return [];
+    }
+
+    public tokenize(str: string): string[] {
+        return [str];
+    }
+}
+
 export class TapeCollection extends Tape {
 
     public tapes: Map<string, Tape> = new Map();
@@ -104,33 +131,27 @@ export class TapeCollection extends Tape {
     }
 
     public addTape(tape: Tape): void {
-        this.tapes.set(tape.name, tape);
+        this.tapes.set(tape.tapeName, tape);
     }
 
-    public get name(): string {
+    public get tapeName(): string {
         if (this.tapes.size == 0) {
             return "__NO_TAPE__";
         }
         return "__ANY_TAPE__";
     }
 
-    public add(tapeName: string, char: string): void {
+    public registerToken(tapeName: string, char: string): void {
         var tape = this.tapes.get(tapeName);
         if (tape == undefined) {
-            tape = new SingleTape(tapeName);
+            tape = new StringTape(tapeName);
             this.tapes.set(tapeName, tape);
         }
-        tape.add(tapeName, char);
+        tape.registerToken(tapeName, char);
     }
 
     public matchTape(tapeName: string): Tape | undefined {
         return this.tapes.get(tapeName);
-    }
-
-    public *allChars(): Gen<[string, string]> {
-        for (const tape of this.tapes.values()) {
-            yield* tape.allChars();
-        }
     }
 
     public toBits(tapeName: string, char: string): BitSet {
@@ -160,13 +181,26 @@ export class RenamedTape extends Tape {
         super();
     }
 
-    public get name(): string {
-        return this.child.name;
+    public get tapeName(): string {
+        return this.child.tapeName;
     }
 
     public get numTapes(): number {
         return this.child.numTapes;
     }
+
+    public one(): BitSet {
+        return this.child.one();
+    }
+
+    public plus(str1: string, str2: string): string[] {
+        return this.child.plus(str1, str2);
+    }
+
+    public times(str1: BitSet, str2: BitSet): BitSet {
+        return this.child.times(str1, str2);
+    }
+
 
     matchTape(tapeName: string): Tape | undefined {
         if (tapeName == this.fromTape) {
@@ -179,21 +213,11 @@ export class RenamedTape extends Tape {
         return new RenamedTape(newChild, this.fromTape, this.toTape);
     }
 
-    public add(tapeName: string, char: string): void {
-        if (tapeName == this.toTape) {
-            tapeName = this.fromTape;
+    public registerToken(tapeName: string, char: string): void {
+        if (tapeName == this.fromTape) {
+            tapeName = this.toTape;
         }
-        return this.child.add(tapeName, char);
-    }
-
-    public *allChars(): Gen<[string, string]> {
-        for (const [tape, char] of this.child.allChars()) {
-            if (tape == this.fromTape) {
-                yield [this.toTape, char];
-                continue;
-            }
-            yield [tape, char];
-        }
+        return this.child.registerToken(tapeName, char);
     }
 
     toBits(tapeName: string, char: string): BitSet {

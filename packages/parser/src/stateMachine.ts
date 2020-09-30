@@ -1,6 +1,6 @@
 import { Gen } from "./util";
 import { BitSet } from "bitset";
-import { Tape, SingleTape, RenamedTape, TapeCollection } from "./tapes";
+import { Tape, StringTape, RenamedTape, TapeCollection } from "./tapes";
 import { assert } from "chai";
 
 /**
@@ -60,7 +60,7 @@ class Output {
 
     public *toObj(): Gen<StringDict> { 
         yield {};
-    };
+    }
 }
 
 class SuccessiveOutput extends Output {
@@ -82,7 +82,6 @@ class SuccessiveOutput extends Output {
             if (!(this.tape.name in result)) {
                 result[this.tape.name] = "";
             }
-            const cs = this.tape.fromBits(this.tape.name, this.text);
             for (const c of this.tape.fromBits(this.tape.name, this.text)) {
                 result[this.tape.name] += c;
                 yield result;
@@ -315,7 +314,8 @@ export abstract class State {
      * @returns a generator of { tape: string } dictionaries, one for each successful traversal. 
      */
     public *generate(maxRecursion: number = 4, maxChars: number = 1000): Gen<StringDict> {
-        const allTapes = this.getVocab([]);
+        const allTapes = new TapeCollection();
+        this.collectVocab(allTapes, []);
         const initialOutput: Output = new Output();
         var stateQueue: [Output, State][] = [[initialOutput, this]];
         var symbolStack = new CounterStack(maxRecursion);
@@ -348,21 +348,11 @@ export abstract class State {
     /**
      * Collects all explicitly mentioned characters in the grammar for all tapes.
      * 
-     * Note that any particular invocation of getVocab() might not correspond to the
-     * vocab that we actually use when querying that state.  The getVocab() of a literal
-     * is just going to be the characters used in the literal, but the vocab that we
-     * pass in is going to be the vocab for the entire automaton.  If we were to compare
-     * those, it'd be nonsense, since characters would have different indices.  So this 
-     * is for calling a single time, before graph traversal, just to find out what
-     * our domain of characters is; we shouldn't be calling this in the middle
-     * of querying.
-     * 
+     * @param tapes A TapeCollection for holding found characters
      * @param stateStack What symbols we've already collected from, to prevent inappropriate recursion
      * @returns vocab 
      */
-    public getVocab(stateStack: String[]): Tape {
-        return new TapeCollection();
-    }
+    public collectVocab(tapes: Tape, stateStack: String[]): void { }
 }
 
 /**
@@ -399,7 +389,8 @@ abstract class TextState extends State {
             return; 
         }
 
-        const result = this.getBits(matchedTape).and(target);
+        const bits = this.getBits(matchedTape);
+        const result = matchedTape.times(bits, target);
         const nextState = this.successor();
         yield [matchedTape, result, true, nextState];
 
@@ -419,7 +410,7 @@ export class AnyCharState extends TextState {
     
 
     protected getBits(tape: Tape): BitSet {
-        return ANY_CHAR;
+        return tape.one();
     }
 
     protected successor(): State {
@@ -450,12 +441,8 @@ export class LiteralState extends TextState {
         return this.text == "";
     }
 
-    public getVocab(stateStack: String[]): Tape {
-        const result = new SingleTape(this.tapeName);
-        for (const c of this.text) {
-            result.add(this.tapeName, c);
-        }
-        return result;
+    public collectVocab(tapes: Tape, stateStack: String[]): void {
+        tapes.registerToken(this.tapeName, this.text);
     }
 
     protected getBits(tape: Tape): BitSet {
@@ -509,10 +496,11 @@ abstract class BinaryState extends State {
         super();
     }
     
-    public getVocab(stateStack: String[]): Tape {
-        const result = this.child1.getVocab(stateStack);
-        return result.combineVocab(this.child2.getVocab(stateStack));
+    public collectVocab(tapes: Tape, stateStack: String[]): void {
+        this.child1.collectVocab(tapes, stateStack);
+        this.child2.collectVocab(tapes, stateStack);
     }
+
 
     public get id(): string {
         return `${this.constructor.name}(${this.child1.id},${this.child2.id})`;
@@ -711,10 +699,11 @@ abstract class UnaryState extends State {
     public get id(): string {
         return `${this.constructor.name}(${this.child.id})`;
     }
-
-    public getVocab(stateStack: String[]): Tape {
-        return this.child.getVocab(stateStack);
+    
+    public collectVocab(tapes: Tape, stateStack: String[]): void {
+        this.child.collectVocab(tapes, stateStack);
     }
+
 
 
     public accepting(symbolStack: CounterStack): boolean {
@@ -748,11 +737,11 @@ export class RepetitionState extends UnaryState {
     ) { 
         super();
     }
-
     
-    public getVocab(stateStack: String[]): Tape {
-        return this.initialChild.getVocab(stateStack);
+    public collectVocab(tapes: Tape, stateStack: String[]): void {
+        this.initialChild.collectVocab(tapes, stateStack);
     }
+
 
     public accepting(symbolStack: CounterStack): boolean {
         return this.index >= this.minRepetitions && 
@@ -826,12 +815,12 @@ export class EmbedState extends UnaryState {
         return `${this.constructor.name}(${this.symbolName})`;
     }
     
-    public getVocab(stateStack: String[]): Tape {
+    public collectVocab(tapes: Tape, stateStack: String[]): void {
         if (stateStack.indexOf(this.symbolName) != -1) {
-            return new TapeCollection();
+            return;
         }
         const newStack = [...stateStack, this.symbolName];
-        return this.child.getVocab(newStack);
+        this.child.collectVocab(tapes, newStack);
     }
 
     public get child(): State {
@@ -913,15 +902,7 @@ export class ProjectionState extends UnaryState {
 
 /**
  * Implements the Rename operation from relational algebra.
- * 
- * TODO: This implementation is a bit clunky and should probably be replaced by something more elegant 
- * in future versions.  The annoyance is with vocabularies: the index that a particular
- * letter has depends on what tape it's associated with, but rename renames tapes, so we have to in some
- * way adapt the [Vocab] so that child states "see" the appropriate vocabulary even though they refer to it
- * with a different name.  This is tedious and hard to reason about (like it's easy to get mixed up with
- * whether you want to replace the fromTape with the toTape, or vice-versa, depending on what exactly you're
- * doing).  It might be better to make the tier param of ndQuery an object that carries around
- * a vocab, and can consistently handle renaming, rather than both change the tier strings and adapt the vocab.
+ *
  */
 export class RenameState extends UnaryState {
 
@@ -933,9 +914,9 @@ export class RenameState extends UnaryState {
         super();
     }
 
-    public getVocab(stateStack: String[]): Tape {
-        const childVocab = new RenamedTape(this.child.getVocab(stateStack), this.fromTape, this.toTape);
-        return new TapeCollection().combineVocab(childVocab);
+    public collectVocab(tapes: Tape, stateStack: String[]): void {
+        tapes = new RenamedTape(tapes, this.fromTape, this.toTape);
+        this.child.collectVocab(tapes, stateStack);
     }
 
     public *ndQuery(tape: Tape, 
@@ -1010,12 +991,12 @@ export class NegationState extends State {
         }
         return `~(${this.child.id})`;
     }
-
-    public getVocab(stateStack: String[]): Tape {
-        if (this.child == undefined) { 
-            return new TapeCollection();
+    
+    public collectVocab(tapes: Tape, stateStack: String[]): void {
+        if (this.child == undefined) {
+            return;
         }
-        return this.child.getVocab(stateStack);
+        this.child.collectVocab(tapes, stateStack);
     }
 
     public accepting(symbolStack: CounterStack): boolean {
