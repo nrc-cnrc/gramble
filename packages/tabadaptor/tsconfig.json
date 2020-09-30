@@ -19,5 +19,8 @@
     "es2016",
     "dom",
     "es6"
-]
+  ],
+  "references": [
+    { "path": "../parser" }
+  ]
 }

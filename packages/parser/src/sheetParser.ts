@@ -84,32 +84,9 @@ export abstract class TabComponent {
      */
     public abstract get position(): CellPosition;
 
-    /**
-     * The previous sibling of the component (i.e. the component that shares
-     * the same parent, but appeared before this component, usually directly
-     * above this one).
-     * 
-     * Only EnclosureComponents have siblings, but it's more convenient
-     * to define it here so that certain clients (like unit tests) don't have
-     * to deal with the templating aspects.  
-     */
-    public sibling: TabComponent | undefined = undefined;
-
-    /**
-     * The last-defined child of the component (i.e. of all the components
-     * enclosed by this component, the last one.)  As [SheetParser] builds the
-     * tree, this value will change; when a new child is added, it's set to the
-     * parent's child and the previous child (if any) becomes the new child's
-     * sibling.
-     * 
-     * Only EnclosureComponents have children, but it's more convenient
-     * to define it here so that certain clients (like unit tests) don't have
-     * to deal with the templating aspects.  
-     */
-    public child: TabComponent | undefined = undefined;
 }
 
-class CellComponent extends TabComponent {
+export class CellComponent extends TabComponent {
 
     constructor(
         public text: string,
@@ -122,6 +99,36 @@ class CellComponent extends TabComponent {
         return `${this.text}:${this.position}`;
     }
 
+}
+
+export abstract class CompileableComponent<T> extends TabComponent {
+
+    
+    /**
+     * The previous sibling of the component (i.e. the component that shares
+     * the same parent, but appeared before this component, usually directly
+     * above this one).
+     * 
+     * Only EnclosureComponents have siblings, but it's more convenient
+     * to define it here so that certain clients (like unit tests) don't have
+     * to deal with the templating aspects.  
+     */
+    public sibling: CompileableComponent<T> | undefined = undefined;
+
+    /**
+     * The last-defined child of the component (i.e. of all the components
+     * enclosed by this component, the last one.)  As [SheetParser] builds the
+     * tree, this value will change; when a new child is added, it's set to the
+     * parent's child and the previous child (if any) becomes the new child's
+     * sibling.
+     * 
+     * Only EnclosureComponents have children, but it's more convenient
+     * to define it here so that certain clients (like unit tests) don't have
+     * to deal with the templating aspects.  
+     */
+    public child: CompileableComponent<T> | undefined = undefined;
+
+    public abstract compile(compiler: Compiler<T>, errors: ErrorAccumulator): T;
 }
 
 /**
@@ -161,7 +168,7 @@ class CellComponent extends TabComponent {
  * the union of the grammar represented by 2 and the grammar represented by the B table.
  * 
  */
-export class EnclosureComponent<T> extends TabComponent {
+export class EnclosureComponent<T> extends CompileableComponent<T> {
 
     public specRow: number = -1;
 
@@ -202,8 +209,8 @@ export class EnclosureComponent<T> extends TabComponent {
         this.child.addContent(cell);
     }
 
-    public compile(compiler: Compiler<T>): T {
-        return compiler.compileEnclosure(this);
+    public compile(compiler: Compiler<T>, errors: ErrorAccumulator): T {
+        return compiler.compileEnclosure(this, errors);
     }
 
     public addChildEnclosure(child: EnclosureComponent<T>): void {
@@ -232,11 +239,11 @@ export class EnclosureComponent<T> extends TabComponent {
  * Each header indicates how each cell beneath it should be interpreted; "foo"
  * should be interpret as "text", whatever that happens to mean in the programming
  * language in question.  Note that these are not necessarily well-formed database
- * tables; it's entirely possible (common, even) to get tables where the same
+ * tables; it's entirely possible to get tables where the same
  * header appears multiple times.
  */
 
-class TableComponent<T> extends TabComponent {
+export class TableComponent<T> extends CompileableComponent<T> {
 
     public headersByCol: {[col: number]: CellComponent} = {}
     public headers: CellComponent[] = [];
@@ -275,18 +282,18 @@ class TableComponent<T> extends TabComponent {
         this.table[this.table.length-1].push(cell);
     }
 
-    public compile(compiler: Compiler<T>): T {
+    public compile(compiler: Compiler<T>, errors: ErrorAccumulator): T {
 
         const compiledRows: T[] = [];
         for (const row of this.table) {
             const compiledCells: T[] = [];
             for (const cell of row) {
                 const header = this.headersByCol[cell.position.col];
-                compiledCells.push(compiler.compileContent(header, cell));
+                compiledCells.push(compiler.compileContent(header, cell, errors));
             }
-            compiledRows.push(compiler.compileRow(compiledCells));
+            compiledRows.push(compiler.compileRow(compiledCells, errors));
         }
-        return compiler.compileTable(compiledRows);
+        return compiler.compileTable(compiledRows, errors);
     }
 
 
@@ -315,7 +322,7 @@ export class SheetParser<T> {
                     errors: ErrorAccumulator): T {
 
         const sheetComponent = this.parseCells(sheetName, cells, errors);
-        return compiler.compileSheet(sheetComponent);
+        return compiler.compileSheet(sheetComponent, errors);
     }
 
     public parseString(sheetName: string,
@@ -426,11 +433,11 @@ export class SheetParser<T> {
  * We utilize the Visitor design pattern here from the Gang of Four.
  */
 export interface Compiler<T> {
-    compileContent(h: CellComponent, c: CellComponent): T;
-    compileRow(row: T[]): T;
-    compileTable(col: T[]): T;
-    compileEnclosure(enc: EnclosureComponent<T>): T;
-    compileSheet(sheet: EnclosureComponent<T>): T;
+    compileContent(h: CellComponent, c: CellComponent, errors: ErrorAccumulator): T;
+    compileRow(row: T[], errors: ErrorAccumulator): T;
+    compileTable(rows: T[], errors: ErrorAccumulator): T;
+    compileEnclosure(enc: EnclosureComponent<T>, errors: ErrorAccumulator): T;
+    compileSheet(sheet: EnclosureComponent<T>, errors: ErrorAccumulator): T;
 }
 
 export function cellSplit(s: string): string[][] {
