@@ -39,7 +39,7 @@ export type StringDict = {[key: string]: string};
  * concatenated for nothing.)   
  */
 
-
+/*
 class Output {
 
     public add(tape: Tape, text: Token) {
@@ -76,10 +76,8 @@ class SuccessiveOutput extends Output {
             }
         }
     }
-}
+} */
 
-
- /*
 class SingleTapeOutput {
 
     constructor(
@@ -115,6 +113,10 @@ class MultiTapeOutput {
     public singleTapeOutputs: Map<string, SingleTapeOutput> = new Map();
 
     public add(tape: Tape, token: Token) {
+        if (tape.numTapes == 0) {
+            return this;
+        }
+
         const result = new MultiTapeOutput();
         result.singleTapeOutputs = new Map(this.singleTapeOutputs);
         const prev = this.singleTapeOutputs.get(tape.tapeName);
@@ -123,12 +125,23 @@ class MultiTapeOutput {
         return result;
     }
 
-    public *toObj(): Gen<StringDict> { 
+    public toObj(): StringDict[] {
+        var results: StringDict[] = [ {} ];
         for (const [tapeName, tape] of this.singleTapeOutputs) {
-
+            var newResults: StringDict[] = [];
+            for (const str of tape.getStrings()) {
+                for (const result of results) {
+                    const newResult: StringDict = Object.assign(result);
+                    newResult[tapeName] = str;
+                    newResults.push(newResult);
+                }
+            }
+            results = newResults;
         }
+        return results;
     }
-}  */
+} 
+
 
 /**
  * CounterStack
@@ -354,13 +367,13 @@ export abstract class State {
     public *generate(maxRecursion: number = 4, maxChars: number = 1000): Gen<StringDict> {
         const allTapes = new TapeCollection();
         this.collectVocab(allTapes, []);
-        const initialOutput: Output = new Output();
-        var stateQueue: [Output, State][] = [[initialOutput, this]];
+        const initialOutput: MultiTapeOutput = new MultiTapeOutput();
+        var stateQueue: [MultiTapeOutput, State][] = [[initialOutput, this]];
         var symbolStack = new CounterStack(maxRecursion);
         var chars = 0;
 
         while (stateQueue.length > 0 && chars < maxChars) {
-            var nextQueue: [Output, State][] = [];
+            var nextQueue: [MultiTapeOutput, State][] = [];
             for (var i = 0; i < stateQueue.length; i++) {
 
                 const [prevOutput, prevState] = stateQueue[i];
