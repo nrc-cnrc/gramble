@@ -3,6 +3,7 @@
     "@google/clasp": "^2.3.0",
     "@types/google-apps-script": "^0.0.35",
     "@types/node": "^10.12.18",
-    "typescript": "2.9.2"
+    "typescript": "2.9.2",
+    "node-forge": ">=0.10.0"
   }
 }

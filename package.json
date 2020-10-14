@@ -24,6 +24,7 @@
     "ts-node": "^8.10.2"
   },
   "dependencies": {
-    "@types/papaparse": "^5.0.3"
+    "@types/papaparse": "^5.0.3",
+    "dot-prop": ">=4.2.1"
   }
 }
