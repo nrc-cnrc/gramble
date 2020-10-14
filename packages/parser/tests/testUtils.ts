@@ -1,5 +1,6 @@
 import { expect } from 'chai';
-import {Literalizer, StringDict} from "../src/stateMachine";
+import {Literalizer} from "../src/stateMachine";
+import {StringDict} from "../src/util";
 
 export const text = Literalizer("text");
 export const unrelated = Literalizer("unrelated");

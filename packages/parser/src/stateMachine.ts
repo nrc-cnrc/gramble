@@ -243,7 +243,7 @@ export abstract class State {
      * choosing an appropriate "query grammar" to join X with.
      * 
      * @param [maxRecursion] The maximum number of times the grammar can recurse; for infinite recursion pass Infinity.
-     * @param [maxChars] The maximum number of steps any one traversal can take (usually == the total number of characters
+     * @param [maxChars] The maximum number of steps any one traversal can take (roughly == the total number of characters
      *                    output to all tapes)
      * @returns a generator of { tape: string } dictionaries, one for each successful traversal. 
      */
@@ -594,7 +594,7 @@ export class JoinState extends BinaryState {
                               
         for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, symbolStack)) {
 
-            if (c1tape.tapeName == "__NO_TAPE__") { 
+            if (c1tape.numTapes == 0) { 
                 // c1 contained a ProjectionState that hides the original tape; move on without
                 // asking c2 to match anything.
                 yield [c1tape, c1target, c1matched, new JoinState(c1next, c2)];
