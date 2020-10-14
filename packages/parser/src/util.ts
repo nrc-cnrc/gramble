@@ -2,6 +2,7 @@
 export type Gen<T> = Generator<T, void, undefined>;
 
 
+export type StringDict = {[key: string]: string};
 
 export function setIntersection<T>(s1: Set<T>, s2: Set<T>): Set<T> {
     return new Set([...s1].filter(i => s2.has(i)));

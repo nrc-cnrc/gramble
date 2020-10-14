@@ -1,5 +1,5 @@
-import { Gen } from "./util";
-import { Tape, StringTape, RenamedTape, TapeCollection, Token, ANY_CHAR, NO_CHAR } from "./tapes";
+import { Gen, StringDict } from "./util";
+import { MultiTapeOutput, Tape, StringTape, RenamedTape, TapeCollection, Token, ANY_CHAR, NO_CHAR } from "./tapes";
 import { assert } from "chai";
 
 /**
@@ -25,123 +25,6 @@ import { assert } from "chai";
  */
 
 export type SymbolTable = {[key: string]: State};
-export type StringDict = {[key: string]: string};
-
-/**
- * Output
- * 
- * The outputs of this algorithm are kept as tries, since that's the natural
- * shape of a set of outputs from a non-deterministic parsing algorithm.  (E.g., if
- * we've already output "fooba", and at the next state we could either output "r" or
- * "z", then just having "r" and "z" point to that previous output is both less effort
- * and less space than copying it twice and concatenating it.  Especially if "z" ends
- * up being a false path and we end up discarding it; that would mean we had copied/
- * concatenated for nothing.)   
- */
-
-/*
-class Output {
-
-    public add(tape: Tape, text: Token) {
-        return new SuccessiveOutput(tape, text, this);
-    }
-
-    public *toObj(): Gen<StringDict> { 
-        yield {};
-    }
-}
-
-class SuccessiveOutput extends Output {
-
-    constructor(
-        public tape: Tape,
-        public text: Token,
-        public prev: Output
-    ) { 
-        super();
-    }
-
-    public *toObj(): Gen<StringDict> {
-        for (const result of this.prev.toObj()) {
-            if (this.tape.numTapes == 0) {
-                yield result;
-                return;
-            }
-            if (!(this.tape.tapeName in result)) {
-                result[this.tape.tapeName] = "";
-            }
-            for (const c of this.tape.fromBits(this.tape.tapeName, this.text.bits)) {
-                result[this.tape.tapeName] += c;
-                yield result;
-            }
-        }
-    }
-} */
-
-class SingleTapeOutput {
-
-    constructor(
-        public tape: Tape,
-        public token: Token,
-        public prev: SingleTapeOutput | undefined = undefined
-    ) { }
-
-    public add(tape: Tape, token: Token) {
-        if (tape.tapeName != this.tape.tapeName) {
-            throw new Error(`Incompatible tapes: ${tape.tapeName}, ${this.tape.tapeName}`);
-        }
-        return new SingleTapeOutput(tape, token, this);
-    }
-
-    public *getStrings(): Gen<string> {
-        var prevStrings = [""];
-        if (this.prev != undefined) {
-            prevStrings = [... this.prev.getStrings()];
-        }
-
-        for (const s of prevStrings) {
-            for (const c of this.tape.fromBits(this.tape.tapeName, this.token.bits)) {
-                yield s + c;
-            }
-        }
-    }
-
-}
-
-class MultiTapeOutput {
-
-    public singleTapeOutputs: Map<string, SingleTapeOutput> = new Map();
-
-    public add(tape: Tape, token: Token) {
-        if (tape.numTapes == 0) {
-            return this;
-        }
-
-        const result = new MultiTapeOutput();
-        result.singleTapeOutputs = new Map(this.singleTapeOutputs);
-        const prev = this.singleTapeOutputs.get(tape.tapeName);
-        const newTape = new SingleTapeOutput(tape, token, prev);
-        result.singleTapeOutputs.set(tape.tapeName, newTape);
-        return result;
-    }
-
-    public toObj(): StringDict[] {
-        var results: StringDict[] = [ {} ];
-        for (const [tapeName, tape] of this.singleTapeOutputs) {
-            var newResults: StringDict[] = [];
-            for (const str of tape.getStrings()) {
-                for (const result of results) {
-                    const newResult: StringDict = Object.assign(result);
-                    newResult[tapeName] = str;
-                    newResults.push(newResult);
-                }
-            }
-            results = newResults;
-        }
-        return results;
-    }
-} 
-
 
 /**
  * CounterStack
@@ -379,7 +262,7 @@ export abstract class State {
                 const [prevOutput, prevState] = stateQueue[i];
 
                 if (prevState.accepting(symbolStack)) {
-                    yield* prevOutput.toObj();
+                    yield* prevOutput.toStrings();
                 }
 
                 for (const [tape, c, matched, newState] of 
