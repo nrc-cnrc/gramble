@@ -1,9 +1,10 @@
 import { BitSet } from "bitset";
+import { Lit } from "./stateMachine";
 import { Gen, StringDict } from "./util";
 
 
 /**
- * Output
+ * Outputs
  * 
  * The outputs of this algorithm are kept as tries, since that's the natural
  * shape of a set of outputs from a non-deterministic parsing algorithm.  (E.g., if
@@ -12,46 +13,21 @@ import { Gen, StringDict } from "./util";
  * and less space than copying it twice and concatenating it.  Especially if "z" ends
  * up being a false path and we end up discarding it; that would mean we had copied/
  * concatenated for nothing.)   
+ * 
+ * It used to be that we just kept every tape output in one trie (like an output
+ * might have characters on different tapes interleaved).  That's fine when it's guaranteed
+ * that every concatenation succeeds (like for string concatenation), but when it's something like
+ * flag concatenation (which can fail), that means we have to search backwards through the trie
+ * to find the most recent output on the relevant tape.  So now, outputs are segregated by tape.
+ * A SingleTapeOutput represents the output on a given tape, and then there's a separate object that
+ * represents a collection of them (by keeping a pointer to the appropriate output along each tape).
+ * 
+ * TODO: There's currently some conceptual duplication between these Outputs and the various Tape
+ * objects, which store *information* about tapes (like their names and vocabs) without storing any
+ * actual outputs onto those tapes.  Each Output is associated with a particular Tape, there are collections
+ * of both corresponding to each other, etc.  We should eventually refactor these so that there's only
+ * one hierarchy of objects, "tapes" to which you can write and also know their own information.
  */
-
-/*
-class Output {
-
-    public add(tape: Tape, text: Token) {
-        return new SuccessiveOutput(tape, text, this);
-    }
-
-    public *toObj(): Gen<StringDict> { 
-        yield {};
-    }
-}
-
-class SuccessiveOutput extends Output {
-
-    constructor(
-        public tape: Tape,
-        public text: Token,
-        public prev: Output
-    ) { 
-        super();
-    }
-
-    public *toObj(): Gen<StringDict> {
-        for (const result of this.prev.toObj()) {
-            if (this.tape.numTapes == 0) {
-                yield result;
-                return;
-            }
-            if (!(this.tape.tapeName in result)) {
-                result[this.tape.tapeName] = "";
-            }
-            for (const c of this.tape.fromBits(this.tape.tapeName, this.text.bits)) {
-                result[this.tape.tapeName] += c;
-                yield result;
-            }
-        }
-    }
-} */
 
 class SingleTapeOutput {
 
@@ -82,6 +58,14 @@ class SingleTapeOutput {
     }
 }
 
+/**
+ * Multi tape output
+ * 
+ * This stores a collection of outputs on different tapes, by storing a collection of pointers to them.
+ * When you add a <tape, char> pair to it (say, <text,b>), you return a new MultiTapeOutput that now
+ * points to a new SingleTapeOutput corresponding to "text" -- the new one with "b" added -- and keep 
+ * all the old pointers the same.
+ */
 export class MultiTapeOutput {
 
     public singleTapeOutputs: Map<string, SingleTapeOutput> = new Map();
@@ -119,7 +103,18 @@ export class MultiTapeOutput {
 
 
 
-
+/**
+ * Tape
+ * 
+ * This encapsulates information about a tape or set of tapes (like what its name is, what
+ * its possible vocabulary is, what counts as concatenation and matching, etc.).  It doesn't,
+ * however, encapsulate a tape in the sense of keeping a sequence of character outputs; that
+ * would be encapsulated by the Output objects above.
+ * 
+ * TODO: Refactor Outputs and Tapes so that they're all one kind of object, because currently
+ * we're keeping a duplicated hierarchy in which the Output and Tape class hierarchies mirror 
+ * each other.
+ */
 export abstract class Tape {
     
     public abstract readonly tapeName: string;
@@ -155,6 +150,15 @@ export abstract class Tape {
     public abstract fromBits(tapeName: string, bits: BitSet): string[];
 }
 
+/**
+ * Token
+ * 
+ * This encapsulates a token, so that parsers need not necessarily know how, exactly, a token is implemented.
+ * Right now we only have one kind of token, strings implemented as BitSets, but eventually this should be an
+ * abstract class with (e.g.) StringToken, maybe FlagToken, ProbToken and/or LogToken (for handling weights), 
+ * etc.
+ * 
+ */
 export class Token {
 
     constructor(
@@ -177,6 +181,10 @@ export class Token {
 export const ANY_CHAR: Token = new Token(new BitSet().flip());
 export const NO_CHAR: Token = new Token(new BitSet());
 
+/**
+ * A tape containing strings; the basic kind of tape and (right now) the only one we really use.
+ * (Besides a TapeCollection, which implements Tape but is really used for a different situation.)
+ */
 export class StringTape extends Tape {
 
     constructor(
@@ -315,6 +323,14 @@ export class StringTape extends Tape {
     }
 }
 
+/**
+ * A tape containing flags, roughly identical to a "U" flag in XFST/LEXC.  
+ * This uses a different method for "add" than a normal string tape; you can
+ * always concatenate a string to a string, but trying to add a flag to a different
+ * flag will fail.
+ * 
+ * At the moment this isn't used anywhere.
+ */
 class FlagTape extends StringTape {
 
     public add(oldResults: string, newResult: string): string[] {
@@ -333,6 +349,16 @@ class FlagTape extends StringTape {
     }
 }
 
+/**
+ * This contains information about all the tapes.  When we do a "free query" in the state machine,
+ * what we're saying is "match anything on any tape".  Eventually, something's going to match on a particular
+ * tape, so we have to have that information handy for all tapes.  (That is to say, something like a LiteralState
+ * knows what tape it cares about only as a string, say, "text".  In a constrained query, we pass in a normal StringTape
+ * object, and if it's the "text" tape, matchTape("text") succeeds and returns itself, and if it doesn't, 
+ * matchTape("text") fails.  In a free query, we pass in one of these objects, and when we matchTape("text"), we
+ * return the StringTape corresponding to "text".  That's why we need an object that collects all of them, so we
+ * can return the appropriate one when it's needed.)
+ */
 export class TapeCollection extends Tape {
 
     public tapes: Map<string, Tape> = new Map();
@@ -382,6 +408,25 @@ export class TapeCollection extends Tape {
     }
 }
 
+
+/**
+ * RenamedTapes are necessary for RenameStates to work properly.
+ * 
+ * From the point of view of any particular state, it believes that particular
+ * tapes have particular names, e.g. "text" or "gloss".  However, because renaming is
+ * an operator of our relational algebra, different states may be referred to by different
+ * names in different parts of the grammar.  
+ * 
+ * (For example, consider a composition between two FSTS, {"up":"lr", "down":"ll"} and 
+ * {"up":"ll", "down":"lh"}.  In order to express their composition as a "join", we have to make it so that
+ * the first "down" and the second "up" have the same name.  Renaming does that.
+ * 
+ * The simplest way to get renaming, so that each state doesn't have to understand the name structure
+ * of the larger grammar, is for RenameStates to wrap tapes in a simple adaptor class that makes it seem
+ * as if an existing tape has a new name.  That way, any child of a RenameState can (for example) ask for the
+ * vocabulary of the tape it thinks is called "down", even if outside of that RenameState the tape is called
+ * "text".  
+ */
 export class RenamedTape extends Tape {
 
     constructor(
