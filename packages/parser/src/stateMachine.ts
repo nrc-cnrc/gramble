@@ -11,7 +11,12 @@ import { assert } from "chai";
  *      can read/write.  Finite-state acceptors are one-tape automata,
  *      they read in from one tape and either succeed or fail.  Finite-
  *      state transducers are two-tape automata, reading from one and
- *      writing to another.  This system allows any number of tapes.
+ *      writing to another.  This system allows any number of tapes, and
+ *      reading/writing from them in any combination.  (E.g. you could have
+ *      five tapes A,B,C,D,E, have the input tapes be B and C and the outputs
+ *      be A,D,E.  You don't need to specify this in advance, the grammar just
+ *      expresses a relationship between tapes, not the direction 
+ *      of the "parse".)
  * 
  *      - "Recursive" means that states can themselves contain states,
  *      meaning that the machine can parse context-free languages rather
@@ -75,6 +80,54 @@ class CounterStack {
     }
 }
 
+export class Namespace {
+    
+    protected parent: Namespace | undefined = undefined;
+
+    constructor(
+        protected symbols: {[name: string]: State} = {}
+    ) { }
+
+    protected childNamespaces: {[name: string]: Namespace} = {};
+    
+    public addSymbol(name: string, state: State): void {
+        if (name in this.symbols) {
+            throw new Error(`Redefining symbol ${name}`);
+        }
+        this.symbols[name] = state;
+    }
+
+    public addNamespace(name: string, namespace: Namespace): void {
+        if (name in this.childNamespaces) {
+            throw new Error(`Redefining namespace ${name}`);
+        }
+        this.childNamespaces[name] = namespace;
+    }
+
+    protected getNamePieces(namePieces: string[]): State | undefined {
+
+        if (namePieces.length == 1 && namePieces[0] in this.symbols) {
+            return this.symbols[namePieces[0]];
+        }
+
+        if (namePieces[0] in this.childNamespaces) {   
+            const remainder = namePieces.slice(1);
+            return this.childNamespaces[namePieces[0]].getNamePieces(remainder);
+        }
+
+        if (this.parent != undefined) {
+            return this.parent.getNamePieces(namePieces);
+        }
+
+        return undefined;
+    }
+
+    public get(name: String): State | undefined {
+        const pieces = name.split(".")
+        return this.getNamePieces(pieces);
+    }
+}
+
 /**
  * State
  * 
@@ -108,7 +161,7 @@ class CounterStack {
  *  * ndQuery(tape, char): What states can this state get to, compatible with a given tape/character
  *  * dQuery(tape, char): Calls ndQuery and rearranges the outputs so that any specific character can 
  *                      only lead to one state.
- *  * accepting(): Whether this state is a final state, meaning it consistutes a complete parse
+ *  * accepting(): Whether this state is a final state, meaning it constitutes a complete parse
  */
 
 export abstract class State {
@@ -743,7 +796,7 @@ export class EmbedState extends UnaryState {
 
     constructor(
         public symbolName: string,
-        public symbolTable: SymbolTable,
+        public namespace: Namespace,
         public _child: State | undefined = undefined
     ) { 
         super();
@@ -763,10 +816,10 @@ export class EmbedState extends UnaryState {
 
     public get child(): State {
         if (this._child == undefined) {
-            if (!(this.symbolName in this.symbolTable)) {
+            this._child = this.namespace.get(this.symbolName);
+            if (this._child == undefined) {
                 throw new Error(`Cannot find symbol name ${this.symbolName}`);
             }
-            this._child = this.symbolTable[this.symbolName];
         }
         return this._child;
     }
@@ -790,7 +843,7 @@ export class EmbedState extends UnaryState {
 
         symbolStack = symbolStack.add(this.symbolName);
         for (const [childchildTape, childTarget, childMatched, childNext] of this.child.ndQuery(tape, target, symbolStack)) {
-            const successor = new EmbedState(this.symbolName, this.symbolTable, childNext);
+            const successor = new EmbedState(this.symbolName, this.namespace, childNext);
             yield [childchildTape, childTarget, childMatched, successor];
         }
     }
@@ -1020,8 +1073,8 @@ export function Not(child: State): State {
     return new NegationState(child);
 }
 
-export function Emb(symbolName: string, symbolTable: SymbolTable): State {
-    return new EmbedState(symbolName, symbolTable);
+export function Emb(symbolName: string, namespace: Namespace): State {
+    return new EmbedState(symbolName, namespace);
 }
 
 export function Proj(child: State, ...tiers: string[]): State {

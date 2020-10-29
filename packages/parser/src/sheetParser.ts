@@ -7,6 +7,8 @@
  * of formulas in that language.
  */
 
+import { Emb, Empty, Join, Lit, Namespace, Not, Seq, State, SymbolTable, Uni } from "./stateMachine";
+
 
 /**
  * A convenience class encapsulating information about where a cell
@@ -73,8 +75,7 @@ export abstract class TabComponent {
 
     /**
      * In the case of cells, text() is the text of the cell; otherwise
-     * it's the text of the first cell in the component.  (For non-cells
-     * we really only use this for debugging.)
+     * it's the text of the first cell in the component. 
      */
     public abstract get text(): string;
 
@@ -101,7 +102,7 @@ export class CellComponent extends TabComponent {
 
 }
 
-export abstract class CompileableComponent<T> extends TabComponent {
+export abstract class CompileableComponent extends TabComponent {
 
     
     /**
@@ -113,7 +114,7 @@ export abstract class CompileableComponent<T> extends TabComponent {
      * to define it here so that certain clients (like unit tests) don't have
      * to deal with the templating aspects.  
      */
-    public sibling: CompileableComponent<T> | undefined = undefined;
+    public sibling: CompileableComponent | undefined = undefined;
 
     /**
      * The last-defined child of the component (i.e. of all the components
@@ -126,10 +127,19 @@ export abstract class CompileableComponent<T> extends TabComponent {
      * to define it here so that certain clients (like unit tests) don't have
      * to deal with the templating aspects.  
      */
-    public child: CompileableComponent<T> | undefined = undefined;
+    public child: CompileableComponent | undefined = undefined;
 
-    public abstract compile(compiler: Compiler<T>, errors: ErrorAccumulator): T;
+    public abstract compile(namespace: Namespace, errors: ErrorAccumulator): State;
 }
+
+
+type BinaryOp = (...children: State[]) => State;
+const BINARY_OPS: {[opName: string]: BinaryOp} = {
+    "or": Uni,
+    "concat": Seq,
+    "join": Join,
+}
+
 
 /**
  * An enclosure represents a single-cell unit containing a command or identifier (call that the "startCell"),
@@ -168,13 +178,13 @@ export abstract class CompileableComponent<T> extends TabComponent {
  * the union of the grammar represented by 2 and the grammar represented by the B table.
  * 
  */
-export class EnclosureComponent<T> extends CompileableComponent<T> {
+export class EnclosureComponent extends CompileableComponent {
 
     public specRow: number = -1;
 
     constructor(
         public startCell: CellComponent,
-        public parent: EnclosureComponent<T> | undefined = undefined
+        public parent: EnclosureComponent | undefined = undefined
     ) {
         super();
         this.specRow = startCell.position.row;
@@ -208,12 +218,61 @@ export class EnclosureComponent<T> extends CompileableComponent<T> {
         }
         this.child.addContent(cell);
     }
+    
+    public compile(namespace: Namespace, 
+        errors: ErrorAccumulator): State {
 
-    public compile(compiler: Compiler<T>, errors: ErrorAccumulator): T {
-        return compiler.compileEnclosure(this, errors);
+        if (this.text == "table") {
+            if (this.child == undefined) {
+                errors.addError(this.position,
+                    "'table' seems to be missing a table; something should be in the cell to the right.")
+                return Empty();
+            }
+            if (this.sibling != undefined) {
+                const throwaway = this.sibling.compile(namespace, errors);
+                // we don't do anything with the compiled sibling, but we
+                // compile it anyway in case there are errors in it the
+                // programmer may want to know about
+                errors.addError(this.position,
+                    `Warning: 'table' here will obliterate the preceding content at ${this.sibling.position}.`);
+            
+            }
+            return this.child.compile(namespace, errors);
+        }
+
+        return this.compileBinaryOp(namespace, errors);
     }
 
-    public addChildEnclosure(child: EnclosureComponent<T>): void {
+    public compileBinaryOp(namespace: Namespace, 
+                            errors: ErrorAccumulator): State {
+
+        if (!(this.text in BINARY_OPS)) {
+            errors.addError(this.position,
+                    `Operator '{opName}' not recognized.`);
+            return Empty();
+        }
+    
+        const op = BINARY_OPS[this.text];
+                                    
+        if (this.child == undefined) {
+            errors.addError(this.position, 
+                `'${this.text}' is missing a second argument; ` +
+                "something should be in the cell to the right.");
+            return Empty();
+        }
+        if (this.sibling == undefined) {
+            errors.addError(this.position,
+                `'${this.text}' is missing a first argument; ` +
+                "something should be in a cell above this.");
+            return Empty();
+        }
+        const arg1 = this.sibling.compile(namespace, errors);
+        const arg2 = this.child.compile(namespace, errors);
+        return op(arg1, arg2);
+    }
+
+
+    public addChildEnclosure(child: EnclosureComponent): void {
         if (this.child instanceof TableComponent) {
             throw new Error("Can't add a new child if the parent already has headers");
         }
@@ -243,7 +302,7 @@ export class EnclosureComponent<T> extends CompileableComponent<T> {
  * header appears multiple times.
  */
 
-export class TableComponent<T> extends CompileableComponent<T> {
+export class TableComponent extends CompileableComponent {
 
     public headersByCol: {[col: number]: CellComponent} = {}
     public headers: CellComponent[] = [];
@@ -282,20 +341,31 @@ export class TableComponent<T> extends CompileableComponent<T> {
         this.table[this.table.length-1].push(cell);
     }
 
-    public compile(compiler: Compiler<T>, errors: ErrorAccumulator): T {
-
-        const compiledRows: T[] = [];
-        for (const row of this.table) {
-            const compiledCells: T[] = [];
-            for (const cell of row) {
-                const header = this.headersByCol[cell.position.col];
-                compiledCells.push(compiler.compileContent(header, cell, errors));
-            }
-            compiledRows.push(compiler.compileRow(compiledCells, errors));
+    
+    public compileCell(h: CellComponent, 
+                        c: CellComponent, 
+                        namespace: Namespace, 
+                        errors: ErrorAccumulator): State {
+        if (h.text == "embed") {
+            return Emb(c.text, namespace);
         }
-        return compiler.compileTable(compiledRows, errors);
+        return Lit(h.text, c.text);
     }
 
+    public compile(namespace: Namespace, 
+                        errors: ErrorAccumulator): State {
+        const compiledRows: State[] = [];
+        for (const row of this.table) {
+            const compiledRow: State[] = [];
+            for (const cell of row) {
+                const header = this.headersByCol[cell.position.col];
+                const compiledCell = this.compileCell(header, cell, namespace, errors);
+                compiledRow.push(compiledCell);
+            }
+            compiledRows.push(Seq(...compiledRow));
+        }
+        return Uni(...compiledRows);
+    }
 
     public toString(): string {
         return `Table(${this.position})`;
@@ -310,24 +380,25 @@ export class TableComponent<T> extends CompileableComponent<T> {
  * what exactly these components represent or how they'll be handled later, it's just a parser
  * for a particular class of tabular languages.
  */
-export class SheetParser<T> {
+export class SheetParser {
 
     constructor(
         public builtInOperators: string[] = []
     ) { }
 
-    public compile(compiler: Compiler<T>, 
-                    sheetName: string, 
+    public compile(sheetName: string, 
                     cells: string[][], 
-                    errors: ErrorAccumulator): T {
+                    errors: ErrorAccumulator): State {
 
         const sheetComponent = this.parseCells(sheetName, cells, errors);
-        return compiler.compileSheet(sheetComponent, errors);
+        //return compiler.compileSheet(sheetComponent, errors);
+        return Empty();
     }
+
 
     public parseString(sheetName: string,
                 text: string,
-                errors: ErrorAccumulator): EnclosureComponent<T> {
+                errors: ErrorAccumulator): EnclosureComponent {
 
         const cells = cellSplit(text);
         return this.parseCells(sheetName, cells, errors);
@@ -346,13 +417,13 @@ export class SheetParser<T> {
 
     public parseCells(sheetName: string, 
                 cells: string[][],
-                errors: ErrorAccumulator): EnclosureComponent<T> {
+                errors: ErrorAccumulator): EnclosureComponent {
 
         const enclosureOps = this.getEnclosureOperators(cells);
 
         // There's one big enclosure that encompasses the whole sheet, with startCell (-1,-1)
         const startCell = new CellComponent(sheetName, new CellPosition(sheetName));
-        var topEnclosure = new EnclosureComponent<T>(startCell);
+        var topEnclosure = new EnclosureComponent(startCell);
         //const resultStack: EnclosureComponent[] = [sheetEnclosure];
 
         // Now iterate through the cells, left-to-right top-to-bottom
@@ -424,21 +495,6 @@ export class SheetParser<T> {
     }
 }
 
-/**
- * A Compiler turns the abstract syntax tree (AST) created by SheetParser into
- * a sentence of the target formalism.  It's a template because we don't want,
- * here, to be too specific about what kind of object these make.  The requirement
- * is only that they all be the same kind of object.
- * 
- * We utilize the Visitor design pattern here from the Gang of Four.
- */
-export interface Compiler<T> {
-    compileContent(h: CellComponent, c: CellComponent, errors: ErrorAccumulator): T;
-    compileRow(row: T[], errors: ErrorAccumulator): T;
-    compileTable(rows: T[], errors: ErrorAccumulator): T;
-    compileEnclosure(enc: EnclosureComponent<T>, errors: ErrorAccumulator): T;
-    compileSheet(sheet: EnclosureComponent<T>, errors: ErrorAccumulator): T;
-}
 
 export function cellSplit(s: string): string[][] {
     return s.split("\n").map((line) => line.split(","));

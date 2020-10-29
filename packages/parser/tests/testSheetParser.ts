@@ -4,10 +4,10 @@ import { expect } from "chai";
 
 const BUILT_IN_OPS = [ "table", "or", "apply", "join" ];
 
-export function sheetFromFile(path: string): [EnclosureComponent<string>, ErrorAccumulator] { 
+export function sheetFromFile(path: string): [EnclosureComponent, ErrorAccumulator] { 
     const text = readFileSync(path, 'utf8');
     const errors = new ErrorAccumulator();
-    const parser = new SheetParser<string>(BUILT_IN_OPS);
+    const parser = new SheetParser(BUILT_IN_OPS);
     const result = parser.parseString("test", text, errors);
     return [result, errors];
 }
