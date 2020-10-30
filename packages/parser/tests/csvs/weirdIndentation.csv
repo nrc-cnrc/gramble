@@ -5,8 +5,8 @@ verb, table, text, gloss
 suffix, table, text, gloss
     ,       , bar, -1SG
 
-word,       , table, var, var
+word,       , table, embed, embed
     ,       ,       , verb, suffix 
     ,
-    , apply, up, down
+    , join, up, down
     ,      , foo, fo:

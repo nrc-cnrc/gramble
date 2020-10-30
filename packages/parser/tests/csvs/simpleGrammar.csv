@@ -1,12 +1,14 @@
 
 verb, table, text, gloss
     ,       , foo, run
+    ,       , moo, jump
 
 suffix, table, text, gloss
     ,       , bar, -1SG
+    ,       , baz, -2SG
 
-word, table, var, var
+word, table, embed, embed
     ,       , verb, suffix 
     ,
-    , apply, up, down
-    ,      , foo, fo:
+    , join, lang, 
+    ,      , foobese,

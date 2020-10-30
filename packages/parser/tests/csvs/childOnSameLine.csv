@@ -2,11 +2,11 @@
 verb, table, text, gloss
     ,       , foo, run
 
-suffix, table, text, gloss, table, var, var
+suffix, table, text, gloss, table, embed, embed
     ,       , bar, -1SG,         , verb, suffix
 
-word, table, var, var
+word, table, embed, embed
     ,       , verb, suffix,   
     ,
-    , apply, up, down
+    , join, up, down
     ,      , foo, fo:

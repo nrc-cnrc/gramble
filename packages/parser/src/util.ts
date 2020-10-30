@@ -18,8 +18,6 @@ export function setChain<T>(sets: Iterable<Set<T>>): Set<T> {
     return results;
 }
 
-
-
 class Iter<T> implements Gen<T> {
     
     constructor(

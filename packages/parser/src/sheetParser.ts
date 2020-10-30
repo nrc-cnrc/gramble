@@ -32,26 +32,40 @@ class CellPosition {
     }
 }
 
+class SyntaxError {
+
+    constructor(
+        public position: CellPosition,
+        public level: "error" | "warning",
+        public msg: string
+    ) { }
+
+    public toString() {
+        return `${this.level.toUpperCase()}: ${this.msg}`;
+    }
+}
+
 /**
  * An ErrorAccumulator associates [CellPositions]s with error messages, for
  * later display to the user.
  */
 export class ErrorAccumulator {
 
-    protected errors: {[key: string]: [CellPosition, string][]} = {};
+    protected errors: {[key: string]: SyntaxError[]} = {};
 
-    public addError(pos: CellPosition, msg: string) {
+    public addError(pos: CellPosition, level: "error" | "warning", msg: string) {
         const key = pos.toString();
         if (!(key in this.errors)) {
             this.errors[key] = [];
         }
-        this.errors[key].push([pos, msg]);
+        const error = new SyntaxError(pos, level, msg);
+        this.errors[key].push(error);
     }
 
     public logErrors(): void {
         for (const error of Object.values(this.errors)) {
-            for (const [pos, msg] of error) {
-                console.log(`${pos}: ${msg}`);
+            for (const errorMsg of error) {
+                console.log(`${errorMsg.position}: ${errorMsg.toString()}`);
             }
         }
     }
@@ -59,14 +73,22 @@ export class ErrorAccumulator {
     public getErrors(sheet: string, row: number, col: number): string[] {
         const key = new CellPosition(sheet, row, col).toString();
         const results: string[] = [];
-        for (const [pos, msg] of this.errors[key]) {
-            results.push(msg);
+        if (!(key in this.errors)) {
+            return [];
         }
-        return results;
+        return this.errors[key].map(e => e.toString());
     }
 
-    public get length(): number {
-        return Object.keys(this.errors).length;
+    public numErrors(level: "error" | "warning"): number {
+        var result = 0;
+        for (const error of Object.values(this.errors)) {
+            for (const errorMsg of error) {
+                if (errorMsg.level == level) {
+                    result++;
+                }
+            }
+        }
+        return result;
     }
 }
 
@@ -129,7 +151,12 @@ export abstract class CompileableComponent extends TabComponent {
      */
     public child: CompileableComponent | undefined = undefined;
 
-    public abstract compile(namespace: Namespace, errors: ErrorAccumulator): State;
+    public abstract compile(namespace: Namespace, 
+                            errors: ErrorAccumulator): State;
+
+    public abstract compileAssignment(namespace: Namespace, 
+                            errors: ErrorAccumulator): State;
+
 }
 
 
@@ -140,6 +167,8 @@ const BINARY_OPS: {[opName: string]: BinaryOp} = {
     "join": Join,
 }
 
+const RESERVED_WORDS: Set<string> = new Set(Object.keys(BINARY_OPS))
+RESERVED_WORDS.add("table");
 
 /**
  * An enclosure represents a single-cell unit containing a command or identifier (call that the "startCell"),
@@ -222,46 +251,105 @@ export class EnclosureComponent extends CompileableComponent {
     public compile(namespace: Namespace, 
         errors: ErrorAccumulator): State {
 
-        if (this.text == "table") {
-            if (this.child == undefined) {
-                errors.addError(this.position,
-                    "'table' seems to be missing a table; something should be in the cell to the right.")
-                return Empty();
-            }
-            if (this.sibling != undefined) {
-                const throwaway = this.sibling.compile(namespace, errors);
-                // we don't do anything with the compiled sibling, but we
-                // compile it anyway in case there are errors in it the
-                // programmer may want to know about
-                errors.addError(this.position,
-                    `Warning: 'table' here will obliterate the preceding content at ${this.sibling.position}.`);
-            
-            }
-            return this.child.compile(namespace, errors);
+        if (this.text == "table") { 
+            // it's a "table", which is technically a no-op,
+            // but this .compileTable() function does some useful
+            // error checking.
+            return this.compileTable(namespace, errors);
         }
 
-        return this.compileBinaryOp(namespace, errors);
+        if (this.text in BINARY_OPS) {
+            // it's a binary operator like "or" or "join"
+            return this.compileBinaryOp(namespace, errors);
+        }
+
+        /*
+        if (this.parent == this.sheet) {
+            // it's not any other kind of operator, but it's "top-level"
+            // within its sheet, so it's an assignment to a new symbol
+            return this.compileAssignment(namespace, errors);
+        } */
+
+        errors.addError(this.position, "error",
+            `Operator ${this.text} not recognized.`);
+        return Empty();
+    }
+
+    public compileAssignment(namespace: Namespace, errors: ErrorAccumulator): State {
+
+        // first compile the previous sibling.  note that all siblings
+        // of an assignment statement should be an assignment statement, since
+        // being an assignment statement is, by definition, having a sheet component
+        // as your immediate parent.
+        if (this.sibling != undefined) {
+            this.sibling.compileAssignment(namespace, errors);
+        }
+
+        if (RESERVED_WORDS.has(this.text)) {
+            // oops, assigning to a reserved word
+            errors.addError(this.position, "error", 
+                "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
+                `reserved word ${this.text}.  Choose a different symbol name.`);
+            if (this.child != undefined) {
+                // compile the child just in case there are useful errors to display
+                this.child.compile(namespace, errors);
+            }
+            return Empty();
+        }
+
+        if (this.child == undefined) {
+            // oops, empty "right side" of the assignment!
+            errors.addError(this.position, "warning",
+                `This looks like an assignment to a symbol ${this.text}, ` +
+                "but there's nothing to the right of it.");
+            return Empty();
+        }
+
+        const state = this.child.compile(namespace, errors);
+
+        if (namespace.hasSymbol(this.text)) {
+            // oops, trying to assign to a symbol that already is assigned to!
+            errors.addError(this.position, "error",
+                `You've already assigned something to the symbol ${this.text}`);
+            // TODO: The error message should say where it's assigned
+        }
+
+        namespace.addSymbol(this.text, state);
+        return state;
+    }
+
+    public compileTable(namespace: Namespace, errors: ErrorAccumulator): State {
+
+        if (this.child == undefined) {
+            errors.addError(this.position, "error",
+                "'table' seems to be missing a table; something should be in the cell to the right.")
+            return Empty();
+        }
+        if (this.sibling != undefined) {
+            const throwaway = this.sibling.compile(namespace, errors);
+            // we don't do anything with the sibling, but we
+            // compile it anyway in case there are errors in it the
+            // programmer may want to know about
+            errors.addError(this.position, "warning",
+                `'table' here will obliterate the preceding content at ${this.sibling.position}.`);
+        
+        }
+        return this.child.compile(namespace, errors);
     }
 
     public compileBinaryOp(namespace: Namespace, 
                             errors: ErrorAccumulator): State {
 
-        if (!(this.text in BINARY_OPS)) {
-            errors.addError(this.position,
-                    `Operator '{opName}' not recognized.`);
-            return Empty();
-        }
-    
         const op = BINARY_OPS[this.text];
                                     
         if (this.child == undefined) {
-            errors.addError(this.position, 
+            errors.addError(this.position, "error",
                 `'${this.text}' is missing a second argument; ` +
                 "something should be in the cell to the right.");
             return Empty();
         }
         if (this.sibling == undefined) {
-            errors.addError(this.position,
+            errors.addError(this.position, "error",
                 `'${this.text}' is missing a first argument; ` +
                 "something should be in a cell above this.");
             return Empty();
@@ -272,10 +360,19 @@ export class EnclosureComponent extends CompileableComponent {
     }
 
 
-    public addChildEnclosure(child: EnclosureComponent): void {
+    public addChildEnclosure(child: EnclosureComponent, 
+                            errors: ErrorAccumulator): void {
         if (this.child instanceof TableComponent) {
-            throw new Error("Can't add a new child if the parent already has headers");
+            throw new Error("Can't add an operator to a line that already has headers.");
         }
+
+        if (this.child != undefined && this.child.position.col != child.position.col) {
+            errors.addError(child.position, "warning",
+                "This operator is in an unexpected column.  Did you mean for it " +
+                `to be in column ${this.child.position.col}, ` + 
+                `so that it's under the operator in cell ${this.child.position}?`);
+        }
+
         child.sibling = this.child;
         this.child = child;
     }
@@ -283,7 +380,38 @@ export class EnclosureComponent extends CompileableComponent {
     public toString(): string {
         return `Enclosure(${this.position})`;
     }
+
+    public get sheet(): SheetComponent {
+        if (this.parent == undefined) {
+            throw new Error("Stack empty; something has gone very wrong");
+        }
+        return this.parent.sheet;
+    }
     
+}
+
+class SheetComponent extends EnclosureComponent {
+
+    constructor(
+        public name: string
+    ) { 
+        super(new CellComponent(name, new CellPosition(name)));
+    }
+
+    public compile(namespace: Namespace, 
+        errors: ErrorAccumulator): State {
+
+        if (this.child == undefined) {
+            return Empty();
+        }
+
+        return this.child.compileAssignment(namespace, errors);
+    }
+
+    public get sheet(): SheetComponent {
+        return this;
+    }
+
 }
 
 /**
@@ -303,6 +431,14 @@ export class EnclosureComponent extends CompileableComponent {
  */
 
 export class TableComponent extends CompileableComponent {
+
+    public compileAssignment(namespace: Namespace, errors: ErrorAccumulator): State {
+        // I don't think this error is possible, but just in case
+        errors.addError(this.position, "error",
+            "This cell needs to be an assignment, " +
+            "but it looks like you're trying to start a table.");
+        return Empty();
+    }
 
     public headersByCol: {[col: number]: CellComponent} = {}
     public headers: CellComponent[] = [];
@@ -380,38 +516,42 @@ export class TableComponent extends CompileableComponent {
  * what exactly these components represent or how they'll be handled later, it's just a parser
  * for a particular class of tabular languages.
  */
-export class SheetParser {
+export class Project {
+
+    public globalNamespace = new Namespace();
 
     constructor(
         public builtInOperators: string[] = []
     ) { }
 
-    public compile(sheetName: string, 
+    public addSheet(sheetName: string, 
                     cells: string[][], 
-                    errors: ErrorAccumulator): State {
+                    errors: ErrorAccumulator): EnclosureComponent {
 
+        // parse the cells into an abstract syntax tree
         const sheetComponent = this.parseCells(sheetName, cells, errors);
-        //return compiler.compileSheet(sheetComponent, errors);
-        return Empty();
+
+        // Create a new namespace for this sheet and add it to the 
+        // global namespace
+        const sheetNamespace = new Namespace();
+        this.globalNamespace.addNamespace(sheetName, sheetNamespace);
+
+        // Compile it
+        sheetComponent.compile(sheetNamespace, errors);
+
+        // Return it (really only for testing purposes)
+        return sheetComponent;
     }
 
-
-    public parseString(sheetName: string,
-                text: string,
-                errors: ErrorAccumulator): EnclosureComponent {
-
-        const cells = cellSplit(text);
-        return this.parseCells(sheetName, cells, errors);
-    }
 
     public getEnclosureOperators(cells: string[][]): Set<string> {
         const results = new Set(this.builtInOperators);
-        for (const row of cells) {
+        /*for (const row of cells) {
             if (row.length == 0) {
                 continue;
             }
             results.add(row[0]);
-        }
+        } */
         return results;
     }
 
@@ -422,9 +562,7 @@ export class SheetParser {
         const enclosureOps = this.getEnclosureOperators(cells);
 
         // There's one big enclosure that encompasses the whole sheet, with startCell (-1,-1)
-        const startCell = new CellComponent(sheetName, new CellPosition(sheetName));
-        var topEnclosure = new EnclosureComponent(startCell);
-        //const resultStack: EnclosureComponent[] = [sheetEnclosure];
+        var topEnclosure: EnclosureComponent = new SheetComponent(sheetName);
 
         // Now iterate through the cells, left-to-right top-to-bottom
         for (var rowIndex = 0; rowIndex < cells.length; rowIndex++) {
@@ -455,21 +593,21 @@ export class SheetParser {
                     try {
                         topEnclosure.addContent(cell);
                     } catch (e) {
-                        errors.addError(position, 
+                        errors.addError(position, "error",
                             "This cell does not have a header above it, so we're unable to interpret it.");
                     }
                     continue;
                 }
 
                 // either we're still in the spec row, or there's no spec row yet
-                if (enclosureOps.has(cellText)) {
+                if (enclosureOps.has(cellText) || cell.position.col == 0) {
                     // it's the start of a new enclosure
                     const newEnclosure = new EnclosureComponent(cell, topEnclosure);
                     try {
-                        topEnclosure.addChildEnclosure(newEnclosure);     
+                        topEnclosure.addChildEnclosure(newEnclosure, errors);     
                         topEnclosure = newEnclosure;
                     } catch (e) {
-                        errors.addError(position,
+                        errors.addError(position, "error",
                             "This looks like an operator, but only a header can follow a header.");
                     }
                     continue;
@@ -480,7 +618,7 @@ export class SheetParser {
                     topEnclosure.addHeader(cell);
                 } catch (e) {
                     //console.log(e);
-                    errors.addError(position, 
+                    errors.addError(position, "error",
                         `Cannot add a header to ${topEnclosure}; ` + 
                         "you need an operator like 'or', 'apply', etc.");
                 }
@@ -493,9 +631,4 @@ export class SheetParser {
         return topEnclosure;
 
     }
-}
-
-
-export function cellSplit(s: string): string[][] {
-    return s.split("\n").map((line) => line.split(","));
 }

@@ -90,11 +90,26 @@ export class Namespace {
 
     protected childNamespaces: {[name: string]: Namespace} = {};
     
+    public hasSymbol(name: string): boolean {
+        return name in this.symbols;
+    }
+
     public addSymbol(name: string, state: State): void {
         if (name in this.symbols) {
             throw new Error(`Redefining symbol ${name}`);
         }
         this.symbols[name] = state;
+    }
+
+    public allSymbols(): String[] {
+        const result = Object.keys(this.symbols);
+        for (const namespaceName in this.childNamespaces) {
+            const childNamespace = this.childNamespaces[namespaceName];
+            for (const symbol of childNamespace.allSymbols()) {
+                result.push(`${namespaceName}.${symbol}`);
+            }
+        }
+        return result;
     }
 
     public addNamespace(name: string, namespace: Namespace): void {
