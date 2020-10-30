@@ -79,11 +79,11 @@ export class ErrorAccumulator {
         return this.errors[key].map(e => e.toString());
     }
 
-    public numErrors(level: "error" | "warning"): number {
+    public numErrors(level: "error" | "warning"|"any"): number {
         var result = 0;
         for (const error of Object.values(this.errors)) {
             for (const errorMsg of error) {
-                if (errorMsg.level == level) {
+                if (level == "any" || errorMsg.level == level) {
                     result++;
                 }
             }
@@ -93,7 +93,7 @@ export class ErrorAccumulator {
 }
 
 
-export abstract class TabComponent {
+export abstract class TabularComponent {
 
     /**
      * In the case of cells, text() is the text of the cell; otherwise
@@ -109,7 +109,7 @@ export abstract class TabComponent {
 
 }
 
-export class CellComponent extends TabComponent {
+export class CellComponent extends TabularComponent {
 
     constructor(
         public text: string,
@@ -124,7 +124,7 @@ export class CellComponent extends TabComponent {
 
 }
 
-export abstract class CompileableComponent extends TabComponent {
+export abstract class CompileableComponent extends TabularComponent {
 
     
     /**
@@ -144,10 +144,6 @@ export abstract class CompileableComponent extends TabComponent {
      * tree, this value will change; when a new child is added, it's set to the
      * parent's child and the previous child (if any) becomes the new child's
      * sibling.
-     * 
-     * Only EnclosureComponents have children, but it's more convenient
-     * to define it here so that certain clients (like unit tests) don't have
-     * to deal with the templating aspects.  
      */
     public child: CompileableComponent | undefined = undefined;
 
@@ -557,7 +553,7 @@ export class Project {
 
     public parseCells(sheetName: string, 
                 cells: string[][],
-                errors: ErrorAccumulator): EnclosureComponent {
+                errors: ErrorAccumulator): SheetComponent {
 
         const enclosureOps = this.getEnclosureOperators(cells);
 
@@ -625,10 +621,7 @@ export class Project {
             }
         }
 
-        while (topEnclosure.parent != undefined) {
-            topEnclosure = topEnclosure.parent;
-        }
-        return topEnclosure;
+        return topEnclosure.sheet;
 
     }
 }

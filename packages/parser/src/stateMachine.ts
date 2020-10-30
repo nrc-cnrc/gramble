@@ -117,6 +117,7 @@ export class Namespace {
             throw new Error(`Redefining namespace ${name}`);
         }
         this.childNamespaces[name] = namespace;
+        namespace.parent = this;
     }
 
     protected getNamePieces(namePieces: string[]): State | undefined {

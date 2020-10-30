@@ -1,7 +1,8 @@
-import { Project, ErrorAccumulator, EnclosureComponent, TabComponent } from "../src/sheetParser";
+import { Project, ErrorAccumulator, EnclosureComponent, TabularComponent } from "../src/sheetParser";
 import { readFileSync } from "fs";
 import { expect } from "chai";
 import { Namespace } from "../src/stateMachine";
+import { testHasOutput, testNumOutputs, testNumErrors, testErrorInCell } from "./testUtils";
 
 const BUILT_IN_OPS = [ "table", "or", "join", "concat", "join" ];
 
@@ -10,7 +11,7 @@ function cellSplit(s: string): string[][] {
     return s.split("\n").map((line) => line.split(","));
 }
 
-export function fromFile(path: string): 
+export function sheetFromFile(path: string): 
             [EnclosureComponent, Namespace, ErrorAccumulator] { 
     const text = readFileSync(path, 'utf8');
     const cells = cellSplit(text);
@@ -19,20 +20,29 @@ export function fromFile(path: string):
 
     const sheet = parser.addSheet("test", cells, errors);
     return [sheet, parser.globalNamespace, errors];
+}
+
+export function projectFromFiles(files: [string, string][]):
+        [Namespace, ErrorAccumulator] {
+
+    const errors = new ErrorAccumulator();
+    const parser = new Project(BUILT_IN_OPS);
+    
+    for (const [title, path] of files) {
+        const text = readFileSync(path, 'utf8');
+        const cells = cellSplit(text);
+        parser.addSheet(title, cells, errors);
+    }
+
+    return [parser.globalNamespace, errors];
 
 }
 
 describe('Correct grammar', function() {
     
-    const [sheet, namespace, errors] = fromFile("./tests/csvs/simpleGrammar.csv");
+    const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/simpleGrammar.csv");
 
-    it("should have 0 errors", function() {
-        expect(errors.numErrors("error")).to.equal(0);
-    });
-    
-    it("should have 0 warnings", function() {
-        expect(errors.numErrors("warning")).to.equal(0);
-    });
+    testNumErrors(errors, 0, "any");
 
     it("should have 'word' as its child", function() {
         expect(sheet.child).to.not.be.undefined;
@@ -109,66 +119,43 @@ describe('Correct grammar', function() {
     });
  
     if (state == undefined) return;
-    
-    it("should have 4 results", function() {   
-        const results = [...state.generate()];
-        expect(results.length).to.equal(4);
-    });
+    const results = [...state.generate()];
+
+    testNumOutputs(results, 4);
+    testHasOutput(results, "text", "foobar");
+    testHasOutput(results, "text", "foobaz");
+    testHasOutput(results, "text", "moobar");
+    testHasOutput(results, "text", "moobaz");
 }); 
 
 
 
 describe('Grammar with two children on the same line', function() {
     
-    const [sheet, namespace, errors] = fromFile("./tests/csvs/childOnSameLine.csv");
+    const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/childOnSameLine.csv");
 
-    it("should have 1 errors", function() {
-        expect(errors.numErrors("error")).to.equal(1);
-    })
-    
-    it("should have 0 warnings", function() {
-        expect(errors.numErrors("warning")).to.equal(0);
-    });
-    
-    it("should have an error at 4:4", function() {
-        expect(errors.getErrors("test", 4, 4));
-    })
+    testNumErrors(errors, 1, "error");
+    testNumErrors(errors, 0, "warning");
+    testErrorInCell(errors, "test", 4, 4);
 });
 
 
 describe('Grammar with reserved word as header', function() {
     
-    const [sheet, namespace, errors] = fromFile("./tests/csvs/headerUsingReservedWord.csv");
+    const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/headerUsingReservedWord.csv");
 
-    it("should have 2 errors", function() {
-        expect(errors.numErrors("error")).to.equal(2);
-    })
-    
-    it("should have 0 warnings", function() {
-        expect(errors.numErrors("warning")).to.equal(0);
-    });
-    
-    it("should have an error at 4:4", function() {
-        expect(errors.getErrors("test", 4, 4));
-    })
-
-    it("should have an error at 5:4", function() {
-        expect(errors.getErrors("test", 5, 4));
-    })
+    testNumErrors(errors, 2, "error");
+    testNumErrors(errors, 0, "warning");
+    testErrorInCell(errors, "test", 4, 4);
+    testErrorInCell(errors, "test", 5, 4);
 });
 
 describe('Grammar with nested tables', function() {
     
-    const [sheet, namespace, errors] = fromFile("./tests/csvs/nestedTables.csv");
+    const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/nestedTables.csv");
 
-    it("should have 0 errors", function() {
-        expect(errors.numErrors("error")).to.equal(0);
-    });
+    testNumErrors(errors, 0, "any");
 
-    it("should have 0 warnings", function() {
-        expect(errors.numErrors("warning")).to.equal(0);
-    });
-    
     it("should have 'word' as its child", function() {
         expect(sheet.child).to.not.be.undefined;
         if (sheet.child == undefined) return;
@@ -240,33 +227,19 @@ describe('Grammar with nested tables', function() {
 
 describe('Grammar with table obliteration', function() {
     
-    const [sheet, namespace, errors] = fromFile("./tests/csvs/tableObliteration.csv");
-
-    it("should have 0 errors", function() {
-        expect(errors.numErrors("error")).to.equal(0);
-    });
-
-    it("should have 1 warnings", function() {
-        expect(errors.numErrors("warning")).to.equal(1);
-    });
+    const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/tableObliteration.csv");
     
-    it("should have an error at 6:1", function() {
-        expect(errors.getErrors("test", 6, 1));
-    })
-
+    testNumErrors(errors, 0, "error");
+    testNumErrors(errors, 1, "warning");
+    testErrorInCell(errors, "test", 6, 1);
 });
 
 describe('Parseable grammar but with weird indentation', function() {
     
-    const [sheet, namespace, errors] = fromFile("./tests/csvs/weirdIndentation.csv");
+    const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/weirdIndentation.csv");
 
-    it("should have 0 errors", function() {
-        expect(errors.numErrors("error")).to.equal(0);
-    });
-    
-    it("should have 1 warning", function() {
-        expect(errors.numErrors("warning")).to.equal(1);
-    });
+    testNumErrors(errors, 0, "error");
+    testNumErrors(errors, 1, "warning");
     
     it("should have 'word' as its child", function() {
         expect(sheet.child).to.not.be.undefined;
@@ -331,3 +304,42 @@ describe('Parseable grammar but with weird indentation', function() {
         expect(sheet.child.child.sibling.text).to.equal("table");
     });
 }); 
+
+
+
+
+describe('Multi-sheet project', function() {
+    
+    const paths: [string, string][] = [
+        [ "Source1", "./tests/csvs/simpleGrammar.csv"],
+        [ "Source2", "./tests/csvs/grammarWithExternalRef.csv"]
+    ];
+    
+    const [namespace, errors] = projectFromFiles(paths);
+
+    testNumErrors(errors, 0, "any");
+
+    it("should have 4 symbols defined", function() {
+        expect(namespace.allSymbols().length).to.equal(4);
+    });
+    
+    const source1state = namespace.get('Source1.word');
+    const source2state = namespace.get('Source2.word');
+    
+    it("should have a symbol named 'Source1.word'", function() {
+        expect(source1state).to.not.be.undefined;
+    });
+
+    it("should have a symbol named 'Source2.word'", function() {
+        expect(source2state).to.not.be.undefined;
+    });
+
+    if (source2state == undefined) return;
+    const results = [...source2state.generate()]
+
+    testNumOutputs(results, 4);
+    testHasOutput(results, "text", "foobarable");
+    testHasOutput(results, "text", "foobazable");
+    testHasOutput(results, "text", "moobarable");
+    testHasOutput(results, "text", "moobazable");
+});
