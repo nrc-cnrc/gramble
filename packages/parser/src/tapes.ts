@@ -1,5 +1,4 @@
 import { BitSet } from "bitset";
-import { Lit } from "./stateMachine";
 import { Gen, StringDict } from "./util";
 
 
@@ -89,7 +88,7 @@ export class MultiTapeOutput {
             var newResults: StringDict[] = [];
             for (const str of tape.getStrings()) {
                 for (const result of results) {
-                    const newResult: StringDict = Object.assign(result);
+                    const newResult: StringDict = Object.assign({}, result);
                     newResult[tapeName] = str;
                     newResults.push(newResult);
                 }
