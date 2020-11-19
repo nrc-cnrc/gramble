@@ -427,6 +427,17 @@ export class AnyCharState extends TextState {
  * Inside, it's just a string like "foo"; upon successfully 
  * matching "f" we construct a successor state looking for 
  * "oo", and so on.
+ * 
+ * The first time we construct a LiteralState, we just pass in
+ * the text argument, and leave tokens empty.  (This is because,
+ * at the initial point of construction of a LiteralState, we
+ * don't know what the total character vocabulary of the grammar is
+ * yet, and thus can't tokenize it into Tokens yet.)  On subsequent
+ * constructions, like in successor(), we've already tokenized,
+ * so we pass the remainder of the tokens into the tokens argument.
+ * It doesn't really matter what we pass into text in subsequent
+ * constructions, it's not used except for debugging, so we just pass
+ * in the original text.
  */
 export class LiteralState extends TextState {
 
@@ -439,7 +450,7 @@ export class LiteralState extends TextState {
     }
 
     public get id(): string {
-        return `${this.tapeName}:${this.text}`;
+        return `${this.tapeName}:${this.text}[${this.text.length-this.tokens.length}]`;
     }
 
     public accepting(symbolStack: CounterStack): boolean {
@@ -456,7 +467,7 @@ export class LiteralState extends TextState {
 
     protected successor(): State {
         const newTokens = this.tokens.slice(1);
-        const newText = newTokens.join("");
+        const newText = this.text;
         return new LiteralState(this.tapeName, newText, newTokens);
     }
 
