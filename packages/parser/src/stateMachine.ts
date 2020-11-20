@@ -80,6 +80,25 @@ class CounterStack {
     }
 }
 
+/**
+ * Namespace
+ * 
+ * A Namespace object associates symbols with names, and resolves references
+ * to them.  They are nested; when a symbol cannot be resolved in the current
+ * namespace, it's passed to the parent namespace which tries to resolve it.
+ * 
+ * While these namespaces, structurally, form a tree, at the moment we only
+ * actually support one level of nesting.  There is a global namespace associated
+ * with a whole Project, and a child namespace for each source sheet within the 
+ * project.  Project sources are currently assumed to be flat: that is to say,
+ * there's nothing like a "directory" or "nested module" structure at the moment.
+ * (The reason for that is that we conceptualize a project as being composed
+ * primarily within a spreadsheet editor like Google Sheets or Excel, and there
+ * is no metaphor within a spreadsheet by which worksheets are grouped in a 
+ * directory-like structure.  From the POV of the spreadsheet user, worksheets
+ * are unordered and not hierarchically structured, and so likewise Gramble 
+ * project source files are unordered and not hierarchically structured, too.)
+ */
 export class Namespace {
     
     protected parent: Namespace | undefined = undefined;
@@ -89,6 +108,7 @@ export class Namespace {
     ) { }
 
     protected childNamespaces: {[name: string]: Namespace} = {};
+    public requiredNamespaces: Set<string> = new Set();
 
     public hasSymbol(name: string): boolean {
         return name in this.symbols;
@@ -141,6 +161,31 @@ export class Namespace {
     public get(name: String): State | undefined {
         const pieces = name.split(".")
         return this.getNamePieces(pieces);
+    }
+
+    /**
+     * When an EmbedState is constructed, it needs to "register" the symbol
+     * name it is going to want later, so that we can (if necessary) load and
+     * parse the source file that contains that symbol.
+     */
+    public register(symbolName: string): void {
+        const pieces = symbolName.split(".");
+        if (pieces.length == 1) {
+            return;
+        }
+        if (pieces.length > 2) {
+            // At some point we may want to allow registration of
+            // symbols with nested namespaces, but right now that's
+            // a whole can of worms.
+            throw new Error(`${symbolName} is not a valid reference, ` +
+               " because nested namespaces (e.g. X.Y.Z) are not currently supported.");
+        }
+        if (this.parent == undefined) {
+            // I don't think this can actually happen.
+            throw new Error("Something strange happened; trying to register " +
+                    "a symbol name in the global namespace");
+        }
+        this.parent.requiredNamespaces.add(pieces[0]);
     }
 }
 
@@ -827,6 +872,10 @@ export class EmbedState extends UnaryState {
         public _child: State | undefined = undefined
     ) { 
         super();
+        
+        // need to register our symbol name with the namespace, in case
+        // the referred-to symbol is defined in a file we haven't yet loaded.
+        namespace.register(symbolName);
     }
     
     public get id(): string {

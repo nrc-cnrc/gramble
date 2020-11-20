@@ -17,23 +17,6 @@ export function sheetFromFile(path: string):
     return [sheet, project, devEnv];
 }
 
-/*
-export function projectFromFiles(files: [string, string][]):
-        [Project, DevEnvironment] {
-
-    const devEnv = new TextDevEnvironment("");
-    const project = new Project(devEnv);
-    
-    for (const [title, path] of files) {
-        const text = readFileSync(path, 'utf8');
-        const cells = cellSplit(text);
-        project.addSheet(title, cells);
-    }
-
-    return [project, devEnv];
-
-}
-*/
 
 describe('Correct grammar', function() {
     
@@ -294,23 +277,23 @@ describe('Parseable grammar but with weird indentation', function() {
 
 
 
-/*
+
 describe('Multi-sheet project', function() {
     
     const paths: [string, string][] = [
         [ "Source1", "./tests/csvs/simpleGrammar.csv"],
-        [ "Source2", "./tests/csvs/grammarWithExternalRef.csv"]
+        [ "Source2", "./tests/csvs/externalRef.csv"]
     ];
     
-    const [project, devEnv] = projectFromFiles(paths);
+    const [sheet, project, devEnv] = sheetFromFile("./tests/csvs/externalRef.csv");
 
     testNumErrors(devEnv, 0, "any");
 
     testNumSymbols(project, 4);
-    testHasSymbol(project, "Source1.word");
-    testHasSymbol(project, "Source2.word");
+    testHasSymbol(project, "simpleGrammar.word");
+    testHasSymbol(project, "externalRef.word");
 
-    const results = [...project.generate("Source2.word")]
+    const results = [...project.generate("externalRef.word")]
 
     testNumOutputs(results, 4);
     testHasOutput(results, "text", "foobarable");
@@ -318,4 +301,3 @@ describe('Multi-sheet project', function() {
     testHasOutput(results, "text", "moobarable");
     testHasOutput(results, "text", "moobazable");
 });
-*/

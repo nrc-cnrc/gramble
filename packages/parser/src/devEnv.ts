@@ -13,7 +13,8 @@ export interface DevEnvironment {
     logErrors(): void;
     getErrors(sheet: string, row: number, col: number): string[];
 
-    getCells(sheet: string): string[][];
+    hasSource(sheet: string): boolean;
+    loadSource(sheet: string): string[][];
 
     markError(sheet: string, row: number, col: number, 
             msg: string, level?: "error"|"warning"|"info"): void;
@@ -27,6 +28,4 @@ export interface DevEnvironment {
     alert(msg: string): void;
 }
 
-
-type SyntaxError = [string, number, number, string, "error"|"warning"|"info"];
 

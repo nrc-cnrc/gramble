@@ -540,7 +540,19 @@ export class Project {
     
     public addSheet(sheetName: string): void {
 
-        const cells = this.devEnv.getCells(sheetName);
+        if (sheetName in this.sheets) {
+            // already loaded it, don't have to do anything
+            return;
+        }
+
+        if (!this.devEnv.hasSource(sheetName)) {
+            // this is an error, but we don't freak out about it here.
+            // later on, we'll put errors on any cells for which we can't
+            // resolve the reference.
+            return;
+        }
+
+        const cells = this.devEnv.loadSource(sheetName);
 
         // parse the cells into an abstract syntax tree
         const sheetComponent = this.parseCells(sheetName, cells);
@@ -555,6 +567,10 @@ export class Project {
         
         // Store it in .sheets
         this.sheets[sheetName] = sheetComponent;
+
+        for (const requiredSheet of this.globalNamespace.requiredNamespaces) {
+            this.addSheet(requiredSheet);
+        }
     }
 
     public getSheet(sheetName: string): SheetComponent {

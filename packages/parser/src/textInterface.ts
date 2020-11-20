@@ -1,5 +1,5 @@
 import { DevEnvironment } from "./devEnv";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 
 type SyntaxError = [string, number, number, string, "error"|"warning"|"info"];
@@ -25,7 +25,12 @@ export class TextDevEnvironment implements DevEnvironment {
 
     protected errors: {[key: string]: SyntaxError[]} = {};
 
-    public getCells(sheet: string): string[][] {
+    public hasSource(sheet: string): boolean {
+        const path = join(this.dirname, sheet + ".csv");
+        return existsSync(path);
+    }
+
+    public loadSource(sheet: string): string[][] {
         const path = join(this.dirname, sheet + ".csv");
         const text = readFileSync(path, 'utf8');
         return cellSplit(text);
