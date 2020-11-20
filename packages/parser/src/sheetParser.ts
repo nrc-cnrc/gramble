@@ -9,6 +9,7 @@
 
 import { DevEnvironment } from "./devEnv";
 import { Emb, Empty, Join, Lit, Namespace, Not, Seq, State, SymbolTable, Uni } from "./stateMachine";
+import { StringDict } from "./util";
 
 
 /**
@@ -33,6 +34,7 @@ class CellPosition {
     }
 }
 
+/*
 class SyntaxError {
 
     constructor(
@@ -45,11 +47,6 @@ class SyntaxError {
         return `${this.level.toUpperCase()}: ${this.msg}`;
     }
 }
-
-/**
- * An ErrorAccumulator associates [CellPositions]s with error messages, for
- * later display to the user.
- */
 export class ErrorAccumulator {
 
     protected errors: {[key: string]: SyntaxError[]} = {};
@@ -92,7 +89,7 @@ export class ErrorAccumulator {
         return result;
     }
 }
-
+*/
 
 export abstract class TabularComponent {
 
@@ -523,16 +520,30 @@ export class TableComponent extends CompileableComponent {
  */
 export class Project {
 
-    public globalNamespace = new Namespace();
+    public globalNamespace: Namespace = new Namespace();
+    public sheets: {[key: string]: SheetComponent} = {};
 
-    constructor() { }
+    constructor(
+        public devEnv: DevEnvironment
+    ) { }
 
-    public addSheet(sheetName: string, 
-                    cells: string[][], 
-                    devEnv: DevEnvironment): EnclosureComponent {
+    
+    public generate(symbolName: string): StringDict[] {
+        const startState = this.globalNamespace.get(symbolName);
+        if (startState == undefined) {
+            throw new Error(`Cannot find symbol ${symbolName}`);
+        }
+    
+        return [...startState.generate()];
+    }
+
+    
+    public addSheet(sheetName: string): void {
+
+        const cells = this.devEnv.getCells(sheetName);
 
         // parse the cells into an abstract syntax tree
-        const sheetComponent = this.parseCells(sheetName, cells, devEnv);
+        const sheetComponent = this.parseCells(sheetName, cells);
 
         // Create a new namespace for this sheet and add it to the 
         // global namespace
@@ -540,10 +551,18 @@ export class Project {
         this.globalNamespace.addNamespace(sheetName, sheetNamespace);
 
         // Compile it
-        sheetComponent.compile(sheetNamespace, devEnv);
+        sheetComponent.compile(sheetNamespace, this.devEnv);
+        
+        // Store it in .sheets
+        this.sheets[sheetName] = sheetComponent;
+    }
 
-        // Return it (really only for testing purposes)
-        return sheetComponent;
+    public getSheet(sheetName: string): SheetComponent {
+        if (!(sheetName in this.sheets)) {
+            throw new Error(`Sheet ${sheetName} not found in project`);
+        }
+
+        return this.sheets[sheetName];
     }
 
     public getEnclosureOperators(cells: string[][]): Set<string> {
@@ -556,8 +575,7 @@ export class Project {
     }
 
     public parseCells(sheetName: string, 
-                cells: string[][],
-                devEnv: DevEnvironment): SheetComponent {
+                cells: string[][]): SheetComponent {
 
         const enclosureOps = this.getEnclosureOperators(cells);
 
@@ -593,7 +611,7 @@ export class Project {
                     try {
                         topEnclosure.addContent(cell);
                     } catch (e) {
-                        devEnv.markError(position.sheet, position.row, position.col,
+                        this.devEnv.markError(position.sheet, position.row, position.col,
                             "This cell does not have a header above it, so we're unable to interpret it.");
                     }
                     continue;
@@ -604,10 +622,10 @@ export class Project {
                     // it's the start of a new enclosure
                     const newEnclosure = new EnclosureComponent(cell, topEnclosure);
                     try {
-                        topEnclosure.addChildEnclosure(newEnclosure, devEnv);     
+                        topEnclosure.addChildEnclosure(newEnclosure, this.devEnv);     
                         topEnclosure = newEnclosure;
                     } catch (e) {
-                        devEnv.markError(position.sheet, position.row, position.col,
+                        this.devEnv.markError(position.sheet, position.row, position.col,
                             "This looks like an operator, but only a header can follow a header.");
                     }
                     continue;
@@ -618,7 +636,7 @@ export class Project {
                     topEnclosure.addHeader(cell);
                 } catch (e) {
                     //console.log(e);
-                    devEnv.markError(position.sheet, position.row, position.col,
+                    this.devEnv.markError(position.sheet, position.row, position.col,
                         `Cannot add a header to ${topEnclosure}; ` + 
                         "you need an operator like 'or', 'apply', etc.");
                 }

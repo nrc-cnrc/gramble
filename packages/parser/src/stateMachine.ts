@@ -1,6 +1,6 @@
 import { Gen, StringDict } from "./util";
 import { MultiTapeOutput, Tape, StringTape, RenamedTape, TapeCollection, Token, ANY_CHAR, NO_CHAR } from "./tapes";
-import { assert } from "chai";
+
 
 /**
  * This is the parsing engine that underlies Gramble.
@@ -89,7 +89,7 @@ export class Namespace {
     ) { }
 
     protected childNamespaces: {[name: string]: Namespace} = {};
-    
+
     public hasSymbol(name: string): boolean {
         return name in this.symbols;
     }
@@ -947,7 +947,7 @@ export class RenameState extends UnaryState {
         }
     
         for (var [childTape, childTarget, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack)) {
-            assert(childTape instanceof RenamedTape);
+            //assert(childTape instanceof RenamedTape);
             const trueChildTape = (childTape as RenamedTape).child;
             yield [trueChildTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape)];
         }

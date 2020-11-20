@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { DevEnvironment } from '../src/devEnv';
-import { ErrorAccumulator } from '../src/sheetParser';
+import { Project } from '../src/sheetParser';
 import {Literalizer} from "../src/stateMachine";
 import {StringDict} from "../src/util";
 
@@ -27,11 +27,25 @@ export function testNumErrors(devEnv: DevEnvironment, expectedNum: number, error
     });
 }
 
+
 export function testErrorInCell(devEnv: DevEnvironment, sheet: string, row: number, col: number) {
     it(`should have an error at ${sheet}:${row}:${col}`, function() {
         expect(devEnv.getErrors(sheet, row, col).length)
                                 .to.be.greaterThan(0);
     })
+}
+
+export function testNumSymbols(project: Project, expectedNum: number): void {
+    it (`should have ${expectedNum} symbols defined`, function() {
+        expect(project.globalNamespace.allSymbols().length).to.equal(expectedNum);
+    });
+}
+
+
+export function testHasSymbol(project: Project, symbolName: string): void {
+    it (`should have a symbol named ${symbolName}`, function() {
+        expect(project.globalNamespace.get(symbolName)).to.not.be.undefined;
+    });
 }
 
 export function testHasOutput(outputs: StringDict[], tier: string, target: string) {
@@ -49,3 +63,4 @@ export function testDoesntHaveOutput(outputs: StringDict[], tier: string, target
         expect(results).to.not.contain(target);
     });
 }
+

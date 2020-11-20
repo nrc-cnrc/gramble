@@ -1,44 +1,43 @@
-import { Project, ErrorAccumulator, EnclosureComponent, TabularComponent } from "../src/sheetParser";
-import { readFileSync } from "fs";
+import { Project, EnclosureComponent } from "../src/sheetParser";
+import { dirname, basename } from "path";
 import { expect } from "chai";
-import { Namespace } from "../src/stateMachine";
-import { testHasOutput, testNumOutputs, testNumErrors, testErrorInCell } from "./testUtils";
-import { DevEnvironment, TextDevEnvironment } from "../src/devEnv";
-
-function cellSplit(s: string): string[][] {
-    return s.split("\n").map((line) => line.split(","));
-}
+import { testHasOutput, testNumOutputs, testNumErrors, testErrorInCell, testNumSymbols, testHasSymbol } from "./testUtils";
+import { TextDevEnvironment } from "../src/textInterface";
 
 export function sheetFromFile(path: string): 
-            [EnclosureComponent, Namespace, DevEnvironment ] { 
-    const text = readFileSync(path, 'utf8');
-    const cells = cellSplit(text);
-    const errors = new TextDevEnvironment();
-    const parser = new Project();
+            [EnclosureComponent, Project, TextDevEnvironment ] { 
 
-    const sheet = parser.addSheet("test", cells, errors);
-    return [sheet, parser.globalNamespace, errors];
+    const dir = dirname(path);
+    const sheetName = basename(path, ".csv");
+    const devEnv = new TextDevEnvironment(dir);
+    const project = new Project(devEnv);
+
+    project.addSheet(sheetName);
+    const sheet = project.getSheet(sheetName);
+    return [sheet, project, devEnv];
 }
 
+/*
 export function projectFromFiles(files: [string, string][]):
-        [Namespace, DevEnvironment] {
+        [Project, DevEnvironment] {
 
-    const errors = new TextDevEnvironment();
-    const parser = new Project();
+    const devEnv = new TextDevEnvironment("");
+    const project = new Project(devEnv);
     
     for (const [title, path] of files) {
         const text = readFileSync(path, 'utf8');
         const cells = cellSplit(text);
-        parser.addSheet(title, cells, errors);
+        project.addSheet(title, cells);
     }
 
-    return [parser.globalNamespace, errors];
+    return [project, devEnv];
 
 }
+*/
 
 describe('Correct grammar', function() {
     
-    const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/simpleGrammar.csv");
+    const [sheet, project, errors] = sheetFromFile("./tests/csvs/simpleGrammar.csv");
 
     testNumErrors(errors, 0, "any");
 
@@ -105,19 +104,9 @@ describe('Correct grammar', function() {
         expect(sheet.child.child.sibling.text).to.equal("table");
     });
 
-    it("should have 3 symbols defined", function() {
-        expect(namespace.allSymbols().length).to.equal(3);
-    });
-
-    
-    const state = namespace.get('test.word');
-
-    it("should have a symbol named 'test.word'", function() {
-        expect(state).to.not.be.undefined;
-    });
- 
-    if (state == undefined) return;
-    const results = [...state.generate()];
+    testNumSymbols(project, 3);
+    testHasSymbol(project, 'simpleGrammar.word'); 
+    const results = [...project.generate('simpleGrammar.word')];
 
     testNumOutputs(results, 4);
     testHasOutput(results, "text", "foobar");
@@ -130,22 +119,22 @@ describe('Correct grammar', function() {
 
 describe('Grammar with two children on the same line', function() {
     
-    const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/childOnSameLine.csv");
+    const [sheet, project, errors] = sheetFromFile("./tests/csvs/childOnSameLine.csv");
 
     testNumErrors(errors, 1, "error");
     testNumErrors(errors, 0, "warning");
-    testErrorInCell(errors, "test", 4, 4);
+    testErrorInCell(errors, "childOnSameLine", 4, 4);
 });
 
 
 describe('Grammar with reserved word as header', function() {
     
-    const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/headerUsingReservedWord.csv");
+    const [sheet, project, errors] = sheetFromFile("./tests/csvs/headerUsingReservedWord.csv");
 
     testNumErrors(errors, 2, "error");
     testNumErrors(errors, 0, "warning");
-    testErrorInCell(errors, "test", 4, 4);
-    testErrorInCell(errors, "test", 5, 4);
+    testErrorInCell(errors, "headerUsingReservedWord", 4, 4);
+    testErrorInCell(errors, "headerUsingReservedWord", 5, 4);
 });
 
 describe('Grammar with nested tables', function() {
@@ -229,7 +218,7 @@ describe('Grammar with table obliteration', function() {
     
     testNumErrors(errors, 0, "error");
     testNumErrors(errors, 1, "warning");
-    testErrorInCell(errors, "test", 6, 1);
+    testErrorInCell(errors, "tableObliteration", 6, 1);
 });
 
 describe('Parseable grammar but with weird indentation', function() {
@@ -305,7 +294,7 @@ describe('Parseable grammar but with weird indentation', function() {
 
 
 
-
+/*
 describe('Multi-sheet project', function() {
     
     const paths: [string, string][] = [
@@ -313,27 +302,15 @@ describe('Multi-sheet project', function() {
         [ "Source2", "./tests/csvs/grammarWithExternalRef.csv"]
     ];
     
-    const [namespace, errors] = projectFromFiles(paths);
+    const [project, devEnv] = projectFromFiles(paths);
 
-    testNumErrors(errors, 0, "any");
+    testNumErrors(devEnv, 0, "any");
 
-    it("should have 4 symbols defined", function() {
-        expect(namespace.allSymbols().length).to.equal(4);
-    });
-    
-    const source1state = namespace.get('Source1.word');
-    const source2state = namespace.get('Source2.word');
-    
-    it("should have a symbol named 'Source1.word'", function() {
-        expect(source1state).to.not.be.undefined;
-    });
+    testNumSymbols(project, 4);
+    testHasSymbol(project, "Source1.word");
+    testHasSymbol(project, "Source2.word");
 
-    it("should have a symbol named 'Source2.word'", function() {
-        expect(source2state).to.not.be.undefined;
-    });
-
-    if (source2state == undefined) return;
-    const results = [...source2state.generate()]
+    const results = [...project.generate("Source2.word")]
 
     testNumOutputs(results, 4);
     testHasOutput(results, "text", "foobarable");
@@ -341,3 +318,4 @@ describe('Multi-sheet project', function() {
     testHasOutput(results, "text", "moobarable");
     testHasOutput(results, "text", "moobazable");
 });
+*/
