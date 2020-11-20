@@ -7,6 +7,7 @@
  * of formulas in that language.
  */
 
+import { DevEnvironment } from "./devEnv";
 import { Emb, Empty, Join, Lit, Namespace, Not, Seq, State, SymbolTable, Uni } from "./stateMachine";
 
 
@@ -148,10 +149,10 @@ export abstract class CompileableComponent extends TabularComponent {
     public child: CompileableComponent | undefined = undefined;
 
     public abstract compile(namespace: Namespace, 
-                            errors: ErrorAccumulator): State;
+                            devEnv: DevEnvironment): State;
 
     public abstract compileAssignment(namespace: Namespace, 
-                            errors: ErrorAccumulator): State;
+                            devEnv: DevEnvironment): State;
 
 }
 
@@ -163,8 +164,13 @@ const BINARY_OPS: {[opName: string]: BinaryOp} = {
     "join": Join,
 }
 
-const RESERVED_WORDS: Set<string> = new Set(Object.keys(BINARY_OPS))
-RESERVED_WORDS.add("table");
+const BUILT_IN_OPS: Set<string> = new Set(Object.keys(BINARY_OPS))
+BUILT_IN_OPS.add("table");
+
+/* There are some reserved words like "maybe" that aren't built in ops, 
+but none implemented at the moment */
+const RESERVED_WORDS = new Set(BUILT_IN_OPS);
+
 
 /**
  * An enclosure represents a single-cell unit containing a command or identifier (call that the "startCell"),
@@ -245,18 +251,18 @@ export class EnclosureComponent extends CompileableComponent {
     }
     
     public compile(namespace: Namespace, 
-        errors: ErrorAccumulator): State {
+        devEnv: DevEnvironment): State {
 
         if (this.text == "table") { 
             // it's a "table", which is technically a no-op,
             // but this .compileTable() function does some useful
             // error checking.
-            return this.compileTable(namespace, errors);
+            return this.compileTable(namespace, devEnv);
         }
 
         if (this.text in BINARY_OPS) {
             // it's a binary operator like "or" or "join"
-            return this.compileBinaryOp(namespace, errors);
+            return this.compileBinaryOp(namespace, devEnv);
         }
 
         /*
@@ -266,46 +272,46 @@ export class EnclosureComponent extends CompileableComponent {
             return this.compileAssignment(namespace, errors);
         } */
 
-        errors.addError(this.position, "error",
-            `Operator ${this.text} not recognized.`);
+        devEnv.markError(this.position.sheet, this.position.row, this.position.col,
+                         `Operator ${this.text} not recognized.`);
         return Empty();
     }
 
-    public compileAssignment(namespace: Namespace, errors: ErrorAccumulator): State {
+    public compileAssignment(namespace: Namespace, devEnv: DevEnvironment): State {
 
         // first compile the previous sibling.  note that all siblings
         // of an assignment statement should be an assignment statement, since
         // being an assignment statement is, by definition, having a sheet component
         // as your immediate parent.
         if (this.sibling != undefined) {
-            this.sibling.compileAssignment(namespace, errors);
+            this.sibling.compileAssignment(namespace, devEnv);
         }
 
         if (RESERVED_WORDS.has(this.text)) {
             // oops, assigning to a reserved word
-            errors.addError(this.position, "error", 
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col,
                 "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
                 `reserved word ${this.text}.  Choose a different symbol name.`);
             if (this.child != undefined) {
                 // compile the child just in case there are useful errors to display
-                this.child.compile(namespace, errors);
+                this.child.compile(namespace, devEnv);
             }
             return Empty();
         }
 
         if (this.child == undefined) {
             // oops, empty "right side" of the assignment!
-            errors.addError(this.position, "warning",
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col,
                 `This looks like an assignment to a symbol ${this.text}, ` +
                 "but there's nothing to the right of it.");
             return Empty();
         }
 
-        const state = this.child.compile(namespace, errors);
+        const state = this.child.compile(namespace, devEnv);
 
         if (namespace.hasSymbol(this.text)) {
             // oops, trying to assign to a symbol that already is assigned to!
-            errors.addError(this.position, "error",
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col,
                 `You've already assigned something to the symbol ${this.text}`);
             // TODO: The error message should say where it's assigned
         }
@@ -314,59 +320,61 @@ export class EnclosureComponent extends CompileableComponent {
         return state;
     }
 
-    public compileTable(namespace: Namespace, errors: ErrorAccumulator): State {
+    public compileTable(namespace: Namespace, devEnv: DevEnvironment): State {
 
         if (this.child == undefined) {
-            errors.addError(this.position, "error",
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col,
                 "'table' seems to be missing a table; something should be in the cell to the right.")
             return Empty();
         }
         if (this.sibling != undefined) {
-            const throwaway = this.sibling.compile(namespace, errors);
+            const throwaway = this.sibling.compile(namespace, devEnv);
             // we don't do anything with the sibling, but we
             // compile it anyway in case there are errors in it the
             // programmer may want to know about
-            errors.addError(this.position, "warning",
-                `'table' here will obliterate the preceding content at ${this.sibling.position}.`);
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col,
+                `'table' here will obliterate the preceding content at ${this.sibling.position}.`,
+                "warning");
         
         }
-        return this.child.compile(namespace, errors);
+        return this.child.compile(namespace, devEnv);
     }
 
     public compileBinaryOp(namespace: Namespace, 
-                            errors: ErrorAccumulator): State {
+                            devEnv: DevEnvironment): State {
 
         const op = BINARY_OPS[this.text];
                                     
         if (this.child == undefined) {
-            errors.addError(this.position, "error",
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col,
                 `'${this.text}' is missing a second argument; ` +
                 "something should be in the cell to the right.");
             return Empty();
         }
         if (this.sibling == undefined) {
-            errors.addError(this.position, "error",
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col,
                 `'${this.text}' is missing a first argument; ` +
                 "something should be in a cell above this.");
             return Empty();
         }
-        const arg1 = this.sibling.compile(namespace, errors);
-        const arg2 = this.child.compile(namespace, errors);
+        const arg1 = this.sibling.compile(namespace, devEnv);
+        const arg2 = this.child.compile(namespace, devEnv);
         return op(arg1, arg2);
     }
 
 
     public addChildEnclosure(child: EnclosureComponent, 
-                            errors: ErrorAccumulator): void {
+                            devEnv: DevEnvironment): void {
         if (this.child instanceof TableComponent) {
             throw new Error("Can't add an operator to a line that already has headers.");
         }
 
         if (this.child != undefined && this.child.position.col != child.position.col) {
-            errors.addError(child.position, "warning",
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col,
                 "This operator is in an unexpected column.  Did you mean for it " +
                 `to be in column ${this.child.position.col}, ` + 
-                `so that it's under the operator in cell ${this.child.position}?`);
+                `so that it's under the operator in cell ${this.child.position}?`,
+                "warning");
         }
 
         child.sibling = this.child;
@@ -395,13 +403,13 @@ class SheetComponent extends EnclosureComponent {
     }
 
     public compile(namespace: Namespace, 
-        errors: ErrorAccumulator): State {
+        devEnv: DevEnvironment): State {
 
         if (this.child == undefined) {
             return Empty();
         }
 
-        return this.child.compileAssignment(namespace, errors);
+        return this.child.compileAssignment(namespace, devEnv);
     }
 
     public get sheet(): SheetComponent {
@@ -428,9 +436,9 @@ class SheetComponent extends EnclosureComponent {
 
 export class TableComponent extends CompileableComponent {
 
-    public compileAssignment(namespace: Namespace, errors: ErrorAccumulator): State {
+    public compileAssignment(namespace: Namespace, devEnv: DevEnvironment): State {
         // I don't think this error is possible, but just in case
-        errors.addError(this.position, "error",
+        devEnv.markError(this.position.sheet, this.position.row, this.position.col,
             "This cell needs to be an assignment, " +
             "but it looks like you're trying to start a table.");
         return Empty();
@@ -477,7 +485,7 @@ export class TableComponent extends CompileableComponent {
     public compileCell(h: CellComponent, 
                         c: CellComponent, 
                         namespace: Namespace, 
-                        errors: ErrorAccumulator): State {
+                        devEnv: DevEnvironment): State {
         if (h.text == "embed") {
             return Emb(c.text, namespace);
         }
@@ -485,13 +493,13 @@ export class TableComponent extends CompileableComponent {
     }
 
     public compile(namespace: Namespace, 
-                        errors: ErrorAccumulator): State {
+                        devEnv: DevEnvironment): State {
         const compiledRows: State[] = [];
         for (const row of this.table) {
             const compiledRow: State[] = [];
             for (const cell of row) {
                 const header = this.headersByCol[cell.position.col];
-                const compiledCell = this.compileCell(header, cell, namespace, errors);
+                const compiledCell = this.compileCell(header, cell, namespace, devEnv);
                 compiledRow.push(compiledCell);
             }
             compiledRows.push(Seq(...compiledRow));
@@ -506,6 +514,7 @@ export class TableComponent extends CompileableComponent {
 }
 
 
+
 /**
  * A SheetParser turns a grid of cells into abstract syntax tree (AST) components, which in
  * turn are interpreted or compiled into a computer language.  This parser is agnostic as to
@@ -516,16 +525,14 @@ export class Project {
 
     public globalNamespace = new Namespace();
 
-    constructor(
-        public builtInOperators: string[] = []
-    ) { }
+    constructor() { }
 
     public addSheet(sheetName: string, 
                     cells: string[][], 
-                    errors: ErrorAccumulator): EnclosureComponent {
+                    devEnv: DevEnvironment): EnclosureComponent {
 
         // parse the cells into an abstract syntax tree
-        const sheetComponent = this.parseCells(sheetName, cells, errors);
+        const sheetComponent = this.parseCells(sheetName, cells, devEnv);
 
         // Create a new namespace for this sheet and add it to the 
         // global namespace
@@ -533,27 +540,24 @@ export class Project {
         this.globalNamespace.addNamespace(sheetName, sheetNamespace);
 
         // Compile it
-        sheetComponent.compile(sheetNamespace, errors);
+        sheetComponent.compile(sheetNamespace, devEnv);
 
         // Return it (really only for testing purposes)
         return sheetComponent;
     }
 
-
     public getEnclosureOperators(cells: string[][]): Set<string> {
-        const results = new Set(this.builtInOperators);
-        /*for (const row of cells) {
-            if (row.length == 0) {
-                continue;
-            }
-            results.add(row[0]);
-        } */
+        const results = new Set(BUILT_IN_OPS);
+
+        /* here is where we might also scan the files for definitions
+        of new enclosure operators.  but we don't have the capability for
+        custom operators yet. */
         return results;
     }
 
     public parseCells(sheetName: string, 
                 cells: string[][],
-                errors: ErrorAccumulator): SheetComponent {
+                devEnv: DevEnvironment): SheetComponent {
 
         const enclosureOps = this.getEnclosureOperators(cells);
 
@@ -589,7 +593,7 @@ export class Project {
                     try {
                         topEnclosure.addContent(cell);
                     } catch (e) {
-                        errors.addError(position, "error",
+                        devEnv.markError(position.sheet, position.row, position.col,
                             "This cell does not have a header above it, so we're unable to interpret it.");
                     }
                     continue;
@@ -600,10 +604,10 @@ export class Project {
                     // it's the start of a new enclosure
                     const newEnclosure = new EnclosureComponent(cell, topEnclosure);
                     try {
-                        topEnclosure.addChildEnclosure(newEnclosure, errors);     
+                        topEnclosure.addChildEnclosure(newEnclosure, devEnv);     
                         topEnclosure = newEnclosure;
                     } catch (e) {
-                        errors.addError(position, "error",
+                        devEnv.markError(position.sheet, position.row, position.col,
                             "This looks like an operator, but only a header can follow a header.");
                     }
                     continue;
@@ -614,7 +618,7 @@ export class Project {
                     topEnclosure.addHeader(cell);
                 } catch (e) {
                     //console.log(e);
-                    errors.addError(position, "error",
+                    devEnv.markError(position.sheet, position.row, position.col,
                         `Cannot add a header to ${topEnclosure}; ` + 
                         "you need an operator like 'or', 'apply', etc.");
                 }

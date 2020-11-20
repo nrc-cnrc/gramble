@@ -3,30 +3,28 @@ import { readFileSync } from "fs";
 import { expect } from "chai";
 import { Namespace } from "../src/stateMachine";
 import { testHasOutput, testNumOutputs, testNumErrors, testErrorInCell } from "./testUtils";
-
-const BUILT_IN_OPS = [ "table", "or", "join", "concat", "join" ];
-
+import { DevEnvironment, TextDevEnvironment } from "../src/devEnv";
 
 function cellSplit(s: string): string[][] {
     return s.split("\n").map((line) => line.split(","));
 }
 
 export function sheetFromFile(path: string): 
-            [EnclosureComponent, Namespace, ErrorAccumulator] { 
+            [EnclosureComponent, Namespace, DevEnvironment ] { 
     const text = readFileSync(path, 'utf8');
     const cells = cellSplit(text);
-    const errors = new ErrorAccumulator();
-    const parser = new Project(BUILT_IN_OPS);
+    const errors = new TextDevEnvironment();
+    const parser = new Project();
 
     const sheet = parser.addSheet("test", cells, errors);
     return [sheet, parser.globalNamespace, errors];
 }
 
 export function projectFromFiles(files: [string, string][]):
-        [Namespace, ErrorAccumulator] {
+        [Namespace, DevEnvironment] {
 
-    const errors = new ErrorAccumulator();
-    const parser = new Project(BUILT_IN_OPS);
+    const errors = new TextDevEnvironment();
+    const parser = new Project();
     
     for (const [title, path] of files) {
         const text = readFileSync(path, 'utf8');

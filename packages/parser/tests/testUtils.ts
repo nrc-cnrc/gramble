@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import { DevEnvironment } from '../src/devEnv';
 import { ErrorAccumulator } from '../src/sheetParser';
 import {Literalizer} from "../src/stateMachine";
 import {StringDict} from "../src/util";
@@ -16,19 +17,19 @@ export function testNumOutputs(outputs: StringDict[], expectedNum: number) {
     });
 }
 
-export function testNumErrors(errors: ErrorAccumulator, expectedNum: number, errorType: "error"|"warning"|"any") {
+export function testNumErrors(devEnv: DevEnvironment, expectedNum: number, errorType: "error"|"warning"|"any") {
     const errorText = (errorType == "any") ? 
                             "error(s)/warning(s)" :
                             errorType + "(s)";
     
     it(`should have ${expectedNum} ${errorText}`, function() {
-        expect(errors.numErrors(errorType)).to.equal(expectedNum);
+        expect(devEnv.numErrors(errorType)).to.equal(expectedNum);
     });
 }
 
-export function testErrorInCell(errors: ErrorAccumulator, sheet: string, row: number, col: number) {
+export function testErrorInCell(devEnv: DevEnvironment, sheet: string, row: number, col: number) {
     it(`should have an error at ${sheet}:${row}:${col}`, function() {
-        expect(errors.getErrors(sheet, row, col).length)
+        expect(devEnv.getErrors(sheet, row, col).length)
                                 .to.be.greaterThan(0);
     })
 }
