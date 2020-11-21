@@ -9,23 +9,14 @@
  */
 export interface DevEnvironment {
     getErrorMessages(): [string, number, number, string, "error"|"warning"|"info"][];
-    numErrors(level: "error" | "warning"|"any"): number;
-    logErrors(): void;
-    getErrors(sheet: string, row: number, col: number): string[];
 
-    hasSource(sheet: string): boolean;
-    loadSource(sheet: string): string[][];
-
-    markError(sheet: string, row: number, col: number, 
-            msg: string, level?: "error"|"warning"|"info"): void;
+    markError(sheet: string, row: number, col: number, msg: string, level: "error"|"warning"|"info"): void;
     markTier(sheet: string, row: number, col: number, tier: string): void;
     markComment(sheet: string, row: number, col: number): void;
-    markHeader(sheet: string, row: number, col: number, color: string): void;
+    markHeader(sheet: string, row: number, col: number, tier: string): void;
     markCommand(sheet: string, row: number, col: number): void;
     markSymbol(sheet: string, row: number, col: number): void;
     setColor(tierName: string, color: string): void;
     highlight(): void;
     alert(msg: string): void;
 }
-
-

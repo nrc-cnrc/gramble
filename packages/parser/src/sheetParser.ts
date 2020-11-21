@@ -461,7 +461,21 @@ export class TableComponent extends CompileableComponent {
                         c: CellComponent, 
                         namespace: Namespace, 
                         devEnv: DevEnvironment): State {
-        return parseHeader(h.text, h.position, c.text, c.position, namespace, devEnv);
+        try {
+            const header = parseHeader(h.text);
+            const headerColor = header.getColor(0.3);
+            const contentColor = header.getColor(0.15);
+            devEnv.markHeader(h.position.sheet, h.position.row, h.position.col, headerColor);
+            devEnv.markTier(c.position.sheet, c.position.row, c.position.col, contentColor);
+            return header.compile(c.text, h.position, namespace, devEnv);
+        } catch (e) {
+            devEnv.markError(h.position.sheet, h.position.row, h.position.col,
+                e.toString());
+            devEnv.markError(c.position.sheet, c.position.row, c.position.col,
+                `Because of an error in the header at ${h.position}, ` +
+                "this cell will be ignored.", "warning");
+            return Empty();
+        }
     }
 
     public compile(namespace: Namespace, 

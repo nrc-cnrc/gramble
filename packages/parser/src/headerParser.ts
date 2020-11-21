@@ -3,7 +3,7 @@ import { State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not } from "./stateMachi
 import { DevEnvironment } from "./devEnv";
 
 
-const DEFAULT_SATURATION = 0.1;
+const DEFAULT_SATURATION = 0.2;
 const DEFAULT_VALUE = 1.0;
 
 
@@ -41,7 +41,7 @@ export class CellPosition {
  * (We treat commented-out headers specially, because they turn everything
  * in their column into no-ops.)
  */
-abstract class Header {
+export abstract class Header {
     public abstract get hue(): number;
     
     public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
@@ -58,7 +58,7 @@ abstract class Header {
                             devEnv: DevEnvironment): State;
 }
 
-export class AtomicHeader extends Header { 
+class AtomicHeader extends Header { 
 
     public constructor(
         public text: string
@@ -67,7 +67,7 @@ export class AtomicHeader extends Header {
     }
 
     public get hue(): number {
-        const str = this.text + "extrasalt" // otherwise short strings are boring colors
+        const str = this.text + "abcde" // otherwise short strings are boring colors
         var hash = 0; 
 
         for (let i = 0; i < str.length; i++) { 
@@ -92,7 +92,7 @@ export class AtomicHeader extends Header {
     }
 }
 
-export class CommentHeader extends Header { 
+class CommentHeader extends Header { 
 
     public get hue(): number {
         return 0;
@@ -115,7 +115,7 @@ export class CommentHeader extends Header {
     }
 }
 
-export class UnaryHeader extends Header {
+class UnaryHeader extends Header {
 
     public constructor(
         public text: string,
@@ -154,7 +154,7 @@ export class UnaryHeader extends Header {
     }
 }
 
-export class BinaryHeader extends Header {
+class BinaryHeader extends Header {
     public constructor(
         public text: string,
         public child1: Header,
@@ -193,8 +193,7 @@ type HeaderParser = (input: string[]) => Gen<[Header, string[]]>;
 
 const SYMBOL = [ "(", ")", "%", "/"];
 const UNARY_RESERVED = [ "maybe", "not" ];
-//const ONE_TIER_RESERVED = [ "join", "shift", "upward", "downward", "input", "contains", "equals" ];
-const ALL_RESERVED = SYMBOL.concat(UNARY_RESERVED); //.concat(ONE_TIER_RESERVED);
+const ALL_RESERVED = SYMBOL.concat(UNARY_RESERVED); 
 
 const SUBEXPR = AltHeaderParser([AtomicHeaderParser, ParensHeaderParser]);
 const NON_COMMENT_EXPR = AltHeaderParser([UnaryHeaderParser, SlashHeaderParser, SUBEXPR]);
@@ -215,16 +214,6 @@ function AltHeaderParser(children: HeaderParser[]): HeaderParser {
         }
     }
 }
-
-/*
-function* OneTierParser(input: string[]): Gen<[Header, string[]]> {
-    if (input.length == 0 || ONE_TIER_RESERVED.indexOf(input[0]) == -1) {
-        return;
-    }
-    for (const [t, rem] of Identifier(input.slice(1))) {
-        yield [new UnaryHeader(input[0], t), rem];
-    }
-} */
 
 function* UnaryHeaderParser(input: string[]): Gen<[Header, string[]]> {
     if (input.length == 0 || UNARY_RESERVED.indexOf(input[0]) == -1) {
@@ -275,29 +264,18 @@ function* CommentHeaderParser(input: string[]): Gen<[Header, string[]]> {
     yield [new CommentHeader(), []];
 }
 
-export function parseHeader(headerText: string,
-                            headerPos: CellPosition,
-                            valueText: string,
-                            valuePos: CellPosition,
-                            namespace: Namespace,
-                            devEnv: DevEnvironment): State {
+export function parseHeader(headerText: string): Header {
     var pieces = headerText.split(/\s+|(\%|\(|\)|\/)/);
     pieces = pieces.filter((s: string) => s !== undefined && s !== '');
     var result = [... EXPR(pieces)];
     result = result.filter(([t, r]) => r.length == 0);
     if (result.length == 0) {
-        devEnv.markError(headerPos.sheet, headerPos.row, headerPos.col,  
-            `Cannot parse header: ${headerText}`);
-        return Empty();
+        throw new Error(`Cannot parse header: ${headerText}`);
     }
     if (result.length > 1) {
          // shouldn't happen with this grammar, but just in case
-        devEnv.markError(headerPos.sheet, headerPos.row, headerPos.col,            
-            `Ambiguous header, cannot parse: ${headerText}`);
-        return Empty();
+        throw new Error(`Ambiguous header, cannot parse: ${headerText}`);
     }
-    const header = result[0][0];
-    const state = header.compile(valueText, headerPos, namespace, devEnv);
-    return state;
+    return result[0][0];
 
 }

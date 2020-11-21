@@ -91,7 +91,7 @@ export class TextDevEnvironment implements DevEnvironment {
     
     public markTier(sheet: string, row: number, col: number, tier: string): void {}
     public markComment(sheet: string, row: number, col: number): void {}
-    public markHeader(sheet: string, row: number, col: number, tier: string): void {}
+    public markHeader(sheet: string, row: number, col: number, color: string): void {}
     public markCommand(sheet: string, row: number, col: number): void {}
     public markSymbol(sheet: string, row: number, col: number): void {}
     public setColor(tierName: string, color: string): void {}

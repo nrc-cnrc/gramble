@@ -13,10 +13,11 @@
       "noImplicitThis": true,
       "alwaysStrict": true,
   
-      "noUnusedLocals": true,
-      "noUnusedParameters": true,
       "noImplicitReturns": true,
       "noFallthroughCasesInSwitch": true,
       "esModuleInterop": true
-    }
+    },
+    "include": [
+      "decs.d.ts"
+    ]
   }

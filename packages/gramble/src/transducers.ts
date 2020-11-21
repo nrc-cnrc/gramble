@@ -1,5 +1,5 @@
 import { Gen, RandomPicker, winnow, GPos, NULL_POS } from "./util";
-import { DevEnvironment } from "./spreadsheet";
+import { DevEnvironment } from "./devEnv";
 import { Tier, parseTier, UnaryTier, CommentTier, BinaryTier } from "./tierParser";
 
 //import { getEnabledCategories } from "trace_events";
