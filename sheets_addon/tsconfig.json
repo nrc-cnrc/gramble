@@ -17,7 +17,5 @@
       "noFallthroughCasesInSwitch": true,
       "esModuleInterop": true
     },
-    "include": [
-      "decs.d.ts"
-    ]
+    "include": [ ]
   }

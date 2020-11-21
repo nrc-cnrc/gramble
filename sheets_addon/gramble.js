@@ -1676,7 +1676,6 @@ class Project {
                     continue;
                 }
                 const position = new headerParser_1.CellPosition(sheetName, rowIndex, colIndex);
-                //var topEnclosure = resultStack[resultStack.length-1];
                 const cell = new CellComponent(cellText, position);
                 while (colIndex <= topEnclosure.position.col) {
                     // it breaks the previous enclosure; pop that off
@@ -1698,8 +1697,9 @@ class Project {
                     continue;
                 }
                 // either we're still in the spec row, or there's no spec row yet
-                if (enclosureOps.has(cellText) || cell.position.col == 0) {
+                if (enclosureOps.has(cellText) || position.col == 0) {
                     // it's the start of a new enclosure
+                    this.devEnv.markCommand(position.sheet, position.row, position.col);
                     const newEnclosure = new EnclosureComponent(cell, topEnclosure);
                     try {
                         topEnclosure.addChildEnclosure(newEnclosure, this.devEnv);

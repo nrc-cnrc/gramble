@@ -245,18 +245,25 @@ class GoogleSheetsDevEnvironment {
 
     }
 
-    /*
+    markCommand(sheet, row, col) {
 
-    public markCommand(sheet: string, row: number, col: number): void {
-        this.boldStyler.addCell(row, col);
-        this.centerStyler.addCell(row, col);
+        if (sheet != this.currentSheetName) {
+            return;
+        }
+
+        this.boldStyler.addCell(sheet, row, col);
+        this.centerStyler.addCell(sheet, row, col);
     }
     
-    public markSymbol(sheet: string, row: number, col: number): void {
-        this.boldStyler.addCell(row, col);
-        this.centerStyler.addCell(row, col);
+    markSymbol(sheet, row, col) {
+
+        if (sheet != this.currentSheetName) {
+            return;
+        }
+        
+        this.boldStyler.addCell(sheet, row, col);
+        this.centerStyler.addCell(sheet, row, col);
     }
-    */
 
     highlight() {
 
