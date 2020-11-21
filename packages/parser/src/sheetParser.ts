@@ -10,29 +10,8 @@
 import { DevEnvironment } from "./devEnv";
 import { Emb, Empty, Join, Lit, Namespace, Not, Seq, State, SymbolTable, Uni } from "./stateMachine";
 import { StringDict } from "./util";
+import { parseHeader, CellPosition } from "./headerParser";
 
-
-/**
- * A convenience class encapsulating information about where a cell
- * is.  Every component of the abstract syntax tree has one of these;
- * if it's a cell, that's just its position on a spreadsheet; if it's a
- * complex component, it's the position of its first cell.
- *
- * By convention we treat the spreadsheet itself as a component with 
- * its first cell at -1, -1.
- */
-class CellPosition {
-
-    constructor(
-        public readonly sheet: string,
-        public readonly row: number = -1,
-        public readonly col: number = -1
-    ) { }
-
-    public toString() {
-        return `${this.sheet}:${this.row}:${this.col}`;
-    }
-}
 
 /*
 class SyntaxError {
@@ -477,16 +456,12 @@ export class TableComponent extends CompileableComponent {
 
         this.table[this.table.length-1].push(cell);
     }
-
     
     public compileCell(h: CellComponent, 
                         c: CellComponent, 
                         namespace: Namespace, 
                         devEnv: DevEnvironment): State {
-        if (h.text == "embed") {
-            return Emb(c.text, namespace);
-        }
-        return Lit(h.text, c.text);
+        return parseHeader(h.text, h.position, c.text, c.position, namespace, devEnv);
     }
 
     public compile(namespace: Namespace, 
@@ -509,7 +484,7 @@ export class TableComponent extends CompileableComponent {
     }
 
 }
-
+ 
 
 
 /**

@@ -100,6 +100,26 @@ describe('Correct grammar', function() {
 
 
 
+describe('Correct grammar with "maybe" header', function() {
+    
+    const [sheet, project, errors] = sheetFromFile("./tests/csvs/maybeGrammar.csv");
+
+    testNumErrors(errors, 0, "any");
+    testNumSymbols(project, 3);
+    testHasSymbol(project, 'maybeGrammar.word'); 
+    const results = [...project.generate('maybeGrammar.word')];
+
+    testNumOutputs(results, 6);
+    testHasOutput(results, "text", "foobar");
+    testHasOutput(results, "text", "foobaz");
+    testHasOutput(results, "text", "moobar");
+    testHasOutput(results, "text", "moobaz");
+    testHasOutput(results, "text", "foo");
+    testHasOutput(results, "text", "moo");
+}); 
+
+
+
 describe('Grammar with two children on the same line', function() {
     
     const [sheet, project, errors] = sheetFromFile("./tests/csvs/childOnSameLine.csv");

@@ -1172,3 +1172,7 @@ export function Rep(child: State, minReps=0, maxReps=Infinity) {
 export function Empty(): State {
     return new TrivialState();
 }
+
+export function Maybe(child: State): State {
+    return Uni(child, Empty());
+}
