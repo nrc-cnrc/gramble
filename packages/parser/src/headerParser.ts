@@ -281,7 +281,7 @@ export function parseHeader(headerText: string,
                             valuePos: CellPosition,
                             namespace: Namespace,
                             devEnv: DevEnvironment): State {
-    var pieces = headerText.split(/\s+|\%|(\(|\)|\/)/);
+    var pieces = headerText.split(/\s+|(\%|\(|\)|\/)/);
     pieces = pieces.filter((s: string) => s !== undefined && s !== '');
     var result = [... EXPR(pieces)];
     result = result.filter(([t, r]) => r.length == 0);

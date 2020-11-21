@@ -99,13 +99,11 @@ describe('Correct grammar', function() {
 }); 
 
 
-
-describe('Correct grammar with "maybe" header', function() {
+describe('Grammar with "maybe" header', function() {
     
     const [sheet, project, errors] = sheetFromFile("./tests/csvs/maybeGrammar.csv");
 
     testNumErrors(errors, 0, "any");
-    testNumSymbols(project, 3);
     testHasSymbol(project, 'maybeGrammar.word'); 
     const results = [...project.generate('maybeGrammar.word')];
 
@@ -118,7 +116,61 @@ describe('Correct grammar with "maybe" header', function() {
     testHasOutput(results, "text", "moo");
 }); 
 
+describe('Grammar with "text/gloss" header', function() {
+    
+    const [sheet, project, errors] = sheetFromFile("./tests/csvs/slashHeader.csv");
 
+    testNumErrors(errors, 0, "any");
+    testHasSymbol(project, 'slashHeader.word'); 
+    const results = [...project.generate('slashHeader.word')];
+
+    testNumOutputs(results, 4);
+    testHasOutput(results, "text", "foobar");
+    testHasOutput(results, "text", "foobaz");
+    testHasOutput(results, "text", "moobar");
+    testHasOutput(results, "text", "moobaz");
+    testHasOutput(results, "gloss", "foo-1SG");
+    testHasOutput(results, "gloss", "foo-2SG");
+    testHasOutput(results, "gloss", "moo-1SG");
+    testHasOutput(results, "gloss", "moo-2SG");
+}); 
+
+
+describe('Grammar with suffix commented out', function() {
+    
+    const [sheet, project, errors] = sheetFromFile("./tests/csvs/commentHeader.csv");
+
+    testNumErrors(errors, 0, "any");
+    testHasSymbol(project, 'commentHeader.word'); 
+    const results = [...project.generate('commentHeader.word')];
+    testNumOutputs(results, 2);
+    testHasOutput(results, "text", "foo");
+    testHasOutput(results, "text", "moo");
+}); 
+
+
+describe('Grammar with lots of parens in the headers', function() {
+    
+    const [sheet, project, errors] = sheetFromFile("./tests/csvs/headerWithParens.csv");
+
+    errors.logErrors();
+    testNumErrors(errors, 0, "any");
+    testHasSymbol(project, 'headerWithParens.word'); 
+    const results = [...project.generate('headerWithParens.word')];
+    testNumOutputs(results, 2);
+    testHasOutput(results, "text", "foo");
+    testHasOutput(results, "text", "moo");
+}); 
+
+
+describe('Correct grammar with unparseable header', function() {
+    
+    const [sheet, project, errors] = sheetFromFile("./tests/csvs/unparseableHeader.csv");
+
+    testNumErrors(errors, 1, "error");
+    
+    testErrorInCell(errors, "unparseableHeader", 8, 3);
+}); 
 
 describe('Grammar with two children on the same line', function() {
     
