@@ -276,12 +276,12 @@ describe('Grammar with table obliteration', function() {
     testErrorInCell(errors, "tableObliteration", 6, 1);
 });
 
-describe('Parseable grammar but with weird indentation', function() {
+describe('Grammar but with weird indentation', function() {
     
     const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/weirdIndentation.csv");
 
-    testNumErrors(errors, 0, "error");
-    testNumErrors(errors, 1, "warning");
+    testNumErrors(errors, 1, "error");
+    testNumErrors(errors, 0, "warning");
     
     it("should have 'word' as its child", function() {
         expect(sheet.child).to.not.be.undefined;

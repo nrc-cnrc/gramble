@@ -9,7 +9,7 @@
 
 import { DevEnvironment } from "./devEnv";
 import { Emb, Empty, Join, Lit, Namespace, Not, Seq, State, SymbolTable, Uni } from "./stateMachine";
-import { StringDict } from "./util";
+import { iterTake, StringDict } from "./util";
 import { parseHeader, CellPosition } from "./headerParser";
 
 
@@ -124,6 +124,10 @@ export abstract class CompileableComponent extends TabularComponent {
      */
     public child: CompileableComponent | undefined = undefined;
 
+    public getHeader(col: number): CellComponent | undefined {
+        return undefined;
+    }
+
     public abstract compile(namespace: Namespace, 
                             devEnv: DevEnvironment): State;
 
@@ -205,6 +209,12 @@ export class EnclosureComponent extends CompileableComponent {
         return this.startCell.text;
     }
 
+    public getHeader(col: number): CellComponent | undefined {
+        if (this.child == undefined) {
+            return undefined;
+        }
+        return this.child.getHeader(col);
+    }
     
     public addHeader(header: CellComponent): void {
         // can only add a header if there aren't any child enclosures yet.
@@ -219,11 +229,11 @@ export class EnclosureComponent extends CompileableComponent {
         this.child.addHeader(header);
     }
     
-    public addContent(cell: CellComponent): void {
+    public addContent(cell: CellComponent, devEnv: DevEnvironment): void {
         if (!(this.child instanceof TableComponent)) {
             throw new Error("Trying to add content to a non-table");
         }
-        this.child.addContent(cell);
+        this.child.addContent(cell, devEnv);
     }
     
     public compile(namespace: Namespace, 
@@ -249,7 +259,7 @@ export class EnclosureComponent extends CompileableComponent {
         } */
 
         devEnv.markError(this.position.sheet, this.position.row, this.position.col,
-                         `Operator ${this.text} not recognized.`);
+                        "Unknown operator", `Operator ${this.text} not recognized.`);
         return Empty();
     }
 
@@ -266,6 +276,7 @@ export class EnclosureComponent extends CompileableComponent {
         if (RESERVED_WORDS.has(this.text)) {
             // oops, assigning to a reserved word
             devEnv.markError(this.position.sheet, this.position.row, this.position.col,
+                "Assignment to reserved word", 
                 "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
                 `reserved word ${this.text}.  Choose a different symbol name.`);
             if (this.child != undefined) {
@@ -278,8 +289,8 @@ export class EnclosureComponent extends CompileableComponent {
         if (this.child == undefined) {
             // oops, empty "right side" of the assignment!
             devEnv.markError(this.position.sheet, this.position.row, this.position.col,
-                `This looks like an assignment to a symbol ${this.text}, ` +
-                "but there's nothing to the right of it.");
+                "Missing content", `This looks like an assignment to a symbol ${this.text}, ` +
+                "but there's nothing to the right of it.", "warning");
             return Empty();
         }
 
@@ -288,6 +299,7 @@ export class EnclosureComponent extends CompileableComponent {
         if (namespace.hasSymbol(this.text)) {
             // oops, trying to assign to a symbol that already is assigned to!
             devEnv.markError(this.position.sheet, this.position.row, this.position.col,
+                "Redefining existing symbol", 
                 `You've already assigned something to the symbol ${this.text}`);
             // TODO: The error message should say where it's assigned
         }
@@ -300,7 +312,8 @@ export class EnclosureComponent extends CompileableComponent {
 
         if (this.child == undefined) {
             devEnv.markError(this.position.sheet, this.position.row, this.position.col,
-                "'table' seems to be missing a table; something should be in the cell to the right.")
+                "Missing content",
+                "'table' seems to be missing a table; something should be in the cell to the right.", "warning")
             return Empty();
         }
         if (this.sibling != undefined) {
@@ -309,6 +322,7 @@ export class EnclosureComponent extends CompileableComponent {
             // compile it anyway in case there are errors in it the
             // programmer may want to know about
             devEnv.markError(this.position.sheet, this.position.row, this.position.col,
+                "Table overwrite warning",
                 `'table' here will obliterate the preceding content at ${this.sibling.position}.`,
                 "warning");
         
@@ -323,12 +337,14 @@ export class EnclosureComponent extends CompileableComponent {
                                     
         if (this.child == undefined) {
             devEnv.markError(this.position.sheet, this.position.row, this.position.col,
+                `Missing argument to '${this.text}'`, 
                 `'${this.text}' is missing a second argument; ` +
                 "something should be in the cell to the right.");
             return Empty();
         }
         if (this.sibling == undefined) {
             devEnv.markError(this.position.sheet, this.position.row, this.position.col,
+                `Missing argument to '${this.text}'`,
                 `'${this.text}' is missing a first argument; ` +
                 "something should be in a cell above this.");
             return Empty();
@@ -370,12 +386,21 @@ export class EnclosureComponent extends CompileableComponent {
     
 }
 
+/**
+ * A [SheetComponent] is basically an EnclosureComponent without 
+ * a parent component; a sheet is always the outermost component of
+ * any component tree.
+ */
 class SheetComponent extends EnclosureComponent {
 
     constructor(
         public name: string
     ) { 
         super(new CellComponent(name, new CellPosition(name)));
+    }
+    
+    public addHeader(header: CellComponent): void {
+        throw new Error("This appears to be a header, but what is it a header for?");
     }
 
     public compile(namespace: Namespace, 
@@ -415,7 +440,7 @@ export class TableComponent extends CompileableComponent {
     public compileAssignment(namespace: Namespace, devEnv: DevEnvironment): State {
         // I don't think this error is possible, but just in case
         devEnv.markError(this.position.sheet, this.position.row, this.position.col,
-            "This cell needs to be an assignment, " +
+            "Unexpected operator", "This cell needs to be an assignment, " +
             "but it looks like you're trying to start a table.");
         return Empty();
     }
@@ -442,18 +467,45 @@ export class TableComponent extends CompileableComponent {
         this.headersByCol[header.position.col] = header;
     }
 
-    public addContent(cell: CellComponent): void {
-        const header = this.headersByCol[cell.position.col];
+    public getHeader(col: number): CellComponent | undefined {
+        return this.headersByCol[col];
+    }
+
+    public addContent(cell: CellComponent, devEnv: DevEnvironment): void {
+        
+        // make sure we have a header
+        const header = this.getHeader(cell.position.col);
         if (header == undefined) {
             throw new Error(`Table at ${this.position} cannot add ` +
                 `content in column ${cell.position.col}`);
         }
 
+        // color the cell appropriately (even if there's no text)
+        try {
+            const parsedHeader = parseHeader(header.text);
+            const contentColor = parsedHeader.getColor(0.15);
+            devEnv.markTier(cell.position.sheet, cell.position.row, 
+                cell.position.col, contentColor);
+        } catch (e) {
+            devEnv.markError(cell.position.sheet, cell.position.row, 
+                cell.position.col, `Invalid header ${header.text}`,
+                "Cannot interpret this cell due to an invalid header above.",
+                "warning");
+            return;
+        }
+            
+        // the following only applies if there's text in the cell
+        if (cell.text.length == 0) {
+            return;
+        }
+    
+        // make a table row if we need one
         if (this.table.length == 0 || 
             cell.position.row != this.table[this.table.length-1][0].position.row) {
             this.table.push([]);
         }
 
+        // add the content
         this.table[this.table.length-1].push(cell);
     }
     
@@ -463,15 +515,10 @@ export class TableComponent extends CompileableComponent {
                         devEnv: DevEnvironment): State {
         try {
             const header = parseHeader(h.text);
-            const headerColor = header.getColor(0.3);
-            const contentColor = header.getColor(0.15);
-            devEnv.markHeader(h.position.sheet, h.position.row, h.position.col, headerColor);
-            devEnv.markTier(c.position.sheet, c.position.row, c.position.col, contentColor);
             return header.compile(c.text, h.position, namespace, devEnv);
         } catch (e) {
-            devEnv.markError(h.position.sheet, h.position.row, h.position.col,
-                e.toString());
             devEnv.markError(c.position.sheet, c.position.row, c.position.col,
+                "Ignoring cell",
                 `Because of an error in the header at ${h.position}, ` +
                 "this cell will be ignored.", "warning");
             return Empty();
@@ -500,6 +547,26 @@ export class TableComponent extends CompileableComponent {
 }
  
 
+/**
+ * Determines whether a line is empty
+ * @param row A list of strings, representing the cell text along that row
+ * @returns True if the line is empty
+ */
+
+function isLineEmpty(row: string[]): boolean {
+    if (row.length == 0) {
+        return true;
+    }
+
+    for (let cellText of row) {
+        if (cellText.trim().length != 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 
 /**
  * A SheetParser turns a grid of cells into abstract syntax tree (AST) components, which in
@@ -516,14 +583,68 @@ export class Project {
         public devEnv: DevEnvironment
     ) { }
 
+    public allSymbols(): string[] {
+        return this.globalNamespace.allSymbols();
+    }
+
+    public getSymbol(symbolName: string): State | undefined {
+        return this.globalNamespace.get(symbolName);
+    }
     
-    public generate(symbolName: string): StringDict[] {
+    public getTapeNames(symbolName: string): [string, string][] {
+        const startState = this.globalNamespace.get(symbolName);
+        if (startState == undefined) {
+            throw new Error(`Cannot find symbol ${symbolName}`);
+        }
+        const results: [string, string][] = [];
+        for (const tapeName of startState.getTapeNames()) {
+            const header = parseHeader(tapeName);
+            results.push([tapeName, header.getColor(0.3)]);
+        }
+        return results;
+    }
+
+    
+    public parse(symbolName: string,
+            inputs: StringDict,
+            maxResults: number = Infinity,
+            randomize: boolean = false,
+            maxRecursion: number = 4, 
+            maxChars: number = 1000): StringDict[] {
+
+        var startState = this.globalNamespace.get(symbolName);
+        if (startState == undefined) {
+            throw new Error(`Cannot find symbol ${symbolName}`);
+        }
+
+        const inputLiterals: State[] = [];
+        for (const tapeName in inputs) {
+            const value = inputs[tapeName];
+            const inputLiteral = Lit(tapeName, value);
+            inputLiterals.push(inputLiteral);
+        }
+
+        if (inputLiterals.length > 0) {
+            const inputSeq = Seq(...inputLiterals);
+            startState = Join(inputSeq, startState); 
+        }
+
+        const gen = startState.generate(randomize, maxRecursion, maxChars);
+        return iterTake(gen, maxResults);
+    }
+
+    public generate(symbolName: string,
+            maxResults: number = Infinity,
+            randomize: boolean = false,
+            maxRecursion: number = 4, 
+            maxChars: number = 1000): StringDict[] {
         const startState = this.globalNamespace.get(symbolName);
         if (startState == undefined) {
             throw new Error(`Cannot find symbol ${symbolName}`);
         }
     
-        return [...startState.generate()];
+        const gen = startState.generate(randomize, maxRecursion, maxChars);
+        return iterTake(gen, maxResults);
     }
 
     
@@ -545,6 +666,10 @@ export class Project {
 
         // parse the cells into an abstract syntax tree
         const sheetComponent = this.parseCells(sheetName, cells);
+
+        // put the raw cells into the sheetComponent, for interfaces
+        // that need them (like the sidebar of the GSuite add-on)
+        //const 
 
         // Create a new namespace for this sheet and add it to the 
         // global namespace
@@ -589,18 +714,23 @@ export class Project {
 
         // Now iterate through the cells, left-to-right top-to-bottom
         for (var rowIndex = 0; rowIndex < cells.length; rowIndex++) {
+
+            const cellsInRow = cells[rowIndex];
+            if (isLineEmpty(cellsInRow)) {
+                continue;
+            }
+
+            
             for (var colIndex = 0; colIndex < cells[rowIndex].length; colIndex++) {
                 const cellText = cells[rowIndex][colIndex].trim();
-
-                if (cellText.length == 0) {
-                    continue;
-                }
 
                 const position = new CellPosition(sheetName, rowIndex, colIndex);
 
                 const cell = new CellComponent(cellText, position);
 
-                while (colIndex <= topEnclosure.position.col) {
+                
+                while (cellText.length > 0 
+                        && colIndex <= topEnclosure.position.col) {
                     // it breaks the previous enclosure; pop that off
                     if (topEnclosure.parent == undefined) {
                         throw new Error("The enclosure stack is empty somehow; " +
@@ -612,26 +742,38 @@ export class Project {
             
                 if (topEnclosure.specRow > -1 && rowIndex > topEnclosure.specRow) {
                     // we're inside an enclosure
-                    try {
-                        topEnclosure.addContent(cell);
-                    } catch (e) {
-                        this.devEnv.markError(position.sheet, position.row, position.col,
-                            "This cell does not have a header above it, so we're unable to interpret it.");
+                    const header = topEnclosure.getHeader(colIndex);
+                    if (header == undefined) {
+                        // there's nothing above this cell
+                        if (cellText.length == 0) {
+                            // if there's also nothing in the cell, we're fine
+                            continue;
+                        }
+                        this.devEnv.markError(sheetName, rowIndex, colIndex,
+                            `Wayward cell: ${cell.text}`, `This cell does not have a header above it in column ${colIndex}, ` + 
+                            "so we're unable to interpret it.");
+                        continue;
                     }
+                    topEnclosure.addContent(cell, this.devEnv);
+                    continue;
+                }
+
+                if (cellText.length == 0) {
+                    // all of the following steps require there to be some explicit content
                     continue;
                 }
 
                 // either we're still in the spec row, or there's no spec row yet
                 if (enclosureOps.has(cellText) || position.col == 0) {
                     // it's the start of a new enclosure
-                    this.devEnv.markCommand(position.sheet, position.row, position.col);
+                    this.devEnv.markCommand(sheetName, rowIndex, colIndex,);
                     const newEnclosure = new EnclosureComponent(cell, topEnclosure);
                     try {
                         topEnclosure.addChildEnclosure(newEnclosure, this.devEnv);     
                         topEnclosure = newEnclosure;
                     } catch (e) {
-                        this.devEnv.markError(position.sheet, position.row, position.col,
-                            "This looks like an operator, but only a header can follow a header.");
+                        this.devEnv.markError(sheetName, rowIndex, colIndex,
+                            `Unexpected operator: ${cell.text}`, "This looks like an operator, but only a header can follow a header.");
                     }
                     continue;
                 } 
@@ -639,11 +781,13 @@ export class Project {
                 // it's a header
                 try {
                     topEnclosure.addHeader(cell);
+                    const header = parseHeader(cell.text);
+                    const color = header.getColor(0.3);
+                    this.devEnv.markHeader(sheetName, rowIndex, colIndex, color);
                 } catch (e) {
                     //console.log(e);
-                    this.devEnv.markError(position.sheet, position.row, position.col,
-                        `Cannot add a header to ${topEnclosure}; ` + 
-                        "you need an operator like 'or', 'apply', etc.");
+                    this.devEnv.markError(sheetName, rowIndex, colIndex,
+                        `Invalid header: ${cell.text}`, e.toString());
                 }
             }
         }

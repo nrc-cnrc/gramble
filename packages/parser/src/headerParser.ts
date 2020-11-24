@@ -148,7 +148,7 @@ class UnaryHeader extends Header {
 
         // The header parser shouldn't be creating unary headers that
         // aren't in the above set, but just in case...
-        devEnv.markError(pos.sheet, pos.row, pos.col,
+        devEnv.markError(pos.sheet, pos.row, pos.col, "Invalid header",
                 `${valueText} is not among the operators allowed in headers.`);
         return Empty();
     }
@@ -181,7 +181,7 @@ class BinaryHeader extends Header {
         
         // The header parser shouldn't be creating binary headers that
         // aren't in the above set, but just in case...
-        devEnv.markError(pos.sheet, pos.row, pos.col,
+        devEnv.markError(pos.sheet, pos.row, pos.col, "Invalid header", 
             `${valueText} is not among the operators allowed in headers.`);
         return Empty();
 

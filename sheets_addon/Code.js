@@ -48,6 +48,12 @@ function letterFromNumber(n) { // number -> string
     return concat > 0 ? letterFromNumber(concat-1) + letter : letter;
 };
 
+function getA1Notation(sheet, row, col) {
+    if (sheet == "") {
+        return `${letterFromNumber(col)}${(row+1)}`;
+    }
+    return `${sheet}!${letterFromNumber(col)}${(row+1)}`;
+}
 
 class Styler {
     
@@ -167,7 +173,7 @@ class GoogleSheetsDevEnvironment {
         return values;
     }
 
-    markError(sheet, row, col, msg, level = "error") {
+    markError(sheet, row, col, shortMsg, msg, level = "error") {
 
         if (sheet != this.currentSheetName) {
             return;
@@ -524,10 +530,6 @@ function GrambleGenerateToSheet(): void {
 */
 
 
-function GrambleHighlighting() {
-    const [project, devEnv] = makeProject();
-    devEnv.highlight();
-} 
 
 /*
 function GrambleTest(): void {
@@ -583,11 +585,15 @@ function GrambleUncomment(): void {
 }
 */
 
-function GrambleSidebar() {
+function highlight() {
+    const [project, devEnv] = makeProject();
+    devEnv.highlight();
+} 
+
+function showSidebar() {
     var html = HtmlService.createTemplateFromFile('sidebar')
         .evaluate()
-        .setTitle('Gramble Results')
-        .setWidth(800);
+        .setTitle('Gramble Control Panel');
     SpreadsheetApp.getUi() // Or DocumentApp or SlidesApp or FormApp.
         .showSidebar(html);
 }
@@ -596,17 +602,6 @@ function include(filename) {
     return HtmlService.createHtmlOutputFromFile(filename)
         .getContent();
   }
-
-function getCurrentSheetData() {
-    const spreadsheet = SpreadsheetApp.getActive();
-    const sheet = spreadsheet.getActiveSheet();
-    const range = sheet.getDataRange();
-    const cells = range.getDisplayValues();
-    return cells;
-}
-
-
-
 
 function makeProject() {
     const spreadsheet = SpreadsheetApp.getActive();
@@ -619,12 +614,46 @@ function makeProject() {
     return [project, devEnv];
 }
 
+function scrollToCell(sheetName, row, col) {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = spreadsheet.getSheetByName(sheetName);
+    sheet.activate();
+    const range = sheet.getRange(getA1Notation("", row, col));
+    sheet.setActiveRange(range);
+}
+
+function getAllCells() {
+    highlight();
+    try {
+        const results = { "success": true,
+                          "payload": { 
+                             "startSheet": "",
+                             "sheets": {}
+                          } 
+                        };
+        const spreadsheet = SpreadsheetApp.getActive();
+
+        // add the name of the sheet that's currently active
+        const sheetName = spreadsheet.getActiveSheet().getName();
+        results["payload"]["startSheet"] = sheetName;
+
+        for (const sheet of spreadsheet.getSheets()) {
+            const name = sheet.getName();
+            const data = sheet.getDataRange().getDisplayValues();
+            results["payload"]["sheets"][name] = data;
+        }
+        return results;
+    } catch (e) {
+        return { "success": false, "message": e.toString() };
+    }
+}
+
 function onOpen() {
     const ui = SpreadsheetApp.getUi();
     //const project = new Gr.Project();
 
     ui.createMenu('Gramble')
-        .addItem('Highlight', 'GrambleHighlighting')
+        .addItem('Highlight', 'highlight')
         //.addItem('Run Tests', 'GrambleTest')
         //.addSeparator()
         //.addItem('Comment', 'GrambleComment')
@@ -634,7 +663,8 @@ function onOpen() {
         //.addItem('Generate all', 'GrambleGenerate')
         //.addItem('Generate all to new sheet', 'GrambleGenerateToSheet')
         //.addSeparator()
-        .addItem('Show sidebar', 'GrambleSidebar')
+        .addItem('Show sidebar', 'showSidebar')
         .addToUi();
 
+    showSidebar();
 }

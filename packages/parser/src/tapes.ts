@@ -369,6 +369,10 @@ export class TapeCollection extends Tape {
     public addTape(tape: Tape): void {
         this.tapes.set(tape.tapeName, tape);
     }
+    
+    public getTapeNames(): string[] {
+        return [...this.tapes.keys()];
+    }
 
     public get tapeName(): string {
         if (this.tapes.size == 0) {

@@ -2,9 +2,57 @@
     <head>
         <title>Gramble by Examble</title>
         <?!= include('grambleWrapped'); ?>
+        <?!= include('style'); ?>
     </head>
     <body>
         <script>
+            function letterFromNumber(n) { // number -> string
+                var letter = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(n % 26)
+                var concat = Math.round(n / 26);
+                return concat > 0 ? letterFromNumber(concat-1) + letter : letter;
+            };
+
+            function getA1Notation(sheet, row, col) {
+                if (sheet == "") {
+                    return `${letterFromNumber(col)}${(row+1)}`;
+                }
+                return `${sheet}!${letterFromNumber(col)}${(row+1)}`;
+            }
+
+            var devEnv = undefined;  // SidebarDevEnvironment
+            var project = undefined; // Project
+            var CURRENT_TAPES = [];
+            var CURRENT_INPUTS = {};
+
+            class SidebarDevEnvironment {
+
+                constructor(cellsBySheet) {
+                    this.cellsBySheet = cellsBySheet; // {[key: string}: string[][]
+                    this.errorMsgs = []; // list of [sheet, row, col, shortMsg, msg, level]
+                }
+
+                hasSource(sheetName) { 
+                    return (sheetName in this.cellsBySheet);
+                }
+
+                loadSource(sheetName) {
+                    if (!(this.hasSource(sheetName))) {
+                        return [];
+                    }
+                    return this.cellsBySheet[sheetName];
+                }
+
+                markError(sheet, row, col, shortMsg, msg, level = "error") { 
+                    this.errorMsgs.push([sheet, row, col, shortMsg, msg, level]);
+                }
+
+                markHeader(sheet, row, col, color) { }
+                markTier(sheet, row, col, color) { }
+                markCommand(sheet, row, col) { }
+                markSymbol(sheet, row, col) { }
+                highlight() { }
+
+            }
 
             function scriptRunPromise() {
                 const gs = {};
@@ -24,167 +72,232 @@
                 return gs;
             }
 
-            var GRAMMAR = undefined;
+            function removeElementsByClass(className) {
+                var inputsToRemove = document.getElementsByClassName(className);
+                while(inputsToRemove.length > 0){
+                    inputsToRemove[0].parentNode.removeChild(inputsToRemove[0]);
+                }
 
+            }
+
+            var reloadGrammarLock = false;
             async function reloadGrammar() {
-                var cells = await scriptRunPromise().getCurrentSheetData();
-                GRAMMAR = await gramble.fromDataAsync(cells);
+                
+                if (reloadGrammarLock) {
+                    return;
+                }
+
+                reloadGrammarLock = true;
+
+                // hide or remove everything in the control panel except "Loading..."
+                const controlTable = document.getElementById("controlTable");
+                controlTable.style.visibility = "collapse";
+                const sampleTable = document.getElementById("sampleTable");
+                sampleTable.style.visibility = "collapse";
+                removeElementsByClass("tapeInputTr");
+                removeElementsByClass("errorButton");
+                const resultsTable  = document.getElementById("resultsTable"); 
+                resultsTable.innerHTML = "";
+                resultsTable.style.visibility = "collapse";
+                const loadingP = document.getElementById("loadingP");
+                loadingP.style.display = "block";
+
+                // ask for the latest data from GSuite
+                const responseFromGSuite = await scriptRunPromise().getAllCells();
+                
+                if (!responseFromGSuite["success"]) {
+                    throw new Error("Failed to communicate with Google Sheets backend: " +
+                        `${responseFromGSuite["message"]}`);
+                }
+
+                const currentSheetName = responseFromGSuite["payload"]["startSheet"];
+                const cellsBySheet = responseFromGSuite["payload"]["sheets"];
+                
+                devEnv = new SidebarDevEnvironment(cellsBySheet);
+                project = new gramble.Project(devEnv);
+                project.addSheet(currentSheetName);
+                
+                createErrorButtons(devEnv.errorMsgs, currentSheetName);
+                reloadSymbols(currentSheetName);
+                reloadInputs();
+
+                loadingP.style.display = "none";
+                controlTable.style.visibility = "visible";
+                sampleTable.style.visibility = "visible";
+                resultsTable.style.visibility = "visible";
+                reloadGrammarLock = false;
+            }
+
+            function createErrorButtons(errorMsgs, currentSheetName) {
+
+                if (devEnv.errorMsgs.length == 0) {
+                    return;
+                }
+
+                
+                const errorArea = document.getElementById("errorArea");
+                
+                for (const [sheet, row, col, shortMsg, msg, lvl] of errorMsgs) {
+
+                    if (lvl != "error") {
+                        return;
+                    }
+
+                    const button = document.createElement('button');
+                    button.classList.add('errorButton');
+                    var cellName = getA1Notation("", row, col);
+                    if (sheet != currentSheetName) {
+                        cellName = `${sheet}!${cellName}`; 
+                    }
+                    button.innerHTML = `${cellName}: ${shortMsg}`;
+                    button.title = msg;
+                    button.onclick = async function() {
+                        await scriptRunPromise().scrollToCell(sheet, row, col);
+                        return false;
+                    };
+                    errorArea.appendChild(button);
+                }
+            }
+
+            
+            function reloadSymbols(currentSheetName) {
+
+                if (project == undefined) {
+                    throw new Error("Trying to reload symbols without a project");
+                }
+
+                const select = document.getElementById("selectSymbol"); 
+                select.innerHTML = "";
+                
+                var options = project.allSymbols();
+                for (const option of options) {
+                    const el = document.createElement('option');
+
+                    var optionText = option;
+                    const pieces = option.split(".");
+                    if (pieces[0] == currentSheetName) {
+                        optionText = pieces.slice(1).join(".");
+                    }
+                    el.textContent = optionText;
+                    el.value = option;
+                    if (optionText.toLowerCase() == 'main') {
+                        el.selected = true;
+                    }
+                    select.appendChild(el);
+                } 
+            }
+
+            function reloadInputs() {
+
+                const select = document.getElementById("selectSymbol"); 
+                const currentSymbol = select.value;
+                
+                CURRENT_TAPES = project.getTapeNames(currentSymbol);
+
+                const controlTable = document.getElementById("controlTable");
+                for (const [tapeName, color] of CURRENT_TAPES) {
+                    const tr = document.createElement("tr");
+                    tr.classList.add("tapeInputTr");
+                    tr.style.backgroundColor = color;
+                    const labelTd = document.createElement("td");
+                    labelTd.classList.add("labelTd");
+                    const label = document.createElement("label");
+                    label.htmlFor = `input_${tapeName}`;
+                    label.innerHTML = tapeName;
+                    labelTd.appendChild(label);
+                    tr.appendChild(labelTd);
+                    const inputTd = document.createElement("td");
+                    const input = document.createElement("input");
+                    input.classList.add("tapeInput");
+                    input.type = "text";
+                    input.id = `input_${tapeName}`;
+                    input.name = `input_${tapeName}`;
+                    inputTd.appendChild(input);
+                    tr.appendChild(inputTd);
+                    controlTable.append(tr);
+                }
             }
             
             function reloadResults() {
+
                 var symbolName = document.getElementById("selectSymbol").value;
 
-
-                if (GRAMMAR.allSymbols().indexOf(symbolName) == -1) {
-                    tbl.innerHTML = "Unknown symbol: " + symbolName + ", check your source to make sure it's defined.";
-                    return;
-                } 
-
                 var results = [];
-                var text = "";
-                let val = document.getElementById("selectCommand").value;
-                if (val == "sample") {
-                    
-                    console.log(`sampling from symbol ${symbolName}`);
-                    results = GRAMMAR.sampleFlatten(symbolName, 10);
-                    console.log(`sampled from symbol ${symbolName}`);
-                    console.log(results);
-                } else if (val == "generate") {  
-                    results = GRAMMAR.generateFlatten(symbolName, false, 10);
-                } else if (val == "parse") {    
-                    text = document.getElementById("parseInput").value;
-                    if (text.length != 0) {  
-                        results = GRAMMAR.parseFlatten({text: text}, symbolName, false, 10);
+                var tries = 0;
+
+                CURRENT_INPUTS = {};
+                for (const [tapeName, color] of CURRENT_TAPES) {
+                    const input = document.getElementById(`input_${tapeName}`);
+                    const value = input.value.trim();
+                    if (value.length == 0) {
+                        continue;
                     }
-                } /* else if (val == "complete") {
-                    text = document.getElementById("completeInput").value;
-                    console.log(text);
-                    if (text.length != 0) { 
-                        results = GRAMMAR.completeFlatten({text: text}, symbolName, false, 10);
-                        console.log(results);
-                    }
-                } */
-                
-                var tbl  = document.getElementById("resultsTable"); 
-                tbl.innerHTML = "";
-                for (var i = 0; i < results.length; i++) {
-                    displayRecord(results[i], tbl);
+                    CURRENT_INPUTS[tapeName] = value;
                 }
 
+                while (results.length < 5 && tries < 1000) {
+                    const result = project.parse(symbolName, CURRENT_INPUTS, 1, true);
+                    results = results.concat(result);
+                    tries++;
+                }
+                
+                var resultsTable  = document.getElementById("resultsTable"); 
+                resultsTable.innerHTML = "";
+                for (var i = 0; i < results.length; i++) {
+                    displayRecord(results[i], resultsTable);
+                }
             }
 
             function displayRecord(record, table) {
 
-                var blankRow = table.insertRow();
-                var blankCell = blankRow.insertCell();
-                blankCell = blankRow.insertCell();
-                blankCell.appendChild(document.createTextNode("\u00A0"));
-                blankRow.style.borderBottom = "1px solid #999999";
-                for (key in record) {
+                
+                for (const [key, color] of CURRENT_TAPES) {
+
                     if (!record.hasOwnProperty(key)) {
                         continue;
                     }
+
                     var tr = table.insertRow();
-                    tr.style.width = "100%";
-                    tr.style.borderBottom = "1px solid #999999";
+                    tr.classList.add("resultsTr");
+                    tr.style.backgroundColor = color;
+                    
                     var keyCell = tr.insertCell();
-                    keyCell.appendChild(document.createTextNode(key + ":"));
-                    keyCell.style.textAlign = "center";
-                    keyCell.style.fontWeight = "bold";
+                    keyCell.classList.add("resultsKey");
+                    keyCell.appendChild(document.createTextNode(key));
+
                     var valueCell = tr.insertCell();
+                    valueCell.classList.add("resultsValue");
                     valueCell.appendChild(document.createTextNode(record[key]));
-
-                    try {
-                        var color = gramble.getBackgroundColor(key);
-                        tr.style.background = color;
-                        keyCell.style.background = color;
-                        keyCell.style.padding = "3px 2px";
-                        valueCell.style.background = color;
-                        valueCell.style.padding = "3px 2px";
-                    } catch(err) {
-                        console.log(err);
-                    }
-
                 }
 
-            }
-
-            async function reloadSymbols() {
-                var select = document.getElementById("selectSymbol"); 
-                select.innerHTML = "";
-
-                var options = GRAMMAR.allSymbols();
-                for (var i = 0; i < options.length; i++) {
-                    var option = options[i];
-                    var el = document.createElement('option');
-                    el.textContent = option;
-                    el.value = option;
-                    if (option == 'MAIN') {
-                        el.selected = true;
-                    }
-                    select.appendChild(el);
-                }
-            }
-
-            async function changeCommand() {
-                document.getElementById("sampleDiv").style.display = "none";
-                document.getElementById("generateDiv").style.display = "none";
-                document.getElementById("parseDiv").style.display = "none";
-                //document.getElementById("completeDiv").style.display = "none";
-                let val = document.getElementById("selectCommand").value;
-                if (val == "sample") {
-                    document.getElementById("sampleDiv").style.display = "block";
-                } else if (val == "generate") {
-                    document.getElementById("generateDiv").style.display = "block";
-                } else if (val == "parse") {
-                    document.getElementById("parseDiv").style.display = "block";
-                } /* else if (val == "complete") {
-                    document.getElementById("completeDiv").style.display = "block";
-                } */
-
+                var blankRow = table.insertRow();
+                blankRow.classList.add("resultsBlankTr");
+                var blankCell = blankRow.insertCell();
+                blankCell = blankRow.insertCell();
+                blankCell.appendChild(document.createTextNode("\u00A0"));
+                blankCell.classList.add("resultsBlank");
             }
 
             window.onload = async function() {
                 
                 try {
                     await reloadGrammar();
-                    await reloadSymbols();
-                    await changeCommand();
-                    await reloadResults();
-
-                    var selector = document.getElementById("selectSymbol");
-                    selector.onchange = async function(ev) {
-                        await reloadResults();
-                    };
-
-                    document.getElementById("selectCommand").onchange = async function(ev) {
-                        changeCommand();   
-                        reloadResults();
-                    };
-                    
 
                     var button = document.getElementById("reloadButton");
                     button.onclick = async function(ev) {
                         await reloadGrammar();
-                        await reloadSymbols();
-                        await reloadResults();
                     }
+
+                    var selector = document.getElementById("selectSymbol");
+                    selector.onchange = function(ev) {
+                        removeElementsByClass("tapeInputTr");
+                        reloadInputs();
+                    };
+                    
 
                     document.getElementById("sampleButton").onclick = async function(ev) {
                         await reloadResults();
                     }
-
-                    
-                    document.getElementById("parseInput").oninput = async function(ev) {
-                        await reloadResults();
-                    }
-
-                    /*
-                    document.getElementById("completeInput").oninput = async function(ev) {
-                        await reloadResults();
-                    } */
-
-
 
                 } catch(err) {
                     alert(err);
@@ -194,22 +307,20 @@
 
 
         </script>
-    <table>
-        <tr><td colspan="2"><button id="reloadButton" style="margin: 2px auto; padding: 5px; text-align: center;">Reload from source</button></td></tr>
-        <tr><td>Symbol:</td><td><select id="selectSymbol" style="margin: 2px auto; padding: 5px; text-align: center; text-align-last: center; font-weight: bold;"> </select></td></tr>
-        <tr><td>Command:</td><td><select id="selectCommand" style="margin: 2px auto; padding: 5px; text-align: center; text-align-last: center; font-weight: bold;">
-            <option value="sample" selected="selected">Sample</option>
-            <option value="generate">Generate</option>
-            <option value="parse">Parse</option>
-            <!-- <option value="complete">Complete</option> -->
-        </td></tr>
+    <table id="controlTable">
+        <!-- <td colspan="2"><button id="highlightButton">Highlight</button></td></tr>-->
+        <tr><td colspan="2"><button id="reloadButton">Sync and validate</button></td></tr>
+        <tr id="errorTr"><td colspan="2" id="errorArea"> </td></tr>
+        <tr id="selectTr"><td>Input:</td><td class="wideTd"><select id="selectSymbol"> </select></td></tr>
     </table>
 
-    <div id="sampleDiv" style="display: none"><button id="sampleButton">Resample</button></div>
-    <div id="generateDiv" style="display: none"><button id="generatePrevButton">&lt;</button><button id="generatePrevButton">&gt;</button></div>
-    <div id="parseDiv" style="display: none"><input type="text" id="parseInput"> </input></div>
-    <div id="completeDiv" style="display: none"><input type="text" id="completeInput"> </input></div>
-    <table id="resultsTable" style="width: 100%; padding: 5px; border-collapse: collapse; border-spacing: 0px; border: 0px; font-size: 10pt; font-family: sans-serif;"> </table>
+    <table id="sampleTable">
+        <tr><td colspan="2"><button id="sampleButton">Sample</button></td></tr>
+    </table>
 
+    <p id="loadingP">Loading...</p>
+
+    <table id="resultsTable"> </table>
+    
     </body>
 </html>

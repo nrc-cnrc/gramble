@@ -21,6 +21,35 @@ export function meanAngleDeg(a: number[]): number {
     );
 }
 
+/* Randomize array in-place using Durstenfeld shuffle algorithm */
+export function shuffleArray<T>(array: T[]): void {
+    for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+}
+
+export function iterTake<T>(gen: Gen<T>, n: number) {
+    var i = 1;
+    const results = [];
+
+    if (n <= 0) {
+        throw new Error("Invalid index");
+    }
+
+    for (const value of gen) {
+        results.push(value);
+        if (i++ == n) {
+            break;
+        }
+    }
+
+    return results;
+}
+
+
 export function HSVtoRGB(h: number, s: number, v: number): [number, number, number] {
     var r: number, g: number, b: number, i: number, 
         f: number, p: number, q: number, t: number;

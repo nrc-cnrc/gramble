@@ -1111,7 +1111,7 @@ class UnaryHeader extends Header {
         }
         // The header parser shouldn't be creating unary headers that
         // aren't in the above set, but just in case...
-        devEnv.markError(pos.sheet, pos.row, pos.col, `${valueText} is not among the operators allowed in headers.`);
+        devEnv.markError(pos.sheet, pos.row, pos.col, "Invalid header", `${valueText} is not among the operators allowed in headers.`);
         return stateMachine_1.Empty();
     }
 }
@@ -1133,7 +1133,7 @@ class BinaryHeader extends Header {
         }
         // The header parser shouldn't be creating binary headers that
         // aren't in the above set, but just in case...
-        devEnv.markError(pos.sheet, pos.row, pos.col, `${valueText} is not among the operators allowed in headers.`);
+        devEnv.markError(pos.sheet, pos.row, pos.col, "Invalid header", `${valueText} is not among the operators allowed in headers.`);
         return stateMachine_1.Empty();
     }
 }
@@ -1210,7 +1210,26 @@ function parseHeader(headerText) {
 }
 exports.parseHeader = parseHeader;
 
-},{"./stateMachine":4,"./util":6}],3:[function(require,module,exports){
+},{"./stateMachine":5,"./util":7}],3:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Empty = exports.Rep = exports.Emb = exports.Rename = exports.Proj = exports.Not = exports.Join = exports.Uni = exports.Seq = exports.Lit = exports.State = exports.Project = void 0;
+const stateMachine_1 = require("./stateMachine");
+Object.defineProperty(exports, "State", { enumerable: true, get: function () { return stateMachine_1.State; } });
+Object.defineProperty(exports, "Lit", { enumerable: true, get: function () { return stateMachine_1.Lit; } });
+Object.defineProperty(exports, "Seq", { enumerable: true, get: function () { return stateMachine_1.Seq; } });
+Object.defineProperty(exports, "Uni", { enumerable: true, get: function () { return stateMachine_1.Uni; } });
+Object.defineProperty(exports, "Join", { enumerable: true, get: function () { return stateMachine_1.Join; } });
+Object.defineProperty(exports, "Not", { enumerable: true, get: function () { return stateMachine_1.Not; } });
+Object.defineProperty(exports, "Proj", { enumerable: true, get: function () { return stateMachine_1.Proj; } });
+Object.defineProperty(exports, "Rename", { enumerable: true, get: function () { return stateMachine_1.Rename; } });
+Object.defineProperty(exports, "Emb", { enumerable: true, get: function () { return stateMachine_1.Emb; } });
+Object.defineProperty(exports, "Rep", { enumerable: true, get: function () { return stateMachine_1.Rep; } });
+Object.defineProperty(exports, "Empty", { enumerable: true, get: function () { return stateMachine_1.Empty; } });
+const sheetParser_1 = require("./sheetParser");
+Object.defineProperty(exports, "Project", { enumerable: true, get: function () { return sheetParser_1.Project; } });
+
+},{"./sheetParser":4,"./stateMachine":5}],4:[function(require,module,exports){
 "use strict";
 /**
  * This file describes the parser that turns spreadsheets into abstract
@@ -1222,6 +1241,7 @@ exports.parseHeader = parseHeader;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Project = exports.TableComponent = exports.EnclosureComponent = exports.CompileableComponent = exports.CellComponent = exports.TabularComponent = void 0;
 const stateMachine_1 = require("./stateMachine");
+const util_1 = require("./util");
 const headerParser_1 = require("./headerParser");
 /*
 class SyntaxError {
@@ -1315,6 +1335,9 @@ class CompileableComponent extends TabularComponent {
          */
         this.child = undefined;
     }
+    getHeader(col) {
+        return undefined;
+    }
 }
 exports.CompileableComponent = CompileableComponent;
 const BINARY_OPS = {
@@ -1378,6 +1401,12 @@ class EnclosureComponent extends CompileableComponent {
     get text() {
         return this.startCell.text;
     }
+    getHeader(col) {
+        if (this.child == undefined) {
+            return undefined;
+        }
+        return this.child.getHeader(col);
+    }
     addHeader(header) {
         // can only add a header if there aren't any child enclosures yet.
         // well, we could, but it makes a particular kind of syntax error
@@ -1390,11 +1419,11 @@ class EnclosureComponent extends CompileableComponent {
         }
         this.child.addHeader(header);
     }
-    addContent(cell) {
+    addContent(cell, devEnv) {
         if (!(this.child instanceof TableComponent)) {
             throw new Error("Trying to add content to a non-table");
         }
-        this.child.addContent(cell);
+        this.child.addContent(cell, devEnv);
     }
     compile(namespace, devEnv) {
         if (this.text == "table") {
@@ -1413,7 +1442,7 @@ class EnclosureComponent extends CompileableComponent {
             // within its sheet, so it's an assignment to a new symbol
             return this.compileAssignment(namespace, errors);
         } */
-        devEnv.markError(this.position.sheet, this.position.row, this.position.col, `Operator ${this.text} not recognized.`);
+        devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Unknown operator", `Operator ${this.text} not recognized.`);
         return stateMachine_1.Empty();
     }
     compileAssignment(namespace, devEnv) {
@@ -1426,7 +1455,7 @@ class EnclosureComponent extends CompileableComponent {
         }
         if (RESERVED_WORDS.has(this.text)) {
             // oops, assigning to a reserved word
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Assignment to reserved word", "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
                 `reserved word ${this.text}.  Choose a different symbol name.`);
             if (this.child != undefined) {
                 // compile the child just in case there are useful errors to display
@@ -1436,14 +1465,14 @@ class EnclosureComponent extends CompileableComponent {
         }
         if (this.child == undefined) {
             // oops, empty "right side" of the assignment!
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, `This looks like an assignment to a symbol ${this.text}, ` +
-                "but there's nothing to the right of it.");
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Missing content", `This looks like an assignment to a symbol ${this.text}, ` +
+                "but there's nothing to the right of it.", "warning");
             return stateMachine_1.Empty();
         }
         const state = this.child.compile(namespace, devEnv);
         if (namespace.hasSymbol(this.text)) {
             // oops, trying to assign to a symbol that already is assigned to!
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, `You've already assigned something to the symbol ${this.text}`);
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Redefining existing symbol", `You've already assigned something to the symbol ${this.text}`);
             // TODO: The error message should say where it's assigned
         }
         namespace.addSymbol(this.text, state);
@@ -1451,7 +1480,7 @@ class EnclosureComponent extends CompileableComponent {
     }
     compileTable(namespace, devEnv) {
         if (this.child == undefined) {
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "'table' seems to be missing a table; something should be in the cell to the right.");
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Missing content", "'table' seems to be missing a table; something should be in the cell to the right.", "warning");
             return stateMachine_1.Empty();
         }
         if (this.sibling != undefined) {
@@ -1459,19 +1488,19 @@ class EnclosureComponent extends CompileableComponent {
             // we don't do anything with the sibling, but we
             // compile it anyway in case there are errors in it the
             // programmer may want to know about
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, `'table' here will obliterate the preceding content at ${this.sibling.position}.`, "warning");
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Table overwrite warning", `'table' here will obliterate the preceding content at ${this.sibling.position}.`, "warning");
         }
         return this.child.compile(namespace, devEnv);
     }
     compileBinaryOp(namespace, devEnv) {
         const op = BINARY_OPS[this.text];
         if (this.child == undefined) {
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, `'${this.text}' is missing a second argument; ` +
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, `Missing argument to '${this.text}'`, `'${this.text}' is missing a second argument; ` +
                 "something should be in the cell to the right.");
             return stateMachine_1.Empty();
         }
         if (this.sibling == undefined) {
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, `'${this.text}' is missing a first argument; ` +
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, `Missing argument to '${this.text}'`, `'${this.text}' is missing a first argument; ` +
                 "something should be in a cell above this.");
             return stateMachine_1.Empty();
         }
@@ -1502,10 +1531,18 @@ class EnclosureComponent extends CompileableComponent {
     }
 }
 exports.EnclosureComponent = EnclosureComponent;
+/**
+ * A [SheetComponent] is basically an EnclosureComponent without
+ * a parent component; a sheet is always the outermost component of
+ * any component tree.
+ */
 class SheetComponent extends EnclosureComponent {
     constructor(name) {
         super(new CellComponent(name, new headerParser_1.CellPosition(name)));
         this.name = name;
+    }
+    addHeader(header) {
+        throw new Error("This appears to be a header, but what is it a header for?");
     }
     compile(namespace, devEnv) {
         if (this.child == undefined) {
@@ -1541,7 +1578,7 @@ class TableComponent extends CompileableComponent {
     }
     compileAssignment(namespace, devEnv) {
         // I don't think this error is possible, but just in case
-        devEnv.markError(this.position.sheet, this.position.row, this.position.col, "This cell needs to be an assignment, " +
+        devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Unexpected operator", "This cell needs to be an assignment, " +
             "but it looks like you're trying to start a table.");
         return stateMachine_1.Empty();
     }
@@ -1560,30 +1597,45 @@ class TableComponent extends CompileableComponent {
     addHeader(header) {
         this.headersByCol[header.position.col] = header;
     }
-    addContent(cell) {
-        const header = this.headersByCol[cell.position.col];
+    getHeader(col) {
+        return this.headersByCol[col];
+    }
+    addContent(cell, devEnv) {
+        // make sure we have a header
+        const header = this.getHeader(cell.position.col);
         if (header == undefined) {
             throw new Error(`Table at ${this.position} cannot add ` +
                 `content in column ${cell.position.col}`);
         }
+        // color the cell appropriately (even if there's no text)
+        try {
+            const parsedHeader = headerParser_1.parseHeader(header.text);
+            const contentColor = parsedHeader.getColor(0.15);
+            devEnv.markTier(cell.position.sheet, cell.position.row, cell.position.col, contentColor);
+        }
+        catch (e) {
+            devEnv.markError(cell.position.sheet, cell.position.row, cell.position.col, `Invalid header ${header.text}`, "Cannot interpret this cell due to an invalid header above.", "warning");
+            return;
+        }
+        // the following only applies if there's text in the cell
+        if (cell.text.length == 0) {
+            return;
+        }
+        // make a table row if we need one
         if (this.table.length == 0 ||
             cell.position.row != this.table[this.table.length - 1][0].position.row) {
             this.table.push([]);
         }
+        // add the content
         this.table[this.table.length - 1].push(cell);
     }
     compileCell(h, c, namespace, devEnv) {
         try {
             const header = headerParser_1.parseHeader(h.text);
-            const headerColor = header.getColor(0.3);
-            const contentColor = header.getColor(0.15);
-            devEnv.markHeader(h.position.sheet, h.position.row, h.position.col, headerColor);
-            devEnv.markTier(c.position.sheet, c.position.row, c.position.col, contentColor);
             return header.compile(c.text, h.position, namespace, devEnv);
         }
         catch (e) {
-            devEnv.markError(h.position.sheet, h.position.row, h.position.col, e.toString());
-            devEnv.markError(c.position.sheet, c.position.row, c.position.col, `Because of an error in the header at ${h.position}, ` +
+            devEnv.markError(c.position.sheet, c.position.row, c.position.col, "Ignoring cell", `Because of an error in the header at ${h.position}, ` +
                 "this cell will be ignored.", "warning");
             return stateMachine_1.Empty();
         }
@@ -1607,6 +1659,22 @@ class TableComponent extends CompileableComponent {
 }
 exports.TableComponent = TableComponent;
 /**
+ * Determines whether a line is empty
+ * @param row A list of strings, representing the cell text along that row
+ * @returns True if the line is empty
+ */
+function isLineEmpty(row) {
+    if (row.length == 0) {
+        return true;
+    }
+    for (let cellText of row) {
+        if (cellText.trim().length != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+/**
  * A SheetParser turns a grid of cells into abstract syntax tree (AST) components, which in
  * turn are interpreted or compiled into a computer language.  This parser is agnostic as to
  * what exactly these components represent or how they'll be handled later, it's just a parser
@@ -1618,12 +1686,49 @@ class Project {
         this.globalNamespace = new stateMachine_1.Namespace();
         this.sheets = {};
     }
-    generate(symbolName) {
+    allSymbols() {
+        return this.globalNamespace.allSymbols();
+    }
+    getSymbol(symbolName) {
+        return this.globalNamespace.get(symbolName);
+    }
+    getTapeNames(symbolName) {
         const startState = this.globalNamespace.get(symbolName);
         if (startState == undefined) {
             throw new Error(`Cannot find symbol ${symbolName}`);
         }
-        return [...startState.generate()];
+        const results = [];
+        for (const tapeName of startState.getTapeNames()) {
+            const header = headerParser_1.parseHeader(tapeName);
+            results.push([tapeName, header.getColor(0.3)]);
+        }
+        return results;
+    }
+    parse(symbolName, inputs, maxResults = Infinity, randomize = false, maxRecursion = 4, maxChars = 1000) {
+        var startState = this.globalNamespace.get(symbolName);
+        if (startState == undefined) {
+            throw new Error(`Cannot find symbol ${symbolName}`);
+        }
+        const inputLiterals = [];
+        for (const tapeName in inputs) {
+            const value = inputs[tapeName];
+            const inputLiteral = stateMachine_1.Lit(tapeName, value);
+            inputLiterals.push(inputLiteral);
+        }
+        if (inputLiterals.length > 0) {
+            const inputSeq = stateMachine_1.Seq(...inputLiterals);
+            startState = stateMachine_1.Join(inputSeq, startState);
+        }
+        const gen = startState.generate(randomize, maxRecursion, maxChars);
+        return util_1.iterTake(gen, maxResults);
+    }
+    generate(symbolName, maxResults = Infinity, randomize = false, maxRecursion = 4, maxChars = 1000) {
+        const startState = this.globalNamespace.get(symbolName);
+        if (startState == undefined) {
+            throw new Error(`Cannot find symbol ${symbolName}`);
+        }
+        const gen = startState.generate(randomize, maxRecursion, maxChars);
+        return util_1.iterTake(gen, maxResults);
     }
     addSheet(sheetName) {
         if (sheetName in this.sheets) {
@@ -1639,6 +1744,9 @@ class Project {
         const cells = this.devEnv.loadSource(sheetName);
         // parse the cells into an abstract syntax tree
         const sheetComponent = this.parseCells(sheetName, cells);
+        // put the raw cells into the sheetComponent, for interfaces
+        // that need them (like the sidebar of the GSuite add-on)
+        //const 
         // Create a new namespace for this sheet and add it to the 
         // global namespace
         const sheetNamespace = new stateMachine_1.Namespace();
@@ -1670,14 +1778,16 @@ class Project {
         var topEnclosure = new SheetComponent(sheetName);
         // Now iterate through the cells, left-to-right top-to-bottom
         for (var rowIndex = 0; rowIndex < cells.length; rowIndex++) {
+            const cellsInRow = cells[rowIndex];
+            if (isLineEmpty(cellsInRow)) {
+                continue;
+            }
             for (var colIndex = 0; colIndex < cells[rowIndex].length; colIndex++) {
                 const cellText = cells[rowIndex][colIndex].trim();
-                if (cellText.length == 0) {
-                    continue;
-                }
                 const position = new headerParser_1.CellPosition(sheetName, rowIndex, colIndex);
                 const cell = new CellComponent(cellText, position);
-                while (colIndex <= topEnclosure.position.col) {
+                while (cellText.length > 0
+                    && colIndex <= topEnclosure.position.col) {
                     // it breaks the previous enclosure; pop that off
                     if (topEnclosure.parent == undefined) {
                         throw new Error("The enclosure stack is empty somehow; " +
@@ -1688,36 +1798,48 @@ class Project {
                 }
                 if (topEnclosure.specRow > -1 && rowIndex > topEnclosure.specRow) {
                     // we're inside an enclosure
-                    try {
-                        topEnclosure.addContent(cell);
+                    const header = topEnclosure.getHeader(colIndex);
+                    if (header == undefined) {
+                        // there's nothing above this cell
+                        if (cellText.length == 0) {
+                            // if there's also nothing in the cell, we're fine
+                            continue;
+                        }
+                        this.devEnv.markError(sheetName, rowIndex, colIndex, `Wayward cell: ${cell.text}`, `This cell does not have a header above it in column ${colIndex}, ` +
+                            "so we're unable to interpret it.");
+                        continue;
                     }
-                    catch (e) {
-                        this.devEnv.markError(position.sheet, position.row, position.col, "This cell does not have a header above it, so we're unable to interpret it.");
-                    }
+                    topEnclosure.addContent(cell, this.devEnv);
+                    continue;
+                }
+                if (cellText.length == 0) {
+                    // all of the following steps require there to be some explicit content
                     continue;
                 }
                 // either we're still in the spec row, or there's no spec row yet
                 if (enclosureOps.has(cellText) || position.col == 0) {
                     // it's the start of a new enclosure
-                    this.devEnv.markCommand(position.sheet, position.row, position.col);
+                    this.devEnv.markCommand(sheetName, rowIndex, colIndex);
                     const newEnclosure = new EnclosureComponent(cell, topEnclosure);
                     try {
                         topEnclosure.addChildEnclosure(newEnclosure, this.devEnv);
                         topEnclosure = newEnclosure;
                     }
                     catch (e) {
-                        this.devEnv.markError(position.sheet, position.row, position.col, "This looks like an operator, but only a header can follow a header.");
+                        this.devEnv.markError(sheetName, rowIndex, colIndex, `Unexpected operator: ${cell.text}`, "This looks like an operator, but only a header can follow a header.");
                     }
                     continue;
                 }
                 // it's a header
                 try {
                     topEnclosure.addHeader(cell);
+                    const header = headerParser_1.parseHeader(cell.text);
+                    const color = header.getColor(0.3);
+                    this.devEnv.markHeader(sheetName, rowIndex, colIndex, color);
                 }
                 catch (e) {
                     //console.log(e);
-                    this.devEnv.markError(position.sheet, position.row, position.col, `Cannot add a header to ${topEnclosure}; ` +
-                        "you need an operator like 'or', 'apply', etc.");
+                    this.devEnv.markError(sheetName, rowIndex, colIndex, `Invalid header: ${cell.text}`, e.toString());
                 }
             }
         }
@@ -1726,7 +1848,7 @@ class Project {
 }
 exports.Project = Project;
 
-},{"./headerParser":2,"./stateMachine":4}],4:[function(require,module,exports){
+},{"./headerParser":2,"./stateMachine":5,"./util":7}],5:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Maybe = exports.Empty = exports.Rep = exports.Any = exports.Rename = exports.Proj = exports.Emb = exports.Not = exports.Join = exports.Uni = exports.Seq = exports.Literalizer = exports.Lit = exports.NegationState = exports.RenameState = exports.ProjectionState = exports.EmbedState = exports.RepetitionState = exports.JoinState = exports.UnionState = exports.ConcatState = exports.TrivialState = exports.LiteralState = exports.AnyCharState = exports.State = exports.Namespace = void 0;
@@ -1942,9 +2064,9 @@ class State {
      *      * matched is whether we actually made a match or ignored it (for being on the wrong tape)
      *      * nextState is the state the matched transition leads to
      */
-    *dQuery(tape, target, symbolStack) {
+    *dQuery(tape, target, symbolStack, randomize) {
         var results = [];
-        var nextStates = [...this.ndQuery(tape, target, symbolStack)];
+        var nextStates = [...this.ndQuery(tape, target, symbolStack, randomize)];
         for (var [tape, bits, matched, next] of nextStates) {
             if (tape.numTapes == 0) {
                 results.push([tape, bits, matched, next]);
@@ -1974,6 +2096,11 @@ class State {
         }
         yield* results;
     }
+    getTapeNames() {
+        const allTapes = new tapes_1.TapeCollection();
+        this.collectVocab(allTapes, []);
+        return allTapes.getTapeNames();
+    }
     /**
      * Performs a breadth-first traversal of the graph.  This will be the function that most
      * clients will be calling.
@@ -1989,7 +2116,7 @@ class State {
      *                    output to all tapes)
      * @returns a generator of { tape: string } dictionaries, one for each successful traversal.
      */
-    *generate(maxRecursion = 4, maxChars = 1000) {
+    *generate(randomize = false, maxRecursion = 4, maxChars = 1000) {
         const allTapes = new tapes_1.TapeCollection();
         this.collectVocab(allTapes, []);
         const initialOutput = new tapes_1.MultiTapeOutput();
@@ -2003,7 +2130,7 @@ class State {
                 if (prevState.accepting(symbolStack)) {
                     yield* prevOutput.toStrings();
                 }
-                for (const [tape, c, matched, newState] of prevState.dQuery(allTapes, tapes_1.ANY_CHAR, symbolStack)) {
+                for (const [tape, c, matched, newState] of prevState.dQuery(allTapes, tapes_1.ANY_CHAR, symbolStack, randomize)) {
                     if (!matched) {
                         console.log("Warning, got all the way through without a match");
                         continue;
@@ -2174,25 +2301,25 @@ class BinaryState extends State {
  * appropriate ConcatState consisting of the unmatched material.
  */
 class ConcatState extends BinaryState {
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, symbolStack, randomize) {
         // We can yield from child2 if child1 is accepting, OR if child1 doesn't care about the requested tape,
         // but if child1 is accepting AND doesn't care about the requested tape, we don't want to yield twice;
         // that leads to duplicate results.  yieldedAlready is how we keep track of that.
         var yieldedAlready = false;
-        for (const [c1tape, c1text, c1matched, c1next] of this.child1.dQuery(tape, target, symbolStack)) {
+        for (const [c1tape, c1text, c1matched, c1next] of this.child1.dQuery(tape, target, symbolStack, randomize)) {
             if (c1matched) {
                 yield [c1tape, c1text, c1matched, new ConcatState(c1next, this.child2)];
                 continue;
             }
             // child1 not interested in the requested tape, the first character on the tape must be
             // (if it exists at all) in child2.
-            for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack)) {
+            for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack, randomize)) {
                 yield [c2tape, c2text, c2matched, new ConcatState(this.child1, c2next)];
                 yieldedAlready = true;
             }
         }
         if (!yieldedAlready && this.child1.accepting(symbolStack)) {
-            yield* this.child2.dQuery(tape, target, symbolStack);
+            yield* this.child2.dQuery(tape, target, symbolStack, randomize);
         }
     }
 }
@@ -2208,9 +2335,31 @@ class UnionState extends BinaryState {
     accepting(symbolStack) {
         return this.child1.accepting(symbolStack) || this.child2.accepting(symbolStack);
     }
-    *ndQuery(tape, target, symbolStack) {
-        yield* this.child1.dQuery(tape, target, symbolStack);
-        yield* this.child2.dQuery(tape, target, symbolStack);
+    getChildren() {
+        var children = [];
+        if (this.child1 instanceof UnionState) {
+            children = children.concat(this.child1.getChildren());
+        }
+        else {
+            children.push(this.child1);
+        }
+        if (this.child2 instanceof UnionState) {
+            children = children.concat(this.child2.getChildren());
+        }
+        else {
+            children.push(this.child2);
+        }
+        return children;
+    }
+    *ndQuery(tape, target, symbolStack, randomize) {
+        if (!randomize) {
+            yield* this.child1.dQuery(tape, target, symbolStack, randomize);
+            yield* this.child2.dQuery(tape, target, symbolStack, randomize);
+            return;
+        }
+        const children = this.getChildren();
+        const child = children[Math.floor(Math.random() * children.length)];
+        yield* child.dQuery(tape, target, symbolStack, randomize);
     }
 }
 exports.UnionState = UnionState;
@@ -2275,22 +2424,22 @@ function* iterPriorityUnion(iter1, iter2) {
  * priority union instead.
  */
 class JoinState extends BinaryState {
-    *ndQueryLeft(tape, target, c1, c2, symbolStack) {
-        for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, symbolStack)) {
+    *ndQueryLeft(tape, target, c1, c2, symbolStack, randomize) {
+        for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, symbolStack, randomize)) {
             if (c1tape.numTapes == 0) {
                 // c1 contained a ProjectionState that hides the original tape; move on without
                 // asking c2 to match anything.
                 yield [c1tape, c1target, c1matched, new JoinState(c1next, c2)];
                 continue;
             }
-            for (const [c2tape, c2target, c2matched, c2next] of c2.dQuery(c1tape, c1target, symbolStack)) {
+            for (const [c2tape, c2target, c2matched, c2next] of c2.dQuery(c1tape, c1target, symbolStack, randomize)) {
                 yield [c2tape, c2target, c1matched || c2matched, new JoinState(c1next, c2next)];
             }
         }
     }
-    *ndQuery(tape, target, symbolStack) {
-        const leftJoin = this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack);
-        const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, symbolStack);
+    *ndQuery(tape, target, symbolStack, randomize) {
+        const leftJoin = this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack, randomize);
+        const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, symbolStack, randomize);
         yield* iterPriorityUnion(leftJoin, rightJoin);
     }
 }
@@ -2349,7 +2498,7 @@ class RepetitionState extends UnaryState {
             this.index <= this.maxRepetitions &&
             this.child.accepting(symbolStack);
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, symbolStack, randomize) {
         if (this.index > this.maxRepetitions) {
             return;
         }
@@ -2358,7 +2507,7 @@ class RepetitionState extends UnaryState {
             // we just started, or the child is accepting, so our successor increases its index
             // and starts again with child.
             const successor = new RepetitionState(this.initialChild, this.minRepetitions, this.maxRepetitions, this.index + 1, this.initialChild);
-            for (const result of successor.dQuery(tape, target, symbolStack)) {
+            for (const result of successor.dQuery(tape, target, symbolStack, randomize)) {
                 yield result;
                 yieldedAlready = true;
             }
@@ -2366,7 +2515,7 @@ class RepetitionState extends UnaryState {
         if (yieldedAlready) {
             return;
         }
-        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack)) {
+        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack, randomize)) {
             if (!childMatched) { // child doesn't care, neither do we
                 yield [childTape, childText, false, this];
                 continue;
@@ -2413,7 +2562,8 @@ class EmbedState extends UnaryState {
         if (this._child == undefined) {
             this._child = this.namespace.get(this.symbolName);
             if (this._child == undefined) {
-                throw new Error(`Cannot find symbol name ${this.symbolName}`);
+                //throw new Error(`Cannot find symbol name ${this.symbolName}`);
+                this._child = Empty();
             }
         }
         return this._child;
@@ -2424,12 +2574,12 @@ class EmbedState extends UnaryState {
         }
         return this.child.accepting(symbolStack.add(this.symbolName));
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, symbolStack, randomize) {
         if (symbolStack.exceedsMax(this.symbolName)) {
             return;
         }
         symbolStack = symbolStack.add(this.symbolName);
-        for (const [childchildTape, childTarget, childMatched, childNext] of this.child.ndQuery(tape, target, symbolStack)) {
+        for (const [childchildTape, childTarget, childMatched, childNext] of this.child.ndQuery(tape, target, symbolStack, randomize)) {
             const successor = new EmbedState(this.symbolName, this.namespace, childNext);
             yield [childchildTape, childTarget, childMatched, successor];
         }
@@ -2452,12 +2602,12 @@ class ProjectionState extends UnaryState {
         this.child = child;
         this.tapeRestriction = tapeRestriction;
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, symbolStack, randomize) {
         if (tape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(tape.tapeName)) {
             // if it's not a tape we care about, go nowhere
             yield [tape, target, false, this];
         }
-        for (var [childTape, childTarget, childMatch, childNext] of this.child.dQuery(tape, target, symbolStack)) {
+        for (var [childTape, childTarget, childMatch, childNext] of this.child.dQuery(tape, target, symbolStack, randomize)) {
             if (childTape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(childTape.tapeName)) {
                 // even if our child yields content on a restricted tape, 
                 // we don't let our own parent know about it
@@ -2484,11 +2634,11 @@ class RenameState extends UnaryState {
         tapes = new tapes_1.RenamedTape(tapes, this.fromTape, this.toTape);
         this.child.collectVocab(tapes, stateStack);
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, symbolStack, randomize) {
         if (tape.tapeName == this.toTape || tape.tapeName == "__ANY_TAPE__") {
             tape = new tapes_1.RenamedTape(tape, this.fromTape, this.toTape);
         }
-        for (var [childTape, childTarget, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack)) {
+        for (var [childTape, childTarget, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack, randomize)) {
             //assert(childTape instanceof RenamedTape);
             const trueChildTape = childTape.child;
             yield [trueChildTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape)];
@@ -2560,13 +2710,13 @@ class NegationState extends State {
         }
         return !this.child.accepting(symbolStack);
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, symbolStack, randomize) {
         if (this.child == undefined) { // we've can't possibly match the child, so we're basically .* from now on
             yield [tape, target, true, this];
             return;
         }
         var remainder = new tapes_1.Token(target.bits.clone());
-        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack)) {
+        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack, randomize)) {
             remainder = remainder.andNot(childText);
             yield [childTape, childText, childMatched, new NegationState(childNext)];
         }
@@ -2587,7 +2737,7 @@ function Literalizer(tier) {
 exports.Literalizer = Literalizer;
 function Seq(...children) {
     if (children.length == 0) {
-        throw new Error("Sequences must have at least 1 child");
+        return Empty();
     }
     if (children.length == 1) {
         return children[0];
@@ -2597,7 +2747,7 @@ function Seq(...children) {
 exports.Seq = Seq;
 function Uni(...children) {
     if (children.length == 0) {
-        throw new Error("Unions must have at least 1 child");
+        return Empty();
     }
     if (children.length == 1) {
         return children[0];
@@ -2649,7 +2799,7 @@ function Maybe(child) {
 }
 exports.Maybe = Maybe;
 
-},{"./tapes":5}],5:[function(require,module,exports){
+},{"./tapes":6}],6:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RenamedTape = exports.TapeCollection = exports.StringTape = exports.NO_CHAR = exports.ANY_CHAR = exports.Token = exports.Tape = exports.MultiTapeOutput = void 0;
@@ -2963,6 +3113,9 @@ class TapeCollection extends Tape {
     addTape(tape) {
         this.tapes.set(tape.tapeName, tape);
     }
+    getTapeNames() {
+        return [...this.tapes.keys()];
+    }
     get tapeName() {
         if (this.tapes.size == 0) {
             return "__NO_TAPE__";
@@ -3062,10 +3215,10 @@ class RenamedTape extends Tape {
 }
 exports.RenamedTape = RenamedTape;
 
-},{"bitset":1}],6:[function(require,module,exports){
+},{"bitset":1}],7:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setChain = exports.setIntersection = exports.RGBtoString = exports.HSVtoRGB = exports.meanAngleDeg = void 0;
+exports.setChain = exports.setIntersection = exports.RGBtoString = exports.HSVtoRGB = exports.iterTake = exports.shuffleArray = exports.meanAngleDeg = void 0;
 function sum(a) {
     var s = 0;
     for (var i = 0; i < a.length; i++)
@@ -3079,6 +3232,31 @@ function meanAngleDeg(a) {
     return 180 / Math.PI * Math.atan2(sum(a.map(degToRad).map(Math.sin)) / a.length, sum(a.map(degToRad).map(Math.cos)) / a.length);
 }
 exports.meanAngleDeg = meanAngleDeg;
+/* Randomize array in-place using Durstenfeld shuffle algorithm */
+function shuffleArray(array) {
+    for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+}
+exports.shuffleArray = shuffleArray;
+function iterTake(gen, n) {
+    var i = 1;
+    const results = [];
+    if (n <= 0) {
+        throw new Error("Invalid index");
+    }
+    for (const value of gen) {
+        results.push(value);
+        if (i++ == n) {
+            break;
+        }
+    }
+    return results;
+}
+exports.iterTake = iterTake;
 function HSVtoRGB(h, s, v) {
     var r, g, b, i, f, p, q, t;
     i = Math.floor(h * 6);
