@@ -483,7 +483,7 @@ export class TableComponent extends CompileableComponent {
         // color the cell appropriately (even if there's no text)
         try {
             const parsedHeader = parseHeader(header.text);
-            const contentColor = parsedHeader.getColor(0.15);
+            const contentColor = parsedHeader.getColor(0.1);
             devEnv.markTier(cell.position.sheet, cell.position.row, 
                 cell.position.col, contentColor);
         } catch (e) {
@@ -599,7 +599,7 @@ export class Project {
         const results: [string, string][] = [];
         for (const tapeName of startState.getTapeNames()) {
             const header = parseHeader(tapeName);
-            results.push([tapeName, header.getColor(0.3)]);
+            results.push([tapeName, header.getColor(0.2)]);
         }
         return results;
     }
@@ -782,7 +782,7 @@ export class Project {
                 try {
                     topEnclosure.addHeader(cell);
                     const header = parseHeader(cell.text);
-                    const color = header.getColor(0.3);
+                    const color = header.getColor(0.2);
                     this.devEnv.markHeader(sheetName, rowIndex, colIndex, color);
                 } catch (e) {
                     //console.log(e);

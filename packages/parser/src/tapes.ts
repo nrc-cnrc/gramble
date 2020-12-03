@@ -44,6 +44,28 @@ class SingleTapeOutput {
     }
 
     public *getStrings(): Gen<string> {
+
+        var results: string[] = [ "" ];
+
+        var currentTape: SingleTapeOutput | undefined = this;
+
+        // step backward through the current object and its prevs, building the output strings from
+        // right to left.  (you might think this would be more elegant to be done recursively, but it blows
+        // the stack when stringifying long outputs.)
+        while (currentTape != undefined) {
+            for (const c of currentTape.tape.fromBits(currentTape.tape.tapeName, currentTape.token.bits)) {
+                const newResults: string[] = [];
+                for (const existingResult of results) {
+                    newResults.push(c + existingResult);
+                }
+                results = newResults;
+            }
+            currentTape = currentTape.prev;
+        }
+
+        yield* results;
+
+        /*
         var prevStrings = [""];
         if (this.prev != undefined) {
             prevStrings = [... this.prev.getStrings()];
@@ -53,7 +75,7 @@ class SingleTapeOutput {
             for (const c of this.tape.fromBits(this.tape.tapeName, this.token.bits)) {
                 yield s + c;
             }
-        }
+        } */
     }
 }
 
