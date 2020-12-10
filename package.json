@@ -20,6 +20,8 @@
   ],
   "license": "MIT",
   "devDependencies": {
+    "@types/chai": "^4.2.14",
+    "@types/mocha": "^8.2.0",
     "chai": "^4.2.0",
     "lerna": "^3.22.0",
     "mocha": "^8.1.3",
