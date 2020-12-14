@@ -105,3 +105,8 @@ dist
 
 # Mac
 .DS_Store
+
+# Eclipse Project settings
+.project
+.settings
+.pydevproject
