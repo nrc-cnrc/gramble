@@ -1,0 +1,11 @@
+#!/usr/bin/env node
+
+// the extension of this file is ".jscript" rather than ".js"
+// to prevent the clasp utility from trying to turn it into a GAS
+// file.  (you're supposed to make a .claspignore file for this,
+// but .claspignore is bugged.)
+
+const fs = require("fs");
+const jsSource = fs.readFileSync("gramble.js");
+const wrappedSource = "<script>\n" + jsSource + "</script>";
+fs.writeFileSync("grambleWrapped.html", wrappedSource);

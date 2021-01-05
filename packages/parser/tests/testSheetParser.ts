@@ -191,6 +191,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrorInCell(errors, "headerUsingReservedWord", 5, 4);
     });
 
+
     describe('Grammar with nested tables', function() {
 
         const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/nestedTables.csv");
@@ -269,75 +270,18 @@ describe(`${path.basename(module.filename)}`, function() {
         testNumErrors(errors, 1, "warning");
         testErrorInCell(errors, "tableObliteration", 6, 1);
     });
-
-    describe('Parseable grammar but with weird indentation', function() {
-
+    
+    describe('Grammar but with weird indentation', function() {
+        
         const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/weirdIndentation.csv");
 
-        testNumErrors(errors, 0, "error");
-        testNumErrors(errors, 1, "warning");
-
+        testNumErrors(errors, 1, "error");
+        testNumErrors(errors, 0, "warning");
+        
         it("should have 'word' as its child", function() {
             expect(sheet.child).to.not.be.undefined;
             if (sheet.child == undefined) return;
             expect(sheet.child.text).to.equal("word");
-        });
-
-        it("should have 'suffix' as its child's sibling", function() {
-            expect(sheet.child).to.not.be.undefined;
-            if (sheet.child == undefined) return;
-            expect(sheet.child.sibling).to.not.be.undefined;
-            if (sheet.child.sibling == undefined) return;
-            expect(sheet.child.sibling.text).to.equal("suffix");
-        });
-
-        it("should have 'table' as its child's sibling's child", function() {
-            expect(sheet.child).to.not.be.undefined;
-            if (sheet.child == undefined) return;
-            expect(sheet.child.sibling).to.not.be.undefined;
-            if (sheet.child.sibling == undefined) return;
-            expect(sheet.child.sibling.child).to.not.be.undefined;
-            if (sheet.child.sibling.child == undefined) return;
-            expect(sheet.child.sibling.child.text).to.equal("table");
-        });
-
-        it("should have 'verb' as its child's sibling's sibling", function() {
-            expect(sheet.child).to.not.be.undefined;
-            if (sheet.child == undefined) return;
-            expect(sheet.child.sibling).to.not.be.undefined;
-            if (sheet.child.sibling == undefined) return;
-            expect(sheet.child.sibling.sibling).to.not.be.undefined;
-            if (sheet.child.sibling.sibling == undefined) return;
-            expect(sheet.child.sibling.sibling.text).to.equal("verb");
-        });
-
-
-        it("should have no child's sibling's sibling's sibling", function() {
-            expect(sheet.child).to.not.be.undefined;
-            if (sheet.child == undefined) return;
-            expect(sheet.child.sibling).to.not.be.undefined;
-            if (sheet.child.sibling == undefined) return;
-            expect(sheet.child.sibling.sibling).to.not.be.undefined;
-            if (sheet.child.sibling.sibling == undefined) return;
-            expect(sheet.child.sibling.sibling.sibling).to.be.undefined;
-        });
-
-        it("should have 'join' as its child's child", function() {
-            expect(sheet.child).to.not.be.undefined;
-            if (sheet.child == undefined) return;
-            expect(sheet.child.child).to.not.be.undefined;
-            if (sheet.child.child == undefined) return;
-            expect(sheet.child.child.text).to.equal("join");
-        });
-
-        it("should have 'table' as its child's child's sibling", function() {
-            expect(sheet.child).to.not.be.undefined;
-            if (sheet.child == undefined) return;
-            expect(sheet.child.child).to.not.be.undefined;
-            if (sheet.child.child == undefined) return;
-            expect(sheet.child.child.sibling).to.not.be.undefined;
-            if (sheet.child.child.sibling == undefined) return;
-            expect(sheet.child.child.sibling.text).to.equal("table");
         });
     });
 

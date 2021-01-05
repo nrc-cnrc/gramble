@@ -39,6 +39,7 @@ export class TextDevEnvironment implements DevEnvironment {
     public markError(sheet: string, 
                      row: number, 
                      col: number, 
+                     shortMsg: string,
                      msg: string, 
                      level: "error" | "warning" | "info" = "error") {
         const key = posToStr(sheet, row, col);

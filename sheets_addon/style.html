@@ -1,0 +1,200 @@
+<style>
+
+body {
+    background-color: #eeeeee;
+    overflow-y: scroll;
+    width: 265px;
+    margin: 5px auto;
+}
+
+#controlTable, #sampleTable {
+    width: 100%;
+    border-spacing: 0px;
+    border-collapse: collapse;
+}
+
+tr {
+    padding: 0px;
+    width: 100%;
+}
+
+td {
+    padding: 0px;
+}
+
+input { 
+    box-sizing: border-box;
+} 
+
+
+#reloadButton, #sampleButton {
+    width: 100%;
+    border: 2px solid #555555;
+    background-color: #ffffff;
+    color: #333333;
+    box-shadow: none;
+    padding: 5px;
+    margin: 3px auto;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 2px #999;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+     user-select: none;
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    -webkit-tap-highlight-color: transparent;
+}
+
+#reloadButton:hover, #sampleButton:hover {
+    background-color: #dddddd;
+}
+
+#reloadButton:active, #sampleButton:active {
+    background-color: #dddddd;
+    box-shadow: 0 1px #999;
+    transform: translateY(1px);
+}
+
+.errorButton {  
+    border: 1px solid #994444;
+    box-shadow: 0 1px #633;
+    width: 100%;
+    background-color: #FF7777;
+    padding: 2px 5px;
+    margin: 2px auto;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    text-align: left;
+    font-weight: bold;
+    box-shadow: 0 2px #633;  
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+     user-select: none;
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.errorButton:hover {
+    background-color: #DD7777;
+}
+
+.errorButton:active {
+    background-color: #DD7777;
+    box-shadow: 0 1px #633;
+    transform: translateY(1px);
+}
+
+#selectSymbol {
+    border: 2px solid #555555;
+    color: #333333;
+    box-shadow: none;
+    width: 100%;
+    background-color: #ffffff;
+    padding: 2px;
+    margin: 1px auto;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.tapeInputTr {
+    border-top: 1px solid #333;
+    border-bottom: 1px solid #333;
+    font-size: 10pt; 
+    font-family: sans-serif;
+}
+
+.tapeInput {
+    width: 98%;
+    border: 1px solid #55555577;
+    background-color: #ffffff77;
+    padding: 1px 5px;
+    margin: 2px auto;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    text-align: left;
+}
+
+#errorTr {
+    width: 100%;
+}
+
+#errorTr td {
+    padding: 3px 1px;
+}
+
+#selectTr {
+    width: 100%;
+}
+
+#selectTr td {
+    text-align: center;
+    padding: 3px 1px;
+}
+
+.labelTd {
+    text-align: center;
+    font-weight: bold;
+    padding: 1px 7px;
+}
+
+#loadingP {
+    width: 80%;
+    font-weight: bold;
+    text-align: center;
+    margin: 0 auto;
+    padding: 4px 5px;
+    display: none;
+}
+
+#resultsTable {
+    width: 100%; 
+    margin: 10px auto;
+    padding: 5px 5px; 
+    border-collapse: collapse; 
+    border-spacing: 0px; 
+    border: 0px; 
+    font-size: 10pt; 
+    font-family: sans-serif;
+}
+
+.resultsBlankTr {
+    font-size: 8pt;
+    border: 0;
+}
+
+.resultsTr {
+    width: 100%;
+    border-bottom: 1px solid #333;
+    border-top: 1px solid #333;
+}
+
+.resultsKey {   
+    padding: 3px 7px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.resultsValue {
+    padding: 3px 10px;
+    text-align: left;
+    width: 100%;
+}
+
+
+</style>

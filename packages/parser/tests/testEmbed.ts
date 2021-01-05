@@ -174,7 +174,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const world = Uni(text("world"), Emb("helloWorld", symbolTable))
         const helloWorld = Seq(text("hello"), world);
         symbolTable.addSymbol("helloWorld", helloWorld);
-        const outputs = [... helloWorld.generate(2)];
+        const outputs = [... helloWorld.generate(false, 2)];
         testNumOutputs(outputs, 3);
         testHasOutput(outputs, "text", "helloworld");
         testHasOutput(outputs, "text", "hellohelloworld");
@@ -186,7 +186,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const world = Uni(text("world"), Emb("helloWorld", symbolTable))
         const helloWorld = Seq(text("hello"), world);
         symbolTable.addSymbol("helloWorld", helloWorld);
-        const outputs = [... helloWorld.generate(0)];
+        const outputs = [... helloWorld.generate(false, 0)];
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "text", "helloworld");
     });
@@ -210,7 +210,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
         const helloWorld = Seq(helloHello, text("world"));
         symbolTable.addSymbol("hellohello", helloHello);
-        const outputs = [... helloWorld.generate(2)];
+        const outputs = [... helloWorld.generate(false, 2)];
         testNumOutputs(outputs, 3);
         testHasOutput(outputs, "text", "helloworld");
         testHasOutput(outputs, "text", "hellohelloworld");
@@ -222,7 +222,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
         const helloWorld = Seq(helloHello, text("world"));
         symbolTable.addSymbol("hellohello", helloHello);
-        const outputs = [... helloWorld.generate(0)];
+        const outputs = [... helloWorld.generate(false, 0)];
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "text", "helloworld");
     });
