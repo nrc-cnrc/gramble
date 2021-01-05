@@ -13,8 +13,8 @@ body {
     border-collapse: collapse;
 }
 
-tr {
-    padding: 0px;
+#controlTable, #sampleTable td {
+    padding: 0px 2px;
     width: 100%;
 }
 
@@ -27,14 +27,14 @@ input {
 } 
 
 
-#reloadButton, #sampleButton {
+#reloadButton, #sampleButton, .downloadButton {
     width: 100%;
     border: 2px solid #555555;
     background-color: #ffffff;
     color: #333333;
     box-shadow: none;
     padding: 5px;
-    margin: 3px auto;
+    margin: 2px auto;
     -webkit-border-radius: 3px;
     -moz-border-radius: 3px;
     border-radius: 3px;
@@ -96,7 +96,7 @@ input {
     transform: translateY(1px);
 }
 
-#selectSymbol {
+#selectSymbol, #downloadFormatSelect {
     border: 2px solid #555555;
     color: #333333;
     box-shadow: none;
@@ -109,6 +109,11 @@ input {
     border-radius: 3px;
     text-align: center;
     font-weight: bold;
+}
+
+#downloadFormatSelect {
+    margin: 0px auto;
+    width: 80px;
 }
 
 .tapeInputTr {

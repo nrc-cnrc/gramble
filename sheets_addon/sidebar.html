@@ -305,22 +305,79 @@
 
             };
 
+            
+            function resultsToCSV(labels, items) {
+                const replacer = (key, value) => value === null ? '' : value // specify how you want to handle null values here
+                return [
+                    labels.join(','), // header row first
+                    ...items.map(row => labels.map(label => JSON.stringify(row[label], replacer)).join(','))
+                ].join('\r\n');
+            }
+
+            function downloadResults() {
+
+                // determine what symbol to generate from
+                const symbolSelect = document.getElementById("selectSymbol"); 
+                const symbolName = symbolSelect.value;
+
+                // determine what tape names are relevant to this symbol
+                const tapeInfo = project.getTapeNames(symbolName);
+                const tapeNames = tapeInfo.map(([k, v]) => k);
+
+                // generate the results
+                const results = project.generate(symbolName);
+
+                // determine what format to output in
+                var formatSelect = document.getElementById("downloadFormatSelect");
+                const downloadFormat = formatSelect.value;
+
+                var filename, text;
+                // convert the results to the appropriate format
+                if (downloadFormat == "json") {
+                    filename = `${symbolName}.json`;
+                    text = JSON.stringify(results, null, 2);
+                } else if (downloadFormat == "csv") {
+                    filename = `${symbolName}.csv`;
+                    text = resultsToCSV(tapeNames, results);
+                }
+
+                // create a temporary link element to download from
+                var element = document.createElement('a');
+                element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(text));
+                element.setAttribute('download', filename);
+                element.style.display = 'none';
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+                return false;
+            }
 
         </script>
-    <table id="controlTable">
-        <!-- <td colspan="2"><button id="highlightButton">Highlight</button></td></tr>-->
-        <tr><td colspan="2"><button id="reloadButton">Sync and validate</button></td></tr>
-        <tr id="errorTr"><td colspan="2" id="errorArea"> </td></tr>
-        <tr id="selectTr"><td>Input:</td><td class="wideTd"><select id="selectSymbol"> </select></td></tr>
-    </table>
 
-    <table id="sampleTable">
-        <tr><td colspan="2"><button id="sampleButton">Sample</button></td></tr>
-    </table>
+        <table id="controlTable">
+            <!-- <td colspan="2"><button id="highlightButton">Highlight</button></td></tr>-->
+            <tr><td colspan="2"><button id="reloadButton">Sync and validate</button></td></tr>
+            <tr id="errorTr"><td colspan="2" id="errorArea"> </td></tr>
+            <tr id="selectTr"><td>Input:</td><td class="wideTd"><select id="selectSymbol"> </select></td></tr>
+        </table>
 
-    <p id="loadingP">Loading...</p>
+        <table id="sampleTable">
+            <tr><td><button class="downloadButton" onclick="downloadResults()">Download results</button>
+                </td>
+                <td>
+                    <select id="downloadFormatSelect">
+                        <option value="csv">CSV</option>
+                        <option value="json">JSON</option>
+                    </select>
+                </td>
+            </tr>
+            <tr><td colspan="2"><button id="sampleButton">Sample</button></td></tr>
+        </table>
 
-    <table id="resultsTable"> </table>
-    
+        <p id="loadingP">Loading...</p>
+
+        <table id="resultsTable"> </table>
+
+
     </body>
 </html>
