@@ -165,6 +165,11 @@ export abstract class Tape {
         throw new Error(`Not implemented`);
     }
 
+    
+    public get vocabSize(): number {
+        return 0;
+    }
+
     public abstract matchTape(tapeName: string): Tape | undefined;
     //public abstract registerTokens(tapeName: string, tokens: string[]): void;
     public abstract toBits(tapeName: string, char: string): BitSet;
@@ -220,6 +225,10 @@ export class StringTape extends Tape {
 
     public get numTapes(): number {
         return 1;
+    }
+
+    public get vocabSize(): number {
+        return this.strToIndex.size;
     }
 
     /*

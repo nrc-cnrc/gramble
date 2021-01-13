@@ -51,7 +51,7 @@ export type SymbolTable = {[key: string]: State};
  * have to take an extra step to do so.
  */
 
-class CounterStack {
+export class CounterStack {
 
     constructor(
         public max: number = 4
@@ -75,7 +75,7 @@ class CounterStack {
         return this.get(key) >= this.max;
     }
 
-    public toString(): string {
+    public tostring(): string {
         return JSON.stringify(this.stack);
     }
 }
@@ -158,7 +158,7 @@ export class Namespace {
         return undefined;
     }
 
-    public get(name: String): State | undefined {
+    public get(name: string): State | undefined {
         const pieces = name.split(".")
         return this.getNamePieces(pieces);
     }
@@ -226,6 +226,9 @@ export class Namespace {
  */
 
 export abstract class State {
+
+    
+    protected relevantTapes: Set<string> | undefined = undefined;
 
     /**
      * Gets an id() for the state.  At the moment we're only using this
@@ -347,15 +350,7 @@ export abstract class State {
         yield *results;
 
     }
-
-    public getTapeNames(): string[] {
-
-        const allTapes = new TapeCollection();
-        this.collectVocab(allTapes, []);
-        return allTapes.getTapeNames();
-
-    }
-
+    
     /**
      * Performs a breadth-first traversal of the graph.  This will be the function that most 
      * clients will be calling.
@@ -378,7 +373,7 @@ export abstract class State {
         this.collectVocab(allTapes, []);
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
         var stateQueue: [MultiTapeOutput, State][] = [[initialOutput, this]];
-        var symbolStack = new CounterStack(maxRecursion);
+        const symbolStack = new CounterStack(maxRecursion);
         var chars = 0;
 
         while (stateQueue.length > 0 && chars < maxChars) {
@@ -413,7 +408,29 @@ export abstract class State {
      * @param stateStack What symbols we've already collected from, to prevent inappropriate recursion
      * @returns vocab 
      */
-    public collectVocab(tapes: Tape, stateStack: String[]): void { }
+    public collectVocab(tapes: Tape, stateStack: string[]): void { }
+
+    /**
+     * Collects the names of all tapes relevant to this state.  The names are those
+     * that this state would "see" (that is, if this state refers to a RenameState,
+     * it uses the renamed tape name, not whatever that tape is referred to "inside"
+     * the RenameState).
+     * 
+     * This will be the same result as if we called "collectVocab" on this state with an empty
+     * TapeCollection, but we don't go to the trouble of collecting the character vocabulary.
+     */
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set();
+        }
+        return this.relevantTapes;
+    }
+
+    public caresAbout(tape: Tape): boolean {
+        if (tape.tapeName == "__ANY_TAPE__") return true;
+        const symbolStack = new CounterStack(2);
+        return this.getRelevantTapes(symbolStack).has(tape.tapeName);
+    }
 }
 
 /**
@@ -457,6 +474,12 @@ abstract class TextState extends State {
 
     }
 
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set([this.tapeName]);
+        }
+        return this.relevantTapes;
+    }
 }
 
 /**
@@ -469,7 +492,6 @@ export class AnyCharState extends TextState {
         return `${this.tapeName}:(ANY)`;
     }
     
-
     protected firstToken(tape: Tape): Token {
         return tape.any();
     }
@@ -514,7 +536,7 @@ export class LiteralState extends TextState {
         return this.tokens.length == 0;
     }
 
-    public collectVocab(tapes: Tape, stateStack: String[]): void {
+    public collectVocab(tapes: Tape, stateStack: string[]): void {
         this.tokens = tapes.tokenize(this.tapeName, this.text);
     }
 
@@ -566,16 +588,26 @@ abstract class BinaryState extends State {
 
     constructor(
         public child1: State,
-        public child2: State
+        public child2: State,
+        relevantTapes: Set<string> | undefined = undefined
     ) {
         super();
+        this.relevantTapes = relevantTapes;
     }
     
-    public collectVocab(tapes: Tape, stateStack: String[]): void {
+    public collectVocab(tapes: Tape, stateStack: string[]): void {
         this.child1.collectVocab(tapes, stateStack);
         this.child2.collectVocab(tapes, stateStack);
     }
 
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            const child1tapes = this.child1.getRelevantTapes(stateStack);
+            const child2tapes = this.child2.getRelevantTapes(stateStack);
+            this.relevantTapes = new Set([...child1tapes, ...child2tapes]);
+        }
+        return this.relevantTapes;
+    }
 
     public get id(): string {
         return `${this.constructor.name}(${this.child1.id},${this.child2.id})`;
@@ -605,10 +637,37 @@ abstract class BinaryState extends State {
  */
 export class ConcatState extends BinaryState {
 
+    constructor(
+        child1: State,
+        child2: State,
+        protected child1Done: boolean = false,
+        relevantTapes: Set<string> | undefined = undefined
+    ) {
+        super(child1, child2, relevantTapes);
+    }
+
     public *ndQuery(tape: Tape, 
         target: Token,
         symbolStack: CounterStack,
         randomize: boolean): Gen<[Tape, Token, boolean, State]> {
+
+        if (!this.caresAbout(tape)) {
+            yield [tape, target, false, this];
+            return;
+        }
+
+        if (this.child1Done) {
+            if (!this.child2.caresAbout(tape)) {
+                return;
+            }
+
+            for (const [c2tape, c2text, c2matched, c2next] of 
+                this.child2.dQuery(tape, target, symbolStack, randomize)) {
+                const successor = new ConcatState(this.child1, c2next, true, this.relevantTapes);
+                yield [c2tape, c2text, c2matched, successor];
+            }
+            return;
+        }
 
         // We can yield from child2 if child1 is accepting, OR if child1 doesn't care about the requested tape,
         // but if child1 is accepting AND doesn't care about the requested tape, we don't want to yield twice;
@@ -619,7 +678,8 @@ export class ConcatState extends BinaryState {
                 this.child1.dQuery(tape, target, symbolStack, randomize)) {
 
             if (c1matched) {         
-                yield [c1tape, c1text, c1matched, new ConcatState(c1next, this.child2)];
+                const successor = new ConcatState(c1next, this.child2, false, this.relevantTapes);
+                yield [c1tape, c1text, c1matched, successor];
                 continue;
             }
    
@@ -627,13 +687,15 @@ export class ConcatState extends BinaryState {
             // (if it exists at all) in child2.
             for (const [c2tape, c2text, c2matched, c2next] of 
                     this.child2.dQuery(tape, target, symbolStack, randomize)) {
-                yield [c2tape, c2text, c2matched, new ConcatState(this.child1, c2next)];
+                const successor = new ConcatState(this.child1, c2next, false, this.relevantTapes);
+                yield [c2tape, c2text, c2matched, successor];
                 yieldedAlready = true;
             }
         }
 
         if (!yieldedAlready && this.child1.accepting(symbolStack)) { 
-            yield* this.child2.dQuery(tape, target, symbolStack, randomize);
+            const successor = new ConcatState(this.child1, this.child2, true);
+            yield* successor.dQuery(tape, target, symbolStack, randomize);
         }  
     }
 }
@@ -762,13 +824,15 @@ export class JoinState extends BinaryState {
             if (c1tape.numTapes == 0) { 
                 // c1 contained a ProjectionState that hides the original tape; move on without
                 // asking c2 to match anything.
-                yield [c1tape, c1target, c1matched, new JoinState(c1next, c2)];
+                const successor = new JoinState(c1next, c2, this.relevantTapes);
+                yield [c1tape, c1target, c1matched, successor];
                 continue;
             }
             
             for (const [c2tape, c2target, c2matched, c2next] of 
                     c2.dQuery(c1tape, c1target, symbolStack, randomize)) {
-                yield [c2tape, c2target, c1matched || c2matched, new JoinState(c1next, c2next)];
+                const successor = new JoinState(c1next, c2next, this.relevantTapes);
+                yield [c2tape, c2target, c1matched || c2matched, successor];
             }
         } 
     }
@@ -805,11 +869,16 @@ abstract class UnaryState extends State {
         return `${this.constructor.name}(${this.child.id})`;
     }
     
-    public collectVocab(tapes: Tape, stateStack: String[]): void {
+    public collectVocab(tapes: Tape, stateStack: string[]): void {
         this.child.collectVocab(tapes, stateStack);
     }
 
-
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = this.child.getRelevantTapes(stateStack);
+        }
+        return this.relevantTapes;
+    }
 
     public accepting(symbolStack: CounterStack): boolean {
         return this.child.accepting(symbolStack);
@@ -843,7 +912,7 @@ export class RepetitionState extends UnaryState {
         super();
     }
     
-    public collectVocab(tapes: Tape, stateStack: String[]): void {
+    public collectVocab(tapes: Tape, stateStack: string[]): void {
         this.initialChild.collectVocab(tapes, stateStack);
     }
 
@@ -913,25 +982,39 @@ export class EmbedState extends UnaryState {
     constructor(
         public symbolName: string,
         public namespace: Namespace,
-        public _child: State | undefined = undefined
+        public _child: State | undefined = undefined,
+        relevantTapes: Set<string> | undefined = undefined
     ) { 
         super();
         
         // need to register our symbol name with the namespace, in case
         // the referred-to symbol is defined in a file we haven't yet loaded.
         namespace.register(symbolName);
+        this.relevantTapes = relevantTapes;
     }
     
     public get id(): string {
         return `${this.constructor.name}(${this.symbolName})`;
     }
     
-    public collectVocab(tapes: Tape, stateStack: String[]): void {
+    public collectVocab(tapes: Tape, stateStack: string[]): void {
         if (stateStack.indexOf(this.symbolName) != -1) {
             return;
         }
         const newStack = [...stateStack, this.symbolName];
         this.child.collectVocab(tapes, newStack);
+    }
+
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            if (stateStack.exceedsMax(this.symbolName)) {
+                this.relevantTapes = new Set();
+            } else {
+                const newStack = stateStack.add(this.symbolName);
+                this.relevantTapes = this.child.getRelevantTapes(newStack);
+            }
+        }
+        return this.relevantTapes;
     }
 
     public get child(): State {
@@ -966,7 +1049,7 @@ export class EmbedState extends UnaryState {
         symbolStack = symbolStack.add(this.symbolName);
         for (const [childchildTape, childTarget, childMatched, childNext] of 
                 this.child.ndQuery(tape, target, symbolStack, randomize)) {
-            const successor = new EmbedState(this.symbolName, this.namespace, childNext);
+            const successor = new EmbedState(this.symbolName, this.namespace, childNext, this.relevantTapes);
             yield [childchildTape, childTarget, childMatched, successor];
         }
     }
@@ -989,6 +1072,13 @@ export class ProjectionState extends UnaryState {
         public tapeRestriction: Set<string>
     ) { 
         super();
+    }
+
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = this.tapeRestriction;
+        }
+        return this.relevantTapes;
     }
 
     public *ndQuery(tape: Tape, 
@@ -1024,14 +1114,30 @@ export class RenameState extends UnaryState {
     constructor(
         public child: State,
         public fromTape: string,
-        public toTape: string
+        public toTape: string,
+        relevantTapes: Set<string> | undefined = undefined
     ) { 
         super();
+        this.relevantTapes = relevantTapes;
     }
 
-    public collectVocab(tapes: Tape, stateStack: String[]): void {
+    public collectVocab(tapes: Tape, stateStack: string[]): void {
         tapes = new RenamedTape(tapes, this.fromTape, this.toTape);
         this.child.collectVocab(tapes, stateStack);
+    }
+
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set();
+            for (const tapeName of this.child.getRelevantTapes(stateStack)) {
+                if (tapeName == this.fromTape) {
+                    this.relevantTapes.add(this.toTape);
+                } else {
+                    this.relevantTapes.add(tapeName);
+                }
+            }
+        }
+        return this.relevantTapes;
     }
 
     public *ndQuery(tape: Tape, 
@@ -1109,12 +1215,23 @@ export class NegationState extends State {
         return `~(${this.child.id})`;
     }
     
-    public collectVocab(tapes: Tape, stateStack: String[]): void {
+    public collectVocab(tapes: Tape, stateStack: string[]): void {
         if (this.child == undefined) {
             return;
         }
         this.child.collectVocab(tapes, stateStack);
     }
+
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            if (this.child == undefined) {
+                this.relevantTapes = new Set();
+            } else {
+                this.relevantTapes = this.child.getRelevantTapes(stateStack);
+            }
+        }
+        return this.relevantTapes;
+    } 
 
     public accepting(symbolStack: CounterStack): boolean {
         if (this.child == undefined) {

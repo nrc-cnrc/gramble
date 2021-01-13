@@ -6,10 +6,42 @@ import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe('Text with between 1 and 4 Os: text:o{1,4}', function() {
+    
+    describe('Between 0 and 1 Os: text:o{0,1}', function() {
+        const grammar = Rep(text("o"), 0, 1);
+        const outputs = [...grammar.generate()];
+
+        testNumOutputs(outputs, 2);
+        testHasOutput(outputs, "text", "o");
+    });
+
+
+    describe('Between 1 and 4 Os: text:o{1,4}', function() {
         const grammar = Rep(text("o"), 1, 4);
         const outputs = [...grammar.generate()];
 
+        testNumOutputs(outputs, 4);
+        testHasOutput(outputs, "text", "o");
+        testHasOutput(outputs, "text", "oo");
+        testHasOutput(outputs, "text", "ooo");
+        testHasOutput(outputs, "text", "oooo");
+    });
+
+    
+    describe('Between 1 and 4 Os: text:o{1,4}, plus an unrelated foo', function() {
+        const grammar = Seq(Rep(text("o"), 1, 4), unrelated("foo"));
+        const outputs = [...grammar.generate()];
+        testNumOutputs(outputs, 4);
+        testHasOutput(outputs, "text", "o");
+        testHasOutput(outputs, "text", "oo");
+        testHasOutput(outputs, "text", "ooo");
+        testHasOutput(outputs, "text", "oooo");
+    });
+
+    
+    describe('Unrelated foo + Between 1 and 4 Os: text:o{1,4}', function() {
+        const grammar = Seq(unrelated("foo"), Rep(text("o"), 1, 4));
+        const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 4);
         testHasOutput(outputs, "text", "o");
         testHasOutput(outputs, "text", "oo");
@@ -99,5 +131,12 @@ describe(`${path.basename(module.filename)}`, function() {
         testDoesntHaveOutput(outputs, "text", "n");
         testDoesntHaveOutput(outputs, "text", "nan");
     });
+
+    /*
+    describe('Text with between 1 and 4 NAs: text:na{1,4}', function() {
+        const grammar = Join(Seq(Rep(text("h"), 1, 3), unrelated("world")), Seq(Rep(text("h"), 1, 3), unrelated("world")));
+        const outputs = [...grammar.generate()];
+        testNumOutputs(outputs, 3);
+    }); */
 
 });

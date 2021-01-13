@@ -1,12 +1,17 @@
 import { Rename, Seq, Join } from "../src/stateMachine";
-import { t1, testNumOutputs, testHasOutput, testDoesntHaveOutput, t2, t3 } from "./testUtils";
+import { t1, testNumOutputs, testHasOutput, testDoesntHaveOutput, t2, t3, testHasTapes, testHasVocab, testHasNoVocab } from "./testUtils";
 
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Rename(t2/t1) of t1:hello', function() {
-        const outputs = [...Rename(t1("hello"), "t1", "t2").generate()];
+        const grammar = Rename(t1("hello"), "t1", "t2");
+        testHasTapes(grammar, ["t2"]);
+        testHasNoVocab(grammar, "t1");
+        testHasVocab(grammar, {"t2":4});
+
+        const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "t2", "hello");
         testDoesntHaveOutput(outputs, "t1", "hello");
@@ -20,10 +25,15 @@ describe(`${path.basename(module.filename)}`, function() {
         testDoesntHaveOutput(outputs, "t1", "hello");
         testDoesntHaveOutput(outputs, "t2", "foo");
     });
-    */
-
-    describe('Rename(t2/t1) of t1:hello+t3:foo', function() {
-        const outputs = [...Rename(Seq(t1("hello"),t3("foo")), "t1", "t2").generate()];
+    */  
+        
+    describe('rename(t1:hello+unrelated:foo) from t1 to t2', function() {
+        const grammar = Rename(Seq(t1("hello"),t3("foo")), "t1", "t2");
+        testHasTapes(grammar, ["t2", "t3"]);
+        testHasVocab(grammar, {"t2":4, "t3":2});
+        testHasNoVocab(grammar, "t1");
+        
+        const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "t2", "hello");
         testHasOutput(outputs, "t3", "foo");

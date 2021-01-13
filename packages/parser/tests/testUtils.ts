@@ -1,7 +1,8 @@
 import { expect } from 'chai';
 import { DevEnvironment } from '../src/devEnv';
 import { Project } from '../src/sheetParser';
-import {Literalizer} from "../src/stateMachine";
+import {CounterStack, Literalizer, State} from "../src/stateMachine";
+import { TapeCollection } from '../src/tapes';
 import {StringDict} from "../src/util";
 
 export const text = Literalizer("text");
@@ -10,6 +11,43 @@ export const t1 = Literalizer("t1");
 export const t2 = Literalizer("t2");
 export const t3 = Literalizer("t3");
 
+export function testHasTapes(state: State, expectedTapes: string[]): void {
+    const stack = new CounterStack(2);
+    const tapes = state.getRelevantTapes(stack);
+    const bSet = new Set(expectedTapes);
+    it(`should have tapes [${[...bSet]}]`, function() {
+        expect(tapes.size).to.equal(bSet.size);
+        for (const a of tapes) {
+            expect(bSet).to.contain(a);
+        }
+    });
+}
+
+export function testHasVocab(state: State, expectedVocab: {[tape: string]: number}) {
+    const tapeCollection = new TapeCollection();
+    state.collectVocab(tapeCollection, []);
+    for (const tapeName in expectedVocab) {
+        const tape = tapeCollection.matchTape(tapeName);
+        const expectedNum = expectedVocab[tapeName];
+        it(`should have ${expectedNum} tokens in the ${tapeName} vocab`, function() {
+            expect(tape).to.not.be.undefined;
+            if (tape == undefined) {
+                return;
+            }
+            expect(tape.vocabSize).to.equal(expectedNum);
+        });
+    }
+}
+
+
+export function testHasNoVocab(state: State, forbiddenVocab: string) {
+    const tapeCollection = new TapeCollection();
+    state.collectVocab(tapeCollection, []);
+    const tape = tapeCollection.matchTape(forbiddenVocab);
+    it(`should have no ${forbiddenVocab} vocab`, function() {
+        expect(tape).to.be.undefined;
+    });
+}
 
 export function testNumOutputs(outputs: StringDict[], expectedNum: number) {
     it(`should have ${expectedNum} result(s)`, function() {

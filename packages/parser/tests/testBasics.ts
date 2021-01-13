@@ -1,13 +1,18 @@
 
 import { Seq, Uni } from "../src/stateMachine";
-import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput } from './testUtils';
+import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput, testHasTapes, testHasVocab } from './testUtils';
 
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
+    
     describe('Literal text:hello', function() {
         const grammar = text("hello");
+
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {"text":4});
+
         const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "text", "hello");
@@ -15,6 +20,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Sequence text:hello+test:world', function() {
         const grammar = Seq(text("hello"), text("world"));
+
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {"text":7});
+
         const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "text", "helloworld");
@@ -55,6 +64,16 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasOutput(outputs, "text", "hello, world");
     });
 
+    describe('text:hello+unrelated:foo', function() {
+        const grammar = Seq(text("hello"), unrelated("foo"));
+        testHasTapes(grammar, ["text", "unrelated"]);
+        testHasVocab(grammar, {"text":4, "unrelated":2});
+        const outputs = [...grammar.generate()];
+        testNumOutputs(outputs, 1);
+        testHasOutput(outputs, "text", "hello");
+        testHasOutput(outputs, "unrelated", "foo");
+    });
+
     describe('Alt text:hello|text:goodbye', function() {
         const grammar = Uni(text("hello"), text("goodbye"));
         const outputs = [...grammar.generate()];
@@ -65,6 +84,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Alt of different tiers: t1:hello|t2:goodbye', function() {
         const grammar = Uni(t1("hello"), t2("goodbye"));
+        testHasTapes(grammar, ["t1", "t2"]);
+        testHasVocab(grammar, {"t1":4, "t2":6});
+        
         const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 2);
         testHasOutput(outputs, "t1", "hello");

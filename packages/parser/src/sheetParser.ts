@@ -8,7 +8,7 @@
  */
 
 import { DevEnvironment } from "./devEnv";
-import { Emb, Empty, Join, Lit, Namespace, Not, Seq, State, SymbolTable, Uni } from "./stateMachine";
+import { CounterStack, Emb, Empty, Join, Lit, Namespace, Not, Seq, State, SymbolTable, Uni } from "./stateMachine";
 import { iterTake, StringDict } from "./util";
 import { parseHeader, CellPosition } from "./headerParser";
 
@@ -597,7 +597,8 @@ export class Project {
             throw new Error(`Cannot find symbol ${symbolName}`);
         }
         const results: [string, string][] = [];
-        for (const tapeName of startState.getTapeNames()) {
+        const stack = new CounterStack(2);
+        for (const tapeName of startState.getRelevantTapes(stack)) {
             const header = parseHeader(tapeName);
             results.push([tapeName, header.getColor(0.2)]);
         }

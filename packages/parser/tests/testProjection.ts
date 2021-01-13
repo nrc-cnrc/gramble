@@ -1,5 +1,5 @@
 import { Seq, Uni, Join, Emb, Proj } from "../src/stateMachine";
-import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput } from './testUtils';
+import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput, testHasNoVocab, testHasTapes, testHasVocab } from './testUtils';
 
 import * as path from 'path';
 
@@ -15,8 +15,14 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Projection(text) of text:hello+unrelated:foo', function() {
-        const grammar = Seq(text("hello"), unrelated("foo"));
-        const outputs = [...Proj(grammar, "text").generate()];
+        const grammar = Proj(Seq(text("hello"), unrelated("foo")), "text");
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {"text":4});
+        // contrary to what you might expect, there's still a *vocab* for the
+        // unrelated tier here; we still have to know what characters are on
+        // a particular tape even if this state can't write to that tape.
+
+        const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "text", "hello");
         testDoesntHaveOutput(outputs, "unrelated", "foo");

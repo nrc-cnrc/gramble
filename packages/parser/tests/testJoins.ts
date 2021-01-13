@@ -1,6 +1,6 @@
 
 import { Seq, Uni, Join, Emb, Proj } from "../src/stateMachine";
-import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput } from './testUtils';
+import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput, testHasTapes, testHasVocab } from './testUtils';
 
 import * as path from 'path';
 
@@ -12,6 +12,19 @@ describe(`${path.basename(module.filename)}`, function() {
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "text", "hello");
     });
+
+    
+    describe('Joining text:hello & unrelated:foo', function() {
+        const grammar = Join(text("hello"), unrelated("foo"));
+        testHasTapes(grammar, ["text", "unrelated"]);
+        testHasVocab(grammar, {"text":4, "unrelated":2});
+        
+        const outputs = [...grammar.generate()];
+        testNumOutputs(outputs, 1);
+        testHasOutput(outputs, "text", "hello");
+        testHasOutput(outputs, "unrelated", "foo");
+    });
+
 
     describe('Joining text:hello & text:hello+text:<emtpy>', function() {
         const grammar = Join(text("hello"), Seq(text("hello"), text("")));
@@ -145,11 +158,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testNumOutputs(outputs, 0);
     });
 
-    describe('Joining text:hello & text:hello+text:world', function() {
-        const outputs = [...Join(text("hello"), Seq(text("hello"), text("world"))).generate()];
-        testNumOutputs(outputs, 0);
-    });
-
     describe('Joining text:helloworld & text:hello', function() {
         const outputs = [...Join(text("helloworld"), text("hello")).generate()];
         testNumOutputs(outputs, 0);
@@ -273,6 +281,41 @@ describe(`${path.basename(module.filename)}`, function() {
         console.log(outputs);
         testNumOutputs(outputs, 4);
     });
+   describe('Repetition bug with unrelated text', function() {
+        const grammar = Join(Seq(Uni(text("h"), text("hh")), unrelated("world")), Seq(Uni(text("h"), text("hh")), unrelated("world")));
+        const outputs = [...grammar.generate()];
+        testNumOutputs(outputs, 2);
+    });
     */
+    describe('Unfinished join', function() {
+        const grammar = Join(text("h"), text("hello"));
+        const outputs = [...grammar.generate()];
+        testNumOutputs(outputs, 0);
+    });
 
+    describe('Unfinished join, opposite direction', function() {
+        const grammar = Join(text("h"), text("hello"));
+        const outputs = [...grammar.generate()];
+        testNumOutputs(outputs, 0);
+    });
+
+
+    describe('Unfinished join with unrelated', function() {
+        const grammar = Join(Seq(text("h"), unrelated("foo")), text("hello"));
+        const outputs = [...grammar.generate()];
+        testNumOutputs(outputs, 0);
+    });
+
+    describe('Unfinished join with unrelated, other direction', function() {
+        const grammar = Join(text("hello"), Seq(text("h"), unrelated("foo")));
+        const outputs = [...grammar.generate()];
+        testNumOutputs(outputs, 0);
+    });
+
+    
+    describe('Identical join of text:hello interrupted by unrelated content', function() {
+        const grammar = Join(Seq(text("h"), unrelated("foo"), text("ello")), text("hello"));
+        const outputs = [...grammar.generate()];
+        testNumOutputs(outputs, 1);
+    });
 });
