@@ -650,7 +650,7 @@ export class ConcatState extends BinaryState {
         target: Token,
         symbolStack: CounterStack,
         randomize: boolean): Gen<[Tape, Token, boolean, State]> {
-
+        
         if (!this.caresAbout(tape)) {
             yield [tape, target, false, this];
             return;
@@ -914,6 +914,14 @@ export class RepetitionState extends UnaryState {
     
     public collectVocab(tapes: Tape, stateStack: string[]): void {
         this.initialChild.collectVocab(tapes, stateStack);
+    }
+
+    
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = this.initialChild.getRelevantTapes(stateStack);
+        }
+        return this.relevantTapes;
     }
 
 

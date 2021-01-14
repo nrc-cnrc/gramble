@@ -1,20 +1,21 @@
 
 import { Seq, Uni, Join, Emb, Proj, Rep } from "../src/stateMachine";
-import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput } from './testUtils';
+import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput, testHasTapes, testHasVocab } from './testUtils';
 
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    
+   
     describe('Between 0 and 1 Os: text:o{0,1}', function() {
         const grammar = Rep(text("o"), 0, 1);
-        const outputs = [...grammar.generate()];
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {"text":1});
 
+        const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 2);
         testHasOutput(outputs, "text", "o");
     });
-
 
     describe('Between 1 and 4 Os: text:o{1,4}', function() {
         const grammar = Rep(text("o"), 1, 4);
@@ -108,9 +109,32 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasOutput(outputs, "text", "hhhello");
         testHasOutput(outputs, "text", "hhhhello");
     });
+    
+    describe('Joining between 1 and 4 Hs and the same, with unrelated "world"', function() {
+        const grammar = Join(Seq(Rep(text("h"), 1, 4), unrelated("world")), Seq(Rep(text("h"), 1, 4), unrelated("world")));
+        const outputs = [...grammar.generate()];
+        testNumOutputs(outputs, 4);
+        testHasOutput(outputs, "text", "h");
+        testHasOutput(outputs, "text", "hh");
+        testHasOutput(outputs, "text", "hhh");
+        testHasOutput(outputs, "text", "hhhh");
+        testHasOutput(outputs, "unrelated", "world");
+    });
 
     describe('Joining hello with between 1 and 4 Hs and the same, with unrelated "world"', function() {
         const grammar = Join(Seq(Rep(text("h"), 1, 4), text("ello"), unrelated("world")), Seq(Rep(text("h"), 1, 4), text("ello"), unrelated("world")));
+        const outputs = [...grammar.generate()];
+        testNumOutputs(outputs, 4);
+        testHasOutput(outputs, "text", "hello");
+        testHasOutput(outputs, "text", "hhello");
+        testHasOutput(outputs, "text", "hhhello");
+        testHasOutput(outputs, "text", "hhhhello");
+        testHasOutput(outputs, "unrelated", "world");
+    });
+
+    
+    describe('Joining h{1,4} and ello (with unrelated in between) and the same, with unrelated "world"', function() {
+        const grammar = Join(Seq(Rep(text("h"), 1, 4), unrelated("world"), text("ello")), Seq(Rep(text("h"), 1, 4), unrelated("world"), text("ello")));
         const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 4);
         testHasOutput(outputs, "text", "hello");
@@ -131,12 +155,5 @@ describe(`${path.basename(module.filename)}`, function() {
         testDoesntHaveOutput(outputs, "text", "n");
         testDoesntHaveOutput(outputs, "text", "nan");
     });
-
-    /*
-    describe('Text with between 1 and 4 NAs: text:na{1,4}', function() {
-        const grammar = Join(Seq(Rep(text("h"), 1, 3), unrelated("world")), Seq(Rep(text("h"), 1, 3), unrelated("world")));
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 3);
-    }); */
 
 });
