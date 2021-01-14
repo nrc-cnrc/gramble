@@ -1,5 +1,5 @@
 import { Seq, Uni, Join, Emb, Proj, Rep, Not } from "../src/stateMachine";
-import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput } from './testUtils';
+import { text, testNumOutputs, testHasOutput, t1, t2, t3, unrelated, testDoesntHaveOutput, testHasTapes, testHasVocab } from './testUtils';
 import { NegationState } from "../src/stateMachine";
 
 import * as path from 'path';
@@ -7,7 +7,11 @@ import * as path from 'path';
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Join(t1:foo & ~t1:hello)', function() {
-        const outputs = [...Join(t1("foo"), Not(t1("hello"))).generate()];
+        const grammar = Join(t1("foo"), Not(t1("hello")));
+        testHasTapes(grammar, ["t1"]);
+        testHasVocab(grammar, {"t1":5});
+        
+        const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "t1", "foo");
         testDoesntHaveOutput(outputs, "t1", "hello");

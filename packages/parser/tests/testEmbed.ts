@@ -1,5 +1,5 @@
 import {Seq, Uni, Join, Emb, SymbolTable, Namespace} from "../src/stateMachine";
-import { text, testNumOutputs, testHasOutput, t1, t2, t3 } from './testUtils';
+import { text, testNumOutputs, testHasOutput, t1, t2, t3, testHasTapes, testHasVocab } from './testUtils';
 
 import * as path from 'path';
 
@@ -10,6 +10,9 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Symbol containing text:hello', function() {
         const symbolTable = new Namespace({ "s": text("hello") });
         const grammar = Emb("s", symbolTable);
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {"text":4});
+
         const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "text", "hello");

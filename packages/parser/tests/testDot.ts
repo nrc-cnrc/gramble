@@ -1,5 +1,5 @@
 import {Seq, Uni, Join, Emb, SymbolTable, Any} from "../src/stateMachine";
-import { text, testNumOutputs, testHasOutput } from './testUtils';
+import { text, testNumOutputs, testHasOutput, testHasTapes, testHasVocab } from './testUtils';
 
 import * as path from 'path';
 
@@ -9,6 +9,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Joining text:h & text:.', function() {
         const grammar = Join(text("h"), Any("text"));
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {"text":1});
+        
         const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "text", "h");
@@ -16,6 +19,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Joining text:hello & text:.ello', function() {
         const grammar = Join(text("hello"), Seq(Any("text"), text('ello')));
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {"text":4});
+        
         const outputs = [...grammar.generate()];
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "text", "hello");
