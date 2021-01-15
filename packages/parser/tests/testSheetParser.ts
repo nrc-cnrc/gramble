@@ -309,4 +309,82 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasOutput(results, "text", "moobazable");
     });
 
+    
+    describe('Project with flag header', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/flagHeader.csv");
+
+        testNumErrors(errors, 0, "any");
+        testHasSymbol(project, 'flagHeader.word');
+        const results = [...project.generate('flagHeader.word')];
+
+        testNumOutputs(results, 2);
+        testHasOutput(results, "text", "foobaz");
+        testHasOutput(results, "text", "moobaz");
+    });
+
+    
+    describe('Project with trivial flag header', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/trivialFlagHeader.csv");
+
+        testNumErrors(errors, 0, "any");
+        testHasSymbol(project, 'trivialFlagHeader.word');
+        const results = [...project.generate('trivialFlagHeader.word')];
+
+        testNumOutputs(results, 4);
+        testHasOutput(results, "text", "foobar");
+        testHasOutput(results, "text", "foobaz");
+        testHasOutput(results, "text", "moobar");
+        testHasOutput(results, "text", "moobaz");
+    });
+
+    describe('Project with complex flag header', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/complexFlagHeader.csv");
+
+        testNumErrors(errors, 0, "any");
+        testHasSymbol(project, 'complexFlagHeader.word');
+        const results = [...project.generate('complexFlagHeader.word')];
+
+        testNumOutputs(results, 2);
+        testHasOutput(results, "text", "foobeez");
+        testHasOutput(results, "text", "moobeez");
+    });
+
+    
+    describe('Project with complex flag header, other direction', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/complexFlagHeader2.csv");
+
+        testNumErrors(errors, 0, "any");
+
+        errors.logErrors();
+        
+
+        testHasSymbol(project, 'complexFlagHeader2.word');
+        const results = [...project.generate('complexFlagHeader2.word')];
+
+        testNumOutputs(results, 2);
+        testHasOutput(results, "text", "foobeez");
+        testHasOutput(results, "text", "moobeez");
+    });
+
+    describe('Project with flag header around a slash header', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/complexFlagHeader3.csv");
+
+        testNumErrors(errors, 0, "any");
+
+        errors.logErrors();
+        
+
+        testHasSymbol(project, 'complexFlagHeader3.word');
+        const results = [...project.generate('complexFlagHeader3.word')];
+
+        testNumOutputs(results, 2);
+        testHasOutput(results, "text", "foobeez");
+        testHasOutput(results, "text", "moobeez");
+    });
+
 });

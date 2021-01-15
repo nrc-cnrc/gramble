@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { DevEnvironment } from '../src/devEnv';
+import { Header } from '../src/headerParser';
 import { Project } from '../src/sheetParser';
 import {CounterStack, Literalizer, State} from "../src/stateMachine";
 import { TapeCollection } from '../src/tapes';
@@ -10,6 +11,18 @@ export const unrelated = Literalizer("unrelated");
 export const t1 = Literalizer("t1");
 export const t2 = Literalizer("t2");
 export const t3 = Literalizer("t3");
+
+export function testIsType(obj: any, type: any,  objName: string = "itself"): void {
+    it(`should have ${objName} be of ${type}`, function() {
+        expect(obj instanceof type).to.be.true;
+    });
+}
+
+export function testHeaderHasText(header: Header, text: string, objName: string = "itself"): void {
+    it(`should have ${objName} have text "${text}"`, function() {
+        expect(header.text).to.equal(text);
+    });
+}
 
 export function testHasTapes(state: State, expectedTapes: string[]): void {
     const stack = new CounterStack(2);

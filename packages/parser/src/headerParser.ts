@@ -1,5 +1,5 @@
 import { Gen, meanAngleDeg, HSVtoRGB, RGBtoString} from "./util";
-import { State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not } from "./stateMachine";
+import { State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join } from "./stateMachine";
 import { DevEnvironment } from "./devEnv";
 
 
@@ -42,6 +42,11 @@ export class CellPosition {
  * in their column into no-ops.)
  */
 export abstract class Header {
+
+    constructor(
+        public text: string
+    ) { }
+
     public abstract get hue(): number;
     
     public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
@@ -52,19 +57,35 @@ export abstract class Header {
         return "#000000";
     }
     
-    public abstract compile(valueText: string, 
+    public compile(valueText: string, 
                             pos: CellPosition,
                             namespace: Namespace, 
-                            devEnv: DevEnvironment): State;
+                            devEnv: DevEnvironment): State {
+        
+        devEnv.markError(pos.sheet, pos.row, pos.col, "Invalid header",
+                `Invalid: ${this.text}:${valueText}.  Something is wrong in the header parser.  This probably isn't your fault.`);
+        return Empty();
+    }
+
+    public merge(state: State, other: State): State {
+        return Seq(state, other);
+    }
+
+    public compileAndMerge(valueText: string,
+                            pos: CellPosition,
+                            namespace: Namespace,
+                            devEnv: DevEnvironment,
+                            rightNeighbor: State | undefined): State {
+        
+        const compiledCell = this.compile(valueText, pos, namespace, devEnv);
+        if (rightNeighbor == undefined) {
+            return compiledCell;
+        }
+        return this.merge(compiledCell, rightNeighbor);
+    }
 }
 
-class AtomicHeader extends Header { 
-
-    public constructor(
-        public text: string
-    ) { 
-        super();
-    }
+export class AtomicHeader extends Header { 
 
     public get hue(): number {
         const str = this.text + "abcde" // otherwise short strings are boring colors
@@ -92,7 +113,7 @@ class AtomicHeader extends Header {
     }
 }
 
-class CommentHeader extends Header { 
+export class CommentHeader extends Header { 
 
     public get hue(): number {
         return 0;
@@ -115,20 +136,18 @@ class CommentHeader extends Header {
     }
 }
 
-class UnaryHeader extends Header {
+export class UnaryHeader extends Header {
 
     public constructor(
-        public text: string,
+        text: string,
         public child: Header
     ) { 
-        super();
+        super(text);
     }
 
     public get hue(): number {
         return this.child.hue;
     }
-
-    
     
     public compile(valueText: string,
                    pos: CellPosition,
@@ -154,19 +173,45 @@ class UnaryHeader extends Header {
     }
 }
 
-class BinaryHeader extends Header {
+
+export class FlagHeader extends UnaryHeader {
+
     public constructor(
-        public text: string,
+        public child: Header
+    ) { 
+        super('@', child);
+    }
+
+    public compile(valueText: string,
+        pos: CellPosition,
+        namespace: Namespace, 
+        devEnv: DevEnvironment): State {
+
+        return this.child.compile(valueText, pos, namespace, devEnv);
+    }
+
+    public merge(state: State, other: State): State {
+        return Join(state, other);
+    }
+}
+
+
+abstract class BinaryHeader extends Header {
+
+    public constructor(
+        text: string,
         public child1: Header,
         public child2: Header
     ) { 
-        super();
+        super(text);
     }
 
     
     public get hue(): number {
         return (meanAngleDeg([this.child1.hue * 360, this.child2.hue * 360]) + 360) / 360;
     }
+
+    /*
 
     public compile(valueText: string,
                     pos: CellPosition,
@@ -185,17 +230,49 @@ class BinaryHeader extends Header {
             `${valueText} is not among the operators allowed in headers.`);
         return Empty();
 
+    } */
+}
+
+export class SlashHeader extends BinaryHeader {
+
+    public constructor(
+        public child1: Header,
+        public child2: Header
+    ) { 
+        super("/", child1, child2);
     }
 
+
+    public compile(valueText: string,
+        pos: CellPosition,
+        namespace: Namespace,
+        devEnv: DevEnvironment): State {
+
+        const childState1 = this.child1.compile(valueText, pos, namespace, devEnv);
+        const childState2 = this.child2.compile(valueText, pos, namespace, devEnv);
+        return Seq(childState1, childState2);
+    }
+
+    public compileAndMerge(valueText: string,
+        pos: CellPosition,
+        namespace: Namespace,
+        devEnv: DevEnvironment,
+        rightNeighbor: State | undefined): State {
+
+        const childState2 = this.child2.compileAndMerge(valueText, pos, namespace, devEnv, rightNeighbor);
+        const childState1 = this.child1.compileAndMerge(valueText, pos, namespace, devEnv, childState2);
+        return childState1;
+    }
 }
+
 
 type HeaderParser = (input: string[]) => Gen<[Header, string[]]>;
 
-const SYMBOL = [ "(", ")", "%", "/"];
+const SYMBOL = [ "(", ")", "%", "/", '@'];
 const UNARY_RESERVED = [ "maybe", "not" ];
 const ALL_RESERVED = SYMBOL.concat(UNARY_RESERVED); 
 
-const SUBEXPR = AltHeaderParser([AtomicHeaderParser, ParensHeaderParser]);
+const SUBEXPR = AltHeaderParser([AtomicHeaderParser, FlagHeaderParser, ParensHeaderParser]);
 const NON_COMMENT_EXPR = AltHeaderParser([UnaryHeaderParser, SlashHeaderParser, SUBEXPR]);
 const EXPR = AltHeaderParser([CommentHeaderParser, NON_COMMENT_EXPR]);
 
@@ -224,6 +301,14 @@ function* UnaryHeaderParser(input: string[]): Gen<[Header, string[]]> {
     }
 }
 
+function* FlagHeaderParser(input: string[]): Gen<[Header, string[]]> {
+    if (input.length == 0 || input[0] != "@") {
+        return;
+    }
+    for (const [t, rem] of SUBEXPR(input.slice(1))) {
+        yield [new FlagHeader(t), rem];
+    }
+}
 
 function* ParensHeaderParser(input: string[]): Gen<[Header, string[]]> {
     if (input.length == 0 || input[0] != "(") {
@@ -249,7 +334,7 @@ function* SlashHeaderParser(input: string[]): Gen<[Header, string[]]> {
             return;
         }
         for (const [t2, rem2] of NON_COMMENT_EXPR(rem1.slice(1))) {
-            yield [new BinaryHeader("/", t1, t2), rem2];
+            yield [new SlashHeader(t1, t2), rem2];
         }
     }
 
@@ -261,11 +346,11 @@ function* CommentHeaderParser(input: string[]): Gen<[Header, string[]]> {
         return;
     }
 
-    yield [new CommentHeader(), []];
+    yield [new CommentHeader('%'), []];
 }
 
 export function parseHeader(headerText: string): Header {
-    var pieces = headerText.split(/\s+|(\%|\(|\)|\/)/);
+    var pieces = headerText.split(/\s+|(\%|\(|\)|\/|\@)/);
     pieces = pieces.filter((s: string) => s !== undefined && s !== '');
     var result = [... EXPR(pieces)];
     result = result.filter(([t, r]) => r.length == 0);

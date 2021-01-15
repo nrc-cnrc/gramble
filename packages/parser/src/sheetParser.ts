@@ -10,7 +10,7 @@
 import { DevEnvironment } from "./devEnv";
 import { CounterStack, Emb, Empty, Join, Lit, Namespace, Not, Seq, State, SymbolTable, Uni } from "./stateMachine";
 import { iterTake, StringDict } from "./util";
-import { parseHeader, CellPosition } from "./headerParser";
+import { parseHeader, CellPosition, Header } from "./headerParser";
 
 
 /*
@@ -508,34 +508,35 @@ export class TableComponent extends CompileableComponent {
         // add the content
         this.table[this.table.length-1].push(cell);
     }
-    
-    public compileCell(h: CellComponent, 
-                        c: CellComponent, 
-                        namespace: Namespace, 
-                        devEnv: DevEnvironment): State {
-        try {
-            const header = parseHeader(h.text);
-            return header.compile(c.text, h.position, namespace, devEnv);
-        } catch (e) {
-            devEnv.markError(c.position.sheet, c.position.row, c.position.col,
-                "Ignoring cell",
-                `Because of an error in the header at ${h.position}, ` +
-                "this cell will be ignored.", "warning");
-            return Empty();
-        }
-    }
 
     public compile(namespace: Namespace, 
                         devEnv: DevEnvironment): State {
         const compiledRows: State[] = [];
         for (const row of this.table) {
-            const compiledRow: State[] = [];
-            for (const cell of row) {
-                const header = this.headersByCol[cell.position.col];
-                const compiledCell = this.compileCell(header, cell, namespace, devEnv);
-                compiledRow.push(compiledCell);
+            var resultState: State | undefined = undefined;
+
+            for (var i = row.length-1; i >= 0; i--) {
+                const cell = row[i];
+                const headerCell = this.headersByCol[cell.position.col];
+                try {
+                    const header = parseHeader(headerCell.text);
+                    resultState = header.compileAndMerge(cell.text, 
+                                                                headerCell.position, 
+                                                                namespace, 
+                                                                devEnv, 
+                                                                resultState);
+                } catch(e) {
+                    devEnv.markError(cell.position.sheet, cell.position.row, cell.position.col,
+                        "Ignoring cell",
+                        `Because of an error in the header at ${headerCell.position}, ` +
+                        "this cell will be ignored.", "warning");
+                }
             }
-            compiledRows.push(Seq(...compiledRow));
+            
+            if (resultState != undefined) {
+                compiledRows.push(resultState);
+            }
+
         }
         return Uni(...compiledRows);
     }
