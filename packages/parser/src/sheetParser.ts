@@ -522,8 +522,7 @@ export class TableComponent extends CompileableComponent {
                     const header = parseHeader(headerCell.text);
                     resultState = header.compileAndMerge(cell.text, 
                                                                 headerCell.position, 
-                                                                namespace, 
-                                                                devEnv, 
+                                                                namespace,
                                                                 resultState);
                 } catch(e) {
                     devEnv.markError(cell.position.sheet, cell.position.row, cell.position.col,

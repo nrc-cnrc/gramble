@@ -387,4 +387,60 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasOutput(results, "text", "moobeez");
     });
 
+    
+    describe('Project with @X/@Y header', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/complexFlagHeader4.csv");
+
+        testNumErrors(errors, 0, "any");
+
+        errors.logErrors();
+        
+
+        testHasSymbol(project, 'complexFlagHeader4.word');
+        const results = [...project.generate('complexFlagHeader4.word')];
+
+        testNumOutputs(results, 2);
+        testHasOutput(results, "text", "foobeez");
+        testHasOutput(results, "text", "moobeez");
+    });
+
+    
+    describe('Project with X/@Y/Z header', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/complexFlagHeader5.csv");
+
+        testNumErrors(errors, 0, "any");
+
+        errors.logErrors();
+        
+        testHasSymbol(project, 'complexFlagHeader5.word');
+        const results = [...project.generate('complexFlagHeader5.word')];
+
+        testNumOutputs(results, 2);
+        testHasOutput(results, "text", "foobeez");
+        testHasOutput(results, "text", "moobeez");
+    });
+
+    describe('Project with @embed header', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/flagEmbed.csv");
+    
+        testNumErrors(errors, 0, "any");
+    
+        errors.logErrors();
+        
+    
+        testHasSymbol(project, 'flagEmbed.word');
+        const results = [...project.generate('flagEmbed.word')];
+    
+        testNumOutputs(results, 4);
+        testHasOutput(results, "text", "foobaz");
+        testHasOutput(results, "text", "moobaz");
+        testHasOutput(results, "text", "foobeez");
+        testHasOutput(results, "text", "moobeez");
+    });
+    
 });
+
+

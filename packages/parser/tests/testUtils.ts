@@ -12,14 +12,18 @@ export const t1 = Literalizer("t1");
 export const t2 = Literalizer("t2");
 export const t3 = Literalizer("t3");
 
-export function testIsType(obj: any, type: any,  objName: string = "itself"): void {
-    it(`should have ${objName} be of ${type}`, function() {
+export function testIsType(obj: any, type: any,  objName: string = ""): void {
+    const msg = objName + (objName != "" ? " ":"") + 
+        `should have ${objName} be of type ${type.name}`;
+    it(msg, function() {
         expect(obj instanceof type).to.be.true;
     });
 }
 
-export function testHeaderHasText(header: Header, text: string, objName: string = "itself"): void {
-    it(`should have ${objName} have text "${text}"`, function() {
+export function testHeaderHasText(header: Header, text: string, objName: string = ""): void {
+    const msg = objName + (objName != "" ? " ":"") + 
+        `should have ${objName} have text "${text}"`;
+    it(msg, function() {
         expect(header.text).to.equal(text);
     });
 }
