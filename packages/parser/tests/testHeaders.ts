@@ -43,6 +43,27 @@ describe(`${path.basename(module.filename)}`, function() {
         testHeaderHasText(header, "%");
     });
 
+    
+    describe('Header "(text)"', function() {
+        const header = parseHeader("(text)");
+        testIsType(header, LiteralHeader);
+        testHeaderHasText(header, "text");
+    });
+
+    
+    describe('Header "(text"', function() {
+        it ("should fail to parse", function() {
+            expect(parseHeader.bind('(text')).to.throw;
+        });
+    });
+
+    describe('Header "text)"', function() {
+        it ("should fail to parse", function() {
+            expect(parseHeader.bind('text)')).to.throw;
+        });
+    });
+
+
     describe('Header "maybe text"', function() {
         const header = parseHeader("maybe text");
 
@@ -57,11 +78,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testHeaderHasText(header.child, "text", "child");
     });
 
-    describe('Header "(text)"', function() {
-        const header = parseHeader("(text)");
-        testIsType(header, LiteralHeader);
-        testHeaderHasText(header, "text");
-    });
     
     describe('Header "not text"', function() {
         const header = parseHeader("not text");
@@ -109,7 +125,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Header "blarg text"', function() {
 
-        it ("should throw an error", function() {
+        it ("should fail to parse", function() {
             expect(parseHeader.bind('blarg text')).to.throw;
         });
 
@@ -215,7 +231,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Header "/text"', function() {
 
-        it ("should throw an error", function() {
+        it ("should fail to parse", function() {
             expect(parseHeader.bind('/text')).to.throw;
         });
 
@@ -224,7 +240,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Header "text/"', function() {
 
-        it ("should throw an error", function() {
+        it ("should fail to parse", function() {
             expect(parseHeader.bind('/text')).to.throw;
         });
 
@@ -233,7 +249,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Header "maybe"', function() {
 
-        it ("should throw an error", function() {
+        it ("should fail to parse", function() {
             expect(parseHeader.bind('maybe')).to.throw;
         });
 
@@ -242,7 +258,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Header "@"', function() {
 
-        it ("should throw an error", function() {
+        it ("should fail to parse", function() {
             expect(parseHeader.bind('@')).to.throw;
         });
 
@@ -251,7 +267,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Header "maybe/text"', function() {
 
-        it ("should throw an error", function() {
+        it ("should fail to parse", function() {
             expect(parseHeader.bind('maybe/text')).to.throw;
         });
 
@@ -259,7 +275,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Header "text maybe"', function() {
 
-        it ("should throw an error", function() {
+        it ("should fail to parse", function() {
             expect(parseHeader.bind('text maybe')).to.throw;
         });
 

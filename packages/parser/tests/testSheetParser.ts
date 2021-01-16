@@ -324,6 +324,23 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     
+    describe('Project with flag header on right side', function() {
+
+        // Flag headers only restrict things if they're on the left side!
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/flagHeaderOnRight.csv");
+
+        testNumErrors(errors, 0, "any");
+        testHasSymbol(project, 'flagHeaderOnRight.word');
+        const results = [...project.generate('flagHeaderOnRight.word')];
+
+        testNumOutputs(results, 4);
+        testHasOutput(results, "text", "foobar");
+        testHasOutput(results, "text", "foobaz");
+        testHasOutput(results, "text", "moobar");
+        testHasOutput(results, "text", "moobaz");
+    });
+
     describe('Project with trivial flag header', function() {
 
         const [sheet, project, errors] = sheetFromFile("./tests/csvs/trivialFlagHeader.csv");
