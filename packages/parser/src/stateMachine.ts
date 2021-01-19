@@ -652,6 +652,7 @@ export class ConcatState extends BinaryState {
         randomize: boolean): Gen<[Tape, Token, boolean, State]> {
         
         if (!this.caresAbout(tape)) {
+            // if neither child cares, just short circuit this rather than bother with all the rest
             yield [tape, target, false, this];
             return;
         }
@@ -669,6 +670,31 @@ export class ConcatState extends BinaryState {
             return;
         }
 
+        // new simpler algorithm below
+        if (this.child1.accepting(symbolStack)) {
+            const successor = new ConcatState(this.child1, this.child2, true);
+            yield* successor.dQuery(tape, target, symbolStack, randomize);
+        }
+
+        if (this.child1.caresAbout(tape)) {
+            for (const [c1tape, c1text, c1matched, c1next] of 
+                    this.child1.dQuery(tape, target, symbolStack, randomize)) {
+                const successor = new ConcatState(c1next, this.child2, false, this.relevantTapes);
+                yield [c1tape, c1text, c1matched, successor];
+            }
+            return;
+        }
+
+        // child2 must care, otherwise one of the previous conditions would have triggered
+        for (const [c2tape, c2text, c2matched, c2next] of 
+                this.child2.dQuery(tape, target, symbolStack, randomize)) {
+            const successor = new ConcatState(this.child1, c2next, false, this.relevantTapes);
+            yield [c2tape, c2text, c2matched, successor];
+        }
+
+        // old, more circuitous, algorithm
+
+        /*
         // We can yield from child2 if child1 is accepting, OR if child1 doesn't care about the requested tape,
         // but if child1 is accepting AND doesn't care about the requested tape, we don't want to yield twice;
         // that leads to duplicate results.  yieldedAlready is how we keep track of that.
@@ -697,6 +723,8 @@ export class ConcatState extends BinaryState {
             const successor = new ConcatState(this.child1, this.child2, true);
             yield* successor.dQuery(tape, target, symbolStack, randomize);
         }  
+
+        */
     }
 }
 
