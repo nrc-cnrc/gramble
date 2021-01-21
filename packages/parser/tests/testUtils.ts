@@ -1,10 +1,11 @@
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
+import { it } from 'mocha';
 import { DevEnvironment } from '../src/devEnv';
 import { Header } from '../src/headerParser';
 import { Project } from '../src/sheetParser';
-import {CounterStack, Literalizer, State} from "../src/stateMachine";
+import { CounterStack, Literalizer, State } from "../src/stateMachine";
 import { TapeCollection } from '../src/tapes';
-import {StringDict} from "../src/util";
+import { StringDict } from "../src/util";
 
 export const text = Literalizer("text");
 export const unrelated = Literalizer("unrelated");
@@ -17,14 +18,6 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
         `should have ${objName} be of type ${type.name}`;
     it(msg, function() {
         expect(obj instanceof type).to.be.true;
-    });
-}
-
-export function testHeaderHasText(header: Header, text: string, objName: string = ""): void {
-    const msg = objName + (objName != "" ? " ":"") + 
-        `should have ${objName} have text "${text}"`;
-    it(msg, function() {
-        expect(header.text).to.equal(text);
     });
 }
 
@@ -56,7 +49,6 @@ export function testHasVocab(state: State, expectedVocab: {[tape: string]: numbe
     }
 }
 
-
 export function testHasNoVocab(state: State, forbiddenVocab: string) {
     const tapeCollection = new TapeCollection();
     state.collectVocab(tapeCollection, []);
@@ -68,38 +60,12 @@ export function testHasNoVocab(state: State, forbiddenVocab: string) {
 
 export function testNumOutputs(outputs: StringDict[], expectedNum: number) {
     it(`should have ${expectedNum} result(s)`, function() {
-        expect(outputs.length).to.equal(expectedNum);
-    });
-}
-
-export function testNumErrors(devEnv: DevEnvironment, expectedNum: number, errorType: "error"|"warning"|"any") {
-    const errorText = (errorType == "any") ? 
-                            "error(s)/warning(s)" :
-                            errorType + "(s)";
-    
-    it(`should have ${expectedNum} ${errorText}`, function() {
-        expect(devEnv.numErrors(errorType)).to.equal(expectedNum);
-    });
-}
-
-
-export function testErrorInCell(devEnv: DevEnvironment, sheet: string, row: number, col: number) {
-    it(`should have an error at ${sheet}:${row}:${col}`, function() {
-        expect(devEnv.getErrors(sheet, row, col).length)
-                                .to.be.greaterThan(0);
-    })
-}
-
-export function testNumSymbols(project: Project, expectedNum: number): void {
-    it (`should have ${expectedNum} symbols defined`, function() {
-        expect(project.globalNamespace.allSymbols().length).to.equal(expectedNum);
-    });
-}
-
-
-export function testHasSymbol(project: Project, symbolName: string): void {
-    it (`should have a symbol named ${symbolName}`, function() {
-        expect(project.globalNamespace.get(symbolName)).to.not.be.undefined;
+        try {
+            expect(outputs.length).to.equal(expectedNum);
+        } catch (e) {
+            console.log(`outputs: ${JSON.stringify(outputs)}`);
+            throw e;
+        }
     });
 }
 
@@ -119,3 +85,80 @@ export function testDoesntHaveOutput(outputs: StringDict[], tier: string, target
     });
 }
 
+export function testMatchOutputs(outputs: StringDict[], expected_outputs: StringDict[]): void {
+    // Check that the output dictionaries of State.generate() match the expected
+    // outputs.
+    //
+    // Outputs can be in any order.
+    it(`should match ${JSON.stringify(expected_outputs)}`, function() {
+        for (var expected_output of expected_outputs) {
+            try {
+                expect(outputs).to.deep.include(expected_output);
+            } catch (e) {
+                console.log(`outputs: ${JSON.stringify(outputs)}`);
+                throw e;
+            }
+        }
+        for (var output of outputs) {
+            try {
+                expect(expected_outputs).to.deep.include(output);
+            } catch (e) {
+                console.log(`outputs: ${JSON.stringify(outputs)}`);
+                throw e;
+            }
+        }
+    });
+}
+
+export function testGrammar(grammar: State, expected_results: StringDict[], 
+                            maxRecursion: number | undefined = undefined, 
+                            maxChars: number | undefined = undefined ): void {
+    var outputs: StringDict[] = [];
+    try {
+        outputs = [...grammar.generate(undefined, maxRecursion, maxChars)];
+    } catch (e) {
+        it("Unexpected Exception", function() {
+            console.log(e);
+            assert.fail(e);
+        });
+    }
+    testNumOutputs(outputs, expected_results.length);
+    testMatchOutputs(outputs, expected_results);
+}
+
+export function testHeaderHasText(header: Header, text: string, objName: string = ""): void {
+    const msg = objName + (objName != "" ? " ":"") + 
+        `should have ${objName} have text "${text}"`;
+    it(msg, function() {
+        expect(header.text).to.equal(text);
+    });
+}
+
+export function testNumErrors(devEnv: DevEnvironment, expectedNum: number, errorType: "error"|"warning"|"any") {
+    const errorText = (errorType == "any") ? 
+                            "error(s)/warning(s)" :
+                            errorType + "(s)";
+    
+    it(`should have ${expectedNum} ${errorText}`, function() {
+        expect(devEnv.numErrors(errorType)).to.equal(expectedNum);
+    });
+}
+
+export function testErrorInCell(devEnv: DevEnvironment, sheet: string, row: number, col: number) {
+    it(`should have an error at ${sheet}:${row}:${col}`, function() {
+        expect(devEnv.getErrors(sheet, row, col).length)
+                                .to.be.greaterThan(0);
+    })
+}
+
+export function testNumSymbols(project: Project, expectedNum: number): void {
+    it (`should have ${expectedNum} symbols defined`, function() {
+        expect(project.globalNamespace.allSymbols().length).to.equal(expectedNum);
+    });
+}
+
+export function testHasSymbol(project: Project, symbolName: string): void {
+    it (`should have a symbol named ${symbolName}`, function() {
+        expect(project.globalNamespace.get(symbolName)).to.not.be.undefined;
+    });
+}

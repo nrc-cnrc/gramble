@@ -1,5 +1,5 @@
-import {Seq, Uni, Join, Emb, SymbolTable, Namespace} from "../src/stateMachine";
-import { text, testNumOutputs, testHasOutput, t1, t2, t3, testHasTapes, testHasVocab } from './testUtils';
+import { Seq, Uni, Join, Emb, Namespace } from "../src/stateMachine";
+import { text, t1, t2, t3, testHasTapes, testHasVocab, testGrammar } from './testUtils';
 
 import * as path from 'path';
 
@@ -11,59 +11,47 @@ describe(`${path.basename(module.filename)}`, function() {
         const symbolTable = new Namespace({ "s": text("hello") });
         const grammar = Emb("s", symbolTable);
         testHasTapes(grammar, ["text"]);
-        testHasVocab(grammar, {"text":4});
-
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "text", "hello");
+        testHasVocab(grammar, {text: 4});
+        testGrammar(grammar, [{text: "hello"}]);
     });
 
     describe('Symbol containing text:hello+text:world', function() {
         const symbolTable = new Namespace({ "s": Seq(text("hello"), text("world")) });
         const grammar = Emb("s", symbolTable);
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "text", "helloworld");
+        testGrammar(grammar, [{text: "helloworld"}]);
     });
 
     describe('Symbol containing text:hello|text:goodbye', function() {
         const symbolTable = new Namespace({ "s": Uni(text("hello"), text("goodbye")) });
         const grammar = Emb("s", symbolTable);
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 2);
-        testHasOutput(outputs, "text", "hello");
-        testHasOutput(outputs, "text", "goodbye");
+        testGrammar(grammar, [{text: "hello"},
+                              {text: "goodbye"}]);
     });
 
     describe('Symbol of (t1:hi & t1:hi+t2:bye)', function() {
         const symbolTable = new Namespace({ "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) });
-        const outputs = [...Emb("hi2bye", symbolTable).generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "t2", "bye");
+        const grammar = Emb("hi2bye", symbolTable)
+        testGrammar(grammar, [{t1: "hi", t2: "bye"}]);
     });
 
     describe('Joining sym(t1:hi & t1:hi+t2:bye) & t2:bye+t3:yo', function() {
         const symbolTable = new Namespace({ "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) });
-        const grammar = Join(Emb("hi2bye", symbolTable), Seq(t2("bye"), t3("yo")));
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "t3", "yo");
+        const grammar = Join(Emb("hi2bye", symbolTable),
+                             Seq(t2("bye"), t3("yo")));
+        testGrammar(grammar, [{t1: "hi", t2: "bye", t3: "yo"}]);
     });
 
     describe('Joining t1:hi & sym(t1:hi+t2:bye & t2:bye+t3:yo)', function() {
-        const symbolTable = new Namespace({ "hi2yo": Join(Seq(t1("hi"), t2("bye")), Seq(t2("bye"), t3("yo")))});
+        const symbolTable = new Namespace({ "hi2yo": Join(Seq(t1("hi"), t2("bye")),
+                                                          Seq(t2("bye"), t3("yo")))});
         const grammar = Join(t1("hi"), Emb("hi2yo", symbolTable));
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "t3", "yo");
+        testGrammar(grammar, [{t1: "hi", t2: "bye", t3: "yo"}]);
     });
 
     describe('Joining of sym(t1:hi & t1:hi+t2:bye)+t2:world', function() {
         const symbolTable = new Namespace({ "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))) });
         const grammar = Seq(Emb("hi2bye", symbolTable), t2("world"));
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "t2", "byeworld");
+        testGrammar(grammar, [{t1: "hi", t2: "byeworld"}]);
     });
 
     describe('Joining "helloworld" with right-recursive "hello+ world"', function() {
@@ -73,9 +61,7 @@ describe(`${path.basename(module.filename)}`, function() {
         symbolTable.addSymbol("helloWorld", helloWorld);
 
         const grammar = Join(text("helloworld"), helloWorld);
-        const outputs = [... grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "text", "helloworld");
+        testGrammar(grammar, [{text: "helloworld"}]);
     });
 
     describe('Joining right-recursive "hello+ world" with "helloworld"', function() {
@@ -85,9 +71,7 @@ describe(`${path.basename(module.filename)}`, function() {
         symbolTable.addSymbol("helloWorld", helloWorld);
 
         const grammar = Join(helloWorld, text("helloworld"));
-        const outputs = [... grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "text", "helloworld");
+        testGrammar(grammar, [{text: "helloworld"}]);
     });
 
     describe('Joining "hellohelloworld" with right-recursive "hello+ world"', function() {
@@ -97,9 +81,7 @@ describe(`${path.basename(module.filename)}`, function() {
         symbolTable.addSymbol("helloWorld", helloWorld);
 
         const grammar = Join(text("hellohelloworld"), helloWorld);
-        const outputs = [... grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "text", "hellohelloworld");
+        testGrammar(grammar, [{text: "hellohelloworld"}]);
     });
 
     describe('Joining right-recursive "hello+ world" with "hellohelloworld"', function() {
@@ -109,9 +91,7 @@ describe(`${path.basename(module.filename)}`, function() {
         symbolTable.addSymbol("helloWorld", helloWorld);
 
         const grammar = Join(helloWorld, text("hellohelloworld"));
-        const outputs = [... grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "text", "hellohelloworld");
+        testGrammar(grammar, [{text: "hellohelloworld"}]);
     });
 
     describe('Joining "helloworld" with left-recursive "hello+ world"', function() {
@@ -119,10 +99,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
         const helloWorld = Seq(helloHello, text("world"));
         symbolTable.addSymbol("hellohello", helloHello);
+
         const grammar = Join(text("helloworld"), helloWorld);
-        const outputs = [... grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "text", "helloworld");
+        testGrammar(grammar, [{text: "helloworld"}]);
     });
 
     describe('Joining "hellohelloworld" with left-recursive "hello+ world"', function() {
@@ -130,10 +109,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
         const helloWorld = Seq(helloHello, text("world"));
         symbolTable.addSymbol("hellohello", helloHello);
+
         const grammar = Join(text("hellohelloworld"), helloWorld);
-        const outputs = [... grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "text", "hellohelloworld");
+        testGrammar(grammar, [{text: "hellohelloworld"}]);
     });
 
     describe('Joining left-recursive "hello+ world" with "helloworld"', function() {
@@ -141,10 +119,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
         const helloWorld = Seq(helloHello, text("world"));
         symbolTable.addSymbol("hellohello", helloHello);
+
         const grammar = Join(helloWorld, text("helloworld"));
-        const outputs = [... grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "text", "helloworld");
+        testGrammar(grammar, [{text: "helloworld"}]);
     });
 
     describe('Joining left-recursive "hello+ world" with "hellohelloworld"', function() {
@@ -152,10 +129,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
         const helloWorld = Seq(helloHello, text("world"));
         symbolTable.addSymbol("hellohello", helloHello);
+
         const grammar = Join(helloWorld, text("hellohelloworld"));
-        const outputs = [... grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "text", "hellohelloworld");
+        testGrammar(grammar, [{text: "hellohelloworld"}]);
     });
 
     describe('Emitting from right-recursive "hello+ world" with default max recursion (4)', function() {
@@ -163,13 +139,13 @@ describe(`${path.basename(module.filename)}`, function() {
         const world = Uni(text("world"), Emb("helloWorld", symbolTable))
         const helloWorld = Seq(text("hello"), world);
         symbolTable.addSymbol("helloWorld", helloWorld);
-        const outputs = [... helloWorld.generate()];
-        testNumOutputs(outputs, 5);
-        testHasOutput(outputs, "text", "helloworld");
-        testHasOutput(outputs, "text", "hellohelloworld");
-        testHasOutput(outputs, "text", "hellohellohelloworld");
-        testHasOutput(outputs, "text", "hellohellohellohelloworld");
-        testHasOutput(outputs, "text", "hellohellohellohellohelloworld");
+
+        const grammar = helloWorld;
+        testGrammar(grammar, [{text: "helloworld"},
+                              {text: "hellohelloworld"},
+                              {text: "hellohellohelloworld"},
+                              {text: "hellohellohellohelloworld"},
+                              {text: "hellohellohellohellohelloworld"}]);
     });
 
     describe('Emitting from right-recursive "hello+ world" with max recursion 2', function() {
@@ -177,11 +153,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const world = Uni(text("world"), Emb("helloWorld", symbolTable))
         const helloWorld = Seq(text("hello"), world);
         symbolTable.addSymbol("helloWorld", helloWorld);
-        const outputs = [... helloWorld.generate(false, 2)];
-        testNumOutputs(outputs, 3);
-        testHasOutput(outputs, "text", "helloworld");
-        testHasOutput(outputs, "text", "hellohelloworld");
-        testHasOutput(outputs, "text", "hellohellohelloworld");
+
+        const grammar = helloWorld;
+        testGrammar(grammar, [{text: "helloworld"},
+                              {text: "hellohelloworld"},
+                              {text: "hellohellohelloworld"}],
+                    2);
     });
 
     describe('Emitting from right-recursive "hello+ world" with max recursion 0', function() {
@@ -189,9 +166,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const world = Uni(text("world"), Emb("helloWorld", symbolTable))
         const helloWorld = Seq(text("hello"), world);
         symbolTable.addSymbol("helloWorld", helloWorld);
-        const outputs = [... helloWorld.generate(false, 0)];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "text", "helloworld");
+
+        const grammar = helloWorld;
+        testGrammar(grammar, [{text: "helloworld"}], 0);
     });
 
     describe('Emitting from left-recursive "hello+ world" with default max recursion (4)', function() {
@@ -199,13 +176,13 @@ describe(`${path.basename(module.filename)}`, function() {
         const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
         const helloWorld = Seq(helloHello, text("world"));
         symbolTable.addSymbol("hellohello", helloHello);
-        const outputs = [... helloWorld.generate()];
-        testNumOutputs(outputs, 5);
-        testHasOutput(outputs, "text", "helloworld");
-        testHasOutput(outputs, "text", "hellohelloworld");
-        testHasOutput(outputs, "text", "hellohellohelloworld");
-        testHasOutput(outputs, "text", "hellohellohellohelloworld");
-        testHasOutput(outputs, "text", "hellohellohellohellohelloworld");
+
+        const grammar = helloWorld;
+        testGrammar(grammar, [{text: "helloworld"},
+                              {text: "hellohelloworld"},
+                              {text: "hellohellohelloworld"},
+                              {text: "hellohellohellohelloworld"},
+                              {text: "hellohellohellohellohelloworld"}]);
     });
 
     describe('Emitting from left-recursive "hello+ world" with max recursion 2', function() {
@@ -213,11 +190,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
         const helloWorld = Seq(helloHello, text("world"));
         symbolTable.addSymbol("hellohello", helloHello);
-        const outputs = [... helloWorld.generate(false, 2)];
-        testNumOutputs(outputs, 3);
-        testHasOutput(outputs, "text", "helloworld");
-        testHasOutput(outputs, "text", "hellohelloworld");
-        testHasOutput(outputs, "text", "hellohellohelloworld");
+
+        const grammar = helloWorld;
+        testGrammar(grammar, [{text: "helloworld"},
+                              {text: "hellohelloworld"},
+                              {text: "hellohellohelloworld"}],
+                    2);
     });
 
     describe('Emitting from left-recursive "hello+ world" with max recursion 0', function() {
@@ -225,9 +203,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
         const helloWorld = Seq(helloHello, text("world"));
         symbolTable.addSymbol("hellohello", helloHello);
-        const outputs = [... helloWorld.generate(false, 0)];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "text", "helloworld");
+
+        const grammar = helloWorld;
+        testGrammar(grammar, [{text: "helloworld"}], 0);
     });
 
 });

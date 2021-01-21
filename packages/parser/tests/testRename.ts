@@ -1,5 +1,5 @@
 import { Rename, Seq, Join } from "../src/stateMachine";
-import { t1, testNumOutputs, testHasOutput, testDoesntHaveOutput, t2, t3, testHasTapes, testHasVocab, testHasNoVocab } from "./testUtils";
+import { t1, t2, t3, testHasTapes, testHasVocab, testHasNoVocab, testGrammar } from "./testUtils";
 
 import * as path from 'path';
 
@@ -9,72 +9,52 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Rename(t1("hello"), "t1", "t2");
         testHasTapes(grammar, ["t2"]);
         testHasNoVocab(grammar, "t1");
-        testHasVocab(grammar, {"t2":4});
-
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "t2", "hello");
-        testDoesntHaveOutput(outputs, "t1", "hello");
+        testHasVocab(grammar, {t2: 4});
+        testGrammar(grammar, [{t2: "hello"}]);
     });
 
-    /* Actually this one's pretty iffy, not sure what the answer should be.
+    // Actually this one's pretty iffy, not sure what the answer should be.
     describe('Rename(t2/t1) of t1:hello+t2:foo', function() {
-        const outputs = [...Rename(Seq(t1("hello"),t2("foo")), "t1", "t2").run()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "t2", "hellofoo");
-        testDoesntHaveOutput(outputs, "t1", "hello");
-        testDoesntHaveOutput(outputs, "t2", "foo");
+        const grammar = Rename(Seq(t1("hello"), t2("foo")), "t1", "t2");
+        testGrammar(grammar, [{t2: "hellofoo"}]);
     });
-    */  
         
     describe('rename(t1:hello+unrelated:foo) from t1 to t2', function() {
-        const grammar = Rename(Seq(t1("hello"),t3("foo")), "t1", "t2");
+        const grammar = Rename(Seq(t1("hello"), t3("foo")), "t1", "t2");
         testHasTapes(grammar, ["t2", "t3"]);
-        testHasVocab(grammar, {"t2":4, "t3":2});
+        testHasVocab(grammar, {"t2": 4, "t3": 2});
         testHasNoVocab(grammar, "t1");
-        
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "t2", "hello");
-        testHasOutput(outputs, "t3", "foo");
-        testDoesntHaveOutput(outputs, "t1", "hello");
+        testGrammar(grammar, [{t2: "hello", t3: "foo"}]);
     });
 
     describe('Joining t2:hello & rename(t2/t1, t1:hello))', function() {
-        const grammar = Join(t2("hello"), Rename(t1("hello"), "t1", "t2"));
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "t2", "hello");
-        testDoesntHaveOutput(outputs, "t1", "hello");
+        const grammar = Join(t2("hello"),
+                             Rename(t1("hello"), "t1", "t2"));
+        testGrammar(grammar, [{t2: "hello"}]);
     });
 
     describe('Joining rename(t2/t1, t1:hello)) & t2:hello', function() {
-        const grammar = Join(Rename(t1("hello"), "t1", "t2"), t2("hello"));
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "t2", "hello");
-        testDoesntHaveOutput(outputs, "t1", "hello");
+        const grammar = Join(Rename(t1("hello"), "t1", "t2"),
+                             t2("hello"));
+        testGrammar(grammar, [{t2: "hello"}]);
     });
 
-    describe('Joining rename(t2/t1, t1:hello+t3:foo)) & t21:hello', function() {
-        const grammar = Join(Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"), t2("hello"));
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 1);
-        testHasOutput(outputs, "t2", "hello");
-        testHasOutput(outputs, "t3", "foo");
-        testDoesntHaveOutput(outputs, "t1", "hello");
+    describe('Joining rename(t2/t1, t1:hello+t3:foo)) & t2:hello', function() {
+        const grammar = Join(Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"),
+                             t2("hello"));
+        testGrammar(grammar, [{t2: "hello", t3: "foo"}]);
     });
 
     describe('Joining rename(t2/t1, t1:hello+t3:foo)) & t2:hello+t3:bar', function() {
-        const grammar = Join(Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"), Seq(t2("hello"), t3("bar")));
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 0);
+        const grammar = Join(Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"),
+                             Seq(t2("hello"), t3("bar")));
+        testGrammar(grammar, []);
     });
 
     describe('Joining t2:hello+t3:bar & rename(t2/t1, t1:hello+t3:foo))', function() {
-        const grammar = Join(Seq(t2("hello"), t3("bar")), Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"));
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 0);
+        const grammar = Join(Seq(t2("hello"), t3("bar")),
+                             Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"));
+        testGrammar(grammar, []);
     });
 
 });
