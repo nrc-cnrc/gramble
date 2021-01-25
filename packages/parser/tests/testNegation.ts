@@ -102,7 +102,6 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Join(~t1:hello & t2:hello)', function() {
         const grammar = Join(Not(t1("hello")), t2("hello"));
         testGrammar(grammar, [{t2: "hello"}], undefined, 30);
-        console.log("done the test")
     });
 
 });
