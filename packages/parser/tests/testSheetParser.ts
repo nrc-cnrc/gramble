@@ -21,9 +21,32 @@ export function sheetFromFile(path: string):
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe('Correct grammar', function() {
+    
+    describe('Minimal grammar', function() {
 
-        const [sheet, project, errors] = sheetFromFile("./tests/csvs/simpleGrammar.csv");
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/minimalGrammar.csv");
+
+        testNumErrors(errors, 0, "any");
+
+        it("should have 'word' as its child", function() {
+            expect(sheet.child).to.not.be.undefined;
+            if (sheet.child == undefined) return;
+            expect(sheet.child.text).to.equal("word");
+        });
+
+        
+        testNumSymbols(project, 1);
+        testHasSymbol(project, 'minimalGrammar.word');
+        const results = [...project.generate('minimalGrammar.word')];
+
+        testNumOutputs(results, 2);
+        testHasOutput(results, "text", "foo");
+        testHasOutput(results, "text", "moo");
+    });
+
+    describe('Grammar with embeds', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/embedGrammar.csv");
 
         testNumErrors(errors, 0, "any");
 
@@ -71,6 +94,45 @@ describe(`${path.basename(module.filename)}`, function() {
             if (sheet.child.sibling.sibling == undefined) return;
             expect(sheet.child.sibling.sibling.sibling).to.be.undefined;
         });
+
+        it("should have 'table' as its child's child", function() {
+            expect(sheet.child).to.not.be.undefined;
+            if (sheet.child == undefined) return;
+            expect(sheet.child.child).to.not.be.undefined;
+            if (sheet.child.child == undefined) return;
+            expect(sheet.child.child.text).to.equal("table");
+        });
+
+        testNumSymbols(project, 3);
+        testHasSymbol(project, 'embedGrammar.word');
+        const results = [...project.generate('embedGrammar.word')];
+
+        testNumOutputs(results, 4);
+        testHasOutput(results, "text", "foobar");
+        testHasOutput(results, "text", "foobaz");
+        testHasOutput(results, "text", "moobar");
+        testHasOutput(results, "text", "moobaz");
+    });
+
+    /*
+    describe('Grammar with a missing symbol', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/missingSymbol.csv");
+
+        testNumErrors(errors, 0, "any");
+
+        testNumSymbols(project, 2);
+        testHasSymbol(project, 'missingSymbol.word');
+        const results = [...project.generate('missingSymbol.word')];
+
+        testNumOutputs(results, 0);
+    }); */
+
+    describe('Grammar with symbols and joins', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/simpleGrammar.csv");
+
+        testNumErrors(errors, 0, "any");
 
         it("should have 'join' as its child's child", function() {
             expect(sheet.child).to.not.be.undefined;
@@ -170,6 +232,27 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testErrorInCell(errors, "unparseableHeader", 8, 3);
     });
+
+    
+    describe('Non-assignments in first column', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/firstLevelNonAssignments.csv");
+
+        testNumErrors(errors, 2, "error");
+        testErrorInCell(errors, "firstLevelNonAssignments", 1, 0);
+        testErrorInCell(errors, "firstLevelNonAssignments", 12, 0);
+    });
+
+    describe('Wayward operator not assigned to anything', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/waywardOperator.csv");
+
+        testNumErrors(errors, 1, "error");
+        testNumErrors(errors, 1, "warning");
+        testErrorInCell(errors, "waywardOperator", 1, 1);
+        testErrorInCell(errors, "waywardOperator", 5, 0);
+    });
+
 
     describe('Grammar with two children on the same line', function() {
 
@@ -275,8 +358,8 @@ describe(`${path.basename(module.filename)}`, function() {
         
         const [sheet, namespace, errors] = sheetFromFile("./tests/csvs/weirdIndentation.csv");
 
-        testNumErrors(errors, 1, "error");
-        testNumErrors(errors, 0, "warning");
+        testNumErrors(errors, 0, "error");
+        testNumErrors(errors, 1, "warning");
         
         it("should have 'word' as its child", function() {
             expect(sheet.child).to.not.be.undefined;

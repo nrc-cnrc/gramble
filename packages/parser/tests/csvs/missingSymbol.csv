@@ -1,0 +1,7 @@
+
+verb, table, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+word, table, embed, embed
+    ,       , verb, suffix 
