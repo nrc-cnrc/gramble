@@ -464,7 +464,11 @@ export class RenamedTape extends Tape {
     }
 
     public get tapeName(): string {
-        return this.child.tapeName;
+        const childName = this.child.tapeName;
+        if (childName == this.toTape) {
+            return this.fromTape;
+        }
+        return childName;
     }
 
     public get numTapes(): number {

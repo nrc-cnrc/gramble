@@ -378,9 +378,7 @@ export abstract class State {
 
         while (stateQueue.length > 0 && chars < maxChars) {
             var nextQueue: [MultiTapeOutput, State][] = [];
-            for (var i = 0; i < stateQueue.length; i++) {
-
-                const [prevOutput, prevState] = stateQueue[i];
+            for (const [prevOutput, prevState] of stateQueue) {
 
                 if (prevState.accepting(symbolStack)) {
                     yield* prevOutput.toStrings();
@@ -1208,7 +1206,7 @@ export class RenameState extends UnaryState {
                 this.child.dQuery(tape, target, symbolStack, randomize)) {
             //assert(childTape instanceof RenamedTape);
             const trueChildTape = (childTape as RenamedTape).child;
-            yield [trueChildTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape)];
+            yield [trueChildTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape, this.relevantTapes)];
         }
     }
 }
