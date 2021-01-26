@@ -60,6 +60,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{text: "hello"}]);
     });
 
+
     describe('Joining t1:hi & t1:hi+t2:bye', function() {
         const grammar = Join(t1("hi"), Seq(t1("hi"), t2("bye")));
         testGrammar(grammar, [{t1: "hi", t2: "bye"}]);
@@ -70,6 +71,7 @@ describe(`${path.basename(module.filename)}`, function() {
                              Seq(t2("bye"), t3("yo")));
         testGrammar(grammar, [{t1: "hi", t2: "bye", t3: "yo"}]);
     });
+
 
     describe('Joining text:hello+text:world & text:hello+text:world', function() {
         const grammar = Join(Seq(text("hello"), text("world")),
@@ -85,7 +87,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Joining t1:hello+t1:kitty & (t1:hello+t1:kitty)+(t2:goodbye+t2:world)', function() {
         const grammar = Join(Seq(t1("hello"), t1("kitty")),
-                             Seq(Seq(t1("hello"), t1("kitty")), Seq(t2("goodbye"), t2("world"))));
+                             Seq(Seq(t1("hello"), t1("kitty")),
+                                 Seq(t2("goodbye"), t2("world"))));
         testGrammar(grammar, [{t1: "hellokitty", t2: "goodbyeworld"}]);
     });
 
@@ -110,6 +113,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "hellokitty", t2: "goodbyeworld"}]);
     });
 
+
     describe('Joining an alternation & literal', function() {
         const grammar = Join(Uni(t1("hi"), t1("yo")), Seq(t1("hi"), t2("bye")));
         testGrammar(grammar, [{t1: "hi", t2: "bye"}]);
@@ -128,6 +132,7 @@ describe(`${path.basename(module.filename)}`, function() {
                             t2("world"));
         testGrammar(grammar, [{t1: "hi", t2: "byeworld"}]);
     });
+
 
     describe('Joining text:hello & text:hello+text:world', function() {
         const grammar = Join(text("hello"), Seq(text("hello"), text("world")));
@@ -149,6 +154,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, []);
     });
 
+
     describe('Joining text:hi+unrelated:world & text:hi+unrelated:world', function() {
         const grammar = Join(Seq(text("hi"), unrelated("world")),
                              Seq(text("hi"), unrelated("world")));
@@ -160,6 +166,7 @@ describe(`${path.basename(module.filename)}`, function() {
                              Seq(text("hello"), unrelated("world")));
         testGrammar(grammar, [{text: "hello", unrelated: "world"}]);
     });
+
 
     describe('Joining text:hello & text:hello+unrelated:foo', function() {
         const grammar = Join(text("hello"), Seq(text("hello"), unrelated("foo")));
@@ -180,6 +187,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(Seq(unrelated("foo"), text("hello")), text("hello"));
         testGrammar(grammar, [{text: "hello", unrelated: "foo"}]);
     });
+
 
     describe('Joining text:hello+unrelated:foo & text:hello+unrelated:bar', function() {
         const grammar = Join(Seq(text("hello"), unrelated("foo")),
@@ -212,6 +220,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                   Uni(text("goodbye"),  text("welcome"))));
         testGrammar(grammar, [{text: "goodbye"}]);
     });
+
 
     describe('Joining to joining text:hello & text:hello', function() {
         const grammar = Join(text("hello"),
@@ -249,6 +258,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{text: "goodbye"}]);
     });
 
+
     describe('Joining to a sequence of alternating sequences ', function() {
         const grammar = Join(text("hello"),
                              Seq(Uni(Seq(text("hello"), unrelated("hola")),
@@ -269,12 +279,35 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "hello", unrelated: "foo"}]);
     });
 
-    /*
-    describe('Joining unrelated-tier alts in different directions', function() {
-        const outputs = [...Join(Uni(unrelated("foo"), text("hello")), Uni(text("hello"), unrelated("foo"))).generate()];
-        console.log(outputs);
-        testNumOutputs(outputs, 4);
+
+    describe('Joining unrelated-tier alts in same direction', function() {
+        const grammar = Join(Uni(text("hello"), unrelated("foo")),
+                             Uni(text("hello"), unrelated("foo")));
+        testGrammar(grammar, [{text: "hello"},
+                              {unrelated: "foo"},
+                              {text: "hello", unrelated: "foo"},
+                              {text: "hello", unrelated: "foo"}]);
     });
+
+    describe('Joining unrelated-tier alts in different directions', function() {
+        const grammar = Join(Uni(unrelated("foo"), text("hello")),
+                             Uni(text("hello"), unrelated("foo")));
+        testGrammar(grammar, [{unrelated: "foo"},
+                              {text: "hello"},
+                              {text: "hello", unrelated: "foo"},
+                              {text: "hello", unrelated: "foo"}]);
+    });
+
+    describe('Joining unrelated-tier alts in different directions', function() {
+        const grammar = Join(Uni(text("hello"), unrelated("foo")),
+                             Uni(unrelated("foo"), text("hello")));
+        testGrammar(grammar, [{unrelated: "foo"},
+                              {text: "hello"},
+                              {text: "hello", unrelated: "foo"},
+                              {text: "hello", unrelated: "foo"}]);
+    });
+
+    /*
     describe('Repetition bug with unrelated text', function() {
         const grammar = Join(Seq(Uni(text("h"), text("hh")), unrelated("world")), Seq(Uni(text("h"), text("hh")), unrelated("world")));
         const outputs = [...grammar.generate()];
@@ -288,7 +321,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Unfinished join, opposite direction', function() {
-        const grammar = Join(text("h"), text("hello"));
+        const grammar = Join(text("hello"), text("h"));
         testGrammar(grammar, []);
     });
 

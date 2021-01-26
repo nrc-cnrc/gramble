@@ -45,7 +45,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t2: "hello", t3: "foo"}]);
     });
 
-    
     describe('Joining t2:hello & rename(t2/t1, t1:hello+t3:foo)) & ', function() {
         const grammar = Join(t2("hello"), Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"));
         testGrammar(grammar, [{t2: "hello", t3: "foo"}]);

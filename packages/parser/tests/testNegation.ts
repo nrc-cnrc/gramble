@@ -75,7 +75,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('~(~t1:hello)', function() {
         const grammar = Not(Not(t1("hello")));
-        testGrammar(grammar, [{t1: "hello"}], undefined, 30);
+        testGrammar(grammar, [{t1: "hello"}], 4, 30);
     });
 
     describe('~t1:hi', function() {
@@ -102,8 +102,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "helloo"},
                               {unrelated: "foobar"}]);
     });
-
-    
 
     describe('Alt ~t1:hi | t2:hi', function() {
         const grammar = Uni(Not(t1("hi")), t2("hi"));

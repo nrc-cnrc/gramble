@@ -884,6 +884,12 @@ export class JoinState extends SemijoinState {
 
         const leftJoin = this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack, randomize);
         const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, symbolStack, randomize);
+        
+        if (this.child1.accepting(symbolStack)) {
+            yield* iterPriorityUnion(rightJoin, leftJoin);
+            return;
+        }
+
         yield* iterPriorityUnion(leftJoin, rightJoin);
     }
 
