@@ -1,5 +1,4 @@
 import { assert, expect } from 'chai';
-import { it } from 'mocha';
 import { DevEnvironment } from '../src/devEnv';
 import { Header } from '../src/headerParser';
 import { Project } from '../src/sheetParser';
@@ -110,12 +109,13 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
     });
 }
 
-export function testGrammar(grammar: State, expected_results: StringDict[], 
-                            maxRecursion: number | undefined = undefined, 
-                            maxChars: number | undefined = undefined ): void {
+export function testGrammar(grammar: State, 
+                            expected_results: StringDict[], 
+                            maxRecursion: number = 4, 
+                            maxChars: number = 1000): void {
     var outputs: StringDict[] = [];
     try {
-        outputs = [...grammar.generate(undefined, maxRecursion, maxChars)];
+        outputs = [...grammar.generate(false, maxRecursion, maxChars)];
     } catch (e) {
         it("Unexpected Exception", function() {
             console.log(e);

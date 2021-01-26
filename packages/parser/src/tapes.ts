@@ -53,29 +53,17 @@ class SingleTapeOutput {
         // right to left.  (you might think this would be more elegant to be done recursively, but it blows
         // the stack when stringifying long outputs.)
         while (currentTape != undefined) {
-            for (const c of currentTape.tape.fromBits(currentTape.tape.tapeName, currentTape.token.bits)) {
-                const newResults: string[] = [];
+            const newResults: string[] = [];
+            for (const c of currentTape.tape.fromBits(currentTape.tape.tapeName, currentTape.token.bits)) {   
                 for (const existingResult of results) {
                     newResults.push(c + existingResult);
                 }
-                results = newResults;
             }
+            results = newResults;
             currentTape = currentTape.prev;
         }
 
         yield* results;
-
-        /*
-        var prevStrings = [""];
-        if (this.prev != undefined) {
-            prevStrings = [... this.prev.getStrings()];
-        }
-
-        for (const s of prevStrings) {
-            for (const c of this.tape.fromBits(this.tape.tapeName, this.token.bits)) {
-                yield s + c;
-            }
-        } */
     }
 }
 
@@ -201,6 +189,10 @@ export class Token {
 
     public isEmpty(): boolean {
         return this.bits.isEmpty();
+    }
+
+    public stringify(tape: Tape): string {
+        return tape.fromBits(tape.tapeName, this.bits).join("|");
     }
 }
 

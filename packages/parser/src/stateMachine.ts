@@ -389,8 +389,7 @@ export abstract class State {
                 for (const [tape, c, matched, newState] of 
                             prevState.dQuery(allTapes, ANY_CHAR, symbolStack, randomize)) {
                     if (!matched) {
-                        console.log("Warning, got all the way through without a match");
-                        continue;
+                        throw new Error("Something went wrong, got all the way through without a match");
                     }
                     const nextOutput = prevOutput.add(tape, c);
                     nextQueue.push([nextOutput, newState]);
@@ -773,35 +772,6 @@ export class UnionState extends BinaryState {
     }
 } 
 
-/**
- * SemijoinState
- * 
- * This implements the left semijoin.  The full join is the priority union of the left and right
- * semijoins.
-
-export class SemijoinState extends BinaryState {
-
-    public *ndQuery(tape: string, 
-        target: BitSet,
-        symbolStack: CounterStack,
-        vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
-
-        for (const [c1tape, c1target, c1matched, c1next] of this.child1.dQuery(tape, target, symbolStack, vocab)) {
-
-            if (c1tape == NO_TAPE) {
-                yield [c1tape, c1target, c1matched, Join(c1next, this.child2)];
-                continue;
-            }
-            
-            for (const [c2tape, c2target, c2matched, c2next] of this.child2.dQuery(c1tape, c1target, symbolStack, vocab)) {
-                yield [c2tape, c2target, c1matched || c2matched, Join(c1next, c2next)];
-            }
-        } 
-    }
-
-}
-
- */
 
 /**
  * Convenience function that takes two generators, and yields from the
@@ -823,6 +793,69 @@ function *iterPriorityUnion<T>(iter1: Gen<T>, iter2: Gen<T>): Gen<T> {
 }
 
 /**
+ * Implements a left semijoin (which we use for unit testing).
+ * 
+ * To test that an entry E is in the grammar G, we execute
+ * 
+ *      Semijoin(G, E)
+ * 
+ * This requires that there be an entry in G that matches every field in E.
+ * (There could be additional fields in the relevant entries in G that you don't 
+ * care about.  In practice it's difficult to anticipate all the different 
+ * fields that G might have in a complex grammar, to make sure E has all of them.)
+ */
+class SemijoinState extends BinaryState {
+
+    /**
+    * We factor out the logic into a separate function (one that doesn't specifically
+    * refer to the child1/child2 properties of this object) because it's the same algorithm
+    * used twice in a descendent class, JoinState.  A join is just the priority union of the
+    * left and right semijoins, and the right semijoin is just the left semijoin with the
+    * children reversed.  So we let the caller decide which child is "c1" and which is "c2" for
+    * the purposes of the semijoin.
+    */
+    public *ndQueryLeft(tape: Tape,
+                          target: Token,
+                          c1: State,
+                          c2: State,
+                          symbolStack: CounterStack,
+                          randomize: boolean): Gen<[Tape, Token, boolean, State]> {
+                              
+        for (const [c1tape, c1target, c1matched, c1next] of 
+                c1.dQuery(tape, target, symbolStack, randomize)) {
+            
+            if (c1tape.numTapes == 0) { 
+                // c1 contained a ProjectionState that hides the original tape; move on without
+                // asking c2 to match anything.
+                const successor = this.successor(c1next, c2);
+                yield [c1tape, c1target, c1matched, successor];
+                continue;
+            }
+            
+            for (const [c2tape, c2target, c2matched, c2next] of 
+                    c2.dQuery(c1tape, c1target, symbolStack, randomize)) {
+                const successor = this.successor(c1next, c2next);
+                yield [c2tape, c2target, c1matched || c2matched, successor];
+            }
+        } 
+    }
+
+    protected successor(newChild1: State, newChild2: State): State {
+        return new SemijoinState(newChild1, newChild2, this.relevantTapes);
+    }
+
+    public *ndQuery(tape: Tape, 
+        target: Token,
+        symbolStack: CounterStack,
+        randomize: boolean): Gen<[Tape, Token, boolean, State]> {
+
+        yield *this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack, randomize);
+    }
+
+}
+
+
+/**
  * The JoinState implements the natural join (in the relational algebra sense)
  * for two automata. This is a fundamental operation in the parser, as we implement
  * parsing as a traversal of a corresponding join state.  You can think of join(X,Y)
@@ -837,32 +870,11 @@ function *iterPriorityUnion<T>(iter1: Gen<T>, iter2: Gen<T>): Gen<T> {
  * Because the ordinary union of these would lead to the same states twice, we use the
  * priority union instead.
  */
-export class JoinState extends BinaryState {
+export class JoinState extends SemijoinState {
 
-    public *ndQueryLeft(tape: Tape,
-                          target: Token,
-                          c1: State,
-                          c2: State,
-                          symbolStack: CounterStack,
-                          randomize: boolean): Gen<[Tape, Token, boolean, State]> {
-                              
-        for (const [c1tape, c1target, c1matched, c1next] of 
-                c1.dQuery(tape, target, symbolStack, randomize)) {
-
-            if (c1tape.numTapes == 0) { 
-                // c1 contained a ProjectionState that hides the original tape; move on without
-                // asking c2 to match anything.
-                const successor = new JoinState(c1next, c2, this.relevantTapes);
-                yield [c1tape, c1target, c1matched, successor];
-                continue;
-            }
-            
-            for (const [c2tape, c2target, c2matched, c2next] of 
-                    c2.dQuery(c1tape, c1target, symbolStack, randomize)) {
-                const successor = new JoinState(c1next, c2next, this.relevantTapes);
-                yield [c2tape, c2target, c1matched || c2matched, successor];
-            }
-        } 
+    
+    protected successor(newChild1: State, newChild2: State): State {
+        return new JoinState(newChild1, newChild2, this.relevantTapes);
     }
 
     public *ndQuery(tape: Tape, 
@@ -1239,9 +1251,11 @@ export class RenameState extends UnaryState {
 export class NegationState extends State {
 
     constructor(
-        public child: State | undefined
-    ) { 
+        public child: State | undefined,
+        relevantTapes: Set<string> | undefined = undefined
+    ) {
         super();
+        this.relevantTapes = relevantTapes;
     }
 
     public get id(): string {
@@ -1265,6 +1279,10 @@ export class NegationState extends State {
             } else {
                 this.relevantTapes = this.child.getRelevantTapes(stateStack);
             }
+            
+            if (this.relevantTapes.size > 1) {
+                throw new Error("We do not currently support negations of grammars that reference 2+ tapes");
+            }
         }
         return this.relevantTapes;
     } 
@@ -1281,21 +1299,27 @@ export class NegationState extends State {
         symbolStack: CounterStack,
         randomize: boolean): Gen<[Tape, Token, boolean, State]> {
 
-
-        if (this.child == undefined) {  // we've can't possibly match the child, so we're basically .* from now on
-            yield [tape, target, true, this]; 
+        var remainderTapeName = [...this.getRelevantTapes(symbolStack)][0];
+        var remainderTape = tape.matchTape(remainderTapeName);
+        if (remainderTape == undefined) {
+            yield [tape, target, false, this];
             return;
         }
-        
+
+        if (this.child == undefined) {  // we've can't possibly match the child, so we're basically .* from now on
+            yield [remainderTape, target, true, this]; 
+            return;
+        }
+
         var remainder = new Token(target.bits.clone());
 
         for (const [childTape, childText, childMatched, childNext] of 
                 this.child.dQuery(tape, target, symbolStack, randomize)) {
             remainder = remainder.andNot(childText);
-            yield [childTape, childText, childMatched, new NegationState(childNext)];
+            yield [childTape, childText, childMatched, new NegationState(childNext, this.relevantTapes)];
         }
 
-        yield [tape, remainder, true, new NegationState(undefined)];
+        yield [remainderTape, remainder, true, new NegationState(undefined, this.relevantTapes)];
     }
 }
 
@@ -1347,6 +1371,11 @@ export function Join(child1: State, child2: State): State {
     const right = new SemijoinState(child2, child1);
     return new PriorityUnionState([left, right]); */
 
+}
+
+
+export function Semijoin(child1: State, child2: State): State {
+    return new SemijoinState(child1, child2);
 }
 
 export function Not(child: State): State {

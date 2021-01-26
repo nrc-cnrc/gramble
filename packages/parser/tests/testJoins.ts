@@ -1,5 +1,5 @@
 
-import { Seq, Uni, Join } from "../src/stateMachine";
+import { Seq, Uni, Join, Semijoin } from "../src/stateMachine";
 import { text, t1, t2, t3, unrelated, testHasTapes, testHasVocab, testGrammar } from './testUtils';
 
 import * as path from 'path';
@@ -306,5 +306,31 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(Seq(text("h"), unrelated("foo"), text("ello")),
                              text("hello"));
         testGrammar(grammar, [{text: "hello", unrelated: "foo"}]);
+    });
+    
+    describe('Left semijoin of text:hello & text:hello', function() {
+        const grammar = Semijoin(text("hello"), text("hello"));
+        const outputs = [...grammar.generate()];
+        testGrammar(grammar, [{text: "hello"}]);
+    });
+
+    
+    describe('Left semijoin of text:h & text:hello', function() {
+        const grammar = Semijoin(text("h"), text("hello"));
+        const outputs = [...grammar.generate()];
+        testGrammar(grammar, []);
+    });
+
+    
+    describe('Left semijoin of text:hello+unrelated:foo & text:hello', function() {
+        const grammar = Semijoin(Seq(text("hello"), unrelated("foo")), text("hello"));
+        const outputs = [...grammar.generate()];
+        testGrammar(grammar, [{text: "hello", unrelated: "foo"}]);
+    });
+    
+    describe('Left semijoin of text:hello & text:hello+unrelated:foo', function() {
+        const grammar = Semijoin(text("hello"), Seq(text("hello"), unrelated("foo")));
+        const outputs = [...grammar.generate()];
+        testGrammar(grammar, []);
     });
 });
