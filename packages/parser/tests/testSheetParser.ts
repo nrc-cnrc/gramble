@@ -115,6 +115,37 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     
+    describe('Grammar with embeds and unit tests', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/embedGrammarWithTests.csv");
+
+        testNumErrors(errors, 0, "any");
+
+        testNumSymbols(project, 3);
+        testHasSymbol(project, 'embedGrammarWithTests.word');
+        const results = [...project.generate('embedGrammarWithTests.word')];
+
+        testNumOutputs(results, 4);
+    });
+
+    describe('Grammar with embeds and failing unit tests', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/embedGrammarWithFailedTests.csv");
+
+        testNumErrors(errors, 3, "error");
+        testNumErrors(errors, 0, "warning");
+        testErrorInCell(errors, "embedGrammarWithFailedTests", 14, 2);
+        testErrorInCell(errors, "embedGrammarWithFailedTests", 15, 2);
+        testErrorInCell(errors, "embedGrammarWithFailedTests", 16, 2);
+
+        testNumSymbols(project, 3);
+        testHasSymbol(project, 'embedGrammarWithFailedTests.word');
+        const results = [...project.generate('embedGrammarWithFailedTests.word')];
+
+        testNumOutputs(results, 4);
+    });
+    
+    
     describe('Grammar with empty cell', function() {
 
         const [sheet, project, errors] = sheetFromFile("./tests/csvs/emptyCell.csv");
