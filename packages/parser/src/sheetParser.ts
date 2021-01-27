@@ -364,7 +364,7 @@ abstract class BinaryHeader extends Header {
     }
 
     public get hue(): number {
-        return (meanAngleDeg([this.child1.hue * 360, this.child2.hue * 360]) + 360) / 360;
+        return this.child1.hue;
     }
     
     public static *parseTarget(target: string, input: string[]): Gen<[Header, string[]]> {

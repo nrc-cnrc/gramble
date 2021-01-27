@@ -1334,7 +1334,7 @@ class BinaryHeader extends Header {
         this.child2 = child2;
     }
     get hue() {
-        return (util_1.meanAngleDeg([this.child1.hue * 360, this.child2.hue * 360]) + 360) / 360;
+        return this.child1.hue;
     }
     static *parseTarget(target, input) {
         if (input.length == 0) {
@@ -1805,7 +1805,7 @@ class ContentsComponent extends CompileableComponent {
             this.headersByCol[headerCell.position.col] = compiledHeader;
         }
         catch (e) {
-            devEnv.markError(headerCell.position.sheet, headerCell.position.row, headerCell.position.col, `Invalid header ${headerCell.text}`, "Attempted to parse this cell as a header, but could not.", "error");
+            devEnv.markError(headerCell.position.sheet, headerCell.position.row, headerCell.position.col, `Invalid header: ${headerCell.text}`, "Attempted to parse this cell as a header, but could not.", "error");
         }
     }
     getHeader(col) {
@@ -1816,7 +1816,7 @@ class ContentsComponent extends CompileableComponent {
         const header = this.getHeader(cell.position.col);
         if (header == undefined) {
             if (cell.text.length != 0) {
-                devEnv.markError(cell.position.sheet, cell.position.row, cell.position.col, `Ignoring cell`, "Cannot associate this cell with any valid header above; ignoring.", "warning");
+                devEnv.markError(cell.position.sheet, cell.position.row, cell.position.col, `Ignoring cell: ${cell.text}`, "Cannot associate this cell with any valid header above; ignoring.", "warning");
             }
             return;
         }
