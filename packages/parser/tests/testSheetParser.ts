@@ -128,7 +128,20 @@ describe(`${path.basename(module.filename)}`, function() {
         testNumOutputs(results, 4);
     });
 
-    describe('Grammar with embeds and failing unit tests', function() {
+    
+    describe('Negative tests', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/negativeTests.csv");
+
+        testNumErrors(errors, 0, "any");
+        errors.logErrors();
+        testNumSymbols(project, 3);
+        testHasSymbol(project, 'negativeTests.word');
+        const results = [...project.generate('negativeTests.word')];
+        testNumOutputs(results, 4);
+    });
+
+    describe('Failing unit tests', function() {
 
         const [sheet, project, errors] = sheetFromFile("./tests/csvs/embedGrammarWithFailedTests.csv");
 
@@ -145,6 +158,21 @@ describe(`${path.basename(module.filename)}`, function() {
         testNumOutputs(results, 4);
     });
     
+    
+    describe('Failing negative tests', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/failingNegativeTests.csv");
+
+        testNumErrors(errors, 1, "error");
+        testNumErrors(errors, 0, "warning");
+        testErrorInCell(errors, "failingNegativeTests", 13, 2);
+
+        testNumSymbols(project, 3);
+        testHasSymbol(project, 'failingNegativeTests.word');
+        const results = [...project.generate('failingNegativeTests.word')];
+        testNumOutputs(results, 4);
+    });
+
     
     describe('Grammar with empty cell', function() {
 
