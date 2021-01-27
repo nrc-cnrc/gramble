@@ -8,10 +8,8 @@
  */
 
 import { DevEnvironment } from "./devEnv";
-import { CounterStack, Empty, Join, Lit, Namespace, Seq, State, Uni } from "./stateMachine";
-import { iterTake, StringDict } from "./util";
-import { parseHeader, CellPosition, Header } from "./headerParser";
-
+import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join } from "./stateMachine";
+import { Gen, HSVtoRGB, iterTake, meanAngleDeg, RGBtoString, StringDict } from "./util";
 
 /*
 class SyntaxError {
@@ -70,6 +68,439 @@ export class ErrorAccumulator {
 }
 */
 
+
+const DEFAULT_SATURATION = 0.2;
+const DEFAULT_VALUE = 1.0;
+
+
+/**
+ * A convenience class encapsulating information about where a cell
+ * is.  Every component of the abstract syntax tree has one of these;
+ * if it's a cell, that's just its position on a spreadsheet; if it's a
+ * complex component, it's the position of its first cell.
+ *
+ * By convention we treat the spreadsheet itself as a component with 
+ * its first cell at -1, -1.
+ */
+export class CellPosition {
+
+    constructor(
+        public readonly sheet: string,
+        public readonly row: number = -1,
+        public readonly col: number = -1
+    ) { }
+
+    public toString() {
+        return `${this.sheet}:${this.row}:${this.col}`;
+    }
+}
+
+/**
+ * A Header is a cell in the top row of a table, consisting of one of
+ * 
+ * * the name of a tape, like "text" or "gloss"
+ * * a unary operator like "maybe" followed by a valid Header (e.g. "maybe text") 
+ * * two valid Headers joined by a slash (e.g. "text/gloss")
+ * * a valid Header in parentheses (e.g. "(text)")
+ * * a comment (e.g. "% text")
+ * 
+ * (We treat commented-out headers specially, because they turn everything
+ * in their column into no-ops.)
+ * 
+ * Header objects are responsible for:
+ * 
+ * * providing a static parse method that takes a list of input tokens and returns
+ *   lists of [Header, remnant] pairs.  These are combined into a quick-n-dirty 
+ *   parser-combinator engine at the bottom of this file.  (If you want to understand
+ *   how this works, google for "parser combinators"; it's an old trick to quickly 
+ *   write a recursive descent parser in plain code, without using a parsing library.)
+ * 
+ * * compiling the cells beneath them into States, and merging them (usually by
+ *   concatenation) with cells to their right.
+ * 
+ * * knowing what colors the foreground and background of the header cell should be 
+ * 
+ */
+export abstract class Header {
+
+    constructor(
+        public text: string
+    ) { }
+
+    public abstract get hue(): number;
+    
+    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
+        return RGBtoString(...HSVtoRGB(this.hue, saturation, value));
+    }
+
+    public getFgColor(): string {
+        return "#000000";
+    }
+    
+    public compile(cell: CellComponent, namespace: Namespace): HeadedCellComponent {
+        throw new Error('Not implemented');
+    }
+
+    public merge(state: State, other: State): State {
+        return Seq(state, other);
+    }
+
+    public compileAndMerge(cell: CellComponent,
+                            namespace: Namespace,
+                            rightNeighbor: State | undefined): HeadedCellComponent {
+        
+        const compiledCell = this.compile(cell, namespace);
+        if (rightNeighbor == undefined) {
+            return compiledCell;
+        }
+        compiledCell.state = this.merge(compiledCell.state, rightNeighbor);
+        return compiledCell;
+    }
+}
+
+/**
+ * AtomicHeader is the ancestor class of all single-token headers, like "embed" and 
+ * literals (e.g. "text").
+ */
+abstract class AtomicHeader extends Header { 
+
+    public get hue(): number {
+        const str = this.text + "abcde" // otherwise short strings are boring colors
+        var hash = 0; 
+
+        for (let i = 0; i < str.length; i++) { 
+            hash = ((hash << 5) - hash) + str.charCodeAt(i); 
+            hash = hash & hash; 
+        } 
+        
+        return (hash & 0xFF) / 255;
+    }
+
+    public static *parseTarget(target: string,
+                        constructor: new (t: string) => Header,
+                        input: string[]): Gen<[Header, string[]]> {
+        if (input.length == 0 || input[0] != target) {
+            return;
+        }
+        yield [new constructor(input[0]), input.slice(1)];
+    }
+}
+
+/**
+ * EmbedHeaders lead to the complilation of EmbedStates.
+ */
+export class EmbedHeader extends AtomicHeader {
+
+    
+    public compile(cell: CellComponent, namespace: Namespace): HeadedCellComponent {
+        const compiledCell = new EmbedComponent(this, cell);
+        compiledCell.state = Emb(cell.text, namespace);
+        return compiledCell;
+    }
+
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        yield* super.parseTarget("embed", EmbedHeader, input);
+    }
+}
+
+/**
+ * LiteralHeaders are references to a particular tape name (e.g. "text")
+ */
+export class LiteralHeader extends AtomicHeader {
+    
+    public compile(cell: CellComponent, namespace: Namespace): HeadedCellComponent {
+        const compiledCell = new HeadedCellComponent(this, cell);
+        compiledCell.state = Lit(this.text, cell.text);
+        return compiledCell;
+    }
+
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        if (input.length == 0 || ALL_RESERVED.indexOf(input[0]) != -1) {
+            return;
+        }
+        yield [new LiteralHeader(input[0]), input.slice(1)];
+    }
+}
+
+
+/**
+ * Commented-out headers also comment out any cells below them; the cells just act as
+ * Empty() states.
+ * 
+ * Note that "%" is not a unary operator the way others are; the *parse method 
+ * for this doesn't bother parsing any remnant, and just effectively consumes everything.
+ * If the programmer is failing to construct a header, for example, and comments it
+ * out in the meantime, we don't want to keep parsing it and fail, we just want
+ * to accept that whatever in this line isn't a header, it's a comment.
+ */
+export class CommentHeader extends Header { 
+
+    public get hue(): number {
+        return 0;
+    }
+
+    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string {
+        return "#FFFFFF";
+    }
+
+    public getFgColor(): string {
+        return "#449944";
+    }
+
+    public compile(cell: CellComponent, namespace: Namespace): HeadedCellComponent {
+        return new HeadedCellComponent(this, cell);
+        // don't have to do any assignment to state because it's already Empty() on construction
+    }
+        
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+
+        if (input.length == 0 || input[0] != "%") {
+            return;
+        }
+
+        yield [new CommentHeader('%'), []];
+    }
+}
+
+/**
+ * The ancestor class of unary header operators like "maybe", "not", and "@"
+ * (the joining operator that we use to implement flags).
+ */
+abstract class UnaryHeader extends Header {
+
+    public constructor(
+        text: string,
+        public child: Header
+    ) { 
+        super(text);
+    }
+
+    public get hue(): number {
+        return this.child.hue;
+    }
+
+    public compile(cell: CellComponent, namespace: Namespace): HeadedCellComponent {
+        const childCell = this.child.compile(cell, namespace);
+        const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
+        compiledCell.state = childCell.state;
+        return compiledCell;
+    }
+
+    public static *parseTarget(target: string, 
+                            constructor: new(t: string, c: Header) => Header,
+                            childParser: HeaderParser,
+                            input: string[]): Gen<[Header, string[]]> {
+        if (input.length == 0 || input[0] != target) {
+            return;
+        }
+        for (const [child, rem] of childParser(input.slice(1))) {
+            yield [new constructor(target, child), rem];
+        }
+    }
+}
+
+/**
+ * Header that constructs optional parsers, e.g. "maybe text"
+ */
+export class MaybeHeader extends UnaryHeader {
+
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        yield *super.parseTarget("maybe", MaybeHeader, NON_COMMENT_EXPR, input);
+    }
+
+    public compile(cell: CellComponent, namespace: Namespace): HeadedCellComponent {
+        const childCell = this.child.compile(cell, namespace);
+        const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
+        compiledCell.state = Maybe(childCell.state);
+        return compiledCell;
+    }
+}
+
+
+/**
+ * Header that constructs negations, e.g. "not text"
+ */
+export class NotHeader extends UnaryHeader {
+
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        yield *super.parseTarget("not", NotHeader, NON_COMMENT_EXPR, input);
+    }
+
+    public compile(cell: CellComponent, namespace: Namespace): HeadedCellComponent {
+        const childCell = this.child.compile(cell, namespace);
+        const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
+        compiledCell.state = Maybe(childCell.state);
+        return compiledCell;
+    }
+}
+
+/**
+ * A FlagHeader handles headers like "@x"; it joins x:X with whatever
+ * follows rather than concatenating it.
+ * 
+ * Note that FlagHeader binds more tightly than other unary operators,
+ * e.g. while "maybe" in "maybe text/gloss" has "text/gloss" as its child,
+ * "@" in "@text/gloss" only has "@" as its child.
+ */
+export class FlagHeader extends UnaryHeader {
+
+    public merge(state: State, other: State): State {
+        return Join(state, other);
+    }
+    
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        yield *super.parseTarget("@", FlagHeader, SUBEXPR, input);
+    }
+}
+
+abstract class BinaryHeader extends Header {
+
+    public constructor(
+        text: string,
+        public child1: Header,
+        public child2: Header
+    ) { 
+        super(text);
+    }
+
+    public get hue(): number {
+        return (meanAngleDeg([this.child1.hue * 360, this.child2.hue * 360]) + 360) / 360;
+    }
+    
+    public static *parseTarget(target: string, input: string[]): Gen<[Header, string[]]> {
+        if (input.length == 0) {
+            return;
+        }
+
+        for (const [t1, rem1] of SUBEXPR(input)) {
+            if (rem1.length == 0 || rem1[0] != target) {
+                return;
+            }
+            for (const [t2, rem2] of NON_COMMENT_EXPR(rem1.slice(1))) {
+                yield [new SlashHeader(t1, t2), rem2];
+            }
+        }
+    }
+
+}
+
+export class SlashHeader extends BinaryHeader {
+
+    public constructor(
+        public child1: Header,
+        public child2: Header
+    ) { 
+        super("/", child1, child2);
+    }
+
+    /**
+     * This isn't ordinarily called, usually compileAndMerge handles compilation
+     * of SlashHeader.  But
+     * when another header has a SlashHeader child, like "@(x/y)", this would
+     * be called.
+     */
+    
+    public compile(cell: CellComponent, namespace: Namespace): HeadedCellComponent {
+        const childCell1 = this.child1.compile(cell, namespace);
+        const childCell2 = this.child2.compile(cell, namespace);
+        const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
+        compiledCell.state = Seq(childCell1.state, childCell2.state);
+        return compiledCell;
+    }
+
+    public compileAndMerge(cell: CellComponent,
+                            namespace: Namespace,
+                            rightNeighbor: State | undefined): HeadedCellComponent {
+        
+        const childCell2 = this.child2.compileAndMerge(cell, namespace, rightNeighbor);
+        const childCell1 = this.child1.compileAndMerge(cell, namespace, childCell2.state);
+        const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
+        compiledCell.state = childCell1.state;
+        return compiledCell;
+    }
+
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        yield *super.parseTarget("/", input);
+    }   
+}
+
+
+type HeaderParser = (input: string[]) => Gen<[Header, string[]]>;
+
+const SYMBOL = [ "(", ")", "%", "/", '@'];
+const RESERVED = ["embed", "maybe", "not" ];
+const ALL_RESERVED = [...SYMBOL, ...RESERVED];
+
+const SUBEXPR = Alt([LiteralHeader.parse,
+                    EmbedHeader.parse, 
+                    FlagHeader.parse, 
+                    Parens]);
+
+const NON_COMMENT_EXPR = Alt([MaybeHeader.parse, 
+                              NotHeader.parse,
+                              SlashHeader.parse, 
+                              SUBEXPR]);
+
+const EXPR = Alt([CommentHeader.parse, 
+                NON_COMMENT_EXPR]);
+
+function Alt(children: HeaderParser[]): HeaderParser {
+    return function*(input: string[]) {
+        for (const child of children) {
+            yield* child(input);
+        }
+    }
+}
+
+function* Parens(input: string[]): Gen<[Header, string[]]> {
+    if (input.length == 0 || input[0] != "(") {
+        return;
+    }
+
+    for (const [t, rem] of NON_COMMENT_EXPR(input.slice(1))) {
+        if (rem.length == 0 || rem[0] != ")") {
+            return;
+        }
+
+        yield [t, rem.slice(1)]
+    }
+}
+
+
+const tokenizer = new RegExp("\\s+|(" + 
+                            SYMBOL.map(s => "\\"+s).join("|") + 
+                            ")");
+
+function tokenize(text: string): string[] {
+    return text.split(tokenizer).filter(
+        (s: string) => s !== undefined && s !== ''
+    );
+}
+
+/**
+ * This is the main function that the rest of the libraries interact with;
+ * they provide a string and (hopefully) get a parser in return.
+ */
+export function parseHeader(headerText: string): Header {
+    const pieces = tokenize(headerText);
+    var result = [... EXPR(pieces)];
+    // result is a list of [header, remaining_tokens] pairs.  
+    // we only want results where there are no remaining tokens.
+    result = result.filter(([t, r]) => r.length == 0);
+
+    if (result.length == 0) {
+        // if there are no results, the programmer made a syntax error
+        throw new Error(`Cannot parse header: ${headerText}`);
+    }
+    if (result.length > 1) {
+         // the grammar above should be unambiguous, so we shouldn't get 
+         // multiple results, but just in case...
+        throw new Error(`Ambiguous header, cannot parse: ${headerText}.` +
+                " This probably isn't your fault.");
+    }
+    return result[0][0];
+}
+
 export abstract class TabularComponent {
 
     /**
@@ -125,19 +556,20 @@ export abstract class CompileableComponent extends TabularComponent {
      */
     public child: CompileableComponent | undefined = undefined;
 
-    public getHeader(col: number): CellComponent | undefined {
+    public getHeader(col: number): Header | undefined {
         return undefined;
     }
 
     public abstract compile(namespace: Namespace, 
-                            devEnv: DevEnvironment): CompileableComponent;
+                            devEnv: DevEnvironment): void;
 
-    public runTests(devEnv: DevEnvironment): void {
+
+    public runChecks(namespace: Namespace, devEnv: DevEnvironment): void {
         if (this.sibling != undefined) {
-            this.sibling.runTests(devEnv);
+            this.sibling.runChecks(namespace, devEnv);
         }
         if (this.child != undefined) {
-            this.child.runTests(devEnv);
+            this.child.runChecks(namespace, devEnv);
         }
     }
 }
@@ -150,17 +582,16 @@ const BINARY_OPS: {[opName: string]: BinaryOp} = {
     "join": Join,
 }
 
-const BUILT_IN_OPS: Set<string> = new Set(Object.keys(BINARY_OPS))
-BUILT_IN_OPS.add("table");
-BUILT_IN_OPS.add("test");
+const BUILT_IN_OPS: Set<string> = new Set([...Object.keys(BINARY_OPS),
+                                            "table",
+                                            "test"]);
 
 /* There are some reserved words like "maybe" that aren't built in ops, but
- * for sanity's sake you still can't use them as symbols
- */
-const RESERVED_WORDS = new Set(BUILT_IN_OPS);
-RESERVED_WORDS.add("maybe");
-RESERVED_WORDS.add("not");
-
+ * for sanity's sake you still can't use them as symbols */
+const RESERVED_WORDS = new Set([...BUILT_IN_OPS,
+                                "maybe",
+                                "not",
+                                "embed"]);
 
 /**
  * An enclosure represents a single-cell unit containing a command or identifier (call that the "startCell"),
@@ -219,14 +650,14 @@ export class EnclosureComponent extends CompileableComponent {
         return this.startCell.text;
     }
 
-    public getHeader(col: number): CellComponent | undefined {
+    public getHeader(col: number): Header | undefined {
         if (this.child == undefined) {
             return undefined;
         }
         return this.child.getHeader(col);
     }
     
-    public addHeader(header: CellComponent): void {
+    public addHeader(header: CellComponent, devEnv: DevEnvironment): void {
         // can only add a header if there aren't any child enclosures yet.
         // well, we could, but it makes a particular kind of syntax error
         // hard to spot
@@ -236,7 +667,7 @@ export class EnclosureComponent extends CompileableComponent {
         if (!(this.child instanceof ContentsComponent)) {
             throw new Error("Closure already has a child; cannot add a header to it.");
         }
-        this.child.addHeader(header);
+        this.child.addHeader(header, devEnv);
     }
     
     public addContent(cell: CellComponent, devEnv: DevEnvironment): void {
@@ -247,11 +678,12 @@ export class EnclosureComponent extends CompileableComponent {
     }
     
     public compile(namespace: Namespace, 
-        devEnv: DevEnvironment): CompileableComponent {
+        devEnv: DevEnvironment): void {
 
+        // we only ever end up in this base EncloseComponent compile if it wasn't
+        // a known operator.
         devEnv.markError(this.position.sheet, this.position.row, this.position.col,
                         "Unknown operator", `Operator ${this.text} not recognized.`);
-        return this;
     }
 
 
@@ -296,7 +728,7 @@ class AssignmentComponent extends EnclosureComponent {
         // being an assignment statement is, by definition, having a sheet component
         // as your immediate parent.
         if (this.sibling != undefined) {
-            this.sibling = this.sibling.compile(namespace, devEnv);
+            this.sibling.compile(namespace, devEnv);
         }
 
         if (RESERVED_WORDS.has(this.text)) {
@@ -315,8 +747,7 @@ class AssignmentComponent extends EnclosureComponent {
         if (this.sibling != undefined && !(this.sibling instanceof AssignmentComponent)) {
             devEnv.markError(this.sibling.position.sheet, this.sibling.position.row, this.sibling.position.col,
                 "Wayward operator",
-                "The result of this operator does not get assigned to anything.",
-                "error");
+                "The result of this operator does not get assigned to anything.");
         }
 
         if (this.child == undefined) {
@@ -327,7 +758,7 @@ class AssignmentComponent extends EnclosureComponent {
             return this;
         }
 
-        this.child = this.child.compile(namespace, devEnv);
+        this.child.compile(namespace, devEnv);
         this.state = this.child.state;
         
         if (namespace.hasSymbol(this.text)) {
@@ -335,7 +766,7 @@ class AssignmentComponent extends EnclosureComponent {
             devEnv.markError(this.position.sheet, this.position.row, this.position.col,
                 "Redefining existing symbol", 
                 `You've already assigned something to the symbol ${this.text}`);
-            // TODO: The error message should say where it's assigned
+            return this;
         }
 
         namespace.addSymbol(this.text, this.child.state);
@@ -347,7 +778,7 @@ class AssignmentComponent extends EnclosureComponent {
 class BinaryOpComponent extends EnclosureComponent {
 
     public compile(namespace: Namespace, 
-                            devEnv: DevEnvironment): CompileableComponent {
+                            devEnv: DevEnvironment): void {
 
         const op = BINARY_OPS[this.text];
                                     
@@ -356,36 +787,37 @@ class BinaryOpComponent extends EnclosureComponent {
                 `Missing argument to '${this.text}'`, 
                 `'${this.text}' is missing a second argument; ` +
                 "something should be in the cell to the right.");
-            return this;
+            return;
         }
+
         if (this.sibling == undefined) {
             devEnv.markError(this.position.sheet, this.position.row, this.position.col,
                 `Missing argument to '${this.text}'`,
                 `'${this.text}' is missing a first argument; ` +
                 "something should be in a cell above this.");
-            return this;
+            return;
         }
-        this.sibling = this.sibling.compile(namespace, devEnv);
-        this.child = this.child.compile(namespace, devEnv);
+
+        this.sibling.compile(namespace, devEnv);
+        this.child.compile(namespace, devEnv);
         this.state = op(this.sibling.state, this.child.state);
-        return this;
     }
 }
 
 class TableComponent extends EnclosureComponent {
 
 
-    public compile(namespace: Namespace, devEnv: DevEnvironment): CompileableComponent {
+    public compile(namespace: Namespace, devEnv: DevEnvironment): void {
 
         if (this.child == undefined) {
             devEnv.markError(this.position.sheet, this.position.row, this.position.col,
                 "Missing content",
                 "'table' seems to be missing a table; something should be in the cell to the right.", "warning")
-            return this;
+            return;
         }
 
         if (this.sibling != undefined) {
-            this.sibling = this.sibling.compile(namespace, devEnv);
+            this.sibling.compile(namespace, devEnv);
             // we don't do anything with the sibling, but we
             // compile it anyway in case there are errors in it the
             // programmer may want to know about
@@ -396,9 +828,8 @@ class TableComponent extends EnclosureComponent {
         
         }
 
-        this.child = this.child.compile(namespace, devEnv);
+        this.child.compile(namespace, devEnv);
         this.state = this.child.state;
-        return this;
     }
 
 
@@ -406,7 +837,7 @@ class TableComponent extends EnclosureComponent {
 
 class TestSuiteComponent extends EnclosureComponent {
 
-    protected tests: State[] = [];
+    protected tests: CompileableComponent[] = [];
 
     /**
      * "test" is an operator that takes two tables, one above (spatially speaking)
@@ -416,13 +847,13 @@ class TestSuiteComponent extends EnclosureComponent {
      * Test doesn't make any change to the State it returns; adding a "test" below
      * a grammar returns the exact same grammar as otherwise.  
      */
-    public compile(namespace: Namespace, devEnv: DevEnvironment): CompileableComponent {
+    public compile(namespace: Namespace, devEnv: DevEnvironment): void {
         
         if (this.sibling == undefined) {
             devEnv.markError(this.position.sheet, this.position.row, this.position.col,
                 "Wayward test",
                 "There should be something above this 'test' command for us to test");
-            return this;
+            return;
         }
 
         const sibling = this.sibling.compile(namespace, devEnv);
@@ -432,7 +863,7 @@ class TestSuiteComponent extends EnclosureComponent {
                 "Missing content",
                 "'test' seems to be missing something to test; something should be in the cell to the right.", "warning")
             this.state = this.sibling.state;
-            return this; // whereas usually we result in the empty grammar upon erroring, in this case
+            return; // whereas usually we result in the empty grammar upon erroring, in this case
                         // we don't want to let a flubbed "test" command obliterate the grammar
                         // it was meant to test!
         }
@@ -442,19 +873,15 @@ class TestSuiteComponent extends EnclosureComponent {
                 "Cannot execute tests",
                 "You can't nest another operator under a test block, it has to be a content table.");
             this.state = this.sibling.state;
-            return this;
+            return;
         }
 
         this.tests = this.child.rows;
         this.state = this.sibling.state;
-        return this;
-
     }
     
-    public runTests(devEnv: DevEnvironment): void {
-        if (this.sibling != undefined) {
-            this.sibling.runTests(devEnv);
-        }
+    public runChecks(namespace: Namespace, devEnv: DevEnvironment): void {
+        super.runChecks(namespace, devEnv);
     }
 }
 
@@ -475,21 +902,20 @@ class SheetComponent extends EnclosureComponent {
         throw new Error("This appears to be a header, but what is it a header for?");
     }
 
-    public compile(namespace: Namespace, 
-        devEnv: DevEnvironment): CompileableComponent {
+    public compile(namespace: Namespace, devEnv: DevEnvironment): void {
 
         if (this.child == undefined) {
-            return this;
+            return;
         }
 
-        this.child = this.child.compile(namespace, devEnv);
+        this.child.compile(namespace, devEnv);
+
         if (!(this.child instanceof AssignmentComponent)) {
             devEnv.markError(this.child.position.sheet, this.child.position.row, this.child.position.col,
                 "Wayward operator",
                 "The result of this operator does not get assigned to anything.",
                 "warning");
         }
-        return this;
     }
 
     public get sheet(): SheetComponent {
@@ -499,7 +925,7 @@ class SheetComponent extends EnclosureComponent {
 }
 
 /**
- * A Table is a rectangular region of the grid consisting of a header row
+ * A ContentsComponent is a rectangular region of the grid consisting of a header row
  * and cells beneath each header.  For example,
  * 
  *      text, gloss
@@ -516,113 +942,89 @@ class SheetComponent extends EnclosureComponent {
 
 class ContentsComponent extends CompileableComponent {
 
-    public compileAssignment(namespace: Namespace, devEnv: DevEnvironment): CompileableComponent {
-        // I don't think this error is possible, but just in case
-        devEnv.markError(this.position.sheet, this.position.row, this.position.col,
-            "Unexpected operator", "This cell needs to be an assignment, " +
-            "but it looks like you're trying to start a table.");
-        return this;
-    }
-
-    public headersByCol: {[col: number]: CellComponent} = {}
-    public headers: CellComponent[] = [];
-    public table: CellComponent[][] = [];
-    public rows: State[] = [];
+    public headersByCol: {[col: number]: Header} = {};
+    public rows: RowComponent[] = [];
+    private startCell: CellComponent | undefined = undefined;
 
     public get position(): CellPosition {
-        if (this.headers.length == 0) {
-            return new CellPosition("?",-1,-1);
+        if (this.startCell == undefined) {
+            throw new Error("Trying to get position of an empty ContentsComponent");
         }
-        return this.headers[0].position;
+        return this.startCell.position;
     }
 
     public get text(): string {
-        if (this.headers.length == 0) {
-            return "?";
+        if (this.startCell == undefined) {
+            throw new Error("Trying to get text of an empty ContentsComponent");
         }
-        return this.headers[0].text;
+        return this.startCell.text;
+    } 
+
+    public addHeader(headerCell: CellComponent, devEnv: DevEnvironment): void {
+        if (this.startCell == undefined) {
+            this.startCell = headerCell;
+        }
+        try {
+            // parse the header into a Header object
+            const compiledHeader = parseHeader(headerCell.text);
+            // color it properly in the interface
+            const contentColor = compiledHeader.getColor(0.1);
+            devEnv.markTier(headerCell.position.sheet, headerCell.position.row, 
+                headerCell.position.col, contentColor);
+            // remember it by its column number, because that's how content
+            // cells will be asking for it.
+            this.headersByCol[headerCell.position.col] = compiledHeader;
+        } catch(e) {
+            devEnv.markError(headerCell.position.sheet, headerCell.position.row, 
+                headerCell.position.col, `Invalid header ${headerCell.text}`,
+                "Attempted to parse this cell as a header, but could not.",
+                "error");
+        }
     }
 
-    public addHeader(header: CellComponent): void {
-        this.headersByCol[header.position.col] = header;
-    }
-
-    public getHeader(col: number): CellComponent | undefined {
+    public getHeader(col: number): Header | undefined {
         return this.headersByCol[col];
     }
 
     public addContent(cell: CellComponent, devEnv: DevEnvironment): void {
         
-        // make sure we have a header
-        const header = this.getHeader(cell.position.col);
-        if (header == undefined) {
-            throw new Error(`Table at ${this.position} cannot add ` +
-                `content in column ${cell.position.col}`);
-        }
-
-        // color the cell appropriately (even if there's no text)
-        try {
-            const parsedHeader = parseHeader(header.text);
-            const contentColor = parsedHeader.getColor(0.1);
-            devEnv.markTier(cell.position.sheet, cell.position.row, 
-                cell.position.col, contentColor);
-        } catch (e) {
-            devEnv.markError(cell.position.sheet, cell.position.row, 
-                cell.position.col, `Invalid header ${header.text}`,
-                "Cannot interpret this cell due to an invalid header above.",
-                "warning");
-            return;
-        }
-            
         // the following only applies if there's text in the cell
         if (cell.text.length == 0) {
             return;
         }
+
+        // make sure we have a header
+        const header = this.getHeader(cell.position.col);
+        if (header == undefined) {
+            devEnv.markError(cell.position.sheet, cell.position.row, 
+                cell.position.col, `Ignoring cell`,
+                "Cannot associate this cell with any valid header above; ignoring.",
+                "warning");
+            return;
+        }
     
         // make a table row if we need one
-        if (this.table.length == 0 || 
-            cell.position.row != this.table[this.table.length-1][0].position.row) {
-            this.table.push([]);
+        if (this.rows.length == 0 || 
+            cell.position.row != this.rows[this.rows.length-1].position.row) {
+            const newRow = new RowComponent();
+            this.rows.push(newRow);
         }
 
         // add the content
-        this.table[this.table.length-1].push(cell);
+        const lastRow = this.rows[this.rows.length-1];
+        lastRow.addContent(header, cell);
     }
 
     public compile(namespace: Namespace, 
-                        devEnv: DevEnvironment): CompileableComponent {
-        this.rows = this.table.map(row => this.compileRow(row, namespace, devEnv));
-        this.state = Uni(...this.rows);
-        return this;
+                        devEnv: DevEnvironment): void {
+        this.rows = this.rows.map(row => row.compile(namespace, devEnv)) as RowComponent[];
+        const rowStates = this.rows.map(row => row.state);
+        this.state = Uni(...rowStates);
     }
 
-    protected compileRow(row: CellComponent[], 
-                         namespace: Namespace, 
-                         devEnv: DevEnvironment): State {
-
-        var resultState: State | undefined = undefined;
-        for (var i = row.length-1; i >= 0; i--) {
-            const cell = row[i];
-            const headerCell = this.headersByCol[cell.position.col];
-            try {
-                const header = parseHeader(headerCell.text);
-                resultState = header.compileAndMerge(cell.text, 
-                                                            headerCell.position, 
-                                                            namespace,
-                                                            resultState);
-            } catch(e) {
-                devEnv.markError(cell.position.sheet, cell.position.row, cell.position.col,
-                    "Ignoring cell",
-                    `Because of an error in the header at ${headerCell.position}, ` +
-                    "this cell will be ignored.", "warning");
-            }
-        }
-
-        if (resultState == undefined) {
-            throw new Error("Something went wrong in row compilation; maybe there was nothing in this row?");
-        }
-
-        return resultState;
+    
+    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
+        this.rows.map(row => row.runChecks(ns, devEnv));
     }
 
     public toString(): string {
@@ -631,12 +1033,131 @@ class ContentsComponent extends CompileableComponent {
 
 }
 
-/*
+
 class RowComponent extends CompileableComponent {
 
+    protected uncompiledCells: [Header, CellComponent][] = [];
+    protected compiledCells: HeadedCellComponent[] = [];
+
+    public get position(): CellPosition {
+        if (this.uncompiledCells.length == 0) {
+            throw new Error("Trying to get position of an empty RowComponent");
+        }
+        return this.uncompiledCells[0][1].position;
+    }
+    
+    public get text(): string {
+        if (this.uncompiledCells.length == 0) {
+            throw new Error("Trying to get text of an empty RowComponent");
+        }
+        return this.uncompiledCells[0][1].text;
+    }
+    
+    public compile(namespace: Namespace, devEnv: DevEnvironment): CompileableComponent {
+        var resultState: State | undefined = undefined;
+        for (var i = this.uncompiledCells.length-1; i >= 0; i--) {
+            const [header, cell] = this.uncompiledCells[i];
+            const compiledCell = header.compileAndMerge(cell, namespace,
+                                                 resultState) as HeadedCellComponent;
+            resultState = compiledCell.state;
+            this.compiledCells = [ compiledCell, ...this.compiledCells];
+        }
+
+        if (resultState == undefined) {
+            throw new Error("Something went wrong in row compilation; maybe there was nothing in this row?");
+        }
+
+        this.state = resultState;
+        return this;
+    }
+
+    public addContent(header: Header, cell: CellComponent): void {
+        this.uncompiledCells.push([header, cell]);
+    }
+
+    
+    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
+        this.compiledCells.map(cell => cell.runChecks(ns, devEnv));
+    }
+}
+
+
+class HeadedCellComponent extends CompileableComponent {
+
+    constructor(
+        public header: Header,
+        public cell: CellComponent
+    ) {
+        super();
+    }
+
+    public get position(): CellPosition {
+        return this.cell.position;
+    }
+    
+    public get text(): string {
+        return this.cell.text;
+    }
+
+    public compile(namespace: Namespace, devEnv: DevEnvironment): CompileableComponent {
+        throw new Error("Not implemented; shouldn't be calling this.");
+    }
 
 }
- */
+
+
+class UnaryHeadedCellComponent extends HeadedCellComponent {
+
+    constructor(
+        header: Header,
+        cell: CellComponent,
+        public child: HeadedCellComponent
+    ) {
+        super(header, cell);
+    }
+
+    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
+        this.child.runChecks(ns, devEnv);
+    }
+}
+
+
+class BinaryHeadedCellComponent extends HeadedCellComponent {
+
+    constructor(
+        header: Header,
+        cell: CellComponent,
+        public child1: HeadedCellComponent,
+        public child2: HeadedCellComponent,
+    ) {
+        super(header, cell);
+    }
+
+    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
+        this.child1.runChecks(ns, devEnv);
+        this.child2.runChecks(ns, devEnv);
+
+        if (this.child1 instanceof EmbedComponent || this.child2 instanceof EmbedComponent) {
+            devEnv.markError(this.cell.position.sheet, this.cell.position.row, this.cell.position.col,
+                "Embed inside slash header",
+                "Why are you putting an 'embed' inside a slash header? That's really weird.",
+                "warning");
+        }
+    }
+}
+
+class EmbedComponent extends HeadedCellComponent {
+
+    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
+        const symbol = ns.get(this.cell.text);
+        if (symbol == undefined) {
+            devEnv.markError(this.cell.position.sheet, this.cell.position.row, this.cell.position.col,
+                `Cannot find symbol ${this.cell.text}`,
+                `Cannot find symbol ${this.cell.text}.`,
+                "error");
+        }
+    }
+}
 
 /**
  * Determines whether a line is empty
@@ -696,7 +1217,6 @@ export class Project {
         return results;
     }
 
-    
     public parse(symbolName: string,
             inputs: StringDict,
             maxResults: number = Infinity,
@@ -740,7 +1260,7 @@ export class Project {
     }
 
     
-    public addSheet(sheetName: string): void {
+    public addSheetAux(sheetName: string): void {
 
         if (sheetName in this.sheets) {
             // already loaded it, don't have to do anything
@@ -775,7 +1295,18 @@ export class Project {
         this.sheets[sheetName] = sheetComponent;
 
         for (const requiredSheet of this.globalNamespace.requiredNamespaces) {
-            this.addSheet(requiredSheet);
+            this.addSheetAux(requiredSheet);
+        }
+    }
+
+    public addSheet(sheetName: string): void {
+        // add this sheet and any sheets that it refers to
+        this.addSheetAux(sheetName);
+
+        // now run checks over the whole project
+        for (const sheetName of Object.keys(this.sheets)) {
+            const localNamespace = this.globalNamespace.getNamespace(sheetName);
+            this.sheets[sheetName].runChecks(localNamespace, this.devEnv);
         }
     }
 
@@ -817,14 +1348,10 @@ export class Project {
                 continue;
             }
 
-            
             for (var colIndex = 0; colIndex < cells[rowIndex].length; colIndex++) {
                 const cellText = cells[rowIndex][colIndex].trim();
-
                 const position = new CellPosition(sheetName, rowIndex, colIndex);
-
                 const cell = new CellComponent(cellText, position);
-
                 
                 while (cellText.length > 0 
                         && colIndex <= topEnclosure.position.col) {
@@ -838,19 +1365,7 @@ export class Project {
                 }
             
                 if (topEnclosure.specRow > -1 && rowIndex > topEnclosure.specRow) {
-                    // we're inside an enclosure
-                    const header = topEnclosure.getHeader(colIndex);
-                    if (header == undefined) {
-                        // there's nothing above this cell
-                        if (cellText.length == 0) {
-                            // if there's also nothing in the cell, we're fine
-                            continue;
-                        }
-                        this.devEnv.markError(sheetName, rowIndex, colIndex,
-                            `Wayward cell: ${cell.text}`, `This cell does not have a header above it in column ${colIndex}, ` + 
-                            "so we're unable to interpret it.");
-                        continue;
-                    }
+                    // we're inside an enclosure, after the header row
                     topEnclosure.addContent(cell, this.devEnv);
                     continue;
                 }
@@ -862,7 +1377,7 @@ export class Project {
 
                 // either we're still in the spec row, or there's no spec row yet
                 if (enclosureOps.has(cellText) || position.col == 0) {
-                    // it's the start of a new enclosure
+                    // it's an operation, which starts a new enclosure
                     this.devEnv.markCommand(sheetName, rowIndex, colIndex,);
                     var newEnclosure;
                     
@@ -888,16 +1403,7 @@ export class Project {
                 } 
 
                 // it's a header
-                try {
-                    topEnclosure.addHeader(cell);
-                    const header = parseHeader(cell.text);
-                    const color = header.getColor(0.2);
-                    this.devEnv.markHeader(sheetName, rowIndex, colIndex, color);
-                } catch (e) {
-                    //console.log(e);
-                    this.devEnv.markError(sheetName, rowIndex, colIndex,
-                        `Invalid header: ${cell.text}`, e.toString());
-                }
+                topEnclosure.addHeader(cell, this.devEnv);
             }
         }
 

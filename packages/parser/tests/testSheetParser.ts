@@ -114,19 +114,43 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasOutput(results, "text", "moobaz");
     });
 
-    /*
+    
+    describe('Grammar with empty cell', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/emptyCell.csv");
+
+        testNumErrors(errors, 0, "any");
+
+        testNumSymbols(project, 3);
+        testHasSymbol(project, 'emptyCell.word');
+        const results = [...project.generate('emptyCell.word')];
+
+        testNumOutputs(results, 6);
+        testHasOutput(results, "text", "foobar");
+        testHasOutput(results, "text", "foobaz");
+        testHasOutput(results, "text", "moobar");
+        testHasOutput(results, "text", "moobaz");
+        testHasOutput(results, "text", "foo");
+        testHasOutput(results, "text", "moo");
+    });
+
+    
     describe('Grammar with a missing symbol', function() {
 
         const [sheet, project, errors] = sheetFromFile("./tests/csvs/missingSymbol.csv");
 
-        testNumErrors(errors, 0, "any");
+        testNumErrors(errors, 1, "error");
+        testNumErrors(errors, 0, "warning");
+        testErrorInCell(errors, "missingSymbol", 6, 3);
 
         testNumSymbols(project, 2);
         testHasSymbol(project, 'missingSymbol.word');
         const results = [...project.generate('missingSymbol.word')];
 
-        testNumOutputs(results, 0);
-    }); */
+        testNumOutputs(results, 2);
+        testHasOutput(results, "text", "foo");
+        testHasOutput(results, "text", "moo");
+    }); 
 
     describe('Grammar with symbols and joins', function() {
 
@@ -215,7 +239,6 @@ describe(`${path.basename(module.filename)}`, function() {
 
         const [sheet, project, errors] = sheetFromFile("./tests/csvs/headerWithParens.csv");
 
-        errors.logErrors();
         testNumErrors(errors, 0, "any");
         testHasSymbol(project, 'headerWithParens.word');
         const results = [...project.generate('headerWithParens.word')];
@@ -224,13 +247,14 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasOutput(results, "text", "moo");
     });
 
-    describe('Correct grammar with unparseable header', function() {
+    describe('Grammar with unparseable header', function() {
 
         const [sheet, project, errors] = sheetFromFile("./tests/csvs/unparseableHeader.csv");
 
         testNumErrors(errors, 1, "error");
-
+        testNumErrors(errors, 1, "warning");
         testErrorInCell(errors, "unparseableHeader", 8, 3);
+        testErrorInCell(errors, "unparseableHeader", 9, 3);
     });
 
     
@@ -268,10 +292,19 @@ describe(`${path.basename(module.filename)}`, function() {
 
         const [sheet, project, errors] = sheetFromFile("./tests/csvs/headerUsingReservedWord.csv");
 
-        testNumErrors(errors, 2, "error");
-        testNumErrors(errors, 0, "warning");
+        testNumErrors(errors, 1, "error");
+        testNumErrors(errors, 1, "warning");
         testErrorInCell(errors, "headerUsingReservedWord", 4, 4);
         testErrorInCell(errors, "headerUsingReservedWord", 5, 4);
+    });
+
+    
+    describe('Reassigning a symbol', function() {
+
+        const [sheet, project, errors] = sheetFromFile("./tests/csvs/reassigningSymbol.csv");
+
+        testNumErrors(errors, 1, "error");
+        testErrorInCell(errors, "reassigningSymbol", 4, 0);
     });
 
 
@@ -351,7 +384,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testNumErrors(errors, 0, "error");
         testNumErrors(errors, 1, "warning");
-        testErrorInCell(errors, "tableObliteration", 6, 1);
+        testErrorInCell(errors, "tableObliteration", 14, 1);
     });
     
     describe('Grammar but with weird indentation', function() {
@@ -370,11 +403,6 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Multi-sheet project', function() {
 
-        const paths: [string, string][] = [
-            [ "Source1", "./tests/csvs/simpleGrammar.csv"],
-            [ "Source2", "./tests/csvs/externalRef.csv"]
-        ];
-
         const [sheet, project, devEnv] = sheetFromFile("./tests/csvs/externalRef.csv");
 
         testNumErrors(devEnv, 0, "any");
@@ -390,6 +418,40 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasOutput(results, "text", "foobazable");
         testHasOutput(results, "text", "moobarable");
         testHasOutput(results, "text", "moobazable");
+    });
+
+    
+    describe('Multi-sheet project with missing symbol in imported sheet', function() {
+
+        const [sheet, project, devEnv] = sheetFromFile("./tests/csvs/missingExternalRef.csv");
+
+        testNumErrors(devEnv, 1, "error");
+        testNumErrors(devEnv, 0, "warning");
+
+        testNumSymbols(project, 4);
+        testHasSymbol(project, "simpleGrammar.word");
+        testHasSymbol(project, "missingExternalRef.word");
+
+        const results = [...project.generate("missingExternalRef.word")]
+
+        testNumOutputs(results, 1);
+        testHasOutput(results, "text", "able");
+    });
+
+    describe('Multi-sheet project referencing non-existent sheet', function() {
+
+        const [sheet, project, devEnv] = sheetFromFile("./tests/csvs/missingSheet.csv");
+
+        testNumErrors(devEnv, 1, "error");
+        testNumErrors(devEnv, 0, "warning");
+
+        testNumSymbols(project, 1);
+        testHasSymbol(project, "missingSheet.word");
+
+        const results = [...project.generate("missingSheet.word")]
+
+        testNumOutputs(results, 1);
+        testHasOutput(results, "text", "able");
     });
 
     
@@ -459,9 +521,6 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testNumErrors(errors, 0, "any");
 
-        errors.logErrors();
-        
-
         testHasSymbol(project, 'complexFlagHeader2.word');
         const results = [...project.generate('complexFlagHeader2.word')];
 
@@ -475,9 +534,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const [sheet, project, errors] = sheetFromFile("./tests/csvs/complexFlagHeader3.csv");
 
         testNumErrors(errors, 0, "any");
-
-        errors.logErrors();
-        
 
         testHasSymbol(project, 'complexFlagHeader3.word');
         const results = [...project.generate('complexFlagHeader3.word')];
@@ -493,10 +549,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const [sheet, project, errors] = sheetFromFile("./tests/csvs/complexFlagHeader4.csv");
 
         testNumErrors(errors, 0, "any");
-
-        errors.logErrors();
         
-
         testHasSymbol(project, 'complexFlagHeader4.word');
         const results = [...project.generate('complexFlagHeader4.word')];
 
@@ -512,8 +565,6 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testNumErrors(errors, 0, "any");
 
-        errors.logErrors();
-        
         testHasSymbol(project, 'complexFlagHeader5.word');
         const results = [...project.generate('complexFlagHeader5.word')];
 
@@ -527,9 +578,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const [sheet, project, errors] = sheetFromFile("./tests/csvs/flagEmbed.csv");
     
         testNumErrors(errors, 0, "any");
-    
-        errors.logErrors();
-        
     
         testHasSymbol(project, 'flagEmbed.word');
         const results = [...project.generate('flagEmbed.word')];

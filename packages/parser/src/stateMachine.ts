@@ -140,6 +140,13 @@ export class Namespace {
         namespace.parent = this;
     }
 
+    public getNamespace(name: string): Namespace {
+        if (!(name in this.childNamespaces)) {
+            throw new Error(`Cannot find namespace ${name}`);
+        }
+        return this.childNamespaces[name];
+    }
+
     protected getNamePieces(namePieces: string[]): State | undefined {
 
         if (namePieces.length == 1 && namePieces[0] in this.symbols) {

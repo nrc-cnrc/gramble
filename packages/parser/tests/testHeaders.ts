@@ -1,4 +1,4 @@
-import { parseHeader, SlashHeader, CommentHeader, FlagHeader, MaybeHeader, NotHeader, LiteralHeader, EmbedHeader } from "../src/headerParser";
+import { parseHeader, SlashHeader, CommentHeader, FlagHeader, MaybeHeader, NotHeader, LiteralHeader, EmbedHeader } from "../src/sheetParser";
 
 
 import * as path from 'path';
