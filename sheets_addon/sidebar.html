@@ -42,7 +42,7 @@
                     return this.cellsBySheet[sheetName];
                 }
 
-                markError(sheet, row, col, shortMsg, msg, level = "error") { 
+                markError(sheet, row, col, shortMsg, msg, level = "error") {
                     this.errorMsgs.push([sheet, row, col, shortMsg, msg, level]);
                 }
 
@@ -116,7 +116,7 @@
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
                 project = new gramble.Project(devEnv);
                 project.addSheet(currentSheetName);
-                
+
                 createErrorButtons(devEnv.errorMsgs, currentSheetName);
                 reloadSymbols(currentSheetName);
                 reloadInputs();
@@ -130,7 +130,8 @@
 
             function createErrorButtons(errorMsgs, currentSheetName) {
 
-                if (devEnv.errorMsgs.length == 0) {
+
+                if (errorMsgs.length == 0) {
                     return;
                 }
 
@@ -140,7 +141,7 @@
                 for (const [sheet, row, col, shortMsg, msg, lvl] of errorMsgs) {
 
                     if (lvl != "error") {
-                        return;
+                        continue;
                     }
 
                     const button = document.createElement('button');

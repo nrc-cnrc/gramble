@@ -1011,209 +1011,6 @@
 },{}],2:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseHeader = exports.Header = exports.CellPosition = void 0;
-const util_1 = require("./util");
-const stateMachine_1 = require("./stateMachine");
-const DEFAULT_SATURATION = 0.2;
-const DEFAULT_VALUE = 1.0;
-/**
- * A convenience class encapsulating information about where a cell
- * is.  Every component of the abstract syntax tree has one of these;
- * if it's a cell, that's just its position on a spreadsheet; if it's a
- * complex component, it's the position of its first cell.
- *
- * By convention we treat the spreadsheet itself as a component with
- * its first cell at -1, -1.
- */
-class CellPosition {
-    constructor(sheet, row = -1, col = -1) {
-        this.sheet = sheet;
-        this.row = row;
-        this.col = col;
-    }
-    toString() {
-        return `${this.sheet}:${this.row}:${this.col}`;
-    }
-}
-exports.CellPosition = CellPosition;
-/**
- * A Header is a cell in the top row of a table, consisting of one of
- *
- * * the name of a tape, like "text" or "gloss"
- * * a unary operator like "maybe" followed by a valid Header (e.g. "maybe text")
- * * two valid Headers joined by a slash (e.g. "text/gloss")
- * * a valid Header in parentheses (e.g. "(text)")
- * * a comment (e.g. "% text")
- *
- * (We treat commented-out headers specially, because they turn everything
- * in their column into no-ops.)
- */
-class Header {
-    getColor(saturation = DEFAULT_SATURATION, value = DEFAULT_VALUE) {
-        return util_1.RGBtoString(...util_1.HSVtoRGB(this.hue, saturation, value));
-    }
-    getFgColor() {
-        return "#000000";
-    }
-}
-exports.Header = Header;
-class AtomicHeader extends Header {
-    constructor(text) {
-        super();
-        this.text = text;
-    }
-    get hue() {
-        const str = this.text + "abcde"; // otherwise short strings are boring colors
-        var hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = ((hash << 5) - hash) + str.charCodeAt(i);
-            hash = hash & hash;
-        }
-        return (hash & 0xFF) / 255;
-    }
-    compile(valueText, pos, namespace, devEnv) {
-        if (this.text.toLowerCase() == "embed") {
-            return stateMachine_1.Emb(valueText, namespace);
-        }
-        return stateMachine_1.Lit(this.text, valueText);
-    }
-}
-class CommentHeader extends Header {
-    get hue() {
-        return 0;
-    }
-    getColor(saturation = DEFAULT_SATURATION, value = DEFAULT_VALUE) {
-        return "#FFFFFF";
-    }
-    getFgColor() {
-        return "#449944";
-    }
-    compile(valueText, pos, namespace, devEnv) {
-        return stateMachine_1.Empty();
-    }
-}
-class UnaryHeader extends Header {
-    constructor(text, child) {
-        super();
-        this.text = text;
-        this.child = child;
-    }
-    get hue() {
-        return this.child.hue;
-    }
-    compile(valueText, pos, namespace, devEnv) {
-        const childState = this.child.compile(valueText, pos, namespace, devEnv);
-        if (this.text.toLowerCase() == "maybe") {
-            const childState = this.child.compile(valueText, pos, namespace, devEnv);
-            return stateMachine_1.Maybe(childState);
-        }
-        if (this.text.toLowerCase() == "not") {
-            return stateMachine_1.Not(childState);
-        }
-        // The header parser shouldn't be creating unary headers that
-        // aren't in the above set, but just in case...
-        devEnv.markError(pos.sheet, pos.row, pos.col, "Invalid header", `${valueText} is not among the operators allowed in headers.`);
-        return stateMachine_1.Empty();
-    }
-}
-class BinaryHeader extends Header {
-    constructor(text, child1, child2) {
-        super();
-        this.text = text;
-        this.child1 = child1;
-        this.child2 = child2;
-    }
-    get hue() {
-        return (util_1.meanAngleDeg([this.child1.hue * 360, this.child2.hue * 360]) + 360) / 360;
-    }
-    compile(valueText, pos, namespace, devEnv) {
-        if (this.text == "/") {
-            const childState1 = this.child1.compile(valueText, pos, namespace, devEnv);
-            const childState2 = this.child2.compile(valueText, pos, namespace, devEnv);
-            return stateMachine_1.Seq(childState1, childState2);
-        }
-        // The header parser shouldn't be creating binary headers that
-        // aren't in the above set, but just in case...
-        devEnv.markError(pos.sheet, pos.row, pos.col, "Invalid header", `${valueText} is not among the operators allowed in headers.`);
-        return stateMachine_1.Empty();
-    }
-}
-const SYMBOL = ["(", ")", "%", "/"];
-const UNARY_RESERVED = ["maybe", "not"];
-const ALL_RESERVED = SYMBOL.concat(UNARY_RESERVED);
-const SUBEXPR = AltHeaderParser([AtomicHeaderParser, ParensHeaderParser]);
-const NON_COMMENT_EXPR = AltHeaderParser([UnaryHeaderParser, SlashHeaderParser, SUBEXPR]);
-const EXPR = AltHeaderParser([CommentHeaderParser, NON_COMMENT_EXPR]);
-function* AtomicHeaderParser(input) {
-    if (input.length == 0 || ALL_RESERVED.indexOf(input[0]) != -1) {
-        return;
-    }
-    yield [new AtomicHeader(input[0]), input.slice(1)];
-}
-function AltHeaderParser(children) {
-    return function* (input) {
-        for (const child of children) {
-            yield* child(input);
-        }
-    };
-}
-function* UnaryHeaderParser(input) {
-    if (input.length == 0 || UNARY_RESERVED.indexOf(input[0]) == -1) {
-        return;
-    }
-    for (const [t, rem] of NON_COMMENT_EXPR(input.slice(1))) {
-        yield [new UnaryHeader(input[0], t), rem];
-    }
-}
-function* ParensHeaderParser(input) {
-    if (input.length == 0 || input[0] != "(") {
-        return;
-    }
-    for (const [t, rem] of NON_COMMENT_EXPR(input.slice(1))) {
-        if (rem.length == 0 || rem[0] != ")") {
-            return;
-        }
-        yield [t, rem.slice(1)];
-    }
-}
-function* SlashHeaderParser(input) {
-    if (input.length == 0) {
-        return;
-    }
-    for (const [t1, rem1] of SUBEXPR(input)) {
-        if (rem1.length == 0 || rem1[0] != "/") {
-            return;
-        }
-        for (const [t2, rem2] of NON_COMMENT_EXPR(rem1.slice(1))) {
-            yield [new BinaryHeader("/", t1, t2), rem2];
-        }
-    }
-}
-function* CommentHeaderParser(input) {
-    if (input.length == 0 || input[0] != "%") {
-        return;
-    }
-    yield [new CommentHeader(), []];
-}
-function parseHeader(headerText) {
-    var pieces = headerText.split(/\s+|(\%|\(|\)|\/)/);
-    pieces = pieces.filter((s) => s !== undefined && s !== '');
-    var result = [...EXPR(pieces)];
-    result = result.filter(([t, r]) => r.length == 0);
-    if (result.length == 0) {
-        throw new Error(`Cannot parse header: ${headerText}`);
-    }
-    if (result.length > 1) {
-        // shouldn't happen with this grammar, but just in case
-        throw new Error(`Ambiguous header, cannot parse: ${headerText}`);
-    }
-    return result[0][0];
-}
-exports.parseHeader = parseHeader;
-
-},{"./stateMachine":5,"./util":7}],3:[function(require,module,exports){
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.Empty = exports.Rep = exports.Emb = exports.Rename = exports.Proj = exports.Not = exports.Join = exports.Uni = exports.Seq = exports.Lit = exports.State = exports.Project = void 0;
 const stateMachine_1 = require("./stateMachine");
 Object.defineProperty(exports, "State", { enumerable: true, get: function () { return stateMachine_1.State; } });
@@ -1230,7 +1027,7 @@ Object.defineProperty(exports, "Empty", { enumerable: true, get: function () { r
 const sheetParser_1 = require("./sheetParser");
 Object.defineProperty(exports, "Project", { enumerable: true, get: function () { return sheetParser_1.Project; } });
 
-},{"./sheetParser":4,"./stateMachine":5}],4:[function(require,module,exports){
+},{"./sheetParser":3,"./stateMachine":4}],3:[function(require,module,exports){
 "use strict";
 /**
  * This file describes the parser that turns spreadsheets into abstract
@@ -1240,10 +1037,9 @@ Object.defineProperty(exports, "Project", { enumerable: true, get: function () {
  * of formulas in that language.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Project = exports.TableComponent = exports.EnclosureComponent = exports.CompileableComponent = exports.CellComponent = exports.TabularComponent = void 0;
+exports.Project = exports.EnclosureComponent = exports.CompileableComponent = exports.CellComponent = exports.TabularComponent = exports.parseHeader = exports.SlashHeader = exports.FlagHeader = exports.NotHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.EmbedHeader = exports.Header = exports.CellPosition = void 0;
 const stateMachine_1 = require("./stateMachine");
 const util_1 = require("./util");
-const headerParser_1 = require("./headerParser");
 /*
 class SyntaxError {
 
@@ -1300,6 +1096,352 @@ export class ErrorAccumulator {
     }
 }
 */
+const DEFAULT_SATURATION = 0.2;
+const DEFAULT_VALUE = 1.0;
+/**
+ * A convenience class encapsulating information about where a cell
+ * is.  Every component of the abstract syntax tree has one of these;
+ * if it's a cell, that's just its position on a spreadsheet; if it's a
+ * complex component, it's the position of its first cell.
+ *
+ * By convention we treat the spreadsheet itself as a component with
+ * its first cell at -1, -1.
+ */
+class CellPosition {
+    constructor(sheet, row = -1, col = -1) {
+        this.sheet = sheet;
+        this.row = row;
+        this.col = col;
+    }
+    toString() {
+        return `${this.sheet}:${this.row}:${this.col}`;
+    }
+}
+exports.CellPosition = CellPosition;
+/**
+ * A Header is a cell in the top row of a table, consisting of one of
+ *
+ * * the name of a tape, like "text" or "gloss"
+ * * a unary operator like "maybe" followed by a valid Header (e.g. "maybe text")
+ * * two valid Headers joined by a slash (e.g. "text/gloss")
+ * * a valid Header in parentheses (e.g. "(text)")
+ * * a comment (e.g. "% text")
+ *
+ * (We treat commented-out headers specially, because they turn everything
+ * in their column into no-ops.)
+ *
+ * Header objects are responsible for:
+ *
+ * * providing a static parse method that takes a list of input tokens and returns
+ *   lists of [Header, remnant] pairs.  These are combined into a quick-n-dirty
+ *   parser-combinator engine at the bottom of this file.  (If you want to understand
+ *   how this works, google for "parser combinators"; it's an old trick to quickly
+ *   write a recursive descent parser in plain code, without using a parsing library.)
+ *
+ * * compiling the cells beneath them into States, and merging them (usually by
+ *   concatenation) with cells to their right.
+ *
+ * * knowing what colors the foreground and background of the header cell should be
+ *
+ */
+class Header {
+    constructor(text) {
+        this.text = text;
+    }
+    getColor(saturation = DEFAULT_SATURATION, value = DEFAULT_VALUE) {
+        return util_1.RGBtoString(...util_1.HSVtoRGB(this.hue, saturation, value));
+    }
+    getFgColor() {
+        return "#000000";
+    }
+    compile(cell, namespace) {
+        throw new Error('Not implemented');
+    }
+    merge(state, other) {
+        return stateMachine_1.Seq(state, other);
+    }
+    compileAndMerge(cell, namespace, rightNeighbor) {
+        const compiledCell = this.compile(cell, namespace);
+        if (rightNeighbor == undefined) {
+            return compiledCell;
+        }
+        compiledCell.state = this.merge(compiledCell.state, rightNeighbor);
+        return compiledCell;
+    }
+}
+exports.Header = Header;
+/**
+ * AtomicHeader is the ancestor class of all single-token headers, like "embed" and
+ * literals (e.g. "text").
+ */
+class AtomicHeader extends Header {
+    get hue() {
+        const str = this.text + "abcde"; // otherwise short strings are boring colors
+        var hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash = hash & hash;
+        }
+        return (hash & 0xFF) / 255;
+    }
+    static *parseTarget(target, constructor, input) {
+        if (input.length == 0 || input[0] != target) {
+            return;
+        }
+        yield [new constructor(input[0]), input.slice(1)];
+    }
+}
+/**
+ * EmbedHeaders lead to the complilation of EmbedStates.
+ */
+class EmbedHeader extends AtomicHeader {
+    compile(cell, namespace) {
+        const compiledCell = new EmbedComponent(this, cell);
+        compiledCell.state = stateMachine_1.Emb(cell.text, namespace);
+        return compiledCell;
+    }
+    static *parse(input) {
+        yield* super.parseTarget("embed", EmbedHeader, input);
+    }
+}
+exports.EmbedHeader = EmbedHeader;
+/**
+ * LiteralHeaders are references to a particular tape name (e.g. "text")
+ */
+class LiteralHeader extends AtomicHeader {
+    compile(cell, namespace) {
+        const compiledCell = new HeadedCellComponent(this, cell);
+        compiledCell.state = stateMachine_1.Lit(this.text, cell.text);
+        return compiledCell;
+    }
+    static *parse(input) {
+        if (input.length == 0 || ALL_RESERVED.indexOf(input[0]) != -1) {
+            return;
+        }
+        yield [new LiteralHeader(input[0]), input.slice(1)];
+    }
+}
+exports.LiteralHeader = LiteralHeader;
+/**
+ * Commented-out headers also comment out any cells below them; the cells just act as
+ * Empty() states.
+ *
+ * Note that "%" is not a unary operator the way others are; the *parse method
+ * for this doesn't bother parsing any remnant, and just effectively consumes everything.
+ * If the programmer is failing to construct a header, for example, and comments it
+ * out in the meantime, we don't want to keep parsing it and fail, we just want
+ * to accept that whatever in this line isn't a header, it's a comment.
+ */
+class CommentHeader extends Header {
+    get hue() {
+        return 0;
+    }
+    getColor(saturation = DEFAULT_SATURATION, value = DEFAULT_VALUE) {
+        return "#FFFFFF";
+    }
+    getFgColor() {
+        return "#449944";
+    }
+    compile(cell, namespace) {
+        return new HeadedCellComponent(this, cell);
+        // don't have to do any assignment to state because it's already Empty() on construction
+    }
+    static *parse(input) {
+        if (input.length == 0 || input[0] != "%") {
+            return;
+        }
+        yield [new CommentHeader('%'), []];
+    }
+}
+exports.CommentHeader = CommentHeader;
+/**
+ * The ancestor class of unary header operators like "maybe", "not", and "@"
+ * (the joining operator that we use to implement flags).
+ */
+class UnaryHeader extends Header {
+    constructor(text, child) {
+        super(text);
+        this.child = child;
+    }
+    get hue() {
+        return this.child.hue;
+    }
+    compile(cell, namespace) {
+        const childCell = this.child.compile(cell, namespace);
+        const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
+        compiledCell.state = childCell.state;
+        return compiledCell;
+    }
+    static *parseTarget(target, constructor, childParser, input) {
+        if (input.length == 0 || input[0] != target) {
+            return;
+        }
+        for (const [child, rem] of childParser(input.slice(1))) {
+            yield [new constructor(target, child), rem];
+        }
+    }
+}
+/**
+ * Header that constructs optional parsers, e.g. "maybe text"
+ */
+class MaybeHeader extends UnaryHeader {
+    static *parse(input) {
+        yield* super.parseTarget("maybe", MaybeHeader, NON_COMMENT_EXPR, input);
+    }
+    compile(cell, namespace) {
+        const childCell = this.child.compile(cell, namespace);
+        const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
+        compiledCell.state = stateMachine_1.Maybe(childCell.state);
+        return compiledCell;
+    }
+}
+exports.MaybeHeader = MaybeHeader;
+/**
+ * Header that constructs negations, e.g. "not text"
+ */
+class NotHeader extends UnaryHeader {
+    static *parse(input) {
+        yield* super.parseTarget("not", NotHeader, NON_COMMENT_EXPR, input);
+    }
+    compile(cell, namespace) {
+        const childCell = this.child.compile(cell, namespace);
+        const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
+        compiledCell.state = stateMachine_1.Maybe(childCell.state);
+        return compiledCell;
+    }
+}
+exports.NotHeader = NotHeader;
+/**
+ * A FlagHeader handles headers like "@x"; it joins x:X with whatever
+ * follows rather than concatenating it.
+ *
+ * Note that FlagHeader binds more tightly than other unary operators,
+ * e.g. while "maybe" in "maybe text/gloss" has "text/gloss" as its child,
+ * "@" in "@text/gloss" only has "@" as its child.
+ */
+class FlagHeader extends UnaryHeader {
+    merge(state, other) {
+        return stateMachine_1.Join(state, other);
+    }
+    static *parse(input) {
+        yield* super.parseTarget("@", FlagHeader, SUBEXPR, input);
+    }
+}
+exports.FlagHeader = FlagHeader;
+class BinaryHeader extends Header {
+    constructor(text, child1, child2) {
+        super(text);
+        this.child1 = child1;
+        this.child2 = child2;
+    }
+    get hue() {
+        return (util_1.meanAngleDeg([this.child1.hue * 360, this.child2.hue * 360]) + 360) / 360;
+    }
+    static *parseTarget(target, input) {
+        if (input.length == 0) {
+            return;
+        }
+        for (const [t1, rem1] of SUBEXPR(input)) {
+            if (rem1.length == 0 || rem1[0] != target) {
+                return;
+            }
+            for (const [t2, rem2] of NON_COMMENT_EXPR(rem1.slice(1))) {
+                yield [new SlashHeader(t1, t2), rem2];
+            }
+        }
+    }
+}
+class SlashHeader extends BinaryHeader {
+    constructor(child1, child2) {
+        super("/", child1, child2);
+        this.child1 = child1;
+        this.child2 = child2;
+    }
+    /**
+     * This isn't ordinarily called, usually compileAndMerge handles compilation
+     * of SlashHeader.  But
+     * when another header has a SlashHeader child, like "@(x/y)", this would
+     * be called.
+     */
+    compile(cell, namespace) {
+        const childCell1 = this.child1.compile(cell, namespace);
+        const childCell2 = this.child2.compile(cell, namespace);
+        const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
+        compiledCell.state = stateMachine_1.Seq(childCell1.state, childCell2.state);
+        return compiledCell;
+    }
+    compileAndMerge(cell, namespace, rightNeighbor) {
+        const childCell2 = this.child2.compileAndMerge(cell, namespace, rightNeighbor);
+        const childCell1 = this.child1.compileAndMerge(cell, namespace, childCell2.state);
+        const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
+        compiledCell.state = childCell1.state;
+        return compiledCell;
+    }
+    static *parse(input) {
+        yield* super.parseTarget("/", input);
+    }
+}
+exports.SlashHeader = SlashHeader;
+const SYMBOL = ["(", ")", "%", "/", '@'];
+const RESERVED = ["embed", "maybe", "not"];
+const ALL_RESERVED = [...SYMBOL, ...RESERVED];
+const SUBEXPR = Alt([LiteralHeader.parse,
+    EmbedHeader.parse,
+    FlagHeader.parse,
+    Parens]);
+const NON_COMMENT_EXPR = Alt([MaybeHeader.parse,
+    NotHeader.parse,
+    SlashHeader.parse,
+    SUBEXPR]);
+const EXPR = Alt([CommentHeader.parse,
+    NON_COMMENT_EXPR]);
+function Alt(children) {
+    return function* (input) {
+        for (const child of children) {
+            yield* child(input);
+        }
+    };
+}
+function* Parens(input) {
+    if (input.length == 0 || input[0] != "(") {
+        return;
+    }
+    for (const [t, rem] of NON_COMMENT_EXPR(input.slice(1))) {
+        if (rem.length == 0 || rem[0] != ")") {
+            return;
+        }
+        yield [t, rem.slice(1)];
+    }
+}
+const tokenizer = new RegExp("\\s+|(" +
+    SYMBOL.map(s => "\\" + s).join("|") +
+    ")");
+function tokenize(text) {
+    return text.split(tokenizer).filter((s) => s !== undefined && s !== '');
+}
+/**
+ * This is the main function that the rest of the libraries interact with;
+ * they provide a string and (hopefully) get a parser in return.
+ */
+function parseHeader(headerText) {
+    const pieces = tokenize(headerText);
+    var result = [...EXPR(pieces)];
+    // result is a list of [header, remaining_tokens] pairs.  
+    // we only want results where there are no remaining tokens.
+    result = result.filter(([t, r]) => r.length == 0);
+    if (result.length == 0) {
+        // if there are no results, the programmer made a syntax error
+        throw new Error(`Cannot parse header: ${headerText}`);
+    }
+    if (result.length > 1) {
+        // the grammar above should be unambiguous, so we shouldn't get 
+        // multiple results, but just in case...
+        throw new Error(`Ambiguous header, cannot parse: ${headerText}.` +
+            " This probably isn't your fault.");
+    }
+    return result[0][0];
+}
+exports.parseHeader = parseHeader;
 class TabularComponent {
 }
 exports.TabularComponent = TabularComponent;
@@ -1317,6 +1459,7 @@ exports.CellComponent = CellComponent;
 class CompileableComponent extends TabularComponent {
     constructor() {
         super(...arguments);
+        this.state = stateMachine_1.Empty();
         /**
          * The previous sibling of the component (i.e. the component that shares
          * the same parent, but appeared before this component, usually directly
@@ -1339,6 +1482,14 @@ class CompileableComponent extends TabularComponent {
     getHeader(col) {
         return undefined;
     }
+    runChecks(namespace, devEnv) {
+        if (this.sibling != undefined) {
+            this.sibling.runChecks(namespace, devEnv);
+        }
+        if (this.child != undefined) {
+            this.child.runChecks(namespace, devEnv);
+        }
+    }
 }
 exports.CompileableComponent = CompileableComponent;
 const BINARY_OPS = {
@@ -1346,11 +1497,15 @@ const BINARY_OPS = {
     "concat": stateMachine_1.Seq,
     "join": stateMachine_1.Join,
 };
-const BUILT_IN_OPS = new Set(Object.keys(BINARY_OPS));
-BUILT_IN_OPS.add("table");
-/* There are some reserved words like "maybe" that aren't built in ops,
-but none implemented at the moment */
-const RESERVED_WORDS = new Set(BUILT_IN_OPS);
+const BUILT_IN_OPS = new Set([...Object.keys(BINARY_OPS),
+    "table",
+    "test"]);
+/* There are some reserved words like "maybe" that aren't built in ops, but
+ * for sanity's sake you still can't use them as symbols */
+const RESERVED_WORDS = new Set([...BUILT_IN_OPS,
+    "maybe",
+    "not",
+    "embed"]);
 /**
  * An enclosure represents a single-cell unit containing a command or identifier (call that the "startCell"),
  * and a rectangular region describing further details (like the parameters of the command,
@@ -1408,113 +1563,35 @@ class EnclosureComponent extends CompileableComponent {
         }
         return this.child.getHeader(col);
     }
-    addHeader(header) {
+    addHeader(header, devEnv) {
         // can only add a header if there aren't any child enclosures yet.
         // well, we could, but it makes a particular kind of syntax error
         // hard to spot
         if (this.child == undefined) {
-            this.child = new TableComponent();
+            this.child = new ContentsComponent();
         }
-        if (!(this.child instanceof TableComponent)) {
+        if (!(this.child instanceof ContentsComponent)) {
             throw new Error("Closure already has a child; cannot add a header to it.");
         }
-        this.child.addHeader(header);
+        this.child.addHeader(header, devEnv);
     }
     addContent(cell, devEnv) {
-        if (!(this.child instanceof TableComponent)) {
+        if (!(this.child instanceof ContentsComponent)) {
             throw new Error("Trying to add content to a non-table");
         }
         this.child.addContent(cell, devEnv);
     }
     compile(namespace, devEnv) {
-        if (this.text == "table") {
-            // it's a "table", which is technically a no-op,
-            // but this .compileTable() function does some useful
-            // error checking.
-            return this.compileTable(namespace, devEnv);
-        }
-        if (this.text in BINARY_OPS) {
-            // it's a binary operator like "or" or "join"
-            return this.compileBinaryOp(namespace, devEnv);
-        }
-        /*
-        if (this.parent == this.sheet) {
-            // it's not any other kind of operator, but it's "top-level"
-            // within its sheet, so it's an assignment to a new symbol
-            return this.compileAssignment(namespace, errors);
-        } */
+        // we only ever end up in this base EncloseComponent compile if it wasn't
+        // a known operator.
         devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Unknown operator", `Operator ${this.text} not recognized.`);
-        return stateMachine_1.Empty();
-    }
-    compileAssignment(namespace, devEnv) {
-        // first compile the previous sibling.  note that all siblings
-        // of an assignment statement should be an assignment statement, since
-        // being an assignment statement is, by definition, having a sheet component
-        // as your immediate parent.
-        if (this.sibling != undefined) {
-            this.sibling.compileAssignment(namespace, devEnv);
-        }
-        if (RESERVED_WORDS.has(this.text)) {
-            // oops, assigning to a reserved word
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Assignment to reserved word", "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
-                `reserved word ${this.text}.  Choose a different symbol name.`);
-            if (this.child != undefined) {
-                // compile the child just in case there are useful errors to display
-                this.child.compile(namespace, devEnv);
-            }
-            return stateMachine_1.Empty();
-        }
-        if (this.child == undefined) {
-            // oops, empty "right side" of the assignment!
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Missing content", `This looks like an assignment to a symbol ${this.text}, ` +
-                "but there's nothing to the right of it.", "warning");
-            return stateMachine_1.Empty();
-        }
-        const state = this.child.compile(namespace, devEnv);
-        if (namespace.hasSymbol(this.text)) {
-            // oops, trying to assign to a symbol that already is assigned to!
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Redefining existing symbol", `You've already assigned something to the symbol ${this.text}`);
-            // TODO: The error message should say where it's assigned
-        }
-        namespace.addSymbol(this.text, state);
-        return state;
-    }
-    compileTable(namespace, devEnv) {
-        if (this.child == undefined) {
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Missing content", "'table' seems to be missing a table; something should be in the cell to the right.", "warning");
-            return stateMachine_1.Empty();
-        }
-        if (this.sibling != undefined) {
-            const throwaway = this.sibling.compile(namespace, devEnv);
-            // we don't do anything with the sibling, but we
-            // compile it anyway in case there are errors in it the
-            // programmer may want to know about
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Table overwrite warning", `'table' here will obliterate the preceding content at ${this.sibling.position}.`, "warning");
-        }
-        return this.child.compile(namespace, devEnv);
-    }
-    compileBinaryOp(namespace, devEnv) {
-        const op = BINARY_OPS[this.text];
-        if (this.child == undefined) {
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, `Missing argument to '${this.text}'`, `'${this.text}' is missing a second argument; ` +
-                "something should be in the cell to the right.");
-            return stateMachine_1.Empty();
-        }
-        if (this.sibling == undefined) {
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, `Missing argument to '${this.text}'`, `'${this.text}' is missing a first argument; ` +
-                "something should be in a cell above this.");
-            return stateMachine_1.Empty();
-        }
-        const arg1 = this.sibling.compile(namespace, devEnv);
-        const arg2 = this.child.compile(namespace, devEnv);
-        return op(arg1, arg2);
     }
     addChildEnclosure(child, devEnv) {
-        if (this.child instanceof TableComponent) {
+        if (this.child instanceof ContentsComponent) {
             throw new Error("Can't add an operator to a line that already has headers.");
         }
         if (this.child != undefined && this.child.position.col != child.position.col) {
-            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "This operator is in an unexpected column.  Did you mean for it " +
+            devEnv.markError(child.position.sheet, child.position.row, child.position.col, "Unexpected operator", "This operator is in an unexpected column.  Did you mean for it " +
                 `to be in column ${this.child.position.col}, ` +
                 `so that it's under the operator in cell ${this.child.position}?`, "warning");
         }
@@ -1532,6 +1609,128 @@ class EnclosureComponent extends CompileableComponent {
     }
 }
 exports.EnclosureComponent = EnclosureComponent;
+class AssignmentComponent extends EnclosureComponent {
+    compile(namespace, devEnv) {
+        // first compile the previous sibling.  note that all siblings
+        // of an assignment statement should be an assignment statement, since
+        // being an assignment statement is, by definition, having a sheet component
+        // as your immediate parent.
+        if (this.sibling != undefined) {
+            this.sibling.compile(namespace, devEnv);
+        }
+        if (RESERVED_WORDS.has(this.text)) {
+            // oops, assigning to a reserved word
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Assignment to reserved word", "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
+                `reserved word ${this.text}.  Choose a different symbol name.`);
+            if (this.child != undefined) {
+                // compile the child just in case there are useful errors to display
+                this.child.compile(namespace, devEnv);
+            }
+            return this;
+        }
+        if (this.sibling != undefined && !(this.sibling instanceof AssignmentComponent)) {
+            devEnv.markError(this.sibling.position.sheet, this.sibling.position.row, this.sibling.position.col, "Wayward operator", "The result of this operator does not get assigned to anything.");
+        }
+        if (this.child == undefined) {
+            // oops, empty "right side" of the assignment!
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Missing content", `This looks like an assignment to a symbol ${this.text}, ` +
+                "but there's nothing to the right of it.", "warning");
+            return this;
+        }
+        this.child.compile(namespace, devEnv);
+        this.state = this.child.state;
+        if (namespace.hasSymbol(this.text)) {
+            // oops, trying to assign to a symbol that already is assigned to!
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Redefining existing symbol", `You've already assigned something to the symbol ${this.text}`);
+            return this;
+        }
+        namespace.addSymbol(this.text, this.child.state);
+        return this;
+    }
+}
+class BinaryOpComponent extends EnclosureComponent {
+    compile(namespace, devEnv) {
+        const op = BINARY_OPS[this.text];
+        if (this.child == undefined) {
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, `Missing argument to '${this.text}'`, `'${this.text}' is missing a second argument; ` +
+                "something should be in the cell to the right.");
+            return;
+        }
+        if (this.sibling == undefined) {
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, `Missing argument to '${this.text}'`, `'${this.text}' is missing a first argument; ` +
+                "something should be in a cell above this.");
+            return;
+        }
+        this.sibling.compile(namespace, devEnv);
+        this.child.compile(namespace, devEnv);
+        this.state = op(this.sibling.state, this.child.state);
+    }
+}
+class TableComponent extends EnclosureComponent {
+    compile(namespace, devEnv) {
+        if (this.child == undefined) {
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Missing content", "'table' seems to be missing a table; something should be in the cell to the right.", "warning");
+            return;
+        }
+        if (this.sibling != undefined) {
+            this.sibling.compile(namespace, devEnv);
+            // we don't do anything with the sibling, but we
+            // compile it anyway in case there are errors in it the
+            // programmer may want to know about
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Table overwrite warning", `'table' here will obliterate the preceding content at ${this.sibling.position}.`, "warning");
+        }
+        this.child.compile(namespace, devEnv);
+        this.state = this.child.state;
+    }
+}
+class TestSuiteComponent extends EnclosureComponent {
+    constructor() {
+        super(...arguments);
+        this.tests = [];
+    }
+    /**
+     * "test" is an operator that takes two tables, one above (spatially speaking)
+     * and one to the right, and makes sure that each line of the one to the right
+     * has an output when semijoined to the table above.
+     *
+     * Test doesn't make any change to the State it returns; adding a "test" below
+     * a grammar returns the exact same grammar as otherwise.
+     */
+    compile(namespace, devEnv) {
+        if (this.sibling == undefined) {
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Wayward test", "There should be something above this 'test' command for us to test");
+            return;
+        }
+        const sibling = this.sibling.compile(namespace, devEnv);
+        if (this.child == undefined) {
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Missing content", "'test' seems to be missing something to test; something should be in the cell to the right.", "warning");
+            this.state = this.sibling.state;
+            return; // whereas usually we result in the empty grammar upon erroring, in this case
+            // we don't want to let a flubbed "test" command obliterate the grammar
+            // it was meant to test!
+        }
+        if (!(this.child instanceof ContentsComponent)) {
+            devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Cannot execute tests", "You can't nest another operator under a test block, it has to be a content table.");
+            this.state = this.sibling.state;
+            return;
+        }
+        this.child.compile(namespace, devEnv);
+        this.tests = this.child.rows;
+        this.state = this.sibling.state;
+    }
+    runChecks(namespace, devEnv) {
+        super.runChecks(namespace, devEnv);
+        for (const test of this.tests) {
+            // the appropriate operation here is the left semijoin between my state
+            // and the test's state
+            const testingState = stateMachine_1.Semijoin(this.state, test.state);
+            const results = [...testingState.generate()];
+            if (results.length == 0) {
+                devEnv.markError(test.position.sheet, test.position.row, test.position.col, `Test failed: ${test.text}`, "This row cannot be generated by the grammar above.");
+            }
+        }
+    }
+}
 /**
  * A [SheetComponent] is basically an EnclosureComponent without
  * a parent component; a sheet is always the outermost component of
@@ -1539,7 +1738,7 @@ exports.EnclosureComponent = EnclosureComponent;
  */
 class SheetComponent extends EnclosureComponent {
     constructor(name) {
-        super(new CellComponent(name, new headerParser_1.CellPosition(name)));
+        super(new CellComponent(name, new CellPosition(name)));
         this.name = name;
     }
     addHeader(header) {
@@ -1547,16 +1746,19 @@ class SheetComponent extends EnclosureComponent {
     }
     compile(namespace, devEnv) {
         if (this.child == undefined) {
-            return stateMachine_1.Empty();
+            return;
         }
-        return this.child.compileAssignment(namespace, devEnv);
+        this.child.compile(namespace, devEnv);
+        if (!(this.child instanceof AssignmentComponent)) {
+            devEnv.markError(this.child.position.sheet, this.child.position.row, this.child.position.col, "Wayward operator", "The result of this operator does not get assigned to anything.", "warning");
+        }
     }
     get sheet() {
         return this;
     }
 }
 /**
- * A Table is a rectangular region of the grid consisting of a header row
+ * A ContentsComponent is a rectangular region of the grid consisting of a header row
  * and cells beneath each header.  For example,
  *
  *      text, gloss
@@ -1570,33 +1772,42 @@ class SheetComponent extends EnclosureComponent {
  * tables; it's entirely possible to get tables where the same
  * header appears multiple times.
  */
-class TableComponent extends CompileableComponent {
+class ContentsComponent extends CompileableComponent {
     constructor() {
         super(...arguments);
         this.headersByCol = {};
-        this.headers = [];
-        this.table = [];
-    }
-    compileAssignment(namespace, devEnv) {
-        // I don't think this error is possible, but just in case
-        devEnv.markError(this.position.sheet, this.position.row, this.position.col, "Unexpected operator", "This cell needs to be an assignment, " +
-            "but it looks like you're trying to start a table.");
-        return stateMachine_1.Empty();
+        this.rows = [];
+        this.startCell = undefined;
     }
     get position() {
-        if (this.headers.length == 0) {
-            return new headerParser_1.CellPosition("?", -1, -1);
+        if (this.startCell == undefined) {
+            throw new Error("Trying to get position of an empty ContentsComponent");
         }
-        return this.headers[0].position;
+        return this.startCell.position;
     }
     get text() {
-        if (this.headers.length == 0) {
-            return "?";
+        if (this.startCell == undefined) {
+            throw new Error("Trying to get text of an empty ContentsComponent");
         }
-        return this.headers[0].text;
+        return this.startCell.text;
     }
-    addHeader(header) {
-        this.headersByCol[header.position.col] = header;
+    addHeader(headerCell, devEnv) {
+        if (this.startCell == undefined) {
+            this.startCell = headerCell;
+        }
+        try {
+            // parse the header into a Header object
+            const compiledHeader = parseHeader(headerCell.text);
+            // color it properly in the interface
+            const contentColor = compiledHeader.getColor(0.1);
+            devEnv.markHeader(headerCell.position.sheet, headerCell.position.row, headerCell.position.col, contentColor);
+            // remember it by its column number, because that's how content
+            // cells will be asking for it.
+            this.headersByCol[headerCell.position.col] = compiledHeader;
+        }
+        catch (e) {
+            devEnv.markError(headerCell.position.sheet, headerCell.position.row, headerCell.position.col, `Invalid header ${headerCell.text}`, "Attempted to parse this cell as a header, but could not.", "error");
+        }
     }
     getHeader(col) {
         return this.headersByCol[col];
@@ -1605,60 +1816,125 @@ class TableComponent extends CompileableComponent {
         // make sure we have a header
         const header = this.getHeader(cell.position.col);
         if (header == undefined) {
-            throw new Error(`Table at ${this.position} cannot add ` +
-                `content in column ${cell.position.col}`);
-        }
-        // color the cell appropriately (even if there's no text)
-        try {
-            const parsedHeader = headerParser_1.parseHeader(header.text);
-            const contentColor = parsedHeader.getColor(0.1);
-            devEnv.markTier(cell.position.sheet, cell.position.row, cell.position.col, contentColor);
-        }
-        catch (e) {
-            devEnv.markError(cell.position.sheet, cell.position.row, cell.position.col, `Invalid header ${header.text}`, "Cannot interpret this cell due to an invalid header above.", "warning");
+            if (cell.text.length != 0) {
+                devEnv.markError(cell.position.sheet, cell.position.row, cell.position.col, `Ignoring cell`, "Cannot associate this cell with any valid header above; ignoring.", "warning");
+            }
             return;
         }
+        // mark it as such
+        const contentColor = header.getColor(0.1);
+        devEnv.markTier(cell.position.sheet, cell.position.row, cell.position.col, contentColor);
         // the following only applies if there's text in the cell
         if (cell.text.length == 0) {
             return;
         }
         // make a table row if we need one
-        if (this.table.length == 0 ||
-            cell.position.row != this.table[this.table.length - 1][0].position.row) {
-            this.table.push([]);
+        if (this.rows.length == 0 ||
+            cell.position.row != this.rows[this.rows.length - 1].position.row) {
+            const newRow = new RowComponent();
+            this.rows.push(newRow);
         }
         // add the content
-        this.table[this.table.length - 1].push(cell);
-    }
-    compileCell(h, c, namespace, devEnv) {
-        try {
-            const header = headerParser_1.parseHeader(h.text);
-            return header.compile(c.text, h.position, namespace, devEnv);
-        }
-        catch (e) {
-            devEnv.markError(c.position.sheet, c.position.row, c.position.col, "Ignoring cell", `Because of an error in the header at ${h.position}, ` +
-                "this cell will be ignored.", "warning");
-            return stateMachine_1.Empty();
-        }
+        const lastRow = this.rows[this.rows.length - 1];
+        lastRow.addContent(header, cell);
     }
     compile(namespace, devEnv) {
-        const compiledRows = [];
-        for (const row of this.table) {
-            const compiledRow = [];
-            for (const cell of row) {
-                const header = this.headersByCol[cell.position.col];
-                const compiledCell = this.compileCell(header, cell, namespace, devEnv);
-                compiledRow.push(compiledCell);
-            }
-            compiledRows.push(stateMachine_1.Seq(...compiledRow));
-        }
-        return stateMachine_1.Uni(...compiledRows);
+        this.rows.map(row => row.compile(namespace, devEnv));
+        const rowStates = this.rows.map(row => row.state);
+        this.state = stateMachine_1.Uni(...rowStates);
+    }
+    runChecks(ns, devEnv) {
+        this.rows.map(row => row.runChecks(ns, devEnv));
     }
     toString() {
         return `Table(${this.position})`;
     }
 }
-exports.TableComponent = TableComponent;
+class RowComponent extends CompileableComponent {
+    constructor() {
+        super(...arguments);
+        this.uncompiledCells = [];
+        this.compiledCells = [];
+    }
+    get position() {
+        if (this.uncompiledCells.length == 0) {
+            throw new Error("Trying to get position of an empty RowComponent");
+        }
+        return this.uncompiledCells[0][1].position;
+    }
+    get text() {
+        if (this.uncompiledCells.length == 0) {
+            throw new Error("Trying to get text of an empty RowComponent");
+        }
+        return this.uncompiledCells[0][1].text;
+    }
+    compile(namespace, devEnv) {
+        var resultState = undefined;
+        for (var i = this.uncompiledCells.length - 1; i >= 0; i--) {
+            const [header, cell] = this.uncompiledCells[i];
+            const compiledCell = header.compileAndMerge(cell, namespace, resultState);
+            resultState = compiledCell.state;
+            this.compiledCells = [compiledCell, ...this.compiledCells];
+        }
+        if (resultState == undefined) {
+            throw new Error("Something went wrong in row compilation; maybe there was nothing in this row?");
+        }
+        this.state = resultState;
+    }
+    addContent(header, cell) {
+        this.uncompiledCells.push([header, cell]);
+    }
+    runChecks(ns, devEnv) {
+        this.compiledCells.map(cell => cell.runChecks(ns, devEnv));
+    }
+}
+class HeadedCellComponent extends CompileableComponent {
+    constructor(header, cell) {
+        super();
+        this.header = header;
+        this.cell = cell;
+    }
+    get position() {
+        return this.cell.position;
+    }
+    get text() {
+        return this.cell.text;
+    }
+    compile(namespace, devEnv) {
+        throw new Error("Not implemented; shouldn't be calling this.");
+    }
+}
+class UnaryHeadedCellComponent extends HeadedCellComponent {
+    constructor(header, cell, child) {
+        super(header, cell);
+        this.child = child;
+    }
+    runChecks(ns, devEnv) {
+        this.child.runChecks(ns, devEnv);
+    }
+}
+class BinaryHeadedCellComponent extends HeadedCellComponent {
+    constructor(header, cell, child1, child2) {
+        super(header, cell);
+        this.child1 = child1;
+        this.child2 = child2;
+    }
+    runChecks(ns, devEnv) {
+        this.child1.runChecks(ns, devEnv);
+        this.child2.runChecks(ns, devEnv);
+        if (this.child1 instanceof EmbedComponent || this.child2 instanceof EmbedComponent) {
+            devEnv.markError(this.cell.position.sheet, this.cell.position.row, this.cell.position.col, "Embed inside slash header", "Why are you putting an 'embed' inside a slash header? That's really weird.", "warning");
+        }
+    }
+}
+class EmbedComponent extends HeadedCellComponent {
+    runChecks(ns, devEnv) {
+        const symbol = ns.get(this.cell.text);
+        if (symbol == undefined) {
+            devEnv.markError(this.cell.position.sheet, this.cell.position.row, this.cell.position.col, `Cannot find symbol ${this.cell.text}`, `Cannot find symbol ${this.cell.text}.`, "error");
+        }
+    }
+}
 /**
  * Determines whether a line is empty
  * @param row A list of strings, representing the cell text along that row
@@ -1699,8 +1975,9 @@ class Project {
             throw new Error(`Cannot find symbol ${symbolName}`);
         }
         const results = [];
-        for (const tapeName of startState.getTapeNames()) {
-            const header = headerParser_1.parseHeader(tapeName);
+        const stack = new stateMachine_1.CounterStack(2);
+        for (const tapeName of startState.getRelevantTapes(stack)) {
+            const header = parseHeader(tapeName);
             results.push([tapeName, header.getColor(0.2)]);
         }
         return results;
@@ -1731,7 +2008,7 @@ class Project {
         const gen = startState.generate(randomize, maxRecursion, maxChars);
         return util_1.iterTake(gen, maxResults);
     }
-    addSheet(sheetName) {
+    addSheetAux(sheetName) {
         if (sheetName in this.sheets) {
             // already loaded it, don't have to do anything
             return;
@@ -1757,7 +2034,16 @@ class Project {
         // Store it in .sheets
         this.sheets[sheetName] = sheetComponent;
         for (const requiredSheet of this.globalNamespace.requiredNamespaces) {
-            this.addSheet(requiredSheet);
+            this.addSheetAux(requiredSheet);
+        }
+    }
+    addSheet(sheetName) {
+        // add this sheet and any sheets that it refers to
+        this.addSheetAux(sheetName);
+        // now run checks over the whole project
+        for (const sheetName of Object.keys(this.sheets)) {
+            const localNamespace = this.globalNamespace.getNamespace(sheetName);
+            this.sheets[sheetName].runChecks(localNamespace, this.devEnv);
         }
     }
     getSheet(sheetName) {
@@ -1775,7 +2061,12 @@ class Project {
     }
     parseCells(sheetName, cells) {
         const enclosureOps = this.getEnclosureOperators(cells);
-        // There's one big enclosure that encompasses the whole sheet, with startCell (-1,-1)
+        // topEnclosure refers to whatever enclosure is currently on top 
+        // of the stack.  Since each enclosure knows what its parent is, we 
+        // don't explicitly have to maintain a stack structure, we can just
+        // use the .parent property of the current topEnclosure when we need
+        // to pop.  We start with the one big enclosure that encompasses the 
+        // whole sheet, with startCell (-1,-1)
         var topEnclosure = new SheetComponent(sheetName);
         // Now iterate through the cells, left-to-right top-to-bottom
         for (var rowIndex = 0; rowIndex < cells.length; rowIndex++) {
@@ -1785,7 +2076,7 @@ class Project {
             }
             for (var colIndex = 0; colIndex < cells[rowIndex].length; colIndex++) {
                 const cellText = cells[rowIndex][colIndex].trim();
-                const position = new headerParser_1.CellPosition(sheetName, rowIndex, colIndex);
+                const position = new CellPosition(sheetName, rowIndex, colIndex);
                 const cell = new CellComponent(cellText, position);
                 while (cellText.length > 0
                     && colIndex <= topEnclosure.position.col) {
@@ -1798,18 +2089,7 @@ class Project {
                     topEnclosure.specRow = rowIndex;
                 }
                 if (topEnclosure.specRow > -1 && rowIndex > topEnclosure.specRow) {
-                    // we're inside an enclosure
-                    const header = topEnclosure.getHeader(colIndex);
-                    if (header == undefined) {
-                        // there's nothing above this cell
-                        if (cellText.length == 0) {
-                            // if there's also nothing in the cell, we're fine
-                            continue;
-                        }
-                        this.devEnv.markError(sheetName, rowIndex, colIndex, `Wayward cell: ${cell.text}`, `This cell does not have a header above it in column ${colIndex}, ` +
-                            "so we're unable to interpret it.");
-                        continue;
-                    }
+                    // we're inside an enclosure, after the header row
                     topEnclosure.addContent(cell, this.devEnv);
                     continue;
                 }
@@ -1819,9 +2099,24 @@ class Project {
                 }
                 // either we're still in the spec row, or there's no spec row yet
                 if (enclosureOps.has(cellText) || position.col == 0) {
-                    // it's the start of a new enclosure
+                    // it's an operation, which starts a new enclosure
                     this.devEnv.markCommand(sheetName, rowIndex, colIndex);
-                    const newEnclosure = new EnclosureComponent(cell, topEnclosure);
+                    var newEnclosure;
+                    if (position.col == 0) {
+                        newEnclosure = new AssignmentComponent(cell, topEnclosure);
+                    }
+                    else if (cell.text in BINARY_OPS) {
+                        newEnclosure = new BinaryOpComponent(cell, topEnclosure);
+                    }
+                    else if (cell.text == "table") {
+                        newEnclosure = new TableComponent(cell, topEnclosure);
+                    }
+                    else if (cell.text == "test") {
+                        newEnclosure = new TestSuiteComponent(cell, topEnclosure);
+                    }
+                    else {
+                        newEnclosure = new EnclosureComponent(cell, topEnclosure);
+                    }
                     try {
                         topEnclosure.addChildEnclosure(newEnclosure, this.devEnv);
                         topEnclosure = newEnclosure;
@@ -1832,16 +2127,7 @@ class Project {
                     continue;
                 }
                 // it's a header
-                try {
-                    topEnclosure.addHeader(cell);
-                    const header = headerParser_1.parseHeader(cell.text);
-                    const color = header.getColor(0.2);
-                    this.devEnv.markHeader(sheetName, rowIndex, colIndex, color);
-                }
-                catch (e) {
-                    //console.log(e);
-                    this.devEnv.markError(sheetName, rowIndex, colIndex, `Invalid header: ${cell.text}`, e.toString());
-                }
+                topEnclosure.addHeader(cell, this.devEnv);
             }
         }
         return topEnclosure.sheet;
@@ -1849,10 +2135,10 @@ class Project {
 }
 exports.Project = Project;
 
-},{"./headerParser":2,"./stateMachine":5,"./util":7}],5:[function(require,module,exports){
+},{"./stateMachine":4,"./util":6}],4:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Maybe = exports.Empty = exports.Rep = exports.Any = exports.Rename = exports.Proj = exports.Emb = exports.Not = exports.Join = exports.Uni = exports.Seq = exports.Literalizer = exports.Lit = exports.NegationState = exports.RenameState = exports.ProjectionState = exports.EmbedState = exports.RepetitionState = exports.JoinState = exports.UnionState = exports.ConcatState = exports.TrivialState = exports.LiteralState = exports.AnyCharState = exports.State = exports.Namespace = void 0;
+exports.Maybe = exports.Empty = exports.Rep = exports.Any = exports.Rename = exports.Proj = exports.Emb = exports.Not = exports.Semijoin = exports.Join = exports.Uni = exports.Seq = exports.Literalizer = exports.Lit = exports.NegationState = exports.RenameState = exports.ProjectionState = exports.EmbedState = exports.RepetitionState = exports.JoinState = exports.UnionState = exports.ConcatState = exports.TrivialState = exports.LiteralState = exports.AnyCharState = exports.State = exports.Namespace = exports.CounterStack = void 0;
 const tapes_1 = require("./tapes");
 /**
  * CounterStack
@@ -1891,10 +2177,11 @@ class CounterStack {
     exceedsMax(key) {
         return this.get(key) >= this.max;
     }
-    toString() {
+    tostring() {
         return JSON.stringify(this.stack);
     }
 }
+exports.CounterStack = CounterStack;
 /**
  * Namespace
  *
@@ -1946,6 +2233,12 @@ class Namespace {
         }
         this.childNamespaces[name] = namespace;
         namespace.parent = this;
+    }
+    getNamespace(name) {
+        if (!(name in this.childNamespaces)) {
+            throw new Error(`Cannot find namespace ${name}`);
+        }
+        return this.childNamespaces[name];
     }
     getNamePieces(namePieces) {
         if (namePieces.length == 1 && namePieces[0] in this.symbols) {
@@ -2026,6 +2319,9 @@ exports.Namespace = Namespace;
  *  * accepting(): Whether this state is a final state, meaning it constitutes a complete parse
  */
 class State {
+    constructor() {
+        this.relevantTapes = undefined;
+    }
     /**
      * accepting
      *
@@ -2097,11 +2393,6 @@ class State {
         }
         yield* results;
     }
-    getTapeNames() {
-        const allTapes = new tapes_1.TapeCollection();
-        this.collectVocab(allTapes, []);
-        return allTapes.getTapeNames();
-    }
     /**
      * Performs a breadth-first traversal of the graph.  This will be the function that most
      * clients will be calling.
@@ -2122,19 +2413,17 @@ class State {
         this.collectVocab(allTapes, []);
         const initialOutput = new tapes_1.MultiTapeOutput();
         var stateQueue = [[initialOutput, this]];
-        var symbolStack = new CounterStack(maxRecursion);
+        const symbolStack = new CounterStack(maxRecursion);
         var chars = 0;
         while (stateQueue.length > 0 && chars < maxChars) {
             var nextQueue = [];
-            for (var i = 0; i < stateQueue.length; i++) {
-                const [prevOutput, prevState] = stateQueue[i];
+            for (const [prevOutput, prevState] of stateQueue) {
                 if (prevState.accepting(symbolStack)) {
                     yield* prevOutput.toStrings();
                 }
                 for (const [tape, c, matched, newState] of prevState.dQuery(allTapes, tapes_1.ANY_CHAR, symbolStack, randomize)) {
                     if (!matched) {
-                        console.log("Warning, got all the way through without a match");
-                        continue;
+                        throw new Error("Something went wrong, got all the way through without a match");
                     }
                     const nextOutput = prevOutput.add(tape, c);
                     nextQueue.push([nextOutput, newState]);
@@ -2152,6 +2441,27 @@ class State {
      * @returns vocab
      */
     collectVocab(tapes, stateStack) { }
+    /**
+     * Collects the names of all tapes relevant to this state.  The names are those
+     * that this state would "see" (that is, if this state refers to a RenameState,
+     * it uses the renamed tape name, not whatever that tape is referred to "inside"
+     * the RenameState).
+     *
+     * This will be the same result as if we called "collectVocab" on this state with an empty
+     * TapeCollection, but we don't go to the trouble of collecting the character vocabulary.
+     */
+    getRelevantTapes(stateStack) {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set();
+        }
+        return this.relevantTapes;
+    }
+    caresAbout(tape) {
+        if (tape.tapeName == "__ANY_TAPE__")
+            return true;
+        const symbolStack = new CounterStack(2);
+        return this.getRelevantTapes(symbolStack).has(tape.tapeName);
+    }
 }
 exports.State = State;
 /**
@@ -2181,6 +2491,12 @@ class TextState extends State {
         const result = matchedTape.match(bits, target);
         const nextState = this.successor();
         yield [matchedTape, result, true, nextState];
+    }
+    getRelevantTapes(stateStack) {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set([this.tapeName]);
+        }
+        return this.relevantTapes;
     }
 }
 /**
@@ -2268,14 +2584,23 @@ exports.TrivialState = TrivialState;
  * states into right-braching UnionStates).
  */
 class BinaryState extends State {
-    constructor(child1, child2) {
+    constructor(child1, child2, relevantTapes = undefined) {
         super();
         this.child1 = child1;
         this.child2 = child2;
+        this.relevantTapes = relevantTapes;
     }
     collectVocab(tapes, stateStack) {
         this.child1.collectVocab(tapes, stateStack);
         this.child2.collectVocab(tapes, stateStack);
+    }
+    getRelevantTapes(stateStack) {
+        if (this.relevantTapes == undefined) {
+            const child1tapes = this.child1.getRelevantTapes(stateStack);
+            const child2tapes = this.child2.getRelevantTapes(stateStack);
+            this.relevantTapes = new Set([...child1tapes, ...child2tapes]);
+        }
+        return this.relevantTapes;
     }
     get id() {
         return `${this.constructor.name}(${this.child1.id},${this.child2.id})`;
@@ -2302,26 +2627,75 @@ class BinaryState extends State {
  * appropriate ConcatState consisting of the unmatched material.
  */
 class ConcatState extends BinaryState {
+    constructor(child1, child2, child1Done = false, relevantTapes = undefined) {
+        super(child1, child2, relevantTapes);
+        this.child1Done = child1Done;
+    }
     *ndQuery(tape, target, symbolStack, randomize) {
+        if (!this.caresAbout(tape)) {
+            // if neither child cares, just short circuit this rather than bother with all the rest
+            yield [tape, target, false, this];
+            return;
+        }
+        if (this.child1Done) {
+            if (!this.child2.caresAbout(tape)) {
+                return;
+            }
+            for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack, randomize)) {
+                const successor = new ConcatState(this.child1, c2next, true, this.relevantTapes);
+                yield [c2tape, c2text, c2matched, successor];
+            }
+            return;
+        }
+        // new simpler algorithm below
+        if (this.child1.accepting(symbolStack)) {
+            const successor = new ConcatState(this.child1, this.child2, true);
+            yield* successor.dQuery(tape, target, symbolStack, randomize);
+        }
+        if (this.child1.caresAbout(tape)) {
+            for (const [c1tape, c1text, c1matched, c1next] of this.child1.dQuery(tape, target, symbolStack, randomize)) {
+                const successor = new ConcatState(c1next, this.child2, false, this.relevantTapes);
+                yield [c1tape, c1text, c1matched, successor];
+            }
+            return;
+        }
+        // child2 must care, otherwise one of the previous conditions would have triggered
+        for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack, randomize)) {
+            const successor = new ConcatState(this.child1, c2next, false, this.relevantTapes);
+            yield [c2tape, c2text, c2matched, successor];
+        }
+        // old, more circuitous, algorithm
+        /*
         // We can yield from child2 if child1 is accepting, OR if child1 doesn't care about the requested tape,
         // but if child1 is accepting AND doesn't care about the requested tape, we don't want to yield twice;
         // that leads to duplicate results.  yieldedAlready is how we keep track of that.
         var yieldedAlready = false;
-        for (const [c1tape, c1text, c1matched, c1next] of this.child1.dQuery(tape, target, symbolStack, randomize)) {
+
+        for (const [c1tape, c1text, c1matched, c1next] of
+                this.child1.dQuery(tape, target, symbolStack, randomize)) {
+
             if (c1matched) {
-                yield [c1tape, c1text, c1matched, new ConcatState(c1next, this.child2)];
+                const successor = new ConcatState(c1next, this.child2, false, this.relevantTapes);
+                yield [c1tape, c1text, c1matched, successor];
                 continue;
             }
+   
             // child1 not interested in the requested tape, the first character on the tape must be
             // (if it exists at all) in child2.
-            for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack, randomize)) {
-                yield [c2tape, c2text, c2matched, new ConcatState(this.child1, c2next)];
+            for (const [c2tape, c2text, c2matched, c2next] of
+                    this.child2.dQuery(tape, target, symbolStack, randomize)) {
+                const successor = new ConcatState(this.child1, c2next, false, this.relevantTapes);
+                yield [c2tape, c2text, c2matched, successor];
                 yieldedAlready = true;
             }
         }
+
         if (!yieldedAlready && this.child1.accepting(symbolStack)) {
-            yield* this.child2.dQuery(tape, target, symbolStack, randomize);
+            const successor = new ConcatState(this.child1, this.child2, true);
+            yield* successor.dQuery(tape, target, symbolStack, randomize);
         }
+
+        */
     }
 }
 exports.ConcatState = ConcatState;
@@ -2365,35 +2739,6 @@ class UnionState extends BinaryState {
 }
 exports.UnionState = UnionState;
 /**
- * SemijoinState
- *
- * This implements the left semijoin.  The full join is the priority union of the left and right
- * semijoins.
-
-export class SemijoinState extends BinaryState {
-
-    public *ndQuery(tape: string,
-        target: BitSet,
-        symbolStack: CounterStack,
-        vocab: Vocab): Gen<[string, BitSet, boolean, State]> {
-
-        for (const [c1tape, c1target, c1matched, c1next] of this.child1.dQuery(tape, target, symbolStack, vocab)) {
-
-            if (c1tape == NO_TAPE) {
-                yield [c1tape, c1target, c1matched, Join(c1next, this.child2)];
-                continue;
-            }
-            
-            for (const [c2tape, c2target, c2matched, c2next] of this.child2.dQuery(c1tape, c1target, symbolStack, vocab)) {
-                yield [c2tape, c2target, c1matched || c2matched, Join(c1next, c2next)];
-            }
-        }
-    }
-
-}
-
- */
-/**
  * Convenience function that takes two generators, and yields from the
  * second only if it can't yield from the first.  This is handy in situations
  * like the implementation of join, where if we yielded from both we would
@@ -2407,6 +2752,49 @@ function* iterPriorityUnion(iter1, iter2) {
     }
     if (!yieldedAlready) {
         yield* iter2;
+    }
+}
+/**
+ * Implements a left semijoin (which we use for unit testing).
+ *
+ * To test that an entry E is in the grammar G, we execute
+ *
+ *      Semijoin(G, E)
+ *
+ * This requires that there be an entry in G that matches every field in E.
+ * (There could be additional fields in the relevant entries in G that you don't
+ * care about.  In practice it's difficult to anticipate all the different
+ * fields that G might have in a complex grammar, to make sure E has all of them.)
+ */
+class SemijoinState extends BinaryState {
+    /**
+    * We factor out the logic into a separate function (one that doesn't specifically
+    * refer to the child1/child2 properties of this object) because it's the same algorithm
+    * used twice in a descendent class, JoinState.  A join is just the priority union of the
+    * left and right semijoins, and the right semijoin is just the left semijoin with the
+    * children reversed.  So we let the caller decide which child is "c1" and which is "c2" for
+    * the purposes of the semijoin.
+    */
+    *ndQueryLeft(tape, target, c1, c2, symbolStack, randomize) {
+        for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, symbolStack, randomize)) {
+            if (c1tape.numTapes == 0) {
+                // c1 contained a ProjectionState that hides the original tape; move on without
+                // asking c2 to match anything.
+                const successor = this.successor(c1next, c2);
+                yield [c1tape, c1target, c1matched, successor];
+                continue;
+            }
+            for (const [c2tape, c2target, c2matched, c2next] of c2.dQuery(c1tape, c1target, symbolStack, randomize)) {
+                const successor = this.successor(c1next, c2next);
+                yield [c2tape, c2target, c1matched || c2matched, successor];
+            }
+        }
+    }
+    successor(newChild1, newChild2) {
+        return new SemijoinState(newChild1, newChild2, this.relevantTapes);
+    }
+    *ndQuery(tape, target, symbolStack, randomize) {
+        yield* this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack, randomize);
     }
 }
 /**
@@ -2424,23 +2812,17 @@ function* iterPriorityUnion(iter1, iter2) {
  * Because the ordinary union of these would lead to the same states twice, we use the
  * priority union instead.
  */
-class JoinState extends BinaryState {
-    *ndQueryLeft(tape, target, c1, c2, symbolStack, randomize) {
-        for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, symbolStack, randomize)) {
-            if (c1tape.numTapes == 0) {
-                // c1 contained a ProjectionState that hides the original tape; move on without
-                // asking c2 to match anything.
-                yield [c1tape, c1target, c1matched, new JoinState(c1next, c2)];
-                continue;
-            }
-            for (const [c2tape, c2target, c2matched, c2next] of c2.dQuery(c1tape, c1target, symbolStack, randomize)) {
-                yield [c2tape, c2target, c1matched || c2matched, new JoinState(c1next, c2next)];
-            }
-        }
+class JoinState extends SemijoinState {
+    successor(newChild1, newChild2) {
+        return new JoinState(newChild1, newChild2, this.relevantTapes);
     }
     *ndQuery(tape, target, symbolStack, randomize) {
         const leftJoin = this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack, randomize);
         const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, symbolStack, randomize);
+        if (this.child1.accepting(symbolStack)) {
+            yield* iterPriorityUnion(rightJoin, leftJoin);
+            return;
+        }
         yield* iterPriorityUnion(leftJoin, rightJoin);
     }
 }
@@ -2463,6 +2845,12 @@ class UnaryState extends State {
     }
     collectVocab(tapes, stateStack) {
         this.child.collectVocab(tapes, stateStack);
+    }
+    getRelevantTapes(stateStack) {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = this.child.getRelevantTapes(stateStack);
+        }
+        return this.relevantTapes;
     }
     accepting(symbolStack) {
         return this.child.accepting(symbolStack);
@@ -2493,6 +2881,12 @@ class RepetitionState extends UnaryState {
     }
     collectVocab(tapes, stateStack) {
         this.initialChild.collectVocab(tapes, stateStack);
+    }
+    getRelevantTapes(stateStack) {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = this.initialChild.getRelevantTapes(stateStack);
+        }
+        return this.relevantTapes;
     }
     accepting(symbolStack) {
         return this.index >= this.minRepetitions &&
@@ -2540,7 +2934,7 @@ exports.RepetitionState = RepetitionState;
  * but which we specify when constructing EmbedState's successor.
  */
 class EmbedState extends UnaryState {
-    constructor(symbolName, namespace, _child = undefined) {
+    constructor(symbolName, namespace, _child = undefined, relevantTapes = undefined) {
         super();
         this.symbolName = symbolName;
         this.namespace = namespace;
@@ -2548,6 +2942,7 @@ class EmbedState extends UnaryState {
         // need to register our symbol name with the namespace, in case
         // the referred-to symbol is defined in a file we haven't yet loaded.
         namespace.register(symbolName);
+        this.relevantTapes = relevantTapes;
     }
     get id() {
         return `${this.constructor.name}(${this.symbolName})`;
@@ -2558,6 +2953,18 @@ class EmbedState extends UnaryState {
         }
         const newStack = [...stateStack, this.symbolName];
         this.child.collectVocab(tapes, newStack);
+    }
+    getRelevantTapes(stateStack) {
+        if (this.relevantTapes == undefined) {
+            if (stateStack.exceedsMax(this.symbolName)) {
+                this.relevantTapes = new Set();
+            }
+            else {
+                const newStack = stateStack.add(this.symbolName);
+                this.relevantTapes = this.child.getRelevantTapes(newStack);
+            }
+        }
+        return this.relevantTapes;
     }
     get child() {
         if (this._child == undefined) {
@@ -2581,7 +2988,7 @@ class EmbedState extends UnaryState {
         }
         symbolStack = symbolStack.add(this.symbolName);
         for (const [childchildTape, childTarget, childMatched, childNext] of this.child.ndQuery(tape, target, symbolStack, randomize)) {
-            const successor = new EmbedState(this.symbolName, this.namespace, childNext);
+            const successor = new EmbedState(this.symbolName, this.namespace, childNext, this.relevantTapes);
             yield [childchildTape, childTarget, childMatched, successor];
         }
     }
@@ -2602,6 +3009,12 @@ class ProjectionState extends UnaryState {
         super();
         this.child = child;
         this.tapeRestriction = tapeRestriction;
+    }
+    getRelevantTapes(stateStack) {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = this.tapeRestriction;
+        }
+        return this.relevantTapes;
     }
     *ndQuery(tape, target, symbolStack, randomize) {
         if (tape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(tape.tapeName)) {
@@ -2625,15 +3038,30 @@ exports.ProjectionState = ProjectionState;
  *
  */
 class RenameState extends UnaryState {
-    constructor(child, fromTape, toTape) {
+    constructor(child, fromTape, toTape, relevantTapes = undefined) {
         super();
         this.child = child;
         this.fromTape = fromTape;
         this.toTape = toTape;
+        this.relevantTapes = relevantTapes;
     }
     collectVocab(tapes, stateStack) {
         tapes = new tapes_1.RenamedTape(tapes, this.fromTape, this.toTape);
         this.child.collectVocab(tapes, stateStack);
+    }
+    getRelevantTapes(stateStack) {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set();
+            for (const tapeName of this.child.getRelevantTapes(stateStack)) {
+                if (tapeName == this.fromTape) {
+                    this.relevantTapes.add(this.toTape);
+                }
+                else {
+                    this.relevantTapes.add(tapeName);
+                }
+            }
+        }
+        return this.relevantTapes;
     }
     *ndQuery(tape, target, symbolStack, randomize) {
         if (tape.tapeName == this.toTape || tape.tapeName == "__ANY_TAPE__") {
@@ -2642,7 +3070,7 @@ class RenameState extends UnaryState {
         for (var [childTape, childTarget, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack, randomize)) {
             //assert(childTape instanceof RenamedTape);
             const trueChildTape = childTape.child;
-            yield [trueChildTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape)];
+            yield [trueChildTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape, this.relevantTapes)];
         }
     }
 }
@@ -2689,9 +3117,10 @@ exports.RenameState = RenameState;
  * most reasonable use cases.
  */
 class NegationState extends State {
-    constructor(child) {
+    constructor(child, relevantTapes = undefined) {
         super();
         this.child = child;
+        this.relevantTapes = relevantTapes;
     }
     get id() {
         if (this.child == undefined) {
@@ -2705,6 +3134,20 @@ class NegationState extends State {
         }
         this.child.collectVocab(tapes, stateStack);
     }
+    getRelevantTapes(stateStack) {
+        if (this.relevantTapes == undefined) {
+            if (this.child == undefined) {
+                this.relevantTapes = new Set();
+            }
+            else {
+                this.relevantTapes = this.child.getRelevantTapes(stateStack);
+            }
+            if (this.relevantTapes.size > 1) {
+                throw new Error("We do not currently support negations of grammars that reference 2+ tapes");
+            }
+        }
+        return this.relevantTapes;
+    }
     accepting(symbolStack) {
         if (this.child == undefined) {
             return true;
@@ -2712,16 +3155,22 @@ class NegationState extends State {
         return !this.child.accepting(symbolStack);
     }
     *ndQuery(tape, target, symbolStack, randomize) {
+        var remainderTapeName = [...this.getRelevantTapes(symbolStack)][0];
+        var remainderTape = tape.matchTape(remainderTapeName);
+        if (remainderTape == undefined) {
+            yield [tape, target, false, this];
+            return;
+        }
         if (this.child == undefined) { // we've can't possibly match the child, so we're basically .* from now on
-            yield [tape, target, true, this];
+            yield [remainderTape, target, true, this];
             return;
         }
         var remainder = new tapes_1.Token(target.bits.clone());
         for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack, randomize)) {
             remainder = remainder.andNot(childText);
-            yield [childTape, childText, childMatched, new NegationState(childNext)];
+            yield [childTape, childText, childMatched, new NegationState(childNext, this.relevantTapes)];
         }
-        yield [tape, remainder, true, new NegationState(undefined)];
+        yield [remainderTape, remainder, true, new NegationState(undefined, this.relevantTapes)];
     }
 }
 exports.NegationState = NegationState;
@@ -2767,6 +3216,10 @@ function Join(child1, child2) {
     return new PriorityUnionState([left, right]); */
 }
 exports.Join = Join;
+function Semijoin(child1, child2) {
+    return new SemijoinState(child1, child2);
+}
+exports.Semijoin = Semijoin;
 function Not(child) {
     return new NegationState(child);
 }
@@ -2800,7 +3253,7 @@ function Maybe(child) {
 }
 exports.Maybe = Maybe;
 
-},{"./tapes":6}],6:[function(require,module,exports){
+},{"./tapes":5}],5:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RenamedTape = exports.TapeCollection = exports.StringTape = exports.NO_CHAR = exports.ANY_CHAR = exports.Token = exports.Tape = exports.MultiTapeOutput = void 0;
@@ -2849,27 +3302,16 @@ class SingleTapeOutput {
         // right to left.  (you might think this would be more elegant to be done recursively, but it blows
         // the stack when stringifying long outputs.)
         while (currentTape != undefined) {
+            const newResults = [];
             for (const c of currentTape.tape.fromBits(currentTape.tape.tapeName, currentTape.token.bits)) {
-                const newResults = [];
                 for (const existingResult of results) {
                     newResults.push(c + existingResult);
                 }
-                results = newResults;
             }
+            results = newResults;
             currentTape = currentTape.prev;
         }
         yield* results;
-        /*
-        var prevStrings = [""];
-        if (this.prev != undefined) {
-            prevStrings = [... this.prev.getStrings()];
-        }
-
-        for (const s of prevStrings) {
-            for (const c of this.tape.fromBits(this.tape.tapeName, this.token.bits)) {
-                yield s + c;
-            }
-        } */
     }
 }
 /**
@@ -2943,6 +3385,9 @@ class Tape {
     tokenize(tapeName, str) {
         throw new Error(`Not implemented`);
     }
+    get vocabSize() {
+        return 0;
+    }
 }
 exports.Tape = Tape;
 /**
@@ -2967,6 +3412,9 @@ class Token {
     isEmpty() {
         return this.bits.isEmpty();
     }
+    stringify(tape) {
+        return tape.fromBits(tape.tapeName, this.bits).join("|");
+    }
 }
 exports.Token = Token;
 exports.ANY_CHAR = new Token(new bitset_1.BitSet().flip());
@@ -2986,6 +3434,9 @@ class StringTape extends Tape {
     }
     get numTapes() {
         return 1;
+    }
+    get vocabSize() {
+        return this.strToIndex.size;
     }
     /*
     public *plus(tapeName: string, other: BitSet): Gen<Tape> {
@@ -3194,7 +3645,11 @@ class RenamedTape extends Tape {
         this.toTape = toTape;
     }
     get tapeName() {
-        return this.child.tapeName;
+        const childName = this.child.tapeName;
+        if (childName == this.toTape) {
+            return this.fromTape;
+        }
+        return childName;
     }
     get numTapes() {
         return this.child.numTapes;
@@ -3234,7 +3689,7 @@ class RenamedTape extends Tape {
 }
 exports.RenamedTape = RenamedTape;
 
-},{"bitset":1}],7:[function(require,module,exports){
+},{"bitset":1}],6:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setChain = exports.setIntersection = exports.RGBtoString = exports.HSVtoRGB = exports.iterTake = exports.shuffleArray = exports.meanAngleDeg = void 0;
@@ -3383,6 +3838,6 @@ function* iterMap(i, f) {
     }
 }
 
-},{}]},{},[3])(3)
+},{}]},{},[2])(2)
 });
 </script>
