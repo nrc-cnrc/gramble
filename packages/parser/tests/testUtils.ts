@@ -1,6 +1,6 @@
 import { assert, expect } from 'chai';
 import { DevEnvironment } from '../src/devEnv';
-import { Project, Header } from '../src/sheetParser';
+import { Project, Header, EnclosureComponent, CompileableComponent } from '../src/sheetParser';
 import { CounterStack, Literalizer, State } from "../src/stateMachine";
 import { TapeCollection } from '../src/tapes';
 import { StringDict } from "../src/util";
@@ -109,7 +109,7 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
 }
 
 export function testGrammar(grammar: State, 
-                            expected_results: StringDict[], 
+                            expectedResults: StringDict[], 
                             maxRecursion: number = 4, 
                             maxChars: number = 1000): void {
     var outputs: StringDict[] = [];
@@ -121,9 +121,24 @@ export function testGrammar(grammar: State,
             assert.fail(e);
         });
     }
-    testNumOutputs(outputs, expected_results.length);
-    testMatchOutputs(outputs, expected_results);
+    testNumOutputs(outputs, expectedResults.length);
+    testMatchOutputs(outputs, expectedResults);
 }
+
+
+export function testProject(project: Project,
+                            symbolName: string,
+                            expectedResults: StringDict[], 
+                            maxRecursion: number = 4, 
+                            maxChars: number = 1000): void {
+    
+    const symbol = project.getSymbol(symbolName);
+    if (symbol == undefined) {
+        return;
+    }
+    testGrammar(symbol, expectedResults, maxRecursion, maxChars);
+}
+
 
 export function testHeaderHasText(header: Header, text: string, objName: string = ""): void {
     const msg = objName + (objName != "" ? " ":"") + 
@@ -150,14 +165,54 @@ export function testErrorInCell(devEnv: DevEnvironment, sheet: string, row: numb
     })
 }
 
-export function testNumSymbols(project: Project, expectedNum: number): void {
-    it (`should have ${expectedNum} symbols defined`, function() {
-        expect(project.globalNamespace.allSymbols().length).to.equal(expectedNum);
+/**
+ * devEnv: the DevEnvironment that collected the errors
+ * errors: list of [sheetName, row, column, level], where level is "error"|"warning"
+ */
+export function testErrors(project: Project, expectedErrors: [string, number, number, string][]) {
+    const devEnv = project.devEnv;
+    it(`should have ${expectedErrors.length} errors/warnings}`, function() {
+        expect(devEnv.numErrors("any")).to.equal(expectedErrors.length);
     });
+
+    for (var [sheet, row, col, level] of expectedErrors) {
+        const levelMsg = (level == "warning") ? `a ${level}` : `an ${level}`;
+        it(`should have ${levelMsg} at ${sheet}:${row}:${col}`, function() {
+            expect(devEnv.getErrors(sheet, row, col).length).to.be.greaterThan(0);
+        });
+    }
 }
 
-export function testHasSymbol(project: Project, symbolName: string): void {
-    it (`should have a symbol named ${symbolName}`, function() {
-        expect(project.globalNamespace.get(symbolName)).to.not.be.undefined;
+export function testSymbols(project: Project, expectedSymbols: string[]): void {
+    it (`should have ${expectedSymbols.length} symbols defined`, function() {
+        expect(project.globalNamespace.allSymbols().length).to.equal(expectedSymbols.length);
     });
+    for (const symbolName of expectedSymbols) {
+        it (`should have a symbol named "${symbolName}"`, function() {
+            expect(project.getSymbol(symbolName)).to.not.be.undefined;
+        });
+    }
+}
+
+export function testStructure(project: Project, expectedOps: [string, string[]][]) {
+    const sheet = project.getDefaultSheet();
+    for (const [text, relationship] of expectedOps) {
+        const relationshipMsg = relationship.join("'s ");
+        it(`should have "${text}" as its ${relationshipMsg}`, function() {
+            var relative: CompileableComponent | undefined = sheet;
+            for (const rel of relationship) {
+                if (rel == "child") {
+                    relative = relative.child;
+                } else if (rel == "sibling") {
+                    relative = relative.sibling;
+                } else {
+                    assert.fail("There is no relationship of that name");
+                }
+                expect(relative).to.not.be.undefined;
+                if (relative == undefined) return;
+            }
+            expect(relative.text).to.equal(text);
+        });
+    }
+
 }

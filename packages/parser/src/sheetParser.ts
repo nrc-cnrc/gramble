@@ -11,67 +11,8 @@ import { DevEnvironment } from "./devEnv";
 import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin } from "./stateMachine";
 import { Gen, HSVtoRGB, iterTake, meanAngleDeg, RGBtoString, StringDict } from "./util";
 
-/*
-class SyntaxError {
-
-    constructor(
-        public position: CellPosition,
-        public level: "error" | "warning",
-        public msg: string
-    ) { }
-
-    public toString() {
-        return `${this.level.toUpperCase()}: ${this.msg}`;
-    }
-}
-export class ErrorAccumulator {
-
-    protected errors: {[key: string]: SyntaxError[]} = {};
-
-    public addError(pos: CellPosition, level: "error" | "warning", msg: string) {
-        const key = pos.toString();
-        if (!(key in this.errors)) {
-            this.errors[key] = [];
-        }
-        const error = new SyntaxError(pos, level, msg);
-        this.errors[key].push(error);
-    }
-
-    public logErrors(): void {
-        for (const error of Object.values(this.errors)) {
-            for (const errorMsg of error) {
-                console.log(`${errorMsg.position}: ${errorMsg.toString()}`);
-            }
-        }
-    }
-
-    public getErrors(sheet: string, row: number, col: number): string[] {
-        const key = new CellPosition(sheet, row, col).toString();
-        const results: string[] = [];
-        if (!(key in this.errors)) {
-            return [];
-        }
-        return this.errors[key].map(e => e.toString());
-    }
-
-    public numErrors(level: "error" | "warning"|"any"): number {
-        var result = 0;
-        for (const error of Object.values(this.errors)) {
-            for (const errorMsg of error) {
-                if (level == "any" || errorMsg.level == level) {
-                    result++;
-                }
-            }
-        }
-        return result;
-    }
-}
-*/
-
-
 const DEFAULT_SATURATION = 0.2;
 const DEFAULT_VALUE = 1.0;
-
 
 /**
  * A convenience class encapsulating information about where a cell
@@ -1238,6 +1179,7 @@ function isLineEmpty(row: string[]): boolean {
 export class Project {
 
     public globalNamespace: Namespace = new Namespace();
+    public defaultSheetName: string = '';
     public sheets: {[key: string]: SheetComponent} = {};
 
     constructor(
@@ -1249,7 +1191,13 @@ export class Project {
     }
 
     public getSymbol(symbolName: string): State | undefined {
-        return this.globalNamespace.get(symbolName);
+        var ns: Namespace;
+        if (this.defaultSheetName != "") {
+            ns = this.globalNamespace.getNamespace(this.defaultSheetName);
+        } else {
+            ns = this.globalNamespace;
+        }
+        return ns.get(symbolName);
     }
     
     public getTapeNames(symbolName: string): [string, string][] {
@@ -1273,7 +1221,7 @@ export class Project {
             maxRecursion: number = 4, 
             maxChars: number = 1000): StringDict[] {
 
-        var startState = this.globalNamespace.get(symbolName);
+        var startState = this.getSymbol(symbolName);
         if (startState == undefined) {
             throw new Error(`Cannot find symbol ${symbolName}`);
         }
@@ -1299,7 +1247,7 @@ export class Project {
             randomize: boolean = false,
             maxRecursion: number = 4, 
             maxChars: number = 1000): StringDict[] {
-        const startState = this.globalNamespace.get(symbolName);
+        const startState = this.getSymbol(symbolName);
         if (startState == undefined) {
             throw new Error(`Cannot find symbol ${symbolName}`);
         }
@@ -1357,6 +1305,7 @@ export class Project {
             const localNamespace = this.globalNamespace.getNamespace(sheetName);
             this.sheets[sheetName].runChecks(localNamespace, this.devEnv);
         }
+        this.defaultSheetName = sheetName;
     }
 
     public getSheet(sheetName: string): SheetComponent {
@@ -1365,6 +1314,13 @@ export class Project {
         }
 
         return this.sheets[sheetName];
+    }
+
+    public getDefaultSheet(): SheetComponent {
+        if (this.defaultSheetName == '') {
+            throw new Error("Asking for the default sheet of a project to which no sheets have been added");
+        }
+        return this.getSheet(this.defaultSheetName);
     }
 
     public getEnclosureOperators(cells: string[][]): Set<string> {

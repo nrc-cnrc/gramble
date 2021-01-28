@@ -1,2 +1,2 @@
 word, embed, text,
-    , simpleGrammar.word, able
+    , embedGrammar.word, able
