@@ -2323,6 +2323,7 @@ class State {
     accepting(symbolStack) {
         return false;
     }
+    setRandom(randomize, symbolStack) { }
     /**
      * deterministic Query
      *
@@ -2347,9 +2348,9 @@ class State {
      *      * matched is whether we actually made a match or ignored it (for being on the wrong tape)
      *      * nextState is the state the matched transition leads to
      */
-    *dQuery(tape, target, symbolStack, randomize) {
+    *dQuery(tape, target, symbolStack) {
         var results = [];
-        var nextStates = [...this.ndQuery(tape, target, symbolStack, randomize)];
+        var nextStates = [...this.ndQuery(tape, target, symbolStack)];
         for (var [tape, bits, matched, next] of nextStates) {
             if (tape.numTapes == 0) {
                 results.push([tape, bits, matched, next]);
@@ -2398,6 +2399,7 @@ class State {
         const allTapes = new tapes_1.TapeCollection();
         this.collectVocab(allTapes, []);
         const initialOutput = new tapes_1.MultiTapeOutput();
+        this.setRandom(randomize, new CounterStack(1));
         var stateQueue = [[initialOutput, this]];
         const symbolStack = new CounterStack(maxRecursion);
         var chars = 0;
@@ -2407,7 +2409,7 @@ class State {
                 if (prevState.accepting(symbolStack)) {
                     yield* prevOutput.toStrings();
                 }
-                for (const [tape, c, matched, newState] of prevState.dQuery(allTapes, tapes_1.ANY_CHAR, symbolStack, randomize)) {
+                for (const [tape, c, matched, newState] of prevState.dQuery(allTapes, tapes_1.ANY_CHAR, symbolStack)) {
                     if (!matched) {
                         throw new Error("Something went wrong, got all the way through without a match");
                     }
@@ -2580,6 +2582,10 @@ class BinaryState extends State {
         this.child1.collectVocab(tapes, stateStack);
         this.child2.collectVocab(tapes, stateStack);
     }
+    setRandom(randomize, symbolStack) {
+        this.child1.setRandom(randomize, symbolStack);
+        this.child2.setRandom(randomize, symbolStack);
+    }
     getRelevantTapes(stateStack) {
         if (this.relevantTapes == undefined) {
             const child1tapes = this.child1.getRelevantTapes(stateStack);
@@ -2617,7 +2623,7 @@ class ConcatState extends BinaryState {
         super(child1, child2, relevantTapes);
         this.child1Done = child1Done;
     }
-    *ndQuery(tape, target, symbolStack, randomize) {
+    *ndQuery(tape, target, symbolStack) {
         if (!this.caresAbout(tape)) {
             // if neither child cares, just short circuit this rather than bother with all the rest
             yield [tape, target, false, this];
@@ -2627,7 +2633,7 @@ class ConcatState extends BinaryState {
             if (!this.child2.caresAbout(tape)) {
                 return;
             }
-            for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack, randomize)) {
+            for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack)) {
                 const successor = new ConcatState(this.child1, c2next, true, this.relevantTapes);
                 yield [c2tape, c2text, c2matched, successor];
             }
@@ -2636,52 +2642,20 @@ class ConcatState extends BinaryState {
         // new simpler algorithm below
         if (this.child1.accepting(symbolStack)) {
             const successor = new ConcatState(this.child1, this.child2, true);
-            yield* successor.dQuery(tape, target, symbolStack, randomize);
+            yield* successor.dQuery(tape, target, symbolStack);
         }
         if (this.child1.caresAbout(tape)) {
-            for (const [c1tape, c1text, c1matched, c1next] of this.child1.dQuery(tape, target, symbolStack, randomize)) {
+            for (const [c1tape, c1text, c1matched, c1next] of this.child1.dQuery(tape, target, symbolStack)) {
                 const successor = new ConcatState(c1next, this.child2, false, this.relevantTapes);
                 yield [c1tape, c1text, c1matched, successor];
             }
             return;
         }
         // child2 must care, otherwise one of the previous conditions would have triggered
-        for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack, randomize)) {
+        for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack)) {
             const successor = new ConcatState(this.child1, c2next, false, this.relevantTapes);
             yield [c2tape, c2text, c2matched, successor];
         }
-        // old, more circuitous, algorithm
-        /*
-        // We can yield from child2 if child1 is accepting, OR if child1 doesn't care about the requested tape,
-        // but if child1 is accepting AND doesn't care about the requested tape, we don't want to yield twice;
-        // that leads to duplicate results.  yieldedAlready is how we keep track of that.
-        var yieldedAlready = false;
-
-        for (const [c1tape, c1text, c1matched, c1next] of
-                this.child1.dQuery(tape, target, symbolStack, randomize)) {
-
-            if (c1matched) {
-                const successor = new ConcatState(c1next, this.child2, false, this.relevantTapes);
-                yield [c1tape, c1text, c1matched, successor];
-                continue;
-            }
-   
-            // child1 not interested in the requested tape, the first character on the tape must be
-            // (if it exists at all) in child2.
-            for (const [c2tape, c2text, c2matched, c2next] of
-                    this.child2.dQuery(tape, target, symbolStack, randomize)) {
-                const successor = new ConcatState(this.child1, c2next, false, this.relevantTapes);
-                yield [c2tape, c2text, c2matched, successor];
-                yieldedAlready = true;
-            }
-        }
-
-        if (!yieldedAlready && this.child1.accepting(symbolStack)) {
-            const successor = new ConcatState(this.child1, this.child2, true);
-            yield* successor.dQuery(tape, target, symbolStack, randomize);
-        }
-
-        */
     }
 }
 exports.ConcatState = ConcatState;
@@ -2693,7 +2667,25 @@ exports.ConcatState = ConcatState;
  * successor UnionStates, their successors are just the successors of their children.
  */
 class UnionState extends BinaryState {
+    constructor() {
+        super(...arguments);
+        this.randomChild = undefined;
+    }
+    setRandom(randomize, symbolStack) {
+        if (!randomize) {
+            this.randomChild == undefined;
+            super.setRandom(false, symbolStack);
+            return;
+        }
+        const children = this.getChildren();
+        this.randomChild = children[Math.floor(Math.random() * children.length)];
+        this.randomChild.setRandom(true, symbolStack);
+    }
     accepting(symbolStack) {
+        if (this.randomChild != undefined) {
+            // we've been randomized
+            return this.randomChild.accepting(symbolStack);
+        }
         return this.child1.accepting(symbolStack) || this.child2.accepting(symbolStack);
     }
     getChildren() {
@@ -2712,15 +2704,14 @@ class UnionState extends BinaryState {
         }
         return children;
     }
-    *ndQuery(tape, target, symbolStack, randomize) {
-        if (!randomize) {
-            yield* this.child1.dQuery(tape, target, symbolStack, randomize);
-            yield* this.child2.dQuery(tape, target, symbolStack, randomize);
+    *ndQuery(tape, target, symbolStack) {
+        if (this.randomChild != undefined) {
+            // we've been randomized
+            yield* this.randomChild.dQuery(tape, target, symbolStack);
             return;
         }
-        const children = this.getChildren();
-        const child = children[Math.floor(Math.random() * children.length)];
-        yield* child.dQuery(tape, target, symbolStack, randomize);
+        yield* this.child1.dQuery(tape, target, symbolStack);
+        yield* this.child2.dQuery(tape, target, symbolStack);
     }
 }
 exports.UnionState = UnionState;
@@ -2761,8 +2752,8 @@ class SemijoinState extends BinaryState {
     * children reversed.  So we let the caller decide which child is "c1" and which is "c2" for
     * the purposes of the semijoin.
     */
-    *ndQueryLeft(tape, target, c1, c2, symbolStack, randomize) {
-        for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, symbolStack, randomize)) {
+    *ndQueryLeft(tape, target, c1, c2, symbolStack) {
+        for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, symbolStack)) {
             if (c1tape.numTapes == 0) {
                 // c1 contained a ProjectionState that hides the original tape; move on without
                 // asking c2 to match anything.
@@ -2770,7 +2761,7 @@ class SemijoinState extends BinaryState {
                 yield [c1tape, c1target, c1matched, successor];
                 continue;
             }
-            for (const [c2tape, c2target, c2matched, c2next] of c2.dQuery(c1tape, c1target, symbolStack, randomize)) {
+            for (const [c2tape, c2target, c2matched, c2next] of c2.dQuery(c1tape, c1target, symbolStack)) {
                 const successor = this.successor(c1next, c2next);
                 yield [c2tape, c2target, c1matched || c2matched, successor];
             }
@@ -2779,8 +2770,8 @@ class SemijoinState extends BinaryState {
     successor(newChild1, newChild2) {
         return new SemijoinState(newChild1, newChild2, this.relevantTapes);
     }
-    *ndQuery(tape, target, symbolStack, randomize) {
-        yield* this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack, randomize);
+    *ndQuery(tape, target, symbolStack) {
+        yield* this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack);
     }
 }
 /**
@@ -2802,9 +2793,9 @@ class JoinState extends SemijoinState {
     successor(newChild1, newChild2) {
         return new JoinState(newChild1, newChild2, this.relevantTapes);
     }
-    *ndQuery(tape, target, symbolStack, randomize) {
-        const leftJoin = this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack, randomize);
-        const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, symbolStack, randomize);
+    *ndQuery(tape, target, symbolStack) {
+        const leftJoin = this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack);
+        const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, symbolStack);
         if (this.child1.accepting(symbolStack)) {
             yield* iterPriorityUnion(rightJoin, leftJoin);
             return;
@@ -2826,6 +2817,9 @@ exports.JoinState = JoinState;
  * work, because the EmbedState's child can be that EmbedState itself.)
  */
 class UnaryState extends State {
+    setRandom(randomize, symbolStack) {
+        this.child.setRandom(randomize, symbolStack);
+    }
     get id() {
         return `${this.constructor.name}(${this.child.id})`;
     }
@@ -2868,6 +2862,10 @@ class RepetitionState extends UnaryState {
     collectVocab(tapes, stateStack) {
         this.initialChild.collectVocab(tapes, stateStack);
     }
+    setRandom(randomize, symbolStack) {
+        this.child.setRandom(randomize, symbolStack);
+        this.initialChild.setRandom(randomize, symbolStack);
+    }
     getRelevantTapes(stateStack) {
         if (this.relevantTapes == undefined) {
             this.relevantTapes = this.initialChild.getRelevantTapes(stateStack);
@@ -2879,7 +2877,7 @@ class RepetitionState extends UnaryState {
             this.index <= this.maxRepetitions &&
             this.child.accepting(symbolStack);
     }
-    *ndQuery(tape, target, symbolStack, randomize) {
+    *ndQuery(tape, target, symbolStack) {
         if (this.index > this.maxRepetitions) {
             return;
         }
@@ -2888,7 +2886,7 @@ class RepetitionState extends UnaryState {
             // we just started, or the child is accepting, so our successor increases its index
             // and starts again with child.
             const successor = new RepetitionState(this.initialChild, this.minRepetitions, this.maxRepetitions, this.index + 1, this.initialChild);
-            for (const result of successor.dQuery(tape, target, symbolStack, randomize)) {
+            for (const result of successor.dQuery(tape, target, symbolStack)) {
                 yield result;
                 yieldedAlready = true;
             }
@@ -2896,7 +2894,7 @@ class RepetitionState extends UnaryState {
         if (yieldedAlready) {
             return;
         }
-        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack, randomize)) {
+        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack)) {
             if (!childMatched) { // child doesn't care, neither do we
                 yield [childTape, childText, false, this];
                 continue;
@@ -2933,6 +2931,13 @@ class EmbedState extends UnaryState {
     get id() {
         return `${this.constructor.name}(${this.symbolName})`;
     }
+    setRandom(randomize, symbolStack) {
+        if (symbolStack.exceedsMax(this.symbolName)) {
+            return;
+        }
+        const newStack = symbolStack.add(this.symbolName);
+        this.child.setRandom(randomize, newStack);
+    }
     collectVocab(tapes, stateStack) {
         if (stateStack.indexOf(this.symbolName) != -1) {
             return;
@@ -2968,12 +2973,12 @@ class EmbedState extends UnaryState {
         }
         return this.child.accepting(symbolStack.add(this.symbolName));
     }
-    *ndQuery(tape, target, symbolStack, randomize) {
+    *ndQuery(tape, target, symbolStack) {
         if (symbolStack.exceedsMax(this.symbolName)) {
             return;
         }
         symbolStack = symbolStack.add(this.symbolName);
-        for (const [childchildTape, childTarget, childMatched, childNext] of this.child.ndQuery(tape, target, symbolStack, randomize)) {
+        for (const [childchildTape, childTarget, childMatched, childNext] of this.child.ndQuery(tape, target, symbolStack)) {
             const successor = new EmbedState(this.symbolName, this.namespace, childNext, this.relevantTapes);
             yield [childchildTape, childTarget, childMatched, successor];
         }
@@ -3002,12 +3007,12 @@ class ProjectionState extends UnaryState {
         }
         return this.relevantTapes;
     }
-    *ndQuery(tape, target, symbolStack, randomize) {
+    *ndQuery(tape, target, symbolStack) {
         if (tape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(tape.tapeName)) {
             // if it's not a tape we care about, go nowhere
             yield [tape, target, false, this];
         }
-        for (var [childTape, childTarget, childMatch, childNext] of this.child.dQuery(tape, target, symbolStack, randomize)) {
+        for (var [childTape, childTarget, childMatch, childNext] of this.child.dQuery(tape, target, symbolStack)) {
             if (childTape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(childTape.tapeName)) {
                 // even if our child yields content on a restricted tape, 
                 // we don't let our own parent know about it
@@ -3049,11 +3054,11 @@ class RenameState extends UnaryState {
         }
         return this.relevantTapes;
     }
-    *ndQuery(tape, target, symbolStack, randomize) {
+    *ndQuery(tape, target, symbolStack) {
         if (tape.tapeName == this.toTape || tape.tapeName == "__ANY_TAPE__") {
             tape = new tapes_1.RenamedTape(tape, this.fromTape, this.toTape);
         }
-        for (var [childTape, childTarget, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack, randomize)) {
+        for (var [childTape, childTarget, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack)) {
             //assert(childTape instanceof RenamedTape);
             const trueChildTape = childTape.child;
             yield [trueChildTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape, this.relevantTapes)];
@@ -3140,7 +3145,7 @@ class NegationState extends State {
         }
         return !this.child.accepting(symbolStack);
     }
-    *ndQuery(tape, target, symbolStack, randomize) {
+    *ndQuery(tape, target, symbolStack) {
         var remainderTapeName = [...this.getRelevantTapes(symbolStack)][0];
         var remainderTape = tape.matchTape(remainderTapeName);
         if (remainderTape == undefined) {
@@ -3152,7 +3157,7 @@ class NegationState extends State {
             return;
         }
         var remainder = new tapes_1.Token(target.bits.clone());
-        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack, randomize)) {
+        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack)) {
             remainder = remainder.andNot(childText);
             yield [childTape, childText, childMatched, new NegationState(childNext, this.relevantTapes)];
         }
