@@ -18,7 +18,7 @@ export interface DevEnvironment {
 
     markError(sheet: string, row: number, col: number, 
             shortMsg: string, msg: string, level?: "error"|"warning"|"info"): void;
-    markTier(sheet: string, row: number, col: number, tier: string): void;
+    markContent(sheet: string, row: number, col: number, tier: string): void;
     markComment(sheet: string, row: number, col: number): void;
     markHeader(sheet: string, row: number, col: number, color: string): void;
     markCommand(sheet: string, row: number, col: number): void;

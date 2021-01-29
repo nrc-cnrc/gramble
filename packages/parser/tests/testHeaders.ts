@@ -1,5 +1,4 @@
-import { parseHeader, SlashHeader, CommentHeader, FlagHeader, MaybeHeader, NotHeader, LiteralHeader, EmbedHeader } from "../src/sheetParser";
-
+import { constructHeader, SlashHeader, CommentHeader, FlagHeader, MaybeHeader, NotHeader, LiteralHeader, EmbedHeader } from "../src/sheetParser";
 
 import * as path from 'path';
 import { expect } from "chai";
@@ -8,28 +7,28 @@ import { testHeaderHasText, testIsType } from "./testUtils";
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Header "text"', function() {
-        const header = parseHeader("text");
+        const header = constructHeader("text");
 
         testIsType(header, LiteralHeader);
         testHeaderHasText(header, "text");
     });
     
     describe('Header "embed"', function() {
-        const header = parseHeader("embed");
+        const header = constructHeader("embed");
 
         testIsType(header, EmbedHeader);
         testHeaderHasText(header, "embed");
     });
 
     describe('Header "%text"', function() {
-        const header = parseHeader("%text");
+        const header = constructHeader("%text");
 
         testIsType(header, CommentHeader);
         testHeaderHasText(header, "%");
     });
 
     describe('Header "% text"', function() {
-        const header = parseHeader("% text");
+        const header = constructHeader("% text");
 
         testIsType(header, CommentHeader);
         testHeaderHasText(header, "%");
@@ -37,7 +36,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('Header "%"', function() {
-        const header = parseHeader("%");
+        const header = constructHeader("%");
 
         testIsType(header, CommentHeader);
         testHeaderHasText(header, "%");
@@ -45,7 +44,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('Header "(text)"', function() {
-        const header = parseHeader("(text)");
+        const header = constructHeader("(text)");
         testIsType(header, LiteralHeader);
         testHeaderHasText(header, "text");
     });
@@ -53,19 +52,19 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Header "(text"', function() {
         it ("should fail to parse", function() {
-            expect(parseHeader.bind('(text')).to.throw;
+            expect(constructHeader.bind('(text')).to.throw;
         });
     });
 
     describe('Header "text)"', function() {
         it ("should fail to parse", function() {
-            expect(parseHeader.bind('text)')).to.throw;
+            expect(constructHeader.bind('text)')).to.throw;
         });
     });
 
 
     describe('Header "maybe text"', function() {
-        const header = parseHeader("maybe text");
+        const header = constructHeader("maybe text");
 
         testIsType(header, MaybeHeader);
         testHeaderHasText(header, "maybe");
@@ -80,7 +79,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('Header "not text"', function() {
-        const header = parseHeader("not text");
+        const header = constructHeader("not text");
 
         testIsType(header, NotHeader);
         testHeaderHasText(header, "not");
@@ -95,7 +94,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('Header "not(text)"', function() {
-        const header = parseHeader("not(text)");
+        const header = constructHeader("not(text)");
 
         testIsType(header, NotHeader);
         testHeaderHasText(header, "not");
@@ -109,7 +108,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Header "(not text)"', function() {
-        const header = parseHeader("(not text)");
+        const header = constructHeader("(not text)");
 
         testIsType(header, NotHeader);
         testHeaderHasText(header, "not");
@@ -126,14 +125,14 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Header "blarg text"', function() {
 
         it ("should fail to parse", function() {
-            expect(parseHeader.bind('blarg text')).to.throw;
+            expect(constructHeader.bind('blarg text')).to.throw;
         });
 
     });
 
     
     describe('Header "@text"', function() {
-        const header = parseHeader("@text");
+        const header = constructHeader("@text");
 
         testIsType(header, FlagHeader);
         testHeaderHasText(header, "@");
@@ -148,7 +147,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('Header "@(text)"', function() {
-        const header = parseHeader("@(text)");
+        const header = constructHeader("@(text)");
 
         testIsType(header, FlagHeader);
         testHeaderHasText(header, "@");
@@ -163,7 +162,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('Header "(@text)"', function() {
-        const header = parseHeader("(@text)");
+        const header = constructHeader("(@text)");
 
         testIsType(header, FlagHeader);
         testHeaderHasText(header, "@");
@@ -177,7 +176,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Header "text/gloss"', function() {
-        const header = parseHeader("text/gloss");
+        const header = constructHeader("text/gloss");
 
         testIsType(header, SlashHeader);
         testHeaderHasText(header, "/");
@@ -195,7 +194,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('Header "(text)/(gloss)"', function() {
-        const header = parseHeader("(text)/(gloss)");
+        const header = constructHeader("(text)/(gloss)");
 
         testIsType(header, SlashHeader);
         testHeaderHasText(header, "/");
@@ -213,7 +212,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('Header "(text/gloss)"', function() {
-        const header = parseHeader("(text/gloss)");
+        const header = constructHeader("(text/gloss)");
 
         testIsType(header, SlashHeader);
         testHeaderHasText(header, "/");
@@ -232,7 +231,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Header "/text"', function() {
 
         it ("should fail to parse", function() {
-            expect(parseHeader.bind('/text')).to.throw;
+            expect(constructHeader.bind('/text')).to.throw;
         });
 
     });
@@ -241,7 +240,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Header "text/"', function() {
 
         it ("should fail to parse", function() {
-            expect(parseHeader.bind('/text')).to.throw;
+            expect(constructHeader.bind('/text')).to.throw;
         });
 
     });
@@ -250,7 +249,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Header "maybe"', function() {
 
         it ("should fail to parse", function() {
-            expect(parseHeader.bind('maybe')).to.throw;
+            expect(constructHeader.bind('maybe')).to.throw;
         });
 
     });
@@ -259,7 +258,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Header "@"', function() {
 
         it ("should fail to parse", function() {
-            expect(parseHeader.bind('@')).to.throw;
+            expect(constructHeader.bind('@')).to.throw;
         });
 
     });
@@ -268,7 +267,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Header "maybe/text"', function() {
 
         it ("should fail to parse", function() {
-            expect(parseHeader.bind('maybe/text')).to.throw;
+            expect(constructHeader.bind('maybe/text')).to.throw;
         });
 
     });
@@ -276,7 +275,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Header "text maybe"', function() {
 
         it ("should fail to parse", function() {
-            expect(parseHeader.bind('text maybe')).to.throw;
+            expect(constructHeader.bind('text maybe')).to.throw;
         });
 
     });
@@ -284,7 +283,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('Header "text/gloss/root"', function() {
-        const header = parseHeader("text/gloss/root");
+        const header = constructHeader("text/gloss/root");
 
         testIsType(header, SlashHeader);
         testHeaderHasText(header, "/");
@@ -311,7 +310,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     
     describe('Header "(text/gloss)/root"', function() {
-        const header = parseHeader("(text/gloss)/root");
+        const header = constructHeader("(text/gloss)/root");
 
         testIsType(header, SlashHeader);
         testHeaderHasText(header, "/");

@@ -1,5 +1,5 @@
 
-import { Seq, Uni } from "../src/stateMachine";
+import { Empty, Seq, Uni } from "../src/stateMachine";
 import { text, t1, t2, unrelated, testHasTapes, testHasVocab, testGrammar } from './testUtils';
 
 import * as path from 'path';
@@ -21,13 +21,24 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{text: "helloworld"}]);
     });
 
-    describe('Sequence text:hello+test:<empty>', function() {
+    describe('Sequence text:hello+test:""', function() {
         const grammar = Seq(text("hello"), text(""));
         testGrammar(grammar, [{text: "hello"}]);
     });
 
-    describe('Sequence test:<empty>+text:hello', function() {
+    describe('Sequence test:""+text:hello', function() {
         const grammar = Seq(text(""), text("hello"));
+        testGrammar(grammar, [{text: "hello"}]);
+    });
+
+    
+    describe('Sequence text:hello+0', function() {
+        const grammar = Seq(text("hello"), Empty());
+        testGrammar(grammar, [{text: "hello"}]);
+    });
+
+    describe('Sequence 0+text:hello', function() {
+        const grammar = Seq(Empty(), text("hello"));
         testGrammar(grammar, [{text: "hello"}]);
     });
 
@@ -62,6 +73,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Uni(text("hello"), text("goodbye"));
         testGrammar(grammar, [{text: "hello"},
                               {text: "goodbye"}]);
+    });
+
+    describe('Alt text:hello|0', function() {
+        const grammar = Uni(text("hello"), Empty());
+        testGrammar(grammar, [{text: "hello"},
+                              {}]);
     });
 
     describe('Alt of different tiers: t1:hello|t2:goodbye', function() {

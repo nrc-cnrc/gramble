@@ -22,8 +22,9 @@ const NOTE_COLORS = new Map([
     ["info", "#99FF99"]
 ]);
 
-/* 
-const COMMENT_FONT_COLOR: string = "#449944";
+const COMMENT_FONT_COLOR = "#449944";
+
+/*
 const NAMED_COLORS: Map<string, number> = new Map([
     ["red", 0],
     ["orange", 30],
@@ -127,8 +128,8 @@ class FontColorStyler extends Styler {
         this.color = color;
     }
 
-    apply(rangeList) { 
-        cells.setFontColor(this.color);
+    apply(rangeList) {
+        rangeList.setFontColor(this.color);
     }
 }
 
@@ -191,17 +192,15 @@ class GoogleSheetsDevEnvironment {
         noteStyler.addCell(sheet, row, col); 
     }
 
-    /*
-    public markComment(sheet: string, row: number, col: number): void {
+    markComment(sheet, row, col) {
         var colorStyler = this.fgColorStylers.get(COMMENT_FONT_COLOR);
         if (colorStyler == undefined) {
             colorStyler = new FontColorStyler(COMMENT_FONT_COLOR);
             this.fgColorStylers.set(COMMENT_FONT_COLOR, colorStyler);
         }
-        colorStyler.addCell(row, col);
-        this.italicStyler.addCell(row, col);
+        colorStyler.addCell(sheet, row, col);
+        this.italicStyler.addCell(sheet, row, col);
     }
-    */
 
     markHeader(sheet, row, col, color) {
 
@@ -228,7 +227,7 @@ class GoogleSheetsDevEnvironment {
     }
 
 
-    markTier(sheet, row, col, color) {
+    markContent(sheet, row, col, color) {
 
         if (sheet != this.currentSheetName) {
             return;
@@ -248,7 +247,6 @@ class GoogleSheetsDevEnvironment {
         */
        
         this.centerStyler.addCell(sheet, row, col);
-
     }
 
     markCommand(sheet, row, col) {

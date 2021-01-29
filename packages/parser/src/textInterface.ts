@@ -88,15 +88,13 @@ export class TextDevEnvironment implements DevEnvironment {
         }
         return result;
     }
-
     
-    public markTier(sheet: string, row: number, col: number, tier: string): void {}
+    public markContent(sheet: string, row: number, col: number, tier: string): void {}
     public markComment(sheet: string, row: number, col: number): void {}
     public markHeader(sheet: string, row: number, col: number, color: string): void {}
     public markCommand(sheet: string, row: number, col: number): void {}
     public markSymbol(sheet: string, row: number, col: number): void {}
     public setColor(tierName: string, color: string): void {}
-
 
     public highlight(): void {
         for (const [sheet, row, col, msg, lvl] of this.getErrorMessages()) {

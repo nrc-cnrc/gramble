@@ -1384,7 +1384,6 @@ export function Join(child1: State, child2: State): State {
 
 }
 
-
 export function Semijoin(child1: State, child2: State): State {
     return new SemijoinState(child1, child2);
 }
