@@ -1037,7 +1037,7 @@ Object.defineProperty(exports, "Project", { enumerable: true, get: function () {
  * of formulas in that language.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Project = exports.EnclosureComponent = exports.GrammarComponent = exports.CellComponent = exports.constructHeader = exports.SlashHeader = exports.FlagHeader = exports.NotHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.EmbedHeader = exports.Header = exports.TabularComponent = exports.CellPosition = void 0;
+exports.Project = exports.EnclosureComponent = exports.GrammarComponent = exports.CellComponent = exports.constructHeader = exports.SlashHeader = exports.FlagHeader = exports.RenameHeader = exports.NotHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.EmbedHeader = exports.Header = exports.TabularComponent = exports.CellPosition = void 0;
 const stateMachine_1 = require("./stateMachine");
 const util_1 = require("./util");
 const DEFAULT_SATURATION = 0.1;
@@ -1113,17 +1113,17 @@ class Header extends TabularComponent {
         const color = this.getColor(0.1);
         devEnv.markHeader(this.position.sheet, this.position.row, this.position.col, color);
     }
-    compile(cell, namespace) {
+    compile(cell, namespace, devEnv) {
         throw new Error('Not implemented');
     }
-    merge(state, other) {
-        return stateMachine_1.Seq(state, other);
-    }
-    compileAndMerge(cell, namespace, leftNeighbor) {
-        const compiledCell = this.compile(cell, namespace);
+    merge(leftNeighbor, state) {
         if (leftNeighbor == undefined) {
-            return compiledCell;
+            return state;
         }
+        return stateMachine_1.Seq(leftNeighbor, state);
+    }
+    compileAndMerge(cell, namespace, devEnv, leftNeighbor) {
+        const compiledCell = this.compile(cell, namespace, devEnv);
         compiledCell.state = this.merge(leftNeighbor, compiledCell.state);
         return compiledCell;
     }
@@ -1154,7 +1154,7 @@ class AtomicHeader extends Header {
  * EmbedHeaders lead to the complilation of EmbedStates.
  */
 class EmbedHeader extends AtomicHeader {
-    compile(cell, namespace) {
+    compile(cell, namespace, devEnv) {
         const compiledCell = new EmbedComponent(this, cell);
         compiledCell.state = stateMachine_1.Emb(cell.text, namespace);
         return compiledCell;
@@ -1168,7 +1168,7 @@ exports.EmbedHeader = EmbedHeader;
  * LiteralHeaders are references to a particular tape name (e.g. "text")
  */
 class LiteralHeader extends AtomicHeader {
-    compile(cell, namespace) {
+    compile(cell, namespace, devEnv) {
         const compiledCell = new HeadedCellComponent(this, cell);
         compiledCell.state = stateMachine_1.Lit(this.text, cell.text);
         return compiledCell;
@@ -1198,7 +1198,7 @@ class CommentHeader extends Header {
     mark(devEnv) {
         devEnv.markComment(this.position.sheet, this.position.row, this.position.col);
     }
-    compile(cell, namespace) {
+    compile(cell, namespace, devEnv) {
         return new CommentComponent(cell);
     }
     static *parse(input) {
@@ -1210,8 +1210,9 @@ class CommentHeader extends Header {
 }
 exports.CommentHeader = CommentHeader;
 /**
- * The ancestor class of unary header operators like "maybe", "not", and "@"
- * (the joining operator that we use to implement flags).
+ * The ancestor class of unary header operators like "maybe", "not", "@"
+ * (the joining operator that we use to implement flags), and ">" (the rename
+ * operator)
  */
 class UnaryHeader extends Header {
     constructor(text, child) {
@@ -1221,8 +1222,8 @@ class UnaryHeader extends Header {
     get hue() {
         return this.child.hue;
     }
-    compile(cell, namespace) {
-        const childCell = this.child.compile(cell, namespace);
+    compile(cell, namespace, devEnv) {
+        const childCell = this.child.compile(cell, namespace, devEnv);
         const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
         compiledCell.state = childCell.state;
         return compiledCell;
@@ -1243,8 +1244,8 @@ class MaybeHeader extends UnaryHeader {
     static *parse(input) {
         yield* super.parseTarget("maybe", MaybeHeader, NON_COMMENT_EXPR, input);
     }
-    compile(cell, namespace) {
-        const childCell = this.child.compile(cell, namespace);
+    compile(cell, namespace, devEnv) {
+        const childCell = this.child.compile(cell, namespace, devEnv);
         const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
         compiledCell.state = stateMachine_1.Maybe(childCell.state);
         return compiledCell;
@@ -1258,14 +1259,38 @@ class NotHeader extends UnaryHeader {
     static *parse(input) {
         yield* super.parseTarget("not", NotHeader, NON_COMMENT_EXPR, input);
     }
-    compile(cell, namespace) {
-        const childCell = this.child.compile(cell, namespace);
+    compile(cell, namespace, devEnv) {
+        const childCell = this.child.compile(cell, namespace, devEnv);
         const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
-        compiledCell.state = stateMachine_1.Maybe(childCell.state);
+        compiledCell.state = stateMachine_1.Not(childCell.state);
         return compiledCell;
     }
 }
 exports.NotHeader = NotHeader;
+/**
+ * Header that constructs negations, e.g. "not text"
+ */
+class RenameHeader extends UnaryHeader {
+    static *parse(input) {
+        yield* super.parseTarget(">", RenameHeader, LiteralHeader.parse, input);
+    }
+    compile(cell, namespace, devEnv) {
+        const childCell = this.child.compile(cell, namespace, devEnv);
+        const compiledCell = new RenameComponent(this, cell, childCell);
+        compiledCell.state = childCell.state;
+        return compiledCell;
+    }
+    merge(leftNeighbor, state) {
+        if (leftNeighbor == undefined) {
+            return state;
+        }
+        if (!(state instanceof stateMachine_1.LiteralState)) {
+            throw new Error("Rename (>) of a non-literal");
+        }
+        return stateMachine_1.Rename(leftNeighbor, state.text, state.tapeName);
+    }
+}
+exports.RenameHeader = RenameHeader;
 /**
  * A FlagHeader handles headers like "@x"; it joins x:X with whatever
  * follows rather than concatenating it.
@@ -1275,8 +1300,11 @@ exports.NotHeader = NotHeader;
  * "@" in "@text/gloss" only has "@" as its child.
  */
 class FlagHeader extends UnaryHeader {
-    merge(state, other) {
-        return stateMachine_1.Join(state, other);
+    merge(leftNeighbor, state) {
+        if (leftNeighbor == undefined) {
+            return state;
+        }
+        return stateMachine_1.Join(leftNeighbor, state);
     }
     static *parse(input) {
         yield* super.parseTarget("@", FlagHeader, SUBEXPR, input);
@@ -1318,16 +1346,16 @@ class SlashHeader extends BinaryHeader {
      * when another header has a SlashHeader child, like "@(x/y)", this would
      * be called.
      */
-    compile(cell, namespace) {
-        const childCell1 = this.child1.compile(cell, namespace);
-        const childCell2 = this.child2.compile(cell, namespace);
+    compile(cell, namespace, devEnv) {
+        const childCell1 = this.child1.compile(cell, namespace, devEnv);
+        const childCell2 = this.child2.compile(cell, namespace, devEnv);
         const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
         compiledCell.state = stateMachine_1.Seq(childCell1.state, childCell2.state);
         return compiledCell;
     }
-    compileAndMerge(cell, namespace, leftNeighbor) {
-        const childCell1 = this.child1.compileAndMerge(cell, namespace, leftNeighbor);
-        const childCell2 = this.child2.compileAndMerge(cell, namespace, childCell1.state);
+    compileAndMerge(cell, namespace, devEnv, leftNeighbor) {
+        const childCell1 = this.child1.compileAndMerge(cell, namespace, devEnv, leftNeighbor);
+        const childCell2 = this.child2.compileAndMerge(cell, namespace, devEnv, childCell1.state);
         const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
         compiledCell.state = childCell2.state;
         return compiledCell;
@@ -1337,7 +1365,7 @@ class SlashHeader extends BinaryHeader {
     }
 }
 exports.SlashHeader = SlashHeader;
-const SYMBOL = ["(", ")", "%", "/", '@'];
+const SYMBOL = ["(", ")", "%", "/", '@', ">"];
 const RESERVED = ["embed", "maybe", "not"];
 const ALL_RESERVED = [...SYMBOL, ...RESERVED];
 const SUBEXPR = Alt([LiteralHeader.parse,
@@ -1347,6 +1375,7 @@ const SUBEXPR = Alt([LiteralHeader.parse,
 const NON_COMMENT_EXPR = Alt([MaybeHeader.parse,
     NotHeader.parse,
     SlashHeader.parse,
+    RenameHeader.parse,
     SUBEXPR]);
 const EXPR = Alt([CommentHeader.parse,
     NON_COMMENT_EXPR]);
@@ -1807,7 +1836,7 @@ class RowComponent extends GrammarComponent {
         //for (var i = this.uncompiledCells.length-1; i >= 0; i--) {
         for (const [header, cell] of this.uncompiledCells) {
             //const [header, cell] = this.uncompiledCells[i];
-            const compiledCell = header.compileAndMerge(cell, namespace, resultState);
+            const compiledCell = header.compileAndMerge(cell, namespace, devEnv, resultState);
             compiledCell.mark(devEnv);
             // if it was zero, ignore the result of the merge   
             if (cell.text.length > 0 && !(compiledCell.state instanceof stateMachine_1.TrivialState)) {
@@ -1884,6 +1913,23 @@ class EmbedComponent extends HeadedCellComponent {
         const symbol = ns.get(this.cell.text);
         if (symbol == undefined) {
             this.cell.markError(devEnv, `Cannot find symbol ${this.cell.text}`, `Cannot find symbol ${this.cell.text}.`);
+        }
+    }
+}
+class RenameComponent extends HeadedCellComponent {
+    constructor(header, cell, child) {
+        super(header, cell);
+        this.child = child;
+    }
+    runChecks(ns, devEnv) {
+        if (!(this.state instanceof stateMachine_1.RenameState)) {
+            return;
+        }
+        const symbolStack = new stateMachine_1.CounterStack(2);
+        const childTapes = this.state.child.getRelevantTapes(symbolStack);
+        if (!(childTapes.has(this.state.fromTape))) {
+            this.markError(devEnv, `Inaccessible tape: ${this.state.fromTape}`, `This cell refers to a tape ${this.state.fromTape},` +
+                ` but the content to its left only defines tape(s) ${[...childTapes].join(", ")}.`);
         }
     }
 }
@@ -2478,7 +2524,7 @@ class TextState extends State {
         if (this.accepting(symbolStack)) {
             return;
         }
-        const bits = this.firstToken(matchedTape);
+        const bits = this.getToken(matchedTape);
         const result = matchedTape.match(bits, target);
         const nextState = this.successor();
         yield [matchedTape, result, true, nextState];
@@ -2498,7 +2544,7 @@ class AnyCharState extends TextState {
     get id() {
         return `${this.tapeName}:(ANY)`;
     }
-    firstToken(tape) {
+    getToken(tape) {
         return tape.any();
     }
     successor() {
@@ -2524,27 +2570,26 @@ exports.AnyCharState = AnyCharState;
  * in the original text.
  */
 class LiteralState extends TextState {
-    constructor(tape, text, tokens = []) {
+    constructor(tape, text, index = 0) {
         super(tape);
         this.text = text;
-        this.tokens = tokens;
+        this.index = index;
     }
     get id() {
-        return `${this.tapeName}:${this.text}[${this.text.length - this.tokens.length}]`;
+        return `${this.tapeName}:${this.text}[${this.index}]`;
     }
     accepting(symbolStack) {
-        return this.tokens.length == 0;
+        return this.index >= this.text.length;
     }
     collectVocab(tapes, stateStack) {
-        this.tokens = tapes.tokenize(this.tapeName, this.text);
+        tapes.tokenize(this.tapeName, this.text);
     }
-    firstToken(tape) {
-        return this.tokens[0];
+    getToken(tape) {
+        return tape.tokenize(tape.tapeName, this.text[this.index])[0];
     }
     successor() {
-        const newTokens = this.tokens.slice(1);
         const newText = this.text;
-        return new LiteralState(this.tapeName, newText, newTokens);
+        return new LiteralState(this.tapeName, this.text, this.index + 1);
     }
 }
 exports.LiteralState = LiteralState;
@@ -2676,13 +2721,13 @@ class UnionState extends BinaryState {
     }
     setRandom(randomize, symbolStack) {
         if (!randomize) {
-            this.randomChild == undefined;
+            this.randomChild = undefined;
             super.setRandom(false, symbolStack);
             return;
         }
         const children = this.getChildren();
         this.randomChild = children[Math.floor(Math.random() * children.length)];
-        this.randomChild.setRandom(true, symbolStack);
+        super.setRandom(true, symbolStack);
     }
     accepting(symbolStack) {
         if (this.randomChild != undefined) {

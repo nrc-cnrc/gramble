@@ -10,6 +10,7 @@ export const unrelated = Literalizer("unrelated");
 export const t1 = Literalizer("t1");
 export const t2 = Literalizer("t2");
 export const t3 = Literalizer("t3");
+export const t4 = Literalizer("t4");
 
 export function testIsType(obj: any, type: any,  objName: string = ""): void {
     const msg = objName + (objName != "" ? " ":"") + 

@@ -8,7 +8,7 @@
  */
 
 import { DevEnvironment } from "./devEnv";
-import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState } from "./stateMachine";
+import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState } from "./stateMachine";
 import { Gen, HSVtoRGB, iterTake, meanAngleDeg, RGBtoString, StringDict } from "./util";
 
 const DEFAULT_SATURATION = 0.1;
@@ -104,22 +104,25 @@ export abstract class Header extends TabularComponent {
         devEnv.markHeader(this.position.sheet, this.position.row, this.position.col, color);
     }
     
-    public compile(cell: CellComponent, namespace: Namespace): SingleCellComponent {
+    public compile(cell: CellComponent, 
+                    namespace: Namespace, 
+                    devEnv: DevEnvironment): SingleCellComponent {
         throw new Error('Not implemented');
     }
 
-    public merge(state: State, other: State): State {
-        return Seq(state, other);
+    public merge(leftNeighbor: State | undefined, state: State): State {
+        if (leftNeighbor == undefined) {
+            return state;
+        }
+        return Seq(leftNeighbor, state);
     }
 
     public compileAndMerge(cell: CellComponent,
                             namespace: Namespace,
+                            devEnv: DevEnvironment,
                             leftNeighbor: State | undefined): SingleCellComponent {
         
-        const compiledCell = this.compile(cell, namespace);
-        if (leftNeighbor == undefined) {
-            return compiledCell;
-        }
+        const compiledCell = this.compile(cell, namespace, devEnv);
         compiledCell.state = this.merge(leftNeighbor, compiledCell.state);
         return compiledCell;
     }
@@ -158,7 +161,9 @@ abstract class AtomicHeader extends Header {
  */
 export class EmbedHeader extends AtomicHeader {
 
-    public compile(cell: CellComponent, namespace: Namespace): SingleCellComponent {
+    public compile(cell: CellComponent, 
+                    namespace: Namespace, 
+                    devEnv: DevEnvironment): SingleCellComponent {
         const compiledCell = new EmbedComponent(this, cell);
         compiledCell.state = Emb(cell.text, namespace);
         return compiledCell;
@@ -174,7 +179,9 @@ export class EmbedHeader extends AtomicHeader {
  */
 export class LiteralHeader extends AtomicHeader {
     
-    public compile(cell: CellComponent, namespace: Namespace): SingleCellComponent {
+    public compile(cell: CellComponent, 
+                    namespace: Namespace, 
+                    devEnv: DevEnvironment): SingleCellComponent {
         const compiledCell = new HeadedCellComponent(this, cell);
         compiledCell.state = Lit(this.text, cell.text);
         return compiledCell;
@@ -209,7 +216,9 @@ export class CommentHeader extends Header {
         devEnv.markComment(this.position.sheet, this.position.row, this.position.col);
     }
 
-    public compile(cell: CellComponent, namespace: Namespace): SingleCellComponent {
+    public compile(cell: CellComponent, 
+                    namespace: Namespace, 
+                    devEnv: DevEnvironment): SingleCellComponent {
         return new CommentComponent(cell);
     }
         
@@ -224,8 +233,9 @@ export class CommentHeader extends Header {
 }
 
 /**
- * The ancestor class of unary header operators like "maybe", "not", and "@"
- * (the joining operator that we use to implement flags).
+ * The ancestor class of unary header operators like "maybe", "not", "@"
+ * (the joining operator that we use to implement flags), and ">" (the rename
+ * operator)
  */
 abstract class UnaryHeader extends Header {
 
@@ -240,8 +250,10 @@ abstract class UnaryHeader extends Header {
         return this.child.hue;
     }
 
-    public compile(cell: CellComponent, namespace: Namespace): SingleCellComponent {
-        const childCell = this.child.compile(cell, namespace);
+    public compile(cell: CellComponent, 
+                    namespace: Namespace, 
+                    devEnv: DevEnvironment): SingleCellComponent {
+        const childCell = this.child.compile(cell, namespace, devEnv);
         const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
         compiledCell.state = childCell.state;
         return compiledCell;
@@ -269,8 +281,10 @@ export class MaybeHeader extends UnaryHeader {
         yield *super.parseTarget("maybe", MaybeHeader, NON_COMMENT_EXPR, input);
     }
 
-    public compile(cell: CellComponent, namespace: Namespace): SingleCellComponent {
-        const childCell = this.child.compile(cell, namespace);
+    public compile(cell: CellComponent, 
+                    namespace: Namespace, 
+                    devEnv: DevEnvironment): SingleCellComponent {
+        const childCell = this.child.compile(cell, namespace, devEnv);
         const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
         compiledCell.state = Maybe(childCell.state);
         return compiledCell;
@@ -287,11 +301,43 @@ export class NotHeader extends UnaryHeader {
         yield *super.parseTarget("not", NotHeader, NON_COMMENT_EXPR, input);
     }
 
-    public compile(cell: CellComponent, namespace: Namespace): SingleCellComponent {
-        const childCell = this.child.compile(cell, namespace);
+    public compile(cell: CellComponent, 
+        namespace: Namespace, 
+        devEnv: DevEnvironment): SingleCellComponent {
+        const childCell = this.child.compile(cell, namespace, devEnv);
         const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
-        compiledCell.state = Maybe(childCell.state);
+        compiledCell.state = Not(childCell.state);
         return compiledCell;
+    }
+}
+
+
+/**
+ * Header that constructs negations, e.g. "not text"
+ */
+export class RenameHeader extends UnaryHeader {
+
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        yield *super.parseTarget(">", RenameHeader, LiteralHeader.parse, input);
+    }
+
+    public compile(cell: CellComponent, 
+                    namespace: Namespace, 
+                    devEnv: DevEnvironment): SingleCellComponent {
+        const childCell = this.child.compile(cell, namespace, devEnv);
+        const compiledCell = new RenameComponent(this, cell, childCell);
+        compiledCell.state = childCell.state;
+        return compiledCell;
+    }
+
+    public merge(leftNeighbor: State | undefined, state: State): State {
+        if (leftNeighbor == undefined) {
+            return state;
+        }
+        if (!(state instanceof LiteralState)) {
+            throw new Error("Rename (>) of a non-literal");
+        }
+        return Rename(leftNeighbor, state.text, state.tapeName);
     }
 }
 
@@ -304,9 +350,12 @@ export class NotHeader extends UnaryHeader {
  * "@" in "@text/gloss" only has "@" as its child.
  */
 export class FlagHeader extends UnaryHeader {
-
-    public merge(state: State, other: State): State {
-        return Join(state, other);
+    
+    public merge(leftNeighbor: State | undefined, state: State): State {
+        if (leftNeighbor == undefined) {
+            return state;
+        }
+        return Join(leftNeighbor, state);
     }
     
     public static *parse(input: string[]): Gen<[Header, string[]]> {
@@ -361,9 +410,11 @@ export class SlashHeader extends BinaryHeader {
      * be called.
      */
     
-    public compile(cell: CellComponent, namespace: Namespace): SingleCellComponent {
-        const childCell1 = this.child1.compile(cell, namespace);
-        const childCell2 = this.child2.compile(cell, namespace);
+    public compile(cell: CellComponent, 
+                    namespace: Namespace, 
+                    devEnv: DevEnvironment): SingleCellComponent {
+        const childCell1 = this.child1.compile(cell, namespace, devEnv);
+        const childCell2 = this.child2.compile(cell, namespace, devEnv);
         const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
         compiledCell.state = Seq(childCell1.state, childCell2.state);
         return compiledCell;
@@ -371,10 +422,11 @@ export class SlashHeader extends BinaryHeader {
 
     public compileAndMerge(cell: CellComponent,
                             namespace: Namespace,
+                            devEnv: DevEnvironment,
                             leftNeighbor: State | undefined): SingleCellComponent {
         
-        const childCell1 = this.child1.compileAndMerge(cell, namespace, leftNeighbor);
-        const childCell2 = this.child2.compileAndMerge(cell, namespace, childCell1.state);
+        const childCell1 = this.child1.compileAndMerge(cell, namespace, devEnv, leftNeighbor);
+        const childCell2 = this.child2.compileAndMerge(cell, namespace, devEnv, childCell1.state);
         const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
         compiledCell.state = childCell2.state;
         return compiledCell;
@@ -385,10 +437,9 @@ export class SlashHeader extends BinaryHeader {
     }   
 }
 
-
 type HeaderParser = (input: string[]) => Gen<[Header, string[]]>;
 
-const SYMBOL = [ "(", ")", "%", "/", '@'];
+const SYMBOL = [ "(", ")", "%", "/", '@', ">" ];
 const RESERVED = ["embed", "maybe", "not" ];
 const ALL_RESERVED = [...SYMBOL, ...RESERVED];
 
@@ -400,6 +451,7 @@ const SUBEXPR = Alt([LiteralHeader.parse,
 const NON_COMMENT_EXPR = Alt([MaybeHeader.parse, 
                               NotHeader.parse,
                               SlashHeader.parse, 
+                              RenameHeader.parse,
                               SUBEXPR]);
 
 const EXPR = Alt([CommentHeader.parse, 
@@ -981,7 +1033,7 @@ class RowComponent extends GrammarComponent {
         //for (var i = this.uncompiledCells.length-1; i >= 0; i--) {
         for (const [header, cell] of this.uncompiledCells) {
             //const [header, cell] = this.uncompiledCells[i];
-            const compiledCell = header.compileAndMerge(cell, namespace, resultState);
+            const compiledCell = header.compileAndMerge(cell, namespace, devEnv, resultState);
             compiledCell.mark(devEnv);
             // if it was zero, ignore the result of the merge   
             if (cell.text.length > 0 && !(compiledCell.state instanceof TrivialState)) {
@@ -1094,6 +1146,32 @@ class EmbedComponent extends HeadedCellComponent {
                 `Cannot find symbol ${this.cell.text}.`);
         }
     }
+}
+
+class RenameComponent extends HeadedCellComponent {
+
+    constructor(
+        header: RenameHeader,
+        cell: CellComponent,
+        public child: SingleCellComponent
+    ) {
+        super(header, cell);
+    }
+
+    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
+        if (!(this.state instanceof RenameState)) {
+            return;
+        }
+
+        const symbolStack = new CounterStack(2);
+        const childTapes = this.state.child.getRelevantTapes(symbolStack);
+        if (!(childTapes.has(this.state.fromTape))) {
+            this.markError(devEnv, `Inaccessible tape: ${this.state.fromTape}`,
+                `This cell refers to a tape ${this.state.fromTape},` +
+                ` but the content to its left only defines tape(s) ${[...childTapes].join(", ")}.`);
+        }
+    }
+
 }
 
 /**

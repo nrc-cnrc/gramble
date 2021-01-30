@@ -456,7 +456,7 @@ abstract class TextState extends State {
         super();
     }
 
-    protected abstract firstToken(tape: Tape): Token;
+    protected abstract getToken(tape: Tape): Token;
     protected abstract successor(): State;
 
     public *ndQuery(tape: Tape, 
@@ -473,7 +473,7 @@ abstract class TextState extends State {
             return; 
         }
 
-        const bits = this.firstToken(matchedTape);
+        const bits = this.getToken(matchedTape);
         const result = matchedTape.match(bits, target);
         const nextState = this.successor();
         yield [matchedTape, result, true, nextState];
@@ -498,7 +498,7 @@ export class AnyCharState extends TextState {
         return `${this.tapeName}:(ANY)`;
     }
     
-    protected firstToken(tape: Tape): Token {
+    protected getToken(tape: Tape): Token {
         return tape.any();
     }
 
@@ -529,31 +529,30 @@ export class LiteralState extends TextState {
     constructor(
         tape: string,
         public text: string,
-        protected tokens: Token[] = []
+        public index: number = 0
     ) { 
         super(tape);
     }
 
     public get id(): string {
-        return `${this.tapeName}:${this.text}[${this.text.length-this.tokens.length}]`;
+        return `${this.tapeName}:${this.text}[${this.index}]`;
     }
 
     public accepting(symbolStack: CounterStack): boolean {
-        return this.tokens.length == 0;
+        return this.index >= this.text.length;
     }
 
     public collectVocab(tapes: Tape, stateStack: string[]): void {
-        this.tokens = tapes.tokenize(this.tapeName, this.text);
+        tapes.tokenize(this.tapeName, this.text);
     }
 
-    protected firstToken(tape: Tape): Token {
-        return this.tokens[0];
+    protected getToken(tape: Tape): Token {
+        return tape.tokenize(tape.tapeName, this.text[this.index])[0];
     }
 
     protected successor(): State {
-        const newTokens = this.tokens.slice(1);
         const newText = this.text;
-        return new LiteralState(this.tapeName, newText, newTokens);
+        return new LiteralState(this.tapeName, this.text, this.index+1);
     }
 
 }
@@ -718,14 +717,14 @@ export class UnionState extends BinaryState {
 
     public setRandom(randomize: boolean, symbolStack: CounterStack): void {
         if (!randomize) {
-            this.randomChild == undefined;
+            this.randomChild = undefined;
             super.setRandom(false, symbolStack);
             return;
         }
 
         const children = this.getChildren();
         this.randomChild = children[Math.floor(Math.random() * children.length)];
-        this.randomChild.setRandom(true, symbolStack);
+        super.setRandom(true, symbolStack);
     }
 
     public accepting(symbolStack: CounterStack): boolean {
