@@ -114,13 +114,13 @@ export abstract class Header extends TabularComponent {
 
     public compileAndMerge(cell: CellComponent,
                             namespace: Namespace,
-                            rightNeighbor: State | undefined): SingleCellComponent {
+                            leftNeighbor: State | undefined): SingleCellComponent {
         
         const compiledCell = this.compile(cell, namespace);
-        if (rightNeighbor == undefined) {
+        if (leftNeighbor == undefined) {
             return compiledCell;
         }
-        compiledCell.state = this.merge(compiledCell.state, rightNeighbor);
+        compiledCell.state = this.merge(leftNeighbor, compiledCell.state);
         return compiledCell;
     }
 }
@@ -371,12 +371,12 @@ export class SlashHeader extends BinaryHeader {
 
     public compileAndMerge(cell: CellComponent,
                             namespace: Namespace,
-                            rightNeighbor: State | undefined): SingleCellComponent {
+                            leftNeighbor: State | undefined): SingleCellComponent {
         
-        const childCell2 = this.child2.compileAndMerge(cell, namespace, rightNeighbor);
-        const childCell1 = this.child1.compileAndMerge(cell, namespace, childCell2.state);
+        const childCell1 = this.child1.compileAndMerge(cell, namespace, leftNeighbor);
+        const childCell2 = this.child2.compileAndMerge(cell, namespace, childCell1.state);
         const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
-        compiledCell.state = childCell1.state;
+        compiledCell.state = childCell2.state;
         return compiledCell;
     }
 
@@ -740,6 +740,12 @@ class BinaryOpComponent extends EnclosureComponent {
     }
 }
 
+class ApplyComponent extends EnclosureComponent {
+
+
+
+}
+
 class TableComponent extends EnclosureComponent {
 
 
@@ -972,8 +978,9 @@ class RowComponent extends GrammarComponent {
     
     public compile(namespace: Namespace, devEnv: DevEnvironment): void {
         var resultState: State | undefined = undefined;
-        for (var i = this.uncompiledCells.length-1; i >= 0; i--) {
-            const [header, cell] = this.uncompiledCells[i];
+        //for (var i = this.uncompiledCells.length-1; i >= 0; i--) {
+        for (const [header, cell] of this.uncompiledCells) {
+            //const [header, cell] = this.uncompiledCells[i];
             const compiledCell = header.compileAndMerge(cell, namespace, resultState);
             compiledCell.mark(devEnv);
             // if it was zero, ignore the result of the merge   

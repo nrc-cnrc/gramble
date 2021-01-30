@@ -8,5 +8,5 @@ suffix, table, text, gloss/subj
     ,       , baz, [2SG]
     ,       , beez, [IMP]
 
-word, table, mood/@subj, embed, embed
-    ,       , [IMP], verb, suffix 
+word, table, embed, embed, mood/@subj, 
+    ,       , verb, suffix, [IMP]

@@ -12,5 +12,5 @@ impOr2sg, table, subj
         ,       , [2SG]
         ,       , [IMP]
         
-word, table, @embed, embed, embed
-    ,       , impOr2sg, verb, suffix 
+word, table, embed, embed, @embed
+    ,       , verb, suffix, impOr2sg

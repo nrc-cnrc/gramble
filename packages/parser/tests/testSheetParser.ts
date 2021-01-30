@@ -370,12 +370,12 @@ describe(`${path.basename(module.filename)}`, function() {
 
         // Flag headers only restrict things if they're on the left side!
 
-        const project = sheetFromFile("./tests/csvs/flagHeaderOnRight.csv");
+        const project = sheetFromFile("./tests/csvs/flagHeaderOnLeft.csv");
 
         testErrors(project, []);
         testProject(project, 'word', [
-            { text: "foobar", gloss: "run[1SG]", subj: "[1SG][2SG]"  },
-            { text: "moobar", gloss: "jump[1SG]", subj: "[1SG][2SG]"  },
+            { text: "foobar", gloss: "run[1SG]", subj: "[2SG][1SG]"  },
+            { text: "moobar", gloss: "jump[1SG]", subj: "[2SG][1SG]"  },
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG][2SG]"  },
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG][2SG]"  }
         ]);
