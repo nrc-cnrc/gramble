@@ -93,6 +93,8 @@
                 // hide or remove everything in the control panel except "Loading..."
                 const controlTable = document.getElementById("controlTable");
                 controlTable.style.visibility = "collapse";
+                const inputTable = document.getElementById("inputTable");
+                inputTable.style.visibility = "collapse";
                 const sampleTable = document.getElementById("sampleTable");
                 sampleTable.style.visibility = "collapse";
                 removeElementsByClass("tapeInputTr");
@@ -122,11 +124,21 @@
                 reloadSymbols(currentSheetName);
                 reloadInputs();
 
+                reloadGrammarLock = false;
+
                 loadingP.style.display = "none";
                 controlTable.style.visibility = "visible";
+                
+                const select = document.getElementById("selectSymbol"); 
+                const currentSymbol = select.value;
+                if (currentSymbol == "" || currentSymbol == undefined) {
+                    // this happens when no symbols happen to be defined in the
+                    // active document
+                    return;
+                }
+                inputTable.style.visibility = "visible";
                 sampleTable.style.visibility = "visible";
                 resultsTable.style.visibility = "visible";
-                reloadGrammarLock = false;
             }
 
             function createErrorButtons(errorMsgs, currentSheetName) {
@@ -194,6 +206,10 @@
                 const select = document.getElementById("selectSymbol"); 
                 const currentSymbol = select.value;
                 
+                if (currentSymbol == "" || currentSymbol == undefined) {
+                    return;
+                }
+
                 CURRENT_TAPES = project.getTapeNames(currentSymbol);
 
                 const controlTable = document.getElementById("controlTable");
@@ -222,7 +238,14 @@
             
             function reloadResults() {
 
+                var resultsTable  = document.getElementById("resultsTable"); 
+                resultsTable.innerHTML = "";
+
                 var symbolName = document.getElementById("selectSymbol").value;
+
+                if (symbolName == "" || symbolName == undefined) {
+                    return;
+                }
 
                 var results = [];
                 var tries = 0;
@@ -243,8 +266,6 @@
                     tries++;
                 }
                 
-                var resultsTable  = document.getElementById("resultsTable"); 
-                resultsTable.innerHTML = "";
                 for (var i = 0; i < results.length; i++) {
                     displayRecord(results[i], resultsTable);
                 }
@@ -280,32 +301,6 @@
                 blankCell.classList.add("resultsBlank");
             }
 
-            window.onload = async function() {
-                
-                try {
-                    await reloadGrammar();
-
-                    var button = document.getElementById("reloadButton");
-                    button.onclick = async function(ev) {
-                        await reloadGrammar();
-                    }
-
-                    var selector = document.getElementById("selectSymbol");
-                    selector.onchange = function(ev) {
-                        removeElementsByClass("tapeInputTr");
-                        reloadInputs();
-                    };
-                    
-
-                    document.getElementById("sampleButton").onclick = async function(ev) {
-                        await reloadResults();
-                    }
-
-                } catch(err) {
-                    alert(err);
-                }
-
-            };
 
             
             function resultsToCSV(labels, items) {
@@ -321,6 +316,10 @@
                 // determine what symbol to generate from
                 const symbolSelect = document.getElementById("selectSymbol"); 
                 const symbolName = symbolSelect.value;
+
+                if (symbolName == "" || symbolName == undefined) {
+                    return;
+                }
 
                 // determine what tape names are relevant to this symbol
                 const tapeInfo = project.getTapeNames(symbolName);
@@ -354,12 +353,37 @@
                 return false;
             }
 
+            window.onload = async function() {
+                
+                try {
+                    await reloadGrammar();
+
+                    document.getElementById("reloadButton").onclick = async function(ev) {
+                        await reloadGrammar();
+                    }
+
+                    document.getElementById("selectSymbol").onchange = function(ev) {
+                        removeElementsByClass("tapeInputTr");
+                        reloadInputs();
+                    };
+                    
+                    document.getElementById("sampleButton").onclick = async function(ev) {
+                        await reloadResults();
+                    }
+
+                } catch(err) {
+                    alert(err);
+                }
+
+            };
         </script>
 
         <table id="controlTable">
             <!-- <td colspan="2"><button id="highlightButton">Highlight</button></td></tr>-->
             <tr><td colspan="2"><button id="reloadButton">Sync and validate</button></td></tr>
             <tr id="errorTr"><td colspan="2" id="errorArea"> </td></tr>
+        </table>
+        <table id="inputTable">
             <tr id="selectTr"><td>Input:</td><td class="wideTd"><select id="selectSymbol"> </select></td></tr>
         </table>
 
