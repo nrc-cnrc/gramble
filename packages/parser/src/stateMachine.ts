@@ -1,5 +1,6 @@
-import { Gen, shuffleArray, StringDict } from "./util";
-import { MultiTapeOutput, Tape, StringTape, RenamedTape, TapeCollection, Token, ANY_CHAR, NO_CHAR } from "./tapes";
+import { Gen, StringDict } from "./util";
+import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR, NO_CHAR } from "./tapes";
+import { assert } from "chai";
 
 
 /**
@@ -307,7 +308,7 @@ export abstract class State {
      *    X-Y (leading to the state X would have led to)
      *    Y-X (leading to the state Y would have led to)
      * 
-     * @param tape A Tape object identifying the name/type/vocabulary of the relevant tape
+     * @param nextTape A Tape object identifying the name/type/vocabulary of the relevant tape
      * @param target A Token identifying what characters we need to match
      * @param symbolStack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
      * @returns A tuple <tape, match, matched, nextState>, where:
@@ -322,9 +323,9 @@ export abstract class State {
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
         var results: [Tape, Token, boolean, State][] = [];
-        var nextStates = [... this.ndQuery(tape, target, symbolStack)];
-        for (var [tape, bits, matched, next] of nextStates) {
 
+        var nextStates: [Tape, Token, boolean, State][] = [... this.ndQuery(tape, target, symbolStack)];
+        for (var [tape, bits, matched, next] of nextStates) {
             if (tape.numTapes == 0) {
                 results.push([tape, bits, matched, next]);
                 continue;
@@ -1162,6 +1163,57 @@ export class ProjectionState extends UnaryState {
     }
 }
 
+
+/**
+ * A state that implements Projection in the sense of relational algebra, only 
+ * exposing a subset of fields (read: tapes) of its child state.
+ * 
+ * Note that the child state itself still has and operates on those fields/tapes.
+ * For example, the Projection of a join can still fail when there's a conflict regarding
+ * field T, even if the Projection hides field T.  We can think of the Project as encapsulating
+ * the set of fields/tapes such that only a subset of its fields are exposed to the outside,
+ * rather than removing those fields/tapes.
+ */
+export class DropState extends UnaryState {
+
+    constructor(
+        public child: State,
+        public droppedTape: string
+    ) { 
+        super();
+    }
+
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        const result = new Set([...this.child.getRelevantTapes(stateStack)]);
+        result.delete(this.droppedTape);
+        return result;
+    }
+
+    public *ndQuery(tape: Tape, 
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+
+        if (tape.tapeName == this.droppedTape) {
+            // don't pass it on, just stay here
+            yield [tape, target, false, this];
+            return;
+        }
+
+        for (var [childTape, childTarget, childMatch, childNext] of 
+                            this.child.dQuery(tape, target, symbolStack)) {
+
+            if (childTape.tapeName == this.droppedTape) {
+                // even if our child yields content on a restricted tape, 
+                // we don't let our own parent know about it
+                childTape = new TapeCollection();
+                childTarget = NO_CHAR;
+            }
+            yield [childTape, childTarget, childMatch, 
+                    new DropState(childNext, this.droppedTape)];
+        }
+    }
+}
+
 /**
  * Implements the Rename operation from relational algebra.
  *
@@ -1202,15 +1254,19 @@ export class RenameState extends UnaryState {
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
 
+        var rememberToUnwrapTape = false;
+
         if (tape.tapeName == this.toTape || tape.tapeName == "__ANY_TAPE__") {
             tape = new RenamedTape(tape, this.fromTape, this.toTape);
+            rememberToUnwrapTape = true;
         }
     
         for (var [childTape, childTarget, childMatched, childNext] of 
                 this.child.dQuery(tape, target, symbolStack)) {
-            //assert(childTape instanceof RenamedTape);
-            const trueChildTape = (childTape as RenamedTape).child;
-            yield [trueChildTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape, this.relevantTapes)];
+            if (rememberToUnwrapTape) {
+                childTape = (childTape as RenamedTape).child;
+            }
+            yield [childTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape, this.relevantTapes)];
         }
     }
 }
@@ -1392,8 +1448,12 @@ export function Emb(symbolName: string, namespace: Namespace): State {
     return new EmbedState(symbolName, namespace);
 }
 
-export function Proj(child: State, ...tiers: string[]): State {
-    return new ProjectionState(child, new Set(tiers));
+export function Proj(child: State, ...tape: string[]): State {
+    return new ProjectionState(child, new Set(tape));
+}
+
+export function Drop(child: State, tape: string): State {
+    return new DropState(child, tape);
 }
 
 export function Rename(child: State, fromTier: string, toTier: string): State {

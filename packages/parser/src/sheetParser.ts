@@ -7,8 +7,8 @@
  * of formulas in that language.
  */
 
-import { DevEnvironment } from "./devEnv";
-import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState } from "./stateMachine";
+import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
+import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState, DropState, Drop } from "./stateMachine";
 import { Gen, HSVtoRGB, iterTake, meanAngleDeg, RGBtoString, StringDict } from "./util";
 
 const DEFAULT_SATURATION = 0.1;
@@ -147,7 +147,7 @@ abstract class AtomicHeader extends Header {
     }
 
     public static *parseTarget(target: string,
-                        constructor: new (t: string) => Header,
+                        constructor: new(t: string) => Header,
                         input: string[]): Gen<[Header, string[]]> {
         if (input.length == 0 || input[0] != target) {
             return;
@@ -171,6 +171,33 @@ export class EmbedHeader extends AtomicHeader {
 
     public static *parse(input: string[]): Gen<[Header, string[]]> {
         yield* super.parseTarget("embed", EmbedHeader, input);
+    }
+}
+
+/**
+ * DropHeaders lead to the complilation of DropStates.
+ */
+export class DropHeader extends AtomicHeader {
+
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        yield* super.parseTarget("drop", DropHeader, input);
+    }
+
+    
+    public compileAndMerge(cell: CellComponent,
+            namespace: Namespace,
+            devEnv: DevEnvironment,
+            leftNeighbor: State | undefined): SingleCellComponent {
+
+        const compiledCell = new DropComponent(this, cell);
+        
+        if (leftNeighbor == undefined) {
+            compiledCell.markError(devEnv, "Wayward drop",
+                '"Drop" has to have something to the left of it, to drop from.');
+            return compiledCell;
+        }
+        compiledCell.state = Drop(leftNeighbor, cell.text);
+        return compiledCell;
     }
 }
 
@@ -440,11 +467,12 @@ export class SlashHeader extends BinaryHeader {
 type HeaderParser = (input: string[]) => Gen<[Header, string[]]>;
 
 const SYMBOL = [ "(", ")", "%", "/", '@', ">" ];
-const RESERVED = ["embed", "maybe", "not" ];
+const RESERVED = ["embed", "maybe", "not", "drop" ];
 const ALL_RESERVED = [...SYMBOL, ...RESERVED];
 
 const SUBEXPR = Alt([LiteralHeader.parse,
                     EmbedHeader.parse, 
+                    DropHeader.parse,
                     FlagHeader.parse, 
                     Parens]);
 
@@ -597,7 +625,8 @@ const BUILT_IN_OPS: Set<string> = new Set([...Object.keys(BINARY_OPS),
 const RESERVED_WORDS = new Set([...BUILT_IN_OPS,
                                 "maybe",
                                 "not",
-                                "embed"]);
+                                "embed", 
+                                "drop"]);
 
 /**
  * An enclosure represents a single-cell unit containing a command or identifier (call that the "startCell"),
@@ -1148,6 +1177,27 @@ class EmbedComponent extends HeadedCellComponent {
     }
 }
 
+class DropComponent extends HeadedCellComponent {
+
+    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
+        if (!(this.state instanceof DropState)) {
+            return;
+        }
+
+        if (this.state.droppedTape == "") {
+            return;
+        }
+
+        const symbolStack = new CounterStack(2);
+        const childTapes = this.state.child.getRelevantTapes(symbolStack);
+        if (!(childTapes.has(this.state.droppedTape))) {
+            this.markError(devEnv, `Inaccessible tape: ${this.state.droppedTape}`,
+                `This cell refers to a tape ${this.state.droppedTape},` +
+                ` but the content to its left only defines tape(s) ${[...childTapes].join(", ")}.`);
+        }
+    }
+}
+
 class RenameComponent extends HeadedCellComponent {
 
     constructor(
@@ -1160,6 +1210,10 @@ class RenameComponent extends HeadedCellComponent {
 
     public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
         if (!(this.state instanceof RenameState)) {
+            return;
+        }
+
+        if (this.state.fromTape == "") {
             return;
         }
 
@@ -1216,6 +1270,7 @@ function constructOp(cell: CellComponent,
     return newEnclosure;
 }
 
+type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
 /**
  * A SheetParser turns a grid of cells into abstract syntax tree (AST) components, which in
@@ -1230,7 +1285,7 @@ export class Project {
     public sheets: {[key: string]: SheetComponent} = {};
 
     constructor(
-        public devEnv: DevEnvironment
+        public devEnv: DevEnvironment = new SimpleDevEnvironment()
     ) { }
 
     public allSymbols(): string[] {
@@ -1245,6 +1300,11 @@ export class Project {
             ns = this.globalNamespace;
         }
         return ns.get(symbolName);
+    }
+
+    public getErrors(): GrambleError[] {
+        return this.devEnv.getErrorMessages().map(([sheet, row, col, msg, level]) =>
+            { return { sheet: sheet, row: row, col:col, msg:msg, level:level }});
     }
     
     public getTapeNames(symbolName: string): [string, string][] {
@@ -1262,7 +1322,7 @@ export class Project {
     }
 
     public parse(symbolName: string,
-            inputs: StringDict,
+            inputs: StringDict = {},
             maxResults: number = Infinity,
             randomize: boolean = false,
             maxRecursion: number = 4, 
@@ -1270,7 +1330,7 @@ export class Project {
 
         var startState = this.getSymbol(symbolName);
         if (startState == undefined) {
-            throw new Error(`Cannot find symbol ${symbolName}`);
+            throw new Error(`Project does not define a symbol named ${symbolName}`);
         }
 
         const inputLiterals: State[] = [];
@@ -1289,20 +1349,27 @@ export class Project {
         return iterTake(gen, maxResults);
     }
 
+    /**
+     * A convenience method around parse(), for non-random results
+     */
     public generate(symbolName: string,
+            restriction: StringDict = {},
             maxResults: number = Infinity,
-            randomize: boolean = false,
             maxRecursion: number = 4, 
             maxChars: number = 1000): StringDict[] {
-        const startState = this.getSymbol(symbolName);
-        if (startState == undefined) {
-            throw new Error(`Cannot find symbol ${symbolName}`);
-        }
-    
-        const gen = startState.generate(randomize, maxRecursion, maxChars);
-        return iterTake(gen, maxResults);
+        return this.parse(symbolName, restriction, maxResults, false, maxRecursion, maxChars);
     }
 
+    /**
+     * A convenience method around parse(), for random results
+     */
+    public sample(symbolName: string,
+            restriction: StringDict = {},
+            maxRecursion: number = 4, 
+            maxChars: number = 1000): StringDict[] {
+
+        return this.parse(symbolName, restriction, 1, true, maxRecursion, maxChars);
+    }
     
     public addSheetAux(sheetName: string): void {
 
@@ -1346,13 +1413,22 @@ export class Project {
     public addSheet(sheetName: string): void {
         // add this sheet and any sheets that it refers to
         this.addSheetAux(sheetName);
+        
+        if (this.defaultSheetName == "") {
+            this.defaultSheetName = sheetName;
+        }
+    }
 
-        // now run checks over the whole project
+    public addSheetAsText(sheetName: string, text: string) {
+        this.devEnv.addSourceAsText(sheetName, text);
+        this.addSheet(sheetName);
+    }
+
+    public runChecks(): void {
         for (const sheetName of Object.keys(this.sheets)) {
             const localNamespace = this.globalNamespace.getNamespace(sheetName);
             this.sheets[sheetName].runChecks(localNamespace, this.devEnv);
         }
-        this.defaultSheetName = sheetName;
     }
 
     public getSheet(sheetName: string): SheetComponent {
@@ -1465,7 +1541,9 @@ export class Project {
         }
 
         return topEnclosure.sheet;
-
     }
 }
 
+export function createProject(): Project {
+    return new Project();
+}

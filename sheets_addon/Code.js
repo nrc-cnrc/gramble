@@ -45,7 +45,7 @@ const NAMED_COLORS: Map<string, number> = new Map([
 
 function letterFromNumber(n) { // number -> string
     var letter = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(n % 26)
-    var concat = Math.round(n / 26);
+    var concat = Math.floor(n / 26);
     return concat > 0 ? letterFromNumber(concat-1) + letter : letter;
 };
 
