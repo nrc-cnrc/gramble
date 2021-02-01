@@ -1330,7 +1330,7 @@ export class Project {
 
         var startState = this.getSymbol(symbolName);
         if (startState == undefined) {
-            throw new Error(`Project does not define a symbol named ${symbolName}`);
+            throw new Error(`Project does not define a symbol named "${symbolName}"`);
         }
 
         const inputLiterals: State[] = [];
@@ -1352,7 +1352,7 @@ export class Project {
     /**
      * A convenience method around parse(), for non-random results
      */
-    public generate(symbolName: string,
+    public generate(symbolName: string = "",
             restriction: StringDict = {},
             maxResults: number = Infinity,
             maxRecursion: number = 4, 
@@ -1363,12 +1363,23 @@ export class Project {
     /**
      * A convenience method around parse(), for random results
      */
-    public sample(symbolName: string,
+    public sample(symbolName: string = "",
+            numSamples: number = 1,
             restriction: StringDict = {},
+            maxTries: number = 1000,
             maxRecursion: number = 4, 
             maxChars: number = 1000): StringDict[] {
 
-        return this.parse(symbolName, restriction, 1, true, maxRecursion, maxChars);
+        var results: StringDict[] = [];
+        var tries = 0;
+
+        while (results.length < numSamples && tries < maxTries) {
+            const result = [...this.parse(symbolName, restriction, 1, true, maxRecursion, maxChars)];
+            results = results.concat(result);
+            tries++;
+        }
+
+        return results;
     }
     
     public addSheetAux(sheetName: string): void {
@@ -1413,10 +1424,7 @@ export class Project {
     public addSheet(sheetName: string): void {
         // add this sheet and any sheets that it refers to
         this.addSheetAux(sheetName);
-        
-        if (this.defaultSheetName == "") {
-            this.defaultSheetName = sheetName;
-        }
+        this.defaultSheetName = sheetName;
     }
 
     public addSheetAsText(sheetName: string, text: string) {

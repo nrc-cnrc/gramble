@@ -2,7 +2,6 @@ import { Gen, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR, NO_CHAR } from "./tapes";
 import { assert } from "chai";
 
-
 /**
  * This is the parsing engine that underlies Gramble.
  * It executes a multi-tape recursive state machine.
@@ -110,16 +109,21 @@ export class Namespace {
 
     protected childNamespaces: {[name: string]: Namespace} = {};
     public requiredNamespaces: Set<string> = new Set();
+    public defaultSymbolName: string = "";
 
     public hasSymbol(name: string): boolean {
         return name in this.symbols;
     }
 
     public addSymbol(name: string, state: State): void {
+        if (name.indexOf(".") != -1) {
+            throw new Error('Cannot define a symbol with a period in its name');
+        }
         if (name in this.symbols) {
             throw new Error(`Redefining symbol ${name}`);
         }
         this.symbols[name] = state;
+        this.defaultSymbolName = name;
     }
 
     public allSymbols(): string[] {
@@ -167,8 +171,18 @@ export class Namespace {
     }
 
     public get(name: string): State | undefined {
+        if (name == "") {
+            return this.getDefault();
+        }
         const pieces = name.split(".")
         return this.getNamePieces(pieces);
+    }
+
+    public getDefault(): State | undefined {
+        if (this.defaultSymbolName == "") {
+            return undefined;
+        }
+        return this.symbols[this.defaultSymbolName];
     }
 
     /**
@@ -340,7 +354,8 @@ export abstract class State {
 
                 const intersection = bits.and(otherBits);
                 if (!intersection.isEmpty()) {
-                    const union = new UnionState(next, otherNext);
+                    // there's something in the intersection\
+                    const union = new UnionState([next, otherNext]);
                     newResults.push([tape, intersection, matched || otherMatched, union]); 
                 }
                 bits = bits.andNot(intersection)
@@ -376,14 +391,18 @@ export abstract class State {
     public *generate(randomize: boolean = false,
                     maxRecursion: number = 4, 
                     maxChars: number = 1000): Gen<StringDict> {
+
         const allTapes = new TapeCollection();
         this.collectVocab(allTapes, []);
+        const symbolStack = new CounterStack(maxRecursion);
+        const startState = this;
+        //const startState = this.semicompile(allTapes, symbolStack);
+
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
 
         this.setRandom(randomize, new CounterStack(1));
 
-        var stateQueue: [MultiTapeOutput, State][] = [[initialOutput, this]];
-        const symbolStack = new CounterStack(maxRecursion);
+        var stateQueue: [MultiTapeOutput, State][] = [[initialOutput, startState]];
         var chars = 0;
 
         while (stateQueue.length > 0 && chars < maxChars) {
@@ -437,6 +456,85 @@ export abstract class State {
         if (tape.tapeName == "__ANY_TAPE__") return true;
         const symbolStack = new CounterStack(2);
         return this.getRelevantTapes(symbolStack).has(tape.tapeName);
+    }
+
+    public semicompile(allTapes: TapeCollection, symbolStack: CounterStack): State {
+        const tapes = this.getRelevantTapes(symbolStack);
+
+        var allResults: [Tape, Token, State][] = [];
+        for (const [tapeName, tape] of allTapes.tapes) {
+            for (const [resTape, resToken, resMatched, resNext] of 
+                                    this.dQuery(tape, tape.any(), symbolStack)) {
+                if (!resMatched) {
+                    continue;
+                }
+                allResults.push([resTape, resToken, resNext]);
+            }
+        }
+        return new CompiledState(allResults, tapes, this.accepting(symbolStack));
+    }
+}
+
+class CompiledState extends State {
+
+    public transitionsByTape: {[tape: string]: [Token, State][]} = {}
+
+    constructor(
+        transitions: [Tape, Token, State][] = [],
+        public relevantTapes: Set<string>,
+        public acceptingOnStart: boolean = false
+    ) {
+        super();
+        for (const [tape, target, next] of transitions) {
+            if (!(tape.tapeName in this.transitionsByTape)) {
+                this.transitionsByTape[tape.tapeName] = [];
+            }
+            this.transitionsByTape[tape.tapeName].push([target, next]);
+        }
+    }
+
+    public accepting(symbolStack: CounterStack): boolean {
+        return this.acceptingOnStart;
+    }
+
+    public get id(): string {
+        return "<compiled>";
+    }
+    
+    public *dQuery(tape: Tape, 
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+
+        yield *this.ndQuery(tape, target, symbolStack);
+    }
+
+    public *ndQuery(tape: Tape, 
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+
+        if (!this.caresAbout(tape)) {
+            yield [tape, target, false, this];
+            return;
+        }
+
+        var yieldedAlready = false;
+
+        for (const tapeName in this.transitionsByTape) {
+            const transitions = this.transitionsByTape[tapeName];
+            const matchedTape = tape.matchTape(tapeName);
+            if (matchedTape == undefined) {
+                continue;
+            }
+
+            for (const [token, next] of transitions) {
+            
+                const resultToken = matchedTape.match(token, target);
+                yield [matchedTape, resultToken, true, next];
+                yieldedAlready = true;
+            }
+
+        }
+
     }
 }
 
@@ -600,6 +698,12 @@ abstract class BinaryState extends State {
         super();
         this.relevantTapes = relevantTapes;
     }
+
+    public semicompile(allTapes: TapeCollection, symbolStack: CounterStack): State {
+        this.child1 = this.child1.semicompile(allTapes, symbolStack);
+        this.child2 = this.child2.semicompile(allTapes, symbolStack);
+        return super.semicompile(allTapes, symbolStack);
+    }
     
     public collectVocab(tapes: Tape, stateStack: string[]): void {
         this.child1.collectVocab(tapes, stateStack);
@@ -680,7 +784,6 @@ export class ConcatState extends BinaryState {
             return;
         }
 
-        // new simpler algorithm below
         if (this.child1.accepting(symbolStack)) {
             const successor = new ConcatState(this.child1, this.child2, true);
             yield* successor.dQuery(tape, target, symbolStack);
@@ -711,7 +814,9 @@ export class ConcatState extends BinaryState {
  * So note that UnionStates are only around initally; they don't construct 
  * successor UnionStates, their successors are just the successors of their children.
  */
-export class UnionState extends BinaryState {
+
+
+export class OldUnionState extends BinaryState {
 
     protected randomChild: State | undefined = undefined;
 
@@ -738,12 +843,12 @@ export class UnionState extends BinaryState {
 
     public getChildren(): State[] {
         var children: State[] = [];
-        if (this.child1 instanceof UnionState) {
+        if (this.child1 instanceof OldUnionState) {
             children = children.concat(this.child1.getChildren());
         } else {
             children.push(this.child1);
         }
-        if (this.child2 instanceof UnionState) {
+        if (this.child2 instanceof OldUnionState) {
             children = children.concat(this.child2.getChildren());
         } else {
             children.push(this.child2);
@@ -766,6 +871,77 @@ export class UnionState extends BinaryState {
     }
 } 
 
+
+export class UnionState extends State {
+
+    protected randomChild: State | undefined = undefined;
+
+    constructor(
+        public children: State[]
+    ) {
+        super();
+    }
+
+    public setRandom(randomize: boolean, symbolStack: CounterStack): void {
+        for (const child of this.children) {
+            child.setRandom(randomize, symbolStack);
+        }
+        if (!randomize) {
+            this.randomChild = undefined;
+            return;
+        }
+        this.randomChild = this.children[Math.floor(Math.random() * this.children.length)];
+    }
+
+    public collectVocab(tapes: Tape, stateStack: string[]): void {
+        for (const child of this.children) {
+            child.collectVocab(tapes, stateStack);
+        }
+    }
+
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set();
+            for (const child of this.children) {
+                const childTapes = child.getRelevantTapes(stateStack);
+                this.relevantTapes = new Set([...this.relevantTapes, ...childTapes]);
+            }
+        }
+        return this.relevantTapes;
+    }
+
+    public get id(): string {
+        return `${this.constructor.name}(${this.children.map(c => c.id).join("|")})`;
+    }
+
+    public accepting(symbolStack: CounterStack): boolean {
+        if (this.randomChild != undefined) {
+            // we've been randomized
+            return this.randomChild.accepting(symbolStack);
+        }
+        for (const child of this.children) {
+            if (child.accepting(symbolStack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public *ndQuery(tape: Tape, 
+        target: Token,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+
+        if (this.randomChild != undefined) {
+            // we've been randomized
+            yield* this.randomChild.dQuery(tape, target, symbolStack);
+            return;
+        }
+
+        for (const child of this.children) {
+            yield* child.dQuery(tape, target, symbolStack);
+        }
+    }
+} 
 
 /**
  * Convenience function that takes two generators, and yields from the
@@ -1107,7 +1283,7 @@ export class EmbedState extends UnaryState {
 
         symbolStack = symbolStack.add(this.symbolName);
         for (const [childchildTape, childTarget, childMatched, childNext] of 
-                this.child.ndQuery(tape, target, symbolStack)) {
+                this.child.dQuery(tape, target, symbolStack)) {
             const successor = new EmbedState(this.symbolName, this.namespace, childNext, this.relevantTapes);
             yield [childchildTape, childTarget, childMatched, successor];
         }
@@ -1416,11 +1592,13 @@ export function Uni(...children: State[]): State {
         return Empty();
     }
 
+    return new UnionState(children);
+    /*
     if (children.length == 1) {
         return children[0];
     }
 
-    return new UnionState(children[0], Uni(...children.slice(1)));
+    return new UnionState(children[0], Uni(...children.slice(1))); */
 }
 
 /*

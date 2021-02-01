@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "browserify": "^17.0.0",
+    "mocha-performance": "^0.1.1",
     "tsify": "^5.0.2",
     "typescript": "^4.1.2"
   }

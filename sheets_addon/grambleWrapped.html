@@ -2139,7 +2139,7 @@ class Project {
     parse(symbolName, inputs = {}, maxResults = Infinity, randomize = false, maxRecursion = 4, maxChars = 1000) {
         var startState = this.getSymbol(symbolName);
         if (startState == undefined) {
-            throw new Error(`Project does not define a symbol named ${symbolName}`);
+            throw new Error(`Project does not define a symbol named "${symbolName}"`);
         }
         const inputLiterals = [];
         for (const tapeName in inputs) {
@@ -2157,14 +2157,21 @@ class Project {
     /**
      * A convenience method around parse(), for non-random results
      */
-    generate(symbolName, restriction = {}, maxResults = Infinity, maxRecursion = 4, maxChars = 1000) {
+    generate(symbolName = "", restriction = {}, maxResults = Infinity, maxRecursion = 4, maxChars = 1000) {
         return this.parse(symbolName, restriction, maxResults, false, maxRecursion, maxChars);
     }
     /**
      * A convenience method around parse(), for random results
      */
-    sample(symbolName, restriction = {}, maxRecursion = 4, maxChars = 1000) {
-        return this.parse(symbolName, restriction, 1, true, maxRecursion, maxChars);
+    sample(symbolName = "", numSamples = 1, restriction = {}, maxTries = 1000, maxRecursion = 4, maxChars = 1000) {
+        var results = [];
+        var tries = 0;
+        while (results.length < numSamples && tries < maxTries) {
+            const result = [...this.parse(symbolName, restriction, 1, true, maxRecursion, maxChars)];
+            results = results.concat(result);
+            tries++;
+        }
+        return results;
     }
     addSheetAux(sheetName) {
         if (sheetName in this.sheets) {
@@ -2198,9 +2205,7 @@ class Project {
     addSheet(sheetName) {
         // add this sheet and any sheets that it refers to
         this.addSheetAux(sheetName);
-        if (this.defaultSheetName == "") {
-            this.defaultSheetName = sheetName;
-        }
+        this.defaultSheetName = sheetName;
     }
     addSheetAsText(sheetName, text) {
         this.devEnv.addSourceAsText(sheetName, text);
@@ -2313,7 +2318,7 @@ exports.createProject = createProject;
 },{"./devEnv":2,"./stateMachine":5,"./util":7}],5:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Maybe = exports.Empty = exports.Rep = exports.Any = exports.Rename = exports.Drop = exports.Proj = exports.Emb = exports.Not = exports.Semijoin = exports.Join = exports.Uni = exports.Seq = exports.Literalizer = exports.Lit = exports.NegationState = exports.RenameState = exports.DropState = exports.ProjectionState = exports.EmbedState = exports.RepetitionState = exports.JoinState = exports.UnionState = exports.ConcatState = exports.TrivialState = exports.LiteralState = exports.AnyCharState = exports.State = exports.Namespace = exports.CounterStack = void 0;
+exports.Maybe = exports.Empty = exports.Rep = exports.Any = exports.Rename = exports.Drop = exports.Proj = exports.Emb = exports.Not = exports.Semijoin = exports.Join = exports.Uni = exports.Seq = exports.Literalizer = exports.Lit = exports.NegationState = exports.RenameState = exports.DropState = exports.ProjectionState = exports.EmbedState = exports.RepetitionState = exports.JoinState = exports.MorePerfectUnion = exports.UnionState = exports.ConcatState = exports.TrivialState = exports.LiteralState = exports.AnyCharState = exports.State = exports.Namespace = exports.CounterStack = void 0;
 const tapes_1 = require("./tapes");
 /**
  * CounterStack
@@ -2382,15 +2387,20 @@ class Namespace {
         this.parent = undefined;
         this.childNamespaces = {};
         this.requiredNamespaces = new Set();
+        this.defaultSymbolName = "";
     }
     hasSymbol(name) {
         return name in this.symbols;
     }
     addSymbol(name, state) {
+        if (name.indexOf(".") != -1) {
+            throw new Error('Cannot define a symbol with a period in its name');
+        }
         if (name in this.symbols) {
             throw new Error(`Redefining symbol ${name}`);
         }
         this.symbols[name] = state;
+        this.defaultSymbolName = name;
     }
     allSymbols() {
         const result = Object.keys(this.symbols);
@@ -2429,8 +2439,17 @@ class Namespace {
         return undefined;
     }
     get(name) {
+        if (name == "") {
+            return this.getDefault();
+        }
         const pieces = name.split(".");
         return this.getNamePieces(pieces);
+    }
+    getDefault() {
+        if (this.defaultSymbolName == "") {
+            return undefined;
+        }
+        return this.symbols[this.defaultSymbolName];
     }
     /**
      * When an EmbedState is constructed, it needs to "register" the symbol
@@ -2903,6 +2922,71 @@ class UnionState extends BinaryState {
     }
 }
 exports.UnionState = UnionState;
+/**
+ * UnionStates are very simple, they just have a left child and a right child,
+ * and upon querying they yield from the first and then yield from the second.
+ *
+ * So note that UnionStates are only around initally; they don't construct
+ * successor UnionStates, their successors are just the successors of their children.
+ */
+class MorePerfectUnion extends State {
+    constructor(children) {
+        super();
+        this.children = children;
+        this.randomChild = undefined;
+    }
+    setRandom(randomize, symbolStack) {
+        for (const child of this.children) {
+            child.setRandom(randomize, symbolStack);
+        }
+        if (!randomize) {
+            this.randomChild = undefined;
+            return;
+        }
+        this.randomChild = this.children[Math.floor(Math.random() * this.children.length)];
+    }
+    collectVocab(tapes, stateStack) {
+        for (const child of this.children) {
+            child.collectVocab(tapes, stateStack);
+        }
+    }
+    getRelevantTapes(stateStack) {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set();
+            for (const child of this.children) {
+                const childTapes = child.getRelevantTapes(stateStack);
+                this.relevantTapes = new Set([...this.relevantTapes, ...childTapes]);
+            }
+        }
+        return this.relevantTapes;
+    }
+    get id() {
+        return `${this.constructor.name}(${this.children.map(c => c.id).join("|")})`;
+    }
+    accepting(symbolStack) {
+        if (this.randomChild != undefined) {
+            // we've been randomized
+            return this.randomChild.accepting(symbolStack);
+        }
+        for (const child of this.children) {
+            if (child.accepting(symbolStack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    *ndQuery(tape, target, symbolStack) {
+        if (this.randomChild != undefined) {
+            // we've been randomized
+            yield* this.randomChild.dQuery(tape, target, symbolStack);
+            return;
+        }
+        for (const child of this.children) {
+            yield* child.dQuery(tape, target, symbolStack);
+        }
+    }
+}
+exports.MorePerfectUnion = MorePerfectUnion;
 /**
  * Convenience function that takes two generators, and yields from the
  * second only if it can't yield from the first.  This is handy in situations
@@ -3421,10 +3505,13 @@ function Uni(...children) {
     if (children.length == 0) {
         return Empty();
     }
+    return new MorePerfectUnion(children);
+    /*
     if (children.length == 1) {
         return children[0];
     }
-    return new UnionState(children[0], Uni(...children.slice(1)));
+
+    return new UnionState(children[0], Uni(...children.slice(1))); */
 }
 exports.Uni = Uni;
 /*

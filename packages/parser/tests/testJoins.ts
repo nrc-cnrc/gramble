@@ -297,16 +297,6 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "hello", unrelated: "foo"},
                               {text: "hello", unrelated: "foo"}]);
     });
-
-    describe('Joining unrelated-tier alts in different directions', function() {
-        const grammar = Join(Uni(text("hello"), unrelated("foo")),
-                             Uni(unrelated("foo"), text("hello")));
-        testGrammar(grammar, [{unrelated: "foo"},
-                              {text: "hello"},
-                              {text: "hello", unrelated: "foo"},
-                              {text: "hello", unrelated: "foo"}]);
-    });
-
     /*
     describe('Repetition bug with unrelated text', function() {
         const grammar = Join(Seq(Uni(text("h"), text("hh")), unrelated("world")), Seq(Uni(text("h"), text("hh")), unrelated("world")));

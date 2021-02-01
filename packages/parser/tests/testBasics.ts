@@ -6,7 +6,6 @@ import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    
     describe('Literal text:hello', function() {
         const grammar = text("hello");
         testHasTapes(grammar, ["text"]);
@@ -61,7 +60,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(text("hello"), Seq(text(", ")), text("world"));
         testGrammar(grammar, [{text: "hello, world"}]);
     });
-
+    
     describe('text:hello+unrelated:foo', function() {
         const grammar = Seq(text("hello"), unrelated("foo"));
         testHasTapes(grammar, ["text", "unrelated"]);
@@ -130,7 +129,5 @@ describe(`${path.basename(module.filename)}`, function() {
         const outputs = [...grammar.run()];
         testNumOutputs(outputs, 1);
         testHasOutput(outputs, "text", "hello");
-    });
-    */
-
+    }); */
 });
