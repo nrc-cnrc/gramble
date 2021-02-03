@@ -1,5 +1,5 @@
 import { Seq, Join, Drop } from "../src/stateMachine";
-import { text, unrelated, testHasTapes, testHasVocab, testGrammar } from './testUtils';
+import { text, unrelated, testHasTapes, testHasVocab, testGrammar, t1, t2, t3 } from './testUtils';
 
 import * as path from 'path';
 
@@ -25,9 +25,20 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{text: "hello", unrelated: "bar"}]);
     });
 
-    describe('Drop(unrelated, text:hello+unrelated:foo) & unrelated:bar', function() {
+    
+    describe('unrelated:bar + drop(unrelated, text:hello+unrelated:foo)', function() {
+        const grammar = Seq(unrelated("bar"), Drop(Seq(text("hello"), unrelated("foo")), "unrelated"));
+        testGrammar(grammar, [{text: "hello", unrelated: "bar"}]);
+    });
+
+    describe('drop(unrelated, text:hello+unrelated:foo) & unrelated:bar', function() {
         const grammar = Join(Drop(Seq(text("hello"), unrelated("foo")), "unrelated"),
                              unrelated("bar"));
+        testGrammar(grammar, [{text: "hello", unrelated: "bar"}]);
+    });
+
+    describe('unrelated:bar & drop(unrelated, text:hello+unrelated:foo) ', function() {
+        const grammar = Join(unrelated("bar"), Drop(Seq(text("hello"), unrelated("foo")), "unrelated"));
         testGrammar(grammar, [{text: "hello", unrelated: "bar"}]);
     });
 
@@ -41,6 +52,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Drop(Join(Seq(text("hello"), unrelated("foo")),
                                   Seq(text("hello"), unrelated("bar"))), "unrelated");
         testGrammar(grammar, []);
+    });
+    
+    describe('Nested drop', function() {
+        const grammar = Drop(Drop(Seq(t1("foo"), t2("hello"), t3("bar")), "t1"), "t3");
+        testGrammar(grammar, [{t2: "hello"}]);
     });
 
 });

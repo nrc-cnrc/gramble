@@ -7,6 +7,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // Embedding tests
 
+    
     describe('Symbol containing text:hello', function() {
         const symbolTable = new Namespace({ "s": text("hello") });
         const grammar = Emb("s", symbolTable);
@@ -161,6 +162,20 @@ describe(`${path.basename(module.filename)}`, function() {
                     2);
     });
 
+    
+    describe('Emitting from center-recursive "hello+ world" with max recursion 2', function() {
+        const symbolTable = new Namespace();
+        const world = Uni(text("world"), Emb("helloWorld", symbolTable))
+        const helloWorld = Seq(text("hello"), world, text("hello"));
+        symbolTable.addSymbol("helloWorld", helloWorld);
+
+        const grammar = helloWorld;
+        testGrammar(grammar, [{text: "helloworldhello"},
+                              {text: "hellohelloworldhellohello"},
+                              {text: "hellohellohelloworldhellohellohello"}],
+                    2);
+    });
+
     describe('Emitting from right-recursive "hello+ world" with max recursion 0', function() {
         const symbolTable = new Namespace();
         const world = Uni(text("world"), Emb("helloWorld", symbolTable))
@@ -207,5 +222,5 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = helloWorld;
         testGrammar(grammar, [{text: "helloworld"}], 0);
     });
-
+    
 });

@@ -6,7 +6,7 @@ import * as path from 'path';
 describe(`${path.basename(module.filename)}`, function() {
 
     // Projection tests
-
+ 
     describe('Projection(text) of text:hello', function() {
         const grammar = Proj(text("hello"), "text");
         testGrammar(grammar, [{text: "hello"}]);
@@ -29,9 +29,19 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{text: "hello", unrelated: "bar"}]);
     });
 
+    describe('unrelated:bar + proj(text, text:hello+unrelated:foo)', function() {
+        const grammar = Seq(unrelated("bar"), Proj(Seq(text("hello"), unrelated("foo")), "text"));
+        testGrammar(grammar, [{text: "hello", unrelated: "bar"}]);
+    });
+
     describe('Proj(text, text:hello+unrelated:foo) & unrelated:bar', function() {
         const grammar = Join(Proj(Seq(text("hello"), unrelated("foo")),"text"),
                              unrelated("bar"));
+        testGrammar(grammar, [{text: "hello", unrelated: "bar"}]);
+    });
+
+    describe('unrelated:bar & proj(text, text:hello+unrelated:foo)', function() {
+        const grammar = Join(unrelated("bar"), Proj(Seq(text("hello"), unrelated("foo")), "text"));
         testGrammar(grammar, [{text: "hello", unrelated: "bar"}]);
     });
 
@@ -47,4 +57,14 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, []);
     });
 
+    describe('Nested projection(text) of text:hello', function() {
+        const grammar = Proj(Proj(text("hello"), "text"), "text");
+        testGrammar(grammar, [{text: "hello"}]);
+    });
+
+    
+    describe('Nested projection(text) of text:hello+unrelated:foo', function() {
+        const grammar = Proj(Proj(Seq(text("hello"), unrelated("foo")), "text"), "text");
+        testGrammar(grammar, [{text: "hello"}]);
+    });
 });

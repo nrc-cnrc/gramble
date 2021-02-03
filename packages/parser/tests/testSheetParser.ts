@@ -53,7 +53,6 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobaz", gloss: "jump-2SG" }
         ]);
     });
-
     
     describe('Embeds and unit tests', function() {
 
@@ -69,7 +68,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
     describe('Negative tests', function() {
 
         const project = sheetFromFile("./tests/csvs/negativeTests.csv");

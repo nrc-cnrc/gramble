@@ -114,6 +114,7 @@ export function testGrammar(grammar: State,
                             maxRecursion: number = 4, 
                             maxChars: number = 1000): void {
     var outputs: StringDict[] = [];
+    grammar = grammar.compile(new CounterStack(maxRecursion));
     try {
         outputs = [...grammar.generate(false, maxRecursion, maxChars)];
     } catch (e) {
@@ -172,7 +173,7 @@ export function testErrorInCell(devEnv: DevEnvironment, sheet: string, row: numb
  */
 export function testErrors(project: Project, expectedErrors: [string, number, number, string][]) {
     const devEnv = project.devEnv;
-    it(`should have ${expectedErrors.length} errors/warnings}`, function() {
+    it(`should have ${expectedErrors.length} errors/warnings`, function() {
         expect(devEnv.numErrors("any")).to.equal(expectedErrors.length);
     });
 

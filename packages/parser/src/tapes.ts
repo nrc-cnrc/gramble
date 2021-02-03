@@ -389,9 +389,10 @@ export class TapeCollection extends Tape {
         return this.tapes.size;
     }
 
+    /*
     public addTape(tape: Tape): void {
         this.tapes.set(tape.tapeName, tape);
-    }
+    } */
     
     public getTapeNames(): string[] {
         return [...this.tapes.keys()];
@@ -431,6 +432,10 @@ export class TapeCollection extends Tape {
             throw new Error(`Undefined tape: ${tapeName}`);
         }
         return tape.fromBits(tapeName, bits);
+    }
+
+    public any(): Token {
+        return ANY_CHAR;
     }
 }
 

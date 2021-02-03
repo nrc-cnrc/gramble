@@ -13,6 +13,12 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{text: "hello"}]);
     });
 
+    describe('Empty grammar', function() {
+        const grammar = Empty();
+        testHasTapes(grammar, []);
+        testGrammar(grammar, [{}]);
+    });
+
     describe('Sequence text:hello+test:world', function() {
         const grammar = Seq(text("hello"), text("world"));
         testHasTapes(grammar, ["text"]);
@@ -87,6 +93,18 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "hello"},
                               {t2: "goodbye"}]);
     });
+
+
+    describe('Alt of sequences', function() {
+
+        const grammar = Uni(Seq(t1("hello"), t2("kitty")),
+                            Seq(t1("goodbye"), t2("world")));
+        testGrammar(grammar, [
+            { t1: "hello", t2: "kitty" },
+            { t1: "goodbye", t2: "world" }
+        ]);
+    });
+
 
     describe('Sequence with alt: (text:hello|text:goodbye)+text:world', function() {
         const grammar = Seq(Uni(text("hello"), text("goodbye")), text("world"));

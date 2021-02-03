@@ -20,22 +20,22 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
 
-    describe('Joining text:hello & text:hello+text:<emtpy>', function() {
+    describe('Joining text:hello & text:hello+text:""', function() {
         const grammar = Join(text("hello"), Seq(text("hello"), text("")));
         testGrammar(grammar, [{text: "hello"}]);
     });
 
-    describe('Joining text:hello & text:<emtpy>+text:hello', function() {
+    describe('Joining text:hello & text:""+text:hello', function() {
         const grammar = Join(text("hello"), Seq(text(""), text("hello")));
         testGrammar(grammar, [{text: "hello"}]);
     });
 
-    describe('Joining text:<emtpy>+text:hello & text:hello', function() {
+    describe('Joining text:""+text:hello & text:hello', function() {
         const grammar = Join(Seq(text(""), text("hello")), text("hello"));
         testGrammar(grammar, [{text: "hello"}]);
     });
 
-    describe('Joining text:hello+text:<emtpy> & text:hello', function() {
+    describe('Joining text:hello+text:"" & text:hello', function() {
         const grammar = Join(Seq(text("hello"), text("")), text("hello"));
         testGrammar(grammar, [{text: "hello"}]);
     });
@@ -279,7 +279,6 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "hello", unrelated: "foo"}]);
     });
 
-
     describe('Joining unrelated-tier alts in same direction', function() {
         const grammar = Join(Uni(text("hello"), unrelated("foo")),
                              Uni(text("hello"), unrelated("foo")));
@@ -297,13 +296,6 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "hello", unrelated: "foo"},
                               {text: "hello", unrelated: "foo"}]);
     });
-    /*
-    describe('Repetition bug with unrelated text', function() {
-        const grammar = Join(Seq(Uni(text("h"), text("hh")), unrelated("world")), Seq(Uni(text("h"), text("hh")), unrelated("world")));
-        const outputs = [...grammar.generate()];
-        testNumOutputs(outputs, 2);
-    });
-    */
 
     describe('Unfinished join', function() {
         const grammar = Join(text("h"), text("hello"));
@@ -344,6 +336,11 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, []);
     });
 
+    describe('Left semijoin of text:hello & text:h', function() {
+        const grammar = Semijoin(text("hello"), text("h"));
+        const outputs = [...grammar.generate()];
+        testGrammar(grammar, []);
+    });
     
     describe('Left semijoin of text:hello+unrelated:foo & text:hello', function() {
         const grammar = Semijoin(Seq(text("hello"), unrelated("foo")), text("hello"));
@@ -355,5 +352,32 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Semijoin(text("hello"), Seq(text("hello"), unrelated("foo")));
         const outputs = [...grammar.generate()];
         testGrammar(grammar, []);
+    }); 
+    
+    describe('Left semijoin of text:hi+unrelated:world & text:hi+unrelated:world', function() {
+        const grammar = Semijoin(Seq(text("hi"), unrelated("world")),
+                             Seq(text("hi"), unrelated("world")));
+        testGrammar(grammar, [{text: "hi", unrelated: "world"}]);
     });
+
+    describe('Left semijoin of  unrelated:world+text:hello & text:hello+unrelated:world', function() {
+        const grammar = Semijoin(Seq(unrelated("world"), text("hello")),
+                             Seq(text("hello"), unrelated("world")));
+        testGrammar(grammar, [{text: "hello", unrelated: "world"}]);
+    });
+
+    describe('Semijoining unrelated-tier alts in same direction', function() {
+        const grammar = Semijoin(Uni(text("hello"), unrelated("foo")),
+                             Uni(text("hello"), unrelated("foo")));
+        testGrammar(grammar, [{text: "hello"},
+                              {unrelated: "foo"}]);
+    });
+
+    describe('Semijoining unrelated-tier alts in different directions', function() {
+        const grammar = Semijoin(Uni(unrelated("foo"), text("hello")),
+                             Uni(text("hello"), unrelated("foo")));
+        testGrammar(grammar, [{unrelated: "foo"},
+                              {text: "hello"}]);
+    });
+
 });
