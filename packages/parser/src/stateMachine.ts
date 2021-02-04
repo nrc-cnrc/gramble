@@ -111,6 +111,7 @@ export class Namespace {
 
     protected childNamespaces: {[name: string]: Namespace} = {};
     public requiredNamespaces: Set<string> = new Set();
+    public defaultNamespaceName: string = "";
     public defaultSymbolName: string = "";
 
     public hasSymbol(name: string): boolean {
@@ -119,13 +120,105 @@ export class Namespace {
 
     public addSymbol(name: string, state: State): void {
         if (name.indexOf(".") != -1) {
-            throw new Error('Cannot define a symbol with a period in its name');
+            throw new Error(`Symbol names may not contain a period: ${name}`);
         }
         if (name in this.symbols) {
             throw new Error(`Redefining symbol ${name}`);
         }
         this.symbols[name] = state;
         this.defaultSymbolName = name;
+    }
+
+    public resolveName(name: string): [Namespace, string] | undefined {
+
+        const pieces = name.split(".", 2);
+        if (pieces.length == 1) {
+            // it's either a local symbol name, or a local namespace name with the default symbol name,
+            // or in our default namespace
+
+            const symbol = this.symbols[name];
+            if (symbol != undefined) {
+                return [this, name];  // it's a local symbol
+            }
+
+            if (this.defaultSymbolName != "") {
+                const ns = this.getLocalNamespace(name);
+                if (ns != undefined) {
+                    return [ns, ns.defaultSymbolName]; // it's a local namespace name with the default symbol
+                }
+            }
+
+            if (this.defaultNamespaceName != "") {
+                const ns = this.getLocalNamespace(this.defaultNamespaceName);
+                if (ns != undefined) {
+                    const result = ns.symbols[name];
+                    if (result != undefined) {
+                        return [ns, name]; // it's a symbol in our default namespace
+                    }
+                }
+            }
+        } else {
+            // there is more than one name piece, so this is a name qualified by a namespace. look
+            // for the namespace locally, and ask for that one
+     
+            const ns = this.getLocalNamespace(pieces[0]);
+            if (ns != undefined) {
+                const remnant = pieces.slice(1).join("");
+                const result = ns.resolveName(remnant);
+                if (result != undefined) {
+                    return result;
+                }
+            }
+        }
+        
+        // if you still can't find it, see if your parent can resolve it
+        if (this.parent != undefined) {
+            const result = this.parent.resolveName(name);
+            if (result != undefined) {
+                return result;
+            }
+        }
+        return undefined;
+    }
+
+    public compileSymbol(
+        name: string, 
+        allTapes: TapeCollection, 
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): void {
+        const resolution = this.resolveName(name);
+        if (resolution == undefined) {
+            // this is an error due to an undefined symbol, but now isn't the time
+            // to raise a fuss.  this error will be caught elsewhere and the programmer
+            // will be notified
+            return;
+        }
+        const [ns, symbolName] = resolution;
+        ns.compileLocalSymbol(symbolName, allTapes, symbolStack, compileLevel);
+    }
+
+    public compileLocalSymbol(
+        name: string, 
+        allTapes: TapeCollection, 
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): void {
+        
+        if (name.indexOf(".") != -1) {
+            throw new Error(`Trying to locally compile a qualified name ${name}; ` +
+                    " this should have been resolved in symbol resolution");
+        }
+        
+        const compiledName = name + "@@@" + symbolStack.id;
+        if (compiledName in this.symbols) {
+            // already compiled it
+            return;
+        }
+
+        const state = this.symbols[name];
+        const compiledState = state.compileAux(allTapes, symbolStack, compileLevel);
+        this.symbols[compiledName] = compiledState;
     }
 
     public allSymbols(): string[] {
@@ -139,7 +232,10 @@ export class Namespace {
         return result;
     }
 
-    public addNamespace(name: string, namespace: Namespace): void {
+    public addLocalNamespace(name: string, namespace: Namespace): void {
+        if (name.indexOf(".") != -1) {
+            throw new Error(`Namespace names may not contain a period: ${name}`);
+        }
         if (name in this.childNamespaces) {
             throw new Error(`Redefining namespace ${name}`);
         }
@@ -147,44 +243,45 @@ export class Namespace {
         namespace.parent = this;
     }
 
-    public getNamespace(name: string): Namespace {
+    public setDefaultNamespaceName(name: string): void {
         if (!(name in this.childNamespaces)) {
-            throw new Error(`Cannot find namespace ${name}`);
+            throw new Error(`Trying to set ${name} to the default namespace, but it doesn't exist yet.`);
         }
+        this.defaultNamespaceName = name;
+    }
+
+    /**
+     * Gets a namespace by name, but only local ones (i.e. children of this namespace)
+     */
+    public getLocalNamespace(name: string): Namespace | undefined {
         return this.childNamespaces[name];
     }
 
-    protected getNamePieces(namePieces: string[]): State | undefined {
-
-        if (namePieces.length == 1 && namePieces[0] in this.symbols) {
-            return this.symbols[namePieces[0]];
+    public getLocalSymbol(name: string, 
+                        symbolStack: CounterStack | undefined = undefined): State | undefined {
+        if (symbolStack != undefined) {
+            const compiledName = this.getCompiledName(name, symbolStack);
+            if (compiledName in this.symbols) {
+                return this.symbols[compiledName]
+            }
         }
-
-        if (namePieces[0] in this.childNamespaces) {   
-            const remainder = namePieces.slice(1);
-            return this.childNamespaces[namePieces[0]].getNamePieces(remainder);
-        }
-
-        if (this.parent != undefined) {
-            return this.parent.getNamePieces(namePieces);
-        }
-
-        return undefined;
+        return this.symbols[name];
     }
 
-    public get(name: string): State | undefined {
-        if (name == "") {
-            return this.getDefault();
-        }
-        const pieces = name.split(".")
-        return this.getNamePieces(pieces);
+    protected getCompiledName(symbolName: string, symbolStack: CounterStack) {
+        return symbolName + "@@@" + symbolStack.id;
     }
 
-    public getDefault(): State | undefined {
-        if (this.defaultSymbolName == "") {
+    public getSymbol(name: string, 
+                symbolStack: CounterStack | undefined = undefined): State | undefined {
+
+        const resolution = this.resolveName(name);
+        if (resolution == undefined) {
             return undefined;
         }
-        return this.symbols[this.defaultSymbolName];
+
+        const [ns, localName] = resolution;
+        return ns.getLocalSymbol(localName, symbolStack);
     }
 
     /**
@@ -250,9 +347,6 @@ export class Namespace {
  */
 
 export abstract class State {
-
-    
-    protected compiledState: State | undefined = undefined;
 
     /**
      * Due to complications involved in compilation, States sometimes have to keep reference
@@ -406,12 +500,54 @@ export abstract class State {
         yield *results;
 
     }
-    
+
+    public runUnitTest(test: State): boolean {
+        const testingState = Semijoin(this, test);
+        const tapeCollection = this.getAllTapes(); // see the commentary on .parse() for why we have
+        test.collectVocab(tapeCollection, []); // to do something special with the tapes.
+        testingState.allTapes = tapeCollection;
+        const results = [...testingState.generate()];
+        return (results.length != 0);
+    }
+
+    public *parse(inputs: StringDict,
+                randomize: boolean = false,
+                maxRecursion: number = 4, 
+                maxChars: number = 1000): Gen<StringDict> {
+
+        const inputLiterals: State[] = [];
+        for (const tapeName in inputs) {
+            const value = inputs[tapeName];
+            const inputLiteral = Lit(tapeName, value);
+            inputLiterals.push(inputLiteral);
+        }
+
+        var startState: State = this;
+
+        if (inputLiterals.length > 0) {
+            const inputSeq = Seq(...inputLiterals);
+            startState = Join(inputSeq, startState); 
+            const tapeCollection = this.getAllTapes(); // in case this state has already
+                    // been compiled, we need to start the algorithm with the same vocab.
+                    // if it hasn't been compiled, .allTapes always starts as undefined anyway,
+                    // so it's no change.
+            inputSeq.collectVocab(tapeCollection, []);   
+                                        // add any new characters in the inputs to the vocab
+                                        //  this would actually happen automatically
+                                        // anyway, but I'd rather do it explicitly here 
+                                        // than rely on an undocumented side-effect
+            startState.allTapes = tapeCollection; 
+        }
+
+        yield *startState.generate(randomize, maxRecursion, maxChars);
+    }
+
     /**
      * Performs a breadth-first traversal of the graph.  This will be the function that most 
      * clients will be calling.
      * 
-     * Note that there's no corresponding "parse" function, only "generate".  To do parses, we
+     * Even parsing is just calling generate.  (It's a separate function only because of a
+     * complication with compilation.)  To do parses, we
      * join the grammar with a grammar corresponding to the query.  E.g., if we wanted to parse
      * { text: "foo" } in grammar X, we would construct JoinState(LiteralState("text", "foo"), X).
      * The reason for this is that it allows us a diverse collection of query types for free, by
@@ -426,7 +562,6 @@ export abstract class State {
                     maxRecursion: number = 4, 
                     maxChars: number = 1000): Gen<StringDict> {
         
-
         const symbolStack = new CounterStack(maxRecursion);
         var startState: State = this;
         const allTapes = this.getAllTapes();
@@ -491,19 +626,22 @@ export abstract class State {
         return this.getRelevantTapes(symbolStack).has(tape.tapeName);
     }
 
-    public compileAux(allTapes: TapeCollection, symbolStack: CounterStack): State {
+    public compileAux(
+        allTapes: TapeCollection, 
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
         return this;
     }
 
-    public compile(symbolStack: CounterStack): State {
-        if (this.allTapes == undefined) {
-            this.allTapes = new TapeCollection();
-            this.collectVocab(this.allTapes, []);
-        }
-        const myReplacement = this.compileAux(this.allTapes, symbolStack);
-        myReplacement.allTapes = this.allTapes;
-        return myReplacement;
+    public compile(
+        compileLevel: number,
+        maxRecursion: number = 4
+    ): State {
+        const allTapes = this.getAllTapes();
+        return this.compileAux(allTapes, new CounterStack(maxRecursion), compileLevel);
     }
+
 }
 
 class CompiledState extends State {
@@ -515,12 +653,11 @@ class CompiledState extends State {
     constructor(
         originalState: State,
         allTapes: TapeCollection,
-        symbolStack: CounterStack
+        symbolStack: CounterStack,
+        compileLevel: number,
     ) {
         super();
         this.id = `compiled(${originalState.id}@${symbolStack.id})`;
-
-        console.log(`compiling ${originalState.id} at ${symbolStack.id}`);
         // your relevant states, and your accepting status, are inherited from the original
         this.relevantTapes = originalState.getRelevantTapes(symbolStack);
         this.acceptingOnStart = originalState.accepting(symbolStack);
@@ -530,11 +667,12 @@ class CompiledState extends State {
         for (const tape of tapes) {
             for (const [resTape, resToken, resMatched, resNext] of 
                                     originalState.dQuery(tape, tape.any(), symbolStack)) {
-                
-                console.log(`adding a ${tape.tapeName} transition (matching ${resTape.tapeName})`);
-                this.addTransition(tape, resTape, resToken, resMatched, resNext);
+                const compiledNext = resNext.compileAux(allTapes, symbolStack, compileLevel-1);
+                this.addTransition(tape, resTape, resToken, resMatched, compiledNext);
             }
         }
+
+        this.allTapes = allTapes;
     }
 
     public addTransition(queryTape: Tape,
@@ -568,18 +706,6 @@ class CompiledState extends State {
         target: Token,
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
-        console.log(`${this.id} looking for ${tape.tapeName}`);
-        
-        /*if (!this.caresAbout(tape)) {
-            if (this.relevantTapes == undefined) {
-                console.log("I don't know what tapes are relevant to me...?")
-            } else {            
-                console.log(`don't care, i only care about [${[...this.relevantTapes.entries()]}]`);
-            }
-            yield [tape, target, false, this];
-            return;
-        }*/
-
         const transitions = this.transitionsByTape[tape.tapeName];
         if (transitions == undefined) {
             // no transitions were recording for this tape, it must have failed for all possibilities
@@ -591,14 +717,11 @@ class CompiledState extends State {
                 yield [origResultTape, token, matched, next];
                 return;
             }
-            console.log(`looking for a ${tape.tapeName}, matching a ${origResultTape.tapeName}`);
             const matchedTape = tape.matchTape(origResultTape.tapeName);
             if (matchedTape == undefined) {
                 throw new Error(`Failed to match ${tape.tapeName} to ${origResultTape.tapeName}..?`);
             }
             const resultToken = matchedTape.match(token, target);
-            console.log(`    ${tape.fromBits(matchedTape.tapeName, resultToken.bits).join("|")}`);
-            console.log(`    result is ${next.id}`);
             yield [matchedTape, resultToken, matched, next];
         }
     }
@@ -821,14 +944,22 @@ export class ConcatState extends BinaryState {
         super(child1, child2, relevantTapes);
     }
 
-    public compileAux(allTapes: TapeCollection, symbolStack: CounterStack): State {
+    public compileAux(
+        allTapes: TapeCollection, 
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
+
+        if (compileLevel <= 0) {
+            return this;
+        }
         
-        const newChild1 = this.child1.compileAux(allTapes, symbolStack);
-        const newChild2 = this.child2.compileAux(allTapes, symbolStack);
+        const newChild1 = this.child1.compileAux(allTapes, symbolStack, compileLevel);
+        const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
 
         const newThis = new ConcatState(newChild1, newChild2, this.child1Done, this.relevantTapes);
 
-        return new CompiledState(newThis, allTapes, symbolStack);
+        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
 
 
@@ -953,11 +1084,19 @@ export class UnionState extends State {
         super();
     }
     
-    public compileAux(allTapes: TapeCollection, symbolStack: CounterStack): State {
+    public compileAux(
+        allTapes: TapeCollection, 
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
         
-        const newChildren = this.children.map(c => c.compileAux(allTapes, symbolStack));
+        if (compileLevel <= 0) {
+            return this;
+        }
+
+        const newChildren = this.children.map(c => c.compileAux(allTapes, symbolStack, compileLevel));
         const newThis = new UnionState(newChildren);
-        return new CompiledState(newThis, allTapes, symbolStack);
+        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
 
 
@@ -1059,11 +1198,18 @@ class SemijoinState extends BinaryState {
      * Because .successor() on both this and its descendent JoinState are
      * so simple, we only have to write one semicompile() for both
      */
-    public compileAux(allTapes: TapeCollection, symbolStack: CounterStack): State {
-        const newChild1 = this.child1.compileAux(allTapes, symbolStack);
-        const newChild2 = this.child2.compileAux(allTapes, symbolStack);
+    public compileAux(
+        allTapes: TapeCollection, 
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
+        if (compileLevel <= 0) {
+            return this;
+        }
+        const newChild1 = this.child1.compileAux(allTapes, symbolStack, compileLevel);
+        const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
         const newThis = this.successor(newChild1, newChild2);
-        return new CompiledState(newThis, allTapes, symbolStack);
+        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
 
     /**
@@ -1225,11 +1371,19 @@ export class RepetitionState extends UnaryState {
         super();
     }
 
-    public compileAux(allTapes: TapeCollection, symbolStack: CounterStack): State {
-        const newInitialChild = this.initialChild.compileAux(allTapes, symbolStack);
+    public compileAux(
+        allTapes: TapeCollection, 
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
+        
+        if (compileLevel <= 0) {
+            return this;
+        }
+        const newInitialChild = this.initialChild.compileAux(allTapes, symbolStack, compileLevel);
         const newThis = new RepetitionState(this.child, this.minReps, this.maxReps, 
                                                     this.index, newInitialChild);
-        return new CompiledState(newThis, allTapes, symbolStack);
+        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
     
     public collectVocab(tapes: Tape, stateStack: string[]): void {
@@ -1308,7 +1462,7 @@ export class RepetitionState extends UnaryState {
  * first letter again and again.)  We keep track of that through the _child member, which is initially undefined
  * but which we specify when constructing EmbedState's successor.
  */
-export class EmbedState extends UnaryState {
+export class EmbedState extends State {
 
     constructor(
         public symbolName: string,
@@ -1328,24 +1482,31 @@ export class EmbedState extends UnaryState {
         return `${this.constructor.name}(${this.symbolName})`;
     }
 
-    public compileAux(allTapes: TapeCollection, symbolStack: CounterStack): State {
+    public compileAux(
+        allTapes: TapeCollection, 
+        symbolStack: CounterStack, 
+        compileLevel: number
+    ): State {
+        
+        if (compileLevel <= 0) {
+            return this;
+        }
+        
         if (symbolStack.exceedsMax(this.symbolName)) {
             return this;
         }
 
         const newStack = symbolStack.add(this.symbolName);
-        const newChild = this.child.compileAux(allTapes, newStack);
-        const newThis = new EmbedState(this.symbolName, this.namespace, newChild, this.relevantTapes);
-        return new CompiledState(newThis, allTapes, symbolStack);
+        this.namespace.compileSymbol(this.symbolName, allTapes, newStack, compileLevel);
+        return new CompiledState(this, allTapes, symbolStack, compileLevel);
     } 
-
     
     public setRandom(randomize: boolean, symbolStack: CounterStack): void {
         if (symbolStack.exceedsMax(this.symbolName)) {
             return;
         }
         const newStack = symbolStack.add(this.symbolName);
-        this.child.setRandom(randomize, newStack);
+        this.getChild(newStack).setRandom(randomize, newStack);
     }
     
     public collectVocab(tapes: Tape, stateStack: string[]): void {
@@ -1353,7 +1514,7 @@ export class EmbedState extends UnaryState {
             return;
         }
         const newStack = [...stateStack, this.symbolName];
-        this.child.collectVocab(tapes, newStack);
+        this.getChild().collectVocab(tapes, newStack);
     }
 
     public getRelevantTapes(stateStack: CounterStack): Set<string> {
@@ -1362,15 +1523,16 @@ export class EmbedState extends UnaryState {
                 this.relevantTapes = new Set();
             } else {
                 const newStack = stateStack.add(this.symbolName);
-                this.relevantTapes = this.child.getRelevantTapes(newStack);
+                this.relevantTapes = this.getChild(newStack).getRelevantTapes(newStack);
             }
         }
         return this.relevantTapes;
     }
 
+    /*
     public get child(): State {
         if (this._child == undefined) {
-            this._child = this.namespace.get(this.symbolName);
+            this._child = this.namespace.getSymbol(this.symbolName);
             if (this._child == undefined) {
                 // this is an error, typically caused by programmer error,
                 // but now is not when we notify the programmer.  just
@@ -1379,15 +1541,29 @@ export class EmbedState extends UnaryState {
             }
         }
         return this._child;
-    }
+    } */
 
+    public getChild(symbolStack: CounterStack | undefined = undefined): State {
+        if (this._child == undefined) {
+            const child = this.namespace.getSymbol(this.symbolName, symbolStack);
+            if (child == undefined) {
+                // this is an error, due to the programmer referring to an undefined
+                // symbol, but now is not the time to complain.  it'll be caught elsewhere
+                // and the programmer will be notified.  just fail gracefully by treating
+                // the child as the empty grammar
+                return Empty();
+            } 
+            return child;
+        }
+        return this._child;
+    }
     
     public accepting(symbolStack: CounterStack): boolean {
         if (symbolStack.exceedsMax(this.symbolName)) {
             return false;
         }
-        
-        return this.child.accepting(symbolStack.add(this.symbolName));
+        const newStack = symbolStack.add(this.symbolName);
+        return this.getChild(newStack).accepting(newStack);
     }
 
     public *ndQuery(tape: Tape, 
@@ -1399,8 +1575,9 @@ export class EmbedState extends UnaryState {
         }
 
         symbolStack = symbolStack.add(this.symbolName);
+        const child = this.getChild(symbolStack);
         for (const [childchildTape, childTarget, childMatched, childNext] of 
-                this.child.dQuery(tape, target, symbolStack)) {
+                        child.dQuery(tape, target, symbolStack)) {
             const successor = new EmbedState(this.symbolName, this.namespace, childNext, this.relevantTapes);
             yield [childchildTape, childTarget, childMatched, successor];
         }
@@ -1426,10 +1603,18 @@ export class ProjectionState extends UnaryState {
         super();
     }
 
-    public compileAux(allTapes: TapeCollection, symbolStack: CounterStack): State {
-        const newChild = this.child.compileAux(allTapes, symbolStack);
+    public compileAux(
+        allTapes: TapeCollection, 
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
+        
+        if (compileLevel <= 0) {
+            return this;
+        }
+        const newChild = this.child.compileAux(allTapes, symbolStack, compileLevel);
         const newThis = new ProjectionState(newChild, this.tapeRestriction);
-        return new CompiledState(newThis, allTapes, symbolStack);
+        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
 
     public getRelevantTapes(stateStack: CounterStack): Set<string> {
@@ -1490,10 +1675,18 @@ export class DropState extends UnaryState {
     }
 
     
-    public compileAux(allTapes: TapeCollection, symbolStack: CounterStack): State {
-        const newChild = this.child.compileAux(allTapes, symbolStack);
+    public compileAux(
+        allTapes: TapeCollection, 
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
+        
+        if (compileLevel <= 0) {
+            return this;
+        }
+        const newChild = this.child.compileAux(allTapes, symbolStack, compileLevel);
         const newThis = new DropState(newChild, this.droppedTape);
-        return new CompiledState(newThis, allTapes, symbolStack);
+        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
 
     public *ndQuery(tape: Tape, 
@@ -1628,13 +1821,21 @@ export class NegationState extends State {
         this.relevantTapes = relevantTapes;
     }
 
-    public compileAux(allTapes: TapeCollection, symbolStack: CounterStack): State {
+    public compileAux(
+        allTapes: TapeCollection, 
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
+        
+        if (compileLevel <= 0) {
+            return this;
+        }
         var newChild = this.child;
         if (newChild != undefined) {
-            newChild = newChild.compileAux(allTapes, symbolStack);
+            newChild = newChild.compileAux(allTapes, symbolStack, compileLevel);
         }
         const newThis = new NegationState(newChild, this.relevantTapes);
-        return new CompiledState(newThis, allTapes, symbolStack);
+        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
 
     public get id(): string {

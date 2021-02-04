@@ -333,11 +333,15 @@
                     }
                     CURRENT_INPUTS[tapeName] = value;
                 }
+                
+                var startTime = Date.now();
+                project.compile(symbolName);
+                console.log(`Compiled project, elapsed time = ${Date.now()-startTime}ms`);
 
                 // generate the results
                 var startTime = Date.now();
                 const results = project.generate(symbolName, CURRENT_INPUTS);
-                console.log(`Elapsed time = ${Date.now()-startTime}ms`);
+                console.log(`Generated results, elapsed time = ${Date.now()-startTime}ms`);
                 
                 // determine what format to output in
                 var formatSelect = document.getElementById("downloadFormatSelect");

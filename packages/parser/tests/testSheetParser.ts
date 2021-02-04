@@ -463,7 +463,6 @@ describe(`${path.basename(module.filename)}`, function() {
             {"subj":"[IMP]",    "text":"moobeez",   "gloss":"jump[IMP]"}
         ]);
     });
-    
 });
 
 

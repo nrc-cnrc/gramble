@@ -114,7 +114,7 @@ export function testGrammar(grammar: State,
                             maxRecursion: number = 4, 
                             maxChars: number = 1000): void {
     var outputs: StringDict[] = [];
-    grammar = grammar.compile(new CounterStack(maxRecursion));
+    grammar = grammar.compile(2, maxRecursion);
     try {
         outputs = [...grammar.generate(false, maxRecursion, maxChars)];
     } catch (e) {
@@ -127,6 +127,24 @@ export function testGrammar(grammar: State,
     testMatchOutputs(outputs, expectedResults);
 }
 
+export function testParse(grammar: State, 
+                            inputs: StringDict,
+                            expectedResults: StringDict[], 
+                            maxRecursion: number = 4, 
+                            maxChars: number = 1000): void {
+    var outputs: StringDict[] = [];
+    grammar = grammar.compile(2, maxRecursion);
+    try {
+        outputs = [...grammar.parse(inputs, false, maxRecursion, maxChars)];
+    } catch (e) {
+        it("Unexpected Exception", function() {
+            console.log(e);
+            assert.fail(e);
+        });
+    }
+    testNumOutputs(outputs, expectedResults.length);
+    testMatchOutputs(outputs, expectedResults);
+}
 
 export function testProject(project: Project,
                             symbolName: string,
@@ -134,11 +152,22 @@ export function testProject(project: Project,
                             maxRecursion: number = 4, 
                             maxChars: number = 1000): void {
     
-    const symbol = project.getSymbol(symbolName);
-    if (symbol == undefined) {
+    project.compile(symbolName, 2);
+    const grammar = project.getSymbol(symbolName);
+    if (grammar == undefined) {
         return;
     }
-    testGrammar(symbol, expectedResults, maxRecursion, maxChars);
+    var outputs: StringDict[] = [];
+    try {
+        outputs = [...grammar.generate(false, maxRecursion, maxChars)];
+    } catch (e) {
+        it("Unexpected Exception", function() {
+            console.log(e);
+            assert.fail(e);
+        });
+    }
+    testNumOutputs(outputs, expectedResults.length);
+    testMatchOutputs(outputs, expectedResults);
 }
 
 
@@ -186,9 +215,6 @@ export function testErrors(project: Project, expectedErrors: [string, number, nu
 }
 
 export function testSymbols(project: Project, expectedSymbols: string[]): void {
-    it (`should have ${expectedSymbols.length} symbols defined`, function() {
-        expect(project.globalNamespace.allSymbols().length).to.equal(expectedSymbols.length);
-    });
     for (const symbolName of expectedSymbols) {
         it (`should have a symbol named "${symbolName}"`, function() {
             expect(project.getSymbol(symbolName)).to.not.be.undefined;

@@ -183,11 +183,10 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{text: "hello", unrelated: "foo"}]);
     });
 
-    describe('Joining +unrelated:foo+text:hello & text:hello', function() {
+    describe('Joining unrelated:foo+text:hello & text:hello', function() {
         const grammar = Join(Seq(unrelated("foo"), text("hello")), text("hello"));
         testGrammar(grammar, [{text: "hello", unrelated: "foo"}]);
     });
-
 
     describe('Joining text:hello+unrelated:foo & text:hello+unrelated:bar', function() {
         const grammar = Join(Seq(text("hello"), unrelated("foo")),
