@@ -359,7 +359,7 @@ export abstract class State {
      * Not all States will actually define this property; generally it will only be the "root"
      * state of a grammar, or a state that was at some point a root state of a grammar that a 
      * caller was manupulating as a reference.  (That is, for this to be defined, this State
-     * was probably references as a variable and someone called generate() or compile() on it.)
+     * was probably referenced as a variable and someone called generate() or compile() on it.)
      */
     protected allTapes: TapeCollection | undefined = undefined;
 
@@ -722,6 +722,9 @@ class CompiledState extends State {
                 throw new Error(`Failed to match ${tape.tapeName} to ${origResultTape.tapeName}..?`);
             }
             const resultToken = matchedTape.match(token, target);
+            if (resultToken.isEmpty()) {
+                continue;
+            }
             yield [matchedTape, resultToken, matched, next];
         }
     }
@@ -763,6 +766,9 @@ abstract class TextState extends State {
 
         const bits = this.getToken(matchedTape);
         const result = matchedTape.match(bits, target);
+        if (result.isEmpty()) {
+            return;
+        }
         const nextState = this.successor();
         yield [matchedTape, result, true, nextState];
 
@@ -962,7 +968,6 @@ export class ConcatState extends BinaryState {
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
 
-
     public *ndQuery(tape: Tape, 
         target: Token,
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
@@ -986,9 +991,12 @@ export class ConcatState extends BinaryState {
             return;
         }
 
+        var yieldedAlready = false;
+
         if (this.child1.accepting(symbolStack)) {
             const successor = new ConcatState(this.child1, this.child2, true);
             yield* successor.dQuery(tape, target, symbolStack);
+            yieldedAlready = true;
         }
 
         if (this.child1.caresAbout(tape)) {
@@ -1000,6 +1008,10 @@ export class ConcatState extends BinaryState {
             return;
         }
 
+        if (yieldedAlready == true) {
+            return;
+        }
+        
         // child2 must care, otherwise one of the previous conditions would have triggered
         for (const [c2tape, c2text, c2matched, c2next] of 
                 this.child2.dQuery(tape, target, symbolStack)) {
@@ -1650,14 +1662,8 @@ export class ProjectionState extends UnaryState {
 
 
 /**
- * A state that implements Projection in the sense of relational algebra, only 
- * exposing a subset of fields (read: tapes) of its child state.
- * 
- * Note that the child state itself still has and operates on those fields/tapes.
- * For example, the Projection of a join can still fail when there's a conflict regarding
- * field T, even if the Projection hides field T.  We can think of the Project as encapsulating
- * the set of fields/tapes such that only a subset of its fields are exposed to the outside,
- * rather than removing those fields/tapes.
+ * This is the opposite of ProjectionState; in which you specify what you drop rather than what you keep.
+ * Either is sufficient to implement relational algebra; you only really need one of these.
  */
 export class DropState extends UnaryState {
 

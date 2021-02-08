@@ -1119,33 +1119,12 @@ Object.defineProperty(exports, "Project", { enumerable: true, get: function () {
  * of formulas in that language.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createProject = exports.Project = exports.EnclosureComponent = exports.GrammarComponent = exports.CellComponent = exports.constructHeader = exports.SlashHeader = exports.FlagHeader = exports.RenameHeader = exports.NotHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.DropHeader = exports.EmbedHeader = exports.Header = exports.TabularComponent = exports.CellPosition = void 0;
+exports.createProject = exports.Project = exports.EnclosureComponent = exports.GrammarComponent = exports.CellComponent = exports.constructHeader = exports.SlashHeader = exports.FlagHeader = exports.RenameHeader = exports.NotHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.DropHeader = exports.EmbedHeader = exports.Header = exports.TabularComponent = void 0;
 const devEnv_1 = require("./devEnv");
 const stateMachine_1 = require("./stateMachine");
 const util_1 = require("./util");
 const DEFAULT_SATURATION = 0.1;
 const DEFAULT_VALUE = 1.0;
-/**
- * A convenience class encapsulating information about where a cell
- * is.  Every component of the abstract syntax tree has one of these;
- * if it's a cell, that's just its position on a spreadsheet; if it's a
- * complex component, it's the position of its first cell.
- *
- * By convention we treat the spreadsheet itself as a component with
- * its first cell at -1, -1.
- */
-class CellPosition {
-    constructor(sheet, row = -1, col = -1) {
-        this.sheet = sheet;
-        this.row = row;
-        this.col = col;
-    }
-    toString() {
-        return `${this.sheet}:${this.row}:${this.col}`;
-    }
-}
-exports.CellPosition = CellPosition;
-const DUMMY_POSITION = new CellPosition("?", -1, -1);
 class TabularComponent {
     constructor(text, position) {
         this.text = text;
@@ -1187,7 +1166,7 @@ exports.TabularComponent = TabularComponent;
  */
 class Header extends TabularComponent {
     constructor(text) {
-        super(text, DUMMY_POSITION);
+        super(text, util_1.DUMMY_POSITION);
     }
     getColor(saturation = DEFAULT_SATURATION, value = DEFAULT_VALUE) {
         return util_1.RGBtoString(...util_1.HSVtoRGB(this.hue, saturation, value));
@@ -1509,7 +1488,7 @@ function tokenize(text) {
  * This is the main function that the rest of the libraries interact with;
  * they provide a string and (hopefully) get a parser in return.
  */
-function constructHeader(headerText, pos = DUMMY_POSITION) {
+function constructHeader(headerText, pos = util_1.DUMMY_POSITION) {
     const pieces = tokenize(headerText);
     var result = [...EXPR(pieces)];
     // result is a list of [header, remaining_tokens] pairs.  
@@ -1847,7 +1826,7 @@ class TestNotSuiteComponent extends AbstractTestSuiteComponent {
  */
 class SheetComponent extends EnclosureComponent {
     constructor(name) {
-        super(new CellComponent(name, new CellPosition(name)));
+        super(new CellComponent(name, new util_1.CellPosition(name)));
         this.name = name;
     }
     addHeader(header) {
@@ -2121,7 +2100,7 @@ class Project {
         const results = [];
         const stack = new stateMachine_1.CounterStack(2);
         for (const tapeName of startState.getRelevantTapes(stack)) {
-            const header = constructHeader(tapeName, new CellPosition("?", -1, -1));
+            const header = constructHeader(tapeName, new util_1.CellPosition("?", -1, -1));
             results.push([tapeName, header.getColor(0.2)]);
         }
         return results;
@@ -2246,7 +2225,7 @@ class Project {
             const rowIsComment = row[0].trim().startsWith('%%');
             for (var colIndex = 0; colIndex < row.length; colIndex++) {
                 const cellText = row[colIndex].trim();
-                const position = new CellPosition(sheetName, rowIndex, colIndex);
+                const position = new util_1.CellPosition(sheetName, rowIndex, colIndex);
                 const cell = new CellComponent(cellText, position);
                 if (rowIsComment) {
                     const comment = new CommentComponent(cell);
@@ -2465,7 +2444,7 @@ class Namespace {
             return;
         }
         const state = this.symbols[name];
-        const compiledState = state.compile(allTapes, symbolStack, compileLevel);
+        const compiledState = state.compileAux(allTapes, symbolStack, compileLevel);
         this.symbols[compiledName] = compiledState;
     }
     allSymbols() {
@@ -2787,8 +2766,12 @@ class State {
         const symbolStack = new CounterStack(2);
         return this.getRelevantTapes(symbolStack).has(tape.tapeName);
     }
-    compile(allTapes, symbolStack, compileLevel) {
+    compileAux(allTapes, symbolStack, compileLevel) {
         return this;
+    }
+    compile(compileLevel, maxRecursion = 4) {
+        const allTapes = this.getAllTapes();
+        return this.compileAux(allTapes, new CounterStack(maxRecursion), compileLevel);
     }
 }
 exports.State = State;
@@ -2804,7 +2787,7 @@ class CompiledState extends State {
         const tapes = [allTapes, ...allTapes.tapes.values()];
         for (const tape of tapes) {
             for (const [resTape, resToken, resMatched, resNext] of originalState.dQuery(tape, tape.any(), symbolStack)) {
-                const compiledNext = resNext.compile(allTapes, symbolStack, compileLevel - 1);
+                const compiledNext = resNext.compileAux(allTapes, symbolStack, compileLevel - 1);
                 this.addTransition(tape, resTape, resToken, resMatched, compiledNext);
             }
         }
@@ -3017,12 +3000,12 @@ class ConcatState extends BinaryState {
         super(child1, child2, relevantTapes);
         this.child1Done = child1Done;
     }
-    compile(allTapes, symbolStack, compileLevel) {
+    compileAux(allTapes, symbolStack, compileLevel) {
         if (compileLevel <= 0) {
             return this;
         }
-        const newChild1 = this.child1.compile(allTapes, symbolStack, compileLevel);
-        const newChild2 = this.child2.compile(allTapes, symbolStack, compileLevel);
+        const newChild1 = this.child1.compileAux(allTapes, symbolStack, compileLevel);
+        const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
         const newThis = new ConcatState(newChild1, newChild2, this.child1Done, this.relevantTapes);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
@@ -3123,11 +3106,11 @@ class UnionState extends State {
         this.children = children;
         this.randomChild = undefined;
     }
-    compile(allTapes, symbolStack, compileLevel) {
+    compileAux(allTapes, symbolStack, compileLevel) {
         if (compileLevel <= 0) {
             return this;
         }
-        const newChildren = this.children.map(c => c.compile(allTapes, symbolStack, compileLevel));
+        const newChildren = this.children.map(c => c.compileAux(allTapes, symbolStack, compileLevel));
         const newThis = new UnionState(newChildren);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
@@ -3216,12 +3199,12 @@ class SemijoinState extends BinaryState {
      * Because .successor() on both this and its descendent JoinState are
      * so simple, we only have to write one semicompile() for both
      */
-    compile(allTapes, symbolStack, compileLevel) {
+    compileAux(allTapes, symbolStack, compileLevel) {
         if (compileLevel <= 0) {
             return this;
         }
-        const newChild1 = this.child1.compile(allTapes, symbolStack, compileLevel);
-        const newChild2 = this.child2.compile(allTapes, symbolStack, compileLevel);
+        const newChild1 = this.child1.compileAux(allTapes, symbolStack, compileLevel);
+        const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
         const newThis = this.successor(newChild1, newChild2);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
@@ -3346,11 +3329,11 @@ class RepetitionState extends UnaryState {
         this.index = index;
         this.initialChild = initialChild;
     }
-    compile(allTapes, symbolStack, compileLevel) {
+    compileAux(allTapes, symbolStack, compileLevel) {
         if (compileLevel <= 0) {
             return this;
         }
-        const newInitialChild = this.initialChild.compile(allTapes, symbolStack, compileLevel);
+        const newInitialChild = this.initialChild.compileAux(allTapes, symbolStack, compileLevel);
         const newThis = new RepetitionState(this.child, this.minReps, this.maxReps, this.index, newInitialChild);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
@@ -3426,7 +3409,7 @@ class EmbedState extends State {
     get id() {
         return `${this.constructor.name}(${this.symbolName})`;
     }
-    compile(allTapes, symbolStack, compileLevel) {
+    compileAux(allTapes, symbolStack, compileLevel) {
         if (compileLevel <= 0) {
             return this;
         }
@@ -3526,11 +3509,11 @@ class ProjectionState extends UnaryState {
         this.child = child;
         this.tapeRestriction = tapeRestriction;
     }
-    compile(allTapes, symbolStack, compileLevel) {
+    compileAux(allTapes, symbolStack, compileLevel) {
         if (compileLevel <= 0) {
             return this;
         }
-        const newChild = this.child.compile(allTapes, symbolStack, compileLevel);
+        const newChild = this.child.compileAux(allTapes, symbolStack, compileLevel);
         const newThis = new ProjectionState(newChild, this.tapeRestriction);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
@@ -3579,11 +3562,11 @@ class DropState extends UnaryState {
         result.delete(this.droppedTape);
         return result;
     }
-    compile(allTapes, symbolStack, compileLevel) {
+    compileAux(allTapes, symbolStack, compileLevel) {
         if (compileLevel <= 0) {
             return this;
         }
-        const newChild = this.child.compile(allTapes, symbolStack, compileLevel);
+        const newChild = this.child.compileAux(allTapes, symbolStack, compileLevel);
         const newThis = new DropState(newChild, this.droppedTape);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
@@ -3698,13 +3681,13 @@ class NegationState extends State {
         this.child = child;
         this.relevantTapes = relevantTapes;
     }
-    compile(allTapes, symbolStack, compileLevel) {
+    compileAux(allTapes, symbolStack, compileLevel) {
         if (compileLevel <= 0) {
             return this;
         }
         var newChild = this.child;
         if (newChild != undefined) {
-            newChild = newChild.compile(allTapes, symbolStack, compileLevel);
+            newChild = newChild.compileAux(allTapes, symbolStack, compileLevel);
         }
         const newThis = new NegationState(newChild, this.relevantTapes);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
@@ -3994,8 +3977,9 @@ exports.Tape = Tape;
  *
  */
 class Token {
-    constructor(bits) {
+    constructor(bits, positions = []) {
         this.bits = bits;
+        this.positions = positions;
     }
     and(other) {
         return new Token(this.bits.and(other.bits));
@@ -4290,7 +4274,28 @@ exports.RenamedTape = RenamedTape;
 },{"bitset":1}],7:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setChain = exports.setIntersection = exports.RGBtoString = exports.HSVtoRGB = exports.iterTake = exports.shuffleArray = exports.meanAngleDeg = void 0;
+exports.setChain = exports.setIntersection = exports.RGBtoString = exports.HSVtoRGB = exports.iterTake = exports.shuffleArray = exports.meanAngleDeg = exports.DUMMY_POSITION = exports.CellPosition = void 0;
+/**
+ * A convenience class encapsulating information about where a cell
+ * is.  Every component of the abstract syntax tree has one of these;
+ * if it's a cell, that's just its position on a spreadsheet; if it's a
+ * complex component, it's the position of its first cell.
+ *
+ * By convention we treat the spreadsheet itself as a component with
+ * its first cell at -1, -1.
+ */
+class CellPosition {
+    constructor(sheet, row = -1, col = -1) {
+        this.sheet = sheet;
+        this.row = row;
+        this.col = col;
+    }
+    toString() {
+        return `${this.sheet}:${this.row}:${this.col}`;
+    }
+}
+exports.CellPosition = CellPosition;
+exports.DUMMY_POSITION = new CellPosition("?", -1, -1);
 function sum(a) {
     var s = 0;
     for (var i = 0; i < a.length; i++)

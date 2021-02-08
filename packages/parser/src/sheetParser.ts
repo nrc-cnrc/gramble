@@ -9,35 +9,12 @@
 
 import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
 import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState, DropState, Drop } from "./stateMachine";
-import { Gen, HSVtoRGB, iterTake, meanAngleDeg, RGBtoString, StringDict } from "./util";
+import { CellPosition, DUMMY_POSITION, Gen, HSVtoRGB, iterTake, meanAngleDeg, RGBtoString, StringDict } from "./util";
 
 const DEFAULT_SATURATION = 0.1;
 const DEFAULT_VALUE = 1.0;
 
 
-/**
- * A convenience class encapsulating information about where a cell
- * is.  Every component of the abstract syntax tree has one of these;
- * if it's a cell, that's just its position on a spreadsheet; if it's a
- * complex component, it's the position of its first cell.
- *
- * By convention we treat the spreadsheet itself as a component with 
- * its first cell at -1, -1.
- */
-export class CellPosition {
-
-    constructor(
-        public readonly sheet: string,
-        public readonly row: number = -1,
-        public readonly col: number = -1
-    ) { }
-
-    public toString() {
-        return `${this.sheet}:${this.row}:${this.col}`;
-    }
-}
-
-const DUMMY_POSITION = new CellPosition("?", -1, -1);
 
 export abstract class TabularComponent {
 

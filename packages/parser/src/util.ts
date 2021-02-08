@@ -4,6 +4,31 @@ export type Gen<T> = Generator<T, void, undefined>;
 
 export type StringDict = {[key: string]: string};
 
+
+/**
+ * A convenience class encapsulating information about where a cell
+ * is.  Every component of the abstract syntax tree has one of these;
+ * if it's a cell, that's just its position on a spreadsheet; if it's a
+ * complex component, it's the position of its first cell.
+ *
+ * By convention we treat the spreadsheet itself as a component with 
+ * its first cell at -1, -1.
+ */
+export class CellPosition {
+
+    constructor(
+        public readonly sheet: string,
+        public readonly row: number = -1,
+        public readonly col: number = -1
+    ) { }
+
+    public toString() {
+        return `${this.sheet}:${this.row}:${this.col}`;
+    }
+}
+
+export const DUMMY_POSITION = new CellPosition("?", -1, -1);
+
 function sum(a: number[]): number {
     var s = 0;
     for (var i = 0; i < a.length; i++) s += a[i];

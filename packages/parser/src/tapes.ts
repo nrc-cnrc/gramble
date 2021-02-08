@@ -174,7 +174,7 @@ export abstract class Tape {
  * 
  */
 export class Token {
-
+ 
     constructor(
         public bits: BitSet
     ) { }
