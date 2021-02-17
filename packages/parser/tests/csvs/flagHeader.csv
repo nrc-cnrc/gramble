@@ -1,11 +1,11 @@
 
-verb, table, text, gloss
+verb:, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-suffix, table, text, gloss/subj
+suffix:, table:, text, gloss/subj
     ,       , bar, [1SG]
     ,       , baz, [2SG]
 
-word, table, embed, embed, @subj
+word:, table:, embed, embed, @subj
     ,       , verb, suffix, [2SG]

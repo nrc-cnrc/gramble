@@ -1,23 +1,23 @@
 
-verb, table, text, gloss
+verb:, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-suffix, table, text, gloss
+suffix:, table:, text, gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
 
-word, table, table, embed, embed
+word:, table:, table:, embed, embed
     ,       ,      , verb, suffix 
     ,
-    ,       , join, up, down
+    ,       , join:, up, down
     ,      ,       , foo, fu
 
-    , or, table, embed, embed
+    , or:, table:, embed, embed
     ,       ,      , verb, suffix 
     ,
-    ,       , join, up, down
+    ,       , join:, up, down
     ,      ,       , foo, fo:
     , 
-    , join, up, down,
+    , join:, up, down,
     ,       , r, z

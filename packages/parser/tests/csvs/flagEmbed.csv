@@ -1,16 +1,16 @@
 
-verb, table, text, gloss
+verb:, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-suffix, table, text, gloss/subj
+suffix:, table:, text, gloss/subj
     ,       , bar, [1SG]
     ,       , baz, [2SG]
     ,       , beez, [IMP]
 
-impOr2sg, table, subj
+impOr2sg:, table:, subj
         ,       , [2SG]
         ,       , [IMP]
         
-word, table, embed, embed, @embed
+word:, table:, embed, embed, @embed
     ,       , verb, suffix, impOr2sg

@@ -114,8 +114,8 @@ export function testGrammar(grammar: State,
                             maxRecursion: number = 4, 
                             maxChars: number = 1000): void {
     var outputs: StringDict[] = [];
-    grammar = grammar.compile(2, maxRecursion);
-    try {
+    try {    
+        grammar = grammar.compile(2, maxRecursion);
         outputs = [...grammar.generate(false, maxRecursion, maxChars)];
     } catch (e) {
         it("Unexpected Exception", function() {
@@ -133,8 +133,8 @@ export function testParse(grammar: State,
                             maxRecursion: number = 4, 
                             maxChars: number = 1000): void {
     var outputs: StringDict[] = [];
-    grammar = grammar.compile(2, maxRecursion);
-    try {
+    try {    
+        grammar = grammar.compile(2, maxRecursion);
         outputs = [...grammar.parse(inputs, false, maxRecursion, maxChars)];
     } catch (e) {
         it("Unexpected Exception", function() {
@@ -151,8 +151,14 @@ export function testProject(project: Project,
                             expectedResults: StringDict[], 
                             maxRecursion: number = 4, 
                             maxChars: number = 1000): void {
-    
-    project.compile(symbolName, 2);
+    try {
+        project.compile(symbolName, 2);
+    } catch (e) {
+        it("Unexpected exception in compilation", function() {
+            console.log(e);
+            assert.fail(e);
+        });
+    }
     const grammar = project.getSymbol(symbolName);
     if (grammar == undefined) {
         return;
@@ -239,7 +245,11 @@ export function testStructure(project: Project, expectedOps: [string, string[]][
                 expect(relative).to.not.be.undefined;
                 if (relative == undefined) return;
             }
-            expect(relative.text).to.equal(text);
+            var relativeText = relative.text;
+            if (relativeText.endsWith(":")) {
+                relativeText = relativeText.slice(0, relativeText.length-1).trim();
+            }
+            expect(relativeText).to.equal(text);
         });
     }
 

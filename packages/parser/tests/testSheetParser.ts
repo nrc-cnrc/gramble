@@ -23,6 +23,23 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/minimalGrammar.csv");
 
         testErrors(project, []);
+        project.devEnv.logErrors();
+        testStructure(project, [
+            ["word",    ["child"]],
+            ["table",   ["child", "child"]]
+        ]);
+        testSymbols(project, ["word"]);
+        testProject(project, 'word', [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
+        ]);
+    });
+
+    describe('Minimal grammar with no table: op', function() {
+
+        const project = sheetFromFile("./tests/csvs/minimalGrammarNoTable.csv");
+
+        testErrors(project, []);
         testStructure(project, [
             ["word",    ["child"]]
         ]);
@@ -32,6 +49,29 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moo", gloss: "jump" }
         ]);
     });
+
+    describe('Bare grammar', function() {
+
+        const project = sheetFromFile("./tests/csvs/bareGrammar.csv");
+
+        testErrors(project, []);
+        testProject(project, '__MAIN__', [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
+        ]);
+    });
+
+    describe('Bare grammar with table', function() {
+
+        const project = sheetFromFile("./tests/csvs/bareGrammarWithTable.csv");
+
+        testErrors(project, []);
+        testProject(project, '__MAIN__', [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
+        ]);
+    });
+
 
     describe('Embeds', function() {
 
@@ -223,26 +263,6 @@ describe(`${path.basename(module.filename)}`, function() {
             ["unparseableHeader", 9, 3, "warning"]
         ]);
     });
-
-    
-    describe('Non-assignments in first column', function() {
-
-        const project = sheetFromFile("./tests/csvs/firstLevelNonAssignments.csv");
-        testErrors(project, [
-            ["firstLevelNonAssignments", 1, 0, "error"],
-            ["firstLevelNonAssignments", 12, 0, "error"]
-        ]);
-    });
-
-    describe('Wayward operator not assigned to anything', function() {
-
-        const project = sheetFromFile("./tests/csvs/waywardOperator.csv");
-        testErrors(project, [
-            ["waywardOperator", 1, 1, "error"],
-            ["waywardOperator", 5, 0, "error"]
-        ]);
-    });
-
 
     describe('Two children on the same line', function() {
 

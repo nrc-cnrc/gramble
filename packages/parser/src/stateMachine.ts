@@ -462,29 +462,29 @@ export abstract class State {
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
         var results: [Tape, Token, boolean, State][] = [];
-
         var nextStates: [Tape, Token, boolean, State][] = [... this.ndQuery(tape, target, symbolStack)];
-        for (var [tape, bits, matched, next] of nextStates) {
-            if (tape.numTapes == 0 || !matched) {
-                results.push([tape, bits, matched, next]);
+        
+        for (var [nextTape, nextBits, nextMatched, next] of nextStates) {
+            if (nextTape.numTapes == 0 || !nextMatched) {
+                results.push([nextTape, nextBits, nextMatched, next]);
                 continue;
             }
 
             var newResults: [Tape, Token, boolean, State][] = [];
             for (var [otherTape, otherBits, otherMatched, otherNext] of results) {
-                if (tape.tapeName != otherTape.tapeName || !otherMatched) {
+                if (nextTape.tapeName != otherTape.tapeName || !otherMatched) {
                     newResults.push([otherTape, otherBits, otherMatched, otherNext]);
                     continue;
                 }
 
                 // they both matched
-                const intersection = bits.and(otherBits);
+                const intersection = nextBits.and(otherBits);
                 if (!intersection.isEmpty()) {
                     // there's something in the intersection
                     const union = new UnionState([next, otherNext]);
-                    newResults.push([tape, intersection, true, union]); 
+                    newResults.push([nextTape, intersection, true, union]); 
                 }
-                bits = bits.andNot(intersection)
+                nextBits = nextBits.andNot(intersection)
                 otherBits = otherBits.andNot(intersection);
 
                 // there's something left over
@@ -493,8 +493,8 @@ export abstract class State {
                 }
             }
             results = newResults;
-            if (!bits.isEmpty()) {
-                results.push([tape, bits, matched, next]);
+            if (!nextBits.isEmpty()) {
+                results.push([nextTape, nextBits, nextMatched, next]);
             }
         }
         yield *results;
