@@ -1,5 +1,4 @@
 import { assert, expect } from 'chai';
-import { DevEnvironment } from '../src/devEnv';
 import { Project, Header, GrammarComponent } from '../src/sheetParser';
 import { CounterStack, Literalizer, State } from "../src/stateMachine";
 import { TapeCollection } from '../src/tapes';
@@ -183,23 +182,6 @@ export function testHeaderHasText(header: Header, text: string, objName: string 
     it(msg, function() {
         expect(header.text).to.equal(text);
     });
-}
-
-export function testNumErrors(devEnv: DevEnvironment, expectedNum: number, errorType: "error"|"warning"|"any") {
-    const errorText = (errorType == "any") ? 
-                            "error(s)/warning(s)" :
-                            errorType + "(s)";
-    
-    it(`should have ${expectedNum} ${errorText}`, function() {
-        expect(devEnv.numErrors(errorType)).to.equal(expectedNum);
-    });
-}
-
-export function testErrorInCell(devEnv: DevEnvironment, sheet: string, row: number, col: number) {
-    it(`should have an error at ${sheet}:${row}:${col}`, function() {
-        expect(devEnv.getErrors(sheet, row, col).length)
-                                .to.be.greaterThan(0);
-    })
 }
 
 /**

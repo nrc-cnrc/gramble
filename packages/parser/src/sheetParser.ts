@@ -8,35 +8,12 @@
  */
 
 import { assert } from "chai";
-import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
+import { SimpleDevEnvironment } from "./devEnv";
 import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState, DropState, Drop } from "./stateMachine";
-import { CellPosition, DUMMY_POSITION, Gen, HSVtoRGB, iterTake, meanAngleDeg, RGBtoString, StringDict } from "./util";
+import { CellPosition, DevEnvironment, DUMMY_POSITION, Gen, HSVtoRGB, iterTake, meanAngleDeg, RGBtoString, StringDict, TabularComponent } from "./util";
 
 const DEFAULT_SATURATION = 0.1;
 const DEFAULT_VALUE = 1.0;
-
-
-
-export abstract class TabularComponent {
-
-    constructor(
-        public text: string,
-        public position: CellPosition
-    ) { }
-
-    public mark(devEnv: DevEnvironment): void { }
-
-    public markError(devEnv: DevEnvironment, shortMsg: string, msg: string): void {
-        devEnv.markError(this.position.sheet, this.position.row, this.position.col,
-            shortMsg, msg, "error");
-    }
-
-    public markWarning(devEnv: DevEnvironment, shortMsg: string, msg: string): void {
-        devEnv.markError(this.position.sheet, this.position.row, this.position.col,
-        shortMsg, msg, "warning");
-    }
-}
-
 
 /**
  * A Header is a cell in the top row of a table, consisting of one of
@@ -365,6 +342,22 @@ export class FlagHeader extends UnaryHeader {
     
     public static *parse(input: string[]): Gen<[Header, string[]]> {
         yield *super.parseTarget("@", FlagHeader, SUBEXPR, input);
+    }
+
+    public compile(cell: CellComponent, 
+        namespace: Namespace, 
+        devEnv: DevEnvironment): SingleCellComponent {
+
+        const cellTextPieces = cell.text.split(" or ");
+        const childCells: SingleCellComponent[] = [];
+        for (const cellTextPiece of cellTextPieces) {
+            const newCell = new CellComponent(cellTextPiece, cell.position);
+            const childCell = this.child.compile(newCell, namespace, devEnv);
+            childCells.push(childCell);
+        }
+        const compiledCell = new NAryHeadedCellComponent(this, cell, childCells);
+        compiledCell.state = Uni(...childCells.map(c => c.state));
+        return compiledCell;
     }
 }
 
@@ -1061,6 +1054,11 @@ class ContentsComponent extends EnclosureComponent {
 
     public compile(namespace: Namespace, 
                         devEnv: DevEnvironment): void {
+
+        if (this.sibling != undefined) {
+            this.sibling.compile(namespace, devEnv);
+        }
+
         this.rows.map(row => row.compile(namespace, devEnv));
         var rowStates = this.rows.map(row => row.state);
         rowStates = rowStates.filter(state => !(state instanceof TrivialState));
@@ -1069,12 +1067,6 @@ class ContentsComponent extends EnclosureComponent {
 
     
     public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
-        if (this.sibling != undefined) {
-            this.markWarning(devEnv, "Table overwrite warning",
-                "Content here will obliterate the preceding " +
-                `content above this.`);
-        }
-
         this.rows.map(row => row.runChecks(ns, devEnv));
     }
 
@@ -1193,6 +1185,24 @@ class BinaryHeadedCellComponent extends HeadedCellComponent {
                 "Why are you putting an 'embed' inside a slash header? That's weird.");
         }
     }
+}
+
+class NAryHeadedCellComponent extends HeadedCellComponent {
+
+    constructor(
+        header: Header,
+        cell: CellComponent,
+        public children: SingleCellComponent[]
+    ) {
+        super(header, cell);
+    }
+
+    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
+        for (const child of this.children) {
+            child.runChecks(ns, devEnv);
+        }
+    }
+
 }
 
 class EmbedComponent extends HeadedCellComponent {

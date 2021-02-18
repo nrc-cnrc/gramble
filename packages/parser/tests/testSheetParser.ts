@@ -94,6 +94,22 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    
+    describe('Bare grammar with embeds', function() {
+
+        const project = sheetFromFile("./tests/csvs/bareGrammarWithEmbeds.csv");
+        project.devEnv.logErrors();
+        testErrors(project, []);
+        testSymbols(project, ["verb", "suffix"]);
+        testProject(project, '__MAIN__', [
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ]);
+    });
+    
+
     describe('Embeds and unit tests', function() {
 
         const project = sheetFromFile("./tests/csvs/embedGrammarWithTests.csv");
@@ -172,6 +188,26 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('or: operation', function() {
+
+        const project = sheetFromFile("./tests/csvs/orOp.csv");
+
+        testErrors(project, []);
+        testStructure(project, [
+            ["word",    ["child"]],
+            ["verb",  ["child", "sibling"]],
+            ["or",   ["child", "child"]],
+            ["table",    ["child", "child", "sibling"]]
+        ]);
+        testSymbols(project, ["word", "verb"]);
+        testProject(project, 'word', [
+            { text: "umfoo", gloss: "[1SG]run" },
+            { text: "ummoo", gloss: "[1SG]jump" },
+            { text: "foobar", gloss: "run[2SG]" },
+            { text: "moobar", gloss: "jump[2SG]" },
+        ]);
+    });
+    
     
     describe('Reference to a missing symbol', function() {
 
@@ -384,6 +420,19 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    
+    describe('Flag header whose value contains OR', function() {
+
+        const project = sheetFromFile("./tests/csvs/flagHeaderWithOr.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
+            { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
+            { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
+        ]);
+    });
     
     describe('Flag header on wrong side', function() {
 

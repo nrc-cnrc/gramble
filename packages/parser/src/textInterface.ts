@@ -1,4 +1,4 @@
-import { DevEnvironment, posToStr, SyntaxError, cellSplit, SimpleDevEnvironment } from "./devEnv";
+import { SyntaxError, cellSplit, SimpleDevEnvironment } from "./devEnv";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 

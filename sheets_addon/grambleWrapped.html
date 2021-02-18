@@ -11973,27 +11973,13 @@ Object.defineProperty(exports, "Project", { enumerable: true, get: function () {
  * of formulas in that language.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createProject = exports.Project = exports.EnclosureComponent = exports.GrammarComponent = exports.CellComponent = exports.constructHeader = exports.SlashHeader = exports.FlagHeader = exports.RenameHeader = exports.NotHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.DropHeader = exports.EmbedHeader = exports.Header = exports.TabularComponent = void 0;
+exports.createProject = exports.Project = exports.EnclosureComponent = exports.GrammarComponent = exports.CellComponent = exports.constructHeader = exports.SlashHeader = exports.FlagHeader = exports.RenameHeader = exports.NotHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.DropHeader = exports.EmbedHeader = exports.Header = void 0;
 const chai_1 = require("chai");
 const devEnv_1 = require("./devEnv");
 const stateMachine_1 = require("./stateMachine");
 const util_1 = require("./util");
 const DEFAULT_SATURATION = 0.1;
 const DEFAULT_VALUE = 1.0;
-class TabularComponent {
-    constructor(text, position) {
-        this.text = text;
-        this.position = position;
-    }
-    mark(devEnv) { }
-    markError(devEnv, shortMsg, msg) {
-        devEnv.markError(this.position.sheet, this.position.row, this.position.col, shortMsg, msg, "error");
-    }
-    markWarning(devEnv, shortMsg, msg) {
-        devEnv.markError(this.position.sheet, this.position.row, this.position.col, shortMsg, msg, "warning");
-    }
-}
-exports.TabularComponent = TabularComponent;
 /**
  * A Header is a cell in the top row of a table, consisting of one of
  *
@@ -12019,7 +12005,7 @@ exports.TabularComponent = TabularComponent;
  *
  * * knowing what colors the foreground and background of the header cell should be
  */
-class Header extends TabularComponent {
+class Header extends util_1.TabularComponent {
     constructor(text) {
         super(text, util_1.DUMMY_POSITION);
     }
@@ -12244,6 +12230,18 @@ class FlagHeader extends UnaryHeader {
     static *parse(input) {
         yield* super.parseTarget("@", FlagHeader, SUBEXPR, input);
     }
+    compile(cell, namespace, devEnv) {
+        const cellTextPieces = cell.text.split(" or ");
+        const childCells = [];
+        for (const cellTextPiece of cellTextPieces) {
+            const newCell = new CellComponent(cellTextPiece, cell.position);
+            const childCell = this.child.compile(newCell, namespace, devEnv);
+            childCells.push(childCell);
+        }
+        const compiledCell = new NAryHeadedCellComponent(this, cell, childCells);
+        compiledCell.state = stateMachine_1.Uni(...childCells.map(c => c.state));
+        return compiledCell;
+    }
 }
 exports.FlagHeader = FlagHeader;
 class BinaryHeader extends Header {
@@ -12369,7 +12367,7 @@ function constructHeader(headerText, pos = util_1.DUMMY_POSITION) {
     return result[0][0];
 }
 exports.constructHeader = constructHeader;
-class CellComponent extends TabularComponent {
+class CellComponent extends util_1.TabularComponent {
     constructor(text, position) {
         super(text, position);
     }
@@ -12390,7 +12388,7 @@ exports.CellComponent = CellComponent;
  * but the grammar they represent typically depends on cells to the right
  * and below them.)
  */
-class GrammarComponent extends TabularComponent {
+class GrammarComponent extends util_1.TabularComponent {
     constructor() {
         super(...arguments);
         this.state = stateMachine_1.Empty();
@@ -12786,6 +12784,9 @@ class ContentsComponent extends EnclosureComponent {
         return child;
     }
     compile(namespace, devEnv) {
+        if (this.sibling != undefined) {
+            this.sibling.compile(namespace, devEnv);
+        }
         this.rows.map(row => row.compile(namespace, devEnv));
         var rowStates = this.rows.map(row => row.state);
         rowStates = rowStates.filter(state => !(state instanceof stateMachine_1.TrivialState));
@@ -12879,6 +12880,17 @@ class BinaryHeadedCellComponent extends HeadedCellComponent {
         this.child2.runChecks(ns, devEnv);
         if (this.child1 instanceof EmbedComponent || this.child2 instanceof EmbedComponent) {
             this.cell.markWarning(devEnv, "Embed inside slash header", "Why are you putting an 'embed' inside a slash header? That's weird.");
+        }
+    }
+}
+class NAryHeadedCellComponent extends HeadedCellComponent {
+    constructor(header, cell, children) {
+        super(header, cell);
+        this.children = children;
+    }
+    runChecks(ns, devEnv) {
+        for (const child of this.children) {
+            child.runChecks(ns, devEnv);
         }
     }
 }
@@ -15180,7 +15192,7 @@ exports.RenamedTape = RenamedTape;
 },{"bitset":39}],45:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setChain = exports.setIntersection = exports.RGBtoString = exports.HSVtoRGB = exports.iterTake = exports.shuffleArray = exports.meanAngleDeg = exports.DUMMY_POSITION = exports.CellPosition = void 0;
+exports.setChain = exports.setIntersection = exports.RGBtoString = exports.HSVtoRGB = exports.iterTake = exports.shuffleArray = exports.meanAngleDeg = exports.DUMMY_POSITION = exports.TabularComponent = exports.CellPosition = void 0;
 /**
  * A convenience class encapsulating information about where a cell
  * is.  Every component of the abstract syntax tree has one of these;
@@ -15201,6 +15213,20 @@ class CellPosition {
     }
 }
 exports.CellPosition = CellPosition;
+class TabularComponent {
+    constructor(text, position) {
+        this.text = text;
+        this.position = position;
+    }
+    mark(devEnv) { }
+    markError(devEnv, shortMsg, msg) {
+        devEnv.markError(this.position.sheet, this.position.row, this.position.col, shortMsg, msg, "error");
+    }
+    markWarning(devEnv, shortMsg, msg) {
+        devEnv.markError(this.position.sheet, this.position.row, this.position.col, shortMsg, msg, "warning");
+    }
+}
+exports.TabularComponent = TabularComponent;
 exports.DUMMY_POSITION = new CellPosition("?", -1, -1);
 function sum(a) {
     var s = 0;
