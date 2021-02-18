@@ -829,12 +829,6 @@ class TableComponent extends EnclosureComponent {
 
         if (this.sibling != undefined) {
             this.sibling.compile(namespace, devEnv);
-            // we don't do anything with the sibling, but we
-            // compile it anyway in case there are errors in it the
-            // programmer may want to know about
-            this.markWarning(devEnv, "Table overwrite warning",
-                "'table' here will obliterate the preceding " +
-                `content above this.`);
         }
 
         this.child.compile(namespace, devEnv);

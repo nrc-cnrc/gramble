@@ -343,14 +343,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
 
     });
-
-    describe('Table obliteration', function() {
-
-        const project = sheetFromFile("./tests/csvs/tableObliteration.csv");
-        testErrors(project, [
-            ["tableObliteration", 14, 1, "warning"]
-        ]);
-    });
     
     describe('Grammar with weird indentation', function() {
         
