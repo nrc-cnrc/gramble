@@ -6,7 +6,6 @@ verb:, table:, text, gloss
 suffix:, table:, text, gloss/subj
     ,       , bar, [1SG]
     ,       , baz, [2SG]
-    ,       ,    , [3SG]
 
-word:, table:, embed, embed, @subj
-    ,       , verb, suffix, [2SG]|[3SG]
+word:, table:, embed, embed, equals subj
+    ,       , verb, suffix, [2SG]

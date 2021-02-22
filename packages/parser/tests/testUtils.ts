@@ -12,9 +12,8 @@ export const t3 = Literalizer("t3");
 export const t4 = Literalizer("t4");
 
 export function testIsType(obj: any, type: any,  objName: string = ""): void {
-    const msg = objName + (objName != "" ? " ":"") + 
-        `should have ${objName} be of type ${type.name}`;
-    it(msg, function() {
+    const msg = (objName != "") ? "have ${objName} " : ""; 
+    it(`should ${msg}be of type ${type.name}`, function() {
         expect(obj instanceof type).to.be.true;
     });
 }

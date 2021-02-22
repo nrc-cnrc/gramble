@@ -1,0 +1,17 @@
+
+labials:, text
+        , f
+        , m
+
+nonlabials:, text
+           , g
+
+
+root:, text, gloss
+     , foo, run
+     , moo, jump
+     , goo, climb
+
+word:, text, gloss, embed, startswith embed
+     , um, [1SG], root, labials
+     , un, [1SG], root, nonlabials

@@ -11865,6 +11865,161 @@ return typeDetect;
 },{}],40:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseBooleanCell = exports.MPAlternation = exports.MPNegation = exports.MPLiteral = void 0;
+class DelayParser {
+    constructor() {
+        this.child = null;
+    }
+    *parse(input) {
+        if (this.child == null) {
+            return;
+        }
+        yield* this.child.parse(input);
+    }
+}
+class AtomicParser {
+    constructor(matcherFunction, resultConstructor) {
+        this.matcherFunction = matcherFunction;
+        this.resultConstructor = resultConstructor;
+    }
+    *parse(input) {
+        if (input.length == 0 || !this.matcherFunction(input[0])) {
+            return;
+        }
+        yield [this.resultConstructor(input[0]), input.slice(1)];
+    }
+}
+class ParensParser {
+    constructor(openMatcher, innerMatcher, closedMatcher, resultConstructor) {
+        this.openMatcher = openMatcher;
+        this.innerMatcher = innerMatcher;
+        this.closedMatcher = closedMatcher;
+        this.resultConstructor = resultConstructor;
+    }
+    *parse(input) {
+        if (input.length == 0 || !this.openMatcher(input[0])) {
+            return;
+        }
+        for (const [t, rem] of this.innerMatcher.parse(input.slice(1))) {
+            if (rem.length == 0 || !this.closedMatcher(rem[0])) {
+                return;
+            }
+            yield [t, rem.slice(1)];
+        }
+    }
+}
+class UnaryParser {
+    constructor(opMatcher, innerMatcher, resultConstructor) {
+        this.opMatcher = opMatcher;
+        this.innerMatcher = innerMatcher;
+        this.resultConstructor = resultConstructor;
+    }
+    *parse(input) {
+        if (input.length == 0 || !this.opMatcher(input[0])) {
+            return;
+        }
+        for (const [child, rem] of this.innerMatcher.parse(input.slice(1))) {
+            yield [this.resultConstructor(input[0], child), rem];
+        }
+    }
+}
+class BinaryParser {
+    constructor(child1Matcher, opMatcher, child2Matcher, resultConstructor) {
+        this.child1Matcher = child1Matcher;
+        this.opMatcher = opMatcher;
+        this.child2Matcher = child2Matcher;
+        this.resultConstructor = resultConstructor;
+    }
+    *parse(input) {
+        if (input.length == 0) {
+            return;
+        }
+        for (const [t1, rem1] of this.child1Matcher.parse(input)) {
+            if (rem1.length == 0 || !this.opMatcher(rem1[0])) {
+                return;
+            }
+            for (const [t2, rem2] of this.child2Matcher.parse(rem1.slice(1))) {
+                yield [this.resultConstructor(rem1[0], t1, t2), rem2];
+            }
+        }
+    }
+}
+class MPAlt {
+    constructor(...children) {
+        this.children = children;
+    }
+    *parse(input) {
+        for (const child of this.children) {
+            yield* child.parse(input);
+        }
+    }
+}
+class MPLiteral {
+    constructor(text) {
+        this.text = text.trim();
+    }
+}
+exports.MPLiteral = MPLiteral;
+const SYMBOL = new Set(["(", ")", "~", "|"]);
+class MPNegation {
+    constructor(text, child) {
+        this.text = text;
+        this.child = child;
+    }
+}
+exports.MPNegation = MPNegation;
+class MPAlternation {
+    constructor(text, child1, child2) {
+        this.text = text;
+        this.child1 = child1;
+        this.child2 = child2;
+    }
+}
+exports.MPAlternation = MPAlternation;
+var EXPR = new DelayParser();
+var SUBEXPR = new DelayParser();
+const LITERAL = new AtomicParser((s) => !SYMBOL.has(s), // what to recognize
+(s) => new MPLiteral(s) // what to do with it
+);
+const PARENS = new ParensParser((s) => s == "(", EXPR, (s) => s == ")", (c) => c);
+const NEGATION = new UnaryParser((s) => s == "~", // how to recognize the operator
+EXPR, // how to recognize the child
+(s, c) => new MPNegation(s, c));
+const ALTERNATION = new BinaryParser(SUBEXPR, // how to recognize child1
+(s) => s == "|", // how to recognize the operator
+EXPR, // how to recognize child2
+(s, c1, c2) => new MPAlternation(s, c1, c2));
+SUBEXPR.child = new MPAlt(LITERAL, PARENS);
+EXPR.child = new MPAlt(NEGATION, ALTERNATION, SUBEXPR);
+const tokenizer = new RegExp("(" +
+    [...SYMBOL].map(s => "\\" + s).join("|") +
+    ")");
+function tokenize(text) {
+    return text.split(tokenizer).filter((s) => s !== undefined && s !== '');
+}
+function parseBooleanCell(text) {
+    const pieces = tokenize(text);
+    var result = [...EXPR.parse(pieces)];
+    // result is a list of [header, remaining_tokens] pairs.  
+    // we only want results where there are no remaining tokens.
+    result = result.filter(([t, r]) => r.length == 0);
+    if (result.length == 0) {
+        // if there are no results, the programmer made a syntax error
+        throw new Error(`Cannot parse: ${text}`);
+    }
+    if (result.length > 1) {
+        // the grammar above should be unambiguous, so we shouldn't get 
+        // multiple results, but just in case...
+        throw new Error(`Ambiguous, cannot parse: ${text}.` +
+            " This probably isn't your fault.");
+    }
+    return result[0][0];
+}
+exports.parseBooleanCell = parseBooleanCell;
+
+},{}],41:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.SimpleDevEnvironment = exports.cellSplit = exports.posToStr = void 0;
 function posToStr(sheet, row, col) {
     return `${sheet}:${row}:${col}`;
@@ -11944,7 +12099,7 @@ class SimpleDevEnvironment {
 }
 exports.SimpleDevEnvironment = SimpleDevEnvironment;
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Empty = exports.Rep = exports.Emb = exports.Rename = exports.Proj = exports.Not = exports.Join = exports.Uni = exports.Seq = exports.Lit = exports.State = exports.Project = void 0;
@@ -11963,7 +12118,7 @@ Object.defineProperty(exports, "Empty", { enumerable: true, get: function () { r
 const sheetParser_1 = require("./sheetParser");
 Object.defineProperty(exports, "Project", { enumerable: true, get: function () { return sheetParser_1.Project; } });
 
-},{"./sheetParser":42,"./stateMachine":43}],42:[function(require,module,exports){
+},{"./sheetParser":43,"./stateMachine":44}],43:[function(require,module,exports){
 "use strict";
 /**
  * This file describes the parser that turns spreadsheets into abstract
@@ -11973,8 +12128,9 @@ Object.defineProperty(exports, "Project", { enumerable: true, get: function () {
  * of formulas in that language.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createProject = exports.Project = exports.EnclosureComponent = exports.GrammarComponent = exports.CellComponent = exports.constructHeader = exports.SlashHeader = exports.FlagHeader = exports.RenameHeader = exports.NotHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.DropHeader = exports.EmbedHeader = exports.Header = void 0;
+exports.createProject = exports.Project = exports.EnclosureComponent = exports.GrammarComponent = exports.CellComponent = exports.constructHeader = exports.SlashHeader = exports.EndsWithHeader = exports.StartsWithHeader = exports.EqualsHeader = exports.JoinHeader = exports.RenameHeader = exports.NotHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.DropHeader = exports.EmbedHeader = exports.Header = void 0;
 const chai_1 = require("chai");
+const cellParser_1 = require("./cellParser");
 const devEnv_1 = require("./devEnv");
 const stateMachine_1 = require("./stateMachine");
 const util_1 = require("./util");
@@ -12046,7 +12202,7 @@ class AtomicHeader extends Header {
         }
         return (hash & 0xFF) / 255;
     }
-    static *parseTarget(target, constructor, input) {
+    static *parseAux(target, constructor, input) {
         if (input.length == 0 || input[0] != target) {
             return;
         }
@@ -12063,7 +12219,7 @@ class EmbedHeader extends AtomicHeader {
         return compiledCell;
     }
     static *parse(input) {
-        yield* super.parseTarget("embed", EmbedHeader, input);
+        yield* super.parseAux("embed", EmbedHeader, input);
     }
 }
 exports.EmbedHeader = EmbedHeader;
@@ -12072,7 +12228,7 @@ exports.EmbedHeader = EmbedHeader;
  */
 class DropHeader extends AtomicHeader {
     static *parse(input) {
-        yield* super.parseTarget("drop", DropHeader, input);
+        yield* super.parseAux("drop", DropHeader, input);
     }
     compileAndMerge(cell, namespace, devEnv, leftNeighbor) {
         const compiledCell = new DropComponent(this, cell);
@@ -12149,7 +12305,7 @@ class UnaryHeader extends Header {
         compiledCell.state = childCell.state;
         return compiledCell;
     }
-    static *parseTarget(target, constructor, childParser, input) {
+    static *parseAux(target, constructor, childParser, input) {
         if (input.length == 0 || input[0] != target) {
             return;
         }
@@ -12163,7 +12319,7 @@ class UnaryHeader extends Header {
  */
 class MaybeHeader extends UnaryHeader {
     static *parse(input) {
-        yield* super.parseTarget("maybe", MaybeHeader, NON_COMMENT_EXPR, input);
+        yield* super.parseAux("maybe", MaybeHeader, NON_COMMENT_EXPR, input);
     }
     compile(cell, namespace, devEnv) {
         const childCell = this.child.compile(cell, namespace, devEnv);
@@ -12178,7 +12334,7 @@ exports.MaybeHeader = MaybeHeader;
  */
 class NotHeader extends UnaryHeader {
     static *parse(input) {
-        yield* super.parseTarget("not", NotHeader, NON_COMMENT_EXPR, input);
+        yield* super.parseAux("not", NotHeader, NON_COMMENT_EXPR, input);
     }
     compile(cell, namespace, devEnv) {
         const childCell = this.child.compile(cell, namespace, devEnv);
@@ -12193,7 +12349,7 @@ exports.NotHeader = NotHeader;
  */
 class RenameHeader extends UnaryHeader {
     static *parse(input) {
-        yield* super.parseTarget(">", RenameHeader, LiteralHeader.parse, input);
+        yield* super.parseAux(">", RenameHeader, LiteralHeader.parse, input);
     }
     compile(cell, namespace, devEnv) {
         const childCell = this.child.compile(cell, namespace, devEnv);
@@ -12213,37 +12369,133 @@ class RenameHeader extends UnaryHeader {
 }
 exports.RenameHeader = RenameHeader;
 /**
- * A FlagHeader handles headers like "@x"; it joins x:X with whatever
- * follows rather than concatenating it.
- *
- * Note that FlagHeader binds more tightly than other unary operators,
- * e.g. while "maybe" in "maybe text/gloss" has "text/gloss" as its child,
- * "@" in "@text/gloss" only has "@" as its child.
+ * BooleanHeaders are the abstract ancestor of all Headers that
+ * allow and parse boolean-algebra expressions in their fields (e.g. "~(A|B)").
  */
-class FlagHeader extends UnaryHeader {
+class BooleanHeader extends UnaryHeader {
     merge(leftNeighbor, state) {
         if (leftNeighbor == undefined) {
             return state;
         }
         return stateMachine_1.Join(leftNeighbor, state);
     }
-    static *parse(input) {
-        yield* super.parseTarget("@", FlagHeader, SUBEXPR, input);
+    compileLiteral(parsedText, cell, namespace, devEnv) {
+        const newCell = new CellComponent(parsedText.text, cell.position);
+        const childCell = this.child.compile(newCell, namespace, devEnv);
+        return childCell;
+    }
+    compilePiece(parsedText, cell, namespace, devEnv) {
+        if (parsedText instanceof cellParser_1.MPLiteral) {
+            const newCell = new CellComponent(parsedText.text, cell.position);
+            const childCell = this.child.compile(newCell, namespace, devEnv);
+            return this.compileLiteral(parsedText, cell, namespace, devEnv);
+        }
+        if (parsedText instanceof cellParser_1.MPNegation) {
+            const childCell = this.compilePiece(parsedText.child, cell, namespace, devEnv);
+            const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
+            compiledCell.state = stateMachine_1.Not(childCell.state);
+            return compiledCell;
+        }
+        if (parsedText instanceof cellParser_1.MPAlternation) {
+            const child1Cell = this.compilePiece(parsedText.child1, cell, namespace, devEnv);
+            const child2Cell = this.compilePiece(parsedText.child2, cell, namespace, devEnv);
+            const compiledCell = new NAryHeadedCellComponent(this, cell, [child1Cell, child2Cell]);
+            compiledCell.state = stateMachine_1.Uni(child1Cell.state, child2Cell.state);
+            return compiledCell;
+        }
+        throw new Error(`Error constructing boolean expression in cell ${cell.position}`);
     }
     compile(cell, namespace, devEnv) {
-        const cellTextPieces = cell.text.split(" or ");
-        const childCells = [];
-        for (const cellTextPiece of cellTextPieces) {
-            const newCell = new CellComponent(cellTextPiece, cell.position);
-            const childCell = this.child.compile(newCell, namespace, devEnv);
-            childCells.push(childCell);
+        if (cell.text.length == 0) {
+            return super.compile(cell, namespace, devEnv);
         }
-        const compiledCell = new NAryHeadedCellComponent(this, cell, childCells);
-        compiledCell.state = stateMachine_1.Uni(...childCells.map(c => c.state));
+        const parsedText = cellParser_1.parseBooleanCell(cell.text);
+        const compiledCell = this.compilePiece(parsedText, cell, namespace, devEnv);
         return compiledCell;
     }
 }
-exports.FlagHeader = FlagHeader;
+/**
+ * A JoinHeader handles headers like "@x"; it joins x:X with whatever
+ * follows rather than concatenating it.
+ *
+ * Note that JoinHeader binds more tightly than other unary operators,
+ * e.g. while "maybe" in "maybe text/gloss" has "text/gloss" as its child,
+ * "@" in "@text/gloss" only has "@" as its child.
+ */
+class JoinHeader extends BooleanHeader {
+    static *parse(input) {
+        yield* super.parseAux("@", JoinHeader, SUBEXPR, input);
+    }
+}
+exports.JoinHeader = JoinHeader;
+/**
+ * EqualsHeader puts a constraint on the state of the immediately preceding cell (call this state N)
+ * that Semijoin(N, X) -- that is, it filters the results of N such that every surviving record is a
+ * superset of X.
+ *
+ * This is also the superclass of [StartsWithHeader] and [EndsWithHeader].  These constrain N to either
+ * start with X (that is, Semijoin(N, X.*)) or end with X (that is, Semijoin(N, .*X)).
+ */
+class EqualsHeader extends JoinHeader {
+    merge(leftNeighbor, state) {
+        if (leftNeighbor == undefined) {
+            throw new Error("'startswith' requires content to its left.");
+        }
+        if (leftNeighbor instanceof stateMachine_1.ConcatState) {
+            // if your left neighbor is a concat state we have to do something a little special,
+            // because startswith only scopes over the cell immediately to the left.  (if you let
+            // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
+            // specifying in the same row, rather than the embedded thing you're trying to catch.)
+            const immediateLeftNeighbor = leftNeighbor.child2; // taking advantage of the fact that
+            // these are constructed to be left-branching
+            const remnant = leftNeighbor.child1;
+            return stateMachine_1.Seq(remnant, stateMachine_1.Semijoin(immediateLeftNeighbor, state));
+        }
+        return stateMachine_1.Semijoin(leftNeighbor, state);
+    }
+    static *parse(input) {
+        yield* super.parseAux("equals", EqualsHeader, NON_COMMENT_EXPR, input);
+    }
+}
+exports.EqualsHeader = EqualsHeader;
+/**
+ * StartsWithHeader is a special kind of RequireHeader that only requires its predecessor (call it N) to
+ * start with X (that is, Semijoin(N, X.*))
+ */
+class StartsWithHeader extends EqualsHeader {
+    compileLiteral(parsedText, cell, namespace, devEnv) {
+        const newCell = new CellComponent(parsedText.text, cell.position);
+        const result = this.child.compile(newCell, namespace, devEnv);
+        const symbolStack = new stateMachine_1.CounterStack(4);
+        const relevantTapes = result.state.getRelevantTapes(symbolStack);
+        for (const tape of relevantTapes) {
+            const anychars = stateMachine_1.Rep(stateMachine_1.Any(tape));
+            result.state = stateMachine_1.Seq(result.state, anychars);
+        }
+        return result;
+    }
+    static *parse(input) {
+        yield* super.parseAux("startswith", StartsWithHeader, NON_COMMENT_EXPR, input);
+    }
+}
+exports.StartsWithHeader = StartsWithHeader;
+class EndsWithHeader extends EqualsHeader {
+    compileLiteral(parsedText, cell, namespace, devEnv) {
+        const newCell = new CellComponent(parsedText.text, cell.position);
+        const result = this.child.compile(newCell, namespace, devEnv);
+        const symbolStack = new stateMachine_1.CounterStack(4);
+        const relevantTapes = result.state.getRelevantTapes(symbolStack);
+        for (const tape of relevantTapes) {
+            const anychars = stateMachine_1.Rep(stateMachine_1.Any(tape));
+            result.state = stateMachine_1.Seq(anychars, result.state);
+        }
+        return result;
+    }
+    static *parse(input) {
+        yield* super.parseAux("endswith", EndsWithHeader, NON_COMMENT_EXPR, input);
+    }
+}
+exports.EndsWithHeader = EndsWithHeader;
 class BinaryHeader extends Header {
     constructor(text, child1, child2) {
         super(text);
@@ -12253,7 +12505,7 @@ class BinaryHeader extends Header {
     get hue() {
         return this.child1.hue;
     }
-    static *parseTarget(target, input) {
+    static *parseAux(target, input) {
         if (input.length == 0) {
             return;
         }
@@ -12294,12 +12546,12 @@ class SlashHeader extends BinaryHeader {
         return compiledCell;
     }
     static *parse(input) {
-        yield* super.parseTarget("/", input);
+        yield* super.parseAux("/", input);
     }
 }
 exports.SlashHeader = SlashHeader;
 const SYMBOL = ["(", ")", "%", "/", '@', ">", ":"];
-const RESERVED_HEADERS = ["embed", "maybe", "not", "drop"];
+const RESERVED_HEADERS = ["embed", "maybe", "not", "drop", "equals", "startswith"];
 const BINARY_OPS = {
     "or": stateMachine_1.Uni,
     "concat": stateMachine_1.Seq,
@@ -12310,12 +12562,15 @@ const RESERVED_WORDS = new Set([...SYMBOL, ...RESERVED_HEADERS, ...RESERVED_OPS]
 const SUBEXPR = Alt([LiteralHeader.parse,
     EmbedHeader.parse,
     DropHeader.parse,
-    FlagHeader.parse,
+    JoinHeader.parse,
     Parens]);
 const NON_COMMENT_EXPR = Alt([MaybeHeader.parse,
     NotHeader.parse,
     SlashHeader.parse,
     RenameHeader.parse,
+    EqualsHeader.parse,
+    StartsWithHeader.parse,
+    EndsWithHeader.parse,
     SUBEXPR]);
 const EXPR = Alt([CommentHeader.parse,
     NON_COMMENT_EXPR]);
@@ -12606,11 +12861,6 @@ class TableComponent extends EnclosureComponent {
         }
         if (this.sibling != undefined) {
             this.sibling.compile(namespace, devEnv);
-            // we don't do anything with the sibling, but we
-            // compile it anyway in case there are errors in it the
-            // programmer may want to know about
-            this.markWarning(devEnv, "Table overwrite warning", "'table' here will obliterate the preceding " +
-                `content above this.`);
         }
         this.child.compile(namespace, devEnv);
         this.state = this.child.state;
@@ -12793,10 +13043,6 @@ class ContentsComponent extends EnclosureComponent {
         this.state = stateMachine_1.Uni(...rowStates);
     }
     runChecks(ns, devEnv) {
-        if (this.sibling != undefined) {
-            this.markWarning(devEnv, "Table overwrite warning", "Content here will obliterate the preceding " +
-                `content above this.`);
-        }
         this.rows.map(row => row.runChecks(ns, devEnv));
     }
     toString() {
@@ -13200,7 +13446,7 @@ function createProject() {
 }
 exports.createProject = createProject;
 
-},{"./devEnv":40,"./stateMachine":43,"./util":45,"chai":2}],43:[function(require,module,exports){
+},{"./cellParser":40,"./devEnv":41,"./stateMachine":44,"./util":46,"chai":2}],44:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Maybe = exports.Empty = exports.Rep = exports.Any = exports.Rename = exports.Drop = exports.Proj = exports.Emb = exports.Not = exports.Semijoin = exports.Join = exports.Uni = exports.Seq = exports.Literalizer = exports.Lit = exports.NegationState = exports.RenameState = exports.DropState = exports.ProjectionState = exports.EmbedState = exports.RepetitionState = exports.JoinState = exports.UnionState = exports.OldUnionState = exports.ConcatState = exports.TrivialState = exports.LiteralState = exports.AnyCharState = exports.State = exports.Namespace = exports.CounterStack = void 0;
@@ -14749,7 +14995,7 @@ function Maybe(child) {
 }
 exports.Maybe = Maybe;
 
-},{"./tapes":44}],44:[function(require,module,exports){
+},{"./tapes":45}],45:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RenamedTape = exports.TapeCollection = exports.StringTape = exports.NO_CHAR = exports.ANY_CHAR = exports.Token = exports.Tape = exports.MultiTapeOutput = void 0;
@@ -15189,7 +15435,7 @@ class RenamedTape extends Tape {
 }
 exports.RenamedTape = RenamedTape;
 
-},{"bitset":39}],45:[function(require,module,exports){
+},{"bitset":39}],46:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setChain = exports.setIntersection = exports.RGBtoString = exports.HSVtoRGB = exports.iterTake = exports.shuffleArray = exports.meanAngleDeg = exports.DUMMY_POSITION = exports.TabularComponent = exports.CellPosition = void 0;
@@ -15373,6 +15619,6 @@ function* iterMap(i, f) {
     }
 }
 
-},{}]},{},[41])(41)
+},{}]},{},[42])(42)
 });
 </script>

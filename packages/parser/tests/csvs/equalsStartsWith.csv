@@ -1,0 +1,10 @@
+
+root:, text, gloss, trans
+     , foo, run, [INTR]
+     , goo, climb, [INTR]
+     , moo, see, [TR]
+
+word:, text, gloss, embed, equals trans, startswith text, 
+     , um, [1SG], root, [INTR], f, 
+     , un, [1SG], root, [INTR], g, 
+     ,   , [1SG], root, [TR], 

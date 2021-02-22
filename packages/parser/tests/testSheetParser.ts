@@ -222,9 +222,9 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     }); 
 
-    describe('Grammar with symbols and joins', function() {
+    describe('Grammar with embeds and an irrelevant join', function() {
 
-        const project = sheetFromFile("./tests/csvs/simpleGrammar.csv");
+        const project = sheetFromFile("./tests/csvs/irrelevantJoin.csv");
 
         testErrors(project, []);
         testStructure(project, [
@@ -233,10 +233,27 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
         testSymbols(project, ["word", "verb", "suffix"]);
         testProject(project, 'word', [
-            { text: "foobar", gloss: "run-1SG", lang: "foobese" },
-            { text: "moobar", gloss: "jump-1SG", lang: "foobese" },
-            { text: "foobaz", gloss: "run-2SG", lang: "foobese" },
-            { text: "moobaz", gloss: "jump-2SG", lang: "foobese" }
+            { text: "foobar", gloss: "run[1SG]", lang: "foobese" },
+            { text: "moobar", gloss: "jump[1SG]", lang: "foobese" },
+            { text: "foobaz", gloss: "run[2SG]", lang: "foobese" },
+            { text: "moobaz", gloss: "jump[2SG]", lang: "foobese" }
+        ]);
+    });
+
+    
+    describe('Grammar with embeds and a relevant join', function() {
+
+        const project = sheetFromFile("./tests/csvs/relevantJoin.csv");
+
+        testErrors(project, []);
+        testStructure(project, [
+            ["join",    ["child", "child"]],
+            ["table",      ["child", "child", "sibling"]],
+        ]);
+        testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, 'word', [
+            { text: "foobar", gloss: "run[1SG]", subj: "1SG" },
+            { text: "moobar", gloss: "jump[1SG]", subj: "1SG" },
         ]);
     });
 
@@ -343,7 +360,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
 
     });
-    
+
     describe('Grammar with weird indentation', function() {
         
         const project = sheetFromFile("./tests/csvs/weirdIndentation.csv");
@@ -401,7 +418,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     
-    describe('Flag header', function() {
+    describe('Join header', function() {
 
         const project = sheetFromFile("./tests/csvs/flagHeader.csv");
 
@@ -412,8 +429,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
-    describe('Flag header whose value contains OR', function() {
+    describe('Join header with alt value', function() {
 
         const project = sheetFromFile("./tests/csvs/flagHeaderWithOr.csv");
 
@@ -426,7 +442,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Flag header on wrong side', function() {
+    describe('Join header on wrong side', function() {
 
         // Flag headers only restrict things if they're on the left side!
 
@@ -441,7 +457,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Trivial flag header', function() {
+    describe('Trivial Join header', function() {
 
         const project = sheetFromFile("./tests/csvs/trivialFlagHeader.csv");
 
@@ -454,7 +470,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Complex flag header', function() {
+    describe('Complex Join header', function() {
 
         const project = sheetFromFile("./tests/csvs/complexFlagHeader.csv");
 
@@ -466,7 +482,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     
-    describe('Complex flag header, other direction', function() {
+    describe('Complex Join header, other direction', function() {
 
         const project = sheetFromFile("./tests/csvs/complexFlagHeader2.csv");
 
@@ -477,7 +493,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Flag header around a slash header', function() {
+    describe('Join header around a slash header', function() {
 
         const project = sheetFromFile("./tests/csvs/complexFlagHeader3.csv");
 
@@ -524,6 +540,213 @@ describe(`${path.basename(module.filename)}`, function() {
             {"subj":"[IMP]",    "text":"moobeez",   "gloss":"jump[IMP]"}
         ]);
     });
+
+    describe('Equals header', function() {
+
+        const project = sheetFromFile("./tests/csvs/equalsHeader.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" }
+        ]);
+    });
+
+    describe('Nested equals header', function() {
+
+        const project = sheetFromFile("./tests/csvs/nestedEquals.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]", trans: "INTR" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]", trans: "INTR" }
+        ]);
+    });
+    
+    describe('Equals header with alt value', function() {
+
+        const project = sheetFromFile("./tests/csvs/equalsOr.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
+            { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
+            { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
+        ]);
+    });
+    
+    
+    describe('Equals header with not value', function() {
+
+        const project = sheetFromFile("./tests/csvs/equalsNot.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
+            { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
+            { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
+        ]);
+    });
+
+    describe('startswith header', function() {
+
+        const project = sheetFromFile("./tests/csvs/startsWith.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "umfoo", gloss: "[1SG]run" },
+            { text: "ungoo", gloss: "[1SG]climb" }
+        ]);
+    });
+
+    
+    describe('startswith header with alt value', function() {
+
+        const project = sheetFromFile("./tests/csvs/startsWithOr.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "umfoo", gloss: "[1SG]run" },
+            { text: "ummoo", gloss: "[1SG]jump" },
+            { text: "ungoo", gloss: "[1SG]climb" }
+        ]);
+    });
+    
+    
+    describe('startswith header with not value', function() {
+
+        const project = sheetFromFile("./tests/csvs/startsWithNot.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "umfoo", gloss: "[1SG]run" },
+            { text: "ummoo", gloss: "[1SG]jump" },
+            { text: "ungoo", gloss: "[1SG]climb" }
+        ]);
+    });
+
+    describe('startswith embed header', function() {
+
+        const project = sheetFromFile("./tests/csvs/startsWithEmbed.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "umfoo", gloss: "[1SG]run" },
+            { text: "ummoo", gloss: "[1SG]jump" },
+            { text: "ungoo", gloss: "[1SG]climb" }
+        ]);
+    });
+
+    describe('startswith and equals modifying same embed', function() {
+
+        const project = sheetFromFile("./tests/csvs/startsWithEquals.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "umfoo", gloss: "[1SG]run", trans: "[INTR]" },
+            { text: "ungoo", gloss: "[1SG]climb", trans: "[INTR]" },
+            { text: "moo", gloss: "[1SG]see", trans: "[TR]" }
+        ]);
+    });
+
+    describe('equals and startswith modifying same embed', function() {
+
+        const project = sheetFromFile("./tests/csvs/equalsStartsWith.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "umfoo", gloss: "[1SG]run", trans: "[INTR]" },
+            { text: "ungoo", gloss: "[1SG]climb", trans: "[INTR]" },
+            { text: "moo", gloss: "[1SG]see", trans: "[TR]" },
+        ]);
+    });
+    
+    describe('endswith header', function() {
+
+        const project = sheetFromFile("./tests/csvs/endsWith.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobarq", gloss: "run[1SG]" },
+            { text: "foobazk", gloss: "jump[1SG]" }
+        ]);
+    });
+
+    describe('endswith header with alt value', function() {
+
+        const project = sheetFromFile("./tests/csvs/endsWithOr.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobarq", gloss: "run[1SG]" },
+            { text: "foobazk", gloss: "jump[1SG]" },
+            { text: "foobask", gloss: "climb[1SG]" }
+        ]);
+    });
+
+    
+    describe('endswith header with not value', function() {
+
+        const project = sheetFromFile("./tests/csvs/endsWithNot.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobarq", gloss: "run[1SG]" },
+            { text: "foobazk", gloss: "jump[1SG]" },
+            { text: "foobask", gloss: "climb[1SG]" }
+        ]);
+    });
+
+    describe('endswith embed header', function() {
+
+        const project = sheetFromFile("./tests/csvs/endsWithEmbed.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobarq", gloss: "run[1SG]" },
+            { text: "foobazk", gloss: "jump[1SG]" },
+            { text: "foobask", gloss: "climb[1SG]" }
+        ]);
+    });
+
+    describe('endswith and equals modifying same embed', function() {
+
+        const project = sheetFromFile("./tests/csvs/endsWithEquals.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobarq", gloss: "run[1SG]", trans: "INTR" },
+            { text: "foobazk", gloss: "jump[1SG]", trans: "INTR" },
+            { text: "foobas", gloss: "see[1SG]", trans: "TR" }
+        ]);
+    });
+
+    
+    describe('equals and endswith modifying same embed', function() {
+
+        const project = sheetFromFile("./tests/csvs/equalsEndsWith.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobarq", gloss: "run[1SG]", trans: "INTR" },
+            { text: "foobazk", gloss: "jump[1SG]", trans: "INTR" },
+            { text: "foobas", gloss: "see[1SG]", trans: "TR" }
+        ]);
+    });
+
+
+    describe('startswith and endswith modifying same embed', function() {
+
+        const project = sheetFromFile("./tests/csvs/startsWithEndsWith.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "umfooz", gloss: "[1SG]jump" }
+        ]);
+    });
+    
 });
 
 

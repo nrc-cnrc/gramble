@@ -1,4 +1,4 @@
-import { constructHeader, SlashHeader, CommentHeader, FlagHeader, MaybeHeader, NotHeader, LiteralHeader, EmbedHeader } from "../src/sheetParser";
+import { constructHeader, SlashHeader, CommentHeader, JoinHeader, MaybeHeader, NotHeader, LiteralHeader, EmbedHeader, EqualsHeader, EndsWithHeader, StartsWithHeader } from "../src/sheetParser";
 
 import * as path from 'path';
 import { expect } from "chai";
@@ -134,10 +134,10 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Header "@text"', function() {
         const header = constructHeader("@text");
 
-        testIsType(header, FlagHeader);
+        testIsType(header, JoinHeader);
         testHeaderHasText(header, "@");
 
-        if (!(header instanceof FlagHeader)) {
+        if (!(header instanceof JoinHeader)) {
             return;
         }
 
@@ -149,10 +149,10 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Header "@(text)"', function() {
         const header = constructHeader("@(text)");
 
-        testIsType(header, FlagHeader);
+        testIsType(header, JoinHeader);
         testHeaderHasText(header, "@");
 
-        if (!(header instanceof FlagHeader)) {
+        if (!(header instanceof JoinHeader)) {
             return;
         }
 
@@ -164,10 +164,10 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Header "(@text)"', function() {
         const header = constructHeader("(@text)");
 
-        testIsType(header, FlagHeader);
+        testIsType(header, JoinHeader);
         testHeaderHasText(header, "@");
 
-        if (!(header instanceof FlagHeader)) {
+        if (!(header instanceof JoinHeader)) {
             return;
         }
 
@@ -175,6 +175,67 @@ describe(`${path.basename(module.filename)}`, function() {
         testHeaderHasText(header.child, "text", "child");
     });
     
+    
+    describe('Header "equals text"', function() {
+        const header = constructHeader("equals text");
+
+        testIsType(header, EqualsHeader);
+        testHeaderHasText(header, "equals");
+
+        if (!(header instanceof EqualsHeader)) {
+            return;
+        }
+
+        testIsType(header.child, LiteralHeader, "child");
+        testHeaderHasText(header.child, "text", "child");
+    });
+
+    
+    describe('Header "equals @text"', function() {
+        const header = constructHeader("equals @text");
+
+        testIsType(header, EqualsHeader);
+        testHeaderHasText(header, "equals");
+
+        if (!(header instanceof EqualsHeader)) {
+            return;
+        }
+
+        testIsType(header.child, JoinHeader, "child");
+        testHeaderHasText(header.child, "@", "child");
+    });
+
+    
+    describe('Header "startswith text"', function() {
+        const header = constructHeader("startswith text");
+
+        testIsType(header, StartsWithHeader);
+        testHeaderHasText(header, "startswith");
+
+        if (!(header instanceof StartsWithHeader)) {
+            return;
+        }
+
+        testIsType(header.child, LiteralHeader, "child");
+        testHeaderHasText(header.child, "text", "child");
+    });
+    
+    
+    describe('Header "endswith text"', function() {
+        const header = constructHeader("endswith text");
+
+        testIsType(header, EndsWithHeader);
+        testHeaderHasText(header, "endswith");
+
+        if (!(header instanceof EndsWithHeader)) {
+            return;
+        }
+
+        testIsType(header.child, LiteralHeader, "child");
+        testHeaderHasText(header.child, "text", "child");
+    });
+    
+
     describe('Header "text/gloss"', function() {
         const header = constructHeader("text/gloss");
 
@@ -210,7 +271,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testHeaderHasText(header.child2, "gloss", "child2");
     });
 
-    
     describe('Header "(text/gloss)"', function() {
         const header = constructHeader("(text/gloss)");
 

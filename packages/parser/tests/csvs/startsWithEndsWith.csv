@@ -1,0 +1,9 @@
+
+root:, text, gloss,
+     , foom, run, 
+     , gooz, climb, 
+     , fooz, jump, 
+     , goom, sing, 
+
+word:, text, gloss, embed, startswith text, endswith text
+     , um, [1SG], root, f, z

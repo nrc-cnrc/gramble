@@ -8,8 +8,9 @@
  */
 
 import { assert } from "chai";
+import { MPAlternation, MPLiteral, MPNegation, MPResult, parseBooleanCell } from "./cellParser";
 import { SimpleDevEnvironment } from "./devEnv";
-import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState, DropState, Drop } from "./stateMachine";
+import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState, DropState, Drop, Rep, Any, ConcatState } from "./stateMachine";
 import { CellPosition, DevEnvironment, DUMMY_POSITION, Gen, HSVtoRGB, iterTake, meanAngleDeg, RGBtoString, StringDict, TabularComponent } from "./util";
 
 const DEFAULT_SATURATION = 0.1;
@@ -101,7 +102,7 @@ abstract class AtomicHeader extends Header {
         return (hash & 0xFF) / 255;
     }
 
-    public static *parseTarget(target: string,
+    public static *parseAux(target: string,
                         constructor: new(t: string) => Header,
                         input: string[]): Gen<[Header, string[]]> {
         if (input.length == 0 || input[0] != target) {
@@ -125,7 +126,7 @@ export class EmbedHeader extends AtomicHeader {
     }
 
     public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield* super.parseTarget("embed", EmbedHeader, input);
+        yield* super.parseAux("embed", EmbedHeader, input);
     }
 }
 
@@ -135,9 +136,8 @@ export class EmbedHeader extends AtomicHeader {
 export class DropHeader extends AtomicHeader {
 
     public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield* super.parseTarget("drop", DropHeader, input);
+        yield* super.parseAux("drop", DropHeader, input);
     }
-
     
     public compileAndMerge(cell: CellComponent,
             namespace: Namespace,
@@ -241,7 +241,7 @@ abstract class UnaryHeader extends Header {
         return compiledCell;
     }
 
-    public static *parseTarget(target: string, 
+    public static *parseAux(target: string, 
                             constructor: new(t: string, c: Header) => Header,
                             childParser: HeaderParser,
                             input: string[]): Gen<[Header, string[]]> {
@@ -260,7 +260,7 @@ abstract class UnaryHeader extends Header {
 export class MaybeHeader extends UnaryHeader {
 
     public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseTarget("maybe", MaybeHeader, NON_COMMENT_EXPR, input);
+        yield *super.parseAux("maybe", MaybeHeader, NON_COMMENT_EXPR, input);
     }
 
     public compile(cell: CellComponent, 
@@ -280,7 +280,7 @@ export class MaybeHeader extends UnaryHeader {
 export class NotHeader extends UnaryHeader {
 
     public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseTarget("not", NotHeader, NON_COMMENT_EXPR, input);
+        yield *super.parseAux("not", NotHeader, NON_COMMENT_EXPR, input);
     }
 
     public compile(cell: CellComponent, 
@@ -300,7 +300,7 @@ export class NotHeader extends UnaryHeader {
 export class RenameHeader extends UnaryHeader {
 
     public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseTarget(">", RenameHeader, LiteralHeader.parse, input);
+        yield *super.parseAux(">", RenameHeader, LiteralHeader.parse, input);
     }
 
     public compile(cell: CellComponent, 
@@ -324,42 +324,181 @@ export class RenameHeader extends UnaryHeader {
 }
 
 /**
- * A FlagHeader handles headers like "@x"; it joins x:X with whatever
- * follows rather than concatenating it.
- * 
- * Note that FlagHeader binds more tightly than other unary operators,
- * e.g. while "maybe" in "maybe text/gloss" has "text/gloss" as its child,
- * "@" in "@text/gloss" only has "@" as its child.
+ * BooleanHeaders are the abstract ancestor of all Headers that
+ * allow and parse boolean-algebra expressions in their fields (e.g. "~(A|B)").
  */
-export class FlagHeader extends UnaryHeader {
-    
+ abstract class BooleanHeader extends UnaryHeader {
+
     public merge(leftNeighbor: State | undefined, state: State): State {
         if (leftNeighbor == undefined) {
             return state;
         }
         return Join(leftNeighbor, state);
     }
-    
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseTarget("@", FlagHeader, SUBEXPR, input);
+
+    public compileLiteral(
+        parsedText: MPLiteral,
+        cell: CellComponent,
+        namespace: Namespace,
+        devEnv: DevEnvironment
+    ): SingleCellComponent {
+        const newCell = new CellComponent(parsedText.text, cell.position);
+        const childCell = this.child.compile(newCell, namespace, devEnv);
+        return childCell;
     }
 
+    public compilePiece(
+        parsedText: MPResult,
+        cell: CellComponent, 
+        namespace: Namespace, 
+        devEnv: DevEnvironment
+    ): SingleCellComponent {
+
+        if (parsedText instanceof MPLiteral) {
+            const newCell = new CellComponent(parsedText.text, cell.position);
+            const childCell = this.child.compile(newCell, namespace, devEnv);
+            return this.compileLiteral(parsedText, cell, namespace, devEnv);
+        }
+
+        if (parsedText instanceof MPNegation) {
+            const childCell = this.compilePiece(parsedText.child, cell, namespace, devEnv);
+            const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
+            compiledCell.state = Not(childCell.state);
+            return compiledCell;
+        }
+
+        if (parsedText instanceof MPAlternation) {
+            const child1Cell = this.compilePiece(parsedText.child1, cell, namespace, devEnv);
+            const child2Cell = this.compilePiece(parsedText.child2, cell, namespace, devEnv);
+            const compiledCell = new NAryHeadedCellComponent(this, cell, [child1Cell, child2Cell]);
+            compiledCell.state = Uni(child1Cell.state, child2Cell.state);
+            return compiledCell;
+        }
+
+        throw new Error(`Error constructing boolean expression in cell ${cell.position}`);
+    }
+    
     public compile(cell: CellComponent, 
         namespace: Namespace, 
         devEnv: DevEnvironment): SingleCellComponent {
 
-        const cellTextPieces = cell.text.split(" or ");
-        const childCells: SingleCellComponent[] = [];
-        for (const cellTextPiece of cellTextPieces) {
-            const newCell = new CellComponent(cellTextPiece, cell.position);
-            const childCell = this.child.compile(newCell, namespace, devEnv);
-            childCells.push(childCell);
+        if (cell.text.length == 0) {
+            return super.compile(cell, namespace, devEnv);
         }
-        const compiledCell = new NAryHeadedCellComponent(this, cell, childCells);
-        compiledCell.state = Uni(...childCells.map(c => c.state));
+
+        const parsedText = parseBooleanCell(cell.text);
+        const compiledCell = this.compilePiece(parsedText, cell, namespace, devEnv);
         return compiledCell;
     }
 }
+
+/**
+ * A JoinHeader handles headers like "@x"; it joins x:X with whatever
+ * follows rather than concatenating it.
+ * 
+ * Note that JoinHeader binds more tightly than other unary operators,
+ * e.g. while "maybe" in "maybe text/gloss" has "text/gloss" as its child,
+ * "@" in "@text/gloss" only has "@" as its child.
+ */
+export class JoinHeader extends BooleanHeader {
+    
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        yield *super.parseAux("@", JoinHeader, SUBEXPR, input);
+    }
+}
+
+/**
+ * EqualsHeader puts a constraint on the state of the immediately preceding cell (call this state N)
+ * that Semijoin(N, X) -- that is, it filters the results of N such that every surviving record is a 
+ * superset of X.
+ * 
+ * This is also the superclass of [StartsWithHeader] and [EndsWithHeader].  These constrain N to either
+ * start with X (that is, Semijoin(N, X.*)) or end with X (that is, Semijoin(N, .*X)).
+ */
+export class EqualsHeader extends JoinHeader {
+    
+    public merge(
+        leftNeighbor: State | undefined, 
+        state: State
+    ): State {
+        if (leftNeighbor == undefined) {
+            throw new Error("'startswith' requires content to its left.");
+        }
+
+        if (leftNeighbor instanceof ConcatState) {
+            // if your left neighbor is a concat state we have to do something a little special,
+            // because startswith only scopes over the cell immediately to the left.  (if you let
+            // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
+            // specifying in the same row, rather than the embedded thing you're trying to catch.)
+
+            const immediateLeftNeighbor = leftNeighbor.child2;  // taking advantage of the fact that
+                                    // these are constructed to be left-branching
+            const remnant = leftNeighbor.child1;
+            return Seq(remnant, Semijoin(immediateLeftNeighbor, state));
+        }
+
+        return Semijoin(leftNeighbor, state);
+    }
+    
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        yield *super.parseAux("equals", EqualsHeader, NON_COMMENT_EXPR, input);
+    }
+}
+
+/**
+ * StartsWithHeader is a special kind of RequireHeader that only requires its predecessor (call it N) to 
+ * start with X (that is, Semijoin(N, X.*))
+ */
+export class StartsWithHeader extends EqualsHeader {
+
+    public compileLiteral(
+        parsedText: MPLiteral,
+        cell: CellComponent,
+        namespace: Namespace,
+        devEnv: DevEnvironment
+    ): SingleCellComponent {
+        const newCell = new CellComponent(parsedText.text, cell.position);
+        const result = this.child.compile(newCell, namespace, devEnv);
+
+        const symbolStack = new CounterStack(4);
+        const relevantTapes = result.state.getRelevantTapes(symbolStack);
+        for (const tape of relevantTapes) {
+            const anychars = Rep(Any(tape));
+            result.state = Seq(result.state, anychars);
+        }
+        return result;
+    }
+
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        yield *super.parseAux("startswith", StartsWithHeader, NON_COMMENT_EXPR, input);
+    }
+}
+
+export class EndsWithHeader extends EqualsHeader {
+    
+    public compileLiteral(
+        parsedText: MPLiteral,
+        cell: CellComponent,
+        namespace: Namespace,
+        devEnv: DevEnvironment
+    ): SingleCellComponent {
+        const newCell = new CellComponent(parsedText.text, cell.position);
+        const result = this.child.compile(newCell, namespace, devEnv);
+
+        const symbolStack = new CounterStack(4);
+        const relevantTapes = result.state.getRelevantTapes(symbolStack);
+        for (const tape of relevantTapes) {
+            const anychars = Rep(Any(tape));
+            result.state =  Seq(anychars, result.state);
+        }
+        return result;
+    }
+
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        yield *super.parseAux("endswith", EndsWithHeader, NON_COMMENT_EXPR, input);
+    }
+}
+
 
 abstract class BinaryHeader extends Header {
 
@@ -375,7 +514,7 @@ abstract class BinaryHeader extends Header {
         return this.child1.hue;
     }
     
-    public static *parseTarget(target: string, input: string[]): Gen<[Header, string[]]> {
+    public static *parseAux(target: string, input: string[]): Gen<[Header, string[]]> {
         if (input.length == 0) {
             return;
         }
@@ -431,14 +570,14 @@ export class SlashHeader extends BinaryHeader {
     }
 
     public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseTarget("/", input);
+        yield *super.parseAux("/", input);
     }   
 }
 
 type HeaderParser = (input: string[]) => Gen<[Header, string[]]>;
 
 const SYMBOL = [ "(", ")", "%", "/", '@', ">", ":" ];
-const RESERVED_HEADERS = ["embed", "maybe", "not", "drop" ];
+const RESERVED_HEADERS = ["embed", "maybe", "not", "drop", "equals", "startswith" ];
 
 type BinaryOp = (...children: State[]) => State;
 const BINARY_OPS: {[opName: string]: BinaryOp} = {
@@ -454,13 +593,16 @@ const RESERVED_WORDS = new Set([...SYMBOL, ...RESERVED_HEADERS, ...RESERVED_OPS]
 const SUBEXPR = Alt([LiteralHeader.parse,
                     EmbedHeader.parse, 
                     DropHeader.parse,
-                    FlagHeader.parse, 
+                    JoinHeader.parse, 
                     Parens]);
 
 const NON_COMMENT_EXPR = Alt([MaybeHeader.parse, 
                               NotHeader.parse,
                               SlashHeader.parse, 
                               RenameHeader.parse,
+                              EqualsHeader.parse,
+                              StartsWithHeader.parse,
+                              EndsWithHeader.parse,
                               SUBEXPR]);
 
 const EXPR = Alt([CommentHeader.parse, 

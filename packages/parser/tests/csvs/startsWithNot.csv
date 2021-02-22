@@ -1,0 +1,9 @@
+
+root:, text, gloss
+     , foo, run
+     , moo, jump
+     , goo, climb
+
+word:, text, gloss, embed, startswith text
+     , um, [1SG], root, ~g
+     , un, [1SG], root, g
