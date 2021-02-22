@@ -1,5 +1,5 @@
-import { Seq, Join, Proj } from "../src/stateMachine";
-import { text, unrelated, testHasTapes, testHasVocab, testGrammar } from './testUtils';
+import { Seq, Join, Proj, Rename } from "../src/stateMachine";
+import { text, unrelated, testHasTapes, testHasVocab, testGrammar, t2, t1 } from './testUtils';
 
 import * as path from 'path';
 
@@ -67,4 +67,28 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Proj(Proj(Seq(text("hello"), unrelated("foo")), "text"), "text");
         testGrammar(grammar, [{text: "hello"}]);
     });
+
+    describe('Rename t2=>t3 of projection(t1) of t1:hello+t2:foo', function() {
+        const grammar = Rename(Proj(Seq(t1("hello"), t2("foo")), "t1"), "t2", "t3");
+        testHasTapes(grammar, ["t1"]);
+        testHasVocab(grammar, {t1: 4});
+        // Contrary to what you might expect, there's still a *vocab* for the
+        // unrelated tier here; we still have to know what characters are on
+        // a particular tape even if this state can't write to that tape.
+        testHasVocab(grammar, {t3: 2});
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    
+    describe('Rename t1=>t3 of projection(t1) of t1:hello+t2:foo', function() {
+        const grammar = Rename(Proj(Seq(t1("hello"), t2("foo")), "t1"), "t1", "t3");
+        testHasTapes(grammar, ["t3"]);
+        testHasVocab(grammar, {t3: 4});
+        // Contrary to what you might expect, there's still a *vocab* for the
+        // unrelated tier here; we still have to know what characters are on
+        // a particular tape even if this state can't write to that tape.
+        testHasVocab(grammar, {t2: 2});
+        testGrammar(grammar, [{t3: "hello"}]);
+    });
+
 });

@@ -465,7 +465,7 @@ export abstract class State {
         var nextStates: [Tape, Token, boolean, State][] = [... this.ndQuery(tape, target, symbolStack)];
         
         for (var [nextTape, nextBits, nextMatched, next] of nextStates) {
-            if (nextTape.numTapes == 0 || !nextMatched) {
+            if (nextTape.isTrivial || !nextMatched) {
                 results.push([nextTape, nextBits, nextMatched, next]);
                 continue;
             }
@@ -713,7 +713,7 @@ class CompiledState extends State {
         }
 
         for (const [origResultTape, token, matched, next] of transitions) {
-            if (origResultTape.numTapes == 0) { // result was hidden by a Projection or Drop
+            if (origResultTape.isTrivial) { // result was hidden by a Projection or Drop
                 yield [origResultTape, token, matched, next];
                 return;
             }
@@ -1241,7 +1241,7 @@ class SemijoinState extends BinaryState {
         for (const [c1tape, c1target, c1matched, c1next] of 
                 c1.dQuery(tape, target, symbolStack)) {
             
-            if (c1tape.numTapes == 0) { 
+            if (c1tape.isTrivial) { 
                 // c1 contained a ProjectionState that hides the original tape; move on without
                 // asking c2 to match anything.
                 const successor = this.successor(c1next, c2);
@@ -1768,8 +1768,8 @@ export class RenameState extends UnaryState {
     
         for (var [childTape, childTarget, childMatched, childNext] of 
                 this.child.dQuery(tape, target, symbolStack)) {
-            if (rememberToUnwrapTape) {
-                childTape = (childTape as RenamedTape).child;
+            if (rememberToUnwrapTape && childTape instanceof RenamedTape) {
+                childTape = childTape.child;
             }
             yield [childTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape, this.relevantTapes)];
         }

@@ -80,7 +80,7 @@ export class MultiTapeOutput {
     public singleTapeOutputs: Map<string, SingleTapeOutput> = new Map();
 
     public add(tape: Tape, token: Token) {
-        if (tape.numTapes == 0) {
+        if (tape.isTrivial) {
             return this;
         }
 
@@ -127,7 +127,8 @@ export class MultiTapeOutput {
 export abstract class Tape {
     
     public abstract readonly tapeName: string;
-    public abstract readonly numTapes: number;
+
+    public abstract readonly isTrivial: boolean;
 
     public add(str1: string, str2: string): string[] {
         throw new Error(`Not implemented`);
@@ -215,8 +216,8 @@ export class StringTape extends Tape {
         super();
     }
 
-    public get numTapes(): number {
-        return 1;
+    public get isTrivial(): boolean {
+        return false;
     }
 
     public get vocabSize(): number {
@@ -384,9 +385,9 @@ class FlagTape extends StringTape {
 export class TapeCollection extends Tape {
 
     public tapes: Map<string, Tape> = new Map();
-
-    public get numTapes(): number {
-        return this.tapes.size;
+    
+    public get isTrivial(): boolean {
+        return this.tapes.size == 0;
     }
 
     /*
@@ -475,9 +476,9 @@ export class RenamedTape extends Tape {
         }
         return childName;
     }
-
-    public get numTapes(): number {
-        return this.child.numTapes;
+    
+    public get isTrivial(): boolean {
+        return this.child.isTrivial;
     }
 
     public any(): Token {
