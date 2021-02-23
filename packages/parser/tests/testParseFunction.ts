@@ -26,10 +26,10 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('text:hello, parsing unrelated:foo', function() {
         const grammar = text("hello");
         const inputs = {unrelated: "foo"};
-        testParse(grammar, inputs, [{text: "hello", unrelated: "foo"}]);
+        testParse(grammar, inputs, []);
     });
 
-    describe('text:hello+text:.*, parsing text:blorp', function() {
+    describe('text:hello+text:.*, parsing text:hellog', function() {
         const grammar = Seq(text("hello"), Any("text"));
         const inputs = {text: "hellog"};
         testParse(grammar, inputs, [{text: "hellog"}]);
@@ -38,7 +38,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('text:hello, parsing unrelated:foo, text:hello ', function() {
         const grammar = text("hello");
         const inputs = {text: "hello", unrelated: "foo"};
-        testParse(grammar, inputs, [{text: "hello", unrelated: "foo"}]);
+        testParse(grammar, inputs, []);
     });
 
     describe('text:hello+unrelated:foo, parsing text:hello', function() {

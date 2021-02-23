@@ -8,7 +8,7 @@
  */
 
 import { assert } from "chai";
-import { MPAlternation, MPLiteral, MPNegation, MPResult, parseBooleanCell } from "./cellParser";
+import { MPAlternation, MPUnreserved, MPNegation, MPResult, parseBooleanCell } from "./cellParser";
 import { SimpleDevEnvironment } from "./devEnv";
 import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState, DropState, Drop, Rep, Any, ConcatState } from "./stateMachine";
 import { CellPosition, DevEnvironment, DUMMY_POSITION, Gen, HSVtoRGB, iterTake, meanAngleDeg, RGBtoString, StringDict, TabularComponent } from "./util";
@@ -337,7 +337,7 @@ export class RenameHeader extends UnaryHeader {
     }
 
     public compileLiteral(
-        parsedText: MPLiteral,
+        parsedText: MPUnreserved,
         cell: CellComponent,
         namespace: Namespace,
         devEnv: DevEnvironment
@@ -354,7 +354,7 @@ export class RenameHeader extends UnaryHeader {
         devEnv: DevEnvironment
     ): SingleCellComponent {
 
-        if (parsedText instanceof MPLiteral) {
+        if (parsedText instanceof MPUnreserved) {
             const newCell = new CellComponent(parsedText.text, cell.position);
             const childCell = this.child.compile(newCell, namespace, devEnv);
             return this.compileLiteral(parsedText, cell, namespace, devEnv);
@@ -452,7 +452,7 @@ export class EqualsHeader extends JoinHeader {
 export class StartsWithHeader extends EqualsHeader {
 
     public compileLiteral(
-        parsedText: MPLiteral,
+        parsedText: MPUnreserved,
         cell: CellComponent,
         namespace: Namespace,
         devEnv: DevEnvironment
@@ -477,7 +477,7 @@ export class StartsWithHeader extends EqualsHeader {
 export class EndsWithHeader extends EqualsHeader {
     
     public compileLiteral(
-        parsedText: MPLiteral,
+        parsedText: MPUnreserved,
         cell: CellComponent,
         namespace: Namespace,
         devEnv: DevEnvironment

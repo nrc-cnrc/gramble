@@ -1,6 +1,6 @@
 import { Project } from "../src/sheetParser";
 import { dirname, basename } from "path";
-import { testProject, testErrors, testSymbols, testStructure } from "./testUtils";
+import { testProject, testErrors, testSymbols, testStructure, testSample } from "./testUtils";
 import { TextDevEnvironment } from "../src/textInterface";
 
 import * as path from 'path';
@@ -48,6 +48,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
+        testSample(project, 'word');
     });
 
     describe('Bare grammar', function() {
@@ -627,9 +628,21 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('startswith embed header', function() {
+    describe('startswith embed', function() {
 
         const project = sheetFromFile("./tests/csvs/startsWithEmbed.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "umfoo", gloss: "[1SG]run" },
+            { text: "ummoo", gloss: "[1SG]jump" },
+            { text: "ungoo", gloss: "[1SG]climb" }
+        ]);
+    });
+
+    describe('startswith negated embed', function() {
+
+        const project = sheetFromFile("./tests/csvs/startsWithNegatedEmbed.csv");
 
         testErrors(project, []);
         testProject(project, 'word', [
@@ -699,7 +712,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('endswith embed header', function() {
+    describe('endswith embed', function() {
 
         const project = sheetFromFile("./tests/csvs/endsWithEmbed.csv");
 
@@ -708,6 +721,18 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foobarq", gloss: "run[1SG]" },
             { text: "foobazk", gloss: "jump[1SG]" },
             { text: "foobask", gloss: "climb[1SG]" }
+        ]);
+    });
+
+    describe('endswith negated embed', function() {
+
+        const project = sheetFromFile("./tests/csvs/endsWithEmbedNot.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobar", gloss: "run[1SG]" },
+            { text: "foobor", gloss: "jump[1SG]" },
+            { text: "foobaru", gloss: "climb[1SG]" }
         ]);
     });
 

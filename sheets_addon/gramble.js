@@ -11864,141 +11864,54 @@ return typeDetect;
 },{}],40:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseBooleanCell = exports.MPAlternation = exports.MPNegation = exports.MPLiteral = void 0;
-class DelayParser {
-    constructor() {
-        this.child = null;
-    }
-    *parse(input) {
-        if (this.child == null) {
-            return;
-        }
-        yield* this.child.parse(input);
-    }
+exports.parseBooleanCell = exports.MPAlternation = exports.MPNegation = exports.MPUnreserved = void 0;
+function Delay(child) {
+    return function* (input) {
+        yield* child()(input);
+    };
 }
-class AtomicParser {
-    constructor(matcherFunction, resultConstructor) {
-        this.matcherFunction = matcherFunction;
-        this.resultConstructor = resultConstructor;
-    }
-    *parse(input) {
-        if (input.length == 0 || !this.matcherFunction(input[0])) {
+function Unreserved(reserved, constr) {
+    return function* (input) {
+        if (input.length == 0 || reserved.has(input[0])) {
             return;
         }
-        yield [this.resultConstructor(input[0]), input.slice(1)];
-    }
+        yield [constr(input[0]), input.slice(1)];
+    };
 }
-class ParensParser {
-    constructor(openMatcher, innerMatcher, closedMatcher, resultConstructor) {
-        this.openMatcher = openMatcher;
-        this.innerMatcher = innerMatcher;
-        this.closedMatcher = closedMatcher;
-        this.resultConstructor = resultConstructor;
-    }
-    *parse(input) {
-        if (input.length == 0 || !this.openMatcher(input[0])) {
-            return;
-        }
-        for (const [t, rem] of this.innerMatcher.parse(input.slice(1))) {
-            if (rem.length == 0 || !this.closedMatcher(rem[0])) {
-                return;
+function Sequence(children, constr) {
+    return function* (input) {
+        var results = [[[], input]];
+        for (const child of children) {
+            var newResults = [];
+            for (const [existingOutputs, existingRemnant] of results) {
+                if (typeof child == "string") {
+                    if (existingRemnant.length > 0 && existingRemnant[0] == child) {
+                        newResults.push([existingOutputs, existingRemnant.slice(1)]);
+                    }
+                    continue;
+                }
+                for (const [output2, remnant2] of child(existingRemnant)) {
+                    const newOutput = [...existingOutputs, output2];
+                    newResults.push([newOutput, remnant2]);
+                }
             }
-            yield [t, rem.slice(1)];
+            results = newResults;
         }
-    }
-}
-class UnaryParser {
-    constructor(opMatcher, innerMatcher, resultConstructor) {
-        this.opMatcher = opMatcher;
-        this.innerMatcher = innerMatcher;
-        this.resultConstructor = resultConstructor;
-    }
-    *parse(input) {
-        if (input.length == 0 || !this.opMatcher(input[0])) {
-            return;
+        for (const [output, remnant] of results) {
+            yield [constr(...output), remnant];
         }
-        for (const [child, rem] of this.innerMatcher.parse(input.slice(1))) {
-            yield [this.resultConstructor(input[0], child), rem];
+    };
+}
+function Alternation(...children) {
+    return function* (input) {
+        for (const child of children) {
+            yield* child(input);
         }
-    }
+    };
 }
-class BinaryParser {
-    constructor(child1Matcher, opMatcher, child2Matcher, resultConstructor) {
-        this.child1Matcher = child1Matcher;
-        this.opMatcher = opMatcher;
-        this.child2Matcher = child2Matcher;
-        this.resultConstructor = resultConstructor;
-    }
-    *parse(input) {
-        if (input.length == 0) {
-            return;
-        }
-        for (const [t1, rem1] of this.child1Matcher.parse(input)) {
-            if (rem1.length == 0 || !this.opMatcher(rem1[0])) {
-                return;
-            }
-            for (const [t2, rem2] of this.child2Matcher.parse(rem1.slice(1))) {
-                yield [this.resultConstructor(rem1[0], t1, t2), rem2];
-            }
-        }
-    }
-}
-class MPAlt {
-    constructor(...children) {
-        this.children = children;
-    }
-    *parse(input) {
-        for (const child of this.children) {
-            yield* child.parse(input);
-        }
-    }
-}
-class MPLiteral {
-    constructor(text) {
-        this.text = text.trim();
-    }
-}
-exports.MPLiteral = MPLiteral;
-const SYMBOL = new Set(["(", ")", "~", "|"]);
-class MPNegation {
-    constructor(text, child) {
-        this.text = text;
-        this.child = child;
-    }
-}
-exports.MPNegation = MPNegation;
-class MPAlternation {
-    constructor(text, child1, child2) {
-        this.text = text;
-        this.child1 = child1;
-        this.child2 = child2;
-    }
-}
-exports.MPAlternation = MPAlternation;
-var EXPR = new DelayParser();
-var SUBEXPR = new DelayParser();
-const LITERAL = new AtomicParser((s) => !SYMBOL.has(s), // what to recognize
-(s) => new MPLiteral(s) // what to do with it
-);
-const PARENS = new ParensParser((s) => s == "(", EXPR, (s) => s == ")", (c) => c);
-const NEGATION = new UnaryParser((s) => s == "~", // how to recognize the operator
-EXPR, // how to recognize the child
-(s, c) => new MPNegation(s, c));
-const ALTERNATION = new BinaryParser(SUBEXPR, // how to recognize child1
-(s) => s == "|", // how to recognize the operator
-EXPR, // how to recognize child2
-(s, c1, c2) => new MPAlternation(s, c1, c2));
-SUBEXPR.child = new MPAlt(LITERAL, PARENS);
-EXPR.child = new MPAlt(NEGATION, ALTERNATION, SUBEXPR);
-const tokenizer = new RegExp("(" +
-    [...SYMBOL].map(s => "\\" + s).join("|") +
-    ")");
-function tokenize(text) {
-    return text.split(tokenizer).filter((s) => s !== undefined && s !== '');
-}
-function parseBooleanCell(text) {
-    const pieces = tokenize(text);
-    var result = [...EXPR.parse(pieces)];
+function parse(tokenizer, grammar, text) {
+    const pieces = tokenizer(text);
+    var result = [...grammar(pieces)];
     // result is a list of [header, remaining_tokens] pairs.  
     // we only want results where there are no remaining tokens.
     result = result.filter(([t, r]) => r.length == 0);
@@ -12013,6 +11926,42 @@ function parseBooleanCell(text) {
             " This probably isn't your fault.");
     }
     return result[0][0];
+}
+class MPUnreserved {
+    constructor(text) {
+        this.text = text;
+        this.text = text.trim();
+    }
+}
+exports.MPUnreserved = MPUnreserved;
+class MPNegation {
+    constructor(child) {
+        this.child = child;
+    }
+}
+exports.MPNegation = MPNegation;
+class MPAlternation {
+    constructor(child1, child2) {
+        this.child1 = child1;
+        this.child2 = child2;
+    }
+}
+exports.MPAlternation = MPAlternation;
+var EXPR = Delay(() => Alternation(NEGATION, ALTERNATION, SUBEXPR));
+var SUBEXPR = Delay(() => Alternation(UNRESERVED, PARENS));
+const RESERVED = new Set(["(", ")", "~", "|"]);
+const UNRESERVED = Unreserved(RESERVED, (s) => new MPUnreserved(s));
+const PARENS = Sequence(["(", EXPR, ")"], (child) => child);
+const NEGATION = Sequence(["~", EXPR], (child) => new MPNegation(child));
+const ALTERNATION = Sequence([SUBEXPR, "|", EXPR], (c1, c2) => new MPAlternation(c1, c2));
+const tokenizer = new RegExp("(" +
+    [...RESERVED].map(s => "\\" + s).join("|") +
+    ")");
+function tokenize(text) {
+    return text.split(tokenizer).filter((s) => s !== undefined && s !== '');
+}
+function parseBooleanCell(text) {
+    return parse(tokenize, EXPR, text);
 }
 exports.parseBooleanCell = parseBooleanCell;
 
@@ -12384,7 +12333,7 @@ class BooleanHeader extends UnaryHeader {
         return childCell;
     }
     compilePiece(parsedText, cell, namespace, devEnv) {
-        if (parsedText instanceof cellParser_1.MPLiteral) {
+        if (parsedText instanceof cellParser_1.MPUnreserved) {
             const newCell = new CellComponent(parsedText.text, cell.position);
             const childCell = this.child.compile(newCell, namespace, devEnv);
             return this.compileLiteral(parsedText, cell, namespace, devEnv);
@@ -13791,7 +13740,7 @@ class State {
         var results = [];
         var nextStates = [...this.ndQuery(tape, target, symbolStack)];
         for (var [nextTape, nextBits, nextMatched, next] of nextStates) {
-            if (nextTape.numTapes == 0 || !nextMatched) {
+            if (nextTape.isTrivial || !nextMatched) {
                 results.push([nextTape, nextBits, nextMatched, next]);
                 continue;
             }
@@ -13840,7 +13789,7 @@ class State {
         var startState = this;
         if (inputLiterals.length > 0) {
             const inputSeq = Seq(...inputLiterals);
-            startState = Join(inputSeq, startState);
+            startState = Semijoin(startState, inputSeq);
             const tapeCollection = this.getAllTapes(); // in case this state has already
             // been compiled, we need to start the algorithm with the same vocab.
             // if it hasn't been compiled, .allTapes always starts as undefined anyway,
@@ -13976,7 +13925,7 @@ class CompiledState extends State {
             return;
         }
         for (const [origResultTape, token, matched, next] of transitions) {
-            if (origResultTape.numTapes == 0) { // result was hidden by a Projection or Drop
+            if (origResultTape.isTrivial) { // result was hidden by a Projection or Drop
                 yield [origResultTape, token, matched, next];
                 return;
             }
@@ -14379,6 +14328,18 @@ class SemijoinState extends BinaryState {
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
     /**
+     * Unlike other binary states, Semijoin and Join only randomizes left children for sampling.
+     * The reason is that this state generally is used for restrictions (e.g. filtering a grammar
+     * so that only forms with "subj:1SG" are generated), and when that restriction is itself
+     * a Union we don't want to only choose one of those restrictions as random.
+     *
+     * For example, if someone is filtering an embedded symbol with "startswith text:vowel", we
+     * don't want to randomly choose a vowel and only accept that as a vowel!
+     */
+    setRandom(randomize, symbolStack) {
+        this.child1.setRandom(randomize, symbolStack);
+    }
+    /**
     * We factor out the logic into a separate function (one that doesn't specifically
     * refer to the child1/child2 properties of this object) because it's the same algorithm
     * used twice in a descendent class, JoinState.  A join is just the priority union of the
@@ -14388,7 +14349,7 @@ class SemijoinState extends BinaryState {
     */
     *ndQueryLeft(tape, target, c1, c2, symbolStack) {
         for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, symbolStack)) {
-            if (c1tape.numTapes == 0) {
+            if (c1tape.isTrivial) {
                 // c1 contained a ProjectionState that hides the original tape; move on without
                 // asking c2 to match anything.
                 const successor = this.successor(c1next, c2);
@@ -14790,7 +14751,7 @@ class RenameState extends UnaryState {
             rememberToUnwrapTape = true;
         }
         for (var [childTape, childTarget, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack)) {
-            if (rememberToUnwrapTape) {
+            if (rememberToUnwrapTape && childTape instanceof tapes_1.RenamedTape) {
                 childTape = childTape.child;
             }
             yield [childTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape, this.relevantTapes)];
@@ -15068,7 +15029,7 @@ class MultiTapeOutput {
         this.singleTapeOutputs = new Map();
     }
     add(tape, token) {
-        if (tape.numTapes == 0) {
+        if (tape.isTrivial) {
             return this;
         }
         const result = new MultiTapeOutput();
@@ -15173,8 +15134,8 @@ class StringTape extends Tape {
         this.strToIndex = strToIndex;
         this.indexToStr = indexToStr;
     }
-    get numTapes() {
-        return 1;
+    get isTrivial() {
+        return false;
     }
     get vocabSize() {
         return this.strToIndex.size;
@@ -15318,8 +15279,8 @@ class TapeCollection extends Tape {
         super(...arguments);
         this.tapes = new Map();
     }
-    get numTapes() {
-        return this.tapes.size;
+    get isTrivial() {
+        return this.tapes.size == 0;
     }
     /*
     public addTape(tape: Tape): void {
@@ -15396,8 +15357,8 @@ class RenamedTape extends Tape {
         }
         return childName;
     }
-    get numTapes() {
-        return this.child.numTapes;
+    get isTrivial() {
+        return this.child.isTrivial;
     }
     any() {
         return this.child.any();

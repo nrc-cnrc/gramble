@@ -526,7 +526,7 @@ export abstract class State {
 
         if (inputLiterals.length > 0) {
             const inputSeq = Seq(...inputLiterals);
-            startState = Join(inputSeq, startState); 
+            startState = Semijoin(startState, inputSeq); 
             const tapeCollection = this.getAllTapes(); // in case this state has already
                     // been compiled, we need to start the algorithm with the same vocab.
                     // if it hasn't been compiled, .allTapes always starts as undefined anyway,
@@ -1208,7 +1208,7 @@ class SemijoinState extends BinaryState {
 
     /**
      * Because .successor() on both this and its descendent JoinState are
-     * so simple, we only have to write one semicompile() for both
+     * so simple, we only have to write one compileAux() for both
      */
     public compileAux(
         allTapes: TapeCollection, 
@@ -1222,6 +1222,19 @@ class SemijoinState extends BinaryState {
         const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
         const newThis = this.successor(newChild1, newChild2);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
+    }
+
+    /**
+     * Unlike other binary states, Semijoin and Join only randomizes left children for sampling.
+     * The reason is that this state generally is used for restrictions (e.g. filtering a grammar
+     * so that only forms with "subj:1SG" are generated), and when that restriction is itself
+     * a Union we don't want to only choose one of those restrictions as random.  
+     * 
+     * For example, if someone is filtering an embedded symbol with "startswith text:vowel", we
+     * don't want to randomly choose a vowel and only accept that as a vowel!
+     */
+    public setRandom(randomize: boolean, symbolStack: CounterStack): void {
+        this.child1.setRandom(randomize, symbolStack);
     }
 
     /**
