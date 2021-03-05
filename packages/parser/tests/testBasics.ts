@@ -1,6 +1,6 @@
 
 import { Empty, Seq, Uni } from "../src/stateMachine";
-import { text, t1, t2, unrelated, testHasTapes, testHasVocab, testGrammar } from './testUtils';
+import { text, t1, t2, unrelated, testHasTapes, testHasVocab, testGenerateAndSample } from './testUtils';
 
 import * as path from 'path';
 
@@ -10,79 +10,79 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = text("hello");
         testHasTapes(grammar, ["text"]);
         testHasVocab(grammar, {text: 4});
-        testGrammar(grammar, [{text: "hello"}]);
+        testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
     describe('Empty grammar', function() {
         const grammar = Empty();
         testHasTapes(grammar, []);
-        testGrammar(grammar, [{}]);
+        testGenerateAndSample(grammar, [{}]);
     });
 
     describe('Sequence text:hello+test:world', function() {
         const grammar = Seq(text("hello"), text("world"));
         testHasTapes(grammar, ["text"]);
         testHasVocab(grammar, {text: 7});
-        testGrammar(grammar, [{text: "helloworld"}]);
+        testGenerateAndSample(grammar, [{text: "helloworld"}]);
     });
 
     describe('Sequence text:hello+test:""', function() {
         const grammar = Seq(text("hello"), text(""));
-        testGrammar(grammar, [{text: "hello"}]);
+        testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
     describe('Sequence test:""+text:hello', function() {
         const grammar = Seq(text(""), text("hello"));
-        testGrammar(grammar, [{text: "hello"}]);
+        testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
     
     describe('Sequence text:hello+0', function() {
         const grammar = Seq(text("hello"), Empty());
-        testGrammar(grammar, [{text: "hello"}]);
+        testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
     describe('Sequence 0+text:hello', function() {
         const grammar = Seq(Empty(), text("hello"));
-        testGrammar(grammar, [{text: "hello"}]);
+        testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
     describe('Sequence text:hello+text:,+test:world', function() {
         const grammar = Seq(text("hello"), text(", "), text("world"));
-        testGrammar(grammar, [{text: "hello, world"}]);
+        testGenerateAndSample(grammar, [{text: "hello, world"}]);
     });
 
     describe('Nested sequence (text:hello+text:,)+test:world', function() {
         const grammar = Seq(Seq(text("hello"), text(", ")), text("world"));
-        testGrammar(grammar, [{text: "hello, world"}]);
+        testGenerateAndSample(grammar, [{text: "hello, world"}]);
     });
 
     describe('Nested sequence text:hello+(text:,+test:world)', function() {
         const grammar = Seq(text("hello"), Seq(text(", "), text("world")));
-        testGrammar(grammar, [{text: "hello, world"}]);
+        testGenerateAndSample(grammar, [{text: "hello, world"}]);
     });
 
     describe('Nested sequence text:hello+(text:,)+text:world', function() {
         const grammar = Seq(text("hello"), Seq(text(", ")), text("world"));
-        testGrammar(grammar, [{text: "hello, world"}]);
+        testGenerateAndSample(grammar, [{text: "hello, world"}]);
     });
     
     describe('text:hello+unrelated:foo', function() {
         const grammar = Seq(text("hello"), unrelated("foo"));
         testHasTapes(grammar, ["text", "unrelated"]);
         testHasVocab(grammar, {text: 4, unrelated: 2});
-        testGrammar(grammar, [{text: "hello", unrelated: "foo"}]);
+        testGenerateAndSample(grammar, [{text: "hello", unrelated: "foo"}]);
     });
 
     describe('Alt text:hello|text:goodbye', function() {
         const grammar = Uni(text("hello"), text("goodbye"));
-        testGrammar(grammar, [{text: "hello"},
+        testGenerateAndSample(grammar, [{text: "hello"},
                               {text: "goodbye"}]);
     });
 
     describe('Alt text:hello|0', function() {
         const grammar = Uni(text("hello"), Empty());
-        testGrammar(grammar, [{text: "hello"},
+        testGenerateAndSample(grammar, [{text: "hello"},
                               {}]);
     });
 
@@ -90,7 +90,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Uni(t1("hello"), t2("goodbye"));
         testHasTapes(grammar, ["t1", "t2"]);
         testHasVocab(grammar, {t1: 4, t2: 6});
-        testGrammar(grammar, [{t1: "hello"},
+        testGenerateAndSample(grammar, [{t1: "hello"},
                               {t2: "goodbye"}]);
     });
 
@@ -99,7 +99,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
         const grammar = Uni(Seq(t1("hello"), t2("kitty")),
                             Seq(t1("goodbye"), t2("world")));
-        testGrammar(grammar, [
+        testGenerateAndSample(grammar, [
             { t1: "hello", t2: "kitty" },
             { t1: "goodbye", t2: "world" }
         ]);
@@ -108,19 +108,19 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Sequence with alt: (text:hello|text:goodbye)+text:world', function() {
         const grammar = Seq(Uni(text("hello"), text("goodbye")), text("world"));
-        testGrammar(grammar, [{text: "helloworld"},
+        testGenerateAndSample(grammar, [{text: "helloworld"},
                               {text: "goodbyeworld"}]);
     });
 
     describe('Sequence with alt: text:say+(text:hello|text:goodbye)', function() {
         const grammar = Seq(text("say"), Uni(text("hello"), text("goodbye")));
-        testGrammar(grammar, [{text: "sayhello"},
+        testGenerateAndSample(grammar, [{text: "sayhello"},
                               {text: "saygoodbye"}]);
     });
 
     describe('Sequence with alt: (text:hello|text:goodbye)+(text:world|text:kitty)', function() {
         const grammar = Seq(Uni(text("hello"), text("goodbye")), Uni(text("world"), text("kitty")));
-        testGrammar(grammar, [{text: "helloworld"},
+        testGenerateAndSample(grammar, [{text: "helloworld"},
                               {text: "goodbyeworld"},
                               {text: "hellokitty"},
                               {text: "goodbyekitty"}]);

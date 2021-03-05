@@ -43,7 +43,7 @@ class SingleTapeOutput {
         return new SingleTapeOutput(tape, token, this);
     }
 
-    public *getStrings(): Gen<string> {
+    public *getStrings(random: boolean = false): Gen<string> {
 
         var results: string[] = [ "" ];
 
@@ -54,7 +54,12 @@ class SingleTapeOutput {
         // the stack when stringifying long outputs.)
         while (currentTape != undefined) {
             const newResults: string[] = [];
-            for (const c of currentTape.tape.fromBits(currentTape.tape.tapeName, currentTape.token.bits)) {   
+            let possibleChars = currentTape.tape.fromBits(currentTape.tape.tapeName, currentTape.token.bits);
+            if (random) {
+                // if we're randomizing, just choose one possible char
+                possibleChars = [possibleChars[Math.floor(Math.random() * possibleChars.length)]];
+            }
+            for (const c of possibleChars) {   
                 for (const existingResult of results) {
                     newResults.push(c + existingResult);
                 }
@@ -92,11 +97,11 @@ export class MultiTapeOutput {
         return result;
     }
 
-    public toStrings(): StringDict[] {
+    public toStrings(random: boolean = false): StringDict[] {
         var results: StringDict[] = [ {} ];
         for (const [tapeName, tape] of this.singleTapeOutputs) {
             var newResults: StringDict[] = [];
-            for (const str of tape.getStrings()) {
+            for (const str of tape.getStrings(random)) {
                 for (const result of results) {
                     const newResult: StringDict = Object.assign({}, result);
                     newResult[tapeName] = str;

@@ -1513,10 +1513,9 @@ export class Project {
         this.globalNamespace.compileSymbol(symbolName, allTapes, new CounterStack(4), compileLevel);
     }
 
-    public parse(symbolName: string,
+    public generate(symbolName: string,
             inputs: StringDict = {},
             maxResults: number = Infinity,
-            randomize: boolean = false,
             maxRecursion: number = 4, 
             maxChars: number = 1000): StringDict[] {
 
@@ -1525,24 +1524,10 @@ export class Project {
             throw new Error(`Project does not define a symbol named "${symbolName}"`);
         }
 
-        const gen = startState.parse(inputs, randomize, maxRecursion, maxChars);
+        const gen = startState.parse(inputs, false, maxRecursion, maxChars);
         return iterTake(gen, maxResults);
     }
 
-    /**
-     * A convenience method around parse(), for non-random results
-     */
-    public generate(symbolName: string = "",
-            restriction: StringDict = {},
-            maxResults: number = Infinity,
-            maxRecursion: number = 4, 
-            maxChars: number = 1000): StringDict[] {
-        return this.parse(symbolName, restriction, maxResults, false, maxRecursion, maxChars);
-    }
-
-    /**
-     * A convenience method around parse(), for random results
-     */
     public sample(symbolName: string = "",
             numSamples: number = 1,
             restriction: StringDict = {},
@@ -1550,16 +1535,12 @@ export class Project {
             maxRecursion: number = 4, 
             maxChars: number = 1000): StringDict[] {
 
-        var results: StringDict[] = [];
-        var tries = 0;
-
-        while (results.length < numSamples && tries < maxTries) {
-            const result = [...this.parse(symbolName, restriction, 1, true, maxRecursion, maxChars)];
-            results = results.concat(result);
-            tries++;
+        var startState = this.getSymbol(symbolName);
+        if (startState == undefined) {
+            throw new Error(`Project does not define a symbol named "${symbolName}"`);
         }
 
-        return results;
+        return startState.sample(restriction, numSamples, maxTries, maxRecursion, maxChars);
     }
     
     public addSheetAux(sheetName: string): void {

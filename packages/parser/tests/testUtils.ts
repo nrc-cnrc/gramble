@@ -107,7 +107,7 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
     });
 }
 
-export function testGrammar(
+export function testGenerate(
     grammar: State, 
     expectedResults: StringDict[], 
     maxRecursion: number = 4, 
@@ -115,6 +115,23 @@ export function testGrammar(
 ): void {
     describe("Uncompiled grammar", function() {
         testGrammarUncompiled(grammar, expectedResults, maxRecursion, maxChars);
+    });
+    describe("Compiled grammar", function() {
+        testGrammarCompiled(grammar, expectedResults, maxRecursion, maxChars);
+    });
+}
+
+export function testGenerateAndSample(
+    grammar: State, 
+    expectedResults: StringDict[], 
+    maxRecursion: number = 4, 
+    maxChars: number = 1000
+): void {
+    describe("Uncompiled grammar", function() {
+        testGrammarUncompiled(grammar, expectedResults, maxRecursion, maxChars);
+    });
+    describe("Sampling from uncompiled grammar", function() {
+        testSample(grammar, 100, 10000, maxRecursion, maxChars);
     });
     describe("Compiled grammar", function() {
         testGrammarCompiled(grammar, expectedResults, maxRecursion, maxChars);
@@ -211,17 +228,12 @@ function stringDictUnique(records: StringDict[]): StringDict[] {
 }
 
 export function testSample(
-    project: Project,
-    symbolName: string,
+    grammar: State,
     numSamples: number = 100,
-    numTries: number = 10000,
+    maxTries: number = 10000,
     maxRecursion: number = 4, 
     maxChars: number = 1000
 ): void {
-    const grammar = project.getSymbol(symbolName);
-    if (grammar == undefined) {
-        return;
-    }
     var generatedOutputs: StringDict[] = [];
     try {
         generatedOutputs = [...grammar.generate(false, maxRecursion, maxChars)];
@@ -234,9 +246,8 @@ export function testSample(
 
     // sample 1000 times and make sure that every sample is in the generated outputs, 
     // and every output is sampled at least once
-    var sampledOutputs = project.sample(symbolName, numSamples, {}, numTries, maxRecursion, maxChars);
+    var sampledOutputs = grammar.sample({}, numSamples, maxTries, maxRecursion, maxChars);
     sampledOutputs = stringDictUnique(sampledOutputs);
-
     it("every generable output should be sampled", function() {
         for (var generatedOutput of generatedOutputs) {
             expect(sampledOutputs).to.deep.include(generatedOutput);
@@ -263,8 +274,8 @@ export function testProject(project: Project,
     describe("Uncompiled grammar", function() {
         testGrammarUncompiled(grammar, expectedResults, maxRecursion, maxChars);
     });
-    describe("Random sampling", function() {
-        testSample(project, symbolName, 100, 10000, maxRecursion, maxChars);
+    describe("Sampling from uncompiled grammar", function() {
+        testSample(grammar, 100, 10000, maxRecursion, maxChars);
     });
     describe("Compiled grammar", function() {
         testGrammarCompiled(grammar, expectedResults, maxRecursion, maxChars);

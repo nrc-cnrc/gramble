@@ -48,7 +48,6 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
-        testSample(project, 'word');
     });
 
     describe('Bare grammar', function() {
@@ -615,7 +614,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    
     describe('startswith header with not value', function() {
 
         const project = sheetFromFile("./tests/csvs/startsWithNot.csv");
@@ -771,7 +769,6 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "umfooz", gloss: "[1SG]jump" }
         ]);
     });
-    
 });
 
 

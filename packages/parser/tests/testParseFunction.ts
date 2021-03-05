@@ -1,5 +1,5 @@
 import { Seq, Uni, Join, Semijoin, Any } from "../src/stateMachine";
-import { text, t1, t2, t3, unrelated, testHasTapes, testHasVocab, testGrammar, testParse } from './testUtils';
+import { text, unrelated, testParse } from './testUtils';
 
 import * as path from 'path';
 
