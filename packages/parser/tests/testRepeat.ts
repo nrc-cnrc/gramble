@@ -91,7 +91,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "h", unrelated: "world"},
                               {text: "hh", unrelated: "world"},
                               {text: "hhh", unrelated: "world"},
-                              {text: "hhhh", unrelated: "world"}])
+                              {text: "hhhh", unrelated: "world"}]);
     });
 
     describe('Joining hello with between 1 and 4 Hs and the same, with unrelated "world"', function() {
@@ -100,7 +100,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "hello", unrelated: "world"},
                               {text: "hhello", unrelated: "world"},
                               {text: "hhhello", unrelated: "world"},
-                              {text: "hhhhello", unrelated: "world"}])
+                              {text: "hhhhello", unrelated: "world"}]);
     });
     
     describe('Joining h{1,4} and ello (with unrelated in between) and the same, with unrelated "world"', function() {
@@ -109,7 +109,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "hello", unrelated: "world"},
                               {text: "hhello", unrelated: "world"},
                               {text: "hhhello", unrelated: "world"},
-                              {text: "hhhhello", unrelated: "world"}])
+                              {text: "hhhhello", unrelated: "world"}]);
     });
 
     describe('Text with between 1 and 4 NAs: text:na{1,4}', function() {
@@ -117,31 +117,31 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "na"},
                               {text: "nana"},
                               {text: "nanana"},
-                              {text: "nananana"}])
+                              {text: "nananana"}]);
     });
 
     describe('Text with between 0 and 2 NAs: text:na{0,2}', function() {
         const grammar = Rep(text("na"), 0, 2);
         testGenerateAndSample(grammar, [{},
                               {text: "na"},
-                              {text: "nana"}])
+                              {text: "nana"}]);
     });
 
     describe('Text with 0 NAs: text:na{0,0}', function() {
         const grammar = Rep(text("na"), 0, 0);
-        testGenerateAndSample(grammar, [{}])
+        testGenerateAndSample(grammar, [{}]);
     });
 
     describe('Text with no NAs (min > max): text:na{4,3}', function() {
         const grammar = Rep(text("na"), 4, 3);
-        testGenerateAndSample(grammar, [])
+        testGenerateAndSample(grammar, []);
     });
 
     describe('Text with between 0 and 2 NAs (negative min): text:na{-3,2}', function() {
         const grammar = Rep(text("na"), -3, 2);
         testGenerateAndSample(grammar, [{},
                               {text: "na"},
-                              {text: "nana"}])
+                              {text: "nana"}]);
     });
 
     describe('Text with between 1 and unlimited Os: text:o+', function() {
@@ -151,7 +151,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "ooo"},
                               {text: "oooo"},
                               {text: "ooooo"}],
-                    undefined, 6)
+                    undefined, 6);
     });
 
     describe('Text with between 0 and unlimited Os: text:o*', function() {
@@ -162,6 +162,6 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "ooo"},
                               {text: "oooo"},
                               {text: "ooooo"}],
-                    undefined, 6)
+                    undefined, 6);
     });
 });

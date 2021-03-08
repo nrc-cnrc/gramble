@@ -131,7 +131,7 @@ export function testGenerateAndSample(
         testGrammarUncompiled(grammar, expectedResults, maxRecursion, maxChars);
     });
     describe("Sampling from uncompiled grammar", function() {
-        testSample(grammar, 100, 10000, maxRecursion, maxChars);
+        testSample(grammar, 500, 10000, maxRecursion, maxChars);
     });
     describe("Compiled grammar", function() {
         testGrammarCompiled(grammar, expectedResults, maxRecursion, maxChars);
@@ -229,7 +229,7 @@ function stringDictUnique(records: StringDict[]): StringDict[] {
 
 export function testSample(
     grammar: State,
-    numSamples: number = 100,
+    numSamples: number = 500,
     maxTries: number = 10000,
     maxRecursion: number = 4, 
     maxChars: number = 1000

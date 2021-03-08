@@ -769,6 +769,44 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "umfooz", gloss: "[1SG]jump" }
         ]);
     });
+
+    describe('Contains header', function() {
+
+        const project = sheetFromFile("./tests/csvs/containsHeader.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
+            { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" }
+        ]);
+    });
+
+    
+    describe('Contains header with alt value', function() {
+
+        const project = sheetFromFile("./tests/csvs/containsOr.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
+            { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
+            { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
+            { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
+        ]);
+    });
+
+    describe('Contains header with not value', function() {
+
+        const project = sheetFromFile("./tests/csvs/containsNot.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
+            { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
+            { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
+            { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
+        ]);
+    });
 });
 
 

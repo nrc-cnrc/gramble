@@ -445,11 +445,12 @@ export class EqualsHeader extends JoinHeader {
     }
 }
 
-/**
- * StartsWithHeader is a special kind of RequireHeader that only requires its predecessor (call it N) to 
- * start with X (that is, Semijoin(N, X.*))
- */
-export class StartsWithHeader extends EqualsHeader {
+export class PartialEqualsHeader extends EqualsHeader {
+
+    public formSequence(state: State, tapeName: string): State {
+        const anychars = Rep(Any(tapeName));
+        return Seq(state, anychars);
+    }
 
     public compileLiteral(
         parsedText: MPUnreserved,
@@ -463,10 +464,23 @@ export class StartsWithHeader extends EqualsHeader {
         const symbolStack = new CounterStack(4);
         const relevantTapes = result.state.getRelevantTapes(symbolStack);
         for (const tape of relevantTapes) {
-            const anychars = Rep(Any(tape));
-            result.state = Seq(result.state, anychars);
+            result.state = this.formSequence(result.state, tape);
         }
         return result;
+    }
+
+}
+
+/**
+ * StartsWithHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to 
+ * start with X (that is, Semijoin(N, X.*))
+ */
+export class StartsWithHeader extends PartialEqualsHeader {
+
+
+    public formSequence(state: State, tapeName: string): State {
+        const anychars = Rep(Any(tapeName));
+        return Seq(state, anychars);
     }
 
     public static *parse(input: string[]): Gen<[Header, string[]]> {
@@ -474,28 +488,29 @@ export class StartsWithHeader extends EqualsHeader {
     }
 }
 
-export class EndsWithHeader extends EqualsHeader {
+export class EndsWithHeader extends PartialEqualsHeader {
     
-    public compileLiteral(
-        parsedText: MPUnreserved,
-        cell: CellComponent,
-        namespace: Namespace,
-        devEnv: DevEnvironment
-    ): SingleCellComponent {
-        const newCell = new CellComponent(parsedText.text, cell.position);
-        const result = this.child.compile(newCell, namespace, devEnv);
-
-        const symbolStack = new CounterStack(4);
-        const relevantTapes = result.state.getRelevantTapes(symbolStack);
-        for (const tape of relevantTapes) {
-            const anychars = Rep(Any(tape));
-            result.state =  Seq(anychars, result.state);
-        }
-        return result;
+    
+    public formSequence(state: State, tapeName: string): State {
+        const anychars = Rep(Any(tapeName));
+        return Seq(anychars, state);
     }
 
     public static *parse(input: string[]): Gen<[Header, string[]]> {
         yield *super.parseAux("endswith", EndsWithHeader, NON_COMMENT_EXPR, input);
+    }
+}
+
+
+export class ContainsHeader extends PartialEqualsHeader {
+    
+    public formSequence(state: State, tapeName: string): State {
+        const anychars = Rep(Any(tapeName));
+        return Seq(anychars, state, anychars);
+    }
+
+    public static *parse(input: string[]): Gen<[Header, string[]]> {
+        yield *super.parseAux("contains", ContainsHeader, NON_COMMENT_EXPR, input);
     }
 }
 
@@ -577,7 +592,7 @@ export class SlashHeader extends BinaryHeader {
 type HeaderParser = (input: string[]) => Gen<[Header, string[]]>;
 
 const SYMBOL = [ "(", ")", "%", "/", '@', ">", ":" ];
-const RESERVED_HEADERS = ["embed", "maybe", "not", "drop", "equals", "startswith" ];
+const RESERVED_HEADERS = ["embed", "maybe", "not", "drop", "equals", "startswith", "endswith", "contains" ];
 
 type BinaryOp = (...children: State[]) => State;
 const BINARY_OPS: {[opName: string]: BinaryOp} = {
@@ -603,6 +618,7 @@ const NON_COMMENT_EXPR = Alt([MaybeHeader.parse,
                               EqualsHeader.parse,
                               StartsWithHeader.parse,
                               EndsWithHeader.parse,
+                              ContainsHeader.parse,
                               SUBEXPR]);
 
 const EXPR = Alt([CommentHeader.parse, 
