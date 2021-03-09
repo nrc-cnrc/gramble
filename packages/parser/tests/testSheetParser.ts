@@ -395,6 +395,44 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     
+    describe('Multi-sheet project with a "bare" sheet reference', function() {
+
+        const project = sheetFromFile("./tests/csvs/externalBareRef.csv");
+
+        testErrors(project, []);
+        testSymbols(project, [
+            "word", 
+            "embedGrammar.word", 
+            "embedGrammar.verb", 
+            "embedGrammar.suffix"
+        ]);
+        testProject(project, 'word', [
+            { text: "foobarable", gloss: "run-1SG" },
+            { text: "moobarable", gloss: "jump-1SG" },
+            { text: "foobazable", gloss: "run-2SG" },
+            { text: "moobazable", gloss: "jump-2SG" }
+        ]);
+    });
+    
+    describe('Multi-sheet project with a "bare" reference to "bare" grammar', function() {
+
+        const project = sheetFromFile("./tests/csvs/externalBareRefToBareGrammar.csv");
+
+        testErrors(project, []);
+        testSymbols(project, [
+            "word", 
+            "bareGrammarWithEmbeds", 
+            "bareGrammarWithEmbeds.verb", 
+            "bareGrammarWithEmbeds.suffix"
+        ]);
+        testProject(project, 'word', [
+            { text: "foobarable", gloss: "run-1SG" },
+            { text: "moobarable", gloss: "jump-1SG" },
+            { text: "foobazable", gloss: "run-2SG" },
+            { text: "moobazable", gloss: "jump-2SG" }
+        ]);
+    });
+
     describe('Multi-sheet project with missing symbol in imported sheet', function() {
 
         const project = sheetFromFile("./tests/csvs/missingExternalRef.csv");

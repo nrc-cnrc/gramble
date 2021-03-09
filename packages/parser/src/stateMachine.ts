@@ -129,7 +129,7 @@ export class Namespace {
         this.defaultSymbolName = name;
     }
 
-    public resolveName(name: string): [Namespace, string] | undefined {
+    public resolveName(name: string, tryParent: boolean = true): [Namespace, string] | undefined {
 
         const pieces = name.split(".", 2);
         if (pieces.length == 1) {
@@ -162,7 +162,7 @@ export class Namespace {
             const ns = this.getLocalNamespace(pieces[0]);
             if (ns != undefined) {
                 const remnant = pieces.slice(1).join("");
-                const result = ns.resolveName(remnant);
+                const result = ns.resolveName(remnant, false);
                 if (result != undefined) {
                     return result;
                 }
@@ -170,7 +170,7 @@ export class Namespace {
         }
 
         // if you still can't find it, see if your parent can resolve it
-        if (this.parent != undefined) {
+        if (this.parent != undefined && tryParent) {
             const result = this.parent.resolveName(name);
             if (result != undefined) {
                 return result;

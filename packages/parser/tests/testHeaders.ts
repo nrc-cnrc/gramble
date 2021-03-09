@@ -1,4 +1,6 @@
-import { parseHeaderCell, SlashHeader, CommentHeader, JoinHeader, MaybeHeader, LiteralHeader, EmbedHeader, EqualsHeader, EndsWithHeader, StartsWithHeader } from "../src/sheetParser";
+import { parseHeaderCell, SlashHeader, CommentHeader, JoinHeader, MaybeHeader, 
+    DropHeader, LiteralHeader, EmbedHeader, EqualsHeader, EndsWithHeader, 
+    StartsWithHeader, ContainsHeader } from "../src/sheetParser";
 
 import * as path from 'path';
 import { expect } from "chai";
@@ -18,6 +20,13 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testIsType(header, EmbedHeader);
         testHeaderHasText(header, "embed");
+    });
+
+    describe('Header "drop"', function() {
+        const header = parseHeaderCell("drop");
+
+        testIsType(header, DropHeader);
+        testHeaderHasText(header, "drop");
     });
 
     describe('Header "%text"', function() {
@@ -76,22 +85,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testIsType(header.child, LiteralHeader, "child");
         testHeaderHasText(header.child, "text", "child");
     });
-
-    /*
-    describe('Header "not text"', function() {
-        const header = parseHeaderCell("not text");
-
-        testIsType(header, NotHeader);
-        testHeaderHasText(header, "not");
-
-        if (!(header instanceof NotHeader)) {
-            return;
-        }
-
-        testIsType(header.child, LiteralHeader, "child");
-        testHeaderHasText(header.child, "text", "child");
-    });
-*/
     
     describe('Header "maybe(text)"', function() {
         const header = parseHeaderCell("maybe(text)");
@@ -235,6 +228,19 @@ describe(`${path.basename(module.filename)}`, function() {
         testHeaderHasText(header.child, "text", "child");
     });
     
+    describe('Header "contains text"', function() {
+        const header = parseHeaderCell("contains text");
+
+        testIsType(header, ContainsHeader);
+        testHeaderHasText(header, "contains");
+
+        if (!(header instanceof ContainsHeader)) {
+            return;
+        }
+
+        testIsType(header.child, LiteralHeader, "child");
+        testHeaderHasText(header.child, "text", "child");
+    });
 
     describe('Header "text/gloss"', function() {
         const header = parseHeaderCell("text/gloss");
