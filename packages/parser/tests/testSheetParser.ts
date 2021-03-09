@@ -1,6 +1,6 @@
-import { Project } from "../src/sheetParser";
+import { Project } from "../src/project";
 import { dirname, basename } from "path";
-import { testProject, testErrors, testSymbols, testStructure, testSample } from "./testUtils";
+import { testProject, testErrors, testSymbols, testStructure } from "./testUtils";
 import { TextDevEnvironment } from "../src/textInterface";
 
 import * as path from 'path';

@@ -9,10 +9,9 @@
 
 import { assert } from "chai";
 import { CPAlternation, CPUnreserved, CPNegation, CPResult, parseBooleanCell } from "./cellParser";
-import { SimpleDevEnvironment } from "./devEnv";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPSequence, MPUnreserved } from "./miniParser";
 import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState, DropState, Drop, Rep, Any, ConcatState } from "./stateMachine";
-import { CellPosition, DevEnvironment, DUMMY_POSITION, Gen, HSVtoRGB, iterTake, meanAngleDeg, RGBtoString, StringDict, TabularComponent } from "./util";
+import { CellPosition, DevEnvironment, DUMMY_POSITION, HSVtoRGB, RGBtoString, TabularComponent } from "./util";
 
 const DEFAULT_SATURATION = 0.1;
 const DEFAULT_VALUE = 1.0;
@@ -216,7 +215,7 @@ export class MaybeHeader extends UnaryHeader {
 /**
  * Header that constructs negations, e.g. "not text"
  */
-export class NotHeader extends UnaryHeader {
+class NotHeader extends UnaryHeader {
 
     public compile(cell: CellComponent, 
         namespace: Namespace, 
@@ -232,7 +231,7 @@ export class NotHeader extends UnaryHeader {
 /**
  * Header that constructs negations, e.g. "not text"
  */
-export class RenameHeader extends UnaryHeader {
+class RenameHeader extends UnaryHeader {
 
     public compile(cell: CellComponent, 
                     namespace: Namespace, 
@@ -265,7 +264,7 @@ export class RenameHeader extends UnaryHeader {
  * JoinHeader are also the ancestor of all Headers that
  * allow and parse boolean-algebra expressions in their fields (e.g. "~(A|B)").
  */
- export class JoinHeader extends UnaryHeader {
+export class JoinHeader extends UnaryHeader {
 
     public merge(leftNeighbor: State | undefined, state: State): State {
         if (leftNeighbor == undefined) {
@@ -590,7 +589,9 @@ export function parseHeaderCell(text: string, pos: CellPosition = DUMMY_POSITION
     return result;
 }
 
-export class CellComponent extends TabularComponent {
+
+
+class CellComponent extends TabularComponent {
 
     constructor(
         text: string,
@@ -692,7 +693,7 @@ export abstract class GrammarComponent extends TabularComponent {
  * the union of the grammar represented by 2 and the grammar represented by the B table.
  * 
  */
-export class EnclosureComponent extends GrammarComponent {
+class EnclosureComponent extends GrammarComponent {
 
     public specRow: number = -1;
 
@@ -991,7 +992,7 @@ class TestNotSuiteComponent extends AbstractTestSuiteComponent {
  * a parent component; a sheet is always the outermost component of
  * any component tree.
  */
-class SheetComponent extends EnclosureComponent {
+export class SheetComponent extends EnclosureComponent {
 
     constructor(
         public name: string
@@ -1382,256 +1383,95 @@ function constructOp(cell: CellComponent,
     return newEnclosure;
 }
 
-type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
-/**
- * A SheetParser turns a grid of cells into abstract syntax tree (AST) components, which in
- * turn are interpreted or compiled into a computer language.  This parser is agnostic as to
- * what exactly these components represent or how they'll be handled later, it's just a parser
- * for a particular class of tabular languages.
- */
-export class Project {
+export function parseCells(
+    sheetName: string, 
+    cells: string[][],
+    devEnv: DevEnvironment,
+): SheetComponent {
 
-    public globalNamespace: Namespace = new Namespace();
-    public defaultSheetName: string = '';
-    public sheets: {[key: string]: SheetComponent} = {};
+    // topEnclosure refers to whatever enclosure is currently on top 
+    // of the stack.  Since each enclosure knows what its parent is, we 
+    // don't explicitly have to maintain a stack structure, we can just
+    // use the .parent property of the current topEnclosure when we need
+    // to pop.  We start with the one big enclosure that encompasses the 
+    // whole sheet, with startCell (-1,-1)
+    var topEnclosure: EnclosureComponent = new SheetComponent(sheetName);
 
-    constructor(
-        public devEnv: DevEnvironment = new SimpleDevEnvironment()
-    ) { }
+    // Now iterate through the cells, left-to-right top-to-bottom
+    for (var rowIndex = 0; rowIndex < cells.length; rowIndex++) {
 
-    public allSymbols(): string[] {
-        return this.globalNamespace.allSymbols();
-    }
-
-    public getSymbol(symbolName: string): State | undefined {
-        return this.globalNamespace.getSymbol(symbolName, new CounterStack(4));
-    }
-
-    public getErrors(): GrambleError[] {
-        return this.devEnv.getErrorMessages().map(([sheet, row, col, msg, level]) =>
-            { return { sheet: sheet, row: row, col:col, msg:msg, level:level }});
-    }
-    
-    public getTapeNames(symbolName: string): [string, string][] {
-        const startState = this.globalNamespace.getSymbol(symbolName);
-        if (startState == undefined) {
-            throw new Error(`Cannot find symbol ${symbolName}`);
-        }
-        const results: [string, string][] = [];
-        const stack = new CounterStack(2);
-        for (const tapeName of startState.getRelevantTapes(stack)) {
-            const header = parseHeaderCell(tapeName, new CellPosition("?",-1,-1));
-            results.push([tapeName, header.getColor(0.2)]);
-        }
-        return results;
-    }
-
-    public compile(symbolName: string, compileLevel: number = 1) {
-        const symbol = this.globalNamespace.getSymbol(symbolName);
-        if (symbol == undefined) {
-            throw new Error(`Cannot find symbol ${symbolName} to compile it`);
-        }
-        const allTapes = symbol.getAllTapes();
-        this.globalNamespace.compileSymbol(symbolName, allTapes, new CounterStack(4), compileLevel);
-    }
-
-    public generate(symbolName: string,
-            inputs: StringDict = {},
-            maxResults: number = Infinity,
-            maxRecursion: number = 4, 
-            maxChars: number = 1000): StringDict[] {
-
-        var startState = this.getSymbol(symbolName);
-        if (startState == undefined) {
-            throw new Error(`Project does not define a symbol named "${symbolName}"`);
+        const row = cells[rowIndex];
+        if (isLineEmpty(row)) {
+            continue;
         }
 
-        const gen = startState.parse(inputs, false, maxRecursion, maxChars);
-        return iterTake(gen, maxResults);
-    }
-
-    public sample(symbolName: string = "",
-            numSamples: number = 1,
-            restriction: StringDict = {},
-            maxTries: number = 1000,
-            maxRecursion: number = 4, 
-            maxChars: number = 1000): StringDict[] {
-
-        var startState = this.getSymbol(symbolName);
-        if (startState == undefined) {
-            throw new Error(`Project does not define a symbol named "${symbolName}"`);
-        }
-
-        return startState.sample(restriction, numSamples, maxTries, maxRecursion, maxChars);
-    }
-    
-    public addSheetAux(sheetName: string): void {
-
-        if (sheetName in this.sheets) {
-            // already loaded it, don't have to do anything
-            return;
-        }
-
-        if (!this.devEnv.hasSource(sheetName)) {
-            // this is an error, but we don't freak out about it here.
-            // later on, we'll put errors on any cells for which we can't
-            // resolve the reference.
-            return;
-        }
-
-        const cells = this.devEnv.loadSource(sheetName);
-
-        // parse the cells into an abstract syntax tree
-        const sheetComponent = this.parseCells(sheetName, cells);
-
-        // put the raw cells into the sheetComponent, for interfaces
-        // that need them (like the sidebar of the GSuite add-on)
-        //const 
-
-        // Create a new namespace for this sheet and add it to the 
-        // global namespace
-        const sheetNamespace = new Namespace();
-        this.globalNamespace.addLocalNamespace(sheetName, sheetNamespace);
-
-        // Compile it
-        sheetComponent.compile(sheetNamespace, this.devEnv);
+        const rowIsComment = row[0].trim().startsWith('%%');
         
-        // Store it in .sheets
-        this.sheets[sheetName] = sheetComponent;
+        for (var colIndex = 0; colIndex < row.length; colIndex++) {
 
-        for (const requiredSheet of this.globalNamespace.requiredNamespaces) {
-            this.addSheetAux(requiredSheet);
-        }
-    }
-
-    public addSheet(sheetName: string): void {
-        // add this sheet and any sheets that it refers to
-        this.addSheetAux(sheetName);
-        this.globalNamespace.setDefaultNamespaceName(sheetName);
-        this.defaultSheetName = sheetName;
-    }
-
-    public addSheetAsText(sheetName: string, text: string) {
-        this.devEnv.addSourceAsText(sheetName, text);
-        this.addSheet(sheetName);
-    }
-
-    public runChecks(): void {
-        for (const sheetName of Object.keys(this.sheets)) {
-            const localNamespace = this.globalNamespace.getLocalNamespace(sheetName);
-            if (localNamespace == undefined) {
-                throw new Error(`Trying to find local namespace ${sheetName} but can't.`);
-            }
-            this.sheets[sheetName].runChecks(localNamespace, this.devEnv);
-        }
-    }
-
-    public getSheet(sheetName: string): SheetComponent {
-        if (!(sheetName in this.sheets)) {
-            throw new Error(`Sheet ${sheetName} not found in project`);
-        }
-
-        return this.sheets[sheetName];
-    }
-
-    public getDefaultSheet(): SheetComponent {
-        if (this.defaultSheetName == '') {
-            throw new Error("Asking for the default sheet of a project to which no sheets have been added");
-        }
-        return this.getSheet(this.defaultSheetName);
-    } 
-
-    public parseCells(sheetName: string, 
-                cells: string[][]): SheetComponent {
-
-        // topEnclosure refers to whatever enclosure is currently on top 
-        // of the stack.  Since each enclosure knows what its parent is, we 
-        // don't explicitly have to maintain a stack structure, we can just
-        // use the .parent property of the current topEnclosure when we need
-        // to pop.  We start with the one big enclosure that encompasses the 
-        // whole sheet, with startCell (-1,-1)
-        var topEnclosure: EnclosureComponent = new SheetComponent(sheetName);
-
-        // Now iterate through the cells, left-to-right top-to-bottom
-        for (var rowIndex = 0; rowIndex < cells.length; rowIndex++) {
-
-            const row = cells[rowIndex];
-            if (isLineEmpty(row)) {
+            const cellText = row[colIndex].trim();
+            const position = new CellPosition(sheetName, rowIndex, colIndex);
+            const cell = new CellComponent(cellText, position);
+            
+            if (rowIsComment) {
+                const comment = new CommentComponent(cell);
+                comment.mark(devEnv);
                 continue;
             }
 
-            const rowIsComment = row[0].trim().startsWith('%%');
-            
-            for (var colIndex = 0; colIndex < row.length; colIndex++) {
-
-                const cellText = row[colIndex].trim();
-                const position = new CellPosition(sheetName, rowIndex, colIndex);
-                const cell = new CellComponent(cellText, position);
-                
-                if (rowIsComment) {
-                    const comment = new CommentComponent(cell);
-                    comment.mark(this.devEnv);
-                    continue;
-                }
-
-                while (topEnclosure.isBrokenBy(cell)) {
-                    // it breaks the previous enclosure; pop that off
-                    if (topEnclosure.parent == undefined) {
-                        throw new Error("The enclosure stack is empty somehow; " +
-                                        "something has gone very wrong.");
-                    } 
-                    topEnclosure = topEnclosure.parent;
-                    topEnclosure.specRow = rowIndex;
-                }
-            
-                if (topEnclosure instanceof ContentsComponent && topEnclosure.canAddContent(cell)) {
-                    // we're inside an enclosure, after the header row
-                    topEnclosure.addContent(cell, this.devEnv);
-                    continue;
-                }
-
-                if (cellText.length == 0) {
-                    // all of the following steps require there to be some explicit content
-                    continue;
-                }
-
-                // either we're still in the spec row, or there's no spec row yet
-                if (cellText.endsWith(":")) {
-                    // it's an operation, which starts a new enclosure
-                    const newEnclosure = constructOp(cell, this.devEnv);
-                    try {
-                        topEnclosure = topEnclosure.addChild(newEnclosure, this.devEnv);
-                    } catch (e) {
-                        cell.markError(this.devEnv, `Unexpected operator: ${cell.text}`, 
-                            "This looks like an operator, but only a header can follow a header.");
-                    }
-                    continue;
+            while (topEnclosure.isBrokenBy(cell)) {
+                // it breaks the previous enclosure; pop that off
+                if (topEnclosure.parent == undefined) {
+                    throw new Error("The enclosure stack is empty somehow; " +
+                                    "something has gone very wrong.");
                 } 
+                topEnclosure = topEnclosure.parent;
+                topEnclosure.specRow = rowIndex;
+            }
+        
+            if (topEnclosure instanceof ContentsComponent && topEnclosure.canAddContent(cell)) {
+                // we're inside an enclosure, after the header row
+                topEnclosure.addContent(cell, devEnv);
+                continue;
+            }
 
-                // it's a header
+            if (cellText.length == 0) {
+                // all of the following steps require there to be some explicit content
+                continue;
+            }
+
+            // either we're still in the spec row, or there's no spec row yet
+            if (cellText.endsWith(":")) {
+                // it's an operation, which starts a new enclosure
+                const newEnclosure = constructOp(cell, devEnv);
                 try {
-                    // parse the header into a Header object
-                    const header = parseHeaderCell(cell.text, cell.position);
-                    // color it properly in the interface
-                    header.mark(this.devEnv); 
-                    
-                    if (!(topEnclosure instanceof ContentsComponent)) {
-                        const newEnclosure = new ContentsComponent(header);
-                        topEnclosure = topEnclosure.addChild(newEnclosure, this.devEnv);
-                    }
-                    (topEnclosure as ContentsComponent).addHeader(header, this.devEnv);
-                } catch(e) {
-                    cell.markError(this.devEnv, `Invalid header: ${cell.text}`,
-                        `Attempted to parse "${cell.text}" as a header, but could not.`);
+                    topEnclosure = topEnclosure.addChild(newEnclosure, devEnv);
+                } catch (e) {
+                    cell.markError(devEnv, `Unexpected operator: ${cell.text}`, 
+                        "This looks like an operator, but only a header can follow a header.");
                 }
+                continue;
+            } 
+
+            // it's a header
+            try {
+                // parse the header into a Header object
+                const header = parseHeaderCell(cell.text, cell.position);
+                // color it properly in the interface
+                header.mark(devEnv); 
+                
+                if (!(topEnclosure instanceof ContentsComponent)) {
+                    const newEnclosure = new ContentsComponent(header);
+                    topEnclosure = topEnclosure.addChild(newEnclosure, devEnv);
+                }
+                (topEnclosure as ContentsComponent).addHeader(header, devEnv);
+            } catch(e) {
+                cell.markError(devEnv, `Invalid header: ${cell.text}`,
+                    `Attempted to parse "${cell.text}" as a header, but could not.`);
             }
         }
-
-        return topEnclosure.sheet;
     }
-}
 
-export function createProject(): Project {
-    return new Project();
+    return topEnclosure.sheet;
 }

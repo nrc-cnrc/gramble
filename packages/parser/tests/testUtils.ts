@@ -1,5 +1,6 @@
 import { assert, expect } from 'chai';
-import { Project, Header, GrammarComponent } from '../src/sheetParser';
+import { Project } from "../src/project";
+import { Header, GrammarComponent } from '../src/sheetParser';
 import { CounterStack, Literalizer, State } from "../src/stateMachine";
 import { TapeCollection } from '../src/tapes';
 import { StringDict } from "../src/util";

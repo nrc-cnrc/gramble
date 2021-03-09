@@ -1,4 +1,4 @@
-import { parseHeaderCell, SlashHeader, CommentHeader, JoinHeader, MaybeHeader, NotHeader, LiteralHeader, EmbedHeader, EqualsHeader, EndsWithHeader, StartsWithHeader } from "../src/sheetParser";
+import { parseHeaderCell, SlashHeader, CommentHeader, JoinHeader, MaybeHeader, LiteralHeader, EmbedHeader, EqualsHeader, EndsWithHeader, StartsWithHeader } from "../src/sheetParser";
 
 import * as path from 'path';
 import { expect } from "chai";
