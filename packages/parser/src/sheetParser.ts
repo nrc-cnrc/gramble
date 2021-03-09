@@ -8,8 +8,9 @@
  */
 
 import { assert } from "chai";
-import { MPAlternation, MPUnreserved, MPNegation, MPResult, parseBooleanCell } from "./cellParser";
+import { CPAlternation, CPUnreserved, CPNegation, CPResult, parseBooleanCell } from "./cellParser";
 import { SimpleDevEnvironment } from "./devEnv";
+import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPSequence, MPUnreserved } from "./miniParser";
 import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState, DropState, Drop, Rep, Any, ConcatState } from "./stateMachine";
 import { CellPosition, DevEnvironment, DUMMY_POSITION, Gen, HSVtoRGB, iterTake, meanAngleDeg, RGBtoString, StringDict, TabularComponent } from "./util";
 
@@ -29,12 +30,6 @@ const DEFAULT_VALUE = 1.0;
  * in their column into no-ops.)
  * 
  * Header objects are responsible for:
- * 
- * * providing a static parse method that takes a list of input tokens and returns
- *   lists of [Header, remnant] pairs.  These are combined into a quick-n-dirty 
- *   parser-combinator engine at the bottom of this file.  (If you want to understand
- *   how this works, google for "parser combinators"; it's an old trick to quickly 
- *   write a recursive descent parser in plain code, without using a parsing library.)
  * 
  * * compiling the cells beneath them into States, and merging them (usually by
  *   concatenation) with cells to their right.
@@ -101,15 +96,6 @@ abstract class AtomicHeader extends Header {
         
         return (hash & 0xFF) / 255;
     }
-
-    public static *parseAux(target: string,
-                        constructor: new(t: string) => Header,
-                        input: string[]): Gen<[Header, string[]]> {
-        if (input.length == 0 || input[0] != target) {
-            return;
-        }
-        yield [new constructor(input[0]), input.slice(1)];
-    }
 }
 
 /**
@@ -124,20 +110,12 @@ export class EmbedHeader extends AtomicHeader {
         compiledCell.state = Emb(cell.text, namespace);
         return compiledCell;
     }
-
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield* super.parseAux("embed", EmbedHeader, input);
-    }
 }
 
 /**
  * DropHeaders lead to the complilation of DropStates.
  */
 export class DropHeader extends AtomicHeader {
-
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield* super.parseAux("drop", DropHeader, input);
-    }
     
     public compileAndMerge(cell: CellComponent,
             namespace: Namespace,
@@ -168,25 +146,11 @@ export class LiteralHeader extends AtomicHeader {
         compiledCell.state = Lit(this.text, cell.text);
         return compiledCell;
     }
-
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        if (input.length == 0 || RESERVED_WORDS.has(input[0])) {
-            return;
-        }
-        yield [new LiteralHeader(input[0]), input.slice(1)];
-    }
 }
-
 
 /**
  * Commented-out headers also comment out any cells below them; the cells just act as
  * Empty() states.
- * 
- * Note that "%" is not a unary operator the way others are; the *parse method 
- * for this doesn't bother parsing any remnant, and just effectively consumes everything.
- * If the programmer is failing to construct a header, for example, and comments it
- * out in the meantime, we don't want to keep parsing it and fail, we just want
- * to accept that whatever in this line isn't a header, it's a comment.
  */
 export class CommentHeader extends Header { 
 
@@ -202,15 +166,6 @@ export class CommentHeader extends Header {
                     namespace: Namespace, 
                     devEnv: DevEnvironment): SingleCellComponent {
         return new CommentComponent(cell);
-    }
-        
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-
-        if (input.length == 0 || input[0] != "%") {
-            return;
-        }
-
-        yield [new CommentHeader('%'), []];
     }
 }
 
@@ -240,28 +195,12 @@ abstract class UnaryHeader extends Header {
         compiledCell.state = childCell.state;
         return compiledCell;
     }
-
-    public static *parseAux(target: string, 
-                            constructor: new(t: string, c: Header) => Header,
-                            childParser: HeaderParser,
-                            input: string[]): Gen<[Header, string[]]> {
-        if (input.length == 0 || input[0] != target) {
-            return;
-        }
-        for (const [child, rem] of childParser(input.slice(1))) {
-            yield [new constructor(target, child), rem];
-        }
-    }
 }
 
 /**
  * Header that constructs optional parsers, e.g. "maybe text"
  */
 export class MaybeHeader extends UnaryHeader {
-
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseAux("maybe", MaybeHeader, NON_COMMENT_EXPR, input);
-    }
 
     public compile(cell: CellComponent, 
                     namespace: Namespace, 
@@ -279,10 +218,6 @@ export class MaybeHeader extends UnaryHeader {
  */
 export class NotHeader extends UnaryHeader {
 
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseAux("not", NotHeader, NON_COMMENT_EXPR, input);
-    }
-
     public compile(cell: CellComponent, 
         namespace: Namespace, 
         devEnv: DevEnvironment): SingleCellComponent {
@@ -298,10 +233,6 @@ export class NotHeader extends UnaryHeader {
  * Header that constructs negations, e.g. "not text"
  */
 export class RenameHeader extends UnaryHeader {
-
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseAux(">", RenameHeader, LiteralHeader.parse, input);
-    }
 
     public compile(cell: CellComponent, 
                     namespace: Namespace, 
@@ -324,10 +255,17 @@ export class RenameHeader extends UnaryHeader {
 }
 
 /**
- * BooleanHeaders are the abstract ancestor of all Headers that
+ * A JoinHeader handles headers like "@x"; it joins x:X with whatever
+ * follows rather than concatenating it.
+ * 
+ * Note that JoinHeader binds more tightly than other unary operators,
+ * e.g. while "maybe" in "maybe text/gloss" has "text/gloss" as its child,
+ * "@" in "@text/gloss" only has "@" as its child.
+ * 
+ * JoinHeader are also the ancestor of all Headers that
  * allow and parse boolean-algebra expressions in their fields (e.g. "~(A|B)").
  */
- abstract class BooleanHeader extends UnaryHeader {
+ export class JoinHeader extends UnaryHeader {
 
     public merge(leftNeighbor: State | undefined, state: State): State {
         if (leftNeighbor == undefined) {
@@ -337,7 +275,7 @@ export class RenameHeader extends UnaryHeader {
     }
 
     public compileLiteral(
-        parsedText: MPUnreserved,
+        parsedText: CPUnreserved,
         cell: CellComponent,
         namespace: Namespace,
         devEnv: DevEnvironment
@@ -348,26 +286,26 @@ export class RenameHeader extends UnaryHeader {
     }
 
     public compilePiece(
-        parsedText: MPResult,
+        parsedText: CPResult,
         cell: CellComponent, 
         namespace: Namespace, 
         devEnv: DevEnvironment
     ): SingleCellComponent {
 
-        if (parsedText instanceof MPUnreserved) {
+        if (parsedText instanceof CPUnreserved) {
             const newCell = new CellComponent(parsedText.text, cell.position);
             const childCell = this.child.compile(newCell, namespace, devEnv);
             return this.compileLiteral(parsedText, cell, namespace, devEnv);
         }
 
-        if (parsedText instanceof MPNegation) {
+        if (parsedText instanceof CPNegation) {
             const childCell = this.compilePiece(parsedText.child, cell, namespace, devEnv);
             const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
             compiledCell.state = Not(childCell.state);
             return compiledCell;
         }
 
-        if (parsedText instanceof MPAlternation) {
+        if (parsedText instanceof CPAlternation) {
             const child1Cell = this.compilePiece(parsedText.child1, cell, namespace, devEnv);
             const child2Cell = this.compilePiece(parsedText.child2, cell, namespace, devEnv);
             const compiledCell = new NAryHeadedCellComponent(this, cell, [child1Cell, child2Cell]);
@@ -389,21 +327,6 @@ export class RenameHeader extends UnaryHeader {
         const parsedText = parseBooleanCell(cell.text);
         const compiledCell = this.compilePiece(parsedText, cell, namespace, devEnv);
         return compiledCell;
-    }
-}
-
-/**
- * A JoinHeader handles headers like "@x"; it joins x:X with whatever
- * follows rather than concatenating it.
- * 
- * Note that JoinHeader binds more tightly than other unary operators,
- * e.g. while "maybe" in "maybe text/gloss" has "text/gloss" as its child,
- * "@" in "@text/gloss" only has "@" as its child.
- */
-export class JoinHeader extends BooleanHeader {
-    
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseAux("@", JoinHeader, SUBEXPR, input);
     }
 }
 
@@ -439,21 +362,14 @@ export class EqualsHeader extends JoinHeader {
 
         return Semijoin(leftNeighbor, state);
     }
-    
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseAux("equals", EqualsHeader, NON_COMMENT_EXPR, input);
-    }
 }
 
-export class PartialEqualsHeader extends EqualsHeader {
+abstract class PartialEqualsHeader extends EqualsHeader {
 
-    public formSequence(state: State, tapeName: string): State {
-        const anychars = Rep(Any(tapeName));
-        return Seq(state, anychars);
-    }
+    public abstract formSequence(state: State, tapeName: string): State;
 
     public compileLiteral(
-        parsedText: MPUnreserved,
+        parsedText: CPUnreserved,
         cell: CellComponent,
         namespace: Namespace,
         devEnv: DevEnvironment
@@ -468,7 +384,6 @@ export class PartialEqualsHeader extends EqualsHeader {
         }
         return result;
     }
-
 }
 
 /**
@@ -477,43 +392,35 @@ export class PartialEqualsHeader extends EqualsHeader {
  */
 export class StartsWithHeader extends PartialEqualsHeader {
 
-
     public formSequence(state: State, tapeName: string): State {
         const anychars = Rep(Any(tapeName));
         return Seq(state, anychars);
     }
-
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseAux("startswith", StartsWithHeader, NON_COMMENT_EXPR, input);
-    }
 }
 
+/**
+ * EndsWithHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to 
+ * end with X (that is, Semijoin(N, .*X))
+ */
 export class EndsWithHeader extends PartialEqualsHeader {
-    
     
     public formSequence(state: State, tapeName: string): State {
         const anychars = Rep(Any(tapeName));
         return Seq(anychars, state);
     }
-
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseAux("endswith", EndsWithHeader, NON_COMMENT_EXPR, input);
-    }
 }
 
-
+/**
+ * ContainsHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to 
+ * contain X (that is, Semijoin(N, .*X.*))
+ */
 export class ContainsHeader extends PartialEqualsHeader {
     
     public formSequence(state: State, tapeName: string): State {
         const anychars = Rep(Any(tapeName));
         return Seq(anychars, state, anychars);
     }
-
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseAux("contains", ContainsHeader, NON_COMMENT_EXPR, input);
-    }
 }
-
 
 abstract class BinaryHeader extends Header {
 
@@ -528,22 +435,6 @@ abstract class BinaryHeader extends Header {
     public get hue(): number {
         return this.child1.hue;
     }
-    
-    public static *parseAux(target: string, input: string[]): Gen<[Header, string[]]> {
-        if (input.length == 0) {
-            return;
-        }
-
-        for (const [t1, rem1] of SUBEXPR(input)) {
-            if (rem1.length == 0 || rem1[0] != target) {
-                return;
-            }
-            for (const [t2, rem2] of NON_COMMENT_EXPR(rem1.slice(1))) {
-                yield [new SlashHeader(t1, t2), rem2];
-            }
-        }
-    }
-
 }
 
 export class SlashHeader extends BinaryHeader {
@@ -583,13 +474,15 @@ export class SlashHeader extends BinaryHeader {
         compiledCell.state = childCell2.state;
         return compiledCell;
     }
-
-    public static *parse(input: string[]): Gen<[Header, string[]]> {
-        yield *super.parseAux("/", input);
-    }   
 }
 
-type HeaderParser = (input: string[]) => Gen<[Header, string[]]>;
+/**
+ * What follows is a grammar and parser for the mini-language inside headers, e.g.
+ * "text", "text/gloss", "startswith text", etc.
+ * 
+ * It uses the mini-parser library in miniParser.ts to construct a recursive-descent
+ * parser for the grammar.
+ */
 
 const SYMBOL = [ "(", ")", "%", "/", '@', ">", ":" ];
 const RESERVED_HEADERS = ["embed", "maybe", "not", "drop", "equals", "startswith", "endswith", "contains" ];
@@ -605,48 +498,6 @@ const RESERVED_OPS: string[] = [ ...Object.keys(BINARY_OPS), "table", "test", "t
 
 const RESERVED_WORDS = new Set([...SYMBOL, ...RESERVED_HEADERS, ...RESERVED_OPS]);
 
-const SUBEXPR = Alt([LiteralHeader.parse,
-                    EmbedHeader.parse, 
-                    DropHeader.parse,
-                    JoinHeader.parse, 
-                    Parens]);
-
-const NON_COMMENT_EXPR = Alt([MaybeHeader.parse, 
-                              NotHeader.parse,
-                              SlashHeader.parse, 
-                              RenameHeader.parse,
-                              EqualsHeader.parse,
-                              StartsWithHeader.parse,
-                              EndsWithHeader.parse,
-                              ContainsHeader.parse,
-                              SUBEXPR]);
-
-const EXPR = Alt([CommentHeader.parse, 
-                NON_COMMENT_EXPR]);
-
-function Alt(children: HeaderParser[]): HeaderParser {
-    return function*(input: string[]) {
-        for (const child of children) {
-            yield* child(input);
-        }
-    }
-}
-
-function* Parens(input: string[]): Gen<[Header, string[]]> {
-    if (input.length == 0 || input[0] != "(") {
-        return;
-    }
-
-    for (const [t, rem] of NON_COMMENT_EXPR(input.slice(1))) {
-        if (rem.length == 0 || rem[0] != ")") {
-            return;
-        }
-
-        yield [t, rem.slice(1)]
-    }
-}
-
-
 const tokenizer = new RegExp("\\s+|(" + 
                             SYMBOL.map(s => "\\"+s).join("|") + 
                             ")");
@@ -657,30 +508,86 @@ function tokenize(text: string): string[] {
     );
 }
 
-/**
- * This is the main function that the rest of the libraries interact with;
- * they provide a string and (hopefully) get a parser in return.
- */
-export function constructHeader(headerText: string, 
-                                pos: CellPosition = DUMMY_POSITION): Header {
-    const pieces = tokenize(headerText);
-    var result = [... EXPR(pieces)];
-    // result is a list of [header, remaining_tokens] pairs.  
-    // we only want results where there are no remaining tokens.
-    result = result.filter(([t, r]) => r.length == 0);
+var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
+    MPAlternation(HP_MAYBE, HP_SLASH, HP_RENAME, HP_EQUALS, 
+                HP_STARTSWITH, HP_ENDSWITH, HP_CONTAINS, HP_SUBEXPR)
+);
 
-    if (result.length == 0) {
-        // if there are no results, the programmer made a syntax error
-        throw new Error(`Cannot parse header: ${headerText}`);
-    }
-    if (result.length > 1) {
-         // the grammar above should be unambiguous, so we shouldn't get 
-         // multiple results, but just in case...
-        throw new Error(`Ambiguous header, cannot parse: ${headerText}.` +
-                " This probably isn't your fault.");
-    }
-    result[0][0].position = pos;
-    return result[0][0];
+var HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
+    MPAlternation(HP_UNRESERVED, HP_EMBED, HP_DROP, HP_JOIN, HP_PARENS)
+);
+
+const HP_COMMENT = MPComment<Header>(
+    '%',
+    (s) => new CommentHeader(s)
+);
+
+const HP_UNRESERVED = MPUnreserved<Header>(
+    RESERVED_WORDS, 
+    (s) => new LiteralHeader(s)
+);
+
+const HP_EMBED = MPSequence<Header>(
+    ["embed"],
+    () => new EmbedHeader("embed")
+);
+
+const HP_DROP = MPSequence<Header>(
+    ["drop"],
+    () => new DropHeader("drop")
+);
+
+const HP_JOIN = MPSequence<Header>(
+    ["@", HP_SUBEXPR],
+    (child) => new JoinHeader("@", child)
+);
+
+const HP_MAYBE = MPSequence<Header>(
+    ["maybe", HP_NON_COMMENT_EXPR],
+    (child) => new MaybeHeader("maybe", child)
+);
+
+const HP_SLASH = MPSequence<Header>(
+    [HP_SUBEXPR, "/", HP_NON_COMMENT_EXPR],
+    (child1, child2) => new SlashHeader(child1, child2)
+);
+
+const HP_RENAME = MPSequence<Header>(
+    [">", HP_UNRESERVED],
+    (child) => new RenameHeader(">", child)
+);
+
+const HP_PARENS = MPSequence<Header>(
+    ["(", HP_NON_COMMENT_EXPR, ")"],
+    (child) => child 
+);
+
+const HP_EQUALS = MPSequence<Header>(
+    ["equals", HP_NON_COMMENT_EXPR],
+    (child) => new EqualsHeader("equals", child)
+);
+
+const HP_STARTSWITH = MPSequence<Header>(
+    ["startswith", HP_NON_COMMENT_EXPR],
+    (child) => new StartsWithHeader("startswith", child)
+);
+
+const HP_ENDSWITH = MPSequence<Header>(
+    ["endswith", HP_NON_COMMENT_EXPR],
+    (child) => new EndsWithHeader("endswith", child)
+);
+
+const HP_CONTAINS = MPSequence<Header>(
+    ["contains", HP_NON_COMMENT_EXPR],
+    (child) => new ContainsHeader("contains", child)
+);
+
+var HP_EXPR: MPParser<Header> = MPAlternation(HP_COMMENT, HP_NON_COMMENT_EXPR);
+
+export function parseHeaderCell(text: string, pos: CellPosition = DUMMY_POSITION): Header {
+    const result = miniParse(tokenize, HP_EXPR, text);
+    result.position = pos;
+    return result;
 }
 
 export class CellComponent extends TabularComponent {
@@ -1514,7 +1421,7 @@ export class Project {
         const results: [string, string][] = [];
         const stack = new CounterStack(2);
         for (const tapeName of startState.getRelevantTapes(stack)) {
-            const header = constructHeader(tapeName, new CellPosition("?",-1,-1));
+            const header = parseHeaderCell(tapeName, new CellPosition("?",-1,-1));
             results.push([tapeName, header.getColor(0.2)]);
         }
         return results;
@@ -1705,7 +1612,7 @@ export class Project {
                 // it's a header
                 try {
                     // parse the header into a Header object
-                    const header = constructHeader(cell.text, cell.position);
+                    const header = parseHeaderCell(cell.text, cell.position);
                     // color it properly in the interface
                     header.mark(this.devEnv); 
                     
