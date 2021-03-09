@@ -141,11 +141,9 @@ export class Namespace {
                 return [this, name];  // it's a local symbol
             }
 
-            if (this.defaultSymbolName != "") {
-                const ns = this.getLocalNamespace(name);
-                if (ns != undefined) {
-                    return [ns, ns.defaultSymbolName]; // it's a local namespace name with the default symbol
-                }
+            const ns = this.getLocalNamespace(name);
+            if (ns != undefined && ns.defaultSymbolName != "") {
+                return [ns, ns.defaultSymbolName]; // it's a local namespace name with the default symbol
             }
 
             if (this.defaultNamespaceName != "") {
@@ -170,7 +168,7 @@ export class Namespace {
                 }
             }
         }
-        
+
         // if you still can't find it, see if your parent can resolve it
         if (this.parent != undefined) {
             const result = this.parent.resolveName(name);
@@ -284,6 +282,8 @@ export class Namespace {
         return ns.getLocalSymbol(localName, symbolStack);
     }
 
+    public registeredSymbolNames: string[] = [];
+
     /**
      * When an EmbedState is constructed, it needs to "register" the symbol
      * name it is going to want later, so that we can (if necessary) load and
@@ -291,9 +291,6 @@ export class Namespace {
      */
     public register(symbolName: string): void {
         const pieces = symbolName.split(".");
-        if (pieces.length == 1) {
-            return;
-        }
         if (pieces.length > 2) {
             // At some point we may want to allow registration of
             // symbols with nested namespaces, but right now that's
@@ -302,9 +299,8 @@ export class Namespace {
                " because nested namespaces (e.g. X.Y.Z) are not currently supported.");
         }
         if (this.parent == undefined) {
-            // I don't think this can actually happen.
-            throw new Error("Something strange happened; trying to register " +
-                    "a symbol name in the global namespace");
+            // this doesn't happen in real projects, but it can happen when unit testing.
+            return;
         }
         this.parent.requiredNamespaces.add(pieces[0]);
     }

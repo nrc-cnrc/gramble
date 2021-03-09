@@ -11865,96 +11865,35 @@ return typeDetect;
 },{}],40:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseBooleanCell = exports.MPAlternation = exports.MPNegation = exports.MPUnreserved = void 0;
-function Delay(child) {
-    return function* (input) {
-        yield* child()(input);
-    };
-}
-function Unreserved(reserved, constr) {
-    return function* (input) {
-        if (input.length == 0 || reserved.has(input[0])) {
-            return;
-        }
-        yield [constr(input[0]), input.slice(1)];
-    };
-}
-function Sequence(children, constr) {
-    return function* (input) {
-        var results = [[[], input]];
-        for (const child of children) {
-            var newResults = [];
-            for (const [existingOutputs, existingRemnant] of results) {
-                if (typeof child == "string") {
-                    if (existingRemnant.length > 0 && existingRemnant[0] == child) {
-                        newResults.push([existingOutputs, existingRemnant.slice(1)]);
-                    }
-                    continue;
-                }
-                for (const [output2, remnant2] of child(existingRemnant)) {
-                    const newOutput = [...existingOutputs, output2];
-                    newResults.push([newOutput, remnant2]);
-                }
-            }
-            results = newResults;
-        }
-        for (const [output, remnant] of results) {
-            yield [constr(...output), remnant];
-        }
-    };
-}
-function Alternation(...children) {
-    return function* (input) {
-        for (const child of children) {
-            yield* child(input);
-        }
-    };
-}
-function parse(tokenizer, grammar, text) {
-    const pieces = tokenizer(text);
-    var result = [...grammar(pieces)];
-    // result is a list of [header, remaining_tokens] pairs.  
-    // we only want results where there are no remaining tokens.
-    result = result.filter(([t, r]) => r.length == 0);
-    if (result.length == 0) {
-        // if there are no results, the programmer made a syntax error
-        throw new Error(`Cannot parse: ${text}`);
-    }
-    if (result.length > 1) {
-        // the grammar above should be unambiguous, so we shouldn't get 
-        // multiple results, but just in case...
-        throw new Error(`Ambiguous, cannot parse: ${text}.` +
-            " This probably isn't your fault.");
-    }
-    return result[0][0];
-}
-class MPUnreserved {
+exports.parseBooleanCell = exports.CPAlternation = exports.CPNegation = exports.CPUnreserved = void 0;
+const miniParser_1 = require("./miniParser");
+class CPUnreserved {
     constructor(text) {
         this.text = text;
         this.text = text.trim();
     }
 }
-exports.MPUnreserved = MPUnreserved;
-class MPNegation {
+exports.CPUnreserved = CPUnreserved;
+class CPNegation {
     constructor(child) {
         this.child = child;
     }
 }
-exports.MPNegation = MPNegation;
-class MPAlternation {
+exports.CPNegation = CPNegation;
+class CPAlternation {
     constructor(child1, child2) {
         this.child1 = child1;
         this.child2 = child2;
     }
 }
-exports.MPAlternation = MPAlternation;
-var EXPR = Delay(() => Alternation(NEGATION, ALTERNATION, SUBEXPR));
-var SUBEXPR = Delay(() => Alternation(UNRESERVED, PARENS));
+exports.CPAlternation = CPAlternation;
+var EXPR = miniParser_1.MPDelay(() => miniParser_1.MPAlternation(NEGATION, ALTERNATION, SUBEXPR));
+var SUBEXPR = miniParser_1.MPDelay(() => miniParser_1.MPAlternation(UNRESERVED, PARENS));
 const RESERVED = new Set(["(", ")", "~", "|"]);
-const UNRESERVED = Unreserved(RESERVED, (s) => new MPUnreserved(s));
-const PARENS = Sequence(["(", EXPR, ")"], (child) => child);
-const NEGATION = Sequence(["~", EXPR], (child) => new MPNegation(child));
-const ALTERNATION = Sequence([SUBEXPR, "|", EXPR], (c1, c2) => new MPAlternation(c1, c2));
+const UNRESERVED = miniParser_1.MPUnreserved(RESERVED, (s) => new CPUnreserved(s));
+const PARENS = miniParser_1.MPSequence(["(", EXPR, ")"], (child) => child);
+const NEGATION = miniParser_1.MPSequence(["~", EXPR], (child) => new CPNegation(child));
+const ALTERNATION = miniParser_1.MPSequence([SUBEXPR, "|", EXPR], (c1, c2) => new CPAlternation(c1, c2));
 const tokenizer = new RegExp("(" +
     [...RESERVED].map(s => "\\" + s).join("|") +
     ")");
@@ -11962,11 +11901,11 @@ function tokenize(text) {
     return text.split(tokenizer).filter((s) => s !== undefined && s !== '');
 }
 function parseBooleanCell(text) {
-    return parse(tokenize, EXPR, text);
+    return miniParser_1.miniParse(tokenize, EXPR, text);
 }
 exports.parseBooleanCell = parseBooleanCell;
 
-},{}],41:[function(require,module,exports){
+},{"./miniParser":43}],41:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SimpleDevEnvironment = exports.cellSplit = exports.posToStr = void 0;
@@ -12051,23 +11990,242 @@ exports.SimpleDevEnvironment = SimpleDevEnvironment;
 },{}],42:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Empty = exports.Rep = exports.Emb = exports.Rename = exports.Proj = exports.Not = exports.Join = exports.Uni = exports.Seq = exports.Lit = exports.State = exports.Project = void 0;
+exports.Empty = exports.Rep = exports.Emb = exports.Rename = exports.Drop = exports.Proj = exports.Not = exports.Semijoin = exports.Join = exports.Uni = exports.Seq = exports.Lit = exports.State = exports.Project = void 0;
 const stateMachine_1 = require("./stateMachine");
 Object.defineProperty(exports, "State", { enumerable: true, get: function () { return stateMachine_1.State; } });
 Object.defineProperty(exports, "Lit", { enumerable: true, get: function () { return stateMachine_1.Lit; } });
 Object.defineProperty(exports, "Seq", { enumerable: true, get: function () { return stateMachine_1.Seq; } });
 Object.defineProperty(exports, "Uni", { enumerable: true, get: function () { return stateMachine_1.Uni; } });
 Object.defineProperty(exports, "Join", { enumerable: true, get: function () { return stateMachine_1.Join; } });
+Object.defineProperty(exports, "Semijoin", { enumerable: true, get: function () { return stateMachine_1.Semijoin; } });
 Object.defineProperty(exports, "Not", { enumerable: true, get: function () { return stateMachine_1.Not; } });
 Object.defineProperty(exports, "Proj", { enumerable: true, get: function () { return stateMachine_1.Proj; } });
+Object.defineProperty(exports, "Drop", { enumerable: true, get: function () { return stateMachine_1.Drop; } });
 Object.defineProperty(exports, "Rename", { enumerable: true, get: function () { return stateMachine_1.Rename; } });
 Object.defineProperty(exports, "Emb", { enumerable: true, get: function () { return stateMachine_1.Emb; } });
 Object.defineProperty(exports, "Rep", { enumerable: true, get: function () { return stateMachine_1.Rep; } });
 Object.defineProperty(exports, "Empty", { enumerable: true, get: function () { return stateMachine_1.Empty; } });
-const sheetParser_1 = require("./sheetParser");
-Object.defineProperty(exports, "Project", { enumerable: true, get: function () { return sheetParser_1.Project; } });
+const project_1 = require("./project");
+Object.defineProperty(exports, "Project", { enumerable: true, get: function () { return project_1.Project; } });
 
-},{"./sheetParser":43,"./stateMachine":44}],43:[function(require,module,exports){
+},{"./project":44,"./stateMachine":46}],43:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.miniParse = exports.MPAlternation = exports.MPSequence = exports.MPComment = exports.MPUnreserved = exports.MPDelay = void 0;
+function MPDelay(child) {
+    return function* (input) {
+        yield* child()(input);
+    };
+}
+exports.MPDelay = MPDelay;
+function MPUnreserved(reserved, constr) {
+    return function* (input) {
+        if (input.length == 0 || reserved.has(input[0])) {
+            return;
+        }
+        yield [constr(input[0]), input.slice(1)];
+    };
+}
+exports.MPUnreserved = MPUnreserved;
+function MPComment(commentStarter, constr) {
+    return function* (input) {
+        if (input.length == 0 || input[0] != commentStarter) {
+            return;
+        }
+        yield [constr(input[0]), []];
+    };
+}
+exports.MPComment = MPComment;
+function MPSequence(children, constr) {
+    return function* (input) {
+        var results = [[[], input]];
+        for (const child of children) {
+            var newResults = [];
+            for (const [existingOutputs, existingRemnant] of results) {
+                if (typeof child == "string") {
+                    if (existingRemnant.length > 0 && existingRemnant[0] == child) {
+                        newResults.push([existingOutputs, existingRemnant.slice(1)]);
+                    }
+                    continue;
+                }
+                for (const [output2, remnant2] of child(existingRemnant)) {
+                    const newOutput = [...existingOutputs, output2];
+                    newResults.push([newOutput, remnant2]);
+                }
+            }
+            results = newResults;
+        }
+        for (const [output, remnant] of results) {
+            yield [constr(...output), remnant];
+        }
+    };
+}
+exports.MPSequence = MPSequence;
+function MPAlternation(...children) {
+    return function* (input) {
+        for (const child of children) {
+            yield* child(input);
+        }
+    };
+}
+exports.MPAlternation = MPAlternation;
+function miniParse(tokenizer, grammar, text) {
+    const pieces = tokenizer(text);
+    var result = [...grammar(pieces)];
+    // result is a list of [header, remaining_tokens] pairs.  
+    // we only want results where there are no remaining tokens.
+    result = result.filter(([t, r]) => r.length == 0);
+    if (result.length == 0) {
+        // if there are no results, the programmer made a syntax error
+        throw new Error(`Cannot parse: ${text}`);
+    }
+    if (result.length > 1) {
+        throw new Error(`Ambiguous, cannot uniquely parse: ${text}.`);
+    }
+    return result[0][0];
+}
+exports.miniParse = miniParse;
+
+},{}],44:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Project = void 0;
+const devEnv_1 = require("./devEnv");
+const stateMachine_1 = require("./stateMachine");
+const util_1 = require("./util");
+const sheetParser_1 = require("./sheetParser");
+/**
+ * A Project does two things:
+ *
+ *   (1) Holds multiple SheetComponents (worksheets parsed into a syntax tree and associated
+ *       with States) and a global namespace.
+ *
+ *   (2) Acts as a Facade (in the GoF sense) for the client to interact with, so that they
+ *       don't necessarily have to understand the ways DevEnvironments, SheetComponents, Namespaces,
+ *       and States are related and interact.
+ */
+class Project {
+    constructor(devEnv = new devEnv_1.SimpleDevEnvironment()) {
+        this.devEnv = devEnv;
+        this.globalNamespace = new stateMachine_1.Namespace();
+        this.defaultSheetName = '';
+        this.sheets = {};
+    }
+    allSymbols() {
+        return this.globalNamespace.allSymbols();
+    }
+    getSymbol(symbolName) {
+        return this.globalNamespace.getSymbol(symbolName, new stateMachine_1.CounterStack(4));
+    }
+    getErrors() {
+        return this.devEnv.getErrorMessages().map(([sheet, row, col, msg, level]) => { return { sheet: sheet, row: row, col: col, msg: msg, level: level }; });
+    }
+    getTapeNames(symbolName) {
+        const startState = this.globalNamespace.getSymbol(symbolName);
+        if (startState == undefined) {
+            throw new Error(`Cannot find symbol ${symbolName}`);
+        }
+        const results = [];
+        const stack = new stateMachine_1.CounterStack(2);
+        for (const tapeName of startState.getRelevantTapes(stack)) {
+            const header = sheetParser_1.parseHeaderCell(tapeName, new util_1.CellPosition("?", -1, -1));
+            results.push([tapeName, header.getColor(0.2)]);
+        }
+        return results;
+    }
+    compile(symbolName, compileLevel = 1) {
+        const symbol = this.globalNamespace.getSymbol(symbolName);
+        if (symbol == undefined) {
+            throw new Error(`Cannot find symbol ${symbolName} to compile it`);
+        }
+        const allTapes = symbol.getAllTapes();
+        this.globalNamespace.compileSymbol(symbolName, allTapes, new stateMachine_1.CounterStack(4), compileLevel);
+    }
+    generate(symbolName = "", inputs = {}, maxResults = Infinity, maxRecursion = 4, maxChars = 1000) {
+        var startState = this.getSymbol(symbolName);
+        if (startState == undefined) {
+            throw new Error(`Project does not define a symbol named "${symbolName}"`);
+        }
+        const gen = startState.parse(inputs, false, maxRecursion, maxChars);
+        return util_1.iterTake(gen, maxResults);
+    }
+    sample(symbolName = "", numSamples = 1, restriction = {}, maxTries = 1000, maxRecursion = 4, maxChars = 1000) {
+        var startState = this.getSymbol(symbolName);
+        if (startState == undefined) {
+            throw new Error(`Project does not define a symbol named "${symbolName}"`);
+        }
+        return startState.sample(restriction, numSamples, maxTries, maxRecursion, maxChars);
+    }
+    addSheetAux(sheetName) {
+        if (sheetName in this.sheets) {
+            // already loaded it, don't have to do anything
+            return;
+        }
+        if (!this.devEnv.hasSource(sheetName)) {
+            // this might or might not be an error.  most of the time, it
+            // just means that an embed in some sheet referred to a symbol
+            // of this name, and we're checking to see if it refers to a 
+            // sheet.  Even if we can't find that sheet, we're probably good,
+            // it's probably just a symbol name.
+            //
+            // if this is indeed a programmer error, don't freak out about it here.
+            // it's too early to know what and what isn't an error.
+            // later on, we'll put errors on any cells for which we can't
+            // resolve the reference.
+            return;
+        }
+        const cells = this.devEnv.loadSource(sheetName);
+        // parse the cells into an abstract syntax tree
+        const sheetComponent = sheetParser_1.parseCells(sheetName, cells, this.devEnv);
+        // put the raw cells into the sheetComponent, for interfaces
+        // that need them (like the sidebar of the GSuite add-on)
+        // Create a new namespace for this sheet and add it to the 
+        // global namespace
+        const sheetNamespace = new stateMachine_1.Namespace();
+        this.globalNamespace.addLocalNamespace(sheetName, sheetNamespace);
+        // Compile it
+        sheetComponent.compile(sheetNamespace, this.devEnv);
+        // Store it in .sheets
+        this.sheets[sheetName] = sheetComponent;
+        for (const requiredSheet of this.globalNamespace.requiredNamespaces) {
+            this.addSheetAux(requiredSheet);
+        }
+    }
+    addSheet(sheetName) {
+        // add this sheet and any sheets that it refers to
+        this.addSheetAux(sheetName);
+        this.globalNamespace.setDefaultNamespaceName(sheetName);
+        this.defaultSheetName = sheetName;
+    }
+    addSheetAsText(sheetName, text) {
+        this.devEnv.addSourceAsText(sheetName, text);
+        this.addSheet(sheetName);
+    }
+    runChecks() {
+        for (const sheetName of Object.keys(this.sheets)) {
+            const localNamespace = this.globalNamespace.getLocalNamespace(sheetName);
+            if (localNamespace == undefined) {
+                throw new Error(`Trying to find local namespace ${sheetName} but can't.`);
+            }
+            this.sheets[sheetName].runChecks(localNamespace, this.devEnv);
+        }
+    }
+    getSheet(sheetName) {
+        if (!(sheetName in this.sheets)) {
+            throw new Error(`Sheet ${sheetName} not found in project`);
+        }
+        return this.sheets[sheetName];
+    }
+    getDefaultSheet() {
+        if (this.defaultSheetName == '') {
+            throw new Error("Asking for the default sheet of a project to which no sheets have been added");
+        }
+        return this.getSheet(this.defaultSheetName);
+    }
+}
+exports.Project = Project;
+
+},{"./devEnv":41,"./sheetParser":45,"./stateMachine":46,"./util":48}],45:[function(require,module,exports){
 "use strict";
 /**
  * This file describes the parser that turns spreadsheets into abstract
@@ -12077,10 +12235,10 @@ Object.defineProperty(exports, "Project", { enumerable: true, get: function () {
  * of formulas in that language.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createProject = exports.Project = exports.EnclosureComponent = exports.GrammarComponent = exports.CellComponent = exports.constructHeader = exports.SlashHeader = exports.EndsWithHeader = exports.StartsWithHeader = exports.EqualsHeader = exports.JoinHeader = exports.RenameHeader = exports.NotHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.DropHeader = exports.EmbedHeader = exports.Header = void 0;
+exports.parseCells = exports.SheetComponent = exports.GrammarComponent = exports.parseHeaderCell = exports.SlashHeader = exports.ContainsHeader = exports.EndsWithHeader = exports.StartsWithHeader = exports.EqualsHeader = exports.JoinHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.DropHeader = exports.EmbedHeader = exports.Header = void 0;
 const chai_1 = require("chai");
 const cellParser_1 = require("./cellParser");
-const devEnv_1 = require("./devEnv");
+const miniParser_1 = require("./miniParser");
 const stateMachine_1 = require("./stateMachine");
 const util_1 = require("./util");
 const DEFAULT_SATURATION = 0.1;
@@ -12098,12 +12256,6 @@ const DEFAULT_VALUE = 1.0;
  * in their column into no-ops.)
  *
  * Header objects are responsible for:
- *
- * * providing a static parse method that takes a list of input tokens and returns
- *   lists of [Header, remnant] pairs.  These are combined into a quick-n-dirty
- *   parser-combinator engine at the bottom of this file.  (If you want to understand
- *   how this works, google for "parser combinators"; it's an old trick to quickly
- *   write a recursive descent parser in plain code, without using a parsing library.)
  *
  * * compiling the cells beneath them into States, and merging them (usually by
  *   concatenation) with cells to their right.
@@ -12151,12 +12303,6 @@ class AtomicHeader extends Header {
         }
         return (hash & 0xFF) / 255;
     }
-    static *parseAux(target, constructor, input) {
-        if (input.length == 0 || input[0] != target) {
-            return;
-        }
-        yield [new constructor(input[0]), input.slice(1)];
-    }
 }
 /**
  * EmbedHeaders lead to the complilation of EmbedStates.
@@ -12167,18 +12313,12 @@ class EmbedHeader extends AtomicHeader {
         compiledCell.state = stateMachine_1.Emb(cell.text, namespace);
         return compiledCell;
     }
-    static *parse(input) {
-        yield* super.parseAux("embed", EmbedHeader, input);
-    }
 }
 exports.EmbedHeader = EmbedHeader;
 /**
  * DropHeaders lead to the complilation of DropStates.
  */
 class DropHeader extends AtomicHeader {
-    static *parse(input) {
-        yield* super.parseAux("drop", DropHeader, input);
-    }
     compileAndMerge(cell, namespace, devEnv, leftNeighbor) {
         const compiledCell = new DropComponent(this, cell);
         if (leftNeighbor == undefined) {
@@ -12199,23 +12339,11 @@ class LiteralHeader extends AtomicHeader {
         compiledCell.state = stateMachine_1.Lit(this.text, cell.text);
         return compiledCell;
     }
-    static *parse(input) {
-        if (input.length == 0 || RESERVED_WORDS.has(input[0])) {
-            return;
-        }
-        yield [new LiteralHeader(input[0]), input.slice(1)];
-    }
 }
 exports.LiteralHeader = LiteralHeader;
 /**
  * Commented-out headers also comment out any cells below them; the cells just act as
  * Empty() states.
- *
- * Note that "%" is not a unary operator the way others are; the *parse method
- * for this doesn't bother parsing any remnant, and just effectively consumes everything.
- * If the programmer is failing to construct a header, for example, and comments it
- * out in the meantime, we don't want to keep parsing it and fail, we just want
- * to accept that whatever in this line isn't a header, it's a comment.
  */
 class CommentHeader extends Header {
     get hue() {
@@ -12226,12 +12354,6 @@ class CommentHeader extends Header {
     }
     compile(cell, namespace, devEnv) {
         return new CommentComponent(cell);
-    }
-    static *parse(input) {
-        if (input.length == 0 || input[0] != "%") {
-            return;
-        }
-        yield [new CommentHeader('%'), []];
     }
 }
 exports.CommentHeader = CommentHeader;
@@ -12254,22 +12376,11 @@ class UnaryHeader extends Header {
         compiledCell.state = childCell.state;
         return compiledCell;
     }
-    static *parseAux(target, constructor, childParser, input) {
-        if (input.length == 0 || input[0] != target) {
-            return;
-        }
-        for (const [child, rem] of childParser(input.slice(1))) {
-            yield [new constructor(target, child), rem];
-        }
-    }
 }
 /**
  * Header that constructs optional parsers, e.g. "maybe text"
  */
 class MaybeHeader extends UnaryHeader {
-    static *parse(input) {
-        yield* super.parseAux("maybe", MaybeHeader, NON_COMMENT_EXPR, input);
-    }
     compile(cell, namespace, devEnv) {
         const childCell = this.child.compile(cell, namespace, devEnv);
         const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
@@ -12282,9 +12393,6 @@ exports.MaybeHeader = MaybeHeader;
  * Header that constructs negations, e.g. "not text"
  */
 class NotHeader extends UnaryHeader {
-    static *parse(input) {
-        yield* super.parseAux("not", NotHeader, NON_COMMENT_EXPR, input);
-    }
     compile(cell, namespace, devEnv) {
         const childCell = this.child.compile(cell, namespace, devEnv);
         const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
@@ -12292,14 +12400,10 @@ class NotHeader extends UnaryHeader {
         return compiledCell;
     }
 }
-exports.NotHeader = NotHeader;
 /**
  * Header that constructs negations, e.g. "not text"
  */
 class RenameHeader extends UnaryHeader {
-    static *parse(input) {
-        yield* super.parseAux(">", RenameHeader, LiteralHeader.parse, input);
-    }
     compile(cell, namespace, devEnv) {
         const childCell = this.child.compile(cell, namespace, devEnv);
         const compiledCell = new RenameComponent(this, cell, childCell);
@@ -12316,12 +12420,18 @@ class RenameHeader extends UnaryHeader {
         return stateMachine_1.Rename(leftNeighbor, state.text, state.tapeName);
     }
 }
-exports.RenameHeader = RenameHeader;
 /**
- * BooleanHeaders are the abstract ancestor of all Headers that
+ * A JoinHeader handles headers like "@x"; it joins x:X with whatever
+ * follows rather than concatenating it.
+ *
+ * Note that JoinHeader binds more tightly than other unary operators,
+ * e.g. while "maybe" in "maybe text/gloss" has "text/gloss" as its child,
+ * "@" in "@text/gloss" only has "@" as its child.
+ *
+ * JoinHeader are also the ancestor of all Headers that
  * allow and parse boolean-algebra expressions in their fields (e.g. "~(A|B)").
  */
-class BooleanHeader extends UnaryHeader {
+class JoinHeader extends UnaryHeader {
     merge(leftNeighbor, state) {
         if (leftNeighbor == undefined) {
             return state;
@@ -12334,18 +12444,18 @@ class BooleanHeader extends UnaryHeader {
         return childCell;
     }
     compilePiece(parsedText, cell, namespace, devEnv) {
-        if (parsedText instanceof cellParser_1.MPUnreserved) {
+        if (parsedText instanceof cellParser_1.CPUnreserved) {
             const newCell = new CellComponent(parsedText.text, cell.position);
             const childCell = this.child.compile(newCell, namespace, devEnv);
             return this.compileLiteral(parsedText, cell, namespace, devEnv);
         }
-        if (parsedText instanceof cellParser_1.MPNegation) {
+        if (parsedText instanceof cellParser_1.CPNegation) {
             const childCell = this.compilePiece(parsedText.child, cell, namespace, devEnv);
             const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
             compiledCell.state = stateMachine_1.Not(childCell.state);
             return compiledCell;
         }
-        if (parsedText instanceof cellParser_1.MPAlternation) {
+        if (parsedText instanceof cellParser_1.CPAlternation) {
             const child1Cell = this.compilePiece(parsedText.child1, cell, namespace, devEnv);
             const child2Cell = this.compilePiece(parsedText.child2, cell, namespace, devEnv);
             const compiledCell = new NAryHeadedCellComponent(this, cell, [child1Cell, child2Cell]);
@@ -12361,19 +12471,6 @@ class BooleanHeader extends UnaryHeader {
         const parsedText = cellParser_1.parseBooleanCell(cell.text);
         const compiledCell = this.compilePiece(parsedText, cell, namespace, devEnv);
         return compiledCell;
-    }
-}
-/**
- * A JoinHeader handles headers like "@x"; it joins x:X with whatever
- * follows rather than concatenating it.
- *
- * Note that JoinHeader binds more tightly than other unary operators,
- * e.g. while "maybe" in "maybe text/gloss" has "text/gloss" as its child,
- * "@" in "@text/gloss" only has "@" as its child.
- */
-class JoinHeader extends BooleanHeader {
-    static *parse(input) {
-        yield* super.parseAux("@", JoinHeader, SUBEXPR, input);
     }
 }
 exports.JoinHeader = JoinHeader;
@@ -12402,49 +12499,53 @@ class EqualsHeader extends JoinHeader {
         }
         return stateMachine_1.Semijoin(leftNeighbor, state);
     }
-    static *parse(input) {
-        yield* super.parseAux("equals", EqualsHeader, NON_COMMENT_EXPR, input);
-    }
 }
 exports.EqualsHeader = EqualsHeader;
-/**
- * StartsWithHeader is a special kind of RequireHeader that only requires its predecessor (call it N) to
- * start with X (that is, Semijoin(N, X.*))
- */
-class StartsWithHeader extends EqualsHeader {
+class PartialEqualsHeader extends EqualsHeader {
     compileLiteral(parsedText, cell, namespace, devEnv) {
         const newCell = new CellComponent(parsedText.text, cell.position);
         const result = this.child.compile(newCell, namespace, devEnv);
         const symbolStack = new stateMachine_1.CounterStack(4);
         const relevantTapes = result.state.getRelevantTapes(symbolStack);
         for (const tape of relevantTapes) {
-            const anychars = stateMachine_1.Rep(stateMachine_1.Any(tape));
-            result.state = stateMachine_1.Seq(result.state, anychars);
+            result.state = this.formSequence(result.state, tape);
         }
         return result;
     }
-    static *parse(input) {
-        yield* super.parseAux("startswith", StartsWithHeader, NON_COMMENT_EXPR, input);
+}
+/**
+ * StartsWithHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to
+ * start with X (that is, Semijoin(N, X.*))
+ */
+class StartsWithHeader extends PartialEqualsHeader {
+    formSequence(state, tapeName) {
+        const anychars = stateMachine_1.Rep(stateMachine_1.Any(tapeName));
+        return stateMachine_1.Seq(state, anychars);
     }
 }
 exports.StartsWithHeader = StartsWithHeader;
-class EndsWithHeader extends EqualsHeader {
-    compileLiteral(parsedText, cell, namespace, devEnv) {
-        const newCell = new CellComponent(parsedText.text, cell.position);
-        const result = this.child.compile(newCell, namespace, devEnv);
-        const symbolStack = new stateMachine_1.CounterStack(4);
-        const relevantTapes = result.state.getRelevantTapes(symbolStack);
-        for (const tape of relevantTapes) {
-            const anychars = stateMachine_1.Rep(stateMachine_1.Any(tape));
-            result.state = stateMachine_1.Seq(anychars, result.state);
-        }
-        return result;
-    }
-    static *parse(input) {
-        yield* super.parseAux("endswith", EndsWithHeader, NON_COMMENT_EXPR, input);
+/**
+ * EndsWithHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to
+ * end with X (that is, Semijoin(N, .*X))
+ */
+class EndsWithHeader extends PartialEqualsHeader {
+    formSequence(state, tapeName) {
+        const anychars = stateMachine_1.Rep(stateMachine_1.Any(tapeName));
+        return stateMachine_1.Seq(anychars, state);
     }
 }
 exports.EndsWithHeader = EndsWithHeader;
+/**
+ * ContainsHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to
+ * contain X (that is, Semijoin(N, .*X.*))
+ */
+class ContainsHeader extends PartialEqualsHeader {
+    formSequence(state, tapeName) {
+        const anychars = stateMachine_1.Rep(stateMachine_1.Any(tapeName));
+        return stateMachine_1.Seq(anychars, state, anychars);
+    }
+}
+exports.ContainsHeader = ContainsHeader;
 class BinaryHeader extends Header {
     constructor(text, child1, child2) {
         super(text);
@@ -12453,19 +12554,6 @@ class BinaryHeader extends Header {
     }
     get hue() {
         return this.child1.hue;
-    }
-    static *parseAux(target, input) {
-        if (input.length == 0) {
-            return;
-        }
-        for (const [t1, rem1] of SUBEXPR(input)) {
-            if (rem1.length == 0 || rem1[0] != target) {
-                return;
-            }
-            for (const [t2, rem2] of NON_COMMENT_EXPR(rem1.slice(1))) {
-                yield [new SlashHeader(t1, t2), rem2];
-            }
-        }
     }
 }
 class SlashHeader extends BinaryHeader {
@@ -12494,13 +12582,17 @@ class SlashHeader extends BinaryHeader {
         compiledCell.state = childCell2.state;
         return compiledCell;
     }
-    static *parse(input) {
-        yield* super.parseAux("/", input);
-    }
 }
 exports.SlashHeader = SlashHeader;
+/**
+ * What follows is a grammar and parser for the mini-language inside headers, e.g.
+ * "text", "text/gloss", "startswith text", etc.
+ *
+ * It uses the mini-parser library in miniParser.ts to construct a recursive-descent
+ * parser for the grammar.
+ */
 const SYMBOL = ["(", ")", "%", "/", '@', ">", ":"];
-const RESERVED_HEADERS = ["embed", "maybe", "not", "drop", "equals", "startswith"];
+const RESERVED_HEADERS = ["embed", "maybe", "not", "drop", "equals", "startswith", "endswith", "contains"];
 const BINARY_OPS = {
     "or": stateMachine_1.Uni,
     "concat": stateMachine_1.Seq,
@@ -12508,69 +12600,34 @@ const BINARY_OPS = {
 };
 const RESERVED_OPS = [...Object.keys(BINARY_OPS), "table", "test", "testnot"];
 const RESERVED_WORDS = new Set([...SYMBOL, ...RESERVED_HEADERS, ...RESERVED_OPS]);
-const SUBEXPR = Alt([LiteralHeader.parse,
-    EmbedHeader.parse,
-    DropHeader.parse,
-    JoinHeader.parse,
-    Parens]);
-const NON_COMMENT_EXPR = Alt([MaybeHeader.parse,
-    NotHeader.parse,
-    SlashHeader.parse,
-    RenameHeader.parse,
-    EqualsHeader.parse,
-    StartsWithHeader.parse,
-    EndsWithHeader.parse,
-    SUBEXPR]);
-const EXPR = Alt([CommentHeader.parse,
-    NON_COMMENT_EXPR]);
-function Alt(children) {
-    return function* (input) {
-        for (const child of children) {
-            yield* child(input);
-        }
-    };
-}
-function* Parens(input) {
-    if (input.length == 0 || input[0] != "(") {
-        return;
-    }
-    for (const [t, rem] of NON_COMMENT_EXPR(input.slice(1))) {
-        if (rem.length == 0 || rem[0] != ")") {
-            return;
-        }
-        yield [t, rem.slice(1)];
-    }
-}
 const tokenizer = new RegExp("\\s+|(" +
     SYMBOL.map(s => "\\" + s).join("|") +
     ")");
 function tokenize(text) {
     return text.split(tokenizer).filter((s) => s !== undefined && s !== '');
 }
-/**
- * This is the main function that the rest of the libraries interact with;
- * they provide a string and (hopefully) get a parser in return.
- */
-function constructHeader(headerText, pos = util_1.DUMMY_POSITION) {
-    const pieces = tokenize(headerText);
-    var result = [...EXPR(pieces)];
-    // result is a list of [header, remaining_tokens] pairs.  
-    // we only want results where there are no remaining tokens.
-    result = result.filter(([t, r]) => r.length == 0);
-    if (result.length == 0) {
-        // if there are no results, the programmer made a syntax error
-        throw new Error(`Cannot parse header: ${headerText}`);
-    }
-    if (result.length > 1) {
-        // the grammar above should be unambiguous, so we shouldn't get 
-        // multiple results, but just in case...
-        throw new Error(`Ambiguous header, cannot parse: ${headerText}.` +
-            " This probably isn't your fault.");
-    }
-    result[0][0].position = pos;
-    return result[0][0];
+var HP_NON_COMMENT_EXPR = miniParser_1.MPDelay(() => miniParser_1.MPAlternation(HP_MAYBE, HP_SLASH, HP_RENAME, HP_EQUALS, HP_STARTSWITH, HP_ENDSWITH, HP_CONTAINS, HP_SUBEXPR));
+var HP_SUBEXPR = miniParser_1.MPDelay(() => miniParser_1.MPAlternation(HP_UNRESERVED, HP_EMBED, HP_DROP, HP_JOIN, HP_PARENS));
+const HP_COMMENT = miniParser_1.MPComment('%', (s) => new CommentHeader(s));
+const HP_UNRESERVED = miniParser_1.MPUnreserved(RESERVED_WORDS, (s) => new LiteralHeader(s));
+const HP_EMBED = miniParser_1.MPSequence(["embed"], () => new EmbedHeader("embed"));
+const HP_DROP = miniParser_1.MPSequence(["drop"], () => new DropHeader("drop"));
+const HP_JOIN = miniParser_1.MPSequence(["@", HP_SUBEXPR], (child) => new JoinHeader("@", child));
+const HP_MAYBE = miniParser_1.MPSequence(["maybe", HP_NON_COMMENT_EXPR], (child) => new MaybeHeader("maybe", child));
+const HP_SLASH = miniParser_1.MPSequence([HP_SUBEXPR, "/", HP_NON_COMMENT_EXPR], (child1, child2) => new SlashHeader(child1, child2));
+const HP_RENAME = miniParser_1.MPSequence([">", HP_UNRESERVED], (child) => new RenameHeader(">", child));
+const HP_PARENS = miniParser_1.MPSequence(["(", HP_NON_COMMENT_EXPR, ")"], (child) => child);
+const HP_EQUALS = miniParser_1.MPSequence(["equals", HP_NON_COMMENT_EXPR], (child) => new EqualsHeader("equals", child));
+const HP_STARTSWITH = miniParser_1.MPSequence(["startswith", HP_NON_COMMENT_EXPR], (child) => new StartsWithHeader("startswith", child));
+const HP_ENDSWITH = miniParser_1.MPSequence(["endswith", HP_NON_COMMENT_EXPR], (child) => new EndsWithHeader("endswith", child));
+const HP_CONTAINS = miniParser_1.MPSequence(["contains", HP_NON_COMMENT_EXPR], (child) => new ContainsHeader("contains", child));
+var HP_EXPR = miniParser_1.MPAlternation(HP_COMMENT, HP_NON_COMMENT_EXPR);
+function parseHeaderCell(text, pos = util_1.DUMMY_POSITION) {
+    const result = miniParser_1.miniParse(tokenize, HP_EXPR, text);
+    result.position = pos;
+    return result;
 }
-exports.constructHeader = constructHeader;
+exports.parseHeaderCell = parseHeaderCell;
 class CellComponent extends util_1.TabularComponent {
     constructor(text, position) {
         super(text, position);
@@ -12579,7 +12636,6 @@ class CellComponent extends util_1.TabularComponent {
         return `${this.text}:${this.position}`;
     }
 }
-exports.CellComponent = CellComponent;
 /**
  * A GrammarComponent is a component of our tabular syntax tree
  * that is associated with a grammar -- that is, a [State] of the
@@ -12740,7 +12796,6 @@ class EnclosureComponent extends GrammarComponent {
         return this.parent.sheet;
     }
 }
-exports.EnclosureComponent = EnclosureComponent;
 class AssignmentComponent extends EnclosureComponent {
     compile(namespace, devEnv) {
         // first compile the previous sibling.
@@ -12922,6 +12977,7 @@ class SheetComponent extends EnclosureComponent {
         return this;
     }
 }
+exports.SheetComponent = SheetComponent;
 /**
  * A ContentsComponent is a rectangular region of the grid consisting of a header row
  * and cells beneath each header.  For example,
@@ -13185,220 +13241,86 @@ function constructOp(cell, devEnv) {
     newEnclosure.mark(devEnv);
     return newEnclosure;
 }
-/**
- * A SheetParser turns a grid of cells into abstract syntax tree (AST) components, which in
- * turn are interpreted or compiled into a computer language.  This parser is agnostic as to
- * what exactly these components represent or how they'll be handled later, it's just a parser
- * for a particular class of tabular languages.
- */
-class Project {
-    constructor(devEnv = new devEnv_1.SimpleDevEnvironment()) {
-        this.devEnv = devEnv;
-        this.globalNamespace = new stateMachine_1.Namespace();
-        this.defaultSheetName = '';
-        this.sheets = {};
-    }
-    allSymbols() {
-        return this.globalNamespace.allSymbols();
-    }
-    getSymbol(symbolName) {
-        return this.globalNamespace.getSymbol(symbolName, new stateMachine_1.CounterStack(4));
-    }
-    getErrors() {
-        return this.devEnv.getErrorMessages().map(([sheet, row, col, msg, level]) => { return { sheet: sheet, row: row, col: col, msg: msg, level: level }; });
-    }
-    getTapeNames(symbolName) {
-        const startState = this.globalNamespace.getSymbol(symbolName);
-        if (startState == undefined) {
-            throw new Error(`Cannot find symbol ${symbolName}`);
+function parseCells(sheetName, cells, devEnv) {
+    // topEnclosure refers to whatever enclosure is currently on top 
+    // of the stack.  Since each enclosure knows what its parent is, we 
+    // don't explicitly have to maintain a stack structure, we can just
+    // use the .parent property of the current topEnclosure when we need
+    // to pop.  We start with the one big enclosure that encompasses the 
+    // whole sheet, with startCell (-1,-1)
+    var topEnclosure = new SheetComponent(sheetName);
+    // Now iterate through the cells, left-to-right top-to-bottom
+    for (var rowIndex = 0; rowIndex < cells.length; rowIndex++) {
+        const row = cells[rowIndex];
+        if (isLineEmpty(row)) {
+            continue;
         }
-        const results = [];
-        const stack = new stateMachine_1.CounterStack(2);
-        for (const tapeName of startState.getRelevantTapes(stack)) {
-            const header = constructHeader(tapeName, new util_1.CellPosition("?", -1, -1));
-            results.push([tapeName, header.getColor(0.2)]);
-        }
-        return results;
-    }
-    compile(symbolName, compileLevel = 1) {
-        const symbol = this.globalNamespace.getSymbol(symbolName);
-        if (symbol == undefined) {
-            throw new Error(`Cannot find symbol ${symbolName} to compile it`);
-        }
-        const allTapes = symbol.getAllTapes();
-        this.globalNamespace.compileSymbol(symbolName, allTapes, new stateMachine_1.CounterStack(4), compileLevel);
-    }
-    parse(symbolName, inputs = {}, maxResults = Infinity, randomize = false, maxRecursion = 4, maxChars = 1000) {
-        var startState = this.getSymbol(symbolName);
-        if (startState == undefined) {
-            throw new Error(`Project does not define a symbol named "${symbolName}"`);
-        }
-        const gen = startState.parse(inputs, randomize, maxRecursion, maxChars);
-        return util_1.iterTake(gen, maxResults);
-    }
-    /**
-     * A convenience method around parse(), for non-random results
-     */
-    generate(symbolName = "", restriction = {}, maxResults = Infinity, maxRecursion = 4, maxChars = 1000) {
-        return this.parse(symbolName, restriction, maxResults, false, maxRecursion, maxChars);
-    }
-    /**
-     * A convenience method around parse(), for random results
-     */
-    sample(symbolName = "", numSamples = 1, restriction = {}, maxTries = 1000, maxRecursion = 4, maxChars = 1000) {
-        var results = [];
-        var tries = 0;
-        while (results.length < numSamples && tries < maxTries) {
-            const result = [...this.parse(symbolName, restriction, 1, true, maxRecursion, maxChars)];
-            results = results.concat(result);
-            tries++;
-        }
-        return results;
-    }
-    addSheetAux(sheetName) {
-        if (sheetName in this.sheets) {
-            // already loaded it, don't have to do anything
-            return;
-        }
-        if (!this.devEnv.hasSource(sheetName)) {
-            // this is an error, but we don't freak out about it here.
-            // later on, we'll put errors on any cells for which we can't
-            // resolve the reference.
-            return;
-        }
-        const cells = this.devEnv.loadSource(sheetName);
-        // parse the cells into an abstract syntax tree
-        const sheetComponent = this.parseCells(sheetName, cells);
-        // put the raw cells into the sheetComponent, for interfaces
-        // that need them (like the sidebar of the GSuite add-on)
-        //const 
-        // Create a new namespace for this sheet and add it to the 
-        // global namespace
-        const sheetNamespace = new stateMachine_1.Namespace();
-        this.globalNamespace.addLocalNamespace(sheetName, sheetNamespace);
-        // Compile it
-        sheetComponent.compile(sheetNamespace, this.devEnv);
-        // Store it in .sheets
-        this.sheets[sheetName] = sheetComponent;
-        for (const requiredSheet of this.globalNamespace.requiredNamespaces) {
-            this.addSheetAux(requiredSheet);
-        }
-    }
-    addSheet(sheetName) {
-        // add this sheet and any sheets that it refers to
-        this.addSheetAux(sheetName);
-        this.globalNamespace.setDefaultNamespaceName(sheetName);
-        this.defaultSheetName = sheetName;
-    }
-    addSheetAsText(sheetName, text) {
-        this.devEnv.addSourceAsText(sheetName, text);
-        this.addSheet(sheetName);
-    }
-    runChecks() {
-        for (const sheetName of Object.keys(this.sheets)) {
-            const localNamespace = this.globalNamespace.getLocalNamespace(sheetName);
-            if (localNamespace == undefined) {
-                throw new Error(`Trying to find local namespace ${sheetName} but can't.`);
-            }
-            this.sheets[sheetName].runChecks(localNamespace, this.devEnv);
-        }
-    }
-    getSheet(sheetName) {
-        if (!(sheetName in this.sheets)) {
-            throw new Error(`Sheet ${sheetName} not found in project`);
-        }
-        return this.sheets[sheetName];
-    }
-    getDefaultSheet() {
-        if (this.defaultSheetName == '') {
-            throw new Error("Asking for the default sheet of a project to which no sheets have been added");
-        }
-        return this.getSheet(this.defaultSheetName);
-    }
-    parseCells(sheetName, cells) {
-        // topEnclosure refers to whatever enclosure is currently on top 
-        // of the stack.  Since each enclosure knows what its parent is, we 
-        // don't explicitly have to maintain a stack structure, we can just
-        // use the .parent property of the current topEnclosure when we need
-        // to pop.  We start with the one big enclosure that encompasses the 
-        // whole sheet, with startCell (-1,-1)
-        var topEnclosure = new SheetComponent(sheetName);
-        // Now iterate through the cells, left-to-right top-to-bottom
-        for (var rowIndex = 0; rowIndex < cells.length; rowIndex++) {
-            const row = cells[rowIndex];
-            if (isLineEmpty(row)) {
+        const rowIsComment = row[0].trim().startsWith('%%');
+        for (var colIndex = 0; colIndex < row.length; colIndex++) {
+            const cellText = row[colIndex].trim();
+            const position = new util_1.CellPosition(sheetName, rowIndex, colIndex);
+            const cell = new CellComponent(cellText, position);
+            if (rowIsComment) {
+                const comment = new CommentComponent(cell);
+                comment.mark(devEnv);
                 continue;
             }
-            const rowIsComment = row[0].trim().startsWith('%%');
-            for (var colIndex = 0; colIndex < row.length; colIndex++) {
-                const cellText = row[colIndex].trim();
-                const position = new util_1.CellPosition(sheetName, rowIndex, colIndex);
-                const cell = new CellComponent(cellText, position);
-                if (rowIsComment) {
-                    const comment = new CommentComponent(cell);
-                    comment.mark(this.devEnv);
-                    continue;
+            while (topEnclosure.isBrokenBy(cell)) {
+                // it breaks the previous enclosure; pop that off
+                if (topEnclosure.parent == undefined) {
+                    throw new Error("The enclosure stack is empty somehow; " +
+                        "something has gone very wrong.");
                 }
-                while (topEnclosure.isBrokenBy(cell)) {
-                    // it breaks the previous enclosure; pop that off
-                    if (topEnclosure.parent == undefined) {
-                        throw new Error("The enclosure stack is empty somehow; " +
-                            "something has gone very wrong.");
-                    }
-                    topEnclosure = topEnclosure.parent;
-                    topEnclosure.specRow = rowIndex;
-                }
-                if (topEnclosure instanceof ContentsComponent && topEnclosure.canAddContent(cell)) {
-                    // we're inside an enclosure, after the header row
-                    topEnclosure.addContent(cell, this.devEnv);
-                    continue;
-                }
-                if (cellText.length == 0) {
-                    // all of the following steps require there to be some explicit content
-                    continue;
-                }
-                // either we're still in the spec row, or there's no spec row yet
-                if (cellText.endsWith(":")) {
-                    // it's an operation, which starts a new enclosure
-                    const newEnclosure = constructOp(cell, this.devEnv);
-                    try {
-                        topEnclosure = topEnclosure.addChild(newEnclosure, this.devEnv);
-                    }
-                    catch (e) {
-                        cell.markError(this.devEnv, `Unexpected operator: ${cell.text}`, "This looks like an operator, but only a header can follow a header.");
-                    }
-                    continue;
-                }
-                // it's a header
+                topEnclosure = topEnclosure.parent;
+                topEnclosure.specRow = rowIndex;
+            }
+            if (topEnclosure instanceof ContentsComponent && topEnclosure.canAddContent(cell)) {
+                // we're inside an enclosure, after the header row
+                topEnclosure.addContent(cell, devEnv);
+                continue;
+            }
+            if (cellText.length == 0) {
+                // all of the following steps require there to be some explicit content
+                continue;
+            }
+            // either we're still in the spec row, or there's no spec row yet
+            if (cellText.endsWith(":")) {
+                // it's an operation, which starts a new enclosure
+                const newEnclosure = constructOp(cell, devEnv);
                 try {
-                    // parse the header into a Header object
-                    const header = constructHeader(cell.text, cell.position);
-                    // color it properly in the interface
-                    header.mark(this.devEnv);
-                    if (!(topEnclosure instanceof ContentsComponent)) {
-                        const newEnclosure = new ContentsComponent(header);
-                        topEnclosure = topEnclosure.addChild(newEnclosure, this.devEnv);
-                    }
-                    topEnclosure.addHeader(header, this.devEnv);
+                    topEnclosure = topEnclosure.addChild(newEnclosure, devEnv);
                 }
                 catch (e) {
-                    cell.markError(this.devEnv, `Invalid header: ${cell.text}`, `Attempted to parse "${cell.text}" as a header, but could not.`);
+                    cell.markError(devEnv, `Unexpected operator: ${cell.text}`, "This looks like an operator, but only a header can follow a header.");
                 }
+                continue;
+            }
+            // it's a header
+            try {
+                // parse the header into a Header object
+                const header = parseHeaderCell(cell.text, cell.position);
+                // color it properly in the interface
+                header.mark(devEnv);
+                if (!(topEnclosure instanceof ContentsComponent)) {
+                    const newEnclosure = new ContentsComponent(header);
+                    topEnclosure = topEnclosure.addChild(newEnclosure, devEnv);
+                }
+                topEnclosure.addHeader(header, devEnv);
+            }
+            catch (e) {
+                cell.markError(devEnv, `Invalid header: ${cell.text}`, `Attempted to parse "${cell.text}" as a header, but could not.`);
             }
         }
-        return topEnclosure.sheet;
     }
+    return topEnclosure.sheet;
 }
-exports.Project = Project;
-function createProject() {
-    return new Project();
-}
-exports.createProject = createProject;
+exports.parseCells = parseCells;
 
-},{"./cellParser":40,"./devEnv":41,"./stateMachine":44,"./util":46,"chai":2}],44:[function(require,module,exports){
+},{"./cellParser":40,"./miniParser":43,"./stateMachine":46,"./util":48,"chai":2}],46:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Maybe = exports.Empty = exports.Rep = exports.Any = exports.Rename = exports.Drop = exports.Proj = exports.Emb = exports.Not = exports.Semijoin = exports.Join = exports.Uni = exports.Seq = exports.Literalizer = exports.Lit = exports.NegationState = exports.RenameState = exports.DropState = exports.ProjectionState = exports.EmbedState = exports.RepetitionState = exports.JoinState = exports.UnionState = exports.OldUnionState = exports.ConcatState = exports.TrivialState = exports.LiteralState = exports.AnyCharState = exports.State = exports.Namespace = exports.CounterStack = void 0;
+exports.Maybe = exports.Empty = exports.Rep = exports.Any = exports.Rename = exports.Drop = exports.Proj = exports.Emb = exports.Not = exports.Semijoin = exports.Join = exports.Uni = exports.Seq = exports.Literalizer = exports.Lit = exports.NegationState = exports.RenameState = exports.DropState = exports.ProjectionState = exports.EmbedState = exports.RepetitionState = exports.JoinState = exports.UnionState = exports.ConcatState = exports.TrivialState = exports.LiteralState = exports.AnyCharState = exports.State = exports.Namespace = exports.CounterStack = void 0;
+const util_1 = require("./util");
 const tapes_1 = require("./tapes");
 /**
  * CounterStack
@@ -13471,6 +13393,7 @@ class Namespace {
         this.requiredNamespaces = new Set();
         this.defaultNamespaceName = "";
         this.defaultSymbolName = "";
+        this.registeredSymbolNames = [];
     }
     hasSymbol(name) {
         return name in this.symbols;
@@ -13494,11 +13417,9 @@ class Namespace {
             if (symbol != undefined) {
                 return [this, name]; // it's a local symbol
             }
-            if (this.defaultSymbolName != "") {
-                const ns = this.getLocalNamespace(name);
-                if (ns != undefined) {
-                    return [ns, ns.defaultSymbolName]; // it's a local namespace name with the default symbol
-                }
+            const ns = this.getLocalNamespace(name);
+            if (ns != undefined && ns.defaultSymbolName != "") {
+                return [ns, ns.defaultSymbolName]; // it's a local namespace name with the default symbol
             }
             if (this.defaultNamespaceName != "") {
                 const ns = this.getLocalNamespace(this.defaultNamespaceName);
@@ -13615,9 +13536,6 @@ class Namespace {
      */
     register(symbolName) {
         const pieces = symbolName.split(".");
-        if (pieces.length == 1) {
-            return;
-        }
         if (pieces.length > 2) {
             // At some point we may want to allow registration of
             // symbols with nested namespaces, but right now that's
@@ -13626,9 +13544,8 @@ class Namespace {
                 " because nested namespaces (e.g. X.Y.Z) are not currently supported.");
         }
         if (this.parent == undefined) {
-            // I don't think this can actually happen.
-            throw new Error("Something strange happened; trying to register " +
-                "a symbol name in the global namespace");
+            // this doesn't happen in real projects, but it can happen when unit testing.
+            return;
         }
         this.parent.requiredNamespaces.add(pieces[0]);
     }
@@ -13709,10 +13626,10 @@ class State {
      * @param symbolStack A [CounterStack] that keeps track of symbols, used for preventing infinite recursion.
      * @returns true if the state is an accepting state (i.e., constitutes a complete parse)
      */
-    accepting(symbolStack) {
+    accepting(random, symbolStack) {
         return false;
     }
-    setRandom(randomize, symbolStack) { }
+    resetRandom() { }
     /**
      * deterministic Query
      *
@@ -13737,9 +13654,9 @@ class State {
      *      * matched is whether we actually made a match or ignored it (for being on the wrong tape)
      *      * nextState is the state the matched transition leads to
      */
-    *dQuery(tape, target, symbolStack) {
+    *dQuery(tape, target, random, symbolStack) {
         var results = [];
-        var nextStates = [...this.ndQuery(tape, target, symbolStack)];
+        var nextStates = [...this.ndQuery(tape, target, random, symbolStack)];
         for (var [nextTape, nextBits, nextMatched, next] of nextStates) {
             if (nextTape.isTrivial || !nextMatched) {
                 results.push([nextTape, nextBits, nextMatched, next]);
@@ -13804,6 +13721,17 @@ class State {
         }
         yield* startState.generate(randomize, maxRecursion, maxChars);
     }
+    sample(restriction, numSamples = 1, maxTries = 1000, maxRecursion = 4, maxChars = 1000) {
+        var results = [];
+        var tries = 0;
+        while (results.length < numSamples && tries < maxTries) {
+            const gen = this.parse(restriction, true, maxRecursion, maxChars);
+            const firstResult = util_1.iterTake(gen, 1);
+            results = results.concat(firstResult);
+            tries++;
+        }
+        return results;
+    }
     /**
      * Performs a breadth-first traversal of the graph.  This will be the function that most
      * clients will be calling.
@@ -13825,16 +13753,18 @@ class State {
         var startState = this;
         const allTapes = this.getAllTapes();
         const initialOutput = new tapes_1.MultiTapeOutput();
-        this.setRandom(randomize, new CounterStack(1));
+        if (randomize) {
+            this.resetRandom(); // just in case there are leftover random children from
+        } // a previous call to generate()
         var stateQueue = [[initialOutput, startState]];
         var chars = 0;
         while (stateQueue.length > 0 && chars < maxChars) {
             var nextQueue = [];
             for (const [prevOutput, prevState] of stateQueue) {
-                if (prevState.accepting(symbolStack)) {
-                    yield* prevOutput.toStrings();
+                if (prevState.accepting(randomize, symbolStack)) {
+                    yield* prevOutput.toStrings(randomize);
                 }
-                for (const [tape, c, matched, newState] of prevState.dQuery(allTapes, tapes_1.ANY_CHAR, symbolStack)) {
+                for (const [tape, c, matched, newState] of prevState.dQuery(allTapes, tapes_1.ANY_CHAR, randomize, symbolStack)) {
                     if (!matched) {
                         throw new Error("Something went wrong, got all the way through without a match");
                     }
@@ -13891,11 +13821,11 @@ class CompiledState extends State {
         this.id = `compiled(${originalState.id}@${symbolStack.id})`;
         // your relevant states, and your accepting status, are inherited from the original
         this.relevantTapes = originalState.getRelevantTapes(symbolStack);
-        this.acceptingOnStart = originalState.accepting(symbolStack);
+        this.acceptingOnStart = originalState.accepting(false, symbolStack);
         // then run dQuery and remember the results
         const tapes = [allTapes, ...allTapes.tapes.values()];
         for (const tape of tapes) {
-            for (const [resTape, resToken, resMatched, resNext] of originalState.dQuery(tape, tape.any(), symbolStack)) {
+            for (const [resTape, resToken, resMatched, resNext] of originalState.dQuery(tape, tape.any(), false, symbolStack)) {
                 const compiledNext = resNext.compileAux(allTapes, symbolStack, compileLevel - 1);
                 this.addTransition(tape, resTape, resToken, resMatched, compiledNext);
             }
@@ -13908,7 +13838,7 @@ class CompiledState extends State {
         }
         this.transitionsByTape[queryTape.tapeName].push([resultTape, token, matched, next]);
     }
-    accepting(symbolStack) {
+    accepting(random, symbolStack) {
         return this.acceptingOnStart;
     }
     /**
@@ -13916,10 +13846,10 @@ class CompiledState extends State {
      * they might not be unique), because they themselves are the result of calling dQuery.
      * So it's not necessary to determinize them again; we just yield ndQuery.
      */
-    *dQuery(tape, target, symbolStack) {
-        yield* this.ndQuery(tape, target, symbolStack);
+    *dQuery(tape, target, random, symbolStack) {
+        yield* this.ndQuery(tape, target, random, symbolStack);
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, random, symbolStack) {
         const transitions = this.transitionsByTape[tape.tapeName];
         if (transitions == undefined) {
             // no transitions were recording for this tape, it must have failed for all possibilities
@@ -13956,13 +13886,13 @@ class TextState extends State {
         super();
         this.tapeName = tapeName;
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, random, symbolStack) {
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
             yield [tape, target, false, this];
             return;
         }
-        if (this.accepting(symbolStack)) {
+        if (this.accepting(random, symbolStack)) {
             return;
         }
         const bits = this.getToken(matchedTape);
@@ -14022,7 +13952,7 @@ class LiteralState extends TextState {
     get id() {
         return `${this.tapeName}:${this.text}[${this.index}]`;
     }
-    accepting(symbolStack) {
+    accepting(random, symbolStack) {
         return this.index >= this.text.length;
     }
     collectVocab(tapes, stateStack) {
@@ -14049,10 +13979,10 @@ class TrivialState extends State {
     get id() {
         return "0";
     }
-    accepting(symbolStack) {
+    accepting(random, symbolStack) {
         return true;
     }
-    *ndQuery(tape, target, symbolStack) { }
+    *ndQuery(tape, target, random, symbolStack) { }
 }
 exports.TrivialState = TrivialState;
 /**
@@ -14074,9 +14004,9 @@ class BinaryState extends State {
         this.child1.collectVocab(tapes, stateStack);
         this.child2.collectVocab(tapes, stateStack);
     }
-    setRandom(randomize, symbolStack) {
-        this.child1.setRandom(randomize, symbolStack);
-        this.child2.setRandom(randomize, symbolStack);
+    resetRandom() {
+        this.child1.resetRandom();
+        this.child2.resetRandom();
     }
     getRelevantTapes(stateStack) {
         if (this.relevantTapes == undefined) {
@@ -14089,8 +14019,8 @@ class BinaryState extends State {
     get id() {
         return `${this.constructor.name}(${this.child1.id},${this.child2.id})`;
     }
-    accepting(symbolStack) {
-        return this.child1.accepting(symbolStack) && this.child2.accepting(symbolStack);
+    accepting(random, symbolStack) {
+        return this.child1.accepting(random, symbolStack) && this.child2.accepting(random, symbolStack);
     }
 }
 /**
@@ -14124,7 +14054,7 @@ class ConcatState extends BinaryState {
         const newThis = new ConcatState(newChild1, newChild2, this.child1Done, this.relevantTapes);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, random, symbolStack) {
         if (!this.caresAbout(tape)) {
             // if neither child cares, just short circuit this rather than bother with all the rest
             yield [tape, target, false, this];
@@ -14134,20 +14064,20 @@ class ConcatState extends BinaryState {
             if (!this.child2.caresAbout(tape)) {
                 return;
             }
-            for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack)) {
+            for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, random, symbolStack)) {
                 const successor = new ConcatState(this.child1, c2next, true, this.relevantTapes);
                 yield [c2tape, c2text, c2matched, successor];
             }
             return;
         }
         var yieldedAlready = false;
-        if (this.child1.accepting(symbolStack)) {
+        if (this.child1.accepting(random, symbolStack)) {
             const successor = new ConcatState(this.child1, this.child2, true);
-            yield* successor.dQuery(tape, target, symbolStack);
+            yield* successor.dQuery(tape, target, random, symbolStack);
             yieldedAlready = true;
         }
         if (this.child1.caresAbout(tape)) {
-            for (const [c1tape, c1text, c1matched, c1next] of this.child1.dQuery(tape, target, symbolStack)) {
+            for (const [c1tape, c1text, c1matched, c1next] of this.child1.dQuery(tape, target, random, symbolStack)) {
                 const successor = new ConcatState(c1next, this.child2, false, this.relevantTapes);
                 yield [c1tape, c1text, c1matched, successor];
             }
@@ -14157,74 +14087,18 @@ class ConcatState extends BinaryState {
             return;
         }
         // child2 must care, otherwise one of the previous conditions would have triggered
-        for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, symbolStack)) {
+        for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, random, symbolStack)) {
             const successor = new ConcatState(this.child1, c2next, false, this.relevantTapes);
             yield [c2tape, c2text, c2matched, successor];
         }
     }
 }
 exports.ConcatState = ConcatState;
-/**
- * UnionStates are very simple, they just have a left child and a right child,
- * and upon querying they yield from the first and then yield from the second.
- *
- * So note that UnionStates are only around initally; they don't construct
- * successor UnionStates, their successors are just the successors of their children.
- */
-class OldUnionState extends BinaryState {
-    constructor() {
-        super(...arguments);
-        this.randomChild = undefined;
-    }
-    setRandom(randomize, symbolStack) {
-        if (!randomize) {
-            this.randomChild = undefined;
-            super.setRandom(false, symbolStack);
-            return;
-        }
-        const children = this.getChildren();
-        this.randomChild = children[Math.floor(Math.random() * children.length)];
-        super.setRandom(true, symbolStack);
-    }
-    accepting(symbolStack) {
-        if (this.randomChild != undefined) {
-            // we've been randomized
-            return this.randomChild.accepting(symbolStack);
-        }
-        return this.child1.accepting(symbolStack) || this.child2.accepting(symbolStack);
-    }
-    getChildren() {
-        var children = [];
-        if (this.child1 instanceof OldUnionState) {
-            children = children.concat(this.child1.getChildren());
-        }
-        else {
-            children.push(this.child1);
-        }
-        if (this.child2 instanceof OldUnionState) {
-            children = children.concat(this.child2.getChildren());
-        }
-        else {
-            children.push(this.child2);
-        }
-        return children;
-    }
-    *ndQuery(tape, target, symbolStack) {
-        if (this.randomChild != undefined) {
-            // we've been randomized
-            yield* this.randomChild.dQuery(tape, target, symbolStack);
-            return;
-        }
-        yield* this.child1.dQuery(tape, target, symbolStack);
-        yield* this.child2.dQuery(tape, target, symbolStack);
-    }
-}
-exports.OldUnionState = OldUnionState;
 class UnionState extends State {
     constructor(children) {
         super();
         this.children = children;
-        this.randomChild = undefined;
+        this.randomChild = null;
     }
     compileAux(allTapes, symbolStack, compileLevel) {
         if (compileLevel <= 0) {
@@ -14234,15 +14108,11 @@ class UnionState extends State {
         const newThis = new UnionState(newChildren);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
-    setRandom(randomize, symbolStack) {
+    resetRandom() {
+        this.randomChild = null;
         for (const child of this.children) {
-            child.setRandom(randomize, symbolStack);
+            child.resetRandom();
         }
-        if (!randomize) {
-            this.randomChild = undefined;
-            return;
-        }
-        this.randomChild = this.children[Math.floor(Math.random() * this.children.length)];
     }
     collectVocab(tapes, stateStack) {
         for (const child of this.children) {
@@ -14262,26 +14132,30 @@ class UnionState extends State {
     get id() {
         return `${this.constructor.name}(${this.children.map(c => c.id).join("|")})`;
     }
-    accepting(symbolStack) {
-        if (this.randomChild != undefined) {
-            // we've been randomized
-            return this.randomChild.accepting(symbolStack);
+    getRandomChild() {
+        if (this.randomChild == null) {
+            this.randomChild = this.children[Math.floor(Math.random() * this.children.length)];
+        }
+        return this.randomChild;
+    }
+    accepting(random, symbolStack) {
+        if (random) {
+            return this.getRandomChild().accepting(random, symbolStack);
         }
         for (const child of this.children) {
-            if (child.accepting(symbolStack)) {
+            if (child.accepting(random, symbolStack)) {
                 return true;
             }
         }
         return false;
     }
-    *ndQuery(tape, target, symbolStack) {
-        if (this.randomChild != undefined) {
-            // we've been randomized
-            yield* this.randomChild.dQuery(tape, target, symbolStack);
+    *ndQuery(tape, target, random, symbolStack) {
+        if (random) {
+            yield* this.getRandomChild().dQuery(tape, target, random, symbolStack);
             return;
         }
         for (const child of this.children) {
-            yield* child.dQuery(tape, target, symbolStack);
+            yield* child.dQuery(tape, target, random, symbolStack);
         }
     }
 }
@@ -14317,7 +14191,7 @@ function* iterPriorityUnion(iter1, iter2) {
 class SemijoinState extends BinaryState {
     /**
      * Because .successor() on both this and its descendent JoinState are
-     * so simple, we only have to write one semicompile() for both
+     * so simple, we only have to write one compileAux() for both
      */
     compileAux(allTapes, symbolStack, compileLevel) {
         if (compileLevel <= 0) {
@@ -14328,17 +14202,9 @@ class SemijoinState extends BinaryState {
         const newThis = this.successor(newChild1, newChild2);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
-    /**
-     * Unlike other binary states, Semijoin and Join only randomizes left children for sampling.
-     * The reason is that this state generally is used for restrictions (e.g. filtering a grammar
-     * so that only forms with "subj:1SG" are generated), and when that restriction is itself
-     * a Union we don't want to only choose one of those restrictions as random.
-     *
-     * For example, if someone is filtering an embedded symbol with "startswith text:vowel", we
-     * don't want to randomly choose a vowel and only accept that as a vowel!
-     */
-    setRandom(randomize, symbolStack) {
-        this.child1.setRandom(randomize, symbolStack);
+    resetRandom() {
+        this.child1.resetRandom();
+        this.child2.resetRandom();
     }
     /**
     * We factor out the logic into a separate function (one that doesn't specifically
@@ -14348,8 +14214,8 @@ class SemijoinState extends BinaryState {
     * children reversed.  So we let the caller decide which child is "c1" and which is "c2" for
     * the purposes of the semijoin.
     */
-    *ndQueryLeft(tape, target, c1, c2, symbolStack) {
-        for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, symbolStack)) {
+    *ndQueryLeft(tape, target, c1, c2, random, symbolStack) {
+        for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, random, symbolStack)) {
             if (c1tape.isTrivial) {
                 // c1 contained a ProjectionState that hides the original tape; move on without
                 // asking c2 to match anything.
@@ -14363,7 +14229,11 @@ class SemijoinState extends BinaryState {
                 yield [c1tape, c1target, c1matched, successor];
                 continue;
             } */
-            for (const [c2tape, c2target, c2matched, c2next] of c2.dQuery(c1tape, c1target, symbolStack)) {
+            /**
+             * Even if we're random, we don't ask the other side to randomize; this
+             * would end up having surprising effects.
+             */
+            for (const [c2tape, c2target, c2matched, c2next] of c2.dQuery(c1tape, c1target, false, symbolStack)) {
                 const successor = this.successor(c1next, c2next);
                 yield [c2tape, c2target, c1matched || c2matched, successor];
             }
@@ -14372,8 +14242,11 @@ class SemijoinState extends BinaryState {
     successor(newChild1, newChild2) {
         return new SemijoinState(newChild1, newChild2, this.relevantTapes);
     }
-    *ndQuery(tape, target, symbolStack) {
-        yield* this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack);
+    *ndQuery(tape, target, random, symbolStack) {
+        yield* this.ndQueryLeft(tape, target, this.child1, this.child2, random, symbolStack);
+    }
+    accepting(random, symbolStack) {
+        return this.child1.accepting(random, symbolStack) && this.child2.accepting(false, symbolStack);
     }
 }
 /**
@@ -14395,10 +14268,13 @@ class JoinState extends SemijoinState {
     successor(newChild1, newChild2) {
         return new JoinState(newChild1, newChild2, this.relevantTapes);
     }
-    *ndQuery(tape, target, symbolStack) {
-        const leftJoin = this.ndQueryLeft(tape, target, this.child1, this.child2, symbolStack);
-        const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, symbolStack);
-        if (this.child1.accepting(symbolStack)) {
+    accepting(random, symbolStack) {
+        return this.child1.accepting(random, symbolStack) && this.child2.accepting(random, symbolStack);
+    }
+    *ndQuery(tape, target, random, symbolStack) {
+        const leftJoin = this.ndQueryLeft(tape, target, this.child1, this.child2, random, symbolStack);
+        const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, random, symbolStack);
+        if (this.child1.accepting(random, symbolStack)) {
             yield* iterPriorityUnion(rightJoin, leftJoin);
             return;
         }
@@ -14419,8 +14295,8 @@ exports.JoinState = JoinState;
  * work, because the EmbedState's child can be that EmbedState itself.)
  */
 class UnaryState extends State {
-    setRandom(randomize, symbolStack) {
-        this.child.setRandom(randomize, symbolStack);
+    resetRandom() {
+        this.child.resetRandom();
     }
     get id() {
         return `${this.constructor.name}(${this.child.id})`;
@@ -14434,8 +14310,8 @@ class UnaryState extends State {
         }
         return this.relevantTapes;
     }
-    accepting(symbolStack) {
-        return this.child.accepting(symbolStack);
+    accepting(random, symbolStack) {
+        return this.child.accepting(random, symbolStack);
     }
 }
 /**
@@ -14460,6 +14336,7 @@ class RepetitionState extends UnaryState {
         this.maxReps = maxReps;
         this.index = index;
         this.initialChild = initialChild;
+        this.randomReps = null;
     }
     compileAux(allTapes, symbolStack, compileLevel) {
         if (compileLevel <= 0) {
@@ -14472,9 +14349,10 @@ class RepetitionState extends UnaryState {
     collectVocab(tapes, stateStack) {
         this.initialChild.collectVocab(tapes, stateStack);
     }
-    setRandom(randomize, symbolStack) {
-        this.child.setRandom(randomize, symbolStack);
-        this.initialChild.setRandom(randomize, symbolStack);
+    resetRandom() {
+        this.randomReps = null;
+        this.child.resetRandom();
+        this.initialChild.resetRandom();
     }
     getRelevantTapes(stateStack) {
         if (this.relevantTapes == undefined) {
@@ -14482,21 +14360,48 @@ class RepetitionState extends UnaryState {
         }
         return this.relevantTapes;
     }
-    accepting(symbolStack) {
+    accepting(random, symbolStack) {
+        if (random) {
+            return this.index == this.getRandomReps() &&
+                this.child.accepting(random, symbolStack);
+        }
         return this.index >= this.minReps &&
             this.index <= this.maxReps &&
-            this.child.accepting(symbolStack);
+            this.child.accepting(random, symbolStack);
     }
-    *ndQuery(tape, target, symbolStack) {
+    getRandomReps() {
+        if (this.randomReps == null) {
+            if (this.minReps > this.maxReps) {
+                this.randomReps = -1;
+                return this.randomReps;
+            }
+            if (this.minReps == this.maxReps) {
+                this.randomReps = this.minReps;
+                return this.randomReps;
+            }
+            const maxReps = (this.maxReps != Infinity) ? this.maxReps : 10;
+            const range = maxReps - this.minReps + 1;
+            this.randomReps = this.minReps + Math.floor(Math.random() * range);
+        }
+        return this.randomReps;
+    }
+    successor(nextChild, newIndex, random) {
+        if (random) {
+            const randomReps = this.getRandomReps();
+            return new RepetitionState(nextChild, randomReps, randomReps, newIndex, this.initialChild);
+        }
+        return new RepetitionState(nextChild, this.minReps, this.maxReps, newIndex, this.initialChild);
+    }
+    *ndQuery(tape, target, random, symbolStack) {
         if (this.index > this.maxReps) {
             return;
         }
         var yieldedAlready = false;
-        if (this.child.accepting(symbolStack)) {
+        if (this.child.accepting(random, symbolStack)) {
             // we just started, or the child is accepting, so our successor increases its index
             // and starts again with child.
-            const successor = new RepetitionState(this.initialChild, this.minReps, this.maxReps, this.index + 1, this.initialChild);
-            for (const result of successor.dQuery(tape, target, symbolStack)) {
+            const successor = this.successor(this.initialChild, this.index + 1, random);
+            for (const result of successor.dQuery(tape, target, random, symbolStack)) {
                 yield result;
                 yieldedAlready = true;
             }
@@ -14504,12 +14409,13 @@ class RepetitionState extends UnaryState {
         if (yieldedAlready) {
             return;
         }
-        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack)) {
+        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, random, symbolStack)) {
             if (!childMatched) { // child doesn't care, neither do we
                 yield [childTape, childText, false, this];
                 continue;
             }
-            yield [childTape, childText, childMatched, new RepetitionState(childNext, this.minReps, this.maxReps, this.index, this.initialChild)];
+            const successor = this.successor(childNext, this.index, random);
+            yield [childTape, childText, childMatched, successor];
         }
     }
 }
@@ -14551,13 +14457,6 @@ class EmbedState extends State {
         const newStack = symbolStack.add(this.symbolName);
         this.namespace.compileSymbol(this.symbolName, allTapes, newStack, compileLevel);
         return new CompiledState(this, allTapes, symbolStack, compileLevel);
-    }
-    setRandom(randomize, symbolStack) {
-        if (symbolStack.exceedsMax(this.symbolName)) {
-            return;
-        }
-        const newStack = symbolStack.add(this.symbolName);
-        this.getChild(newStack).setRandom(randomize, newStack);
     }
     collectVocab(tapes, stateStack) {
         if (stateStack.indexOf(this.symbolName) != -1) {
@@ -14605,20 +14504,23 @@ class EmbedState extends State {
         }
         return this._child;
     }
-    accepting(symbolStack) {
+    accepting(random, symbolStack) {
         if (symbolStack.exceedsMax(this.symbolName)) {
             return false;
         }
         const newStack = symbolStack.add(this.symbolName);
-        return this.getChild(newStack).accepting(newStack);
+        return this.getChild(newStack).accepting(random, newStack);
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, random, symbolStack) {
         if (symbolStack.exceedsMax(this.symbolName)) {
             return;
         }
         symbolStack = symbolStack.add(this.symbolName);
         const child = this.getChild(symbolStack);
-        for (const [childchildTape, childTarget, childMatched, childNext] of child.dQuery(tape, target, symbolStack)) {
+        if (random) {
+            child.resetRandom();
+        }
+        for (const [childchildTape, childTarget, childMatched, childNext] of child.dQuery(tape, target, random, symbolStack)) {
             const successor = new EmbedState(this.symbolName, this.namespace, childNext, this.relevantTapes);
             yield [childchildTape, childTarget, childMatched, successor];
         }
@@ -14655,13 +14557,13 @@ class ProjectionState extends UnaryState {
         }
         return this.relevantTapes;
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, random, symbolStack) {
         if (tape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(tape.tapeName)) {
             // if it's not a tape we care about, go nowhere
             yield [tape, target, false, this];
             return;
         }
-        for (var [childTape, childTarget, childMatch, childNext] of this.child.dQuery(tape, target, symbolStack)) {
+        for (var [childTape, childTarget, childMatch, childNext] of this.child.dQuery(tape, target, random, symbolStack)) {
             if (childTape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(childTape.tapeName)) {
                 // even if our child yields content on a restricted tape, 
                 // we don't let our own parent know about it
@@ -14696,13 +14598,13 @@ class DropState extends UnaryState {
         const newThis = new DropState(newChild, this.droppedTape);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, random, symbolStack) {
         if (tape.tapeName == this.droppedTape) {
             // don't pass it on, just stay here
             yield [tape, target, false, this];
             return;
         }
-        for (var [childTape, childTarget, childMatch, childNext] of this.child.dQuery(tape, target, symbolStack)) {
+        for (var [childTape, childTarget, childMatch, childNext] of this.child.dQuery(tape, target, random, symbolStack)) {
             if (childTape.tapeName == this.droppedTape) {
                 // even if our child yields content on a restricted tape, 
                 // we don't let our own parent know about it
@@ -14745,13 +14647,13 @@ class RenameState extends UnaryState {
         }
         return this.relevantTapes;
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, random, symbolStack) {
         var rememberToUnwrapTape = false;
         if (tape.tapeName == this.toTape || tape.tapeName == "__ANY_TAPE__") {
             tape = new tapes_1.RenamedTape(tape, this.fromTape, this.toTape);
             rememberToUnwrapTape = true;
         }
-        for (var [childTape, childTarget, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack)) {
+        for (var [childTape, childTarget, childMatched, childNext] of this.child.dQuery(tape, target, random, symbolStack)) {
             if (rememberToUnwrapTape && childTape instanceof tapes_1.RenamedTape) {
                 childTape = childTape.child;
             }
@@ -14844,16 +14746,19 @@ class NegationState extends State {
         }
         return this.relevantTapes;
     }
-    accepting(symbolStack) {
+    accepting(random, symbolStack) {
         if (this.child == undefined) {
             return true;
         }
-        return !this.child.accepting(symbolStack);
+        return !this.child.accepting(random, symbolStack);
     }
-    *ndQuery(tape, target, symbolStack) {
+    *ndQuery(tape, target, random, symbolStack) {
+        if (random) {
+            console.log("Warning, querying a negation randomly");
+        }
         var remainderTapeName = [...this.getRelevantTapes(symbolStack)][0];
         var remainderTape = tape.matchTape(remainderTapeName);
-        if (remainderTape == undefined) {
+        if (remainderTape == undefined) { // we don't care about this
             yield [tape, target, false, this];
             return;
         }
@@ -14862,7 +14767,7 @@ class NegationState extends State {
             return;
         }
         var remainder = new tapes_1.Token(target.bits.clone());
-        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, symbolStack)) {
+        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, random, symbolStack)) {
             remainder = remainder.andNot(childText);
             yield [childTape, childText, childMatched, new NegationState(childNext, this.relevantTapes)];
         }
@@ -14956,7 +14861,7 @@ function Maybe(child) {
 }
 exports.Maybe = Maybe;
 
-},{"./tapes":45}],45:[function(require,module,exports){
+},{"./tapes":47,"./util":48}],47:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RenamedTape = exports.TapeCollection = exports.StringTape = exports.NO_CHAR = exports.ANY_CHAR = exports.Token = exports.Tape = exports.MultiTapeOutput = void 0;
@@ -14998,7 +14903,7 @@ class SingleTapeOutput {
         }
         return new SingleTapeOutput(tape, token, this);
     }
-    *getStrings() {
+    *getStrings(random = false) {
         var results = [""];
         var currentTape = this;
         // step backward through the current object and its prevs, building the output strings from
@@ -15006,7 +14911,12 @@ class SingleTapeOutput {
         // the stack when stringifying long outputs.)
         while (currentTape != undefined) {
             const newResults = [];
-            for (const c of currentTape.tape.fromBits(currentTape.tape.tapeName, currentTape.token.bits)) {
+            let possibleChars = currentTape.tape.fromBits(currentTape.tape.tapeName, currentTape.token.bits);
+            if (random) {
+                // if we're randomizing, just choose one possible char
+                possibleChars = [possibleChars[Math.floor(Math.random() * possibleChars.length)]];
+            }
+            for (const c of possibleChars) {
                 for (const existingResult of results) {
                     newResults.push(c + existingResult);
                 }
@@ -15040,11 +14950,11 @@ class MultiTapeOutput {
         result.singleTapeOutputs.set(tape.tapeName, newTape);
         return result;
     }
-    toStrings() {
+    toStrings(random = false) {
         var results = [{}];
         for (const [tapeName, tape] of this.singleTapeOutputs) {
             var newResults = [];
-            for (const str of tape.getStrings()) {
+            for (const str of tape.getStrings(random)) {
                 for (const result of results) {
                     const newResult = Object.assign({}, result);
                     newResult[tapeName] = str;
@@ -15396,7 +15306,7 @@ class RenamedTape extends Tape {
 }
 exports.RenamedTape = RenamedTape;
 
-},{"bitset":39}],46:[function(require,module,exports){
+},{"bitset":39}],48:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setChain = exports.setIntersection = exports.RGBtoString = exports.HSVtoRGB = exports.iterTake = exports.shuffleArray = exports.meanAngleDeg = exports.DUMMY_POSITION = exports.TabularComponent = exports.CellPosition = void 0;

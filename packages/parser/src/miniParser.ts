@@ -79,10 +79,7 @@ export function miniParse<T>(
         throw new Error(`Cannot parse: ${text}`);
     }
     if (result.length > 1) {
-         // the grammar above should be unambiguous, so we shouldn't get 
-         // multiple results, but just in case...
-        throw new Error(`Ambiguous, cannot parse: ${text}.` +
-                " This probably isn't your fault.");
+        throw new Error(`Ambiguous, cannot uniquely parse: ${text}.`);
     }
     return result[0][0];
 }

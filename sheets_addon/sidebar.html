@@ -19,7 +19,8 @@
                 return `${sheet}!${letterFromNumber(col)}${(row+1)}`;
             }
 
-            var preferredSymbol = "main"; // the symbol that the user selected is stored even
+            var previousSheetName = "";
+            var previousSymbol = ""; // the symbol that the user selected is stored even
                                           // between grammar reloads, so that they're not surprised
                                           // when they reload, start sampling again, and get a different
                                           // symbol than just a moment before.
@@ -120,6 +121,15 @@
 
                 const currentSheetName = responseFromGSuite["payload"]["startSheet"];
                 const cellsBySheet = responseFromGSuite["payload"]["sheets"];
+
+                // if there's not yet been a previous symbol chosen, or if the user
+                // is syncing a different sheet from before, reset the previousSymbol
+                // to the sheet name.
+                if (previousSymbol == "" || currentSheetName != previousSheetName) {
+                    previousSymbol = currentSheetName;
+                }
+
+                previousSheetName = currentSheetName;
                 
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
                 project = new gramble.Project(devEnv);
@@ -195,13 +205,14 @@
 
                     var optionText = option;
                     const pieces = option.split(".");
-                    if (pieces[0] == currentSheetName) {
-                        optionText = pieces.slice(1).join(".");
-                    }
+                    if (pieces[pieces.length-1] == "__MAIN__") {
+                        optionText = pieces.slice(0, pieces.length-1).join(".");
+                    } 
                     el.textContent = optionText;
                     el.value = option;
                     select.appendChild(el);
-                    if (select.value.toLowerCase() != preferredSymbol.toLowerCase()) {
+                    if (optionText.toLowerCase() == previousSymbol.toLowerCase() ||
+                        el.value.toLowerCase() == previousSymbol.toLowerCase()) {
                         el.selected = true;
                     }
 
@@ -337,7 +348,7 @@
                 
                 var startTime = Date.now();
                 //project.compile(symbolName, 2);
-                console.log(`Compiled project, elapsed time = ${Date.now()-startTime}ms`);
+                //console.log(`Compiled project, elapsed time = ${Date.now()-startTime}ms`);
 
                 // generate the results
                 var startTime = Date.now();
@@ -380,7 +391,7 @@
 
                     const selector = document.getElementById("selectSymbol")
                     selector.onchange = function(ev) {
-                        preferredSymbol = selector.value;
+                        previousSymbol = selector.value;
                         removeElementsByClass("tapeInputTr");
                         reloadInputs();                     
                         var resultsTable  = document.getElementById("resultsTable"); 

@@ -8,10 +8,14 @@ import { SheetComponent, parseCells, parseHeaderCell } from "./sheetParser";
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
 /**
- * A SheetParser turns a grid of cells into abstract syntax tree (AST) components, which in
- * turn are interpreted or compiled into a computer language.  This parser is agnostic as to
- * what exactly these components represent or how they'll be handled later, it's just a parser
- * for a particular class of tabular languages.
+ * A Project does two things:
+ * 
+ *   (1) Holds multiple SheetComponents (worksheets parsed into a syntax tree and associated 
+ *       with States) and a global namespace.
+ * 
+ *   (2) Acts as a Facade (in the GoF sense) for the client to interact with, so that they
+ *       don't necessarily have to understand the ways DevEnvironments, SheetComponents, Namespaces,
+ *       and States are related and interact.
  */
 export class Project {
 
@@ -59,7 +63,7 @@ export class Project {
         this.globalNamespace.compileSymbol(symbolName, allTapes, new CounterStack(4), compileLevel);
     }
 
-    public generate(symbolName: string,
+    public generate(symbolName: string = "",
             inputs: StringDict = {},
             maxResults: number = Infinity,
             maxRecursion: number = 4, 
@@ -97,7 +101,14 @@ export class Project {
         }
 
         if (!this.devEnv.hasSource(sheetName)) {
-            // this is an error, but we don't freak out about it here.
+            // this might or might not be an error.  most of the time, it
+            // just means that an embed in some sheet referred to a symbol
+            // of this name, and we're checking to see if it refers to a 
+            // sheet.  Even if we can't find that sheet, we're probably good,
+            // it's probably just a symbol name.
+            //
+            // if this is indeed a programmer error, don't freak out about it here.
+            // it's too early to know what and what isn't an error.
             // later on, we'll put errors on any cells for which we can't
             // resolve the reference.
             return;
@@ -110,7 +121,6 @@ export class Project {
 
         // put the raw cells into the sheetComponent, for interfaces
         // that need them (like the sidebar of the GSuite add-on)
-        //const 
 
         // Create a new namespace for this sheet and add it to the 
         // global namespace

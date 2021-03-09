@@ -64,7 +64,7 @@ class Styler {
 
     addCell(sheet, row, col) {
         //const a1Notation = `${sheet}!${letterFromNumber(col)}${(row+1)}`;
-        const a1Notation = `${letterFromNumber(col)}${(row+1)}`;
+        const a1Notation = getA1Notation("", row, col);
         this.cells.push(a1Notation);
     }
 
@@ -193,6 +193,11 @@ class GoogleSheetsDevEnvironment {
     }
 
     markComment(sheet, row, col) {
+
+        if (sheet != this.currentSheetName) {
+            return;
+        }
+        
         var colorStyler = this.fgColorStylers.get(COMMENT_FONT_COLOR);
         if (colorStyler == undefined) {
             colorStyler = new FontColorStyler(COMMENT_FONT_COLOR);
