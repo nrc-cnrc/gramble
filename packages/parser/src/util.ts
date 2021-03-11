@@ -78,6 +78,11 @@ export abstract class TabularComponent {
         devEnv.markError(this.position.sheet, this.position.row, this.position.col,
         shortMsg, msg, "warning");
     }
+
+    public markInfo(devEnv: DevEnvironment, shortMsg: string, msg: string): void {
+        devEnv.markError(this.position.sheet, this.position.row, this.position.col,
+        shortMsg, msg, "info");
+    }
 }
 
 

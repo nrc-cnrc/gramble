@@ -312,47 +312,64 @@
                 blankCell.classList.add("resultsBlank");
             }
 
-
+            function resultsToTable(labels, entries) {
+                return [
+                    labels,
+                    ...entries.map(row => labels.map(label => row[label]))
+                ];
+            }
             
-            function resultsToCSV(labels, items) {
-                const replacer = (key, value) => value === null ? '' : value // specify how you want to handle null values here
+            function resultsToCSV(labels, entries) {
+                const replacer = (key, value) => value === null ? '' : value 
                 return [
                     labels.join(','), // header row first
-                    ...items.map(row => labels.map(label => JSON.stringify(row[label], replacer)).join(','))
-                ].join('\r\n');
+                    ...entries.map(row => labels.map(label => JSON.stringify(row[label], replacer)).join(','))
+                ].join('\n');
             }
 
-            function downloadResults() {
-
-                // determine what symbol to generate from
-                const symbolSelect = document.getElementById("selectSymbol"); 
-                const symbolName = symbolSelect.value;
-
-                if (symbolName == "" || symbolName == undefined) {
-                    return;
-                }
-
-                // determine what tape names are relevant to this symbol
-                const tapeInfo = project.getTapeNames(symbolName);
-                const tapeNames = tapeInfo.map(([k, v]) => k);
-
-                CURRENT_INPUTS = {};
+            function getCurrentInputs() {
+                const results = {};
                 for (const [tapeName, color] of CURRENT_TAPES) {
                     const input = document.getElementById(`input_${tapeName}`);
                     const value = input.value.trim();
                     if (value.length == 0) {
                         continue;
                     }
-                    CURRENT_INPUTS[tapeName] = value;
+                    results[tapeName] = value;
                 }
+                return results;
+            }
+
+            function getCurrentSymbolName() {
+
+                // determine what symbol to generate from
+                const symbolSelect = document.getElementById("selectSymbol"); 
+                var symbolName = symbolSelect.value;
+
+                if (symbolName == "" || symbolName == undefined) {
+                    return;
+                }
+
+                if (symbolName.endsWith(".__MAIN__")) {
+                    symbolName = symbolName.substr(0, symbolName.length-9);
+                }
+
+                return symbolName;
+
+            }
+
+            function downloadResults() {
+
+                const symbolName = getCurrentSymbolName();
+
+                // determine what tape names are relevant to this symbol
+                const tapeInfo = project.getTapeNames(symbolName);
+                const tapeNames = tapeInfo.map(([k, v]) => k);
+
+                const inputs = getCurrentInputs();
                 
                 var startTime = Date.now();
-                //project.compile(symbolName, 2);
-                //console.log(`Compiled project, elapsed time = ${Date.now()-startTime}ms`);
-
-                // generate the results
-                var startTime = Date.now();
-                const results = project.generate(symbolName, CURRENT_INPUTS);
+                const results = project.generate(symbolName, inputs);
                 console.log(`Generated results, elapsed time = ${Date.now()-startTime}ms`);
                 
                 // determine what format to output in
@@ -362,10 +379,10 @@
                 var filename, text;
                 // convert the results to the appropriate format
                 if (downloadFormat == "json") {
-                    filename = `${symbolName}.json`;
+                    filename = `${symbolName}_output.json`;
                     text = JSON.stringify(results, null, 2);
                 } else if (downloadFormat == "csv") {
-                    filename = `${symbolName}.csv`;
+                    filename = `${symbolName}_output.csv`;
                     text = resultsToCSV(tapeNames, results);
                 }
 
@@ -378,6 +395,45 @@
                 element.click();
                 document.body.removeChild(element);
                 return false;
+            }
+
+            async function generateToNewSheet() {
+                
+                const symbolName = getCurrentSymbolName();
+
+                const inputs = getCurrentInputs();
+                
+                var startTime = Date.now();
+                const results = project.generate(symbolName, inputs);
+                console.log(`Generated results, elapsed time = ${Date.now()-startTime}ms`);
+                
+                // determine what tape names are relevant to this symbol
+                const tapeInfo = project.getTapeNames(symbolName);
+                const tapeNames = tapeInfo.map(([k, v]) => k);
+
+                const resultsTable = resultsToTable(tapeNames, results)
+                const sheetName = symbolName + "_generated";
+                await scriptRunPromise().makeNewSheet(symbolName, sheetName, resultsTable);
+            }
+
+            
+            async function sampleToNewSheet() {
+                
+                const symbolName = getCurrentSymbolName();
+
+                const inputs = getCurrentInputs();
+                
+                var startTime = Date.now();
+                const results = project.sample(symbolName, 50, inputs);
+                console.log(`Generated results, elapsed time = ${Date.now()-startTime}ms`);
+                
+                // determine what tape names are relevant to this symbol
+                const tapeInfo = project.getTapeNames(symbolName);
+                const tapeNames = tapeInfo.map(([k, v]) => k);
+
+                const resultsTable = resultsToTable(tapeNames, results)
+                const sheetName = symbolName + "_sampled";
+                await scriptRunPromise().makeNewSheet(symbolName, sheetName, resultsTable);
             }
 
             window.onload = async function() {
@@ -411,7 +467,7 @@
 
         <table id="controlTable">
             <!-- <td colspan="2"><button id="highlightButton">Highlight</button></td></tr>-->
-            <tr><td colspan="2"><button id="reloadButton">Sync and validate</button></td></tr>
+            <tr><td colspan="2"><button id="reloadButton" class="sidebarButton">Sync &amp; validate</button></td></tr>
             <tr id="errorTr"><td colspan="2" id="errorArea"> </td></tr>
         </table>
         <table id="inputTable">
@@ -419,7 +475,9 @@
         </table>
 
         <table id="sampleTable">
-            <tr><td><button class="downloadButton" onclick="downloadResults()">Download results</button>
+            <tr>
+                <td>
+                    <button id="downloadButton" class="sidebarButton" onclick="downloadResults()">Generate &amp; download</button>
                 </td>
                 <td>
                     <select id="downloadFormatSelect">
@@ -428,7 +486,17 @@
                     </select>
                 </td>
             </tr>
-            <tr><td colspan="2"><button id="sampleButton">Sample</button></td></tr>
+            <tr>
+                <td colspan="2">
+                    <button id="generateToNewSheetButton" class="sidebarButton" onclick="generateToNewSheet()">Generate to new sheet</button>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <button id="sampleToNewSheetButton" class="sidebarButton" onclick="sampleToNewSheet()">Sample to new sheet</button>
+                </td>
+            </tr>
+            <tr><td colspan="2"><button id="sampleButton" class="sidebarButton">Sample here</button></td></tr>
         </table>
 
         <p id="loadingP">Loading...</p>

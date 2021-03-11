@@ -27,9 +27,9 @@ input {
 } 
 
 
-#reloadButton, #sampleButton, .downloadButton {
+.sidebarButton {
     width: 100%;
-    border: 2px solid #555555;
+    border: 1px solid #777;
     background-color: #ffffff;
     color: #333333;
     box-shadow: none;
@@ -40,7 +40,7 @@ input {
     border-radius: 3px;
     text-align: center;
     font-weight: bold;
-    box-shadow: 0 2px #999;
+    box-shadow: 1px 1px 3px #999;
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -52,13 +52,13 @@ input {
     -webkit-tap-highlight-color: transparent;
 }
 
-#reloadButton:hover, #sampleButton:hover {
-    background-color: #dddddd;
+.sidebarButton:hover {
+    background-color: #e6e6e6;
 }
 
-#reloadButton:active, #sampleButton:active {
-    background-color: #dddddd;
-    box-shadow: 0 1px #999;
+.sidebarButton:active {
+    background-color: #e6e6e6;
+    box-shadow: 0px 0px 3px #999;
     transform: translateY(1px);
 }
 
@@ -74,7 +74,7 @@ input {
     border-radius: 3px;
     text-align: left;
     font-weight: bold;
-    box-shadow: 0 2px #633;  
+    box-shadow: 1px 1px 3px #633;
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -92,12 +92,12 @@ input {
 
 .errorButton:active {
     background-color: #DD7777;
-    box-shadow: 0 1px #633;
+    box-shadow: 0px 0px 3px #633;
     transform: translateY(1px);
 }
 
 #selectSymbol, #downloadFormatSelect {
-    border: 2px solid #555555;
+    border: 1px solid #777;
     color: #333333;
     box-shadow: none;
     width: 100%;
@@ -163,7 +163,7 @@ input {
     font-weight: bold;
     text-align: center;
     margin: 0 auto;
-    padding: 4px 5px;
+    padding: 2px 5px;
     display: none;
 }
 
@@ -185,8 +185,8 @@ input {
 
 .resultsTr {
     width: 100%;
-    border-bottom: 1px solid #333;
-    border-top: 1px solid #333;
+    border-bottom: 1px solid #666;
+    border-top: 1px solid #666;
 }
 
 .resultsKey {   

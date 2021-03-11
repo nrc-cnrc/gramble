@@ -76,7 +76,7 @@ export class SimpleDevEnvironment implements DevEnvironment {
         var result = 0;
         for (const error of Object.values(this.errors)) {
             for (const [sheet, row, col, msg, lev] of error) {
-                if (level == "any" || lev == level) {
+                if (level == "any" && lev != "info" || lev == level) {
                     result++;
                 }
             }
