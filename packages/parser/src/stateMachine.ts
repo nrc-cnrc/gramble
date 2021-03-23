@@ -585,16 +585,24 @@ export abstract class State {
                     maxChars: number = 1000): Gen<StringDict> {
         
         const symbolStack = new CounterStack(maxRecursion);
-        var startState: State = this;
         const allTapes = this.getAllTapes();
-
-        const initialOutput: MultiTapeOutput = new MultiTapeOutput();
 
         if (randomize) {
             this.resetRandom(); // just in case there are leftover random children from
         }                       // a previous call to generate()
 
-        var stateQueue: [MultiTapeOutput, State][] = [[initialOutput, startState]];
+        if (allTapes.isTrivial) {
+            // there aren't any literal characters anywhere in the grammar, so there's no vocab.  
+            // the only possible output is the empty grammar.
+            if (this.accepting(randomize, symbolStack)) {
+                yield {};
+            }
+            return;
+        }
+
+        const initialOutput: MultiTapeOutput = new MultiTapeOutput();
+
+        var stateQueue: [MultiTapeOutput, State][] = [[initialOutput, this]];
         var chars = 0;
 
         while (stateQueue.length > 0 && chars < maxChars) {
@@ -876,6 +884,12 @@ export class LiteralState extends TextState {
         return new LiteralState(this.tapeName, this.text, this.index+1);
     }
 
+    public getText(): string {
+        // Return the remaining text for this LiteralState.
+        return this.text.slice(this.index);
+    }
+
+
 }
 
 /**
@@ -1024,7 +1038,7 @@ export class ConcatState extends BinaryState {
         var yieldedAlready = false;
 
         if (this.child1.accepting(random, symbolStack)) {
-            const successor = new ConcatState(this.child1, this.child2, true);
+            const successor = new ConcatState(this.child1, this.child2, true, this.relevantTapes);
             yield* successor.dQuery(tape, target, random, symbolStack);
             yieldedAlready = true;
         }
@@ -1213,10 +1227,11 @@ class SemijoinState extends BinaryState {
         c2: State,                  
         random: boolean,
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
-                              
+                            
+
         for (const [c1tape, c1target, c1matched, c1next] of 
                 c1.dQuery(tape, target, random, symbolStack)) {
-            
+
             if (c1tape.isTrivial) { 
                 // c1 contained a ProjectionState that hides the original tape; move on without
                 // asking c2 to match anything.
@@ -1224,6 +1239,7 @@ class SemijoinState extends BinaryState {
                 yield [c1tape, c1target, c1matched, successor];
                 continue;
             }
+
 
             /*
             if (!c2.caresAbout(c1tape)) {
@@ -1947,6 +1963,239 @@ export class NegationState extends State {
     }
 }
 
+export class MatchState extends UnaryState {
+
+    constructor(
+        public child: State,
+        public tapes: Set<string>,
+        public buffers: {[key: string]: State} = {}
+    ) {
+        super();
+    }
+
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set(this.tapes);
+        }
+        return this.relevantTapes;
+    }
+
+    public accepting(random: boolean, symbolStack: CounterStack): boolean {
+        for (const buffer of Object.values(this.buffers)) {
+            if (!buffer.accepting(random, symbolStack)) {
+                return false;
+            }
+        }
+        return this.child.accepting(random, symbolStack);
+    }
+
+    public *ndQuery(
+        tape: Tape, 
+        target: Token,
+        random: boolean,
+        symbolStack: CounterStack
+    ): Gen<[Tape, Token, boolean, State]> {
+
+        for (const [c1tape, c1target, c1matched, c1next] of 
+                    this.child.dQuery(tape, target, random, symbolStack)) {
+            
+            // if c1tape is not one we care about, then yield right away
+            if (!this.caresAbout(c1tape)) {
+                yield [c1tape, c1target, c1matched, new MatchState(c1next, this.tapes, this.buffers)];
+                return;
+            }
+        
+            if (!c1matched) { 
+                yield [c1tape, c1target, c1matched, new MatchState(c1next, this.tapes, this.buffers)];
+                return;
+            }
+            
+            // We need to match each character separately.
+            for (const c of c1tape.fromToken(c1tape.tapeName, c1target)) {
+
+                // cTarget: Token = c1tape.tokenize(c1tape.tapeName, c)[0]
+                const cTarget: Token = c1tape.toToken(c1tape.tapeName, c);
+                
+                // STEP A: Are we matching something already buffered?
+                const c1buffer = this.buffers[c1tape.tapeName]
+                var c1bufMatched = false;
+                if (c1buffer instanceof LiteralState) {
+
+                    // that means we already matched a character on a different
+                    // tape previously and now need to make sure it also matches
+                    // this character on this tape
+                    for (const [bufTape, bufTarget, bufMatched, bufNext] of 
+                            c1buffer.dQuery(c1tape, cTarget, random, symbolStack)) {
+                        if (bufMatched) {
+                            c1bufMatched = true;
+                        }
+                    }
+                }
+
+                // STEP B: If not, constrain my successors to match this on other tapes
+                const newBuffers: {[key: string]: State} = {};
+                //Object.assign(newBuffers, this.buffers);
+                if (!c1bufMatched) {
+                    for (const tapeName of this.tapes) {
+                        const buffer = this.buffers[tapeName];
+                        if (buffer != undefined && tapeName == c1tape.tapeName) {
+                            // we're going to match it in a moment, don't need to match
+                            // it again!
+                            newBuffers[tapeName] = buffer;
+                            continue;
+                        }
+                        var prevText: string = "";
+                        if (buffer instanceof LiteralState) {
+                            // that means we already found stuff we needed to match,
+                            // so we add to that
+                            prevText = buffer.getText();
+                        }
+                        newBuffers[tapeName] = new LiteralState(tapeName, prevText + c);
+                    }
+                }
+                
+                // STEP C: Match the buffer
+                if (c1buffer instanceof LiteralState) {
+                    // that means we already matched a character on a different tape
+                    // previously and now need to make sure it also matches on this
+                    // tape
+                    for (const [bufTape, bufTarget, bufMatched, bufNext] of 
+                            c1buffer.dQuery(c1tape, cTarget, random, symbolStack)) {
+                        // We expect at most one match here.
+                        // We expect bufTape == c1Tape,
+                        //   bufTape == c1Tape
+                        //   bufTarget == cTarget
+                        //   bufMatched == c1Matched
+                        //assert(bufTape == c1tape, "tape does not match");
+                        //assert(bufTarget == cTarget, "target does not match");
+                        //assert(bufMatched == c1matched, "matched does not match");
+                        newBuffers[c1tape.tapeName] = bufNext;
+                        // oops, not yield for each buffer, get through all the
+                        // buffers and only yield at the end if we got through them
+                        // all.  so fix this ????
+                        yield [c1tape, cTarget, c1matched, new MatchState(c1next, this.tapes, newBuffers)];
+                    }
+                } else {
+                    // my predecessors have not previously required me to match
+                    // anything in particular on this tape
+                    yield [c1tape, cTarget, c1matched, new MatchState(c1next, this.tapes, newBuffers)]
+                }
+            }
+        }
+    }
+}
+
+/*
+class MatchState(UnaryState):
+    """
+    MatchState ensures that a set of tapes have the same output.
+
+    MatchState acts like concatenation, but without ordering. Upon getting
+    content for one of the tapes in its set, it acts as a restriction on all the
+    tapes.
+    """
+    def __init__(self, child: State, tapes: Union[Set[str], Dict[str, Optional[State]]]) -> None:
+        super().__init__()
+        self.__child = child
+        self.__buffers: Dict[str, Optional[State]]
+        if type(tapes) is dict:
+            self.__buffers = cast(Dict[str, Optional[State]], tapes)
+        else:
+            self.__buffers = {tape: None for tape in tapes}
+
+    @property
+    def child(self) -> State:
+        return self.__child
+
+    def getRelevantTapes(self, stateStack: CounterStack) -> Set[str]:
+        if self._relevantTapes is None:
+            # self._relevantTapes = self.child.getRelevantTapes(stateStack)
+            # self._relevantTapes |= self.__buffers.keys()
+            self._relevantTapes = set(self.__buffers.keys())
+        return self._relevantTapes
+
+    def accepting(self, symbolStack: CounterStack) -> bool:
+        buffer: Optional[State]
+        for buffer in self.__buffers.values():
+            if buffer and not buffer.accepting(symbolStack):
+                return False
+        return self.child.accepting(symbolStack)
+
+    def ndQuery(self,
+                tape: Tape, 
+                target: Token, 
+                symbolStack: CounterStack) -> Gen[Tuple[Tape, Token, bool, State]]:
+        for c1tape, c1target, c1matched, c1next \
+                in self.child.dQuery(tape, target, symbolStack):
+            # if c1tape is not one we care about, then yield right away
+            # if c1tape.tapeName not in self.__buffers:
+            if not self.caresAbout(c1tape):
+                yield (c1tape, c1target, c1matched, MatchState(c1next, self.__buffers))
+                return
+
+            if not c1matched:
+                yield (c1tape, c1target, c1matched, MatchState(c1next, self.__buffers))
+                return
+
+            # We need to match each character separately.
+            for c in c1tape.fromToken(c1tape.tapeName, c1target):
+                # cTarget: Token = c1tape.tokenize(c1tape.tapeName, c)[0]
+                cTarget: Token = c1tape.toToken(c1tape.tapeName, c)
+                # STEP A: Are we matching something already buffered?
+                c1buffer: Optional[State] = self.__buffers[c1tape.tapeName]
+                c1bufMatched: bool = False
+                if isinstance(c1buffer, LiteralState):
+                    # that means we already matched a character on a different
+                    # tape previously and now need to make sure it also matches
+                    # this character on this tape
+                    for bufTape, bufTarget, bufMatched, bufNext \
+                            in c1buffer.dQuery(c1tape, cTarget, symbolStack):
+                        if bufMatched:
+                            c1bufMatched = True
+            
+                # STEP B: If not, constrain my successors to match this on other tapes
+                newBuffers: Dict[str, Optional[State]] = dict(self.__buffers)
+                tapeName: str; buffer: Optional[State]
+                if not c1bufMatched:
+                    for tapeName, buffer in self.__buffers.items():
+                        if tapeName == c1tape.tapeName:
+                            # we're going to match it in a moment, don't need to match
+                            # it again!
+                            newBuffers[tapeName] = buffer
+                            continue
+                        prevText: str = ""
+                        if isinstance(buffer, LiteralState):
+                            # that means we already found stuff we needed to match,
+                            # so we add to that
+                            prevText = buffer.getText()
+                        newBuffers[tapeName] = LiteralState(tapeName, prevText + c)
+
+                # STEP C: Match the buffer
+                if isinstance(c1buffer, LiteralState):
+                    # that means we already matched a character on a different tape
+                    # previously and now need to make sure it also matches on this
+                    # tape
+                    for bufTape, bufTarget, bufMatched, bufNext \
+                            in c1buffer.dQuery(c1tape, cTarget, symbolStack):
+                        # We expect at most one match here.
+                        # We expect bufTape == c1Tape,
+                        #   bufTape == c1Tape
+                        #   bufTarget == cTarget
+                        #   bufMatched == c1Matched
+                        assert bufTape == c1tape
+                        assert bufTarget == cTarget
+                        assert bufMatched == c1matched
+                        newBuffers[c1tape.tapeName] = bufNext
+                        # oops, not yield for each buffer, get through all the
+                        # buffers and only yield at the end if we got through them
+                        # all.  so fix this ????
+                        yield (c1tape, cTarget, c1matched, MatchState(c1next, newBuffers))
+                else:
+                    # my predecessors have not previously required me to match
+                    # anything in particular on this tape
+                    yield (c1tape, cTarget, c1matched, MatchState(c1next, newBuffers))
+
+*/
 
 /* CONVENIENCE FUNCTIONS FOR CONSTRUCTING GRAMMARS */
 
@@ -2031,6 +2280,27 @@ export function Rep(child: State, minReps=0, maxReps=Infinity) {
     return new RepetitionState(new TrivialState(), minReps, maxReps, 0, child);
 }
 
+export function Match(child: State, ...tapes: string[]): State {
+    return new MatchState(child, new Set(tapes));
+}
+
+export function Dot(...tapes: string[]): State {
+    return Seq(...tapes.map((t: string) => Any(t)));
+}
+
+export function MatchDot(...tapes: string[]): State {
+    return Match(Dot(...tapes), ...tapes)
+}
+
+
+export function MatchDotRep(minReps: number = 0, maxReps: number = Infinity, ...tapes: string[]): State {
+    return Match(Rep(Dot(...tapes), minReps, maxReps), ...tapes)
+}
+
+export function MatchDotStar(...tapes: string[]): State {
+    return Match(Rep(Dot(...tapes)), ...tapes)
+}
+    
 export function Empty(): State {
     return new TrivialState();
 }

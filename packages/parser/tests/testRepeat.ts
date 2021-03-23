@@ -1,5 +1,5 @@
 
-import { Seq, Join, Rep } from "../src/stateMachine";
+import { Seq, Join, Rep, Empty, Semijoin } from "../src/stateMachine";
 import { text, unrelated, testHasTapes, testHasVocab, testGenerateAndSample } from './testUtils';
 
 import * as path from 'path';
@@ -111,6 +111,30 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "hhhello", unrelated: "world"},
                               {text: "hhhhello", unrelated: "world"}]);
     });
+
+    
+    describe('Semijoining text:na{0,2} & empty()', function() {
+        const grammar = Semijoin(Rep(text("na"), 0, 2), Empty());
+        testGenerateAndSample(grammar, [{}]);
+    });
+
+    
+    describe('Semijoining empty() & text:na{0,2}', function() {
+        const grammar = Semijoin(Empty(), Rep(text("na"), 0, 2));
+        testGenerateAndSample(grammar, [{}]);
+    });
+
+    
+    describe('Joining text:na{0,2} & empty()', function() {
+        const grammar = Join(Rep(text("na"), 0, 2), Empty());
+        testGenerateAndSample(grammar, [{}]);
+    });
+
+    describe('Joining empty() & text:na{0,2}', function() {
+        const grammar = Join(Empty(), Rep(text("na"), 0, 2));
+        testGenerateAndSample(grammar, [{}]);
+    });
+
 
     describe('Text with between 1 and 4 NAs: text:na{1,4}', function() {
         const grammar = Rep(text("na"), 1, 4);

@@ -46,7 +46,7 @@ export interface DevEnvironment {
     loadSource(sheet: string): string[][];
 
     addSourceAsText(sheetName: string, text: string): void;
-
+    addSourceAsCells(sheetName: string, cells: string[][]): void;
     markError(sheet: string, row: number, col: number, 
             shortMsg: string, msg: string, level?: "error"|"warning"|"info"): void;
     markContent(sheet: string, row: number, col: number, tier: string): void;

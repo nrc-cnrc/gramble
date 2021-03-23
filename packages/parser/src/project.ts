@@ -150,6 +150,11 @@ export class Project {
         this.addSheet(sheetName);
     }
 
+    public addSheetAsCells(sheetName: string, cells: string[][]) {
+        this.devEnv.addSourceAsCells(sheetName, cells);
+        this.addSheet(sheetName);
+    }
+
     public runChecks(): void {
         for (const sheetName of Object.keys(this.sheets)) {
             const localNamespace = this.globalNamespace.getLocalNamespace(sheetName);

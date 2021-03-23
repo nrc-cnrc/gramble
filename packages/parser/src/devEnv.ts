@@ -11,7 +11,6 @@ export function cellSplit(s: string): string[][] {
     return s.split("\n").map((line) => line.split(","));
 }
 
-
 export class SimpleDevEnvironment implements DevEnvironment {
 
     protected sources: {[name: string]: string[][]} = {};
@@ -30,6 +29,10 @@ export class SimpleDevEnvironment implements DevEnvironment {
 
     public addSourceAsText(sheetName: string, text: string) {
         const cells = cellSplit(text);
+        this.addSourceAsCells(sheetName, cells);
+    }
+
+    public addSourceAsCells(sheetName: string, cells: string[][]) {
         this.sources[sheetName] = cells;
     }
 

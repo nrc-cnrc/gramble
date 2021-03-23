@@ -1,4 +1,4 @@
-import { Seq, Rep, Any, Semijoin } from "../src/stateMachine";
+import { Seq, Rep, Any, Semijoin, Join, Empty } from "../src/stateMachine";
 import { text, testGenerateAndSample } from './testUtils';
 
 import * as path from 'path';
@@ -24,6 +24,27 @@ describe(`${path.basename(module.filename)}`, function() {
                             {text: "hihhi"},
                             {text: "hiihi"}]);
     });
+
+    describe('Rep(Any): text:.{0,3}+text:hi', function() {
+        const grammar = Seq(Rep(Any("text"), 0, 3), text("hi"));
+        testGenerateAndSample(grammar, [ 
+                            {text: "hi"},
+                            {text: "ihi"},
+                            {text: "hhi"},
+                            {text: "iihi"},
+                            {text: "hihi"},
+                            {text: "hhhi"},
+                            {text: "ihhi"},
+                            {text: "iihhi"},
+                            {text: "hihhi"},
+                            {text: "hhhhi"},
+                            {text: "ihhhi"},
+                            {text: "iiihi"},
+                            {text: "hiihi"},
+                            {text: "hhihi"},
+                            {text: "ihihi"}]);
+    });
+
 
     describe('Rep(Any): text:.{0,3}+text:hi', function() {
         const grammar = Seq( Rep(Any("text"), 0, 3), text("hi"));
@@ -80,6 +101,31 @@ describe(`${path.basename(module.filename)}`, function() {
                             {text: "ihii"}]);
     });
 
+    describe('Joining text:hi & text:.{0,1}', function() {
+        const grammar = Join(text("h"), Rep(Any("text"), 0, 1));
+        testGenerateAndSample(grammar, [{text: "h"}]);
+    });
+    
+    describe('Semijoining text:.{0,1} & empty()', function() {
+        const grammar = Semijoin(Rep(Any("text"), 0, 2), Empty());
+        testGenerateAndSample(grammar, [{}]);
+    });
+    
+    describe('Semijoining 0 & text:.{0,1}', function() {
+        const grammar = Semijoin(Empty(), Rep(Any("text"), 0, 2));
+        testGenerateAndSample(grammar, [{}]);
+    });
+    
+    describe('Joining text:.{0,1} & empty()', function() {
+        const grammar = Join(Rep(Any("text"), 0, 2), Empty());
+        testGenerateAndSample(grammar, [{}]);
+    });
+    
+    describe('Joining 0 & text:.{0,1}', function() {
+        const grammar = Join(Empty(), Rep(Any("text"), 0, 2));
+        testGenerateAndSample(grammar, [{}]);
+    });
+
     describe('Semijoining "hello" with he.*', function() {
         const grammar = Semijoin(text("hello"), Seq(text("he"), Rep(Any("text"))));
         testGenerateAndSample(grammar, [ 
@@ -115,5 +161,4 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [ 
                             {text: "hello"}]);
     });
-    
 });

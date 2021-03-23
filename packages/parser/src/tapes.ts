@@ -168,6 +168,16 @@ export abstract class Tape {
     //public abstract registerTokens(tapeName: string, tokens: string[]): void;
     public abstract toBits(tapeName: string, char: string): BitSet;
     public abstract fromBits(tapeName: string, bits: BitSet): string[];
+
+    
+    public toToken(tapeName: string, char: string): Token {
+        return new Token(this.toBits(tapeName, char));
+    }
+
+    public fromToken(tapeName: string, token: Token): string[] {
+        return this.fromBits(tapeName, token.bits);
+    }
+
 }
 
 /**
