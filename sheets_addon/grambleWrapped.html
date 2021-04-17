@@ -11933,6 +11933,9 @@ class SimpleDevEnvironment {
     }
     addSourceAsText(sheetName, text) {
         const cells = cellSplit(text);
+        this.addSourceAsCells(sheetName, cells);
+    }
+    addSourceAsCells(sheetName, cells) {
         this.sources[sheetName] = cells;
     }
     markError(sheet, row, col, shortMsg, msg, level = "error") {
@@ -11990,7 +11993,7 @@ exports.SimpleDevEnvironment = SimpleDevEnvironment;
 },{}],42:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Empty = exports.Rep = exports.Emb = exports.Rename = exports.Drop = exports.Proj = exports.Not = exports.Semijoin = exports.Join = exports.Uni = exports.Seq = exports.Lit = exports.State = exports.Project = void 0;
+exports.Empty = exports.Rep = exports.Emb = exports.Rename = exports.Drop = exports.Proj = exports.Not = exports.Semijoin = exports.Join = exports.Uni = exports.Seq = exports.Lit = exports.State = exports.SimpleDevEnvironment = exports.Project = void 0;
 const stateMachine_1 = require("./stateMachine");
 Object.defineProperty(exports, "State", { enumerable: true, get: function () { return stateMachine_1.State; } });
 Object.defineProperty(exports, "Lit", { enumerable: true, get: function () { return stateMachine_1.Lit; } });
@@ -12007,8 +12010,10 @@ Object.defineProperty(exports, "Rep", { enumerable: true, get: function () { ret
 Object.defineProperty(exports, "Empty", { enumerable: true, get: function () { return stateMachine_1.Empty; } });
 const project_1 = require("./project");
 Object.defineProperty(exports, "Project", { enumerable: true, get: function () { return project_1.Project; } });
+const devEnv_1 = require("./devEnv");
+Object.defineProperty(exports, "SimpleDevEnvironment", { enumerable: true, get: function () { return devEnv_1.SimpleDevEnvironment; } });
 
-},{"./project":44,"./stateMachine":46}],43:[function(require,module,exports){
+},{"./devEnv":41,"./project":44,"./stateMachine":46}],43:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.miniParse = exports.MPAlternation = exports.MPSequence = exports.MPComment = exports.MPUnreserved = exports.MPDelay = void 0;
@@ -12199,6 +12204,10 @@ class Project {
     }
     addSheetAsText(sheetName, text) {
         this.devEnv.addSourceAsText(sheetName, text);
+        this.addSheet(sheetName);
+    }
+    addSheetAsCells(sheetName, cells) {
+        this.devEnv.addSourceAsCells(sheetName, cells);
         this.addSheet(sheetName);
     }
     runChecks() {

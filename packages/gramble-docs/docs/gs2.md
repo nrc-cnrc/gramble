@@ -1,10 +1,10 @@
 ---
 id: gs2
 title: What is a Gramble program?
-sidebar_label: What's Gramble?
+sidebar_label: What's a Gramble program?
 ---
 
-A Gramble program is a way of specifying a *linguistic database* in an efficient manner, without having to list out every possible entry.  This is useful for very complex languages like Swahili or Kanyenkeha (in which there are millions of possible verb forms), or for syntactic phenomena like sentences (where we can't possibly list every possible sentence), or for procedures like Romanization where you want to produce a Roman-alphabet version of any user input, even if it's not a word you've ever seen before.
+A Gramble program is a way of specifying a *linguistic database* in an efficient manner, without having to list out every possible entry.  This is useful for very complex languages like Swahili or Kanyen'keha (in which there are millions of possible verb forms), or for syntactic phenomena like sentences (where we can't possibly list every possible sentence), or for procedures like Romanization where you want to produce a Roman-alphabet version of any user input, even if it's not a word you've ever seen before.
 
 * There are lots of programming languages in which we could specify this, from special-purpose languages like XFST to general-purpose programming languages like Python.
 
@@ -14,7 +14,7 @@ A Gramble program is a way of specifying a *linguistic database* in an efficient
 
 In the abstract sense, a database is an organized collection of entries, stored on a computer, that you can access ("query") in various ways.  
 
-For example, imagine the following *very* simple and incomplete database of Swahili verb conjugations, along with the tense, person, and verb root that they express.  ("Pend" means "love", if you're wondering, and "ona" means "see".  "Ninapenda" means "I love him/her/it".)
+For example, imagine the following *very* simple and incomplete database of Swahili verb conjugations, along with the tense (past, present), person (first, second, or third), and verb root that they express.  ("Pend" means "love", if you're wondering, and "ona" means "see".  "Ninapenda" means "I love him/her/it".)
 
 | verb  | person | tense | root |
 |-----------|--------|-------|-----|
@@ -62,7 +62,7 @@ So you could use a database like this to *parse* a known word into meaningful co
 
 ## How do we make one?
 
-That's all well and good, but in reality there are so many possible Swahili verbs forms (thousands of them for every verb) that writing this database by hand would be effectively impossble.  There aren't just three persons and three tenses, there are more than a dozen persons (for both subjects and objects) and more than a dozen tenses, and thousands of verb roots, as well as a lot of other verb suffixes.  You simply can't specify them all, not by writing out each possible form.  
+That's all well and good, but in reality there are so many possible Swahili verbs forms (thousands of them for every verb) that writing this database by hand would be effectively impossble.  There aren't just three persons and three tenses, there are more than a dozen persons (for both subjects and objects) and more than a dozen tenses, and thousands of verb roots, as well as a lot of other verb suffixes.  You simply can't specify them all, not by writing out each possible form.
 
 So what you really need to do is write a *program* that generates Swahili verbs from their component parts ("ni" and "u" and "a" and "li" etc.), while associating the parts with their appropriate labels/meanings, specifying any changes that they undergo during combination, etc. 
 
@@ -70,31 +70,27 @@ A lot of linguistic phenomena are like that, not just verb conjugation.  For ano
 
 ## Enter *Gramble*
 
-*Gramble* is a tabular programming language intended to make it easy to write these kinds of programs.  You interact with a Gramble program just like you would interact with a database, by inputting queries and getting answers in return.  The neat thing about Gramble is that the programs are both readable *descriptions* of the phenomena in question (e.g., they look like fairly ordinary verb conjugation tables or phoneme conversion charts) as well as being the *step-by-step code* that turns a query into its correct answers.
+*Gramble* is a tabular programming language intended to make it easy to write these kinds of programs.  You interact with a Gramble program just like you would interact with a database, by inputting queries and getting answers in return.  The neat thing about Gramble is that the programs are both readable *descriptions* of the phenomena in question (e.g., they look like fairly ordinary verb conjugation tables or phoneme conversion charts) as well as being the *code* that turns a query into its correct answers.
 
 For example, the following little Gramble program has the same effect as the Swahili database above:
 
 []() |
 |----|----|----|----|----|
-| **SUBJECT** | **add** | **tex** | **person** |
-|         |     | ni   | 1 |
-|         |     | u   | 2 |
-|         |     | a   | 3 |
+| **SUBJECT:** | **text** | **person** |
+|              | ni   | 1 |
+|              | u   | 2 |
+|              | a   | 3 |
 | &nbsp; |
-| **TENSE** | **add** | **text** | **tense** |
-|       |     | na | present |
-|       |     | li | past |
-|       |     | me | perfect |
+| **TENSE:** | **text** | **tense** |
+|         | na | present |
+|         | li | past |
+|         | me | perfect |
 | &nbsp; |
-| **ROOT** | **add** | **text/root** |
-|       |     | pend |
-|       |     | ona |
+| **ROOT:** | **text/root** |
+|         | pend |
+|         | ona |
 | &nbsp; |
-| **MAIN** | **add** | **var** | **var** | **var** |
-|      |     | SUBJECT | TENSE | ROOT |
+| **var** | **var** | **var** |
+| SUBJECT | TENSE | ROOT |
 
 To add a new verb, you don't have to specify nine new forms (in our little database above) or thousands of new forms (in real Swahili).  You just add one line to the ROOT chart with the new verb.  You've saved yourself a lot of time in the future, at the cost of some programming work right now.
-
-There's a particular algorithm (step-by-step procedure) that the Gramble interpreter follows, that takes a query like ``verb: nilipenda``, and steps through these charts cell-by-cell to end up with the appropriate result.  This algorithm is actually pretty easy to do in your head.  (That's on purpose, it's easier to program if you can step through what's going to happen in your head.)
-
-We'll take a first look at that algorithm in the next tutorial.

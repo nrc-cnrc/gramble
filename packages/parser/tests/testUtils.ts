@@ -21,10 +21,13 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
 
 export function testHasTapes(state: State, expectedTapes: string[]): void {
     const stack = new CounterStack(2);
-    const tapes = state.getRelevantTapes(stack);
+    var tapes = [...state.getRelevantTapes(stack)];
+    tapes = tapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
+                                // leave out any internal-only tapes, like those created 
+                                // by a Drop().
     const bSet = new Set(expectedTapes);
     it(`should have tapes [${[...bSet]}]`, function() {
-        expect(tapes.size).to.equal(bSet.size);
+        expect(tapes.length).to.equal(bSet.size);
         for (const a of tapes) {
             expect(bSet).to.contain(a);
         }
@@ -83,11 +86,27 @@ export function testDoesntHaveOutput(outputs: StringDict[], tier: string, target
     });
 }
 
+function removeHiddenFields(outputs: StringDict[]): StringDict[] {
+    const results: StringDict[] = [];
+    for (const output of outputs) {
+        const result: StringDict = {};
+        for (const [key, value] of Object.entries(output)) {
+            if (key.startsWith("__")) {
+                continue;
+            }
+            result[key] = value;
+        }
+        results.push(result);
+    }
+    return results;
+}
+
 export function testMatchOutputs(outputs: StringDict[], expected_outputs: StringDict[]): void {
     // Check that the output dictionaries of State.generate() match the expected
     // outputs.
     //
     // Outputs can be in any order.
+    outputs = removeHiddenFields(outputs);
     it(`should match ${JSON.stringify(expected_outputs)}`, function() {
         for (var expected_output of expected_outputs) {
             try {

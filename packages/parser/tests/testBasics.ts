@@ -1,6 +1,6 @@
 
 import { Empty, Seq, Uni } from "../src/stateMachine";
-import { text, t1, t2, unrelated, testHasTapes, testHasVocab, testGenerateAndSample } from './testUtils';
+import { text, t1, t2, unrelated, testHasTapes, testHasVocab, testGenerateAndSample, testGrammarUncompiled } from './testUtils';
 
 import * as path from 'path';
 
@@ -12,7 +12,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasVocab(grammar, {text: 4});
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
-
     describe('Empty grammar', function() {
         const grammar = Empty();
         testHasTapes(grammar, []);
@@ -23,7 +22,13 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(text("hello"), text("world"));
         testHasTapes(grammar, ["text"]);
         testHasVocab(grammar, {text: 7});
-        testGenerateAndSample(grammar, [{text: "helloworld"}]);
+        testGrammarUncompiled(grammar, [{text: "helloworld"}]);
+    });
+
+    describe('Empty+Empty', function() {
+        const grammar = Seq(Empty(), Empty());
+        testHasTapes(grammar, []);
+        testGenerateAndSample(grammar, [{}]);
     });
 
     describe('Sequence text:hello+test:""', function() {
@@ -47,31 +52,41 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
-    describe('Sequence text:hello+text:,+test:world', function() {
-        const grammar = Seq(text("hello"), text(", "), text("world"));
-        testGenerateAndSample(grammar, [{text: "hello, world"}]);
+    describe('Sequence text:hello+0+world', function() {
+        const grammar = Seq(text("hello"), Empty(), text("world"));
+        testGenerateAndSample(grammar, [{text: "helloworld"}]);
     });
 
-    describe('Nested sequence (text:hello+text:,)+test:world', function() {
-        const grammar = Seq(Seq(text("hello"), text(", ")), text("world"));
-        testGenerateAndSample(grammar, [{text: "hello, world"}]);
+    describe('Sequence text:hello+0+0+world', function() {
+        const grammar = Seq(text("hello"), Empty(), Empty(), text("world"));
+        testGenerateAndSample(grammar, [{text: "helloworld"}]);
     });
 
-    describe('Nested sequence text:hello+(text:,+test:world)', function() {
-        const grammar = Seq(text("hello"), Seq(text(", "), text("world")));
-        testGenerateAndSample(grammar, [{text: "hello, world"}]);
-    });
-
-    describe('Nested sequence text:hello+(text:,)+text:world', function() {
-        const grammar = Seq(text("hello"), Seq(text(", ")), text("world"));
-        testGenerateAndSample(grammar, [{text: "hello, world"}]);
+    describe('Sequence text:ab+text:cd+test:ef', function() {
+        const grammar = Seq(text("ab"), text("cd"), text("ef"));
+        testGenerateAndSample(grammar, [{text: "abcdef"}]);
     });
     
-    describe('text:hello+unrelated:foo', function() {
-        const grammar = Seq(text("hello"), unrelated("foo"));
+    describe('Nested sequence (text:ab+text:cd)+test:ef', function() {
+        const grammar = Seq(Seq(text("ab"), text("cd")), text("ef"));
+        testGenerateAndSample(grammar, [{text: "abcdef"}]);
+    });
+
+    describe('Nested sequence text:ab+(text:cd+text:ef)', function() {
+        const grammar = Seq(text("ab"), Seq(text("cd"), text("ef")));
+        testGenerateAndSample(grammar, [{text: "abcdef"}]);
+    });
+
+    describe('Nested sequence text:ab+(text:cd)+text:ef', function() {
+        const grammar = Seq(text("ab"), Seq(text("cd")), text("ef"));
+        testGenerateAndSample(grammar, [{text: "abcdef"}]);
+    });
+
+    describe('text:hi+unrelated:yo', function() {
+        const grammar = Seq(text("hi"), unrelated("yo"));
         testHasTapes(grammar, ["text", "unrelated"]);
-        testHasVocab(grammar, {text: 4, unrelated: 2});
-        testGenerateAndSample(grammar, [{text: "hello", unrelated: "foo"}]);
+        testHasVocab(grammar, {text: 2, unrelated: 2});
+        testGenerateAndSample(grammar, [{text: "hi", unrelated: "yo"}]);
     });
 
     describe('Alt text:hello|text:goodbye', function() {
@@ -84,6 +99,19 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Uni(text("hello"), Empty());
         testGenerateAndSample(grammar, [{text: "hello"},
                               {}]);
+    });
+
+    describe('text:hello + (text:world|0)', function() {
+        const grammar = Seq(text("hello"), Uni(text("world"), Empty()));
+        testGenerateAndSample(grammar, [{text: "hello"},
+                                        {text: "helloworld"}]);
+    });
+
+    
+    describe('(text:hello|0) + text:world', function() {
+        const grammar = Seq(Uni(text("hello"), Empty()), text("world"));
+        testGenerateAndSample(grammar, [{text: "world"},
+                                        {text: "helloworld"}]);
     });
 
     describe('Alt of different tiers: t1:hello|t2:goodbye', function() {

@@ -241,7 +241,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     */
 
-    describe('Join Match(.{0,2},t1,t2) & t1:hi+t2:hi', function() {
+    describe('Semijoin Match(.{0,2},t1,t2) & t1:hi+t2:hi', function() {
     
         const grammar =  Semijoin(MatchDotRep(0, 2, "t1", "t2"),
                             Seq(t1("hi"), t2("hi")));
@@ -250,7 +250,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammarUncompiled(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
-    describe('Join t1:hi+t2:hi + Match(..,t1,t2)', function() {
+    describe('Semijoin t1:hi+t2:hi + Match(..,t1,t2)', function() {
         const grammar =  Semijoin(Seq(t1("hi"), t2("hi")), Match(Seq(Dot("t1", "t2"), Dot("t1", "t2")), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {'t1': 2, 't2': 2});

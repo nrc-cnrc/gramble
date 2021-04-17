@@ -16,11 +16,11 @@ For example, we were once writing a pre-processing system for the Uyghur languag
 
 * A team of humans, overseeing the whole process and wanting to make sure that all system outputs were basically reasonable, wanted a rough, human-readable English rendering like ``of multiple people``.
 
-This caused a dilemma, because a conventional finite state transducer (FST) system only allows for the specification of two levels of representation.  (This actually isn't a requirement of the FST paradigm itself, it just happened that the systems available to us assumed two levels of representation.)  One of these has to be the actual text form (like ``kishilerning``), but what should the second form be?  
+This caused a dilemma, because a conventional finite state transducer (FST) system only allows for the specification of two levels of representation.  One of these has to be the actual text form (like ``kishilerning``), but what should the second form be?  
 
 We could have built four systems, one for each output.  Or we could build a chain of three systems: one system that turns ``kishilerning`` into ``kishi, ler, ning``, one that turns that into ``people, PLURAL, GENITIVE``, and one that turns that into ``of multiple people``.  But that would involve a lot of duplication of knowledge: what parts mean what, how they can be ordered with respect to each other, etc., and this was a system that was *very rapidly* evolving in a chaotic work environment.  (We only had about 36 hours to develop the first iteration of this system!)  There was basically no way to engineer four systems at once and keep them in sync.
 
-So instead, we rewrote a system from scratch that could generate multiple different kinds of outputs at once.  (This might seem crazy to write a parser system from scratch when you only have 2 days, but the underlying parsing system here, "parser combinators", makes writing parsers from scratch very quick.)
+So instead, we wrote a system from scratch (that is, without any pre-existing parser library) that could generate multiple different kinds of outputs at once.
 
 ## Case study #2
 

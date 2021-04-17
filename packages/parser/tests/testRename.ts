@@ -1,5 +1,5 @@
-import { Rename, Seq, Join, Uni, Literalizer, Namespace, Emb } from "../src/stateMachine";
-import { t1, t2, t3, testHasTapes, testHasVocab, testHasNoVocab, testGenerateAndSample, unrelated, t4 } from "./testUtils";
+import { Rename, Seq, Join, Uni, Literalizer, Namespace, Emb, Semijoin } from "../src/stateMachine";
+import { t1, t2, t3, testHasTapes, testHasVocab, testHasNoVocab, testGenerateAndSample, unrelated, t4, testGrammarUncompiled } from "./testUtils";
 
 import * as path from 'path';
 
@@ -13,12 +13,12 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{t2: "hello"}]);
     });
 
-    describe('Rename(t2/t1) of t1:hello+t2:foo', function() {
-        const grammar = Rename(Seq(t1("hello"), t2("foo")), "t1", "t2");
+    describe('Rename(t2/t1) of t1:hi+t2:wo', function() {
+        const grammar = Rename(Seq(t1("hi"), t2("wo")), "t1", "t2");
         testHasTapes(grammar, ["t2"]);
-        testHasVocab(grammar, {t2: 5});
-        testGenerateAndSample(grammar, [{t2: "hellofoo"}]);
-    });
+        testHasVocab(grammar, {t2: 4});
+        testGenerateAndSample(grammar, [{t2: "hiwo"}]);
+    }); 
 
     describe('Rename(unrelated/t1) of t1:hello+t2:foo', function() {
         const grammar = Rename(Seq(t1("hello"), t2("foo")), "t3", "t4");
@@ -34,7 +34,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{t2: "hello", unrelated: "foo"}]);
     });
 
-    
     describe('Alt(rename(t1:hello+unrelated:foo) t1 -> t2|rename(t1:hello+unrelated:foo) t1->t3)', function() {
         const grammar = Uni(Rename(Seq(t1("hello"), unrelated("foo")), "t1", "t2"),
                         Rename(Seq(t1("hello"), unrelated("foo")), "t1", "t3"));
@@ -95,5 +94,11 @@ describe(`${path.basename(module.filename)}`, function() {
                              Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"));
         testGenerateAndSample(grammar, []);
     });
-
+    
+    describe('Semijoin of t2:hiwo & rename(t2/t1) of t1:hi+t2:wo', function() {
+        const grammar = Semijoin(t2("hiwo"), Rename(Seq(t1("hi"), t2("wo")), "t1", "t2"));
+        testHasTapes(grammar, ["t2"]);
+        testHasVocab(grammar, {t2: 4});
+        testGenerateAndSample(grammar, [{t2: "hiwo"}]);
+    }); 
 });

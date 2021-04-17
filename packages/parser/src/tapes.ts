@@ -513,12 +513,14 @@ export class RenamedTape extends Tape {
     }
 
     public matchTape(tapeName: string): Tape | undefined {
-        tapeName = this.adjustTapeName(tapeName); 
-        const newChild = this.child.matchTape(tapeName);
-        if (newChild == undefined) {
-            return undefined;
+        if (tapeName == this.fromTape) {
+            const newChild = this.child.matchTape(this.toTape);
+            if (newChild == undefined) {
+                return undefined;
+            }
+            return new RenamedTape(newChild, this.fromTape, this.toTape);
         }
-        return new RenamedTape(newChild, this.fromTape, this.toTape);
+        return this.child.matchTape(tapeName);
     }
 
     public tokenize(tapeName: string, str: string): Token[] {

@@ -10,7 +10,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(text("hello"), text("hello"));
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
-
     
     describe('Joining text:hello & unrelated:foo', function() {
         const grammar = Join(text("hello"), unrelated("foo"));
@@ -93,11 +92,11 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "helloworld"}]);
     });
 
-    describe('Joining t1:hello+t1:kitty & t1:hello+t2:goodbye+t1:kitty+t2:world', function() {
-        const grammar = Join(Seq(t1("hello"), t1("kitty")),
-                             Seq(t1("hello"), t2("goodbye"), t1("kitty"), t2("world")));
-        testGenerateAndSample(grammar, [{t1: "hellokitty", t2: "goodbyeworld"}]);
-});
+    describe('Joining t1:hi+t1:ki & t1:hi+t2:bi+t1:ki+t2:wo', function() {
+        const grammar = Join(Seq(t1("hi"), t1("ki")),
+                             Seq(t1("hi"), t2("bi"), t1("ki"), t2("wo")));
+        testGenerateAndSample(grammar, [{t1: "hiki", t2: "biwo"}]);
+    });
 
     describe('Joining t1:hello+t1:kitty & (t1:hello+t1:kitty)+(t2:goodbye+t2:world)', function() {
         const grammar = Join(Seq(t1("hello"), t1("kitty")),
@@ -175,12 +174,11 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "hi", unrelated: "world"}]);
     });
 
-    describe('Joining unrelated:world+text:hello & text:hello+unrelated:world', function() {
-        const grammar = Join(Seq(unrelated("world"), text("hello")),
-                             Seq(text("hello"), unrelated("world")));
-        testGenerateAndSample(grammar, [{text: "hello", unrelated: "world"}]);
+    describe('Joining unrelated:fo+text:hi & text:hi+unrelated:fo', function() {
+        const grammar = Join(Seq(unrelated("fo"), text("hi")),
+                             Seq(text("hi"), unrelated("fo")));
+        testGenerateAndSample(grammar, [{text: "hi", unrelated: "fo"}]);
     });
-
 
     describe('Joining text:hello & text:hello+unrelated:foo', function() {
         const grammar = Join(text("hello"), Seq(text("hello"), unrelated("foo")));
@@ -392,5 +390,4 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{unrelated: "foo"},
                               {text: "hello"}]);
     });
-
 });
