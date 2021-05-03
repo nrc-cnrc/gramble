@@ -10,13 +10,13 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Drop(Seq(text("hello"), unrelated("foo")), "unrelated");
         testHasTapes(grammar, ["text"]);
         testHasVocab(grammar, {text: 4});
-        testGrammarUncompiled(grammar, [{text: "hello"}]);
+        testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
     describe('Drop(unrelated, text:hello+unrelated:foo)+unrelated:bar', function() {
         const grammar = Seq(Drop(Seq(text("hello"), unrelated("fooo")), "unrelated"),
                             unrelated("bar"));
-        testGrammarUncompiled(grammar, [{text: "hello", unrelated: "bar"}]);
+        testGenerateAndSample(grammar, [{text: "hello", unrelated: "bar"}]);
     });
 
     describe('unrelated:bar + drop(unrelated, text:hello+unrelated:foo)', function() {
@@ -27,7 +27,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('drop(unrelated, text:hello+unrelated:foo) & unrelated:bar', function() {
         const grammar = Join(Drop(Seq(text("hello"), unrelated("foo")), "unrelated"),
                              unrelated("bar"));
-        testGrammarUncompiled(grammar, [{text: "hello", unrelated: "bar"}]);
+        testGenerateAndSample(grammar, [{text: "hello", unrelated: "bar"}]);
     });
 
     describe('unrelated:bar & drop(unrelated, text:hello+unrelated:foo) ', function() {

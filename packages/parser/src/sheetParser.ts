@@ -353,10 +353,10 @@ export class EqualsHeader extends JoinHeader {
             // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
             // specifying in the same row, rather than the embedded thing you're trying to catch.)
 
-            const immediateLeftNeighbor = leftNeighbor.child2;  // taking advantage of the fact that
+            const immediateLeftNeighbor = leftNeighbor.children[leftNeighbor.children.length-1];  // taking advantage of the fact that
                                     // these are constructed to be left-branching
-            const remnant = leftNeighbor.child1;
-            return Seq(remnant, Semijoin(immediateLeftNeighbor, state));
+            const remnant = leftNeighbor.children.slice(0, leftNeighbor.children.length-1)
+            return Seq(...remnant, Semijoin(immediateLeftNeighbor, state));
         }
 
         return Semijoin(leftNeighbor, state);

@@ -990,6 +990,38 @@ abstract class BinaryState extends State {
     }
 }
 
+abstract class NAryState extends State {
+
+    constructor(
+        public children: State[]
+    ) {
+        super();
+    }
+
+    public resetRandom(): void {
+        for (const child of this.children) {
+            child.resetRandom();
+        }
+    } 
+
+    public collectVocab(tapes: Tape, stateStack: string[]): void {
+        for (const child of this.children) {
+            child.collectVocab(tapes, stateStack);
+        }
+    }
+
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set();
+            for (const child of this.children) {
+                const childTapes = child.getRelevantTapes(stateStack);
+                this.relevantTapes = new Set([...this.relevantTapes, ...childTapes]);
+            }
+        }
+        return this.relevantTapes;
+    }
+}
+
 
 /**
  * ConcatState represents the current state in a concatenation A+B of two grammars.  It
@@ -1002,12 +1034,143 @@ abstract class BinaryState extends State {
  * on tape A needs to be emitted/matched before the material on tape B.  But then consider the opposite,
  * ConcatState(LiteralState("B","b"), LiteralState("A","a")).  That grammar describes the same database,
  * but looks for the material in opposite tape order.  If we join these two, the first is emitting on A and
- * waiting for a match, but the second can't match it because it'll only get there later.  There are several
- * possible solutions for this, but the simplest by far is to implement ConcatState so that it can always emit/match
- * on any tape that any of its children refer to.  Basically, it goes through its children, and if child1
- * returns but doesn't match (meaning it doesn't care about tape T), it asks child2.  Then it returns the 
- * appropriate ConcatState consisting of the unmatched material.
+ * waiting for a match, but the second can't match it because it'll only get there later.
  */
+
+ export class ConcatState extends NAryState {
+
+    constructor(
+        children: State[],
+        public indices: {[tapeName: string]: number} | undefined = undefined
+    ) {
+        super(children);
+    }
+
+    public get id(): string {
+        return `${this.constructor.name}(${this.children.map(c => c.id).join("+")})`;
+    }
+
+    public getIndices(symbolStack: CounterStack): {[tapeName: string]: number} {
+        if (this.indices == undefined) {
+            this.indices = {};
+            for (const tapeName of this.getRelevantTapes(symbolStack)) {
+                this.indices[tapeName] = 0;
+            }
+        }
+        return this.indices;
+    }
+
+    public accepting(
+        tape: Tape, 
+        random: boolean, 
+        symbolStack: CounterStack
+    ): boolean {
+        for (const child of this.children) {
+            if (!child.accepting(tape, random, symbolStack)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public successor(
+        tape: Tape, 
+        newChild: State,
+        newIndex: number,
+        symbolStack: CounterStack
+    ): ConcatState {
+        
+        const currentIndices = this.getIndices(symbolStack);
+        
+        const newIndices: {[tapeName: string]: number} = {};
+        Object.assign(newIndices, currentIndices);
+        newIndices[tape.tapeName] = newIndex;
+
+        const newChildren = [... this.children];
+        newChildren[newIndex] = newChild;
+        return new ConcatState(newChildren, newIndices);
+    }
+
+    protected getCurrentIndex(tape: Tape, symbolStack: CounterStack): [Tape, number] {
+        const indices = this.getIndices(symbolStack);
+
+        if (!(tape.tapeName == "__ANY_TAPE__")) {
+            if (!(tape.tapeName in indices)) {
+                throw new Error(`Cannot find tape ${tape.tapeName} in indices in ${this.id}`);
+            }
+            return [tape, indices[tape.tapeName]];
+        }
+
+        // the tape is ANY_TAPE, we need to find the lowest index of our indices.
+        let minTapeName = "";
+        let minIndex = Infinity;
+        for (const [tapeName, index] of Object.entries(indices)) {
+            if (index < minIndex) {
+                minTapeName = tapeName;
+                minIndex = index;
+            }
+        }
+        const matchedTape = tape.matchTape(minTapeName);
+        if (matchedTape == undefined) {
+            throw new Error('Somehow the minimum tape is an undefined tape');
+        }
+        return [matchedTape, minIndex];
+    }
+
+    public *ndQuery(
+        tape: Tape, 
+        target: Token,
+        random: boolean,
+        symbolStack: CounterStack
+    ): Gen<[Tape, Token, boolean, State]> {
+
+        if (!this.caresAbout(tape)) {
+            // if no child cares, just short circuit this rather than bother with all the rest
+            yield [tape, target, false, this];
+            return;
+        }
+
+        const [matchedTape, currentIndex] = this.getCurrentIndex(tape, symbolStack);
+        // when tape is an actual named tape, matchedTape will be identical.  but when
+        // tape is ANY_TAPE, matchedTape will be a named tape.  we don't actually use this
+        // tape for querying children; we only use it to check whether the child is accepting 
+        // on a tape, and increment the index for that tape if so.
+
+        if (currentIndex >= this.children.length) {
+            return;
+        }
+
+        const currentChild = this.children[currentIndex];
+
+        if (currentChild.accepting(tape, random, symbolStack)) {
+            if (currentIndex+1 < this.children.length) {
+                const currentChild = this.children[currentIndex+1];
+                const successor = this.successor(matchedTape, currentChild, currentIndex+1, symbolStack);
+                yield* successor.dQuery(tape, target, random, symbolStack);
+            }
+        }
+
+        const childResults = [...currentChild.dQuery(tape, target, random, symbolStack)];
+        for (const [cTape, cTarget, cMatched, cNext] of childResults) {
+            if (!cMatched) {
+                // we don't accept trivial transitions by NewConcatState children.  only
+                // if the entire sequence doesn't care, do we perform a trivial match, above.
+                continue;
+            }
+            
+            // in this successor, the indices stay the same, but we change the
+            // child at the current index to cNext
+            const newChildren = [... this.children];
+            newChildren[currentIndex] = cNext;
+            const successor = new ConcatState(newChildren, this.indices);
+            yield [cTape, cTarget, cMatched, successor];
+        }
+    }
+}
+/*
+
+// this is the old implementation of ConcatState 
+
 export class ConcatState extends BinaryState {
 
     constructor(
@@ -1091,168 +1254,7 @@ export class ConcatState extends BinaryState {
     }
 }
 
-abstract class NAryState extends State {
-
-    constructor(
-        public children: State[]
-    ) {
-        super();
-    }
-
-    public resetRandom(): void {
-        for (const child of this.children) {
-            child.resetRandom();
-        }
-    } 
-
-    public collectVocab(tapes: Tape, stateStack: string[]): void {
-        for (const child of this.children) {
-            child.collectVocab(tapes, stateStack);
-        }
-    }
-
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
-        if (this.relevantTapes == undefined) {
-            this.relevantTapes = new Set();
-            for (const child of this.children) {
-                const childTapes = child.getRelevantTapes(stateStack);
-                this.relevantTapes = new Set([...this.relevantTapes, ...childTapes]);
-            }
-        }
-        return this.relevantTapes;
-    }
-}
-
-export class NewConcatState extends NAryState {
-
-    constructor(
-        children: State[],
-        public indices: {[tapeName: string]: number} | undefined = undefined
-    ) {
-        super(children);
-    }
-
-    public get id(): string {
-        return `${this.constructor.name}(${this.children.map(c => c.id).join("+")})`;
-    }
-
-    public getIndices(symbolStack: CounterStack): {[tapeName: string]: number} {
-        if (this.indices == undefined) {
-            this.indices = {};
-            for (const tapeName of this.getRelevantTapes(symbolStack)) {
-                this.indices[tapeName] = 0;
-            }
-        }
-        return this.indices;
-    }
-
-    public accepting(
-        tape: Tape, 
-        random: boolean, 
-        symbolStack: CounterStack
-    ): boolean {
-        for (const child of this.children) {
-            if (!child.accepting(tape, random, symbolStack)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public successor(
-        tape: Tape, 
-        newChild: State,
-        newIndex: number,
-        symbolStack: CounterStack
-    ): NewConcatState {
-        
-        const currentIndices = this.getIndices(symbolStack);
-        
-        const newIndices: {[tapeName: string]: number} = {};
-        Object.assign(newIndices, currentIndices);
-        newIndices[tape.tapeName] = newIndex;
-
-        const newChildren = [... this.children];
-        newChildren[newIndex] = newChild;
-        return new NewConcatState(newChildren, newIndices);
-    }
-
-    protected getCurrentIndex(tape: Tape, symbolStack: CounterStack): [Tape, number] {
-        const indices = this.getIndices(symbolStack);
-
-        if (!(tape.tapeName == "__ANY_TAPE__")) {
-            if (!(tape.tapeName in indices)) {
-                throw new Error(`Cannot find tape ${tape.tapeName} in indices in ${this.id}`);
-            }
-            return [tape, indices[tape.tapeName]];
-        }
-
-        // the tape is ANY_TAPE, we need to find the lowest index of our indices.
-        let minTapeName = "";
-        let minIndex = Infinity;
-        for (const [tapeName, index] of Object.entries(indices)) {
-            if (index < minIndex) {
-                minTapeName = tapeName;
-                minIndex = index;
-            }
-        }
-        const matchedTape = tape.matchTape(minTapeName);
-        if (matchedTape == undefined) {
-            throw new Error('Somehow the minimum tape is an undefined tape');
-        }
-        return [matchedTape, minIndex];
-    }
-
-    public *ndQuery(
-        tape: Tape, 
-        target: Token,
-        random: boolean,
-        symbolStack: CounterStack
-    ): Gen<[Tape, Token, boolean, State]> {
-
-        if (!this.caresAbout(tape)) {
-            // if no child cares, just short circuit this rather than bother with all the rest
-            yield [tape, target, false, this];
-            return;
-        }
-
-        const [matchedTape, currentIndex] = this.getCurrentIndex(tape, symbolStack);
-        // when tape is an actual named tape, matchedTape will be identical.  but when
-        // tape is ANY_TAPE, matchedTape will be a named tape.  we don't actually use this
-        // tape for querying children; we only use it to check whether the child is accepting 
-        // on a tape, and increment the index for that tape if so.
-
-        if (currentIndex >= this.children.length) {
-            return;
-        }
-
-        const currentChild = this.children[currentIndex];
-
-        if (currentChild.accepting(tape, random, symbolStack)) {
-            if (currentIndex+1 < this.children.length) {
-                const currentChild = this.children[currentIndex+1];
-                const successor = this.successor(matchedTape, currentChild, currentIndex+1, symbolStack);
-                yield* successor.dQuery(tape, target, random, symbolStack);
-            }
-        }
-
-        const childResults = [...currentChild.dQuery(tape, target, random, symbolStack)];
-        for (const [cTape, cTarget, cMatched, cNext] of childResults) {
-            if (!cMatched) {
-                // we don't accept trivial transitions by NewConcatState children.  only
-                // if the entire sequence doesn't care, do we perform a trivial match, above.
-                continue;
-            }
-            
-            // in this successor, the indices stay the same, but we change the
-            // child at the current index to cNext
-            const newChildren = [... this.children];
-            newChildren[currentIndex] = cNext;
-            const successor = new NewConcatState(newChildren, this.indices);
-            yield [cTape, cTarget, cMatched, successor];
-        }
-    }
-}
+*/
 
 export class UnionState extends NAryState {
 
@@ -2330,7 +2332,7 @@ export function Seq(...children: State[]): State {
 
     return new ConcatState(children[0], Seq(...children.slice(1)));
     */
-    return new NewConcatState(children);
+    return new ConcatState(children);
 }
 
 export function Uni(...children: State[]): State {

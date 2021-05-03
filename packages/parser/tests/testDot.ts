@@ -110,7 +110,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Semijoining t1:hi+t2:hi & t1:.+t2:.+t1:.+t2.', function() {
         const grammar = Semijoin(Seq(t1("hi"), t2("hi")), Seq(Any("t1"), Any("t2"), Any("t1"), Any("t2")));
-        testGrammarUncompiled(grammar, [{t1: "hi", t2: "hi"}]);
+        testGenerateAndSample(grammar, [{t1: "hi", t2: "hi"}]);
     });
 
     

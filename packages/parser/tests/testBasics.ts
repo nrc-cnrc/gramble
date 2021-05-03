@@ -22,7 +22,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(text("hello"), text("world"));
         testHasTapes(grammar, ["text"]);
         testHasVocab(grammar, {text: 7});
-        testGrammarUncompiled(grammar, [{text: "helloworld"}]);
+        testGenerateAndSample(grammar, [{text: "helloworld"}]);
     });
 
     describe('Empty+Empty', function() {
