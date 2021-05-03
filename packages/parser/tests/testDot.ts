@@ -1,5 +1,5 @@
 import { Seq, Join, Any, Semijoin } from "../src/stateMachine";
-import { text, testHasTapes, testHasVocab, testGenerateAndSample, t1, t2 } from './testUtils';
+import { text, testHasTapes, testHasVocab, testGenerateAndSample, t1, t2, testGrammarUncompiled } from './testUtils';
 
 import * as path from 'path';
 
@@ -110,7 +110,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Semijoining t1:hi+t2:hi & t1:.+t2:.+t1:.+t2.', function() {
         const grammar = Semijoin(Seq(t1("hi"), t2("hi")), Seq(Any("t1"), Any("t2"), Any("t1"), Any("t2")));
-        testGenerateAndSample(grammar, [{t1: "hi", t2: "hi"}]);
+        testGrammarUncompiled(grammar, [{t1: "hi", t2: "hi"}]);
     });
 
     

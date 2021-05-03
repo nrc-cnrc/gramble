@@ -831,6 +831,18 @@ export class AnyCharState extends TextState {
         return tape.any();
     }
 
+    public accepting(
+        tape: Tape, 
+        random: boolean, 
+        symbolStack: CounterStack
+    ): boolean {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return true;
+        }
+        return false;
+    }
+
     protected successor(): State {
         return new TrivialState();
     }
