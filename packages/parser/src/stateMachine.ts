@@ -1,5 +1,5 @@
 import { Gen, iterTake, StringDict } from "./util";
-import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR, NO_CHAR } from "./tapes";
+import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
 import { assert } from "chai";
 
 /**
@@ -1499,7 +1499,6 @@ export class JoinState extends SemijoinState {
         const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, random, symbolStack);
         
         if (this.child1.accepting(tape, random, symbolStack)) {
-            console.log("left child is done, yielding from right");
             yield* iterPriorityUnion(rightJoin, leftJoin);
             return;
         }
@@ -1847,6 +1846,7 @@ export class EmbedState extends State {
  * the set of fields/tapes such that only a subset of its fields are exposed to the outside,
  * rather than removing those fields/tapes.
  */
+/*
 export class ProjectionState extends UnaryState {
 
     constructor(
@@ -1901,12 +1901,13 @@ export class ProjectionState extends UnaryState {
         }
     }
 }
-
+*/
 
 /**
  * This is the opposite of ProjectionState; in which you specify what you drop rather than what you keep.
  * Either is sufficient to implement relational algebra; you only really need one of these.
  */
+/*
 export class DropState extends UnaryState {
 
     constructor(
@@ -1962,6 +1963,7 @@ export class DropState extends UnaryState {
         }
     }
 }
+*/
 
 /**
  * Implements the Rename operation from relational algebra.
@@ -2009,7 +2011,6 @@ export class RenameState extends UnaryState {
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
         var rememberToUnwrapTape = false;
-        console.log(`renameState got a ${tape.tapeName} request`)
 
         if (tape.tapeName == this.fromTape) {
             yield [tape, target, false, this];
@@ -2018,17 +2019,14 @@ export class RenameState extends UnaryState {
 
         if (tape.tapeName == this.toTape || tape.tapeName == "__ANY_TAPE__") {
             tape = new RenamedTape(tape, this.fromTape, this.toTape);
-            console.log(`treating it as a ${tape.tapeName}`);
             rememberToUnwrapTape = true;
         } 
     
         for (var [childTape, childTarget, childMatched, childNext] of 
                 this.child.dQuery(tape, target, random, symbolStack)) {
-            console.log(`matched as a ${childTape.tapeName}`)
             if (rememberToUnwrapTape && childTape instanceof RenamedTape) {
                 childTape = childTape.child;
             }
-            console.log(`yielding as a ${childTape.tapeName}`)
             yield [childTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape, this.relevantTapes)];
         }
     }
@@ -2374,20 +2372,34 @@ export function Emb(symbolName: string, namespace: Namespace): State {
     return new EmbedState(symbolName, namespace);
 }
 
-export function Proj(child: State, ...tape: string[]): State {
-    return new ProjectionState(child, new Set(tape));
-}
+// Reveal and Hide, as currently implemented, does name-mangling
+// a la Python double-underscore variables.  Generally an 
+// interface will supply a name for the show/hide and we'll use that
+// to mangle the name, but if not, the Show()/Hide() function will use
+// this variable to create a nonce name.
 
-let DROP_INDEX = 0; // Drop, as currently implemented, does name-mangling
-                    // a la Python double-underscore variables.  Generally an 
-                    // interface will supply a name for the Drop and we'll use that
-                    // to mangle the name, but if not, the Drop() function will use
-                    // this variable to create a nonce name.
-export function Drop(child: State, tape: string, name: string = ""): State {
+let REVEAL_INDEX = 0; 
+export function Reveal(child: State, tape: string[], name: string = ""): State {
+    if (name == "") {
+        name = `PROJ${REVEAL_INDEX}`;
+        REVEAL_INDEX++;
+    }
+    const desiredTapes: Set<string> = new Set(tape);
+    var result: State = child;
+    for (const tape of child.getRelevantTapes(new CounterStack())) {
+        if (!desiredTapes.has(tape)) {
+            result = new RenameState(result, tape, `__${name}_${tape}`)
+        }
+    }
+    return result;
+} 
+
+let HIDE_INDEX = 0; 
+export function Hide(child: State, tape: string, name: string = ""): State {
 
     if (name == "") {
-        name = `DROP${DROP_INDEX}`;
-        DROP_INDEX++;
+        name = `DROP${HIDE_INDEX}`;
+        HIDE_INDEX++;
     }
     return new RenameState(child, tape, `__${name}_${tape}`);
 }

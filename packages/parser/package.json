@@ -29,8 +29,7 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
-    "test": "mocha -r ts-node/register tests/*.ts",
-    "testDrop": "mocha -r ts-node/register tests/testDrop.ts"
+    "test": "mocha -r ts-node/register tests/*.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"

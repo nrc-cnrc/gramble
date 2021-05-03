@@ -455,6 +455,37 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Drop header', function() {
+
+        const project = sheetFromFile("./tests/csvs/drop.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobar", gloss: "run[1SG]", subj: "[1SG]" },
+            { text: "moobar", gloss: "jump[1SG]", subj: "[1SG]" },
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
+            { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
+            { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
+        ]);
+    });
+
+    
+    describe('Two drop headers', function() {
+
+        const project = sheetFromFile("./tests/csvs/doubleDrop.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobar", gloss: "run[1SG]" },
+            { text: "moobar", gloss: "jump[1SG]" },
+            { text: "foobaz", gloss: "run[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]" },
+            { text: "foo", gloss: "run[3SG]" },
+            { text: "moo", gloss: "jump[3SG]" }
+        ]);
+    });
+    
     
     describe('Join header', function() {
 

@@ -10,7 +10,7 @@
 import { assert } from "chai";
 import { CPAlternation, CPUnreserved, CPNegation, CPResult, parseBooleanCell } from "./cellParser";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPSequence, MPUnreserved } from "./miniParser";
-import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState, DropState, Drop, Rep, Any, ConcatState } from "./stateMachine";
+import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState, Hide, Rep, Any, ConcatState } from "./stateMachine";
 import { CellPosition, DevEnvironment, DUMMY_POSITION, HSVtoRGB, RGBtoString, TabularComponent } from "./util";
 
 const DEFAULT_SATURATION = 0.1;
@@ -128,7 +128,7 @@ export class DropHeader extends AtomicHeader {
                 '"Drop" has to have something to the left of it, to drop from.');
             return compiledCell;
         }
-        compiledCell.state = Drop(leftNeighbor, cell.text);
+        compiledCell.state = Hide(leftNeighbor, cell.text);
         return compiledCell;
     }
 }
@@ -1283,19 +1283,19 @@ class EmbedComponent extends HeadedCellComponent {
 class DropComponent extends HeadedCellComponent {
 
     public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
-        if (!(this.state instanceof DropState)) {
+        if (!(this.state instanceof RenameState)) {
             return;
         }
 
-        if (this.state.droppedTape == "") {
+        if (this.state.fromTape == "") {
             return;
         }
 
         const symbolStack = new CounterStack(2);
         const childTapes = this.state.child.getRelevantTapes(symbolStack);
-        if (!(childTapes.has(this.state.droppedTape))) {
-            this.markError(devEnv, `Inaccessible tape: ${this.state.droppedTape}`,
-                `This cell refers to a tape ${this.state.droppedTape},` +
+        if (!(childTapes.has(this.state.fromTape))) {
+            this.markError(devEnv, `Inaccessible tape: ${this.state.fromTape}`,
+                `This cell refers to a tape ${this.state.fromTape},` +
                 ` but the content to its left only defines tape(s) ${[...childTapes].join(", ")}.`);
         }
     }
