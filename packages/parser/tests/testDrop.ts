@@ -5,6 +5,7 @@ import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
+    
     describe('Drop(unrelated) of text:hello+unrelated:foo', function() {
         const grammar = Drop(Seq(text("hello"), unrelated("foo")), "unrelated");
         testHasTapes(grammar, ["text"]);
@@ -26,7 +27,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('drop(unrelated, text:hello+unrelated:foo) & unrelated:bar', function() {
         const grammar = Join(Drop(Seq(text("hello"), unrelated("foo")), "unrelated"),
                              unrelated("bar"));
-        testGenerateAndSample(grammar, [{text: "hello", unrelated: "bar"}]);
+        testGrammarUncompiled(grammar, [{text: "hello", unrelated: "bar"}]);
     });
 
     describe('unrelated:bar & drop(unrelated, text:hello+unrelated:foo) ', function() {
@@ -55,7 +56,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Rename(Drop(Seq(t1("hello"), t2("foo")), "t2"), "t1", "t3")
         testHasTapes(grammar, ["t3"]);
         testHasVocab(grammar, {t3: 4});
-        testHasVocab(grammar, {t2: 2});
         testGenerateAndSample(grammar, [{t3: "hello"}]);
     });
 
@@ -64,7 +64,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Rename(Drop(Seq(t1("hello"), t2("foo")), "t2"), "t2", "t3")
         testHasTapes(grammar, ["t1"]);
         testHasVocab(grammar, {t1: 4});
-        testHasVocab(grammar, {t3: 2});
         testGenerateAndSample(grammar, [{t1: "hello"}]);
     });
 
@@ -72,7 +71,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Rename(Drop(Seq(t1("hello"), t2("foo")), "t2"), "t1", "t3")
         testHasTapes(grammar, ["t3"]);
         testHasVocab(grammar, {t3: 4});
-        testHasVocab(grammar, {t2: 2});
         testGenerateAndSample(grammar, [{t3: "hello"}]);
     });
     

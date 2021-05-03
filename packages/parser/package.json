@@ -29,7 +29,8 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
-    "test": "mocha -r ts-node/register tests/*.ts"
+    "test": "mocha -r ts-node/register tests/*.ts",
+    "testDrop": "mocha -r ts-node/register tests/testDrop.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "browserify": "^17.0.0",
+    "mocha": "^8.3.2",
     "mocha-performance": "^0.1.1",
     "tsify": "^5.0.2",
     "typescript": "^4.1.2"

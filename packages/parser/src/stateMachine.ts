@@ -1485,6 +1485,7 @@ export class JoinState extends SemijoinState {
         const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, random, symbolStack);
         
         if (this.child1.accepting(tape, random, symbolStack)) {
+            console.log("left child is done, yielding from right");
             yield* iterPriorityUnion(rightJoin, leftJoin);
             return;
         }
@@ -1994,17 +1995,26 @@ export class RenameState extends UnaryState {
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
         var rememberToUnwrapTape = false;
+        console.log(`renameState got a ${tape.tapeName} request`)
+
+        if (tape.tapeName == this.fromTape) {
+            yield [tape, target, false, this];
+            return;
+        }
 
         if (tape.tapeName == this.toTape || tape.tapeName == "__ANY_TAPE__") {
             tape = new RenamedTape(tape, this.fromTape, this.toTape);
+            console.log(`treating it as a ${tape.tapeName}`);
             rememberToUnwrapTape = true;
-        }
+        } 
     
         for (var [childTape, childTarget, childMatched, childNext] of 
                 this.child.dQuery(tape, target, random, symbolStack)) {
+            console.log(`matched as a ${childTape.tapeName}`)
             if (rememberToUnwrapTape && childTape instanceof RenamedTape) {
                 childTape = childTape.child;
             }
+            console.log(`yielding as a ${childTape.tapeName}`)
             yield [childTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape, this.relevantTapes)];
         }
     }
