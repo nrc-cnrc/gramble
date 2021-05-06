@@ -1,5 +1,5 @@
 import { parseHeaderCell, SlashHeader, CommentHeader, JoinHeader, MaybeHeader, 
-    DropHeader, LiteralHeader, EmbedHeader, EqualsHeader, EndsWithHeader, 
+    HideHeader, LiteralHeader, EmbedHeader, EqualsHeader, EndsWithHeader, 
     StartsWithHeader, ContainsHeader } from "../src/sheetParser";
 
 import * as path from 'path';
@@ -23,10 +23,10 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Header "drop"', function() {
-        const header = parseHeaderCell("drop");
+        const header = parseHeaderCell("hide");
 
-        testIsType(header, DropHeader);
-        testHeaderHasText(header, "drop");
+        testIsType(header, HideHeader);
+        testHeaderHasText(header, "hide");
     });
 
     describe('Header "%text"', function() {

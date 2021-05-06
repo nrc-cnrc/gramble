@@ -19,6 +19,23 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
+    describe('Projection(t1) of t1:hello+t2:foo+t3:world', function() {
+        const grammar = Reveal(Seq(t1("hello"), t2("foo"), t3("world")), ["t1"]);
+        testHasTapes(grammar, ["t1"]);
+        testHasVocab(grammar, {t1: 4});
+        testGenerateAndSample(grammar, [{t1: "hello"}]);
+    });
+
+    
+    describe('Projection(text, unrelated) of text:hello+unrelated:foo', function() {
+        const grammar = Reveal(Seq(text("hello"), unrelated("foo")), ["text", "unrelated"]);
+        testHasTapes(grammar, ["text", "unrelated"]);
+        testHasVocab(grammar, {text: 4});
+        testHasVocab(grammar, {unrelated: 2});
+        testGenerateAndSample(grammar, [{text: "hello", unrelated: "foo"}]);
+    });
+
+
     describe('Proj(text, text:hello+unrelated:foo)+unrelated:bar', function() {
         const grammar = Seq(Reveal(Seq(text("hello"), unrelated("foo")), ["text"]),
                             unrelated("bar"));

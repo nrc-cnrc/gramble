@@ -455,9 +455,9 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Drop header', function() {
+    describe('Hide header', function() {
 
-        const project = sheetFromFile("./tests/csvs/drop.csv");
+        const project = sheetFromFile("./tests/csvs/hide.csv");
 
         testErrors(project, []);
         testProject(project, 'word', [
@@ -470,10 +470,9 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
-    describe('Two drop headers', function() {
+    describe('Two hide headers', function() {
 
-        const project = sheetFromFile("./tests/csvs/doubleDrop.csv");
+        const project = sheetFromFile("./tests/csvs/doubleHide.csv");
 
         testErrors(project, []);
         testProject(project, 'word', [
@@ -486,6 +485,50 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    describe('Hide header with a slash value', function() {
+
+        const project = sheetFromFile("./tests/csvs/doubleHideSlash.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobar", gloss: "run[1SG]" },
+            { text: "moobar", gloss: "jump[1SG]" },
+            { text: "foobaz", gloss: "run[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]" },
+            { text: "foo", gloss: "run[3SG]" },
+            { text: "moo", gloss: "jump[3SG]" }
+        ]);
+    });
+    
+    describe('Reveal header', function() {
+
+        const project = sheetFromFile("./tests/csvs/reveal.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobar" },
+            { text: "moobar" },
+            { text: "foobaz" },
+            { text: "moobaz" },
+            { text: "foo" },
+            { text: "moo" }
+        ]);
+    });
+
+    describe('Reveal header with a slash value', function() {
+
+        const project = sheetFromFile("./tests/csvs/revealWithSlash.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobar", gloss: "run[1SG]" },
+            { text: "moobar", gloss: "jump[1SG]" },
+            { text: "foobaz", gloss: "run[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]" },
+            { text: "foo", gloss: "run[3SG]" },
+            { text: "moo", gloss: "jump[3SG]" }
+        ]);
+    });
     
     describe('Join header', function() {
 
@@ -876,6 +919,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
         ]);
     });
+    
 });
 
 

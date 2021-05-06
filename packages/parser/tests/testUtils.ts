@@ -316,7 +316,12 @@ export function testHeaderHasText(header: Header, text: string, objName: string 
 export function testErrors(project: Project, expectedErrors: [string, number, number, string][]) {
     const devEnv = project.devEnv;
     it(`should have ${expectedErrors.length} errors/warnings`, function() {
-        expect(devEnv.numErrors("any")).to.equal(expectedErrors.length);
+        try {
+            expect(devEnv.numErrors("any")).to.equal(expectedErrors.length);
+        } catch (e) {
+            console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
+            throw e;
+        }
     });
 
     for (var [sheet, row, col, level] of expectedErrors) {

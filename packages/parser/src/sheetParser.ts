@@ -10,7 +10,7 @@
 import { assert } from "chai";
 import { CPAlternation, CPUnreserved, CPNegation, CPResult, parseBooleanCell } from "./cellParser";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPSequence, MPUnreserved } from "./miniParser";
-import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState, Hide, Rep, Any, ConcatState } from "./stateMachine";
+import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Semijoin, TrivialState, LiteralState, Rename, RenameState, Hide, Rep, Any, ConcatState, Reveal } from "./stateMachine";
 import { CellPosition, DevEnvironment, DUMMY_POSITION, HSVtoRGB, RGBtoString, TabularComponent } from "./util";
 
 const DEFAULT_SATURATION = 0.1;
@@ -112,26 +112,61 @@ export class EmbedHeader extends AtomicHeader {
 }
 
 /**
- * DropHeaders lead to the complilation of DropStates.
+ * HideHeader is an atomic header "hide:X" that takes the grammar
+ * to the left and mangles the name of X outside of that grammar,
+ * so that the field cannot be referenced outside of it.  This allows
+ * programmers to use additional fields without necessarily overwhelming
+ * the "public" interface to the grammar with fields that are only 
+ * internally-relevant, and avoid unexpected behavior when joining two classes
+ * that define same-named fields internally for different purposes.  
  */
-export class DropHeader extends AtomicHeader {
-    
+export class HideHeader extends AtomicHeader {
+
     public compileAndMerge(cell: CellComponent,
             namespace: Namespace,
             devEnv: DevEnvironment,
             leftNeighbor: State | undefined): SingleCellComponent {
 
-        const compiledCell = new DropComponent(this, cell);
+        const compiledCell = new HeadedCellComponent(this, cell);
         
         if (leftNeighbor == undefined) {
-            compiledCell.markError(devEnv, "Wayward drop",
-                '"Drop" has to have something to the left of it, to drop from.');
+            compiledCell.markError(devEnv, "Wayward hide",
+                '"hide" has to have something to the left of it.');
             return compiledCell;
         }
-        compiledCell.state = Hide(leftNeighbor, cell.text);
+        compiledCell.state = leftNeighbor;
+        for (const tape of cell.text.split("/")) {
+            compiledCell.state = Hide(compiledCell.state, tape.trim());
+        }
         return compiledCell;
     }
 }
+
+
+/**
+ * RevealHeader is the opposite of HideHeader: any tape T named in "reveal:T"
+ * is left alone, and all other tapes are hidden.  
+ */
+ export class RevealHeader extends AtomicHeader {
+
+    public compileAndMerge(cell: CellComponent,
+            namespace: Namespace,
+            devEnv: DevEnvironment,
+            leftNeighbor: State | undefined): SingleCellComponent {
+
+        const compiledCell = new HeadedCellComponent(this, cell);
+        
+        if (leftNeighbor == undefined) {
+            compiledCell.markError(devEnv, "Wayward reveal",
+                '"reveal" has to have something to the left of it.');
+            return compiledCell;
+        }
+        const tapes = cell.text.split("/").map(t => t.trim());
+        compiledCell.state = Reveal(leftNeighbor, tapes);
+        return compiledCell;
+    }
+}
+
 
 /**
  * LiteralHeaders are references to a particular tape name (e.g. "text")
@@ -484,7 +519,7 @@ export class SlashHeader extends BinaryHeader {
  */
 
 const SYMBOL = [ "(", ")", "%", "/", '@', ">", ":" ];
-const RESERVED_HEADERS = ["embed", "maybe", "not", "drop", "equals", "startswith", "endswith", "contains" ];
+const RESERVED_HEADERS = ["embed", "maybe", "not", "hide", "reveal", "equals", "startswith", "endswith", "contains" ];
 
 type BinaryOp = (...children: State[]) => State;
 const BINARY_OPS: {[opName: string]: BinaryOp} = {
@@ -513,7 +548,7 @@ var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
 );
 
 var HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
-    MPAlternation(HP_UNRESERVED, HP_EMBED, HP_DROP, HP_JOIN, HP_PARENS)
+    MPAlternation(HP_UNRESERVED, HP_EMBED, HP_HIDE, HP_REVEAL, HP_JOIN, HP_PARENS)
 );
 
 const HP_COMMENT = MPComment<Header>(
@@ -531,9 +566,14 @@ const HP_EMBED = MPSequence<Header>(
     () => new EmbedHeader("embed")
 );
 
-const HP_DROP = MPSequence<Header>(
-    ["drop"],
-    () => new DropHeader("drop")
+const HP_HIDE = MPSequence<Header>(
+    ["hide"],
+    () => new HideHeader("hide")
+);
+
+const HP_REVEAL = MPSequence<Header>(
+    ["reveal"],
+    () => new RevealHeader("reveal")
 );
 
 const HP_JOIN = MPSequence<Header>(
@@ -1276,27 +1316,6 @@ class EmbedComponent extends HeadedCellComponent {
         if (symbol == undefined) {
             this.cell.markError(devEnv, `Cannot find symbol ${this.cell.text}`,
                 `Cannot find symbol ${this.cell.text}.`);
-        }
-    }
-}
-
-class DropComponent extends HeadedCellComponent {
-
-    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
-        if (!(this.state instanceof RenameState)) {
-            return;
-        }
-
-        if (this.state.fromTape == "") {
-            return;
-        }
-
-        const symbolStack = new CounterStack(2);
-        const childTapes = this.state.child.getRelevantTapes(symbolStack);
-        if (!(childTapes.has(this.state.fromTape))) {
-            this.markError(devEnv, `Inaccessible tape: ${this.state.fromTape}`,
-                `This cell refers to a tape ${this.state.fromTape},` +
-                ` but the content to its left only defines tape(s) ${[...childTapes].join(", ")}.`);
         }
     }
 }
