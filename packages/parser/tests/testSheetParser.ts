@@ -93,6 +93,71 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobaz", gloss: "jump-2SG" }
         ]);
     });
+
+    describe('Uppercase table: ops', function() {
+
+        const project = sheetFromFile("./tests/csvs/uppercaseTable.csv");
+
+        testErrors(project, []);
+        testStructure(project, [
+            ["word",    ["child"]],
+            ["suffix",  ["child", "sibling"]],
+            ["Table",   ["child", "sibling", "child"]],
+            ["verb",    ["child", "sibling", "sibling"]],
+            ["table",   ["child", "child"]]
+        ]);
+        testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, 'word', [
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ]);
+    });
+    
+    
+    describe('Uppercase embed header', function() {
+
+        const project = sheetFromFile("./tests/csvs/uppercaseEmbed.csv");
+
+        testErrors(project, []);
+        testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, 'word', [
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ]);
+    });
+
+    
+    describe('Uppercase reference to lowercase symbol', function() {
+
+        const project = sheetFromFile("./tests/csvs/uppercaseSymbol.csv");
+
+        testErrors(project, []);
+        testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, 'word', [
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ]);
+    });
+    
+    describe('Lowercase reference to uppercase symbol', function() {
+
+        const project = sheetFromFile("./tests/csvs/lowercaseSymbol.csv");
+
+        testErrors(project, []);
+        testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, 'word', [
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ]);
+    });
     
     
     describe('Bare grammar with embeds', function() {
@@ -273,6 +338,22 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('"MAYBE X" header to test case insensitivity', function() {
+
+        const project = sheetFromFile("./tests/csvs/uppercaseMaybe.csv");
+        
+        testErrors(project, []);
+        testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, 'word', [
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" },
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
+        ]);
+    });
+
     describe('"text/gloss" header', function() {
 
         const project = sheetFromFile("./tests/csvs/slashHeader.csv");
@@ -378,6 +459,26 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Multi-sheet project', function() {
 
         const project = sheetFromFile("./tests/csvs/externalRef.csv");
+
+        testErrors(project, []);
+        testSymbols(project, [
+            "word", 
+            "embedGrammar.word", 
+            "embedGrammar.verb", 
+            "embedGrammar.suffix"
+        ]);
+        testProject(project, 'word', [
+            { text: "foobarable", gloss: "run-1SG" },
+            { text: "moobarable", gloss: "jump-1SG" },
+            { text: "foobazable", gloss: "run-2SG" },
+            { text: "moobazable", gloss: "jump-2SG" }
+        ]);
+    });
+
+    
+    describe('Multi-sheet project with lowercase sheet reference', function() {
+
+        const project = sheetFromFile("./tests/csvs/lowercaseExternalRef.csv");
 
         testErrors(project, []);
         testSymbols(project, [
@@ -919,7 +1020,6 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
         ]);
     });
-    
 });
 
 

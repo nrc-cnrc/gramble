@@ -19,7 +19,7 @@ type GrambleError = { sheet: string, row: number, col: number, msg: string, leve
  */
 export class Project {
 
-    public globalNamespace: Namespace = new Namespace();
+    public globalNamespace: Namespace = new Namespace("__GLOBAL__");
     public defaultSheetName: string = '';
     public sheets: {[key: string]: SheetComponent} = {};
 
@@ -124,7 +124,7 @@ export class Project {
 
         // Create a new namespace for this sheet and add it to the 
         // global namespace
-        const sheetNamespace = new Namespace();
+        const sheetNamespace = new Namespace(sheetName);
         this.globalNamespace.addLocalNamespace(sheetName, sheetNamespace);
 
         // Compile it

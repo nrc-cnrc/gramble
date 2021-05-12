@@ -1,5 +1,20 @@
-import { Rename, Seq, Join, Uni, Literalizer, Namespace, Emb, Semijoin } from "../src/stateMachine";
-import { t1, t2, t3, testHasTapes, testHasVocab, testHasNoVocab, testGenerateAndSample, unrelated, t4, testGrammarUncompiled } from "./testUtils";
+import { 
+    Rename, 
+    Seq, 
+    Join, 
+    Uni, 
+    Emb, 
+    Semijoin 
+} from "../src/stateMachine";
+
+import { 
+    t1, t2, t3, t4, unrelated,
+    testHasTapes, 
+    testHasVocab, 
+    testHasNoVocab, 
+    testGenerateAndSample, 
+    makeTestNamespace 
+} from "./testUtils";
 
 import * as path from 'path';
 
@@ -44,7 +59,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Rename + embed bug encountered in implementing templates', function() {
-        const symbolTable = new Namespace({ "s": Seq(t2("hi"), t3("hello"), t4("goodbye")) });
+        const symbolTable = makeTestNamespace({ "s": Seq(t2("hi"), t3("hello"), t4("goodbye")) });
         const grammar = Uni(Rename(Seq(Emb("s", symbolTable), unrelated("foo")), "t2", "t1"),
                         Rename(Seq(Emb("s", symbolTable), unrelated("foo")), "t3", "t1"),
                         Rename(Seq(Emb("s", symbolTable), unrelated("foo")), "t4", "t1"));

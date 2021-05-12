@@ -1,7 +1,7 @@
 import { assert, expect } from 'chai';
 import { Project } from "../src/project";
 import { Header, GrammarComponent } from '../src/sheetParser';
-import { CounterStack, Literalizer, State } from "../src/stateMachine";
+import { CounterStack, Literalizer, Namespace, State } from "../src/stateMachine";
 import { TapeCollection } from '../src/tapes';
 import { StringDict } from "../src/util";
 
@@ -11,6 +11,14 @@ export const t1 = Literalizer("t1");
 export const t2 = Literalizer("t2");
 export const t3 = Literalizer("t3");
 export const t4 = Literalizer("t4");
+
+export function makeTestNamespace(symbols: {[key: string]: State} = {}) {
+    const symbolTable = new Namespace("__TEST__");
+    for (const symbolName in symbols) {
+        symbolTable.addSymbol(symbolName, symbols[symbolName]);
+    }
+    return symbolTable;
+}
 
 export function testIsType(obj: any, type: any,  objName: string = ""): void {
     const msg = (objName != "") ? `have ${objName} ` : ""; 

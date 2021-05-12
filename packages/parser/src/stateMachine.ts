@@ -1,6 +1,5 @@
 import { Gen, iterTake, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
-import { assert } from "chai";
 
 /**
  * This is the parsing engine that underlies Gramble.
@@ -106,7 +105,8 @@ export class Namespace {
     protected parent: Namespace | undefined = undefined;
 
     constructor(
-        protected symbols: {[name: string]: State} = {}
+        protected name: string,
+        protected symbols: {[name: string]: [string, State]} = {}
     ) { }
 
     protected childNamespaces: {[name: string]: Namespace} = {};
@@ -125,8 +125,9 @@ export class Namespace {
         if (name in this.symbols) {
             throw new Error(`Redefining symbol ${name}`);
         }
-        this.symbols[name] = state;
-        this.defaultSymbolName = name;
+        const lowercaseName = name.toLowerCase();
+        this.symbols[lowercaseName] = [name, state];
+        this.defaultSymbolName = lowercaseName;
     }
 
     public resolveName(name: string, tryParent: boolean = true): [Namespace, string] | undefined {
@@ -136,7 +137,8 @@ export class Namespace {
             // it's either a local symbol name, or a local namespace name with the default symbol name,
             // or in our default namespace
 
-            const symbol = this.symbols[name];
+            const lowercaseName = name.toLowerCase();
+            const symbol = this.symbols[lowercaseName];
             if (symbol != undefined) {
                 return [this, name];  // it's a local symbol
             }
@@ -149,9 +151,9 @@ export class Namespace {
             if (this.defaultNamespaceName != "") {
                 const ns = this.getLocalNamespace(this.defaultNamespaceName);
                 if (ns != undefined) {
-                    const result = ns.symbols[name];
+                    const result = ns.symbols[lowercaseName];
                     if (result != undefined) {
-                        return [ns, name]; // it's a symbol in our default namespace
+                        return [ns, lowercaseName]; // it's a symbol in our default namespace
                     }
                 }
             }
@@ -208,19 +210,21 @@ export class Namespace {
                     " this should have been resolved in symbol resolution");
         }
         
-        const compiledName = name + "@@@" + symbolStack.id;
+        const compiledName = this.getCompiledName(name, symbolStack);
         if (compiledName in this.symbols) {
             // already compiled it
             return;
         }
 
-        const state = this.symbols[name];
+        const lowercaseName = name.toLowerCase();
+        const [realName, state] = this.symbols[lowercaseName];
         const compiledState = state.compileAux(allTapes, symbolStack, compileLevel);
-        this.symbols[compiledName] = compiledState;
+        this.symbols[compiledName] = [realName, compiledState]
     }
 
     public allSymbols(): string[] {
-        const result = Object.keys(this.symbols);
+        const symbols = Object.values(this.symbols);
+        var result = symbols.map(([name, value]) => name);
         for (const namespaceName in this.childNamespaces) {
             const childNamespace = this.childNamespaces[namespaceName];
             for (const symbol of childNamespace.allSymbols()) {
@@ -234,36 +238,43 @@ export class Namespace {
         if (name.indexOf(".") != -1) {
             throw new Error(`Namespace names may not contain a period: ${name}`);
         }
-        if (name in this.childNamespaces) {
+        const lowercaseNmae = name.toLowerCase();
+        if (lowercaseNmae in this.childNamespaces) {
             throw new Error(`Redefining namespace ${name}`);
         }
-        this.childNamespaces[name] = namespace;
+        this.childNamespaces[lowercaseNmae] = namespace;
         namespace.parent = this;
     }
 
     public setDefaultNamespaceName(name: string): void {
-        if (!(name in this.childNamespaces)) {
+        const lowercaseName = name.toLowerCase();
+        if (!(lowercaseName in this.childNamespaces)) {
             throw new Error(`Trying to set ${name} to the default namespace, but it doesn't exist yet.`);
         }
-        this.defaultNamespaceName = name;
+        this.defaultNamespaceName = lowercaseName;
     }
 
     /**
      * Gets a namespace by name, but only local ones (i.e. children of this namespace)
      */
     public getLocalNamespace(name: string): Namespace | undefined {
-        return this.childNamespaces[name];
+        const lowercaseName = name.toLowerCase();
+        return this.childNamespaces[lowercaseName];
     }
 
     public getLocalSymbol(name: string, 
                         symbolStack: CounterStack | undefined = undefined): State | undefined {
+        
         if (symbolStack != undefined) {
             const compiledName = this.getCompiledName(name, symbolStack);
             if (compiledName in this.symbols) {
-                return this.symbols[compiledName]
+                const [realName, state] = this.symbols[compiledName];
+                return state;
             }
         }
-        return this.symbols[name];
+        const lowercaseName = name.toLowerCase();
+        const [realName, state] = this.symbols[lowercaseName];
+        return state;
     }
 
     protected getCompiledName(symbolName: string, symbolStack: CounterStack) {
@@ -282,7 +293,7 @@ export class Namespace {
         return ns.getLocalSymbol(localName, symbolStack);
     }
 
-    public registeredSymbolNames: string[] = [];
+    //public registeredSymbolNames: string[] = [];
 
     /**
      * When an EmbedState is constructed, it needs to "register" the symbol
@@ -302,7 +313,8 @@ export class Namespace {
             // this doesn't happen in real projects, but it can happen when unit testing.
             return;
         }
-        this.parent.requiredNamespaces.add(pieces[0]);
+        const lowercaseName = pieces[0].toLowerCase();
+        this.parent.requiredNamespaces.add(lowercaseName);
     }
 }
 
@@ -2140,10 +2152,12 @@ export class NegationState extends State {
         return !this.child.accepting(tape, random, symbolStack);
     }
 
-    public *ndQuery(tape: Tape, 
+    public *ndQuery(
+        tape: Tape, 
         target: Token,
         random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+        symbolStack: CounterStack
+    ): Gen<[Tape, Token, boolean, State]> {
 
         if (random) {
             console.log("Warning, querying a negation randomly");

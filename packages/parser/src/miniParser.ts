@@ -8,9 +8,16 @@ export function MPDelay<T>(child: () => MPParser<T>): MPParser<T> {
     }
 }
 
-export function MPUnreserved<T>(reserved: Set<string>, constr: (s: string) => T): MPParser<T> {
+export function MPUnreserved<T>(
+    reserved: Set<string>, 
+    constr: (s: string) => T,
+    caseSensitive: boolean = false    
+): MPParser<T> {
     return function*(input: string[]) {
-        if (input.length == 0 || reserved.has(input[0])) {
+        
+        const firstToken = caseSensitive ? input[0] 
+                                         : input[0].toLowerCase();
+        if (input.length == 0 || reserved.has(firstToken)) {
             return;
         }
         yield [constr(input[0]), input.slice(1)];
@@ -27,7 +34,11 @@ export function MPComment<T>(commentStarter: string, constr: (s: string) => T): 
     }
 }
 
-export function MPSequence<T>(children: (string | MPParser<T>)[], constr: (...children: T[]) => T): MPParser<T> {
+export function MPSequence<T>(children: 
+    (string | MPParser<T>)[], 
+    constr: (...children: T[]) => T,
+    caseSensitive: boolean = false    
+): MPParser<T> {
     return function*(input: string[]) {
 
         var results: [T[], string[]][] = [[[], input]];
@@ -36,7 +47,15 @@ export function MPSequence<T>(children: (string | MPParser<T>)[], constr: (...ch
             var newResults: [T[], string[]][] = [];
             for (const [existingOutputs, existingRemnant] of results) {
                 if (typeof child == "string") {
-                    if (existingRemnant.length > 0 && existingRemnant[0] == child) {
+                    if (existingRemnant.length == 0) {
+                        continue;
+                    }
+                    const remnantTestForm = caseSensitive ? existingRemnant[0] 
+                                                          : existingRemnant[0].toLowerCase();
+                    const childTestForm = caseSensitive ? child 
+                                                        : child.toLowerCase();
+
+                    if (remnantTestForm == childTestForm) {
                         newResults.push([existingOutputs, existingRemnant.slice(1)]);
                     }
                     continue;

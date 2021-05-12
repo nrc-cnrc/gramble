@@ -10,45 +10,40 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Header "text"', function() {
         const header = parseHeaderCell("text");
-
         testIsType(header, LiteralHeader);
         testHeaderHasText(header, "text");
     });
     
     describe('Header "embed"', function() {
         const header = parseHeaderCell("embed");
-
         testIsType(header, EmbedHeader);
-        testHeaderHasText(header, "embed");
+    });
+
+    
+    describe('Header "EMBED"', function() {
+        const header = parseHeaderCell("EMBED");
+        testIsType(header, EmbedHeader);
     });
 
     describe('Header "drop"', function() {
         const header = parseHeaderCell("hide");
-
         testIsType(header, HideHeader);
-        testHeaderHasText(header, "hide");
     });
 
     describe('Header "%text"', function() {
         const header = parseHeaderCell("%text");
-
         testIsType(header, CommentHeader);
-        testHeaderHasText(header, "%");
     });
 
     describe('Header "% text"', function() {
         const header = parseHeaderCell("% text");
-
         testIsType(header, CommentHeader);
-        testHeaderHasText(header, "%");
     });
 
     
     describe('Header "%"', function() {
         const header = parseHeaderCell("%");
-
         testIsType(header, CommentHeader);
-        testHeaderHasText(header, "%");
     });
 
     
@@ -74,9 +69,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Header "maybe text"', function() {
         const header = parseHeaderCell("maybe text");
-
         testIsType(header, MaybeHeader);
-        testHeaderHasText(header, "maybe");
 
         if (!(header instanceof MaybeHeader)) {
             return;
@@ -88,9 +81,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Header "maybe(text)"', function() {
         const header = parseHeaderCell("maybe(text)");
-
         testIsType(header, MaybeHeader);
-        testHeaderHasText(header, "maybe");
 
         if (!(header instanceof MaybeHeader)) {
             return;
@@ -102,9 +93,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Header "(maybe text)"', function() {
         const header = parseHeaderCell("(maybe text)");
-
         testIsType(header, MaybeHeader);
-        testHeaderHasText(header, "maybe");
 
         if (!(header instanceof MaybeHeader)) {
             return;
@@ -128,7 +117,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("@text");
 
         testIsType(header, JoinHeader);
-        testHeaderHasText(header, "@");
 
         if (!(header instanceof JoinHeader)) {
             return;
@@ -143,7 +131,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("@(text)");
 
         testIsType(header, JoinHeader);
-        testHeaderHasText(header, "@");
 
         if (!(header instanceof JoinHeader)) {
             return;
@@ -158,7 +145,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("(@text)");
 
         testIsType(header, JoinHeader);
-        testHeaderHasText(header, "@");
 
         if (!(header instanceof JoinHeader)) {
             return;
@@ -173,7 +159,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("equals text");
 
         testIsType(header, EqualsHeader);
-        testHeaderHasText(header, "equals");
 
         if (!(header instanceof EqualsHeader)) {
             return;
@@ -188,7 +173,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("equals @text");
 
         testIsType(header, EqualsHeader);
-        testHeaderHasText(header, "equals");
 
         if (!(header instanceof EqualsHeader)) {
             return;
@@ -203,7 +187,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("startswith text");
 
         testIsType(header, StartsWithHeader);
-        testHeaderHasText(header, "startswith");
 
         if (!(header instanceof StartsWithHeader)) {
             return;
@@ -218,7 +201,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("endswith text");
 
         testIsType(header, EndsWithHeader);
-        testHeaderHasText(header, "endswith");
 
         if (!(header instanceof EndsWithHeader)) {
             return;
@@ -232,7 +214,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("contains text");
 
         testIsType(header, ContainsHeader);
-        testHeaderHasText(header, "contains");
 
         if (!(header instanceof ContainsHeader)) {
             return;
@@ -246,7 +227,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("text/gloss");
 
         testIsType(header, SlashHeader);
-        testHeaderHasText(header, "/");
 
         if (!(header instanceof SlashHeader)) {
             return;
@@ -264,7 +244,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("(text)/(gloss)");
 
         testIsType(header, SlashHeader);
-        testHeaderHasText(header, "/");
 
         if (!(header instanceof SlashHeader)) {
             return;
@@ -281,7 +260,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("(text/gloss)");
 
         testIsType(header, SlashHeader);
-        testHeaderHasText(header, "/");
 
         if (!(header instanceof SlashHeader)) {
             return;
@@ -352,7 +330,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("text/gloss/root");
 
         testIsType(header, SlashHeader);
-        testHeaderHasText(header, "/");
 
         if (!(header instanceof SlashHeader)) {
             return;
@@ -361,7 +338,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testIsType(header.child1, LiteralHeader, "child1");
         testHeaderHasText(header.child1, "text", "child1");
         testIsType(header.child2, SlashHeader, "child2");
-        testHeaderHasText(header.child2, "/", "child2");
 
         if (!(header.child2 instanceof SlashHeader)) {
             return;
@@ -379,14 +355,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("(text/gloss)/root");
 
         testIsType(header, SlashHeader);
-        testHeaderHasText(header, "/");
 
         if (!(header instanceof SlashHeader)) {
             return;
         }
 
         testIsType(header.child1, SlashHeader, "child1");
-        testHeaderHasText(header.child1, "/", "child1");
         testIsType(header.child2, LiteralHeader, "child2");
         testHeaderHasText(header.child2, "root", "child2");
 

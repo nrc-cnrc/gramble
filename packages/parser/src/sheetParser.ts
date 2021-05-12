@@ -112,8 +112,8 @@ export class EmbedHeader extends AtomicHeader {
 }
 
 /**
- * HideHeader is an atomic header "hide:X" that takes the grammar
- * to the left and mangles the name of X outside of that grammar,
+ * HideHeader is an atomic header "hide:T" that takes the grammar
+ * to the left and mangles the name of tape T outside of that grammar,
  * so that the field cannot be referenced outside of it.  This allows
  * programmers to use additional fields without necessarily overwhelming
  * the "public" interface to the grammar with fields that are only 
@@ -166,7 +166,6 @@ export class HideHeader extends AtomicHeader {
         return compiledCell;
     }
 }
-
 
 /**
  * LiteralHeaders are references to a particular tape name (e.g. "text")
@@ -844,8 +843,9 @@ class AssignmentComponent extends EnclosureComponent {
 
         // determine what symbol you're assigning to
         const trimmedText = this.text.slice(0, this.text.length-1).trim();
+        const trimmedTextLower = trimmedText.toLowerCase();
 
-        if (RESERVED_WORDS.has(trimmedText)) {
+        if (RESERVED_WORDS.has(trimmedTextLower)) {
             // oops, assigning to a reserved word
             this.markError(devEnv, "Assignment to reserved word", 
                 "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
@@ -1378,13 +1378,14 @@ function constructOp(cell: CellComponent,
     assert(cell.text.endsWith(":"), "Tried to construct an op that didn't end with ':'");
     
     const trimmedText = cell.text.slice(0, cell.text.length-1).trim();
-    if (trimmedText in BINARY_OPS) {
+    const trimmedTextLower = trimmedText.toLowerCase();
+    if (trimmedTextLower in BINARY_OPS) {
         newEnclosure = new BinaryOpComponent(cell);
-    } else if (trimmedText == "table") {
+    } else if (trimmedTextLower == "table") {
         newEnclosure = new TableComponent(cell);
-    } else if (trimmedText == "test") {
+    } else if (trimmedTextLower == "test") {
         newEnclosure = new TestSuiteComponent(cell);
-    } else if (trimmedText == "testnot") {
+    } else if (trimmedTextLower == "testnot") {
         newEnclosure = new TestNotSuiteComponent(cell);
     } else if (cell.position.col == 0) {
         // if it's none of these special operators, it's an assignment,
