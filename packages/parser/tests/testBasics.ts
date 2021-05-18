@@ -12,6 +12,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasVocab(grammar, {text: 4});
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
+
     describe('Empty grammar', function() {
         const grammar = Empty();
         testHasTapes(grammar, []);
@@ -25,10 +26,51 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "helloworld"}]);
     });
 
+    describe('Empty sequence', function() {
+        const grammar = Seq();
+        testHasTapes(grammar, []);
+        testGenerateAndSample(grammar, [{}]);
+    });
+
+    describe('Sequence of one Empty', function() {
+        const grammar = Seq(Empty());
+        testHasTapes(grammar, []);
+        testGenerateAndSample(grammar, [{}]);
+    });
+
     describe('Empty+Empty', function() {
         const grammar = Seq(Empty(), Empty());
         testHasTapes(grammar, []);
         testGenerateAndSample(grammar, [{}]);
+    });
+
+    describe('text:hello+Seq()', function() {
+        const grammar = Seq(text("hello"), Seq());
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {text: 4});
+        testGenerateAndSample(grammar, [{text: "hello"}]);
+    });
+    
+    
+    describe('Seq()+text:hello', function() {
+        const grammar = Seq(Seq(), text("hello"));
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {text: 4});
+        testGenerateAndSample(grammar, [{text: "hello"}]);
+    });
+
+    describe('text:hello+Seq(Empty)', function() {
+        const grammar = Seq(text("hello"), Seq(Empty()));
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {text: 4});
+        testGenerateAndSample(grammar, [{text: "hello"}]);
+    });
+    
+    describe('text:hello+(Empty+Empty)', function() {
+        const grammar = Seq(text("hello"), Seq(Empty(), Empty()));
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {text: 4});
+        testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
     describe('Sequence text:hello+test:""', function() {
@@ -42,12 +84,12 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     
-    describe('Sequence text:hello+0', function() {
+    describe('Sequence text:hello+Empty', function() {
         const grammar = Seq(text("hello"), Empty());
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
-    describe('Sequence 0+text:hello', function() {
+    describe('Sequence Empty+text:hello', function() {
         const grammar = Seq(Empty(), text("hello"));
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
@@ -95,20 +137,20 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "goodbye"}]);
     });
 
-    describe('Alt text:hello|0', function() {
+    describe('Alt text:hello|Empty', function() {
         const grammar = Uni(text("hello"), Empty());
         testGenerateAndSample(grammar, [{text: "hello"},
                               {}]);
     });
 
-    describe('text:hello + (text:world|0)', function() {
+    describe('text:hello + (text:world|Empty)', function() {
         const grammar = Seq(text("hello"), Uni(text("world"), Empty()));
         testGenerateAndSample(grammar, [{text: "hello"},
                                         {text: "helloworld"}]);
     });
 
     
-    describe('(text:hello|0) + text:world', function() {
+    describe('(text:hello|Empty) + text:world', function() {
         const grammar = Seq(Uni(text("hello"), Empty()), text("world"));
         testGenerateAndSample(grammar, [{text: "world"},
                                         {text: "helloworld"}]);
@@ -152,7 +194,32 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "goodbyeworld"},
                               {text: "hellokitty"},
                               {text: "goodbyekitty"}]);
-       });
+    });
+
+    describe('Empty union', function() {
+        const grammar = Uni();
+        testHasTapes(grammar, []);
+        testGenerateAndSample(grammar, [{}]);
+    });
+
+    describe('Union of one Empty', function() {
+        const grammar = Uni(Empty());
+        testHasTapes(grammar, []);
+        testGenerateAndSample(grammar, [{}]);
+    });
+
+    describe('Empty|Empty', function() {
+        const grammar = Uni(Empty(), Empty());
+        testHasTapes(grammar, []);
+        testGenerateAndSample(grammar, [{}]);
+    });
+
+    describe('text(hello)+(Empty|Empty)', function() {
+        const grammar = Seq(text("hello"), Uni(Empty(), Empty()));
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {text: 4});
+        testGenerateAndSample(grammar, [{text: "hello"}]);
+    });
 
     /*
     describe('Sequence with priority union: (text:hello|text:goodbye) | (text:world|text:kitty)', function() {

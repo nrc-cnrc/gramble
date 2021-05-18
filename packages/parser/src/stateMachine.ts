@@ -1,5 +1,6 @@
 import { Gen, iterTake, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
+import { assert } from "chai";
 
 /**
  * This is the parsing engine that underlies Gramble.
@@ -888,7 +889,8 @@ export class LiteralState extends TextState {
     }
 
     public get id(): string {
-        return `${this.tapeName}:${this.text}[${this.index}]`;
+        const index = this.index > 0 ? `[${this.index}]` : ""; 
+        return `${this.tapeName}:${this.text}${index}`;
     }
 
     public accepting(
@@ -1059,7 +1061,7 @@ abstract class NAryState extends State {
     }
 
     public get id(): string {
-        return `${this.constructor.name}(${this.children.map(c => c.id).join("+")})`;
+        return `(${this.children.map(c => c.id).join("+")})`;
     }
 
     public getIndices(symbolStack: CounterStack): {[tapeName: string]: number} {
@@ -1103,7 +1105,7 @@ abstract class NAryState extends State {
         return new ConcatState(newChildren, newIndices);
     }
 
-    protected getCurrentIndex(tape: Tape, symbolStack: CounterStack): [Tape, number] {
+    protected getCurrentIndex(tape: Tape, symbolStack: CounterStack): [Tape | undefined, number] {
         const indices = this.getIndices(symbolStack);
 
         if (!(tape.tapeName == "__ANY_TAPE__")) {
@@ -1123,9 +1125,8 @@ abstract class NAryState extends State {
             }
         }
         const matchedTape = tape.matchTape(minTapeName);
-        if (matchedTape == undefined) {
-            throw new Error('Somehow the minimum tape is an undefined tape');
-        }
+        // matchedTape *can* be undefined here; it's not an error, it's the correct
+        // behavior when all the children are Empty()
         return [matchedTape, minIndex];
     }
 
@@ -1147,6 +1148,11 @@ abstract class NAryState extends State {
         // tape is ANY_TAPE, matchedTape will be a named tape.  we don't actually use this
         // tape for querying children; we only use it to check whether the child is accepting 
         // on a tape, and increment the index for that tape if so.
+
+        if (matchedTape == undefined) {
+            // this can happen when all the children are empty
+            return;
+        }
 
         if (currentIndex >= this.children.length) {
             return;
@@ -1295,7 +1301,7 @@ export class UnionState extends NAryState {
 
 
     public get id(): string {
-        return `${this.constructor.name}(${this.children.map(c => c.id).join("|")})`;
+        return `(${this.children.map(c => c.id).join("|")})`;
     }
 
     public resetRandom(): void {
@@ -1318,6 +1324,10 @@ export class UnionState extends NAryState {
         symbolStack: CounterStack
     ): boolean {
 
+        if (this.children.length == 0) {
+            return true;
+        }
+
         if (random) {
             return this.getRandomChild().accepting(tape, random, symbolStack);
         }
@@ -1335,6 +1345,10 @@ export class UnionState extends NAryState {
         target: Token,
         random: boolean,
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+
+        if (this.children.length == 0) {
+            return;
+        }
 
         if (random) {
             yield* this.getRandomChild().dQuery(tape, target, random, symbolStack);
@@ -2341,24 +2355,21 @@ export function Seq(...children: State[]): State {
     if (children.length == 1) {
         return children[0];
     }
-
-    return new ConcatState(children[0], Seq(...children.slice(1)));
     */
     return new ConcatState(children);
 }
 
 export function Uni(...children: State[]): State {
+    /*
     if (children.length == 0) {
         return Empty();
     }
 
-    return new UnionState(children);
-    /*
     if (children.length == 1) {
         return children[0];
-    }
+    } */
 
-    return new UnionState(children[0], Uni(...children.slice(1))); */
+    return new UnionState(children);
 }
 
 /*

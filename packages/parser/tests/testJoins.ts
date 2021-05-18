@@ -132,6 +132,12 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{t1: "hi", t2: "bye"}]);
     });
 
+    describe('Joining t1:hi+t2:bye & t2:bye+t3:yo', function() {
+        const grammar = Join(Seq(t1("hi"), t2("bye")),
+                             Seq(t2("bye"), t3("yo")));
+        testGenerateAndSample(grammar, [{t1: "hi", t2: "bye", t3: "yo"}]);
+    });
+
     describe('Joining t1:hi & (t1:hi+t2:bye & t2:bye+t3:yo)', function() {
         const grammar = Join(t1("hi"),
                              Join(Seq(t1("hi"), t2("bye")),

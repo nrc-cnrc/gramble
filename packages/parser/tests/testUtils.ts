@@ -94,7 +94,7 @@ export function testDoesntHaveOutput(outputs: StringDict[], tier: string, target
     });
 }
 
-function removeHiddenFields(outputs: StringDict[]): StringDict[] {
+export function removeHiddenFields(outputs: StringDict[]): StringDict[] {
     const results: StringDict[] = [];
     for (const output of outputs) {
         const result: StringDict = {};
