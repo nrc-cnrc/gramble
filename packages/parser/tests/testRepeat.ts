@@ -1,6 +1,7 @@
 
 import { Seq, Join, Rep, Empty, Semijoin } from "../src/stateMachine";
-import { text, unrelated, testHasTapes, testHasVocab, testGenerateAndSample } from './testUtils';
+import { text, t1, t2, unrelated, testHasTapes, testHasVocab, 
+         testGenerateAndSample, testGrammarUncompiled } from './testUtils';
 
 import * as path from 'path';
 
@@ -188,4 +189,13 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "ooooo"}],
                     undefined, 6);
     });
+
+    describe('Semijoin t1:h+t2:h & t1:h{0,1}+t2:h*', function() {
+        const grammar = Semijoin(Seq(t1("h"), t2("h")),
+                                 Seq(Rep(t1("h"), 0, 1), Rep(t2("h"))));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {'t1': 1, 't2': 1});
+        testGrammarUncompiled(grammar, [{'t1': 'h', 't2': 'h'}]);
+    });
+
 });
