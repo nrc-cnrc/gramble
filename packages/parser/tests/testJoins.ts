@@ -396,4 +396,5 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{unrelated: "foo"},
                               {text: "hello"}]);
     });
+
 });

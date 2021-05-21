@@ -1,4 +1,22 @@
-import { ConcatState, Empty, Join, Lit, Semijoin, Seq, State, Uni } from "../src/stateMachine";
+import { Empty, Join, Lit, Rep, RepetitionState, Semijoin, Seq, State, Uni } from "../src/stateMachine";
+
+const TRIALS = 1000;
+const MAX_RECURSION = 4;
+const MAX_CHARS = 200;
+
+const MAX_OUTPUTS = 1000; // don't bother with results that have more than MAX_OUTPUTS,
+                          // it takes too long to compare them
+
+const MAX_GRAMMAR_DEPTH = 2;
+const LIT_POISSON_MEAN = 3;
+const SEQ_POISSON_MEAN = 2;
+const UNI_POISSON_MEAN = 2;
+const TAPES_POISSON_MEAN = 2;
+const REPS_POISSON_MEAN = 1;
+
+const MAX_PARAMS_PER_TEST = 3; // The maximum number of State params any test function can have
+                            // It's no trouble if this is larger, it just has to be some number.
+                            // But currently the most is 3, and I can't picture needing more.
 
 function poisson(mean: number): number {
     const L = Math.exp(-mean);
@@ -29,26 +47,28 @@ function poissonRange(mean: number): number[] {
 const LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
 
 function randomString(): string {
-    const letters = poissonRange(4).map(_ => randomChoice(LETTERS));
+    const letters = poissonRange(LIT_POISSON_MEAN).map(_ => randomChoice(LETTERS));
     return letters.join("");
 }
 
-type randomConstr = (t: string[], n: number) => State;
+type randomConstr = (tapes: string[], depth: number) => State;
 const RANDOM_CONSTRUCTORS: [randomConstr, number][] = [
     [ randomLit, 0.4 ],
     [ randomSeq, 0.25 ],
-    [ randomUnion, 0.25 ],
+    [ randomUnion, 0.2 ],
+    [ randomRepeat, 0.5 ],
     [ randomEmpty, 0.1 ],
 ]
 
-function randomEmpty(possibleTapes: string[], allowedDepth: number = 5): State {
-    return Empty();
+function randomGrammar(): State {
+    const length = poisson(TAPES_POISSON_MEAN)+1;  // always has to be at least one tape
+    const tapes = range(length).map(n => `T${n+1}`);
+    return randomState(tapes, MAX_GRAMMAR_DEPTH);
 }
 
-function randomGrammar(): State {
-    const length = poisson(3)+1;  // always has to be at least one tape
-    const tapes = range(length).map(n => `T${n+1}`);
-    return randomState(tapes, 5);
+
+function randomEmpty(possibleTapes: string[], allowedDepth: number = 5): State {
+    return Empty();
 }
 
 function randomState(possibleTapes: string[], allowedDepth: number = 5): State {
@@ -73,30 +93,36 @@ function randomLit(possibleTapes: string[], allowedDepth: number = 5): State {
 }
 
 function randomSeq(possibleTapes: string[], allowedDepth: number = 5): State {
-    const children = poissonRange(3).map(_ => randomState(possibleTapes, allowedDepth));
+    const children = poissonRange(SEQ_POISSON_MEAN).map(_ => randomState(possibleTapes, allowedDepth));
     return Seq(...children);
 }
 
 function randomUnion(possibleTapes: string[], allowedDepth: number = 5): State {
-    const children = poissonRange(3).map(_ => randomState(possibleTapes, allowedDepth));
+    const children = poissonRange(UNI_POISSON_MEAN).map(_ => randomState(possibleTapes, allowedDepth));
     return Uni(...children);
+}
+
+function randomRepeat(possibleTapes: string[], allowedDepth: number = 5): State {
+    const child = randomState(possibleTapes, allowedDepth);
+    const n1 = poisson(REPS_POISSON_MEAN);
+    const n2 = poisson(REPS_POISSON_MEAN);
+    return Rep(child, n1, n2);
 }
 
 import * as path from 'path';
 import { StringDict } from "../src/util";
-import { removeHiddenFields } from "./testUtils";
+import { removeHiddenFields, t1, t2, t3 } from "./testUtils";
 import { expect } from "chai";
 
 
-const TRIALS = 100;
-const MAX_RECURSION = 4;
-const MAX_CHARS = 1000;
 
-function getOutputs(grammar: State): StringDict[] {
+function getOutputs(grammar: State, includeHidden: boolean = false): StringDict[] {
     const outputs = [...grammar.generate(false, MAX_RECURSION, MAX_CHARS)];
-    return removeHiddenFields(outputs);
+    if (!includeHidden) {
+        return removeHiddenFields(outputs);
+    }
+    return outputs;
 }
-
 
 export function testOutputEquals(grammar1: State, grammar2: State): void {
     // Check that the output dictionaries of State.generate() match the expected
@@ -104,8 +130,15 @@ export function testOutputEquals(grammar1: State, grammar2: State): void {
     //
     // Outputs can be in any order.
     
+    //console.log(`evaluating leftside`);
     const outputs1 = getOutputs(grammar1);
+
+    //console.log(`evaluating rightside`);
     const outputs2 = getOutputs(grammar2);
+
+    if (outputs1.length > MAX_OUTPUTS || outputs2.length > MAX_OUTPUTS) {
+        return;
+    }
 
     for (var o1 of outputs1) {
         try {
@@ -125,13 +158,128 @@ export function testOutputEquals(grammar1: State, grammar2: State): void {
     }
 }
 
+type StateOp = (...states: State[]) => State;
+
+
+const FUNCTIONS: {[desc: string]: [string, StateOp, StateOp][]} = {
+
+    "Identity functions": [
+        [ 
+            "X = X",                      
+            (x) => x,
+            (x) => x
+        ],
+        [ 
+            'X[X] = X', 
+            (x) => Semijoin(x, x),
+            (x) => x
+        ],
+        [ 
+            "X+0 = X",                    
+            (x) => Seq(x, Empty()),
+            (x) => x
+        ],
+        [ 
+            "0+X = X",                    
+            (x) => Seq(Empty(), x),
+            (x) => x
+        ],
+        [ 
+            "X|X = X",                    
+            (x) => Uni(x, x),
+            (x) => x
+        ],
+        [ 
+            "(X+0)[X] = X",               
+            (x) => Semijoin(Seq(x, Empty()), x),
+            (x) => x
+        ],
+        [ 
+            "X[X+0] = X",                 
+            (x) => Semijoin(x, Seq(x, Empty())),
+            (x) => x
+        ],
+        [
+            "X{1} = X",
+            (x) => Rep(x, 1, 1),
+            (x) => x
+        ]
+    ],
+
+    "Commutative functions": [
+
+        [ 
+            "X | Y = Y | X",              
+            (x, y) => Uni(x, y),
+            (x, y) => Uni(y, x) 
+        ],
+        //[ "X & Y = Y & X",            (x: State, y:State, z:State) => Join(x, y) ],
+    
+    ],
+
+    "Associative functions": [
+
+        [ 
+            "X+(Y+Z) = (X+Y)+Z",          
+            (x, y, z) => Seq(x, Seq(y, z)),          
+            (x, y, z) => Seq(Seq(x, y), z)
+        ],
+        [ 
+            "X|(Y|Z) = (X|Y)|Z",          
+            (x, y, z) => Uni(x, Uni(y, z)),          
+            (x, y, z) => Uni(Uni(x, y), z)
+        ],
+        [ 
+            "X[Y[Z]] = X[Y][Z]",          
+            (x, y, z) => Semijoin(x, Semijoin(y, z)),          
+            (x, y, z) => Semijoin(Semijoin(x, y), z)
+        ],
+    
+    ],
+
+    "Idempotent functions": [
+
+        [ 
+            "X|Y = (X|Y)|Y",              
+            (x, y) => Uni(x, y),
+            (x, y) => Uni(Uni(x, y), y) 
+        ],
+        [ 
+            "X[Y] = X[Y][Y]",             
+            (x, y) => Semijoin(x, y),
+            (x, y) => Semijoin(Semijoin(x, y), y)
+        ]
+    ],
+
+    "Other" : [
+
+        [
+            "X+X = X{2}",
+            (x) => Seq(x, x),
+            (x) => Rep(x, 2, 2)
+        ],
+        [
+            "X|0 = X{0,1}",
+            (x) => Uni(x, Empty()),
+            (x) => Rep(x, 0, 1)
+        ], 
+        [
+            "X|(X+X) = X{1, 2}",
+            (x) => Uni(x, Seq(x, x)),
+            (x) => Rep(x, 1, 2)
+        ],
+        [
+            "X{0} = 0",
+            (x) => Rep(x, 0, 0),
+            () => Empty()
+        ],
+    ]
+
+}
 
 /*
 
-PROPERTIES WE TEST
-
-
-# PROPERTIES YOU MIGHT THINK SHOULD WORK, BUT DON'T
+# IDENTITIES YOU MIGHT THINK SHOULD WORK, BUT DON'T
 
 ## Join(X, X) = X
 
@@ -144,20 +292,54 @@ outputs, [{A:a}, {B:b}]
 but when joined with itself, it has three outputs: [{A:a}, {B:b}, {A:a, B:b}]
 
 */
+
 /*
+
+// minimal example of a bug found by reflexivity testing of Join
+
+const x = Uni(t1(""), t1("a"));
+const y = Uni(t2(""), t2("b"));
+const leftward = Join(x, y);
+const rightward = Join(y, x);
+console.log(getOutputs(leftward));
+console.log(getOutputs(rightward));
+
+*/
+
+
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe(`${TRIALS} random grammars`, function() {
-
-        const grammars = range(TRIALS).map(_ => randomGrammar());
-
-        it('Semijoin(X, X) = X', function() {
-            for (const g of grammars) {
-                const gJoinG = Semijoin(g, g);
-                testOutputEquals(g, gJoinG);
+    const grammars: State[] = [];
+    
+    describe('All grammars', function() {
+        it ('should generate without errors', function() {
+            this.timeout(0); // turn off timeout
+            while (grammars.length < TRIALS + MAX_PARAMS_PER_TEST) {
+                const grammar = randomGrammar();
+                const outputs = getOutputs(grammar, true);
+                if (outputs.length < MAX_OUTPUTS) {
+                    grammars.push(grammar);
+                }
             }
         });
+    
     });
 
+    for (const [categoryDesc, f] of Object.entries(FUNCTIONS)) {
+        describe(categoryDesc, function() {
+            for (const [funcDesc, leftF, rightF] of f) {
+                it (funcDesc, function() {
+                    this.timeout(0); // turn off timeout
+                    for (let i = 0; i < TRIALS; i++) {
+                        const gSlice = grammars.slice(i, i+MAX_PARAMS_PER_TEST);
+                        const leftside = leftF(...gSlice);
+                        const rightside = rightF(...gSlice);
+                        //console.log(`leftside = ${leftside.id}`);
+                        //console.log(`rightside = ${rightside.id}`);
+                        testOutputEquals(leftside, rightside);
+                    }
+                });
+            }
+        });
+    }
 });
-*/

@@ -198,4 +198,13 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammarUncompiled(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
+    describe('Nested repetition: (text(ba){1,2}){2,3}', function() {
+        const grammar = Rep(Rep(text("ba"), 1, 2), 2, 3);
+        testGenerateAndSample(grammar, [
+                              {text: "baba"},
+                              {text: "bababa"},
+                              {text: "babababa"},
+                              {text: "bababababa"},
+                              {text: "babababababa"}]);
+    });
 });
