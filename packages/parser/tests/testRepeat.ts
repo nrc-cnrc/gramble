@@ -190,12 +190,12 @@ describe(`${path.basename(module.filename)}`, function() {
                     undefined, 6);
     });
 
-    describe('Semijoin t1:h+t2:h & t1:h{0,1}+t2:h*', function() {
-        const grammar = Semijoin(Seq(t1("h"), t2("h")),
-                                 Seq(Rep(t1("h"), 0, 1), Rep(t2("h"))));
+    describe('Semijoin t1:h & t2:h*', function() {
+        const grammar = Semijoin(t1("h"),
+                                 Rep(t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testGrammarUncompiled(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammarUncompiled(grammar, [{'t1': 'h'}]);
     });
 
     describe('Nested repetition: (text(ba){1,2}){2,3}', function() {

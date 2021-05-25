@@ -1753,7 +1753,11 @@ export class RepetitionState extends UnaryState {
             return;
         }
 
-        if (this.child.accepting(tape, random, symbolStack)) {
+        if (!this.child.caresAbout(tape)) {
+            yield [tape, target, false, this];
+        }
+
+        if (this.child.accepting(tape, random, symbolStack) && this.initialChild.caresAbout(tape)) {
             // we just started, or the child is accepting, so our successor increases its index
             // and starts again with child.
             const successor = this.successor(this.initialChild, this.index+1, random);

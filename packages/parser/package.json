@@ -34,7 +34,8 @@
     "testProj": "mocha -r ts-node/register tests/testProjection.ts",
     "testHeaders": "mocha -r ts-node/register tests/testHeaders.ts",
     "testEmbed": "mocha -r ts-node/register tests/testEmbed.ts",
-    "testProperties": "mocha -r ts-node/register tests/propertyTester.ts"
+    "testProperties": "mocha -r ts-node/register tests/properties/testProperties.ts",
+    "testRepeat":  "mocha -r ts-node/register tests/testRepeat.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"
