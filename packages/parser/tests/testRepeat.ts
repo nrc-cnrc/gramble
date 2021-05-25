@@ -1,5 +1,5 @@
 
-import { Seq, Join, Rep, Empty, Semijoin } from "../src/stateMachine";
+import { Seq, Join, Rep, Empty, Semijoin, Uni, Star } from "../src/stateMachine";
 import { text, t1, t2, unrelated, testHasTapes, testHasVocab, 
          testGenerateAndSample, testGrammarUncompiled } from './testUtils';
 
@@ -190,6 +190,18 @@ describe(`${path.basename(module.filename)}`, function() {
                     undefined, 6);
     });
 
+    describe('text:o*', function() {
+        const grammar = Rep(text("o"));
+        testGrammarUncompiled(grammar, [{},
+                              {text: "o"},
+                              {text: "oo"},
+                              {text: "ooo"},
+                              {text: "oooo"},
+                              {text: "ooooo"}],
+                    undefined, 6);
+    });
+
+
     describe('Semijoin t1:h & t2:h*', function() {
         const grammar = Semijoin(t1("h"),
                                  Rep(t2("h")));
@@ -197,6 +209,25 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasVocab(grammar, {'t1': 1, 't2': 1});
         testGrammarUncompiled(grammar, [{'t1': 'h'}]);
     });
+
+    
+/*
+    describe('Semijoin t1:h & (t1:h|t2:h)*', function() {
+        const grammar = Semijoin(t1("h"),
+                                 Star(Uni(t1("h"), t2("h"))));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {'t1': 1, 't2': 1});
+
+        testGrammarUncompiled(grammar, [{'t1': 'h'}]);
+    });
+
+    describe('Seq t1:h+0*', function() {
+        const grammar = Seq(t1("h"), Rep(Empty()));
+        testHasTapes(grammar, ['t1']);
+        testHasVocab(grammar, {'t1': 1});
+        testGrammarUncompiled(grammar, [{'t1': 'h'}]);
+    });
+    */
 
     describe('Nested repetition: (text(ba){1,2}){2,3}', function() {
         const grammar = Rep(Rep(text("ba"), 1, 2), 2, 3);

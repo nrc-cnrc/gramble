@@ -1192,11 +1192,11 @@ abstract class NAryState extends State {
             if (currentIndex+1 < this.children.length) {
                 const currentChild = this.children[currentIndex+1];
                 const successor = this.successor(matchedTape, currentChild, currentIndex+1, symbolStack);
-                yield* successor.dQuery(tape, target, random, symbolStack);
+                yield* successor.ndQuery(tape, target, random, symbolStack);
             }
         }
 
-        const childResults = [...currentChild.dQuery(tape, target, random, symbolStack)];
+        const childResults = [...currentChild.ndQuery(tape, target, random, symbolStack)];
         for (const [cTape, cTarget, cMatched, cNext] of childResults) {
             if (!cMatched) {
                 // we don't accept trivial transitions by NewConcatState children.  only
@@ -1302,6 +1302,7 @@ export class ConcatState extends BinaryState {
 
 */
 
+
 export class UnionState extends NAryState {
 
     protected randomChild: State | null = null;
@@ -1393,12 +1394,12 @@ export class UnionState extends NAryState {
         }
 
         if (random) {
-            yield* this.getRandomChild().dQuery(tape, target, random, symbolStack);
+            yield* this.getRandomChild().ndQuery(tape, target, random, symbolStack);
             return;
         } 
 
         for (const child of this.children) {
-            yield* child.dQuery(tape, target, random, symbolStack);
+            yield* child.ndQuery(tape, target, random, symbolStack);
         }
     }
 } 
@@ -1477,7 +1478,7 @@ class SemijoinState extends BinaryState {
                             
 
         for (const [c1tape, c1target, c1matched, c1next] of 
-                c1.dQuery(tape, target, random, symbolStack)) {
+                c1.ndQuery(tape, target, random, symbolStack)) {
 
             /*
             if (c1tape.isTrivial) { 
@@ -1501,7 +1502,7 @@ class SemijoinState extends BinaryState {
              * would end up having surprising effects.
              */
             for (const [c2tape, c2target, c2matched, c2next] of 
-                    c2.dQuery(c1tape, c1target, false, symbolStack)) {
+                    c2.ndQuery(c1tape, c1target, false, symbolStack)) {
                 const successor = this.successor(c1next, c2next);
                 yield [c2tape, c2target, c1matched || c2matched, successor];
             }
@@ -1617,6 +1618,39 @@ abstract class UnaryState extends State {
     }
 }
 
+export class StarState extends UnaryState {
+
+    constructor(
+        public child: State
+    ) {
+        super();
+    }
+
+    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
+        return true;
+    }
+
+    public get id(): string {
+        return `(${this.child.id})*`;
+    }
+
+    public *ndQuery(
+        tape: Tape, 
+        target: Token,
+        random: boolean,
+        symbolStack: CounterStack
+    ): Gen<[Tape, Token, boolean, State]> {
+
+        if (!this.caresAbout(tape)) {
+            // if no child cares, just short circuit this rather than bother with all the rest
+            yield [tape, target, false, this];
+            return;
+        }
+
+        const successor = new ConcatState([this.child, this]);
+        yield* successor.ndQuery(tape, target, random, symbolStack);
+    }
+}
 
 /**
  * RepetitionState implements the Kleene star, plus, question mark, and in general
@@ -1761,13 +1795,13 @@ export class RepetitionState extends UnaryState {
             // we just started, or the child is accepting, so our successor increases its index
             // and starts again with child.
             const successor = this.successor(this.initialChild, this.index+1, random);
-            for (const result of successor.dQuery(tape, target, random, symbolStack)) {
+            for (const result of successor.ndQuery(tape, target, random, symbolStack)) {
                 yield result;
             }
         }
 
         for (const [childTape, childText, childMatched, childNext] of 
-                this.child.dQuery(tape, target, random, symbolStack)) {
+                this.child.ndQuery(tape, target, random, symbolStack)) {
             if (!childMatched) { // child doesn't care, neither do we
                 yield [childTape, childText, false, this];
                 continue;
@@ -1910,7 +1944,7 @@ export class EmbedState extends State {
         }
 
         for (const [childchildTape, childTarget, childMatched, childNext] of 
-                        child.dQuery(tape, target, random, symbolStack)) {
+                        child.ndQuery(tape, target, random, symbolStack)) {
             const successor = new EmbedState(this.symbolName, this.namespace, childNext, this.relevantTapes);
             yield [childchildTape, childTarget, childMatched, successor];
         }
@@ -2108,7 +2142,7 @@ export class RenameState extends UnaryState {
         } 
     
         for (var [childTape, childTarget, childMatched, childNext] of 
-                this.child.dQuery(tape, target, random, symbolStack)) {
+                this.child.ndQuery(tape, target, random, symbolStack)) {
             if (rememberToUnwrapTape && childTape instanceof RenamedTape) {
                 childTape = childTape.child;
             }
@@ -2298,7 +2332,7 @@ export class MatchState extends UnaryState {
     ): Gen<[Tape, Token, boolean, State]> {
 
         for (const [c1tape, c1target, c1matched, c1next] of 
-                    this.child.dQuery(tape, target, random, symbolStack)) {
+                    this.child.ndQuery(tape, target, random, symbolStack)) {
             
             // if c1tape is not one we care about, then yield right away
             if (!this.caresAbout(c1tape)) {
@@ -2326,7 +2360,7 @@ export class MatchState extends UnaryState {
                     // tape previously and now need to make sure it also matches
                     // this character on this tape
                     for (const [bufTape, bufTarget, bufMatched, bufNext] of 
-                            c1buffer.dQuery(c1tape, cTarget, random, symbolStack)) {
+                            c1buffer.ndQuery(c1tape, cTarget, random, symbolStack)) {
                         if (bufMatched) {
                             c1bufMatched = true;
                         }
@@ -2363,7 +2397,7 @@ export class MatchState extends UnaryState {
                     // previously and now need to make sure it also matches on this
                     // tape
                     for (const [bufTape, bufTarget, bufMatched, bufNext] of 
-                            c1buffer.dQuery(c1tape, cTarget, random, symbolStack)) {
+                            c1buffer.ndQuery(c1tape, cTarget, random, symbolStack)) {
                         // We expect at most one match here.
                         // We expect bufTape == c1Tape,
                         //   bufTape == c1Tape
@@ -2527,4 +2561,8 @@ export function Empty(): State {
 
 export function Maybe(child: State): State {
     return Uni(child, Empty());
+}
+
+export function Star(child: State) {
+    return new StarState(child);
 }

@@ -1,4 +1,4 @@
-import { Empty, Join, Lit, Rep, RepetitionState, Semijoin, Seq, State, Uni } from "../src/stateMachine";
+import { Empty, Join, Lit, Rep, RepetitionState, Semijoin, Seq, State, Uni } from "../../src/stateMachine";
 
 const TRIALS = 1000;
 const MAX_RECURSION = 4;
@@ -7,7 +7,7 @@ const MAX_CHARS = 200;
 const MAX_OUTPUTS = 1000; // don't bother with results that have more than MAX_OUTPUTS,
                           // it takes too long to compare them
 
-const MAX_GRAMMAR_DEPTH = 2;
+const MAX_GRAMMAR_DEPTH = 3;
 const LIT_POISSON_MEAN = 3;
 const SEQ_POISSON_MEAN = 2;
 const UNI_POISSON_MEAN = 2;
@@ -56,7 +56,7 @@ const RANDOM_CONSTRUCTORS: [randomConstr, number][] = [
     [ randomLit, 0.4 ],
     [ randomSeq, 0.25 ],
     [ randomUnion, 0.2 ],
-    [ randomRepeat, 0.5 ],
+   // [ randomRepeat, 0.05 ],
     [ randomEmpty, 0.1 ],
 ]
 
@@ -110,8 +110,8 @@ function randomRepeat(possibleTapes: string[], allowedDepth: number = 5): State 
 }
 
 import * as path from 'path';
-import { StringDict } from "../src/util";
-import { removeHiddenFields, t1, t2, t3 } from "./testUtils";
+import { StringDict } from "../../src/util";
+import { removeHiddenFields, t1, t2, t3 } from "../testUtils";
 import { expect } from "chai";
 
 
