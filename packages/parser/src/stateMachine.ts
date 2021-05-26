@@ -1618,6 +1618,13 @@ abstract class UnaryState extends State {
     }
 }
 
+/*
+
+// StarState was a test class to see whether a particular bug
+// was related to our implementation of RepetitionState, or something
+// deeper.  It was indeed something deeper, and the fix was easier to
+// do in RepetitionState.
+
 export class StarState extends UnaryState {
 
     constructor(
@@ -1651,6 +1658,7 @@ export class StarState extends UnaryState {
         yield* successor.ndQuery(tape, target, random, symbolStack);
     }
 }
+*/
 
 /**
  * RepetitionState implements the Kleene star, plus, question mark, and in general
@@ -1791,9 +1799,8 @@ export class RepetitionState extends UnaryState {
             yield [tape, target, false, this];
         }
 
-        if (this.child.accepting(tape, random, symbolStack) && this.initialChild.caresAbout(tape)) {
-            // we just started, or the child is accepting, so our successor increases its index
-            // and starts again with child.
+        if (this.child.accepting(tape, random, symbolStack) &&
+            !(this.maxReps == Infinity && this.child == this.initialChild)) {
             const successor = this.successor(this.initialChild, this.index+1, random);
             for (const result of successor.ndQuery(tape, target, random, symbolStack)) {
                 yield result;
@@ -2563,6 +2570,7 @@ export function Maybe(child: State): State {
     return Uni(child, Empty());
 }
 
+/*
 export function Star(child: State) {
     return new StarState(child);
-}
+} */
