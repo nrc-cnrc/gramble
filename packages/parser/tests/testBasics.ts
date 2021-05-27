@@ -156,7 +156,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                         {text: "helloworld"}]);
     });
 
-    describe('Alt of different tiers: t1:hello|t2:goodbye', function() {
+    describe('Alt of different tapes: t1:hello|t2:goodbye', function() {
         const grammar = Uni(t1("hello"), t2("goodbye"));
         testHasTapes(grammar, ["t1", "t2"]);
         testHasVocab(grammar, {t1: 4, t2: 6});

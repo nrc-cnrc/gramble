@@ -358,6 +358,39 @@ export class Namespace {
 export abstract class State {
 
     /**
+     * States must know what tapes their associated grammars are defined over.  Note that these
+     * might not be the same names that the grammar as a whole knows these tapes by, because the Rename
+     * operation can rename tapes within its scope.
+     * 
+     * The tapes over which a grammar is defined are not necessarily known at the point that the grammar
+     * is initially constructed, because this depends on their children, and children can include symbols
+     * defined only later.  So we need a separate pass after construction.
+     */
+     protected relevantTapes: Set<string> | undefined = undefined;
+
+    /**
+     * Collects the names of all tapes relevant to this state.  The names are those
+     * that this state would "see" (that is, if this state refers to a RenameState,
+     * it uses the renamed tape name, not whatever that tape is referred to "inside"
+     * the RenameState).
+     * 
+     * This will be the same result as if we called "collectVocab" on this state with an empty
+     * TapeCollection, but we don't go to the trouble of collecting the character vocabulary.
+     */
+     public getRelevantTapes(stateStack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set();
+        }
+        return this.relevantTapes;
+    }
+
+    public caresAbout(tape: Tape): boolean {
+        if (tape.tapeName == "__ANY_TAPE__") return true;
+        const symbolStack = new CounterStack(2);
+        return this.getRelevantTapes(symbolStack).has(tape.tapeName);
+    }
+
+    /**
      * Due to complications involved in compilation, States sometimes have to keep reference
      * to the vocabulary with which they were originally compiled.  (You can't run a compiled
      * state graph using a different vocab, after all, and running the collectVocab() algorithm
@@ -383,8 +416,6 @@ export abstract class State {
     public setAllTapes(tapes: TapeCollection): void {
         this.allTapes = tapes;
     }
-
-    protected relevantTapes: Set<string> | undefined = undefined;
 
     /**
      * Gets an id() for the state.  At the moment we're only using this
@@ -422,7 +453,7 @@ export abstract class State {
      * Note that an ndQuery's results may "overlap" in the sense that you may get the same matched character
      * twice (e.g., you might get two results "q", or a result "q" and a result "__ANY__" that includes "q").
      * For some parts of the algorithm, this would be inappropriate (i.e., inside of a negation).  So rather
-     * than call ndQuery directly, call dQuery (detreministic Query), which calls ndQuery and then adjusts
+     * than call ndQuery directly, call dQuery (deterministic Query), which calls ndQuery and then adjusts
      * the results so that the results are disjoint.
      * 
      * @param tape A Tape object identifying the name/type/vocabulary of the relevant tape
@@ -517,7 +548,7 @@ export abstract class State {
     }
 
     public runUnitTest(test: State): boolean {
-        const testingState = Semijoin(this, test);
+        const testingState = Filter(this, test);
         const tapeCollection = this.getAllTapes(); // see the commentary on .parse() for why we have
         test.collectVocab(tapeCollection, []); // to do something special with the tapes.
         testingState.allTapes = tapeCollection;
@@ -541,7 +572,7 @@ export abstract class State {
 
         if (inputLiterals.length > 0) {
             const inputSeq = Seq(...inputLiterals);
-            startState = Semijoin(startState, inputSeq); 
+            startState = Filter(startState, inputSeq); 
             const tapeCollection = this.getAllTapes(); // in case this state has already
                     // been compiled, we need to start the algorithm with the same vocab.
                     // if it hasn't been compiled, .allTapes always starts as undefined anyway,
@@ -650,27 +681,6 @@ export abstract class State {
      */
     public collectVocab(tapes: Tape, stateStack: string[]): void { }
 
-    /**
-     * Collects the names of all tapes relevant to this state.  The names are those
-     * that this state would "see" (that is, if this state refers to a RenameState,
-     * it uses the renamed tape name, not whatever that tape is referred to "inside"
-     * the RenameState).
-     * 
-     * This will be the same result as if we called "collectVocab" on this state with an empty
-     * TapeCollection, but we don't go to the trouble of collecting the character vocabulary.
-     */
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
-        if (this.relevantTapes == undefined) {
-            this.relevantTapes = new Set();
-        }
-        return this.relevantTapes;
-    }
-
-    public caresAbout(tape: Tape): boolean {
-        if (tape.tapeName == "__ANY_TAPE__") return true;
-        const symbolStack = new CounterStack(2);
-        return this.getRelevantTapes(symbolStack).has(tape.tapeName);
-    }
 
     public compileAux(
         allTapes: TapeCollection, 
@@ -1424,18 +1434,19 @@ function *iterPriorityUnion<T>(iter1: Gen<T>, iter2: Gen<T>): Gen<T> {
 }
 
 /**
- * Implements a left semijoin (which we use for unit testing).
+ * Filter(A, B) removes outputs of A that do not contain an output of B.  That is, consider these two
+ * grammars:
  * 
- * To test that an entry E is in the grammar G, we execute
+ *    A = [ { T1:a, T2:b }, {T1:b, T2:b }, {T1:c, T1:a}, and {T1:d} ]
+ *    B = [ { T2:b } ]
  * 
- *      Semijoin(G, E)
- * 
- * This requires that there be an entry in G that matches every field in E.
- * (There could be additional fields in the relevant entries in G that you don't 
- * care about.  In practice it's difficult to anticipate all the different 
- * fields that G might have in a complex grammar, to make sure E has all of them.)
+ * Filter(A, B) would output [ { T1:a, T2:b }, {T1:b, T2:b } ].  Note that {T1:d} wasn't included, even
+ * though T2 is irrelevant to it -- this isn't just "match T2:b if you care about T2", but "you must match T2:b".
+ *  
+ * At one point we incorrectly called this a left semijoin, but a left semijoin doesn't care about tapes
+ * in B that aren't defined in A, whereas this does.
  */
-class SemijoinState extends BinaryState {
+class FilterState extends BinaryState {
 
     /**
      * Because .successor() on both this and its descendent JoinState are
@@ -1461,14 +1472,9 @@ class SemijoinState extends BinaryState {
     } 
 
     /**
-    * We factor out the logic into a separate function (one that doesn't specifically
-    * refer to the child1/child2 properties of this object) because it's the same algorithm
-    * used twice in a descendent class, JoinState.  A join is just the priority union of the
-    * left and right semijoins, and the right semijoin is just the left semijoin with the
-    * children reversed.  So we let the caller decide which child is "c1" and which is "c2" for
-    * the purposes of the semijoin.
-    */
-    public *ndQueryLeft(
+     * We factor this out from ndQuery because the descend Join class uses it too.
+     */
+    public *filter(
         tape: Tape,
         target: Token,
         c1: State,
@@ -1510,7 +1516,7 @@ class SemijoinState extends BinaryState {
     }
 
     protected successor(newChild1: State, newChild2: State): State {
-        return new SemijoinState(newChild1, newChild2, this.relevantTapes);
+        return new FilterState(newChild1, newChild2, this.relevantTapes);
     }
 
     public *ndQuery(tape: Tape, 
@@ -1518,7 +1524,7 @@ class SemijoinState extends BinaryState {
         random: boolean,
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
-        yield *this.ndQueryLeft(tape, target, this.child1, this.child2, random, symbolStack);
+        yield *this.filter(tape, target, this.child1, this.child2, random, symbolStack);
     }
 
     public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
@@ -1543,8 +1549,11 @@ class SemijoinState extends BinaryState {
  * 
  * Because the ordinary union of these would lead to the same states twice, we use the
  * priority union instead.
+ * 
+ * Note that even though, on its own, the Filter(A, B) operation is not the semijoin, the
+ * way its used *here* ends up equivalent to the union of semijoins.
  */
-export class JoinState extends SemijoinState {
+export class JoinState extends FilterState {
     
     protected successor(newChild1: State, newChild2: State): State {
         return new JoinState(newChild1, newChild2, this.relevantTapes);
@@ -1565,8 +1574,8 @@ export class JoinState extends SemijoinState {
         random: boolean,
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
 
-        const leftJoin = this.ndQueryLeft(tape, target, this.child1, this.child2, random, symbolStack);
-        const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, random, symbolStack);
+        const leftJoin = this.filter(tape, target, this.child1, this.child2, random, symbolStack);
+        const rightJoin = this.filter(tape, target, this.child2, this.child1, random, symbolStack);
         
         if (this.child1.accepting(tape, random, symbolStack)) {
             yield* iterPriorityUnion(rightJoin, leftJoin);
@@ -1797,7 +1806,7 @@ export class RepetitionState extends UnaryState {
 
         if (!this.child.caresAbout(tape)) {
             yield [tape, target, false, this];
-        }
+        } 
 
         if (this.child.accepting(tape, random, symbolStack) &&
             !(this.maxReps == Infinity && this.child == this.initialChild)) {
@@ -2436,13 +2445,13 @@ export class MatchState extends UnaryState {
 
 /* CONVENIENCE FUNCTIONS FOR CONSTRUCTING GRAMMARS */
 
-export function Lit(tier: string, text: string): State {
-    return new LiteralState(tier, text);
+export function Lit(tape: string, text: string): State {
+    return new LiteralState(tape, text);
 }
 
-export function Literalizer(tier: string) {
+export function Literalizer(tape: string) {
     return function(text: string) {
-        return Lit(tier, text);
+        return Lit(tape, text);
     }
 }
 
@@ -2479,14 +2488,10 @@ export function Pri(...children: State[]): State {
 
 export function Join(child1: State, child2: State): State {
     return new JoinState(child1, child2);
-    /* const left = new SemijoinState(child1, child2);
-    const right = new SemijoinState(child2, child1);
-    return new PriorityUnionState([left, right]); */
-
 }
 
-export function Semijoin(child1: State, child2: State): State {
-    return new SemijoinState(child1, child2);
+export function Filter(child1: State, child2: State): State {
+    return new FilterState(child1, child2);
 }
 
 export function Not(child: State): State {
@@ -2529,12 +2534,12 @@ export function Hide(child: State, tape: string, name: string = ""): State {
     return new RenameState(child, tape, `__${name}_${tape}`);
 }
 
-export function Rename(child: State, fromTier: string, toTier: string): State {
-    return new RenameState(child, fromTier, toTier);
+export function Rename(child: State, fromTape: string, toTape: string): State {
+    return new RenameState(child, fromTape, toTape);
 }
 
-export function Any(tier: string): State {
-    return new AnyCharState(tier);
+export function Any(tape: string): State {
+    return new AnyCharState(tape);
 }
 
 export function Rep(child: State, minReps=0, maxReps=Infinity) {

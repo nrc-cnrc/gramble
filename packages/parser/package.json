@@ -30,6 +30,7 @@
     "build": "tsc",
     "prepare": "npm run build",
     "test": "mocha -r ts-node/register tests/*.ts",
+    "testBasics": "mocha -r ts-node/register tests/testBasics.ts",
     "testSheets": "mocha -r ts-node/register tests/testSheetParser.ts",
     "testProj": "mocha -r ts-node/register tests/testProjection.ts",
     "testHeaders": "mocha -r ts-node/register tests/testHeaders.ts",

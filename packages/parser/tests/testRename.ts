@@ -4,7 +4,7 @@ import {
     Join, 
     Uni, 
     Emb, 
-    Semijoin 
+    Filter 
 } from "../src/stateMachine";
 
 import { 
@@ -110,8 +110,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, []);
     });
     
-    describe('Semijoin of t2:hiwo & rename(t2/t1) of t1:hi+t2:wo', function() {
-        const grammar = Semijoin(t2("hiwo"), Rename(Seq(t1("hi"), t2("wo")), "t1", "t2"));
+    describe('Filtering of t2:hiwo & rename(t2/t1) of t1:hi+t2:wo', function() {
+        const grammar = Filter(t2("hiwo"), Rename(Seq(t1("hi"), t2("wo")), "t1", "t2"));
         testHasTapes(grammar, ["t2"]);
         testHasVocab(grammar, {t2: 4});
         testGenerateAndSample(grammar, [{t2: "hiwo"}]);

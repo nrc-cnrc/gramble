@@ -1,5 +1,5 @@
 
-import { Seq, Join, Rep, Empty, Semijoin, Uni } from "../src/stateMachine";
+import { Seq, Join, Rep, Empty, Filter, Uni } from "../src/stateMachine";
 import { text, t1, t2, unrelated, testHasTapes, testHasVocab, 
          testGenerateAndSample, testGrammarUncompiled } from './testUtils';
 
@@ -114,14 +114,14 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     
-    describe('Semijoining text:na{0,2} & empty()', function() {
-        const grammar = Semijoin(Rep(text("na"), 0, 2), Empty());
+    describe('Filtering text:na{0,2} & empty()', function() {
+        const grammar = Filter(Rep(text("na"), 0, 2), Empty());
         testGenerateAndSample(grammar, [{}]);
     });
 
     
-    describe('Semijoining empty() & text:na{0,2}', function() {
-        const grammar = Semijoin(Empty(), Rep(text("na"), 0, 2));
+    describe('Filtering empty() & text:na{0,2}', function() {
+        const grammar = Filter(Empty(), Rep(text("na"), 0, 2));
         testGenerateAndSample(grammar, [{}]);
     });
 
@@ -202,16 +202,16 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
 
-    describe('Semijoin t1:h & t2:h*', function() {
-        const grammar = Semijoin(t1("h"),
+    describe('Filtering t1:h & t2:h*', function() {
+        const grammar = Filter(t1("h"),
                                  Rep(t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {'t1': 1, 't2': 1});
         testGenerateAndSample(grammar, [{'t1': 'h'}]);
     });
     
-    describe('Semijoin t1:h & (t1:h|t2:h)*', function() {
-        const grammar = Semijoin(t1("h"),
+    describe('Filtering t1:h & (t1:h|t2:h)*', function() {
+        const grammar = Filter(t1("h"),
                                  Rep(Uni(t1("h"), t2("h"))));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {'t1': 1, 't2': 1});

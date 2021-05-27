@@ -1,4 +1,4 @@
-import { Seq, Join, Any, Semijoin } from "../src/stateMachine";
+import { Seq, Join, Any, Filter } from "../src/stateMachine";
 import { text, testHasTapes, testHasVocab, testGenerateAndSample, t1, t2, testGrammarUncompiled } from './testUtils';
 
 import * as path from 'path';
@@ -98,29 +98,29 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, []);
     });
 
-    describe('Semijoining t1:hi & t1:.+t1:.', function() {
-        const grammar = Semijoin(t1("hi"), Seq(Any("t1"), Any("t1")));
+    describe('Filtering t1:hi & t1:.+t1:.', function() {
+        const grammar = Filter(t1("hi"), Seq(Any("t1"), Any("t1")));
         testGenerateAndSample(grammar, [{t1: "hi"}]);
     });
 
-    describe('Semijoining t1:hi+t2:hi & t1:.+t1:.+t2:.+t2.', function() {
-        const grammar = Semijoin(Seq(t1("hi"), t2("hi")), Seq(Any("t1"), Any("t1"), Any("t2"), Any("t2")));
+    describe('Filtering t1:hi+t2:hi & t1:.+t1:.+t2:.+t2.', function() {
+        const grammar = Filter(Seq(t1("hi"), t2("hi")), Seq(Any("t1"), Any("t1"), Any("t2"), Any("t2")));
         testGenerateAndSample(grammar, [{t1: "hi", t2: "hi"}]);
     });
 
-    describe('Semijoining t1:hi+t2:hi & t1:.+t2:.+t1:.+t2.', function() {
-        const grammar = Semijoin(Seq(t1("hi"), t2("hi")), Seq(Any("t1"), Any("t2"), Any("t1"), Any("t2")));
+    describe('Filtering t1:hi+t2:hi & t1:.+t2:.+t1:.+t2.', function() {
+        const grammar = Filter(Seq(t1("hi"), t2("hi")), Seq(Any("t1"), Any("t2"), Any("t1"), Any("t2")));
         testGenerateAndSample(grammar, [{t1: "hi", t2: "hi"}]);
     });
 
     
-    describe('Semijoining t1:hi+t2:hi & (t1:.+t2:.)+(t1:.+t2.)', function() {
-        const grammar = Semijoin(Seq(t1("hi"), t2("hi")), Seq(Seq(Any("t1"), Any("t2")), Seq(Any("t1"), Any("t2"))));
+    describe('Filtering t1:hi+t2:hi & (t1:.+t2:.)+(t1:.+t2.)', function() {
+        const grammar = Filter(Seq(t1("hi"), t2("hi")), Seq(Seq(Any("t1"), Any("t2")), Seq(Any("t1"), Any("t2"))));
         testGenerateAndSample(grammar, [{t1: "hi", t2: "hi"}]);
     });
 
-    describe('Semijoining t1:hi+t2:hi & (t1:h+t2:i)+(t1:h+t2:i)', function() {
-        const grammar = Semijoin(Seq(t1("hi"), t2("hi")), Seq(Seq(t1("h"), t2("h")), Seq(t1("i"), t2("i"))));
+    describe('Filtering t1:hi+t2:hi & (t1:h+t2:i)+(t1:h+t2:i)', function() {
+        const grammar = Filter(Seq(t1("hi"), t2("hi")), Seq(Seq(t1("h"), t2("h")), Seq(t1("i"), t2("i"))));
         testGenerateAndSample(grammar, [{t1: "hi", t2: "hi"}]);
     });
 

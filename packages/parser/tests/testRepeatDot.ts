@@ -1,4 +1,4 @@
-import { Seq, Rep, Any, Semijoin, Join, Empty } from "../src/stateMachine";
+import { Seq, Rep, Any, Filter, Join, Empty } from "../src/stateMachine";
 import { text, testGenerateAndSample } from './testUtils';
 
 import * as path from 'path';
@@ -106,13 +106,13 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "h"}]);
     });
     
-    describe('Semijoining text:.{0,1} & empty()', function() {
-        const grammar = Semijoin(Rep(Any("text"), 0, 2), Empty());
+    describe('Filtering text:.{0,1} & empty()', function() {
+        const grammar = Filter(Rep(Any("text"), 0, 2), Empty());
         testGenerateAndSample(grammar, [{}]);
     });
     
-    describe('Semijoining 0 & text:.{0,1}', function() {
-        const grammar = Semijoin(Empty(), Rep(Any("text"), 0, 2));
+    describe('Filtering 0 & text:.{0,1}', function() {
+        const grammar = Filter(Empty(), Rep(Any("text"), 0, 2));
         testGenerateAndSample(grammar, [{}]);
     });
     
@@ -126,38 +126,38 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{}]);
     });
 
-    describe('Semijoining "hello" with he.*', function() {
-        const grammar = Semijoin(text("hello"), Seq(text("he"), Rep(Any("text"))));
+    describe('Filtering "hello" with he.*', function() {
+        const grammar = Filter(text("hello"), Seq(text("he"), Rep(Any("text"))));
         testGenerateAndSample(grammar, [ 
                             {text: "hello"}]);
     });
 
-    describe('Semijoining "hello" with .*lo', function() {
-        const grammar = Semijoin(text("hello"), Seq(Rep(Any("text")), text("lo")));
+    describe('Filtering "hello" with .*lo', function() {
+        const grammar = Filter(text("hello"), Seq(Rep(Any("text")), text("lo")));
         testGenerateAndSample(grammar, [ 
                             {text: "hello"}]);
     });
 
-    describe('Semijoining "hello" with .*e.*', function() {
-        const grammar = Semijoin(text("hello"), Seq(Rep(Any("text")), text("e"), Rep(Any("text"))));
+    describe('Filtering "hello" with .*e.*', function() {
+        const grammar = Filter(text("hello"), Seq(Rep(Any("text")), text("e"), Rep(Any("text"))));
         testGenerateAndSample(grammar, [ 
                             {text: "hello"}]);
     });
 
-    describe('Semijoining "hello" with .*l.*', function() {
-        const grammar = Semijoin(text("hello"), Seq(Rep(Any("text")), text("l"), Rep(Any("text"))));
+    describe('Filtering "hello" with .*l.*', function() {
+        const grammar = Filter(text("hello"), Seq(Rep(Any("text")), text("l"), Rep(Any("text"))));
         testGenerateAndSample(grammar, [ 
                             {text: "hello"}]);
     });
 
-    describe('Semijoining "hello" with .*h.*', function() {
-        const grammar = Semijoin(text("hello"), Seq(Rep(Any("text")), text("h"), Rep(Any("text"))));
+    describe('Filtering "hello" with .*h.*', function() {
+        const grammar = Filter(text("hello"), Seq(Rep(Any("text")), text("h"), Rep(Any("text"))));
         testGenerateAndSample(grammar, [ 
                             {text: "hello"}]);
     });
 
-    describe('Semijoining "hello" with .*o.*', function() {
-        const grammar = Semijoin(text("hello"), Seq(Rep(Any("text")), text("h"), Rep(Any("text"))));
+    describe('Filtering "hello" with .*o.*', function() {
+        const grammar = Filter(text("hello"), Seq(Rep(Any("text")), text("h"), Rep(Any("text"))));
         testGenerateAndSample(grammar, [ 
                             {text: "hello"}]);
     });

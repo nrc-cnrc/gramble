@@ -78,18 +78,18 @@ export function testNumOutputs(outputs: StringDict[], expectedNum: number) {
     });
 }
 
-export function testHasOutput(outputs: StringDict[], tier: string, target: string) {
-    it(`should have ${target} on tier ${tier}`, function() {
-        var results = outputs.filter(o => tier in o)
-                             .map(o => o[tier]);
+export function testHasOutput(outputs: StringDict[], tape: string, target: string) {
+    it(`should have ${target} on tape ${tape}`, function() {
+        var results = outputs.filter(o => tape in o)
+                             .map(o => o[tape]);
         expect(results).to.contain(target);
     });
 }
 
-export function testDoesntHaveOutput(outputs: StringDict[], tier: string, target: string) {
-    it(`should not have ${target} on tier ${tier}`, function() {
-        var results = outputs.filter(o => tier in o)
-                             .map(o => o[tier]);
+export function testDoesntHaveOutput(outputs: StringDict[], tape: string, target: string) {
+    it(`should not have ${target} on tape ${tape}`, function() {
+        var results = outputs.filter(o => tape in o)
+                             .map(o => o[tape]);
         expect(results).to.not.contain(target);
     });
 }

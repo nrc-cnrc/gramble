@@ -1,5 +1,5 @@
 
-import { Seq, Uni, Join, Semijoin, Empty } from "../src/stateMachine";
+import { Seq, Uni, Join, Filter, Empty } from "../src/stateMachine";
 import { text, t1, t2, t3, unrelated, testHasTapes, testHasVocab, testGenerateAndSample } from './testUtils';
 
 import * as path from 'path';
@@ -290,13 +290,13 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, []);
     });
 
-    describe('Joining to an alt of different tiers', function() {
+    describe('Joining to an alt of different tapes', function() {
         const grammar = Join(text("hello"), Uni(text("hello"), unrelated("foo")));
         testGenerateAndSample(grammar, [{text: "hello"},
                               {text: "hello", unrelated: "foo"}]);
     });
 
-    describe('Joining unrelated-tier alts in same direction', function() {
+    describe('Joining unrelated-tape alts in same direction', function() {
         const grammar = Join(Uni(text("hello"), unrelated("foo")),
                              Uni(text("hello"), unrelated("foo")));
         testGenerateAndSample(grammar, [{text: "hello"},
@@ -305,7 +305,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "hello", unrelated: "foo"}]);
     });
 
-    describe('Joining unrelated-tier alts in different directions', function() {
+    describe('Joining unrelated-tape alts in different directions', function() {
         const grammar = Join(Uni(unrelated("foo"), text("hello")),
                              Uni(text("hello"), unrelated("foo")));
         testGenerateAndSample(grammar, [{unrelated: "foo"},
@@ -340,58 +340,58 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "hello", unrelated: "foo"}]);
     });
     
-    describe('Left semijoin of text:hello & text:hello', function() {
-        const grammar = Semijoin(text("hello"), text("hello"));
+    describe('Filter of text:hello & text:hello', function() {
+        const grammar = Filter(text("hello"), text("hello"));
         const outputs = [...grammar.generate()];
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
     
-    describe('Left semijoin of text:h & text:hello', function() {
-        const grammar = Semijoin(text("h"), text("hello"));
+    describe('Filter of text:h & text:hello', function() {
+        const grammar = Filter(text("h"), text("hello"));
         const outputs = [...grammar.generate()];
         testGenerateAndSample(grammar, []);
     });
 
-    describe('Left semijoin of text:hello & text:h', function() {
-        const grammar = Semijoin(text("hello"), text("h"));
+    describe('Filter of text:hello & text:h', function() {
+        const grammar = Filter(text("hello"), text("h"));
         const outputs = [...grammar.generate()];
         testGenerateAndSample(grammar, []);
     });
     
-    describe('Left semijoin of text:hello+unrelated:foo & text:hello', function() {
-        const grammar = Semijoin(Seq(text("hello"), unrelated("foo")), text("hello"));
+    describe('Filter of text:hello+unrelated:foo & text:hello', function() {
+        const grammar = Filter(Seq(text("hello"), unrelated("foo")), text("hello"));
         const outputs = [...grammar.generate()];
         testGenerateAndSample(grammar, [{text: "hello", unrelated: "foo"}]);
     });
     
-    describe('Left semijoin of text:hello & text:hello+unrelated:foo', function() {
-        const grammar = Semijoin(text("hello"), Seq(text("hello"), unrelated("foo")));
+    describe('Filter of text:hello & text:hello+unrelated:foo', function() {
+        const grammar = Filter(text("hello"), Seq(text("hello"), unrelated("foo")));
         const outputs = [...grammar.generate()];
         testGenerateAndSample(grammar, []);
     }); 
     
-    describe('Left semijoin of text:hi+unrelated:world & text:hi+unrelated:world', function() {
-        const grammar = Semijoin(Seq(text("hi"), unrelated("world")),
+    describe('Filter of text:hi+unrelated:world & text:hi+unrelated:world', function() {
+        const grammar = Filter(Seq(text("hi"), unrelated("world")),
                              Seq(text("hi"), unrelated("world")));
         testGenerateAndSample(grammar, [{text: "hi", unrelated: "world"}]);
     });
 
-    describe('Left semijoin of  unrelated:world+text:hello & text:hello+unrelated:world', function() {
-        const grammar = Semijoin(Seq(unrelated("world"), text("hello")),
+    describe('Filter of unrelated:world+text:hello & text:hello+unrelated:world', function() {
+        const grammar = Filter(Seq(unrelated("world"), text("hello")),
                              Seq(text("hello"), unrelated("world")));
         testGenerateAndSample(grammar, [{text: "hello", unrelated: "world"}]);
     });
 
-    describe('Semijoining unrelated-tier alts in same direction', function() {
-        const grammar = Semijoin(Uni(text("hello"), unrelated("foo")),
+    describe('Filtering unrelated-tape alts in same direction', function() {
+        const grammar = Filter(Uni(text("hello"), unrelated("foo")),
                              Uni(text("hello"), unrelated("foo")));
         testGenerateAndSample(grammar, [{text: "hello"},
                               {unrelated: "foo"}]);
     });
 
-    describe('Semijoining unrelated-tier alts in different directions', function() {
-        const grammar = Semijoin(Uni(unrelated("foo"), text("hello")),
+    describe('Filtering unrelated-tape alts in different directions', function() {
+        const grammar = Filter(Uni(unrelated("foo"), text("hello")),
                              Uni(text("hello"), unrelated("foo")));
         testGenerateAndSample(grammar, [{unrelated: "foo"},
                               {text: "hello"}]);
