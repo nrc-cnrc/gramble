@@ -14,7 +14,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "hih"}, {text: "hii"}]);
     });
 
-    describe('text:hi + text:.', function() {
+    describe('text:. + text:hi', function() {
         const grammar = Seq(Any("text"), text("hi"));
         testHasTapes(grammar, ["text"]);
         testHasVocab(grammar, {text: 2});

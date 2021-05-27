@@ -439,7 +439,7 @@ export abstract class State {
      * @param symbolStack A [CounterStack] that keeps track of symbols, used for preventing infinite recursion.
      * @returns true if the state is an accepting state (i.e., constitutes a complete parse) 
      */
-    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
+    public accepting(tape: Tape, symbolStack: CounterStack): boolean {
         return false;
     }
 
@@ -471,8 +471,9 @@ export abstract class State {
         random: boolean,
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]>;
 
-     
-    public resetRandom(): void { }
+    public randomize(): State {
+        return this;
+    }
         
     /** 
      * deterministic Query
@@ -600,6 +601,7 @@ export abstract class State {
         var tries = 0;
 
         while (results.length < numSamples && tries < maxTries) {
+
             const gen = this.parse(restriction, true, maxRecursion, maxChars);
             const firstResult = iterTake(gen, 1);
             results = results.concat(firstResult);
@@ -625,21 +627,19 @@ export abstract class State {
      *                    output to all tapes)
      * @returns a generator of { tape: string } dictionaries, one for each successful traversal. 
      */
-    public *generate(randomize: boolean = false,
+    public *generate(random: boolean = false,
                     maxRecursion: number = 4, 
                     maxChars: number = 1000): Gen<StringDict> {
         
         const symbolStack = new CounterStack(maxRecursion);
         const allTapes = this.getAllTapes();
 
-        if (randomize) {
-            this.resetRandom(); // just in case there are leftover random children from
-        }                       // a previous call to generate()
+        const startingState = random ? this.randomize() : this;
 
         if (allTapes.isTrivial) {
             // there aren't any literal characters anywhere in the grammar, so there's no vocab.  
             // the only possible output is the empty grammar.
-            if (this.accepting(allTapes, randomize, symbolStack)) {
+            if (startingState.accepting(allTapes, symbolStack)) {
                 yield {};
             }
             return;
@@ -647,19 +647,19 @@ export abstract class State {
 
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
 
-        var stateQueue: [MultiTapeOutput, State][] = [[initialOutput, this]];
+        var stateQueue: [MultiTapeOutput, State][] = [[initialOutput, startingState]];
         var chars = 0;
 
         while (stateQueue.length > 0 && chars < maxChars) {
             var nextQueue: [MultiTapeOutput, State][] = [];
             for (const [prevOutput, prevState] of stateQueue) {
 
-                if (prevState.accepting(allTapes, randomize, symbolStack)) {
-                    yield* prevOutput.toStrings(randomize);
+                if (prevState.accepting(allTapes, symbolStack)) {
+                    yield* prevOutput.toStrings(random);
                 }
 
                 for (const [tape, c, matched, newState] of 
-                            prevState.dQuery(allTapes, ANY_CHAR, randomize, symbolStack)) {
+                            prevState.dQuery(allTapes, ANY_CHAR, random, symbolStack)) {
                     if (!matched) {
                         throw new Error("Something went wrong, got all the way through without a match");
                     }
@@ -719,7 +719,7 @@ class CompiledState extends State {
         this.id = `compiled(${originalState.id}@${symbolStack.id})`;
         // your relevant states, and your accepting status, are inherited from the original
         this.relevantTapes = originalState.getRelevantTapes(symbolStack);
-        this.acceptingOnStart = originalState.accepting(allTapes, false, symbolStack);
+        this.acceptingOnStart = originalState.accepting(allTapes, symbolStack);
 
         // then run dQuery and remember the results
         const tapes = [ allTapes, ...allTapes.tapes.values() ];
@@ -745,7 +745,7 @@ class CompiledState extends State {
         this.transitionsByTape[queryTape.tapeName].push([resultTape, token, matched, next]);
     }
 
-    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
+    public accepting(tape: Tape, symbolStack: CounterStack): boolean {
         return this.acceptingOnStart;
     }
 
@@ -822,7 +822,7 @@ abstract class TextState extends State {
             return;
         }
         
-        if (this.accepting(matchedTape, random, symbolStack)) {
+        if (this.accepting(matchedTape, symbolStack)) {
             return; 
         }
 
@@ -859,8 +859,7 @@ export class AnyCharState extends TextState {
     }
 
     public accepting(
-        tape: Tape, 
-        random: boolean, 
+        tape: Tape,
         symbolStack: CounterStack
     ): boolean {
         const matchedTape = tape.matchTape(this.tapeName);
@@ -913,7 +912,6 @@ export class LiteralState extends TextState {
 
     public accepting(
         tape: Tape, 
-        random: boolean, 
         symbolStack: CounterStack
     ): boolean {
         const matchedTape = tape.matchTape(this.tapeName);
@@ -964,7 +962,7 @@ export class TrivialState extends State {
         return true;
     }
 
-    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
+    public accepting(tape: Tape, symbolStack: CounterStack): boolean {
         return true;
     }
 
@@ -997,13 +995,7 @@ abstract class BinaryState extends State {
         this.child1.collectVocab(tapes, stateStack);
         this.child2.collectVocab(tapes, stateStack);
     }
-
     
-    public resetRandom(): void {
-        this.child1.resetRandom();
-        this.child2.resetRandom();
-    } 
-
     public getRelevantTapes(stateStack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
             const child1tapes = this.child1.getRelevantTapes(stateStack);
@@ -1019,11 +1011,10 @@ abstract class BinaryState extends State {
 
     public accepting(
         tape: Tape, 
-        random: boolean, 
         symbolStack: CounterStack
     ): boolean {
-        return this.child1.accepting(tape, random, symbolStack) && 
-                this.child2.accepting(tape, random, symbolStack);
+        return this.child1.accepting(tape, symbolStack) && 
+                this.child2.accepting(tape, symbolStack);
     }
 }
 
@@ -1034,12 +1025,6 @@ abstract class NAryState extends State {
     ) {
         super();
     }
-
-    public resetRandom(): void {
-        for (const child of this.children) {
-            child.resetRandom();
-        }
-    } 
 
     public collectVocab(tapes: Tape, stateStack: string[]): void {
         for (const child of this.children) {
@@ -1087,6 +1072,11 @@ abstract class NAryState extends State {
         return `Seq(${this.children.map(c => c.id).join("+")})`;
     }
 
+    public randomize(): State {
+        const newChildren = this.children.map(c => c.randomize());
+        return new ConcatState(newChildren);
+    }
+
     public isEmpty(): boolean {
 
         if (this.children.length == 0) {
@@ -1114,11 +1104,10 @@ abstract class NAryState extends State {
 
     public accepting(
         tape: Tape, 
-        random: boolean, 
         symbolStack: CounterStack
     ): boolean {
         for (const child of this.children) {
-            if (!child.accepting(tape, random, symbolStack)) {
+            if (!child.accepting(tape, symbolStack)) {
                 return false;
             }
         }
@@ -1198,7 +1187,7 @@ abstract class NAryState extends State {
 
         const currentChild = this.children[currentIndex];
 
-        if (currentChild.accepting(tape, random, symbolStack)) {
+        if (currentChild.accepting(tape, symbolStack)) {
             if (currentIndex+1 < this.children.length) {
                 const currentChild = this.children[currentIndex+1];
                 const successor = this.successor(matchedTape, currentChild, currentIndex+1, symbolStack);
@@ -1315,8 +1304,6 @@ export class ConcatState extends BinaryState {
 
 export class UnionState extends NAryState {
 
-    protected randomChild: State | null = null;
-
     constructor(
         children: State[]
     ) {
@@ -1357,23 +1344,16 @@ export class UnionState extends NAryState {
         return `(${this.children.map(c => c.id).join("|")})`;
     }
 
-    public resetRandom(): void {
-        this.randomChild = null;
-        for (const child of this.children) {
-            child.resetRandom();
+    public randomize(): State {
+        if (this.children.length == 0) {
+            return this;
         }
-    } 
-
-    public getRandomChild(): State {
-        if (this.randomChild == null) {
-            this.randomChild = this.children[Math.floor(Math.random() * this.children.length)];
-        }
-        return this.randomChild;
+        const randomChild = this.children[Math.floor(Math.random() * this.children.length)];
+        return randomChild.randomize();
     }
 
     public accepting(
         tape: Tape, 
-        random: boolean, 
         symbolStack: CounterStack
     ): boolean {
 
@@ -1381,12 +1361,8 @@ export class UnionState extends NAryState {
             return true;
         }
 
-        if (random) {
-            return this.getRandomChild().accepting(tape, random, symbolStack);
-        }
-
         for (const child of this.children) {
-            if (child.accepting(tape, random, symbolStack)) {
+            if (child.accepting(tape, symbolStack)) {
                 return true;
             }
         }
@@ -1402,11 +1378,6 @@ export class UnionState extends NAryState {
         if (this.children.length == 0) {
             return;
         }
-
-        if (random) {
-            yield* this.getRandomChild().ndQuery(tape, target, random, symbolStack);
-            return;
-        } 
 
         for (const child of this.children) {
             yield* child.ndQuery(tape, target, random, symbolStack);
@@ -1466,10 +1437,10 @@ class FilterState extends BinaryState {
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
 
-    public resetRandom(): void {
-        this.child1.resetRandom();
-        this.child2.resetRandom();
-    } 
+    public randomize(): State {
+        const randomLeft = this.child1.randomize();
+        return new FilterState(randomLeft, this.child2);
+    }
 
     /**
      * We factor this out from ndQuery because the descend Join class uses it too.
@@ -1527,9 +1498,9 @@ class FilterState extends BinaryState {
         yield *this.filter(tape, target, this.child1, this.child2, random, symbolStack);
     }
 
-    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
-        return this.child1.accepting(tape, random, symbolStack) && 
-                this.child2.accepting(tape, false, symbolStack);
+    public accepting(tape: Tape, symbolStack: CounterStack): boolean {
+        return this.child1.accepting(tape, symbolStack) && 
+                this.child2.accepting(tape, symbolStack);
     }
 
 }
@@ -1560,13 +1531,18 @@ export class JoinState extends FilterState {
     }
 
     
+    public randomize(): State {
+        const randomLeft = this.child1.randomize();
+        const randomRight = this.child2.randomize();
+        return new JoinState(randomLeft, randomRight);
+    }
+
     public accepting(
         tape: Tape, 
-        random: boolean, 
         symbolStack: CounterStack
     ): boolean {
-        return this.child1.accepting(tape, random, symbolStack) && 
-               this.child2.accepting(tape, random, symbolStack);
+        return this.child1.accepting(tape, symbolStack) && 
+               this.child2.accepting(tape, symbolStack);
     }
 
     public *ndQuery(tape: Tape, 
@@ -1577,7 +1553,7 @@ export class JoinState extends FilterState {
         const leftJoin = this.filter(tape, target, this.child1, this.child2, random, symbolStack);
         const rightJoin = this.filter(tape, target, this.child2, this.child1, random, symbolStack);
         
-        if (this.child1.accepting(tape, random, symbolStack)) {
+        if (this.child1.accepting(tape, symbolStack)) {
             yield* iterPriorityUnion(rightJoin, leftJoin);
             return;
         }
@@ -1603,10 +1579,6 @@ abstract class UnaryState extends State {
 
     public abstract get child(): State;
 
-    public resetRandom(): void {
-        this.child.resetRandom();
-    } 
-
     public get id(): string {
         return `${this.constructor.name}(${this.child.id})`;
     }
@@ -1622,8 +1594,8 @@ abstract class UnaryState extends State {
         return this.relevantTapes;
     }
 
-    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
-        return this.child.accepting(tape, random, symbolStack);
+    public accepting(tape: Tape, symbolStack: CounterStack): boolean {
+        return this.child.accepting(tape, symbolStack);
     }
 }
 
@@ -1685,8 +1657,6 @@ export class StarState extends UnaryState {
  */
 export class RepetitionState extends UnaryState {
 
-    public randomReps: number | null = null;
-
     constructor(
         public child: State,
         public minReps: number = 0,
@@ -1695,6 +1665,25 @@ export class RepetitionState extends UnaryState {
         public initialChild: State,
     ) { 
         super();
+    }
+
+    public randomize(): State {
+
+        const newChild = this.child.randomize();
+        
+        let randomReps = 0;
+
+        if (this.minReps > this.maxReps) {
+            randomReps = -1;
+        } else if (this.minReps == this.maxReps) {
+            randomReps = this.minReps;
+        } else {
+            const maxReps = (this.maxReps != Infinity) ? this.maxReps : 10;
+            const range = maxReps - this.minReps + 1;
+            randomReps = this.minReps + Math.floor(Math.random() * range);
+        }
+
+        return new RepetitionState(newChild, randomReps, randomReps, this.index, this.initialChild);
     }
 
     public get id(): string {
@@ -1727,13 +1716,6 @@ export class RepetitionState extends UnaryState {
         this.initialChild.collectVocab(tapes, stateStack);
     }
 
-    
-    public resetRandom(): void {
-        this.randomReps = null;
-        this.child.resetRandom();
-        //this.initialChild.resetRandom();
-    } 
-    
     public getRelevantTapes(stateStack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
             this.relevantTapes = this.initialChild.getRelevantTapes(stateStack);
@@ -1744,14 +1726,8 @@ export class RepetitionState extends UnaryState {
 
     public accepting(
         tape: Tape, 
-        random: boolean, 
         symbolStack: CounterStack
     ): boolean {
-
-        if (random) {
-            return this.index == this.getRandomReps() && 
-                   this.child.accepting(tape, random, symbolStack);
-        }
 
         if (this.child.isEmpty() && this.initialChild.isEmpty()) {
             return true;
@@ -1759,40 +1735,7 @@ export class RepetitionState extends UnaryState {
 
         return this.index >= this.minReps && 
             this.index <= this.maxReps && 
-            this.child.accepting(tape, random, symbolStack);
-    }
-
-    public getRandomReps(): number {
-        if (this.randomReps == null) {
-
-            if (this.minReps > this.maxReps) {
-                this.randomReps = -1;
-                return this.randomReps;
-            }
-
-            if (this.minReps == this.maxReps) {
-                this.randomReps = this.minReps;
-                return this.randomReps;
-            }
-
-            const maxReps = (this.maxReps != Infinity) ? this.maxReps : 10;
-                  
-            const range = maxReps - this.minReps + 1;
-            this.randomReps = this.minReps + Math.floor(Math.random() * range);
-        }
-        return this.randomReps;
-    }
-
-    public successor(nextChild: State, newIndex: number, random: boolean) {
-
-        if (random) {
-            const randomReps = this.getRandomReps();
-            nextChild.resetRandom();
-            return new RepetitionState(nextChild, randomReps, randomReps, newIndex, this.initialChild);
-        }
-
-        return new RepetitionState(nextChild, this.minReps, this.maxReps, newIndex, this.initialChild);
-
+            this.child.accepting(tape, symbolStack);
     }
 
     public *ndQuery(tape: Tape, 
@@ -1808,9 +1751,11 @@ export class RepetitionState extends UnaryState {
             yield [tape, target, false, this];
         } 
 
-        if (this.child.accepting(tape, random, symbolStack) &&
+        if (this.child.accepting(tape, symbolStack) &&
             !(this.maxReps == Infinity && this.child == this.initialChild)) {
-            const successor = this.successor(this.initialChild, this.index+1, random);
+            const successorChild = random ? this.initialChild.randomize() : this.initialChild;
+            const successor = new RepetitionState(successorChild, this.minReps, this.maxReps, 
+                                                this.index+1, this.initialChild)
             for (const result of successor.ndQuery(tape, target, random, symbolStack)) {
                 yield result;
             }
@@ -1823,7 +1768,7 @@ export class RepetitionState extends UnaryState {
                 continue;
             }
 
-            const successor = this.successor(childNext, this.index, random);
+            const successor = new RepetitionState(childNext, this.minReps, this.maxReps, this.index, this.initialChild);
             yield [childTape, childText, childMatched, successor];
         }
 
@@ -1933,14 +1878,13 @@ export class EmbedState extends State {
     
     public accepting(
         tape: Tape, 
-        random: boolean, 
         symbolStack: CounterStack
     ): boolean {
         if (symbolStack.exceedsMax(this.symbolName)) {
             return false;
         }
         const newStack = symbolStack.add(this.symbolName);
-        return this.getChild(newStack).accepting(tape, random, newStack);
+        return this.getChild(newStack).accepting(tape, newStack);
     }
 
     public *ndQuery(tape: Tape, 
@@ -1953,10 +1897,10 @@ export class EmbedState extends State {
         }
 
         symbolStack = symbolStack.add(this.symbolName);
-        const child = this.getChild(symbolStack);
-        
+        let child = this.getChild(symbolStack);
+
         if (random) {
-            child.resetRandom();
+            child = child.randomize();
         }
 
         for (const [childchildTape, childTarget, childMatched, childNext] of 
@@ -2116,9 +2060,13 @@ export class RenameState extends UnaryState {
         return this.child.isEmpty();
     }
 
-    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
+    public randomize(): State {
+        return new RenameState(this.child.randomize(), this.fromTape, this.toTape);
+    }
+
+    public accepting(tape: Tape, symbolStack: CounterStack): boolean {
         tape = new RenamedTape(tape, this.fromTape, this.toTape);
-        return this.child.accepting(tape, random, symbolStack);
+        return this.child.accepting(tape, symbolStack);
     }
 
     public collectVocab(tapes: Tape, stateStack: string[]): void {
@@ -2264,15 +2212,19 @@ export class NegationState extends State {
         return this.relevantTapes;
     } 
 
+    public randomize(): State {
+        console.log("Warning, taking a randomization of a negation");
+        return this;
+    }
+
     public accepting(
         tape: Tape,
-        random: boolean, 
         symbolStack: CounterStack
     ): boolean {
         if (this.child == undefined) {
             return true;
         }
-        return !this.child.accepting(tape, random, symbolStack);
+        return !this.child.accepting(tape, symbolStack);
     }
 
     public *ndQuery(
@@ -2320,6 +2272,12 @@ export class MatchState extends UnaryState {
         super();
     }
 
+
+    public randomize(): State {
+        console.log("Warning, taking a randomization of a match");
+        return this;
+    }
+
     public getRelevantTapes(stateStack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
             this.relevantTapes = new Set(this.tapes);
@@ -2329,15 +2287,14 @@ export class MatchState extends UnaryState {
 
     public accepting(
         tape: Tape,
-        random: boolean, 
         symbolStack: CounterStack
     ): boolean {
         for (const buffer of Object.values(this.buffers)) {
-            if (!buffer.accepting(tape, random, symbolStack)) {
+            if (!buffer.accepting(tape, symbolStack)) {
                 return false;
             }
         }
-        return this.child.accepting(tape, random, symbolStack);
+        return this.child.accepting(tape, symbolStack);
     }
 
     public *ndQuery(

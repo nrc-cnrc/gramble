@@ -322,9 +322,23 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('"maybe X" header', function() {
+    describe('"maybe text" header', function() {
 
-        const project = sheetFromFile("./tests/csvs/maybeGrammar.csv");
+        const project = sheetFromFile("./tests/csvs/maybeHeader.csv");
+        
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foo" },
+            { text: "moo" },
+            { text: "foobar" },
+            { text: "moobar" },
+        ]);
+    });
+
+    
+    describe('"maybe embed" header', function() {
+
+        const project = sheetFromFile("./tests/csvs/maybeEmbed.csv");
         
         testErrors(project, []);
         testSymbols(project, ["word", "verb", "suffix"]);
