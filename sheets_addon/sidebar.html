@@ -275,7 +275,9 @@
                     CURRENT_INPUTS[tapeName] = value;
                 }
 
+                var startTime = Date.now();
                 const results = project.sample(symbolName, 5, CURRENT_INPUTS);
+                console.log(`Generated results, elapsed time = ${Date.now()-startTime}ms`);
 
                 for (var i = 0; i < results.length; i++) {
                     displayRecord(results[i], resultsTable);

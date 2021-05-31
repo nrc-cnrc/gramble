@@ -11979,12 +11979,12 @@ class SimpleDevEnvironment {
         }
         return result;
     }
-    markContent(sheet, row, col, tier) { }
+    markContent(sheet, row, col, tape) { }
     markComment(sheet, row, col) { }
     markHeader(sheet, row, col, color) { }
     markCommand(sheet, row, col) { }
     markSymbol(sheet, row, col) { }
-    setColor(tierName, color) { }
+    setColor(tape, color) { }
     highlight() { }
     alert(msg) { }
 }
@@ -11993,17 +11993,17 @@ exports.SimpleDevEnvironment = SimpleDevEnvironment;
 },{}],42:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Empty = exports.Rep = exports.Emb = exports.Rename = exports.Drop = exports.Proj = exports.Not = exports.Semijoin = exports.Join = exports.Uni = exports.Seq = exports.Lit = exports.State = exports.SimpleDevEnvironment = exports.Project = void 0;
+exports.Empty = exports.Rep = exports.Emb = exports.Rename = exports.Drop = exports.Proj = exports.Not = exports.Filter = exports.Join = exports.Uni = exports.Seq = exports.Lit = exports.State = exports.SimpleDevEnvironment = exports.Project = void 0;
 const stateMachine_1 = require("./stateMachine");
 Object.defineProperty(exports, "State", { enumerable: true, get: function () { return stateMachine_1.State; } });
 Object.defineProperty(exports, "Lit", { enumerable: true, get: function () { return stateMachine_1.Lit; } });
 Object.defineProperty(exports, "Seq", { enumerable: true, get: function () { return stateMachine_1.Seq; } });
 Object.defineProperty(exports, "Uni", { enumerable: true, get: function () { return stateMachine_1.Uni; } });
 Object.defineProperty(exports, "Join", { enumerable: true, get: function () { return stateMachine_1.Join; } });
-Object.defineProperty(exports, "Semijoin", { enumerable: true, get: function () { return stateMachine_1.Semijoin; } });
+Object.defineProperty(exports, "Filter", { enumerable: true, get: function () { return stateMachine_1.Filter; } });
 Object.defineProperty(exports, "Not", { enumerable: true, get: function () { return stateMachine_1.Not; } });
-Object.defineProperty(exports, "Proj", { enumerable: true, get: function () { return stateMachine_1.Proj; } });
-Object.defineProperty(exports, "Drop", { enumerable: true, get: function () { return stateMachine_1.Drop; } });
+Object.defineProperty(exports, "Proj", { enumerable: true, get: function () { return stateMachine_1.Reveal; } });
+Object.defineProperty(exports, "Drop", { enumerable: true, get: function () { return stateMachine_1.Hide; } });
 Object.defineProperty(exports, "Rename", { enumerable: true, get: function () { return stateMachine_1.Rename; } });
 Object.defineProperty(exports, "Emb", { enumerable: true, get: function () { return stateMachine_1.Emb; } });
 Object.defineProperty(exports, "Rep", { enumerable: true, get: function () { return stateMachine_1.Rep; } });
@@ -12023,9 +12023,11 @@ function MPDelay(child) {
     };
 }
 exports.MPDelay = MPDelay;
-function MPUnreserved(reserved, constr) {
+function MPUnreserved(reserved, constr, caseSensitive = false) {
     return function* (input) {
-        if (input.length == 0 || reserved.has(input[0])) {
+        const firstToken = caseSensitive ? input[0]
+            : input[0].toLowerCase();
+        if (input.length == 0 || reserved.has(firstToken)) {
             return;
         }
         yield [constr(input[0]), input.slice(1)];
@@ -12041,14 +12043,21 @@ function MPComment(commentStarter, constr) {
     };
 }
 exports.MPComment = MPComment;
-function MPSequence(children, constr) {
+function MPSequence(children, constr, caseSensitive = false) {
     return function* (input) {
         var results = [[[], input]];
         for (const child of children) {
             var newResults = [];
             for (const [existingOutputs, existingRemnant] of results) {
                 if (typeof child == "string") {
-                    if (existingRemnant.length > 0 && existingRemnant[0] == child) {
+                    if (existingRemnant.length == 0) {
+                        continue;
+                    }
+                    const remnantTestForm = caseSensitive ? existingRemnant[0]
+                        : existingRemnant[0].toLowerCase();
+                    const childTestForm = caseSensitive ? child
+                        : child.toLowerCase();
+                    if (remnantTestForm == childTestForm) {
                         newResults.push([existingOutputs, existingRemnant.slice(1)]);
                     }
                     continue;
@@ -12112,7 +12121,7 @@ const sheetParser_1 = require("./sheetParser");
 class Project {
     constructor(devEnv = new devEnv_1.SimpleDevEnvironment()) {
         this.devEnv = devEnv;
-        this.globalNamespace = new stateMachine_1.Namespace();
+        this.globalNamespace = new stateMachine_1.Namespace("__GLOBAL__");
         this.defaultSheetName = '';
         this.sheets = {};
     }
@@ -12186,7 +12195,7 @@ class Project {
         // that need them (like the sidebar of the GSuite add-on)
         // Create a new namespace for this sheet and add it to the 
         // global namespace
-        const sheetNamespace = new stateMachine_1.Namespace();
+        const sheetNamespace = new stateMachine_1.Namespace(sheetName);
         this.globalNamespace.addLocalNamespace(sheetName, sheetNamespace);
         // Compile it
         sheetComponent.compile(sheetNamespace, this.devEnv);
@@ -12244,7 +12253,7 @@ exports.Project = Project;
  * of formulas in that language.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseCells = exports.SheetComponent = exports.GrammarComponent = exports.parseHeaderCell = exports.SlashHeader = exports.ContainsHeader = exports.EndsWithHeader = exports.StartsWithHeader = exports.EqualsHeader = exports.JoinHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.DropHeader = exports.EmbedHeader = exports.Header = void 0;
+exports.parseCells = exports.SheetComponent = exports.GrammarComponent = exports.parseHeaderCell = exports.SlashHeader = exports.ContainsHeader = exports.EndsWithHeader = exports.StartsWithHeader = exports.EqualsHeader = exports.JoinHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.RevealHeader = exports.HideHeader = exports.EmbedHeader = exports.Header = void 0;
 const chai_1 = require("chai");
 const cellParser_1 = require("./cellParser");
 const miniParser_1 = require("./miniParser");
@@ -12325,20 +12334,46 @@ class EmbedHeader extends AtomicHeader {
 }
 exports.EmbedHeader = EmbedHeader;
 /**
- * DropHeaders lead to the complilation of DropStates.
+ * HideHeader is an atomic header "hide:T" that takes the grammar
+ * to the left and mangles the name of tape T outside of that grammar,
+ * so that the field cannot be referenced outside of it.  This allows
+ * programmers to use additional fields without necessarily overwhelming
+ * the "public" interface to the grammar with fields that are only
+ * internally-relevant, and avoid unexpected behavior when joining two classes
+ * that define same-named fields internally for different purposes.
  */
-class DropHeader extends AtomicHeader {
+class HideHeader extends AtomicHeader {
     compileAndMerge(cell, namespace, devEnv, leftNeighbor) {
-        const compiledCell = new DropComponent(this, cell);
+        const compiledCell = new HeadedCellComponent(this, cell);
         if (leftNeighbor == undefined) {
-            compiledCell.markError(devEnv, "Wayward drop", '"Drop" has to have something to the left of it, to drop from.');
+            compiledCell.markError(devEnv, "Wayward hide", '"hide" has to have something to the left of it.');
             return compiledCell;
         }
-        compiledCell.state = stateMachine_1.Drop(leftNeighbor, cell.text);
+        compiledCell.state = leftNeighbor;
+        for (const tape of cell.text.split("/")) {
+            compiledCell.state = stateMachine_1.Hide(compiledCell.state, tape.trim());
+        }
         return compiledCell;
     }
 }
-exports.DropHeader = DropHeader;
+exports.HideHeader = HideHeader;
+/**
+ * RevealHeader is the opposite of HideHeader: any tape T named in "reveal:T"
+ * is left alone, and all other tapes are hidden.
+ */
+class RevealHeader extends AtomicHeader {
+    compileAndMerge(cell, namespace, devEnv, leftNeighbor) {
+        const compiledCell = new HeadedCellComponent(this, cell);
+        if (leftNeighbor == undefined) {
+            compiledCell.markError(devEnv, "Wayward reveal", '"reveal" has to have something to the left of it.');
+            return compiledCell;
+        }
+        const tapes = cell.text.split("/").map(t => t.trim());
+        compiledCell.state = stateMachine_1.Reveal(leftNeighbor, tapes);
+        return compiledCell;
+    }
+}
+exports.RevealHeader = RevealHeader;
 /**
  * LiteralHeaders are references to a particular tape name (e.g. "text")
  */
@@ -12485,11 +12520,11 @@ class JoinHeader extends UnaryHeader {
 exports.JoinHeader = JoinHeader;
 /**
  * EqualsHeader puts a constraint on the state of the immediately preceding cell (call this state N)
- * that Semijoin(N, X) -- that is, it filters the results of N such that every surviving record is a
+ * that Filter(N, X) -- that is, it filters the results of N such that every surviving record is a
  * superset of X.
  *
  * This is also the superclass of [StartsWithHeader] and [EndsWithHeader].  These constrain N to either
- * start with X (that is, Semijoin(N, X.*)) or end with X (that is, Semijoin(N, .*X)).
+ * start with X (that is, Filter(N, X.*)) or end with X (that is, Filter(N, .*X)).
  */
 class EqualsHeader extends JoinHeader {
     merge(leftNeighbor, state) {
@@ -12501,12 +12536,12 @@ class EqualsHeader extends JoinHeader {
             // because startswith only scopes over the cell immediately to the left.  (if you let
             // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
             // specifying in the same row, rather than the embedded thing you're trying to catch.)
-            const immediateLeftNeighbor = leftNeighbor.child2; // taking advantage of the fact that
+            const immediateLeftNeighbor = leftNeighbor.children[leftNeighbor.children.length - 1]; // taking advantage of the fact that
             // these are constructed to be left-branching
-            const remnant = leftNeighbor.child1;
-            return stateMachine_1.Seq(remnant, stateMachine_1.Semijoin(immediateLeftNeighbor, state));
+            const remnant = leftNeighbor.children.slice(0, leftNeighbor.children.length - 1);
+            return stateMachine_1.Seq(...remnant, stateMachine_1.Filter(immediateLeftNeighbor, state));
         }
-        return stateMachine_1.Semijoin(leftNeighbor, state);
+        return stateMachine_1.Filter(leftNeighbor, state);
     }
 }
 exports.EqualsHeader = EqualsHeader;
@@ -12524,7 +12559,7 @@ class PartialEqualsHeader extends EqualsHeader {
 }
 /**
  * StartsWithHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to
- * start with X (that is, Semijoin(N, X.*))
+ * start with X (that is, Filter(N, X.*))
  */
 class StartsWithHeader extends PartialEqualsHeader {
     formSequence(state, tapeName) {
@@ -12535,7 +12570,7 @@ class StartsWithHeader extends PartialEqualsHeader {
 exports.StartsWithHeader = StartsWithHeader;
 /**
  * EndsWithHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to
- * end with X (that is, Semijoin(N, .*X))
+ * end with X (that is, Filter(N, .*X))
  */
 class EndsWithHeader extends PartialEqualsHeader {
     formSequence(state, tapeName) {
@@ -12546,7 +12581,7 @@ class EndsWithHeader extends PartialEqualsHeader {
 exports.EndsWithHeader = EndsWithHeader;
 /**
  * ContainsHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to
- * contain X (that is, Semijoin(N, .*X.*))
+ * contain X (that is, Filter(N, .*X.*))
  */
 class ContainsHeader extends PartialEqualsHeader {
     formSequence(state, tapeName) {
@@ -12601,7 +12636,7 @@ exports.SlashHeader = SlashHeader;
  * parser for the grammar.
  */
 const SYMBOL = ["(", ")", "%", "/", '@', ">", ":"];
-const RESERVED_HEADERS = ["embed", "maybe", "not", "drop", "equals", "startswith", "endswith", "contains"];
+const RESERVED_HEADERS = ["embed", "maybe", "not", "hide", "reveal", "equals", "startswith", "endswith", "contains"];
 const BINARY_OPS = {
     "or": stateMachine_1.Uni,
     "concat": stateMachine_1.Seq,
@@ -12616,11 +12651,12 @@ function tokenize(text) {
     return text.split(tokenizer).filter((s) => s !== undefined && s !== '');
 }
 var HP_NON_COMMENT_EXPR = miniParser_1.MPDelay(() => miniParser_1.MPAlternation(HP_MAYBE, HP_SLASH, HP_RENAME, HP_EQUALS, HP_STARTSWITH, HP_ENDSWITH, HP_CONTAINS, HP_SUBEXPR));
-var HP_SUBEXPR = miniParser_1.MPDelay(() => miniParser_1.MPAlternation(HP_UNRESERVED, HP_EMBED, HP_DROP, HP_JOIN, HP_PARENS));
+var HP_SUBEXPR = miniParser_1.MPDelay(() => miniParser_1.MPAlternation(HP_UNRESERVED, HP_EMBED, HP_HIDE, HP_REVEAL, HP_JOIN, HP_PARENS));
 const HP_COMMENT = miniParser_1.MPComment('%', (s) => new CommentHeader(s));
 const HP_UNRESERVED = miniParser_1.MPUnreserved(RESERVED_WORDS, (s) => new LiteralHeader(s));
 const HP_EMBED = miniParser_1.MPSequence(["embed"], () => new EmbedHeader("embed"));
-const HP_DROP = miniParser_1.MPSequence(["drop"], () => new DropHeader("drop"));
+const HP_HIDE = miniParser_1.MPSequence(["hide"], () => new HideHeader("hide"));
+const HP_REVEAL = miniParser_1.MPSequence(["reveal"], () => new RevealHeader("reveal"));
 const HP_JOIN = miniParser_1.MPSequence(["@", HP_SUBEXPR], (child) => new JoinHeader("@", child));
 const HP_MAYBE = miniParser_1.MPSequence(["maybe", HP_NON_COMMENT_EXPR], (child) => new MaybeHeader("maybe", child));
 const HP_SLASH = miniParser_1.MPSequence([HP_SUBEXPR, "/", HP_NON_COMMENT_EXPR], (child1, child2) => new SlashHeader(child1, child2));
@@ -12813,7 +12849,8 @@ class AssignmentComponent extends EnclosureComponent {
         }
         // determine what symbol you're assigning to
         const trimmedText = this.text.slice(0, this.text.length - 1).trim();
-        if (RESERVED_WORDS.has(trimmedText)) {
+        const trimmedTextLower = trimmedText.toLowerCase();
+        if (RESERVED_WORDS.has(trimmedTextLower)) {
             // oops, assigning to a reserved word
             this.markError(devEnv, "Assignment to reserved word", "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
                 `reserved word ${trimmedText}.  Choose a different symbol name.`);
@@ -12882,7 +12919,7 @@ class AbstractTestSuiteComponent extends EnclosureComponent {
     /**
      * "test" is an operator that takes two tables, one above (spatially speaking)
      * and one to the right, and makes sure that each line of the one to the right
-     * has an output when semijoined to the table above.
+     * has an output when filtering the table above.
      *
      * Test doesn't make any change to the State it returns; adding a "test" below
      * a grammar returns the exact same grammar as otherwise.
@@ -12916,8 +12953,8 @@ class TestSuiteComponent extends AbstractTestSuiteComponent {
     runChecks(namespace, devEnv) {
         super.runChecks(namespace, devEnv);
         for (const test of this.tests) {
-            // the appropriate operation here is the left semijoin between my state
-            // and the test's state
+            // the appropriate operation here is the filter of my state
+            // by the test's state
             if (!this.state.runUnitTest(test.state)) {
                 test.markError(devEnv, `Test failed: ${test.text}`, "Test failed: This row cannot be generated by the grammar above.");
             }
@@ -12933,8 +12970,8 @@ class TestNotSuiteComponent extends AbstractTestSuiteComponent {
     runChecks(namespace, devEnv) {
         super.runChecks(namespace, devEnv);
         for (const test of this.tests) {
-            // the appropriate operation here is the left semijoin between my state
-            // and the test's state
+            // the appropriate operation here is the filter of my state
+            // by the test's state
             if (this.state.runUnitTest(test.state)) {
                 // opposite of TestSuiteComponent: mark an error if the test succeeds
                 test.markError(devEnv, `Test failed: ${test.text}`, "Test failed: This row can be generated by the grammar above.");
@@ -13163,22 +13200,6 @@ class EmbedComponent extends HeadedCellComponent {
         }
     }
 }
-class DropComponent extends HeadedCellComponent {
-    runChecks(ns, devEnv) {
-        if (!(this.state instanceof stateMachine_1.DropState)) {
-            return;
-        }
-        if (this.state.droppedTape == "") {
-            return;
-        }
-        const symbolStack = new stateMachine_1.CounterStack(2);
-        const childTapes = this.state.child.getRelevantTapes(symbolStack);
-        if (!(childTapes.has(this.state.droppedTape))) {
-            this.markError(devEnv, `Inaccessible tape: ${this.state.droppedTape}`, `This cell refers to a tape ${this.state.droppedTape},` +
-                ` but the content to its left only defines tape(s) ${[...childTapes].join(", ")}.`);
-        }
-    }
-}
 class RenameComponent extends HeadedCellComponent {
     constructor(header, cell, child) {
         super(header, cell);
@@ -13219,16 +13240,17 @@ function constructOp(cell, devEnv) {
     var newEnclosure;
     chai_1.assert(cell.text.endsWith(":"), "Tried to construct an op that didn't end with ':'");
     const trimmedText = cell.text.slice(0, cell.text.length - 1).trim();
-    if (trimmedText in BINARY_OPS) {
+    const trimmedTextLower = trimmedText.toLowerCase();
+    if (trimmedTextLower in BINARY_OPS) {
         newEnclosure = new BinaryOpComponent(cell);
     }
-    else if (trimmedText == "table") {
+    else if (trimmedTextLower == "table") {
         newEnclosure = new TableComponent(cell);
     }
-    else if (trimmedText == "test") {
+    else if (trimmedTextLower == "test") {
         newEnclosure = new TestSuiteComponent(cell);
     }
-    else if (trimmedText == "testnot") {
+    else if (trimmedTextLower == "testnot") {
         newEnclosure = new TestNotSuiteComponent(cell);
     }
     else if (cell.position.col == 0) {
@@ -13326,7 +13348,7 @@ exports.parseCells = parseCells;
 },{"./cellParser":40,"./miniParser":43,"./stateMachine":46,"./util":48,"chai":2}],46:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Maybe = exports.Empty = exports.Rep = exports.Any = exports.Rename = exports.Drop = exports.Proj = exports.Emb = exports.Not = exports.Semijoin = exports.Join = exports.Uni = exports.Seq = exports.Literalizer = exports.Lit = exports.NegationState = exports.RenameState = exports.DropState = exports.ProjectionState = exports.EmbedState = exports.RepetitionState = exports.JoinState = exports.UnionState = exports.ConcatState = exports.TrivialState = exports.LiteralState = exports.AnyCharState = exports.State = exports.Namespace = exports.CounterStack = void 0;
+exports.Maybe = exports.Empty = exports.MatchDotStar = exports.MatchDotRep = exports.MatchDot = exports.Dot = exports.Match = exports.Rep = exports.Any = exports.Rename = exports.Hide = exports.Reveal = exports.Emb = exports.Not = exports.Filter = exports.Join = exports.Uni = exports.Seq = exports.Literalizer = exports.Lit = exports.MatchState = exports.NegationState = exports.RenameState = exports.EmbedState = exports.RepetitionState = exports.JoinState = exports.UnionState = exports.ConcatState = exports.TrivialState = exports.LiteralState = exports.AnyCharState = exports.State = exports.Namespace = exports.CounterStack = void 0;
 const util_1 = require("./util");
 const tapes_1 = require("./tapes");
 /**
@@ -13393,14 +13415,14 @@ exports.CounterStack = CounterStack;
  * project source files are unordered and not hierarchically structured, too.)
  */
 class Namespace {
-    constructor(symbols = {}) {
+    constructor(name, symbols = {}) {
+        this.name = name;
         this.symbols = symbols;
         this.parent = undefined;
         this.childNamespaces = {};
         this.requiredNamespaces = new Set();
         this.defaultNamespaceName = "";
         this.defaultSymbolName = "";
-        this.registeredSymbolNames = [];
     }
     hasSymbol(name) {
         return name in this.symbols;
@@ -13412,15 +13434,17 @@ class Namespace {
         if (name in this.symbols) {
             throw new Error(`Redefining symbol ${name}`);
         }
-        this.symbols[name] = state;
-        this.defaultSymbolName = name;
+        const lowercaseName = name.toLowerCase();
+        this.symbols[lowercaseName] = [name, state];
+        this.defaultSymbolName = lowercaseName;
     }
     resolveName(name, tryParent = true) {
         const pieces = name.split(".", 2);
         if (pieces.length == 1) {
             // it's either a local symbol name, or a local namespace name with the default symbol name,
             // or in our default namespace
-            const symbol = this.symbols[name];
+            const lowercaseName = name.toLowerCase();
+            const symbol = this.symbols[lowercaseName];
             if (symbol != undefined) {
                 return [this, name]; // it's a local symbol
             }
@@ -13431,9 +13455,9 @@ class Namespace {
             if (this.defaultNamespaceName != "") {
                 const ns = this.getLocalNamespace(this.defaultNamespaceName);
                 if (ns != undefined) {
-                    const result = ns.symbols[name];
+                    const result = ns.symbols[lowercaseName];
                     if (result != undefined) {
-                        return [ns, name]; // it's a symbol in our default namespace
+                        return [ns, lowercaseName]; // it's a symbol in our default namespace
                     }
                 }
             }
@@ -13475,17 +13499,19 @@ class Namespace {
             throw new Error(`Trying to locally compile a qualified name ${name}; ` +
                 " this should have been resolved in symbol resolution");
         }
-        const compiledName = name + "@@@" + symbolStack.id;
+        const compiledName = this.getCompiledName(name, symbolStack);
         if (compiledName in this.symbols) {
             // already compiled it
             return;
         }
-        const state = this.symbols[name];
+        const lowercaseName = name.toLowerCase();
+        const [realName, state] = this.symbols[lowercaseName];
         const compiledState = state.compileAux(allTapes, symbolStack, compileLevel);
-        this.symbols[compiledName] = compiledState;
+        this.symbols[compiledName] = [realName, compiledState];
     }
     allSymbols() {
-        const result = Object.keys(this.symbols);
+        const symbols = Object.values(this.symbols);
+        var result = symbols.map(([name, value]) => name);
         for (const namespaceName in this.childNamespaces) {
             const childNamespace = this.childNamespaces[namespaceName];
             for (const symbol of childNamespace.allSymbols()) {
@@ -13498,32 +13524,38 @@ class Namespace {
         if (name.indexOf(".") != -1) {
             throw new Error(`Namespace names may not contain a period: ${name}`);
         }
-        if (name in this.childNamespaces) {
+        const lowercaseNmae = name.toLowerCase();
+        if (lowercaseNmae in this.childNamespaces) {
             throw new Error(`Redefining namespace ${name}`);
         }
-        this.childNamespaces[name] = namespace;
+        this.childNamespaces[lowercaseNmae] = namespace;
         namespace.parent = this;
     }
     setDefaultNamespaceName(name) {
-        if (!(name in this.childNamespaces)) {
+        const lowercaseName = name.toLowerCase();
+        if (!(lowercaseName in this.childNamespaces)) {
             throw new Error(`Trying to set ${name} to the default namespace, but it doesn't exist yet.`);
         }
-        this.defaultNamespaceName = name;
+        this.defaultNamespaceName = lowercaseName;
     }
     /**
      * Gets a namespace by name, but only local ones (i.e. children of this namespace)
      */
     getLocalNamespace(name) {
-        return this.childNamespaces[name];
+        const lowercaseName = name.toLowerCase();
+        return this.childNamespaces[lowercaseName];
     }
     getLocalSymbol(name, symbolStack = undefined) {
         if (symbolStack != undefined) {
             const compiledName = this.getCompiledName(name, symbolStack);
             if (compiledName in this.symbols) {
-                return this.symbols[compiledName];
+                const [realName, state] = this.symbols[compiledName];
+                return state;
             }
         }
-        return this.symbols[name];
+        const lowercaseName = name.toLowerCase();
+        const [realName, state] = this.symbols[lowercaseName];
+        return state;
     }
     getCompiledName(symbolName, symbolStack) {
         return symbolName + "@@@" + symbolStack.id;
@@ -13536,6 +13568,7 @@ class Namespace {
         const [ns, localName] = resolution;
         return ns.getLocalSymbol(localName, symbolStack);
     }
+    //public registeredSymbolNames: string[] = [];
     /**
      * When an EmbedState is constructed, it needs to "register" the symbol
      * name it is going to want later, so that we can (if necessary) load and
@@ -13554,7 +13587,8 @@ class Namespace {
             // this doesn't happen in real projects, but it can happen when unit testing.
             return;
         }
-        this.parent.requiredNamespaces.add(pieces[0]);
+        const lowercaseName = pieces[0].toLowerCase();
+        this.parent.requiredNamespaces.add(lowercaseName);
     }
 }
 exports.Namespace = Namespace;
@@ -13596,6 +13630,16 @@ exports.Namespace = Namespace;
 class State {
     constructor() {
         /**
+         * States must know what tapes their associated grammars are defined over.  Note that these
+         * might not be the same names that the grammar as a whole knows these tapes by, because the Rename
+         * operation can rename tapes within its scope.
+         *
+         * The tapes over which a grammar is defined are not necessarily known at the point that the grammar
+         * is initially constructed, because this depends on their children, and children can include symbols
+         * defined only later.  So we need a separate pass after construction.
+         */
+        this.relevantTapes = undefined;
+        /**
          * Due to complications involved in compilation, States sometimes have to keep reference
          * to the vocabulary with which they were originally compiled.  (You can't run a compiled
          * state graph using a different vocab, after all, and running the collectVocab() algorithm
@@ -13609,7 +13653,27 @@ class State {
          * was probably referenced as a variable and someone called generate() or compile() on it.)
          */
         this.allTapes = undefined;
-        this.relevantTapes = undefined;
+    }
+    /**
+     * Collects the names of all tapes relevant to this state.  The names are those
+     * that this state would "see" (that is, if this state refers to a RenameState,
+     * it uses the renamed tape name, not whatever that tape is referred to "inside"
+     * the RenameState).
+     *
+     * This will be the same result as if we called "collectVocab" on this state with an empty
+     * TapeCollection, but we don't go to the trouble of collecting the character vocabulary.
+     */
+    getRelevantTapes(stateStack) {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set();
+        }
+        return this.relevantTapes;
+    }
+    caresAbout(tape) {
+        if (tape.tapeName == "__ANY_TAPE__")
+            return true;
+        const symbolStack = new CounterStack(2);
+        return this.getRelevantTapes(symbolStack).has(tape.tapeName);
     }
     getAllTapes() {
         if (this.allTapes == undefined) {
@@ -13633,10 +13697,12 @@ class State {
      * @param symbolStack A [CounterStack] that keeps track of symbols, used for preventing infinite recursion.
      * @returns true if the state is an accepting state (i.e., constitutes a complete parse)
      */
-    accepting(random, symbolStack) {
+    accepting(tape, random, symbolStack) {
         return false;
     }
-    resetRandom() { }
+    randomize() {
+        return this;
+    }
     /**
      * deterministic Query
      *
@@ -13665,7 +13731,8 @@ class State {
         var results = [];
         var nextStates = [...this.ndQuery(tape, target, random, symbolStack)];
         for (var [nextTape, nextBits, nextMatched, next] of nextStates) {
-            if (nextTape.isTrivial || !nextMatched) {
+            //if (nextTape.isTrivial || !nextMatched) {
+            if (!nextMatched) {
                 results.push([nextTape, nextBits, nextMatched, next]);
                 continue;
             }
@@ -13697,7 +13764,7 @@ class State {
         yield* results;
     }
     runUnitTest(test) {
-        const testingState = Semijoin(this, test);
+        const testingState = Filter(this, test);
         const tapeCollection = this.getAllTapes(); // see the commentary on .parse() for why we have
         test.collectVocab(tapeCollection, []); // to do something special with the tapes.
         testingState.allTapes = tapeCollection;
@@ -13714,7 +13781,7 @@ class State {
         var startState = this;
         if (inputLiterals.length > 0) {
             const inputSeq = Seq(...inputLiterals);
-            startState = Semijoin(startState, inputSeq);
+            startState = Filter(startState, inputSeq);
             const tapeCollection = this.getAllTapes(); // in case this state has already
             // been compiled, we need to start the algorithm with the same vocab.
             // if it hasn't been compiled, .allTapes always starts as undefined anyway,
@@ -13755,23 +13822,29 @@ class State {
      *                    output to all tapes)
      * @returns a generator of { tape: string } dictionaries, one for each successful traversal.
      */
-    *generate(randomize = false, maxRecursion = 4, maxChars = 1000) {
+    *generate(random = false, maxRecursion = 4, maxChars = 1000) {
         const symbolStack = new CounterStack(maxRecursion);
-        var startState = this;
         const allTapes = this.getAllTapes();
+        const startTime = Date.now();
+        const startingState = random ? this.randomize() : this;
+        if (allTapes.isTrivial) {
+            // there aren't any literal characters anywhere in the grammar, so there's no vocab.  
+            // the only possible output is the empty grammar.
+            if (startingState.accepting(allTapes, random, symbolStack)) {
+                yield {};
+            }
+            return;
+        }
         const initialOutput = new tapes_1.MultiTapeOutput();
-        if (randomize) {
-            this.resetRandom(); // just in case there are leftover random children from
-        } // a previous call to generate()
-        var stateQueue = [[initialOutput, startState]];
+        var stateQueue = [[initialOutput, startingState]];
         var chars = 0;
         while (stateQueue.length > 0 && chars < maxChars) {
             var nextQueue = [];
             for (const [prevOutput, prevState] of stateQueue) {
-                if (prevState.accepting(randomize, symbolStack)) {
-                    yield* prevOutput.toStrings(randomize);
+                if (prevState.accepting(allTapes, random, symbolStack)) {
+                    yield* prevOutput.toStrings(random);
                 }
-                for (const [tape, c, matched, newState] of prevState.dQuery(allTapes, tapes_1.ANY_CHAR, randomize, symbolStack)) {
+                for (const [tape, c, matched, newState] of prevState.dQuery(allTapes, tapes_1.ANY_CHAR, random, symbolStack)) {
                     if (!matched) {
                         throw new Error("Something went wrong, got all the way through without a match");
                     }
@@ -13791,33 +13864,15 @@ class State {
      * @returns vocab
      */
     collectVocab(tapes, stateStack) { }
-    /**
-     * Collects the names of all tapes relevant to this state.  The names are those
-     * that this state would "see" (that is, if this state refers to a RenameState,
-     * it uses the renamed tape name, not whatever that tape is referred to "inside"
-     * the RenameState).
-     *
-     * This will be the same result as if we called "collectVocab" on this state with an empty
-     * TapeCollection, but we don't go to the trouble of collecting the character vocabulary.
-     */
-    getRelevantTapes(stateStack) {
-        if (this.relevantTapes == undefined) {
-            this.relevantTapes = new Set();
-        }
-        return this.relevantTapes;
-    }
-    caresAbout(tape) {
-        if (tape.tapeName == "__ANY_TAPE__")
-            return true;
-        const symbolStack = new CounterStack(2);
-        return this.getRelevantTapes(symbolStack).has(tape.tapeName);
-    }
     compileAux(allTapes, symbolStack, compileLevel) {
         return this;
     }
     compile(compileLevel, maxRecursion = 4) {
         const allTapes = this.getAllTapes();
         return this.compileAux(allTapes, new CounterStack(maxRecursion), compileLevel);
+    }
+    isEmpty() {
+        return false;
     }
 }
 exports.State = State;
@@ -13828,7 +13883,7 @@ class CompiledState extends State {
         this.id = `compiled(${originalState.id}@${symbolStack.id})`;
         // your relevant states, and your accepting status, are inherited from the original
         this.relevantTapes = originalState.getRelevantTapes(symbolStack);
-        this.acceptingOnStart = originalState.accepting(false, symbolStack);
+        this.acceptingOnStart = originalState.accepting(allTapes, false, symbolStack);
         // then run dQuery and remember the results
         const tapes = [allTapes, ...allTapes.tapes.values()];
         for (const tape of tapes) {
@@ -13845,7 +13900,7 @@ class CompiledState extends State {
         }
         this.transitionsByTape[queryTape.tapeName].push([resultTape, token, matched, next]);
     }
-    accepting(random, symbolStack) {
+    accepting(tape, random, symbolStack) {
         return this.acceptingOnStart;
     }
     /**
@@ -13863,7 +13918,7 @@ class CompiledState extends State {
             return;
         }
         for (const [origResultTape, token, matched, next] of transitions) {
-            if (origResultTape.isTrivial) { // result was hidden by a Projection or Drop
+            if (origResultTape.isTrivial) { // no vocab, so no possible results
                 yield [origResultTape, token, matched, next];
                 return;
             }
@@ -13899,7 +13954,7 @@ class TextState extends State {
             yield [tape, target, false, this];
             return;
         }
-        if (this.accepting(random, symbolStack)) {
+        if (this.accepting(matchedTape, random, symbolStack)) {
             return;
         }
         const bits = this.getToken(matchedTape);
@@ -13928,13 +13983,20 @@ class AnyCharState extends TextState {
     getToken(tape) {
         return tape.any();
     }
+    accepting(tape, random, symbolStack) {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return true;
+        }
+        return false;
+    }
     successor() {
         return new TrivialState();
     }
 }
 exports.AnyCharState = AnyCharState;
 /**
- * Recognizese/emits a literal string on a particular tape.
+ * Recognizes/emits a literal string on a particular tape.
  * Inside, it's just a string like "foo"; upon successfully
  * matching "f" we construct a successor state looking for
  * "oo", and so on.
@@ -13956,10 +14018,18 @@ class LiteralState extends TextState {
         this.text = text;
         this.index = index;
     }
-    get id() {
-        return `${this.tapeName}:${this.text}[${this.index}]`;
+    isEmpty() {
+        return this.text.length == 0;
     }
-    accepting(random, symbolStack) {
+    get id() {
+        const index = this.index > 0 ? `[${this.index}]` : "";
+        return `${this.tapeName}:${this.text}${index}`;
+    }
+    accepting(tape, random, symbolStack) {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return true;
+        }
         return this.index >= this.text.length;
     }
     collectVocab(tapes, stateStack) {
@@ -13971,6 +14041,10 @@ class LiteralState extends TextState {
     successor() {
         const newText = this.text;
         return new LiteralState(this.tapeName, this.text, this.index + 1);
+    }
+    getText() {
+        // Return the remaining text for this LiteralState.
+        return this.text.slice(this.index);
     }
 }
 exports.LiteralState = LiteralState;
@@ -13986,7 +14060,10 @@ class TrivialState extends State {
     get id() {
         return "0";
     }
-    accepting(random, symbolStack) {
+    isEmpty() {
+        return true;
+    }
+    accepting(tape, random, symbolStack) {
         return true;
     }
     *ndQuery(tape, target, random, symbolStack) { }
@@ -13994,11 +14071,7 @@ class TrivialState extends State {
 exports.TrivialState = TrivialState;
 /**
  * The abstract base class of all States with two state children
- * (e.g. [JoinState], [ConcatState], [UnionState]).
- * States that conceptually might have infinite children (like Union)
- * we treat as right-recursive binary (see for
- * example the helper function [Uni] which converts lists of
- * states into right-braching UnionStates).
+ * (e.g. [JoinState]).
  */
 class BinaryState extends State {
     constructor(child1, child2, relevantTapes = undefined) {
@@ -14011,10 +14084,6 @@ class BinaryState extends State {
         this.child1.collectVocab(tapes, stateStack);
         this.child2.collectVocab(tapes, stateStack);
     }
-    resetRandom() {
-        this.child1.resetRandom();
-        this.child2.resetRandom();
-    }
     getRelevantTapes(stateStack) {
         if (this.relevantTapes == undefined) {
             const child1tapes = this.child1.getRelevantTapes(stateStack);
@@ -14026,100 +14095,15 @@ class BinaryState extends State {
     get id() {
         return `${this.constructor.name}(${this.child1.id},${this.child2.id})`;
     }
-    accepting(random, symbolStack) {
-        return this.child1.accepting(random, symbolStack) && this.child2.accepting(random, symbolStack);
+    accepting(tape, random, symbolStack) {
+        return this.child1.accepting(tape, random, symbolStack) &&
+            this.child2.accepting(tape, random, symbolStack);
     }
 }
-/**
- * ConcatState represents the current state in a concatenation A+B of two grammars.  It
- * is a [BinaryState], meaning it has two children; sequences ABCDEF are constructed as
- * A+(B+(C+(D+(E+F)))).
- *
- * The one thing that makes ConcatState a bit tricky is that they're the only part of the grammar
- * where there is a precedence order, which in a naive implementation can lead to a deadlock situation.
- * For example, if we have ConcatState(LiteralState("A","a"), LiteralState("B","b")), then the material
- * on tape A needs to be emitted/matched before the material on tape B.  But then consider the opposite,
- * ConcatState(LiteralState("B","b"), LiteralState("A","a")).  That grammar describes the same database,
- * but looks for the material in opposite tape order.  If we join these two, the first is emitting on A and
- * waiting for a match, but the second can't match it because it'll only get there later.  There are several
- * possible solutions for this, but the simplest by far is to implement ConcatState so that it can always emit/match
- * on any tape that any of its children refer to.  Basically, it goes through its children, and if child1
- * returns but doesn't match (meaning it doesn't care about tape T), it asks child2.  Then it returns the
- * appropriate ConcatState consisting of the unmatched material.
- */
-class ConcatState extends BinaryState {
-    constructor(child1, child2, child1Done = false, relevantTapes = undefined) {
-        super(child1, child2, relevantTapes);
-        this.child1Done = child1Done;
-    }
-    compileAux(allTapes, symbolStack, compileLevel) {
-        if (compileLevel <= 0) {
-            return this;
-        }
-        const newChild1 = this.child1.compileAux(allTapes, symbolStack, compileLevel);
-        const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
-        const newThis = new ConcatState(newChild1, newChild2, this.child1Done, this.relevantTapes);
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
-    }
-    *ndQuery(tape, target, random, symbolStack) {
-        if (!this.caresAbout(tape)) {
-            // if neither child cares, just short circuit this rather than bother with all the rest
-            yield [tape, target, false, this];
-            return;
-        }
-        if (this.child1Done) {
-            if (!this.child2.caresAbout(tape)) {
-                return;
-            }
-            for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, random, symbolStack)) {
-                const successor = new ConcatState(this.child1, c2next, true, this.relevantTapes);
-                yield [c2tape, c2text, c2matched, successor];
-            }
-            return;
-        }
-        var yieldedAlready = false;
-        if (this.child1.accepting(random, symbolStack)) {
-            const successor = new ConcatState(this.child1, this.child2, true);
-            yield* successor.dQuery(tape, target, random, symbolStack);
-            yieldedAlready = true;
-        }
-        if (this.child1.caresAbout(tape)) {
-            for (const [c1tape, c1text, c1matched, c1next] of this.child1.dQuery(tape, target, random, symbolStack)) {
-                const successor = new ConcatState(c1next, this.child2, false, this.relevantTapes);
-                yield [c1tape, c1text, c1matched, successor];
-            }
-            return;
-        }
-        if (yieldedAlready == true) {
-            return;
-        }
-        // child2 must care, otherwise one of the previous conditions would have triggered
-        for (const [c2tape, c2text, c2matched, c2next] of this.child2.dQuery(tape, target, random, symbolStack)) {
-            const successor = new ConcatState(this.child1, c2next, false, this.relevantTapes);
-            yield [c2tape, c2text, c2matched, successor];
-        }
-    }
-}
-exports.ConcatState = ConcatState;
-class UnionState extends State {
+class NAryState extends State {
     constructor(children) {
         super();
         this.children = children;
-        this.randomChild = null;
-    }
-    compileAux(allTapes, symbolStack, compileLevel) {
-        if (compileLevel <= 0) {
-            return this;
-        }
-        const newChildren = this.children.map(c => c.compileAux(allTapes, symbolStack, compileLevel));
-        const newThis = new UnionState(newChildren);
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
-    }
-    resetRandom() {
-        this.randomChild = null;
-        for (const child of this.children) {
-            child.resetRandom();
-        }
     }
     collectVocab(tapes, stateStack) {
         for (const child of this.children) {
@@ -14136,33 +14120,275 @@ class UnionState extends State {
         }
         return this.relevantTapes;
     }
+}
+/**
+ * ConcatState represents the current state in a concatenation A+B of two grammars.  It
+ * is a [BinaryState], meaning it has two children; sequences ABCDEF are constructed as
+ * A+(B+(C+(D+(E+F)))).
+ *
+ * The one thing that makes ConcatState a bit tricky is that they're the only part of the grammar
+ * where there is a precedence order, which in a naive implementation can lead to a deadlock situation.
+ * For example, if we have ConcatState(LiteralState("A","a"), LiteralState("B","b")), then the material
+ * on tape A needs to be emitted/matched before the material on tape B.  But then consider the opposite,
+ * ConcatState(LiteralState("B","b"), LiteralState("A","a")).  That grammar describes the same database,
+ * but looks for the material in opposite tape order.  If we join these two, the first is emitting on A and
+ * waiting for a match, but the second can't match it because it'll only get there later.
+ */
+class ConcatState extends NAryState {
+    constructor(children, indices = undefined) {
+        super(children);
+        this.indices = indices;
+    }
     get id() {
-        return `${this.constructor.name}(${this.children.map(c => c.id).join("|")})`;
+        return `Seq(${this.children.map(c => c.id).join("+")})`;
     }
-    getRandomChild() {
-        if (this.randomChild == null) {
-            this.randomChild = this.children[Math.floor(Math.random() * this.children.length)];
-        }
-        return this.randomChild;
+    randomize() {
+        const newChildren = this.children.map(c => c.randomize());
+        return new ConcatState(newChildren);
     }
-    accepting(random, symbolStack) {
-        if (random) {
-            return this.getRandomChild().accepting(random, symbolStack);
+    isEmpty() {
+        if (this.children.length == 0) {
+            return true;
         }
         for (const child of this.children) {
-            if (child.accepting(random, symbolStack)) {
+            if (!child.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+    getIndices(symbolStack) {
+        if (this.indices == undefined) {
+            this.indices = {};
+            for (const tapeName of this.getRelevantTapes(symbolStack)) {
+                this.indices[tapeName] = 0;
+            }
+        }
+        return this.indices;
+    }
+    accepting(tape, random, symbolStack) {
+        for (const child of this.children) {
+            if (!child.accepting(tape, random, symbolStack)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    successor(tape, newChild, newIndex, symbolStack) {
+        const currentIndices = this.getIndices(symbolStack);
+        const newIndices = {};
+        Object.assign(newIndices, currentIndices);
+        newIndices[tape.tapeName] = newIndex;
+        const newChildren = [...this.children];
+        newChildren[newIndex] = newChild;
+        return new ConcatState(newChildren, newIndices);
+    }
+    getCurrentIndex(tape, symbolStack) {
+        const indices = this.getIndices(symbolStack);
+        if (!(tape.tapeName == "__ANY_TAPE__")) {
+            if (!(tape.tapeName in indices)) {
+                throw new Error(`Cannot find tape ${tape.tapeName} in indices in ${this.id}`);
+            }
+            return [tape, indices[tape.tapeName]];
+        }
+        // the tape is ANY_TAPE, we need to find the lowest index of our indices.
+        let minTapeName = "";
+        let minIndex = Infinity;
+        for (const [tapeName, index] of Object.entries(indices)) {
+            if (index < minIndex) {
+                minTapeName = tapeName;
+                minIndex = index;
+            }
+        }
+        const matchedTape = tape.matchTape(minTapeName);
+        // matchedTape *can* be undefined here; it's not an error, it's the correct
+        // behavior when all the children are Empty()
+        return [matchedTape, minIndex];
+    }
+    *ndQuery(tape, target, random, symbolStack) {
+        if (!this.caresAbout(tape)) {
+            // if no child cares, just short circuit this rather than bother with all the rest
+            yield [tape, target, false, this];
+            return;
+        }
+        const [matchedTape, currentIndex] = this.getCurrentIndex(tape, symbolStack);
+        // when tape is an actual named tape, matchedTape will be identical.  but when
+        // tape is ANY_TAPE, matchedTape will be a named tape.  we don't actually use this
+        // tape for querying children; we only use it to check whether the child is accepting 
+        // on a tape, and increment the index for that tape if so.
+        if (matchedTape == undefined) {
+            // this can happen when all the children are empty
+            return;
+        }
+        if (currentIndex >= this.children.length) {
+            return;
+        }
+        const currentChild = this.children[currentIndex];
+        if (currentChild.accepting(tape, random, symbolStack)) {
+            if (currentIndex + 1 < this.children.length) {
+                const currentChild = this.children[currentIndex + 1];
+                const successor = this.successor(matchedTape, currentChild, currentIndex + 1, symbolStack);
+                yield* successor.ndQuery(tape, target, random, symbolStack);
+            }
+        }
+        const childResults = [...currentChild.ndQuery(tape, target, random, symbolStack)];
+        for (const [cTape, cTarget, cMatched, cNext] of childResults) {
+            if (!cMatched) {
+                // we don't accept trivial transitions by NewConcatState children.  only
+                // if the entire sequence doesn't care, do we perform a trivial match, above.
+                continue;
+            }
+            // in this successor, the indices stay the same, but we change the
+            // child at the current index to cNext
+            const newChildren = [...this.children];
+            newChildren[currentIndex] = cNext;
+            const successor = new ConcatState(newChildren, this.indices);
+            yield [cTape, cTarget, cMatched, successor];
+        }
+    }
+}
+exports.ConcatState = ConcatState;
+// StarState was a test class to see whether a particular bug
+// was related to our implementation of RepetitionState, or something
+// deeper.
+/*
+
+// this is the old implementation of ConcatState
+
+export class ConcatState extends BinaryState {
+
+    constructor(
+        child1: State,
+        child2: State,
+        protected child1Done: boolean = false,
+        relevantTapes: Set<string> | undefined = undefined
+    ) {
+        super(child1, child2, relevantTapes);
+    }
+
+    public compileAux(
+        allTapes: TapeCollection,
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
+
+        if (compileLevel <= 0) {
+            return this;
+        }
+        
+        const newChild1 = this.child1.compileAux(allTapes, symbolStack, compileLevel);
+        const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
+
+        const newThis = new ConcatState(newChild1, newChild2, this.child1Done, this.relevantTapes);
+
+        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
+    }
+
+    public *ndQuery(tape: Tape,
+        target: Token,
+        random: boolean,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+        
+        if (!this.caresAbout(tape)) {
+            // if neither child cares, just short circuit this rather than bother with all the rest
+            yield [tape, target, false, this];
+            return;
+        }
+
+        if (this.child1Done) {
+            if (!this.child2.caresAbout(tape)) {
+                return;
+            }
+
+            for (const [c2tape, c2text, c2matched, c2next] of
+                this.child2.dQuery(tape, target, random, symbolStack)) {
+                const successor = new ConcatState(this.child1, c2next, true, this.relevantTapes);
+                yield [c2tape, c2text, c2matched, successor];
+            }
+            return;
+        }
+
+        var yieldedAlready = false;
+
+        if (this.child1.accepting(tape, random, symbolStack)) {
+            const successor = new ConcatState(this.child1, this.child2, true, this.relevantTapes);
+            yield* successor.dQuery(tape, target, random, symbolStack);
+            yieldedAlready = true;
+        }
+
+        if (this.child1.caresAbout(tape)) {
+            for (const [c1tape, c1text, c1matched, c1next] of
+                    this.child1.dQuery(tape, target, random, symbolStack)) {
+                const successor = new ConcatState(c1next, this.child2, false, this.relevantTapes);
+                yield [c1tape, c1text, c1matched, successor];
+            }
+            return;
+        }
+
+        if (yieldedAlready == true) {
+            return;
+        }
+        
+        // child2 must care, otherwise one of the previous conditions would have triggered
+        for (const [c2tape, c2text, c2matched, c2next] of
+                this.child2.dQuery(tape, target, random, symbolStack)) {
+            const successor = new ConcatState(this.child1, c2next, false, this.relevantTapes);
+            yield [c2tape, c2text, c2matched, successor];
+        }
+    }
+}
+
+*/
+class UnionState extends NAryState {
+    constructor(children) {
+        super(children);
+    }
+    compileAux(allTapes, symbolStack, compileLevel) {
+        if (compileLevel <= 0) {
+            return this;
+        }
+        const newChildren = this.children.map(c => c.compileAux(allTapes, symbolStack, compileLevel));
+        const newThis = new UnionState(newChildren);
+        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
+    }
+    isEmpty() {
+        if (this.children.length == 0) {
+            return true;
+        }
+        for (const child of this.children) {
+            if (child.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    get id() {
+        return `(${this.children.map(c => c.id).join("|")})`;
+    }
+    randomize() {
+        if (this.children.length == 0) {
+            return this;
+        }
+        const randomChild = this.children[Math.floor(Math.random() * this.children.length)];
+        return randomChild.randomize();
+    }
+    accepting(tape, random, symbolStack) {
+        if (this.children.length == 0) {
+            return true;
+        }
+        for (const child of this.children) {
+            if (child.accepting(tape, random, symbolStack)) {
                 return true;
             }
         }
         return false;
     }
     *ndQuery(tape, target, random, symbolStack) {
-        if (random) {
-            yield* this.getRandomChild().dQuery(tape, target, random, symbolStack);
+        if (this.children.length == 0) {
             return;
         }
         for (const child of this.children) {
-            yield* child.dQuery(tape, target, random, symbolStack);
+            yield* child.ndQuery(tape, target, random, symbolStack);
         }
     }
 }
@@ -14184,18 +14410,19 @@ function* iterPriorityUnion(iter1, iter2) {
     }
 }
 /**
- * Implements a left semijoin (which we use for unit testing).
+ * Filter(A, B) removes outputs of A that do not contain an output of B.  That is, consider these two
+ * grammars:
  *
- * To test that an entry E is in the grammar G, we execute
+ *    A = [ { T1:a, T2:b }, {T1:b, T2:b }, {T1:c, T1:a}, and {T1:d} ]
+ *    B = [ { T2:b } ]
  *
- *      Semijoin(G, E)
+ * Filter(A, B) would output [ { T1:a, T2:b }, {T1:b, T2:b } ].  Note that {T1:d} wasn't included, even
+ * though T2 is irrelevant to it -- this isn't just "match T2:b if you care about T2", but "you must match T2:b".
  *
- * This requires that there be an entry in G that matches every field in E.
- * (There could be additional fields in the relevant entries in G that you don't
- * care about.  In practice it's difficult to anticipate all the different
- * fields that G might have in a complex grammar, to make sure E has all of them.)
+ * At one point we incorrectly called this a left semijoin, but a left semijoin doesn't care about tapes
+ * in B that aren't defined in A, whereas this does.
  */
-class SemijoinState extends BinaryState {
+class FilterState extends BinaryState {
     /**
      * Because .successor() on both this and its descendent JoinState are
      * so simple, we only have to write one compileAux() for both
@@ -14209,27 +14436,23 @@ class SemijoinState extends BinaryState {
         const newThis = this.successor(newChild1, newChild2);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
-    resetRandom() {
-        this.child1.resetRandom();
-        this.child2.resetRandom();
+    randomize() {
+        const randomLeft = this.child1.randomize();
+        return new FilterState(randomLeft, this.child2);
     }
     /**
-    * We factor out the logic into a separate function (one that doesn't specifically
-    * refer to the child1/child2 properties of this object) because it's the same algorithm
-    * used twice in a descendent class, JoinState.  A join is just the priority union of the
-    * left and right semijoins, and the right semijoin is just the left semijoin with the
-    * children reversed.  So we let the caller decide which child is "c1" and which is "c2" for
-    * the purposes of the semijoin.
-    */
-    *ndQueryLeft(tape, target, c1, c2, random, symbolStack) {
-        for (const [c1tape, c1target, c1matched, c1next] of c1.dQuery(tape, target, random, symbolStack)) {
+     * We factor this out from ndQuery because the descend Join class uses it too.
+     */
+    *filter(tape, target, c1, c2, random, symbolStack) {
+        for (const [c1tape, c1target, c1matched, c1next] of c1.ndQuery(tape, target, random, symbolStack)) {
+            /*
             if (c1tape.isTrivial) {
                 // c1 contained a ProjectionState that hides the original tape; move on without
                 // asking c2 to match anything.
                 const successor = this.successor(c1next, c2);
                 yield [c1tape, c1target, c1matched, successor];
                 continue;
-            }
+            } */
             /*
             if (!c2.caresAbout(c1tape)) {
                 const successor = this.successor(c1next, c2);
@@ -14240,20 +14463,21 @@ class SemijoinState extends BinaryState {
              * Even if we're random, we don't ask the other side to randomize; this
              * would end up having surprising effects.
              */
-            for (const [c2tape, c2target, c2matched, c2next] of c2.dQuery(c1tape, c1target, false, symbolStack)) {
+            for (const [c2tape, c2target, c2matched, c2next] of c2.ndQuery(c1tape, c1target, false, symbolStack)) {
                 const successor = this.successor(c1next, c2next);
                 yield [c2tape, c2target, c1matched || c2matched, successor];
             }
         }
     }
     successor(newChild1, newChild2) {
-        return new SemijoinState(newChild1, newChild2, this.relevantTapes);
+        return new FilterState(newChild1, newChild2, this.relevantTapes);
     }
     *ndQuery(tape, target, random, symbolStack) {
-        yield* this.ndQueryLeft(tape, target, this.child1, this.child2, random, symbolStack);
+        yield* this.filter(tape, target, this.child1, this.child2, random, symbolStack);
     }
-    accepting(random, symbolStack) {
-        return this.child1.accepting(random, symbolStack) && this.child2.accepting(false, symbolStack);
+    accepting(tape, random, symbolStack) {
+        return this.child1.accepting(tape, random, symbolStack) &&
+            this.child2.accepting(tape, random, symbolStack);
     }
 }
 /**
@@ -14270,18 +14494,27 @@ class SemijoinState extends BinaryState {
  *
  * Because the ordinary union of these would lead to the same states twice, we use the
  * priority union instead.
+ *
+ * Note that even though, on its own, the Filter(A, B) operation is not the semijoin, the
+ * way its used *here* ends up equivalent to the union of semijoins.
  */
-class JoinState extends SemijoinState {
+class JoinState extends FilterState {
     successor(newChild1, newChild2) {
         return new JoinState(newChild1, newChild2, this.relevantTapes);
     }
-    accepting(random, symbolStack) {
-        return this.child1.accepting(random, symbolStack) && this.child2.accepting(random, symbolStack);
+    randomize() {
+        const randomLeft = this.child1.randomize();
+        const randomRight = this.child2.randomize();
+        return new JoinState(randomLeft, randomRight);
+    }
+    accepting(tape, random, symbolStack) {
+        return this.child1.accepting(tape, random, symbolStack) &&
+            this.child2.accepting(tape, random, symbolStack);
     }
     *ndQuery(tape, target, random, symbolStack) {
-        const leftJoin = this.ndQueryLeft(tape, target, this.child1, this.child2, random, symbolStack);
-        const rightJoin = this.ndQueryLeft(tape, target, this.child2, this.child1, random, symbolStack);
-        if (this.child1.accepting(random, symbolStack)) {
+        const leftJoin = this.filter(tape, target, this.child1, this.child2, random, symbolStack);
+        const rightJoin = this.filter(tape, target, this.child2, this.child1, random, symbolStack);
+        if (this.child1.accepting(tape, random, symbolStack)) {
             yield* iterPriorityUnion(rightJoin, leftJoin);
             return;
         }
@@ -14302,9 +14535,6 @@ exports.JoinState = JoinState;
  * work, because the EmbedState's child can be that EmbedState itself.)
  */
 class UnaryState extends State {
-    resetRandom() {
-        this.child.resetRandom();
-    }
     get id() {
         return `${this.constructor.name}(${this.child.id})`;
     }
@@ -14317,10 +14547,53 @@ class UnaryState extends State {
         }
         return this.relevantTapes;
     }
-    accepting(random, symbolStack) {
-        return this.child.accepting(random, symbolStack);
+    accepting(tape, random, symbolStack) {
+        return this.child.accepting(tape, random, symbolStack);
     }
 }
+/*
+export class StarState extends State {
+
+    protected currentChild: State = new TrivialState();
+    protected nextChild: State | undefined = undefined;
+
+    constructor(
+        public initialChild: State
+    ) {
+        super();
+    }
+
+    public accepting(tape: Tape, symbolStack: CounterStack): boolean {
+        return this.currentChild.accepting(tape, symbolStack);
+    }
+
+    public get id(): string {
+        return `(${this.initialChild.id})*`;
+    }
+
+    public *ndQuery(
+        tape: Tape,
+        target: Token,
+        random: boolean,
+        symbolStack: CounterStack
+    ): Gen<[Tape, Token, boolean, State]> {
+
+        if (!this.caresAbout(tape)) {
+            // if no child cares, just short circuit this rather than bother with all the rest
+            yield [tape, target, false, this];
+            return;
+        }
+
+        if (this.accepting(tape, symbolStack)) {
+
+
+        }
+
+        const successor = new ConcatState([this.child, this]);
+        yield* successor.ndQuery(tape, target, random, symbolStack);
+    }
+}
+*/
 /**
  * RepetitionState implements the Kleene star, plus, question mark, and in general
  * repetitions between N and M times.  (E.g. x{2,3} matching x two or three times.)
@@ -14343,7 +14616,31 @@ class RepetitionState extends UnaryState {
         this.maxReps = maxReps;
         this.index = index;
         this.initialChild = initialChild;
-        this.randomReps = null;
+    }
+    randomize() {
+        const newChild = this.child.randomize();
+        let randomReps = 0;
+        if (this.minReps > this.maxReps) {
+            randomReps = -1;
+        }
+        else if (this.minReps == this.maxReps) {
+            randomReps = this.minReps;
+        }
+        else {
+            const maxReps = (this.maxReps != Infinity) ? this.maxReps : 10;
+            const range = maxReps - this.minReps + 1;
+            randomReps = this.minReps + Math.floor(Math.random() * range);
+        }
+        return new RepetitionState(newChild, randomReps, randomReps, this.index, this.initialChild);
+    }
+    get id() {
+        if (this.minReps == this.maxReps) {
+            return `${this.initialChild.id}{${this.minReps}}`;
+        }
+        return `${this.initialChild.id}{${this.minReps},${this.maxReps}}`;
+    }
+    isEmpty() {
+        return this.initialChild.isEmpty() || (this.minReps == 0 && this.index == 0 && this.child.isEmpty());
     }
     compileAux(allTapes, symbolStack, compileLevel) {
         if (compileLevel <= 0) {
@@ -14356,72 +14653,41 @@ class RepetitionState extends UnaryState {
     collectVocab(tapes, stateStack) {
         this.initialChild.collectVocab(tapes, stateStack);
     }
-    resetRandom() {
-        this.randomReps = null;
-        this.child.resetRandom();
-        this.initialChild.resetRandom();
-    }
     getRelevantTapes(stateStack) {
         if (this.relevantTapes == undefined) {
             this.relevantTapes = this.initialChild.getRelevantTapes(stateStack);
         }
         return this.relevantTapes;
     }
-    accepting(random, symbolStack) {
-        if (random) {
-            return this.index == this.getRandomReps() &&
-                this.child.accepting(random, symbolStack);
+    accepting(tape, random, symbolStack) {
+        if (this.child.isEmpty() && this.initialChild.isEmpty()) {
+            return true;
         }
         return this.index >= this.minReps &&
             this.index <= this.maxReps &&
-            this.child.accepting(random, symbolStack);
-    }
-    getRandomReps() {
-        if (this.randomReps == null) {
-            if (this.minReps > this.maxReps) {
-                this.randomReps = -1;
-                return this.randomReps;
-            }
-            if (this.minReps == this.maxReps) {
-                this.randomReps = this.minReps;
-                return this.randomReps;
-            }
-            const maxReps = (this.maxReps != Infinity) ? this.maxReps : 10;
-            const range = maxReps - this.minReps + 1;
-            this.randomReps = this.minReps + Math.floor(Math.random() * range);
-        }
-        return this.randomReps;
-    }
-    successor(nextChild, newIndex, random) {
-        if (random) {
-            const randomReps = this.getRandomReps();
-            return new RepetitionState(nextChild, randomReps, randomReps, newIndex, this.initialChild);
-        }
-        return new RepetitionState(nextChild, this.minReps, this.maxReps, newIndex, this.initialChild);
+            this.child.accepting(tape, random, symbolStack);
     }
     *ndQuery(tape, target, random, symbolStack) {
         if (this.index > this.maxReps) {
             return;
         }
-        var yieldedAlready = false;
-        if (this.child.accepting(random, symbolStack)) {
-            // we just started, or the child is accepting, so our successor increases its index
-            // and starts again with child.
-            const successor = this.successor(this.initialChild, this.index + 1, random);
-            for (const result of successor.dQuery(tape, target, random, symbolStack)) {
+        if (!this.child.caresAbout(tape)) {
+            yield [tape, target, false, this];
+        }
+        if (this.child.accepting(tape, random, symbolStack) &&
+            !(this.maxReps == Infinity && this.child == this.initialChild)) {
+            const successorChild = random ? this.initialChild.randomize() : this.initialChild;
+            const successor = new RepetitionState(successorChild, this.minReps, this.maxReps, this.index + 1, this.initialChild);
+            for (const result of successor.ndQuery(tape, target, random, symbolStack)) {
                 yield result;
-                yieldedAlready = true;
             }
         }
-        if (yieldedAlready) {
-            return;
-        }
-        for (const [childTape, childText, childMatched, childNext] of this.child.dQuery(tape, target, random, symbolStack)) {
+        for (const [childTape, childText, childMatched, childNext] of this.child.ndQuery(tape, target, random, symbolStack)) {
             if (!childMatched) { // child doesn't care, neither do we
                 yield [childTape, childText, false, this];
                 continue;
             }
-            const successor = this.successor(childNext, this.index, random);
+            const successor = new RepetitionState(childNext, this.minReps, this.maxReps, this.index, this.initialChild);
             yield [childTape, childText, childMatched, successor];
         }
     }
@@ -14470,7 +14736,7 @@ class EmbedState extends State {
             return;
         }
         const newStack = [...stateStack, this.symbolName];
-        this.getChild().collectVocab(tapes, newStack);
+        this.getChild(false).collectVocab(tapes, newStack);
     }
     getRelevantTapes(stateStack) {
         if (this.relevantTapes == undefined) {
@@ -14479,7 +14745,7 @@ class EmbedState extends State {
             }
             else {
                 const newStack = stateStack.add(this.symbolName);
-                this.relevantTapes = this.getChild(newStack).getRelevantTapes(newStack);
+                this.relevantTapes = this.getChild(false, newStack).getRelevantTapes(newStack);
             }
         }
         return this.relevantTapes;
@@ -14497,7 +14763,7 @@ class EmbedState extends State {
         }
         return this._child;
     } */
-    getChild(symbolStack = undefined) {
+    getChild(random, symbolStack = undefined) {
         if (this._child == undefined) {
             const child = this.namespace.getSymbol(this.symbolName, symbolStack);
             if (child == undefined) {
@@ -14507,27 +14773,24 @@ class EmbedState extends State {
                 // the child as the empty grammar
                 return Empty();
             }
-            return child;
+            return random ? child.randomize() : child;
         }
         return this._child;
     }
-    accepting(random, symbolStack) {
+    accepting(tape, random, symbolStack) {
         if (symbolStack.exceedsMax(this.symbolName)) {
             return false;
         }
         const newStack = symbolStack.add(this.symbolName);
-        return this.getChild(newStack).accepting(random, newStack);
+        return this.getChild(random, newStack).accepting(tape, random, newStack);
     }
     *ndQuery(tape, target, random, symbolStack) {
         if (symbolStack.exceedsMax(this.symbolName)) {
             return;
         }
         symbolStack = symbolStack.add(this.symbolName);
-        const child = this.getChild(symbolStack);
-        if (random) {
-            child.resetRandom();
-        }
-        for (const [childchildTape, childTarget, childMatched, childNext] of child.dQuery(tape, target, random, symbolStack)) {
+        let child = this.getChild(random, symbolStack);
+        for (const [childchildTape, childTarget, childMatched, childNext] of child.ndQuery(tape, target, random, symbolStack)) {
             const successor = new EmbedState(this.symbolName, this.namespace, childNext, this.relevantTapes);
             yield [childchildTape, childTarget, childMatched, successor];
         }
@@ -14544,13 +14807,22 @@ exports.EmbedState = EmbedState;
  * the set of fields/tapes such that only a subset of its fields are exposed to the outside,
  * rather than removing those fields/tapes.
  */
-class ProjectionState extends UnaryState {
-    constructor(child, tapeRestriction) {
+/*
+export class ProjectionState extends UnaryState {
+
+    constructor(
+        public child: State,
+        public tapeRestriction: Set<string>
+    ) {
         super();
-        this.child = child;
-        this.tapeRestriction = tapeRestriction;
     }
-    compileAux(allTapes, symbolStack, compileLevel) {
+
+    public compileAux(
+        allTapes: TapeCollection,
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
+        
         if (compileLevel <= 0) {
             return this;
         }
@@ -14558,46 +14830,66 @@ class ProjectionState extends UnaryState {
         const newThis = new ProjectionState(newChild, this.tapeRestriction);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
-    getRelevantTapes(stateStack) {
+
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
             this.relevantTapes = this.tapeRestriction;
         }
         return this.relevantTapes;
     }
-    *ndQuery(tape, target, random, symbolStack) {
+
+    public *ndQuery(tape: Tape,
+        target: Token,
+        random: boolean,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+
         if (tape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(tape.tapeName)) {
             // if it's not a tape we care about, go nowhere
             yield [tape, target, false, this];
             return;
         }
-        for (var [childTape, childTarget, childMatch, childNext] of this.child.dQuery(tape, target, random, symbolStack)) {
+
+        for (var [childTape, childTarget, childMatch, childNext] of
+                            this.child.dQuery(tape, target, random, symbolStack)) {
+
             if (childTape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(childTape.tapeName)) {
-                // even if our child yields content on a restricted tape, 
+                // even if our child yields content on a restricted tape,
                 // we don't let our own parent know about it
-                childTape = new tapes_1.TapeCollection();
-                childTarget = tapes_1.NO_CHAR;
+                childTape = new TapeCollection();
+                childTarget = NO_CHAR;
             }
             yield [childTape, childTarget, childMatch, new ProjectionState(childNext, this.tapeRestriction)];
         }
     }
 }
-exports.ProjectionState = ProjectionState;
+*/
 /**
  * This is the opposite of ProjectionState; in which you specify what you drop rather than what you keep.
  * Either is sufficient to implement relational algebra; you only really need one of these.
  */
-class DropState extends UnaryState {
-    constructor(child, droppedTape) {
+/*
+export class DropState extends UnaryState {
+
+    constructor(
+        public child: State,
+        public droppedTape: string
+    ) {
         super();
-        this.child = child;
-        this.droppedTape = droppedTape;
     }
-    getRelevantTapes(stateStack) {
+
+    public getRelevantTapes(stateStack: CounterStack): Set<string> {
         const result = new Set([...this.child.getRelevantTapes(stateStack)]);
         result.delete(this.droppedTape);
         return result;
     }
-    compileAux(allTapes, symbolStack, compileLevel) {
+
+    
+    public compileAux(
+        allTapes: TapeCollection,
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
+        
         if (compileLevel <= 0) {
             return this;
         }
@@ -14605,25 +14897,33 @@ class DropState extends UnaryState {
         const newThis = new DropState(newChild, this.droppedTape);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
     }
-    *ndQuery(tape, target, random, symbolStack) {
+
+    public *ndQuery(tape: Tape,
+        target: Token,
+        random: boolean,
+        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+
         if (tape.tapeName == this.droppedTape) {
             // don't pass it on, just stay here
             yield [tape, target, false, this];
             return;
         }
-        for (var [childTape, childTarget, childMatch, childNext] of this.child.dQuery(tape, target, random, symbolStack)) {
+
+        for (var [childTape, childTarget, childMatch, childNext] of
+                            this.child.dQuery(tape, target, random, symbolStack)) {
+
             if (childTape.tapeName == this.droppedTape) {
-                // even if our child yields content on a restricted tape, 
+                // even if our child yields content on a restricted tape,
                 // we don't let our own parent know about it
-                childTape = new tapes_1.TapeCollection();
-                childTarget = tapes_1.NO_CHAR;
+                childTape = new TapeCollection();
+                childTarget = NO_CHAR;
             }
             yield [childTape, childTarget, childMatch,
-                new DropState(childNext, this.droppedTape)];
+                    new DropState(childNext, this.droppedTape)];
         }
     }
 }
-exports.DropState = DropState;
+*/
 /**
  * Implements the Rename operation from relational algebra.
  *
@@ -14635,6 +14935,16 @@ class RenameState extends UnaryState {
         this.fromTape = fromTape;
         this.toTape = toTape;
         this.relevantTapes = relevantTapes;
+    }
+    isEmpty() {
+        return this.child.isEmpty();
+    }
+    randomize() {
+        return new RenameState(this.child.randomize(), this.fromTape, this.toTape);
+    }
+    accepting(tape, random, symbolStack) {
+        tape = new tapes_1.RenamedTape(tape, this.fromTape, this.toTape);
+        return this.child.accepting(tape, random, symbolStack);
     }
     collectVocab(tapes, stateStack) {
         tapes = new tapes_1.RenamedTape(tapes, this.fromTape, this.toTape);
@@ -14656,11 +14966,15 @@ class RenameState extends UnaryState {
     }
     *ndQuery(tape, target, random, symbolStack) {
         var rememberToUnwrapTape = false;
+        if (tape.tapeName == this.fromTape) {
+            yield [tape, target, false, this];
+            return;
+        }
         if (tape.tapeName == this.toTape || tape.tapeName == "__ANY_TAPE__") {
             tape = new tapes_1.RenamedTape(tape, this.fromTape, this.toTape);
             rememberToUnwrapTape = true;
         }
-        for (var [childTape, childTarget, childMatched, childNext] of this.child.dQuery(tape, target, random, symbolStack)) {
+        for (var [childTape, childTarget, childMatched, childNext] of this.child.ndQuery(tape, target, random, symbolStack)) {
             if (rememberToUnwrapTape && childTape instanceof tapes_1.RenamedTape) {
                 childTape = childTape.child;
             }
@@ -14753,11 +15067,15 @@ class NegationState extends State {
         }
         return this.relevantTapes;
     }
-    accepting(random, symbolStack) {
+    randomize() {
+        console.log("Warning, taking a randomization of a negation");
+        return this;
+    }
+    accepting(tape, random, symbolStack) {
         if (this.child == undefined) {
             return true;
         }
-        return !this.child.accepting(random, symbolStack);
+        return !this.child.accepting(tape, random, symbolStack);
     }
     *ndQuery(tape, target, random, symbolStack) {
         if (random) {
@@ -14782,38 +15100,149 @@ class NegationState extends State {
     }
 }
 exports.NegationState = NegationState;
+class MatchState extends UnaryState {
+    constructor(child, tapes, buffers = {}) {
+        super();
+        this.child = child;
+        this.tapes = tapes;
+        this.buffers = buffers;
+    }
+    randomize() {
+        console.log("Warning, taking a randomization of a match");
+        return this;
+    }
+    getRelevantTapes(stateStack) {
+        if (this.relevantTapes == undefined) {
+            this.relevantTapes = new Set(this.tapes);
+        }
+        return this.relevantTapes;
+    }
+    accepting(tape, random, symbolStack) {
+        for (const buffer of Object.values(this.buffers)) {
+            if (!buffer.accepting(tape, random, symbolStack)) {
+                return false;
+            }
+        }
+        return this.child.accepting(tape, random, symbolStack);
+    }
+    *ndQuery(tape, target, random, symbolStack) {
+        for (const [c1tape, c1target, c1matched, c1next] of this.child.ndQuery(tape, target, random, symbolStack)) {
+            // if c1tape is not one we care about, then yield right away
+            if (!this.caresAbout(c1tape)) {
+                yield [c1tape, c1target, c1matched, new MatchState(c1next, this.tapes, this.buffers)];
+                continue;
+            }
+            if (!c1matched) {
+                yield [c1tape, c1target, c1matched, new MatchState(c1next, this.tapes, this.buffers)];
+                continue;
+            }
+            // We need to match each character separately.
+            for (const c of c1tape.fromToken(c1tape.tapeName, c1target)) {
+                // cTarget: Token = c1tape.tokenize(c1tape.tapeName, c)[0]
+                const cTarget = c1tape.toToken(c1tape.tapeName, c);
+                // STEP A: Are we matching something already buffered?
+                const c1buffer = this.buffers[c1tape.tapeName];
+                var c1bufMatched = false;
+                if (c1buffer instanceof LiteralState) {
+                    // that means we already matched a character on a different
+                    // tape previously and now need to make sure it also matches
+                    // this character on this tape
+                    for (const [bufTape, bufTarget, bufMatched, bufNext] of c1buffer.ndQuery(c1tape, cTarget, random, symbolStack)) {
+                        if (bufMatched) {
+                            c1bufMatched = true;
+                        }
+                    }
+                }
+                // STEP B: If not, constrain my successors to match this on other tapes
+                const newBuffers = {};
+                //Object.assign(newBuffers, this.buffers);
+                if (!c1bufMatched) {
+                    for (const tapeName of this.tapes) {
+                        const buffer = this.buffers[tapeName];
+                        if (tapeName == c1tape.tapeName) {
+                            // we're going to match it in a moment, don't need to match
+                            // it again!
+                            if (buffer != undefined) {
+                                newBuffers[tapeName] = buffer;
+                            }
+                            continue;
+                        }
+                        var prevText = "";
+                        if (buffer instanceof LiteralState) {
+                            // that means we already found stuff we needed to match,
+                            // so we add to that
+                            prevText = buffer.getText();
+                        }
+                        newBuffers[tapeName] = new LiteralState(tapeName, prevText + c);
+                    }
+                }
+                // STEP C: Match the buffer
+                if (c1buffer instanceof LiteralState) {
+                    // that means we already matched a character on a different tape
+                    // previously and now need to make sure it also matches on this
+                    // tape
+                    for (const [bufTape, bufTarget, bufMatched, bufNext] of c1buffer.ndQuery(c1tape, cTarget, random, symbolStack)) {
+                        // We expect at most one match here.
+                        // We expect bufTape == c1Tape,
+                        //   bufTape == c1Tape
+                        //   bufTarget == cTarget
+                        //   bufMatched == c1Matched
+                        //assert(bufTape == c1tape, "tape does not match");
+                        //assert(bufTarget == cTarget, "target does not match");
+                        //assert(bufMatched == c1matched, "matched does not match");
+                        newBuffers[c1tape.tapeName] = bufNext;
+                        // the following comment is leftover from some pseudocode
+                        // and we're not sure whether it is still relevant.  but just in case...
+                        // oops, not yield for each buffer, get through all the
+                        // buffers and only yield at the end if we got through them
+                        // all.  so fix this ????
+                        yield [c1tape, cTarget, c1matched, new MatchState(c1next, this.tapes, newBuffers)];
+                    }
+                }
+                else {
+                    // my predecessors have not previously required me to match
+                    // anything in particular on this tape
+                    yield [c1tape, cTarget, c1matched, new MatchState(c1next, this.tapes, newBuffers)];
+                }
+            }
+        }
+    }
+}
+exports.MatchState = MatchState;
 /* CONVENIENCE FUNCTIONS FOR CONSTRUCTING GRAMMARS */
-function Lit(tier, text) {
-    return new LiteralState(tier, text);
+function Lit(tape, text) {
+    return new LiteralState(tape, text);
 }
 exports.Lit = Lit;
-function Literalizer(tier) {
+function Literalizer(tape) {
     return function (text) {
-        return Lit(tier, text);
+        return Lit(tape, text);
     };
 }
 exports.Literalizer = Literalizer;
 function Seq(...children) {
+    /*
     if (children.length == 0) {
         return Empty();
     }
+
     if (children.length == 1) {
         return children[0];
     }
-    return new ConcatState(children[0], Seq(...children.slice(1)));
+    */
+    return new ConcatState(children);
 }
 exports.Seq = Seq;
 function Uni(...children) {
+    /*
     if (children.length == 0) {
         return Empty();
     }
-    return new UnionState(children);
-    /*
+
     if (children.length == 1) {
         return children[0];
-    }
-
-    return new UnionState(children[0], Uni(...children.slice(1))); */
+    } */
+    return new UnionState(children);
 }
 exports.Uni = Uni;
 /*
@@ -14822,15 +15251,12 @@ export function Pri(...children: State[]): State {
 } */
 function Join(child1, child2) {
     return new JoinState(child1, child2);
-    /* const left = new SemijoinState(child1, child2);
-    const right = new SemijoinState(child2, child1);
-    return new PriorityUnionState([left, right]); */
 }
 exports.Join = Join;
-function Semijoin(child1, child2) {
-    return new SemijoinState(child1, child2);
+function Filter(child1, child2) {
+    return new FilterState(child1, child2);
 }
-exports.Semijoin = Semijoin;
+exports.Filter = Filter;
 function Not(child) {
     return new NegationState(child);
 }
@@ -14839,26 +15265,68 @@ function Emb(symbolName, namespace) {
     return new EmbedState(symbolName, namespace);
 }
 exports.Emb = Emb;
-function Proj(child, ...tape) {
-    return new ProjectionState(child, new Set(tape));
+// Reveal and Hide, as currently implemented, does name-mangling
+// a la Python double-underscore variables.  Generally an 
+// interface will supply a name for the show/hide and we'll use that
+// to mangle the name, but if not, the Show()/Hide() function will use
+// this variable to create a nonce name.
+let REVEAL_INDEX = 0;
+function Reveal(child, tape, name = "") {
+    if (name == "") {
+        name = `PROJ${REVEAL_INDEX}`;
+        REVEAL_INDEX++;
+    }
+    const desiredTapes = new Set(tape);
+    var result = child;
+    for (const tape of child.getRelevantTapes(new CounterStack())) {
+        if (!desiredTapes.has(tape)) {
+            result = new RenameState(result, tape, `__${name}_${tape}`);
+        }
+    }
+    return result;
 }
-exports.Proj = Proj;
-function Drop(child, tape) {
-    return new DropState(child, tape);
+exports.Reveal = Reveal;
+let HIDE_INDEX = 0;
+function Hide(child, tape, name = "") {
+    if (name == "") {
+        name = `DROP${HIDE_INDEX}`;
+        HIDE_INDEX++;
+    }
+    return new RenameState(child, tape, `__${name}_${tape}`);
 }
-exports.Drop = Drop;
-function Rename(child, fromTier, toTier) {
-    return new RenameState(child, fromTier, toTier);
+exports.Hide = Hide;
+function Rename(child, fromTape, toTape) {
+    return new RenameState(child, fromTape, toTape);
 }
 exports.Rename = Rename;
-function Any(tier) {
-    return new AnyCharState(tier);
+function Any(tape) {
+    return new AnyCharState(tape);
 }
 exports.Any = Any;
 function Rep(child, minReps = 0, maxReps = Infinity) {
     return new RepetitionState(new TrivialState(), minReps, maxReps, 0, child);
 }
 exports.Rep = Rep;
+function Match(child, ...tapes) {
+    return new MatchState(child, new Set(tapes));
+}
+exports.Match = Match;
+function Dot(...tapes) {
+    return Seq(...tapes.map((t) => Any(t)));
+}
+exports.Dot = Dot;
+function MatchDot(...tapes) {
+    return Match(Dot(...tapes), ...tapes);
+}
+exports.MatchDot = MatchDot;
+function MatchDotRep(minReps = 0, maxReps = Infinity, ...tapes) {
+    return Match(Rep(Dot(...tapes), minReps, maxReps), ...tapes);
+}
+exports.MatchDotRep = MatchDotRep;
+function MatchDotStar(...tapes) {
+    return Match(Rep(Dot(...tapes)), ...tapes);
+}
+exports.MatchDotStar = MatchDotStar;
 function Empty() {
     return new TrivialState();
 }
@@ -14867,6 +15335,10 @@ function Maybe(child) {
     return Uni(child, Empty());
 }
 exports.Maybe = Maybe;
+/*
+export function Star(child: State) {
+    return new StarState(child);
+} */
 
 },{"./tapes":47,"./util":48}],47:[function(require,module,exports){
 "use strict";
@@ -15007,6 +15479,12 @@ class Tape {
     }
     get vocabSize() {
         return 0;
+    }
+    toToken(tapeName, char) {
+        return new Token(this.toBits(tapeName, char));
+    }
+    fromToken(tapeName, token) {
+        return this.fromBits(tapeName, token.bits);
     }
 }
 exports.Tape = Tape;
@@ -15291,12 +15769,14 @@ class RenamedTape extends Tape {
         return (tapeName == this.fromTape) ? this.toTape : tapeName;
     }
     matchTape(tapeName) {
-        tapeName = this.adjustTapeName(tapeName);
-        const newChild = this.child.matchTape(tapeName);
-        if (newChild == undefined) {
-            return undefined;
+        if (tapeName == this.fromTape) {
+            const newChild = this.child.matchTape(this.toTape);
+            if (newChild == undefined) {
+                return undefined;
+            }
+            return new RenamedTape(newChild, this.fromTape, this.toTape);
         }
-        return new RenamedTape(newChild, this.fromTape, this.toTape);
+        return this.child.matchTape(tapeName);
     }
     tokenize(tapeName, str) {
         tapeName = this.adjustTapeName(tapeName);
