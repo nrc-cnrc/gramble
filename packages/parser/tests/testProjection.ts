@@ -1,5 +1,5 @@
-import { Seq, Join, Reveal, Hide, Rename } from "../src/stateMachine";
-import { text, unrelated, testHasTapes, testHasVocab, testGenerateAndSample, t1, t2, t3 } from './testUtils';
+import { Seq, Join, Reveal, Hide, Rename, Filter, Emb, Uni } from "../src/stateMachine";
+import { text, unrelated, testHasTapes, testHasVocab, testGenerateAndSample, t1, t2, t3, makeTestNamespace, testGrammarUncompiled } from './testUtils';
 
 import * as path from 'path';
 
@@ -96,42 +96,42 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{t3: "hello"}]);
     });
 
-    describe('Drop(unrelated) of text:hello+unrelated:foo', function() {
+    describe('hide(unrelated) of text:hello+unrelated:foo', function() {
         const grammar = Hide(Seq(text("hello"), unrelated("foo")), "unrelated");
         testHasTapes(grammar, ["text"]);
         testHasVocab(grammar, {text: 4});
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
-    describe('Drop(unrelated, text:hello+unrelated:foo)+unrelated:bar', function() {
+    describe('hide(unrelated, text:hello+unrelated:foo)+unrelated:bar', function() {
         const grammar = Seq(Hide(Seq(text("hello"), unrelated("fooo")), "unrelated"),
                             unrelated("bar"));
         testGenerateAndSample(grammar, [{text: "hello", unrelated: "bar"}]);
     });
 
-    describe('unrelated:bar + drop(unrelated, text:hello+unrelated:foo)', function() {
+    describe('unrelated:bar + hide(unrelated, text:hello+unrelated:foo)', function() {
         const grammar = Seq(unrelated("bar"), Hide(Seq(text("hello"), unrelated("foo")), "unrelated"));
         testGenerateAndSample(grammar, [{text: "hello", unrelated: "bar"}]);
     });
 
-    describe('drop(unrelated, text:hello+unrelated:foo) & unrelated:bar', function() {
+    describe('hide(unrelated, text:hello+unrelated:foo) & unrelated:bar', function() {
         const grammar = Join(Hide(Seq(text("hello"), unrelated("foo")), "unrelated"),
                              unrelated("bar"));
         testGenerateAndSample(grammar, [{text: "hello", unrelated: "bar"}]);
     });
 
-    describe('unrelated:bar & drop(unrelated, text:hello+unrelated:foo) ', function() {
+    describe('unrelated:bar & hide(unrelated, text:hello+unrelated:foo) ', function() {
         const grammar = Join(unrelated("bar"), Hide(Seq(text("hello"), unrelated("foo")), "unrelated"));
         testGenerateAndSample(grammar, [{text: "hello", unrelated: "bar"}]);
     });
 
-    describe('Drop(unrelated) of text:hello+unrelated:foo & text:hello+unrelated:foo', function() {
+    describe('hide(unrelated) of text:hello+unrelated:foo & text:hello+unrelated:foo', function() {
         const grammar = Hide(Join(Seq(text("hello"), unrelated("foo")),
                                   Seq(text("hello"), unrelated("foo"))), "unrelated");
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
-    describe('Drop(unrelated) of text:hello+unrelated:foo & text:hello+unrelated:bar', function() {
+    describe('hide(unrelated) of text:hello+unrelated:foo & text:hello+unrelated:bar', function() {
         const grammar = Hide(Join(Seq(text("hello"), unrelated("foo")),
                                   Seq(text("hello"), unrelated("bar"))), "unrelated");
         testGenerateAndSample(grammar, []);
@@ -142,24 +142,36 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{t2: "hello"}]);
     });
 
-    describe('Renane t1=>t3 if drop(t2) of t1:hello+t2:foo', function() {
+    describe('Renane t1=>t3 if hide(t2) of t1:hello+t2:foo', function() {
         const grammar = Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"), "t1", "t3")
         testHasTapes(grammar, ["t3"]);
         testHasVocab(grammar, {t3: 4});
         testGenerateAndSample(grammar, [{t3: "hello"}]);
     });
 
-    describe('Rename t2=>t3 of drop(t2) of t1:hello+t2:foo', function() {
+    describe('Rename t2=>t3 of hide(t2) of t1:hello+t2:foo', function() {
         const grammar = Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"), "t2", "t3")
         testHasTapes(grammar, ["t1"]);
         testHasVocab(grammar, {t1: 4});
         testGenerateAndSample(grammar, [{t1: "hello"}]);
     });
 
-    describe('Rename t1=>t3 if drop(t2) of t1:hello+t2:foo', function() {
+    describe('Rename t1=>t3 of hide(t2) of t1:hello+t2:foo', function() {
         const grammar = Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"), "t1", "t3")
         testHasTapes(grammar, ["t3"]);
         testHasVocab(grammar, {t3: 4});
         testGenerateAndSample(grammar, [{t3: "hello"}]);
     });
+
+    
+    describe('Filter using a field and then hide it', function() {
+        const grammar = Hide(Filter(Seq(t1("hello"), t2("foo")), t2("foo")), "t2");
+        testGenerateAndSample(grammar, [{t1: "hello"}]);
+    });
+
+    describe('Hide-filter-hide', function() {
+        const grammar = Hide(Filter(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3"), t2("foo")), "t2");
+        testGrammarUncompiled(grammar, [{t1: "hello"}]);
+    });
+
 });
