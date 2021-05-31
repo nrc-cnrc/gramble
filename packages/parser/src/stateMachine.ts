@@ -4,7 +4,8 @@ import { assert } from "chai";
 
 /**
  * This is the parsing engine that underlies Gramble.
- * It executes a multi-tape recursive state machine.
+ * It generalizes Brzozowski derivatives (Brzozowski, 1964) to
+ * multi-tape languages.
  * 
  *      - "Multi-tape" means that there are multiple "tapes"
  *      (in the Turing machine sense) from/to which the machine
@@ -18,15 +19,64 @@ import { assert } from "chai";
  *      expresses a relationship between tapes, not the direction 
  *      of the "parse".)
  * 
- *      - "Recursive" means that states can themselves contain states,
- *      meaning that the machine can parse context-free languages rather
- *      than just regular languages.  (Recursive and push-down automata
- *      are equivalent, but I hesitate to call this "push-down" because 
- *      states/transitions don't perform any operations to the stack.)
- *      
- * The execution of this particular state machine is lazy, 
- * in the sense that we don't necessarily construct the entire machine.
- * Each state constructs successor states as necessary.
+ * The basic idea of a Brzozowski derivative is easy.  Consider a language that
+ * only consists of the following six words 
+ * 
+ *    L = { "apple", "avocado", "banana", "blueberry", "cherry", "date" }
+ * 
+ * The Brzozowski derivative with respect to the character "b" of the above is
+ * 
+ *    D_b(L) = { "anana", "lueberry" }
+ * 
+ * Easy, no?  But we can also do this for languages that we haven't written out in 
+ * full like this -- languages that we've only expressed in terms of a grammar.  For
+ * example, here are the rules for union (| here) and the 
+ * Kleene star with respect to some character c:
+ * 
+ *    D_c(A|B) = D_c(A) | D_c(B)
+ *    D_c(A*) = D_c(A) + A*
+ * 
+ * In other words, we can distribute the derivative operation to the components of each grammar
+ * element, depending on which grammar element it is, and eventually down to atomic elements like
+ * literals.
+ * 
+ *   D_c("banana") = "anana" if c == "b"
+ *                   0 otherwise
+ gi* 
+ * Brzozowski proved that all regular grammars have only finitely many derivatives (even if 
+ * the grammar itself generates infinitely).
+ * 
+ * You can generate from a grammar L by trying each possible letter for c, and then, for 
+ * each derivative L' in D_c(L), trying each possible letter again to get L'' in D_c(L'), etc.
+ * If you put those letters c into a tree, you've got L again, but this time in trie form. 
+ * That's basically what we're doing!  Except it'd be silly to actually iterate through all the possible
+ * letters; instead we represent our vocabulary of possible letters as a set of bits and do bitwise
+ * operations on them. 
+ * 
+ * A lot of our implementation of this algorithm uses the metaphor that these are states in a state
+ * machine that has not been fully constructed yet.  You can picture the process of taking a Brz. 
+ * derivative as moving from a state to a state along an edge labeled "c", but where instead of the state
+ * graph already being constructed and in memory, each state constructing its successors on demand.  
+ * Since states corresponding to (say) a particular position within a literal are different 
+ * than those that (say) start off a subgraph corresponding to a Union, they belong to different 
+ * classes here: there's a LiteralState, a UnionState, etc. that differ in how they construct 
+ * their successors, and what information they need to keep track of to do so.  LiteralStates, for example,
+ * need to keep track of what that literal is and how far along they are within it.
+ * 
+ * Brzozowski derivatives can be applied to grammars beyond regular ones -- they're well-defined
+ * on context-free grammars, and here we generalize them to multi-tape grammars.  Much of the complexity
+ * here isn't in constructing the derivative (which is often easy) but in bookkeeping the multiple tapes,
+ * dealing with sampling randomly from a grammar or compiling it into a more efficient grammar, etc.
+ * 
+ * Although an unoptimized Brzozowski-style algoritm has poor runtime complexity, the benefit of it to
+ * us is that it gives us an easy-to-conceptualize flexibility between top-down parsing (poor runtime 
+ * complexity, good space complexity) and compiling a grammar to a state graph (good runtime complexity, 
+ * poor space complexity).  The reason for this is we can use the Brz. algorithm to actually
+ * construct the state graph, but then still use the Brz. algorithm on that state graph (the Brz. derivative
+ * of a language expressed as a state graph is easy, just follow that edge labeled "c").  That is to say,
+ * compiling the state graph is just pre-running the algorithm.  This gives us a way to think about the 
+ * _partial_ compilation of a grammar, and lets us decide things like where we want to allocate a potentially
+ * limited compilation budget to the places it's going to matter the most at runtime.
  */
 
 export type SymbolTable = {[key: string]: State};
@@ -974,11 +1024,7 @@ export class TrivialState extends State {
 
 /**
  * The abstract base class of all States with two state children 
- * (e.g. [JoinState], [ConcatState], [UnionState]).
- * States that conceptually might have infinite children (like Union) 
- * we treat as right-recursive binary (see for
- * example the helper function [Uni] which converts lists of
- * states into right-braching UnionStates).
+ * (e.g. [JoinState]).
  */
 abstract class BinaryState extends State {
 
@@ -1212,6 +1258,13 @@ abstract class NAryState extends State {
         }
     }
 }
+
+
+// StarState was a test class to see whether a particular bug
+// was related to our implementation of RepetitionState, or something
+// deeper.
+
+
 /*
 
 // this is the old implementation of ConcatState 
@@ -1600,26 +1653,23 @@ abstract class UnaryState extends State {
 }
 
 /*
+export class StarState extends State {
 
-// StarState was a test class to see whether a particular bug
-// was related to our implementation of RepetitionState, or something
-// deeper.  It was indeed something deeper, and the fix was easier to
-// do in RepetitionState.
-
-export class StarState extends UnaryState {
+    protected currentChild: State = new TrivialState();
+    protected nextChild: State | undefined = undefined;
 
     constructor(
-        public child: State
+        public initialChild: State
     ) {
         super();
     }
 
-    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
-        return true;
+    public accepting(tape: Tape, symbolStack: CounterStack): boolean {
+        return this.currentChild.accepting(tape, symbolStack);
     }
 
     public get id(): string {
-        return `(${this.child.id})*`;
+        return `(${this.initialChild.id})*`;
     }
 
     public *ndQuery(
@@ -1633,6 +1683,11 @@ export class StarState extends UnaryState {
             // if no child cares, just short circuit this rather than bother with all the rest
             yield [tape, target, false, this];
             return;
+        }
+
+        if (this.accepting(tape, symbolStack)) {
+
+
         }
 
         const successor = new ConcatState([this.child, this]);
@@ -1722,7 +1777,6 @@ export class RepetitionState extends UnaryState {
         }
         return this.relevantTapes;
     }
-
 
     public accepting(
         tape: Tape, 

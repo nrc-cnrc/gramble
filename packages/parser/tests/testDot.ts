@@ -119,9 +119,4 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{t1: "hi", t2: "hi"}]);
     });
 
-    describe('Filtering t1:hi+t2:hi & (t1:h+t2:i)+(t1:h+t2:i)', function() {
-        const grammar = Filter(Seq(t1("hi"), t2("hi")), Seq(Seq(t1("h"), t2("h")), Seq(t1("i"), t2("i"))));
-        testGenerateAndSample(grammar, [{t1: "hi", t2: "hi"}]);
-    });
-
 });

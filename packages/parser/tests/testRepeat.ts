@@ -235,4 +235,20 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "bababababa"},
                               {text: "babababababa"}]);
     });
+
+    describe('(t1:h+t2:h){2}', function() {
+        const grammar = Rep(Seq(t1("h"), t2("h")), 2, 2);
+        testGenerateAndSample(grammar, [{t1: "hh", t2: "hh"}]);
+    });
+
+    describe('Filtering (t1:h+t2:h){2} with t1:hh+t2:hh ', function() {
+        const grammar = Filter(Rep(Seq(t1("h"), t2("h")), 2, 2), Seq(t1("hh"), t2("hh")));
+        testGenerateAndSample(grammar, [{t1: "hh", t2: "hh"}]);
+    });
+
+    describe('Filtering t1:hh+t2:hh with (t1:h+t2:h){2}', function() {
+        const grammar = Filter(Seq(t1("hh"), t2("hh")), Rep(Seq(t1("h"), t2("h")), 2, 2));
+        testGenerateAndSample(grammar, [{t1: "hh", t2: "hh"}]);
+    });
+
 });
