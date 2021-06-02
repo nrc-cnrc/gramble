@@ -289,11 +289,11 @@ export class Namespace {
         if (name.indexOf(".") != -1) {
             throw new Error(`Namespace names may not contain a period: ${name}`);
         }
-        const lowercaseNmae = name.toLowerCase();
-        if (lowercaseNmae in this.childNamespaces) {
+        const lowercaseName = name.toLowerCase();
+        if (lowercaseName in this.childNamespaces) {
             throw new Error(`Redefining namespace ${name}`);
         }
-        this.childNamespaces[lowercaseNmae] = namespace;
+        this.childNamespaces[lowercaseName] = namespace;
         namespace.parent = this;
     }
 
@@ -364,7 +364,7 @@ export class Namespace {
             // this doesn't happen in real projects, but it can happen when unit testing.
             return;
         }
-        this.parent.requiredNamespaces.add(symbolName);
+        this.parent.requiredNamespaces.add(pieces[0]);
     }
 }
 
@@ -1009,7 +1009,10 @@ export class TrivialState extends State {
         return "0";
     }
 
-    
+    public caresAbout(tape: Tape): boolean {
+        return true;
+    }
+
     public isEmpty(): boolean {
         return true;
     }
@@ -1096,6 +1099,18 @@ abstract class NAryState extends State {
 /*
 export class ListState extends BinaryState {
 
+    constructor(
+        child1: State,
+        child2: State,
+        public indices: {[tapeName: string]: boolean} | undefined = undefined
+    ) {
+        super(child1, child2);
+    }
+
+    public get id(): string {
+        return `(${this.child1.id}+${this.child2.id})`;
+    }
+
     public compileAux(
         allTapes: TapeCollection, 
         symbolStack: CounterStack,
@@ -1110,6 +1125,42 @@ export class ListState extends BinaryState {
         const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
         const newThis = new ListState(newChild1, newChild2);
         return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
+    }
+
+    public randomize(): State {
+        return new ListState(this.child1.randomize(), this.child2.randomize());
+    }
+
+    public getIndices(symbolStack: CounterStack): {[tapeName: string]: boolean} {
+        if (this.indices == undefined) {
+            this.indices = {};
+            for (const tapeName of this.getRelevantTapes(symbolStack)) {
+                this.indices[tapeName] = false;
+            }
+        }
+        return this.indices;
+    }
+
+    protected getCurrentIndex(tape: Tape, symbolStack: CounterStack): [Tape | undefined, boolean] {
+        
+        const indices = this.getIndices(symbolStack);
+
+        if (!(tape.tapeName == "__ANY_TAPE__")) {
+            if (!(tape.tapeName in indices)) {
+                throw new Error(`Cannot find tape ${tape.tapeName} in indices in ${this.id}`);
+            }
+            return [tape, indices[tape.tapeName]];
+        }
+
+        // the tape is ANY_TAPE, we need to find an index that is false
+        let minTapeName = "";
+        let minIndex = Infinity;
+        for (const [tapeName, tapeIsDone] of Object.entries(indices)) {
+            if (!tapeIsDone) {
+                const matchedTape = tape.matchTape(tapeName);
+                return [matchedTape, false];
+            }
+        }
     }
 
 }
@@ -1536,14 +1587,12 @@ class FilterState extends BinaryState {
                 yield [c1tape, c1target, c1matched, successor];
                 continue;
             } */
-
-
-            /*
+            
             if (!c2.caresAbout(c1tape)) {
                 const successor = this.successor(c1next, c2);
                 yield [c1tape, c1target, c1matched, successor];
                 continue;
-            } */
+            } 
             
             /**
              * Even if we're random, we don't ask the other side to randomize; this 

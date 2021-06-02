@@ -488,7 +488,6 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobazable", gloss: "jump-2SG" }
         ]);
     });
-
     
     describe('Multi-sheet project with lowercase sheet reference', function() {
 
@@ -509,7 +508,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
     describe('Multi-sheet project with a "bare" sheet reference', function() {
 
         const project = sheetFromFile("./tests/csvs/externalBareRef.csv");
@@ -1033,7 +1031,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
             { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
         ]);
-    });
+    }); 
 });
 
 
