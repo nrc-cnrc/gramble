@@ -33,19 +33,25 @@
             class SidebarDevEnvironment {
 
                 constructor(cellsBySheet) {
-                    this.cellsBySheet = cellsBySheet; // {[key: string}: string[][]
+                    this.cellsBySheet = {};
+                    for (const sheetName in cellsBySheet) {
+                        const lowercaseName = sheetName.toLowerCase();
+                        this.cellsBySheet[lowercaseName] = cellsBySheet[sheetName];
+                    }; // {[key: string}: string[][]
                     this.errorMsgs = []; // list of [sheet, row, col, shortMsg, msg, level]
                 }
 
                 hasSource(sheetName) { 
-                    return (sheetName in this.cellsBySheet);
+                    const lowercaseName = sheetName.toLowerCase();
+                    return (lowercaseName in this.cellsBySheet);
                 }
 
                 loadSource(sheetName) {
-                    if (!(this.hasSource(sheetName))) {
+                    const lowercaseName = sheetName.toLowerCase();
+                    if (!(this.hasSource(lowercaseName))) {
                         return [];
                     }
-                    return this.cellsBySheet[sheetName];
+                    return this.cellsBySheet[lowercaseName];
                 }
 
                 markError(sheet, row, col, shortMsg, msg, level = "error") {

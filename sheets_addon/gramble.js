@@ -14120,10 +14120,29 @@ class NAryState extends State {
         return this.relevantTapes;
     }
 }
+/*
+export class ListState extends BinaryState {
+
+    public compileAux(
+        allTapes: TapeCollection,
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
+
+        if (compileLevel <= 0) {
+            return this;
+        }
+        
+        const newChild1 = this.child1.compileAux(allTapes, symbolStack, compileLevel);
+        const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
+        const newThis = new ListState(newChild1, newChild2);
+        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
+    }
+
+}
+*/
 /**
- * ConcatState represents the current state in a concatenation A+B of two grammars.  It
- * is a [BinaryState], meaning it has two children; sequences ABCDEF are constructed as
- * A+(B+(C+(D+(E+F)))).
+ * ConcatState represents the current state in a concatenation A+B+... of 2+ grammars.
  *
  * The one thing that makes ConcatState a bit tricky is that they're the only part of the grammar
  * where there is a precedence order, which in a naive implementation can lead to a deadlock situation.
@@ -14247,9 +14266,6 @@ class ConcatState extends NAryState {
     }
 }
 exports.ConcatState = ConcatState;
-// StarState was a test class to see whether a particular bug
-// was related to our implementation of RepetitionState, or something
-// deeper.
 /*
 
 // this is the old implementation of ConcatState
@@ -15768,14 +15784,12 @@ class RenamedTape extends Tape {
         return (tapeName == this.fromTape) ? this.toTape : tapeName;
     }
     matchTape(tapeName) {
-        if (tapeName == this.fromTape) {
-            const newChild = this.child.matchTape(this.toTape);
-            if (newChild == undefined) {
-                return undefined;
-            }
-            return new RenamedTape(newChild, this.fromTape, this.toTape);
+        tapeName = this.adjustTapeName(tapeName);
+        const newChild = this.child.matchTape(tapeName);
+        if (newChild == undefined) {
+            return undefined;
         }
-        return this.child.matchTape(tapeName);
+        return new RenamedTape(newChild, this.fromTape, this.toTape);
     }
     tokenize(tapeName, str) {
         tapeName = this.adjustTapeName(tapeName);

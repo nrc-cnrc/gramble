@@ -1283,12 +1283,6 @@ export class ListState extends BinaryState {
     }
 }
 
-
-// StarState was a test class to see whether a particular bug
-// was related to our implementation of RepetitionState, or something
-// deeper.
-
-
 /*
 
 // this is the old implementation of ConcatState 
