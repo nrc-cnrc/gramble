@@ -13514,7 +13514,7 @@ class Namespace {
         for (const namespaceName in this.childNamespaces) {
             const childNamespace = this.childNamespaces[namespaceName];
             for (const symbol of childNamespace.allSymbols()) {
-                result.push(`${namespaceName}.${symbol}`);
+                result.push(`${childNamespace.name}.${symbol}`);
             }
         }
         return result;
@@ -13586,8 +13586,7 @@ class Namespace {
             // this doesn't happen in real projects, but it can happen when unit testing.
             return;
         }
-        const lowercaseName = pieces[0].toLowerCase();
-        this.parent.requiredNamespaces.add(lowercaseName);
+        this.parent.requiredNamespaces.add(symbolName);
     }
 }
 exports.Namespace = Namespace;
@@ -15288,7 +15287,7 @@ exports.Emb = Emb;
 let REVEAL_INDEX = 0;
 function Reveal(child, tape, name = "") {
     if (name == "") {
-        name = `PROJ${REVEAL_INDEX}`;
+        name = `HIDDEN${REVEAL_INDEX}`;
         REVEAL_INDEX++;
     }
     const desiredTapes = new Set(tape);
@@ -15304,7 +15303,7 @@ exports.Reveal = Reveal;
 let HIDE_INDEX = 0;
 function Hide(child, tape, name = "") {
     if (name == "") {
-        name = `DROP${HIDE_INDEX}`;
+        name = `HIDDEN${HIDE_INDEX}`;
         HIDE_INDEX++;
     }
     return new RenameState(child, tape, `__${name}_${tape}`);

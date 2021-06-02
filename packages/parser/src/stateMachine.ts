@@ -279,7 +279,7 @@ export class Namespace {
         for (const namespaceName in this.childNamespaces) {
             const childNamespace = this.childNamespaces[namespaceName];
             for (const symbol of childNamespace.allSymbols()) {
-                result.push(`${namespaceName}.${symbol}`);
+                result.push(`${childNamespace.name}.${symbol}`);
             }
         }
         return result;
@@ -364,8 +364,7 @@ export class Namespace {
             // this doesn't happen in real projects, but it can happen when unit testing.
             return;
         }
-        const lowercaseName = pieces[0].toLowerCase();
-        this.parent.requiredNamespaces.add(lowercaseName);
+        this.parent.requiredNamespaces.add(symbolName);
     }
 }
 
@@ -2542,7 +2541,7 @@ export function Emb(symbolName: string, namespace: Namespace): State {
 let REVEAL_INDEX = 0; 
 export function Reveal(child: State, tape: string[], name: string = ""): State {
     if (name == "") {
-        name = `PROJ${REVEAL_INDEX}`;
+        name = `HIDDEN${REVEAL_INDEX}`;
         REVEAL_INDEX++;
     }
     const desiredTapes: Set<string> = new Set(tape);
@@ -2559,7 +2558,7 @@ let HIDE_INDEX = 0;
 export function Hide(child: State, tape: string, name: string = ""): State {
 
     if (name == "") {
-        name = `DROP${HIDE_INDEX}`;
+        name = `HIDDEN${HIDE_INDEX}`;
         HIDE_INDEX++;
     }
     return new RenameState(child, tape, `__${name}_${tape}`);

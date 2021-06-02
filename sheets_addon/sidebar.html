@@ -144,7 +144,7 @@
 
                 createErrorButtons(devEnv.errorMsgs, currentSheetName);
                 reloadSymbols(currentSheetName);
-                reloadInputs();
+                reloadInputFields();
 
                 reloadGrammarLock = false;
 
@@ -206,6 +206,7 @@
                 select.innerHTML = "";
                 
                 var options = project.allSymbols();
+
                 for (const option of options) {
                     const el = document.createElement('option');
 
@@ -225,7 +226,7 @@
                 } 
             }
 
-            function reloadInputs() {
+            function reloadInputFields() {
 
                 const select = document.getElementById("selectSymbol"); 
                 const currentSymbol = select.value;
@@ -234,7 +235,10 @@
                     return;
                 }
 
-                CURRENT_TAPES = project.getTapeNames(currentSymbol);
+                CURRENT_TAPES = project.getTapeNames(currentSymbol)
+                                       .filter(([s, c]) => !s.startsWith("__"));
+                                            // tapes that start with __ are internal/hidden/mangled,
+                                            // we don't want to present them to the user in the interface
 
                 const inputTable = document.getElementById("inputTable");
                 for (const [tapeName, color] of CURRENT_TAPES) {
@@ -457,7 +461,7 @@
                     selector.onchange = function(ev) {
                         previousSymbol = selector.value;
                         removeElementsByClass("tapeInputTr");
-                        reloadInputs();                     
+                        reloadInputFields();                     
                         var resultsTable  = document.getElementById("resultsTable"); 
                         resultsTable.innerHTML = "";
                     };
