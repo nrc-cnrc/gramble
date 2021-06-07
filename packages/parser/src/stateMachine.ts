@@ -1588,11 +1588,12 @@ class FilterState extends BinaryState {
                 continue;
             } */
             
+            /*
             if (!c2.caresAbout(c1tape)) {
                 const successor = this.successor(c1next, c2);
                 yield [c1tape, c1target, c1matched, successor];
                 continue;
-            } 
+            }  */
             
             /**
              * Even if we're random, we don't ask the other side to randomize; this 

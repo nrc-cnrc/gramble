@@ -33,6 +33,7 @@
     "testBasics": "mocha -r ts-node/register tests/testBasics.ts",
     "testDot": "mocha -r ts-node/register tests/testDot.ts",
     "testEmbed": "mocha -r ts-node/register tests/testEmbed.ts",
+    "testFilter": "mocha -r ts-node/register tests/testFilter.ts",
     "testJoins": "mocha -r ts-node/register tests/testJoins.ts",
     "testMatch": "mocha -r ts-node/register tests/testMatch.ts",
     "testNegation": "mocha -r ts-node/register tests/testNegation.ts",

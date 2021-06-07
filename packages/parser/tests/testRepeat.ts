@@ -202,15 +202,15 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
 
-    describe('Filtering t1:h & t2:h*', function() {
+    describe('Filtering t1:h[ t2:h* ]', function() {
         const grammar = Filter(t1("h"),
                                  Rep(t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testGenerateAndSample(grammar, [{'t1': 'h'}]);
+        testGenerateAndSample(grammar, []);
     });
     
-    describe('Filtering t1:h & (t1:h|t2:h)*', function() {
+    describe('Filtering t1:h[ (t1:h|t2:h)* ]', function() {
         const grammar = Filter(t1("h"),
                                  Rep(Uni(t1("h"), t2("h"))));
         testHasTapes(grammar, ['t1', 't2']);

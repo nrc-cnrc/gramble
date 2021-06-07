@@ -7,7 +7,7 @@ const MAX_CHARS = 200;
 const MAX_OUTPUTS = 1000; // don't bother with results that have more than MAX_OUTPUTS,
                           // it takes too long to compare them
 
-const MAX_GRAMMAR_DEPTH = 4;
+const MAX_GRAMMAR_DEPTH = 3;
 const LIT_POISSON_MEAN = 3;
 const SEQ_POISSON_MEAN = 2;
 const UNI_POISSON_MEAN = 2;
@@ -261,6 +261,12 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
             (x, y) => testSubset(
                         Uni(x, y),
                         y)
+        ],
+        [
+            "X{2,3} >= X{2}",
+            (x) => testSubset(
+                        Rep(x, 2, 3),
+                        Rep(x, 2, 2))
         ]
 
     ],
@@ -291,13 +297,6 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
                             Uni(x, Uni(y, z)),  
                             Uni(Uni(x, y), z))
         ],
-        [ 
-            "X[Y[Z]] = X[Y][Z]",          
-            (x, y, z) => testEquals(
-                            Filter(x, Filter(y, z)), 
-                            Filter(Filter(x, y), z))
-        ],
-    
     ],
 
     "Idempotent functions": [
@@ -331,7 +330,7 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
                         Rep(x, 0, 1))
         ], 
         [
-            "X|(X+X) = X{1, 2}",
+            "X|(X+X) = X{1,2}",
             (x) => testEquals(
                         Uni(x, Seq(x, x)),
                         Rep(x, 1, 2))
@@ -341,6 +340,12 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
             (x) => testEquals(
                         Rep(x, 0, 0),
                         Empty())
+        ],        
+        [ 
+            "X[Y][Z] = X[Z][Y]",          
+            (x, y, z) => testEquals(
+                            Filter(Filter(x, y), z),
+                            Filter(Filter(x, z), y))
         ],
     ]
 
@@ -374,7 +379,6 @@ console.log(getOutputs(leftward));
 console.log(getOutputs(rightward));
 
 */
-
 
 describe(`${path.basename(module.filename)}`, function() {
 
