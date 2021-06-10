@@ -12,6 +12,13 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasVocab(grammar, {text: 4});
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
+    
+    describe('Literal text:""', function() {
+        const grammar = text("");
+        testHasTapes(grammar, ["text"]);
+        testHasVocab(grammar, {text: 0});
+        testGenerateAndSample(grammar, [{}]);
+    });
 
     describe('Empty grammar', function() {
         const grammar = Empty();
@@ -83,7 +90,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
-    
     describe('Sequence text:hello+Empty', function() {
         const grammar = Seq(text("hello"), Empty());
         testGenerateAndSample(grammar, [{text: "hello"}]);
@@ -91,7 +97,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Sequence Empty+text:hello', function() {
         const grammar = Seq(Empty(), text("hello"));
-        testGenerateAndSample(grammar, [{text: "hello"}]);
+        testGrammarUncompiled(grammar, [{text: "hello"}]);
     });
 
     describe('Sequence text:hello+0+world', function() {

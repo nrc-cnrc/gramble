@@ -207,7 +207,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                  Rep(t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testGenerateAndSample(grammar, []);
+        testGenerateAndSample(grammar, [{t1:"h"}]);
     });
     
     describe('Filtering t1:h[ (t1:h|t2:h)* ]', function() {

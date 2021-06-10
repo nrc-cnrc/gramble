@@ -1,89 +1,84 @@
 
 import { Seq, Uni, Join, Filter, Empty } from "../src/stateMachine";
-import { text, t1, t2, t3, unrelated, testHasTapes, testHasVocab, testGenerateAndSample } from './testUtils';
+import { t1, t2, testGenerateAndSample, testGrammarCompiled, testGrammarUncompiled } from './testUtils';
 
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe('Filter text:hello[text:hello]', function() {
-        const grammar = Filter(text("hello"), text("hello"));
-        const outputs = [...grammar.generate()];
-        testGenerateAndSample(grammar, [{text: "hello"}]);
+    describe('Filter t1:hello[t1:hello]', function() {
+        const grammar = Filter(t1("hello"), t1("hello"));
+        testGenerateAndSample(grammar, [{t1: "hello"}]);
     });
 
-    describe('Filter text:hello[empty]', function() {
-        const grammar = Filter(text("hello"), Empty());
-        const outputs = [...grammar.generate()];
-        testGenerateAndSample(grammar, []);
+    /*
+    TODO: The 'correct' value of this is changing as the semantics change, so uncomment with the right answer once it's clearer
+
+    describe('Filter t1:hello[empty]', function() {
+        const grammar = Filter(t1("hello"), Empty());
+        testGenerateAndSample(grammar, [{t1:"hello"}]);
     });
-    
+
     describe('Filter empty[empty]', function() {
         const grammar = Filter(Empty(), Empty());
-        const outputs = [...grammar.generate()];
         testGenerateAndSample(grammar, [{}]);
     });
 
-    describe('Filter empty[text:hello]', function() {
-        const grammar = Filter(Empty(), text("hello"));
-        const outputs = [...grammar.generate()];
+    */
+    describe('Filter empty[t1:hello]', function() {
+        const grammar = Filter(Empty(), t1("hello"));
         testGenerateAndSample(grammar, []);
     });
 
-    describe('Filter text:h[text:hello]', function() {
-        const grammar = Filter(text("h"), text("hello"));
-        const outputs = [...grammar.generate()];
+    describe('Filter t1:h[t1:hello]', function() {
+        const grammar = Filter(t1("h"), t1("hello"));
         testGenerateAndSample(grammar, []);
     });
 
-    describe('Filter text:hello[text:h]', function() {
-        const grammar = Filter(text("hello"), text("h"));
-        const outputs = [...grammar.generate()];
+    describe('Filter t1:hello[t1:h]', function() {
+        const grammar = Filter(t1("hello"), t1("h"));
         testGenerateAndSample(grammar, []);
     });
     
-    describe('Filter text:hello[text:hello+unrelated:foo]', function() {
-        const grammar = Filter(text("hello"), Seq(text("hello"), unrelated("foo")));
-        const outputs = [...grammar.generate()];
+    describe('Filter t1:hello[t1:hello+t2:foo]', function() {
+        const grammar = Filter(t1("hello"), Seq(t1("hello"), t2("foo")));
         testGenerateAndSample(grammar, []);
     }); 
 
-    describe('Filter text:hello+unrelated:foo[text:hello]', function() {
-        const grammar = Filter(Seq(text("hello"), unrelated("foo")), text("hello"));
-        const outputs = [...grammar.generate()];
-        testGenerateAndSample(grammar, [{text: "hello", unrelated: "foo"}]);
+    describe('Filter (t1:hi+t2:foo)[t1:hello]', function() {
+        const grammar = Filter(Seq(t1("hi"), t2("foo")), t1("hi"));
+        testGrammarUncompiled(grammar, [{t1: "hi", t2: "foo"}]);
     });
     
-    describe('Filter text:hello[text:hello+unrelated:foo]', function() {
-        const grammar = Filter(text("hello"), Seq(text("hello"), unrelated("foo")));
-        const outputs = [...grammar.generate()];
+    describe('Filter t1:hello[t1:hello+t2:foo]', function() {
+        const grammar = Filter(t1("hello"), Seq(t1("hello"), t2("foo")));
         testGenerateAndSample(grammar, []);
     }); 
     
-    describe('Filter (text:hi+unrelated:world)[text:hi+unrelated:world]', function() {
-        const grammar = Filter(Seq(text("hi"), unrelated("world")),
-                             Seq(text("hi"), unrelated("world")));
-        testGenerateAndSample(grammar, [{text: "hi", unrelated: "world"}]);
+    describe('Filter (t1:hi+t2:world)[t1:hi+t2:world]', function() {
+        const grammar = Filter(Seq(t1("hi"), t2("world")),
+                             Seq(t1("hi"), t2("world")));
+        testGenerateAndSample(grammar, [{t1: "hi", t2: "world"}]);
     });
 
-    describe('Filter (unrelated:world+text:hello)[text:hello+unrelated:world]', function() {
-        const grammar = Filter(Seq(unrelated("world"), text("hello")),
-                             Seq(text("hello"), unrelated("world")));
-        testGenerateAndSample(grammar, [{text: "hello", unrelated: "world"}]);
+    describe('Filter (t2:world+t1:hello)[t1:hello+t2:world]', function() {
+        const grammar = Filter(Seq(t2("world"), t1("hello")),
+                             Seq(t1("hello"), t2("world")));
+        testGenerateAndSample(grammar, [{t1: "hello", t2: "world"}]);
     });
 
-    describe('Filter unrelated-tape alts in same direction', function() {
-        const grammar = Filter(Uni(text("hello"), unrelated("foo")),
-                             Uni(text("hello"), unrelated("foo")));
-        testGenerateAndSample(grammar, [{text: "hello"},
-                              {unrelated: "foo"}]);
+    describe('Filter different-tape alts in same direction', function() {
+        const grammar = Filter(Uni(t1("hi"), t2("foo")),
+                             Uni(t1("hi"), t2("foo")));
+        testGrammarCompiled(grammar, [{t1: "hi"},
+                              {t2: "foo"}]);
     });
 
-    describe('Filter unrelated-tape alts in different directions', function() {
-        const grammar = Filter(Uni(unrelated("foo"), text("hello")),
-                             Uni(text("hello"), unrelated("foo")));
-        testGenerateAndSample(grammar, [{unrelated: "foo"},
-                              {text: "hello"}]);
+    describe('Filter different-tape alts in different directions', function() {
+        const grammar = Filter(Uni(t2("foo"), t1("hi")),
+                             Uni(t1("hi"), t2("foo")));
+        testGenerateAndSample(grammar, [{t2: "foo"},
+                              {t1: "hi"}]);
     });
 
     describe('Filter t1:hi+t2:hi[(t1:h+t2:i)+(t1:h+t2:i)]', function() {

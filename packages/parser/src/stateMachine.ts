@@ -1,4 +1,4 @@
-import { Gen, iterTake, StringDict } from "./util";
+import { Gen, iterTake, setDifference, setIntersection, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
 import { assert } from "chai";
 
@@ -756,8 +756,8 @@ export abstract class State {
 class CompiledState extends State {
 
     public id: string;
-    public acceptingOnStart: boolean;
-    public transitionsByTape: {[tape: string]: [Tape, Token, boolean, State][]} = {}
+    public acceptingOnStart: {[tape: string]: boolean} = {};
+    public transitionsByTape: {[tape: string]: [Tape, Token, boolean, State][]} = {};
 
     constructor(
         originalState: State,
@@ -766,14 +766,18 @@ class CompiledState extends State {
         compileLevel: number,
     ) {
         super();
-        this.id = `compiled(${originalState.id}@${symbolStack.id})`;
+        this.id = `cmp${originalState.id}@${symbolStack.id}`;
         // your relevant states, and your accepting status, are inherited from the original
         this.relevantTapes = originalState.getRelevantTapes(symbolStack);
-        this.acceptingOnStart = originalState.accepting(allTapes, false, symbolStack);
 
         // then run dQuery and remember the results
         const tapes = [ allTapes, ...allTapes.tapes.values() ];
         for (const tape of tapes) {
+            
+            // first remember the value of accepting() for this tape
+            this.acceptingOnStart[tape.tapeName] = originalState.accepting(tape, false, symbolStack);
+
+            // then remember the results
             for (const [resTape, resToken, resMatched, resNext] of 
                                     originalState.dQuery(tape, tape.any(), false, symbolStack)) {
                 const compiledNext = resNext.compileAux(allTapes, symbolStack, compileLevel-1);
@@ -796,7 +800,10 @@ class CompiledState extends State {
     }
 
     public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
-        return this.acceptingOnStart;
+        if (!(tape.tapeName in this.acceptingOnStart)) {
+            return false;
+        }
+        return this.acceptingOnStart[tape.tapeName];
     }
 
     /**
@@ -1001,16 +1008,8 @@ export class LiteralState extends TextState {
  */
 export class TrivialState extends State {
 
-    constructor() { 
-        super();
-    }
-
     public get id(): string {
         return "0";
-    }
-
-    public caresAbout(tape: Tape): boolean {
-        return true;
     }
 
     public isEmpty(): boolean {
@@ -1026,6 +1025,7 @@ export class TrivialState extends State {
         random: boolean,
         symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> { }
 }
+
 
 /**
  * The abstract base class of all States with two state children 
@@ -1186,6 +1186,22 @@ export class ListState extends BinaryState {
     ) {
         super(children);
     }
+
+    
+    public compileAux(
+        allTapes: TapeCollection, 
+        symbolStack: CounterStack,
+        compileLevel: number
+    ): State {
+        
+        if (compileLevel <= 0) {
+            return this;
+        }
+
+        const newChildren = this.children.map(c => c.compileAux(allTapes, symbolStack, compileLevel));
+        const newThis = new ConcatState(newChildren, this.indices);
+        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
+    } 
 
     public get id(): string {
         return `Seq(${this.children.map(c => c.id).join("+")})`;
@@ -1526,6 +1542,7 @@ function *iterPriorityUnion<T>(iter1: Gen<T>, iter2: Gen<T>): Gen<T> {
     }
 }
 
+
 /**
  * Filter(A, B) removes outputs of A that do not contain an output of B.  That is, consider these two
  * grammars:
@@ -1565,7 +1582,7 @@ class FilterState extends BinaryState {
     }
 
     /**
-     * We factor this out from ndQuery because the descend Join class uses it too.
+     * We factor this out from ndQuery because the descendant Join class uses it too.
      */
     public *filter(
         tape: Tape,
@@ -2654,6 +2671,12 @@ export function Empty(): State {
 export function Maybe(child: State): State {
     return Uni(child, Empty());
 }
+
+/*
+export function Intersection(child1: State, child2: State): State {
+    return new IntersectionState(child1, child2);
+}
+*/
 
 /*
 export function Star(child: State) {

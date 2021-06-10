@@ -168,6 +168,10 @@ export function setIntersection<T>(s1: Set<T>, s2: Set<T>): Set<T> {
     return new Set([...s1].filter(i => s2.has(i)));
 }
 
+export function setDifference<T>(s1: Set<T>, s2: Set<T>): Set<T> {
+    return new Set([...s1].filter(x => !s2.has(x)));
+}
+
 export function setChain<T>(sets: Iterable<Set<T>>): Set<T> {
     const results: Set<T> = new Set();
     for (const set of sets) {
