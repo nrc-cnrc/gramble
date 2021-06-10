@@ -378,7 +378,7 @@ export class EqualsHeader extends JoinHeader {
         state: State
     ): State {
         if (leftNeighbor == undefined) {
-            throw new Error("'startswith' requires content to its left.");
+            throw new Error("'equals/startswith/endswith/contains' requires content to its left.");
         }
 
         if (leftNeighbor instanceof ConcatState) {
@@ -1188,13 +1188,17 @@ class RowComponent extends GrammarComponent {
         //for (var i = this.uncompiledCells.length-1; i >= 0; i--) {
         for (const [header, cell] of this.uncompiledCells) {
             //const [header, cell] = this.uncompiledCells[i];
-            const compiledCell = header.compileAndMerge(cell, namespace, devEnv, resultState);
-            compiledCell.mark(devEnv);
-            // if it was zero, ignore the result of the merge   
-            if (cell.text.length > 0 && !(compiledCell.state instanceof TrivialState)) {
-                resultState = compiledCell.state;
-            } 
-            this.compiledCells = [ compiledCell, ...this.compiledCells];
+            try {
+                const compiledCell = header.compileAndMerge(cell, namespace, devEnv, resultState);
+                compiledCell.mark(devEnv);
+                // if it was zero, ignore the result of the merge   
+                if (cell.text.length > 0 && !(compiledCell.state instanceof TrivialState)) {
+                    resultState = compiledCell.state;
+                } 
+                this.compiledCells = [ compiledCell, ...this.compiledCells];
+            } catch (e) {
+                cell.markError(devEnv, "Cell error", `${e}`);
+            }
         }
 
         if (resultState == undefined) {

@@ -800,6 +800,36 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
         ]);
     });
+
+    
+    describe('Equals embed', function() {
+
+        const project = sheetFromFile("./tests/csvs/equalsEmbed.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
+            { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
+            { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
+        ]);
+    });
+    
+    
+    describe('Equals embed where the symbol is defined later', function() {
+
+        const project = sheetFromFile("./tests/csvs/equalsEmbedAfter.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
+            { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
+            { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
+        ]);
+    });
+    
+    
     
     
     describe('Equals header with not value', function() {
@@ -854,6 +884,18 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('startswith embed', function() {
 
         const project = sheetFromFile("./tests/csvs/startsWithEmbed.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "umfoo", gloss: "[1SG]run" },
+            { text: "ummoo", gloss: "[1SG]jump" },
+            { text: "ungoo", gloss: "[1SG]climb" }
+        ]);
+    });
+
+    describe('startswith embed where the symbol is defined later', function() {
+
+        const project = sheetFromFile("./tests/csvs/startsWithEmbedAfter.csv");
 
         testErrors(project, []);
         testProject(project, 'word', [
@@ -947,6 +989,19 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    
+    describe('endswith embed where the symbol is defined later', function() {
+
+        const project = sheetFromFile("./tests/csvs/endsWithEmbedAfter.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobarq", gloss: "run[1SG]" },
+            { text: "foobazk", gloss: "jump[1SG]" },
+            { text: "foobask", gloss: "climb[1SG]" }
+        ]);
+    });
+
     describe('endswith negated embed', function() {
 
         const project = sheetFromFile("./tests/csvs/endsWithEmbedNot.csv");
@@ -958,6 +1013,21 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foobaru", gloss: "climb[1SG]" }
         ]);
     });
+
+    
+    describe('endswith complex embed', function() {
+
+        const project = sheetFromFile("./tests/csvs/endsWithComplexEmbed.csv");
+
+        testErrors(project, []);
+        testProject(project, 'word', [
+            { text: "foobar", gloss: "run[1SG]" },
+            { text: "foobor", gloss: "jump[1SG]" },
+            { text: "foobart", gloss: "climb[1SG]" },
+            { text: "foobatu", gloss: "eat[1SG]" }
+        ]);
+    });
+
 
     describe('endswith and equals modifying same embed', function() {
 

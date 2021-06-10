@@ -42,7 +42,7 @@ import { assert } from "chai";
  * 
  *   D_c("banana") = "anana" if c == "b"
  *                   0 otherwise
- gi* 
+ * 
  * Brzozowski proved that all regular grammars have only finitely many derivatives (even if 
  * the grammar itself generates infinitely).
  * 

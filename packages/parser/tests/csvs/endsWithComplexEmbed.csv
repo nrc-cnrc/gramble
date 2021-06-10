@@ -1,0 +1,23 @@
+
+vowels:, text
+        , a
+        , e
+        , i
+        , o
+        , u 
+
+stops:, text
+      , p
+      , t
+      , k
+
+root:, text, gloss
+     , fooba, run
+     , foobo, jump
+     , foobar, climb
+     , foobat, eat
+
+word:, embed, endswith embed, text, gloss
+     , root, vowels, r, [1SG]
+     , root, stops, u, [1SG]
+     , root, ~(vowels|stops), t, [1SG]
