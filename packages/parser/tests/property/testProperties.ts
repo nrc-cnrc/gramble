@@ -1,4 +1,4 @@
-import { Empty, Lit, Rep, Filter, Seq, State, Uni, Join, Null } from "../../src/stateMachine";
+import { Epsilon, Lit, Rep, Filter, Seq, State, Uni, Join, Null } from "../../src/stateMachine";
 
 const TRIALS = 1000;
 const MAX_RECURSION = 4;
@@ -57,7 +57,7 @@ const RANDOM_CONSTRUCTORS: [randomConstr, number][] = [
     [ randomSeq, 0.25 ],
     [ randomUnion, 0.2 ],
     [ randomRepeat, 0.05 ],
-    [ randomEmpty, 0.1 ],
+    [ randomEpsilon, 0.1 ],
 ]
 
 function randomGrammar(): State {
@@ -67,8 +67,8 @@ function randomGrammar(): State {
 }
 
 
-function randomEmpty(possibleTapes: string[], allowedDepth: number = 5): State {
-    return Empty();
+function randomEpsilon(possibleTapes: string[], allowedDepth: number = 5): State {
+    return Epsilon();
 }
 
 function randomState(possibleTapes: string[], allowedDepth: number = 5): State {
@@ -83,7 +83,7 @@ function randomState(possibleTapes: string[], allowedDepth: number = 5): State {
             return constr(possibleTapes, allowedDepth-1);
         }
     }
-    return Empty();
+    return Epsilon();
 }
 
 function randomLit(possibleTapes: string[], allowedDepth: number = 5): State {
@@ -211,13 +211,13 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
         [ 
             "X+ε = X",                    
             (x) => testEquals(
-                        Seq(x, Empty()), 
+                        Seq(x, Epsilon()), 
                         x)
         ],
         [ 
             "ε+X = X",                    
             (x) => testEquals(
-                        Seq(Empty(), x), 
+                        Seq(Epsilon(), x), 
                         x)
         ],
         
@@ -258,6 +258,18 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
             "∅+X = X",                    
             (x) => testEquals(
                         Seq(Null(), x), 
+                        Null())
+        ],
+        [ 
+            "X[∅] = X",                    
+            (x) => testEquals(
+                        Filter(x, Null()), 
+                        Null())
+        ],
+        [ 
+            "X⨝∅ = X",                    
+            (x) => testEquals(
+                        Join(x, Null()), 
                         Null())
         ],
     ],
@@ -366,7 +378,7 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
         [
             "X|ε = X{0,1}",
             (x) => testEquals(
-                        Uni(x, Empty()),
+                        Uni(x, Epsilon()),
                         Rep(x, 0, 1))
         ], 
         [
@@ -379,7 +391,7 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
             "X{0} = ε",
             (x) => testEquals(
                         Rep(x, 0, 0),
-                        Empty())
+                        Epsilon())
         ],        
         [ 
             "X[Y][Z] = X[Z][Y]",          

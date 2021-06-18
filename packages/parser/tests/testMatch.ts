@@ -1,6 +1,6 @@
 
-import { Uni, Match, UnionState, Seq, Any, MatchDot, Dot, MatchDotRep, MatchDotStar, Join, Filter } from "../src/stateMachine";
-import { t1, t2, unrelated, testHasTapes, testHasVocab, testGenerate, testGrammarUncompiled } from './testUtils';
+import { Uni, Match, Seq, Any, MatchDot, Dot, MatchDotRep, MatchDotStar, Join, Filter } from "../src/stateMachine";
+import { t1, t2, unrelated, testHasTapes, testHasVocab, testGrammarUncompiled } from './testUtils';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";

@@ -235,7 +235,7 @@ export class Namespace {
     public compileSymbol(
         name: string, 
         allTapes: TapeCollection, 
-        symbolStack: CounterStack,
+        stack: CounterStack,
         compileLevel: number
     ): void {
         const resolution = this.resolveName(name);
@@ -246,13 +246,13 @@ export class Namespace {
             return;
         }
         const [ns, symbolName] = resolution;
-        ns.compileLocalSymbol(symbolName, allTapes, symbolStack, compileLevel);
+        ns.compileLocalSymbol(symbolName, allTapes, stack, compileLevel);
     }
 
     public compileLocalSymbol(
         name: string, 
         allTapes: TapeCollection, 
-        symbolStack: CounterStack,
+        stack: CounterStack,
         compileLevel: number
     ): void {
         
@@ -261,7 +261,7 @@ export class Namespace {
                     " this should have been resolved in symbol resolution");
         }
         
-        const compiledName = this.getCompiledName(name, symbolStack);
+        const compiledName = this.getCompiledName(name, stack);
         if (compiledName in this.symbols) {
             // already compiled it
             return;
@@ -269,7 +269,7 @@ export class Namespace {
 
         const lowercaseName = name.toLowerCase();
         const [realName, state] = this.symbols[lowercaseName];
-        const compiledState = state.compileAux(allTapes, symbolStack, compileLevel);
+        const compiledState = state.compileAux(allTapes, stack, compileLevel);
         this.symbols[compiledName] = [realName, compiledState]
     }
 
@@ -314,10 +314,10 @@ export class Namespace {
     }
 
     public getLocalSymbol(name: string, 
-                        symbolStack: CounterStack | undefined = undefined): State | undefined {
+                        stack: CounterStack | undefined = undefined): State | undefined {
         
-        if (symbolStack != undefined) {
-            const compiledName = this.getCompiledName(name, symbolStack);
+        if (stack != undefined) {
+            const compiledName = this.getCompiledName(name, stack);
             if (compiledName in this.symbols) {
                 const [realName, state] = this.symbols[compiledName];
                 return state;
@@ -328,12 +328,12 @@ export class Namespace {
         return state;
     }
 
-    protected getCompiledName(symbolName: string, symbolStack: CounterStack) {
-        return symbolName + "@@@" + symbolStack.id;
+    protected getCompiledName(symbolName: string, stack: CounterStack) {
+        return symbolName + "@@@" + stack.id;
     }
 
     public getSymbol(name: string, 
-                symbolStack: CounterStack | undefined = undefined): State | undefined {
+                stack: CounterStack | undefined = undefined): State | undefined {
 
         const resolution = this.resolveName(name);
         if (resolution == undefined) {
@@ -341,7 +341,7 @@ export class Namespace {
         }
 
         const [ns, localName] = resolution;
-        return ns.getLocalSymbol(localName, symbolStack);
+        return ns.getLocalSymbol(localName, stack);
     }
 
     //public registeredSymbolNames: string[] = [];
@@ -371,7 +371,7 @@ export class Namespace {
 /**
  * State
  * 
- * State is the basic class of the parser.  It encapsulate the current state of the parse; you can think
+ * State is the basic class of the parser.  It encapsulates the current state of the parse; you can think
  * of it like a pointer into the state graph, if we were to ever construct that graph, which we don't.
  * Rather, a State encapsulates the *information* that that node would have represented.  
  * 
@@ -426,7 +426,7 @@ export abstract class State {
      * This will be the same result as if we called "collectVocab" on this state with an empty
      * TapeCollection, but we don't go to the trouble of collecting the character vocabulary.
      */
-     public getRelevantTapes(stateStack: CounterStack): Set<string> {
+     public getRelevantTapes(stack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
             this.relevantTapes = new Set();
         }
@@ -435,8 +435,8 @@ export abstract class State {
 
     public caresAbout(tape: Tape): boolean {
         if (tape.tapeName == "__ANY_TAPE__") return true;
-        const symbolStack = new CounterStack(2);
-        return this.getRelevantTapes(symbolStack).has(tape.tapeName);
+        const stack = new CounterStack(2);
+        return this.getRelevantTapes(stack).has(tape.tapeName);
     }
 
     /**
@@ -485,16 +485,19 @@ export abstract class State {
      * can stop parsing, just that we've reached a complete parse within the subgrammar.  For example, [ConcatState] checks whether its left
      * child is accepting() to determine whether to move on and start parsing its right child.
      * 
-     * @param symbolStack A [CounterStack] that keeps track of symbols, used for preventing infinite recursion.
+     * @param stack A [CounterStack] that keeps track of symbols, used for preventing infinite recursion.
      * @returns true if the state is an accepting state (i.e., constitutes a complete parse) 
      */
-    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
+    public accepting(
+        tape: Tape, 
+        stack: CounterStack
+    ): boolean {
         return false;
     }
 
     public* dagger(
         tape: Tape, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): Gen<State> { }
 
     /**
@@ -512,7 +515,7 @@ export abstract class State {
      * 
      * @param tape A Tape object identifying the name/type/vocabulary of the relevant tape
      * @param target A Token identifying what characters we need to match
-     * @param symbolStack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
+     * @param stack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
      * @returns A tuple <tape, match, matched, nextState>, where:
      *      * tape is the tape we matched on, 
      *      * match is the intersection of the original target and our match,
@@ -520,15 +523,11 @@ export abstract class State {
      *      * nextState is the state the matched transition leads to
      */
 
-    public abstract ndQuery(tape: Tape, 
+    public abstract ndQuery(
+        tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]>;
-
-    /*
-    public randomize(): State {
-        return this;
-    }  */
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]>;
         
     /** 
      * deterministic Query
@@ -547,7 +546,7 @@ export abstract class State {
      * 
      * @param nextTape A Tape object identifying the name/type/vocabulary of the relevant tape
      * @param target A Token identifying what characters we need to match
-     * @param symbolStack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
+     * @param stack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
      * @returns A tuple <tape, match, matched, nextState>, where:
      *      * tape is the tape we matched on, 
      *      * match is the intersection of the original target and our match,
@@ -558,24 +557,18 @@ export abstract class State {
     public *dQuery(
         tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack
-    ): Gen<[Tape, Token, boolean, State]> {
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
 
-        var results: [Tape, Token, boolean, State][] = [];
-        var nextStates: [Tape, Token, boolean, State][] = [... this.ndQuery(tape, target, random, symbolStack)];
+        var results: [Tape, Token, State][] = [];
+        var nextStates: [Tape, Token, State][] = [... this.ndQuery(tape, target, stack)];
         
-        for (var [nextTape, nextBits, nextMatched, next] of nextStates) {
-            //if (nextTape.isTrivial || !nextMatched) {
-            if (!nextMatched) {
-                results.push([nextTape, nextBits, nextMatched, next]);
-                continue;
-            }
+        for (var [nextTape, nextBits, next] of nextStates) {
 
-            var newResults: [Tape, Token, boolean, State][] = [];
-            for (var [otherTape, otherBits, otherMatched, otherNext] of results) {
-                if (nextTape.tapeName != otherTape.tapeName || !otherMatched) {
-                    newResults.push([otherTape, otherBits, otherMatched, otherNext]);
+            var newResults: [Tape, Token, State][] = [];
+            for (var [otherTape, otherBits, otherNext] of results) {
+                if (nextTape.tapeName != otherTape.tapeName) {
+                    newResults.push([otherTape, otherBits, otherNext]);
                     continue;
                 }
 
@@ -583,20 +576,20 @@ export abstract class State {
                 const intersection = nextBits.and(otherBits);
                 if (!intersection.isEmpty()) {
                     // there's something in the intersection
-                    const union = new UnionState([next, otherNext]);
-                    newResults.push([nextTape, intersection, true, union]); 
+                    const union = Uni(next, otherNext);
+                    newResults.push([nextTape, intersection, union]); 
                 }
                 nextBits = nextBits.andNot(intersection)
                 otherBits = otherBits.andNot(intersection);
 
                 // there's something left over
                 if (!otherBits.isEmpty()) {
-                    newResults.push([otherTape, otherBits, otherMatched, otherNext]);
+                    newResults.push([otherTape, otherBits, otherNext]);
                 }
             }
             results = newResults;
             if (!nextBits.isEmpty()) {
-                results.push([nextTape, nextBits, nextMatched, next]);
+                results.push([nextTape, nextBits, next]);
             }
         }
         yield *results;
@@ -686,29 +679,29 @@ export abstract class State {
                     maxRecursion: number = 4, 
                     maxChars: number = 1000): Gen<StringDict> {
         
-        const symbolStack = new CounterStack(maxRecursion);
+        const stack = new CounterStack(maxRecursion);
         const allTapes = this.getAllTapes();
 
         if (allTapes.isTrivial) {
             // there aren't any literal characters anywhere in the grammar, so there's no vocab.  
             // the only possible output is the empty grammar.
-            if (this.accepting(allTapes, random, symbolStack)) {
+            if (this.accepting(allTapes, stack)) {
                 yield {};
             }
             return;
         }
 
         if (random) {
-            yield* this.generateRandom(allTapes, symbolStack, maxChars);
+            yield* this.generateRandom(allTapes, stack, maxChars);
             return;
         } 
 
-        yield* this.generateBreadthFirst(allTapes, symbolStack, maxChars);
+        yield* this.generateBreadthFirst(allTapes, stack, maxChars);
     }
 
     public *generateBreadthFirst(
         allTapes: TapeCollection,
-        symbolStack: CounterStack,
+        stack: CounterStack,
         maxChars: number = 1000
     ) {
 
@@ -721,12 +714,12 @@ export abstract class State {
             var nextQueue: [MultiTapeOutput, State][] = [];
             for (const [prevOutput, prevState] of stateQueue) {
 
-                if (prevState.accepting(allTapes, false, symbolStack)) {
+                if (prevState.accepting(allTapes, stack)) {
                     yield* prevOutput.toStrings(false);
                 }
 
-                for (const [tape, c, matched, newState] of 
-                            prevState.dQuery(allTapes, ANY_CHAR, false, symbolStack)) {
+                for (const [tape, c, newState] of 
+                            prevState.dQuery(allTapes, ANY_CHAR, stack)) {
                     const nextOutput = prevOutput.add(tape, c);
                     nextQueue.push([nextOutput, newState]);
                 }
@@ -739,7 +732,7 @@ export abstract class State {
 
     public *generateRandom(
         allTapes: TapeCollection,
-        symbolStack: CounterStack,
+        stack: CounterStack,
         maxChars: number = 1000
     ): Gen<StringDict> {
 
@@ -760,13 +753,13 @@ export abstract class State {
             const randomIndex = Math.floor(Math.random()*stateQueue.length);
             const [currentOutput, currentState, chars] = stateQueue.splice(randomIndex, 1)[0];
             
-            if (currentState.accepting(allTapes, false, symbolStack)) {
+            if (currentState.accepting(allTapes, stack)) {
                 candidates.push([currentOutput, currentState, chars]);
             }
 
             if (chars < maxChars) {
-                for (const [tape, c, matched, newState] of 
-                        currentState.ndQuery(allTapes, ANY_CHAR, false, symbolStack)) {
+                for (const [tape, c, newState] of 
+                        currentState.ndQuery(allTapes, ANY_CHAR, stack)) {
                     const nextOutput = currentOutput.add(tape, c);
                     stateQueue.push([nextOutput, newState, chars+1]);
                 }
@@ -793,15 +786,15 @@ export abstract class State {
      * Collects all explicitly mentioned characters in the grammar for all tapes.
      * 
      * @param tapes A TapeCollection for holding found characters
-     * @param stateStack What symbols we've already collected from, to prevent inappropriate recursion
+     * @param stack What symbols we've already collected from, to prevent inappropriate recursion
      * @returns vocab 
      */
-    public collectVocab(tapes: Tape, stateStack: string[]): void { }
+    public collectVocab(tapes: Tape, stack: string[]): void { }
 
 
     public compileAux(
         allTapes: TapeCollection, 
-        symbolStack: CounterStack,
+        stack: CounterStack,
         compileLevel: number
     ): State {
         return this;
@@ -814,41 +807,37 @@ export abstract class State {
         const allTapes = this.getAllTapes();
         return this.compileAux(allTapes, new CounterStack(maxRecursion), compileLevel);
     }
-
-    public isEmpty(): boolean {
-        return false;
-    }
 }
 
 class CompiledState extends State {
 
     public id: string;
     public acceptingOnStart: {[tape: string]: boolean} = {};
-    public transitionsByTape: {[tape: string]: [Tape, Token, boolean, State][]} = {};
+    public transitionsByTape: {[tape: string]: [Tape, Token, State][]} = {};
 
     constructor(
         originalState: State,
         allTapes: TapeCollection,
-        symbolStack: CounterStack,
+        stack: CounterStack,
         compileLevel: number,
     ) {
         super();
-        this.id = `cmp${originalState.id}@${symbolStack.id}`;
+        this.id = `cmp${originalState.id}@${stack.id}`;
         // your relevant states, and your accepting status, are inherited from the original
-        this.relevantTapes = originalState.getRelevantTapes(symbolStack);
+        this.relevantTapes = originalState.getRelevantTapes(stack);
 
         // then run dQuery and remember the results
         const tapes = [ allTapes, ...allTapes.tapes.values() ];
         for (const tape of tapes) {
             
             // first remember the value of accepting() for this tape
-            this.acceptingOnStart[tape.tapeName] = originalState.accepting(tape, false, symbolStack);
+            this.acceptingOnStart[tape.tapeName] = originalState.accepting(tape, stack);
 
             // then remember the results
-            for (const [resTape, resToken, resMatched, resNext] of 
-                                    originalState.dQuery(tape, tape.any(), false, symbolStack)) {
-                const compiledNext = resNext.compileAux(allTapes, symbolStack, compileLevel-1);
-                this.addTransition(tape, resTape, resToken, resMatched, compiledNext);
+            for (const [resTape, resToken, resNext] of 
+                                    originalState.dQuery(tape, tape.any(), stack)) {
+                const compiledNext = resNext.compileAux(allTapes, stack, compileLevel-1);
+                this.addTransition(tape, resTape, resToken, compiledNext);
             }
         }
 
@@ -858,15 +847,14 @@ class CompiledState extends State {
     public addTransition(queryTape: Tape,
                         resultTape: Tape,
                         token: Token,
-                        matched: boolean,
                         next: State): void {
         if (!(queryTape.tapeName in this.transitionsByTape)) {
             this.transitionsByTape[queryTape.tapeName] = [];
         }
-        this.transitionsByTape[queryTape.tapeName].push([resultTape, token, matched, next]);
+        this.transitionsByTape[queryTape.tapeName].push([resultTape, token, next]);
     }
 
-    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
+    public accepting(tape: Tape, stack: CounterStack): boolean {
         if (!(tape.tapeName in this.acceptingOnStart)) {
             return false;
         }
@@ -878,18 +866,20 @@ class CompiledState extends State {
      * they might not be unique), because they themselves are the result of calling dQuery.
      * So it's not necessary to determinize them again; we just yield ndQuery.
      */
-    public *dQuery(tape: Tape, 
+    public *dQuery(
+        tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
 
-        yield *this.ndQuery(tape, target, random, symbolStack);
+        yield *this.ndQuery(tape, target, stack);
     }
 
-    public *ndQuery(tape: Tape, 
+    public *ndQuery(
+        tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
 
         const transitions = this.transitionsByTape[tape.tapeName];
         if (transitions == undefined) {
@@ -897,9 +887,9 @@ class CompiledState extends State {
             return;
         }
 
-        for (const [origResultTape, token, matched, next] of transitions) {
+        for (const [origResultTape, token, next] of transitions) {
             if (origResultTape.isTrivial) { // no vocab, so no possible results
-                yield [origResultTape, token, matched, next];
+                yield [origResultTape, token, next];
                 return;
             } 
             const matchedTape = tape.matchTape(origResultTape.tapeName);
@@ -910,7 +900,7 @@ class CompiledState extends State {
             if (resultToken.isEmpty()) {
                 continue;
             }
-            yield [matchedTape, resultToken, matched, next];
+            yield [matchedTape, resultToken, next];
         }
     }
 }
@@ -923,18 +913,17 @@ class BrzNull extends State {
 
     public accepting(
         tape: Tape,
-        random: boolean, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): boolean {
         return false;
     }
 
-    public *ndQuery(tape: Tape, 
+    public *ndQuery(
+        tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
-        
-    }
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> { }
+
 }
 
 /**
@@ -957,18 +946,18 @@ abstract class TextState extends State {
     protected abstract getToken(tape: Tape): Token;
     protected abstract successor(): State;
 
-    public *ndQuery(tape: Tape, 
-                    target: Token,
-                    random: boolean,
-                    symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+    public *ndQuery(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
 
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
-            //yield [tape, target, false, this];
             return;
         }
         
-        if (this.accepting(matchedTape, random, symbolStack)) {
+        if (this.accepting(matchedTape, stack)) {
             return; 
         }
 
@@ -978,11 +967,11 @@ abstract class TextState extends State {
             return;
         }
         const nextState = this.successor();
-        yield [matchedTape, result, true, nextState];
+        yield [matchedTape, result, nextState];
 
     }
 
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+    public getRelevantTapes(stack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
             this.relevantTapes = new Set([this.tapeName]);
         }
@@ -1006,8 +995,7 @@ export class AnyCharState extends TextState {
 
     public accepting(
         tape: Tape,
-        random: boolean, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): boolean {
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
@@ -1018,7 +1006,7 @@ export class AnyCharState extends TextState {
 
     public* dagger(
         tape: Tape, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): Gen<State> {
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
@@ -1028,7 +1016,7 @@ export class AnyCharState extends TextState {
     }
 
     protected successor(): State {
-        return new TrivialState();
+        return new BrzEpsilon();
     }
 }
 
@@ -1059,10 +1047,6 @@ export class LiteralState extends TextState {
         super(tape);
     }
 
-    public isEmpty(): boolean {
-        return this.text.length == 0;
-    }
-
     public get id(): string {
         const index = this.index > 0 ? `[${this.index}]` : ""; 
         return `${this.tapeName}:${this.text}${index}`;
@@ -1070,8 +1054,7 @@ export class LiteralState extends TextState {
 
     public accepting(
         tape: Tape, 
-        random: boolean, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): boolean {
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
@@ -1082,7 +1065,7 @@ export class LiteralState extends TextState {
 
     public* dagger(
         tape: Tape, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): Gen<State> {
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
@@ -1090,12 +1073,12 @@ export class LiteralState extends TextState {
             return;
         }
         if (this.index >= this.text.length) {
-            yield Empty();
+            yield Epsilon();
             return;
         }
     }
 
-    public collectVocab(tapes: Tape, stateStack: string[]): void {
+    public collectVocab(tapes: Tape, stack: string[]): void {
         tapes.tokenize(this.tapeName, this.text);
     }
 
@@ -1121,31 +1104,28 @@ export class LiteralState extends TextState {
  * useful in implementing other states (e.g. when
  * you need a state that's accepting but won't go anywhere).
  */
-export class TrivialState extends State {
+export class BrzEpsilon extends State {
 
     public get id(): string {
         return "0";
     }
 
-    public isEmpty(): boolean {
-        return true;
-    }
-
-    public accepting(tape: Tape, random: boolean,  symbolStack: CounterStack): boolean {
+    public accepting(tape: Tape, stack: CounterStack): boolean {
         return true;
     }
 
     public* dagger(
         tape: Tape, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): Gen<State> {
         yield this;
     }
 
-    public *ndQuery(tape: Tape, 
+    public *ndQuery(
+        tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> { }
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> { }
 }
 
 
@@ -1164,15 +1144,15 @@ abstract class BinaryState extends State {
         this.relevantTapes = relevantTapes;
     }
     
-    public collectVocab(tapes: Tape, stateStack: string[]): void {
-        this.child1.collectVocab(tapes, stateStack);
-        this.child2.collectVocab(tapes, stateStack);
+    public collectVocab(tapes: Tape, stack: string[]): void {
+        this.child1.collectVocab(tapes, stack);
+        this.child2.collectVocab(tapes, stack);
     }
     
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+    public getRelevantTapes(stack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
-            const child1tapes = this.child1.getRelevantTapes(stateStack);
-            const child2tapes = this.child2.getRelevantTapes(stateStack);
+            const child1tapes = this.child1.getRelevantTapes(stack);
+            const child2tapes = this.child2.getRelevantTapes(stack);
             this.relevantTapes = new Set([...child1tapes, ...child2tapes]);
         }
         return this.relevantTapes;
@@ -1184,11 +1164,10 @@ abstract class BinaryState extends State {
 
     public accepting(
         tape: Tape, 
-        random: boolean, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): boolean {
-        return this.child1.accepting(tape, random, symbolStack) && 
-                this.child2.accepting(tape, random, symbolStack);
+        return this.child1.accepting(tape, stack) && 
+                this.child2.accepting(tape, stack);
     }
 }
 
@@ -1200,17 +1179,17 @@ abstract class NAryState extends State {
         super();
     }
 
-    public collectVocab(tapes: Tape, stateStack: string[]): void {
+    public collectVocab(tapes: Tape, stack: string[]): void {
         for (const child of this.children) {
-            child.collectVocab(tapes, stateStack);
+            child.collectVocab(tapes, stack);
         }
     }
 
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+    public getRelevantTapes(stack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
             this.relevantTapes = new Set();
             for (const child of this.children) {
-                const childTapes = child.getRelevantTapes(stateStack);
+                const childTapes = child.getRelevantTapes(stack);
                 this.relevantTapes = new Set([...this.relevantTapes, ...childTapes]);
             }
         }
@@ -1218,403 +1197,33 @@ abstract class NAryState extends State {
     }
 }
 
-/**
- * ConcatState represents the current state in a concatenation A+B+... of 2+ grammars.
- * 
- * The one thing that makes ConcatState a bit tricky is that they're the only part of the grammar
- * where there is a precedence order, which in a naive implementation can lead to a deadlock situation.
- * For example, if we have ConcatState(LiteralState("A","a"), LiteralState("B","b")), then the material
- * on tape A needs to be emitted/matched before the material on tape B.  But then consider the opposite,
- * ConcatState(LiteralState("B","b"), LiteralState("A","a")).  That grammar describes the same database,
- * but looks for the material in opposite tape order.  If we join these two, the first is emitting on A and
- * waiting for a match, but the second can't match it because it'll only get there later.
- */
 
- export class ConcatState extends NAryState {
+export class BrzUnion extends BinaryState {
 
-    constructor(
-        children: State[],
-        public indices: {[tapeName: string]: number} | undefined = undefined
-    ) {
-        super(children);
+    public accepting(tape: Tape, stack: CounterStack): boolean {
+        return this.child1.accepting(tape, stack) || 
+               this.child2.accepting(tape, stack);
     }
 
-    
-    public compileAux(
-        allTapes: TapeCollection, 
-        symbolStack: CounterStack,
-        compileLevel: number
-    ): State {
-        
-        if (compileLevel <= 0) {
-            return this;
-        }
-
-        const newChildren = this.children.map(c => c.compileAux(allTapes, symbolStack, compileLevel));
-        const newThis = new ConcatState(newChildren, this.indices);
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
-    } 
-
-    public get id(): string {
-        return `Seq(${this.children.map(c => c.id).join("+")})`;
-    }
-
-    /*
-    public randomize(): State {
-        const newChildren = this.children.map(c => c.randomize());
-        return new ConcatState(newChildren);
-    } */
-
-    public isEmpty(): boolean {
-
-        if (this.children.length == 0) {
-            return true;
-        }
-
-        for (const child of this.children) {
-            if (!child.isEmpty()) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    public getIndices(symbolStack: CounterStack): {[tapeName: string]: number} {
-        if (this.indices == undefined) {
-            this.indices = {};
-            for (const tapeName of this.getRelevantTapes(symbolStack)) {
-                this.indices[tapeName] = 0;
-            }
-        }
-        return this.indices;
-    }
-
-    public accepting(
+    public* dagger(
         tape: Tape, 
-        random: boolean, 
-        symbolStack: CounterStack
-    ): boolean {
-        for (const child of this.children) {
-            if (!child.accepting(tape, random, symbolStack)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public successor(
-        tape: Tape, 
-        newChild: State,
-        newIndex: number,
-        symbolStack: CounterStack
-    ): ConcatState {
-        
-        const currentIndices = this.getIndices(symbolStack);
-        
-        const newIndices: {[tapeName: string]: number} = {};
-        Object.assign(newIndices, currentIndices);
-        newIndices[tape.tapeName] = newIndex;
-
-        const newChildren = [... this.children];
-        newChildren[newIndex] = newChild;
-        return new ConcatState(newChildren, newIndices);
-    }
-
-    protected getCurrentIndex(tape: Tape, symbolStack: CounterStack): [Tape | undefined, number] {
-        const indices = this.getIndices(symbolStack);
-
-        if (!(tape instanceof TapeCollection)) {
-            if (!(tape.tapeName in indices)) {
-                throw new Error(`Cannot find tape ${tape.tapeName} in indices in ${this.id}`);
-            }
-            return [tape, indices[tape.tapeName]];
-        }
-
-        // the tape is ANY_TAPE, we need to find the lowest index of our indices.
-        let minTapeName = "";
-        let minIndex = Infinity;
-        for (const [tapeName, index] of Object.entries(indices)) {
-            if (!(tape.tapes.has(tapeName))) {
-                continue;
-            }
-            if (index < minIndex) {
-                minTapeName = tapeName;
-                minIndex = index;
-            }
-        }
-        const matchedTape = tape.matchTape(minTapeName);
-        // matchedTape *can* be undefined here; it's not an error, it's the correct
-        // behavior when all the children are Empty()
-        return [matchedTape, minIndex];
+        stack: CounterStack
+    ): Gen<State> {
+        yield* this.child1.dagger(tape, stack);
+        yield* this.child2.dagger(tape, stack);
     }
 
     public *ndQuery(
         tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack
-    ): Gen<[Tape, Token, boolean, State]> {
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
 
-        if (!this.caresAbout(tape)) {
-            // if no child cares, just short circuit this rather than bother with all the rest
-            //yield [tape, target, false, this];
-            return;
-        } 
-
-        const [matchedTape, currentIndex] = this.getCurrentIndex(tape, symbolStack);
-        // when tape is an actual named tape, matchedTape will be identical.  but when
-        // tape is ANY_TAPE, matchedTape will be a named tape.  we don't actually use this
-        // tape for querying children; we only use it to check whether the child is accepting 
-        // on a tape, and increment the index for that tape if so.
-
-        if (matchedTape == undefined) {
-            // this can happen when all the children are empty
-            return;
-        }
-
-        if (currentIndex >= this.children.length) {
-            return;
-        }
-
-        const currentChild = this.children[currentIndex];
-
-        if (currentChild.accepting(tape, random, symbolStack)) {
-            if (currentIndex+1 < this.children.length) {
-                const currentChild = this.children[currentIndex+1];
-                const successor = this.successor(matchedTape, currentChild, currentIndex+1, symbolStack);
-                yield* successor.ndQuery(tape, target, random, symbolStack);
-            }
-        }
-
-        const childResults = [...currentChild.ndQuery(tape, target, random, symbolStack)];
-        for (const [cTape, cTarget, cMatched, cNext] of childResults) {
-            if (!cMatched) {
-                // we don't accept trivial transitions by NewConcatState children.  only
-                // if the entire sequence doesn't care, do we perform a trivial match, above.
-                continue;
-            }
-            
-            // in this successor, the indices stay the same, but we change the
-            // child at the current index to cNext
-            const newChildren = [... this.children];
-            newChildren[currentIndex] = cNext;
-            const successor = new ConcatState(newChildren, this.indices);
-            yield [cTape, cTarget, cMatched, successor];
-        }
+        yield* this.child1.ndQuery(tape, target, stack);
+        yield* this.child2.ndQuery(tape, target, stack);
     }
 }
 
-/*
-
-// this is the old implementation of ConcatState 
-
-export class ConcatState extends BinaryState {
-
-    constructor(
-        child1: State,
-        child2: State,
-        protected child1Done: boolean = false,
-        relevantTapes: Set<string> | undefined = undefined
-    ) {
-        super(child1, child2, relevantTapes);
-    }
-
-    public compileAux(
-        allTapes: TapeCollection, 
-        symbolStack: CounterStack,
-        compileLevel: number
-    ): State {
-
-        if (compileLevel <= 0) {
-            return this;
-        }
-        
-        const newChild1 = this.child1.compileAux(allTapes, symbolStack, compileLevel);
-        const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
-
-        const newThis = new ConcatState(newChild1, newChild2, this.child1Done, this.relevantTapes);
-
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
-    }
-
-    public *ndQuery(tape: Tape, 
-        target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
-        
-        if (!this.caresAbout(tape)) {
-            // if neither child cares, just short circuit this rather than bother with all the rest
-            yield [tape, target, false, this];
-            return;
-        }
-
-        if (this.child1Done) {
-            if (!this.child2.caresAbout(tape)) {
-                return;
-            }
-
-            for (const [c2tape, c2text, c2matched, c2next] of 
-                this.child2.dQuery(tape, target, random, symbolStack)) {
-                const successor = new ConcatState(this.child1, c2next, true, this.relevantTapes);
-                yield [c2tape, c2text, c2matched, successor];
-            }
-            return;
-        }
-
-        var yieldedAlready = false;
-
-        if (this.child1.accepting(tape, random, symbolStack)) {
-            const successor = new ConcatState(this.child1, this.child2, true, this.relevantTapes);
-            yield* successor.dQuery(tape, target, random, symbolStack);
-            yieldedAlready = true;
-        }
-
-        if (this.child1.caresAbout(tape)) {
-            for (const [c1tape, c1text, c1matched, c1next] of 
-                    this.child1.dQuery(tape, target, random, symbolStack)) {
-                const successor = new ConcatState(c1next, this.child2, false, this.relevantTapes);
-                yield [c1tape, c1text, c1matched, successor];
-            }
-            return;
-        }
-
-        if (yieldedAlready == true) {
-            return;
-        }
-        
-        // child2 must care, otherwise one of the previous conditions would have triggered
-        for (const [c2tape, c2text, c2matched, c2next] of 
-                this.child2.dQuery(tape, target, random, symbolStack)) {
-            const successor = new ConcatState(this.child1, c2next, false, this.relevantTapes);
-            yield [c2tape, c2text, c2matched, successor];
-        }
-    }
-}
-
-*/
-
-
-export class UnionState extends NAryState {
-
-    constructor(
-        children: State[]
-    ) {
-        super(children);
-    }
-    
-    public compileAux(
-        allTapes: TapeCollection, 
-        symbolStack: CounterStack,
-        compileLevel: number
-    ): State {
-        
-        if (compileLevel <= 0) {
-            return this;
-        }
-
-        const newChildren = this.children.map(c => c.compileAux(allTapes, symbolStack, compileLevel));
-        const newThis = new UnionState(newChildren);
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
-    }
-
-    public isEmpty(): boolean {
-
-        if (this.children.length == 0) {
-            return true;
-        }
-
-        for (const child of this.children) {
-            if (child.isEmpty()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public get id(): string {
-        return `(${this.children.map(c => c.id).join("|")})`;
-    }
-
-    /*
-    public randomize(): State {
-        if (this.children.length == 0) {
-            return this;
-        }
-        const randomChild = this.children[Math.floor(Math.random() * this.children.length)];
-        return randomChild.randomize();
-    } */
-
-    public accepting(
-        tape: Tape, 
-        random: boolean, 
-        symbolStack: CounterStack
-    ): boolean {
-
-        if (this.children.length == 0) {
-            return true;
-        }
-
-        for (const child of this.children) {
-            if (child.accepting(tape, random, symbolStack)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    
-    public* dagger(
-        tape: Tape, 
-        symbolStack: CounterStack
-    ): Gen<State> {
-
-        if (this.children.length == 0) {
-            yield Empty();
-        }
-
-        for (const child of this.children) {
-            yield* child.dagger(tape, symbolStack);
-        }
-        
-    }
-
-
-    public *ndQuery(tape: Tape, 
-        target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
-
-        if (this.children.length == 0) {
-            return;
-        }
-
-        for (const child of this.children) {
-            yield* child.ndQuery(tape, target, random, symbolStack);
-        }
-    }
-} 
-
-/**
- * Convenience function that takes two generators, and yields from the
- * second only if it can't yield from the first.  This is handy in situations
- * like the implementation of join, where if we yielded from both we would
- * constantly be yielding the same states.
- */
-function *iterPriorityUnion<T>(iter1: Gen<T>, iter2: Gen<T>): Gen<T> {
-
-    var yieldedAlready = false;
-    for (const output of iter1) {
-        yield output;
-        yieldedAlready = true;
-    }
-
-    if (!yieldedAlready) {   
-        yield* iter2;
-    }
-}
 
 class IntersectionState extends BinaryState {
 
@@ -1624,24 +1233,24 @@ class IntersectionState extends BinaryState {
 
     public compileAux(
         allTapes: TapeCollection, 
-        symbolStack: CounterStack,
+        stack: CounterStack,
         compileLevel: number
     ): State {
         if (compileLevel <= 0) {
             return this;
         }
-        const newChild1 = this.child1.compileAux(allTapes, symbolStack, compileLevel);
-        const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
+        const newChild1 = this.child1.compileAux(allTapes, stack, compileLevel);
+        const newChild2 = this.child2.compileAux(allTapes, stack, compileLevel);
         const newThis = new IntersectionState(newChild1, newChild2);
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
+        return new CompiledState(newThis, allTapes, stack, compileLevel);
     }
     
     public* dagger(
         tape: Tape, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): Gen<State> {
-        for (const c1next of this.child1.dagger(tape, symbolStack)) {
-            for (const c2next of this.child2.dagger(tape, symbolStack)) {
+        for (const c1next of this.child1.dagger(tape, stack)) {
+            for (const c2next of this.child2.dagger(tape, stack)) {
                 yield new IntersectionState(c1next, c2next);
             }
         }
@@ -1650,23 +1259,35 @@ class IntersectionState extends BinaryState {
     public *ndQuery(
         tape: Tape,
         target: Token,               
-        random: boolean,
-        symbolStack: CounterStack
-    ): Gen<[Tape, Token, boolean, State]> {
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
             
-        for (const [c1tape, c1target, c1matched, c1next] of 
-            this.child1.ndQuery(tape, target, random, symbolStack)) {
+        for (const [c1tape, c1target, c1next] of 
+            this.child1.ndQuery(tape, target, stack)) {
 
-            for (const [c2tape, c2target, c2matched, c2next] of 
-                    this.child2.ndQuery(c1tape, c1target, false, symbolStack)) {
+            for (const [c2tape, c2target, c2next] of 
+                    this.child2.ndQuery(c1tape, c1target, stack)) {
                 const successor = new IntersectionState(c1next, c2next);
-                yield [c2tape, c2target, c1matched || c2matched, successor];
+                yield [c2tape, c2target, successor];
             }
 
         }
     } 
 }
 
+/**
+ * Filter(A, B) removes outputs of A that do not contain an output of B.  That is, consider these two
+ * grammars:
+ * 
+ *    A = [ { T1:a, T2:b }, {T1:b, T2:b }, {T1:c, T1:a}, and {T1:d} ]
+ *    B = [ { T2:b } ]
+ * 
+ * Filter(A, B) would output [ { T1:a, T2:b }, {T1:b, T2:b } ].  Note that {T1:d} wasn't included, even
+ * though T2 is irrelevant to it -- this isn't just "match T2:b if you care about T2", but "you must match T2:b".
+ *  
+ * At one point we incorrectly called this a left semijoin, but a left semijoin doesn't care about tapes
+ * in B that aren't defined in A, whereas this does.
+ */
 class StrictFilterState extends BinaryState {
 
     constructor(
@@ -1679,14 +1300,14 @@ class StrictFilterState extends BinaryState {
         super(child1, child2);
     }
 
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+    public getRelevantTapes(stack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
 
             if (this.sharedTapes != undefined && this.child1OnlyTapes != undefined) {
                 this.relevantTapes = new Set([...this.sharedTapes, ...this.child1OnlyTapes]);
             } else {
-                const child1tapes = this.child1.getRelevantTapes(stateStack);
-                const child2tapes = this.child2.getRelevantTapes(stateStack);
+                const child1tapes = this.child1.getRelevantTapes(stack);
+                const child2tapes = this.child2.getRelevantTapes(stack);
                 this.relevantTapes = new Set([...child1tapes, ...child2tapes]);
             }
         }
@@ -1695,16 +1316,16 @@ class StrictFilterState extends BinaryState {
 
     public compileAux(
         allTapes: TapeCollection, 
-        symbolStack: CounterStack,
+        stack: CounterStack,
         compileLevel: number
     ): State {
         if (compileLevel <= 0) {
             return this;
         }
-        const newChild1 = this.child1.compileAux(allTapes, symbolStack, compileLevel);
-        const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
+        const newChild1 = this.child1.compileAux(allTapes, stack, compileLevel);
+        const newChild2 = this.child2.compileAux(allTapes, stack, compileLevel);
         const newThis = this.successor(newChild1, newChild2);
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
+        return new CompiledState(newThis, allTapes, stack, compileLevel);
     }
 
     protected successor(newChild1: State, newChild2: State): State {
@@ -1715,10 +1336,10 @@ class StrictFilterState extends BinaryState {
     
     public* dagger(
         tape: Tape, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): Gen<State> {
-        for (const c1next of this.child1.dagger(tape, symbolStack)) {
-            for (const c2next of this.child2.dagger(tape, symbolStack)) {
+        for (const c1next of this.child1.dagger(tape, stack)) {
+            for (const c2next of this.child2.dagger(tape, stack)) {
                 yield this.successor(c1next, c2next);
             }
         }
@@ -1727,17 +1348,16 @@ class StrictFilterState extends BinaryState {
 
     public *ndQuery(
         tape: Tape,
-        target: Token,               
-        random: boolean,
-        symbolStack: CounterStack
-    ): Gen<[Tape, Token, boolean, State]> {
+        target: Token,        
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
                             
         if (this.sharedTapes == undefined) {
-            this.sharedTapes = this.child2.getRelevantTapes(symbolStack);
+            this.sharedTapes = this.child2.getRelevantTapes(stack);
         }
 
         if (this.child1OnlyTapes == undefined) {
-            this.child1OnlyTapes = setDifference(this.child1.getRelevantTapes(symbolStack), this.sharedTapes);
+            this.child1OnlyTapes = setDifference(this.child1.getRelevantTapes(stack), this.sharedTapes);
         }
 
         if (this.tapePriority == undefined) {
@@ -1758,34 +1378,41 @@ class StrictFilterState extends BinaryState {
                 throw new Error(`Somehow tape ${tapeName} doesn't exist at ${this.id}`);
             }
 
-            if (this.accepting(tapeToTry, random, symbolStack)) {
+            if (this.accepting(tapeToTry, stack)) {
                 const successor = new StrictFilterState(this.child1, this.child2, this.child1OnlyTapes,
                         this.sharedTapes, this.tapePriority.slice(1));
-                yield* successor.ndQuery(tape, target, random, symbolStack);
+                yield* successor.ndQuery(tape, target, stack);
             }
 
-            yield* this.ndQuery(tapeToTry, target, random, symbolStack);
+            yield* this.ndQuery(tapeToTry, target, stack);
 
             return;
         }
 
-        for (const [c1tape, c1target, c1matched, c1next] of 
-            this.child1.ndQuery(tape, target, random, symbolStack)) {
+        for (const [c1tape, c1target, c1next] of 
+            this.child1.ndQuery(tape, target, stack)) {
             if (this.child1OnlyTapes.has(c1tape.tapeName)) {
                 const successor = this.successor(c1next, this.child2);
-                yield [c1tape, c1target, c1matched, successor];
+                yield [c1tape, c1target, successor];
                 continue;
             }
-            for (const [c2tape, c2target, c2matched, c2next] of 
-                    this.child2.ndQuery(c1tape, c1target, false, symbolStack)) {
+            for (const [c2tape, c2target, c2next] of 
+                    this.child2.ndQuery(c1tape, c1target, stack)) {
                 const successor = this.successor(c1next, c2next);
-                yield [c2tape, c2target, c1matched || c2matched, successor];
+                yield [c2tape, c2target, successor];
             }
         }
     }
 }
 
 
+/**
+ * The JoinState implements the natural join (in the relational algebra sense)
+ * for two automata. This is a fundamental operation in the parser, as we implement
+ * parsing as a traversal of a corresponding join state.  You can think of join(X,Y)
+ * as yielding from the intersection of X and Y on tapes that they share, and the product
+ * on tapes that they don't share.
+ */
 class StrictJoinState extends BinaryState {
 
     constructor(
@@ -1799,14 +1426,14 @@ class StrictJoinState extends BinaryState {
         super(child1, child2);
     }
 
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+    public getRelevantTapes(stack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
 
             if (this.sharedTapes != undefined && this.child1OnlyTapes != undefined && this.child2OnlyTapes != undefined) {
                 this.relevantTapes = new Set([...this.sharedTapes, ...this.child1OnlyTapes, ...this.child2OnlyTapes]);
             } else {
-                const child1tapes = this.child1.getRelevantTapes(stateStack);
-                const child2tapes = this.child2.getRelevantTapes(stateStack);
+                const child1tapes = this.child1.getRelevantTapes(stack);
+                const child2tapes = this.child2.getRelevantTapes(stack);
                 this.relevantTapes = new Set([...child1tapes, ...child2tapes]);
             }
         }
@@ -1815,16 +1442,16 @@ class StrictJoinState extends BinaryState {
     
     public compileAux(
         allTapes: TapeCollection, 
-        symbolStack: CounterStack,
+        stack: CounterStack,
         compileLevel: number
     ): State {
         if (compileLevel <= 0) {
             return this;
         }
-        const newChild1 = this.child1.compileAux(allTapes, symbolStack, compileLevel);
-        const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
+        const newChild1 = this.child1.compileAux(allTapes, stack, compileLevel);
+        const newChild2 = this.child2.compileAux(allTapes, stack, compileLevel);
         const newThis = this.successor(newChild1, newChild2);
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
+        return new CompiledState(newThis, allTapes, stack, compileLevel);
     }
 
     protected successor(newChild1: State, newChild2: State): State {
@@ -1834,10 +1461,10 @@ class StrictJoinState extends BinaryState {
 
     public* dagger(
         tape: Tape, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): Gen<State> {
-        for (const c1next of this.child1.dagger(tape, symbolStack)) {
-            for (const c2next of this.child2.dagger(tape, symbolStack)) {
+        for (const c1next of this.child1.dagger(tape, stack)) {
+            for (const c2next of this.child2.dagger(tape, stack)) {
                 yield this.successor(c1next, c2next);
             }
         }
@@ -1845,17 +1472,16 @@ class StrictJoinState extends BinaryState {
 
     public *ndQuery(
         tape: Tape,
-        target: Token,               
-        random: boolean,
-        symbolStack: CounterStack
-    ): Gen<[Tape, Token, boolean, State]> {
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
                             
         if (this.sharedTapes == undefined 
                     || this.child1OnlyTapes == undefined 
                     || this.child2OnlyTapes == undefined 
                     || this.tapePriority == undefined) {
-            const child1tapes = this.child1.getRelevantTapes(symbolStack);
-            const child2tapes = this.child2.getRelevantTapes(symbolStack);
+            const child1tapes = this.child1.getRelevantTapes(stack);
+            const child2tapes = this.child2.getRelevantTapes(stack);
             this.sharedTapes = setIntersection(child1tapes, child2tapes);
             this.child1OnlyTapes = setDifference(child1tapes, child2tapes);
             this.child2OnlyTapes = setDifference(child2tapes, child1tapes);
@@ -1876,209 +1502,48 @@ class StrictJoinState extends BinaryState {
                 throw new Error(`Somehow tape ${tapeName} doesn't exist at ${this.id}`);
             }
 
-            if (this.accepting(tapeToTry, random, symbolStack)) {
+            if (this.accepting(tapeToTry, stack)) {
                 const successor = new StrictJoinState(this.child1, this.child2, 
                         this.child1OnlyTapes, this.child2OnlyTapes,
                         this.sharedTapes, this.tapePriority.slice(1));
-                yield* successor.ndQuery(tape, target, random, symbolStack);
+                yield* successor.ndQuery(tape, target, stack);
             }
-            yield* this.ndQuery(tapeToTry, target, random, symbolStack);
+            yield* this.ndQuery(tapeToTry, target, stack);
 
             return;
         }
 
         if (this.child1OnlyTapes.has(tape.tapeName)) {
             // only the first child needs to respond
-            for (const [c1tape, c1target, c1matched, c1next] of
-                     this.child1.ndQuery(tape, target, random, symbolStack)) {
+            for (const [c1tape, c1target, c1next] of
+                     this.child1.ndQuery(tape, target, stack)) {
                 const successor = this.successor(c1next, this.child2);
-                yield [c1tape, c1target, c1matched, successor];
+                yield [c1tape, c1target, successor];
             }
             return;    
         }
 
         if (this.child2OnlyTapes.has(tape.tapeName)) {
             // only the second child needs to respond
-            for (const [c2tape, c2target, c2matched, c2next] of
-                     this.child2.ndQuery(tape, target, random, symbolStack)) {
+            for (const [c2tape, c2target, c2next] of
+                     this.child2.ndQuery(tape, target, stack)) {
                 const successor = this.successor(this.child1, c2next);
-                yield [c2tape, c2target, c2matched, successor];
+                yield [c2tape, c2target, successor];
             }
             return;    
         }
 
-        for (const [c1tape, c1target, c1matched, c1next] of 
-            this.child1.ndQuery(tape, target, random, symbolStack)) {
+        for (const [c1tape, c1target, c1next] of 
+            this.child1.ndQuery(tape, target, stack)) {
             // both children need to respond
-            for (const [c2tape, c2target, c2matched, c2next] of 
-                    this.child2.ndQuery(c1tape, c1target, false, symbolStack)) {
+            for (const [c2tape, c2target, c2next] of 
+                    this.child2.ndQuery(c1tape, c1target, stack)) {
                 const successor = this.successor(c1next, c2next);
-                yield [c2tape, c2target, c1matched || c2matched, successor];
+                yield [c2tape, c2target, successor];
             }
         }
     }
 }
-
-/**
- * Filter(A, B) removes outputs of A that do not contain an output of B.  That is, consider these two
- * grammars:
- * 
- *    A = [ { T1:a, T2:b }, {T1:b, T2:b }, {T1:c, T1:a}, and {T1:d} ]
- *    B = [ { T2:b } ]
- * 
- * Filter(A, B) would output [ { T1:a, T2:b }, {T1:b, T2:b } ].  Note that {T1:d} wasn't included, even
- * though T2 is irrelevant to it -- this isn't just "match T2:b if you care about T2", but "you must match T2:b".
- *  
- * At one point we incorrectly called this a left semijoin, but a left semijoin doesn't care about tapes
- * in B that aren't defined in A, whereas this does.
- */
-class FilterState extends BinaryState {
-
-    /**
-     * Because .successor() on both this and its descendent JoinState are
-     * so simple, we only have to write one compileAux() for both
-     */
-    public compileAux(
-        allTapes: TapeCollection, 
-        symbolStack: CounterStack,
-        compileLevel: number
-    ): State {
-        if (compileLevel <= 0) {
-            return this;
-        }
-        const newChild1 = this.child1.compileAux(allTapes, symbolStack, compileLevel);
-        const newChild2 = this.child2.compileAux(allTapes, symbolStack, compileLevel);
-        const newThis = this.successor(newChild1, newChild2);
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
-    }
-
-    /*
-    public randomize(): State {
-        const randomLeft = this.child1.randomize();
-        return new FilterState(randomLeft, this.child2);
-    } */
-
-    /**
-     * We factor this out from ndQuery because the descendant Join class uses it too.
-     */
-    public *filter(
-        tape: Tape,
-        target: Token,
-        c1: State,
-        c2: State,                  
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
-                            
-
-        for (const [c1tape, c1target, c1matched, c1next] of 
-                c1.ndQuery(tape, target, random, symbolStack)) {
-
-            /*
-            if (c1tape.isTrivial) { 
-                // c1 contained a ProjectionState that hides the original tape; move on without
-                // asking c2 to match anything.
-                const successor = this.successor(c1next, c2);
-                yield [c1tape, c1target, c1matched, successor];
-                continue;
-            } */
-            
-            /*
-            if (!c2.caresAbout(c1tape)) {
-                const successor = this.successor(c1next, c2);
-                yield [c1tape, c1target, c1matched, successor];
-                continue;
-            }  */
-            
-            /**
-             * Even if we're random, we don't ask the other side to randomize; this 
-             * would end up having surprising effects.
-             */
-            for (const [c2tape, c2target, c2matched, c2next] of 
-                    c2.ndQuery(c1tape, c1target, false, symbolStack)) {
-                const successor = this.successor(c1next, c2next);
-                yield [c2tape, c2target, c1matched || c2matched, successor];
-            }
-        } 
-    }
-
-    protected successor(newChild1: State, newChild2: State): State {
-        return new FilterState(newChild1, newChild2, this.relevantTapes);
-    }
-
-    public *ndQuery(tape: Tape, 
-        target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
-
-        yield *this.filter(tape, target, this.child1, this.child2, random, symbolStack);
-    }
-
-    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
-        return this.child1.accepting(tape, random, symbolStack) && 
-                this.child2.accepting(tape, random, symbolStack);
-    }
-
-}
-
-
-/**
- * The JoinState implements the natural join (in the relational algebra sense)
- * for two automata. This is a fundamental operation in the parser, as we implement
- * parsing as a traversal of a corresponding join state.  You can think of join(X,Y)
- * as yielding from the intersection of X and Y on tapes that they share, and the product
- * on tapes that they don't share.
- * 
- * The algorithm is simplified by the fact that join(X, Y) can be implemented the union
- * of the left and right semijoins (or, put another way, the left semijoin of (X,Y) and 
- * the left semijoin of (Y,X)).  The left semijoin (X,Y) just consists of querying X, then 
- * taking the result of that and querying Y, and yielding the result of that.
- * 
- * Because the ordinary union of these would lead to the same states twice, we use the
- * priority union instead.
- * 
- * Note that even though, on its own, the Filter(A, B) operation is not the semijoin, the
- * way its used *here* ends up equivalent to the union of semijoins.
- */
-export class JoinState extends FilterState {
-    
-    protected successor(newChild1: State, newChild2: State): State {
-        return new JoinState(newChild1, newChild2, this.relevantTapes);
-    }
-
-    
-    /*
-    public randomize(): State {
-        const randomLeft = this.child1.randomize();
-        const randomRight = this.child2.randomize();
-        return new JoinState(randomLeft, randomRight);
-    } */
-
-    public accepting(
-        tape: Tape, 
-        random: boolean, 
-        symbolStack: CounterStack
-    ): boolean {
-        return this.child1.accepting(tape, random, symbolStack) && 
-               this.child2.accepting(tape, random, symbolStack);
-    }
-
-    public *ndQuery(tape: Tape, 
-        target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
-
-        const leftJoin = this.filter(tape, target, this.child1, this.child2, random, symbolStack);
-        const rightJoin = this.filter(tape, target, this.child2, this.child1, random, symbolStack);
-        
-        if (this.child1.accepting(tape, random, symbolStack)) {
-            yield* iterPriorityUnion(rightJoin, leftJoin);
-            return;
-        }
-
-        yield* iterPriorityUnion(leftJoin, rightJoin);
-    }
-
-} 
 
 /**
  * Abstract base class for states with only one child state.  Typically, UnaryStates
@@ -2100,149 +1565,22 @@ abstract class UnaryState extends State {
         return `${this.constructor.name}(${this.child.id})`;
     }
     
-    public collectVocab(tapes: Tape, stateStack: string[]): void {
-        this.child.collectVocab(tapes, stateStack);
+    public collectVocab(tapes: Tape, stack: string[]): void {
+        this.child.collectVocab(tapes, stack);
     }
 
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+    public getRelevantTapes(stack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
-            this.relevantTapes = this.child.getRelevantTapes(stateStack);
+            this.relevantTapes = this.child.getRelevantTapes(stack);
         }
         return this.relevantTapes;
     }
 
-    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
-        return this.child.accepting(tape, random, symbolStack);
+    public accepting(tape: Tape, stack: CounterStack): boolean {
+        return this.child.accepting(tape, stack);
     }
 }
 
-
-/**
- * RepetitionState implements the Kleene star, plus, question mark, and in general
- * repetitions between N and M times.  (E.g. x{2,3} matching x two or three times.)
- * 
- * The slightly odd part of implementing RepetitionState, compared to other states, is that only
- * RepetitionState needs to remember the initial state of its child.  That is, all the
- * other UnaryStates only keep track of the current state of the child parse.  RepetitionState,
- * however, needs to be able to *restart* the child.  To do that, it
- * keeps around the original child state, so that it can construct its appropriate successor
- * when the current child state is finished.
- * 
- * Note that the below algorithm is fairly similar to [ConcatState]; in the future
- * we might want to partially unify these the way we did [LiteralState] and [AnyCharState].
- */
-export class RepetitionState extends UnaryState {
-
-    constructor(
-        public child: State,
-        public minReps: number = 0,
-        public maxReps: number = Infinity,
-        public index: number = 0,
-        public initialChild: State,
-    ) { 
-        super();
-    }
-
-    /*
-    public randomize(): State {
-
-        const newChild = this.child.randomize();
-        
-        let randomReps = 0;
-
-        if (this.minReps > this.maxReps) {
-            randomReps = -1;
-        } else if (this.minReps == this.maxReps) {
-            randomReps = this.minReps;
-        } else {
-            const maxReps = (this.maxReps != Infinity) ? this.maxReps : 10;
-            const range = maxReps - this.minReps + 1;
-            randomReps = this.minReps + Math.floor(Math.random() * range);
-        }
-
-        return new RepetitionState(newChild, randomReps, randomReps, this.index, this.initialChild);
-    }
-    */
-
-    public get id(): string {
-        if (this.minReps == this.maxReps) {
-            return `${this.initialChild.id}{${this.minReps}}`;
-        }
-        return `${this.initialChild.id}{${this.minReps},${this.maxReps}}`;
-    }
-
-    public isEmpty(): boolean {
-        return this.initialChild.isEmpty() || (this.minReps == 0 && this.index == 0 && this.child.isEmpty());
-    }
-
-    public compileAux(
-        allTapes: TapeCollection, 
-        symbolStack: CounterStack,
-        compileLevel: number
-    ): State {
-        
-        if (compileLevel <= 0) {
-            return this;
-        }
-        const newInitialChild = this.initialChild.compileAux(allTapes, symbolStack, compileLevel);
-        const newThis = new RepetitionState(this.child, this.minReps, this.maxReps, 
-                                                    this.index, newInitialChild);
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
-    }
-    
-    public collectVocab(tapes: Tape, stateStack: string[]): void {
-        this.initialChild.collectVocab(tapes, stateStack);
-    }
-
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
-        if (this.relevantTapes == undefined) {
-            this.relevantTapes = this.initialChild.getRelevantTapes(stateStack);
-        }
-        return this.relevantTapes;
-    }
-
-    public accepting(
-        tape: Tape, 
-        random: boolean, 
-        symbolStack: CounterStack
-    ): boolean {
-
-        if (this.child.isEmpty() && this.initialChild.isEmpty()) {
-            return true;
-        } 
-
-        return this.index >= this.minReps && 
-            this.index <= this.maxReps && 
-            this.child.accepting(tape, random, symbolStack);
-    }
-
-    public *ndQuery(tape: Tape, 
-        target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
-
-        if (this.index > this.maxReps) {
-            return;
-        }
-
-        if (this.child.accepting(tape, random, symbolStack) &&
-            !(this.maxReps == Infinity && this.child == this.initialChild)) {
-            const successorChild = random ? this.initialChild : this.initialChild;
-            const successor = new RepetitionState(successorChild, this.minReps, this.maxReps, 
-                                                this.index+1, this.initialChild)
-            for (const result of successor.ndQuery(tape, target, random, symbolStack)) {
-                yield result;
-            }
-        }
-
-        for (const [childTape, childText, childMatched, childNext] of 
-                this.child.ndQuery(tape, target, random, symbolStack)) {
-            const successor = new RepetitionState(childNext, this.minReps, this.maxReps, this.index, this.initialChild);
-            yield [childTape, childText, childMatched, successor];
-        }
-
-    }
-}
 
 /**
  * The parser that handles arbitrary subgrammars referred to by a symbol name; this is what makes
@@ -2279,7 +1617,7 @@ export class EmbedState extends State {
 
     public compileAux(
         allTapes: TapeCollection, 
-        symbolStack: CounterStack, 
+        stack: CounterStack, 
         compileLevel: number
     ): State {
         
@@ -2287,60 +1625,46 @@ export class EmbedState extends State {
             return this;
         }
         
-        if (symbolStack.exceedsMax(this.symbolName)) {
+        if (stack.exceedsMax(this.symbolName)) {
             return this;
         }
 
-        const newStack = symbolStack.add(this.symbolName);
+        const newStack = stack.add(this.symbolName);
         this.namespace.compileSymbol(this.symbolName, allTapes, newStack, compileLevel);
-        return new CompiledState(this, allTapes, symbolStack, compileLevel);
+        return new CompiledState(this, allTapes, stack, compileLevel);
     } 
     
-    public collectVocab(tapes: Tape, stateStack: string[]): void {
-        if (stateStack.indexOf(this.symbolName) != -1) {
+    public collectVocab(tapes: Tape, stack: string[]): void {
+        if (stack.indexOf(this.symbolName) != -1) {
             return;
         }
-        const newStack = [...stateStack, this.symbolName];
-        this.getChild(false).collectVocab(tapes, newStack);
+        const newStack = [...stack, this.symbolName];
+        this.getChild().collectVocab(tapes, newStack);
     }
 
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+    public getRelevantTapes(stack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
-            if (stateStack.exceedsMax(this.symbolName)) {
+            if (stack.exceedsMax(this.symbolName)) {
                 this.relevantTapes = new Set();
             } else {
-                const newStack = stateStack.add(this.symbolName);
-                this.relevantTapes = this.getChild(false, newStack).getRelevantTapes(newStack);
+                const newStack = stack.add(this.symbolName);
+                this.relevantTapes = this.getChild(newStack).getRelevantTapes(newStack);
             }
         }
         return this.relevantTapes;
     }
 
-    /*
-    public get child(): State {
-        if (this._child == undefined) {
-            this._child = this.namespace.getSymbol(this.symbolName);
-            if (this._child == undefined) {
-                // this is an error, typically caused by programmer error,
-                // but now is not when we notify the programmer.  just
-                // fail gracefully by treating the child as the empty grammar
-                this._child = Empty();
-            }
-        }
-        return this._child;
-    } */
 
-    public getChild(random: boolean, symbolStack: CounterStack | undefined = undefined): State {
+    public getChild(stack: CounterStack | undefined = undefined): State {
         if (this._child == undefined) {
-            const child = this.namespace.getSymbol(this.symbolName, symbolStack);
+            const child = this.namespace.getSymbol(this.symbolName, stack);
             if (child == undefined) {
                 // this is an error, due to the programmer referring to an undefined
                 // symbol, but now is not the time to complain.  it'll be caught elsewhere
                 // and the programmer will be notified.  just fail gracefully by treating
                 // the child as the empty grammar
-                return Empty();
+                return Epsilon();
             } 
-            //return random ? child.randomize() : child;
             this._child = child;
         }
         return this._child;
@@ -2348,143 +1672,77 @@ export class EmbedState extends State {
     
     public accepting(
         tape: Tape, 
-        random: boolean, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): boolean {
-        if (symbolStack.exceedsMax(this.symbolName)) {
+        if (stack.exceedsMax(this.symbolName)) {
             return false;
         }
-        const newStack = symbolStack.add(this.symbolName);
-        return this.getChild(random, newStack).accepting(tape, random, newStack);
+        const newStack = stack.add(this.symbolName);
+        return this.getChild(newStack).accepting(tape, newStack);
     }
 
     public* dagger(
         tape: Tape, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): Gen<State> {
-        if (symbolStack.exceedsMax(this.symbolName)) {
+        if (stack.exceedsMax(this.symbolName)) {
             return;
         }
-        const newStack = symbolStack.add(this.symbolName);
-        yield* this.getChild(false, newStack).dagger(tape, newStack);
+        const newStack = stack.add(this.symbolName);
+        yield* this.getChild(newStack).dagger(tape, newStack);
     
     }
 
-    public *ndQuery(tape: Tape, 
+    public *ndQuery(
+        tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
 
-        if (symbolStack.exceedsMax(this.symbolName)) {
+        if (stack.exceedsMax(this.symbolName)) {
             return;
         }
 
-        symbolStack = symbolStack.add(this.symbolName);
-        let child = this.getChild(random, symbolStack);
+        stack = stack.add(this.symbolName);
+        let child = this.getChild(stack);
 
-        for (const [childchildTape, childTarget, childMatched, childNext] of 
-                        child.ndQuery(tape, target, random, symbolStack)) {
+        for (const [childchildTape, childTarget, childNext] of 
+                        child.ndQuery(tape, target, stack)) {
             const successor = new EmbedState(this.symbolName, this.namespace, childNext, this.relevantTapes);
-            yield [childchildTape, childTarget, childMatched, successor];
+            yield [childchildTape, childTarget, successor];
         }
     }
 }
-
-/**
- * A state that implements Projection in the sense of relational algebra, only 
- * exposing a subset of fields (read: tapes) of its child state.
- * 
- * Note that the child state itself still has and operates on those fields/tapes.
- * For example, the Projection of a join can still fail when there's a conflict regarding
- * field T, even if the Projection hides field T.  We can think of the Project as encapsulating
- * the set of fields/tapes such that only a subset of its fields are exposed to the outside,
- * rather than removing those fields/tapes.
- */
-/*
-export class ProjectionState extends UnaryState {
-
-    constructor(
-        public child: State,
-        public tapeRestriction: Set<string>
-    ) { 
-        super();
-    }
-
-    public compileAux(
-        allTapes: TapeCollection, 
-        symbolStack: CounterStack,
-        compileLevel: number
-    ): State {
-        
-        if (compileLevel <= 0) {
-            return this;
-        }
-        const newChild = this.child.compileAux(allTapes, symbolStack, compileLevel);
-        const newThis = new ProjectionState(newChild, this.tapeRestriction);
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
-    }
-
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
-        if (this.relevantTapes == undefined) {
-            this.relevantTapes = this.tapeRestriction;
-        }
-        return this.relevantTapes;
-    }
-
-    public *ndQuery(tape: Tape, 
-        target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
-
-        if (tape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(tape.tapeName)) {
-            // if it's not a tape we care about, go nowhere
-            yield [tape, target, false, this];
-            return;
-        }
-
-        for (var [childTape, childTarget, childMatch, childNext] of 
-                            this.child.dQuery(tape, target, random, symbolStack)) {
-
-            if (childTape.tapeName != "__ANY_TAPE__" && !this.tapeRestriction.has(childTape.tapeName)) {
-                // even if our child yields content on a restricted tape, 
-                // we don't let our own parent know about it
-                childTape = new TapeCollection();
-                childTarget = NO_CHAR;
-            }
-            yield [childTape, childTarget, childMatch, new ProjectionState(childNext, this.tapeRestriction)];
-        }
-    }
-}
-*/
 
 export class BrzConcatState extends BinaryState {
 
     public* dagger(
         tape: Tape, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): Gen<State> {
-        for (const c1next of this.child1.dagger(tape, symbolStack)) {
-            for (const c2next of this.child2.dagger(tape, symbolStack)) {
+        for (const c1next of this.child1.dagger(tape, stack)) {
+            for (const c2next of this.child2.dagger(tape, stack)) {
                 yield new BrzConcatState(c1next, c2next);
             }
         }
     }
 
-    public *ndQuery(tape: Tape, 
+    public *ndQuery(
+        tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
 
-        for (const [c1tape, c1target, c1match, c1next] of
-                this.child1.ndQuery(tape, target, random, symbolStack)) {
-            yield [c1tape, c1target, c1match, 
+        for (const [c1tape, c1target, c1next] of
+                this.child1.ndQuery(tape, target, stack)) {
+            yield [c1tape, c1target, 
                 new BrzConcatState(c1next, this.child2)];
         }
 
-        for (const c1next of this.child1.dagger(tape, symbolStack)) {
-            for (const [c2tape, c2target, c2match, c2next] of
-                    this.child2.ndQuery(tape, target, random, symbolStack)) {
-                yield [c2tape, c2target, c2match, 
+        for (const c1next of this.child1.dagger(tape, stack)) {
+            for (const [c2tape, c2target, c2next] of
+                    this.child2.ndQuery(tape, target, stack)) {
+                yield [c2tape, c2target, 
                     new BrzConcatState(c1next, c2next)];
             }
         }
@@ -2499,125 +1757,53 @@ export class StarState extends BinaryState {
 
     public accepting(
         tape: Tape, 
-        random: boolean, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): boolean {
         // the right side of the concatenation, (child2)*, 
         // is always accepting, so don't test it
-        return this.child1.accepting(tape, random, symbolStack);
+        return this.child1.accepting(tape, stack);
     }
 
     
     public* dagger(
         tape: Tape, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): Gen<State> {
-        yield* this.child1.dagger(tape, symbolStack);
+        yield* this.child1.dagger(tape, stack);
     }
 
     public *ndQuery(
         tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack
-    ): Gen<[Tape, Token, boolean, State]> {
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
 
-        for (const [c1tape, c1target, c1match, c1next] of
-                this.child1.ndQuery(tape, target, random, symbolStack)) {
-            yield [c1tape, c1target, c1match, 
+        for (const [c1tape, c1target, c1next] of
+                this.child1.ndQuery(tape, target, stack)) {
+            yield [c1tape, c1target, 
                 new StarState(c1next, this.child2)];
         }
 
         if (this.child1 == this.child2) {
             // we don't want to do the next part if c1 and c2 are identical.
             // we'd recurse infinitely to find results we already calculated
-            // above.  the following can only give results if the two are 
+            // above.  the following code can only give results if the two are 
             // different: when we're just starting (and so c1 is epsilon) or
             // when it was (at one point) equal to c2 but we already yielded
             // from it (so its successor is different)
             return;
         }
 
-        for (const c1next of this.child1.dagger(tape, symbolStack)) {
+        for (const c1next of this.child1.dagger(tape, stack)) {
             const successor = new StarState(this.child2, this.child2);
-            for (const [c2tape, c2target, c2match, c2next] of
-                successor.ndQuery(tape, target, random, symbolStack)) {
-                yield [c2tape, c2target, c2match, 
+            for (const [c2tape, c2target, c2next] of
+                successor.ndQuery(tape, target, stack)) {
+                yield [c2tape, c2target, 
                     new BrzConcatState(c1next, c2next)];
             }
         }
     }
 }
-
-/*
-export class DropState extends UnaryState {
-
-    constructor(
-        public child: State,
-        public droppedTapes: Set<string>
-    ) { 
-        super();
-    }
-
-    public accepting(
-        tape: Tape, 
-        random: boolean, 
-        symbolStack: CounterStack
-    ): boolean {
-        
-        if (tape instanceof TapeCollection) {
-            const [droppedTapes, remainderTapes] = tape.split(this.droppedTapes);
-            return this.child.accepting(remainderTapes, random, symbolStack);
-        }
-
-        if (this.droppedTapes.has(tape.tapeName)) {
-            return true;
-        }
-
-        return this.child.accepting(tape, random, symbolStack);
-    }
-
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
-        return setUnion(this.droppedTapes, this.child.getRelevantTapes(stateStack));
-    }
-    
-    public compileAux(
-        allTapes: TapeCollection, 
-        symbolStack: CounterStack,
-        compileLevel: number
-    ): State {
-        
-        if (compileLevel <= 0) {
-            return this;
-        }
-        const newChild = this.child.compileAux(allTapes, symbolStack, compileLevel);
-        const newThis = new DropState(newChild, this.droppedTapes);
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
-    }
-
-    public *ndQuery(tape: Tape, 
-        target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
-
-        if (this.droppedTapes.has(tape.tapeName)) {
-            return;
-        }
-
-        if (tape instanceof TapeCollection) {
-            const [droppedTape, remainderTapes] = tape.split(this.droppedTapes);
-            tape = remainderTapes;
-        }
-
-        for (const [childTape, childTarget, childMatch, childNext] of 
-                            this.child.ndQuery(tape, target, random, symbolStack)) {
-            yield [childTape, childTarget, childMatch, 
-                    new DropState(childNext, this.droppedTapes)];
-        }
-    }
-}
-
-*/
 
 /**
  * Implements the Rename operation from relational algebra.
@@ -2635,37 +1821,28 @@ export class RenameState extends UnaryState {
         this.relevantTapes = relevantTapes;
     }
 
-    public isEmpty(): boolean {
-        return this.child.isEmpty();
-    }
-
-    /*
-    public randomize(): State {
-        return new RenameState(this.child.randomize(), this.fromTape, this.toTape);
-    } */
-
-    public accepting(tape: Tape, random: boolean, symbolStack: CounterStack): boolean {
+    public accepting(tape: Tape, stack: CounterStack): boolean {
         tape = new RenamedTape(tape, this.fromTape, this.toTape);
-        return this.child.accepting(tape, random, symbolStack);
+        return this.child.accepting(tape, stack);
     }
 
     public* dagger(
         tape: Tape, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): Gen<State> {
         tape = new RenamedTape(tape, this.fromTape, this.toTape);
-        yield* this.child.dagger(tape, symbolStack);
+        yield* this.child.dagger(tape, stack);
     }
 
-    public collectVocab(tapes: Tape, stateStack: string[]): void {
+    public collectVocab(tapes: Tape, stack: string[]): void {
         tapes = new RenamedTape(tapes, this.fromTape, this.toTape);
-        this.child.collectVocab(tapes, stateStack);
+        this.child.collectVocab(tapes, stack);
     }
 
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+    public getRelevantTapes(stack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
             this.relevantTapes = new Set();
-            for (const tapeName of this.child.getRelevantTapes(stateStack)) {
+            for (const tapeName of this.child.getRelevantTapes(stack)) {
                 if (tapeName == this.fromTape) {
                     this.relevantTapes.add(this.toTape);
                 } else {
@@ -2676,15 +1853,16 @@ export class RenameState extends UnaryState {
         return this.relevantTapes;
     }
 
-    public *ndQuery(tape: Tape, 
+    public *ndQuery(
+        tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack): Gen<[Tape, Token, boolean, State]> {
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
 
         var rememberToUnwrapTape = false;
 
         if (tape.tapeName == this.fromTape) {
-            yield [tape, target, false, this];
+            //yield [tape, target, this];
             return;
         }
 
@@ -2693,12 +1871,12 @@ export class RenameState extends UnaryState {
             rememberToUnwrapTape = true;
         } 
     
-        for (var [childTape, childTarget, childMatched, childNext] of 
-                this.child.ndQuery(tape, target, random, symbolStack)) {
+        for (var [childTape, childTarget, childNext] of 
+                this.child.ndQuery(tape, target, stack)) {
             if (rememberToUnwrapTape && childTape instanceof RenamedTape) {
                 childTape = childTape.child;
             }
-            yield [childTape, childTarget, childMatched, new RenameState(childNext, this.fromTape, this.toTape, this.relevantTapes)];
+            yield [childTape, childTarget, new RenameState(childNext, this.fromTape, this.toTape, this.relevantTapes)];
         }
     }
 }
@@ -2756,7 +1934,7 @@ export class NegationState extends State {
 
     public compileAux(
         allTapes: TapeCollection, 
-        symbolStack: CounterStack,
+        stack: CounterStack,
         compileLevel: number
     ): State {
         
@@ -2765,10 +1943,10 @@ export class NegationState extends State {
         }
         var newChild = this.child;
         if (newChild != undefined) {
-            newChild = newChild.compileAux(allTapes, symbolStack, compileLevel);
+            newChild = newChild.compileAux(allTapes, stack, compileLevel);
         }
         const newThis = new NegationState(newChild, this.relevantTapes);
-        return new CompiledState(newThis, allTapes, symbolStack, compileLevel);
+        return new CompiledState(newThis, allTapes, stack, compileLevel);
     }
 
     public get id(): string {
@@ -2778,19 +1956,19 @@ export class NegationState extends State {
         return `~(${this.child.id})`;
     }
     
-    public collectVocab(tapes: Tape, stateStack: string[]): void {
+    public collectVocab(tapes: Tape, stack: string[]): void {
         if (this.child == undefined) {
             return;
         }
-        this.child.collectVocab(tapes, stateStack);
+        this.child.collectVocab(tapes, stack);
     }
 
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+    public getRelevantTapes(stack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
             if (this.child == undefined) {
                 this.relevantTapes = new Set();
             } else {
-                this.relevantTapes = this.child.getRelevantTapes(stateStack);
+                this.relevantTapes = this.child.getRelevantTapes(stack);
             }
             
             if (this.relevantTapes.size > 1) {
@@ -2800,41 +1978,34 @@ export class NegationState extends State {
         return this.relevantTapes;
     } 
 
-    /*
-    public randomize(): State {
-        console.log("Warning, taking a randomization of a negation");
-        return this;
-    } */
-
     public accepting(
         tape: Tape,
-        random: boolean, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): boolean {
         if (this.child == undefined) {
             return true;
         }
-        if (tape.tapeName != "__ANY_TAPE__" && !this.getRelevantTapes(symbolStack).has(tape.tapeName)) {
+        if (tape.tapeName != "__ANY_TAPE__" && !this.getRelevantTapes(stack).has(tape.tapeName)) {
             return true;
         }
-        return !this.child.accepting(tape, random, symbolStack);
+        return !this.child.accepting(tape, stack);
     }
 
     
     public *dagger(
         tape: Tape, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): Gen<State> {
         if (this.child == undefined) {
             yield this;
             return;
         }
 
-        if (tape.tapeName != "__ANY_TAPE__" && !this.getRelevantTapes(symbolStack).has(tape.tapeName)) {
+        if (tape.tapeName != "__ANY_TAPE__" && !this.getRelevantTapes(stack).has(tape.tapeName)) {
             yield this;
         }
 
-        for (const childNext of this.child.dagger(tape, symbolStack)) {
+        for (const childNext of this.child.dagger(tape, stack)) {
             return;
         }
 
@@ -2844,15 +2015,10 @@ export class NegationState extends State {
     public *ndQuery(
         tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack
-    ): Gen<[Tape, Token, boolean, State]> {
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
 
-        if (random) {
-            console.log("Warning, querying a negation randomly");
-        }
-
-        var remainderTapeName = [...this.getRelevantTapes(symbolStack)][0];
+        var remainderTapeName = [...this.getRelevantTapes(stack)][0];
         var remainderTape = tape.matchTape(remainderTapeName);
         if (remainderTape == undefined) {  // we don't care about this
             //yield [tape, target, false, this];
@@ -2860,23 +2026,23 @@ export class NegationState extends State {
         }
 
         if (this.child == undefined) {  // we've can't possibly match the child, so we're basically .* from now on
-            yield [remainderTape, target, true, this]; 
+            yield [remainderTape, target, this]; 
             return;
         }
 
         var remainder = new Token(target.bits.clone());
 
-        for (const [childTape, childText, childMatched, childNext] of 
-                this.child.dQuery(tape, target, random, symbolStack)) {
+        for (const [childTape, childText, childNext] of 
+                this.child.dQuery(tape, target, stack)) {
             remainder = remainder.andNot(childText);
-            yield [childTape, childText, childMatched, new NegationState(childNext, this.relevantTapes)];
+            yield [childTape, childText, new NegationState(childNext, this.relevantTapes)];
         }
 
         if (remainder.isEmpty()) {
             return;
         }
 
-        yield [remainderTape, remainder, true, new NegationState(undefined, this.relevantTapes)];
+        yield [remainderTape, remainder, new NegationState(undefined, this.relevantTapes)];
     }
 }
 
@@ -2890,14 +2056,7 @@ export class MatchState extends UnaryState {
         super();
     }
 
-
-    /*
-    public randomize(): State {
-        console.log("Warning, taking a randomization of a match");
-        return this;
-    } */
-
-    public getRelevantTapes(stateStack: CounterStack): Set<string> {
+    public getRelevantTapes(stack: CounterStack): Set<string> {
         if (this.relevantTapes == undefined) {
             this.relevantTapes = new Set(this.tapes);
         }
@@ -2906,35 +2065,28 @@ export class MatchState extends UnaryState {
 
     public accepting(
         tape: Tape,
-        random: boolean, 
-        symbolStack: CounterStack
+        stack: CounterStack
     ): boolean {
         for (const buffer of Object.values(this.buffers)) {
-            if (!buffer.accepting(tape, random, symbolStack)) {
+            if (!buffer.accepting(tape, stack)) {
                 return false;
             }
         }
-        return this.child.accepting(tape, random, symbolStack);
+        return this.child.accepting(tape, stack);
     }
 
     public *ndQuery(
         tape: Tape, 
         target: Token,
-        random: boolean,
-        symbolStack: CounterStack
-    ): Gen<[Tape, Token, boolean, State]> {
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
 
-        for (const [c1tape, c1target, c1matched, c1next] of 
-                    this.child.ndQuery(tape, target, random, symbolStack)) {
+        for (const [c1tape, c1target, c1next] of 
+                    this.child.ndQuery(tape, target, stack)) {
             
             // if c1tape is not one we care about, then yield right away
             if (!this.caresAbout(c1tape)) {
-                yield [c1tape, c1target, c1matched, new MatchState(c1next, this.tapes, this.buffers)];
-                continue;
-            }
-        
-            if (!c1matched) { 
-                yield [c1tape, c1target, c1matched, new MatchState(c1next, this.tapes, this.buffers)];
+                yield [c1tape, c1target, new MatchState(c1next, this.tapes, this.buffers)];
                 continue;
             }
             
@@ -2952,11 +2104,9 @@ export class MatchState extends UnaryState {
                     // that means we already matched a character on a different
                     // tape previously and now need to make sure it also matches
                     // this character on this tape
-                    for (const [bufTape, bufTarget, bufMatched, bufNext] of 
-                            c1buffer.ndQuery(c1tape, cTarget, random, symbolStack)) {
-                        if (bufMatched) {
-                            c1bufMatched = true;
-                        }
+                    for (const [bufTape, bufTarget, bufNext] of 
+                        c1buffer.ndQuery(c1tape, cTarget, stack)) {
+                        c1bufMatched = true;
                     }
                 }
 
@@ -2989,8 +2139,8 @@ export class MatchState extends UnaryState {
                     // that means we already matched a character on a different tape
                     // previously and now need to make sure it also matches on this
                     // tape
-                    for (const [bufTape, bufTarget, bufMatched, bufNext] of 
-                            c1buffer.ndQuery(c1tape, cTarget, random, symbolStack)) {
+                    for (const [bufTape, bufTarget, bufNext] of 
+                            c1buffer.ndQuery(c1tape, cTarget, stack)) {
                         // We expect at most one match here.
                         // We expect bufTape == c1Tape,
                         //   bufTape == c1Tape
@@ -3007,12 +2157,12 @@ export class MatchState extends UnaryState {
                         // oops, not yield for each buffer, get through all the
                         // buffers and only yield at the end if we got through them
                         // all.  so fix this ????
-                        yield [c1tape, cTarget, c1matched, new MatchState(c1next, this.tapes, newBuffers)];
+                        yield [c1tape, cTarget, new MatchState(c1next, this.tapes, newBuffers)];
                     }
                 } else {
                     // my predecessors have not previously required me to match
                     // anything in particular on this tape
-                    yield [c1tape, cTarget, c1matched, new MatchState(c1next, this.tapes, newBuffers)]
+                    yield [c1tape, cTarget, new MatchState(c1next, this.tapes, newBuffers)]
                 }
             }
         }
@@ -3036,7 +2186,7 @@ export function Seq(...children: State[]): State {
     //return new ConcatState(children);
     
     if (children.length == 0) {
-        return Empty();
+        return Epsilon();
     }
 
     if (children.length == 1) {
@@ -3047,16 +2197,15 @@ export function Seq(...children: State[]): State {
 }
 
 export function Uni(...children: State[]): State {
-    /*
     if (children.length == 0) {
-        return Empty();
+        return Null();
     }
 
     if (children.length == 1) {
         return children[0];
-    } */
+    } 
 
-    return new UnionState(children);
+    return new BrzUnion(children[0], Uni(...children.slice(1)));
 }
 
 /*
@@ -3127,7 +2276,7 @@ export function Rep(child: State, minReps=0, maxReps=Infinity): State {
     }
     
     if (maxReps == 0) {
-        return Empty();
+        return Epsilon();
     }
 
     if (minReps > 0) {
@@ -3137,7 +2286,7 @@ export function Rep(child: State, minReps=0, maxReps=Infinity): State {
     }
 
     if (maxReps == Infinity) {
-        return new StarState(new TrivialState(), child);
+        return new StarState(new BrzEpsilon(), child);
     }
 
     const tail = Rep(child, 0, maxReps - 1);
@@ -3165,12 +2314,12 @@ export function MatchDotStar(...tapes: string[]): State {
     return Match(Rep(Dot(...tapes)), ...tapes)
 }
     
-export function Empty(): State {
-    return new TrivialState();
+export function Epsilon(): State {
+    return new BrzEpsilon();
 }
 
 export function Maybe(child: State): State {
-    return Uni(child, Empty());
+    return Uni(child, Epsilon());
 }
 
 export function Intersection(child1: State, child2: State): State {

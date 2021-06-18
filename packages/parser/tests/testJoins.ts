@@ -1,5 +1,5 @@
 
-import { Seq, Uni, Join, Empty } from "../src/stateMachine";
+import { Seq, Uni, Join, Epsilon } from "../src/stateMachine";
 import { 
     text, 
     t1, t2, t3, 
@@ -25,18 +25,18 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "hello", unrelated: "foo"}]);
     });
 
-    describe('Joining empty() & empty()', function() {
-        const grammar = Join(Empty(), Empty());
+    describe('Joining ε & ε', function() {
+        const grammar = Join(Epsilon(), Epsilon());
         testGenerateAndSample(grammar, [{}]);
     });
 
-    describe('Joining text:hello & empty()', function() {
-        const grammar = Join(text("hello"), Empty());
+    describe('Joining text:hello & ε', function() {
+        const grammar = Join(text("hello"), Epsilon());
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
-    describe('Joining empty() & text:hello', function() {
-        const grammar = Join(text("hello"), Empty());
+    describe('Joining ε & text:hello', function() {
+        const grammar = Join(text("hello"), Epsilon());
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 

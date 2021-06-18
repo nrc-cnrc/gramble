@@ -1,5 +1,5 @@
 
-import { Seq, Join, Rep, Empty, Filter, Uni } from "../src/stateMachine";
+import { Seq, Join, Rep, Epsilon, Filter, Uni } from "../src/stateMachine";
 import { text, t1, t2, unrelated, testHasTapes, testHasVocab, testGrammarUncompiled } from './testUtils';
 
 import * as path from 'path';
@@ -113,29 +113,29 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     
-    describe('Filtering text:na{0,2} & empty()', function() {
-        const grammar = Filter(Rep(text("na"), 0, 2), Empty());
+    describe('Filtering text:na{0,2} & ε', function() {
+        const grammar = Filter(Rep(text("na"), 0, 2), Epsilon());
         testGrammarUncompiled(grammar, [{},
             {text: "na"},
             {text: "nana"}]);
     });
 
     
-    describe('Filtering empty() & text:na{0,2}', function() {
-        const grammar = Filter(Empty(), Rep(text("na"), 0, 2));
+    describe('Filtering ε & text:na{0,2}', function() {
+        const grammar = Filter(Epsilon(), Rep(text("na"), 0, 2));
         testGrammarUncompiled(grammar, [{}]);
     });
 
     
-    describe('Joining text:na{0,2} & empty()', function() {
-        const grammar = Join(Rep(text("na"), 0, 2), Empty());
+    describe('Joining text:na{0,2} & ε', function() {
+        const grammar = Join(Rep(text("na"), 0, 2), Epsilon());
         testGrammarUncompiled(grammar, [{},
             {text: "na"},
             {text: "nana"}]);
     });
 
-    describe('Joining empty() & text:na{0,2}', function() {
-        const grammar = Join(Empty(), Rep(text("na"), 0, 2));
+    describe('Joining ε & text:na{0,2}', function() {
+        const grammar = Join(Epsilon(), Rep(text("na"), 0, 2));
         testGrammarUncompiled(grammar, [{},
             {text: "na"},
             {text: "nana"}]);
@@ -289,8 +289,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammarUncompiled(grammar, [{'t1': 'h'}]);
     });
 
-    describe('Seq t1:h+0*', function() {
-        const grammar = Seq(t1("h"), Rep(Empty()));
+    describe('Seq t1:h+ε*', function() {
+        const grammar = Seq(t1("h"), Rep(Epsilon()));
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {'t1': 1});
         testGrammarUncompiled(grammar, [{'t1': 'h'}]);

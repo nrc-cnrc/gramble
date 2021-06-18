@@ -1,5 +1,5 @@
 
-import { Empty, Seq, Uni } from "../src/stateMachine";
+import { Epsilon, Seq, Uni } from "../src/stateMachine";
 import { text, t1, t2, unrelated, testHasTapes, testHasVocab, testGenerateAndSample } from './testUtils';
 
 import * as path from 'path';
@@ -20,8 +20,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{}]);
     });
 
-    describe('Empty grammar', function() {
-        const grammar = Empty();
+    describe('Just ε', function() {
+        const grammar = Epsilon();
         testHasTapes(grammar, []);
         testGenerateAndSample(grammar, [{}]);
     });
@@ -39,14 +39,14 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{}]);
     });
 
-    describe('Sequence of one Empty', function() {
-        const grammar = Seq(Empty());
+    describe('Sequence of one ε', function() {
+        const grammar = Seq(Epsilon());
         testHasTapes(grammar, []);
         testGenerateAndSample(grammar, [{}]);
     });
 
-    describe('Empty+Empty', function() {
-        const grammar = Seq(Empty(), Empty());
+    describe('ε+ε', function() {
+        const grammar = Seq(Epsilon(), Epsilon());
         testHasTapes(grammar, []);
         testGenerateAndSample(grammar, [{}]);
     });
@@ -66,15 +66,15 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
-    describe('text:hello+Seq(Empty)', function() {
-        const grammar = Seq(text("hello"), Seq(Empty()));
+    describe('text:hello+Seq(ε)', function() {
+        const grammar = Seq(text("hello"), Seq(Epsilon()));
         testHasTapes(grammar, ["text"]);
         testHasVocab(grammar, {text: 4});
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
     
-    describe('text:hello+(Empty+Empty)', function() {
-        const grammar = Seq(text("hello"), Seq(Empty(), Empty()));
+    describe('text:hello+(ε+ε)', function() {
+        const grammar = Seq(text("hello"), Seq(Epsilon(), Epsilon()));
         testHasTapes(grammar, ["text"]);
         testHasVocab(grammar, {text: 4});
         testGenerateAndSample(grammar, [{text: "hello"}]);
@@ -90,23 +90,23 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
-    describe('Sequence text:hello+Empty', function() {
-        const grammar = Seq(text("hello"), Empty());
+    describe('Sequence text:hello+ε', function() {
+        const grammar = Seq(text("hello"), Epsilon());
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
-    describe('Sequence Empty+text:hello', function() {
-        const grammar = Seq(Empty(), text("hello"));
+    describe('Sequence ε+text:hello', function() {
+        const grammar = Seq(Epsilon(), text("hello"));
         testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
-    describe('Sequence text:hello+0+world', function() {
-        const grammar = Seq(text("hello"), Empty(), text("world"));
+    describe('Sequence text:hello+ε+world', function() {
+        const grammar = Seq(text("hello"), Epsilon(), text("world"));
         testGenerateAndSample(grammar, [{text: "helloworld"}]);
     });
 
-    describe('Sequence text:hello+0+0+world', function() {
-        const grammar = Seq(text("hello"), Empty(), Empty(), text("world"));
+    describe('Sequence text:hello+ε+ε+world', function() {
+        const grammar = Seq(text("hello"), Epsilon(), Epsilon(), text("world"));
         testGenerateAndSample(grammar, [{text: "helloworld"}]);
     });
 
@@ -143,21 +143,21 @@ describe(`${path.basename(module.filename)}`, function() {
                               {text: "goodbye"}]);
     });
 
-    describe('Alt text:hello|Empty', function() {
-        const grammar = Uni(text("hello"), Empty());
+    describe('Alt text:hello|ε', function() {
+        const grammar = Uni(text("hello"), Epsilon());
         testGenerateAndSample(grammar, [{text: "hello"},
                               {}]);
     });
 
-    describe('text:hello + (text:world|Empty)', function() {
-        const grammar = Seq(text("hello"), Uni(text("world"), Empty()));
+    describe('text:hello + (text:world|ε)', function() {
+        const grammar = Seq(text("hello"), Uni(text("world"), Epsilon()));
         testGenerateAndSample(grammar, [{text: "hello"},
                                         {text: "helloworld"}]);
     });
 
     
-    describe('(text:hello|Empty) + text:world', function() {
-        const grammar = Seq(Uni(text("hello"), Empty()), text("world"));
+    describe('(text:hello|ε) + text:world', function() {
+        const grammar = Seq(Uni(text("hello"), Epsilon()), text("world"));
         testGenerateAndSample(grammar, [{text: "world"},
                                         {text: "helloworld"}]);
     });
@@ -205,23 +205,23 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Empty union', function() {
         const grammar = Uni();
         testHasTapes(grammar, []);
-        testGenerateAndSample(grammar, [{}]);
+        testGenerateAndSample(grammar, []);
     });
 
-    describe('Union of one Empty', function() {
-        const grammar = Uni(Empty());
+    describe('Union of one ε', function() {
+        const grammar = Uni(Epsilon());
         testHasTapes(grammar, []);
         testGenerateAndSample(grammar, [{}]);
     });
 
-    describe('Empty|Empty', function() {
-        const grammar = Uni(Empty(), Empty());
+    describe('ε|ε', function() {
+        const grammar = Uni(Epsilon(), Epsilon());
         testHasTapes(grammar, []);
         testGenerateAndSample(grammar, [{}]);
     });
 
-    describe('text(hello)+(Empty|Empty)', function() {
-        const grammar = Seq(text("hello"), Uni(Empty(), Empty()));
+    describe('text(hello)+(ε|ε)', function() {
+        const grammar = Seq(text("hello"), Uni(Epsilon(), Epsilon()));
         testHasTapes(grammar, ["text"]);
         testHasVocab(grammar, {text: 4});
         testGenerateAndSample(grammar, [{text: "hello"}]);

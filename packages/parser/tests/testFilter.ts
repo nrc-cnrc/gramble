@@ -1,5 +1,5 @@
 
-import { Seq, Uni, Join, Filter, Empty } from "../src/stateMachine";
+import { Seq, Uni, Join, Filter, Epsilon } from "../src/stateMachine";
 import { t1, t2, t3, testGenerateAndSample } from './testUtils';
 
 import * as path from 'path';
@@ -11,18 +11,18 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{t1: "hello"}]);
     });
 
-    describe('Filter t1:hello[empty]', function() {
-        const grammar = Filter(t1("hello"), Empty());
+    describe('Filter t1:hello[ε]', function() {
+        const grammar = Filter(t1("hello"), Epsilon());
         testGenerateAndSample(grammar, [{t1:"hello"}]);
     });
 
-    describe('Filter empty[empty]', function() {
-        const grammar = Filter(Empty(), Empty());
+    describe('Filter ε[ε]', function() {
+        const grammar = Filter(Epsilon(), Epsilon());
         testGenerateAndSample(grammar, [{}]);
     });
 
-    describe('Filter empty[t1:hello]', function() {
-        const grammar = Filter(Empty(), t1("hello"));
+    describe('Filter ε[t1:hello]', function() {
+        const grammar = Filter(Epsilon(), t1("hello"));
         testGenerateAndSample(grammar, []);
     });
 

@@ -10,7 +10,7 @@
 import { assert } from "chai";
 import { CPAlternation, CPUnreserved, CPNegation, CPResult, parseBooleanCell } from "./cellParser";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPSequence, MPUnreserved } from "./miniParser";
-import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Filter, TrivialState, LiteralState, Rename, RenameState, Hide, Rep, Any, ConcatState, Reveal, BrzConcatState } from "./stateMachine";
+import { CounterStack, Uni, State, Lit, Emb, Seq, Epsilon, Namespace, Maybe, Not, Join, Filter, BrzEpsilon, LiteralState, Rename, RenameState, Hide, Rep, Any, Reveal, BrzConcatState } from "./stateMachine";
 import { CellPosition, DevEnvironment, DUMMY_POSITION, HSVtoRGB, RGBtoString, TabularComponent } from "./util";
 
 const DEFAULT_SATURATION = 0.1;
@@ -655,7 +655,7 @@ class CellComponent extends TabularComponent {
  */
 export abstract class GrammarComponent extends TabularComponent {
 
-    public state: State = Empty();
+    public state: State = Epsilon();
 
     /**
      * The previous sibling of the component (i.e. the component that shares
@@ -1158,7 +1158,7 @@ class ContentsComponent extends EnclosureComponent {
 
         this.rows.map(row => row.compile(namespace, devEnv));
         var rowStates = this.rows.map(row => row.state);
-        rowStates = rowStates.filter(state => !(state instanceof TrivialState));
+        rowStates = rowStates.filter(state => !(state instanceof BrzEpsilon));
         this.state = Uni(...rowStates);
     }
 
@@ -1188,7 +1188,7 @@ class RowComponent extends GrammarComponent {
                 const compiledCell = header.compileAndMerge(cell, namespace, devEnv, resultState);
                 compiledCell.mark(devEnv);
                 // if it was zero, ignore the result of the merge   
-                if (cell.text.length > 0 && !(compiledCell.state instanceof TrivialState)) {
+                if (cell.text.length > 0 && !(compiledCell.state instanceof BrzEpsilon)) {
                     resultState = compiledCell.state;
                 } 
                 this.compiledCells = [ compiledCell, ...this.compiledCells];
@@ -1199,7 +1199,7 @@ class RowComponent extends GrammarComponent {
 
         if (resultState == undefined) {
             // everything was comments or empty
-            resultState = Empty();
+            resultState = Epsilon();
         }
         this.state = resultState;
     }

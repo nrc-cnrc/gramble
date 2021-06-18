@@ -1,5 +1,5 @@
 
-import { Seq, Uni, Intersection, Empty, State } from "../src/stateMachine";
+import { Seq, Uni, Intersection, Epsilon, State } from "../src/stateMachine";
 import { t1, t2, testGenerateAndSample } from './testUtils';
 
 import * as path from 'path';
@@ -22,20 +22,20 @@ const TESTS: Test[] = [
     },
 
     {
-        "desc":     'Intersecting empty() & empty()',
-        "grammar":  Intersection(Empty(), Empty()),
+        "desc":     'Intersecting ε & ε',
+        "grammar":  Intersection(Epsilon(), Epsilon()),
         "results":  [{}]
     },
 
     {
-        "desc":     'Intersecting t1:hello & empty()',
-        "grammar":  Intersection(t1("hello"), Empty()),
+        "desc":     'Intersecting t1:hello & ε',
+        "grammar":  Intersection(t1("hello"), Epsilon()),
         "results":  []
     },
 
     {
-        "desc":     'Intersecting empty() & t1:hello',
-        "grammar":  Intersection(Empty(), t1("hello")),
+        "desc":     'Intersecting ε & t1:hello',
+        "grammar":  Intersection(Epsilon(), t1("hello")),
         "results":  []
     },
 
@@ -64,26 +64,26 @@ const TESTS: Test[] = [
     },
 
     {
-        "desc":     'Intersecting t1:hello & t1:hello+0',
-        "grammar":  Intersection(t1("hello"), Seq(t1("hello"), Empty())),
+        "desc":     'Intersecting t1:hello & t1:hello+ε',
+        "grammar":  Intersection(t1("hello"), Seq(t1("hello"), Epsilon())),
         "results":  [{t1: "hello"}]
     },
 
     {
-        "desc":     'Intersecting t1:hello & 0+t1:hello',
-        "grammar":  Intersection(t1("hello"), Seq(Empty(), t1("hello"))),
+        "desc":     'Intersecting t1:hello & ε+t1:hello',
+        "grammar":  Intersection(t1("hello"), Seq(Epsilon(), t1("hello"))),
         "results":  [{t1: "hello"}]
     },
 
     {
-        "desc":     'Intersecting 0+t1:hello & t1:hello',
-        "grammar":  Intersection(Seq(Empty(), t1("hello")), t1("hello")),
+        "desc":     'Intersecting ε+t1:hello & t1:hello',
+        "grammar":  Intersection(Seq(Epsilon(), t1("hello")), t1("hello")),
         "results":  [{t1: "hello"}]
     },
 
     {
-        "desc":     'Intersecting t1:hello+0 & t1:hello',
-        "grammar":  Intersection(Seq(t1("hello"), Empty()), t1("hello")),
+        "desc":     'Intersecting t1:hello+ε & t1:hello',
+        "grammar":  Intersection(Seq(t1("hello"), Epsilon()), t1("hello")),
         "results":  [{t1: "hello"}]
     },
 

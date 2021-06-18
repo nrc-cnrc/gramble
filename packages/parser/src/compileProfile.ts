@@ -1,7 +1,7 @@
 
 
 
-import { Empty, Seq, Uni } from "../src/stateMachine";
+import { Epsilon, Seq, Uni } from "../src/stateMachine";
 import { CounterStack, Literalizer, State } from "../src/stateMachine";
 
 const text = Literalizer("text");

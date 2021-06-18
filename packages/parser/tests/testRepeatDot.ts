@@ -1,4 +1,4 @@
-import { Seq, Rep, Any, Filter, Join, Empty } from "../src/stateMachine";
+import { Seq, Rep, Any, Filter, Join, Epsilon } from "../src/stateMachine";
 import { text, testGenerateAndSample } from './testUtils';
 
 import * as path from 'path';
@@ -64,23 +64,23 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{text: "h"}]);
     });
     
-    describe('Filtering text:.{0,1} & empty()', function() {
-        const grammar = Filter(Rep(Any("text"), 0, 2), Empty());
+    describe('Filtering text:.{0,1} & ε', function() {
+        const grammar = Filter(Rep(Any("text"), 0, 2), Epsilon());
         testGenerateAndSample(grammar, [{}]);
     });
     
-    describe('Filtering 0 & text:.{0,1}', function() {
-        const grammar = Filter(Empty(), Rep(Any("text"), 0, 2));
+    describe('Filtering ε & text:.{0,1}', function() {
+        const grammar = Filter(Epsilon(), Rep(Any("text"), 0, 2));
         testGenerateAndSample(grammar, [{}]);
     });
     
-    describe('Joining text:.{0,1} & empty()', function() {
-        const grammar = Join(Rep(Any("text"), 0, 2), Empty());
+    describe('Joining text:.{0,1} & ε', function() {
+        const grammar = Join(Rep(Any("text"), 0, 2), Epsilon());
         testGenerateAndSample(grammar, [{}]);
     });
     
-    describe('Joining 0 & text:.{0,1}', function() {
-        const grammar = Join(Empty(), Rep(Any("text"), 0, 2));
+    describe('Joining ε & text:.{0,1}', function() {
+        const grammar = Join(Epsilon(), Rep(Any("text"), 0, 2));
         testGenerateAndSample(grammar, [{}]);
     });
 

@@ -28,13 +28,12 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{t2: "hello"}]);
     });
 
-    /*
     describe('Rename(t2/t1) of t1:hi+t2:wo', function() {
         const grammar = Rename(Seq(t1("hi"), t2("wo")), "t1", "t2");
         testHasTapes(grammar, ["t2"]);
         testHasVocab(grammar, {t2: 4});
         testGenerateAndSample(grammar, [{t2: "hiwo"}]);
-    }); */
+    }); 
 
     describe('Rename(unrelated/t1) of t1:hello+t2:foo', function() {
         const grammar = Rename(Seq(t1("hello"), t2("foo")), "t3", "t4");
