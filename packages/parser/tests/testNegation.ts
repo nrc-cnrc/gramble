@@ -1,117 +1,116 @@
 import { Uni, Join, Not, Rep, Seq } from "../src/stateMachine";
-import { t1, t2, unrelated, testHasTapes, testHasVocab, testGenerate } from './testUtils';
+import { t1, t2, unrelated, testHasTapes, testHasVocab, testGrammarUncompiled } from './testUtils';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";
 
 describe(`${path.basename(module.filename)}`, function() {
 
+
     describe('Join(t1:foo & ~t1:hello)', function() {
         const grammar = Join(t1("foo"), Not(t1("hello")));
         testHasTapes(grammar, ["t1"]);
         testHasVocab(grammar, {t1: 5});
-        testGenerate(grammar, [{t1: "foo"}]);
-});
+        testGrammarUncompiled(grammar, [{t1: "foo"}]);
+    });
 
     describe('Join(t1:hello & ~t1:hello)', function() {
         const grammar = Join(t1("hello"), Not(t1("hello")));
-        testGenerate(grammar, []);
+        testGrammarUncompiled(grammar, []);
     });
 
     describe('Join(t1:hell & ~t1:hello)', function() {
         const grammar = Join(t1("hell"), Not(t1("hello")));
-        testGenerate(grammar, [{t1: "hell"}]);
+        testGrammarUncompiled(grammar, [{t1: "hell"}]);
     });
 
     describe('Join(t1:helloo & ~t1:hello)', function() {
         const grammar = Join(t1("helloo"), Not(t1("hello")));
-        testGenerate(grammar, [{t1: "helloo"}]);
+        testGrammarUncompiled(grammar, [{t1: "helloo"}]);
     });
 
     describe('Join(~t1:hello & t1:foo)', function() {
         const grammar = Join(Not(t1("hello")), t1("foo"));
-        testGenerate(grammar, [{t1: "foo"}]);
+        testGrammarUncompiled(grammar, [{t1: "foo"}]);
     });
 
     describe('Join(~t1:hello & t1:hell)', function() {
         const grammar = Join(Not(t1("hello")), t1("hell"));
-        testGenerate(grammar, [{t1: "hell"}]);
+        testGrammarUncompiled(grammar, [{t1: "hell"}]);
     });
 
     describe('Join(~t1:hello & t1:helloo)', function() {
         const grammar = Join(Not(t1("hello")), t1("helloo"));
-        testGenerate(grammar, [{t1: "helloo"}]);
+        testGrammarUncompiled(grammar, [{t1: "helloo"}]);
     });
 
     describe('Join(t1:foo & ~(t1:hello|t1:world)', function() {
         const grammar = Join(t1("foo"), Not(Uni(t1("hello"), t1("world"))));
-        testGenerate(grammar, [{t1: "foo"}]);
+        testGrammarUncompiled(grammar, [{t1: "foo"}]);
     });
 
     describe('Join(t1:hello & ~(t1:hello|t1:world)', function() {
         const grammar = Join(t1("hello"), Not(Uni(t1("hello"), t1("world"))));
-        testGenerate(grammar, []);
+        testGrammarUncompiled(grammar, []);
     });
 
     describe('Join(t1:world & ~(t1:hello|t1:world)', function() {
         const grammar = Join(t1("world"), Not(Uni(t1("hello"), t1("world"))));
-        testGenerate(grammar, []);
+        testGrammarUncompiled(grammar, []);
     });
 
     describe('Join(~(t1:hello|t1:world) & t1:foo)', function() {
         const grammar = Join(Not(Uni(t1("hello"), t1("world"))), t1("foo"));
-        testGenerate(grammar, [{t1: "foo"}]);
+        testGrammarUncompiled(grammar, [{t1: "foo"}]);
     });
 
     describe('Join(~(t1:hello|t1:world) & t1:hello)', function() {
         const grammar = Join(Not(Uni(t1("hello"), t1("world"))), t1("hello"));
-        testGenerate(grammar, []);
+        testGrammarUncompiled(grammar, []);
     });
 
-    /**
-     * This and the following three tests are crucial tests for Negation, because they
-     * fail when the results of the enclosed grammar (here, t1:hello|t1:help) are
-     * not properly determinized.  That is, if the same result (say, h) appears in multiple
-     * yields. Consider, here, "h" transitioning to t1:ello and also "h" transition to t1:elp.
-     * If these are separate yields, then the negation that wraps them can be going down the second
-     * path through "elp", eventually fail to join it with "ello" on the other side, and say 
-     * "Yay, that failed, so I succeed."  But that ends up succeeding on "hello", which should
-     * be forbidden by this grammar.  On the other hand, if "h" led to a UnionState(t1:ello, t1:elp),
-     * this works correctly.
-     */
+    
+    // This and the following three tests are crucial tests for Negation, because they
+    // fail when the results of the enclosed grammar (here, t1:hello|t1:help) are
+    // not properly determinized.  That is, if the same result (say, h) appears in multiple
+    // yields. Consider, here, "h" transitioning to t1:ello and also "h" transition to t1:elp.
+    // If these are separate yields, then the negation that wraps them can be going down the second
+    // path through "elp", eventually fail to join it with "ello" on the other side, and say 
+    // "Yay, that failed, so I succeed."  But that ends up succeeding on "hello", which should
+    // be forbidden by this grammar.  On the other hand, if "h" led to a UnionState(t1:ello, t1:elp),
+    // this works correctly.
     describe('Join(~(t1:hello|t1:help) & t1:hello)', function() {
         const grammar = Join(Not(Uni(t1("hello"), t1("help"))), t1("hello"));
-        testGenerate(grammar, []);
+        testGrammarUncompiled(grammar, []);
     });
 
     describe('Join(t1:hello & ~(t1:hello|t1:help))', function() {
         const grammar = Join(t1("hello"), Not(Uni(t1("hello"), t1("help"))));
-        testGenerate(grammar, []);
+        testGrammarUncompiled(grammar, []);
     });
 
-    /** 
-     * This one is testing the same thing, but the problem is more subtle.  Improperly
-     * determinized, this could have an "h" leading into the first child of the concat, 
-     * the repetition, or (because this repetition can be zero) finishing the repetition
-     * right away and leading to the second child, t1:hello.  So similarly to the above,
-     * the negation that wraps them can say "Okay, going to the first child, matched an 'h',
-     * now can't match an 'e', okay yay that failed, so I succeed," and incorrectly succeed
-     * on "hello" just like before.
-     */
+    
+    // This one is testing the same thing, but the problem is more subtle.  Improperly
+    // determinized, this could have an "h" leading into the first child of the concat, 
+    // the repetition, or (because this repetition can be zero) finishing the repetition
+    // right away and leading to the second child, t1:hello.  So similarly to the above,
+    // the negation that wraps them can say "Okay, going to the first child, matched an 'h',
+    // now can't match an 'e', okay yay that failed, so I succeed," and incorrectly succeed
+    // on "hello" just like before.
     describe('Join(~(t1:h*hello) & t1:hello)', function() {
         const grammar = Join(Not(Seq(Rep(t1("h"),0,2), t1("hello"))), t1("hhello"));
-        testGenerate(grammar, []);
+        testGrammarUncompiled(grammar, []);
     });
 
     describe('Join( & t1:hello & ~(t1:h*hello))', function() {
         const grammar = Join(t1("hhello"), Not(Seq(Rep(t1("h"),0,2), t1("hello"))));
-        testGenerate(grammar, []);
+        testGrammarUncompiled(grammar, []);
     });
 
 
     describe('~(~t1:hello)', function() {
         const grammar = Not(Not(t1("hello")));
-        testGenerate(grammar, [{t1: "hello"}], 4, 30);
+        testGrammarUncompiled(grammar, [{t1: "hello"}], 4, 30);
     });
 
     describe('~t1:hi', function() {
@@ -129,7 +128,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii' }, { t1: 'ihhh' }, { t1: 'ihhi' },
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }];
-        testGenerate(grammar, expectedResults, 4, 5);
+        testGrammarUncompiled(grammar, expectedResults, 4, 5);
     });
 
     
@@ -148,14 +147,14 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii' }, { t1: 'ihhh' }, { t1: 'ihhi' },
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }];
-        testGenerate(grammar, expectedResults, 4, 5);
+        testGrammarUncompiled(grammar, expectedResults, 4, 5);
     });
     
     
 
     describe('Alt Join(~t1:hello & t1:helloo) | unrelated:foobar', function() {
         const grammar = Uni(Join(Not(t1("hello")), t1("helloo")), unrelated("foobar"));
-        testGenerate(grammar, [{t1: "helloo"},
+        testGrammarUncompiled(grammar, [{t1: "helloo"},
                               {unrelated: "foobar"}]);
     });
 
@@ -176,7 +175,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }, 
             { t2: "hi"}];
-        testGenerate(grammar, expectedResults, 4, 5);
+        testGrammarUncompiled(grammar, expectedResults, 4, 5);
     });
     
     describe('~t1:h', function() {
@@ -187,7 +186,30 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hh' },  
             { t1: 'hhh' },
             { t1: 'hhhh' }];
-        testGenerate(grammar, expectedResults, 4, 5);
+        testGrammarUncompiled(grammar, expectedResults, 4, 5);
+    });
+
+    
+    describe('t1:h+(~t1:h)', function() {
+        const grammar = Seq(t1("h"), Not(t1("h")));
+        testHasVocab(grammar, {t1: 1});
+        const expectedResults: StringDict[] = [
+            { t1: 'h'},            
+            { t1: 'hhh' },  
+            { t1: 'hhhh' },
+            { t1: 'hhhhh' }];
+        testGrammarUncompiled(grammar, expectedResults, 4, 6);
+    });
+
+    describe('(~t1:h)+t1:h', function() {
+        const grammar = Seq(Not(t1("h")), t1("h"));
+        testHasVocab(grammar, {t1: 1});
+        const expectedResults: StringDict[] = [
+            { t1: 'h'},            
+            { t1: 'hhh' },  
+            { t1: 'hhhh' },
+            { t1: 'hhhhh' }];
+        testGrammarUncompiled(grammar, expectedResults, 4, 6);
     });
     
     describe('~t1:h{0,1}', function() {
@@ -197,7 +219,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hh' },         
             { t1: 'hhh' },
             { t1: 'hhhh' }];
-        testGenerate(grammar, expectedResults, 4, 5);
+        testGrammarUncompiled(grammar, expectedResults, 4, 5);
     });
 
 
@@ -207,9 +229,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {},            
             { t1: 'hhhh' }];
-        testGenerate(grammar, expectedResults, 4, 5);
+        testGrammarUncompiled(grammar, expectedResults, 4, 5);
     });
-
 
     describe('Join(~t1:hi & t2:hi)', function() {
         const grammar = Join(Not(t1("hi")), t2("hi"));
@@ -226,7 +247,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii', t2: "hi" }, { t1: 'ihhh', t2: "hi" }, { t1: 'ihhi', t2: "hi" },
             { t1: 'ihih', t2: "hi" }, { t1: 'ihii', t2: "hi" }, { t1: 'iihh', t2: "hi" },
             { t1: 'iihi', t2: "hi" }, { t1: 'iiih', t2: "hi" }, { t1: 'iiii', t2: "hi" }];
-        testGenerate(grammar, expectedResults, 4, 7);
+        testGrammarUncompiled(grammar, expectedResults, 4, 7);
     });
     
     describe('Join(t2:hi & ~t1:hi)', function() {
@@ -249,6 +270,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t2: 'hi', t1: 'ihih' }, { t2: 'hi', t1: 'ihii' },
             { t2: 'hi', t1: 'iihh' }, { t2: 'hi', t1: 'iihi' },
             { t2: 'hi', t1: 'iiih' }, { t2: 'hi', t1: 'iiii' }];
-        testGenerate(grammar, expectedResults, 4, 7);
+        testGrammarUncompiled(grammar, expectedResults, 4, 7);
     });
+
 });

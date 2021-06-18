@@ -163,6 +163,9 @@ export function RGBtoString(r: number, g: number, b: number): string {
     return "#" + r.toString(16) + g.toString(16) + b.toString(16);
 }
 
+export function setUnion<T>(s1: Iterable<T>, s2: Iterable<T>): Set<T> {
+    return new Set([...s1, ...s2]);
+}
 
 export function setIntersection<T>(s1: Set<T>, s2: Set<T>): Set<T> {
     return new Set([...s1].filter(i => s2.has(i)));

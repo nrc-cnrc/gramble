@@ -1,8 +1,8 @@
-import { Empty, Join, Lit, Rep, RepetitionState, Filter, Seq, State, Uni } from "../../src/stateMachine";
+import { Empty, Lit, Rep, Filter, Seq, State, Uni, Join, Null } from "../../src/stateMachine";
 
-const TRIALS = 10000;
+const TRIALS = 1000;
 const MAX_RECURSION = 4;
-const MAX_CHARS = 200;
+const MAX_CHARS = 25;
 
 const MAX_OUTPUTS = 1000; // don't bother with results that have more than MAX_OUTPUTS,
                           // it takes too long to compare them
@@ -56,7 +56,7 @@ const RANDOM_CONSTRUCTORS: [randomConstr, number][] = [
     [ randomLit, 0.4 ],
     [ randomSeq, 0.25 ],
     [ randomUnion, 0.2 ],
-   // [ randomRepeat, 0.05 ],
+    [ randomRepeat, 0.05 ],
     [ randomEmpty, 0.1 ],
 ]
 
@@ -202,16 +202,35 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
                         Filter(x, x), 
                         x)
         ],
+        [
+            'X⨝X = X',
+            (x) => testEquals(
+                        Join(x, x), 
+                        x)
+        ],
         [ 
-            "X+0 = X",                    
+            "X+ε = X",                    
             (x) => testEquals(
                         Seq(x, Empty()), 
                         x)
         ],
         [ 
-            "0+X = X",                    
+            "ε+X = X",                    
             (x) => testEquals(
                         Seq(Empty(), x), 
+                        x)
+        ],
+        
+        [ 
+            "X|∅ = X",                    
+            (x) => testEquals(
+                        Uni(x, Null()), 
+                        x)
+        ],
+        [ 
+            "∅|X = X",                    
+            (x) => testEquals(
+                        Uni(Null(), x), 
                         x)
         ],
         [ 
@@ -220,24 +239,27 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
                         Uni(x, x), 
                         x)
         ],
-        [ 
-            "(X+0)[X] = X",               
-            (x) => testEquals(
-                        Filter(Seq(x, Empty()), x), 
-                        x)
-        ],
-        [ 
-            "X[X+0] = X",                 
-            (x) => testEquals(
-                        Filter(x, Seq(x, Empty())), 
-                        x)
-        ],
         [
             "X{1} = X",
             (x) => testEquals(
                         Rep(x, 1, 1), 
                         x)
         ]
+    ], 
+    
+    "Null functions": [
+        [ 
+            "X+∅ = ∅",                    
+            (x) => testEquals(
+                        Seq(x, Null()), 
+                        Null())
+        ],
+        [ 
+            "∅+X = X",                    
+            (x) => testEquals(
+                        Seq(Null(), x), 
+                        Null())
+        ],
     ],
 
     "Subset functions": [
@@ -274,10 +296,16 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
     "Commutative functions": [
 
         [ 
-            "X | Y = Y | X",              
+            "X|Y = Y|X",              
             (x, y) => testEquals(
                             Uni(x, y), 
                             Uni(y, x))
+        ],
+        [ 
+            "X⨝Y = Y⨝X",              
+            (x, y) => testEquals(
+                            Join(x, y), 
+                            Join(y, x))
         ],
         //[ "X & Y = Y & X",            (x: State, y:State, z:State) => Join(x, y) ],
     
@@ -297,6 +325,12 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
                             Uni(x, Uni(y, z)),  
                             Uni(Uni(x, y), z))
         ],
+        [ 
+            "X⨝(Y⨝Z) = (X⨝Y)⨝Z",          
+            (x, y, z) => testEquals(
+                            Join(x, Join(y, z)),  
+                            Join(Join(x, y), z))
+        ]
     ],
 
     "Idempotent functions": [
@@ -312,6 +346,12 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
             (x, y) => testEquals(
                         Filter(x, y),
                         Filter(Filter(x, y), y))
+        ],
+        [ 
+            "X⨝Y = (X⨝Y)⨝Y",             
+            (x, y) => testEquals(
+                        Join(x, y),
+                        Join(Join(x, y), y))
         ]
     ],
 
@@ -324,7 +364,7 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
                          Rep(x, 2, 2))
         ],
         [
-            "X|0 = X{0,1}",
+            "X|ε = X{0,1}",
             (x) => testEquals(
                         Uni(x, Empty()),
                         Rep(x, 0, 1))
@@ -336,7 +376,7 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
                         Rep(x, 1, 2))
         ],
         [
-            "X{0} = 0",
+            "X{0} = ε",
             (x) => testEquals(
                         Rep(x, 0, 0),
                         Empty())
@@ -350,35 +390,6 @@ const FUNCTIONS: {[desc: string]: [string, StateOp][]} = {
     ]
 
 }
-
-/*
-
-# IDENTITIES YOU MIGHT THINK SHOULD WORK, BUT DON'T
-
-## Join(X, X) = X
-
-You might think that any grammar joined with itself has the same outputs 
-it originally did, but this isn't the case.  The following simple grammar has two
-outputs, [{A:a}, {B:b}]
-
-   A:a | B:b
-
-but when joined with itself, it has three outputs: [{A:a}, {B:b}, {A:a, B:b}]
-
-*/
-
-/*
-
-// minimal example of a bug found by reflexivity testing of Join
-
-const x = Uni(t1(""), t1("a"));
-const y = Uni(t2(""), t2("b"));
-const leftward = Join(x, y);
-const rightward = Join(y, x);
-console.log(getOutputs(leftward));
-console.log(getOutputs(rightward));
-
-*/
 
 describe(`${path.basename(module.filename)}`, function() {
 

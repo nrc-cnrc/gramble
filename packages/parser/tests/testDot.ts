@@ -1,5 +1,5 @@
 import { Seq, Join, Any, Filter } from "../src/stateMachine";
-import { text, testHasTapes, testHasVocab, testGenerateAndSample, t1, t2, testGrammarUncompiled } from './testUtils';
+import { text, testHasTapes, testHasVocab, t1, t2, testGenerateAndSample } from './testUtils';
 
 import * as path from 'path';
 

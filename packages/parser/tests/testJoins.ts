@@ -1,6 +1,13 @@
 
 import { Seq, Uni, Join, Empty } from "../src/stateMachine";
-import { text, t1, t2, t3, unrelated, testHasTapes, testHasVocab, testGenerateAndSample } from './testUtils';
+import { 
+    text, 
+    t1, t2, t3, 
+    unrelated, 
+    testHasTapes, 
+    testHasVocab, 
+    testGenerateAndSample 
+} from './testUtils';
 
 import * as path from 'path';
 
@@ -25,12 +32,12 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Joining text:hello & empty()', function() {
         const grammar = Join(text("hello"), Empty());
-        testGenerateAndSample(grammar, []);
+        testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
     describe('Joining empty() & text:hello', function() {
         const grammar = Join(text("hello"), Empty());
-        testGenerateAndSample(grammar, []);
+        testGenerateAndSample(grammar, [{text: "hello"}]);
     });
 
     describe('Joining text:hello & text:hello+text:""', function() {

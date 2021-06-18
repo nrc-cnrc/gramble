@@ -44,48 +44,6 @@ describe(`${path.basename(module.filename)}`, function() {
                             {text: "hhihi"},
                             {text: "ihihi"}]);
     });
-
-
-    describe('Rep(Any): text:.{0,3}+text:hi', function() {
-        const grammar = Seq( Rep(Any("text"), 0, 3), text("hi"));
-        testGenerateAndSample(grammar, [ 
-                            {text: "hi"},
-                            {text: "ihi"},
-                            {text: "hhi"},
-                            {text: "iihi"},
-                            {text: "hihi"},
-                            {text: "hhhi"},
-                            {text: "ihhi"},
-                            {text: "iihhi"},
-                            {text: "hihhi"},
-                            {text: "hhhhi"},
-                            {text: "ihhhi"},
-                            {text: "iiihi"},
-                            {text: "hiihi"},
-                            {text: "hhihi"},
-                            {text: "ihihi"}]);
-    });
-
-    describe('Rep(Any): text:.{0,3}+text:hi', function() {
-        const grammar = Seq( Rep(Any("text"), 0, 3), text("hi"));
-        testGenerateAndSample(grammar, [ 
-                            {text: "hi"},
-                            {text: "ihi"},
-                            {text: "hhi"},
-                            {text: "iihi"},
-                            {text: "hihi"},
-                            {text: "hhhi"},
-                            {text: "ihhi"},
-                            {text: "iihhi"},
-                            {text: "hihhi"},
-                            {text: "hhhhi"},
-                            {text: "ihhhi"},
-                            {text: "iiihi"},
-                            {text: "hiihi"},
-                            {text: "hhihi"},
-                            {text: "ihihi"}]);
-    });
-
     
     describe('Rep(Any): text:.{0,1}+text:hi+text:.{0,1}', function() {
         const grammar = Seq( Rep(Any("text"), 0, 1), text("hi"), Rep(Any("text"), 0, 1));

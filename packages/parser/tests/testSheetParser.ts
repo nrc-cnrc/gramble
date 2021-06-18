@@ -829,9 +829,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    
-    
-    
     describe('Equals header with not value', function() {
 
         const project = sheetFromFile("./tests/csvs/equalsNot.csv");

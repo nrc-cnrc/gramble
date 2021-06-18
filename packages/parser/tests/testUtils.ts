@@ -258,7 +258,7 @@ function stringDictUnique(records: StringDict[]): StringDict[] {
 export function testSample(
     grammar: State,
     numSamples: number = 500,
-    maxTries: number = 10000,
+    maxTries: number = 1000,
     maxRecursion: number = 4, 
     maxChars: number = 1000
 ): void {
@@ -272,7 +272,7 @@ export function testSample(
         });
     }
 
-    // sample 1000 times and make sure that every sample is in the generated outputs, 
+    // sample numSamples times and make sure that every sample is in the generated outputs, 
     // and every output is sampled at least once
     var sampledOutputs = grammar.sample({}, numSamples, maxTries, maxRecursion, maxChars);
     sampledOutputs = stringDictUnique(sampledOutputs);

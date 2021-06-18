@@ -135,6 +135,8 @@ export abstract class Tape {
 
     public abstract readonly isTrivial: boolean;
 
+    public abstract getTapeNames(): Set<string>;
+
     public add(str1: string, str2: string): string[] {
         throw new Error(`Not implemented`);
     }
@@ -237,6 +239,10 @@ export class StringTape extends Tape {
 
     public get vocabSize(): number {
         return this.strToIndex.size;
+    }
+
+    public getTapeNames(): Set<string> {
+        return new Set([this.tapeName]);
     }
 
     /*
@@ -410,9 +416,10 @@ export class TapeCollection extends Tape {
         this.tapes.set(tape.tapeName, tape);
     } */
     
-    public getTapeNames(): string[] {
-        return [...this.tapes.keys()];
+    public getTapeNames(): Set<string> {
+        return new Set(this.tapes.keys());
     }
+
 
     public get tapeName(): string {
         if (this.tapes.size == 0) {
@@ -432,6 +439,23 @@ export class TapeCollection extends Tape {
 
     public matchTape(tapeName: string): Tape | undefined {
         return this.tapes.get(tapeName);
+    }
+
+    public split(tapeNames: Set<string>): [TapeCollection, TapeCollection] {
+        const wheat = new TapeCollection();
+        const chaff = new TapeCollection();
+        for (const [tapeName, tape] of this.tapes.entries()) {
+            if (tapeNames.has(tapeName)) {
+                wheat.tapes.set(tapeName, tape);
+                continue;
+            } 
+            chaff.tapes.set(tapeName, tape);
+        }
+        return [wheat, chaff];
+    }
+
+    public get size(): number {
+        return this.tapes.size;
     }
 
     public toBits(tapeName: string, char: string): BitSet {
@@ -510,6 +534,13 @@ export class RenamedTape extends Tape {
 
     protected adjustTapeName(tapeName: string) {
         return (tapeName == this.fromTape) ? this.toTape : tapeName;
+    }
+
+    
+    public getTapeNames(): Set<string> {
+        const result = [...this.child.getTapeNames()]
+                       .filter(s => this.adjustTapeName(s));
+        return new Set(result);
     }
 
     public matchTape(tapeName: string): Tape | undefined {

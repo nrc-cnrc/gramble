@@ -10,7 +10,7 @@
 import { assert } from "chai";
 import { CPAlternation, CPUnreserved, CPNegation, CPResult, parseBooleanCell } from "./cellParser";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPSequence, MPUnreserved } from "./miniParser";
-import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Filter, TrivialState, LiteralState, Rename, RenameState, Hide, Rep, Any, ConcatState, Reveal } from "./stateMachine";
+import { CounterStack, Uni, State, Lit, Emb, Seq, Empty, Namespace, Maybe, Not, Join, Filter, TrivialState, LiteralState, Rename, RenameState, Hide, Rep, Any, ConcatState, Reveal, BrzConcatState } from "./stateMachine";
 import { CellPosition, DevEnvironment, DUMMY_POSITION, HSVtoRGB, RGBtoString, TabularComponent } from "./util";
 
 const DEFAULT_SATURATION = 0.1;
@@ -381,16 +381,12 @@ export class EqualsHeader extends JoinHeader {
             throw new Error("'equals/startswith/endswith/contains' requires content to its left.");
         }
 
-        if (leftNeighbor instanceof ConcatState) {
+        if (leftNeighbor instanceof BrzConcatState) {
             // if your left neighbor is a concat state we have to do something a little special,
             // because startswith only scopes over the cell immediately to the left.  (if you let
             // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
             // specifying in the same row, rather than the embedded thing you're trying to catch.)
-
-            const immediateLeftNeighbor = leftNeighbor.children[leftNeighbor.children.length-1];  // taking advantage of the fact that
-                                    // these are constructed to be left-branching
-            const remnant = leftNeighbor.children.slice(0, leftNeighbor.children.length-1)
-            return Seq(...remnant, Filter(immediateLeftNeighbor, state));
+            return Seq(leftNeighbor.child1, Filter(leftNeighbor.child2, state));
         }
 
         return Filter(leftNeighbor, state);

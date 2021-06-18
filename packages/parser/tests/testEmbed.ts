@@ -14,40 +14,40 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // Embedding tests
 
-    describe('Symbol containing text:hello', function() {
-        const symbolTable = makeTestNamespace({ "s": text("hello") });
+    describe('Symbol containing text:hi', function() {
+        const symbolTable = makeTestNamespace({ "s": text("hi") });
         const grammar = Emb("s", symbolTable);
         testHasTapes(grammar, ["text"]);
-        testHasVocab(grammar, {text: 4});
-        testGenerateAndSample(grammar, [{text: "hello"}]);
+        testHasVocab(grammar, {text: 2});
+        testGenerateAndSample(grammar, [{text: "hi"}]);
     });
     
     describe('Lowercase assignment, uppercase reference', function() {
-        const symbolTable = makeTestNamespace({ "s": text("hello") });
+        const symbolTable = makeTestNamespace({ "s": text("hi") });
         const grammar = Emb("S", symbolTable);
         testHasTapes(grammar, ["text"]);
-        testHasVocab(grammar, {text: 4});
-        testGenerateAndSample(grammar, [{text: "hello"}]);
+        testHasVocab(grammar, {text: 2});
+        testGenerateAndSample(grammar, [{text: "hi"}]);
     });
 
     describe('Uppercase assignment, lowercase reference', function() {
-        const symbolTable = makeTestNamespace({ "S": text("hello") });
+        const symbolTable = makeTestNamespace({ "S": text("hi") });
         const grammar = Emb("s", symbolTable);
         testHasTapes(grammar, ["text"]);
-        testHasVocab(grammar, {text: 4});
-        testGenerateAndSample(grammar, [{text: "hello"}]);
+        testHasVocab(grammar, {text: 2});
+        testGenerateAndSample(grammar, [{text: "hi"}]);
     });
 
-    describe('Symbol containing text:hello+text:world', function() {
-        const symbolTable = makeTestNamespace({ "s": Seq(text("hello"), text("world")) });
+    describe('Symbol containing text:hi+text:world', function() {
+        const symbolTable = makeTestNamespace({ "s": Seq(text("hi"), text("world")) });
         const grammar = Emb("s", symbolTable);
-        testGenerateAndSample(grammar, [{text: "helloworld"}]);
+        testGenerateAndSample(grammar, [{text: "hiworld"}]);
     });
 
-    describe('Symbol containing text:hello|text:goodbye', function() {
-        const symbolTable = makeTestNamespace({ "s": Uni(text("hello"), text("goodbye")) });
+    describe('Symbol containing text:hi|text:goodbye', function() {
+        const symbolTable = makeTestNamespace({ "s": Uni(text("hi"), text("goodbye")) });
         const grammar = Emb("s", symbolTable);
-        testGenerateAndSample(grammar, [{text: "hello"},
+        testGenerateAndSample(grammar, [{text: "hi"},
                               {text: "goodbye"}]);
     });
 
@@ -77,171 +77,171 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{t1: "hi", t2: "byeworld"}]);
     });
 
-    describe('Joining "helloworld" with right-recursive "hello+ world"', function() {
+    describe('Joining "hiworld" with right-recursive "hi+ world"', function() {
         const symbolTable = makeTestNamespace();
-        const world = Uni(text("world"), Emb("helloWorld", symbolTable))
-        const helloWorld = Seq(text("hello"), world);
-        symbolTable.addSymbol("helloWorld", helloWorld);
+        const world = Uni(text("world"), Emb("hiWorld", symbolTable))
+        const hiWorld = Seq(text("hi"), world);
+        symbolTable.addSymbol("hiWorld", hiWorld);
 
-        const grammar = Join(text("helloworld"), helloWorld);
-        testGenerateAndSample(grammar, [{text: "helloworld"}]);
+        const grammar = Join(text("hiworld"), hiWorld);
+        testGenerateAndSample(grammar, [{text: "hiworld"}]);
     });
 
-    describe('Joining right-recursive "hello+ world" with "helloworld"', function() {
+    describe('Joining right-recursive "hi+ world" with "hiworld"', function() {
         const symbolTable = makeTestNamespace();
-        const world = Uni(text("world"), Emb("helloWorld", symbolTable))
-        const helloWorld = Seq(text("hello"), world);
-        symbolTable.addSymbol("helloWorld", helloWorld);
+        const world = Uni(text("world"), Emb("hiWorld", symbolTable))
+        const hiWorld = Seq(text("hi"), world);
+        symbolTable.addSymbol("hiWorld", hiWorld);
 
-        const grammar = Join(helloWorld, text("helloworld"));
-        testGenerateAndSample(grammar, [{text: "helloworld"}]);
+        const grammar = Join(hiWorld, text("hiworld"));
+        testGenerateAndSample(grammar, [{text: "hiworld"}]);
     });
 
-    describe('Joining "hellohelloworld" with right-recursive "hello+ world"', function() {
+    describe('Joining "hihiworld" with right-recursive "hi+ world"', function() {
         const symbolTable = makeTestNamespace();
-        const world = Uni(text("world"), Emb("helloWorld", symbolTable))
-        const helloWorld = Seq(text("hello"), world);
-        symbolTable.addSymbol("helloWorld", helloWorld);
+        const world = Uni(text("world"), Emb("hiWorld", symbolTable))
+        const hiWorld = Seq(text("hi"), world);
+        symbolTable.addSymbol("hiWorld", hiWorld);
 
-        const grammar = Join(text("hellohelloworld"), helloWorld);
-        testGenerateAndSample(grammar, [{text: "hellohelloworld"}]);
+        const grammar = Join(text("hihiworld"), hiWorld);
+        testGenerateAndSample(grammar, [{text: "hihiworld"}]);
     });
 
-    describe('Joining right-recursive "hello+ world" with "hellohelloworld"', function() {
+    describe('Joining right-recursive "hi+ world" with "hihiworld"', function() {
         const symbolTable = makeTestNamespace();
-        const world = Uni(text("world"), Emb("helloWorld", symbolTable))
-        const helloWorld = Seq(text("hello"), world);
-        symbolTable.addSymbol("helloWorld", helloWorld);
+        const world = Uni(text("world"), Emb("hiWorld", symbolTable))
+        const hiWorld = Seq(text("hi"), world);
+        symbolTable.addSymbol("hiWorld", hiWorld);
 
-        const grammar = Join(helloWorld, text("hellohelloworld"));
-        testGenerateAndSample(grammar, [{text: "hellohelloworld"}]);
+        const grammar = Join(hiWorld, text("hihiworld"));
+        testGenerateAndSample(grammar, [{text: "hihiworld"}]);
     });
 
-    describe('Joining "helloworld" with left-recursive "hello+ world"', function() {
+    describe('Joining "hiworld" with left-recursive "hi+ world"', function() {
         const symbolTable = makeTestNamespace();
-        const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
-        const helloWorld = Seq(helloHello, text("world"));
-        symbolTable.addSymbol("hellohello", helloHello);
+        const hihi = Uni(text("hi"), Seq(Emb("hihi", symbolTable), text("hi")));
+        const hiWorld = Seq(hihi, text("world"));
+        symbolTable.addSymbol("hihi", hihi);
 
-        const grammar = Join(text("helloworld"), helloWorld);
-        testGenerateAndSample(grammar, [{text: "helloworld"}]);
+        const grammar = Join(text("hiworld"), hiWorld);
+        testGenerateAndSample(grammar, [{text: "hiworld"}]);
     });
 
-    describe('Joining "hellohelloworld" with left-recursive "hello+ world"', function() {
+    describe('Joining "hihiworld" with left-recursive "hi+ world"', function() {
         const symbolTable = makeTestNamespace();
-        const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
-        const helloWorld = Seq(helloHello, text("world"));
-        symbolTable.addSymbol("hellohello", helloHello);
+        const hihi = Uni(text("hi"), Seq(Emb("hihi", symbolTable), text("hi")));
+        const hiWorld = Seq(hihi, text("world"));
+        symbolTable.addSymbol("hihi", hihi);
 
-        const grammar = Join(text("hellohelloworld"), helloWorld);
-        testGenerateAndSample(grammar, [{text: "hellohelloworld"}]);
+        const grammar = Join(text("hihiworld"), hiWorld);
+        testGenerateAndSample(grammar, [{text: "hihiworld"}]);
     });
 
-    describe('Joining left-recursive "hello+ world" with "helloworld"', function() {
+    describe('Joining left-recursive "hi+ world" with "hiworld"', function() {
         const symbolTable = makeTestNamespace();
-        const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
-        const helloWorld = Seq(helloHello, text("world"));
-        symbolTable.addSymbol("hellohello", helloHello);
+        const hihi = Uni(text("hi"), Seq(Emb("hihi", symbolTable), text("hi")));
+        const hiWorld = Seq(hihi, text("world"));
+        symbolTable.addSymbol("hihi", hihi);
 
-        const grammar = Join(helloWorld, text("helloworld"));
-        testGenerateAndSample(grammar, [{text: "helloworld"}]);
+        const grammar = Join(hiWorld, text("hiworld"));
+        testGenerateAndSample(grammar, [{text: "hiworld"}]);
     });
 
-    describe('Joining left-recursive "hello+ world" with "hellohelloworld"', function() {
+    describe('Joining left-recursive "hi+ world" with "hihiworld"', function() {
         const symbolTable = makeTestNamespace();
-        const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
-        const helloWorld = Seq(helloHello, text("world"));
-        symbolTable.addSymbol("hellohello", helloHello);
+        const hihi = Uni(text("hi"), Seq(Emb("hihi", symbolTable), text("hi")));
+        const hiWorld = Seq(hihi, text("world"));
+        symbolTable.addSymbol("hihi", hihi);
 
-        const grammar = Join(helloWorld, text("hellohelloworld"));
-        testGenerateAndSample(grammar, [{text: "hellohelloworld"}]);
+        const grammar = Join(hiWorld, text("hihiworld"));
+        testGenerateAndSample(grammar, [{text: "hihiworld"}]);
     });
 
-    describe('Emitting from right-recursive "hello+ world" with default max recursion (4)', function() {
+    describe('Emitting from right-recursive "hi+ world" with default max recursion (4)', function() {
         const symbolTable = makeTestNamespace();
-        const world = Uni(text("world"), Emb("helloWorld", symbolTable))
-        const helloWorld = Seq(text("hello"), world);
-        symbolTable.addSymbol("helloWorld", helloWorld);
+        const world = Uni(text("world"), Emb("hiWorld", symbolTable))
+        const hiWorld = Seq(text("hi"), world);
+        symbolTable.addSymbol("hiWorld", hiWorld);
 
-        const grammar = helloWorld;
-        testGenerateAndSample(grammar, [{text: "helloworld"},
-                              {text: "hellohelloworld"},
-                              {text: "hellohellohelloworld"},
-                              {text: "hellohellohellohelloworld"},
-                              {text: "hellohellohellohellohelloworld"}]);
+        const grammar = hiWorld;
+        testGenerateAndSample(grammar, [{text: "hiworld"},
+                              {text: "hihiworld"},
+                              {text: "hihihiworld"},
+                              {text: "hihihihiworld"},
+                              {text: "hihihihihiworld"}]);
     });
 
-    describe('Emitting from right-recursive "hello+ world" with max recursion 2', function() {
+    describe('Emitting from right-recursive "hi+ world" with max recursion 2', function() {
         const symbolTable = makeTestNamespace();
-        const world = Uni(text("world"), Emb("helloWorld", symbolTable))
-        const helloWorld = Seq(text("hello"), world);
-        symbolTable.addSymbol("helloWorld", helloWorld);
+        const world = Uni(text("world"), Emb("hiWorld", symbolTable))
+        const hiWorld = Seq(text("hi"), world);
+        symbolTable.addSymbol("hiWorld", hiWorld);
 
-        const grammar = helloWorld;
-        testGenerateAndSample(grammar, [{text: "helloworld"},
-                              {text: "hellohelloworld"},
-                              {text: "hellohellohelloworld"}],
+        const grammar = hiWorld;
+        testGenerateAndSample(grammar, [{text: "hiworld"},
+                              {text: "hihiworld"},
+                              {text: "hihihiworld"}],
                     2);
     });
 
     
-    describe('Emitting from center-recursive "hello+ world" with max recursion 2', function() {
+    describe('Emitting from center-recursive "hi+ world" with max recursion 2', function() {
         const symbolTable = makeTestNamespace();
-        const world = Uni(text("world"), Emb("helloWorld", symbolTable))
-        const helloWorld = Seq(text("hello"), world, text("hello"));
-        symbolTable.addSymbol("helloWorld", helloWorld);
+        const world = Uni(text("world"), Emb("hiWorld", symbolTable))
+        const hiWorld = Seq(text("hi"), world, text("hi"));
+        symbolTable.addSymbol("hiWorld", hiWorld);
 
-        const grammar = helloWorld;
-        testGenerateAndSample(grammar, [{text: "helloworldhello"},
-                              {text: "hellohelloworldhellohello"},
-                              {text: "hellohellohelloworldhellohellohello"}],
+        const grammar = hiWorld;
+        testGenerateAndSample(grammar, [{text: "hiworldhi"},
+                              {text: "hihiworldhihi"},
+                              {text: "hihihiworldhihihi"}],
                     2);
     });
 
-    describe('Emitting from right-recursive "hello+ world" with max recursion 0', function() {
+    describe('Emitting from right-recursive "hi+ world" with max recursion 0', function() {
         const symbolTable = makeTestNamespace();
-        const world = Uni(text("world"), Emb("helloWorld", symbolTable))
-        const helloWorld = Seq(text("hello"), world);
-        symbolTable.addSymbol("helloWorld", helloWorld);
+        const world = Uni(text("world"), Emb("hiWorld", symbolTable))
+        const hiWorld = Seq(text("hi"), world);
+        symbolTable.addSymbol("hiWorld", hiWorld);
 
-        const grammar = helloWorld;
-        testGenerateAndSample(grammar, [{text: "helloworld"}], 0);
+        const grammar = hiWorld;
+        testGenerateAndSample(grammar, [{text: "hiworld"}], 0);
     });
 
-    describe('Emitting from left-recursive "hello+ world" with default max recursion (4)', function() {
+    describe('Emitting from left-recursive "hi+ world" with default max recursion (4)', function() {
         const symbolTable = makeTestNamespace();
-        const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
-        const helloWorld = Seq(helloHello, text("world"));
-        symbolTable.addSymbol("hellohello", helloHello);
+        const hihi = Uni(text("hi"), Seq(Emb("hihi", symbolTable), text("hi")));
+        const hiWorld = Seq(hihi, text("world"));
+        symbolTable.addSymbol("hihi", hihi);
 
-        const grammar = helloWorld;
-        testGenerateAndSample(grammar, [{text: "helloworld"},
-                              {text: "hellohelloworld"},
-                              {text: "hellohellohelloworld"},
-                              {text: "hellohellohellohelloworld"},
-                              {text: "hellohellohellohellohelloworld"}]);
+        const grammar = hiWorld;
+        testGenerateAndSample(grammar, [{text: "hiworld"},
+                              {text: "hihiworld"},
+                              {text: "hihihiworld"},
+                              {text: "hihihihiworld"},
+                              {text: "hihihihihiworld"}]);
     });
 
-    describe('Emitting from left-recursive "hello+ world" with max recursion 2', function() {
+    describe('Emitting from left-recursive "hi+ world" with max recursion 2', function() {
         const symbolTable = makeTestNamespace();
-        const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
-        const helloWorld = Seq(helloHello, text("world"));
-        symbolTable.addSymbol("hellohello", helloHello);
+        const hihi = Uni(text("hi"), Seq(Emb("hihi", symbolTable), text("hi")));
+        const hiWorld = Seq(hihi, text("world"));
+        symbolTable.addSymbol("hihi", hihi);
 
-        const grammar = helloWorld;
-        testGenerateAndSample(grammar, [{text: "helloworld"},
-                              {text: "hellohelloworld"},
-                              {text: "hellohellohelloworld"}],
+        const grammar = hiWorld;
+        testGenerateAndSample(grammar, [{text: "hiworld"},
+                              {text: "hihiworld"},
+                              {text: "hihihiworld"}],
                     2);
     });
 
-    describe('Emitting from left-recursive "hello+ world" with max recursion 0', function() {
+    describe('Emitting from left-recursive "hi+ world" with max recursion 0', function() {
         const symbolTable = makeTestNamespace();
-        const helloHello = Uni(text("hello"), Seq(Emb("hellohello", symbolTable), text("hello")));
-        const helloWorld = Seq(helloHello, text("world"));
-        symbolTable.addSymbol("hellohello", helloHello);
+        const hihi = Uni(text("hi"), Seq(Emb("hihi", symbolTable), text("hi")));
+        const hiWorld = Seq(hihi, text("world"));
+        symbolTable.addSymbol("hihi", hihi);
 
-        const grammar = helloWorld;
-        testGenerateAndSample(grammar, [{text: "helloworld"}], 0);
+        const grammar = hiWorld;
+        testGenerateAndSample(grammar, [{text: "hiworld"}], 0);
     });
 });
