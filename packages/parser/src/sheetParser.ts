@@ -10,7 +10,7 @@
 import { assert } from "chai";
 import { CPAlternation, CPUnreserved, CPNegation, CPResult, parseBooleanCell } from "./cellParser";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPSequence, MPUnreserved } from "./miniParser";
-import { CounterStack, Uni, State, Lit, Emb, Seq, Epsilon, Namespace, Maybe, Not, Join, Filter, BrzEpsilon, LiteralState, Rename, RenameState, Hide, Rep, Any, Reveal, BrzConcatState } from "./stateMachine";
+import { CounterStack, Uni, State, Lit, Emb, Seq, Epsilon, Namespace, Maybe, Not, Join, Filter, BrzEpsilon, LiteralState, Rename, RenameState, Hide, Rep, Any, Reveal, BrzConcat } from "./stateMachine";
 import { CellPosition, DevEnvironment, DUMMY_POSITION, HSVtoRGB, RGBtoString, TabularComponent } from "./util";
 
 const DEFAULT_SATURATION = 0.1;
@@ -381,7 +381,7 @@ export class EqualsHeader extends JoinHeader {
             throw new Error("'equals/startswith/endswith/contains' requires content to its left.");
         }
 
-        if (leftNeighbor instanceof BrzConcatState) {
+        if (leftNeighbor instanceof BrzConcat) {
             // if your left neighbor is a concat state we have to do something a little special,
             // because startswith only scopes over the cell immediately to the left.  (if you let
             // it be a join with EVERYTHING to the left, you end up catching prefixes that you're

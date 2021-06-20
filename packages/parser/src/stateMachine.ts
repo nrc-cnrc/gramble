@@ -1171,32 +1171,44 @@ abstract class BinaryState extends State {
     }
 }
 
-abstract class NAryState extends State {
+export class BrzConcat extends BinaryState {
 
-    constructor(
-        public children: State[]
-    ) {
-        super();
-    }
-
-    public collectVocab(tapes: Tape, stack: string[]): void {
-        for (const child of this.children) {
-            child.collectVocab(tapes, stack);
-        }
-    }
-
-    public getRelevantTapes(stack: CounterStack): Set<string> {
-        if (this.relevantTapes == undefined) {
-            this.relevantTapes = new Set();
-            for (const child of this.children) {
-                const childTapes = child.getRelevantTapes(stack);
-                this.relevantTapes = new Set([...this.relevantTapes, ...childTapes]);
+    public* dagger(
+        tape: Tape, 
+        stack: CounterStack
+    ): Gen<State> {
+        for (const c1next of this.child1.dagger(tape, stack)) {
+            for (const c2next of this.child2.dagger(tape, stack)) {
+                yield new BrzConcat(c1next, c2next);
             }
         }
-        return this.relevantTapes;
+    }
+    
+    public get id(): string {
+        return `(${this.child1.id}+${this.child2.id})`;
+    }
+
+    public *ndQuery(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
+
+        for (const [c1tape, c1target, c1next] of
+                this.child1.ndQuery(tape, target, stack)) {
+            yield [c1tape, c1target, 
+                new BrzConcat(c1next, this.child2)];
+        }
+
+        for (const c1next of this.child1.dagger(tape, stack)) {
+            for (const [c2tape, c2target, c2next] of
+                    this.child2.ndQuery(tape, target, stack)) {
+                yield [c2tape, c2target, 
+                    new BrzConcat(c1next, c2next)];
+            }
+        }
     }
 }
-
 
 export class BrzUnion extends BinaryState {
 
@@ -1223,7 +1235,6 @@ export class BrzUnion extends BinaryState {
         yield* this.child2.ndQuery(tape, target, stack);
     }
 }
-
 
 class IntersectionState extends BinaryState {
 
@@ -1401,6 +1412,138 @@ class StrictFilterState extends BinaryState {
                 const successor = this.successor(c1next, c2next);
                 yield [c2tape, c2target, successor];
             }
+        }
+    }
+}
+
+/**
+ * The parser that handles arbitrary subgrammars referred to by a symbol name; this is what makes
+ * recursion possible.
+ * 
+ * Like most such implementations, EmbedState's machinery serves to delay the construction of a child
+ * state, since this child may be the EmbedState itself, or refer to this EmbedState by indirect recursion.
+ * So instead of having a child at the start, it just has a symbol name and a reference to a symbol table.
+ * 
+ * The successor states of the EmbedState may have an explicit child, though: the successors of that initial
+ * child state.  (If we got the child from the symbol table every time, we'd just end up trying to match its 
+ * first letter again and again.)  We keep track of that through the _child member, which is initially undefined
+ * but which we specify when constructing EmbedState's successor.
+ */
+ export class EmbedState extends State {
+
+    constructor(
+        public symbolName: string,
+        public namespace: Namespace,
+        public _child: State | undefined = undefined,
+        relevantTapes: Set<string> | undefined = undefined
+    ) { 
+        super();
+        
+        // need to register our symbol name with the namespace, in case
+        // the referred-to symbol is defined in a file we haven't yet loaded.
+        namespace.register(symbolName);
+        this.relevantTapes = relevantTapes;
+    }
+
+    public get id(): string {
+        return `${this.constructor.name}(${this.symbolName})`;
+    }
+
+    public compileAux(
+        allTapes: TapeCollection, 
+        stack: CounterStack, 
+        compileLevel: number
+    ): State {
+        
+        if (compileLevel <= 0) {
+            return this;
+        }
+        
+        if (stack.exceedsMax(this.symbolName)) {
+            return this;
+        }
+
+        const newStack = stack.add(this.symbolName);
+        this.namespace.compileSymbol(this.symbolName, allTapes, newStack, compileLevel);
+        return new CompiledState(this, allTapes, stack, compileLevel);
+    } 
+    
+    public collectVocab(tapes: Tape, stack: string[]): void {
+        if (stack.indexOf(this.symbolName) != -1) {
+            return;
+        }
+        const newStack = [...stack, this.symbolName];
+        this.getChild().collectVocab(tapes, newStack);
+    }
+
+    public getRelevantTapes(stack: CounterStack): Set<string> {
+        if (this.relevantTapes == undefined) {
+            if (stack.exceedsMax(this.symbolName)) {
+                this.relevantTapes = new Set();
+            } else {
+                const newStack = stack.add(this.symbolName);
+                this.relevantTapes = this.getChild(newStack).getRelevantTapes(newStack);
+            }
+        }
+        return this.relevantTapes;
+    }
+
+
+    public getChild(stack: CounterStack | undefined = undefined): State {
+        if (this._child == undefined) {
+            const child = this.namespace.getSymbol(this.symbolName, stack);
+            if (child == undefined) {
+                // this is an error, due to the programmer referring to an undefined
+                // symbol, but now is not the time to complain.  it'll be caught elsewhere
+                // and the programmer will be notified.  just fail gracefully by treating
+                // the child as the empty grammar
+                return Epsilon();
+            } 
+            this._child = child;
+        }
+        return this._child;
+    }
+    
+    public accepting(
+        tape: Tape, 
+        stack: CounterStack
+    ): boolean {
+        if (stack.exceedsMax(this.symbolName)) {
+            return false;
+        }
+        const newStack = stack.add(this.symbolName);
+        return this.getChild(newStack).accepting(tape, newStack);
+    }
+
+    public* dagger(
+        tape: Tape, 
+        stack: CounterStack
+    ): Gen<State> {
+        if (stack.exceedsMax(this.symbolName)) {
+            return;
+        }
+        const newStack = stack.add(this.symbolName);
+        yield* this.getChild(newStack).dagger(tape, newStack);
+    
+    }
+
+    public *ndQuery(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
+
+        if (stack.exceedsMax(this.symbolName)) {
+            return;
+        }
+
+        stack = stack.add(this.symbolName);
+        let child = this.getChild(stack);
+
+        for (const [childchildTape, childTarget, childNext] of 
+                        child.ndQuery(tape, target, stack)) {
+            const successor = new EmbedState(this.symbolName, this.namespace, childNext, this.relevantTapes);
+            yield [childchildTape, childTarget, successor];
         }
     }
 }
@@ -1584,178 +1727,7 @@ abstract class UnaryState extends State {
 }
 
 
-/**
- * The parser that handles arbitrary subgrammars referred to by a symbol name; this is what makes
- * recursion possible.
- * 
- * Like most such implementations, EmbedState's machinery serves to delay the construction of a child
- * state, since this child may be the EmbedState itself, or refer to this EmbedState by indirect recursion.
- * So instead of having a child at the start, it just has a symbol name and a reference to a symbol table.
- * 
- * The successor states of the EmbedState may have an explicit child, though: the successors of that initial
- * child state.  (If we got the child from the symbol table every time, we'd just end up trying to match its 
- * first letter again and again.)  We keep track of that through the _child member, which is initially undefined
- * but which we specify when constructing EmbedState's successor.
- */
-export class EmbedState extends State {
-
-    constructor(
-        public symbolName: string,
-        public namespace: Namespace,
-        public _child: State | undefined = undefined,
-        relevantTapes: Set<string> | undefined = undefined
-    ) { 
-        super();
-        
-        // need to register our symbol name with the namespace, in case
-        // the referred-to symbol is defined in a file we haven't yet loaded.
-        namespace.register(symbolName);
-        this.relevantTapes = relevantTapes;
-    }
-
-    public get id(): string {
-        return `${this.constructor.name}(${this.symbolName})`;
-    }
-
-    public compileAux(
-        allTapes: TapeCollection, 
-        stack: CounterStack, 
-        compileLevel: number
-    ): State {
-        
-        if (compileLevel <= 0) {
-            return this;
-        }
-        
-        if (stack.exceedsMax(this.symbolName)) {
-            return this;
-        }
-
-        const newStack = stack.add(this.symbolName);
-        this.namespace.compileSymbol(this.symbolName, allTapes, newStack, compileLevel);
-        return new CompiledState(this, allTapes, stack, compileLevel);
-    } 
-    
-    public collectVocab(tapes: Tape, stack: string[]): void {
-        if (stack.indexOf(this.symbolName) != -1) {
-            return;
-        }
-        const newStack = [...stack, this.symbolName];
-        this.getChild().collectVocab(tapes, newStack);
-    }
-
-    public getRelevantTapes(stack: CounterStack): Set<string> {
-        if (this.relevantTapes == undefined) {
-            if (stack.exceedsMax(this.symbolName)) {
-                this.relevantTapes = new Set();
-            } else {
-                const newStack = stack.add(this.symbolName);
-                this.relevantTapes = this.getChild(newStack).getRelevantTapes(newStack);
-            }
-        }
-        return this.relevantTapes;
-    }
-
-
-    public getChild(stack: CounterStack | undefined = undefined): State {
-        if (this._child == undefined) {
-            const child = this.namespace.getSymbol(this.symbolName, stack);
-            if (child == undefined) {
-                // this is an error, due to the programmer referring to an undefined
-                // symbol, but now is not the time to complain.  it'll be caught elsewhere
-                // and the programmer will be notified.  just fail gracefully by treating
-                // the child as the empty grammar
-                return Epsilon();
-            } 
-            this._child = child;
-        }
-        return this._child;
-    }
-    
-    public accepting(
-        tape: Tape, 
-        stack: CounterStack
-    ): boolean {
-        if (stack.exceedsMax(this.symbolName)) {
-            return false;
-        }
-        const newStack = stack.add(this.symbolName);
-        return this.getChild(newStack).accepting(tape, newStack);
-    }
-
-    public* dagger(
-        tape: Tape, 
-        stack: CounterStack
-    ): Gen<State> {
-        if (stack.exceedsMax(this.symbolName)) {
-            return;
-        }
-        const newStack = stack.add(this.symbolName);
-        yield* this.getChild(newStack).dagger(tape, newStack);
-    
-    }
-
-    public *ndQuery(
-        tape: Tape, 
-        target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, State]> {
-
-        if (stack.exceedsMax(this.symbolName)) {
-            return;
-        }
-
-        stack = stack.add(this.symbolName);
-        let child = this.getChild(stack);
-
-        for (const [childchildTape, childTarget, childNext] of 
-                        child.ndQuery(tape, target, stack)) {
-            const successor = new EmbedState(this.symbolName, this.namespace, childNext, this.relevantTapes);
-            yield [childchildTape, childTarget, successor];
-        }
-    }
-}
-
-export class BrzConcatState extends BinaryState {
-
-    public* dagger(
-        tape: Tape, 
-        stack: CounterStack
-    ): Gen<State> {
-        for (const c1next of this.child1.dagger(tape, stack)) {
-            for (const c2next of this.child2.dagger(tape, stack)) {
-                yield new BrzConcatState(c1next, c2next);
-            }
-        }
-    }
-    
-    public get id(): string {
-        return `(${this.child1.id}+${this.child2.id})`;
-    }
-
-    public *ndQuery(
-        tape: Tape, 
-        target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, State]> {
-
-        for (const [c1tape, c1target, c1next] of
-                this.child1.ndQuery(tape, target, stack)) {
-            yield [c1tape, c1target, 
-                new BrzConcatState(c1next, this.child2)];
-        }
-
-        for (const c1next of this.child1.dagger(tape, stack)) {
-            for (const [c2tape, c2target, c2next] of
-                    this.child2.ndQuery(tape, target, stack)) {
-                yield [c2tape, c2target, 
-                    new BrzConcatState(c1next, c2next)];
-            }
-        }
-    }
-}
-
-class StarState extends UnaryState {
+class BrzStar extends UnaryState {
 
     constructor(
         public child: State
@@ -1788,7 +1760,7 @@ class StarState extends UnaryState {
         stack: CounterStack
     ): Gen<[Tape, Token, State]> {
         for (const [cTape, cTarget, cNext] of this.child.ndQuery(tape, target, stack)) {
-            const successor = new BrzConcatState(cNext, this);
+            const successor = new BrzConcat(cNext, this);
             yield [cTape, cTarget, successor];
         }
     }
@@ -2182,7 +2154,7 @@ export function Seq(...children: State[]): State {
         return children[0];
     }
 
-    return new BrzConcatState(children[0], Seq(...children.slice(1)));
+    return new BrzConcat(children[0], Seq(...children.slice(1)));
 }
 
 export function Uni(...children: State[]): State {
@@ -2275,7 +2247,7 @@ export function Rep(child: State, minReps=0, maxReps=Infinity): State {
     }
 
     if (maxReps == Infinity) {
-        return new StarState(child);
+        return new BrzStar(child);
     }
 
     const tail = Rep(child, 0, maxReps - 1);
@@ -2303,8 +2275,9 @@ export function MatchDotStar(...tapes: string[]): State {
     return Match(Rep(Dot(...tapes)), ...tapes)
 }
     
+const EPSILON = new BrzEpsilon();
 export function Epsilon(): State {
-    return new BrzEpsilon();
+    return EPSILON;
 }
 
 export function Maybe(child: State): State {
@@ -2315,6 +2288,7 @@ export function Intersection(child1: State, child2: State): State {
     return new IntersectionState(child1, child2);
 }
 
+const NULL = new BrzNull();
 export function Null(): State {
-    return new BrzNull();
+    return NULL;
 }
