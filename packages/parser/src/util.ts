@@ -167,6 +167,14 @@ export function setUnion<T>(s1: Iterable<T>, s2: Iterable<T>): Set<T> {
     return new Set([...s1, ...s2]);
 }
 
+export function bigUnion<T>(ss: Iterable<Iterable<T>>): Set<T> {
+    var results: T[] = [];
+    for (const s of ss) {
+        results = results.concat(...s);
+    }
+    return new Set(results);
+}
+
 export function setIntersection<T>(s1: Set<T>, s2: Set<T>): Set<T> {
     return new Set([...s1].filter(i => s2.has(i)));
 }
