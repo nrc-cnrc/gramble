@@ -1,6 +1,6 @@
 
 import { Seq, Uni, Join, Filter, Epsilon } from "../src/stateMachine";
-import { t1, t2, t3, testGenerateAndSample } from './testUtils';
+import { t1, t2, t3, testGenerateAndSample, testGrammarUncompiled } from './testUtils';
 
 import * as path from 'path';
 
@@ -57,10 +57,10 @@ describe(`${path.basename(module.filename)}`, function() {
         testGenerateAndSample(grammar, [{t1: "hi", t2: "world"}]);
     });
 
-    describe('Filter (t2:world+t1:hello)[t1:hello+t2:world]', function() {
-        const grammar = Filter(Seq(t2("world"), t1("hello")),
-                             Seq(t1("hello"), t2("world")));
-        testGenerateAndSample(grammar, [{t1: "hello", t2: "world"}]);
+    describe('Filter (t2:wo+t1:hi)[t1:hi+t2:wo]', function() {
+        const grammar = Filter(Seq(t2("b"), t1("a")),
+                             Seq(t1("a"), t2("b")));
+        testGenerateAndSample(grammar, [{t1: "a", t2: "b"}]);
     });
 
     describe('Filter (t1:hello+t2:world|t1:hello+t2:kitty)[t1:hello]', function() {
@@ -112,5 +112,4 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(Filter(Seq(t1("hi"), t2("wo")), t2("wo")), t1("hi"));
         testGenerateAndSample(grammar, [{t1: "hi", t2: "wo"}]);
     });
-
 });

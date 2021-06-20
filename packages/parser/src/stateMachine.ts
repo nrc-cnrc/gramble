@@ -1406,6 +1406,8 @@ class StrictFilterState extends BinaryState {
 }
 
 
+
+
 /**
  * The JoinState implements the natural join (in the relational algebra sense)
  * for two automata. This is a fundamental operation in the parser, as we implement
@@ -1726,6 +1728,10 @@ export class BrzConcatState extends BinaryState {
             }
         }
     }
+    
+    public get id(): string {
+        return `(${this.child1.id}+${this.child2.id})`;
+    }
 
     public *ndQuery(
         tape: Tape, 
@@ -1749,27 +1755,31 @@ export class BrzConcatState extends BinaryState {
     }
 }
 
-export class StarState extends BinaryState {
+class StarState extends UnaryState {
+
+    constructor(
+        public child: State
+    ) {
+        super();
+    }
 
     public get id(): string {
-        return `${this.child2.id}*`;
+        return `${this.child.id}*`;
     }
+
 
     public accepting(
         tape: Tape, 
         stack: CounterStack
     ): boolean {
-        // the right side of the concatenation, (child2)*, 
-        // is always accepting, so don't test it
-        return this.child1.accepting(tape, stack);
+        return true;
     }
 
-    
     public* dagger(
         tape: Tape, 
         stack: CounterStack
     ): Gen<State> {
-        yield* this.child1.dagger(tape, stack);
+        yield Epsilon();
     }
 
     public *ndQuery(
@@ -1777,30 +1787,9 @@ export class StarState extends BinaryState {
         target: Token,
         stack: CounterStack
     ): Gen<[Tape, Token, State]> {
-
-        for (const [c1tape, c1target, c1next] of
-                this.child1.ndQuery(tape, target, stack)) {
-            yield [c1tape, c1target, 
-                new StarState(c1next, this.child2)];
-        }
-
-        if (this.child1 == this.child2) {
-            // we don't want to do the next part if c1 and c2 are identical.
-            // we'd recurse infinitely to find results we already calculated
-            // above.  the following code can only give results if the two are 
-            // different: when we're just starting (and so c1 is epsilon) or
-            // when it was (at one point) equal to c2 but we already yielded
-            // from it (so its successor is different)
-            return;
-        }
-
-        for (const c1next of this.child1.dagger(tape, stack)) {
-            const successor = new StarState(this.child2, this.child2);
-            for (const [c2tape, c2target, c2next] of
-                successor.ndQuery(tape, target, stack)) {
-                yield [c2tape, c2target, 
-                    new BrzConcatState(c1next, c2next)];
-            }
+        for (const [cTape, cTarget, cNext] of this.child.ndQuery(tape, target, stack)) {
+            const successor = new BrzConcatState(cNext, this);
+            yield [cTape, cTarget, successor];
         }
     }
 }
@@ -1859,21 +1848,21 @@ export class RenameState extends UnaryState {
         stack: CounterStack
     ): Gen<[Tape, Token, State]> {
 
-        var rememberToUnwrapTape = false;
+        //var rememberToUnwrapTape = false;
 
         if (tape.tapeName == this.fromTape) {
             //yield [tape, target, this];
             return;
         }
 
-        if (tape.tapeName == this.toTape || tape.tapeName == "__ANY_TAPE__") {
-            tape = new RenamedTape(tape, this.fromTape, this.toTape);
-            rememberToUnwrapTape = true;
-        } 
+        //if (tape.tapeName == this.toTape || tape.tapeName == "__ANY_TAPE__") {
+        tape = new RenamedTape(tape, this.fromTape, this.toTape);
+            //rememberToUnwrapTape = true;
+        //} 
     
         for (var [childTape, childTarget, childNext] of 
                 this.child.ndQuery(tape, target, stack)) {
-            if (rememberToUnwrapTape && childTape instanceof RenamedTape) {
+            if (childTape instanceof RenamedTape) {
                 childTape = childTape.child;
             }
             yield [childTape, childTarget, new RenameState(childNext, this.fromTape, this.toTape, this.relevantTapes)];
@@ -2286,7 +2275,7 @@ export function Rep(child: State, minReps=0, maxReps=Infinity): State {
     }
 
     if (maxReps == Infinity) {
-        return new StarState(new BrzEpsilon(), child);
+        return new StarState(child);
     }
 
     const tail = Rep(child, 0, maxReps - 1);
@@ -2329,9 +2318,3 @@ export function Intersection(child1: State, child2: State): State {
 export function Null(): State {
     return new BrzNull();
 }
-
-
-/*
-export function Star(child: State) {
-    return new StarState(child);
-} */
