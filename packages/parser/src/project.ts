@@ -78,6 +78,20 @@ export class Project {
         return iterTake(gen, maxResults);
     }
 
+    public stripHiddenFields(entries: StringDict[]): StringDict[] {
+        const results: StringDict[] = [];
+        for (const entry of entries) {
+            const result: StringDict = {};
+            for (const [key, value] of Object.entries(entry)) {
+                if (!key.startsWith("__")) {
+                    result[key] = value;
+                }
+            }
+            results.push(result);
+        }
+        return results;
+    }
+
     public sample(symbolName: string = "",
             numSamples: number = 1,
             restriction: StringDict = {},

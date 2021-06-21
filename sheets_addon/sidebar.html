@@ -7,8 +7,8 @@
     <body>
         <script>
             function letterFromNumber(n) { // number -> string
-                var letter = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(n % 26)
-                var concat = Math.round(n / 26);
+                let letter = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(n % 26)
+                let concat = Math.round(n / 26);
                 return concat > 0 ? letterFromNumber(concat-1) + letter : letter;
             };
 
@@ -19,16 +19,16 @@
                 return `${sheet}!${letterFromNumber(col)}${(row+1)}`;
             }
 
-            var previousSheetName = "";
-            var previousSymbol = ""; // the symbol that the user selected is stored even
+            let previousSheetName = "";
+            let previousSymbol = ""; // the symbol that the user selected is stored even
                                           // between grammar reloads, so that they're not surprised
                                           // when they reload, start sampling again, and get a different
                                           // symbol than just a moment before.
 
-            var devEnv = undefined;  // SidebarDevEnvironment
-            var project = undefined; // Project
-            var CURRENT_TAPES = [];
-            var CURRENT_INPUTS = {};
+            let devEnv = undefined;  // SidebarDevEnvironment
+            let project = undefined; // Project
+            let CURRENT_TAPES = [];
+            let CURRENT_INPUTS = {};
 
             class SidebarDevEnvironment {
 
@@ -86,14 +86,14 @@
             }
 
             function removeElementsByClass(className) {
-                var inputsToRemove = document.getElementsByClassName(className);
+                let inputsToRemove = document.getElementsByClassName(className);
                 while(inputsToRemove.length > 0){
                     inputsToRemove[0].parentNode.removeChild(inputsToRemove[0]);
                 }
 
             }
 
-            var reloadGrammarLock = false;
+            let reloadGrammarLock = false;
             async function reloadGrammar() {
                 
                 if (reloadGrammarLock) {
@@ -181,7 +181,7 @@
 
                     const button = document.createElement('button');
                     button.classList.add('errorButton');
-                    var cellName = getA1Notation("", row, col);
+                    let cellName = getA1Notation("", row, col);
                     if (sheet != currentSheetName) {
                         cellName = `${sheet}!${cellName}`; 
                     }
@@ -205,12 +205,12 @@
                 const select = document.getElementById("selectSymbol"); 
                 select.innerHTML = "";
                 
-                var options = project.allSymbols();
+                let options = project.allSymbols();
 
                 for (const option of options) {
                     const el = document.createElement('option');
 
-                    var optionText = option;
+                    let optionText = option;
                     const pieces = option.split(".");
                     if (pieces[pieces.length-1] == "__MAIN__") {
                         optionText = pieces.slice(0, pieces.length-1).join(".");
@@ -266,10 +266,10 @@
             
             function reloadResults() {
 
-                var resultsTable  = document.getElementById("resultsTable"); 
+                let resultsTable  = document.getElementById("resultsTable"); 
                 resultsTable.innerHTML = "";
 
-                var symbolName = document.getElementById("selectSymbol").value;
+                let symbolName = document.getElementById("selectSymbol").value;
 
                 if (symbolName == "" || symbolName == undefined) {
                     return;
@@ -285,11 +285,14 @@
                     CURRENT_INPUTS[tapeName] = value;
                 }
 
-                var startTime = Date.now();
-                const results = project.sample(symbolName, 5, CURRENT_INPUTS);
+                let startTime = Date.now();
+                let results = project.sample(symbolName, 5, CURRENT_INPUTS);
                 console.log(`Generated results, elapsed time = ${Date.now()-startTime}ms`);
 
-                for (var i = 0; i < results.length; i++) {
+                // strip hidden fields from the results
+                results = project.stripHiddenFields(results);
+
+                for (let i = 0; i < results.length; i++) {
                     displayRecord(results[i], resultsTable);
                 }
             }
@@ -303,28 +306,29 @@
                         continue;
                     }
 
-                    var tr = table.insertRow();
+                    let tr = table.insertRow();
                     tr.classList.add("resultsTr");
                     tr.style.backgroundColor = color;
                     
-                    var keyCell = tr.insertCell();
+                    let keyCell = tr.insertCell();
                     keyCell.classList.add("resultsKey");
                     keyCell.appendChild(document.createTextNode(key));
 
-                    var valueCell = tr.insertCell();
+                    let valueCell = tr.insertCell();
                     valueCell.classList.add("resultsValue");
                     valueCell.appendChild(document.createTextNode(record[key]));
                 }
 
-                var blankRow = table.insertRow();
+                let blankRow = table.insertRow();
                 blankRow.classList.add("resultsBlankTr");
-                var blankCell = blankRow.insertCell();
+                let blankCell = blankRow.insertCell();
                 blankCell = blankRow.insertCell();
                 blankCell.appendChild(document.createTextNode("\u00A0"));
                 blankCell.classList.add("resultsBlank");
             }
 
             function resultsToTable(labels, entries) {
+                labels = labels.filter(l => !l.startsWith("__"));
                 return [
                     labels,
                     ...entries.map(row => labels.map(label => row[label]))
@@ -332,6 +336,7 @@
             }
             
             function resultsToCSV(labels, entries) {
+                labels = labels.filter(l => !l.startsWith("__"));
                 const replacer = (key, value) => value === null ? '' : value 
                 return [
                     labels.join(','), // header row first
@@ -356,7 +361,7 @@
 
                 // determine what symbol to generate from
                 const symbolSelect = document.getElementById("selectSymbol"); 
-                var symbolName = symbolSelect.value;
+                let symbolName = symbolSelect.value;
 
                 if (symbolName == "" || symbolName == undefined) {
                     return;
@@ -380,15 +385,18 @@
 
                 const inputs = getCurrentInputs();
                 
-                var startTime = Date.now();
-                const results = project.generate(symbolName, inputs);
+                let startTime = Date.now();
+                let results = project.generate(symbolName, inputs);
                 console.log(`Generated results, elapsed time = ${Date.now()-startTime}ms`);
                 
+                // strip hidden fields from the results
+                results = project.stripHiddenFields(results);
+
                 // determine what format to output in
-                var formatSelect = document.getElementById("downloadFormatSelect");
+                let formatSelect = document.getElementById("downloadFormatSelect");
                 const downloadFormat = formatSelect.value;
 
-                var filename, text;
+                let filename, text;
                 // convert the results to the appropriate format
                 if (downloadFormat == "json") {
                     filename = `${symbolName}_output.json`;
@@ -399,7 +407,7 @@
                 }
 
                 // create a temporary link element to download from
-                var element = document.createElement('a');
+                let element = document.createElement('a');
                 element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(text));
                 element.setAttribute('download', filename);
                 element.style.display = 'none';
@@ -415,10 +423,13 @@
 
                 const inputs = getCurrentInputs();
                 
-                var startTime = Date.now();
-                const results = project.generate(symbolName, inputs);
+                let startTime = Date.now();
+                let results = project.generate(symbolName, inputs);
                 console.log(`Generated results, elapsed time = ${Date.now()-startTime}ms`);
                 
+                // strip hidden fields from the results
+                results = project.stripHiddenFields(results);
+
                 // determine what tape names are relevant to this symbol
                 const tapeInfo = project.getTapeNames(symbolName);
                 const tapeNames = tapeInfo.map(([k, v]) => k);
@@ -435,10 +446,13 @@
 
                 const inputs = getCurrentInputs();
                 
-                var startTime = Date.now();
-                const results = project.sample(symbolName, 50, inputs);
+                let startTime = Date.now();
+                let results = project.sample(symbolName, 50, inputs);
                 console.log(`Generated results, elapsed time = ${Date.now()-startTime}ms`);
                 
+                // strip hidden fields from the results
+                results = project.stripHiddenFields(results);
+
                 // determine what tape names are relevant to this symbol
                 const tapeInfo = project.getTapeNames(symbolName);
                 const tapeNames = tapeInfo.map(([k, v]) => k);
@@ -462,7 +476,7 @@
                         previousSymbol = selector.value;
                         removeElementsByClass("tapeInputTr");
                         reloadInputFields();                     
-                        var resultsTable  = document.getElementById("resultsTable"); 
+                        let resultsTable  = document.getElementById("resultsTable"); 
                         resultsTable.innerHTML = "";
                     };
                     
