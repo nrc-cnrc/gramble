@@ -1299,7 +1299,7 @@ class IntersectionState extends BinaryState {
  * At one point we incorrectly called this a left semijoin, but a left semijoin doesn't care about tapes
  * in B that aren't defined in A, whereas this does.
  */
-class StrictFilterState extends BinaryState {
+export class StrictFilterState extends BinaryState {
 
     constructor(
         child1: State,
@@ -1558,7 +1558,7 @@ class StrictFilterState extends BinaryState {
  * as yielding from the intersection of X and Y on tapes that they share, and the product
  * on tapes that they don't share.
  */
-class StrictJoinState extends BinaryState {
+export class StrictJoinState extends BinaryState {
 
     constructor(
         child1: State,
