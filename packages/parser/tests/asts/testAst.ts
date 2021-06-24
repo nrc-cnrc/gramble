@@ -1,27 +1,24 @@
 
-import { Embed, Epsilon, Lit, Ns, Seq, Uni } from "../src/ast";
-import { testAst, testAstHasTapes, testAstHasSymbols, testAstDoesNotHaveSymbols } from './testUtils';
+import { Embed, Epsilon, Lit, Ns, Seq, Uni } from "../../src/ast";
+import { testAst, testAstHasTapes, testAstHasSymbols, testAstDoesNotHaveSymbols } from './testUtilsAst';
 
 import * as path from 'path';
-
-
-const text = (s: string) => Lit("text", s);
 
 const t1 = (s: string) => Lit("t1", s);
 const t2 = (s: string) => Lit("t2", s);
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe('Literal text:hello', function() {
-        const grammar = text("hello");
-        testAstHasTapes(grammar, [ "text" ]);
-        testAst(grammar, [{text: "hello"}]);
+    describe('Literal t1:hello', function() {
+        const grammar = t1("hello");
+        testAstHasTapes(grammar, [ "t1" ]);
+        testAst(grammar, [{t1: "hello"}]);
     });
 
-    describe('Sequence text:hello+test:world', function() {
-        const grammar = Seq(text("hello"), text("world"));
-        testAstHasTapes(grammar, [ "text" ]);
-        testAst(grammar, [{text: "helloworld"}]);
+    describe('Sequence t1:hello+t1:world', function() {
+        const grammar = Seq(t1("hello"), t1("world"));
+        testAstHasTapes(grammar, [ "t1" ]);
+        testAst(grammar, [{t1: "helloworld"}]);
     });
 
     describe('Sequence of one ε', function() {
@@ -30,39 +27,39 @@ describe(`${path.basename(module.filename)}`, function() {
         testAst(grammar, [{}]);
     });
 
-    describe('Alt text:hello|text:goodbye', function() {
-        const grammar = Uni(text("hello"), text("goodbye"));
+    describe('Alt t1:hello|t1:goodbye', function() {
+        const grammar = Uni(t1("hello"), t1("goodbye"));
         
-        testAstHasTapes(grammar, [ "text" ]);
-        testAst(grammar, [{text: "hello"},
-                            {text: "goodbye"}]);
+        testAstHasTapes(grammar, [ "t1" ]);
+        testAst(grammar, [{t1: "hello"},
+                            {t1: "goodbye"}]);
     });
 
 
     describe('Simple namespace, generating from default symbol', function() {
         const grammar = Ns("myNamespace");
-        grammar.addSymbol("x", text("hello"));
+        grammar.addSymbol("x", t1("hello"));
         grammar.qualifyNames();  
 
         testAstHasSymbols(grammar, [ "myNamespace.x" ]);
         testAstDoesNotHaveSymbols(grammar, [ "x" ]);
 
         
-        testAstHasTapes(grammar, [ "text" ]);
-        testAst(grammar, [{text: "hello"}]);
+        testAstHasTapes(grammar, [ "t1" ]);
+        testAst(grammar, [{t1: "hello"}]);
     });
 
 
     describe('Nested namespaces, generating from default symbols', function() {
         const inner = Ns("innerNamespace");
-        inner.addSymbol("x", text("hello"));
+        inner.addSymbol("x", t1("hello"));
         const outer = Ns("outerNamespace");
         outer.addSymbol("innerNamespace", inner);
 
         testAstHasSymbols(outer, [ "outerNamespace.innerNamespace.x" ]);
         testAstDoesNotHaveSymbols(outer, [ "outerNamespace.x", "innerNamespace.x", "x" ]);
 
-        testAst(outer, [{text: "hello"}]);
+        testAst(outer, [{t1: "hello"}]);
     });
 
 

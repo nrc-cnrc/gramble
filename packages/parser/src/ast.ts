@@ -369,16 +369,13 @@ class AstNamespace extends AstComponent {
             if (qualifiedName == undefined) {
                 throw new Error("Getting Brz expressions without having qualified names yet");
             }
-
             if (referent.tapes == undefined) {
                 throw new Error("Getting Brz expressions without having calculated tapes");
             }
-            
             expr = referent.getBrzExpr(ns);
             ns.addSymbol(qualifiedName, expr);
             ns.addTapes(qualifiedName, referent.tapes);
         }
-
         return expr;
     }
 }

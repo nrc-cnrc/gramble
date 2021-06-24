@@ -907,7 +907,7 @@ class BinaryOpComponent extends EnclosureComponent {
 
 class ApplyComponent extends EnclosureComponent {
 
-
+    
 
 }
 
