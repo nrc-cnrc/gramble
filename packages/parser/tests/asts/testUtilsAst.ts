@@ -7,6 +7,7 @@ import { testGrammarUncompiled } from "../testUtils";
 
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
+export const t3 = (s: string) => Lit("t3", s);
 
 export function testAst(
     component: AstComponent,

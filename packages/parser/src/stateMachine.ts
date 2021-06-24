@@ -1248,7 +1248,7 @@ export class BrzUnion extends BinaryState {
     }
 }
 
-class IntersectionState extends BinaryState {
+export class IntersectionState extends BinaryState {
 
     public get id(): string {
         return `(${this.child1.id}&${this.child2.id})`;
@@ -1739,7 +1739,7 @@ abstract class UnaryState extends State {
 }
 
 
-class BrzStar extends UnaryState {
+export class BrzStar extends UnaryState {
 
     constructor(
         public child: State

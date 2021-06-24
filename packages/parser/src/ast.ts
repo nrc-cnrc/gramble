@@ -1,6 +1,20 @@
-import { CounterStack, State, LiteralState, BrzConcat, BrzUnion, StrictJoinState, StrictFilterState, NegationState, BrzEpsilon, INamespace, EmbedState } from "./stateMachine";
+import { 
+    CounterStack, 
+    State, 
+    LiteralState, 
+    BrzConcat, 
+    BrzUnion, 
+    NegationState, 
+    BrzEpsilon, 
+    BrzNull, 
+    INamespace, 
+    EmbedState, 
+    IntersectionState,
+    AnyCharState,
+    BrzStar
+} from "./stateMachine";
 import { TapeCollection } from "./tapes";
-import { flatten, Gen, StringDict } from "./util";
+import { flatten, Gen, setDifference, StringDict } from "./util";
 
 /* CONVENIENCE FUNCTIONS */
 
@@ -122,7 +136,10 @@ abstract class AstAtomic extends AstComponent {
 class AstEpsilon extends AstAtomic {
 
     public calculateTapes(stack: CounterStack): Set<string> {
-        return new Set();
+        if (this.tapes == undefined) {
+            this.tapes = new Set();
+        }
+        return this.tapes;
     }
 
     public getBrzExpr(ns: Root): State {
@@ -177,7 +194,7 @@ class AstAlternation extends AstNAry {
 
     public getBrzExpr(ns: Root): State {
         const childSymbols = this.children.map(s => s.getBrzExpr(ns));
-        return makeListExpr(childSymbols, BrzUnion, new BrzEpsilon());
+        return makeListExpr(childSymbols, BrzUnion, new BrzNull());
     }
 }
 
@@ -195,23 +212,58 @@ abstract class AstBinary extends AstComponent {
     }
 }
 
-class AstJoin extends AstBinary {
+
+class AstIntersection extends AstBinary {
 
     public getBrzExpr(ns: Root): State {
         const left = this.child1.getBrzExpr(ns);
         const right = this.child2.getBrzExpr(ns);
-        return new StrictJoinState(left, right);
+        return new IntersectionState(left, right);
     }
+}
+
+function fillOutWithDotStar(state: State, tapes: Set<string>) {
+    for (const tape of tapes) {
+        const dot = new AnyCharState(tape);
+        const dotStar = new BrzStar(dot);
+        state = new BrzConcat(state, dotStar);
+    } 
+    return state;
+}
+
+class AstJoin extends AstBinary {
+
+    public getBrzExpr(ns: Root): State {
+        if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
+            throw new Error("Getting Brz expression with undefined tapes");
+        }
+
+        const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
+        const child2OnlyTapes = setDifference(this.child2.tapes, this.child1.tapes);
+
+        const child1 = this.child1.getBrzExpr(ns);
+        const child1Etc = fillOutWithDotStar(child1, child2OnlyTapes);
+        const child2 = this.child2.getBrzExpr(ns);
+        const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
+        return new IntersectionState(child1Etc, child2Etc);
+    }
+
 }
 
 class AstFilter extends AstBinary {
 
     public getBrzExpr(ns: Root): State {
-        const left = this.child1.getBrzExpr(ns);
-        const right = this.child2.getBrzExpr(ns);
-        return new StrictFilterState(left, right);
-    }
+        if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
+            throw new Error("Getting Brz expression with undefined tapes");
+        }
 
+        const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
+
+        const child1 = this.child1.getBrzExpr(ns);
+        const child2 = this.child2.getBrzExpr(ns);
+        const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
+        return new IntersectionState(child1, child2Etc);
+    }
 }
 
 abstract class AstUnary extends AstComponent {
@@ -234,6 +286,7 @@ class AstNegation extends AstUnary {
         return new NegationState(expr);
     }
 }
+
 
 class AstNamespace extends AstComponent {
 
@@ -497,6 +550,18 @@ export function Uni(...children: AstComponent[]): AstAlternation {
 
 export function Lit(tape: string, text: string): AstLiteral {
     return new AstLiteral(tape, text);
+}
+
+export function Intersect(child1: AstComponent, child2: AstComponent): AstIntersection {
+    return new AstIntersection(child1, child2);
+}
+
+export function Filter(child1: AstComponent, child2: AstComponent): AstFilter {
+    return new AstFilter(child1, child2);
+}
+
+export function Join(child1: AstComponent, child2: AstComponent): AstJoin {
+    return new AstJoin(child1, child2);
 }
 
 export function Epsilon(): AstEpsilon {

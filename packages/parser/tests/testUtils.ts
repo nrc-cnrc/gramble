@@ -4,7 +4,6 @@ import { Header, GrammarComponent } from '../src/sheetParser';
 import { CounterStack, Literalizer, Namespace, State } from "../src/stateMachine";
 import { TapeCollection } from '../src/tapes';
 import { StringDict } from "../src/util";
-import { AstComponent } from "../src/ast";
 
 export const text = Literalizer("text");
 export const unrelated = Literalizer("unrelated");
@@ -290,77 +289,6 @@ export function testSample(
     });
 }
 
-export function testAst(
-    component: AstComponent,
-    expectedResults: StringDict[],
-    symbolName: string = "__MAIN__",
-    maxRecursion: number = 4,
-    maxChars: number = 1000
-): void {
-    const root = component.compile();
-    const expr = root.getSymbol(symbolName);
-    if (expr == undefined) {
-        throw new Error(`Undefined symbol ${symbolName}`);
-    }
-    describe("Uncompiled grammar", function() {
-        testGrammarUncompiled(expr, expectedResults, maxRecursion, maxChars);
-    });
-}
-
-
-export function testAstHasTapes(
-    component: AstComponent,
-    expectedTapes: string[],
-    symbolName: string = "__MAIN__",
-    maxRecursion: number = 4,
-    maxChars: number = 1000
-): void {
-    const root = component.compile();
-    let tapes = [...root.getTapes(symbolName)];
-    tapes = tapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
-                                // leave out any internal-only tapes, like those created 
-                                // by a Drop().
-    const bSet = new Set(expectedTapes);
-    it(`should have tapes [${[...bSet]}]`, function() {
-        expect(tapes.length).to.equal(bSet.size);
-        for (const a of tapes) {
-            expect(bSet).to.contain(a);
-        }
-    });
-}
-
-export function testAstHasSymbols(
-    component: AstComponent,
-    expectedSymbols: string[],
-    maxRecursion: number = 4,
-    maxChars: number = 1000
-): void {
-    const root = component.compile();
-    let symbolNames = new Set(root.allSymbols());
-    const bSet = new Set(expectedSymbols);
-    it(`should have symbols [${expectedSymbols}]`, function() {
-        for (const s of expectedSymbols) {
-            expect(symbolNames).to.contain(s);
-        }
-    });
-}
-
-
-export function testAstDoesNotHaveSymbols(
-    component: AstComponent,
-    expectedSymbols: string[],
-    maxRecursion: number = 4,
-    maxChars: number = 1000
-): void {
-    const root = component.compile();
-    let symbolNames = new Set(root.allSymbols());
-    const bSet = new Set(expectedSymbols);
-    it(`should have symbols [${expectedSymbols}]`, function() {
-        for (const s of expectedSymbols) {
-            expect(symbolNames).to.not.contain(s);
-        }
-    });
-}
 
 export function testProject(project: Project,
                             symbolName: string,
