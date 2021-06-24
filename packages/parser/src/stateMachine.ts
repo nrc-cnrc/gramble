@@ -917,7 +917,7 @@ class CompiledState extends State {
     }
 }
 
-class BrzNull extends State {
+export class BrzNull extends State {
 
     public get id(): string {
         return "∅";
@@ -1119,7 +1119,7 @@ export class LiteralState extends TextState {
 export class BrzEpsilon extends State {
 
     public get id(): string {
-        return "0";
+        return "ε";
     }
 
     public accepting(tape: Tape, stack: CounterStack): boolean {

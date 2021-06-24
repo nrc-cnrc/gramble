@@ -1,8 +1,12 @@
 
 import { expect } from "chai";
-import { AstComponent } from "../../src/ast";
+import { AstComponent, Lit } from "../../src/ast";
 import { StringDict } from "../../src/util";
 import { testGrammarUncompiled } from "../testUtils";
+
+
+export const t1 = (s: string) => Lit("t1", s);
+export const t2 = (s: string) => Lit("t2", s);
 
 export function testAst(
     component: AstComponent,
