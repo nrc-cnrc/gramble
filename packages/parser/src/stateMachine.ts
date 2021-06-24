@@ -132,6 +132,18 @@ export class CounterStack {
     }
 }
 
+export interface INamespace {
+    register(symbolName: string): void;
+    getSymbol(name: string, stack: CounterStack | undefined): State | undefined;
+    addSymbol(name: string, state: State): void;
+    compileSymbol(
+        name: string, 
+        allTapes: TapeCollection, 
+        stack: CounterStack,
+        compileLevel: number
+    ): void;
+}
+
 /**
  * Namespace
  * 
@@ -151,7 +163,7 @@ export class CounterStack {
  * are unordered and not hierarchically structured, and so likewise Gramble 
  * project source files are unordered and not hierarchically structured, too.)
  */
-export class Namespace {
+export class Namespace implements INamespace {
     
     protected parent: Namespace | undefined = undefined;
 
@@ -1433,7 +1445,7 @@ export class StrictFilterState extends BinaryState {
 
     constructor(
         public symbolName: string,
-        public namespace: Namespace,
+        public namespace: INamespace,
         public _child: State | undefined = undefined,
         relevantTapes: Set<string> | undefined = undefined
     ) { 

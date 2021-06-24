@@ -1,5 +1,6 @@
-import { CounterStack, Uni, State, Lit, Emb, Seq, Epsilon, Namespace, Maybe, Not, Join, Filter, BrzEpsilon, LiteralState, Rename, RenameState, Hide, Rep, Any, Reveal, BrzConcat, BrzUnion, StrictJoinState, StrictFilterState, NegationState, EmbedState } from "./stateMachine";
-import { bigUnion, setUnion } from "./util";
+import { CounterStack, State, LiteralState, BrzConcat, BrzUnion, StrictJoinState, StrictFilterState, NegationState, BrzEpsilon, INamespace, EmbedState } from "./stateMachine";
+import { TapeCollection } from "./tapes";
+import { flatten, Gen, StringDict } from "./util";
 
 /* CONVENIENCE FUNCTIONS */
 
@@ -20,23 +21,134 @@ function makeListExpr(
 }
 
 
-abstract class AstComponent {
+class AstError {
 
-    protected _tapes: Set<string> | undefined = new Set();
+    constructor(
+        public sheet: string,
+        public row: number,
+        public column: number,
+        public severity: "error" | "warning",
+        public shortMsg: string,
+        public longMsg: string
+    ) { }
 
-    public get tapes(): Set<string> {
-        if (this._tapes == undefined) {
-            const stack = new CounterStack(2);
-            this._tapes = this.getTapes(stack);
+}
+
+/**
+ * Abstract syntax tree (AST) components are responsible for the following
+ * operations:
+ * 
+ *   * qualifying and resolving symbol names (e.g., figuring out that
+ *     a particular reference to VERB refers to, say, the VERB symbol in the
+ *     IntransitiveVerbs namespace, and qualifying that reference so that it
+ *     uniquely identifies that symbol (e.g. "IntransitiveVerb.VERB")
+ * 
+ *   * working out what tapes a particular component refers to.  This is 
+ *     necessary for some complex operations (like "startswith embed:X"); 
+ *     it's too early to infer tapes when the sheet is parsed (X might refer
+ *     to a symbol that hasn't been parsed at all yet), but it still has to 
+ *     done before expressions are generated because otherwise we don't 
+ *     always know what expressions to generate.
+ * 
+ *   * sanity-checking and generating certain errors/warnings, like 
+ *     whether a symbol X actually has a defined referent, whether a 
+ *     filter refers to tapes that the component it's filtering doesn't, etc.
+ * 
+ *   * finally, generating the Brzezowski expression corresponding to each 
+ *     component.
+ */
+
+export abstract class AstComponent {
+
+    public tapes: Set<string> | undefined = undefined;
+
+    public abstract getChildren(): AstComponent[];
+
+    public abstract getBrzExpr(ns: Root): State;
+    
+    public allSymbols(): Map<string, AstComponent> {
+        const results: Map<string, AstComponent> = new Map();
+        for (const child of this.getChildren()) {
+            for (const [name, component] of child.allSymbols()) {
+                if (results.has(name)) {
+                    // shouldn't be possible due to alpha conversion, but check
+                    throw new Error(`Name ${name} is defined twice`);
+                }
+                results.set(name, component);
+            }
         }
-        return this._tapes;
+        return results;
     }
 
-    public abstract getTapes(stack: CounterStack): Set<string>;
+    public calculateTapes(stack: CounterStack): Set<string> {
+        if (this.tapes == undefined) {
+            const childTapes = this.getChildren().map(
+                                s => s.calculateTapes(stack));
+            this.tapes = new Set(flatten(childTapes));
+        }
+        return this.tapes;
+    }
 
-    public abstract getBrzExpr(): State;
+    public qualifyNames(nsStack: AstNamespace[] = []): void {
+        for (const child of this.getChildren()) {
+            child.qualifyNames(nsStack);
+        }
+    }
 
-    public qualifyNames(namespaceStack: AstNamespace[]) { }
+    public sanityCheck(): AstError[] { 
+        return flatten(this.getChildren().map(s => s.sanityCheck()));
+    }
+
+    public compile(): Root {
+        const root = new Root();
+        this.qualifyNames();
+        const stack = new CounterStack(2);
+        const tapes = this.calculateTapes(stack);
+        this.sanityCheck();
+        const expr = this.getBrzExpr(root);
+        root.addSymbol("__MAIN__", expr);
+        root.addTapes("__MAIN__", tapes);
+        return root;
+    }
+
+}
+
+abstract class AstAtomic extends AstComponent {
+
+    public getChildren(): AstComponent[] { return []; }
+
+}
+
+class AstEpsilon extends AstAtomic {
+
+    public calculateTapes(stack: CounterStack): Set<string> {
+        return new Set();
+    }
+
+    public getBrzExpr(ns: Root): State {
+        return new BrzEpsilon();
+    }
+}
+
+class AstLiteral extends AstAtomic {
+
+    constructor(
+        public tape: string,
+        public value: string
+    ) {
+        super();
+    }
+
+    public calculateTapes(stack: CounterStack): Set<string> {
+        if (this.tapes == undefined) {
+            this.tapes = new Set([this.tape]);
+        }
+        return this.tapes;
+    }
+
+    public getBrzExpr(ns: Root): State {
+        return new LiteralState(this.tape, this.value);
+    }
 }
 
 abstract class AstNAry extends AstComponent {
@@ -47,54 +159,25 @@ abstract class AstNAry extends AstComponent {
         super();
     }
     
-    public getTapes(stack: CounterStack): Set<string> {
-        if (this._tapes == undefined) {
-            this._tapes = bigUnion(this.children.map(s => s.getTapes(stack)));
-        }
-        return this._tapes;
+    public getChildren(): AstComponent[] { 
+        return this.children; 
     }
 
-    public qualifyNames(namespaceStack: AstNamespace[]): void {
-        for (const child of this.children) {
-            child.qualifyNames(namespaceStack);
-        }
-    }
 }
 
 class AstSequence extends AstNAry {
 
-    public getBrzExpr(): State {
-        const childSymbols = this.children.map(s => s.getBrzExpr());
-        return makeListExpr(childSymbols, BrzConcat, Epsilon());
+    public getBrzExpr(ns: Root): State {
+        const childSymbols = this.children.map(s => s.getBrzExpr(ns));
+        return makeListExpr(childSymbols, BrzConcat, new BrzEpsilon());
     }
 }
 
 class AstAlternation extends AstNAry {
 
-    public getBrzExpr(): State {
-        const childSymbols = this.children.map(s => s.getBrzExpr());
-        return makeListExpr(childSymbols, BrzUnion, Epsilon());
-    }
-}
-
-class AstLiteral extends AstComponent {
-
-    constructor(
-        public tape: string,
-        public value: string
-    ) {
-        super();
-    }
-
-    public getTapes(stack: CounterStack): Set<string> {
-        if (this._tapes == undefined) {
-            this._tapes = new Set([this.tape]);
-        }
-        return this._tapes;
-    }
-
-    public getBrzExpr(): State {
-        return new LiteralState(this.tape, this.value);
+    public getBrzExpr(ns: Root): State {
+        const childSymbols = this.children.map(s => s.getBrzExpr(ns));
+        return makeListExpr(childSymbols, BrzUnion, new BrzEpsilon());
     }
 }
 
@@ -107,36 +190,26 @@ abstract class AstBinary extends AstComponent {
         super();
     }
     
-    public qualifyNames(namespaceStack: AstNamespace[]): void {
-        this.child1.qualifyNames(namespaceStack);
-        this.child2.qualifyNames(namespaceStack);
-    }
-
-    public getTapes(stack: CounterStack): Set<string> {
-        if (this._tapes == undefined) {
-            this._tapes = setUnion(this.child1.getTapes(stack),
-                                   this.child2.getTapes(stack));
-        }
-        return this._tapes;
+    public getChildren(): AstComponent[] { 
+        return [this.child1, this.child2];
     }
 }
 
-
 class AstJoin extends AstBinary {
 
-    public getBrzExpr(): State {
-        const left = this.child1.getBrzExpr();
-        const right = this.child2.getBrzExpr();
+    public getBrzExpr(ns: Root): State {
+        const left = this.child1.getBrzExpr(ns);
+        const right = this.child2.getBrzExpr(ns);
         return new StrictJoinState(left, right);
     }
 }
 
 class AstFilter extends AstBinary {
 
-    public getBrzExpr(): State {
-        const left = this.child1.getBrzExpr();
-        const right = this.child2.getBrzExpr();
-        return new StrictJoinState(left, right);
+    public getBrzExpr(ns: Root): State {
+        const left = this.child1.getBrzExpr(ns);
+        const right = this.child2.getBrzExpr(ns);
+        return new StrictFilterState(left, right);
     }
 
 }
@@ -149,22 +222,15 @@ abstract class AstUnary extends AstComponent {
         super();
     }
 
-    public qualifyNames(namespaceStack: AstNamespace[]): void {
-        this.child.qualifyNames(namespaceStack);
-    }
-
-    public getTapes(stack: CounterStack): Set<string> {
-        if (this._tapes == undefined) {
-            this._tapes = this.child.getTapes(stack);
-        }
-        return this._tapes;
+    public getChildren(): AstComponent[] { 
+        return [this.child]; 
     }
 }
 
 class AstNegation extends AstUnary {
 
-    public getBrzExpr(): State {
-        const expr = this.child.getBrzExpr();
+    public getBrzExpr(ns: Root): State {
+        const expr = this.child.getBrzExpr(ns);
         return new NegationState(expr);
     }
 }
@@ -179,35 +245,113 @@ class AstNamespace extends AstComponent {
 
     public qualifiedNames: Map<string, string> = new Map();
     public symbols: Map<string, AstComponent> = new Map();
-    
-    public qualifyNames(namespaceStack: AstNamespace[]): void {
-        
-        const namePrefix = namespaceStack.map(n => n.name).join(".");
-        for (const symbolName of this.qualifiedNames.keys()) {
-            this.qualifiedNames.set(symbolName, `${namePrefix}.${symbolName}`);
+
+    public allSymbols(): Map<string, AstComponent> {
+        const results: Map<string, AstComponent> = new Map();
+        for (const [name, component] of this.symbols) {
+            const newName = [this.name, name].join(".");
+            results.set(newName, component);
         }
-        
-        const newStack = [ this, ...namespaceStack ];
-        for (const symbol of this.symbols.values()) {
-            symbol.qualifyNames(namespaceStack);
+
+        for (const child of this.getChildren()) {
+            for (const [name, component] of child.allSymbols()) {
+                if (results.has(name)) {
+                    // shouldn't be possible but check
+                    throw new Error(
+                        `Name ${name} is defined twice in namespace ${this.name}`);
+                }
+                const newName = [this.name, name].join(".");
+                results.set(newName, component);
+            }
+        }
+        return results;
+    }
+
+    public addSymbol(symbolName: string, component: AstComponent) {
+
+        if (symbolName.indexOf(".") != -1) {
+            throw new Error(`Symbol names cannot have . in them`);
+        }
+
+        const symbol = this.symbols.get(symbolName);
+        if (symbol != undefined) {
+            throw new Error(`Symbol ${symbolName} already defined.`);
+        }
+        this.symbols.set(symbolName, component);
+    }
+
+    public getChildren(): AstComponent[] { 
+        return [...this.symbols.values()]; 
+    }
+
+    public calculateQualifiedName(name: string, nsStack: AstNamespace[]) {
+        const namePrefixes = nsStack.map(n => n.name);
+        return [...namePrefixes, name].join(".");
+    }
+    
+    public qualifyNames(nsStack: AstNamespace[] = []): void {
+        const newStack = [ ...nsStack, this ];
+        for (const [symbolName, referent] of this.symbols) {
+            const newName = this.calculateQualifiedName(symbolName, newStack);
+            this.qualifiedNames.set(symbolName, newName);
+            referent.qualifyNames(newStack);
         }
     }
 
-    public getQualifiedName(symbolName: string): string | undefined {
-        return this.qualifiedNames.get(symbolName);
+    public resolveName(
+        symbolName: string, 
+        nsStack: AstNamespace[]
+    ): [string, AstComponent] | undefined {
+
+        // split into (potentially) namespace prefix(es) and symbol name
+        const namePieces = symbolName.split(".");
+
+        // it's got no namespace prefix, it's a symbol name
+        if (namePieces.length == 1) {
+
+            const referent = this.symbols.get(symbolName);
+
+            if (referent == undefined) {
+                // it's not a symbol assigned in this namespace
+                return undefined;
+            }
+            
+            // it IS a symbol defined in this namespace,
+            // so get the fully-qualified name.  we can't just grab this
+            // from this.qualifiedNames because that may not have been
+            // filled out yet
+            const newName = this.calculateQualifiedName(symbolName, nsStack);
+            return [newName, referent];
+        }
+
+        // it's got a namespace prefix
+        const child = this.symbols.get(namePieces[0]);
+        if (child == undefined || !(child instanceof AstNamespace)) {
+            // but it's not a child of this namespace
+            return undefined;
+        }
+
+        // this namespace has a child of the correct name
+        const remnant = namePieces.slice(1).join(".");
+        const newStack = [ ...nsStack, child ];
+        return child.resolveName(remnant, newStack);  // try the child
     }
 
     /**
      * Although an AstNamespace contains many children,
      * upon evaluation it acts as if it's its last-defined
-     * symbol -- so its tapes are the tapes of the last symbol.
+     * symbol -- so its tapes are the tapes of the last symbol,
+     * rather than the union of its children's tapes.
      */
-    public getTapes(stack: CounterStack): Set<string> {
-        if (this._tapes == undefined) {
-            const [lastChild] = [...this.symbols.values()].slice(-1);
-            this._tapes = lastChild.getTapes(stack);
+    public calculateTapes(stack: CounterStack): Set<string> {
+        if (this.tapes == undefined) {
+            this.tapes = new Set();
+            for (const [name, referent] of this.symbols) {
+                const tapes = referent.calculateTapes(stack);
+                this.tapes = tapes;
+            }
         }
-        return this._tapes;
+        return this.tapes;
     }
 
     /**
@@ -216,37 +360,163 @@ class AstNamespace extends AstComponent {
      * you can rely on the last-entered entry to be the last
      * entry when you iterate.)
      */
-    public getBrzExpr(): State {
-        const [lastChild] = [...this.symbols.values()].slice(-1);
-        return lastChild.getBrzExpr();
-    }
+    public getBrzExpr(ns: Root): State {
 
+        let expr: State = new BrzEpsilon();
+
+        for (const [name, referent] of this.symbols) {
+            const qualifiedName = this.qualifiedNames.get(name);
+            if (qualifiedName == undefined) {
+                throw new Error("Getting Brz expressions without having qualified names yet");
+            }
+
+            if (referent.tapes == undefined) {
+                throw new Error("Getting Brz expressions without having calculated tapes");
+            }
+            
+            expr = referent.getBrzExpr(ns);
+            ns.addSymbol(qualifiedName, expr);
+            ns.addTapes(qualifiedName, referent.tapes);
+        }
+
+        return expr;
+    }
 }
 
-class AstEmbed extends AstComponent {
+class AstEmbed extends AstAtomic {
 
-    public qualifiedName: string | undefined = undefined;
-    
+    public qualifiedName: string;
+    public referent: AstComponent = Epsilon();
+
     constructor(
         public name: string
     ) {
         super();
+        this.qualifiedName = name;
     }
         
-    public qualifyNames(namespaceStack: AstNamespace[]): void {
-        for (const namespace of namespaceStack) {
-            this.qualifiedName = namespace.getQualifiedName(this.name);
-            if (this.qualifiedName != undefined) {
-                return;
+    public qualifyNames(nsStack: AstNamespace[] = []): void {
+        for (let i = nsStack.length-1; i >=0; i--) {
+            // we go down the stack asking each to resolve it
+            const subStack = nsStack.slice(0, i+1);
+            const resolution = nsStack[i].resolveName(this.name, subStack);
+            if (resolution == undefined) {
+                continue;
             }
+            const [qualifiedName, referent] = resolution;
+            this.qualifiedName = qualifiedName;
+            this.referent = referent;
         }
     }
 
-    public getTapes(stack: CounterStack): Set<string> {
-        throw new Error("not yet implemented");
+    public calculateTapes(stack: CounterStack): Set<string> {
+        if (this.tapes == undefined) {
+            if (stack.exceedsMax(this.qualifiedName)) {
+                this.tapes = new Set();
+            } else {
+                const newStack = stack.add(this.qualifiedName);
+                this.tapes = this.referent.calculateTapes(newStack);
+            }
+        }
+        return this.tapes;
     }
 
-    public getBrzExpr(): State {
-        throw new Error("not yet implemented");
+    public getBrzExpr(ns: Root): State {
+        return new EmbedState(this.qualifiedName, ns);
     }
+}
+
+class Root implements INamespace {
+
+    constructor(
+        public symbols: Map<string, State> = new Map(),
+        public tapes: Map<string, Set<string>> = new Map()
+    ) { }
+
+    public addSymbol(name: string, state: State): void {
+        if (this.symbols.has(name)) {
+            // shouldn't happen due to alpha conversion, but check
+            throw new Error(`Redefining symbol ${name}`);
+        }
+        this.symbols.set(name, state);
+    }
+    
+    public addTapes(name: string, tapes: Set<string>): void {
+        this.tapes.set(name, tapes);
+    }
+
+    public register(symbolName: string): void { }
+
+    public getSymbol(
+        name: string, 
+        stack: CounterStack | undefined = undefined
+    ): State | undefined {
+        return this.symbols.get(name);
+    }
+    
+    public allSymbols(): string[] {
+        return [...this.symbols.keys()];
+    }
+
+    public getTapes(
+        name: string
+    ): Set<string> {
+        const tapes = this.tapes.get(name);
+        if (tapes == undefined) {
+            return new Set();
+        }
+        return tapes;
+    }
+
+    public compileSymbol(
+        name: string, 
+        allTapes: TapeCollection, 
+        stack: CounterStack,
+        compileLevel: number
+    ): void { }
+
+    public *generate(
+        symbolName: string = "__MAIN__",
+        random: boolean = false,
+        maxRecursion: number = 4, 
+        maxChars: number = 1000
+    ): Gen<StringDict> {
+        const expr = this.getSymbol(symbolName);
+        if (expr == undefined) {
+            throw new Error(`Cannot generate from undefined symbol ${symbolName}`);
+        }
+        expr.generate(random, maxRecursion, maxChars);
+    }
+
+}
+
+export function Seq(...children: AstComponent[]): AstSequence {
+    return new AstSequence(children);
+}
+
+export function Uni(...children: AstComponent[]): AstAlternation {
+    return new AstAlternation(children);
+}
+
+export function Lit(tape: string, text: string): AstLiteral {
+    return new AstLiteral(tape, text);
+}
+
+export function Epsilon(): AstEpsilon {
+    return new AstEpsilon();
+}
+
+export function Embed(name: string): AstEmbed {
+    return new AstEmbed(name);
+}
+
+export function Ns(
+    name: string, 
+    symbols: {[name: string]: AstComponent} = {}
+): AstNamespace {
+    const result = new AstNamespace(name);
+    for (const [symbolName, component] of Object.entries(symbols)) {
+        result.addSymbol(symbolName, component);
+    }
+    return result;
 }
