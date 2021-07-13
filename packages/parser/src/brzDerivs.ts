@@ -346,10 +346,12 @@ export abstract class State {
 
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
 
-        var stateQueue: [TapeCollection, MultiTapeOutput, State, number][] = [[allTapes, initialOutput, this, 0]];
+        const startingTapes = [...allTapes.tapes.values()];
+
+        var stateQueue: [Tape[], MultiTapeOutput, State, number][] = [[startingTapes, initialOutput, this, 0]];
 
         while (stateQueue.length > 0) {
-            let nextQueue: [TapeCollection, MultiTapeOutput, State, number][] = [];
+            let nextQueue: [Tape[], MultiTapeOutput, State, number][] = [];
             for (let [tapes, prevOutput, prevState, chars] of stateQueue) {
 
                 if (chars >= maxChars) {
@@ -361,32 +363,25 @@ export abstract class State {
                     continue;
                 }
                 
-                const remainingTapes = [...tapes.tapes.values()];
-                if (remainingTapes.length == 0) {
+                if (tapes.length == 0) {
                     throw new Error("How is it possible to have a non-epsilon state but no tapes left?");
                 }
 
-                const results: [TapeCollection, MultiTapeOutput, State, number][] = [];
+                // rotate the tapes so that we don't keep trying the same one every time
+                tapes = [... tapes.slice(1), tapes[0]];
 
-                for (const tapeToTry of remainingTapes) {
-                    for (const [cTape, cTarget, cNext] of
-                        prevState.dQuery(tapeToTry, ANY_CHAR, stack)) {
+                const tapeToTry = tapes[0];
+                for (const [cTape, cTarget, cNext] of prevState.dQuery(tapeToTry, ANY_CHAR, stack)) {
 
-                        const nextOutput = prevOutput.add(cTape, cTarget);
-                        results.push([tapes, nextOutput, cNext, chars+1]);
-                    }
+                    const nextOutput = prevOutput.add(cTape, cTarget);
+                    nextQueue.push([tapes, nextOutput, cNext, chars+1]);
+                }
 
-                    const next = prevState.delta(tapeToTry, stack);
+                const delta = prevState.delta(tapeToTry, stack);
 
-                    if (!(next instanceof BrzNull)) {                    
-                        const [_, newTapes] = tapes.split(new Set([tapeToTry.tapeName]));
-                        results.push([newTapes, prevOutput, next, chars]);
-                    }
-
-                    if (results.length > 0) {
-                        nextQueue = nextQueue.concat(results);
-                        break;
-                    }
+                if (!(delta instanceof BrzNull)) {                    
+                    const newTapes = tapes.slice(1);
+                    nextQueue.push([newTapes, prevOutput, delta, chars]);
                 }
             }
             stateQueue = nextQueue;
