@@ -46,8 +46,11 @@
     "testHeaders": "mocha -r ts-node/register tests/testHeaders.ts",
     "testProperties": "mocha -r ts-node/register tests/property/testProperties.ts",    
     "testAst": "mocha -r ts-node/register tests/asts/*.ts",
+    "testBasicsAst": "mocha -r ts-node/register tests/asts/testBasicsAst.ts",
     "testFilterAst": "mocha -r ts-node/register tests/asts/testFilterAst.ts",
-    "testJoinsAst": "mocha -r ts-node/register tests/asts/testJoinsAst.ts"
+    "testNamespaceAst": "mocha -r ts-node/register tests/asts/testNamespaceAst.ts",
+    "testJoinsAst": "mocha -r ts-node/register tests/asts/testJoinsAst.ts",
+    "testRepeatAst": "mocha -r ts-node/register tests/asts/testRepeatAst.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"

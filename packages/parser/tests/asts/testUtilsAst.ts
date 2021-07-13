@@ -1,13 +1,34 @@
 
-import { expect } from "chai";
-import { AstComponent, Lit } from "../../src/ast";
+import { assert, expect } from "chai";
+import { AstComponent, Lit, Root } from "../../src/ast";
+import { State } from "../../src/brzDerivs";
 import { StringDict } from "../../src/util";
-import { testGrammarUncompiled } from "../testUtils";
+import { testMatchOutputs, testNumOutputs } from "../testUtils";
 
 
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
 export const t3 = (s: string) => Lit("t3", s);
+
+export function testGrammarUncompiled(
+    grammar: Root,
+    expectedResults: StringDict[], 
+    symbolName: string = "__MAIN__",
+    maxRecursion: number = 4, 
+    maxChars: number = 1000
+): void {
+    var outputs: StringDict[] = [];
+    try {
+        outputs = [...grammar.generate(symbolName, false, maxRecursion, maxChars)];
+    } catch (e) {
+        it("Unexpected Exception", function() {
+            console.log(e);
+            assert.fail(e);
+        });
+    }
+    testNumOutputs(outputs, expectedResults.length);
+    testMatchOutputs(outputs, expectedResults);
+}
 
 export function testAst(
     component: AstComponent,
@@ -17,12 +38,9 @@ export function testAst(
     maxChars: number = 1000
 ): void {
     const root = component.compile();
-    const expr = root.getSymbol(symbolName);
-    if (expr == undefined) {
-        throw new Error(`Undefined symbol ${symbolName}`);
-    }
     describe(`Generating from ${symbolName}`, function() {
-        testGrammarUncompiled(expr, expectedResults, maxRecursion, maxChars);
+        testGrammarUncompiled(root, expectedResults, symbolName, 
+            maxRecursion, maxChars);
     });
 }
 
@@ -50,9 +68,7 @@ export function testAstHasTapes(
 
 export function testAstHasSymbols(
     component: AstComponent,
-    expectedSymbols: string[],
-    maxRecursion: number = 4,
-    maxChars: number = 1000
+    expectedSymbols: string[]
 ): void {
     const root = component.compile();
     let symbolNames = new Set(root.allSymbols());
@@ -67,9 +83,7 @@ export function testAstHasSymbols(
 
 export function testAstDoesNotHaveSymbols(
     component: AstComponent,
-    expectedSymbols: string[],
-    maxRecursion: number = 4,
-    maxChars: number = 1000
+    expectedSymbols: string[]
 ): void {
     const root = component.compile();
     let symbolNames = new Set(root.allSymbols());

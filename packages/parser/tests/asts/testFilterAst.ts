@@ -111,6 +111,6 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Nested filter (t1:hi+t2:wo)[t2:wo][t1:hi]', function() {
         const grammar = Filter(Filter(Seq(t1("hi"), t2("wo")), t2("wo")), t1("hi"));
         testAst(grammar, [{t1: "hi", t2: "wo"}]);
-    });
+    }); 
     
 });

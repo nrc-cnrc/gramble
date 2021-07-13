@@ -3,36 +3,21 @@ import {
     State, 
     LiteralState, 
     BrzConcat, 
-    BrzUnion, 
-    NegationState, 
+    BrzUnion,
     BrzEpsilon, 
     BrzNull, 
     INamespace, 
     EmbedState, 
     IntersectionState,
     AnyCharState,
-    BrzStar
-} from "./stateMachine";
-import { TapeCollection } from "./tapes";
+    BrzStar,
+    createRepeat,
+    createSequence,
+    createUnion
+} from "./brzDerivs";
+import { StringTape, Tape, TapeCollection } from "./tapes";
 import { flatten, Gen, setDifference, StringDict } from "./util";
 
-/* CONVENIENCE FUNCTIONS */
-
-function makeListExpr(
-    children: State[], 
-    constr: new (c1: State, c2: State) => State,
-    nullResult: State, 
-): State {
-    if (children.length == 0) {
-        return nullResult;
-    }
-    if (children.length == 1) {
-        return children[0];
-    }
-    const head = children[0];
-    const tail = makeListExpr(children.slice(1), constr, nullResult);
-    return new constr(head, tail);
-}
 
 
 class AstError {
@@ -68,7 +53,7 @@ class AstError {
  *     whether a symbol X actually has a defined referent, whether a 
  *     filter refers to tapes that the component it's filtering doesn't, etc.
  * 
- *   * finally, generating the Brzezowski expression corresponding to each 
+ *   * finally, generating the Brzozowski expression corresponding to each 
  *     component.
  */
 
@@ -79,19 +64,19 @@ export abstract class AstComponent {
     public abstract getChildren(): AstComponent[];
 
     public abstract getBrzExpr(ns: Root): State;
+
     
-    public allSymbols(): Map<string, AstComponent> {
-        const results: Map<string, AstComponent> = new Map();
+    /**
+     * Collects all explicitly mentioned characters in the grammar for all tapes.
+     * 
+     * @param tapes A TapeCollection for holding found characters
+     * @param stack What symbols we've already collected from, to prevent inappropriate recursion
+     * @returns vocab 
+     */
+    public collectVocab(tapes: Tape, stack: string[] = []): void { 
         for (const child of this.getChildren()) {
-            for (const [name, component] of child.allSymbols()) {
-                if (results.has(name)) {
-                    // shouldn't be possible due to alpha conversion, but check
-                    throw new Error(`Name ${name} is defined twice`);
-                }
-                results.set(name, component);
-            }
+            child.collectVocab(tapes, stack);
         }
-        return results;
     }
 
     public calculateTapes(stack: CounterStack): Set<string> {
@@ -120,6 +105,7 @@ export abstract class AstComponent {
         const tapes = this.calculateTapes(stack);
         this.sanityCheck();
         const expr = this.getBrzExpr(root);
+        root.addComponent("__MAIN__", this);
         root.addSymbol("__MAIN__", expr);
         root.addTapes("__MAIN__", tapes);
         return root;
@@ -151,9 +137,13 @@ class AstLiteral extends AstAtomic {
 
     constructor(
         public tape: string,
-        public value: string
+        public text: string
     ) {
         super();
+    }
+
+    public collectVocab(tapes: Tape, stack: string[]): void {
+        tapes.tokenize(this.tape, this.text);
     }
 
     public calculateTapes(stack: CounterStack): Set<string> {
@@ -164,7 +154,7 @@ class AstLiteral extends AstAtomic {
     }
 
     public getBrzExpr(ns: Root): State {
-        return new LiteralState(this.tape, this.value);
+        return new LiteralState(this.tape, this.text);
     }
 }
 
@@ -185,16 +175,16 @@ abstract class AstNAry extends AstComponent {
 class AstSequence extends AstNAry {
 
     public getBrzExpr(ns: Root): State {
-        const childSymbols = this.children.map(s => s.getBrzExpr(ns));
-        return makeListExpr(childSymbols, BrzConcat, new BrzEpsilon());
+        const childExprs = this.children.map(s => s.getBrzExpr(ns));
+        return createSequence(...childExprs);
     }
 }
 
 class AstAlternation extends AstNAry {
 
     public getBrzExpr(ns: Root): State {
-        const childSymbols = this.children.map(s => s.getBrzExpr(ns));
-        return makeListExpr(childSymbols, BrzUnion, new BrzNull());
+        const childExprs = this.children.map(s => s.getBrzExpr(ns));
+        return createUnion(...childExprs);
     }
 }
 
@@ -211,7 +201,6 @@ abstract class AstBinary extends AstComponent {
         return [this.child1, this.child2];
     }
 }
-
 
 class AstIntersection extends AstBinary {
 
@@ -279,14 +268,22 @@ abstract class AstUnary extends AstComponent {
     }
 }
 
-class AstNegation extends AstUnary {
+class AstRepeat extends AstUnary {
+
+    constructor(
+        child: AstComponent,
+        public minReps: number = 0,
+        public maxReps: number = Infinity
+    ) {
+        super(child);
+    }
 
     public getBrzExpr(ns: Root): State {
-        const expr = this.child.getBrzExpr(ns);
-        return new NegationState(expr);
+        const childExpr = this.child.getBrzExpr(ns);
+        return createRepeat(childExpr, this.minReps, this.maxReps);
+        
     }
 }
-
 
 class AstNamespace extends AstComponent {
 
@@ -298,27 +295,6 @@ class AstNamespace extends AstComponent {
 
     public qualifiedNames: Map<string, string> = new Map();
     public symbols: Map<string, AstComponent> = new Map();
-
-    public allSymbols(): Map<string, AstComponent> {
-        const results: Map<string, AstComponent> = new Map();
-        for (const [name, component] of this.symbols) {
-            const newName = [this.name, name].join(".");
-            results.set(newName, component);
-        }
-
-        for (const child of this.getChildren()) {
-            for (const [name, component] of child.allSymbols()) {
-                if (results.has(name)) {
-                    // shouldn't be possible but check
-                    throw new Error(
-                        `Name ${name} is defined twice in namespace ${this.name}`);
-                }
-                const newName = [this.name, name].join(".");
-                results.set(newName, component);
-            }
-        }
-        return results;
-    }
 
     public addSymbol(symbolName: string, component: AstComponent) {
 
@@ -426,6 +402,7 @@ class AstNamespace extends AstComponent {
                 throw new Error("Getting Brz expressions without having calculated tapes");
             }
             expr = referent.getBrzExpr(ns);
+            ns.addComponent(qualifiedName, this);
             ns.addSymbol(qualifiedName, expr);
             ns.addTapes(qualifiedName, referent.tapes);
         }
@@ -476,19 +453,28 @@ class AstEmbed extends AstAtomic {
     }
 }
 
-class Root implements INamespace {
+export class Root implements INamespace {
 
     constructor(
-        public symbols: Map<string, State> = new Map(),
+        public components: Map<string, AstComponent> = new Map(),
+        public exprs: Map<string, State> = new Map(),
         public tapes: Map<string, Set<string>> = new Map()
     ) { }
 
-    public addSymbol(name: string, state: State): void {
-        if (this.symbols.has(name)) {
+    public addComponent(name: string, comp: AstComponent): void {
+        if (this.components.has(name)) {
             // shouldn't happen due to alpha conversion, but check
             throw new Error(`Redefining symbol ${name}`);
         }
-        this.symbols.set(name, state);
+        this.components.set(name, comp);
+    }
+
+    public addSymbol(name: string, state: State): void {
+        if (this.exprs.has(name)) {
+            // shouldn't happen due to alpha conversion, but check
+            throw new Error(`Redefining symbol ${name}`);
+        }
+        this.exprs.set(name, state);
     }
     
     public addTapes(name: string, tapes: Set<string>): void {
@@ -501,11 +487,11 @@ class Root implements INamespace {
         name: string, 
         stack: CounterStack | undefined = undefined
     ): State | undefined {
-        return this.symbols.get(name);
+        return this.exprs.get(name);
     }
     
     public allSymbols(): string[] {
-        return [...this.symbols.keys()];
+        return [...this.exprs.keys()];
     }
 
     public getTapes(
@@ -535,7 +521,14 @@ class Root implements INamespace {
         if (expr == undefined) {
             throw new Error(`Cannot generate from undefined symbol ${symbolName}`);
         }
-        expr.generate(random, maxRecursion, maxChars);
+
+        const component = this.components.get("__MAIN__");
+        if (component == undefined) {
+            throw new Error(`No symbol called __MAIN__ somehow`);
+        }
+        const tapes = new TapeCollection();
+        component.collectVocab(tapes);
+        yield* expr.generate(tapes, random, maxRecursion, maxChars);
     }
 
 }
@@ -562,6 +555,14 @@ export function Filter(child1: AstComponent, child2: AstComponent): AstFilter {
 
 export function Join(child1: AstComponent, child2: AstComponent): AstJoin {
     return new AstJoin(child1, child2);
+}
+
+export function Rep(
+    child: AstComponent, 
+    minReps: number = 0, 
+    maxReps: number = Infinity
+) {
+    return new AstRepeat(child, minReps, maxReps);
 }
 
 export function Epsilon(): AstEpsilon {

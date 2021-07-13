@@ -6,6 +6,7 @@ import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
+    
     describe('Literal t1:hello', function() {
         const grammar = t1("hello");
         testAstHasTapes(grammar, ["t1"]);
@@ -215,5 +216,5 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(t1("hello"), Uni(Epsilon(), Epsilon()));
         testAstHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "hello"}]);
-    });
+    }); 
 });

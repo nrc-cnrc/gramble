@@ -1,6 +1,10 @@
-
-import { Embed, Epsilon, Lit, Ns, Seq, Uni } from "../../src/ast";
-import { testAst, testAstHasTapes, testAstHasSymbols, testAstDoesNotHaveSymbols } from './testUtilsAst';
+import { Embed, Lit, Ns } from "../../src/ast";
+import { 
+    testAst, 
+    testAstHasTapes, 
+    testAstHasSymbols, 
+    testAstDoesNotHaveSymbols 
+} from './testUtilsAst';
 
 import * as path from 'path';
 
@@ -8,33 +12,6 @@ const t1 = (s: string) => Lit("t1", s);
 const t2 = (s: string) => Lit("t2", s);
 
 describe(`${path.basename(module.filename)}`, function() {
-
-    describe('Literal t1:hello', function() {
-        const grammar = t1("hello");
-        testAstHasTapes(grammar, [ "t1" ]);
-        testAst(grammar, [{t1: "hello"}]);
-    });
-
-    describe('Sequence t1:hello+t1:world', function() {
-        const grammar = Seq(t1("hello"), t1("world"));
-        testAstHasTapes(grammar, [ "t1" ]);
-        testAst(grammar, [{t1: "helloworld"}]);
-    });
-
-    describe('Sequence of one ε', function() {
-        const grammar = Seq(Epsilon());
-        testAstHasTapes(grammar, [ ]);
-        testAst(grammar, [{}]);
-    });
-
-    describe('Alt t1:hello|t1:goodbye', function() {
-        const grammar = Uni(t1("hello"), t1("goodbye"));
-        
-        testAstHasTapes(grammar, [ "t1" ]);
-        testAst(grammar, [{t1: "hello"},
-                            {t1: "goodbye"}]);
-    });
-
 
     describe('Simple namespace, generating from default symbol', function() {
         const grammar = Ns("myNamespace");
@@ -44,7 +21,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testAstHasSymbols(grammar, [ "myNamespace.x" ]);
         testAstDoesNotHaveSymbols(grammar, [ "x" ]);
 
-        
         testAstHasTapes(grammar, [ "t1" ]);
         testAst(grammar, [{t1: "hello"}]);
     });
@@ -101,7 +77,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testAst(outer, [{t1: "hello"}], "outer.x");
 
     });
-    
+
     describe('Nested namespaces with two inners, and embed in second refers to symbol in first', function() {
         const inner1 = Ns("inner1");
         inner1.addSymbol("x", t1("hello"));
@@ -119,8 +95,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testAst(outer, [{t1: "hello"}], "outer.inner1.x");
         testAst(outer, [{t1: "hello"}], "outer.inner2.x");
 
-    });
-    
+    }); 
+
     describe('Nested namespaces with two inners, and embed in second refers to symbol in first', function() {
         const inner1 = Ns("inner1");
         inner1.addSymbol("x", Embed("inner2.x"));
@@ -138,10 +114,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testAst(outer, [{t1: "hello"}], "outer.inner1.x");
         testAst(outer, [{t1: "hello"}], "outer.inner2.x");
 
-    });
-
-
-
-
+    }); 
 
 });
