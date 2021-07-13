@@ -1,4 +1,4 @@
-import { Gen, iterTake, setDifference, setIntersection, setUnion, StringDict } from "./util";
+import { Gen, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
 import { assert } from "chai";
 
@@ -177,7 +177,8 @@ export interface INamespace {
  *  * ndQuery(tape, char): What states can this state get to, compatible with a given tape/character
  *  * dQuery(tape, char): Calls ndQuery and rearranges the outputs so that any specific character can 
  *                      only lead to one state.
- *  * accepting(): Whether this state is a final state, meaning it constitutes a complete parse
+ *  * delta(tape): if the language contains the empty string on that tape, returns the
+ *                 grammar corresponding to the remaining tapes, otherwise fails (returns BrzNull) 
  */
 
 export abstract class State {
@@ -191,29 +192,9 @@ export abstract class State {
      * unique; right now they're often not.
      */
     public abstract get id(): string;
-    
-    /**
-     * accepting 
-     * 
-     * Whether the state is accepting (i.e. indicates that we have achieved a complete parse).  (What is typically rendered as a "double circle"
-     * in a state machine.) Note that, since this is a recursive state machine, getting to an accepting state doesn't necessarily
-     * mean that the *entire* grammar has completed; we might just be in a subgrammar.  In this case, accepting() isn't the signal that we
-     * can stop parsing, just that we've reached a complete parse within the subgrammar.  For example, [ConcatState] checks whether its left
-     * child is accepting() to determine whether to move on and start parsing its right child.
-     * 
-     * @param stack A [CounterStack] that keeps track of symbols, used for preventing infinite recursion.
-     * @returns true if the state is an accepting state (i.e., constitutes a complete parse) 
-     */
-    public accepting(
-        tape: Tape, 
-        stack: CounterStack
-    ): boolean {
-        return false;
-    }
 
     public abstract delta(tape: Tape, stack: CounterStack): State;
 
-    
     public simplify(): State {
         return this;
     }
@@ -342,16 +323,17 @@ export abstract class State {
         if (allTapes.isTrivial) {
             // there aren't any literal characters anywhere in the grammar, so there's no vocab.  
             // the only possible output is the empty grammar.
-            if (this.accepting(allTapes, stack)) {
+            if (this.delta(allTapes, stack) instanceof BrzEpsilon) {
                 yield {};
             }
             return;
         }
 
+        /*
         if (random) {
             yield* this.generateRandom(allTapes, stack, maxChars);
             return;
-        } 
+        } */
 
         yield* this.generateBreadthFirst(allTapes, stack, maxChars);
     }
@@ -386,7 +368,7 @@ export abstract class State {
 
                 const results: [TapeCollection, MultiTapeOutput, State, number][] = [];
 
-                for (const tapeToTry of tapes.tapes.values()) {
+                for (const tapeToTry of remainingTapes) {
                     for (const [cTape, cTarget, cNext] of
                         prevState.dQuery(tapeToTry, ANY_CHAR, stack)) {
 
@@ -411,6 +393,7 @@ export abstract class State {
         }
     }
 
+    /*
     public *generateRandom(
         allTapes: TapeCollection,
         stack: CounterStack,
@@ -461,20 +444,13 @@ export abstract class State {
         const [candidateOutput, candidateState, candidateChars] = candidates[candidateIndex];
         yield* candidateOutput.toStrings(true);
 
-    }
+    } */
 }
 
 export class BrzNull extends State {
 
     public get id(): string {
         return "∅";
-    }
-
-    public accepting(
-        tape: Tape,
-        stack: CounterStack
-    ): boolean {
-        return false;
     }
     
     public delta(
@@ -492,25 +468,33 @@ export class BrzNull extends State {
 
 }
 
-/**
- * Abstract base class for both LiteralState and AnyCharState,
- * since they share the same query algorithm template.
- * 
- * In order to implement TextState, a descendant class must implement
- * firstToken() (giving the first token that needs to be matched) and
- * successor() (returning the state to which we would translate upon successful
- * matching of the token).
- */
-abstract class TextState extends State {
 
+/**
+ * The state that recognizes/emits any character on a specific tape; 
+ * implements the "dot" in regular expressions.
+ */
+export class AnyCharState extends State {
+    
     constructor(
         public tapeName: string
     ) {
         super();
     }
 
-    protected abstract getToken(tape: Tape): Token;
-    protected abstract successor(): State;
+    public get id(): string {
+        return `${this.tapeName}:.`;
+    }
+    
+    public delta(
+        tape: Tape, 
+        stack: CounterStack
+    ): State {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return this;
+        }
+        return new BrzNull();
+    }
 
     public *ndQuery(
         tape: Tape, 
@@ -523,59 +507,9 @@ abstract class TextState extends State {
             return;
         }
         
-        if (this.accepting(matchedTape, stack)) {
-            return; 
-        }
+        const nextState = new BrzEpsilon();
+        yield [matchedTape, target, nextState];
 
-        const bits = this.getToken(matchedTape);
-        const result = matchedTape.match(bits, target);
-        if (result.isEmpty()) {
-            return;
-        }
-        const nextState = this.successor();
-        yield [matchedTape, result, nextState];
-
-    }
-}
-
-/**
- * The state that recognizes/emits any character on a specific tape; 
- * implements the "dot" in regular expressions.
- */
-export class AnyCharState extends TextState {
-
-    public get id(): string {
-        return `${this.tapeName}:.`;
-    }
-    
-    protected getToken(tape: Tape): Token {
-        return tape.any();
-    }
-
-    public accepting(
-        tape: Tape,
-        stack: CounterStack
-    ): boolean {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
-            return true;
-        }
-        return false;
-    }
-
-    public delta(
-        tape: Tape, 
-        stack: CounterStack
-    ): State {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
-            return this;
-        }
-        return new BrzNull();
-    }
-
-    protected successor(): State {
-        return new BrzEpsilon();
     }
 }
 
@@ -584,42 +518,20 @@ export class AnyCharState extends TextState {
  * Inside, it's just a string like "foo"; upon successfully 
  * matching "f" we construct a successor state looking for 
  * "oo", and so on.
- * 
- * The first time we construct a LiteralState, we just pass in
- * the text argument, and leave tokens empty.  (This is because,
- * at the initial point of construction of a LiteralState, we
- * don't know what the total character vocabulary of the grammar is
- * yet, and thus can't tokenize it into Tokens yet.)  On subsequent
- * constructions, like in successor(), we've already tokenized,
- * so we pass the remainder of the tokens into the tokens argument.
- * It doesn't really matter what we pass into text in subsequent
- * constructions, it's not used except for debugging, so we just pass
- * in the original text.
  */
-export class LiteralState extends TextState {
+export class LiteralState extends State {
 
     constructor(
-        tape: string,
+        public tapeName: string,
         public text: string,
         public index: number = 0
     ) { 
-        super(tape);
+        super();
     }
 
     public get id(): string {
         const index = this.index > 0 ? `[${this.index}]` : ""; 
         return `${this.tapeName}:${this.text}${index}`;
-    }
-
-    public accepting(
-        tape: Tape, 
-        stack: CounterStack
-    ): boolean {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
-            return true;
-        }
-        return this.index >= this.text.length;
     }
 
     public delta(
@@ -644,32 +556,41 @@ export class LiteralState extends TextState {
         return tape.tokenize(tape.tapeName, this.text[this.index])[0];
     }
 
-    protected successor(): State {
-        const newText = this.text;
-        return new LiteralState(this.tapeName, this.text, this.index+1);
-    }
+    public *ndQuery(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, State]> {
 
-    public getText(): string {
-        // Return the remaining text for this LiteralState.
-        return this.text.slice(this.index);
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return;
+        }
+        
+        if (this.index >= this.text.length) {
+            return;
+        }
+
+        const bits = this.getToken(matchedTape);
+        const result = matchedTape.match(bits, target);
+        if (result.isEmpty()) {
+            return;
+        }
+        const nextState = new LiteralState(this.tapeName, this.text, this.index+1);
+        yield [matchedTape, result, nextState];
+
     }
 
 
 }
 
 /**
- * Recognizes the empty grammar.  This is occassionally 
- * useful in implementing other states (e.g. when
- * you need a state that's accepting but won't go anywhere).
+ * An expression that's the empty string on all tapes.
  */
 export class BrzEpsilon extends State {
 
     public get id(): string {
         return "ε";
-    }
-
-    public accepting(tape: Tape, stack: CounterStack): boolean {
-        return true;
     }
 
     public delta(
@@ -703,19 +624,10 @@ abstract class BinaryState extends State {
     public get id(): string {
         return `${this.constructor.name}(${this.child1.id},${this.child2.id})`;
     }
-
-    public accepting(
-        tape: Tape, 
-        stack: CounterStack
-    ): boolean {
-        return this.child1.accepting(tape, stack) && 
-                this.child2.accepting(tape, stack);
-    }
 }
 
 export class BrzConcat extends BinaryState {
 
-    
     public get id(): string {
         return `(${this.child1.id}+${this.child2.id})`;
     }
@@ -766,11 +678,6 @@ export class BrzConcat extends BinaryState {
 }
 
 export class BrzUnion extends BinaryState {
-
-    public accepting(tape: Tape, stack: CounterStack): boolean {
-        return this.child1.accepting(tape, stack) || 
-               this.child2.accepting(tape, stack);
-    }
 
     public delta(
         tape: Tape, 
@@ -943,10 +850,6 @@ abstract class UnaryState extends State {
     public get id(): string {
         return `${this.constructor.name}(${this.child.id})`;
     }
-
-    public accepting(tape: Tape, stack: CounterStack): boolean {
-        return this.child.accepting(tape, stack);
-    }
 }
 
 
@@ -960,14 +863,6 @@ export class BrzStar extends UnaryState {
 
     public get id(): string {
         return `${this.child.id}*`;
-    }
-
-
-    public accepting(
-        tape: Tape, 
-        stack: CounterStack
-    ): boolean {
-        return true;
     }
 
     public simplify(): State {
@@ -1018,11 +913,6 @@ export class RenameState extends UnaryState {
         public toTape: string
     ) { 
         super();
-    }
-
-    public accepting(tape: Tape, stack: CounterStack): boolean {
-        tape = new RenamedTape(tape, this.fromTape, this.toTape);
-        return this.child.accepting(tape, stack);
     }
 
     public delta(
