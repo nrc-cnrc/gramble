@@ -11,9 +11,10 @@ import {
     constructStar,
     constructLiteral,
     constructDot,
-    constructEmbed
+    constructEmbed,
+    constructRename
 } from "./derivs";
-import { StringTape, Tape, TapeCollection } from "./tapes";
+import { RenamedTape, StringTape, Tape, TapeCollection } from "./tapes";
 import { flatten, Gen, setDifference, StringDict } from "./util";
 
 class AstError {
@@ -285,6 +286,42 @@ abstract class AstUnary extends AstComponent {
 
     public getChildren(): AstComponent[] { 
         return [this.child]; 
+    }
+}
+
+class AstRename extends AstUnary {
+
+    constructor(
+        child: AstComponent,
+        public fromTape: string,
+        public toTape: string
+    ) {
+        super(child);
+    }
+
+    public collectVocab(tapes: Tape, stack: string[]): void {
+        tapes = new RenamedTape(tapes, this.fromTape, this.toTape);
+        this.child.collectVocab(tapes, stack);
+    }
+
+    public calculateTapes(stack: CounterStack): Set<string> {
+        if (this.tapes == undefined) {
+            this.tapes = new Set();
+            for (const tapeName of this.child.calculateTapes(stack)) {
+                if (tapeName == this.fromTape) {
+                    this.tapes.add(this.toTape);
+                } else {
+                    this.tapes.add(tapeName);
+                }
+            }
+        }
+        return this.tapes;
+    }
+
+    
+    public constructExpr(ns: Root): Expr {
+        const childExpr = this.child.constructExpr(ns);
+        return constructRename(childExpr, this.fromTape, this.toTape);
     }
 }
 
@@ -595,6 +632,10 @@ export function Epsilon(): AstEpsilon {
 
 export function Embed(name: string): AstEmbed {
     return new AstEmbed(name);
+}
+
+export function Rename(child: AstComponent, fromTape: string, toTape: string): AstRename {
+    return new AstRename(child, fromTape, toTape);
 }
 
 export function Ns(

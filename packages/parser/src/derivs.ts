@@ -805,7 +805,8 @@ class RenameExpr extends UnaryExpr {
 
     public delta(tape: Tape, stack: CounterStack): Expr {
         tape = new RenamedTape(tape, this.fromTape, this.toTape);
-        return this.child.delta(tape, stack);
+        const newChild = this.child.delta(tape, stack);
+        return constructRename(newChild, this.fromTape, this.toTape);
     }
 
     public *deriv(
@@ -1014,4 +1015,18 @@ export function constructRepeat(
 
 export function constructEmbed(symbolName: string, ns: INamespace) {
     return new EmbedExpr(symbolName, ns);
+}
+
+export function constructRename(
+    child: Expr, 
+    fromTape: string, 
+    toTape: string
+): Expr {
+    if (child instanceof EpsilonExpr) {
+        return child;
+    }
+    if (child instanceof NullExpr) {
+        return child;
+    }
+    return new RenameExpr(child, fromTape, toTape);
 }

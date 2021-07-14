@@ -8,6 +8,8 @@ import { testMatchOutputs, testNumOutputs } from "../testUtils";
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
 export const t3 = (s: string) => Lit("t3", s);
+export const t4 = (s: string) => Lit("t4", s);
+export const t5 = (s: string) => Lit("t5", s);
 
 export function testGrammarUncompiled(
     grammar: Root,
