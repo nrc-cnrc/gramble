@@ -1,22 +1,20 @@
 import { 
     CounterStack, 
-    State, 
-    LiteralState, 
+    Expr, 
     EPSILON,
     INamespace, 
-    EmbedState, 
-    AnyCharState,
-    createRepeat,
-    createSequence,
-    createUnion,
-    createBinaryConcat,
-    createIntersection,
-    createStar
-} from "./brzDerivs";
+    constructRepeat,
+    constructSequence,
+    constructAlternation,
+    constructBinaryConcat,
+    constructIntersection,
+    constructStar,
+    constructLiteral,
+    constructDot,
+    constructEmbed
+} from "./derivs";
 import { StringTape, Tape, TapeCollection } from "./tapes";
 import { flatten, Gen, setDifference, StringDict } from "./util";
-
-
 
 class AstError {
 
@@ -61,7 +59,7 @@ export abstract class AstComponent {
 
     public abstract getChildren(): AstComponent[];
 
-    public abstract getBrzExpr(ns: Root): State;
+    public abstract constructExpr(ns: Root): Expr;
 
     
     /**
@@ -102,7 +100,7 @@ export abstract class AstComponent {
         const stack = new CounterStack(2);
         const tapes = this.calculateTapes(stack);
         this.sanityCheck();
-        const expr = this.getBrzExpr(root);
+        const expr = this.constructExpr(root);
         root.addComponent("__MAIN__", this);
         root.addSymbol("__MAIN__", expr);
         root.addTapes("__MAIN__", tapes);
@@ -126,7 +124,7 @@ class AstEpsilon extends AstAtomic {
         return this.tapes;
     }
 
-    public getBrzExpr(ns: Root): State {
+    public constructExpr(ns: Root): Expr {
         return EPSILON;
     }
 }
@@ -151,8 +149,8 @@ class AstLiteral extends AstAtomic {
         return this.tapes;
     }
 
-    public getBrzExpr(ns: Root): State {
-        return new LiteralState(this.tape, this.text);
+    public constructExpr(ns: Root): Expr {
+        return constructLiteral(this.tape, this.text);
     }
 }
 
@@ -175,8 +173,8 @@ class AstDot extends AstAtomic {
         return this.tapes;
     }
 
-    public getBrzExpr(ns: Root): State {
-        return new AnyCharState(this.tape);
+    public constructExpr(ns: Root): Expr {
+        return constructDot(this.tape);
     }
 }
 
@@ -196,17 +194,17 @@ abstract class AstNAry extends AstComponent {
 
 class AstSequence extends AstNAry {
 
-    public getBrzExpr(ns: Root): State {
-        const childExprs = this.children.map(s => s.getBrzExpr(ns));
-        return createSequence(...childExprs);
+    public constructExpr(ns: Root): Expr {
+        const childExprs = this.children.map(s => s.constructExpr(ns));
+        return constructSequence(...childExprs);
     }
 }
 
 class AstAlternation extends AstNAry {
 
-    public getBrzExpr(ns: Root): State {
-        const childExprs = this.children.map(s => s.getBrzExpr(ns));
-        return createUnion(...childExprs);
+    public constructExpr(ns: Root): Expr {
+        const childExprs = this.children.map(s => s.constructExpr(ns));
+        return constructAlternation(...childExprs);
     }
 }
 
@@ -226,25 +224,25 @@ abstract class AstBinary extends AstComponent {
 
 class AstIntersection extends AstBinary {
 
-    public getBrzExpr(ns: Root): State {
-        const left = this.child1.getBrzExpr(ns);
-        const right = this.child2.getBrzExpr(ns);
-        return createIntersection(left, right);
+    public constructExpr(ns: Root): Expr {
+        const left = this.child1.constructExpr(ns);
+        const right = this.child2.constructExpr(ns);
+        return constructIntersection(left, right);
     }
 }
 
-function fillOutWithDotStar(state: State, tapes: Set<string>) {
+function fillOutWithDotStar(state: Expr, tapes: Set<string>) {
     for (const tape of tapes) {
-        const dot = new AnyCharState(tape);
-        const dotStar = createStar(dot);
-        state = createBinaryConcat(state, dotStar);
+        const dot = constructDot(tape);
+        const dotStar = constructStar(dot);
+        state = constructBinaryConcat(state, dotStar);
     } 
     return state;
 }
 
 class AstJoin extends AstBinary {
 
-    public getBrzExpr(ns: Root): State {
+    public constructExpr(ns: Root): Expr {
         if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
             throw new Error("Getting Brz expression with undefined tapes");
         }
@@ -252,28 +250,28 @@ class AstJoin extends AstBinary {
         const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
         const child2OnlyTapes = setDifference(this.child2.tapes, this.child1.tapes);
 
-        const child1 = this.child1.getBrzExpr(ns);
+        const child1 = this.child1.constructExpr(ns);
         const child1Etc = fillOutWithDotStar(child1, child2OnlyTapes);
-        const child2 = this.child2.getBrzExpr(ns);
+        const child2 = this.child2.constructExpr(ns);
         const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
-        return createIntersection(child1Etc, child2Etc);
+        return constructIntersection(child1Etc, child2Etc);
     }
 
 }
 
 class AstFilter extends AstBinary {
 
-    public getBrzExpr(ns: Root): State {
+    public constructExpr(ns: Root): Expr {
         if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
             throw new Error("Getting Brz expression with undefined tapes");
         }
 
         const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
 
-        const child1 = this.child1.getBrzExpr(ns);
-        const child2 = this.child2.getBrzExpr(ns);
+        const child1 = this.child1.constructExpr(ns);
+        const child2 = this.child2.constructExpr(ns);
         const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
-        return createIntersection(child1, child2Etc);
+        return constructIntersection(child1, child2Etc);
     }
 }
 
@@ -300,9 +298,9 @@ class AstRepeat extends AstUnary {
         super(child);
     }
 
-    public getBrzExpr(ns: Root): State {
-        const childExpr = this.child.getBrzExpr(ns);
-        return createRepeat(childExpr, this.minReps, this.maxReps);
+    public constructExpr(ns: Root): Expr {
+        const childExpr = this.child.constructExpr(ns);
+        return constructRepeat(childExpr, this.minReps, this.maxReps);
         
     }
 }
@@ -411,9 +409,9 @@ class AstNamespace extends AstComponent {
      * you can rely on the last-entered entry to be the last
      * entry when you iterate.)
      */
-    public getBrzExpr(ns: Root): State {
+    public constructExpr(ns: Root): Expr {
 
-        let expr: State = EPSILON;
+        let expr: Expr = EPSILON;
 
         for (const [name, referent] of this.symbols) {
             const qualifiedName = this.qualifiedNames.get(name);
@@ -423,7 +421,7 @@ class AstNamespace extends AstComponent {
             if (referent.tapes == undefined) {
                 throw new Error("Getting Brz expressions without having calculated tapes");
             }
-            expr = referent.getBrzExpr(ns);
+            expr = referent.constructExpr(ns);
             ns.addComponent(qualifiedName, this);
             ns.addSymbol(qualifiedName, expr);
             ns.addTapes(qualifiedName, referent.tapes);
@@ -470,8 +468,8 @@ class AstEmbed extends AstAtomic {
         return this.tapes;
     }
 
-    public getBrzExpr(ns: Root): State {
-        return new EmbedState(this.qualifiedName, ns);
+    public constructExpr(ns: Root): Expr {
+        return constructEmbed(this.qualifiedName, ns);
     }
 }
 
@@ -479,7 +477,7 @@ export class Root implements INamespace {
 
     constructor(
         public components: Map<string, AstComponent> = new Map(),
-        public exprs: Map<string, State> = new Map(),
+        public exprs: Map<string, Expr> = new Map(),
         public tapes: Map<string, Set<string>> = new Map()
     ) { }
 
@@ -491,7 +489,7 @@ export class Root implements INamespace {
         this.components.set(name, comp);
     }
 
-    public addSymbol(name: string, state: State): void {
+    public addSymbol(name: string, state: Expr): void {
         if (this.exprs.has(name)) {
             // shouldn't happen due to alpha conversion, but check
             throw new Error(`Redefining symbol ${name}`);
@@ -508,7 +506,7 @@ export class Root implements INamespace {
     public getSymbol(
         name: string, 
         stack: CounterStack | undefined = undefined
-    ): State | undefined {
+    ): Expr | undefined {
         return this.exprs.get(name);
     }
     

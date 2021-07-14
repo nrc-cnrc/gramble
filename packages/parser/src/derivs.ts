@@ -3,7 +3,7 @@ import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } f
 import { assert } from "chai";
 
 /**
- * This is the parsing engine that underlies Gramble.
+ * This is the parsing/generation engine that underlies Gramble.
  * It generalizes Brzozowski derivatives (Brzozowski, 1964) to
  * multi-tape languages.
  * 
@@ -68,8 +68,8 @@ import { assert } from "chai";
  * graph already being constructed and in memory, each state constructing its successors on demand.  
  * Since states corresponding to (say) a particular position within a literal construct their successors
  * differently than those that (say) start off a subgraph corresponding to a Union, they belong to different 
- * classes here: there's a LiteralState, a UnionState, etc. that differ in how they construct 
- * their successors, and what information they need to keep track of to do so.  LiteralStates, for example,
+ * classes here: there's a LiteralExpr, a UnionExpr, etc. that differ in how they construct 
+ * their successors, and what information they need to keep track of to do so.  LiteralExprs, for example,
  * need to keep track of what that literal is and how far along they are within it.
  * 
  * Brzozowski derivatives can be applied to grammars beyond regular ones -- they're well-defined
@@ -141,8 +141,8 @@ export class CounterStack {
 
 export interface INamespace {
     register(symbolName: string): void;
-    getSymbol(name: string, stack: CounterStack | undefined): State | undefined;
-    addSymbol(name: string, state: State): void;
+    getSymbol(name: string, stack: CounterStack | undefined): Expr | undefined;
+    addSymbol(name: string, expr: Expr): void;
     compileSymbol(
         name: string, 
         allTapes: TapeCollection, 
@@ -152,122 +152,109 @@ export interface INamespace {
 }
 
 /**
- * State
+ * Expr
  * 
- * State is the basic class of the parser.  It encapsulates the current state of the parse; you can think
- * of it like a pointer into the state graph, if we were to ever construct that graph, which we don't.
- * Rather, a State encapsulates the *information* that that node would have represented.  
+ * Expr is the basic class of the parser; it represents a symbolic 
+ * expression like A|B or epsilon+(C&D).  These expressions also represent 
+ * "states" or "nodes" in a (potentially abstract) state graph; this class was
+ * originally called "State".  (You can think of Brzozowski's algorithm as 
+ * simultaneously constructing and traversing a FSA.  Calculating the Brz. derivative of
+ * expression A with respect to some character "c" can be conceptualized as following
+ * the transition, labeled "c", between a node corresponding to A and a node 
+ * corresponding to its derivative expression.
  * 
- * For example, imagine an automaton that recognizes the literal "hello".  We could implement this as an
- * explicit graph of nodes, where each node leads to the next by consuming a particular letter (state 0 leads
- * to 1 by consuming "h", state 1 leads to 2 by consuming "e", etc.).  Our pointer into this graph 
- * basically represents two pieces of information, what the word is ("hello") and 
- * how far into it we are.  We could also represent this information as an object { text: string, index: number }.
- * Rather than pre-compute each of these nodes, we can say that this object returns (upon matching) another 
- * object {text: string, index: number+1}... until we exceed the length of the literal, of course.  This 
- * idea, in general, allows us to avoid creating explicit state graphs that can be exponentially huge, 
- * although it comes with its own pitfalls.
+ * There are three kinds of "transitions" that we can follow:
  * 
- * For our purposes, a State is anything that can, upon being queried with a [tape, char] pair, 
- * return the possible successor states it can get to.  
+ *    deriv(T, c): The basic derivative function; it calculates the derivative
+ *            w.r.t. character set c on tape T, but it doesn't guarantee that the
+ *            results are disjoint.  (In other words, this will only create an
+ *            abstract NDFSA, here nd (non-deterministic).)
  * 
- * Many kinds of States have to contain references to other states (like an 
- * [EmbedState], which lets us embed grammars inside other grammars, keeps a point to the current parse state inside
- * that embedded grammar).  The structure of State components ends up being roughly isomorphic to the grammar that it's
- * parsing (e.g. if the grammar is (A+(B|C)), then the start State that we begin in will have the same structure,
- * it'll be a [ConcatState] of (A and a [UnionState] of (B and C)).  Then as the parse goes on, the State will
- * simplify bit-by-bit, like once A is recognized, the current state will just be one corresponding to B|C, and 
- * if B fails, the current state will just be C.
+ *    disjointDeriv(T, c): Determinizes the derivative; in our case that means that making
+ *            sure the returned character sets are disjoint.  This is necessary for
+ *            getting negation right, and we also call this at the highest level to 
+ *            eliminate trivially-identical results.
  * 
- * For the purposes of the algorithm, there are three crucial functions of States:
- * 
- *  * ndQuery(tape, char): What states can this state get to, compatible with a given tape/character
- *  * dQuery(tape, char): Calls ndQuery and rearranges the outputs so that any specific character can 
- *                      only lead to one state.
- *  * delta(tape): if the language contains the empty string on that tape, returns the
- *                 grammar corresponding to the remaining tapes, otherwise fails (returns BrzNull) 
+ *    delta(T): A derivative w.r.t. epsilon: it returns only those languages where the
+ *            contents of tape T are epsilon.
  */
 
-export abstract class State {
+export abstract class Expr {
 
     /**
-     * Gets an id() for the state.  At the moment we're only using this
+     * Gets an id() for the expression.  At the moment we're only using this
      * for debugging purposes, but we may want to use it in the future
-     * as a unique identifier for a state in explicit graph construction.
+     * as a unique identifier for a node in explicit graph construction.
      * 
      * If we do this, we should go through and make sure that IDs are actually
      * unique; right now they're often not.
      */
     public abstract get id(): string;
 
-    public abstract delta(tape: Tape, stack: CounterStack): State;
+    public abstract delta(tape: Tape, stack: CounterStack): Expr;
 
     /**
-     * non-deterministic Query
+     * Calculates the Brzozowski derivative of this expression.
      * 
      * The workhorse function of the parser, taking a <tape, char> pair and trying to match it to a transition
-     * (e.g., matching it to the next character of a [LiteralState]).  It yields all matching <tape, char> pairs, and the respective
-     * nextStates to which we should move upon a successful transition.
+     * (e.g., matching it to the next character of a [LiteralExpr]).  It yields all matching <tape, char> pairs, and the respective
+     * nextExprs to which we should move upon a successful transition.
      * 
-     * Note that an ndQuery's results may "overlap" in the sense that you may get the same matched character
-     * twice (e.g., you might get two results "q", or a result "q" and a result "__ANY__" that includes "q").
+     * Note that an deriv()'s results may "overlap" in the sense that you may get the same matched character
+     * twice -- in the FSA metaphor, you might have two transitions to different states with the same label.
      * For some parts of the algorithm, this would be inappropriate (i.e., inside of a negation).  So rather
-     * than call ndQuery directly, call dQuery (deterministic Query), which calls ndQuery and then adjusts
+     * than call deriv() directly, call disjointDeriv, which calls deriv() and then adjusts
      * the results so that the results are disjoint.
      * 
      * @param tape A Tape object identifying the name/type/vocabulary of the relevant tape
      * @param target A Token identifying what characters we need to match
      * @param stack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
-     * @returns A tuple <tape, match, matched, nextState>, where:
+     * @returns A tuple [tape, match, next] where:
      *      * tape is the tape we matched on, 
      *      * match is the intersection of the original target and our match,
-     *      * matched is whether we actually made a match or ignored it (for being on the wrong tape)
-     *      * nextState is the state the matched transition leads to
+     *      * next is the derivative expression
      */
 
-    public abstract ndQuery(
+    public abstract deriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
-    ): Gen<[Tape, Token, State]>;
+    ): Gen<[Tape, Token, Expr]>;
         
     /** 
-     * deterministic Query
+     * Calculates the derivative so that the results are deterministic (or more accurately, so that all returned 
+     * transitions are disjoint).
      * 
-     * Queries the state so that the results are deterministic (or more accurately, so that all returned 
-     * transitions are disjoint).  (There can still be multiple results; when we query ANY:ANY, for example.)
-     * 
-     * This looks a bit complicated (and it kind of is) but what it's doing is handing off the query to
-     * ndQuery, then combining results so that there's no overlap between the tokens.  For example, say ndQuery yields
+     * This looks a bit complicated (and it kind of is) but what it's doing is handing off the calculation to
+     * deriv(), then combining results so that there's no overlap between the tokens.  For example, say deriv() yields
      * two tokens X and Y, and they have no intersection.  Then we're good, we just yield those.  But if they 
      * do have an intersection, we need to return three paths:
      * 
-     *    X&Y (leading to the UnionState of the states X and Y would have led to)
-     *    X-Y (leading to the state X would have led to)
-     *    Y-X (leading to the state Y would have led to)
+     *    X&Y (leading to the UnionExpr of the exprs X and Y would have led to)
+     *    X-Y (leading to the expr X would have led to)
+     *    Y-X (leading to the expr Y would have led to)
      * 
      * @param nextTape A Tape object identifying the name/type/vocabulary of the relevant tape
      * @param target A Token identifying what characters we need to match
      * @param stack A [CounterStack] that keeps track of symbols (for embedding grammars), used for preventing infinite recursion
-     * @returns A tuple <tape, match, matched, nextState>, where:
+     * @returns A tuple [tape, match, next], where:
      *      * tape is the tape we matched on, 
      *      * match is the intersection of the original target and our match,
-     *      * matched is whether we actually made a match or ignored it (for being on the wrong tape)
-     *      * nextState is the state the matched transition leads to
+     *      * next is the derivative expression
      */ 
 
-    public *dQuery(
+    public *disjointDeriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
-    ): Gen<[Tape, Token, State]> {
+    ): Gen<[Tape, Token, Expr]> {
 
-        var results: [Tape, Token, State][] = [];
-        var nextStates: [Tape, Token, State][] = [... this.ndQuery(tape, target, stack)];
+        var results: [Tape, Token, Expr][] = [];
+        var nextExprs: [Tape, Token, Expr][] = [... this.deriv(tape, target, stack)];
         
-        for (var [nextTape, nextBits, next] of nextStates) {
+        for (var [nextTape, nextBits, next] of nextExprs) {
 
-            var newResults: [Tape, Token, State][] = [];
+            var newResults: [Tape, Token, Expr][] = [];
             for (var [otherTape, otherBits, otherNext] of results) {
                 if (nextTape.tapeName != otherTape.tapeName) {
                     newResults.push([otherTape, otherBits, otherNext]);
@@ -278,7 +265,7 @@ export abstract class State {
                 const intersection = nextBits.and(otherBits);
                 if (!intersection.isEmpty()) {
                     // there's something in the intersection
-                    const union = createBinaryUnion(next, otherNext);
+                    const union = constructBinaryUnion(next, otherNext);
                     newResults.push([nextTape, intersection, union]); 
                 }
                 nextBits = nextBits.andNot(intersection)
@@ -295,7 +282,6 @@ export abstract class State {
             }
         }
         yield *results;
-
     }
 
     /**
@@ -305,7 +291,7 @@ export abstract class State {
      * Even parsing is just calling generate.  (It's a separate function only because of a
      * complication with compilation.)  To do parses, we
      * join the grammar with a grammar corresponding to the query.  E.g., if we wanted to parse
-     * { text: "foo" } in grammar X, we would construct JoinState(LiteralState("text", "foo"), X).
+     * { text: "foo" } in grammar X, we would construct JoinExpr(LiteralExpr("text", "foo"), X).
      * The reason for this is that it allows us a diverse collection of query types for free, by
      * choosing an appropriate "query grammar" to join X with.
      * 
@@ -342,17 +328,17 @@ export abstract class State {
 
         const startingTapes = [...allTapes.tapes.values()];
 
-        var stateQueue: [Tape[], MultiTapeOutput, State, number][] = [[startingTapes, initialOutput, this, 0]];
+        var stateQueue: [Tape[], MultiTapeOutput, Expr, number][] = [[startingTapes, initialOutput, this, 0]];
 
         while (stateQueue.length > 0) {
-            let nextQueue: [Tape[], MultiTapeOutput, State, number][] = [];
-            for (let [tapes, prevOutput, prevState, chars] of stateQueue) {
+            let nextQueue: [Tape[], MultiTapeOutput, Expr, number][] = [];
+            for (let [tapes, prevOutput, prevExpr, chars] of stateQueue) {
 
                 if (chars >= maxChars) {
                     continue;
                 }
 
-                if (prevState instanceof BrzEpsilon) {
+                if (prevExpr instanceof EpsilonExpr) {
                     yield *prevOutput.toStrings(false);
                     continue;
                 }
@@ -366,15 +352,15 @@ export abstract class State {
                 tapes = [... tapes.slice(1), tapes[0]];
 
                 const tapeToTry = tapes[0];
-                for (const [cTape, cTarget, cNext] of prevState.dQuery(tapeToTry, ANY_CHAR, stack)) {
+                for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
 
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nextQueue.push([tapes, nextOutput, cNext, chars+1]);
                 }
 
-                const delta = prevState.delta(tapeToTry, stack);
+                const delta = prevExpr.delta(tapeToTry, stack);
 
-                if (!(delta instanceof BrzNull)) {                    
+                if (!(delta instanceof NullExpr)) {                    
                     const newTapes = tapes.slice(1);
                     nextQueue.push([newTapes, prevOutput, delta, chars]);
                 }
@@ -398,30 +384,30 @@ export abstract class State {
         //    in the queue won't all share the same number of chars queried, so 
         //    we have to keep track of that for each
 
-        var stateQueue: [MultiTapeOutput, State, number][] = 
+        var stateQueue: [MultiTapeOutput, Expr, number][] = 
                         [[initialOutput, this, 0]];
 
-        const candidates: [MultiTapeOutput, State, number][] = [];
+        const candidates: [MultiTapeOutput, Expr, number][] = [];
 
         while (stateQueue.length > 0) {
             const randomIndex = Math.floor(Math.random()*stateQueue.length);
-            const [currentOutput, currentState, chars] = stateQueue.splice(randomIndex, 1)[0];
+            const [currentOutput, currentExpr, chars] = stateQueue.splice(randomIndex, 1)[0];
             
-            if (currentState.accepting(allTapes, stack)) {
-                candidates.push([currentOutput, currentState, chars]);
+            if (currentExpr.accepting(allTapes, stack)) {
+                candidates.push([currentOutput, currentExpr, chars]);
             }
 
             if (chars < maxChars) {
-                for (const [tape, c, newState] of 
-                        currentState.ndQuery(allTapes, ANY_CHAR, stack)) {
+                for (const [tape, c, newExpr] of 
+                        currentExpr.deriv(allTapes, ANY_CHAR, stack)) {
                     const nextOutput = currentOutput.add(tape, c);
-                    stateQueue.push([nextOutput, newState, chars+1]);
+                    stateQueue.push([nextOutput, newExpr, chars+1]);
                 }
             }
             
             if (Math.random() < 0.05 && candidates.length > 0) {
                 const candidateIndex = Math.floor(Math.random()*candidates.length);
-                const [candidateOutput, candidateState, candidateChars] = candidates.splice(candidateIndex, 1)[0];
+                const [candidateOutput, candidateExpr, candidateChars] = candidates.splice(candidateIndex, 1)[0];
                 yield* candidateOutput.toStrings(true);
             }
         }
@@ -431,30 +417,51 @@ export abstract class State {
         }
 
         const candidateIndex = Math.floor(Math.random()*candidates.length);
-        const [candidateOutput, candidateState, candidateChars] = candidates[candidateIndex];
+        const [candidateOutput, candidateExpr, candidateChars] = candidates[candidateIndex];
         yield* candidateOutput.toStrings(true);
 
     } */
 }
 
-export class BrzNull extends State {
+
+/**
+ * An expression denoting the language with one entry, that's epsilon on all tapes.
+ */
+ class EpsilonExpr extends Expr {
+
+    public get id(): string {
+        return "ε";
+    }
+
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        return this;
+    }
+
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> { }
+}
+
+/**
+ * An expression denoting the empty language {}
+ */
+class NullExpr extends Expr {
 
     public get id(): string {
         return "∅";
     }
     
-    public delta(
-        tape: Tape,
-        stack: CounterStack
-    ): State {
+    public delta(tape: Tape, stack: CounterStack): Expr {
         return this;
     }
 
-    public *ndQuery(
+    public *deriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
-    ): Gen<[Tape, Token, State]> { }
+    ): Gen<[Tape, Token, Expr]> { }
 
 }
 
@@ -463,7 +470,7 @@ export class BrzNull extends State {
  * The state that recognizes/emits any character on a specific tape; 
  * implements the "dot" in regular expressions.
  */
-export class AnyCharState extends State {
+class DotExpr extends Expr {
     
     constructor(
         public tapeName: string
@@ -475,10 +482,7 @@ export class AnyCharState extends State {
         return `${this.tapeName}:.`;
     }
     
-    public delta(
-        tape: Tape, 
-        stack: CounterStack
-    ): State {
+    public delta(tape: Tape, stack: CounterStack): Expr {
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
             return this;
@@ -486,19 +490,16 @@ export class AnyCharState extends State {
         return NULL;
     }
 
-    public *ndQuery(
+    public *deriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
-    ): Gen<[Tape, Token, State]> {
-
+    ): Gen<[Tape, Token, Expr]> {
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
             return;
         }
-        
         yield [matchedTape, target, EPSILON];
-
     }
 }
 
@@ -508,7 +509,7 @@ export class AnyCharState extends State {
  * matching "f" we construct a successor state looking for 
  * "oo", and so on.
  */
-export class LiteralState extends State {
+class LiteralExpr extends Expr {
 
     constructor(
         public tapeName: string,
@@ -523,10 +524,7 @@ export class LiteralState extends State {
         return `${this.tapeName}:${this.text}${index}`;
     }
 
-    public delta(
-        tape: Tape, 
-        stack: CounterStack
-    ): State {
+    public delta(tape: Tape, stack: CounterStack): Expr {
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
             return this;
@@ -545,18 +543,18 @@ export class LiteralState extends State {
         return tape.tokenize(tape.tapeName, this.text[this.index])[0];
     }
 
-    public *ndQuery(
+    public *deriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
-    ): Gen<[Tape, Token, State]> {
+    ): Gen<[Tape, Token, Expr]> {
+
+        if (this.index >= this.text.length) {
+            return;
+        }
 
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
-            return;
-        }
-        
-        if (this.index >= this.text.length) {
             return;
         }
 
@@ -565,8 +563,8 @@ export class LiteralState extends State {
         if (result.isEmpty()) {
             return;
         }
-        const nextState = new LiteralState(this.tapeName, this.text, this.index+1);
-        yield [matchedTape, result, nextState];
+        const nextExpr = new LiteralExpr(this.tapeName, this.text, this.index+1);
+        yield [matchedTape, result, nextExpr];
 
     }
 
@@ -574,38 +572,14 @@ export class LiteralState extends State {
 }
 
 /**
- * An expression that's the empty string on all tapes.
+ * The abstract base class of all Exprs with two state children 
+ * (e.g. [JoinExpr]).
  */
-export class BrzEpsilon extends State {
-
-    public get id(): string {
-        return "ε";
-    }
-
-    public delta(
-        tape: Tape, 
-        stack: CounterStack
-    ): State {
-        return this;
-    }
-
-    public *ndQuery(
-        tape: Tape, 
-        target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, State]> { }
-}
-
-
-/**
- * The abstract base class of all States with two state children 
- * (e.g. [JoinState]).
- */
-abstract class BinaryState extends State {
+abstract class BinaryExpr extends Expr {
 
     constructor(
-        public child1: State,
-        public child2: State
+        public child1: Expr,
+        public child2: Expr
     ) {
         super();
     }
@@ -615,97 +589,83 @@ abstract class BinaryState extends State {
     }
 }
 
-export class BrzConcat extends BinaryState {
+class ConcatExpr extends BinaryExpr {
 
     public get id(): string {
         return `(${this.child1.id}+${this.child2.id})`;
     }
 
-    public delta(
-        tape: Tape, 
-        stack: CounterStack
-    ): State {
-        return createBinaryConcat( this.child1.delta(tape, stack),
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        return constructBinaryConcat( this.child1.delta(tape, stack),
                             this.child2.delta(tape, stack));
     }
 
-    public *ndQuery(
+    public *deriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
-    ): Gen<[Tape, Token, State]> {
+    ): Gen<[Tape, Token, Expr]> {
 
         for (const [c1tape, c1target, c1next] of
-                this.child1.ndQuery(tape, target, stack)) {
+                this.child1.deriv(tape, target, stack)) {
             yield [c1tape, c1target, 
-                createBinaryConcat(c1next, this.child2)];
+                constructBinaryConcat(c1next, this.child2)];
         }
 
         const c1next = this.child1.delta(tape, stack);
         for (const [c2tape, c2target, c2next] of
-                this.child2.ndQuery(tape, target, stack)) {
-            const successor = createBinaryConcat(c1next, c2next);
+                this.child2.deriv(tape, target, stack)) {
+            const successor = constructBinaryConcat(c1next, c2next);
             yield [c2tape, c2target, successor];
         }
     }
 }
 
-export class BrzUnion extends BinaryState {
-
+class UnionExpr extends BinaryExpr {
     
     public get id(): string {
         return `(${this.child1.id}|${this.child2.id})`;
     }
 
-    public delta(
-        tape: Tape, 
-        stack: CounterStack
-    ): State {
-        return createBinaryUnion( this.child1.delta(tape, stack),
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        return constructBinaryUnion( this.child1.delta(tape, stack),
                              this.child2.delta(tape, stack));
     }
 
-    public *ndQuery(
+    public *deriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
-    ): Gen<[Tape, Token, State]> {
-
-        yield* this.child1.ndQuery(tape, target, stack);
-        yield* this.child2.ndQuery(tape, target, stack);
+    ): Gen<[Tape, Token, Expr]> {
+        yield* this.child1.deriv(tape, target, stack);
+        yield* this.child2.deriv(tape, target, stack);
     }
 }
 
-export class IntersectionState extends BinaryState {
+class IntersectExpr extends BinaryExpr {
 
     public get id(): string {
         return `(${this.child1.id}&${this.child2.id})`;
     }
 
-    public delta(
-        tape: Tape, 
-        stack: CounterStack
-    ): State {
-        return createIntersection( this.child1.delta(tape, stack),
-                             this.child2.delta(tape, stack));
-            
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        return constructIntersection( this.child1.delta(tape, stack),
+                                   this.child2.delta(tape, stack));
     }
 
-    public *ndQuery(
+    public *deriv(
         tape: Tape,
         target: Token,               
         stack: CounterStack
-    ): Gen<[Tape, Token, State]> {
-            
+    ): Gen<[Tape, Token, Expr]> {
         for (const [c1tape, c1target, c1next] of 
-            this.child1.ndQuery(tape, target, stack)) {
+            this.child1.deriv(tape, target, stack)) {
 
             for (const [c2tape, c2target, c2next] of 
-                    this.child2.ndQuery(c1tape, c1target, stack)) {
-                const successor = createIntersection(c1next, c2next);
+                    this.child2.deriv(c1tape, c1target, stack)) {
+                const successor = constructIntersection(c1next, c2next);
                 yield [c2tape, c2target, successor];
             }
-
         }
     } 
 }
@@ -714,21 +674,21 @@ export class IntersectionState extends BinaryState {
  * The parser that handles arbitrary subgrammars referred to by a symbol name; this is what makes
  * recursion possible.
  * 
- * Like most such implementations, EmbedState's machinery serves to delay the construction of a child
- * state, since this child may be the EmbedState itself, or refer to this EmbedState by indirect recursion.
+ * Like most such implementations, EmbedExpr's machinery serves to delay the construction of a child
+ * state, since this child may be the EmbedExpr itself, or refer to this EmbedExpr by indirect recursion.
  * So instead of having a child at the start, it just has a symbol name and a reference to a symbol table.
  * 
- * The successor states of the EmbedState may have an explicit child, though: the successors of that initial
+ * The successor states of the EmbedExpr may have an explicit child, though: the successors of that initial
  * child state.  (If we got the child from the symbol table every time, we'd just end up trying to match its 
  * first letter again and again.)  We keep track of that through the _child member, which is initially undefined
- * but which we specify when constructing EmbedState's successor.
+ * but which we specify when constructing EmbedExpr's successor.
  */
- export class EmbedState extends State {
+ class EmbedExpr extends Expr {
 
     constructor(
         public symbolName: string,
         public namespace: INamespace,
-        public _child: State | undefined = undefined
+        public _child: Expr | undefined = undefined
     ) { 
         super();
     }
@@ -737,7 +697,7 @@ export class IntersectionState extends BinaryState {
         return `${this.constructor.name}(${this.symbolName})`;
     }
 
-    public getChild(stack: CounterStack | undefined = undefined): State {
+    public getChild(stack: CounterStack | undefined = undefined): Expr {
         if (this._child == undefined) {
             const child = this.namespace.getSymbol(this.symbolName, stack);
             if (child == undefined) {
@@ -750,10 +710,7 @@ export class IntersectionState extends BinaryState {
         return this._child;
     }
 
-    public delta(
-        tape: Tape, 
-        stack: CounterStack
-    ): State {
+    public delta(tape: Tape, stack: CounterStack): Expr {
         if (stack.exceedsMax(this.symbolName)) {
             return NULL;
         }
@@ -762,11 +719,11 @@ export class IntersectionState extends BinaryState {
     
     }
 
-    public *ndQuery(
+    public *deriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
-    ): Gen<[Tape, Token, State]> {
+    ): Gen<[Tape, Token, Expr]> {
 
         if (stack.exceedsMax(this.symbolName)) {
             return;
@@ -776,28 +733,28 @@ export class IntersectionState extends BinaryState {
         let child = this.getChild(stack);
 
         for (const [childchildTape, childTarget, childNext] of 
-                        child.ndQuery(tape, target, stack)) {
-            const successor = new EmbedState(this.symbolName, this.namespace, childNext);
+                        child.deriv(tape, target, stack)) {
+            const successor = new EmbedExpr(this.symbolName, this.namespace, childNext);
             yield [childchildTape, childTarget, successor];
         }
     }
 }
 
 /**
- * Abstract base class for states with only one child state.  Typically, UnaryStates
- * handle queries by forwarding on the query to their child, and doing something special
- * before or after.  For example, [EmbedStates] do a check a stack of symbol names to see
- * whether they've passed the allowable recursion limit, and [RenameState]s change what
+ * Abstract base class for states with only one child state.  Typically, UnaryExprs
+ * handle derivatives by forwarding on the call to their child, and doing something special
+ * before or after.  For example, [EmbedExprs] do a check a stack of symbol names to see
+ * whether they've passed the allowable recursion limit, and [RenameExpr]s change what
  * the different tapes are named.
  * 
- * Note that [UnaryState.child] is a getter, rather than storing an actual child.  This is
- * because [EmbedState] doesn't actually store its child, it grabs it from a symbol table instead.
+ * Note that [UnaryExpr.child] is a getter, rather than storing an actual child.  This is
+ * because [EmbedExpr] doesn't actually store its child, it grabs it from a symbol table instead.
  * (If it tried to take it as a param, or construct it during its own construction, this wouldn't 
- * work, because the EmbedState's child can be that EmbedState itself.)
+ * work, because the EmbedExpr's child can be that EmbedExpr itself.)
  */
-abstract class UnaryState extends State {
+abstract class UnaryExpr extends Expr {
 
-    public abstract get child(): State;
+    public abstract get child(): Expr;
 
     public get id(): string {
         return `${this.constructor.name}(${this.child.id})`;
@@ -805,10 +762,10 @@ abstract class UnaryState extends State {
 }
 
 
-export class BrzStar extends UnaryState {
+class StarExpr extends UnaryExpr {
 
     constructor(
-        public child: State
+        public child: Expr
     ) {
         super();
     }
@@ -817,20 +774,17 @@ export class BrzStar extends UnaryState {
         return `${this.child.id}*`;
     }
 
-    public delta(
-        tape: Tape, 
-        stack: CounterStack
-    ): State {
-        return createStar(this.child.delta(tape, stack));
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        return constructStar(this.child.delta(tape, stack));
     }
 
-    public *ndQuery(
+    public *deriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
-    ): Gen<[Tape, Token, State]> {
-        for (const [cTape, cTarget, cNext] of this.child.ndQuery(tape, target, stack)) {
-            const successor = createBinaryConcat(cNext, this);
+    ): Gen<[Tape, Token, Expr]> {
+        for (const [cTape, cTarget, cNext] of this.child.deriv(tape, target, stack)) {
+            const successor = constructBinaryConcat(cNext, this);
             yield [cTape, cTarget, successor];
         }
     }
@@ -838,31 +792,27 @@ export class BrzStar extends UnaryState {
 
 /**
  * Implements the Rename operation from relational algebra.
- *
  */
-export class RenameState extends UnaryState {
+class RenameExpr extends UnaryExpr {
 
     constructor(
-        public child: State,
+        public child: Expr,
         public fromTape: string,
         public toTape: string
     ) { 
         super();
     }
 
-    public delta(
-        tape: Tape, 
-        stack: CounterStack
-    ): State {
+    public delta(tape: Tape, stack: CounterStack): Expr {
         tape = new RenamedTape(tape, this.fromTape, this.toTape);
         return this.child.delta(tape, stack);
     }
 
-    public *ndQuery(
+    public *deriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
-    ): Gen<[Tape, Token, State]> {
+    ): Gen<[Tape, Token, Expr]> {
 
         if (tape.tapeName == this.fromTape) {
             return;
@@ -871,11 +821,11 @@ export class RenameState extends UnaryState {
         tape = new RenamedTape(tape, this.fromTape, this.toTape);
     
         for (var [childTape, childTarget, childNext] of 
-                this.child.ndQuery(tape, target, stack)) {
+                this.child.deriv(tape, target, stack)) {
             if (childTape instanceof RenamedTape) {
                 childTape = childTape.child;
             }
-            yield [childTape, childTarget, new RenameState(childNext, this.fromTape, this.toTape)];
+            yield [childTape, childTarget, new RenameExpr(childNext, this.fromTape, this.toTape)];
         }
     }
 }
@@ -888,46 +838,54 @@ export class RenameState extends UnaryState {
 
 /*
 let REVEAL_INDEX = 0; 
-export function Reveal(child: State, tape: string[], name: string = ""): State {
+export function Reveal(child: Expr, tape: string[], name: string = ""): Expr {
     if (name == "") {
         name = `HIDDEN${REVEAL_INDEX}`;
         REVEAL_INDEX++;
     }
     const desiredTapes: Set<string> = new Set(tape);
-    var result: State = child;
+    var result: Expr = child;
     for (const tape of child.getRelevantTapes(new CounterStack())) {
         if (!desiredTapes.has(tape)) {
-            result = new RenameState(result, tape, `__${name}_${tape}`)
+            result = new RenameExpr(result, tape, `__${name}_${tape}`)
         }
     }
     return result;
 } 
 
 let HIDE_INDEX = 0; 
-export function Hide(child: State, tape: string, name: string = ""): State {
+export function Hide(child: Expr, tape: string, name: string = ""): Expr {
 
     if (name == "") {
         name = `HIDDEN${HIDE_INDEX}`;
         HIDE_INDEX++;
     }
-    return new RenameState(child, tape, `__${name}_${tape}`);
+    return new RenameExpr(child, tape, `__${name}_${tape}`);
+}
+
+export function Rename(child: Expr, fromTape: string, toTape: string): Expr {
+    return new RenameExpr(child, fromTape, toTape);
 }
 */
 
-export function Rename(child: State, fromTape: string, toTape: string): State {
-    return new RenameState(child, fromTape, toTape);
-}
-
 /* CONVENIENCE FUNCTIONS */
 
-export const EPSILON = new BrzEpsilon();
-export const NULL = new BrzNull();
+export const EPSILON = new EpsilonExpr();
+export const NULL = new NullExpr();
 
-function createListExpr(
-    children: State[], 
-    constr: (c1: State, c2: State) => State,
-    nullResult: State, 
-): State {
+export function constructLiteral(tape: string, text: string): Expr {
+    return new LiteralExpr(tape, text);
+}
+
+export function constructDot(tape: string): Expr {
+    return new DotExpr(tape);
+}
+
+function constructListExpr(
+    children: Expr[], 
+    constr: (c1: Expr, c2: Expr) => Expr,
+    nullResult: Expr, 
+): Expr {
     if (children.length == 0) {
         return nullResult;
     }
@@ -935,64 +893,77 @@ function createListExpr(
         return children[0];
     }
     const head = children[0];
-    const tail = createListExpr(children.slice(1), constr, nullResult);
+    const tail = constructListExpr(children.slice(1), constr, nullResult);
     return constr(head, tail);
 }
 
-export function createBinaryConcat(c1: State, c2: State) {
-
-    if (c1 instanceof BrzEpsilon) {
+export function constructBinaryConcat(c1: Expr, c2: Expr): Expr {
+    if (c1 instanceof EpsilonExpr) {
         return c2;
     }
-    if (c2 instanceof BrzEpsilon) {
+    if (c2 instanceof EpsilonExpr) {
         return c1;
     }
-    if (c1 instanceof BrzNull) {
+    if (c1 instanceof NullExpr) {
         return c1;
     }
-    if (c2 instanceof BrzNull) {
+    if (c2 instanceof NullExpr) {
         return c2;
     }
-    return new BrzConcat(c1, c2);
+    if (c1 instanceof ConcatExpr) {
+        const head = c1.child1;
+        const tail = constructBinaryConcat(c1.child2, c2);
+        return constructBinaryConcat(head, tail);
+    }
+    return new ConcatExpr(c1, c2);
 }
 
-export function createBinaryUnion(c1: State, c2: State) {
-    if (c1 instanceof BrzNull) {
+export function constructBinaryUnion(c1: Expr, c2: Expr): Expr {
+    if (c1 instanceof NullExpr) {
         return c2;
     }
-    if (c2 instanceof BrzNull) {
+    if (c2 instanceof NullExpr) {
         return c1;
     }
-    if (c1 instanceof BrzEpsilon && c2 instanceof BrzEpsilon) {
+    if (c1 instanceof EpsilonExpr && c2 instanceof EpsilonExpr) {
         return c1;
     }
-    return new BrzUnion(c1, c2);
+    if (c1 instanceof UnionExpr) {
+        const head = c1.child1;
+        const tail = constructBinaryUnion(c1.child2, c2);
+        return constructBinaryUnion(head, tail);
+    }
+    return new UnionExpr(c1, c2);
 }
 
-export function createSequence(...children: State[]): State {
-    return createListExpr(children, createBinaryConcat, EPSILON);
+export function constructSequence(...children: Expr[]): Expr {
+    return constructListExpr(children, constructBinaryConcat, EPSILON);
 }
 
-export function createUnion(...children: State[]): State {
-    return createListExpr(children, createBinaryUnion, NULL);
+export function constructAlternation(...children: Expr[]): Expr {
+    return constructListExpr(children, constructBinaryUnion, NULL);
 }
 
-export function createIntersection(c1: State, c2: State) {
-
-    if (c1 instanceof BrzNull) {
+export function constructIntersection(c1: Expr, c2: Expr): Expr {
+    if (c1 instanceof NullExpr) {
         return c1;
     }
-    if (c2 instanceof BrzNull) {
+    if (c2 instanceof NullExpr) {
         return c2;
     }
-    if (c1 instanceof BrzEpsilon && c2 instanceof BrzEpsilon) {
+    if (c1 instanceof EpsilonExpr && c2 instanceof EpsilonExpr) {
         return c1;
     }
-    return new IntersectionState(c1, c2);
+    if (c1 instanceof IntersectExpr) {
+        const head = c1.child1;
+        const tail = constructIntersection(c1.child2, c2);
+        return constructIntersection(head, tail);
+    }
+    return new IntersectExpr(c1, c2);
 }
 
-export function createMaybe(child: State): State {
-    return createUnion(child, EPSILON);
+export function constructMaybe(child: Expr): Expr {
+    return constructAlternation(child, EPSILON);
 }
 
 /**
@@ -1000,20 +971,17 @@ export function createMaybe(child: State): State {
  * in that that works for any range of reps, where as this
  * is only zero through infinity reps.
  */
-export function createStar(child: State): State {
-    if (child instanceof BrzEpsilon) {
+export function constructStar(child: Expr): Expr {
+    if (child instanceof EpsilonExpr) {
         return child;
     }
-
-    if (child instanceof BrzNull) {
+    if (child instanceof NullExpr) {
         return EPSILON;
     }
-
-    if (child instanceof BrzStar) {
+    if (child instanceof StarExpr) {
         return child;
     }
-
-    return new BrzStar(child);
+    return new StarExpr(child);
 }
 
 /**
@@ -1021,26 +989,29 @@ export function createStar(child: State): State {
  * in that that only works for A{0,infinity}, whereas this
  * works for any values of {min,max}.
  */
-export function createRepeat(child: State, minReps=0, maxReps=Infinity): State {
-
+export function constructRepeat(
+    child: Expr, 
+    minReps: number = 0, 
+    maxReps: number = Infinity
+): Expr {
     if (maxReps < 0 || minReps > maxReps) {
         return NULL;
     }
-    
     if (maxReps == 0) {
         return EPSILON;
     }
-
     if (minReps > 0) {
-        const head = createSequence(...Array(minReps).fill(child))
-        const tail = createRepeat(child, 0, maxReps - minReps);
-        return createSequence(head, tail);
+        const head = constructSequence(...Array(minReps).fill(child))
+        const tail = constructRepeat(child, 0, maxReps - minReps);
+        return constructSequence(head, tail);
     }
-
     if (maxReps == Infinity) {
-        return createStar(child);
+        return constructStar(child);
     }
+    const tail = constructRepeat(child, 0, maxReps - 1);
+    return constructMaybe(constructSequence(child, tail));
+}
 
-    const tail = createRepeat(child, 0, maxReps - 1);
-    return createMaybe(createSequence(child, tail));
+export function constructEmbed(symbolName: string, ns: INamespace) {
+    return new EmbedExpr(symbolName, ns);
 }

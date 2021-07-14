@@ -1,7 +1,6 @@
 
 import { assert, expect } from "chai";
 import { AstComponent, Lit, Root } from "../../src/ast";
-import { State } from "../../src/brzDerivs";
 import { StringDict } from "../../src/util";
 import { testMatchOutputs, testNumOutputs } from "../testUtils";
 
