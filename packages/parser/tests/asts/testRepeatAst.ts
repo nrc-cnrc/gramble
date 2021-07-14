@@ -1,5 +1,5 @@
 
-import { Seq, Join, Rep, Epsilon, Filter, Uni } from "../../src/ast";
+import { Seq, Join, Rep, Epsilon, Filter, Uni, Any } from "../../src/ast";
 import { t1, t2, testAstHasTapes, testAst } from './testUtilsAst';
 
 import * as path from 'path';
@@ -317,5 +317,118 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(Seq(t1("hh"), t2("hh")), Rep(Seq(t1("h"), t2("h"))));
         testAst(grammar, [{t1: "hh", t2: "hh"}]);
     });
+    
+    describe('Rep(Any): t1:hi+t1:.{0,3}', function() {
+        const grammar = Seq(t1("hi"), Rep(Any("t1"), 0, 3));
+        testAst(grammar, [ 
+                            {t1: "hi"},
+                            {t1: "hii"},
+                            {t1: "hih"},
+                            {t1: "hiii"},
+                            {t1: "hihi"},
+                            {t1: "hihh"},
+                            {t1: "hiih"},
+                            {t1: "hiiih"},
+                            {t1: "hihih"},
+                            {t1: "hihhh"},
+                            {t1: "hiihh"},
+                            {t1: "hiiii"},
+                            {t1: "hihii"},
+                            {t1: "hihhi"},
+                            {t1: "hiihi"}]);
+    });
 
+    describe('Rep(Any): t1:.{0,3}+t1:hi', function() {
+        const grammar = Seq(Rep(Any("t1"), 0, 3), t1("hi"));
+        testAst(grammar, [{t1: "hi"},
+                            {t1: "ihi"},
+                            {t1: "hhi"},
+                            {t1: "iihi"},
+                            {t1: "hihi"},
+                            {t1: "hhhi"},
+                            {t1: "ihhi"},
+                            {t1: "iihhi"},
+                            {t1: "hihhi"},
+                            {t1: "hhhhi"},
+                            {t1: "ihhhi"},
+                            {t1: "iiihi"},
+                            {t1: "hiihi"},
+                            {t1: "hhihi"},
+                            {t1: "ihihi"}]);
+    });
+    
+    describe('Rep(Any): t1:.{0,1}+t1:hi+t1:.{0,1}', function() {
+        const grammar = Seq( Rep(Any("t1"), 0, 1), t1("hi"), Rep(Any("t1"), 0, 1));
+        testAst(grammar, [ 
+                            {t1: "hi"},
+                            {t1: "hhi"},
+                            {t1: "ihi"},
+                            {t1: "hih"},
+                            {t1: "hii"},
+                            {t1: "hhih"},
+                            {t1: "hhii"},
+                            {t1: "ihih"},
+                            {t1: "ihii"}]);
+    });
+
+    describe('Joining t1:hi & t1:.{0,1}', function() {
+        const grammar = Join(t1("h"), Rep(Any("t1"), 0, 1));
+        testAst(grammar, [{t1: "h"}]);
+    });
+    
+    describe('Filtering t1:.{0,1} & ε', function() {
+        const grammar = Filter(Rep(Any("t1"), 0, 2), Epsilon());
+        testAst(grammar, [{}]);
+    });
+    
+    describe('Filtering ε & t1:.{0,1}', function() {
+        const grammar = Filter(Epsilon(), Rep(Any("t1"), 0, 2));
+        testAst(grammar, [{}]);
+    });
+    
+    describe('Joining t1:.{0,1} & ε', function() {
+        const grammar = Join(Rep(Any("t1"), 0, 2), Epsilon());
+        testAst(grammar, [{}]);
+    });
+    
+    describe('Joining ε & t1:.{0,1}', function() {
+        const grammar = Join(Epsilon(), Rep(Any("t1"), 0, 2));
+        testAst(grammar, [{}]);
+    });
+
+    describe('Filtering "hello" with he.*', function() {
+        const grammar = Filter(t1("hello"), Seq(t1("he"), Rep(Any("t1"))));
+        testAst(grammar, [ 
+                            {t1: "hello"}]);
+    });
+
+    describe('Filtering "hello" with .*lo', function() {
+        const grammar = Filter(t1("hello"), Seq(Rep(Any("t1")), t1("lo")));
+        testAst(grammar, [ 
+                            {t1: "hello"}]);
+    });
+
+    describe('Filtering "hello" with .*e.*', function() {
+        const grammar = Filter(t1("hello"), Seq(Rep(Any("t1")), t1("e"), Rep(Any("t1"))));
+        testAst(grammar, [ 
+                            {t1: "hello"}]);
+    });
+
+    describe('Filtering "hello" with .*l.*', function() {
+        const grammar = Filter(t1("hello"), Seq(Rep(Any("t1")), t1("l"), Rep(Any("t1"))));
+        testAst(grammar, [ 
+                            {t1: "hello"}]);
+    });
+
+    describe('Filtering "hello" with .*h.*', function() {
+        const grammar = Filter(t1("hello"), Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1"))));
+        testAst(grammar, [ 
+                            {t1: "hello"}]);
+    });
+
+    describe('Filtering "hello" with .*o.*', function() {
+        const grammar = Filter(t1("hello"), Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1"))));
+        testAst(grammar, [ 
+                            {t1: "hello"}]);
+    });
 });

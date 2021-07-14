@@ -43,6 +43,15 @@ import { assert } from "chai";
  *   D_c("banana") = "anana" if c == "b"
  *                   0 otherwise
  * 
+ * There is also an operation 𝛿 that checks if the grammar contains the empty string; if
+ * so, it returns the set containing the empty string, otherwise it returns 0.
+ * 
+ *   L2 = { "", "abc", "de", "f" }
+ *   𝛿(L2) = {""}
+ * 
+ *   L2 = { "abc", "de", "f" }
+ *   𝛿(L2) = 0
+ * 
  * Brzozowski proved that all regular grammars have only finitely many derivatives (even if 
  * the grammar itself generates infinitely).
  * 
@@ -78,8 +87,6 @@ import { assert } from "chai";
  * _partial_ compilation of a grammar, and lets us decide things like where we want to allocate a potentially
  * limited compilation budget to the places it's going to matter the most at runtime.
  */
-
-export type SymbolTable = {[key: string]: State};
 
 /**
  * CounterStack
@@ -195,10 +202,6 @@ export abstract class State {
 
     public abstract delta(tape: Tape, stack: CounterStack): State;
 
-    public simplify(): State {
-        return this;
-    }
-
     /**
      * non-deterministic Query
      * 
@@ -275,7 +278,7 @@ export abstract class State {
                 const intersection = nextBits.and(otherBits);
                 if (!intersection.isEmpty()) {
                     // there's something in the intersection
-                    const union = new BrzUnion(next, otherNext).simplify();
+                    const union = createBinaryUnion(next, otherNext);
                     newResults.push([nextTape, intersection, union]); 
                 }
                 nextBits = nextBits.andNot(intersection)
@@ -320,15 +323,6 @@ export abstract class State {
     
         const stack = new CounterStack(maxRecursion);
 
-        if (allTapes.isTrivial) {
-            // there aren't any literal characters anywhere in the grammar, so there's no vocab.  
-            // the only possible output is the empty grammar.
-            if (this.delta(allTapes, stack) instanceof BrzEpsilon) {
-                yield {};
-            }
-            return;
-        }
-
         /*
         if (random) {
             yield* this.generateRandom(allTapes, stack, maxChars);
@@ -364,7 +358,8 @@ export abstract class State {
                 }
                 
                 if (tapes.length == 0) {
-                    throw new Error("How is it possible to have a non-epsilon state but no tapes left?");
+                    // this can happen in the case of ∅
+                    continue; 
                 }
 
                 // rotate the tapes so that we don't keep trying the same one every time
@@ -488,7 +483,7 @@ export class AnyCharState extends State {
         if (matchedTape == undefined) {
             return this;
         }
-        return new BrzNull();
+        return NULL;
     }
 
     public *ndQuery(
@@ -502,8 +497,7 @@ export class AnyCharState extends State {
             return;
         }
         
-        const nextState = new BrzEpsilon();
-        yield [matchedTape, target, nextState];
+        yield [matchedTape, target, EPSILON];
 
     }
 }
@@ -538,9 +532,9 @@ export class LiteralState extends State {
             return this;
         }
         if (this.index >= this.text.length) {
-            return new BrzEpsilon();
+            return EPSILON;
         }
-        return new BrzNull();
+        return NULL;
     }
 
     public collectVocab(tapes: Tape, stack: string[]): void {
@@ -631,24 +625,8 @@ export class BrzConcat extends BinaryState {
         tape: Tape, 
         stack: CounterStack
     ): State {
-        return new BrzConcat( this.child1.delta(tape, stack),
-                            this.child2.delta(tape, stack) ).simplify();
-    }
-    
-    public simplify(): State {
-        if (this.child1 instanceof BrzEpsilon) {
-            return this.child2.simplify();
-        }
-        if (this.child2 instanceof BrzEpsilon) {
-            return this.child1.simplify();
-        }
-        if (this.child1 instanceof BrzNull) {
-            return this.child1;
-        }
-        if (this.child2 instanceof BrzNull) {
-            return this.child2;
-        }
-        return this;
+        return createBinaryConcat( this.child1.delta(tape, stack),
+                            this.child2.delta(tape, stack));
     }
 
     public *ndQuery(
@@ -660,13 +638,13 @@ export class BrzConcat extends BinaryState {
         for (const [c1tape, c1target, c1next] of
                 this.child1.ndQuery(tape, target, stack)) {
             yield [c1tape, c1target, 
-                new BrzConcat(c1next, this.child2)];
+                createBinaryConcat(c1next, this.child2)];
         }
 
         const c1next = this.child1.delta(tape, stack);
         for (const [c2tape, c2target, c2next] of
                 this.child2.ndQuery(tape, target, stack)) {
-            const successor = new BrzConcat(c1next, c2next).simplify();
+            const successor = createBinaryConcat(c1next, c2next);
             yield [c2tape, c2target, successor];
         }
     }
@@ -674,25 +652,17 @@ export class BrzConcat extends BinaryState {
 
 export class BrzUnion extends BinaryState {
 
+    
+    public get id(): string {
+        return `(${this.child1.id}|${this.child2.id})`;
+    }
+
     public delta(
         tape: Tape, 
         stack: CounterStack
     ): State {
-        return new BrzUnion( this.child1.delta(tape, stack),
-                             this.child2.delta(tape, stack)).simplify();
-    }
-
-    public simplify(): State {
-        if (this.child1 instanceof BrzNull) {
-            return this.child2.simplify();
-        }
-        if (this.child2 instanceof BrzNull) {
-            return this.child1.simplify();
-        }
-        if (this.child1 instanceof BrzEpsilon && this.child2 instanceof BrzEpsilon) {
-            return this.child1;
-        }
-        return this;
+        return createBinaryUnion( this.child1.delta(tape, stack),
+                             this.child2.delta(tape, stack));
     }
 
     public *ndQuery(
@@ -716,22 +686,9 @@ export class IntersectionState extends BinaryState {
         tape: Tape, 
         stack: CounterStack
     ): State {
-        return new IntersectionState( this.child1.delta(tape, stack),
-                             this.child2.delta(tape, stack)).simplify();
+        return createIntersection( this.child1.delta(tape, stack),
+                             this.child2.delta(tape, stack));
             
-    }
-
-    public simplify(): State {
-        if (this.child1 instanceof BrzNull) {
-            return this.child1;
-        }
-        if (this.child2 instanceof BrzNull) {
-            return this.child2;
-        }
-        if (this.child1 instanceof BrzEpsilon && this.child2 instanceof BrzEpsilon) {
-            return this.child1;
-        }
-        return this;
     }
 
     public *ndQuery(
@@ -745,7 +702,7 @@ export class IntersectionState extends BinaryState {
 
             for (const [c2tape, c2target, c2next] of 
                     this.child2.ndQuery(c1tape, c1target, stack)) {
-                const successor = new IntersectionState(c1next, c2next);
+                const successor = createIntersection(c1next, c2next);
                 yield [c2tape, c2target, successor];
             }
 
@@ -786,7 +743,7 @@ export class IntersectionState extends BinaryState {
             if (child == undefined) {
                 // this is an error, due to the programmer referring to an undefined
                 // symbol, but now is not the time to complain. 
-                return new BrzEpsilon();
+                return EPSILON;
             } 
             this._child = child;
         }
@@ -798,7 +755,7 @@ export class IntersectionState extends BinaryState {
         stack: CounterStack
     ): State {
         if (stack.exceedsMax(this.symbolName)) {
-            return new BrzNull();;
+            return NULL;
         }
         const newStack = stack.add(this.symbolName);
         return this.getChild(newStack).delta(tape, newStack);
@@ -860,28 +817,11 @@ export class BrzStar extends UnaryState {
         return `${this.child.id}*`;
     }
 
-    public simplify(): State {
-        if (this.child instanceof BrzEpsilon) {
-            return this.child;
-        }
-
-        if (this.child instanceof BrzNull) {
-            return new BrzEpsilon();
-        }
-
-        if (this.child instanceof BrzStar) {
-            return this.child;
-        }
-
-        return this;
-    }
-
     public delta(
         tape: Tape, 
         stack: CounterStack
     ): State {
-        const result = new BrzStar(this.child.delta(tape, stack));
-        return result.simplify();
+        return createStar(this.child.delta(tape, stack));
     }
 
     public *ndQuery(
@@ -890,7 +830,7 @@ export class BrzStar extends UnaryState {
         stack: CounterStack
     ): Gen<[Tape, Token, State]> {
         for (const [cTape, cTarget, cNext] of this.child.ndQuery(tape, target, stack)) {
-            const successor = new BrzConcat(cNext, this);
+            const successor = createBinaryConcat(cNext, this);
             yield [cTape, cTarget, successor];
         }
     }
@@ -978,17 +918,14 @@ export function Rename(child: State, fromTape: string, toTape: string): State {
     return new RenameState(child, fromTape, toTape);
 }
 
-export function Any(tape: string): State {
-    return new AnyCharState(tape);
-}
-
-
-
 /* CONVENIENCE FUNCTIONS */
+
+export const EPSILON = new BrzEpsilon();
+export const NULL = new BrzNull();
 
 function createListExpr(
     children: State[], 
-    constr: new (c1: State, c2: State) => State,
+    constr: (c1: State, c2: State) => State,
     nullResult: State, 
 ): State {
     if (children.length == 0) {
@@ -999,29 +936,99 @@ function createListExpr(
     }
     const head = children[0];
     const tail = createListExpr(children.slice(1), constr, nullResult);
-    return new constr(head, tail);
+    return constr(head, tail);
+}
+
+export function createBinaryConcat(c1: State, c2: State) {
+
+    if (c1 instanceof BrzEpsilon) {
+        return c2;
+    }
+    if (c2 instanceof BrzEpsilon) {
+        return c1;
+    }
+    if (c1 instanceof BrzNull) {
+        return c1;
+    }
+    if (c2 instanceof BrzNull) {
+        return c2;
+    }
+    return new BrzConcat(c1, c2);
+}
+
+export function createBinaryUnion(c1: State, c2: State) {
+    if (c1 instanceof BrzNull) {
+        return c2;
+    }
+    if (c2 instanceof BrzNull) {
+        return c1;
+    }
+    if (c1 instanceof BrzEpsilon && c2 instanceof BrzEpsilon) {
+        return c1;
+    }
+    return new BrzUnion(c1, c2);
 }
 
 export function createSequence(...children: State[]): State {
-    return createListExpr(children, BrzConcat, new BrzEpsilon());
+    return createListExpr(children, createBinaryConcat, EPSILON);
 }
 
 export function createUnion(...children: State[]): State {
-    return createListExpr(children, BrzUnion, new BrzNull());
+    return createListExpr(children, createBinaryUnion, NULL);
+}
+
+export function createIntersection(c1: State, c2: State) {
+
+    if (c1 instanceof BrzNull) {
+        return c1;
+    }
+    if (c2 instanceof BrzNull) {
+        return c2;
+    }
+    if (c1 instanceof BrzEpsilon && c2 instanceof BrzEpsilon) {
+        return c1;
+    }
+    return new IntersectionState(c1, c2);
 }
 
 export function createMaybe(child: State): State {
-    return createUnion(child, new BrzEpsilon());
+    return createUnion(child, EPSILON);
 }
 
+/**
+ * Creates A* from A.  Distinguished from createRepeat
+ * in that that works for any range of reps, where as this
+ * is only zero through infinity reps.
+ */
+export function createStar(child: State): State {
+    if (child instanceof BrzEpsilon) {
+        return child;
+    }
+
+    if (child instanceof BrzNull) {
+        return EPSILON;
+    }
+
+    if (child instanceof BrzStar) {
+        return child;
+    }
+
+    return new BrzStar(child);
+}
+
+/**
+ * Creates A{min,max} from A.  Distinguished from createStar
+ * in that that only works for A{0,infinity}, whereas this
+ * works for any values of {min,max}.
+ */
 export function createRepeat(child: State, minReps=0, maxReps=Infinity): State {
 
     if (maxReps < 0 || minReps > maxReps) {
-        return new BrzNull();
+        return NULL;
     }
     
     if (maxReps == 0) {
-        return new BrzEpsilon();
+        return EPSILON;
     }
 
     if (minReps > 0) {
@@ -1031,7 +1038,7 @@ export function createRepeat(child: State, minReps=0, maxReps=Infinity): State {
     }
 
     if (maxReps == Infinity) {
-        return new BrzStar(child);
+        return createStar(child);
     }
 
     const tail = createRepeat(child, 0, maxReps - 1);

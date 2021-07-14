@@ -2,18 +2,16 @@ import {
     CounterStack, 
     State, 
     LiteralState, 
-    BrzConcat, 
-    BrzUnion,
-    BrzEpsilon, 
-    BrzNull, 
+    EPSILON,
     INamespace, 
     EmbedState, 
-    IntersectionState,
     AnyCharState,
-    BrzStar,
     createRepeat,
     createSequence,
-    createUnion
+    createUnion,
+    createBinaryConcat,
+    createIntersection,
+    createStar
 } from "./brzDerivs";
 import { StringTape, Tape, TapeCollection } from "./tapes";
 import { flatten, Gen, setDifference, StringDict } from "./util";
@@ -129,7 +127,7 @@ class AstEpsilon extends AstAtomic {
     }
 
     public getBrzExpr(ns: Root): State {
-        return new BrzEpsilon();
+        return EPSILON;
     }
 }
 
@@ -155,6 +153,30 @@ class AstLiteral extends AstAtomic {
 
     public getBrzExpr(ns: Root): State {
         return new LiteralState(this.tape, this.text);
+    }
+}
+
+class AstDot extends AstAtomic {
+
+    constructor(
+        public tape: string
+    ) {
+        super();
+    }
+
+    public collectVocab(tapes: Tape, stack: string[]): void {
+        tapes.tokenize(this.tape, "");
+    }
+
+    public calculateTapes(stack: CounterStack): Set<string> {
+        if (this.tapes == undefined) {
+            this.tapes = new Set([this.tape]);
+        }
+        return this.tapes;
+    }
+
+    public getBrzExpr(ns: Root): State {
+        return new AnyCharState(this.tape);
     }
 }
 
@@ -207,15 +229,15 @@ class AstIntersection extends AstBinary {
     public getBrzExpr(ns: Root): State {
         const left = this.child1.getBrzExpr(ns);
         const right = this.child2.getBrzExpr(ns);
-        return new IntersectionState(left, right);
+        return createIntersection(left, right);
     }
 }
 
 function fillOutWithDotStar(state: State, tapes: Set<string>) {
     for (const tape of tapes) {
         const dot = new AnyCharState(tape);
-        const dotStar = new BrzStar(dot);
-        state = new BrzConcat(state, dotStar);
+        const dotStar = createStar(dot);
+        state = createBinaryConcat(state, dotStar);
     } 
     return state;
 }
@@ -234,7 +256,7 @@ class AstJoin extends AstBinary {
         const child1Etc = fillOutWithDotStar(child1, child2OnlyTapes);
         const child2 = this.child2.getBrzExpr(ns);
         const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
-        return new IntersectionState(child1Etc, child2Etc);
+        return createIntersection(child1Etc, child2Etc);
     }
 
 }
@@ -251,7 +273,7 @@ class AstFilter extends AstBinary {
         const child1 = this.child1.getBrzExpr(ns);
         const child2 = this.child2.getBrzExpr(ns);
         const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
-        return new IntersectionState(child1, child2Etc);
+        return createIntersection(child1, child2Etc);
     }
 }
 
@@ -391,7 +413,7 @@ class AstNamespace extends AstComponent {
      */
     public getBrzExpr(ns: Root): State {
 
-        let expr: State = new BrzEpsilon();
+        let expr: State = EPSILON;
 
         for (const [name, referent] of this.symbols) {
             const qualifiedName = this.qualifiedNames.get(name);
@@ -543,6 +565,10 @@ export function Uni(...children: AstComponent[]): AstAlternation {
 
 export function Lit(tape: string, text: string): AstLiteral {
     return new AstLiteral(tape, text);
+}
+
+export function Any(tape: string): AstDot {
+    return new AstDot(tape);
 }
 
 export function Intersect(child1: AstComponent, child2: AstComponent): AstIntersection {

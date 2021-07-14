@@ -50,7 +50,8 @@
     "testFilterAst": "mocha -r ts-node/register tests/asts/testFilterAst.ts",
     "testNamespaceAst": "mocha -r ts-node/register tests/asts/testNamespaceAst.ts",
     "testJoinsAst": "mocha -r ts-node/register tests/asts/testJoinsAst.ts",
-    "testRepeatAst": "mocha -r ts-node/register tests/asts/testRepeatAst.ts"
+    "testRepeatAst": "mocha -r ts-node/register tests/asts/testRepeatAst.ts",
+    "testDotAst": "mocha -r ts-node/register tests/asts/testDotAst.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"
