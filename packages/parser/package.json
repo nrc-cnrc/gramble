@@ -51,7 +51,9 @@
     "testNamespaceAst": "mocha -r ts-node/register tests/asts/testNamespaceAst.ts",
     "testJoinsAst": "mocha -r ts-node/register tests/asts/testJoinsAst.ts",
     "testRepeatAst": "mocha -r ts-node/register tests/asts/testRepeatAst.ts",
-    "testDotAst": "mocha -r ts-node/register tests/asts/testDotAst.ts"
+    "testDotAst": "mocha -r ts-node/register tests/asts/testDotAst.ts",
+    "testEmbedAst": "mocha -r ts-node/register tests/asts/testEmbedAst.ts",
+    "testRecursionAst": "mocha -r ts-node/register tests/asts/testRecusionAst.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"

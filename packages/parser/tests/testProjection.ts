@@ -1,4 +1,4 @@
-import { Seq, Join, Reveal, Hide, Rename, Filter, Emb, Uni } from "../src/stateMachine";
+import { Seq, Join, Reveal, Hide, Rename, Filter } from "../src/stateMachine";
 import { text, unrelated, testHasTapes, testHasVocab, testGenerateAndSample, t1, t2, t3, makeTestNamespace, testGrammarUncompiled } from './testUtils';
 
 import * as path from 'path';

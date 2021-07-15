@@ -342,6 +342,48 @@ class AstRepeat extends AstUnary {
     }
 }
 
+class AstHide extends AstUnary {
+
+    public toTape: string;
+
+    constructor(
+        child: AstComponent,
+        public tape: string,
+        name: string = ""
+    ) {
+        super(child);
+        if (name == "") {
+            name = `HIDDEN${HIDE_INDEX}`;
+            HIDE_INDEX++;
+        }
+        this.toTape = `__${name}_${tape}`
+    }
+
+    public collectVocab(tapes: Tape, stack: string[]): void {
+        tapes = new RenamedTape(tapes, this.tape, this.toTape);
+        this.child.collectVocab(tapes, stack);
+    }
+
+    public calculateTapes(stack: CounterStack): Set<string> {
+        if (this.tapes == undefined) {
+            this.tapes = new Set();
+            for (const tapeName of this.child.calculateTapes(stack)) {
+                if (tapeName == this.tape) {
+                    this.tapes.add(this.toTape);
+                } else {
+                    this.tapes.add(tapeName);
+                }
+            }
+        }
+        return this.tapes;
+    }
+    
+    public constructExpr(ns: Root): Expr {
+        const childExpr = this.child.constructExpr(ns);
+        return constructRename(childExpr, this.tape, this.toTape);
+    }
+}
+
 class AstNamespace extends AstComponent {
 
     constructor(
@@ -359,7 +401,7 @@ class AstNamespace extends AstComponent {
             throw new Error(`Symbol names cannot have . in them`);
         }
 
-        const symbol = this.symbols.get(symbolName);
+        const symbol = this.resolveNameLocal(symbolName);
         if (symbol != undefined) {
             throw new Error(`Symbol ${symbolName} already defined.`);
         }
@@ -384,20 +426,35 @@ class AstNamespace extends AstComponent {
         }
     }
 
+    /**
+     * Looks up an unqualified name in this namespace's symbol table,
+     * case-insensitive.
+     */
+    public resolveNameLocal(name: string): [string, AstComponent] | undefined {
+        for (const symbolName of this.symbols.keys()) {
+            if (name.toLowerCase() == symbolName.toLowerCase()) {
+                const referent = this.symbols.get(symbolName);
+                if (referent == undefined) { return undefined; } // can't happen, just for linting
+                return [symbolName, referent];
+            }
+        }
+        return undefined;
+    }
+
     public resolveName(
-        symbolName: string, 
+        unqualifiedName: string, 
         nsStack: AstNamespace[]
     ): [string, AstComponent] | undefined {
 
         // split into (potentially) namespace prefix(es) and symbol name
-        const namePieces = symbolName.split(".");
+        const namePieces = unqualifiedName.split(".");
 
         // it's got no namespace prefix, it's a symbol name
         if (namePieces.length == 1) {
 
-            const referent = this.symbols.get(symbolName);
+            const localResult = this.resolveNameLocal(unqualifiedName);
 
-            if (referent == undefined) {
+            if (localResult == undefined) {
                 // it's not a symbol assigned in this namespace
                 return undefined;
             }
@@ -406,21 +463,28 @@ class AstNamespace extends AstComponent {
             // so get the fully-qualified name.  we can't just grab this
             // from this.qualifiedNames because that may not have been
             // filled out yet
-            const newName = this.calculateQualifiedName(symbolName, nsStack);
+            const [localName, referent] = localResult;
+            const newName = this.calculateQualifiedName(localName, nsStack);
             return [newName, referent];
         }
 
         // it's got a namespace prefix
-        const child = this.symbols.get(namePieces[0]);
-        if (child == undefined || !(child instanceof AstNamespace)) {
+        const child = this.resolveNameLocal(namePieces[0]);
+        if (child == undefined) {
             // but it's not a child of this namespace
+            return undefined;
+        }
+
+        const [localName, referent] = child;
+        if (!(referent instanceof AstNamespace)) {
+            // if symbol X isn't a namespace, "X.Y" can't refer to anything real
             return undefined;
         }
 
         // this namespace has a child of the correct name
         const remnant = namePieces.slice(1).join(".");
-        const newStack = [ ...nsStack, child ];
-        return child.resolveName(remnant, newStack);  // try the child
+        const newStack = [ ...nsStack, referent ];
+        return referent.resolveName(remnant, newStack);  // try the child
     }
 
     /**
@@ -484,12 +548,12 @@ class AstEmbed extends AstAtomic {
             // we go down the stack asking each to resolve it
             const subStack = nsStack.slice(0, i+1);
             const resolution = nsStack[i].resolveName(this.name, subStack);
-            if (resolution == undefined) {
-                continue;
+            if (resolution != undefined) {              
+                const [qualifiedName, referent] = resolution;
+                this.qualifiedName = qualifiedName;
+                this.referent = referent;
+                break;
             }
-            const [qualifiedName, referent] = resolution;
-            this.qualifiedName = qualifiedName;
-            this.referent = referent;
         }
     }
 
@@ -647,4 +711,9 @@ export function Ns(
         result.addSymbol(symbolName, component);
     }
     return result;
+}
+
+let HIDE_INDEX = 0; 
+export function Hide(child: AstComponent, tape: string, name: string = ""): AstHide {
+    return new AstHide(child, tape, name);
 }
