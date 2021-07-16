@@ -48,7 +48,7 @@
     "testAst": "mocha -r ts-node/register tests/asts/*.ts",
     "testBasicsAst": "mocha -r ts-node/register tests/asts/testBasicsAst.ts",
     "testFilterAst": "mocha -r ts-node/register tests/asts/testFilterAst.ts",
-    "testNamespaceAst": "mocha -r ts-node/register tests/asts/testNamespaceAst.ts",
+    "testNegationAst": "mocha -r ts-node/register tests/asts/testNegationAst.ts",
     "testJoinsAst": "mocha -r ts-node/register tests/asts/testJoinsAst.ts",
     "testRepeatAst": "mocha -r ts-node/register tests/asts/testRepeatAst.ts",
     "testDotAst": "mocha -r ts-node/register tests/asts/testDotAst.ts",

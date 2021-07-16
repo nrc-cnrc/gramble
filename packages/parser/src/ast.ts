@@ -12,7 +12,9 @@ import {
     constructLiteral,
     constructDot,
     constructEmbed,
-    constructRename
+    constructRename,
+    constructNegation,
+    NULL
 } from "./derivs";
 import { RenamedTape, StringTape, Tape, TapeCollection } from "./tapes";
 import { flatten, Gen, setDifference, StringDict } from "./util";
@@ -129,6 +131,21 @@ class AstEpsilon extends AstAtomic {
         return EPSILON;
     }
 }
+
+class AstNull extends AstAtomic {
+
+    public calculateTapes(stack: CounterStack): Set<string> {
+        if (this.tapes == undefined) {
+            this.tapes = new Set();
+        }
+        return this.tapes;
+    }
+
+    public constructExpr(ns: Root): Expr {
+        return NULL;
+    }
+}
+
 
 class AstLiteral extends AstAtomic {
 
@@ -338,7 +355,18 @@ class AstRepeat extends AstUnary {
     public constructExpr(ns: Root): Expr {
         const childExpr = this.child.constructExpr(ns);
         return constructRepeat(childExpr, this.minReps, this.maxReps);
-        
+    }
+}
+
+class AstNegation extends AstUnary {
+
+    public constructExpr(ns: Root): Expr {
+        if (this.child.tapes == undefined) {
+            throw new Error("Getting Brz expression with undefined tapes");
+        }
+
+        const childExpr = this.child.constructExpr(ns);
+        return constructNegation(childExpr, this.child.tapes);
     }
 }
 
@@ -694,12 +722,20 @@ export function Epsilon(): AstEpsilon {
     return new AstEpsilon();
 }
 
+export function Null(): AstNull {
+    return new AstNull();
+}
+
 export function Embed(name: string): AstEmbed {
     return new AstEmbed(name);
 }
 
 export function Rename(child: AstComponent, fromTape: string, toTape: string): AstRename {
     return new AstRename(child, fromTape, toTape);
+}
+
+export function Not(child: AstComponent): AstNegation {
+    return new AstNegation(child);
 }
 
 export function Ns(

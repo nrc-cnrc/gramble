@@ -1,4 +1,4 @@
-import { Gen, StringDict } from "./util";
+import { Gen, setDifference, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
 import { assert } from "chai";
 
@@ -339,12 +339,10 @@ export abstract class Expr {
                 }
 
                 if (prevExpr instanceof EpsilonExpr) {
-                    yield *prevOutput.toStrings(false);
-                    continue;
+                    yield* prevOutput.toStrings(false);
                 }
                 
                 if (tapes.length == 0) {
-                    // this can happen in the case of ∅
                     continue; 
                 }
 
@@ -754,7 +752,11 @@ class IntersectExpr extends BinaryExpr {
  */
 abstract class UnaryExpr extends Expr {
 
-    public abstract get child(): Expr;
+    constructor(
+        public child: Expr
+    ) { 
+        super();
+    }
 
     public get id(): string {
         return `${this.constructor.name}(${this.child.id})`;
@@ -763,12 +765,6 @@ abstract class UnaryExpr extends Expr {
 
 
 class StarExpr extends UnaryExpr {
-
-    constructor(
-        public child: Expr
-    ) {
-        super();
-    }
 
     public get id(): string {
         return `${this.child.id}*`;
@@ -796,11 +792,11 @@ class StarExpr extends UnaryExpr {
 class RenameExpr extends UnaryExpr {
 
     constructor(
-        public child: Expr,
+        child: Expr,
         public fromTape: string,
         public toTape: string
     ) { 
-        super();
+        super(child);
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
@@ -831,48 +827,76 @@ class RenameExpr extends UnaryExpr {
     }
 }
 
-// Reveal and Hide, as currently implemented, do name-mangling
-// a la Python double-underscore variables.  Generally an 
-// interface will supply a name for the show/hide and we'll use that
-// to mangle the name, but if not, the Show()/Hide() function will use
-// this variable to create a nonce name.
-
 /*
-let REVEAL_INDEX = 0; 
-export function Reveal(child: Expr, tape: string[], name: string = ""): Expr {
-    if (name == "") {
-        name = `HIDDEN${REVEAL_INDEX}`;
-        REVEAL_INDEX++;
+class UniverseExpr extends Expr {
+
+    public get id(): string {
+        return `Σ*`;
     }
-    const desiredTapes: Set<string> = new Set(tape);
-    var result: Expr = child;
-    for (const tape of child.getRelevantTapes(new CounterStack())) {
-        if (!desiredTapes.has(tape)) {
-            result = new RenameExpr(result, tape, `__${name}_${tape}`)
+    
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        return this;
+    }
+    
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+        yield [tape, target, this];
+    }
+}  */
+
+class NegationExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public tapes: Set<string>
+    ) { 
+        super(child);
+    }
+
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        const childDelta = this.child.delta(tape, stack);
+        const remainingTapes = setDifference(this.tapes, new Set([tape.tapeName]));
+        return constructNegation(childDelta, remainingTapes);
+    }
+    
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+
+        if (!this.tapes.has(tape.tapeName)) {
+            return;
         }
+
+        var remainder = new Token(target.bits.clone());
+
+        for (const [childTape, childText, childNext] of 
+                this.child.disjointDeriv(tape, target, stack)) {
+            remainder = remainder.andNot(childText);
+            const successor = constructNegation(childNext, this.tapes);
+            yield [childTape, childText, successor];
+        }
+
+        if (remainder.isEmpty()) {
+            return;
+        }
+
+        // any chars not yet consumed by the above represent
+        // cases where we've (in FSA terms) "fallen off" the graph,
+        // and are now at a special consume-anything state that always
+        // succeeds.
+        yield [tape, remainder, constructUniverse(this.tapes)];
     }
-    return result;
-} 
-
-let HIDE_INDEX = 0; 
-export function Hide(child: Expr, tape: string, name: string = ""): Expr {
-
-    if (name == "") {
-        name = `HIDDEN${HIDE_INDEX}`;
-        HIDE_INDEX++;
-    }
-    return new RenameExpr(child, tape, `__${name}_${tape}`);
 }
-
-export function Rename(child: Expr, fromTape: string, toTape: string): Expr {
-    return new RenameExpr(child, fromTape, toTape);
-}
-*/
 
 /* CONVENIENCE FUNCTIONS */
-
 export const EPSILON = new EpsilonExpr();
 export const NULL = new NullExpr();
+//export const UNIVERSE = new UniverseExpr();
 
 export function constructLiteral(tape: string, text: string): Expr {
     return new LiteralExpr(tape, text);
@@ -1015,6 +1039,25 @@ export function constructRepeat(
 
 export function constructEmbed(symbolName: string, ns: INamespace) {
     return new EmbedExpr(symbolName, ns);
+}
+
+export function constructNegation(child: Expr, tapes: Set<string>): Expr {
+    if (child instanceof NullExpr) {
+        return constructUniverse(tapes);
+    }
+    if (child instanceof NegationExpr) {
+        return child.child;
+    }
+    return new NegationExpr(child, tapes);
+}
+
+export function constructDotStar(tape: string): Expr {
+    return constructStar(constructDot(tape));
+}
+
+export function constructUniverse(tapes: Set<string>): Expr {
+    return constructSequence(...[...tapes].map(t => constructDotStar(t)));
+
 }
 
 export function constructRename(
