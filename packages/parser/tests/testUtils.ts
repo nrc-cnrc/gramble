@@ -300,6 +300,7 @@ export function testProject(project: Project,
     if (grammar == undefined) {
         return;
     }    
+    /*
     describe("Uncompiled grammar", function() {
         testGrammarUncompiled(grammar, expectedResults, maxRecursion, maxChars);
     });
@@ -309,6 +310,7 @@ export function testProject(project: Project,
     describe("Compiled grammar", function() {
         testGrammarCompiled(grammar, expectedResults, maxRecursion, maxChars);
     });
+    */
 }
 
 export function testHeaderHasText(header: Header, text: string, objName: string = ""): void {
@@ -344,7 +346,12 @@ export function testErrors(project: Project, expectedErrors: [string, number, nu
 export function testSymbols(project: Project, expectedSymbols: string[]): void {
     for (const symbolName of expectedSymbols) {
         it (`should have a symbol named "${symbolName}"`, function() {
-            expect(project.getSymbol(symbolName)).to.not.be.undefined;
+            try {
+                expect(project.getSymbol(symbolName)).to.not.be.undefined;
+            } catch (e) {
+                console.log(`available symbols: [${project.allSymbols()}]`);
+                throw e;
+            }
         });
     }
 }

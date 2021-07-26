@@ -1,4 +1,4 @@
-import { Seq, Join, Hide, Rename, Filter } from "../../src/ast";
+import { Seq, Join, Hide, Rename, Filter, Ns, Embed } from "../../src/ast";
 import { t1, t2, t3, testAstHasTapes, testAst } from './testUtilsAst';
 import * as path from 'path';
 
@@ -79,6 +79,19 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Hide-filter-hide', function() {
         const grammar = Hide(Filter(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3"), t2("foo")), "t2");
         testAst(grammar, [{t1: "hello"}]);
+    });
+
+    
+    describe('Hide t2 of symbol t1:hi+t2:world', function() {
+        const grammar = Ns("test", 
+                        { "a": Seq(t1("hi"), t2("world")),
+                          "b": Hide(Embed("a"), "t2") });
+
+        testAstHasTapes(grammar, ["t1"]);
+        //testHasVocab(grammar, {t1: 2});
+        testAst(grammar, [{t1: "hi"}], "test.b");
+        
+        console.log(grammar.sanityCheck());
     });
 
 });

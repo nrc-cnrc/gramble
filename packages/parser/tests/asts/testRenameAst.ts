@@ -3,7 +3,9 @@ import {
     Seq, 
     Join, 
     Uni, 
-    Filter 
+    Filter, 
+    Ns,
+    Embed
 } from "../../src/ast";
 
 import { 
@@ -113,4 +115,16 @@ describe(`${path.basename(module.filename)}`, function() {
         //testHasVocab(grammar, {t2: 4});
         testAst(grammar, [{t2: "hiwo"}]);
     }); 
+    
+    describe('Rename t2->t3 of symbol t1:hi+t2:world', function() {
+        const grammar = Ns("test", 
+                        { "a": Seq(t1("hi"), t2("world")),
+                          "b": Rename(Embed("a"), "t2", "t3") });
+
+        testAstHasTapes(grammar, ["t1", "t3"]);
+        testAst(grammar, [{t1: "hi", t3: "world"}], "test.b");
+        
+        console.log(grammar.sanityCheck());
+    });
+
 });

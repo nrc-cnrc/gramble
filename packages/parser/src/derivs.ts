@@ -340,6 +340,7 @@ export abstract class Expr {
 
                 if (prevExpr instanceof EpsilonExpr) {
                     yield* prevOutput.toStrings(false);
+                    continue;
                 }
                 
                 if (tapes.length == 0) {

@@ -17,7 +17,7 @@ export type StringDict = {[key: string]: string};
 export class CellPosition {
 
     constructor(
-        public readonly sheet: string,
+        public readonly sheet: string = "?",
         public readonly row: number = -1,
         public readonly col: number = -1
     ) { }

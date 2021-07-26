@@ -16,15 +16,16 @@ import {
     constructNegation,
     NULL
 } from "./derivs";
+import { parseCells } from "./sheetParser";
 import { RenamedTape, StringTape, Tape, TapeCollection } from "./tapes";
-import { flatten, Gen, setDifference, StringDict } from "./util";
+import { CellPosition, flatten, Gen, setDifference, StringDict } from "./util";
+
+export { CounterStack, Expr };
 
 class AstError {
 
     constructor(
-        public sheet: string,
-        public row: number,
-        public column: number,
+        public pos: CellPosition,
         public severity: "error" | "warning",
         public shortMsg: string,
         public longMsg: string
@@ -57,6 +58,8 @@ class AstError {
  */
 
 export abstract class AstComponent {
+
+    public pos: CellPosition = new CellPosition();
 
     public tapes: Set<string> | undefined = undefined;
 
@@ -97,12 +100,11 @@ export abstract class AstComponent {
         return flatten(this.getChildren().map(s => s.sanityCheck()));
     }
 
-    public compile(): Root {
+    public getRoot(): Root {
         const root = new Root();
         this.qualifyNames();
         const stack = new CounterStack(2);
         const tapes = this.calculateTapes(stack);
-        this.sanityCheck();
         const expr = this.constructExpr(root);
         root.addComponent("__MAIN__", this);
         root.addSymbol("__MAIN__", expr);
@@ -147,7 +149,7 @@ class AstNull extends AstAtomic {
 }
 
 
-class AstLiteral extends AstAtomic {
+export class AstLiteral extends AstAtomic {
 
     constructor(
         public tape: string,
@@ -156,7 +158,7 @@ class AstLiteral extends AstAtomic {
         super();
     }
 
-    public collectVocab(tapes: Tape, stack: string[]): void {
+    public collectVocab(tapes: Tape, stack: string[] = []): void {
         tapes.tokenize(this.tape, this.text);
     }
 
@@ -180,7 +182,7 @@ class AstDot extends AstAtomic {
         super();
     }
 
-    public collectVocab(tapes: Tape, stack: string[]): void {
+    public collectVocab(tapes: Tape, stack: string[] = []): void {
         tapes.tokenize(this.tape, "");
     }
 
@@ -210,11 +212,21 @@ abstract class AstNAry extends AstComponent {
 
 }
 
-class AstSequence extends AstNAry {
+export class AstSequence extends AstNAry {
 
     public constructExpr(ns: Root): Expr {
         const childExprs = this.children.map(s => s.constructExpr(ns));
         return constructSequence(...childExprs);
+    }
+
+    public append(newChild: AstComponent): AstComponent {
+        return Seq(...this.children, newChild);
+    }
+
+    public filterLastChild(filter: AstComponent): AstComponent {
+        const lastChild = this.children[this.children.length-1];
+        const remainingChildren = this.children.slice(0, this.children.length-2);
+        return Seq(...remainingChildren, Filter(lastChild, filter));
     }
 }
 
@@ -316,7 +328,7 @@ class AstRename extends AstUnary {
         super(child);
     }
 
-    public collectVocab(tapes: Tape, stack: string[]): void {
+    public collectVocab(tapes: Tape, stack: string[] = []): void {
         tapes = new RenamedTape(tapes, this.fromTape, this.toTape);
         this.child.collectVocab(tapes, stack);
     }
@@ -334,7 +346,6 @@ class AstRename extends AstUnary {
         }
         return this.tapes;
     }
-
     
     public constructExpr(ns: Root): Expr {
         const childExpr = this.child.constructExpr(ns);
@@ -384,10 +395,10 @@ class AstHide extends AstUnary {
             name = `HIDDEN${HIDE_INDEX}`;
             HIDE_INDEX++;
         }
-        this.toTape = `__${name}_${tape}`
+        this.toTape = `__${name}_${tape}`;
     }
 
-    public collectVocab(tapes: Tape, stack: string[]): void {
+    public collectVocab(tapes: Tape, stack: string[] = []): void {
         tapes = new RenamedTape(tapes, this.tape, this.toTape);
         this.child.collectVocab(tapes, stack);
     }
@@ -406,13 +417,31 @@ class AstHide extends AstUnary {
         return this.tapes;
     }
     
+    public sanityCheck(): AstError[] {
+        const childErrors = super.sanityCheck();
+
+        if (this.child.tapes == undefined) {
+            throw new Error("Trying to sanity check before tapes are calculated");
+        }
+
+        if (!this.child.tapes.has(this.tape)) {
+            const newError = new AstError(
+                this.pos,
+                "error",
+                "Hiding missing tape",
+                `The grammar to the left does not contain the tape ${this.tape}. Available tapes: [${[...this.child.tapes]}]`);
+            childErrors.push(newError);
+        }
+        return childErrors;
+    }
+
     public constructExpr(ns: Root): Expr {
         const childExpr = this.child.constructExpr(ns);
         return constructRename(childExpr, this.tape, this.toTape);
     }
 }
 
-class AstNamespace extends AstComponent {
+export class AstNamespace extends AstComponent {
 
     constructor(
         public name: string
@@ -423,7 +452,7 @@ class AstNamespace extends AstComponent {
     public qualifiedNames: Map<string, string> = new Map();
     public symbols: Map<string, AstComponent> = new Map();
 
-    public addSymbol(symbolName: string, component: AstComponent) {
+    public addSymbol(symbolName: string, component: AstComponent): void {
 
         if (symbolName.indexOf(".") != -1) {
             throw new Error(`Symbol names cannot have . in them`);
@@ -436,8 +465,22 @@ class AstNamespace extends AstComponent {
         this.symbols.set(symbolName, component);
     }
 
+    public getSymbol(symbolName: string): AstComponent | undefined {
+        return this.symbols.get(symbolName);
+    }
+
+    public allSymbols(): string[] {
+        return [...this.symbols.keys()];
+    }
+
     public getChildren(): AstComponent[] { 
-        return [...this.symbols.values()]; 
+        const results: AstComponent[] = [];
+        for (const referent of this.symbols.values()) {
+            if (results.indexOf(referent) == -1) {
+                results.push(referent);
+            }
+        }
+        return results;
     }
 
     public calculateQualifiedName(name: string, nsStack: AstNamespace[]) {
@@ -533,6 +576,20 @@ class AstNamespace extends AstComponent {
     }
 
     /**
+     * The same as calculateTapes and constructExpr, we only count
+     * the last-defined symbol for this calculation
+     */
+    public collectVocab(tapes: Tape, stack: string[] = []): void {
+        const children = [...this.symbols.values()];
+        if (children.length == 0) {
+            return;
+        }
+        const lastChild = children[children.length-1];
+        lastChild.collectVocab(tapes, stack);
+    }
+
+
+    /**
      * The Brz expression for a Namespace object is that of 
      * its last-defined child.  (Note that JS Maps are ordered;
      * you can rely on the last-entered entry to be the last
@@ -562,7 +619,7 @@ class AstNamespace extends AstComponent {
 class AstEmbed extends AstAtomic {
 
     public qualifiedName: string;
-    public referent: AstComponent = Epsilon();
+    public referent: AstComponent | undefined = undefined;
 
     constructor(
         public name: string
@@ -571,6 +628,15 @@ class AstEmbed extends AstAtomic {
         this.qualifiedName = name;
     }
         
+    public sanityCheck(): AstError[] {
+        if (this.referent == undefined) {
+            return [ new AstError(
+                this.pos, "error", "Unknown symbol",
+                `Undefined symbol ${this.name}`)];
+        }
+        return [];
+    }
+
     public qualifyNames(nsStack: AstNamespace[] = []): void {
         for (let i = nsStack.length-1; i >=0; i--) {
             // we go down the stack asking each to resolve it
@@ -587,7 +653,7 @@ class AstEmbed extends AstAtomic {
 
     public calculateTapes(stack: CounterStack): Set<string> {
         if (this.tapes == undefined) {
-            if (stack.exceedsMax(this.qualifiedName)) {
+            if (stack.exceedsMax(this.qualifiedName) || this.referent == undefined) {
                 this.tapes = new Set();
             } else {
                 const newStack = stack.add(this.qualifiedName);
@@ -597,7 +663,22 @@ class AstEmbed extends AstAtomic {
         return this.tapes;
     }
 
+    public collectVocab(tapes: Tape, stack: string[] = []): void {
+        if (this.referent == undefined) {
+            return; // failed to find the referent, so it's epsilon
+        }
+        if (stack.indexOf(this.qualifiedName) != -1) {
+            return;
+        }
+        const newStack = [...stack, this.qualifiedName];
+        this.referent.collectVocab(tapes, newStack);
+    }
+
+
     public constructExpr(ns: Root): Expr {
+        if (this.referent == undefined) {
+            return EPSILON;
+        }
         return constructEmbed(this.qualifiedName, ns);
     }
 }
@@ -638,7 +719,12 @@ export class Root implements INamespace {
     ): Expr | undefined {
         return this.exprs.get(name);
     }
+
+    public getComponent(name: string): AstComponent | undefined {
+        return this.components.get(name);
+    }
     
+
     public allSymbols(): string[] {
         return [...this.exprs.keys()];
     }
@@ -688,6 +774,10 @@ export function Seq(...children: AstComponent[]): AstSequence {
 
 export function Uni(...children: AstComponent[]): AstAlternation {
     return new AstAlternation(children);
+}
+
+export function Maybe(child: AstComponent): AstAlternation {
+    return Uni(child, Epsilon());
 }
 
 export function Lit(tape: string, text: string): AstLiteral {

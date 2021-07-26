@@ -10,7 +10,7 @@
 import { assert } from "chai";
 import { CPAlternation, CPUnreserved, CPNegation, CPResult, parseBooleanCell } from "./cellParser";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPSequence, MPUnreserved } from "./miniParser";
-import { CounterStack, Uni, State, Lit, Emb, Seq, Epsilon, Namespace, Maybe, Not, Join, Filter, BrzEpsilon, LiteralState, Rename, RenameState, Hide, Rep, Any, Reveal, BrzConcat } from "./stateMachine";
+import { CounterStack, Uni, AstComponent, Lit, Embed, Seq, Epsilon, Not, Join, Filter, Rename, Hide, Rep, Any, AstLiteral, Maybe, AstSequence, Ns, AstNamespace } from "./ast";
 import { CellPosition, DevEnvironment, DUMMY_POSITION, HSVtoRGB, RGBtoString, TabularComponent } from "./util";
 
 const DEFAULT_SATURATION = 0.1;
@@ -55,12 +55,11 @@ export abstract class Header extends TabularComponent {
     }
     
     public compile(cell: CellComponent, 
-                    namespace: Namespace, 
                     devEnv: DevEnvironment): SingleCellComponent {
         throw new Error('Not implemented');
     }
 
-    public merge(leftNeighbor: State | undefined, state: State): State {
+    public merge(leftNeighbor: AstComponent | undefined, state: AstComponent): AstComponent {
         if (leftNeighbor == undefined) {
             return state;
         }
@@ -68,12 +67,11 @@ export abstract class Header extends TabularComponent {
     }
 
     public compileAndMerge(cell: CellComponent,
-                            namespace: Namespace,
                             devEnv: DevEnvironment,
-                            leftNeighbor: State | undefined): SingleCellComponent {
+                            leftNeighbor: AstComponent | undefined): SingleCellComponent {
         
-        const compiledCell = this.compile(cell, namespace, devEnv);
-        compiledCell.state = this.merge(leftNeighbor, compiledCell.state);
+        const compiledCell = this.compile(cell, devEnv);
+        compiledCell.ast = this.merge(leftNeighbor, compiledCell.ast);
         return compiledCell;
     }
 }
@@ -103,10 +101,10 @@ abstract class AtomicHeader extends Header {
 export class EmbedHeader extends AtomicHeader {
 
     public compile(cell: CellComponent, 
-                    namespace: Namespace, 
                     devEnv: DevEnvironment): SingleCellComponent {
         const compiledCell = new EmbedComponent(this, cell);
-        compiledCell.state = Emb(cell.text, namespace);
+        compiledCell.ast = Embed(cell.text);
+        compiledCell.ast.pos = cell.position;
         return compiledCell;
     }
 }
@@ -123,9 +121,8 @@ export class EmbedHeader extends AtomicHeader {
 export class HideHeader extends AtomicHeader {
 
     public compileAndMerge(cell: CellComponent,
-            namespace: Namespace,
             devEnv: DevEnvironment,
-            leftNeighbor: State | undefined): SingleCellComponent {
+            leftNeighbor: AstComponent | undefined): SingleCellComponent {
 
         const compiledCell = new HeadedCellComponent(this, cell);
         
@@ -134,9 +131,10 @@ export class HideHeader extends AtomicHeader {
                 '"hide" has to have something to the left of it.');
             return compiledCell;
         }
-        compiledCell.state = leftNeighbor;
+        compiledCell.ast = leftNeighbor;
         for (const tape of cell.text.split("/")) {
-            compiledCell.state = Hide(compiledCell.state, tape.trim());
+            compiledCell.ast = Hide(compiledCell.ast, tape.trim());
+            compiledCell.ast.pos = cell.position;
         }
         return compiledCell;
     }
@@ -147,12 +145,12 @@ export class HideHeader extends AtomicHeader {
  * RevealHeader is the opposite of HideHeader: any tape T named in "reveal:T"
  * is left alone, and all other tapes are hidden.  
  */
+/*
  export class RevealHeader extends AtomicHeader {
 
     public compileAndMerge(cell: CellComponent,
-            namespace: Namespace,
             devEnv: DevEnvironment,
-            leftNeighbor: State | undefined): SingleCellComponent {
+            leftNeighbor: AstComponent | undefined): SingleCellComponent {
 
         const compiledCell = new HeadedCellComponent(this, cell);
         
@@ -165,7 +163,7 @@ export class HideHeader extends AtomicHeader {
         compiledCell.state = Reveal(leftNeighbor, tapes);
         return compiledCell;
     }
-}
+} */
 
 /**
  * LiteralHeaders are references to a particular tape name (e.g. "text")
@@ -173,10 +171,9 @@ export class HideHeader extends AtomicHeader {
 export class LiteralHeader extends AtomicHeader {
     
     public compile(cell: CellComponent, 
-                    namespace: Namespace, 
                     devEnv: DevEnvironment): SingleCellComponent {
         const compiledCell = new HeadedCellComponent(this, cell);
-        compiledCell.state = Lit(this.text, cell.text);
+        compiledCell.ast = Lit(this.text, cell.text);
         return compiledCell;
     }
 }
@@ -196,7 +193,6 @@ export class CommentHeader extends Header {
     }
 
     public compile(cell: CellComponent, 
-                    namespace: Namespace, 
                     devEnv: DevEnvironment): SingleCellComponent {
         return new CommentComponent(cell);
     }
@@ -221,11 +217,10 @@ abstract class UnaryHeader extends Header {
     }
 
     public compile(cell: CellComponent, 
-                    namespace: Namespace, 
                     devEnv: DevEnvironment): SingleCellComponent {
-        const childCell = this.child.compile(cell, namespace, devEnv);
+        const childCell = this.child.compile(cell, devEnv);
         const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
-        compiledCell.state = childCell.state;
+        compiledCell.ast = childCell.ast;
         return compiledCell;
     }
 }
@@ -236,11 +231,10 @@ abstract class UnaryHeader extends Header {
 export class MaybeHeader extends UnaryHeader {
 
     public compile(cell: CellComponent, 
-                    namespace: Namespace, 
                     devEnv: DevEnvironment): SingleCellComponent {
-        const childCell = this.child.compile(cell, namespace, devEnv);
+        const childCell = this.child.compile(cell, devEnv);
         const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
-        compiledCell.state = Maybe(childCell.state);
+        compiledCell.ast = Maybe(childCell.ast);
         return compiledCell;
     }
 }
@@ -252,11 +246,10 @@ export class MaybeHeader extends UnaryHeader {
 class NotHeader extends UnaryHeader {
 
     public compile(cell: CellComponent, 
-        namespace: Namespace, 
         devEnv: DevEnvironment): SingleCellComponent {
-        const childCell = this.child.compile(cell, namespace, devEnv);
+        const childCell = this.child.compile(cell, devEnv);
         const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
-        compiledCell.state = Not(childCell.state);
+        compiledCell.ast = Not(childCell.ast);
         return compiledCell;
     }
 }
@@ -268,22 +261,21 @@ class NotHeader extends UnaryHeader {
 class RenameHeader extends UnaryHeader {
 
     public compile(cell: CellComponent, 
-                    namespace: Namespace, 
                     devEnv: DevEnvironment): SingleCellComponent {
-        const childCell = this.child.compile(cell, namespace, devEnv);
+        const childCell = this.child.compile(cell, devEnv);
         const compiledCell = new RenameComponent(this, cell, childCell);
-        compiledCell.state = childCell.state;
+        compiledCell.ast = childCell.ast;
         return compiledCell;
     }
 
-    public merge(leftNeighbor: State | undefined, state: State): State {
+    public merge(leftNeighbor: AstComponent | undefined, state: AstComponent): AstComponent {
         if (leftNeighbor == undefined) {
             return state;
         }
-        if (!(state instanceof LiteralState)) {
+        if (!(state instanceof AstLiteral)) {
             throw new Error("Rename (>) of a non-literal");
         }
-        return Rename(leftNeighbor, state.text, state.tapeName);
+        return Rename(leftNeighbor, state.text, state.tape);
     }
 }
 
@@ -300,7 +292,7 @@ class RenameHeader extends UnaryHeader {
  */
 export class JoinHeader extends UnaryHeader {
 
-    public merge(leftNeighbor: State | undefined, state: State): State {
+    public merge(leftNeighbor: AstComponent | undefined, state: AstComponent): AstComponent {
         if (leftNeighbor == undefined) {
             return state;
         }
@@ -310,39 +302,37 @@ export class JoinHeader extends UnaryHeader {
     public compileLiteral(
         parsedText: CPUnreserved,
         cell: CellComponent,
-        namespace: Namespace,
         devEnv: DevEnvironment
     ): SingleCellComponent {
         const newCell = new CellComponent(parsedText.text, cell.position);
-        const childCell = this.child.compile(newCell, namespace, devEnv);
+        const childCell = this.child.compile(newCell, devEnv);
         return childCell;
     }
 
     public compilePiece(
         parsedText: CPResult,
         cell: CellComponent, 
-        namespace: Namespace, 
         devEnv: DevEnvironment
     ): SingleCellComponent {
 
         if (parsedText instanceof CPUnreserved) {
             const newCell = new CellComponent(parsedText.text, cell.position);
-            const childCell = this.child.compile(newCell, namespace, devEnv);
-            return this.compileLiteral(parsedText, cell, namespace, devEnv);
+            const childCell = this.child.compile(newCell, devEnv);
+            return this.compileLiteral(parsedText, cell, devEnv);
         }
 
         if (parsedText instanceof CPNegation) {
-            const childCell = this.compilePiece(parsedText.child, cell, namespace, devEnv);
+            const childCell = this.compilePiece(parsedText.child, cell, devEnv);
             const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
-            compiledCell.state = Not(childCell.state);
+            compiledCell.ast = Not(childCell.ast);
             return compiledCell;
         }
 
         if (parsedText instanceof CPAlternation) {
-            const child1Cell = this.compilePiece(parsedText.child1, cell, namespace, devEnv);
-            const child2Cell = this.compilePiece(parsedText.child2, cell, namespace, devEnv);
+            const child1Cell = this.compilePiece(parsedText.child1, cell, devEnv);
+            const child2Cell = this.compilePiece(parsedText.child2, cell, devEnv);
             const compiledCell = new NAryHeadedCellComponent(this, cell, [child1Cell, child2Cell]);
-            compiledCell.state = Uni(child1Cell.state, child2Cell.state);
+            compiledCell.ast = Uni(child1Cell.ast, child2Cell.ast);
             return compiledCell;
         }
 
@@ -350,15 +340,14 @@ export class JoinHeader extends UnaryHeader {
     }
     
     public compile(cell: CellComponent, 
-        namespace: Namespace, 
         devEnv: DevEnvironment): SingleCellComponent {
 
         if (cell.text.length == 0) {
-            return super.compile(cell, namespace, devEnv);
+            return super.compile(cell, devEnv);
         }
 
         const parsedText = parseBooleanCell(cell.text);
-        const compiledCell = this.compilePiece(parsedText, cell, namespace, devEnv);
+        const compiledCell = this.compilePiece(parsedText, cell, devEnv);
         return compiledCell;
     }
 }
@@ -374,19 +363,19 @@ export class JoinHeader extends UnaryHeader {
 export class EqualsHeader extends JoinHeader {
     
     public merge(
-        leftNeighbor: State | undefined, 
-        state: State
-    ): State {
+        leftNeighbor: AstComponent | undefined, 
+        state: AstComponent
+    ): AstComponent {
         if (leftNeighbor == undefined) {
             throw new Error("'equals/startswith/endswith/contains' requires content to its left.");
         }
 
-        if (leftNeighbor instanceof BrzConcat) {
+        if (leftNeighbor instanceof AstSequence) {
             // if your left neighbor is a concat state we have to do something a little special,
             // because startswith only scopes over the cell immediately to the left.  (if you let
             // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
             // specifying in the same row, rather than the embedded thing you're trying to catch.)
-            return Seq(leftNeighbor.child1, Filter(leftNeighbor.child2, state));
+            return leftNeighbor.filterLastChild(state);
         }
 
         return Filter(leftNeighbor, state);
@@ -395,21 +384,20 @@ export class EqualsHeader extends JoinHeader {
 
 abstract class PartialEqualsHeader extends EqualsHeader {
 
-    public abstract formSequence(state: State, tapeName: string): State;
+    public abstract formSequence(state: AstComponent, tapeName: string): AstComponent;
 
     public compileLiteral(
         parsedText: CPUnreserved,
         cell: CellComponent,
-        namespace: Namespace,
         devEnv: DevEnvironment
     ): SingleCellComponent {
         const newCell = new CellComponent(parsedText.text, cell.position);
-        const result = this.child.compile(newCell, namespace, devEnv);
+        const result = this.child.compile(newCell, devEnv);
 
         const symbolStack = new CounterStack(4);
-        const relevantTapes = result.state.getRelevantTapes(symbolStack);
+        const relevantTapes = result.ast.calculateTapes(symbolStack);
         for (const tape of relevantTapes) {
-            result.state = this.formSequence(result.state, tape);
+            result.ast = this.formSequence(result.ast, tape);
         }
         return result;
     }
@@ -421,7 +409,7 @@ abstract class PartialEqualsHeader extends EqualsHeader {
  */
 export class StartsWithHeader extends PartialEqualsHeader {
 
-    public formSequence(state: State, tapeName: string): State {
+    public formSequence(state: AstComponent, tapeName: string): AstComponent {
         const anychars = Rep(Any(tapeName));
         return Seq(state, anychars);
     }
@@ -433,7 +421,7 @@ export class StartsWithHeader extends PartialEqualsHeader {
  */
 export class EndsWithHeader extends PartialEqualsHeader {
     
-    public formSequence(state: State, tapeName: string): State {
+    public formSequence(state: AstComponent, tapeName: string): AstComponent {
         const anychars = Rep(Any(tapeName));
         return Seq(anychars, state);
     }
@@ -445,7 +433,7 @@ export class EndsWithHeader extends PartialEqualsHeader {
  */
 export class ContainsHeader extends PartialEqualsHeader {
     
-    public formSequence(state: State, tapeName: string): State {
+    public formSequence(state: AstComponent, tapeName: string): AstComponent {
         const anychars = Rep(Any(tapeName));
         return Seq(anychars, state, anychars);
     }
@@ -483,24 +471,22 @@ export class SlashHeader extends BinaryHeader {
      */
     
     public compile(cell: CellComponent, 
-                    namespace: Namespace, 
                     devEnv: DevEnvironment): SingleCellComponent {
-        const childCell1 = this.child1.compile(cell, namespace, devEnv);
-        const childCell2 = this.child2.compile(cell, namespace, devEnv);
+        const childCell1 = this.child1.compile(cell, devEnv);
+        const childCell2 = this.child2.compile(cell, devEnv);
         const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
-        compiledCell.state = Seq(childCell1.state, childCell2.state);
+        compiledCell.ast = Seq(childCell1.ast, childCell2.ast);
         return compiledCell;
     }
 
     public compileAndMerge(cell: CellComponent,
-                            namespace: Namespace,
                             devEnv: DevEnvironment,
-                            leftNeighbor: State | undefined): SingleCellComponent {
+                            leftNeighbor: AstComponent | undefined): SingleCellComponent {
         
-        const childCell1 = this.child1.compileAndMerge(cell, namespace, devEnv, leftNeighbor);
-        const childCell2 = this.child2.compileAndMerge(cell, namespace, devEnv, childCell1.state);
+        const childCell1 = this.child1.compileAndMerge(cell, devEnv, leftNeighbor);
+        const childCell2 = this.child2.compileAndMerge(cell, devEnv, childCell1.ast);
         const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
-        compiledCell.state = childCell2.state;
+        compiledCell.ast = childCell2.ast;
         return compiledCell;
     }
 }
@@ -516,7 +502,7 @@ export class SlashHeader extends BinaryHeader {
 const SYMBOL = [ "(", ")", "%", "/", '@', ">", ":" ];
 const RESERVED_HEADERS = ["embed", "maybe", "not", "hide", "reveal", "equals", "startswith", "endswith", "contains" ];
 
-type BinaryOp = (...children: State[]) => State;
+type BinaryOp = (...children: AstComponent[]) => AstComponent;
 const BINARY_OPS: {[opName: string]: BinaryOp} = {
     "or": Uni,
     "concat": Seq,
@@ -543,7 +529,9 @@ var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
 );
 
 var HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
-    MPAlternation(HP_UNRESERVED, HP_EMBED, HP_HIDE, HP_REVEAL, HP_JOIN, HP_PARENS)
+    MPAlternation(HP_UNRESERVED, HP_EMBED, HP_HIDE, 
+    //HP_REVEAL, 
+    HP_JOIN, HP_PARENS)
 );
 
 const HP_COMMENT = MPComment<Header>(
@@ -566,10 +554,12 @@ const HP_HIDE = MPSequence<Header>(
     () => new HideHeader("hide")
 );
 
+/*
 const HP_REVEAL = MPSequence<Header>(
     ["reveal"],
     () => new RevealHeader("reveal")
 );
+*/
 
 const HP_JOIN = MPSequence<Header>(
     ["@", HP_SUBEXPR],
@@ -655,7 +645,7 @@ class CellComponent extends TabularComponent {
  */
 export abstract class GrammarComponent extends TabularComponent {
 
-    public state: State = Epsilon();
+    public ast: AstComponent = Epsilon();
 
     /**
      * The previous sibling of the component (i.e. the component that shares
@@ -677,14 +667,20 @@ export abstract class GrammarComponent extends TabularComponent {
      */
     public child: GrammarComponent | undefined = undefined;
 
-    public compile(namespace: Namespace, devEnv: DevEnvironment): void { }
+    public compile(devEnv: DevEnvironment): void { }
 
-    public runChecks(namespace: Namespace, devEnv: DevEnvironment): void {
+    public assign(ns: AstNamespace, devEnv: DevEnvironment): void {
         if (this.sibling != undefined) {
-            this.sibling.runChecks(namespace, devEnv);
+            this.sibling.assign(ns, devEnv);
+        }
+    }
+
+    public runChecks(devEnv: DevEnvironment): void {
+        if (this.sibling != undefined) {
+            this.sibling.runChecks(devEnv);
         }
         if (this.child != undefined) {
-            this.child.runChecks(namespace, devEnv);
+            this.child.runChecks(devEnv);
         }
     }
 }
@@ -772,8 +768,7 @@ class EnclosureComponent extends GrammarComponent {
         devEnv.markCommand(this.position.sheet, this.position.row, this.position.col);
     }
     
-    public compile(namespace: Namespace, 
-        devEnv: DevEnvironment): void {
+    public compile(devEnv: DevEnvironment): void {
 
         // we only ever end up in this base EncloseComponent compile if it wasn't
         // a known operator.  this is an error, but we flag it for the programmer
@@ -784,13 +779,13 @@ class EnclosureComponent extends GrammarComponent {
         // state (if present), and if not, the empty grammar.
 
         if (this.child != undefined) {
-            this.child.compile(namespace, devEnv);
-            this.state = this.child.state;
+            this.child.compile(devEnv);
+            this.ast = this.child.ast;
         }
 
         if (this.sibling != undefined) {
-            this.sibling.compile(namespace, devEnv);
-            this.state = this.sibling.state;
+            this.sibling.compile(devEnv);
+            this.ast = this.sibling.ast;
         }
     }
 
@@ -830,27 +825,21 @@ class EnclosureComponent extends GrammarComponent {
 
 class AssignmentComponent extends EnclosureComponent {
 
-    public compile(namespace: Namespace, devEnv: DevEnvironment): void {
 
-        // first compile the previous sibling.
-        if (this.sibling != undefined) {
-            this.sibling.compile(namespace, devEnv);
-        }
-
+    public assign(ns: AstNamespace, devEnv: DevEnvironment): void {
+        super.assign(ns, devEnv);
+        
         // determine what symbol you're assigning to
         const trimmedText = this.text.slice(0, this.text.length-1).trim();
         const trimmedTextLower = trimmedText.toLowerCase();
+
 
         if (RESERVED_WORDS.has(trimmedTextLower)) {
             // oops, assigning to a reserved word
             this.markError(devEnv, "Assignment to reserved word", 
                 "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
                 `reserved word ${trimmedText}.  Choose a different symbol name.`);
-            if (this.child != undefined) {
-                // compile the child just in case there are useful errors to display
-                this.child.compile(namespace, devEnv);
-            }
-            return;
+            
         }
 
         if (this.child == undefined) {
@@ -861,25 +850,32 @@ class AssignmentComponent extends EnclosureComponent {
             return;
         }
 
-        this.child.compile(namespace, devEnv);
-        this.state = this.child.state;
-        
-        if (namespace.hasSymbol(trimmedText)) {
-            // oops, trying to assign to a symbol that already is assigned to!
-            this.markError(devEnv, "Redefining existing symbol", 
-                `You've already assigned something to the symbol ${trimmedText}`);
-            return;
+        this.ast = this.child.ast;
+
+        try {
+            ns.addSymbol(trimmedText, this.ast);
+        } catch (e) {
+            this.markError(devEnv, 'Invalid assignment',
+                (e as Error).message);
+        }
+    }
+
+    public compile(devEnv: DevEnvironment): void {
+
+        if (this.sibling != undefined) {
+            this.sibling.compile(devEnv);
         }
 
-        namespace.addSymbol(trimmedText, this.state);
+        if (this.child != undefined) {
+            this.child.compile(devEnv);
+        }
     }
 
 }
 
 class BinaryOpComponent extends EnclosureComponent {
 
-    public compile(namespace: Namespace, 
-                            devEnv: DevEnvironment): void {
+    public compile(devEnv: DevEnvironment): void {
 
         const trimmedText = this.text.slice(0, this.text.length-1).trim();
 
@@ -899,9 +895,9 @@ class BinaryOpComponent extends EnclosureComponent {
             return;
         }
 
-        this.sibling.compile(namespace, devEnv);
-        this.child.compile(namespace, devEnv);
-        this.state = op(this.sibling.state, this.child.state);
+        this.sibling.compile(devEnv);
+        this.child.compile(devEnv);
+        this.ast = op(this.sibling.ast, this.child.ast);
     }
 }
 
@@ -914,7 +910,7 @@ class ApplyComponent extends EnclosureComponent {
 class TableComponent extends EnclosureComponent {
 
 
-    public compile(namespace: Namespace, devEnv: DevEnvironment): void {
+    public compile(devEnv: DevEnvironment): void {
 
         if (this.child == undefined) {
             this.markWarning(devEnv, "Empty table",
@@ -924,11 +920,11 @@ class TableComponent extends EnclosureComponent {
         }
 
         if (this.sibling != undefined) {
-            this.sibling.compile(namespace, devEnv);
+            this.sibling.compile(devEnv);
         }
 
-        this.child.compile(namespace, devEnv);
-        this.state = this.child.state;
+        this.child.compile(devEnv);
+        this.ast = this.child.ast;
     }
 
 
@@ -946,7 +942,7 @@ abstract class AbstractTestSuiteComponent extends EnclosureComponent {
      * Test doesn't make any change to the State it returns; adding a "test" below
      * a grammar returns the exact same grammar as otherwise.  
      */
-    public compile(namespace: Namespace, devEnv: DevEnvironment): void {
+    public compile(devEnv: DevEnvironment): void {
         
         if (this.sibling == undefined) {
             this.markError(devEnv, "Wayward test",
@@ -954,14 +950,14 @@ abstract class AbstractTestSuiteComponent extends EnclosureComponent {
             return;
         }
 
-        const sibling = this.sibling.compile(namespace, devEnv);
+        const sibling = this.sibling.compile(devEnv);
 
         if (this.child == undefined) {
             this.markWarning(devEnv, 
                 "Empty test",
                 "'test' seems to be missing something to test; " +
                 "something should be in the cell to the right.");
-            this.state = this.sibling.state;
+            this.ast = this.sibling.ast;
             return; // whereas usually we result in the empty grammar upon erroring, in this case
                         // we don't want to let a flubbed "test" command obliterate the grammar
                         // it was meant to test!
@@ -971,26 +967,27 @@ abstract class AbstractTestSuiteComponent extends EnclosureComponent {
             this.markError(devEnv, "Cannot execute tests",
                 "You can't nest another operator to the right of a test block, " + 
                 "it has to be a content table.");
-            this.state = this.sibling.state;
+            this.ast = this.sibling.ast;
             return;
         }
 
-        this.child.compile(namespace, devEnv);
+        this.child.compile(devEnv);
         this.tests = this.child.rows;
-        this.state = this.sibling.state;
+        this.ast = this.sibling.ast;
     }
 
 }
 
 class TestSuiteComponent extends AbstractTestSuiteComponent {
 
-    public runChecks(namespace: Namespace, devEnv: DevEnvironment): void {
-        super.runChecks(namespace, devEnv);
+    public runChecks(devEnv: DevEnvironment): void {
+        super.runChecks(devEnv);
 
+        /*
         for (const test of this.tests) {
             // the appropriate operation here is the filter of my state
             // by the test's state
-            if (!this.state.runUnitTest(test.state)) {
+            if (!this.ast.runUnitTest(test.ast)) {
                 test.markError(devEnv, `Test failed: ${test.text}`,
                     "Test failed: This row cannot be generated by the grammar above.");
             }
@@ -998,6 +995,7 @@ class TestSuiteComponent extends AbstractTestSuiteComponent {
             test.markInfo(devEnv, `Test succeeded: ${test.text}`,
                     "Test succeeded: This row can be generated by the grammar above.");
         }
+        */
     }
 }
 
@@ -1005,13 +1003,14 @@ class TestNotSuiteComponent extends AbstractTestSuiteComponent {
 
     protected tests: RowComponent[] = [];
     
-    public runChecks(namespace: Namespace, devEnv: DevEnvironment): void {
-        super.runChecks(namespace, devEnv);
+    public runChecks(devEnv: DevEnvironment): void {
+        super.runChecks(devEnv);
 
+        /*
         for (const test of this.tests) {
             // the appropriate operation here is the filter of my state
             // by the test's state
-            if (this.state.runUnitTest(test.state)) {
+            if (this.ast.runUnitTest(test.ast)) {
                 // opposite of TestSuiteComponent: mark an error if the test succeeds
                 test.markError(devEnv, `Test failed: ${test.text}`,
                     "Test failed: This row can be generated by the grammar above.");
@@ -1021,6 +1020,7 @@ class TestNotSuiteComponent extends AbstractTestSuiteComponent {
             test.markInfo(devEnv, `Test succeeded: ${test.text}`,
                     "Test succeeded: This row cannot be generated by the grammar above.");
         }
+        */
     }
 }
 
@@ -1042,14 +1042,19 @@ export class SheetComponent extends EnclosureComponent {
         throw new Error("This appears to be a header, but what is it a header for?");
     } */
 
-    public compile(namespace: Namespace, devEnv: DevEnvironment): void {
+    public compile(devEnv: DevEnvironment): void {
+
+        const ns = Ns(this.name);
+        this.ast = ns;
 
         if (this.child == undefined) {
             return;
         }
 
-        this.child.compile(namespace, devEnv);
-        this.state = this.child.state;
+        this.child.compile(devEnv);
+        this.child.assign(ns, devEnv);
+
+        //this.ast = this.child.ast;
         
         // We automatically assign the last child enclosure to the symbol
         // __MAIN__, which will serve as the default State when this sheet
@@ -1060,14 +1065,15 @@ export class SheetComponent extends EnclosureComponent {
         // sheets, letting us incorporate many non-Gramble CSVs as
         // databases without having to add Gramble-style assignment syntax.
 
-        if (namespace.hasSymbol("__MAIN__")) {
+        if (ns.getSymbol("__MAIN__") != undefined) {
             // It's not forbidden for programmers to assign to __MAIN__.  If they 
             // already have defined __MAIN__, respect that and don't
             // reassign it.
             return;
         }
 
-        namespace.addSymbol("__MAIN__", this.state);
+        ns.addSymbol("__MAIN__", this.child.ast);
+
     }
 
     public get sheet(): SheetComponent {
@@ -1149,22 +1155,21 @@ class ContentsComponent extends EnclosureComponent {
         return child;
     }
 
-    public compile(namespace: Namespace, 
-                        devEnv: DevEnvironment): void {
+    public compile(devEnv: DevEnvironment): void {
 
         if (this.sibling != undefined) {
-            this.sibling.compile(namespace, devEnv);
+            this.sibling.compile(devEnv);
         }
 
-        this.rows.map(row => row.compile(namespace, devEnv));
-        var rowStates = this.rows.map(row => row.state);
-        rowStates = rowStates.filter(state => !(state instanceof BrzEpsilon));
-        this.state = Uni(...rowStates);
+        this.rows.map(row => row.compile(devEnv));
+        var rowStates = this.rows.map(row => row.ast);
+        rowStates = rowStates.filter(state => !(state instanceof Epsilon));
+        this.ast = Uni(...rowStates);
     }
 
     
-    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
-        this.rows.map(row => row.runChecks(ns, devEnv));
+    public runChecks(devEnv: DevEnvironment): void {
+        this.rows.map(row => row.runChecks(devEnv));
     }
 
     public toString(): string {
@@ -1179,17 +1184,17 @@ class RowComponent extends GrammarComponent {
     protected uncompiledCells: [Header, CellComponent][] = [];
     protected compiledCells: SingleCellComponent[] = [];
     
-    public compile(namespace: Namespace, devEnv: DevEnvironment): void {
-        var resultState: State | undefined = undefined;
+    public compile(devEnv: DevEnvironment): void {
+        var resultState: AstComponent | undefined = undefined;
         //for (var i = this.uncompiledCells.length-1; i >= 0; i--) {
         for (const [header, cell] of this.uncompiledCells) {
             //const [header, cell] = this.uncompiledCells[i];
             try {
-                const compiledCell = header.compileAndMerge(cell, namespace, devEnv, resultState);
+                const compiledCell = header.compileAndMerge(cell, devEnv, resultState);
                 compiledCell.mark(devEnv);
                 // if it was zero, ignore the result of the merge   
-                if (cell.text.length > 0 && !(compiledCell.state instanceof BrzEpsilon)) {
-                    resultState = compiledCell.state;
+                if (cell.text.length > 0 && !(compiledCell.ast instanceof Epsilon)) {
+                    resultState = compiledCell.ast;
                 } 
                 this.compiledCells = [ compiledCell, ...this.compiledCells];
             } catch (e) {
@@ -1201,15 +1206,15 @@ class RowComponent extends GrammarComponent {
             // everything was comments or empty
             resultState = Epsilon();
         }
-        this.state = resultState;
+        this.ast = resultState;
     }
 
     public addContent(header: Header, cell: CellComponent): void {
         this.uncompiledCells.push([header, cell]);
     }
 
-    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
-        this.compiledCells.map(cell => cell.runChecks(ns, devEnv));
+    public runChecks(devEnv: DevEnvironment): void {
+        this.compiledCells.map(cell => cell.runChecks(devEnv));
     }
 }
 
@@ -1236,7 +1241,7 @@ class HeadedCellComponent extends SingleCellComponent {
         devEnv.markContent(this.position.sheet, this.position.row, this.position.col, color);
     }
 
-    public compile(namespace: Namespace, devEnv: DevEnvironment): void {
+    public compile(devEnv: DevEnvironment): void {
         throw new Error("Not implemented; shouldn't be calling this.");
     }
 }
@@ -1247,7 +1252,7 @@ class CommentComponent extends SingleCellComponent {
         devEnv.markComment(this.position.sheet, this.position.row, this.position.col);
     }
 
-    public compile(namespace: Namespace, devEnv: DevEnvironment): void {}
+    public compile(devEnv: DevEnvironment): void {}
 }
 
 class UnaryHeadedCellComponent extends HeadedCellComponent {
@@ -1260,8 +1265,8 @@ class UnaryHeadedCellComponent extends HeadedCellComponent {
         super(header, cell);
     }
 
-    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
-        this.child.runChecks(ns, devEnv);
+    public runChecks(devEnv: DevEnvironment): void {
+        this.child.runChecks(devEnv);
     }
 }
 
@@ -1277,9 +1282,9 @@ class BinaryHeadedCellComponent extends HeadedCellComponent {
         super(header, cell);
     }
 
-    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
-        this.child1.runChecks(ns, devEnv);
-        this.child2.runChecks(ns, devEnv);
+    public runChecks(devEnv: DevEnvironment): void {
+        this.child1.runChecks(devEnv);
+        this.child2.runChecks(devEnv);
 
         if (this.child1 instanceof EmbedComponent || this.child2 instanceof EmbedComponent) {
             this.cell.markWarning(devEnv, "Embed inside slash header",
@@ -1298,9 +1303,9 @@ class NAryHeadedCellComponent extends HeadedCellComponent {
         super(header, cell);
     }
 
-    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
+    public runChecks(devEnv: DevEnvironment): void {
         for (const child of this.children) {
-            child.runChecks(ns, devEnv);
+            child.runChecks(devEnv);
         }
     }
 
@@ -1308,14 +1313,9 @@ class NAryHeadedCellComponent extends HeadedCellComponent {
 
 class EmbedComponent extends HeadedCellComponent {
 
-    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
+    public runChecks(devEnv: DevEnvironment): void {
         if (this.text.length == 0) {
             return;
-        }
-        const symbol = ns.getSymbol(this.cell.text);
-        if (symbol == undefined) {
-            this.cell.markError(devEnv, `Cannot find symbol ${this.cell.text}`,
-                `Cannot find symbol ${this.cell.text}.`);
         }
     }
 }
@@ -1330,7 +1330,9 @@ class RenameComponent extends HeadedCellComponent {
         super(header, cell);
     }
 
-    public runChecks(ns: Namespace, devEnv: DevEnvironment): void {
+    public runChecks(devEnv: DevEnvironment): void {
+
+        /*
         if (!(this.state instanceof RenameState)) {
             return;
         }
@@ -1346,6 +1348,7 @@ class RenameComponent extends HeadedCellComponent {
                 `This cell refers to a tape ${this.state.fromTape},` +
                 ` but the content to its left only defines tape(s) ${[...childTapes].join(", ")}.`);
         }
+        */
     }
 
 }

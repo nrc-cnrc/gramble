@@ -83,8 +83,8 @@ describe(`${path.basename(module.filename)}`, function() {
     
     // This and the following three tests are crucial tests for Negation, because they
     // fail when the results of the enclosed grammar (here, t1:hello|t1:help) are
-    // not properly determinized.  That is, if the same result (say, h) appears in multiple
-    // yields. Consider, here, "h" transitioning to t1:ello and also "h" transition to t1:elp.
+    // not properly determinized (if the same result appears in multiple yields). Consider, 
+    // here, "h" transitioning to t1:ello and also "h" transition to t1:elp.
     // If these are separate yields, then the negation that wraps them can be going down the second
     // path through "elp", eventually fail to join it with "ello" on the other side, and say 
     // "Yay, that failed, so I succeed."  But that ends up succeeding on "hello", which should
@@ -100,7 +100,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testAst(grammar, []);
     });
 
-    
     // This one is testing the same thing, but the problem is more subtle.  Improperly
     // determinized, this could have an "h" leading into the first child of the concat, 
     // the repetition, or (because this repetition can be zero) finishing the repetition
@@ -294,7 +293,17 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"ii","t1":"h"},
             {"t2":"i","t1":"hh"},
             {"t2":"iii"},
-            {"t1":"hhh"}]
+            {"t1":"hhh"}];
+            testAst(grammar, expectedResults, "__MAIN__", 4, 4);
+    }); 
+
+    describe('~(t1:h|t2:h)', function() {
+        const grammar = Not(Uni(t1("h"), t2("i")));
+        const expectedResults: StringDict[] = [
+            {},                     {"t2":"i","t1":"h"},
+            {"t2":"ii"},            {"t1":"hh"},
+            {"t2":"ii","t1":"h"},   {"t2":"i","t1":"hh"},
+            {"t2":"iii"},           {"t1":"hhh"}];
             testAst(grammar, expectedResults, "__MAIN__", 4, 4);
     }); 
 

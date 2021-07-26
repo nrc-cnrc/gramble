@@ -24,6 +24,8 @@ describe(`${path.basename(module.filename)}`, function() {
         //testHasVocab(grammar, {t1: 2});
         testAst(grammar, [{t1: "hi"}], "test.b");
     });
+
+    
     
     describe('Lowercase assignment, uppercase reference', function() {
         const grammar = Ns("test", 
@@ -48,6 +50,15 @@ describe(`${path.basename(module.filename)}`, function() {
                         { "a": Seq(t1("hi"), t1("world")),
                           "b": Embed("a") });
         testAst(grammar, [{t1: "hiworld"}], "test.b");
+    });
+
+    describe('Symbol containing t1:hi+t2:world', function() {
+        const grammar = Ns("test", 
+                        { "a": Seq(t1("hi"), t2("world")),
+                          "b": Embed("a") });
+        testAstHasTapes(grammar, ["t1", "t2"]);
+        //testHasVocab(grammar, {t1: 2});
+        testAst(grammar, [{t1: "hi", t2: "world"}], "test.b");
     });
 
     describe('Symbol containing t1:hi|t1:goodbye', function() {

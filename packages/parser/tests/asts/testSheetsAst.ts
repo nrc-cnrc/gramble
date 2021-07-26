@@ -1,7 +1,7 @@
-import { Project } from "../src/project";
+import { Project } from "../../src/project";
 import { dirname, basename } from "path";
-import { testProject, testErrors, testSymbols, testStructure } from "./testUtils";
-import { TextDevEnvironment } from "../src/textInterface";
+import { testProject, testErrors, testStructure } from "./testUtilsAst";
+import { TextDevEnvironment } from "../../src/textInterface";
 
 import * as path from 'path';
 
@@ -12,7 +12,7 @@ export function sheetFromFile(path: string): Project {
     const devEnv = new TextDevEnvironment(dir);
     const project = new Project(devEnv);
     project.addSheet(sheetName);
-    project.runChecks();
+    //project.runChecks();
     return project;
 }
 
@@ -28,14 +28,13 @@ describe(`${path.basename(module.filename)}`, function() {
             ["word",    ["child"]],
             ["table",   ["child", "child"]]
         ]);
-        testSymbols(project, ["word"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word"]);
+        testProject(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
     });
 
-    /*
     describe('Minimal grammar with no table: op', function() {
 
         const project = sheetFromFile("./tests/csvs/minimalGrammarNoTable.csv");
@@ -44,8 +43,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testStructure(project, [
             ["word",    ["child"]]
         ]);
-        testSymbols(project, ["word"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word"]);
+        testProject(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
@@ -56,7 +55,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/bareGrammar.csv");
 
         testErrors(project, []);
-        testProject(project, '__MAIN__', [
+        testProject(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
@@ -67,12 +66,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/bareGrammarWithTable.csv");
 
         testErrors(project, []);
-        testProject(project, '__MAIN__', [
+        testProject(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
     });
-
 
     describe('Embeds', function() {
 
@@ -86,8 +84,8 @@ describe(`${path.basename(module.filename)}`, function() {
             ["verb",    ["child", "sibling", "sibling"]],
             ["table",   ["child", "child"]]
         ]);
-        testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -107,8 +105,8 @@ describe(`${path.basename(module.filename)}`, function() {
             ["verb",    ["child", "sibling", "sibling"]],
             ["table",   ["child", "child"]]
         ]);
-        testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -122,8 +120,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/uppercaseEmbed.csv");
 
         testErrors(project, []);
-        testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -137,8 +135,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/uppercaseSymbol.csv");
 
         testErrors(project, []);
-        testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -151,23 +149,22 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/lowercaseSymbol.csv");
 
         testErrors(project, []);
-        testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
             { text: "moobaz", gloss: "jump-2SG" }
         ]);
     });
-    
     
     describe('Bare grammar with embeds', function() {
 
         const project = sheetFromFile("./tests/csvs/bareGrammarWithEmbeds.csv");
         project.devEnv.logErrors();
         testErrors(project, []);
-        testSymbols(project, ["verb", "suffix"]);
-        testProject(project, '__MAIN__', [
+        //testSymbols(project, ["verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -175,14 +172,14 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-
+    /*
     describe('Embeds and unit tests', function() {
 
         const project = sheetFromFile("./tests/csvs/embedGrammarWithTests.csv");
 
         testErrors(project, []);
-        testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -195,8 +192,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/negativeTests.csv");
 
         testErrors(project, []);
-        testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -236,15 +233,15 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobaz", gloss: "jump-2SG" }
         ]);
     });
-
+*/
     
     describe('Table with empty cell', function() {
 
         const project = sheetFromFile("./tests/csvs/emptyCell.csv");
 
         testErrors(project, []);
-        testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -265,8 +262,8 @@ describe(`${path.basename(module.filename)}`, function() {
             ["or",   ["child", "child"]],
             ["table",    ["child", "child", "sibling"]]
         ]);
-        testSymbols(project, ["word", "verb"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb"]);
+        testProject(project, [
             { text: "umfoo", gloss: "[1SG]run" },
             { text: "ummoo", gloss: "[1SG]jump" },
             { text: "foobar", gloss: "run[2SG]" },
@@ -274,19 +271,18 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    
     describe('Reference to a missing symbol', function() {
 
         const project = sheetFromFile("./tests/csvs/missingSymbol.csv");
         testErrors(project, [
             ["missingSymbol", 6, 3, "error"]
         ]);
-        testSymbols(project, ["word", "verb"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb"]);
+        testProject(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
-    }); 
+    });  
 
     describe('Grammar with embeds and an irrelevant join', function() {
 
@@ -297,8 +293,8 @@ describe(`${path.basename(module.filename)}`, function() {
             ["join",    ["child", "child"]],
             ["table",      ["child", "child", "sibling"]],
         ]);
-        testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run[1SG]", lang: "foobese" },
             { text: "moobar", gloss: "jump[1SG]", lang: "foobese" },
             { text: "foobaz", gloss: "run[2SG]", lang: "foobese" },
@@ -306,7 +302,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
     describe('Grammar with embeds and a relevant join', function() {
 
         const project = sheetFromFile("./tests/csvs/relevantJoin.csv");
@@ -316,8 +311,8 @@ describe(`${path.basename(module.filename)}`, function() {
             ["join",    ["child", "child"]],
             ["table",      ["child", "child", "sibling"]],
         ]);
-        testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run[1SG]", subj: "1SG" },
             { text: "moobar", gloss: "jump[1SG]", subj: "1SG" },
         ]);
@@ -328,7 +323,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/maybeHeader.csv");
         
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foo" },
             { text: "moo" },
             { text: "foobar" },
@@ -336,14 +331,13 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
     describe('"maybe embed" header', function() {
 
         const project = sheetFromFile("./tests/csvs/maybeEmbed.csv");
         
         testErrors(project, []);
-        testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -353,13 +347,14 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    
     describe('"MAYBE X" header to test case insensitivity', function() {
 
         const project = sheetFromFile("./tests/csvs/uppercaseMaybe.csv");
         
         testErrors(project, []);
-        testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, 'word', [
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testProject(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -374,7 +369,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/slashHeader.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobar", gloss: "foo-1SG" },
             { text: "moobar", gloss: "moo-1SG" },
             { text: "foobaz", gloss: "foo-2SG" },
@@ -387,7 +382,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/commentHeader.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
@@ -398,7 +393,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/headerWithParens.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foo", gloss: "foo" },
             { text: "moo", gloss: "moo" }
         ]);
@@ -471,18 +466,13 @@ describe(`${path.basename(module.filename)}`, function() {
 
     });
 
+    /*
     describe('Multi-sheet project', function() {
 
         const project = sheetFromFile("./tests/csvs/externalRef.csv");
 
         testErrors(project, []);
-        testSymbols(project, [
-            "word", 
-            "embedGrammar.word", 
-            "embedGrammar.verb", 
-            "embedGrammar.suffix"
-        ]);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -568,13 +558,37 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "able" }
         ]);
     });
-
+*/
     describe('Hide header', function() {
 
         const project = sheetFromFile("./tests/csvs/hide.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
+            { text: "foo" }
+        ]);
+    });
+
+    
+    describe('Hiding an irrelevant tape', function() {
+
+        const project = sheetFromFile("./tests/csvs/hideIrrelevant.csv");
+
+        testErrors(project, 
+            [["hideIrrelevant", 1, 4, "error"]]
+        );
+        
+        testProject(project, [
+            { text: "foo", gloss: "run" }
+        ]);
+    });
+
+    describe('Hide header with embeds', function() {
+
+        const project = sheetFromFile("./tests/csvs/hideEmbed.csv");
+
+        testErrors(project, []);
+        testProject(project, [
             { text: "foobar", gloss: "run[1SG]", subj: "[1SG]" },
             { text: "moobar", gloss: "jump[1SG]", subj: "[1SG]" },
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
@@ -589,7 +603,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/doubleHide.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobar", gloss: "run[1SG]" },
             { text: "moobar", gloss: "jump[1SG]" },
             { text: "foobaz", gloss: "run[2SG]" },
@@ -604,7 +618,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/doubleHideSlash.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobar", gloss: "run[1SG]" },
             { text: "moobar", gloss: "jump[1SG]" },
             { text: "foobaz", gloss: "run[2SG]" },
@@ -614,6 +628,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    /*
     describe('Reveal header', function() {
 
         const project = sheetFromFile("./tests/csvs/reveal.csv");
@@ -643,13 +658,14 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moo", gloss: "jump[3SG]" }
         ]);
     });
-    
+    */
+
     describe('Join header', function() {
 
         const project = sheetFromFile("./tests/csvs/flagHeader.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" }
         ]);
@@ -660,7 +676,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/flagHeaderWithOr.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
             { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
@@ -675,7 +691,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/flagHeaderOnLeft.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobar", gloss: "run[1SG]", subj: "[2SG][1SG]"  },
             { text: "moobar", gloss: "jump[1SG]", subj: "[2SG][1SG]"  },
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG][2SG]"  },
@@ -688,7 +704,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/trivialFlagHeader.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobar", gloss: "run[1SG]", subj: "[1SG]", mood: "[IMP]" },
             { text: "moobar", gloss: "jump[1SG]", subj: "[1SG]", mood: "[IMP]" },
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]", mood: "[IMP]" },
@@ -701,7 +717,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/complexFlagHeader.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobeez", gloss: "run[IMP]", subj: "[IMP]", mood: "[IMP]" },
             { text: "moobeez", gloss: "jump[IMP]", subj: "[IMP]", mood: "[IMP]" }
         ]);
@@ -713,7 +729,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/complexFlagHeader2.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobeez", gloss: "run[IMP]", subj: "[IMP]", mood: "[IMP]" },
             { text: "moobeez", gloss: "jump[IMP]", subj: "[IMP]", mood: "[IMP]" }
         ]);
@@ -724,19 +740,18 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/complexFlagHeader3.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobeez", gloss: "run[IMP]", subj: "[IMP]", mood: "[IMP]" },
             { text: "moobeez", gloss: "jump[IMP]", subj: "[IMP]", mood: "[IMP]" }
         ]);
     });
 
-    
     describe('@X/@Y header', function() {
 
         const project = sheetFromFile("./tests/csvs/complexFlagHeader4.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobeez", gloss: "run[IMP]", subj: "[IMP]", mood: "[IMP]" },
             { text: "moobeez", gloss: "jump[IMP]", subj: "[IMP]", mood: "[IMP]" }
         ]);
@@ -748,7 +763,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/complexFlagHeader5.csv");
 
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobeez", gloss: "run[IMP]", subj: "[IMP]", mood: "[IMP]", order: "[IMP]" },
             { text: "moobeez", gloss: "jump[IMP]", subj: "[IMP]", mood: "[IMP]", order: "[IMP]" }
         ]);
@@ -759,7 +774,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/flagEmbed.csv");
     
         testErrors(project, []);
-        testProject(project, 'word', [
+        testProject(project, [
             {"subj":"[2SG]",    "text":"foobaz",    "gloss":"run[2SG]"},
             {"subj":"[IMP]",    "text":"foobeez",   "gloss":"run[IMP]"},
             {"subj":"[2SG]",    "text":"moobaz",    "gloss":"jump[2SG]"},
@@ -767,6 +782,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    /*
     describe('Equals header', function() {
 
         const project = sheetFromFile("./tests/csvs/equalsHeader.csv");
