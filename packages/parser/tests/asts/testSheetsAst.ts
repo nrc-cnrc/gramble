@@ -232,7 +232,6 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 */
     
-/*
     describe('Table with empty cell', function() {
 
         const project = sheetFromFile("./tests/csvs/emptyCell.csv");
@@ -557,7 +556,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 */
-/*
+
     describe('Hide header', function() {
 
         const project = sheetFromFile("./tests/csvs/hide.csv");
@@ -657,8 +656,8 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moo", gloss: "jump[3SG]" }
         ]);
     });
-    */
-/*
+*/
+
     describe('Join header', function() {
 
         const project = sheetFromFile("./tests/csvs/flagHeader.csv");
@@ -780,8 +779,6 @@ describe(`${path.basename(module.filename)}`, function() {
             {"subj":"[IMP]",    "text":"moobeez",   "gloss":"jump[IMP]"}
         ]);
     });
-
-    */
 
     describe('Simple equals', function() {
 
@@ -1164,7 +1161,6 @@ describe(`${path.basename(module.filename)}`, function() {
         "__GLOBAL__.containsEmbedAfter.word");
     });
 
-    
     describe('Contains header with negated embed', function() {
 
         const project = sheetFromFile("./tests/csvs/containsNegatedEmbed.csv");
