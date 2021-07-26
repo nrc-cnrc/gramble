@@ -1038,7 +1038,11 @@ export function constructRepeat(
     return constructMaybe(constructSequence(child, tail));
 }
 
-export function constructEmbed(symbolName: string, ns: INamespace) {
+export function constructEmbed(symbolName: string, ns: INamespace): Expr {
+    const symbol = ns.getSymbol(symbolName, undefined);
+    if (symbol instanceof EpsilonExpr) {
+        return symbol;
+    }
     return new EmbedExpr(symbolName, ns);
 }
 

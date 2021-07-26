@@ -1,4 +1,4 @@
-import { Seq, Uni, Join, Embed, Ns } from "../../src/ast";
+import { Seq, Uni, Join, Embed, Ns, Epsilon, Null } from "../../src/ast";
 import { 
     t1, t2, t3, 
     testAstHasTapes, 
@@ -23,6 +23,31 @@ describe(`${path.basename(module.filename)}`, function() {
         testAst(grammar, [{t1: "hi"}], "test.b");
     });
     
+
+    describe('Symbol containing ε', function() {
+        const grammar = Ns("test", 
+                        { "a": Epsilon(),
+                          "b": Embed("a") });
+        //testHasVocab(grammar, {t1: 2});
+        testAst(grammar, [{}], "test.b");
+    });
+
+    describe('Symbol containing ε+ε', function() {
+        const grammar = Ns("test", 
+                        { "a": Seq(Epsilon(), Epsilon()),
+                          "b": Embed("a") });
+        //testHasVocab(grammar, {t1: 2});
+        testAst(grammar, [{}], "test.b");
+    });
+
+    describe('Symbol containing ∅', function() {
+        const grammar = Ns("test", 
+                        { "a": Null(),
+                          "b": Embed("a") });
+        //testHasVocab(grammar, {t1: 2});
+        testAst(grammar, [], "test.b");
+    });
+
     describe('Lowercase assignment, uppercase reference', function() {
         const grammar = Ns("test", 
                         { "a": t1("hi"),
