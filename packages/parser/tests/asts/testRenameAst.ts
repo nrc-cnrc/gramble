@@ -123,8 +123,6 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testAstHasTapes(grammar, ["t1", "t3"]);
         testAst(grammar, [{t1: "hi", t3: "world"}], "test.b");
-        
-        console.log(grammar.sanityCheck());
     });
 
 });

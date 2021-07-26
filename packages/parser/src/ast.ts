@@ -608,7 +608,7 @@ export class AstNamespace extends AstComponent {
                 throw new Error("Getting Brz expressions without having calculated tapes");
             }
             expr = referent.constructExpr(ns);
-            ns.addComponent(qualifiedName, this);
+            ns.addComponent(qualifiedName, referent);
             ns.addSymbol(qualifiedName, expr);
             ns.addTapes(qualifiedName, referent.tapes);
         }
@@ -673,7 +673,6 @@ class AstEmbed extends AstAtomic {
         const newStack = [...stack, this.qualifiedName];
         this.referent.collectVocab(tapes, newStack);
     }
-
 
     public constructExpr(ns: Root): Expr {
         if (this.referent == undefined) {
@@ -757,9 +756,9 @@ export class Root implements INamespace {
             throw new Error(`Cannot generate from undefined symbol ${symbolName}`);
         }
 
-        const component = this.components.get("__MAIN__");
+        const component = this.components.get(symbolName);
         if (component == undefined) {
-            throw new Error(`No symbol called __MAIN__ somehow`);
+            throw new Error(`Cannot generate from undefined symbol ${symbolName}`);
         }
         const tapes = new TapeCollection();
         component.collectVocab(tapes);

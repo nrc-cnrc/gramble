@@ -14,8 +14,6 @@ import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    // Embedding tests
-
     describe('Symbol containing t1:hi', function() {
         const grammar = Ns("test", 
                         { "a": t1("hi"),
@@ -24,8 +22,6 @@ describe(`${path.basename(module.filename)}`, function() {
         //testHasVocab(grammar, {t1: 2});
         testAst(grammar, [{t1: "hi"}], "test.b");
     });
-
-    
     
     describe('Lowercase assignment, uppercase reference', function() {
         const grammar = Ns("test", 
@@ -123,7 +119,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testAst(outer, [{t1: "hello"}]);
     });
 
-
     describe('Nested namespaces with name shadowing, generating from default symbols', function() {
         const inner = Ns("innerNamespace");
         inner.addSymbol("x", t1("hello"));
@@ -145,7 +140,6 @@ describe(`${path.basename(module.filename)}`, function() {
 
     });
 
-    
     describe('Nested namespaces with identical names', function() {
         const inner = Ns("ns");
         inner.addSymbol("x", t1("hello"));
@@ -246,4 +240,5 @@ describe(`${path.basename(module.filename)}`, function() {
         testAst(outer, [{t1: "hello"}], "outer.inner2.x");
 
     }); 
+    
 });
