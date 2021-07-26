@@ -10,8 +10,9 @@
 import { assert } from "chai";
 import { CPAlternation, CPUnreserved, CPNegation, CPResult, parseBooleanCell } from "./cellParser";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPSequence, MPUnreserved } from "./miniParser";
-import { CounterStack, Uni, AstComponent, Lit, Embed, Seq, Epsilon, Not, Join, Filter, Rename, Hide, Rep, Any, AstLiteral, Maybe, AstSequence, Ns, AstNamespace } from "./ast";
+import { CounterStack, Uni, AstComponent, Lit, Embed, Seq, Epsilon, Not, Join, Filter, Rename, Hide, Rep, Any, AstLiteral, Maybe, AstSequence, Ns, AstNamespace, StartsWith, EndsWith, Contains } from "./ast";
 import { CellPosition, DevEnvironment, DUMMY_POSITION, HSVtoRGB, RGBtoString, TabularComponent } from "./util";
+import { constructSequence } from "./derivs";
 
 const DEFAULT_SATURATION = 0.1;
 const DEFAULT_VALUE = 1.0;
@@ -375,31 +376,17 @@ export class EqualsHeader extends JoinHeader {
             // because startswith only scopes over the cell immediately to the left.  (if you let
             // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
             // specifying in the same row, rather than the embedded thing you're trying to catch.)
-            return leftNeighbor.filterLastChild(state);
+            const lastChild = leftNeighbor.finalChild();
+            const filter = this.constructFilter(lastChild, state);
+            const remainingChildren = leftNeighbor.nonFinalChildren();
+            return Seq(...remainingChildren, filter);
         }
 
-        return Filter(leftNeighbor, state);
+        return this.constructFilter(leftNeighbor, state);
     }
-}
 
-abstract class PartialEqualsHeader extends EqualsHeader {
-
-    public abstract formSequence(state: AstComponent, tapeName: string): AstComponent;
-
-    public compileLiteral(
-        parsedText: CPUnreserved,
-        cell: CellComponent,
-        devEnv: DevEnvironment
-    ): SingleCellComponent {
-        const newCell = new CellComponent(parsedText.text, cell.position);
-        const result = this.child.compile(newCell, devEnv);
-
-        const symbolStack = new CounterStack(4);
-        const relevantTapes = result.ast.calculateTapes(symbolStack);
-        for (const tape of relevantTapes) {
-            result.ast = this.formSequence(result.ast, tape);
-        }
-        return result;
+    public constructFilter(leftNeighbor: AstComponent, condition: AstComponent): AstComponent {
+        return Filter(leftNeighbor, condition);
     }
 }
 
@@ -407,11 +394,10 @@ abstract class PartialEqualsHeader extends EqualsHeader {
  * StartsWithHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to 
  * start with X (that is, Filter(N, X.*))
  */
-export class StartsWithHeader extends PartialEqualsHeader {
+export class StartsWithHeader extends EqualsHeader {
 
-    public formSequence(state: AstComponent, tapeName: string): AstComponent {
-        const anychars = Rep(Any(tapeName));
-        return Seq(state, anychars);
+    public constructFilter(leftNeighbor: AstComponent, condition: AstComponent): AstComponent {
+        return StartsWith(leftNeighbor, condition);
     }
 }
 
@@ -419,11 +405,10 @@ export class StartsWithHeader extends PartialEqualsHeader {
  * EndsWithHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to 
  * end with X (that is, Filter(N, .*X))
  */
-export class EndsWithHeader extends PartialEqualsHeader {
+export class EndsWithHeader extends EqualsHeader {
     
-    public formSequence(state: AstComponent, tapeName: string): AstComponent {
-        const anychars = Rep(Any(tapeName));
-        return Seq(anychars, state);
+    public constructFilter(leftNeighbor: AstComponent, condition: AstComponent): AstComponent {
+        return EndsWith(leftNeighbor, condition);
     }
 }
 
@@ -431,11 +416,10 @@ export class EndsWithHeader extends PartialEqualsHeader {
  * ContainsHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to 
  * contain X (that is, Filter(N, .*X.*))
  */
-export class ContainsHeader extends PartialEqualsHeader {
+export class ContainsHeader extends EqualsHeader {
     
-    public formSequence(state: AstComponent, tapeName: string): AstComponent {
-        const anychars = Rep(Any(tapeName));
-        return Seq(anychars, state, anychars);
+    public constructFilter(leftNeighbor: AstComponent, condition: AstComponent): AstComponent {
+        return Contains(leftNeighbor, condition);
     }
 }
 

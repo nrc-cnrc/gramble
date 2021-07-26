@@ -1,5 +1,5 @@
 
-import { Seq, Uni, Filter, Epsilon } from "../../src/ast";
+import { Seq, Uni, Filter, Epsilon, Ns, Embed } from "../../src/ast";
 import { t1, t2, t3, testAst } from './testUtilsAst';
 
 import * as path from 'path';

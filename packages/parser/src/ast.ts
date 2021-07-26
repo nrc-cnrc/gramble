@@ -223,10 +223,20 @@ export class AstSequence extends AstNAry {
         return Seq(...this.children, newChild);
     }
 
-    public filterLastChild(filter: AstComponent): AstComponent {
-        const lastChild = this.children[this.children.length-1];
-        const remainingChildren = this.children.slice(0, this.children.length-2);
-        return Seq(...remainingChildren, Filter(lastChild, filter));
+    public finalChild(): AstComponent {
+        if (this.children.length == 0) {
+            // shouldn't be possible so long as client used constructX methods,
+            // but just in case
+            return Epsilon();
+        }
+        return this.children[this.children.length-1];
+    }
+
+    public nonFinalChildren(): AstComponent[] {
+        if (this.children.length <= 1) {
+            return [];
+        }
+        return this.children.slice(0, this.children.length-1);
     }
 }
 
@@ -304,6 +314,80 @@ class AstFilter extends AstBinary {
         return constructIntersection(child1, child2Etc);
     }
 }
+
+class AstStartsWith extends AstBinary {
+
+    public constructExpr(ns: Root): Expr {
+        if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
+            throw new Error("Getting Brz expression with undefined tapes");
+        }
+
+        const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
+
+        const child1 = this.child1.constructExpr(ns);
+        var child2 = this.child2.constructExpr(ns);
+
+        for (const tape of this.child2.tapes) {
+            const dot = constructDot(tape);
+            const dotStar = constructStar(dot);
+            child2 = constructBinaryConcat(child2, dotStar);
+        }
+
+        const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
+        return constructIntersection(child1, child2Etc);
+    }
+
+}
+
+class AstEndsWith extends AstBinary {
+
+    public constructExpr(ns: Root): Expr {
+        if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
+            throw new Error("Getting Brz expression with undefined tapes");
+        }
+
+        const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
+
+        const child1 = this.child1.constructExpr(ns);
+        var child2 = this.child2.constructExpr(ns);
+
+        for (const tape of this.child2.tapes) {
+            const dot = constructDot(tape);
+            const dotStar = constructStar(dot);
+            child2 = constructBinaryConcat(dotStar, child2);
+        }
+
+        const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
+        return constructIntersection(child1, child2Etc);
+    }
+
+}
+
+
+class AstContains extends AstBinary {
+
+    public constructExpr(ns: Root): Expr {
+        if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
+            throw new Error("Getting Brz expression with undefined tapes");
+        }
+
+        const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
+
+        const child1 = this.child1.constructExpr(ns);
+        var child2 = this.child2.constructExpr(ns);
+
+        for (const tape of this.child2.tapes) {
+            const dot = constructDot(tape);
+            const dotStar = constructStar(dot);
+            child2 = constructSequence(dotStar, child2, dotStar);
+        }
+
+        const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
+        return constructIntersection(child1, child2Etc);
+    }
+
+}
+
 
 abstract class AstUnary extends AstComponent {
 
@@ -797,6 +881,18 @@ export function Filter(child1: AstComponent, child2: AstComponent): AstFilter {
 
 export function Join(child1: AstComponent, child2: AstComponent): AstJoin {
     return new AstJoin(child1, child2);
+}
+
+export function StartsWith(child1: AstComponent, child2: AstComponent): AstJoin {
+    return new AstStartsWith(child1, child2);
+}
+
+export function EndsWith(child1: AstComponent, child2: AstComponent): AstJoin {
+    return new AstEndsWith(child1, child2);
+}
+
+export function Contains(child1: AstComponent, child2: AstComponent): AstJoin {
+    return new AstContains(child1, child2);
 }
 
 export function Rep(
