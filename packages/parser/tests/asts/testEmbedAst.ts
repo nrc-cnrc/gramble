@@ -72,6 +72,14 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Embed("a") });
         testAst(grammar, [{t1: "hiworld"}], "test.b");
     });
+    
+    describe('Two sequences referencing sym t1:hi+t1:world', function() {
+        const grammar = Ns("test",
+                        { "a": Seq(t1("h"), t1("i")),
+                          "b": Uni(Seq(Embed("a"), t1("world")),
+                                   Seq(Embed("a"), t1("kitty")))});
+        testAst(grammar, [{t1: "hiworld"}, {t1:"hikitty"}], "test.b");
+    });
 
     describe('Symbol containing t1:hi+t2:world', function() {
         const grammar = Ns("test", 
@@ -265,5 +273,4 @@ describe(`${path.basename(module.filename)}`, function() {
         testAst(outer, [{t1: "hello"}], "outer.inner2.x");
 
     }); 
-    
 });

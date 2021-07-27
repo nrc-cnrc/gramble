@@ -14,7 +14,8 @@ import {
     constructEmbed,
     constructRename,
     constructNegation,
-    NULL
+    NULL,
+    constructMemo
 } from "./derivs";
 import { parseCells } from "./sheetParser";
 import { RenamedTape, StringTape, Tape, TapeCollection } from "./tapes";
@@ -692,6 +693,8 @@ export class AstNamespace extends AstComponent {
                 throw new Error("Getting Brz expressions without having calculated tapes");
             }
             expr = referent.constructExpr(ns);
+            // memoize every expr
+            expr = constructMemo(expr);
             ns.addComponent(qualifiedName, referent);
             ns.addSymbol(qualifiedName, expr);
             ns.addTapes(qualifiedName, referent.tapes);

@@ -12,7 +12,7 @@ import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
-
+    /*
     describe('Joining "hiworld" with right-recursive "hi+ world"', function() {
         const ns = Ns("test");
         const world = Uni(t1("world"), Embed("hiWorld"))
@@ -21,7 +21,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ns.addSymbol("b", Join(t1("hiworld"), hiWorld));
         testAst(ns, [{t1: "hiworld"}], "test.b");
     });
-
     
     describe('Joining right-recursive "hi+ world" with "hiworld"', function() {
         const ns = Ns("test");
@@ -119,7 +118,6 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "hihihiworld"}], 
                             "test.b", 2);
     });
-
     
     describe('Emitting from center-recursive "hi+ world" with max recursion 2', function() {
         const symbolTable = Ns("test");
@@ -180,5 +178,5 @@ describe(`${path.basename(module.filename)}`, function() {
         symbolTable.addSymbol("b", hiWorld);
         testAst(symbolTable, [{t1: "hiworld"}], "test.b", 0);
     }); 
-
+    */
 })

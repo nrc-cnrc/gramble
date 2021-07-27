@@ -1,6 +1,7 @@
 import { Gen, setDifference, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
 import { assert } from "chai";
+import { Null } from "./ast";
 
 /**
  * This is the parsing/generation engine that underlies Gramble.
@@ -426,7 +427,7 @@ export abstract class Expr {
 /**
  * An expression denoting the language with one entry, that's epsilon on all tapes.
  */
- class EpsilonExpr extends Expr {
+export class EpsilonExpr extends Expr {
 
     public get id(): string {
         return "ε";
@@ -446,7 +447,7 @@ export abstract class Expr {
 /**
  * An expression denoting the empty language {}
  */
-class NullExpr extends Expr {
+export class NullExpr extends Expr {
 
     public get id(): string {
         return "∅";
@@ -574,7 +575,7 @@ class LiteralExpr extends Expr {
  * The abstract base class of all Exprs with two state children 
  * (e.g. [JoinExpr]).
  */
-abstract class BinaryExpr extends Expr {
+export abstract class BinaryExpr extends Expr {
 
     constructor(
         public child1: Expr,
@@ -620,7 +621,7 @@ class ConcatExpr extends BinaryExpr {
     }
 }
 
-class UnionExpr extends BinaryExpr {
+export class UnionExpr extends BinaryExpr {
     
     public get id(): string {
         return `(${this.child1.id}|${this.child2.id})`;
@@ -715,7 +716,6 @@ class IntersectExpr extends BinaryExpr {
         }
         const newStack = stack.add(this.symbolName);
         return this.getChild(newStack).delta(tape, newStack);
-    
     }
 
     public *deriv(
@@ -764,6 +764,100 @@ abstract class UnaryExpr extends Expr {
     }
 }
 
+class MemoExpr extends UnaryExpr {
+
+    public acceptingOnStart: {[tape: string]: boolean} = {};
+    public transitionsByTape: {[tape: string]: [Tape, Token, Expr][]} = {};
+
+    public addTransition(queryTape: Tape,
+                        resultTape: Tape,
+                        token: Token,
+                        next: Expr): void {
+        if (!(queryTape.tapeName in this.transitionsByTape)) {
+            this.transitionsByTape[queryTape.tapeName] = [];
+        }
+        this.transitionsByTape[queryTape.tapeName].push([resultTape, token, next]);
+    }
+
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        const childNext = this.child.delta(tape, stack);
+        return constructMemo(childNext);
+    }
+
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+
+        var transitions = this.transitionsByTape[tape.tapeName];
+        if (transitions == undefined) {
+            this.transitionsByTape[tape.tapeName] = [];
+            transitions = [];
+        }
+
+        var remainder = new Token(target.bits.clone());
+
+        // first we go through results we've tried before
+        for (const [origResultTape, token, next] of transitions) {
+            /*if (origResultTape.isTrivial) { // no vocab, so no possible results
+                yield [origResultTape, token, next];
+                return;
+            } */
+            
+            if (next instanceof NullExpr) {
+                break;
+            }
+
+            const matchedTape = tape.matchTape(origResultTape.tapeName);
+            if (matchedTape == undefined) {
+                throw new Error(`Failed to match ${tape.tapeName} to ${origResultTape.tapeName}..?`);
+            }
+            
+            const resultToken = matchedTape.match(token, target);
+            if (resultToken.isEmpty()) {
+                continue;
+            }
+            
+            yield [matchedTape, resultToken, next];
+
+            remainder = remainder.andNot(resultToken);
+            if (remainder.isEmpty()) {
+                return;
+            }
+        }
+
+        if (remainder.isEmpty()) {
+            return;
+        }
+
+        // if we get here, remainder is non-empty
+        for (const [cTape, cTarget, cNext] of this.child.disjointDeriv(tape, remainder, stack)) {
+            
+            if (cNext instanceof NullExpr) {
+                continue;
+            }
+
+            const shared = cTarget.and(remainder);
+            const successor = constructMemo(cNext);
+            yield [cTape, shared, successor];
+            this.addTransition(tape, cTape, shared, successor);
+            remainder = remainder.andNot(shared);
+            if (remainder.isEmpty()) {
+                return;
+            }
+        }
+
+        if (remainder.isEmpty()) {
+            return;
+        }
+
+        // if we get here, there are characters that don't match any result.  we don't
+        // want to forever keep querying the child for characters we know don't have any 
+        // result, so we remember that they're Null
+        this.addTransition(tape, tape, remainder, NULL);
+    }
+}
 
 class StarExpr extends UnaryExpr {
 
@@ -1077,4 +1171,14 @@ export function constructRename(
         return child;
     }
     return new RenameExpr(child, fromTape, toTape);
+}
+
+export function constructMemo(child: Expr): Expr {
+    if (child instanceof EpsilonExpr) {
+        return child;
+    }
+    if (child instanceof NullExpr) {
+        return child;
+    }
+    return new MemoExpr(child);
 }
