@@ -131,11 +131,23 @@ export class MultiTapeOutput {
  */
 export abstract class Tape {
     
+    constructor(
+        public parent: TapeCollection | undefined = undefined
+    ) { }
+
     public abstract readonly tapeName: string;
 
     public abstract readonly isTrivial: boolean;
 
     public abstract getTapeNames(): Set<string>;
+
+    
+    public getTape(tapeName: string): Tape | undefined {
+        if (this.parent == undefined) {
+            return undefined;
+        }
+        return this.parent.getTape(tapeName);
+    }
 
     public add(str1: string, str2: string): string[] {
         throw new Error(`Not implemented`);
@@ -224,13 +236,14 @@ export const NO_CHAR: Token = new Token(new BitSet());
 export class StringTape extends Tape {
 
     constructor(
+        parent: TapeCollection,
         public tapeName: string,
         public current: Token | undefined = undefined,
         public prev: StringTape | undefined = undefined,
         public strToIndex: Map<string, number> = new Map(),
         public indexToStr: Map<number, string> = new Map()
     ) { 
-        super();
+        super(parent);
     }
 
     public get isTrivial(): boolean {
@@ -267,11 +280,11 @@ export class StringTape extends Tape {
     }
     */
 
-    
+    /*
     public append(token: Token) {
         return new StringTape(this.tapeName, token,
                 this, this.strToIndex, this.indexToStr);
-    }
+    } */
 
     public *getStrings(): Gen<string> {
 
@@ -420,6 +433,9 @@ export class TapeCollection extends Tape {
         return new Set(this.tapes.keys());
     }
 
+    public getTape(tapeName: string): Tape | undefined {
+        return this.tapes.get(tapeName);
+    }
 
     public get tapeName(): string {
         if (this.tapes.size == 0) {
@@ -431,7 +447,7 @@ export class TapeCollection extends Tape {
     public tokenize(tapeName: string, str: string): Token[] {
         var tape = this.tapes.get(tapeName);
         if (tape == undefined) {
-            tape = new StringTape(tapeName);
+            tape = new StringTape(this, tapeName);
             this.tapes.set(tapeName, tape);
         }
         return tape.tokenize(tapeName, str);
@@ -555,6 +571,14 @@ export class RenamedTape extends Tape {
     public tokenize(tapeName: string, str: string): Token[] {
         tapeName = this.adjustTapeName(tapeName);
         return this.child.tokenize(tapeName, str);
+    }
+
+    public getTape(tapeName: string): Tape | undefined {
+        if (this.parent == undefined) {
+            return undefined;
+        }
+        tapeName = this.adjustTapeName(tapeName);
+        return this.parent.getTape(tapeName);
     }
 
     public toBits(tapeName: string, char: string): BitSet {

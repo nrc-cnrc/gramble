@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { 
     CounterStack, 
     Expr, 
@@ -15,7 +16,8 @@ import {
     constructRename,
     constructNegation,
     NULL,
-    constructMemo
+    constructMemo,
+    constructMatch
 } from "./derivs";
 import { parseCells } from "./sheetParser";
 import { RenamedTape, StringTape, Tape, TapeCollection } from "./tapes";
@@ -102,17 +104,16 @@ export abstract class AstComponent {
     }
 
     public getRoot(): Root {
-        const root = new Root();
         this.qualifyNames();
         const stack = new CounterStack(2);
         const tapes = this.calculateTapes(stack);
+        const root = new Root();
         const expr = this.constructExpr(root);
         root.addComponent("__MAIN__", this);
         root.addSymbol("__MAIN__", expr);
         root.addTapes("__MAIN__", tapes);
         return root;
     }
-
 }
 
 abstract class AstAtomic extends AstComponent {
@@ -210,7 +211,6 @@ abstract class AstNAry extends AstComponent {
     public getChildren(): AstComponent[] { 
         return this.children; 
     }
-
 }
 
 export class AstSequence extends AstNAry {
@@ -526,6 +526,21 @@ class AstHide extends AstUnary {
     }
 }
 
+export class AstMatch extends AstUnary {
+
+    constructor(
+        child: AstComponent,
+        public relevantTapes: Set<string>
+    ) {
+        super(child);
+    }
+
+    public constructExpr(ns: Root): Expr {
+        const childExpr = this.child.constructExpr(ns);
+        return constructMatch(childExpr, this.relevantTapes);
+    }
+}
+
 export class AstNamespace extends AstComponent {
 
     constructor(
@@ -694,7 +709,7 @@ export class AstNamespace extends AstComponent {
             }
             expr = referent.constructExpr(ns);
             // memoize every expr
-            expr = constructMemo(expr);
+            //expr = constructMemo(expr);
             ns.addComponent(qualifiedName, referent);
             ns.addSymbol(qualifiedName, expr);
             ns.addTapes(qualifiedName, referent.tapes);
@@ -847,11 +862,10 @@ export class Root implements INamespace {
         if (component == undefined) {
             throw new Error(`Cannot generate from undefined symbol ${symbolName}`);
         }
-        const tapes = new TapeCollection();
-        component.collectVocab(tapes);
-        yield* expr.generate(tapes, random, maxRecursion, maxChars);
+        const allTapes = new TapeCollection();
+        component.collectVocab(allTapes);
+        yield* expr.generate(allTapes, random, maxRecursion, maxChars);
     }
-
 }
 
 export function Seq(...children: AstComponent[]): AstSequence {
@@ -916,6 +930,34 @@ export function Null(): AstNull {
 
 export function Embed(name: string): AstEmbed {
     return new AstEmbed(name);
+}
+
+export function Match(child: AstComponent, ...tapes: string[]): AstMatch {
+    return new AstMatch(child, new Set(tapes));
+}
+
+export function Dot(...tapes: string[]): AstSequence {
+    return Seq(...tapes.map(t => Any(t)));
+}
+
+export function MatchDot(...tapes: string[]): AstMatch {
+    return Match(Dot(...tapes), ...tapes);
+}
+
+export function MatchDotRep(minReps: number = 0, maxReps: number = Infinity, ...tapes: string[]): AstMatch {
+    return Match(Rep(Dot(...tapes), minReps, maxReps), ...tapes)
+}
+
+export function MatchDotRep2(minReps: number = 0, maxReps: number = Infinity, ...tapes: string[]): AstMatch {
+    return Match(Seq(...tapes.map((t: string) => Rep(Any(t), minReps, maxReps))), ...tapes);
+}
+
+export function MatchDotStar(...tapes: string[]): AstMatch {
+    return MatchDotRep(0, Infinity, ...tapes)
+}
+
+export function MatchDotStar2(...tapes: string[]): AstMatch {
+    return MatchDotRep2(0, Infinity, ...tapes)
 }
 
 export function Rename(child: AstComponent, fromTape: string, toTape: string): AstRename {

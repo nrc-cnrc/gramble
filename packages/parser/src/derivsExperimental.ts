@@ -1,4 +1,4 @@
-import { BinaryExpr, CounterStack, EpsilonExpr, Expr, NULL, NullExpr, UnionExpr } from "./derivs";
+import { BinaryExpr, constructListExpr, CounterStack, EpsilonExpr, Expr, NULL, NullExpr, UnionExpr } from "./derivs";
 import { Tape, Token } from "./tapes";
 import { Gen } from "./util";
 
@@ -7,6 +7,25 @@ import { Gen } from "./util";
  * using, but don't want to delete the code because I might need
  *  them in the future.
  */
+
+class UniverseExpr extends Expr {
+
+    public get id(): string {
+        return `Σ*`;
+    }
+    
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        return this;
+    }
+    
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+        yield [tape, target, this];
+    }
+}  
 
 class TokenExpr extends Expr {
 
@@ -109,8 +128,3 @@ export function constructBinaryDisjointUnion(c1: Expr, c2: Expr): Expr {
     }
     return new DisjointUnionExpr(c1, c2);
 }
-
-function constructListExpr(children: Expr[], constructBinaryDisjointUnion: (c1: Expr, c2: Expr) => Expr, NULL: NullExpr): Expr {
-    throw new Error("Function not implemented.");
-}
-

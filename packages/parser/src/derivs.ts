@@ -1,7 +1,7 @@
 import { Gen, setDifference, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
 import { assert } from "chai";
-import { Null } from "./ast";
+import { Match, Null } from "./ast";
 
 /**
  * This is the parsing/generation engine that underlies Gramble.
@@ -353,13 +353,13 @@ export abstract class Expr {
 
                 const tapeToTry = tapes[0];
                 for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
-
+                    //console.log(`D_${cTape.tapeName}:${cTarget.stringify(cTape)} = ${cNext.id}`);
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nextQueue.push([tapes, nextOutput, cNext, chars+1]);
                 }
 
                 const delta = prevExpr.delta(tapeToTry, stack);
-
+                //console.log(`𝛿 = ${delta.id}`)
                 if (!(delta instanceof NullExpr)) {                    
                     const newTapes = tapes.slice(1);
                     nextQueue.push([newTapes, prevOutput, delta, chars]);
@@ -522,6 +522,11 @@ class LiteralExpr extends Expr {
     public get id(): string {
         const index = this.index > 0 ? `[${this.index}]` : ""; 
         return `${this.tapeName}:${this.text}${index}`;
+    }
+
+    public getText(): string {
+        // Return the remaining text for this LiteralState.
+        return this.text.slice(this.index);
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
@@ -922,26 +927,6 @@ class RenameExpr extends UnaryExpr {
     }
 }
 
-/*
-class UniverseExpr extends Expr {
-
-    public get id(): string {
-        return `Σ*`;
-    }
-    
-    public delta(tape: Tape, stack: CounterStack): Expr {
-        return this;
-    }
-    
-    public *deriv(
-        tape: Tape, 
-        target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
-        yield [tape, target, this];
-    }
-}  */
-
 class NegationExpr extends UnaryExpr {
 
     constructor(
@@ -988,6 +973,135 @@ class NegationExpr extends UnaryExpr {
     }
 }
 
+export class MatchExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public tapes: Set<string>,
+        public buffers: {[key: string]: Expr} = {}
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `Match(${Object.values(this.buffers).map(b=>b.id).join("+")},${this.child.id}`;
+    }
+
+    public delta(
+        tape: Tape,
+        stack: CounterStack
+    ): Expr {
+        if (!this.tapes.has(tape.tapeName)) {
+            // not a tape we care about, we're good
+            return this;
+        }
+        const newBuffers: {[key: string]: Expr} = {};
+        Object.assign(newBuffers, this.buffers);
+        const buffer = this.buffers[tape.tapeName];
+        if (buffer != undefined) {
+            const deltaBuffer = buffer.delta(tape, stack);
+            if (!(deltaBuffer instanceof EpsilonExpr)) {
+                return NULL;
+            }
+            newBuffers[tape.tapeName] = deltaBuffer;
+        }
+        var result: Expr = this.child;
+        for (const mTapeName of this.tapes) {
+            const mTape = tape.getTape(mTapeName);
+            if (mTape == undefined) {
+                throw new Error(`Cannot find tape ${mTape}`);
+            }
+            result = result.delta(mTape, stack);
+        }
+        if (result instanceof EpsilonExpr) {
+            return constructSequence(...Object.values(newBuffers));
+        } else {
+            return NULL;
+        }
+    }
+
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        symbolStack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+
+        for (const [c1tape, c1target, c1next] of 
+                    this.child.deriv(tape, target, symbolStack)) {
+            
+            // We need to match each character separately.
+            for (const c of c1tape.fromToken(c1tape.tapeName, c1target)) {
+
+                // cTarget: Token = c1tape.tokenize(c1tape.tapeName, c)[0]
+                const cTarget: Token = c1tape.toToken(c1tape.tapeName, c);
+                
+                // STEP A: Are we matching something already buffered?
+                const c1buffer = this.buffers[c1tape.tapeName]
+                var c1bufMatched = false;
+                if (c1buffer instanceof LiteralExpr) {
+
+                    // that means we already matched a character on a different
+                    // tape previously and now need to make sure it also matches
+                    // this character on this tape
+                    for (const [bufTape, bufTarget, bufNext] of 
+                            c1buffer.deriv(c1tape, cTarget, symbolStack)) {
+                        c1bufMatched = true;
+                    }
+                }
+
+                // STEP B: If not, constrain my successors to match this on other tapes
+                const newBuffers: {[key: string]: Expr} = {};
+                //Object.assign(newBuffers, this.buffers);
+                if (!c1bufMatched) {
+                    for (const tapeName of this.tapes.keys()) {
+                        const buffer = this.buffers[tapeName];
+                        if (tapeName == c1tape.tapeName) {
+                            // we're going to match it in a moment, don't need to match
+                            // it again!
+                            if (buffer != undefined) {
+                                newBuffers[tapeName] = buffer;
+                            }
+                            continue;
+                        }
+                        var prevText: string = "";
+                        if (buffer instanceof LiteralExpr) {
+                            // that means we already found stuff we needed to match,
+                            // so we add to that
+                            prevText = buffer.getText();
+                        }
+                        newBuffers[tapeName] = new LiteralExpr(tapeName, prevText + c);
+                    }
+                }
+                
+                // STEP C: Match the buffer
+                if (c1buffer instanceof LiteralExpr) {
+                    // that means we already matched a character on a different tape
+                    // previously and now need to make sure it also matches on this
+                    // tape
+                    for (const [bufTape, bufTarget, bufNext] of 
+                            c1buffer.deriv(c1tape, cTarget, symbolStack)) {
+                        // We expect at most one match here.
+                        // We expect bufTape == c1Tape,
+                        //   bufTape == c1Tape
+                        //   bufTarget == cTarget
+                        //   bufMatched == c1Matched
+                        //assert(bufTape == c1tape, "tape does not match");
+                        //assert(bufTarget == cTarget, "target does not match");
+                        //assert(bufMatched == c1matched, "matched does not match");
+                        newBuffers[c1tape.tapeName] = bufNext;
+
+                        yield [c1tape, cTarget, constructMatch(c1next, this.tapes, newBuffers)];
+                    }
+                } else {
+                    // my predecessors have not previously required me to match
+                    // anything in particular on this tape
+                    yield [c1tape, cTarget, constructMatch(c1next, this.tapes, newBuffers)]
+                }
+            }
+        }
+    }
+}
+
 /* CONVENIENCE FUNCTIONS */
 export const EPSILON = new EpsilonExpr();
 export const NULL = new NullExpr();
@@ -1001,7 +1115,7 @@ export function constructDot(tape: string): Expr {
     return new DotExpr(tape);
 }
 
-function constructListExpr(
+export function constructListExpr(
     children: Expr[], 
     constr: (c1: Expr, c2: Expr) => Expr,
     nullResult: Expr, 
@@ -1157,6 +1271,20 @@ export function constructDotStar(tape: string): Expr {
 export function constructUniverse(tapes: Set<string>): Expr {
     return constructSequence(...[...tapes].map(t => constructDotStar(t)));
 
+}
+
+export function constructMatch(
+    child: Expr,
+    tapes: Set<string>,
+    buffers: {[key: string]: Expr} = {}
+): Expr {
+    if (child instanceof EpsilonExpr && Object.values(buffers).every(b=>b instanceof EpsilonExpr)) {
+        return child;
+    }
+    if (child instanceof NullExpr) {
+        return child;
+    }
+    return new MatchExpr(child, tapes, buffers);
 }
 
 export function constructRename(
