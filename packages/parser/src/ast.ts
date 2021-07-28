@@ -21,7 +21,7 @@ import {
 } from "./derivs";
 import { parseCells } from "./sheetParser";
 import { RenamedTape, StringTape, Tape, TapeCollection } from "./tapes";
-import { CellPosition, flatten, Gen, setDifference, StringDict } from "./util";
+import { CellPosition, flatten, Gen, setDifference, setUnion, StringDict } from "./util";
 
 export { CounterStack, Expr };
 
@@ -535,6 +535,13 @@ export class AstMatch extends AstUnary {
         super(child);
     }
 
+    public calculateTapes(stack: CounterStack): Set<string> {
+        if (this.tapes == undefined) {
+            this.tapes = setUnion(this.child.calculateTapes(stack), this.relevantTapes)
+        }
+        return this.tapes;
+    }
+
     public constructExpr(ns: Root): Expr {
         const childExpr = this.child.constructExpr(ns);
         return constructMatch(childExpr, this.relevantTapes);
@@ -709,7 +716,7 @@ export class AstNamespace extends AstComponent {
             }
             expr = referent.constructExpr(ns);
             // memoize every expr
-            //expr = constructMemo(expr);
+            expr = constructMemo(expr);
             ns.addComponent(qualifiedName, referent);
             ns.addSymbol(qualifiedName, expr);
             ns.addTapes(qualifiedName, referent.tapes);
@@ -958,6 +965,14 @@ export function MatchDotStar(...tapes: string[]): AstMatch {
 
 export function MatchDotStar2(...tapes: string[]): AstMatch {
     return MatchDotRep2(0, Infinity, ...tapes)
+}
+
+/**
+ * Construct a MatchState for two tapes given a state graph for the first tape. 
+ */
+export function MatchFrom(firstTape: string, secondTape: string, state: AstComponent): AstComponent {
+    return Match(Seq(state, Rename(state, firstTape, secondTape)),
+                 firstTape, secondTape);
 }
 
 export function Rename(child: AstComponent, fromTape: string, toTape: string): AstRename {

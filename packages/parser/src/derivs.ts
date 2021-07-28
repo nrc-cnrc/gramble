@@ -351,6 +351,7 @@ export abstract class Expr {
                 // rotate the tapes so that we don't keep trying the same one every time
                 tapes = [... tapes.slice(1), tapes[0]];
 
+                //console.log(`querying ${prevExpr.id}`);
                 const tapeToTry = tapes[0];
                 for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
                     //console.log(`D_${cTape.tapeName}:${cTarget.stringify(cTape)} = ${cNext.id}`);
@@ -359,7 +360,7 @@ export abstract class Expr {
                 }
 
                 const delta = prevExpr.delta(tapeToTry, stack);
-                //console.log(`𝛿 = ${delta.id}`)
+                //console.log(`𝛿_${tapeToTry.tapeName} = ${delta.id}`)
                 if (!(delta instanceof NullExpr)) {                    
                     const newTapes = tapes.slice(1);
                     nextQueue.push([newTapes, prevOutput, delta, chars]);
@@ -992,15 +993,18 @@ export class MatchExpr extends UnaryExpr {
         stack: CounterStack
     ): Expr {
         if (!this.tapes.has(tape.tapeName)) {
-            // not a tape we care about, we're good
-            return this;
+            // not a tape we care about, our result is just wrapping child.delta
+            const childDelta = this.child.delta(tape, stack);
+            return constructMatch(childDelta, this.tapes, this.buffers);
         }
+
         const newBuffers: {[key: string]: Expr} = {};
         Object.assign(newBuffers, this.buffers);
         const buffer = this.buffers[tape.tapeName];
         if (buffer != undefined) {
             const deltaBuffer = buffer.delta(tape, stack);
             if (!(deltaBuffer instanceof EpsilonExpr)) {
+                //console.log(`buffer for ${tape.tapeName} isn't empty: ${buffer.id}`);
                 return NULL;
             }
             newBuffers[tape.tapeName] = deltaBuffer;
@@ -1013,9 +1017,10 @@ export class MatchExpr extends UnaryExpr {
             }
             result = result.delta(mTape, stack);
         }
-        if (result instanceof EpsilonExpr) {
-            return constructSequence(...Object.values(newBuffers));
+        if (!(result instanceof NullExpr)) {
+            return constructSequence(...Object.values(newBuffers), result);
         } else {
+            //console.log(`child for ${tape.tapeName} isn't empty: ${this.child.id}, delta is ${result.id}`);
             return NULL;
         }
     }
@@ -1028,7 +1033,12 @@ export class MatchExpr extends UnaryExpr {
 
         for (const [c1tape, c1target, c1next] of 
                     this.child.deriv(tape, target, symbolStack)) {
-            
+
+            if (!this.tapes.has(c1tape.tapeName)) {
+                yield [c1tape, c1target, constructMatch(c1next, this.tapes, this.buffers)];
+                continue;
+            }
+
             // We need to match each character separately.
             for (const c of c1tape.fromToken(c1tape.tapeName, c1target)) {
 

@@ -55,6 +55,7 @@
     "testRepeatAst": "mocha -r ts-node/register tests/asts/testRepeatAst.ts",
     "testDotAst": "mocha -r ts-node/register tests/asts/testDotAst.ts",
     "testMatchAst": "mocha -r ts-node/register tests/asts/testMatchAst.ts",
+    "testMatchRenameAst": "mocha -r ts-node/register tests/asts/testMatchRenameAst.ts",
     "testEmbedAst": "mocha -r ts-node/register tests/asts/testEmbedAst.ts",
     "testRecursionAst": "mocha -r ts-node/register tests/asts/testRecursionAst.ts",
     "testSheetsAst": "mocha -r ts-node/register tests/asts/testSheetsAst.ts"
