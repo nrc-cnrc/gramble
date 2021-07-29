@@ -1,6 +1,17 @@
-import { parseHeaderCell, SlashHeader, CommentHeader, JoinHeader, MaybeHeader, 
-    HideHeader, LiteralHeader, EmbedHeader, EqualsHeader, EndsWithHeader, 
-    StartsWithHeader, ContainsHeader } from "../src/sheetParser";
+import { 
+    parseHeaderCell, 
+    SlashHeader, 
+    CommentHeader, 
+    //JoinHeader, 
+    MaybeHeader, 
+    HideHeader, 
+    LiteralHeader, 
+    EmbedHeader, 
+    EqualsHeader, 
+    EndsWithHeader, 
+    StartsWithHeader, 
+    ContainsHeader
+} from "../src/headers";
 
 import * as path from 'path';
 import { expect } from "chai";
@@ -112,7 +123,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     });
 
-    
+    /*
     describe('Header "@text"', function() {
         const header = parseHeaderCell("@text");
 
@@ -153,6 +164,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testIsType(header.child, LiteralHeader, "child");
         testHeaderHasText(header.child, "text", "child");
     });
+
+    */
     
     
     describe('Header "equals text"', function() {
@@ -168,7 +181,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHeaderHasText(header.child, "text", "child");
     });
 
-    
+    /*
     describe('Header "equals @text"', function() {
         const header = parseHeaderCell("equals @text");
 
@@ -180,7 +193,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testIsType(header.child, JoinHeader, "child");
         testHeaderHasText(header.child, "@", "child");
-    });
+    }); */
 
     
     describe('Header "startswith text"', function() {

@@ -24,6 +24,21 @@ export function MPUnreserved<T>(
     }
 }
 
+export function MPReserved<T>(
+    reserved: Set<string>, 
+    constr: (s: string) => T,
+    caseSensitive: boolean = false    
+): MPParser<T> {
+    return function*(input: string[]) {
+        
+        const firstToken = caseSensitive ? input[0] 
+                                         : input[0].toLowerCase();
+        if (input.length == 0 || !reserved.has(firstToken)) {
+            return;
+        }
+        yield [constr(input[0]), input.slice(1)];
+    }
+}
 
 export function MPComment<T>(commentStarter: string, constr: (s: string) => T): MPParser<T> {
     return function*(input: string[]) {

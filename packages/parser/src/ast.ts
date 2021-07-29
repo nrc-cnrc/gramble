@@ -21,14 +21,14 @@ import {
 } from "./derivs";
 import { parseCells } from "./sheetParser";
 import { RenamedTape, StringTape, Tape, TapeCollection } from "./tapes";
-import { CellPosition, flatten, Gen, setDifference, setUnion, StringDict } from "./util";
+import { CellPos, flatten, Gen, setDifference, setUnion, StringDict } from "./util";
 
 export { CounterStack, Expr };
 
 class AstError {
 
     constructor(
-        public pos: CellPosition,
+        public pos: CellPos,
         public severity: "error" | "warning",
         public shortMsg: string,
         public longMsg: string
@@ -62,7 +62,7 @@ class AstError {
 
 export abstract class AstComponent {
 
-    public pos: CellPosition = new CellPosition();
+    public pos: CellPos = new CellPos();
 
     public tapes: Set<string> | undefined = undefined;
 
@@ -122,7 +122,7 @@ abstract class AstAtomic extends AstComponent {
 
 }
 
-class AstEpsilon extends AstAtomic {
+export class AstEpsilon extends AstAtomic {
 
     public calculateTapes(stack: CounterStack): Set<string> {
         if (this.tapes == undefined) {

@@ -4,6 +4,16 @@ export type Gen<T> = Generator<T, void, undefined>;
 
 export type StringDict = {[key: string]: string};
 
+export class TstError {
+
+    constructor(
+        public pos: CellPos,
+        public severity: "error" | "warning",
+        public shortMsg: string,
+        public longMsg: string
+    ) { }
+
+}
 
 /**
  * A convenience class encapsulating information about where a cell
@@ -14,7 +24,7 @@ export type StringDict = {[key: string]: string};
  * By convention we treat the spreadsheet itself as a component with 
  * its first cell at -1, -1.
  */
-export class CellPosition {
+export class CellPos {
 
     constructor(
         public readonly sheet: string = "?",
@@ -60,33 +70,7 @@ export interface DevEnvironment {
 }
 
 
-export abstract class TabularComponent {
-
-    constructor(
-        public text: string,
-        public position: CellPosition
-    ) { }
-
-    public mark(devEnv: DevEnvironment): void { }
-
-    public markError(devEnv: DevEnvironment, shortMsg: string, msg: string): void {
-        devEnv.markError(this.position.sheet, this.position.row, this.position.col,
-            shortMsg, msg, "error");
-    }
-
-    public markWarning(devEnv: DevEnvironment, shortMsg: string, msg: string): void {
-        devEnv.markError(this.position.sheet, this.position.row, this.position.col,
-        shortMsg, msg, "warning");
-    }
-
-    public markInfo(devEnv: DevEnvironment, shortMsg: string, msg: string): void {
-        devEnv.markError(this.position.sheet, this.position.row, this.position.col,
-        shortMsg, msg, "info");
-    }
-}
-
-
-export const DUMMY_POSITION = new CellPosition("?", -1, -1);
+export const DUMMY_POSITION = new CellPos("?", -1, -1);
 
 function sum(a: number[]): number {
     var s = 0;

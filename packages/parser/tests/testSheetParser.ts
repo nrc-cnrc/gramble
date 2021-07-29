@@ -12,7 +12,7 @@ export function sheetFromFile(path: string): Project {
     const devEnv = new TextDevEnvironment(dir);
     const project = new Project(devEnv);
     project.addSheet(sheetName);
-    project.runChecks();
+    project.sanityCheck();
     return project;
 }
 

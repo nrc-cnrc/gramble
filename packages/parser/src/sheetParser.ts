@@ -1,635 +1,104 @@
 
 /**
  * This file describes the parser that turns spreadsheets into abstract
- * syntax trees, for later compilation into formulas of a programming language.
- * It's agnostic as to exactly what that programming language is; to adapt
- * it to a particular language, implement Compiler<T> where T is the base class
- * of formulas in that language.
+ * syntax trees -- [AstComponent]s from ast.ts -- which are in turn transformed
+ * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { assert } from "chai";
-import { CPAlternation, CPUnreserved, CPNegation, CPResult, parseBooleanCell } from "./cellParser";
-import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPSequence, MPUnreserved } from "./miniParser";
-import { CounterStack, Uni, AstComponent, Lit, Embed, Seq, Epsilon, Not, Join, Filter, Rename, Hide, Rep, Any, AstLiteral, Maybe, AstSequence, Ns, AstNamespace, StartsWith, EndsWith, Contains } from "./ast";
-import { CellPosition, DevEnvironment, DUMMY_POSITION, HSVtoRGB, RGBtoString, TabularComponent } from "./util";
-import { constructSequence } from "./derivs";
+import { Uni, AstComponent, Epsilon, Ns, AstNamespace } from "./ast";
+import { CellPos, DevEnvironment, TstError } from "./util";
+import { BINARY_OPS, DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, parseHeaderCell, RESERVED_WORDS } from "./headers";
 
-const DEFAULT_SATURATION = 0.1;
-const DEFAULT_VALUE = 1.0;
 
-/**
- * A Header is a cell in the top row of a table, consisting of one of
- * 
- * * the name of a tape, like "text" or "gloss"
- * * a unary operator like "maybe" followed by a valid Header (e.g. "maybe text") 
- * * two valid Headers joined by a slash (e.g. "text/gloss")
- * * a valid Header in parentheses (e.g. "(text)")
- * * a comment (e.g. "% text")
- * 
- * (We treat commented-out headers specially, because they turn everything
- * in their column into no-ops.)
- * 
- * Header objects are responsible for:
- * 
- * * compiling the cells beneath them into States, and merging them (usually by
- *   concatenation) with cells to their right.
- * 
- * * knowing what colors the foreground and background of the header cell should be 
- */
-export abstract class Header extends TabularComponent {
+export abstract class TstComponent {
 
     constructor(
-        text: string,
-    ) { 
-        super(text, DUMMY_POSITION);
+        public pos: CellPos
+    ) { }
+
+    public mark(devEnv: DevEnvironment): void { }
+
+    public markError(devEnv: DevEnvironment, shortMsg: string, msg: string): void {
+        devEnv.markError(this.pos.sheet, this.pos.row, this.pos.col,
+            shortMsg, msg, "error");
     }
 
-    public abstract get hue(): number;
-    
-    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
-        return RGBtoString(...HSVtoRGB(this.hue, saturation, value));
+    public markWarning(devEnv: DevEnvironment, shortMsg: string, msg: string): void {
+        devEnv.markError(this.pos.sheet, this.pos.row, this.pos.col,
+        shortMsg, msg, "warning");
     }
 
-    public mark(devEnv: DevEnvironment): void {
-        const color = this.getColor(0.1);
-        devEnv.markHeader(this.position.sheet, this.position.row, this.position.col, color);
-    }
-    
-    public compile(cell: CellComponent, 
-                    devEnv: DevEnvironment): SingleCellComponent {
-        throw new Error('Not implemented');
-    }
-
-    public merge(leftNeighbor: AstComponent | undefined, state: AstComponent): AstComponent {
-        if (leftNeighbor == undefined) {
-            return state;
-        }
-        return Seq(leftNeighbor, state);
-    }
-
-    public compileAndMerge(cell: CellComponent,
-                            devEnv: DevEnvironment,
-                            leftNeighbor: AstComponent | undefined): SingleCellComponent {
-        
-        const compiledCell = this.compile(cell, devEnv);
-        compiledCell.ast = this.merge(leftNeighbor, compiledCell.ast);
-        return compiledCell;
+    public markInfo(devEnv: DevEnvironment, shortMsg: string, msg: string): void {
+        devEnv.markError(this.pos.sheet, this.pos.row, this.pos.col,
+        shortMsg, msg, "info");
     }
 }
 
-/**
- * AtomicHeader is the ancestor class of all single-token headers, like "embed" and 
- * literals (e.g. "text").
- */
-abstract class AtomicHeader extends Header { 
-
-    public get hue(): number {
-        const str = this.text + "abcde" // otherwise short strings are boring colors
-        var hash = 0; 
-
-        for (let i = 0; i < str.length; i++) { 
-            hash = ((hash << 5) - hash) + str.charCodeAt(i); 
-            hash = hash & hash; 
-        } 
-        
-        return (hash & 0xFF) / 255;
-    }
-}
-
-/**
- * EmbedHeaders lead to the complilation of EmbedStates.
- */
-export class EmbedHeader extends AtomicHeader {
-
-    public compile(cell: CellComponent, 
-                    devEnv: DevEnvironment): SingleCellComponent {
-        const compiledCell = new EmbedComponent(this, cell);
-        compiledCell.ast = Embed(cell.text);
-        compiledCell.ast.pos = cell.position;
-        return compiledCell;
-    }
-}
-
-/**
- * HideHeader is an atomic header "hide:T" that takes the grammar
- * to the left and mangles the name of tape T outside of that grammar,
- * so that the field cannot be referenced outside of it.  This allows
- * programmers to use additional fields without necessarily overwhelming
- * the "public" interface to the grammar with fields that are only 
- * internally-relevant, and avoid unexpected behavior when joining two classes
- * that define same-named fields internally for different purposes.  
- */
-export class HideHeader extends AtomicHeader {
-
-    public compileAndMerge(cell: CellComponent,
-            devEnv: DevEnvironment,
-            leftNeighbor: AstComponent | undefined): SingleCellComponent {
-
-        const compiledCell = new HeadedCellComponent(this, cell);
-        
-        if (leftNeighbor == undefined) {
-            compiledCell.markError(devEnv, "Wayward hide",
-                '"hide" has to have something to the left of it.');
-            return compiledCell;
-        }
-        compiledCell.ast = leftNeighbor;
-        for (const tape of cell.text.split("/")) {
-            compiledCell.ast = Hide(compiledCell.ast, tape.trim());
-            compiledCell.ast.pos = cell.position;
-        }
-        return compiledCell;
-    }
-}
-
-
-/**
- * RevealHeader is the opposite of HideHeader: any tape T named in "reveal:T"
- * is left alone, and all other tapes are hidden.  
- */
-/*
- export class RevealHeader extends AtomicHeader {
-
-    public compileAndMerge(cell: CellComponent,
-            devEnv: DevEnvironment,
-            leftNeighbor: AstComponent | undefined): SingleCellComponent {
-
-        const compiledCell = new HeadedCellComponent(this, cell);
-        
-        if (leftNeighbor == undefined) {
-            compiledCell.markError(devEnv, "Wayward reveal",
-                '"reveal" has to have something to the left of it.');
-            return compiledCell;
-        }
-        const tapes = cell.text.split("/").map(t => t.trim());
-        compiledCell.state = Reveal(leftNeighbor, tapes);
-        return compiledCell;
-    }
-} */
-
-/**
- * LiteralHeaders are references to a particular tape name (e.g. "text")
- */
-export class LiteralHeader extends AtomicHeader {
-    
-    public compile(cell: CellComponent, 
-                    devEnv: DevEnvironment): SingleCellComponent {
-        const compiledCell = new HeadedCellComponent(this, cell);
-        compiledCell.ast = Lit(this.text, cell.text);
-        return compiledCell;
-    }
-}
-
-/**
- * Commented-out headers also comment out any cells below them; the cells just act as
- * Empty() states.
- */
-export class CommentHeader extends Header { 
-
-    public get hue(): number {
-        return 0;
-    }
-
-    public mark(devEnv: DevEnvironment): void {
-        devEnv.markComment(this.position.sheet, this.position.row, this.position.col);
-    }
-
-    public compile(cell: CellComponent, 
-                    devEnv: DevEnvironment): SingleCellComponent {
-        return new CommentComponent(cell);
-    }
-}
-
-/**
- * The ancestor class of unary header operators like "maybe", "not", "@"
- * (the joining operator that we use to implement flags), and ">" (the rename
- * operator)
- */
-abstract class UnaryHeader extends Header {
-
-    public constructor(
-        text: string,
-        public child: Header
-    ) { 
-        super(text);
-    }
-
-    public get hue(): number {
-        return this.child.hue;
-    }
-
-    public compile(cell: CellComponent, 
-                    devEnv: DevEnvironment): SingleCellComponent {
-        const childCell = this.child.compile(cell, devEnv);
-        const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
-        compiledCell.ast = childCell.ast;
-        return compiledCell;
-    }
-}
-
-/**
- * Header that constructs optional parsers, e.g. "maybe text"
- */
-export class MaybeHeader extends UnaryHeader {
-
-    public compile(cell: CellComponent, 
-                    devEnv: DevEnvironment): SingleCellComponent {
-        const childCell = this.child.compile(cell, devEnv);
-        const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
-        compiledCell.ast = Maybe(childCell.ast);
-        return compiledCell;
-    }
-}
-
-
-/**
- * Header that constructs negations, e.g. "not text"
- */
-class NotHeader extends UnaryHeader {
-
-    public compile(cell: CellComponent, 
-        devEnv: DevEnvironment): SingleCellComponent {
-        const childCell = this.child.compile(cell, devEnv);
-        const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
-        compiledCell.ast = Not(childCell.ast);
-        return compiledCell;
-    }
-}
-
-
-/**
- * Header that constructs negations, e.g. "not text"
- */
-class RenameHeader extends UnaryHeader {
-
-    public compile(cell: CellComponent, 
-                    devEnv: DevEnvironment): SingleCellComponent {
-        const childCell = this.child.compile(cell, devEnv);
-        const compiledCell = new RenameComponent(this, cell, childCell);
-        compiledCell.ast = childCell.ast;
-        return compiledCell;
-    }
-
-    public merge(leftNeighbor: AstComponent | undefined, state: AstComponent): AstComponent {
-        if (leftNeighbor == undefined) {
-            return state;
-        }
-        if (!(state instanceof AstLiteral)) {
-            throw new Error("Rename (>) of a non-literal");
-        }
-        return Rename(leftNeighbor, state.text, state.tape);
-    }
-}
-
-/**
- * A JoinHeader handles headers like "@x"; it joins x:X with whatever
- * follows rather than concatenating it.
- * 
- * Note that JoinHeader binds more tightly than other unary operators,
- * e.g. while "maybe" in "maybe text/gloss" has "text/gloss" as its child,
- * "@" in "@text/gloss" only has "@" as its child.
- * 
- * JoinHeader are also the ancestor of all Headers that
- * allow and parse boolean-algebra expressions in their fields (e.g. "~(A|B)").
- */
-export class JoinHeader extends UnaryHeader {
-
-    public merge(leftNeighbor: AstComponent | undefined, state: AstComponent): AstComponent {
-        if (leftNeighbor == undefined) {
-            return state;
-        }
-        return Join(leftNeighbor, state);
-    }
-
-    public compileLiteral(
-        parsedText: CPUnreserved,
-        cell: CellComponent,
-        devEnv: DevEnvironment
-    ): SingleCellComponent {
-        const newCell = new CellComponent(parsedText.text, cell.position);
-        const childCell = this.child.compile(newCell, devEnv);
-        return childCell;
-    }
-
-    public compilePiece(
-        parsedText: CPResult,
-        cell: CellComponent, 
-        devEnv: DevEnvironment
-    ): SingleCellComponent {
-
-        if (parsedText instanceof CPUnreserved) {
-            const newCell = new CellComponent(parsedText.text, cell.position);
-            const childCell = this.child.compile(newCell, devEnv);
-            return this.compileLiteral(parsedText, cell, devEnv);
-        }
-
-        if (parsedText instanceof CPNegation) {
-            const childCell = this.compilePiece(parsedText.child, cell, devEnv);
-            const compiledCell = new UnaryHeadedCellComponent(this, cell, childCell);
-            compiledCell.ast = Not(childCell.ast);
-            return compiledCell;
-        }
-
-        if (parsedText instanceof CPAlternation) {
-            const child1Cell = this.compilePiece(parsedText.child1, cell, devEnv);
-            const child2Cell = this.compilePiece(parsedText.child2, cell, devEnv);
-            const compiledCell = new NAryHeadedCellComponent(this, cell, [child1Cell, child2Cell]);
-            compiledCell.ast = Uni(child1Cell.ast, child2Cell.ast);
-            return compiledCell;
-        }
-
-        throw new Error(`Error constructing boolean expression in cell ${cell.position}`);
-    }
-    
-    public compile(cell: CellComponent, 
-        devEnv: DevEnvironment): SingleCellComponent {
-
-        if (cell.text.length == 0) {
-            return super.compile(cell, devEnv);
-        }
-
-        const parsedText = parseBooleanCell(cell.text);
-        const compiledCell = this.compilePiece(parsedText, cell, devEnv);
-        return compiledCell;
-    }
-}
-
-/**
- * EqualsHeader puts a constraint on the state of the immediately preceding cell (call this state N)
- * that Filter(N, X) -- that is, it filters the results of N such that every surviving record is a 
- * superset of X.
- * 
- * This is also the superclass of [StartsWithHeader] and [EndsWithHeader].  These constrain N to either
- * start with X (that is, Filter(N, X.*)) or end with X (that is, Filter(N, .*X)).
- */
-export class EqualsHeader extends JoinHeader {
-    
-    public merge(
-        leftNeighbor: AstComponent | undefined, 
-        state: AstComponent
-    ): AstComponent {
-        if (leftNeighbor == undefined) {
-            throw new Error("'equals/startswith/endswith/contains' requires content to its left.");
-        }
-
-        if (leftNeighbor instanceof AstSequence) {
-            // if your left neighbor is a concat state we have to do something a little special,
-            // because startswith only scopes over the cell immediately to the left.  (if you let
-            // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
-            // specifying in the same row, rather than the embedded thing you're trying to catch.)
-            const lastChild = leftNeighbor.finalChild();
-            const filter = this.constructFilter(lastChild, state);
-            const remainingChildren = leftNeighbor.nonFinalChildren();
-            return Seq(...remainingChildren, filter);
-        }
-
-        return this.constructFilter(leftNeighbor, state);
-    }
-
-    public constructFilter(leftNeighbor: AstComponent, condition: AstComponent): AstComponent {
-        return Filter(leftNeighbor, condition);
-    }
-}
-
-/**
- * StartsWithHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to 
- * start with X (that is, Filter(N, X.*))
- */
-export class StartsWithHeader extends EqualsHeader {
-
-    public constructFilter(leftNeighbor: AstComponent, condition: AstComponent): AstComponent {
-        return StartsWith(leftNeighbor, condition);
-    }
-}
-
-/**
- * EndsWithHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to 
- * end with X (that is, Filter(N, .*X))
- */
-export class EndsWithHeader extends EqualsHeader {
-    
-    public constructFilter(leftNeighbor: AstComponent, condition: AstComponent): AstComponent {
-        return EndsWith(leftNeighbor, condition);
-    }
-}
-
-/**
- * ContainsHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to 
- * contain X (that is, Filter(N, .*X.*))
- */
-export class ContainsHeader extends EqualsHeader {
-    
-    public constructFilter(leftNeighbor: AstComponent, condition: AstComponent): AstComponent {
-        return Contains(leftNeighbor, condition);
-    }
-}
-
-abstract class BinaryHeader extends Header {
-
-    public constructor(
-        text: string,
-        public child1: Header,
-        public child2: Header
-    ) { 
-        super(text);
-    }
-
-    public get hue(): number {
-        return this.child1.hue;
-    }
-}
-
-export class SlashHeader extends BinaryHeader {
-
-    public constructor(
-        public child1: Header,
-        public child2: Header
-    ) { 
-        super("/", child1, child2);
-    }
-
-    /**
-     * This isn't ordinarily called, usually compileAndMerge handles compilation
-     * of SlashHeader.  But
-     * when another header has a SlashHeader child, like "@(x/y)", this would
-     * be called.
-     */
-    
-    public compile(cell: CellComponent, 
-                    devEnv: DevEnvironment): SingleCellComponent {
-        const childCell1 = this.child1.compile(cell, devEnv);
-        const childCell2 = this.child2.compile(cell, devEnv);
-        const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
-        compiledCell.ast = Seq(childCell1.ast, childCell2.ast);
-        return compiledCell;
-    }
-
-    public compileAndMerge(cell: CellComponent,
-                            devEnv: DevEnvironment,
-                            leftNeighbor: AstComponent | undefined): SingleCellComponent {
-        
-        const childCell1 = this.child1.compileAndMerge(cell, devEnv, leftNeighbor);
-        const childCell2 = this.child2.compileAndMerge(cell, devEnv, childCell1.ast);
-        const compiledCell = new BinaryHeadedCellComponent(this, cell, childCell1, childCell2);
-        compiledCell.ast = childCell2.ast;
-        return compiledCell;
-    }
-}
-
-/**
- * What follows is a grammar and parser for the mini-language inside headers, e.g.
- * "text", "text/gloss", "startswith text", etc.
- * 
- * It uses the mini-parser library in miniParser.ts to construct a recursive-descent
- * parser for the grammar.
- */
-
-const SYMBOL = [ "(", ")", "%", "/", '@', ">", ":" ];
-const RESERVED_HEADERS = ["embed", "maybe", "not", "hide", "reveal", "equals", "startswith", "endswith", "contains" ];
-
-type BinaryOp = (...children: AstComponent[]) => AstComponent;
-const BINARY_OPS: {[opName: string]: BinaryOp} = {
-    "or": Uni,
-    "concat": Seq,
-    "join": Join,
-}
-
-const RESERVED_OPS: string[] = [ ...Object.keys(BINARY_OPS), "table", "test", "testnot" ];
-
-const RESERVED_WORDS = new Set([...SYMBOL, ...RESERVED_HEADERS, ...RESERVED_OPS]);
-
-const tokenizer = new RegExp("\\s+|(" + 
-                            SYMBOL.map(s => "\\"+s).join("|") + 
-                            ")");
-
-function tokenize(text: string): string[] {
-    return text.split(tokenizer).filter(
-        (s: string) => s !== undefined && s !== ''
-    );
-}
-
-var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
-    MPAlternation(HP_MAYBE, HP_SLASH, HP_RENAME, HP_EQUALS, 
-                HP_STARTSWITH, HP_ENDSWITH, HP_CONTAINS, HP_SUBEXPR)
-);
-
-var HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
-    MPAlternation(HP_UNRESERVED, HP_EMBED, HP_HIDE, 
-    //HP_REVEAL, 
-    HP_JOIN, HP_PARENS)
-);
-
-const HP_COMMENT = MPComment<Header>(
-    '%',
-    (s) => new CommentHeader(s)
-);
-
-const HP_UNRESERVED = MPUnreserved<Header>(
-    RESERVED_WORDS, 
-    (s) => new LiteralHeader(s)
-);
-
-const HP_EMBED = MPSequence<Header>(
-    ["embed"],
-    () => new EmbedHeader("embed")
-);
-
-const HP_HIDE = MPSequence<Header>(
-    ["hide"],
-    () => new HideHeader("hide")
-);
-
-/*
-const HP_REVEAL = MPSequence<Header>(
-    ["reveal"],
-    () => new RevealHeader("reveal")
-);
-*/
-
-const HP_JOIN = MPSequence<Header>(
-    ["@", HP_SUBEXPR],
-    (child) => new JoinHeader("@", child)
-);
-
-const HP_MAYBE = MPSequence<Header>(
-    ["maybe", HP_NON_COMMENT_EXPR],
-    (child) => new MaybeHeader("maybe", child)
-);
-
-const HP_SLASH = MPSequence<Header>(
-    [HP_SUBEXPR, "/", HP_NON_COMMENT_EXPR],
-    (child1, child2) => new SlashHeader(child1, child2)
-);
-
-const HP_RENAME = MPSequence<Header>(
-    [">", HP_UNRESERVED],
-    (child) => new RenameHeader(">", child)
-);
-
-const HP_PARENS = MPSequence<Header>(
-    ["(", HP_NON_COMMENT_EXPR, ")"],
-    (child) => child 
-);
-
-const HP_EQUALS = MPSequence<Header>(
-    ["equals", HP_NON_COMMENT_EXPR],
-    (child) => new EqualsHeader("equals", child)
-);
-
-const HP_STARTSWITH = MPSequence<Header>(
-    ["startswith", HP_NON_COMMENT_EXPR],
-    (child) => new StartsWithHeader("startswith", child)
-);
-
-const HP_ENDSWITH = MPSequence<Header>(
-    ["endswith", HP_NON_COMMENT_EXPR],
-    (child) => new EndsWithHeader("endswith", child)
-);
-
-const HP_CONTAINS = MPSequence<Header>(
-    ["contains", HP_NON_COMMENT_EXPR],
-    (child) => new ContainsHeader("contains", child)
-);
-
-var HP_EXPR: MPParser<Header> = MPAlternation(HP_COMMENT, HP_NON_COMMENT_EXPR);
-
-export function parseHeaderCell(text: string, pos: CellPosition = DUMMY_POSITION): Header {
-    const result = miniParse(tokenize, HP_EXPR, text);
-    result.position = pos;
-    return result;
-}
-
-
-
-class CellComponent extends TabularComponent {
+class TstCell extends TstComponent {
 
     constructor(
-        text: string,
-        position: CellPosition
+        public text: string,
+        pos: CellPos
     ) {
-        super(text, position);
+        super(pos);
+    }
+    
+}
+
+class TstHeader extends TstCell {
+
+    protected header: Header;
+
+    constructor(
+        text: string,
+        pos: CellPos
+    ) {
+        super(text, pos);
+        this.header = parseHeaderCell(text);
+    }
+    
+    public mark(devEnv: DevEnvironment): void {
+        const color = this.header.getColor(0.1);
+        devEnv.markHeader(this.pos.sheet, this.pos.row, this.pos.col, color);
     }
 
-    public toString(): string {
-        return `${this.text}:${this.position}`;
+    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string {
+        return this.header.getColor(saturation, value);
+    }
+
+    public sanityCheck(devEnv: DevEnvironment): void { 
+        for (const e of this.header.sanityCheck()) {
+            if (e.severity == "error") {
+                this.markError(devEnv, e.shortMsg, e.longMsg);
+            } else {
+                this.markWarning(devEnv, e.shortMsg, e.longMsg);
+            }
+        }
+    }
+
+    public headerToAST(left: AstComponent, text: string, pos: CellPos, devEnv: DevEnvironment): AstComponent {
+
+        if (this.header instanceof ErrorHeader) {
+            devEnv.markError(pos.sheet, pos.row, pos.col, 
+                `Missing/invalid header`, 
+                `Cannot associate this cell with a valid header above`, "warning"); 
+        }
+
+        return this.header.toAST(left, text, pos, devEnv);
     }
 
 }
 
-/**
- * A GrammarComponent is a component of our tabular syntax tree
- * that is associated with a grammar -- that is, a [State] of the
- * state machine.  
- * 
- * At construction, GrammarComponents do not have any specific state
- * yet, they're all associated with [TrivialState]s until they compile()
- * is called on them, at which point their state is calculated.  (This is
- * because GrammarComponents are constructed as soon as their first cell is,
- * but the grammar they represent typically depends on cells to the right
- * and below them.)
- */
-export abstract class GrammarComponent extends TabularComponent {
 
-    public ast: AstComponent = Epsilon();
+/**
+ * A TstGrammar is a component of our tabular syntax tree
+ * that is associated with a grammar -- that is, an [AstComponent]
+ * of our abstract syntax tree, which in turn is associated with an
+ * [Expr] of our semantics.
+ */
+export abstract class TstGrammar extends TstComponent {
+
+    public abstract get text(): string;
 
     /**
      * The previous sibling of the component (i.e. the component that shares
@@ -640,7 +109,7 @@ export abstract class GrammarComponent extends TabularComponent {
      * to define it here so that certain clients (like unit tests) don't have
      * to deal with the templating aspects.  
      */
-    public sibling: GrammarComponent | undefined = undefined;
+    public sibling: TstGrammar | undefined = undefined;
 
     /**
      * The last-defined child of the component (i.e. of all the components
@@ -649,22 +118,18 @@ export abstract class GrammarComponent extends TabularComponent {
      * parent's child and the previous child (if any) becomes the new child's
      * sibling.
      */
-    public child: GrammarComponent | undefined = undefined;
+    public child: TstGrammar | undefined = undefined;
 
-    public compile(devEnv: DevEnvironment): void { }
-
-    public assign(ns: AstNamespace, devEnv: DevEnvironment): void {
-        if (this.sibling != undefined) {
-            this.sibling.assign(ns, devEnv);
-        }
+    public toAST(devEnv: DevEnvironment): AstComponent { 
+        return Epsilon();
     }
 
-    public runChecks(devEnv: DevEnvironment): void {
+    public sanityCheck(devEnv: DevEnvironment): void {
         if (this.sibling != undefined) {
-            this.sibling.runChecks(devEnv);
+            this.sibling.sanityCheck(devEnv);
         }
         if (this.child != undefined) {
-            this.child.runChecks(devEnv);
+            this.child.sanityCheck(devEnv);
         }
     }
 }
@@ -706,19 +171,22 @@ export abstract class GrammarComponent extends TabularComponent {
  * For the most part, and operator like 3 will be a binary operation where
  * 2 and the B table are its params.  (For example, 3 might represent "or", and thus
  * the union of the grammar represented by 2 and the grammar represented by the B table.
- * 
  */
-class EnclosureComponent extends GrammarComponent {
+class TstEnclosure extends TstGrammar {
 
     public specRow: number = -1;
 
-    public parent: EnclosureComponent | undefined = undefined;
+    public parent: TstEnclosure | undefined = undefined;
 
     constructor(
-        public startCell: CellComponent,
+        public startCell: TstCell,
     ) {
-        super(startCell.text, startCell.position);
-        this.specRow = startCell.position.row;
+        super(startCell.pos);
+        this.specRow = startCell.pos.row;
+    }
+
+    public get text(): string {
+        return this.startCell.text;
     }
 
     /** 
@@ -728,31 +196,31 @@ class EnclosureComponent extends GrammarComponent {
      * this is the column in which the operator (e.g. "table:") occurs.
      */
     public get breakColumn(): number {
-        return this.position.col;
+        return this.pos.col;
     }
 
     /**
      * Is this enclosure broken (i.e., considered complete and popped off the stack?)
      * by the given cell?
      */
-    public isBrokenBy(cell: CellComponent): boolean {
+    public isBrokenBy(cell: TstCell): boolean {
         if (cell.text == "") {
             return false;  // empty cells never break you
         }
-        if (cell.position.row <= this.position.row) {
+        if (cell.pos.row <= this.pos.row) {
             return false; // only cells below you can break you
         }
-        if (cell.position.col > this.breakColumn) {
+        if (cell.pos.col > this.breakColumn) {
             return false; // this cell is within your enclosure
         }
         return true;
     }
 
     public mark(devEnv: DevEnvironment): void {
-        devEnv.markCommand(this.position.sheet, this.position.row, this.position.col);
+        devEnv.markCommand(this.pos.sheet, this.pos.row, this.pos.col);
     }
     
-    public compile(devEnv: DevEnvironment): void {
+    public toAST(devEnv: DevEnvironment): AstComponent {
 
         // we only ever end up in this base EncloseComponent compile if it wasn't
         // a known operator.  this is an error, but we flag it for the programmer
@@ -762,30 +230,32 @@ class EnclosureComponent extends GrammarComponent {
         // its sibling's state (if a sibling is present), and if not, as its child's 
         // state (if present), and if not, the empty grammar.
 
+        let result: AstComponent = Epsilon();
+
         if (this.child != undefined) {
-            this.child.compile(devEnv);
-            this.ast = this.child.ast;
+            result = this.child.toAST(devEnv);
         }
 
         if (this.sibling != undefined) {
-            this.sibling.compile(devEnv);
-            this.ast = this.sibling.ast;
+            result = this.sibling.toAST(devEnv);
         }
+
+        return result;
     }
 
-    public addChild(child: EnclosureComponent, 
-                    devEnv: DevEnvironment): EnclosureComponent {
+    public addChild(child: TstEnclosure, 
+                    devEnv: DevEnvironment): TstEnclosure {
 
-        if (this.child instanceof ContentsComponent) {
+        if (this.child instanceof TstTable) {
             throw new Error("Can't add an operator to a line that already has headers." +
                     "I'm not sure how you even did this.");
         }
 
-        if (this.child != undefined && this.child.position.col != child.position.col) {
+        if (this.child != undefined && this.child.pos.col != child.pos.col) {
             child.markWarning(devEnv, "Unexpected operator",
                 "This operator is in an unexpected column.  Did you mean for it " +
-                `to be in column ${this.child.position.col}, ` + 
-                `so that it's under the operator in cell ${this.child.position}?`);
+                `to be in column ${this.child.pos.col}, ` + 
+                `so that it's under the operator in cell ${this.child.pos}?`);
         }
 
         child.parent = this;
@@ -794,129 +264,76 @@ class EnclosureComponent extends GrammarComponent {
         return child;
     }
 
-    public toString(): string {
-        return `Enclosure(${this.position})`;
-    }
-
-    public get sheet(): SheetComponent {
+    public get sheet(): TstSheet {
         if (this.parent == undefined) {
             throw new Error("Stack empty; something has gone very wrong");
         }
         return this.parent.sheet;
     }
-    
 }
 
-class AssignmentComponent extends EnclosureComponent {
 
+class TstBinaryOp extends TstEnclosure {
 
-    public assign(ns: AstNamespace, devEnv: DevEnvironment): void {
-        super.assign(ns, devEnv);
-        
-        // determine what symbol you're assigning to
-        const trimmedText = this.text.slice(0, this.text.length-1).trim();
-        const trimmedTextLower = trimmedText.toLowerCase();
+    public toAST(devEnv: DevEnvironment): AstComponent {
 
-
-        if (RESERVED_WORDS.has(trimmedTextLower)) {
-            // oops, assigning to a reserved word
-            this.markError(devEnv, "Assignment to reserved word", 
-                "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
-                `reserved word ${trimmedText}.  Choose a different symbol name.`);
-            
-        }
-
-        if (this.child == undefined) {
-            // oops, empty "right side" of the assignment!
-            this.markWarning(devEnv, "Empty assignment", 
-                `This looks like an assignment to a symbol ${trimmedText}, ` +
-                "but there's nothing to the right of it.");
-            return;
-        }
-
-        this.ast = this.child.ast;
-
-        try {
-            ns.addSymbol(trimmedText, this.ast);
-        } catch (e) {
-            this.markError(devEnv, 'Invalid assignment',
-                (e as Error).message);
-        }
-    }
-
-    public compile(devEnv: DevEnvironment): void {
-
-        if (this.sibling != undefined) {
-            this.sibling.compile(devEnv);
-        }
-
-        if (this.child != undefined) {
-            this.child.compile(devEnv);
-        }
-    }
-
-}
-
-class BinaryOpComponent extends EnclosureComponent {
-
-    public compile(devEnv: DevEnvironment): void {
-
-        const trimmedText = this.text.slice(0, this.text.length-1).trim();
+        const trimmedText = this.text.slice(0, 
+                        this.text.length-1).trim();
 
         const op = BINARY_OPS[trimmedText];
-                                    
+                            
+        let childAst: AstComponent = Epsilon();
+        let siblingAst: AstComponent = Epsilon();
+
         if (this.child == undefined) {
             this.markError(devEnv,  `Missing argument to '${trimmedText}'`, 
-                `'${this.text}' is missing a second argument; ` +
+                `'${trimmedText}' is missing a second argument; ` +
                 "something should be in the cell to the right.");
-            return;
+        } else {
+            childAst = this.child.toAST(devEnv);
         }
 
         if (this.sibling == undefined) {
             this.markError(devEnv, `Missing argument to '${trimmedText}'`,
                 `'${trimmedText}' is missing a first argument; ` +
                 "something should be in a cell above this.");
-            return;
+        } else {
+            siblingAst = this.sibling.toAST(devEnv);
         }
 
-        this.sibling.compile(devEnv);
-        this.child.compile(devEnv);
-        this.ast = op(this.sibling.ast, this.child.ast);
+        return op(siblingAst, childAst);
     }
 }
 
-class ApplyComponent extends EnclosureComponent {
+class TstApply extends TstEnclosure {
 
     
 
 }
 
-class TableComponent extends EnclosureComponent {
+class TstTableOp extends TstEnclosure {
 
+    public toAST(devEnv: DevEnvironment): AstComponent {
 
-    public compile(devEnv: DevEnvironment): void {
+        if (this.sibling != undefined) {
+            // TODO: Content obliteration warning
+            this.sibling.toAST(devEnv);
+        }
 
         if (this.child == undefined) {
             this.markWarning(devEnv, "Empty table",
                 "'table' seems to be missing a table; " + 
                 "something should be in the cell to the right.")
-            return;
+            return Epsilon();
         }
 
-        if (this.sibling != undefined) {
-            this.sibling.compile(devEnv);
-        }
-
-        this.child.compile(devEnv);
-        this.ast = this.child.ast;
+        return this.child.toAST(devEnv);
     }
-
-
 }
 
-abstract class AbstractTestSuiteComponent extends EnclosureComponent {
+abstract class TstAbstractTestSuite extends TstEnclosure {
 
-    protected tests: RowComponent[] = [];
+    protected tests: TstHeadedCell[] = [];
 
     /**
      * "test" is an operator that takes two tables, one above (spatially speaking)
@@ -926,46 +343,45 @@ abstract class AbstractTestSuiteComponent extends EnclosureComponent {
      * Test doesn't make any change to the State it returns; adding a "test" below
      * a grammar returns the exact same grammar as otherwise.  
      */
-    public compile(devEnv: DevEnvironment): void {
+    public toAST(devEnv: DevEnvironment): AstComponent {
         
         if (this.sibling == undefined) {
             this.markError(devEnv, "Wayward test",
                 "There should be something above this 'test' command for us to test");
-            return;
+            return Epsilon();
         }
 
-        const sibling = this.sibling.compile(devEnv);
+        const siblingAst = this.sibling.toAST(devEnv);
 
         if (this.child == undefined) {
             this.markWarning(devEnv, 
                 "Empty test",
                 "'test' seems to be missing something to test; " +
                 "something should be in the cell to the right.");
-            this.ast = this.sibling.ast;
-            return; // whereas usually we result in the empty grammar upon erroring, in this case
-                        // we don't want to let a flubbed "test" command obliterate the grammar
-                        // it was meant to test!
+            return siblingAst; // whereas usually we result in the 
+                            // empty grammar upon erroring, in this case
+                            // we don't want to let a flubbed "test" command 
+                            // obliterate the grammar it was meant to test!
         }
         
-        if (!(this.child instanceof ContentsComponent)) {
+        if (!(this.child instanceof TstTable)) {
             this.markError(devEnv, "Cannot execute tests",
                 "You can't nest another operator to the right of a test block, " + 
                 "it has to be a content table.");
-            this.ast = this.sibling.ast;
-            return;
+            return siblingAst;
         }
 
-        this.child.compile(devEnv);
+        //const childAst = this.child.toAST(devEnv);
         this.tests = this.child.rows;
-        this.ast = this.sibling.ast;
+        return siblingAst;
     }
 
 }
 
-class TestSuiteComponent extends AbstractTestSuiteComponent {
+class TstTestSuite extends TstAbstractTestSuite {
 
-    public runChecks(devEnv: DevEnvironment): void {
-        super.runChecks(devEnv);
+    public sanityCheck(devEnv: DevEnvironment): void {
+        super.sanityCheck(devEnv);
 
         /*
         for (const test of this.tests) {
@@ -983,12 +399,10 @@ class TestSuiteComponent extends AbstractTestSuiteComponent {
     }
 }
 
-class TestNotSuiteComponent extends AbstractTestSuiteComponent {
-
-    protected tests: RowComponent[] = [];
+class TstTestNotSuite extends TstAbstractTestSuite {
     
-    public runChecks(devEnv: DevEnvironment): void {
-        super.runChecks(devEnv);
+    public sanityCheck(devEnv: DevEnvironment): void {
+        super.sanityCheck(devEnv);
 
         /*
         for (const test of this.tests) {
@@ -1008,66 +422,103 @@ class TestNotSuiteComponent extends AbstractTestSuiteComponent {
     }
 }
 
+
+class TstAssignment extends TstEnclosure {
+
+    public assign(ns: AstNamespace, ast: AstComponent, devEnv: DevEnvironment): void {
+        
+        // determine what symbol you're assigning to
+        const trimmedText = this.text.slice(0, this.text.length-1).trim();
+        const trimmedTextLower = trimmedText.toLowerCase();
+
+        if (RESERVED_WORDS.has(trimmedTextLower)) {
+            // oops, assigning to a reserved word
+            this.markError(devEnv, "Assignment to reserved word", 
+                "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
+                `reserved word ${trimmedText}.  Choose a different symbol name.`);            
+        }
+
+        if (this.child == undefined) {
+            // oops, empty "right side" of the assignment!
+            this.markWarning(devEnv, "Empty assignment", 
+                `This looks like an assignment to a symbol ${trimmedText}, ` +
+                "but there's nothing to the right of it.");
+            return;
+        }
+
+        try {
+            ns.addSymbol(trimmedText, ast);
+        } catch (e) {
+            this.markError(devEnv, 'Invalid assignment', (e as Error).message);
+        }
+    }
+
+    public toAST(devEnv: DevEnvironment): AstComponent {
+
+        if (this.child != undefined) {
+            return this.child.toAST(devEnv);
+        }
+
+        return Epsilon();
+    }
+}
+
 /**
- * A [SheetComponent] is basically an EnclosureComponent without 
+ * A [TstSheet] is basically a [TstEnclosure] without 
  * a parent component; a sheet is always the outermost component of
  * any component tree.
  */
-export class SheetComponent extends EnclosureComponent {
+export class TstSheet extends TstEnclosure {
 
     constructor(
         public name: string
     ) { 
-        super(new CellComponent(name, new CellPosition(name, 0, -1)));
+        super(new TstCell(name, new CellPos(name, 0, -1)));
     }
-    
-    /*
-    public addHeader(header: CellComponent): void {
-        throw new Error("This appears to be a header, but what is it a header for?");
-    } */
 
-    public compile(devEnv: DevEnvironment): void {
+    public getChildren(): TstGrammar[] {
+        let children: TstGrammar[] = [];
+        let c: TstGrammar | undefined = this.child;
+        while (c != undefined) {
+            children = [c, ...children];
+            c = c.sibling;
+        }
+        return children;
+    }
+
+    public toAST(devEnv: DevEnvironment): AstComponent {
 
         const ns = Ns(this.name);
-        this.ast = ns;
 
         if (this.child == undefined) {
-            return;
+            return ns;
         }
 
-        this.child.compile(devEnv);
-        this.child.assign(ns, devEnv);
-
-        //this.ast = this.child.ast;
+        let ast: AstComponent | undefined = undefined;
+        for (const c of this.getChildren()) {
+            ast = c.toAST(devEnv);
+            if (c instanceof TstAssignment) {
+                c.assign(ns, ast, devEnv);
+            }
+        }
         
         // We automatically assign the last child enclosure to the symbol
-        // __MAIN__, which will serve as the default State when this sheet
-        // is referred to without an overt symbol name.  (That is to say, if
-        // you have a sheet named "MySheet", you could refer to symbols on it like
-        // "MySheet.VERB", but you can also refer to "MySheet", which will give you
-        // the last defined symbol whatever it is.)  This lets us have "no boilerplace"
-        // sheets, letting us incorporate many non-Gramble CSVs as
-        // databases without having to add Gramble-style assignment syntax.
-
-        if (ns.getSymbol("__MAIN__") != undefined) {
-            // It's not forbidden for programmers to assign to __MAIN__.  If they 
-            // already have defined __MAIN__, respect that and don't
-            // reassign it.
-            return;
+        // __MAIN__.  (Unless __MAIN__ has already been defined; programmers
+        // are allowed to define what __MAIN__ is for any particular file.)
+        if (ns.getSymbol("__MAIN__") == undefined && ast != undefined) {
+            ns.addSymbol("__MAIN__", ast);
         }
-
-        ns.addSymbol("__MAIN__", this.child.ast);
-
+        return ns;
     }
 
-    public get sheet(): SheetComponent {
+    public get sheet(): TstSheet {
         return this;
     }
 
 }
 
 /**
- * A ContentsComponent is a rectangular region of the grid consisting of a header row
+ * A TstTable is a rectangular region of the grid consisting of a header row
  * and cells beneath each header.  For example,
  * 
  *      text, gloss
@@ -1078,35 +529,42 @@ export class SheetComponent extends EnclosureComponent {
  * Each header indicates how each cell beneath it should be interpreted; "foo"
  * should be interpret as "text", whatever that happens to mean in the programming
  * language in question.  Note that these are not necessarily well-formed database
- * tables; it's entirely possible to get tables where the same
+ * tables; it's noy uncommon to get tables where the same
  * header appears multiple times.
  */
 
-class ContentsComponent extends EnclosureComponent {
+class TstTable extends TstEnclosure {
 
-    public headersByCol: {[col: number]: Header} = {};
-    public rows: RowComponent[] = [];
+    /**
+     * We need to remember headers by column number,
+     * because that's how we know which cells are associated
+     * with which headers
+     */
+    public headersByCol: {[col: number]: TstHeader} = {};
+
+    /**
+     * Each row is represented by the last cell in that row
+     */
+    public rows: TstHeadedCell[] = [];
 
     public get breakColumn(): number {
-        return this.position.col - 1;
+        return this.pos.col - 1;
     }
     
-    public canAddContent(cell: CellComponent): boolean {
-        return cell.position.col >= this.position.col && 
-               cell.position.row > this.specRow;
+    public canAddContent(cell: TstCell): boolean {
+        return cell.pos.col >= this.pos.col && 
+               cell.pos.row > this.specRow;
     }    
 
-    public addHeader(header: Header, devEnv: DevEnvironment): void {        
-        // remember it by its column number, because that's how content
-        // cells will be asking for it.
-        this.headersByCol[header.position.col] = header;
+    public addHeader(headerCell: TstHeader): void {        
+        this.headersByCol[headerCell.pos.col] = headerCell;
     }
 
-    public addContent(cell: CellComponent, devEnv: DevEnvironment): void {
+    public addContent(cell: TstCell, devEnv: DevEnvironment): void {
         
         // make sure we have a header
-        const header = this.headersByCol[cell.position.col];
-        if (header == undefined) {
+        const headerCell = this.headersByCol[cell.pos.col];
+        if (headerCell == undefined) {
             if (cell.text.length != 0) {
                 cell.markWarning(devEnv, `Ignoring cell: ${cell.text}`,
                     "Cannot associate this cell with any valid header above; ignoring.");
@@ -1114,227 +572,107 @@ class ContentsComponent extends EnclosureComponent {
             return;
         }
 
-        // make a table row if we need one
-        if (this.rows.length == 0 || 
-            cell.position.row != this.rows[this.rows.length-1].position.row) {
-            const newRow = new RowComponent(cell.text, cell.position);
+        if (this.rows.length == 0 || cell.pos.row != this.rows[this.rows.length-1].pos.row) {
+            // we need to start an new row, make a new cell with no prev sibling
+            const newRow = new TstHeadedCell(undefined, headerCell, cell);
+            newRow.mark(devEnv);
             this.rows.push(newRow);
+            return;
         }
 
-        // add the content
+        // we're continuing an old row, use the last one as the previous sibling
         const lastRow = this.rows[this.rows.length-1];
-        lastRow.addContent(header, cell);
+        const newRow = new TstHeadedCell(lastRow, headerCell, cell);
+        newRow.mark(devEnv);
+        this.rows[this.rows.length-1] = newRow;
 
     }
 
-    public addChild(child: EnclosureComponent, 
-                    devEnv: DevEnvironment): EnclosureComponent {
+    public addChild(newChild: TstEnclosure, 
+                    devEnv: DevEnvironment): TstEnclosure {
         
-        child.markError(devEnv, "Wayward operator",
+        newChild.markError(devEnv, "Wayward operator",
                         "Cannot add an operator here; I'm not even sure how you did this.");
         // still add it as your child, so you can run checks on it and such
-        child.parent = this;
-        child.sibling = this.child;
-        this.child = child;
-        return child;
+        newChild.parent = this;
+        newChild.sibling = this.child;
+        this.child = newChild;
+        return newChild;
     }
 
-    public compile(devEnv: DevEnvironment): void {
+    public toAST(devEnv: DevEnvironment): AstComponent {
 
         if (this.sibling != undefined) {
-            this.sibling.compile(devEnv);
+            this.sibling.toAST(devEnv);
         }
 
-        this.rows.map(row => row.compile(devEnv));
-        var rowStates = this.rows.map(row => row.ast);
-        rowStates = rowStates.filter(state => !(state instanceof Epsilon));
-        this.ast = Uni(...rowStates);
+        var rowStates = this.rows.map(row => row.toAST(devEnv))
+                                 .filter(state => !(state instanceof Epsilon));
+        return Uni(...rowStates);
     }
 
-    
-    public runChecks(devEnv: DevEnvironment): void {
-        this.rows.map(row => row.runChecks(devEnv));
+    public sanityCheck(devEnv: DevEnvironment): void {
+        Object.values(this.headersByCol).map(header => header.sanityCheck(devEnv));
+        this.rows.map(row => row.sanityCheck(devEnv));
     }
-
-    public toString(): string {
-        return `Table(${this.position})`;
-    }
-
 }
 
 
-class RowComponent extends GrammarComponent {
-
-    protected uncompiledCells: [Header, CellComponent][] = [];
-    protected compiledCells: SingleCellComponent[] = [];
-    
-    public compile(devEnv: DevEnvironment): void {
-        var resultState: AstComponent | undefined = undefined;
-        //for (var i = this.uncompiledCells.length-1; i >= 0; i--) {
-        for (const [header, cell] of this.uncompiledCells) {
-            //const [header, cell] = this.uncompiledCells[i];
-            try {
-                const compiledCell = header.compileAndMerge(cell, devEnv, resultState);
-                compiledCell.mark(devEnv);
-                // if it was zero, ignore the result of the merge   
-                if (cell.text.length > 0 && !(compiledCell.ast instanceof Epsilon)) {
-                    resultState = compiledCell.ast;
-                } 
-                this.compiledCells = [ compiledCell, ...this.compiledCells];
-            } catch (e) {
-                cell.markError(devEnv, "Cell error", `${e}`);
-            }
-        }
-
-        if (resultState == undefined) {
-            // everything was comments or empty
-            resultState = Epsilon();
-        }
-        this.ast = resultState;
-    }
-
-    public addContent(header: Header, cell: CellComponent): void {
-        this.uncompiledCells.push([header, cell]);
-    }
-
-    public runChecks(devEnv: DevEnvironment): void {
-        this.compiledCells.map(cell => cell.runChecks(devEnv));
-    }
-}
-
-abstract class SingleCellComponent extends GrammarComponent {
+class TstHeadedCell extends TstGrammar {
 
     constructor(
-        public cell: CellComponent
-    ) {
-        super(cell.text, cell.position);
+        public prev: TstHeadedCell | undefined,
+        public header: TstHeader,
+        public content: TstCell
+    ) { 
+        super(content.pos);
     }
-}
 
-class HeadedCellComponent extends SingleCellComponent {
-
-    constructor(
-        public header: Header,
-        cell: CellComponent
-    ) {
-        super(cell);
+    public get text(): string {
+        return this.content.text;
     }
 
     public mark(devEnv: DevEnvironment): void {
         const color = this.header.getColor(0.1);
-        devEnv.markContent(this.position.sheet, this.position.row, this.position.col, color);
+        devEnv.markContent(this.pos.sheet, this.pos.row, this.pos.col, color);
     }
 
-    public compile(devEnv: DevEnvironment): void {
-        throw new Error("Not implemented; shouldn't be calling this.");
+    public toAST(devEnv: DevEnvironment): AstComponent {
+
+        let prevAst: AstComponent = Epsilon();
+
+        if (this.prev != undefined) {
+            prevAst = this.prev.toAST(devEnv);
+        }
+        
+        if (this.content.text.length == 0) {
+            return prevAst;
+        }
+
+        return this.header.headerToAST(prevAst, this.text, this.pos, devEnv);
     }
+
 }
 
-class CommentComponent extends SingleCellComponent {
+class TstComment extends TstGrammar {
+
+    constructor(
+        public cell: TstCell
+    ) {
+        super(cell.pos);
+    }
+
+    public get text(): string {
+        return this.cell.text;
+    }
 
     public mark(devEnv: DevEnvironment): void {
-        devEnv.markComment(this.position.sheet, this.position.row, this.position.col);
+        devEnv.markComment(this.pos.sheet, this.pos.row, this.pos.col);
     }
 
-    public compile(devEnv: DevEnvironment): void {}
-}
-
-class UnaryHeadedCellComponent extends HeadedCellComponent {
-
-    constructor(
-        header: Header,
-        cell: CellComponent,
-        public child: SingleCellComponent
-    ) {
-        super(header, cell);
+    public toAST(devEnv: DevEnvironment): AstComponent {
+        return Epsilon();
     }
-
-    public runChecks(devEnv: DevEnvironment): void {
-        this.child.runChecks(devEnv);
-    }
-}
-
-
-class BinaryHeadedCellComponent extends HeadedCellComponent {
-
-    constructor(
-        header: Header,
-        cell: CellComponent,
-        public child1: SingleCellComponent,
-        public child2: SingleCellComponent,
-    ) {
-        super(header, cell);
-    }
-
-    public runChecks(devEnv: DevEnvironment): void {
-        this.child1.runChecks(devEnv);
-        this.child2.runChecks(devEnv);
-
-        if (this.child1 instanceof EmbedComponent || this.child2 instanceof EmbedComponent) {
-            this.cell.markWarning(devEnv, "Embed inside slash header",
-                "Why are you putting an 'embed' inside a slash header? That's weird.");
-        }
-    }
-}
-
-class NAryHeadedCellComponent extends HeadedCellComponent {
-
-    constructor(
-        header: Header,
-        cell: CellComponent,
-        public children: SingleCellComponent[]
-    ) {
-        super(header, cell);
-    }
-
-    public runChecks(devEnv: DevEnvironment): void {
-        for (const child of this.children) {
-            child.runChecks(devEnv);
-        }
-    }
-
-}
-
-class EmbedComponent extends HeadedCellComponent {
-
-    public runChecks(devEnv: DevEnvironment): void {
-        if (this.text.length == 0) {
-            return;
-        }
-    }
-}
-
-class RenameComponent extends HeadedCellComponent {
-
-    constructor(
-        header: RenameHeader,
-        cell: CellComponent,
-        public child: SingleCellComponent
-    ) {
-        super(header, cell);
-    }
-
-    public runChecks(devEnv: DevEnvironment): void {
-
-        /*
-        if (!(this.state instanceof RenameState)) {
-            return;
-        }
-
-        if (this.state.fromTape == "") {
-            return;
-        }
-
-        const symbolStack = new CounterStack(2);
-        const childTapes = this.state.child.getRelevantTapes(symbolStack);
-        if (!(childTapes.has(this.state.fromTape))) {
-            this.markError(devEnv, `Inaccessible tape: ${this.state.fromTape}`,
-                `This cell refers to a tape ${this.state.fromTape},` +
-                ` but the content to its left only defines tape(s) ${[...childTapes].join(", ")}.`);
-        }
-        */
-    }
-
 }
 
 /**
@@ -1358,45 +696,47 @@ function isLineEmpty(row: string[]): boolean {
 }
 
 
-function constructOp(cell: CellComponent, 
-                     devEnv: DevEnvironment): EnclosureComponent {
+function constructOp(cell: TstCell, 
+                     devEnv: DevEnvironment): TstEnclosure {
     
     var newEnclosure;
-    assert(cell.text.endsWith(":"), "Tried to construct an op that didn't end with ':'");
+
+    if (!cell.text.endsWith(":")) {
+        throw new Error("Tried to construct an op that didn't end with ':'");
+    }
     
     const trimmedText = cell.text.slice(0, cell.text.length-1).trim();
     const trimmedTextLower = trimmedText.toLowerCase();
     if (trimmedTextLower in BINARY_OPS) {
-        newEnclosure = new BinaryOpComponent(cell);
+        newEnclosure = new TstBinaryOp(cell);
     } else if (trimmedTextLower == "table") {
-        newEnclosure = new TableComponent(cell);
+        newEnclosure = new TstTableOp(cell);
     } else if (trimmedTextLower == "test") {
-        newEnclosure = new TestSuiteComponent(cell);
+        newEnclosure = new TstTestSuite(cell);
     } else if (trimmedTextLower == "testnot") {
-        newEnclosure = new TestNotSuiteComponent(cell);
-    } else if (cell.position.col == 0) {
+        newEnclosure = new TstTestNotSuite(cell);
+    } else if (cell.pos.col == 0) {
         // if it's none of these special operators, it's an assignment,
         // but note that assignments can only occur in column 0.  if an 
         // unknown word appears elsewhere in the tree, it's an error.
-        newEnclosure = new AssignmentComponent(cell);
+        newEnclosure = new TstAssignment(cell);
     } else {
         // this is an error, flag it for the programmer.  EnclosureComponent
         // defines some useful default behavior in case of this kind of error,
         // like making sure that the child and/or sibling are compiled and 
         // checked for errors.
-        newEnclosure = new EnclosureComponent(cell);
+        newEnclosure = new TstEnclosure(cell);
         cell.markError(devEnv, "Unknown operator", `Operator ${trimmedText} not recognized.`);
     }
     newEnclosure.mark(devEnv);
     return newEnclosure;
 }
 
-
 export function parseCells(
     sheetName: string, 
     cells: string[][],
     devEnv: DevEnvironment,
-): SheetComponent {
+): TstSheet {
 
     // topEnclosure refers to whatever enclosure is currently on top 
     // of the stack.  Since each enclosure knows what its parent is, we 
@@ -1404,7 +744,7 @@ export function parseCells(
     // use the .parent property of the current topEnclosure when we need
     // to pop.  We start with the one big enclosure that encompasses the 
     // whole sheet, with startCell (-1,-1)
-    var topEnclosure: EnclosureComponent = new SheetComponent(sheetName);
+    var topEnclosure: TstEnclosure = new TstSheet(sheetName);
 
     // Now iterate through the cells, left-to-right top-to-bottom
     for (var rowIndex = 0; rowIndex < cells.length; rowIndex++) {
@@ -1419,11 +759,11 @@ export function parseCells(
         for (var colIndex = 0; colIndex < row.length; colIndex++) {
 
             const cellText = row[colIndex].trim();
-            const position = new CellPosition(sheetName, rowIndex, colIndex);
-            const cell = new CellComponent(cellText, position);
+            const position = new CellPos(sheetName, rowIndex, colIndex);
+            const cell = new TstCell(cellText, position);
             
             if (rowIsComment) {
-                const comment = new CommentComponent(cell);
+                const comment = new TstComment(cell);
                 comment.mark(devEnv);
                 continue;
             }
@@ -1438,7 +778,7 @@ export function parseCells(
                 topEnclosure.specRow = rowIndex;
             }
         
-            if (topEnclosure instanceof ContentsComponent && topEnclosure.canAddContent(cell)) {
+            if (topEnclosure instanceof TstTable && topEnclosure.canAddContent(cell)) {
                 // we're inside an enclosure, after the header row
                 topEnclosure.addContent(cell, devEnv);
                 continue;
@@ -1465,18 +805,20 @@ export function parseCells(
             // it's a header
             try {
                 // parse the header into a Header object
-                const header = parseHeaderCell(cell.text, cell.position);
+                //const header = parseHeaderCell(cell.text);
+                // create a cell for it
+                const headerCell = new TstHeader(cell.text, cell.pos);
                 // color it properly in the interface
-                header.mark(devEnv); 
+                headerCell.mark(devEnv); 
                 
-                if (!(topEnclosure instanceof ContentsComponent)) {
-                    const newEnclosure = new ContentsComponent(header);
+                if (!(topEnclosure instanceof TstTable)) {
+                    const newEnclosure = new TstTable(headerCell);
                     topEnclosure = topEnclosure.addChild(newEnclosure, devEnv);
                 }
-                (topEnclosure as ContentsComponent).addHeader(header, devEnv);
+                (topEnclosure as TstTable).addHeader(headerCell);
             } catch(e) {
                 cell.markError(devEnv, `Invalid header: ${cell.text}`,
-                    `Attempted to parse "${cell.text}" as a header, but could not.`);
+                    (e as Error).message);
             }
         }
     }

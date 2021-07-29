@@ -1,6 +1,7 @@
 import { assert, expect } from 'chai';
+import { Header } from '../src/headers';
 import { Project } from "../src/project";
-import { Header, GrammarComponent } from '../src/sheetParser';
+import { TstGrammar } from '../src/sheetParser';
 import { CounterStack, Literalizer, Namespace, State } from "../src/stateMachine";
 import { TapeCollection } from '../src/tapes';
 import { StringDict } from "../src/util";
@@ -361,11 +362,11 @@ export function testStructure(project: Project, expectedOps: [string, string[]][
     for (const [text, relationship] of expectedOps) {
         const relationshipMsg = relationship.join("'s ");
         it(`should have "${text}" as its ${relationshipMsg}`, function() {
-            var relative: GrammarComponent | undefined = sheet;
+            var relative: TstGrammar | undefined = sheet;
             for (const rel of relationship) {
-                if (rel == "child") {
+                if (rel == "child" && relative != undefined) {
                     relative = relative.child;
-                } else if (rel == "sibling") {
+                } else if (rel == "sibling"  && relative != undefined) {
                     relative = relative.sibling;
                 } else {
                     assert.fail("There is no relationship of that name");
@@ -373,6 +374,7 @@ export function testStructure(project: Project, expectedOps: [string, string[]][
                 expect(relative).to.not.be.undefined;
                 if (relative == undefined) return;
             }
+            if (relative == undefined) return;
             var relativeText = relative.text;
             if (relativeText.endsWith(":")) {
                 relativeText = relativeText.slice(0, relativeText.length-1).trim();

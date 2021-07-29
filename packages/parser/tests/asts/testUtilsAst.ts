@@ -2,7 +2,7 @@
 import { assert, expect } from "chai";
 import { AstComponent, Lit, Root } from "../../src/ast";
 import { Project } from "../../src/project";
-import { GrammarComponent } from "../../src/sheetParser";
+import { TstGrammar } from "../../src/sheetParser";
 import { StringDict } from "../../src/util";
 import { testMatchOutputs, testNumOutputs } from "../testUtils";
 
@@ -100,7 +100,7 @@ export function testAstDoesNotHaveSymbols(
 
 export function testErrors(project: Project, expectedErrors: [string, number, number, string][]) {
     const root = project.getRoot();
-    project.runChecks();
+    project.sanityCheck();
     const devEnv = project.devEnv;
     it(`should have ${expectedErrors.length} errors/warnings`, function() {
         try {
@@ -114,7 +114,12 @@ export function testErrors(project: Project, expectedErrors: [string, number, nu
     for (var [sheet, row, col, level] of expectedErrors) {
         const levelMsg = (level == "warning") ? `a ${level}` : `an ${level}`;
         it(`should have ${levelMsg} at ${sheet}:${row}:${col}`, function() {
-            expect(devEnv.getErrors(sheet, row, col).length).to.be.greaterThan(0);
+            try {
+                expect(devEnv.getErrors(sheet, row, col).length).to.be.greaterThan(0);
+            } catch (e) {
+                console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
+                throw e;
+            }
         });
     }
 }
@@ -137,11 +142,11 @@ export function testStructure(project: Project, expectedOps: [string, string[]][
     for (const [text, relationship] of expectedOps) {
         const relationshipMsg = relationship.join("'s ");
         it(`should have "${text}" as its ${relationshipMsg}`, function() {
-            var relative: GrammarComponent | undefined = sheet;
+            var relative: TstGrammar | undefined = sheet;
             for (const rel of relationship) {
-                if (rel == "child") {
+                if (rel == "child" && relative != undefined) {
                     relative = relative.child;
-                } else if (rel == "sibling") {
+                } else if (rel == "sibling"  && relative != undefined) {
                     relative = relative.sibling;
                 } else {
                     assert.fail("There is no relationship of that name");
@@ -149,6 +154,7 @@ export function testStructure(project: Project, expectedOps: [string, string[]][
                 expect(relative).to.not.be.undefined;
                 if (relative == undefined) return;
             }
+            if (relative == undefined) return;
             var relativeText = relative.text;
             if (relativeText.endsWith(":")) {
                 relativeText = relativeText.slice(0, relativeText.length-1).trim();

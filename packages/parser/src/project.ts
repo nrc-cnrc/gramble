@@ -2,8 +2,9 @@
 
 import { SimpleDevEnvironment } from "./devEnv";
 import { CounterStack, AstComponent, AstNamespace, Root } from "./ast";
-import { CellPosition, DevEnvironment, iterTake, StringDict } from "./util";
-import { SheetComponent, parseCells, parseHeaderCell } from "./sheetParser";
+import { CellPos, DevEnvironment, iterTake, StringDict } from "./util";
+import { TstSheet, parseCells } from "./sheetParser";
+import { parseHeaderCell } from "./headers";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
@@ -21,7 +22,7 @@ export class Project {
 
     public globalNamespace: AstNamespace = new AstNamespace("__GLOBAL__");
     public defaultSheetName: string = '';
-    public sheets: {[key: string]: SheetComponent} = {};
+    public sheets: {[key: string]: TstSheet} = {};
 
     public root: Root | undefined = undefined;
 
@@ -50,7 +51,7 @@ export class Project {
         const results: [string, string][] = [];
         const stack = new CounterStack(2);
         for (const tapeName of startState.calculateTapes(stack)) {
-            const header = parseHeaderCell(tapeName, new CellPosition("?",-1,-1));
+            const header = parseHeaderCell(tapeName);
             results.push([tapeName, header.getColor(0.2)]);
         }
         return results;
@@ -150,8 +151,8 @@ export class Project {
         //this.globalNamespace.addSymbol(sheetName, sheetNamespace);
 
         // Compile it
-        sheetComponent.compile(this.devEnv);
-        this.globalNamespace.addSymbol(sheetName, sheetComponent.ast);
+        const sheetAST = sheetComponent.toAST(this.devEnv);
+        this.globalNamespace.addSymbol(sheetName, sheetAST);
 
         // Store it in .sheets
         this.sheets[sheetName] = sheetComponent;
@@ -179,9 +180,9 @@ export class Project {
         this.addSheet(sheetName);
     }
 
-    public runChecks(): void {
+    public sanityCheck(): void {
         for (const sheetName of Object.keys(this.sheets)) {
-            this.sheets[sheetName].runChecks(this.devEnv);
+            this.sheets[sheetName].sanityCheck(this.devEnv);
         }
 
         const astErrors = this.globalNamespace.sanityCheck();
@@ -191,7 +192,7 @@ export class Project {
         }
     }
 
-    public getSheet(sheetName: string): SheetComponent {
+    public getSheet(sheetName: string): TstSheet {
         if (!(sheetName in this.sheets)) {
             throw new Error(`Sheet ${sheetName} not found in project`);
         }
@@ -199,7 +200,7 @@ export class Project {
         return this.sheets[sheetName];
     }
 
-    public getDefaultSheet(): SheetComponent {
+    public getDefaultSheet(): TstSheet {
         if (this.defaultSheetName == '') {
             throw new Error("Asking for the default sheet of a project to which no sheets have been added");
         }
