@@ -2,7 +2,7 @@
 import { assert, expect } from "chai";
 import { AstComponent, Lit, Root } from "../../src/ast";
 import { Project } from "../../src/project";
-import { TstGrammar } from "../../src/sheetParser";
+import { TstEnclosure } from "../../src/tsts";
 import { StringDict } from "../../src/util";
 import { testMatchOutputs, testNumOutputs } from "../testUtils";
 
@@ -100,7 +100,6 @@ export function testAstDoesNotHaveSymbols(
 
 export function testErrors(project: Project, expectedErrors: [string, number, number, string][]) {
     const root = project.getRoot();
-    project.sanityCheck();
     const devEnv = project.devEnv;
     it(`should have ${expectedErrors.length} errors/warnings`, function() {
         try {
@@ -142,7 +141,7 @@ export function testStructure(project: Project, expectedOps: [string, string[]][
     for (const [text, relationship] of expectedOps) {
         const relationshipMsg = relationship.join("'s ");
         it(`should have "${text}" as its ${relationshipMsg}`, function() {
-            var relative: TstGrammar | undefined = sheet;
+            var relative: TstEnclosure | undefined = sheet;
             for (const rel of relationship) {
                 if (rel == "child" && relative != undefined) {
                     relative = relative.child;

@@ -205,7 +205,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobar", gloss: "jump[2SG]" },
         ]);
     });
-    
+
     describe('Reference to a missing symbol', function() {
 
         const project = sheetFromFile("./tests/csvs/missingSymbol.csv");

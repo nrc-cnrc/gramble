@@ -2,8 +2,9 @@
 
 import { SimpleDevEnvironment } from "./devEnv";
 import { CounterStack, AstComponent, AstNamespace, Root } from "./ast";
-import { CellPos, DevEnvironment, iterTake, StringDict } from "./util";
-import { TstSheet, parseCells } from "./sheetParser";
+import { CellPos, DevEnvironment, DummyCell, iterTake, StringDict } from "./util";
+import { TstSheet } from "./tsts";
+import { SheetProject, Sheet } from "./sheets";
 import { parseHeaderCell } from "./headers";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
@@ -20,15 +21,18 @@ type GrambleError = { sheet: string, row: number, col: number, msg: string, leve
  */
 export class Project {
 
-    public globalNamespace: AstNamespace = new AstNamespace("__GLOBAL__");
+    public globalNamespace: AstNamespace = new AstNamespace(new DummyCell(), "__GLOBAL__");
     public defaultSheetName: string = '';
     public sheets: {[key: string]: TstSheet} = {};
 
+    public sheetProject: SheetProject;
     public root: Root | undefined = undefined;
 
     constructor(
         public devEnv: DevEnvironment = new SimpleDevEnvironment()
-    ) { }
+    ) { 
+        this.sheetProject = new SheetProject(devEnv);
+    }
 
     public allSymbols(): string[] {
         return this.getRoot().allSymbols();
@@ -140,7 +144,8 @@ export class Project {
         const cells = this.devEnv.loadSource(sheetName);
 
         // parse the cells into an abstract syntax tree
-        const sheetComponent = parseCells(sheetName, cells, this.devEnv);
+        const sheet = new Sheet(this.sheetProject, sheetName);
+        const sheetComponent = sheet.toTST(sheetName, cells);
 
         // put the raw cells into the sheetComponent, for interfaces
         // that need them (like the sidebar of the GSuite add-on)
@@ -151,7 +156,7 @@ export class Project {
         //this.globalNamespace.addSymbol(sheetName, sheetNamespace);
 
         // Compile it
-        const sheetAST = sheetComponent.toAST(this.devEnv);
+        const sheetAST = sheetComponent.toAST();
         this.globalNamespace.addSymbol(sheetName, sheetAST);
 
         // Store it in .sheets
@@ -178,18 +183,6 @@ export class Project {
     public addSheetAsCells(sheetName: string, cells: string[][]) {
         this.devEnv.addSourceAsCells(sheetName, cells);
         this.addSheet(sheetName);
-    }
-
-    public sanityCheck(): void {
-        for (const sheetName of Object.keys(this.sheets)) {
-            this.sheets[sheetName].sanityCheck(this.devEnv);
-        }
-
-        const astErrors = this.globalNamespace.sanityCheck();
-        for (const e of astErrors) {
-            this.devEnv.markError(e.pos.sheet, e.pos.row, e.pos.col,
-                e.shortMsg, e.longMsg, e.severity);
-        }
     }
 
     public getSheet(sheetName: string): TstSheet {

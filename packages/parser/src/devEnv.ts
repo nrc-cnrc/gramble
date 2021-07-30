@@ -15,6 +15,7 @@ export class SimpleDevEnvironment implements DevEnvironment {
 
     protected sources: {[name: string]: string[][]} = {};
     protected errors: {[key: string]: SyntaxError[]} = {};
+    protected serializedErrors: Set<string> = new Set();
 
     public hasSource(sheet: string): boolean {
         return sheet in this.sources;
@@ -41,7 +42,15 @@ export class SimpleDevEnvironment implements DevEnvironment {
                      col: number, 
                      shortMsg: string,
                      msg: string, 
-                     level: "error" | "warning" | "info" = "error") {
+                     level: "error" | "warning" | "info" = "error"): void {
+
+        // so as not to keep recording identical errors
+        const serializedError = `${sheet}___${row}___${col}___${msg}`;
+        if (this.serializedErrors.has(serializedError)) {
+            return;
+        }
+        this.serializedErrors.add(serializedError);
+
         const key = posToStr(sheet, row, col);
         if (!(key in this.errors)) {
             this.errors[key] = [];

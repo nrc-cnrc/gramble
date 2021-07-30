@@ -1,7 +1,7 @@
 import { assert, expect } from 'chai';
 import { Header } from '../src/headers';
 import { Project } from "../src/project";
-import { TstGrammar } from '../src/sheetParser';
+import { TstEnclosure } from '../src/tsts';
 import { CounterStack, Literalizer, Namespace, State } from "../src/stateMachine";
 import { TapeCollection } from '../src/tapes';
 import { StringDict } from "../src/util";
@@ -362,7 +362,7 @@ export function testStructure(project: Project, expectedOps: [string, string[]][
     for (const [text, relationship] of expectedOps) {
         const relationshipMsg = relationship.join("'s ");
         it(`should have "${text}" as its ${relationshipMsg}`, function() {
-            var relative: TstGrammar | undefined = sheet;
+            var relative: TstEnclosure | undefined = sheet;
             for (const rel of relationship) {
                 if (rel == "child" && relative != undefined) {
                     relative = relative.child;

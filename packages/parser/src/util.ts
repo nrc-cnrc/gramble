@@ -4,17 +4,6 @@ export type Gen<T> = Generator<T, void, undefined>;
 
 export type StringDict = {[key: string]: string};
 
-export class TstError {
-
-    constructor(
-        public pos: CellPos,
-        public severity: "error" | "warning",
-        public shortMsg: string,
-        public longMsg: string
-    ) { }
-
-}
-
 /**
  * A convenience class encapsulating information about where a cell
  * is.  Every component of the abstract syntax tree has one of these;
@@ -37,6 +26,19 @@ export class CellPos {
     }
 }
 
+export interface Cell {
+    markHeader(color: string): void;
+    markError(severity: "error" | "warning", shortMsg: string, longMsg: string): void;
+    markComment(): void;
+    markCommand(): void;
+}
+
+export class DummyCell {
+    markHeader(color: string): void {}
+    markError(severity: "error" | "warning", shortMsg: string, longMsg: string): void {}
+    markComment(): void {}
+    markCommand(): void {}
+}
 
 /**
  * DevEnvironment
@@ -68,7 +70,6 @@ export interface DevEnvironment {
     highlight(): void;
     alert(msg: string): void;
 }
-
 
 export const DUMMY_POSITION = new CellPos("?", -1, -1);
 

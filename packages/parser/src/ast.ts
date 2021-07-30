@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { 
     CounterStack, 
     Expr, 
@@ -19,22 +18,12 @@ import {
     constructMemo,
     constructMatch
 } from "./derivs";
-import { parseCells } from "./sheetParser";
-import { RenamedTape, StringTape, Tape, TapeCollection } from "./tapes";
-import { CellPos, flatten, Gen, setDifference, setUnion, StringDict } from "./util";
+
+import { RenamedTape, Tape, TapeCollection } from "./tapes";
+import { Cell, DummyCell, flatten, Gen, setDifference, setUnion, StringDict } from "./util";
 
 export { CounterStack, Expr };
 
-class AstError {
-
-    constructor(
-        public pos: CellPos,
-        public severity: "error" | "warning",
-        public shortMsg: string,
-        public longMsg: string
-    ) { }
-
-}
 
 /**
  * Abstract syntax tree (AST) components are responsible for the following
@@ -62,7 +51,9 @@ class AstError {
 
 export abstract class AstComponent {
 
-    public pos: CellPos = new CellPos();
+    constructor(
+        public cell: Cell
+    ) { }
 
     public tapes: Set<string> | undefined = undefined;
 
@@ -97,10 +88,6 @@ export abstract class AstComponent {
         for (const child of this.getChildren()) {
             child.qualifyNames(nsStack);
         }
-    }
-
-    public sanityCheck(): AstError[] { 
-        return flatten(this.getChildren().map(s => s.sanityCheck()));
     }
 
     public getRoot(): Root {
@@ -154,10 +141,11 @@ class AstNull extends AstAtomic {
 export class AstLiteral extends AstAtomic {
 
     constructor(
+        cell: Cell,
         public tape: string,
         public text: string
     ) {
-        super();
+        super(cell);
     }
 
     public collectVocab(tapes: Tape, stack: string[] = []): void {
@@ -179,9 +167,10 @@ export class AstLiteral extends AstAtomic {
 class AstDot extends AstAtomic {
 
     constructor(
+        cell: Cell,
         public tape: string
     ) {
-        super();
+        super(cell);
     }
 
     public collectVocab(tapes: Tape, stack: string[] = []): void {
@@ -203,9 +192,10 @@ class AstDot extends AstAtomic {
 abstract class AstNAry extends AstComponent {
 
     constructor(
+        cell: Cell,
         public children: AstComponent[]
     ) {
-        super();
+        super(cell);
     }
     
     public getChildren(): AstComponent[] { 
@@ -220,9 +210,10 @@ export class AstSequence extends AstNAry {
         return constructSequence(...childExprs);
     }
 
+    /*
     public append(newChild: AstComponent): AstComponent {
         return Seq(...this.children, newChild);
-    }
+    } */
 
     public finalChild(): AstComponent {
         if (this.children.length == 0) {
@@ -252,10 +243,11 @@ class AstAlternation extends AstNAry {
 abstract class AstBinary extends AstComponent {
 
     constructor(
+        cell: Cell,
         public child1: AstComponent,
         public child2: AstComponent
     ) {
-        super();
+        super(cell);
     }
     
     public getChildren(): AstComponent[] { 
@@ -393,9 +385,10 @@ class AstContains extends AstBinary {
 abstract class AstUnary extends AstComponent {
 
     constructor(
+        cell: Cell,
         public child: AstComponent
     ) {
-        super();
+        super(cell);
     }
 
     public getChildren(): AstComponent[] { 
@@ -406,11 +399,12 @@ abstract class AstUnary extends AstComponent {
 class AstRename extends AstUnary {
 
     constructor(
+        cell: Cell,
         child: AstComponent,
         public fromTape: string,
         public toTape: string
     ) {
-        super(child);
+        super(cell, child);
     }
 
     public collectVocab(tapes: Tape, stack: string[] = []): void {
@@ -441,11 +435,12 @@ class AstRename extends AstUnary {
 class AstRepeat extends AstUnary {
 
     constructor(
+        cell: Cell,
         child: AstComponent,
         public minReps: number = 0,
         public maxReps: number = Infinity
     ) {
-        super(child);
+        super(cell, child);
     }
 
     public constructExpr(ns: Root): Expr {
@@ -471,11 +466,12 @@ class AstHide extends AstUnary {
     public toTape: string;
 
     constructor(
+        cell: Cell,
         child: AstComponent,
         public tape: string,
         name: string = ""
     ) {
-        super(child);
+        super(cell, child);
         if (name == "") {
             name = `HIDDEN${HIDE_INDEX}`;
             HIDE_INDEX++;
@@ -502,25 +498,19 @@ class AstHide extends AstUnary {
         return this.tapes;
     }
     
-    public sanityCheck(): AstError[] {
-        const childErrors = super.sanityCheck();
+    public constructExpr(ns: Root): Expr {
 
         if (this.child.tapes == undefined) {
-            throw new Error("Trying to sanity check before tapes are calculated");
+            throw new Error("Trying to construct an expression before tapes are calculated");
         }
 
-        if (!this.child.tapes.has(this.tape)) {
-            const newError = new AstError(
-                this.pos,
-                "error",
-                "Hiding missing tape",
+        if (!this.child.tapes.has(this.tape)) {            
+            if (this.cell != undefined) {
+                this.cell.markError("error", "Hiding missing tape",
                 `The grammar to the left does not contain the tape ${this.tape}. Available tapes: [${[...this.child.tapes]}]`);
-            childErrors.push(newError);
+            }
         }
-        return childErrors;
-    }
 
-    public constructExpr(ns: Root): Expr {
         const childExpr = this.child.constructExpr(ns);
         return constructRename(childExpr, this.tape, this.toTape);
     }
@@ -529,10 +519,11 @@ class AstHide extends AstUnary {
 export class AstMatch extends AstUnary {
 
     constructor(
+        cell: Cell,
         child: AstComponent,
         public relevantTapes: Set<string>
     ) {
-        super(child);
+        super(cell, child);
     }
 
     public calculateTapes(stack: CounterStack): Set<string> {
@@ -551,9 +542,10 @@ export class AstMatch extends AstUnary {
 export class AstNamespace extends AstComponent {
 
     constructor(
+        cell: Cell,
         public name: string
     ) {
-        super();
+        super(cell);
     }
 
     public qualifiedNames: Map<string, string> = new Map();
@@ -731,19 +723,11 @@ class AstEmbed extends AstAtomic {
     public referent: AstComponent | undefined = undefined;
 
     constructor(
+        cell: Cell,
         public name: string
     ) {
-        super();
+        super(cell);
         this.qualifiedName = name;
-    }
-        
-    public sanityCheck(): AstError[] {
-        if (this.referent == undefined) {
-            return [ new AstError(
-                this.pos, "error", "Unknown symbol",
-                `Undefined symbol ${this.name}`)];
-        }
-        return [];
     }
 
     public qualifyNames(nsStack: AstNamespace[] = []): void {
@@ -785,6 +769,9 @@ class AstEmbed extends AstAtomic {
 
     public constructExpr(ns: Root): Expr {
         if (this.referent == undefined) {
+            if (this.cell != undefined) {
+                this.cell.markError("error", "Unknown symbol", `Undefined symbol ${this.name}`);
+            }
             return EPSILON;
         }
         return constructEmbed(this.qualifiedName, ns);
@@ -875,12 +862,15 @@ export class Root implements INamespace {
     }
 }
 
+
+const DUMMY_CELL = new DummyCell();
+
 export function Seq(...children: AstComponent[]): AstSequence {
-    return new AstSequence(children);
+    return new AstSequence(DUMMY_CELL, children);
 }
 
 export function Uni(...children: AstComponent[]): AstAlternation {
-    return new AstAlternation(children);
+    return new AstAlternation(DUMMY_CELL, children);
 }
 
 export function Maybe(child: AstComponent): AstAlternation {
@@ -888,35 +878,35 @@ export function Maybe(child: AstComponent): AstAlternation {
 }
 
 export function Lit(tape: string, text: string): AstLiteral {
-    return new AstLiteral(tape, text);
+    return new AstLiteral(DUMMY_CELL, tape, text);
 }
 
 export function Any(tape: string): AstDot {
-    return new AstDot(tape);
+    return new AstDot(DUMMY_CELL, tape);
 }
 
 export function Intersect(child1: AstComponent, child2: AstComponent): AstIntersection {
-    return new AstIntersection(child1, child2);
+    return new AstIntersection(DUMMY_CELL, child1, child2);
 }
 
 export function Filter(child1: AstComponent, child2: AstComponent): AstFilter {
-    return new AstFilter(child1, child2);
+    return new AstFilter(DUMMY_CELL, child1, child2);
 }
 
 export function Join(child1: AstComponent, child2: AstComponent): AstJoin {
-    return new AstJoin(child1, child2);
+    return new AstJoin(DUMMY_CELL, child1, child2);
 }
 
 export function StartsWith(child1: AstComponent, child2: AstComponent): AstJoin {
-    return new AstStartsWith(child1, child2);
+    return new AstStartsWith(DUMMY_CELL, child1, child2);
 }
 
 export function EndsWith(child1: AstComponent, child2: AstComponent): AstJoin {
-    return new AstEndsWith(child1, child2);
+    return new AstEndsWith(DUMMY_CELL, child1, child2);
 }
 
 export function Contains(child1: AstComponent, child2: AstComponent): AstJoin {
-    return new AstContains(child1, child2);
+    return new AstContains(DUMMY_CELL, child1, child2);
 }
 
 export function Rep(
@@ -924,23 +914,23 @@ export function Rep(
     minReps: number = 0, 
     maxReps: number = Infinity
 ) {
-    return new AstRepeat(child, minReps, maxReps);
+    return new AstRepeat(DUMMY_CELL, child, minReps, maxReps);
 }
 
 export function Epsilon(): AstEpsilon {
-    return new AstEpsilon();
+    return new AstEpsilon(DUMMY_CELL);
 }
 
 export function Null(): AstNull {
-    return new AstNull();
+    return new AstNull(DUMMY_CELL);
 }
 
 export function Embed(name: string): AstEmbed {
-    return new AstEmbed(name);
+    return new AstEmbed(DUMMY_CELL, name);
 }
 
 export function Match(child: AstComponent, ...tapes: string[]): AstMatch {
-    return new AstMatch(child, new Set(tapes));
+    return new AstMatch(DUMMY_CELL, child, new Set(tapes));
 }
 
 export function Dot(...tapes: string[]): AstSequence {
@@ -976,18 +966,18 @@ export function MatchFrom(firstTape: string, secondTape: string, state: AstCompo
 }
 
 export function Rename(child: AstComponent, fromTape: string, toTape: string): AstRename {
-    return new AstRename(child, fromTape, toTape);
+    return new AstRename(DUMMY_CELL, child, fromTape, toTape);
 }
 
 export function Not(child: AstComponent): AstNegation {
-    return new AstNegation(child);
+    return new AstNegation(DUMMY_CELL, child);
 }
 
 export function Ns(
     name: string, 
     symbols: {[name: string]: AstComponent} = {}
 ): AstNamespace {
-    const result = new AstNamespace(name);
+    const result = new AstNamespace(DUMMY_CELL, name);
     for (const [symbolName, component] of Object.entries(symbols)) {
         result.addSymbol(symbolName, component);
     }
@@ -996,5 +986,5 @@ export function Ns(
 
 let HIDE_INDEX = 0; 
 export function Hide(child: AstComponent, tape: string, name: string = ""): AstHide {
-    return new AstHide(child, tape, name);
+    return new AstHide(DUMMY_CELL, child, tape, name);
 }

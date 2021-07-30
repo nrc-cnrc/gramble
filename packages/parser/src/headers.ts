@@ -7,7 +7,7 @@ import {
 
 import { CPAlternation, CPNegation, CPResult, CPUnreserved, parseBooleanCell } from "./cellParser";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPReserved, MPSequence, MPUnreserved } from "./miniParser";
-import { CellPos, DevEnvironment, flatten, HSVtoRGB, RGBtoString } from "./util";
+import { Cell, HSVtoRGB, RGBtoString } from "./util";
 
 export const DEFAULT_SATURATION = 0.1;
 export const DEFAULT_VALUE = 1.0;
@@ -53,13 +53,18 @@ export class HeaderError {
         return RGBtoString(...HSVtoRGB(this.hue, saturation, value));
     }
 
-    public abstract getChildren(): Header[];
-    
-    public sanityCheck(): HeaderError[] { 
-        return flatten(this.getChildren().map(s => s.sanityCheck()));
-    }
-
-    public abstract toAST(left: AstComponent, text: string, position: CellPos, devEnv: DevEnvironment): AstComponent;
+    /**
+     * One of the primary responsibilities of the header tree is to construct the appropriate AST
+     * for a cell, from the AST to its left and a string.  This string is usually the text of the 
+     * cell in question, but (in the case of cells that we parse like "~(A|B)" it could be a substring
+     * of this.  (That's why we need a separate text param and don't just grab it from content.text.)
+     * 
+     * @param left The already-constructed AST corresponding to the cell to the left of the content cell
+     * @param text A string expressing the content to be compiled, in light of this header
+     * @param content The cell that ultimately provided the text string
+     * @returns The AST corresponding to this header/content pair
+     */
+    public abstract toAST(left: AstComponent, text: string, content: Cell): AstComponent;
 }
 
 /**
@@ -79,10 +84,6 @@ abstract class AtomicHeader extends Header {
         
         return (hash & 0xFF) / 255;
     }
-
-    public getChildren(): Header[] {
-        return [];
-    }
 }
 
 /**
@@ -93,11 +94,10 @@ export class EmbedHeader extends AtomicHeader {
     public toAST(
         left: AstComponent, 
         text: string,
-        pos: CellPos,
-        devEnv: DevEnvironment
+        content: Cell
     ): AstComponent {
         const cellAST = Embed(text);
-        cellAST.pos = pos;
+        cellAST.cell = content;
         return Seq(left, cellAST);
     }
 
@@ -117,13 +117,12 @@ export class HideHeader extends AtomicHeader {
     public toAST(
         left: AstComponent, 
         text: string,
-        pos: CellPos,
-        devEnv: DevEnvironment
+        content: Cell
     ): AstComponent {
         var result = left;
         for (const tape of text.split("/")) {
             result = Hide(result, tape.trim());
-            result.pos = pos;
+            result.cell = content;
         }
         return result;
     }
@@ -136,12 +135,9 @@ export class LiteralHeader extends AtomicHeader {
 
     public toAST(
         left: AstComponent, 
-        text: string,
-        pos: CellPos,
-        devEnv: DevEnvironment
+        text: string
     ): AstComponent {
         const ast = Lit(this.text, text);
-        ast.pos = pos;
         return Seq(left, ast);
     }
 }
@@ -158,9 +154,7 @@ export class CommentHeader extends AtomicHeader {
 
     public toAST(
         left: AstComponent, 
-        text: string,
-        pos: CellPos,
-        devEnv: DevEnvironment
+        text: string
     ): AstComponent {
         return left;
     }    
@@ -183,10 +177,6 @@ abstract class UnaryHeader extends Header {
     public get hue(): number {
         return this.child.hue;
     }
-
-    public getChildren(): Header[] {
-        return [this.child];
-    }
 }
 
 /**
@@ -197,12 +187,10 @@ export class MaybeHeader extends UnaryHeader {
     public toAST(
         left: AstComponent, 
         text: string,
-        pos: CellPos,
-        devEnv: DevEnvironment
+        content: Cell
     ): AstComponent {
-        const childAST = this.child.toAST(Epsilon(), text, pos, devEnv);
+        const childAST = this.child.toAST(Epsilon(), text, content);
         const ast = Maybe(childAST);
-        ast.pos = pos;
         return Seq(left, ast);
     }
 }
@@ -214,15 +202,12 @@ class RenameHeader extends UnaryHeader {
 
     public toAST(
         left: AstComponent, 
-        text: string,
-        pos: CellPos,
-        devEnv: DevEnvironment
+        text: string
     ): AstComponent {
         if (!(this.child instanceof LiteralHeader)) {
             throw new Error("Rename (>) of a non-literal");
         }
         const ast = Rename(left, text, this.child.text);
-        ast.pos = pos;
         return ast;
     }
 }
@@ -248,34 +233,31 @@ export class LogicHeader extends UnaryHeader {
 
     public toAstPiece(
         parsedText: CPResult,
-        pos: CellPos,
-        devEnv: DevEnvironment
+        content: Cell
     ): AstComponent {
 
         if (parsedText instanceof CPUnreserved) {
-            //const newCell = new TstCell(parsedText.text, cell.position);
-            return this.child.toAST(Epsilon(), parsedText.text, pos, devEnv);
+            return this.child.toAST(Epsilon(), parsedText.text, content);
         }
 
         if (parsedText instanceof CPNegation) {
-            const childAst = this.toAstPiece(parsedText.child, pos, devEnv);
+            const childAst = this.toAstPiece(parsedText.child, content);
             return Not(childAst);
         }
 
         if (parsedText instanceof CPAlternation) {
-            const child1Ast = this.toAstPiece(parsedText.child1, pos, devEnv);
-            const child2Ast = this.toAstPiece(parsedText.child2, pos, devEnv);
+            const child1Ast = this.toAstPiece(parsedText.child1, content);
+            const child2Ast = this.toAstPiece(parsedText.child2, content);
             return Uni(child1Ast, child2Ast);
         }
 
-        throw new Error(`Error constructing boolean expression in cell ${pos}`);
+        throw new Error(`Error constructing boolean expression: ${parsedText}`);
     }
 
     public toAST(
         left: AstComponent, 
         text: string,
-        pos: CellPos,
-        devEnv: DevEnvironment
+        content: Cell
     ): AstComponent {
 
         if (text.length == 0) {
@@ -283,7 +265,7 @@ export class LogicHeader extends UnaryHeader {
         }
 
         const parsedText = parseBooleanCell(text);
-        const c = this.toAstPiece(parsedText, pos, devEnv);
+        const c = this.toAstPiece(parsedText, content);
         return this.merge(left, c);
     }
 }
@@ -371,10 +353,6 @@ abstract class BinaryHeader extends Header {
     public get hue(): number {
         return this.child1.hue;
     }
-
-    public getChildren(): Header[] {
-        return [this.child1, this.child2];
-    }
 }
 
 export class SlashHeader extends BinaryHeader {
@@ -389,11 +367,10 @@ export class SlashHeader extends BinaryHeader {
     public toAST(
         left: AstComponent, 
         text: string,
-        pos: CellPos,
-        devEnv: DevEnvironment
+        content: Cell
     ): AstComponent {
-        const childAst1 = this.child1.toAST(left, text, pos, devEnv);
-        return this.child2.toAST(childAst1, text, pos, devEnv);
+        const childAst1 = this.child1.toAST(left, text, content);
+        return this.child2.toAST(childAst1, text, content);
     }
 }
 
@@ -402,26 +379,24 @@ export class ErrorHeader extends AtomicHeader {
     public toAST(
         left: AstComponent, 
         text: string,
-        pos: CellPos,
-        devEnv: DevEnvironment
+        content: Cell
     ): AstComponent {
+        content.markError("error", `Invalid header: ${this.text}`,
+            `Cannot parse the header ${this.text}`)
         return Epsilon();
     }
-
-    public sanityCheck(): HeaderError[] { 
-        return [ new HeaderError("error", 
-            `Invalid header: ${this.text}`,
-            `Cannot parse the header ${this.text}`) ];
-    }
-
 }
 
 export class ReservedErrorHeader extends ErrorHeader {
 
-    public sanityCheck(): HeaderError[] { 
-        return [ new HeaderError("error", 
-            `Reserved in header: ${this.text}`,
-            `Headers cannot contain reserved words, in this case "${this.text}"`) ];
+    public toAST(
+        left: AstComponent, 
+        text: string,
+        content: Cell
+    ): AstComponent {
+        content.markError("error", `Reserved in header: ${this.text}`,
+            `Headers cannot contain reserved words, in this case "${this.text}"`)
+        return Epsilon();
     }
 
 }
