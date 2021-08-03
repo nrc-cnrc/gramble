@@ -18,7 +18,6 @@ export function sheetFromFile(path: string): Project {
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    /*
     describe('Multi-sheet project', function() {
 
         const project = sheetFromFile("./tests/csvs/externalRef.csv");
@@ -37,13 +36,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/lowercaseExternalRef.csv");
 
         testErrors(project, []);
-        testSymbols(project, [
-            "word", 
-            "embedGrammar.word", 
-            "embedGrammar.verb", 
-            "embedGrammar.suffix"
-        ]);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -56,13 +49,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/externalBareRef.csv");
 
         testErrors(project, []);
-        testSymbols(project, [
-            "word", 
-            "embedGrammar.word", 
-            "embedGrammar.verb", 
-            "embedGrammar.suffix"
-        ]);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -75,13 +62,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/externalBareRefToBareGrammar.csv");
 
         testErrors(project, []);
-        testSymbols(project, [
-            "word", 
-            "bareGrammarWithEmbeds", 
-            "bareGrammarWithEmbeds.verb", 
-            "bareGrammarWithEmbeds.suffix"
-        ]);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -95,7 +76,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["missingExternalRef", 1, 1, "warning"]
         ]);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "able" }
         ]);
     });
@@ -106,11 +87,10 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["missingSheet", 1, 1, "warning"]
         ]);
-        testProject(project, 'word', [
+        testProject(project, [
             { text: "able" }
         ]);
     });
-*/
 
 });
 

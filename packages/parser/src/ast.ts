@@ -84,10 +84,8 @@ export abstract class AstComponent {
         return this.tapes;
     }
 
-    public qualifyNames(nsStack: AstNamespace[] = []): void {
-        for (const child of this.getChildren()) {
-            child.qualifyNames(nsStack);
-        }
+    public qualifyNames(nsStack: AstNamespace[] = []): string[] {
+        return flatten(this.getChildren().map(c => c.qualifyNames(nsStack)));
     }
 
     public getRoot(): Root {
@@ -587,13 +585,15 @@ export class AstNamespace extends AstComponent {
         return [...namePrefixes, name].join(".");
     }
     
-    public qualifyNames(nsStack: AstNamespace[] = []): void {
+    public qualifyNames(nsStack: AstNamespace[] = []): string[] {
+        let unqualifiedNames: string[] = [];
         const newStack = [ ...nsStack, this ];
         for (const [symbolName, referent] of this.symbols) {
             const newName = this.calculateQualifiedName(symbolName, newStack);
             this.qualifiedNames.set(symbolName, newName);
-            referent.qualifyNames(newStack);
+            unqualifiedNames = unqualifiedNames.concat(referent.qualifyNames(newStack));
         }
+        return unqualifiedNames;
     }
 
     /**
@@ -730,11 +730,12 @@ class AstEmbed extends AstAtomic {
         this.qualifiedName = name;
     }
 
-    public qualifyNames(nsStack: AstNamespace[] = []): void {
+    public qualifyNames(nsStack: AstNamespace[] = []): string[] {
+        let resolution: [string, AstComponent] | undefined = undefined;
         for (let i = nsStack.length-1; i >=0; i--) {
             // we go down the stack asking each to resolve it
             const subStack = nsStack.slice(0, i+1);
-            const resolution = nsStack[i].resolveName(this.name, subStack);
+            resolution = nsStack[i].resolveName(this.name, subStack);
             if (resolution != undefined) {              
                 const [qualifiedName, referent] = resolution;
                 this.qualifiedName = qualifiedName;
@@ -742,6 +743,11 @@ class AstEmbed extends AstAtomic {
                 break;
             }
         }
+
+        if (resolution == undefined) {
+            return [ this.name ];
+        }
+        return [];
     }
 
     public calculateTapes(stack: CounterStack): Set<string> {
@@ -787,18 +793,18 @@ export class Root implements INamespace {
     ) { }
 
     public addComponent(name: string, comp: AstComponent): void {
-        if (this.components.has(name)) {
+        //if (this.components.has(name)) {
             // shouldn't happen due to alpha conversion, but check
-            throw new Error(`Redefining symbol ${name}`);
-        }
+            //throw new Error(`Redefining symbol ${name}`);
+        //}
         this.components.set(name, comp);
     }
 
     public addSymbol(name: string, state: Expr): void {
-        if (this.exprs.has(name)) {
+        //if (this.exprs.has(name)) {
             // shouldn't happen due to alpha conversion, but check
-            throw new Error(`Redefining symbol ${name}`);
-        }
+            //throw new Error(`Redefining symbol ${name}`);
+        //}
         this.exprs.set(name, state);
     }
     

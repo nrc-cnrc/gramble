@@ -1,7 +1,7 @@
 
 
 import { SimpleDevEnvironment } from "./devEnv";
-import { CounterStack, AstComponent, AstNamespace, Root } from "./ast";
+import { CounterStack, AstComponent, AstNamespace, Root, Epsilon } from "./ast";
 import { CellPos, DevEnvironment, DummyCell, iterTake, StringDict } from "./util";
 import { TstSheet } from "./tsts";
 import { SheetProject, Sheet } from "./sheets";
@@ -120,58 +120,53 @@ export class Project {
         return startState.sample(restriction, numSamples, maxTries, maxRecursion, maxChars);
     } */
     
-    public addSheetAux(sheetName: string): void {
+    public addSheetAux(sheetName: string): AstComponent | undefined {
 
         if (sheetName in this.sheets) {
             // already loaded it, don't have to do anything
-            return;
+            return this.globalNamespace.getSymbol(sheetName);
         }
 
         if (!this.devEnv.hasSource(sheetName)) {
-            // this might or might not be an error.  most of the time, it
-            // just means that an embed in some sheet referred to a symbol
-            // of this name, and we're checking to see if it refers to a 
-            // sheet.  Even if we can't find that sheet, we're probably good,
-            // it's probably just a symbol name.
-            //
-            // if this is indeed a programmer error, don't freak out about it here.
-            // it's too early to know what and what isn't an error.
-            // later on, we'll put errors on any cells for which we can't
-            // resolve the reference.
-            return;
+            // this is probably a programmer error, in which they've attempted
+            // to reference a non-existant symbol, and we're trying to load it as
+            // a possible source file.  we don't freak out about it here, though;
+            // that symbol will generate an error message at the appropriate place.
+            return Epsilon();
         }
 
         const cells = this.devEnv.loadSource(sheetName);
 
         // parse the cells into an abstract syntax tree
-        const sheet = new Sheet(this.sheetProject, sheetName);
-        const sheetComponent = sheet.toTST(sheetName, cells);
-
-        // put the raw cells into the sheetComponent, for interfaces
-        // that need them (like the sidebar of the GSuite add-on)
-
-        // Create a new namespace for this sheet and add it to the 
-        // global namespace
-        //const sheetNamespace = new AstNamespace(sheetName);
-        //this.globalNamespace.addSymbol(sheetName, sheetNamespace);
-
-        // Compile it
+        const sheet = new Sheet(this.sheetProject, sheetName, cells);
+        const sheetComponent = sheet.toTST();
         const sheetAST = sheetComponent.toAST();
         this.globalNamespace.addSymbol(sheetName, sheetAST);
 
         // Store it in .sheets
         this.sheets[sheetName] = sheetComponent;
 
-        /*
-        for (const requiredSheet of this.globalNamespace.requiredNamespaces) {
-            this.addSheetAux(requiredSheet);
-        } */
+        // check to see if any names didn't get resolved
+        const unresolvedNames: Set<string> = new Set(); 
+        for (const name of sheetAST.qualifyNames()) {
+            const firstPart = name.split(".")[0];
+            unresolvedNames.add(firstPart);
+        }
+
+        for (const possibleSheetName of unresolvedNames) {
+            this.addSheetAux(possibleSheetName);
+        }
+
+        return sheetAST;
     }
 
     public addSheet(sheetName: string): void {
         // add this sheet and any sheets that it refers to
-        this.addSheetAux(sheetName);
+        const ast = this.addSheetAux(sheetName);
         //this.globalNamespace.setDefaultNamespaceName(sheetName);
+        if (ast != undefined) {
+            this.globalNamespace.addSymbol("__MAIN__", ast);
+        }
         this.defaultSheetName = sheetName;
     }
 
