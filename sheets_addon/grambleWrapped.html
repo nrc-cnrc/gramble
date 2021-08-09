@@ -1639,7 +1639,6 @@ class Root {
         return this.exprs.get(name);
     }
     getComponent(name) {
-        console.log(`available components are ${this.components.keys()}`);
         return this.components.get(name);
     }
     allSymbols() {
@@ -2062,11 +2061,10 @@ class Expr {
      */
     *generate(allTapes, random = false, maxRecursion = 4, maxChars = 1000) {
         const stack = new CounterStack(maxRecursion);
-        /*
         if (random) {
             yield* this.generateRandom(allTapes, stack, maxChars);
             return;
-        } */
+        }
         yield* this.generateBreadthFirst(allTapes, stack, maxChars);
     }
     *generateBreadthFirst(allTapes, stack, maxChars = 1000) {
@@ -2088,15 +2086,12 @@ class Expr {
                 }
                 // rotate the tapes so that we don't keep trying the same one every time
                 tapes = [...tapes.slice(1), tapes[0]];
-                //console.log(`querying ${prevExpr.id}`);
                 const tapeToTry = tapes[0];
                 for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, tapes_1.ANY_CHAR, stack)) {
-                    //console.log(`D_${cTape.tapeName}:${cTarget.stringify(cTape)} = ${cNext.id}`);
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nextQueue.push([tapes, nextOutput, cNext, chars + 1]);
                 }
                 const delta = prevExpr.delta(tapeToTry, stack);
-                //console.log(`𝛿_${tapeToTry.tapeName} = ${delta.id}`)
                 if (!(delta instanceof NullExpr)) {
                     const newTapes = tapes.slice(1);
                     nextQueue.push([newTapes, prevOutput, delta, chars]);
@@ -2104,6 +2099,56 @@ class Expr {
             }
             stateQueue = nextQueue;
         }
+    }
+    *generateRandom(allTapes, stack, maxChars = 1000) {
+        const initialOutput = new tapes_1.MultiTapeOutput();
+        const startingTapes = [...allTapes.tapes.values()];
+        var stateStack = [[startingTapes, initialOutput, this, 0]];
+        const candidates = [];
+        while (stateStack.length > 0) {
+            // first, see if it's time to randomly emit a result
+            if (Math.random() < 0.1 && candidates.length > 0) {
+                const candidateIndex = Math.floor(Math.random() * candidates.length);
+                const candidateOutput = candidates.splice(candidateIndex, 1)[0];
+                yield* candidateOutput.toStrings(true);
+            }
+            let nexts = [];
+            let prev = stateStack.pop();
+            if (prev == undefined) {
+                break; // won't happen if stateStack.length > 0 anyway, just for linting
+            }
+            let [tapes, prevOutput, prevExpr, chars] = prev;
+            if (chars >= maxChars) {
+                continue;
+            }
+            if (prevExpr instanceof EpsilonExpr) {
+                candidates.push(prevOutput);
+                continue;
+            }
+            if (tapes.length == 0) {
+                continue;
+            }
+            // rotate the tapes so that we don't keep trying the same one every time
+            tapes = [...tapes.slice(1), tapes[0]];
+            const tapeToTry = tapes[0];
+            for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, tapes_1.ANY_CHAR, stack)) {
+                const nextOutput = prevOutput.add(cTape, cTarget);
+                nexts.push([tapes, nextOutput, cNext, chars + 1]);
+            }
+            const delta = prevExpr.delta(tapeToTry, stack);
+            if (!(delta instanceof NullExpr)) {
+                const newTapes = tapes.slice(1);
+                nexts.push([newTapes, prevOutput, delta, chars]);
+            }
+            util_1.shuffleArray(nexts);
+            stateStack = stateStack.concat(nexts);
+        }
+        if (candidates.length == 0) {
+            return;
+        }
+        const candidateIndex = Math.floor(Math.random() * candidates.length);
+        const candidateOutput = candidates.splice(candidateIndex, 1)[0];
+        yield* candidateOutput.toStrings(true);
     }
 }
 exports.Expr = Expr;
@@ -2516,7 +2561,6 @@ class MatchExpr extends UnaryExpr {
         if (buffer != undefined) {
             const deltaBuffer = buffer.delta(tape, stack);
             if (!(deltaBuffer instanceof EpsilonExpr)) {
-                //console.log(`buffer for ${tape.tapeName} isn't empty: ${buffer.id}`);
                 return exports.NULL;
             }
             newBuffers[tape.tapeName] = deltaBuffer;
@@ -2533,7 +2577,6 @@ class MatchExpr extends UnaryExpr {
             return constructSequence(...Object.values(newBuffers), result);
         }
         else {
-            //console.log(`child for ${tape.tapeName} isn't empty: ${this.child.id}, delta is ${result.id}`);
             return exports.NULL;
         }
     }
@@ -3455,21 +3498,17 @@ class Project {
         }
         return results;
     }
-    /*
-    public sample(symbolName: string = "",
-            numSamples: number = 1,
-            restriction: StringDict = {},
-            maxTries: number = 1000,
-            maxRecursion: number = 4,
-            maxChars: number = 1000): StringDict[] {
-
-        var startState = this.getSymbol(symbolName);
-        if (startState == undefined) {
-            throw new Error(`Project does not define a symbol named "${symbolName}"`);
+    sample(symbolName = "", numSamples = 1, restriction = {}, maxTries = 1000, maxRecursion = 4, maxChars = 1000) {
+        let results = [];
+        for (let i = 0; i < maxTries; i++) {
+            const gen = this.getRoot().generate(symbolName, true, maxRecursion, maxChars);
+            results = results.concat(util_1.iterTake(gen, 1));
+            if (results.length >= numSamples) {
+                break;
+            }
         }
-
-        return startState.sample(restriction, numSamples, maxTries, maxRecursion, maxChars);
-    } */
+        return results;
+    }
     addSheetAux(sheetName) {
         if (sheetName in this.sheets) {
             // already loaded it, don't have to do anything

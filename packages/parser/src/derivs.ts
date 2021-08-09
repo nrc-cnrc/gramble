@@ -1,4 +1,4 @@
-import { Gen, setDifference, StringDict } from "./util";
+import { Gen, setDifference, shuffleArray, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
 import { assert } from "chai";
 import { Match, Null } from "./ast";
@@ -310,11 +310,10 @@ export abstract class Expr {
     
         const stack = new CounterStack(maxRecursion);
 
-        /*
         if (random) {
             yield* this.generateRandom(allTapes, stack, maxChars);
             return;
-        } */
+        } 
 
         yield* this.generateBreadthFirst(allTapes, stack, maxChars);
     }
@@ -351,16 +350,13 @@ export abstract class Expr {
                 // rotate the tapes so that we don't keep trying the same one every time
                 tapes = [... tapes.slice(1), tapes[0]];
 
-                //console.log(`querying ${prevExpr.id}`);
                 const tapeToTry = tapes[0];
                 for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
-                    //console.log(`D_${cTape.tapeName}:${cTarget.stringify(cTape)} = ${cNext.id}`);
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nextQueue.push([tapes, nextOutput, cNext, chars+1]);
                 }
 
                 const delta = prevExpr.delta(tapeToTry, stack);
-                //console.log(`𝛿_${tapeToTry.tapeName} = ${delta.id}`)
                 if (!(delta instanceof NullExpr)) {                    
                     const newTapes = tapes.slice(1);
                     nextQueue.push([newTapes, prevOutput, delta, chars]);
@@ -370,47 +366,63 @@ export abstract class Expr {
         }
     }
 
-    /*
     public *generateRandom(
         allTapes: TapeCollection,
         stack: CounterStack,
         maxChars: number = 1000
-    ): Gen<StringDict> {
-
+    ) {
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
 
-        // the extra number in the queue here is:
-        //    the number of chars, so that we can abort when we've exceeded
-        //    the max.  unlike the normal breadth-first algorithm the hypotheses
-        //    in the queue won't all share the same number of chars queried, so 
-        //    we have to keep track of that for each
+        const startingTapes = [...allTapes.tapes.values()];
 
-        var stateQueue: [MultiTapeOutput, Expr, number][] = 
-                        [[initialOutput, this, 0]];
+        var stateStack: [Tape[], MultiTapeOutput, Expr, number][] = [[startingTapes, initialOutput, this, 0]];
+        const candidates: MultiTapeOutput[] = [];
 
-        const candidates: [MultiTapeOutput, Expr, number][] = [];
+        while (stateStack.length > 0) {
 
-        while (stateQueue.length > 0) {
-            const randomIndex = Math.floor(Math.random()*stateQueue.length);
-            const [currentOutput, currentExpr, chars] = stateQueue.splice(randomIndex, 1)[0];
-            
-            if (currentExpr.accepting(allTapes, stack)) {
-                candidates.push([currentOutput, currentExpr, chars]);
-            }
-
-            if (chars < maxChars) {
-                for (const [tape, c, newExpr] of 
-                        currentExpr.deriv(allTapes, ANY_CHAR, stack)) {
-                    const nextOutput = currentOutput.add(tape, c);
-                    stateQueue.push([nextOutput, newExpr, chars+1]);
-                }
-            }
-            
-            if (Math.random() < 0.05 && candidates.length > 0) {
+            // first, see if it's time to randomly emit a result
+            if (Math.random() < 0.1 && candidates.length > 0) {
                 const candidateIndex = Math.floor(Math.random()*candidates.length);
-                const [candidateOutput, candidateExpr, candidateChars] = candidates.splice(candidateIndex, 1)[0];
+                const candidateOutput = candidates.splice(candidateIndex, 1)[0];
                 yield* candidateOutput.toStrings(true);
             }
+
+            let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
+            let prev = stateStack.pop();
+            if (prev == undefined) {
+                break; // won't happen if stateStack.length > 0 anyway, just for linting
+            }
+            let [tapes, prevOutput, prevExpr, chars] = prev;
+            if (chars >= maxChars) {
+                continue;
+            }
+
+            if (prevExpr instanceof EpsilonExpr) {
+                candidates.push(prevOutput);
+                continue;
+            }
+            
+            if (tapes.length == 0) {
+                continue; 
+            }
+
+            // rotate the tapes so that we don't keep trying the same one every time
+            tapes = [... tapes.slice(1), tapes[0]];
+
+            const tapeToTry = tapes[0];
+            for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
+                const nextOutput = prevOutput.add(cTape, cTarget);
+                nexts.push([tapes, nextOutput, cNext, chars+1]);
+            }
+
+            const delta = prevExpr.delta(tapeToTry, stack);
+            if (!(delta instanceof NullExpr)) {                    
+                const newTapes = tapes.slice(1);
+                nexts.push([newTapes, prevOutput, delta, chars]);
+            }
+
+            shuffleArray(nexts);
+            stateStack = stateStack.concat(nexts);
         }
 
         if (candidates.length == 0) {
@@ -418,10 +430,9 @@ export abstract class Expr {
         }
 
         const candidateIndex = Math.floor(Math.random()*candidates.length);
-        const [candidateOutput, candidateExpr, candidateChars] = candidates[candidateIndex];
+        const candidateOutput = candidates.splice(candidateIndex, 1)[0];
         yield* candidateOutput.toStrings(true);
-
-    } */
+    }
 }
 
 
@@ -1004,7 +1015,6 @@ export class MatchExpr extends UnaryExpr {
         if (buffer != undefined) {
             const deltaBuffer = buffer.delta(tape, stack);
             if (!(deltaBuffer instanceof EpsilonExpr)) {
-                //console.log(`buffer for ${tape.tapeName} isn't empty: ${buffer.id}`);
                 return NULL;
             }
             newBuffers[tape.tapeName] = deltaBuffer;
@@ -1020,7 +1030,6 @@ export class MatchExpr extends UnaryExpr {
         if (!(result instanceof NullExpr)) {
             return constructSequence(...Object.values(newBuffers), result);
         } else {
-            //console.log(`child for ${tape.tapeName} isn't empty: ${this.child.id}, delta is ${result.id}`);
             return NULL;
         }
     }

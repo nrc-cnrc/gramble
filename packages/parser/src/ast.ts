@@ -823,7 +823,6 @@ export class Root implements INamespace {
     }
 
     public getComponent(name: string): AstComponent | undefined {
-        console.log(`available components are ${this.components.keys()}`);
         return this.components.get(name);
     }
     

@@ -207,8 +207,6 @@
                 
                 let options = project.allSymbols();
 
-                console.log(options);
-
                 for (const option of options) {
                     const el = document.createElement('option');
 
@@ -238,13 +236,11 @@
                     return;
                 }
 
-                console.log(`getting tape names for ${currentSymbol}`);
                 CURRENT_TAPES = project.getTapeNames(currentSymbol)
                                        .filter(([s, c]) => !s.startsWith("__"));
                                             // tapes that start with __ are internal/hidden/mangled,
                                             // we don't want to present them to the user in the interface
 
-                console.log(`tape names = ${CURRENT_TAPES}`);
                 const inputTable = document.getElementById("inputTable");
                 for (const [tapeName, color] of CURRENT_TAPES) {
                     const tr = document.createElement("tr");
@@ -440,7 +436,7 @@
                 const tapeNames = tapeInfo.map(([k, v]) => k);
 
                 const resultsTable = resultsToTable(tapeNames, results)
-                const sheetName = symbolName + "_generated";
+                const sheetName = symbolName.replace(".", "_") + "_generated";
                 await scriptRunPromise().makeNewSheet(symbolName, sheetName, resultsTable);
             }
 
@@ -463,7 +459,7 @@
                 const tapeNames = tapeInfo.map(([k, v]) => k);
 
                 const resultsTable = resultsToTable(tapeNames, results)
-                const sheetName = symbolName + "_sampled";
+                const sheetName = symbolName.replace(".", "_") + "_sampled";
                 await scriptRunPromise().makeNewSheet(symbolName, sheetName, resultsTable);
             }
 

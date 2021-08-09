@@ -104,7 +104,6 @@ export class Project {
         return results;
     }
 
-    /*
     public sample(symbolName: string = "",
             numSamples: number = 1,
             restriction: StringDict = {},
@@ -112,13 +111,16 @@ export class Project {
             maxRecursion: number = 4, 
             maxChars: number = 1000): StringDict[] {
 
-        var startState = this.getSymbol(symbolName);
-        if (startState == undefined) {
-            throw new Error(`Project does not define a symbol named "${symbolName}"`);
+        let results: StringDict[] = [];
+        for (let i = 0; i < maxTries; i++) {
+            const gen = this.getRoot().generate(symbolName, true, maxRecursion, maxChars);
+            results = results.concat(iterTake(gen, 1));
+            if (results.length >= numSamples) {
+                break;
+            }
         }
-
-        return startState.sample(restriction, numSamples, maxTries, maxRecursion, maxChars);
-    } */
+        return results;
+    } 
     
     public addSheetAux(sheetName: string): AstComponent | undefined {
 
