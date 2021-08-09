@@ -719,7 +719,7 @@ export class AstNamespace extends AstComponent {
     }
 }
 
-class AstEmbed extends AstAtomic {
+export class AstEmbed extends AstAtomic {
 
     public qualifiedName: string;
     public referent: AstComponent | undefined = undefined;

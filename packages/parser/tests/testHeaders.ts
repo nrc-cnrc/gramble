@@ -15,14 +15,13 @@ import {
 
 import * as path from 'path';
 import { expect } from "chai";
-import { testHeaderHasText, testIsType } from "./testUtilsAst";
+import { testIsType } from "./testUtilsAst";
 
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Header "text"', function() {
         const header = parseHeaderCell("text");
         testIsType(header, LiteralHeader);
-        testHeaderHasText(header, "text");
     });
     
     describe('Header "embed"', function() {
@@ -61,7 +60,6 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Header "(text)"', function() {
         const header = parseHeaderCell("(text)");
         testIsType(header, LiteralHeader);
-        testHeaderHasText(header, "text");
     });
 
     
@@ -87,7 +85,6 @@ describe(`${path.basename(module.filename)}`, function() {
         }
 
         testIsType(header.child, LiteralHeader, "child");
-        testHeaderHasText(header.child, "text", "child");
     });
     
     describe('Header "maybe(text)"', function() {
@@ -99,7 +96,6 @@ describe(`${path.basename(module.filename)}`, function() {
         }
 
         testIsType(header.child, LiteralHeader, "child");
-        testHeaderHasText(header.child, "text", "child");
     });
     
     describe('Header "(maybe text)"', function() {
@@ -111,7 +107,6 @@ describe(`${path.basename(module.filename)}`, function() {
         }
 
         testIsType(header.child, LiteralHeader, "child");
-        testHeaderHasText(header.child, "text", "child");
     });
 
     
@@ -178,7 +173,6 @@ describe(`${path.basename(module.filename)}`, function() {
         }
 
         testIsType(header.child, LiteralHeader, "child");
-        testHeaderHasText(header.child, "text", "child");
     });
 
     /*
@@ -206,7 +200,6 @@ describe(`${path.basename(module.filename)}`, function() {
         }
 
         testIsType(header.child, LiteralHeader, "child");
-        testHeaderHasText(header.child, "text", "child");
     });
     
     
@@ -220,7 +213,6 @@ describe(`${path.basename(module.filename)}`, function() {
         }
 
         testIsType(header.child, LiteralHeader, "child");
-        testHeaderHasText(header.child, "text", "child");
     });
     
     describe('Header "contains text"', function() {
@@ -233,7 +225,6 @@ describe(`${path.basename(module.filename)}`, function() {
         }
 
         testIsType(header.child, LiteralHeader, "child");
-        testHeaderHasText(header.child, "text", "child");
     });
 
     describe('Header "text/gloss"', function() {
@@ -246,10 +237,8 @@ describe(`${path.basename(module.filename)}`, function() {
         }
 
         testIsType(header.child1, LiteralHeader, "child1");
-        testHeaderHasText(header.child1, "text", "child1");
         
         testIsType(header.child2, LiteralHeader, "child2");
-        testHeaderHasText(header.child2, "gloss", "child2");
     });
 
     
@@ -263,10 +252,8 @@ describe(`${path.basename(module.filename)}`, function() {
         }
 
         testIsType(header.child1, LiteralHeader, "child1");
-        testHeaderHasText(header.child1, "text", "child1");
         
         testIsType(header.child2, LiteralHeader, "child2");
-        testHeaderHasText(header.child2, "gloss", "child2");
     });
 
     describe('Header "(text/gloss)"', function() {
@@ -279,10 +266,8 @@ describe(`${path.basename(module.filename)}`, function() {
         }
 
         testIsType(header.child1, LiteralHeader, "child1");
-        testHeaderHasText(header.child1, "text", "child1");
         
         testIsType(header.child2, LiteralHeader, "child2");
-        testHeaderHasText(header.child2, "gloss", "child2");
     });
     
     describe('Header "/text"', function() {
@@ -349,7 +334,6 @@ describe(`${path.basename(module.filename)}`, function() {
         }
 
         testIsType(header.child1, LiteralHeader, "child1");
-        testHeaderHasText(header.child1, "text", "child1");
         testIsType(header.child2, SlashHeader, "child2");
 
         if (!(header.child2 instanceof SlashHeader)) {
@@ -357,9 +341,7 @@ describe(`${path.basename(module.filename)}`, function() {
         }
 
         testIsType(header.child2.child1, LiteralHeader, "child2.child1");
-        testHeaderHasText(header.child2.child1, "gloss", "child2.child1");
         testIsType(header.child2.child2, LiteralHeader, "child2.child2");
-        testHeaderHasText(header.child2.child2, "root", "child2.child2");
     });
 
     
@@ -375,15 +357,12 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testIsType(header.child1, SlashHeader, "child1");
         testIsType(header.child2, LiteralHeader, "child2");
-        testHeaderHasText(header.child2, "root", "child2");
 
         if (!(header.child1 instanceof SlashHeader)) {
             return;
         }
 
         testIsType(header.child1.child1, LiteralHeader, "child2.child1");
-        testHeaderHasText(header.child1.child1, "text", "child2.child1");
         testIsType(header.child1.child2, LiteralHeader, "child2.child2");
-        testHeaderHasText(header.child1.child2, "gloss", "child2.child2");
     });
 });

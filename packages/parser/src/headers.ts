@@ -1,8 +1,6 @@
 import { 
-    AstComponent, AstSequence, Contains, Embed,
-    EndsWith, Epsilon, Filter, Hide, 
-    Join, Lit, Maybe, Not, 
-    Rename, Seq, StartsWith, Uni 
+    AstAlternation,
+    AstComponent, AstContains, AstEmbed, AstEndsWith, AstEpsilon, AstFilter, AstHide, AstJoin, AstLiteral, AstNegation, AstRename, AstSequence, AstStartsWith
 } from "./ast";
 
 import { CPAlternation, CPNegation, CPResult, CPUnreserved, parseBooleanCell } from "./cellParser";
@@ -11,16 +9,6 @@ import { Cell, HSVtoRGB, RGBtoString } from "./util";
 
 export const DEFAULT_SATURATION = 0.1;
 export const DEFAULT_VALUE = 1.0;
-
-export class HeaderError {
-
-    constructor(
-        public severity: "error" | "warning",
-        public shortMsg: string,
-        public longMsg: string
-    ) { }
-
-}
 
 /**
  * A Header is a cell in the top row of a table, consisting of one of
@@ -43,16 +31,6 @@ export class HeaderError {
  */
  export abstract class Header {
 
-    constructor(
-        public text: string,
-    ) { }
-
-    public abstract get hue(): number;
-    
-    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
-        return RGBtoString(...HSVtoRGB(this.hue, saturation, value));
-    }
-
     /**
      * One of the primary responsibilities of the header tree is to construct the appropriate AST
      * for a cell, from the AST to its left and a string.  This string is usually the text of the 
@@ -65,6 +43,7 @@ export class HeaderError {
      * @returns The AST corresponding to this header/content pair
      */
     public abstract toAST(left: AstComponent, text: string, content: Cell): AstComponent;
+    public abstract getColor(saturation: number, value: number): string;
 }
 
 /**
@@ -72,6 +51,12 @@ export class HeaderError {
  * literals (e.g. "text").
  */
 abstract class AtomicHeader extends Header { 
+
+    public abstract get text(): string;
+    
+    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
+        return RGBtoString(...HSVtoRGB(this.hue, saturation, value));
+    }
 
     public get hue(): number {
         const str = this.text + "abcde" // otherwise short strings are boring colors
@@ -91,14 +76,18 @@ abstract class AtomicHeader extends Header {
  */
 export class EmbedHeader extends AtomicHeader {
 
+    public get text(): string {
+        return "embed";
+    }
+
     public toAST(
         left: AstComponent, 
         text: string,
         content: Cell
     ): AstComponent {
-        const cellAST = Embed(text);
+        const cellAST = new AstEmbed(content, text);
         cellAST.cell = content;
-        return Seq(left, cellAST);
+        return new AstSequence(content, [left, cellAST]);
     }
 
 }
@@ -114,6 +103,10 @@ export class EmbedHeader extends AtomicHeader {
  */
 export class HideHeader extends AtomicHeader {
 
+    public get text(): string {
+        return "hide";
+    }
+    
     public toAST(
         left: AstComponent, 
         text: string,
@@ -121,7 +114,7 @@ export class HideHeader extends AtomicHeader {
     ): AstComponent {
         var result = left;
         for (const tape of text.split("/")) {
-            result = Hide(result, tape.trim());
+            result = new AstHide(content, result, tape.trim());
             result.cell = content;
         }
         return result;
@@ -133,12 +126,19 @@ export class HideHeader extends AtomicHeader {
  */
 export class LiteralHeader extends AtomicHeader {
 
+    constructor(
+        public text: string
+    ) {
+        super();
+    }
+
     public toAST(
         left: AstComponent, 
-        text: string
+        text: string,
+        content: Cell
     ): AstComponent {
-        const ast = Lit(this.text, text);
-        return Seq(left, ast);
+        const ast = new AstLiteral(content, this.text, text);
+        return new AstSequence(content, [left, ast]);
     }
 }
 
@@ -146,10 +146,14 @@ export class LiteralHeader extends AtomicHeader {
  * Commented-out headers also comment out any cells below them; the cells just act as
  * Empty() states.
  */
-export class CommentHeader extends AtomicHeader { 
+export class CommentHeader extends Header { 
 
     public get hue(): number {
         return 0;
+    }
+    
+    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
+        return "FFFFF";
     }
 
     public toAST(
@@ -168,14 +172,13 @@ export class CommentHeader extends AtomicHeader {
 abstract class UnaryHeader extends Header {
 
     public constructor(
-        text: string,
         public child: Header
     ) { 
-        super(text);
+        super();
     }
 
-    public get hue(): number {
-        return this.child.hue;
+    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
+        return this.child.getColor(saturation, value);
     }
 }
 
@@ -189,9 +192,9 @@ export class MaybeHeader extends UnaryHeader {
         text: string,
         content: Cell
     ): AstComponent {
-        const childAST = this.child.toAST(Epsilon(), text, content);
-        const ast = Maybe(childAST);
-        return Seq(left, ast);
+        const childAST = this.child.toAST(new AstEpsilon(content), text, content);
+        const ast = new AstAlternation(content, [childAST, new AstEpsilon(content)]);
+        return new AstSequence(content, [left, ast]);
     }
 }
 
@@ -202,12 +205,13 @@ class RenameHeader extends UnaryHeader {
 
     public toAST(
         left: AstComponent, 
-        text: string
+        text: string,
+        content: Cell
     ): AstComponent {
         if (!(this.child instanceof LiteralHeader)) {
             throw new Error("Rename (>) of a non-literal");
         }
-        const ast = Rename(left, text, this.child.text);
+        const ast = new AstRename(content, left, text, this.child.text);
         return ast;
     }
 }
@@ -224,11 +228,15 @@ class RenameHeader extends UnaryHeader {
  */
 export class LogicHeader extends UnaryHeader {
 
-    public merge(leftNeighbor: AstComponent | undefined, state: AstComponent): AstComponent {
-        if (leftNeighbor == undefined) {
-            return state;
+    public merge(
+        left: AstComponent | undefined, 
+        ast: AstComponent,
+        content: Cell
+    ): AstComponent {
+        if (left == undefined) {
+            return ast;
         }
-        return Seq(leftNeighbor, state);
+        return new AstSequence(content, [left, ast]);
     }
 
     public toAstPiece(
@@ -237,18 +245,18 @@ export class LogicHeader extends UnaryHeader {
     ): AstComponent {
 
         if (parsedText instanceof CPUnreserved) {
-            return this.child.toAST(Epsilon(), parsedText.text, content);
+            return this.child.toAST(new AstEpsilon(content), parsedText.text, content);
         }
 
         if (parsedText instanceof CPNegation) {
             const childAst = this.toAstPiece(parsedText.child, content);
-            return Not(childAst);
+            return new AstNegation(content, childAst);
         }
 
         if (parsedText instanceof CPAlternation) {
             const child1Ast = this.toAstPiece(parsedText.child1, content);
             const child2Ast = this.toAstPiece(parsedText.child2, content);
-            return Uni(child1Ast, child2Ast);
+            return new AstAlternation(content, [child1Ast, child2Ast]);
         }
 
         throw new Error(`Error constructing boolean expression: ${parsedText}`);
@@ -266,7 +274,7 @@ export class LogicHeader extends UnaryHeader {
 
         const parsedText = parseBooleanCell(text);
         const c = this.toAstPiece(parsedText, content);
-        return this.merge(left, c);
+        return this.merge(left, c, content);
     }
 }
 
@@ -282,7 +290,8 @@ export class EqualsHeader extends LogicHeader {
     
     public merge(
         leftNeighbor: AstComponent | undefined, 
-        state: AstComponent
+        state: AstComponent,
+        content: Cell
     ): AstComponent {
         if (leftNeighbor == undefined) {
             throw new Error("'equals/startswith/endswith/contains' requires content to its left.");
@@ -294,16 +303,20 @@ export class EqualsHeader extends LogicHeader {
             // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
             // specifying in the same row, rather than the embedded thing you're trying to catch.)
             const lastChild = leftNeighbor.finalChild();
-            const filter = this.constructFilter(lastChild, state);
+            const filter = this.constructFilter(lastChild, state, content);
             const remainingChildren = leftNeighbor.nonFinalChildren();
-            return Seq(...remainingChildren, filter);
+            return new AstSequence(content, [...remainingChildren, filter]);
         }
 
-        return this.constructFilter(leftNeighbor, state);
+        return this.constructFilter(leftNeighbor, state, content);
     }
 
-    public constructFilter(leftNeighbor: AstComponent, condition: AstComponent): AstComponent {
-        return Filter(leftNeighbor, condition);
+    public constructFilter(
+        leftNeighbor: AstComponent, 
+        condition: AstComponent,
+        content: Cell
+    ): AstComponent {
+        return new AstFilter(content, leftNeighbor, condition);
     }
 }
 
@@ -313,8 +326,12 @@ export class EqualsHeader extends LogicHeader {
  */
 export class StartsWithHeader extends EqualsHeader {
 
-    public constructFilter(leftNeighbor: AstComponent, condition: AstComponent): AstComponent {
-        return StartsWith(leftNeighbor, condition);
+    public constructFilter(
+        leftNeighbor: AstComponent, 
+        condition: AstComponent,
+        content: Cell
+    ): AstComponent {
+        return new AstStartsWith(content, leftNeighbor, condition);
     }
 }
 
@@ -323,9 +340,13 @@ export class StartsWithHeader extends EqualsHeader {
  * end with X (that is, Filter(N, .*X))
  */
 export class EndsWithHeader extends EqualsHeader {
-    
-    public constructFilter(leftNeighbor: AstComponent, condition: AstComponent): AstComponent {
-        return EndsWith(leftNeighbor, condition);
+
+    public constructFilter(
+        leftNeighbor: AstComponent, 
+        condition: AstComponent,
+        content: Cell
+    ): AstComponent {
+        return new AstEndsWith(content, leftNeighbor, condition);
     }
 }
 
@@ -335,23 +356,26 @@ export class EndsWithHeader extends EqualsHeader {
  */
 export class ContainsHeader extends EqualsHeader {
     
-    public constructFilter(leftNeighbor: AstComponent, condition: AstComponent): AstComponent {
-        return Contains(leftNeighbor, condition);
+    public constructFilter(
+        leftNeighbor: AstComponent, 
+        condition: AstComponent,
+        content: Cell
+    ): AstComponent {
+        return new AstContains(content, leftNeighbor, condition);
     }
 }
 
 abstract class BinaryHeader extends Header {
 
     public constructor(
-        text: string,
         public child1: Header,
         public child2: Header
     ) { 
-        super(text);
+        super();
     }
 
-    public get hue(): number {
-        return this.child1.hue;
+    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
+        return this.child1.getColor(saturation, value);
     }
 }
 
@@ -361,7 +385,7 @@ export class SlashHeader extends BinaryHeader {
         public child1: Header,
         public child2: Header
     ) { 
-        super("/", child1, child2);
+        super(child1, child2);
     }
     
     public toAST(
@@ -374,7 +398,7 @@ export class SlashHeader extends BinaryHeader {
     }
 }
 
-export class ErrorHeader extends AtomicHeader {
+export class ErrorHeader extends LiteralHeader {
 
     public toAST(
         left: AstComponent, 
@@ -383,7 +407,7 @@ export class ErrorHeader extends AtomicHeader {
     ): AstComponent {
         content.markError("error", `Invalid header: ${this.text}`,
             `Cannot parse the header ${this.text}`)
-        return Epsilon();
+        return new AstEpsilon(content);
     }
 }
 
@@ -396,7 +420,7 @@ export class ReservedErrorHeader extends ErrorHeader {
     ): AstComponent {
         content.markError("error", `Reserved in header: ${this.text}`,
             `Headers cannot contain reserved words, in this case "${this.text}"`)
-        return Epsilon();
+        return new AstEpsilon(content);
     }
 
 }
@@ -423,11 +447,11 @@ export const RESERVED_HEADERS = [
     "contains" 
 ];
 
-type BinaryOp = (...children: AstComponent[]) => AstComponent;
+type BinaryOp = (cell: Cell, c1: AstComponent, c2: AstComponent) => AstComponent;
 export const BINARY_OPS: {[opName: string]: BinaryOp} = {
-    "or": Uni,
-    "concat": Seq,
-    "join": Join,
+    "or": (cell, c1, c2) => new AstAlternation(cell, [c1, c2]),
+    "concat": (cell, c1, c2) => new AstSequence(cell, [c1, c2]),
+    "join": (cell, c1, c2) => new AstJoin(cell, c1, c2),
 }
 
 export const RESERVED_OPS: Set<string> = new Set([ ...Object.keys(BINARY_OPS), "table", "test", "testnot" ]);
@@ -459,7 +483,7 @@ var HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
 
 const HP_COMMENT = MPComment<Header>(
     '%',
-    (s) => new CommentHeader(s)
+    (s) => new CommentHeader()
 );
 
 const HP_UNRESERVED = MPUnreserved<Header>(
@@ -474,12 +498,12 @@ const HP_RESERVED_OP = MPReserved<Header>(
 
 const HP_EMBED = MPSequence<Header>(
     ["embed"],
-    () => new EmbedHeader("embed")
+    () => new EmbedHeader()
 );
 
 const HP_HIDE = MPSequence<Header>(
     ["hide"],
-    () => new HideHeader("hide")
+    () => new HideHeader()
 );
 
 /*
@@ -491,12 +515,12 @@ const HP_REVEAL = MPSequence<Header>(
 
 const HP_MAYBE = MPSequence<Header>(
     ["maybe", HP_NON_COMMENT_EXPR],
-    (child) => new MaybeHeader("maybe", child)
+    (child) => new MaybeHeader(child)
 );
 
 const HP_LOGIC = MPSequence<Header>(
     ["logic", HP_NON_COMMENT_EXPR],
-    (child) => new LogicHeader("maybe", child)
+    (child) => new LogicHeader(child)
 );
 
 const HP_SLASH = MPSequence<Header>(
@@ -506,7 +530,7 @@ const HP_SLASH = MPSequence<Header>(
 
 const HP_RENAME = MPSequence<Header>(
     [">", HP_UNRESERVED],
-    (child) => new RenameHeader(">", child)
+    (child) => new RenameHeader(child)
 );
 
 const HP_PARENS = MPSequence<Header>(
@@ -516,22 +540,22 @@ const HP_PARENS = MPSequence<Header>(
 
 const HP_EQUALS = MPSequence<Header>(
     ["equals", HP_NON_COMMENT_EXPR],
-    (child) => new EqualsHeader("equals", child)
+    (child) => new EqualsHeader(child)
 );
 
 const HP_STARTSWITH = MPSequence<Header>(
     ["startswith", HP_NON_COMMENT_EXPR],
-    (child) => new StartsWithHeader("startswith", child)
+    (child) => new StartsWithHeader(child)
 );
 
 const HP_ENDSWITH = MPSequence<Header>(
     ["endswith", HP_NON_COMMENT_EXPR],
-    (child) => new EndsWithHeader("endswith", child)
+    (child) => new EndsWithHeader(child)
 );
 
 const HP_CONTAINS = MPSequence<Header>(
     ["contains", HP_NON_COMMENT_EXPR],
-    (child) => new ContainsHeader("contains", child)
+    (child) => new ContainsHeader(child)
 );
 
 var HP_EXPR: MPParser<Header> = MPAlternation(HP_COMMENT, HP_NON_COMMENT_EXPR);
@@ -540,6 +564,6 @@ export function parseHeaderCell(text: string): Header {
     try {
         return miniParse(tokenize, HP_EXPR, text);
     } catch (e) {
-        return new ErrorHeader("error");
+        return new ErrorHeader(text);
     }
 }

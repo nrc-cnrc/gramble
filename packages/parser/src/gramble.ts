@@ -51,7 +51,7 @@ export class Gramble {
         const stack = new CounterStack(2);
         for (const tapeName of startState.calculateTapes(stack)) {
             const header = parseHeaderCell(tapeName);
-            results.push([tapeName, header.getColor(0.2)]);
+            results.push([tapeName, header.getColor(0.2, 1.0)]);
         }
         return results;
     }

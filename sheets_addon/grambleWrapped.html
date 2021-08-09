@@ -2895,7 +2895,7 @@ class Gramble {
         const stack = new ast_1.CounterStack(2);
         for (const tapeName of startState.calculateTapes(stack)) {
             const header = headers_1.parseHeaderCell(tapeName);
-            results.push([tapeName, header.getColor(0.2)]);
+            results.push([tapeName, header.getColor(0.2, 1.0)]);
         }
         return results;
     }
@@ -2942,21 +2942,13 @@ exports.Gramble = Gramble;
 },{"./ast":2,"./headers":6,"./sheets":9,"./util":12}],6:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseHeaderCell = exports.RESERVED_WORDS = exports.RESERVED_OPS = exports.BINARY_OPS = exports.RESERVED_HEADERS = exports.ReservedErrorHeader = exports.ErrorHeader = exports.SlashHeader = exports.ContainsHeader = exports.EndsWithHeader = exports.StartsWithHeader = exports.EqualsHeader = exports.LogicHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.HideHeader = exports.EmbedHeader = exports.Header = exports.HeaderError = exports.DEFAULT_VALUE = exports.DEFAULT_SATURATION = void 0;
+exports.parseHeaderCell = exports.RESERVED_WORDS = exports.RESERVED_OPS = exports.BINARY_OPS = exports.RESERVED_HEADERS = exports.ReservedErrorHeader = exports.ErrorHeader = exports.SlashHeader = exports.ContainsHeader = exports.EndsWithHeader = exports.StartsWithHeader = exports.EqualsHeader = exports.LogicHeader = exports.MaybeHeader = exports.CommentHeader = exports.LiteralHeader = exports.HideHeader = exports.EmbedHeader = exports.Header = exports.DEFAULT_VALUE = exports.DEFAULT_SATURATION = void 0;
 const ast_1 = require("./ast");
 const cellParser_1 = require("./cellParser");
 const miniParser_1 = require("./miniParser");
 const util_1 = require("./util");
 exports.DEFAULT_SATURATION = 0.1;
 exports.DEFAULT_VALUE = 1.0;
-class HeaderError {
-    constructor(severity, shortMsg, longMsg) {
-        this.severity = severity;
-        this.shortMsg = shortMsg;
-        this.longMsg = longMsg;
-    }
-}
-exports.HeaderError = HeaderError;
 /**
  * A Header is a cell in the top row of a table, consisting of one of
  *
@@ -2977,12 +2969,6 @@ exports.HeaderError = HeaderError;
  * * knowing what colors the foreground and background of the header cell should be
  */
 class Header {
-    constructor(text) {
-        this.text = text;
-    }
-    getColor(saturation = exports.DEFAULT_SATURATION, value = exports.DEFAULT_VALUE) {
-        return util_1.RGBtoString(...util_1.HSVtoRGB(this.hue, saturation, value));
-    }
 }
 exports.Header = Header;
 /**
@@ -2990,6 +2976,9 @@ exports.Header = Header;
  * literals (e.g. "text").
  */
 class AtomicHeader extends Header {
+    getColor(saturation = exports.DEFAULT_SATURATION, value = exports.DEFAULT_VALUE) {
+        return util_1.RGBtoString(...util_1.HSVtoRGB(this.hue, saturation, value));
+    }
     get hue() {
         const str = this.text + "abcde"; // otherwise short strings are boring colors
         var hash = 0;
@@ -3004,6 +2993,9 @@ class AtomicHeader extends Header {
  * EmbedHeaders lead to the complilation of EmbedStates.
  */
 class EmbedHeader extends AtomicHeader {
+    get text() {
+        return "embed";
+    }
     toAST(left, text, content) {
         const cellAST = ast_1.Embed(text);
         cellAST.cell = content;
@@ -3021,6 +3013,9 @@ exports.EmbedHeader = EmbedHeader;
  * that define same-named fields internally for different purposes.
  */
 class HideHeader extends AtomicHeader {
+    get text() {
+        return "hide";
+    }
     toAST(left, text, content) {
         var result = left;
         for (const tape of text.split("/")) {
@@ -3035,7 +3030,11 @@ exports.HideHeader = HideHeader;
  * LiteralHeaders are references to a particular tape name (e.g. "text")
  */
 class LiteralHeader extends AtomicHeader {
-    toAST(left, text) {
+    constructor(text) {
+        super();
+        this.text = text;
+    }
+    toAST(left, text, content) {
         const ast = ast_1.Lit(this.text, text);
         return ast_1.Seq(left, ast);
     }
@@ -3045,9 +3044,12 @@ exports.LiteralHeader = LiteralHeader;
  * Commented-out headers also comment out any cells below them; the cells just act as
  * Empty() states.
  */
-class CommentHeader extends AtomicHeader {
+class CommentHeader extends Header {
     get hue() {
         return 0;
+    }
+    getColor(saturation = exports.DEFAULT_SATURATION, value = exports.DEFAULT_VALUE) {
+        return "FFFFF";
     }
     toAST(left, text) {
         return left;
@@ -3060,12 +3062,12 @@ exports.CommentHeader = CommentHeader;
  * operator)
  */
 class UnaryHeader extends Header {
-    constructor(text, child) {
-        super(text);
+    constructor(child) {
+        super();
         this.child = child;
     }
-    get hue() {
-        return this.child.hue;
+    getColor(saturation = exports.DEFAULT_SATURATION, value = exports.DEFAULT_VALUE) {
+        return this.child.getColor(saturation, value);
     }
 }
 /**
@@ -3194,18 +3196,18 @@ class ContainsHeader extends EqualsHeader {
 }
 exports.ContainsHeader = ContainsHeader;
 class BinaryHeader extends Header {
-    constructor(text, child1, child2) {
-        super(text);
+    constructor(child1, child2) {
+        super();
         this.child1 = child1;
         this.child2 = child2;
     }
-    get hue() {
-        return this.child1.hue;
+    getColor(saturation = exports.DEFAULT_SATURATION, value = exports.DEFAULT_VALUE) {
+        return this.child1.getColor(saturation, value);
     }
 }
 class SlashHeader extends BinaryHeader {
     constructor(child1, child2) {
-        super("/", child1, child2);
+        super(child1, child2);
         this.child1 = child1;
         this.child2 = child2;
     }
@@ -3215,7 +3217,7 @@ class SlashHeader extends BinaryHeader {
     }
 }
 exports.SlashHeader = SlashHeader;
-class ErrorHeader extends AtomicHeader {
+class ErrorHeader extends LiteralHeader {
     toAST(left, text, content) {
         content.markError("error", `Invalid header: ${this.text}`, `Cannot parse the header ${this.text}`);
         return ast_1.Epsilon();
@@ -3265,33 +3267,33 @@ var HP_NON_COMMENT_EXPR = miniParser_1.MPDelay(() => miniParser_1.MPAlternation(
 var HP_SUBEXPR = miniParser_1.MPDelay(() => miniParser_1.MPAlternation(HP_UNRESERVED, HP_EMBED, HP_HIDE, 
 //HP_REVEAL, 
 HP_LOGIC, HP_PARENS, HP_RESERVED_OP));
-const HP_COMMENT = miniParser_1.MPComment('%', (s) => new CommentHeader(s));
+const HP_COMMENT = miniParser_1.MPComment('%', (s) => new CommentHeader());
 const HP_UNRESERVED = miniParser_1.MPUnreserved(exports.RESERVED_WORDS, (s) => new LiteralHeader(s));
 const HP_RESERVED_OP = miniParser_1.MPReserved(exports.RESERVED_OPS, (s) => new ReservedErrorHeader(s));
-const HP_EMBED = miniParser_1.MPSequence(["embed"], () => new EmbedHeader("embed"));
-const HP_HIDE = miniParser_1.MPSequence(["hide"], () => new HideHeader("hide"));
+const HP_EMBED = miniParser_1.MPSequence(["embed"], () => new EmbedHeader());
+const HP_HIDE = miniParser_1.MPSequence(["hide"], () => new HideHeader());
 /*
 const HP_REVEAL = MPSequence<Header>(
     ["reveal"],
     () => new RevealHeader("reveal")
 );
 */
-const HP_MAYBE = miniParser_1.MPSequence(["maybe", HP_NON_COMMENT_EXPR], (child) => new MaybeHeader("maybe", child));
-const HP_LOGIC = miniParser_1.MPSequence(["logic", HP_NON_COMMENT_EXPR], (child) => new LogicHeader("maybe", child));
+const HP_MAYBE = miniParser_1.MPSequence(["maybe", HP_NON_COMMENT_EXPR], (child) => new MaybeHeader(child));
+const HP_LOGIC = miniParser_1.MPSequence(["logic", HP_NON_COMMENT_EXPR], (child) => new LogicHeader(child));
 const HP_SLASH = miniParser_1.MPSequence([HP_SUBEXPR, "/", HP_NON_COMMENT_EXPR], (child1, child2) => new SlashHeader(child1, child2));
-const HP_RENAME = miniParser_1.MPSequence([">", HP_UNRESERVED], (child) => new RenameHeader(">", child));
+const HP_RENAME = miniParser_1.MPSequence([">", HP_UNRESERVED], (child) => new RenameHeader(child));
 const HP_PARENS = miniParser_1.MPSequence(["(", HP_NON_COMMENT_EXPR, ")"], (child) => child);
-const HP_EQUALS = miniParser_1.MPSequence(["equals", HP_NON_COMMENT_EXPR], (child) => new EqualsHeader("equals", child));
-const HP_STARTSWITH = miniParser_1.MPSequence(["startswith", HP_NON_COMMENT_EXPR], (child) => new StartsWithHeader("startswith", child));
-const HP_ENDSWITH = miniParser_1.MPSequence(["endswith", HP_NON_COMMENT_EXPR], (child) => new EndsWithHeader("endswith", child));
-const HP_CONTAINS = miniParser_1.MPSequence(["contains", HP_NON_COMMENT_EXPR], (child) => new ContainsHeader("contains", child));
+const HP_EQUALS = miniParser_1.MPSequence(["equals", HP_NON_COMMENT_EXPR], (child) => new EqualsHeader(child));
+const HP_STARTSWITH = miniParser_1.MPSequence(["startswith", HP_NON_COMMENT_EXPR], (child) => new StartsWithHeader(child));
+const HP_ENDSWITH = miniParser_1.MPSequence(["endswith", HP_NON_COMMENT_EXPR], (child) => new EndsWithHeader(child));
+const HP_CONTAINS = miniParser_1.MPSequence(["contains", HP_NON_COMMENT_EXPR], (child) => new ContainsHeader(child));
 var HP_EXPR = miniParser_1.MPAlternation(HP_COMMENT, HP_NON_COMMENT_EXPR);
 function parseHeaderCell(text) {
     try {
         return miniParser_1.miniParse(tokenize, HP_EXPR, text);
     }
     catch (e) {
-        return new ErrorHeader("error");
+        return new ErrorHeader(text);
     }
 }
 exports.parseHeaderCell = parseHeaderCell;

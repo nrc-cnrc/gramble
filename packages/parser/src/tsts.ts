@@ -251,7 +251,7 @@ export class TstBinaryOp extends TstEnclosure {
             siblingAst = this.sibling.toAST();
         }
 
-        return op(siblingAst, childAst);
+        return op(this.cell, siblingAst, childAst);
     }
 }
 

@@ -20,13 +20,6 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
     });
 }
 
-export function testHeaderHasText(header: Header, text: string, objName: string = ""): void {
-    const msg = (objName == "") ? "" : ` ${objName} with`;
-    it(`should have${msg} text "${text}"`, function() {
-        expect(header.text).to.equal(text);
-    });
-}
-
 export function testNumOutputs(outputs: StringDict[], expectedNum: number) {
     it(`should have ${expectedNum} result(s)`, function() {
         try {
