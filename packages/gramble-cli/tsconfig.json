@@ -16,6 +16,6 @@
     "src"
   ],
   "references": [
-	{ "path": "../gramble" }
+	{ "path": "../parser" }
   ]
 }

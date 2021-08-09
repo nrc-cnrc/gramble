@@ -12,6 +12,7 @@
   "dependencies": {
     "@docusaurus/core": "^2.0.0-alpha.58",
     "@docusaurus/preset-classic": "^2.0.0-alpha.58",
+    "@gramble/parser": "^0.0.2",
     "clsx": "^1.1.1",
     "node-forge": ">=0.10.0",
     "react": "^16.8.4",

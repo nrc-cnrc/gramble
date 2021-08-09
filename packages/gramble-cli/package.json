@@ -51,7 +51,7 @@
     "typescript": "^3.5.3"
   },
   "dependencies": {
-    "@gramble/gramble": "^0.0.2",
+    "@gramble/parser": "^0.0.2",
     "command-line-args": "^5.1.1",
     "command-line-usage": "^6.1.0",
     "es6-promisify": "^6.1.1",

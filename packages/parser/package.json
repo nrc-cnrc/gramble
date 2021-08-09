@@ -1,5 +1,5 @@
 {
-  "name": "parser",
+  "name": "@gramble/parser",
   "version": "0.0.2",
   "description": "The parsing library that underlies Gramble",
   "keywords": [
@@ -39,12 +39,12 @@
     "testMatch": "mocha -r ts-node/register tests/testMatch.ts",
     "testNegation": "mocha -r ts-node/register tests/testNegation.ts",
     "testProj": "mocha -r ts-node/register tests/testProjection.ts",
-    "testRename":  "mocha -r ts-node/register tests/testRename.ts",
-    "testRepeat":  "mocha -r ts-node/register tests/testRepeat.ts",
-    "testRepeatDot":  "mocha -r ts-node/register tests/testRepeatDot.ts",
+    "testRename": "mocha -r ts-node/register tests/testRename.ts",
+    "testRepeat": "mocha -r ts-node/register tests/testRepeat.ts",
+    "testRepeatDot": "mocha -r ts-node/register tests/testRepeatDot.ts",
     "testSheets": "mocha -r ts-node/register tests/testSheetParser.ts",
     "testHeaders": "mocha -r ts-node/register tests/testHeaders.ts",
-    "testProperties": "mocha -r ts-node/register tests/property/testProperties.ts",    
+    "testProperties": "mocha -r ts-node/register tests/property/testProperties.ts",
     "testAst": "mocha -r ts-node/register tests/asts/*.ts",
     "testHideAst": "mocha -r ts-node/register tests/asts/testHideAst.ts",
     "testRenameAst": "mocha -r ts-node/register tests/asts/testRenameAst.ts",

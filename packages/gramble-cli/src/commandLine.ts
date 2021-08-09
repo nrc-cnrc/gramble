@@ -1,15 +1,11 @@
 #!/usr/bin/env ts-node-script
 
-import {
-  GTable,
-  makeTable,
-  TextProject,
-  TextDevEnvironment,
-} from "@gramble/gramble";
+import { Project, TextDevEnvironment } from "@gramble/parser";
+
 import { parse as papaparse, ParseResult } from "papaparse";
 import { createReadStream, createWriteStream, existsSync } from "fs";
 
-import { parse as filenameParse } from "path";
+import { basename, dirname, parse as filenameParse } from "path";
 import { Readable, Writable } from "stream";
 
 import { fromStream } from "./fileIO";
@@ -21,10 +17,22 @@ import * as commandLineUsage from "command-line-usage";
 // See: man 3 sysexits
 const EXIT_USAGE = 64;
 
+export function sheetFromFile(path: string): Project {
+
+    const dir = dirname(path);
+    const sheetName = basename(path, ".csv");
+    const devEnv = new TextDevEnvironment(dir);
+    const project = new Project(devEnv);
+    project.addSheet(sheetName);
+    //project.runChecks();
+    return project;
+}
+
+/*
 class NodeTextProject extends TextProject {
   private delim: string = "\t";
 
-  public addFile(filename: string): Promise<void> {
+  public addFile(filename: string): Promise<string> {
     if (filenameParse(filename).ext.toLowerCase() == ".csv") {
       this.delim = ",";
     }
@@ -60,7 +68,7 @@ class NodeTextProject extends TextProject {
     maxResults: number = -1,
     outputTier: string | undefined = undefined,
     symbolName: string = "MAIN"
-  ): Promise<void> {
+  ): Promise<string> {
     return fromStream(
       inputStream,
       (error: Error | any, line: string, rownum: number) => {
@@ -148,6 +156,8 @@ class NodeTextProject extends TextProject {
   }
 }
 
+*/
+
 function fileExistsOrFail(filename: string) {
   if (!existsSync(filename)) {
     usageError(`Cannot find file ${filename}`);
@@ -169,7 +179,7 @@ function getOutputStream(output: string | undefined): Writable {
   return createWriteStream(output, "utf8");
 }
 
-const proj = new NodeTextProject();
+//const proj = new NodeTextProject();
 
 /* first - parse the main command */
 const commandDefinition = [{ name: "command", defaultOption: true }];
@@ -220,62 +230,53 @@ const commands: { [name: string]: Command } = {
   generate: {
     synopsis: `generate [--symbol|-s {underline name}] [--max={underline n}][--otier={underline tier}] [--output|-o {underline file}] {underline source}`,
     options: [
-      {
-        name: "source",
-        type: String,
-        defaultOption: true,
-      },
-      {
-        name: "symbol",
-        alias: "s",
-        type: String,
-        defaultValue: "MAIN",
-        typeLabel: "{underline name}",
-        description: "symbol to start generation. Defaults to `MAIN`",
-      },
-      {
-        name: "output",
-        alias: "o",
-        type: String,
-        typeLabel: "{underline file}",
-        description: "write output to {underline file}",
-      },
-      {
-        name: "otier",
-        type: String,
-        typeLabel: "{underline tier}",
-        description: "only output {underline tier}, instead of JSON",
-      },
-      {
-        name: "max",
-        alias: "m",
-        type: Number,
-        defaultValue: -1,
-        typeLabel: "{underline n}",
-        description:
-          "generate at most {underline n} terms [default: unlimited]",
-      },
+        {
+            name: "source",
+            type: String,
+            defaultOption: true,
+        },
+        {
+            name: "symbol",
+            alias: "s",
+            type: String,
+            defaultValue: "__MAIN__",
+            typeLabel: "{underline name}",
+            description: "symbol to start generation. Defaults to `MAIN`",
+        },
+        {
+            name: "output",
+            alias: "o",
+            type: String,
+            typeLabel: "{underline file}",
+            description: "write output to {underline file}",
+        },
+        {
+            name: "otier",
+            type: String,
+            typeLabel: "{underline tier}",
+            description: "only output {underline tier}, instead of JSON",
+        },
+        {
+            name: "max",
+            alias: "m",
+            type: Number,
+            defaultValue: -1,
+            typeLabel: "{underline n}",
+            description:
+            "generate at most {underline n} terms [default: unlimited]",
+        },
     ],
 
     run(options: commandLineArgs.CommandLineOptions) {
-      fileExistsOrFail(options.source);
+        fileExistsOrFail(options.source);
 
-      const outputStream = getOutputStream(options.output);
-      proj
-        .addFile(options.source)
-        .then(() => proj.compile())
-        .then(() => proj.devEnv.highlight())
-        .then(() =>
-          proj.generateStream(
-            outputStream,
-            options.max,
-            options.otier,
-            options.symbol
-          )
-        );
+        const outputStream = getOutputStream(options.output);
+        const proj = sheetFromFile(options.source);
+        const result = proj.generate(options.symbol);
+        outputStream.write(JSON.stringify(result) + "\n");
     },
   },
-
+/*
   sample: {
     synopsis: "sample [--output|-o {underline file}] {underline source}",
     options: [
@@ -431,6 +432,8 @@ const commands: { [name: string]: Command } = {
       }
     },
   },
+
+  */
 };
 
 const sections = [
@@ -447,8 +450,8 @@ const sections = [
     content: [
       { name: "generate", summary: "produces outputs from the grammar" },
       { name: "help", summary: "display this message and exit" },
-      { name: "parse", summary: "attempt to parse input against the grammar" },
-      { name: "sample", summary: "sample outputs from the grammar" },
+     // { name: "parse", summary: "attempt to parse input against the grammar" },
+     // { name: "sample", summary: "sample outputs from the grammar" },
     ],
   },
 ];

@@ -7,8 +7,6 @@
     "build": "npm run bootstrap",
     "bootstrap": "lerna bootstrap",
     "bootstrap:hoist": "lerna bootstrap --hoist",
-    "install": "node ./libexec/postinstall.js",
-    "postinstall": "node ./libexec/postinstall.js",
     "test": "lerna exec npm test"
   },
   "bin": {
