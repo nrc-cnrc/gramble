@@ -21,7 +21,7 @@ type GrambleError = { sheet: string, row: number, col: number, msg: string, leve
  */
 export class Project {
 
-    public globalNamespace: AstNamespace = new AstNamespace(new DummyCell(), "__GLOBAL__");
+    public globalNamespace: AstNamespace = new AstNamespace(new DummyCell(), "");
     public defaultSheetName: string = '';
     public sheets: {[key: string]: TstSheet} = {};
 
@@ -48,7 +48,7 @@ export class Project {
     }
     
     public getTapeNames(symbolName: string): [string, string][] {
-        const startState = this.globalNamespace.getSymbol(symbolName);
+        const startState = this.getRoot().getComponent(symbolName);
         if (startState == undefined) {
             throw new Error(`Cannot find symbol ${symbolName}`);
         }
@@ -165,7 +165,7 @@ export class Project {
         const ast = this.addSheetAux(sheetName);
         //this.globalNamespace.setDefaultNamespaceName(sheetName);
         if (ast != undefined) {
-            this.globalNamespace.addSymbol("__MAIN__", ast);
+            this.globalNamespace.addSymbol("__DEFAULT__", ast);
         }
         this.defaultSheetName = sheetName;
     }

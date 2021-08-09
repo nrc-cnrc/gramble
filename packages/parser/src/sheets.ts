@@ -96,6 +96,10 @@ export class SheetProject {
         this.devEnv.markHeader(name, row, col, color);
     }
 
+    markContent(name: string, row: number, col: number, color: string) {
+        this.devEnv.markContent(name, row, col, color);
+    }
+
 }
 
 export class Sheet {
@@ -118,9 +122,12 @@ export class Sheet {
         this.project.markError(this.name, row, col, shortMsg, longMsg, severity);
     }
 
-    public markHeader(row: number, col: number, color: string
-    ): void {
+    public markHeader(row: number, col: number, color: string): void {
         this.project.markHeader(this.name, row, col, color);
+    }
+
+    public markContent(row: number, col: number, color: string): void {
+        this.project.markContent(this.name, row, col, color);
     }
 
     public markComment(row: number, col: number): void {
@@ -274,6 +281,9 @@ export class SheetCell implements Cell {
         this.sheet.markHeader(this.row, this.col, color);
     }
     
+    public markContent(color: string): void {
+        this.sheet.markContent(this.row, this.col, color);
+    }
     
     public markError(
         severity: "error" | "warning",

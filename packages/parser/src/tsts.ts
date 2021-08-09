@@ -82,7 +82,7 @@ export class TstHeadedCell extends TstComponent {
 
     public mark(): void {
         const color = this.header.getColor(0.1);
-        this.cell.markHeader(color);
+        this.cell.markContent(color);
     }
 
     public toAST(): AstComponent {
@@ -402,20 +402,26 @@ export class TstSheet extends TstEnclosure {
             return ns;
         }
 
+        let child: TstEnclosure | undefined = undefined;
         let ast: AstComponent | undefined = undefined;
-        for (const c of this.getChildren()) {
-            ast = c.toAST();
-            if (c instanceof TstAssignment) {
-                c.assign(ns, ast);
+        for (child of this.getChildren()) {
+            ast = child.toAST();
+            if (child instanceof TstAssignment) {
+                child.assign(ns, ast);
             }
         }
         
-        // We automatically assign the last child enclosure to the symbol
-        // __MAIN__.  (Unless __MAIN__ has already been defined; programmers
-        // are allowed to define what __MAIN__ is for any particular file.)
-        if (ns.getSymbol("__MAIN__") == undefined && ast != undefined) {
-            ns.addSymbol("__MAIN__", ast);
+        // The last child of a sheet is its "default" value; if you refer to 
+        // a sheet without naming any particular symbol defined in that sheet, 
+        // its value is the value of the last expression on the sheet.  This
+        // last expression does not necessarily have to be an assignment, but it 
+        // still has to be called *something* in order to be stored in the namespace;
+        // we call it "__DEFAULT__".  We never actually call it by that name anywhere, 
+        // although you could.
+        if (child != undefined && ast != undefined && !(child instanceof TstAssignment)) {
+            ns.addSymbol("__DEFAULT__", ast);
         }
+
         return ns;
     }
 

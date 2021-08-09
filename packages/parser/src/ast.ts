@@ -548,6 +548,7 @@ export class AstNamespace extends AstComponent {
 
     public qualifiedNames: Map<string, string> = new Map();
     public symbols: Map<string, AstComponent> = new Map();
+    public default: AstComponent = Epsilon();
 
     public addSymbol(symbolName: string, component: AstComponent): void {
 
@@ -581,7 +582,7 @@ export class AstNamespace extends AstComponent {
     }
 
     public calculateQualifiedName(name: string, nsStack: AstNamespace[]) {
-        const namePrefixes = nsStack.map(n => n.name);
+        const namePrefixes = nsStack.map(n => n.name).filter(s => s.length > 0);
         return [...namePrefixes, name].join(".");
     }
     
@@ -822,6 +823,7 @@ export class Root implements INamespace {
     }
 
     public getComponent(name: string): AstComponent | undefined {
+        console.log(`available components are ${this.components.keys()}`);
         return this.components.get(name);
     }
     

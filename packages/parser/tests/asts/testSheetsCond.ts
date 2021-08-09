@@ -213,7 +213,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
             { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
             ], 
-            "__GLOBAL__.equalsEmbedAfter.word"
+            "equalsEmbedAfter.word"
         );
     });
     
@@ -299,7 +299,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "ummoo", gloss: "[1SG]jump" },
             { text: "ungoo", gloss: "[1SG]climb" }
         ], 
-        "__GLOBAL__.startsWithEmbedAfter.word");
+        "startsWithEmbedAfter.word");
     });
 
     describe('startswith negated embed', function() {
@@ -395,7 +395,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foobazk", gloss: "jump[1SG]" },
             { text: "foobask", gloss: "climb[1SG]" }
         ], 
-        "__GLOBAL__.endsWithEmbedAfter.word");
+        "endsWithEmbedAfter.word");
     });
 
     describe('endswith negated embed', function() {
@@ -520,7 +520,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
             { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
         ],
-        "__GLOBAL__.containsEmbedAfter.word");
+        "containsEmbedAfter.word");
     });
 
     describe('Contains header with negated embed', function() {

@@ -331,7 +331,7 @@ function makeProject() {
     const devEnv = new GoogleSheetsDevEnvironment(sheetName);
     const project = new gramble.Project(devEnv);
     project.addSheet(sheetName);
-    project.runChecks();
+    //project.runChecks();
     return [project, devEnv];
 }
 

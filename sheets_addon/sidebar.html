@@ -140,7 +140,7 @@
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
                 project = new gramble.Project(devEnv);
                 project.addSheet(currentSheetName);
-                project.runChecks();
+                //project.runChecks();
 
                 createErrorButtons(devEnv.errorMsgs, currentSheetName);
                 reloadSymbols(currentSheetName);
@@ -207,13 +207,16 @@
                 
                 let options = project.allSymbols();
 
+                console.log(options);
+
                 for (const option of options) {
                     const el = document.createElement('option');
 
                     let optionText = option;
                     const pieces = option.split(".");
-                    if (pieces[pieces.length-1] == "__MAIN__") {
-                        optionText = pieces.slice(0, pieces.length-1).join(".");
+                    const lastPiece = pieces[pieces.length-1];
+                    if (lastPiece == "__MAIN__" || lastPiece == "__DEFAULT__") {
+                        continue;
                     } 
                     el.textContent = optionText;
                     el.value = option;
@@ -235,11 +238,13 @@
                     return;
                 }
 
+                console.log(`getting tape names for ${currentSymbol}`);
                 CURRENT_TAPES = project.getTapeNames(currentSymbol)
                                        .filter(([s, c]) => !s.startsWith("__"));
                                             // tapes that start with __ are internal/hidden/mangled,
                                             // we don't want to present them to the user in the interface
 
+                console.log(`tape names = ${CURRENT_TAPES}`);
                 const inputTable = document.getElementById("inputTable");
                 for (const [tapeName, color] of CURRENT_TAPES) {
                     const tr = document.createElement("tr");
