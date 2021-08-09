@@ -6,7 +6,7 @@ import {
     Filter, 
     Ns,
     Embed
-} from "../../src/ast";
+} from "../src/ast";
 
 import { 
     t1, t2, t3, t4, t5,

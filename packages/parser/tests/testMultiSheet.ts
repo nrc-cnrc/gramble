@@ -1,20 +1,6 @@
-import { Project } from "../../src/project";
-import { dirname, basename } from "path";
-import { testProject, testErrors, testStructure } from "./testUtilsAst";
-import { TextDevEnvironment } from "../../src/textInterface";
+import { testProject, testErrors, sheetFromFile } from "./testUtilsAst";
 
 import * as path from 'path';
-
-export function sheetFromFile(path: string): Project {
-
-    const dir = dirname(path);
-    const sheetName = basename(path, ".csv");
-    const devEnv = new TextDevEnvironment(dir);
-    const project = new Project(devEnv);
-    project.addSheet(sheetName);
-    //project.runChecks();
-    return project;
-}
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -91,6 +77,20 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "able" }
         ]);
     });
+
+    describe('Multi-sheet project where the imported sheet references the original', function() {
+
+        const project = sheetFromFile("./tests/csvs/externalRefCycle.csv");
+
+        testErrors(project, []);
+        testProject(project, [
+            { text: "foobarable", gloss: "run-1SG" },
+            { text: "moobarable", gloss: "jump-1SG" },
+            { text: "foobazable", gloss: "run-2SG" },
+            { text: "moobazable", gloss: "jump-2SG" }
+        ]);
+    });
+    
 
 });
 

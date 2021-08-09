@@ -5,8 +5,8 @@
  * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { Uni, AstComponent, Epsilon, Ns, AstNamespace } from "./ast";
-import { CellPos } from "./util";
+import { AstComponent, AstNamespace, AstAlternation, AstEpsilon } from "./ast";
+import { CellPos, DummyCell } from "./util";
 import { BINARY_OPS, DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, parseHeaderCell, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
 
@@ -87,7 +87,7 @@ export class TstHeadedCell extends TstComponent {
 
     public toAST(): AstComponent {
 
-        let prevAst: AstComponent = Epsilon();
+        let prevAst: AstComponent = new AstEpsilon(this.cell);
 
         if (this.prev != undefined) {
             prevAst = this.prev.toAST();
@@ -110,7 +110,7 @@ export class TstComment extends TstComponent {
     }
 
     public toAST(): AstComponent {
-        return Epsilon();
+        return new AstEpsilon(this.cell);
     }
 }
 
@@ -192,7 +192,7 @@ export class TstEnclosure extends TstComponent {
         // its sibling's state (if a sibling is present), and if not, as its child's 
         // state (if present), and if not, the empty grammar.
 
-        let result: AstComponent = Epsilon();
+        let result: AstComponent = new AstEpsilon(this.cell);
 
         if (this.child != undefined) {
             result = this.child.toAST();
@@ -232,8 +232,8 @@ export class TstBinaryOp extends TstEnclosure {
 
         const op = BINARY_OPS[trimmedText];
                             
-        let childAst: AstComponent = Epsilon();
-        let siblingAst: AstComponent = Epsilon();
+        let childAst: AstComponent = new AstEpsilon(this.cell);
+        let siblingAst: AstComponent = new AstEpsilon(this.cell);
 
         if (this.child == undefined) {
             this.markError(`Missing argument to '${trimmedText}'`, 
@@ -274,7 +274,7 @@ export class TstTableOp extends TstEnclosure {
             this.markWarning("Empty table",
                 "'table' seems to be missing a table; " + 
                 "something should be in the cell to the right.")
-            return Epsilon();
+            return new AstEpsilon(this.cell);
         }
 
         return this.child.toAST();
@@ -298,7 +298,7 @@ abstract class TstAbstractTestSuite extends TstEnclosure {
         if (this.sibling == undefined) {
             this.markError("Wayward test",
                 "There should be something above this 'test' command for us to test");
-            return Epsilon();
+            return new AstEpsilon(this.cell);
         }
 
         const siblingAst = this.sibling.toAST();
@@ -371,7 +371,7 @@ export class TstAssignment extends TstEnclosure {
             return this.child.toAST();
         }
 
-        return Epsilon();
+        return new AstEpsilon(this.cell);
     }
 }
 
@@ -396,7 +396,7 @@ export class TstSheet extends TstEnclosure {
 
     public toAST(): AstComponent {
 
-        const ns = Ns(this.name);
+        const ns = new AstNamespace(this.cell, this.name);
 
         if (this.child == undefined) {
             return ns;
@@ -420,6 +420,29 @@ export class TstSheet extends TstEnclosure {
         // although you could.
         if (child != undefined && ast != undefined && !(child instanceof TstAssignment)) {
             ns.addSymbol("__DEFAULT__", ast);
+        }
+
+        return ns;
+    }
+
+}
+
+export class TstProject {
+
+    protected sheets: {[name: string]: TstSheet} = {};
+
+    public addSheet(sheet: TstSheet): void {
+        this.sheets[sheet.name] = sheet;
+    }
+
+    
+    public toAST(): AstComponent {
+
+        const ns = new AstNamespace(new DummyCell(), "");
+
+        for (const [name, sheet] of Object.entries(this.sheets)) {
+            const ast = sheet.toAST();
+            ns.addSymbol(name, ast);
         }
 
         return ns;
@@ -499,8 +522,8 @@ export class TstTable extends TstEnclosure {
         }
 
         var rowStates = this.rows.map(row => row.toAST())
-                                 .filter(state => !(state instanceof Epsilon));
-        return Uni(...rowStates);
+                                 .filter(ast => !(ast instanceof AstEpsilon));
+        return new AstAlternation(this.cell, rowStates);
     }
 
 }

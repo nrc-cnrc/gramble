@@ -138,9 +138,7 @@
                 previousSheetName = currentSheetName;
                 
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
-                project = new gramble.Project(devEnv);
-                project.addSheet(currentSheetName);
-                //project.runChecks();
+                project = new gramble.Gramble(devEnv, currentSheetName);
 
                 createErrorButtons(devEnv.errorMsgs, currentSheetName);
                 reloadSymbols(currentSheetName);

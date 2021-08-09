@@ -15,7 +15,7 @@ import {
 
 import * as path from 'path';
 import { expect } from "chai";
-import { testHeaderHasText, testIsType } from "./testUtils";
+import { testHeaderHasText, testIsType } from "./testUtilsAst";
 
 describe(`${path.basename(module.filename)}`, function() {
 

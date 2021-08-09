@@ -8,7 +8,7 @@ import {
     Rep, 
     Rename,
     Match
-} from "../../src/ast";
+} from "../src/ast";
 
 import { 
     t1, t2, t3, 

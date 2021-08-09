@@ -1,5 +1,5 @@
 
-import { Seq, Uni, Join, Epsilon } from "../../src/ast";
+import { Seq, Uni, Join, Epsilon } from "../src/ast";
 import { 
     t1, t2, t3, 
     testAstHasTapes,

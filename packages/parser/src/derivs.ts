@@ -1,7 +1,5 @@
 import { Gen, setDifference, shuffleArray, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
-import { assert } from "chai";
-import { Match, Null } from "./ast";
 
 /**
  * This is the parsing/generation engine that underlies Gramble.

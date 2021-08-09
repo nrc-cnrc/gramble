@@ -1,20 +1,4 @@
-import { Project } from "../../src/project";
-import { dirname, basename } from "path";
-import { testProject, testErrors, testStructure } from "./testUtilsAst";
-import { TextDevEnvironment } from "../../src/textInterface";
-
 import * as path from 'path';
-
-export function sheetFromFile(path: string): Project {
-
-    const dir = dirname(path);
-    const sheetName = basename(path, ".csv");
-    const devEnv = new TextDevEnvironment(dir);
-    const project = new Project(devEnv);
-    project.addSheet(sheetName);
-    //project.runChecks();
-    return project;
-}
 
 describe(`${path.basename(module.filename)}`, function() {
 

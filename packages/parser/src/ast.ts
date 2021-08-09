@@ -162,7 +162,7 @@ export class AstLiteral extends AstAtomic {
     }
 }
 
-class AstDot extends AstAtomic {
+export class AstDot extends AstAtomic {
 
     constructor(
         cell: Cell,
@@ -217,7 +217,7 @@ export class AstSequence extends AstNAry {
         if (this.children.length == 0) {
             // shouldn't be possible so long as client used constructX methods,
             // but just in case
-            return Epsilon();
+            return new AstEpsilon(DUMMY_CELL);
         }
         return this.children[this.children.length-1];
     }
@@ -230,7 +230,7 @@ export class AstSequence extends AstNAry {
     }
 }
 
-class AstAlternation extends AstNAry {
+export class AstAlternation extends AstNAry {
 
     public constructExpr(ns: Root): Expr {
         const childExprs = this.children.map(s => s.constructExpr(ns));
@@ -253,7 +253,7 @@ abstract class AstBinary extends AstComponent {
     }
 }
 
-class AstIntersection extends AstBinary {
+export class AstIntersection extends AstBinary {
 
     public constructExpr(ns: Root): Expr {
         const left = this.child1.constructExpr(ns);
@@ -271,7 +271,7 @@ function fillOutWithDotStar(state: Expr, tapes: Set<string>) {
     return state;
 }
 
-class AstJoin extends AstBinary {
+export class AstJoin extends AstBinary {
 
     public constructExpr(ns: Root): Expr {
         if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
@@ -290,7 +290,7 @@ class AstJoin extends AstBinary {
 
 }
 
-class AstFilter extends AstBinary {
+export class AstFilter extends AstBinary {
 
     public constructExpr(ns: Root): Expr {
         if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
@@ -306,7 +306,7 @@ class AstFilter extends AstBinary {
     }
 }
 
-class AstStartsWith extends AstBinary {
+export class AstStartsWith extends AstBinary {
 
     public constructExpr(ns: Root): Expr {
         if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
@@ -330,7 +330,7 @@ class AstStartsWith extends AstBinary {
 
 }
 
-class AstEndsWith extends AstBinary {
+export class AstEndsWith extends AstBinary {
 
     public constructExpr(ns: Root): Expr {
         if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
@@ -355,7 +355,7 @@ class AstEndsWith extends AstBinary {
 }
 
 
-class AstContains extends AstBinary {
+export class AstContains extends AstBinary {
 
     public constructExpr(ns: Root): Expr {
         if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
@@ -380,7 +380,7 @@ class AstContains extends AstBinary {
 }
 
 
-abstract class AstUnary extends AstComponent {
+export abstract class AstUnary extends AstComponent {
 
     constructor(
         cell: Cell,
@@ -394,7 +394,7 @@ abstract class AstUnary extends AstComponent {
     }
 }
 
-class AstRename extends AstUnary {
+export class AstRename extends AstUnary {
 
     constructor(
         cell: Cell,
@@ -430,7 +430,7 @@ class AstRename extends AstUnary {
     }
 }
 
-class AstRepeat extends AstUnary {
+export class AstRepeat extends AstUnary {
 
     constructor(
         cell: Cell,
@@ -447,7 +447,7 @@ class AstRepeat extends AstUnary {
     }
 }
 
-class AstNegation extends AstUnary {
+export class AstNegation extends AstUnary {
 
     public constructExpr(ns: Root): Expr {
         if (this.child.tapes == undefined) {
@@ -459,7 +459,8 @@ class AstNegation extends AstUnary {
     }
 }
 
-class AstHide extends AstUnary {
+let HIDE_INDEX = 0; 
+export class AstHide extends AstUnary {
 
     public toTape: string;
 
@@ -548,7 +549,7 @@ export class AstNamespace extends AstComponent {
 
     public qualifiedNames: Map<string, string> = new Map();
     public symbols: Map<string, AstComponent> = new Map();
-    public default: AstComponent = Epsilon();
+    public default: AstComponent = new AstEpsilon(DUMMY_CELL);
 
     public addSymbol(symbolName: string, component: AstComponent): void {
 
@@ -964,9 +965,6 @@ export function MatchDotStar2(...tapes: string[]): AstMatch {
     return MatchDotRep2(0, Infinity, ...tapes)
 }
 
-/**
- * Construct a MatchState for two tapes given a state graph for the first tape. 
- */
 export function MatchFrom(firstTape: string, secondTape: string, state: AstComponent): AstComponent {
     return Match(Seq(state, Rename(state, firstTape, secondTape)),
                  firstTape, secondTape);
@@ -991,7 +989,6 @@ export function Ns(
     return result;
 }
 
-let HIDE_INDEX = 0; 
 export function Hide(child: AstComponent, tape: string, name: string = ""): AstHide {
     return new AstHide(DUMMY_CELL, child, tape, name);
 }

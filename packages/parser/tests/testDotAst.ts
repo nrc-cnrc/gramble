@@ -1,4 +1,4 @@
-import { Seq, Join, Any, Filter, Uni, Epsilon } from "../../src/ast";
+import { Seq, Join, Any, Filter, Uni, Epsilon } from "../src/ast";
 import { testAstHasTapes, t1, t2, testAst } from './testUtilsAst';
 
 import * as path from 'path';

@@ -1,11 +1,11 @@
 
 import { assert, expect } from "chai";
-import { AstComponent, Lit, Root } from "../../src/ast";
-import { Project } from "../../src/project";
-import { TstEnclosure } from "../../src/tsts";
-import { StringDict } from "../../src/util";
-import { testMatchOutputs, testNumOutputs } from "../testUtils";
-
+import { AstComponent, Lit, Root } from "../src/ast";
+import { Gramble } from "../src/gramble";
+import { StringDict } from "../src/util";
+import { dirname, basename } from "path";
+import { TextDevEnvironment } from "../src/textInterface";
+import { Header } from "../src/headers";
 
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
@@ -13,6 +13,71 @@ export const t3 = (s: string) => Lit("t3", s);
 export const t4 = (s: string) => Lit("t4", s);
 export const t5 = (s: string) => Lit("t5", s);
 
+export function testIsType(obj: any, type: any,  objName: string = ""): void {
+    const msg = (objName != "") ? `have ${objName} ` : ""; 
+    it(`should ${msg}be of type ${type.name}`, function() {
+        expect(obj instanceof type).to.be.true;
+    });
+}
+
+export function testHeaderHasText(header: Header, text: string, objName: string = ""): void {
+    const msg = (objName == "") ? "" : ` ${objName} with`;
+    it(`should have${msg} text "${text}"`, function() {
+        expect(header.text).to.equal(text);
+    });
+}
+
+export function testNumOutputs(outputs: StringDict[], expectedNum: number) {
+    it(`should have ${expectedNum} result(s)`, function() {
+        try {
+            expect(outputs.length).to.equal(expectedNum);
+        } catch (e) {
+            console.log(`outputs: ${JSON.stringify(outputs)}`);
+            throw e;
+        }
+    });
+}
+
+export function removeHiddenFields(outputs: StringDict[]): StringDict[] {
+    const results: StringDict[] = [];
+    for (const output of outputs) {
+        const result: StringDict = {};
+        for (const [key, value] of Object.entries(output)) {
+            if (key.startsWith("__")) {
+                continue;
+            }
+            result[key] = value;
+        }
+        results.push(result);
+    }
+    return results;
+}
+
+export function testMatchOutputs(outputs: StringDict[], expected_outputs: StringDict[]): void {
+    // Check that the output dictionaries of State.generate() match the expected
+    // outputs.
+    //
+    // Outputs can be in any order.
+    outputs = removeHiddenFields(outputs);
+    it(`should match ${JSON.stringify(expected_outputs)}`, function() {
+        for (var expected_output of expected_outputs) {
+            try {
+                expect(outputs).to.deep.include(expected_output);
+            } catch (e) {
+                console.log(`outputs: ${JSON.stringify(outputs)}`);
+                throw e;
+            }
+        }
+        for (var output of outputs) {
+            try {
+                expect(expected_outputs).to.deep.include(output);
+            } catch (e) {
+                console.log(`outputs: ${JSON.stringify(outputs)}`);
+                throw e;
+            }
+        }
+    });
+}
 export function testGrammarUncompiled(
     grammar: Root,
     expectedResults: StringDict[], 
@@ -98,7 +163,7 @@ export function testAstDoesNotHaveSymbols(
 }
 
 
-export function testErrors(project: Project, expectedErrors: [string, number, number, string][]) {
+export function testErrors(project: Gramble, expectedErrors: [string, number, number, string][]) {
     const root = project.getRoot();
     const devEnv = project.devEnv;
     it(`should have ${expectedErrors.length} errors/warnings`, function() {
@@ -123,7 +188,7 @@ export function testErrors(project: Project, expectedErrors: [string, number, nu
     }
 }
 
-export function testSymbols(project: Project, expectedSymbols: string[]): void {
+export function testSymbols(project: Gramble, expectedSymbols: string[]): void {
     for (const symbolName of expectedSymbols) {
         it (`should have a symbol named "${symbolName}"`, function() {
             try {
@@ -136,6 +201,7 @@ export function testSymbols(project: Project, expectedSymbols: string[]): void {
     }
 }
 
+/*
 export function testStructure(project: Project, expectedOps: [string, string[]][]) {
     const sheet = project.getDefaultSheet();
     for (const [text, relationship] of expectedOps) {
@@ -163,13 +229,24 @@ export function testStructure(project: Project, expectedOps: [string, string[]][
     }
 
 }
+*/
 
-
-export function testProject(project: Project,
+export function testProject(project: Gramble,
                             expectedResults: StringDict[], 
                             symbolName: string = "__MAIN__",
                             maxRecursion: number = 4, 
                             maxChars: number = 1000): void {
-    const grammar = project.globalNamespace;
-    testAst(grammar, expectedResults, symbolName, maxRecursion, maxChars);
+    const root = project.getRoot();
+    describe(`Generating from ${symbolName}`, function() {
+        testGrammarUncompiled(root, expectedResults, symbolName, 
+            maxRecursion, maxChars);
+    });
+}
+
+export function sheetFromFile(path: string): Gramble {
+    const dir = dirname(path);
+    const sheetName = basename(path, ".csv");
+    const devEnv = new TextDevEnvironment(dir);
+    const project = new Gramble(devEnv, sheetName);
+    return project;
 }

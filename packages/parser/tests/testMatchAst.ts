@@ -3,7 +3,7 @@ import {
     Match, 
     Seq, Any, Join, Filter, Rep, MatchDot, Dot, MatchDotRep, MatchDotRep2, MatchDotStar, MatchDotStar2,
     //Dot, MatchDot, MatchDotRep, MatchDotStar, MatchDotRep2, MatchDotStar2
-} from "../../src/ast";
+} from "../src/ast";
 
 import { 
     t1, t2, testAstHasTapes, 

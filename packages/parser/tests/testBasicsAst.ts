@@ -1,5 +1,5 @@
 
-import { Epsilon, Seq, Uni } from "../../src/ast";
+import { Epsilon, Seq, Uni } from "../src/ast";
 import { t1, t2, testAstHasTapes, testAst } from './testUtilsAst';
 
 import * as path from 'path';

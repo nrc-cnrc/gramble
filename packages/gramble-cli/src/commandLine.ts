@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node-script
 
-import { Project, TextDevEnvironment } from "@gramble/parser";
+import { Gramble, TextDevEnvironment } from "@gramble/parser";
 
 import { parse as papaparse, ParseResult } from "papaparse";
 import { createReadStream, createWriteStream, existsSync } from "fs";
@@ -17,14 +17,12 @@ import * as commandLineUsage from "command-line-usage";
 // See: man 3 sysexits
 const EXIT_USAGE = 64;
 
-export function sheetFromFile(path: string): Project {
+export function sheetFromFile(path: string): Gramble {
 
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
     const devEnv = new TextDevEnvironment(dir);
-    const project = new Project(devEnv);
-    project.addSheet(sheetName);
-    //project.runChecks();
+    const project = new Gramble(devEnv, sheetName);
     return project;
 }
 

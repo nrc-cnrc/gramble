@@ -1,5 +1,5 @@
 import { BINARY_OPS } from "./headers";
-import { TstAssignment, TstBinaryOp, TstComment, TstEnclosure, TstHeader, TstSheet, TstTable, TstTableOp, TstTestNotSuite, TstTestSuite } from "./tsts";
+import { TstAssignment, TstBinaryOp, TstComment, TstEnclosure, TstHeader, TstProject, TstSheet, TstTable, TstTableOp, TstTestNotSuite, TstTestSuite } from "./tsts";
 import { Cell, CellPos, DevEnvironment } from "./util";
 
 
@@ -61,9 +61,75 @@ function constructOp(cell: SheetCell): TstEnclosure {
 
 export class SheetProject {
 
+    protected sheets: {[name: string]: Sheet} = {};
+
     constructor(
-        public devEnv: DevEnvironment
-    ) { }
+        public devEnv: DevEnvironment,
+        public mainSheetName: string
+    ) { 
+        this.addSheet(mainSheetName);
+
+    }
+    
+    public hasSheet(name: string): boolean {
+        return name in this.sheets;
+    }
+
+    public addSheet(sheetName: string): void {
+
+        if (this.hasSheet(sheetName)) {
+            // already loaded it, don't have to do anything
+            return;
+        }
+
+        if (!this.devEnv.hasSource(sheetName)) {
+            // this is probably a programmer error, in which they've attempted
+            // to reference a non-existant symbol, and we're trying to load it as
+            // a possible source file.  we don't freak out about it here, though;
+            // that symbol will generate an error message at the appropriate place.
+            return;
+        }
+
+        const cells = this.devEnv.loadSource(sheetName);
+
+        const sheet = new Sheet(this, sheetName, cells);
+        this.sheets[sheetName] = sheet;
+
+        const tst = this.toTST();
+        const ast = tst.toAST();
+
+        // check to see if any names didn't get resolved
+        const unresolvedNames: Set<string> = new Set(); 
+        for (const name of ast.qualifyNames()) {
+            const firstPart = name.split(".")[0];
+            unresolvedNames.add(firstPart);
+        }
+
+        for (const possibleSheetName of unresolvedNames) {
+            this.addSheet(possibleSheetName);
+        }
+
+        return;
+    }
+
+    public toTST(): TstProject {
+        const result = new TstProject();
+        for (const [sheetName, sheet] of Object.entries(this.sheets)) {
+            if (sheetName == this.mainSheetName) {
+                continue; // save this for last
+            }
+            const tstSheet = sheet.toTST();
+            result.addSheet(tstSheet);
+        }
+
+        if (!(this.mainSheetName in this.sheets)) { 
+            return result; // unset or incorrect main sheet name
+        }
+
+        const mainTstSheet = this.sheets[this.mainSheetName].toTST();
+        result.addSheet(mainTstSheet);
+        return result;
+    }
 
     public markError(
         sheet: string,
