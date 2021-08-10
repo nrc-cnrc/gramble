@@ -46,7 +46,8 @@
     "testRecursion": "mocha -r ts-node/register tests/testRecursionAst.ts",
     "testSheets": "mocha -r ts-node/register tests/testSheetsAst.ts",
     "testSheetsCond": "mocha -r ts-node/register tests/testSheetsCond.ts",
-    "testMultiSheet": "mocha -r ts-node/register tests/testMultiSheet.ts"
+    "testMultiSheet": "mocha -r ts-node/register tests/testMultiSheet.ts",
+    "testCellParser": "mocha -r ts-node/register tests/testCellParser.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"

@@ -1,6 +1,6 @@
 import { 
     AstAlternation,
-    AstComponent, AstContains, AstEmbed, AstEndsWith, AstEpsilon, AstFilter, AstHide, AstJoin, AstLiteral, AstNegation, AstRename, AstSequence, AstStartsWith
+    AstComponent, AstContains, AstEmbed, AstEndsWith, AstEpsilon, AstFilter, AstHide, AstJoin, AstLiteral, AstNegation, AstRename, AstSequence, AstStartsWith, Epsilon
 } from "./ast";
 
 import { CPAlternation, CPNegation, CPResult, CPUnreserved, parseBooleanCell } from "./cellParser";
@@ -14,6 +14,7 @@ export const DEFAULT_VALUE = 1.0;
  * A Header is a cell in the top row of a table, consisting of one of
  * 
  * * the name of a tape, like "text" or "gloss"
+ * * an atomic operator like "embed" or "hide"
  * * a unary operator like "maybe" followed by a valid Header (e.g. "maybe text") 
  * * two valid Headers joined by a slash (e.g. "text/gloss")
  * * a valid Header in parentheses (e.g. "(text)")
@@ -25,9 +26,11 @@ export const DEFAULT_VALUE = 1.0;
  * Header objects are responsible for:
  * 
  * * compiling the text of the cells beneath them into [AstComponent]s, and merging them (usually by
- *   concatenation) with cells to their right.
+ *   concatenation) with cells to their left.
  * 
- * * knowing what colors the foreground and background of the header cell should be 
+ * * calculating the appropriate background color for their cells and the cells in their column. 
+ * 
+ * Headers are parsed using the "miniParser" engine, a simple parser/combinator engine.
  */
  export abstract class Header {
 
@@ -153,7 +156,7 @@ export class CommentHeader extends Header {
     }
     
     public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
-        return "FFFFF";
+        return "#FFFFFF";
     }
 
     public toAST(
@@ -209,7 +212,8 @@ class RenameHeader extends UnaryHeader {
         content: Cell
     ): AstComponent {
         if (!(this.child instanceof LiteralHeader)) {
-            throw new Error("Rename (>) of a non-literal");
+            content.markError("error", "Renaming error", "Rename (>) needs to have a tape name after it");
+            return new AstEpsilon(content);
         }
         const ast = new AstRename(content, left, text, this.child.text);
         return ast;
@@ -283,8 +287,9 @@ export class LogicHeader extends UnaryHeader {
  * that Filter(N, X) -- that is, it filters the results of N such that every surviving record is a 
  * superset of X.
  * 
- * This is also the superclass of [StartsWithHeader] and [EndsWithHeader].  These constrain N to either
- * start with X (that is, Filter(N, X.*)) or end with X (that is, Filter(N, .*X)).
+ * This is also the superclass of [StartsWithHeader], [EndsWithHeader], and [ContainsHeader].  
+ * These constrain N to either start with X (that is, Filter(N, X.*)) or end with X 
+ * (that is, Filter(N, .*X)), or contain X (Filter(N, .*X.*)).
  */
 export class EqualsHeader extends LogicHeader {
     
