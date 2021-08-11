@@ -1010,7 +1010,8 @@
 },{}],2:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Hide = exports.Ns = exports.Not = exports.Rename = exports.MatchFrom = exports.MatchDotStar2 = exports.MatchDotStar = exports.MatchDotRep2 = exports.MatchDotRep = exports.MatchDot = exports.Dot = exports.Match = exports.Embed = exports.Null = exports.Epsilon = exports.Rep = exports.Contains = exports.EndsWith = exports.StartsWith = exports.Join = exports.Filter = exports.Intersect = exports.Any = exports.Lit = exports.Maybe = exports.Uni = exports.Seq = exports.Root = exports.AstNamespace = exports.AstMatch = exports.AstHide = exports.AstNegation = exports.AstRepeat = exports.AstRename = exports.AstUnary = exports.AstContains = exports.AstEndsWith = exports.AstStartsWith = exports.AstFilter = exports.AstJoin = exports.AstIntersection = exports.AstAlternation = exports.AstSequence = exports.AstDot = exports.AstLiteral = exports.AstEpsilon = exports.AstComponent = exports.Expr = exports.CounterStack = void 0;
+exports.Hide = exports.Ns = exports.Not = exports.Rename = exports.MatchFrom = exports.MatchDotStar2 = exports.MatchDotStar = exports.MatchDotRep2 = exports.MatchDotRep = exports.MatchDot = exports.Dot = exports.Match = exports.Embed = exports.Null = exports.Epsilon = exports.Rep = exports.Contains = exports.EndsWith = exports.StartsWith = exports.Join = exports.Filter = exports.Intersect = exports.Any = exports.Lit = exports.Maybe = exports.Uni = exports.Seq = exports.Root = exports.AstEmbed = exports.AstNamespace = exports.AstMatch = exports.AstHide = exports.AstNegation = exports.AstRepeat = exports.AstRename = exports.AstUnary = exports.AstContains = exports.AstEndsWith = exports.AstStartsWith = exports.AstFilter = exports.AstJoin = exports.AstIntersection = exports.AstAlternation = exports.AstSequence = exports.AstDot = exports.AstLiteral = exports.AstEpsilon = exports.AstComponent = exports.Expr = exports.CounterStack = void 0;
+exports.Replace = void 0;
 const derivs_1 = require("./derivs");
 Object.defineProperty(exports, "CounterStack", { enumerable: true, get: function () { return derivs_1.CounterStack; } });
 Object.defineProperty(exports, "Expr", { enumerable: true, get: function () { return derivs_1.Expr; } });
@@ -1065,6 +1066,11 @@ class AstComponent {
     }
     qualifyNames(nsStack = []) {
         return util_1.flatten(this.getChildren().map(c => c.qualifyNames(nsStack)));
+    }
+    getAllTapes() {
+        const tapes = new tapes_1.TapeCollection();
+        this.collectVocab(tapes, []);
+        return tapes;
     }
     getRoot() {
         this.qualifyNames();
@@ -1172,6 +1178,8 @@ class AstSequence extends AstNAry {
     }
     nonFinalChildren() {
         if (this.children.length <= 1) {
+            // shouldn't be possible so long as client used constructX methods,
+            // but just in case
             return [];
         }
         return this.children.slice(0, this.children.length - 1);
@@ -1624,6 +1632,7 @@ class AstEmbed extends AstAtomic {
         return derivs_1.constructEmbed(this.qualifiedName, ns);
     }
 }
+exports.AstEmbed = AstEmbed;
 class Root {
     constructor(components = new Map(), exprs = new Map(), tapes = new Map()) {
         this.components = components;
@@ -1793,6 +1802,104 @@ function Hide(child, tape, name = "") {
     return new AstHide(DUMMY_CELL, child, tape, name);
 }
 exports.Hide = Hide;
+/**
+  * Replace implements general phonological replacement rules.
+  *
+  * fromTapeName: name of the input (target) tape
+  * toTapeName: name of the output (change) tape
+  * fromState: input (target) State (on fromTape)
+  * toState: output (change) State (on toTape)
+  * preContext: context to match before the target fromState (on fromTape)
+  * postContext: context to match after the target fromState (on fromTape)
+  * beginsWith: set to True to match at the start of fromTape
+  * endsWith: set to True to match at the end of fromTape
+  * minReps: minimum number of times the replace rule is applied; normally 0.
+  * maxReps: maximum number of times the replace rule is applied
+  * maxExtraChars: a character limiter for extra characters at start/end
+  * repetitionPatch: if True, expand replacement repetition using Uni
+  *     repetitionPatch is a workaround for a bug resulting in a bad interaction
+  *         between the old ConcatState and RepetitionState.
+  *     Note: repetitionPatch may not be true if maxReps > 100
+*/
+function Replace(fromTapeName, toTapeName, fromState, toState, preContext, postContext, beginsWith = false, endsWith = false, minReps = 0, maxReps = Infinity, maxExtraChars = 100, repetitionPatch = false) {
+    if (beginsWith || endsWith) {
+        maxReps = Math.max(1, maxReps);
+        minReps = Math.min(minReps, maxReps);
+    }
+    var states = [];
+    if (preContext != undefined)
+        states.push(MatchFrom(fromTapeName, toTapeName, preContext));
+    states.push(fromState, toState);
+    if (postContext != undefined)
+        states.push(MatchFrom(fromTapeName, toTapeName, postContext));
+    // Determine if the vocabulary for fromTape is a subset of the vocabulary
+    // of toTape, in which case toTape could match the target replacement pattern.
+    // sameVocab is used to determine what matchAnythingElse should match, but
+    // is not needed if replacing at the start or end of text.
+    var sameVocab = false;
+    var replaceState = Seq(...states);
+    const tapeCollection = replaceState.getAllTapes();
+    const fromTape = tapeCollection.matchTape(fromTapeName);
+    if (fromTape != undefined) {
+        const fromVocab = fromTape.fromToken(fromTapeName, fromTape.any()).join('');
+        sameVocab = tapeCollection.inVocab(toTapeName, fromVocab);
+    }
+    console.log(`same vocab = ${sameVocab}`);
+    function matchAnythingElse(replaceNone = false) {
+        const dotStar = Rep(Any(fromTapeName), 0, maxExtraChars);
+        // 1. If the fromTape vocab for the replacement operation contains some
+        //    characters that are not in the corresponding toTape vocab, then
+        //    extra text matched before and after the replacement cannot possibly
+        //    contain the from replacement pattern. Furthermore, we don't want to
+        //    add those characters to the toTape vocab, so instead we match .*
+        // 2. If we are matching an instance at the start of text (beginsWith),
+        //    or end of text (endsWith) then matchAnythingElse needs to match any
+        //    other instances of the replacement pattern, so we need to match .*
+        if (!sameVocab || (beginsWith && !replaceNone) || (endsWith && !replaceNone)) {
+            console.log("simple match from");
+            return MatchFrom(fromTapeName, toTapeName, dotStar);
+        }
+        var fromInstance = [];
+        if (preContext != undefined)
+            fromInstance.push(preContext);
+        fromInstance.push(fromState);
+        if (postContext != undefined)
+            fromInstance.push(postContext);
+        var notState;
+        if (beginsWith && replaceNone)
+            notState = Not(Seq(...fromInstance, dotStar)); //, maxExtraChars);
+        else if (endsWith && replaceNone)
+            notState = Not(Seq(dotStar, ...fromInstance)); //, maxExtraChars);
+        else
+            notState = Not(Seq(dotStar, ...fromInstance, dotStar)); //, maxExtraChars);
+        return MatchFrom(fromTapeName, toTapeName, notState);
+    }
+    if (!endsWith)
+        states.push(matchAnythingElse());
+    const replaceOne = Seq(...states);
+    var replaceMultiple = Rep(replaceOne, minReps, maxReps);
+    if (repetitionPatch && maxReps <= 100) {
+        var multiples = [];
+        for (let n = Math.max(1, minReps); n < maxReps + 1; n++) {
+            multiples.push(Seq(...Array.from({ length: n }).map(x => replaceOne)));
+        }
+        replaceMultiple = Uni(...multiples);
+    }
+    if (beginsWith)
+        replaceState = replaceOne;
+    else if (endsWith)
+        replaceState = Seq(matchAnythingElse(), replaceOne);
+    else
+        replaceState = Seq(matchAnythingElse(), replaceMultiple);
+    if (minReps > 0)
+        return replaceState;
+    // ??? NOTE: matchAnythingElse(true) with beginsWith can result in an
+    // "infinite" loop when generate is called (especially if maxChars is
+    // high) because the match on notState is not respecting maxExtraChars
+    // for some reason.
+    return (Uni(matchAnythingElse(true), replaceState));
+}
+exports.Replace = Replace;
 
 },{"./derivs":4,"./tapes":10,"./util":12}],3:[function(require,module,exports){
 "use strict";
@@ -2952,6 +3059,7 @@ exports.DEFAULT_VALUE = 1.0;
  * A Header is a cell in the top row of a table, consisting of one of
  *
  * * the name of a tape, like "text" or "gloss"
+ * * an atomic operator like "embed" or "hide"
  * * a unary operator like "maybe" followed by a valid Header (e.g. "maybe text")
  * * two valid Headers joined by a slash (e.g. "text/gloss")
  * * a valid Header in parentheses (e.g. "(text)")
@@ -2963,9 +3071,11 @@ exports.DEFAULT_VALUE = 1.0;
  * Header objects are responsible for:
  *
  * * compiling the text of the cells beneath them into [AstComponent]s, and merging them (usually by
- *   concatenation) with cells to their right.
+ *   concatenation) with cells to their left.
  *
- * * knowing what colors the foreground and background of the header cell should be
+ * * calculating the appropriate background color for their cells and the cells in their column.
+ *
+ * Headers are parsed using the "miniParser" engine, a simple parser/combinator engine.
  */
 class Header {
 }
@@ -2996,9 +3106,9 @@ class EmbedHeader extends AtomicHeader {
         return "embed";
     }
     toAST(left, text, content) {
-        const cellAST = ast_1.Embed(text);
+        const cellAST = new ast_1.AstEmbed(content, text);
         cellAST.cell = content;
-        return ast_1.Seq(left, cellAST);
+        return new ast_1.AstSequence(content, [left, cellAST]);
     }
 }
 exports.EmbedHeader = EmbedHeader;
@@ -3018,7 +3128,7 @@ class HideHeader extends AtomicHeader {
     toAST(left, text, content) {
         var result = left;
         for (const tape of text.split("/")) {
-            result = ast_1.Hide(result, tape.trim());
+            result = new ast_1.AstHide(content, result, tape.trim());
             result.cell = content;
         }
         return result;
@@ -3034,8 +3144,8 @@ class LiteralHeader extends AtomicHeader {
         this.text = text;
     }
     toAST(left, text, content) {
-        const ast = ast_1.Lit(this.text, text);
-        return ast_1.Seq(left, ast);
+        const ast = new ast_1.AstLiteral(content, this.text, text);
+        return new ast_1.AstSequence(content, [left, ast]);
     }
 }
 exports.LiteralHeader = LiteralHeader;
@@ -3048,7 +3158,7 @@ class CommentHeader extends Header {
         return 0;
     }
     getColor(saturation = exports.DEFAULT_SATURATION, value = exports.DEFAULT_VALUE) {
-        return "FFFFF";
+        return "#FFFFFF";
     }
     toAST(left, text) {
         return left;
@@ -3074,9 +3184,9 @@ class UnaryHeader extends Header {
  */
 class MaybeHeader extends UnaryHeader {
     toAST(left, text, content) {
-        const childAST = this.child.toAST(ast_1.Epsilon(), text, content);
-        const ast = ast_1.Maybe(childAST);
-        return ast_1.Seq(left, ast);
+        const childAST = this.child.toAST(new ast_1.AstEpsilon(content), text, content);
+        const ast = new ast_1.AstAlternation(content, [childAST, new ast_1.AstEpsilon(content)]);
+        return new ast_1.AstSequence(content, [left, ast]);
     }
 }
 exports.MaybeHeader = MaybeHeader;
@@ -3084,11 +3194,12 @@ exports.MaybeHeader = MaybeHeader;
  * Header that constructs renames
  */
 class RenameHeader extends UnaryHeader {
-    toAST(left, text) {
+    toAST(left, text, content) {
         if (!(this.child instanceof LiteralHeader)) {
-            throw new Error("Rename (>) of a non-literal");
+            content.markError("error", "Renaming error", "Rename (>) needs to have a tape name after it");
+            return new ast_1.AstEpsilon(content);
         }
-        const ast = ast_1.Rename(left, text, this.child.text);
+        const ast = new ast_1.AstRename(content, left, text, this.child.text);
         return ast;
     }
 }
@@ -3103,24 +3214,24 @@ class RenameHeader extends UnaryHeader {
  * in their fields.
  */
 class LogicHeader extends UnaryHeader {
-    merge(leftNeighbor, state) {
-        if (leftNeighbor == undefined) {
-            return state;
+    merge(left, ast, content) {
+        if (left == undefined) {
+            return ast;
         }
-        return ast_1.Seq(leftNeighbor, state);
+        return new ast_1.AstSequence(content, [left, ast]);
     }
     toAstPiece(parsedText, content) {
         if (parsedText instanceof cellParser_1.CPUnreserved) {
-            return this.child.toAST(ast_1.Epsilon(), parsedText.text, content);
+            return this.child.toAST(new ast_1.AstEpsilon(content), parsedText.text, content);
         }
         if (parsedText instanceof cellParser_1.CPNegation) {
             const childAst = this.toAstPiece(parsedText.child, content);
-            return ast_1.Not(childAst);
+            return new ast_1.AstNegation(content, childAst);
         }
         if (parsedText instanceof cellParser_1.CPAlternation) {
             const child1Ast = this.toAstPiece(parsedText.child1, content);
             const child2Ast = this.toAstPiece(parsedText.child2, content);
-            return ast_1.Uni(child1Ast, child2Ast);
+            return new ast_1.AstAlternation(content, [child1Ast, child2Ast]);
         }
         throw new Error(`Error constructing boolean expression: ${parsedText}`);
     }
@@ -3130,7 +3241,7 @@ class LogicHeader extends UnaryHeader {
         }
         const parsedText = cellParser_1.parseBooleanCell(text);
         const c = this.toAstPiece(parsedText, content);
-        return this.merge(left, c);
+        return this.merge(left, c, content);
     }
 }
 exports.LogicHeader = LogicHeader;
@@ -3139,13 +3250,15 @@ exports.LogicHeader = LogicHeader;
  * that Filter(N, X) -- that is, it filters the results of N such that every surviving record is a
  * superset of X.
  *
- * This is also the superclass of [StartsWithHeader] and [EndsWithHeader].  These constrain N to either
- * start with X (that is, Filter(N, X.*)) or end with X (that is, Filter(N, .*X)).
+ * This is also the superclass of [StartsWithHeader], [EndsWithHeader], and [ContainsHeader].
+ * These constrain N to either start with X (that is, Filter(N, X.*)) or end with X
+ * (that is, Filter(N, .*X)), or contain X (Filter(N, .*X.*)).
  */
 class EqualsHeader extends LogicHeader {
-    merge(leftNeighbor, state) {
+    merge(leftNeighbor, state, content) {
         if (leftNeighbor == undefined) {
-            throw new Error("'equals/startswith/endswith/contains' requires content to its left.");
+            content.markError("error", "Filtering empty grammar", "'equals/startswith/endswith/contains' requires content to its left.");
+            return new ast_1.AstEpsilon(content);
         }
         if (leftNeighbor instanceof ast_1.AstSequence) {
             // if your left neighbor is a concat state we have to do something a little special,
@@ -3153,14 +3266,14 @@ class EqualsHeader extends LogicHeader {
             // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
             // specifying in the same row, rather than the embedded thing you're trying to catch.)
             const lastChild = leftNeighbor.finalChild();
-            const filter = this.constructFilter(lastChild, state);
+            const filter = this.constructFilter(lastChild, state, content);
             const remainingChildren = leftNeighbor.nonFinalChildren();
-            return ast_1.Seq(...remainingChildren, filter);
+            return new ast_1.AstSequence(content, [...remainingChildren, filter]);
         }
-        return this.constructFilter(leftNeighbor, state);
+        return this.constructFilter(leftNeighbor, state, content);
     }
-    constructFilter(leftNeighbor, condition) {
-        return ast_1.Filter(leftNeighbor, condition);
+    constructFilter(leftNeighbor, condition, content) {
+        return new ast_1.AstFilter(content, leftNeighbor, condition);
     }
 }
 exports.EqualsHeader = EqualsHeader;
@@ -3169,8 +3282,8 @@ exports.EqualsHeader = EqualsHeader;
  * start with X (that is, Filter(N, X.*))
  */
 class StartsWithHeader extends EqualsHeader {
-    constructFilter(leftNeighbor, condition) {
-        return ast_1.StartsWith(leftNeighbor, condition);
+    constructFilter(leftNeighbor, condition, content) {
+        return new ast_1.AstStartsWith(content, leftNeighbor, condition);
     }
 }
 exports.StartsWithHeader = StartsWithHeader;
@@ -3179,8 +3292,8 @@ exports.StartsWithHeader = StartsWithHeader;
  * end with X (that is, Filter(N, .*X))
  */
 class EndsWithHeader extends EqualsHeader {
-    constructFilter(leftNeighbor, condition) {
-        return ast_1.EndsWith(leftNeighbor, condition);
+    constructFilter(leftNeighbor, condition, content) {
+        return new ast_1.AstEndsWith(content, leftNeighbor, condition);
     }
 }
 exports.EndsWithHeader = EndsWithHeader;
@@ -3189,8 +3302,8 @@ exports.EndsWithHeader = EndsWithHeader;
  * contain X (that is, Filter(N, .*X.*))
  */
 class ContainsHeader extends EqualsHeader {
-    constructFilter(leftNeighbor, condition) {
-        return ast_1.Contains(leftNeighbor, condition);
+    constructFilter(leftNeighbor, condition, content) {
+        return new ast_1.AstContains(content, leftNeighbor, condition);
     }
 }
 exports.ContainsHeader = ContainsHeader;
@@ -3218,15 +3331,15 @@ class SlashHeader extends BinaryHeader {
 exports.SlashHeader = SlashHeader;
 class ErrorHeader extends LiteralHeader {
     toAST(left, text, content) {
-        content.markError("error", `Invalid header: ${this.text}`, `Cannot parse the header ${this.text}`);
-        return ast_1.Epsilon();
+        content.markError("warning", `Invalid header: ${this.text}`, `This content is associated with an invalid header above, ignoring`);
+        return new ast_1.AstEpsilon(content);
     }
 }
 exports.ErrorHeader = ErrorHeader;
 class ReservedErrorHeader extends ErrorHeader {
     toAST(left, text, content) {
-        content.markError("error", `Reserved in header: ${this.text}`, `Headers cannot contain reserved words, in this case "${this.text}"`);
-        return ast_1.Epsilon();
+        content.markError("warning", `Invalid header: ${this.text}`, `This content is associated with an invalid header above, ignoring`);
+        return new ast_1.AstEpsilon(content);
     }
 }
 exports.ReservedErrorHeader = ReservedErrorHeader;
@@ -3250,9 +3363,9 @@ exports.RESERVED_HEADERS = [
     "contains"
 ];
 exports.BINARY_OPS = {
-    "or": ast_1.Uni,
-    "concat": ast_1.Seq,
-    "join": ast_1.Join,
+    "or": (cell, c1, c2) => new ast_1.AstAlternation(cell, [c1, c2]),
+    "concat": (cell, c1, c2) => new ast_1.AstSequence(cell, [c1, c2]),
+    "join": (cell, c1, c2) => new ast_1.AstJoin(cell, c1, c2),
 };
 exports.RESERVED_OPS = new Set([...Object.keys(exports.BINARY_OPS), "table", "test", "testnot"]);
 exports.RESERVED_WORDS = new Set([...SYMBOL, ...exports.RESERVED_HEADERS, ...exports.RESERVED_OPS]);
@@ -3307,24 +3420,22 @@ Object.defineProperty(exports, "Gramble", { enumerable: true, get: function () {
 },{"./gramble":5}],8:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.miniParse = exports.MPAlternation = exports.MPSequence = exports.MPComment = exports.MPReserved = exports.MPUnreserved = exports.MPDelay = void 0;
+exports.miniParse = exports.MPAlternation = exports.MPSequence = exports.MPComment = exports.MPUnreserved = exports.MPReserved = exports.MPDelay = void 0;
+/**
+ * Delay the evaluation of a parser X to allow reference to a parser before it's defined (e.g. for
+ * grammars that recurse).  You probably don't need this if your parsers are defined "function X(...){...}",
+ * because hoisting should take care of that, but if they're defined as variables/constants like
+ * "const X = ...", you need this to allow the expression of recursive grammars.
+ */
 function MPDelay(child) {
     return function* (input) {
         yield* child()(input);
     };
 }
 exports.MPDelay = MPDelay;
-function MPUnreserved(reserved, constr, caseSensitive = false) {
-    return function* (input) {
-        const firstToken = caseSensitive ? input[0]
-            : input[0].toLowerCase();
-        if (input.length == 0 || reserved.has(firstToken)) {
-            return;
-        }
-        yield [constr(input[0]), input.slice(1)];
-    };
-}
-exports.MPUnreserved = MPUnreserved;
+/**
+ * Recognizes any word in the "reserved" string set.
+ */
 function MPReserved(reserved, constr, caseSensitive = false) {
     return function* (input) {
         const firstToken = caseSensitive ? input[0]
@@ -3336,6 +3447,23 @@ function MPReserved(reserved, constr, caseSensitive = false) {
     };
 }
 exports.MPReserved = MPReserved;
+/**
+ * Recognizes any word that is NOT in the "reserved" string set.
+ */
+function MPUnreserved(reserved, constr, caseSensitive = false) {
+    return function* (input) {
+        const firstToken = caseSensitive ? input[0]
+            : input[0].toLowerCase();
+        if (input.length == 0 || reserved.has(firstToken)) {
+            return;
+        }
+        yield [constr(input[0]), input.slice(1)];
+    };
+}
+exports.MPUnreserved = MPUnreserved;
+/**
+ * Recognizes a string that begins with commentStarter (e.g. "%" in a header)
+ */
 function MPComment(commentStarter, constr) {
     return function* (input) {
         if (input.length == 0 || input[0] != commentStarter) {
@@ -3345,6 +3473,12 @@ function MPComment(commentStarter, constr) {
     };
 }
 exports.MPComment = MPComment;
+/**
+ * Recognizes a sequence of grammar elements and (for convenience) literal strings.  The function constr
+ * should have as many elements as the non-strings in your array.  (That is to say, it will pass all
+ * non-strings it finds to the constructor, and ignore any literal strings.  If for some reason you need
+ * that literal string to be a result object and passed to the constructor, wrap it in an MPReserved.)
+ */
 function MPSequence(children, constr, caseSensitive = false) {
     return function* (input) {
         var results = [[[], input]];
@@ -3377,6 +3511,9 @@ function MPSequence(children, constr, caseSensitive = false) {
     };
 }
 exports.MPSequence = MPSequence;
+/**
+ * The result of MPAlternation(A, B)(X) is just the union of the results of applying A(X) and B(X).
+ */
 function MPAlternation(...children) {
     return function* (input) {
         for (const child of children) {
@@ -3385,6 +3522,14 @@ function MPAlternation(...children) {
     };
 }
 exports.MPAlternation = MPAlternation;
+/**
+ * A convenience function to tokenize, parse, throw out incomplete results, and fail when the
+ * number of results isn't exactly equal to one.
+ *
+ * If you're parsing a grammar that's genuinely ambiguous (can have multiple valid parses
+ * for the same string) then you don't want to use this function.  All of our mini-grammars
+ * are deterministic so it really is an error if we get multiple parses.
+ */
 function miniParse(tokenizer, grammar, text) {
     const pieces = tokenizer(text);
     var result = [...grammar(pieces)];
@@ -3902,6 +4047,18 @@ class StringTape extends Tape {
     getTapeNames() {
         return new Set([this.tapeName]);
     }
+    inVocab(tapeName, str) {
+        if (tapeName != this.tapeName) {
+            throw new Error(`Trying to check vocab for tape ${tapeName} on tape ${this.tapeName}`);
+        }
+        for (const c of str.split("")) {
+            var index = this.strToIndex.get(c);
+            if (index == undefined) {
+                return false;
+            }
+        }
+        return true;
+    }
     /*
     public *plus(tapeName: string, other: BitSet): Gen<Tape> {
         if (tapeName != this.tapeName) {
@@ -4046,6 +4203,13 @@ class TapeCollection extends Tape {
     get isTrivial() {
         return this.tapes.size == 0;
     }
+    inVocab(tapeName, str) {
+        var tape = this.tapes.get(tapeName);
+        if (tape == undefined) {
+            return false;
+        }
+        return tape.inVocab(tapeName, str);
+    }
     /*
     public addTape(tape: Tape): void {
         this.tapes.set(tape.tapeName, tape);
@@ -4139,6 +4303,10 @@ class RenamedTape extends Tape {
         }
         return childName;
     }
+    inVocab(tapeName, str) {
+        tapeName = this.adjustTapeName(tapeName);
+        return this.child.inVocab(tapeName, str);
+    }
     get isTrivial() {
         return this.child.isTrivial;
     }
@@ -4224,6 +4392,12 @@ class TstHeader extends TstComponent {
     constructor(cell) {
         super(cell);
         this.header = headers_1.parseHeaderCell(cell.text);
+        if (this.header instanceof headers_1.ReservedErrorHeader) {
+            this.cell.markError("error", `Reserved word in header`, `This header contains a reserved word in an invalid position`);
+        }
+        else if (this.header instanceof headers_1.ErrorHeader) {
+            this.cell.markError("error", `Invalid header`, `This header cannot be parsed.`);
+        }
     }
     mark() {
         const color = this.getColor(0.1);
@@ -4233,9 +4407,6 @@ class TstHeader extends TstComponent {
         return this.header.getColor(saturation, value);
     }
     headerToAST(left, content) {
-        if (this.header instanceof headers_1.ErrorHeader) {
-            this.cell.markError("warning", `Missing/invalid header`, `Cannot associate this cell with a valid header above`);
-        }
         const ast = this.header.toAST(left, content.text, content);
         ast.cell = content;
         return ast;
@@ -4381,7 +4552,7 @@ class TstBinaryOp extends TstEnclosure {
         else {
             siblingAst = this.sibling.toAST();
         }
-        return op(siblingAst, childAst);
+        return op(this.cell, siblingAst, childAst);
     }
 }
 exports.TstBinaryOp = TstBinaryOp;

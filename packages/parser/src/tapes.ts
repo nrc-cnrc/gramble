@@ -141,6 +141,7 @@ export abstract class Tape {
 
     public abstract getTapeNames(): Set<string>;
 
+    public abstract inVocab(tapeName: string, str: string): boolean;
     
     public getTape(tapeName: string): Tape | undefined {
         if (this.parent == undefined) {
@@ -256,6 +257,19 @@ export class StringTape extends Tape {
 
     public getTapeNames(): Set<string> {
         return new Set([this.tapeName]);
+    }
+
+    public inVocab(tapeName: string, str: string): boolean {
+        if (tapeName != this.tapeName) {
+            throw new Error(`Trying to check vocab for tape ${tapeName} on tape ${this.tapeName}`);
+        }
+        for (const c of str.split("")) {
+            var index = this.strToIndex.get(c);
+            if (index == undefined) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /*
@@ -424,6 +438,14 @@ export class TapeCollection extends Tape {
         return this.tapes.size == 0;
     }
 
+    public inVocab(tapeName: string, str: string): boolean {
+        var tape = this.tapes.get(tapeName);
+        if (tape == undefined) {
+            return false;
+        }
+        return tape.inVocab(tapeName, str);
+    }
+
     /*
     public addTape(tape: Tape): void {
         this.tapes.set(tape.tapeName, tape);
@@ -530,6 +552,11 @@ export class RenamedTape extends Tape {
             return this.fromTape;
         }
         return childName;
+    }
+    
+    public inVocab(tapeName: string, str: string): boolean {
+        tapeName = this.adjustTapeName(tapeName);
+        return this.child.inVocab(tapeName, str);
     }
     
     public get isTrivial(): boolean {

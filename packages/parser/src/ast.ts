@@ -88,6 +88,12 @@ export abstract class AstComponent {
         return flatten(this.getChildren().map(c => c.qualifyNames(nsStack)));
     }
 
+    public getAllTapes(): TapeCollection {
+        const tapes = new TapeCollection();
+        this.collectVocab(tapes, []);
+        return tapes;
+    }
+
     public getRoot(): Root {
         this.qualifyNames();
         const stack = new CounterStack(2);
@@ -224,6 +230,8 @@ export class AstSequence extends AstNAry {
 
     public nonFinalChildren(): AstComponent[] {
         if (this.children.length <= 1) {
+            // shouldn't be possible so long as client used constructX methods,
+            // but just in case
             return [];
         }
         return this.children.slice(0, this.children.length-1);
@@ -991,4 +999,121 @@ export function Ns(
 
 export function Hide(child: AstComponent, tape: string, name: string = ""): AstHide {
     return new AstHide(DUMMY_CELL, child, tape, name);
+}
+
+
+/**
+  * Replace implements general phonological replacement rules.
+  * 
+  * fromTapeName: name of the input (target) tape
+  * toTapeName: name of the output (change) tape
+  * fromState: input (target) State (on fromTape)
+  * toState: output (change) State (on toTape)
+  * preContext: context to match before the target fromState (on fromTape)
+  * postContext: context to match after the target fromState (on fromTape)
+  * beginsWith: set to True to match at the start of fromTape
+  * endsWith: set to True to match at the end of fromTape
+  * minReps: minimum number of times the replace rule is applied; normally 0.
+  * maxReps: maximum number of times the replace rule is applied
+  * maxExtraChars: a character limiter for extra characters at start/end
+  * repetitionPatch: if True, expand replacement repetition using Uni
+  *     repetitionPatch is a workaround for a bug resulting in a bad interaction
+  *         between the old ConcatState and RepetitionState.
+  *     Note: repetitionPatch may not be true if maxReps > 100
+*/
+export function Replace(
+    fromTapeName: string, toTapeName: string,
+    fromState: AstComponent, toState: AstComponent,
+    preContext: AstComponent | undefined, postContext: AstComponent | undefined,
+    beginsWith: Boolean = false, endsWith: boolean = false,
+    minReps: number = 0, maxReps: number = Infinity,
+    maxExtraChars: number = 100,
+    repetitionPatch: Boolean = false
+): AstComponent {
+    if (beginsWith || endsWith) {
+        maxReps = Math.max(1, maxReps);
+        minReps = Math.min(minReps, maxReps);
+    }
+
+    var states: AstComponent[] = [];
+    if (preContext != undefined)
+        states.push(MatchFrom(fromTapeName, toTapeName, preContext));
+    states.push(fromState, toState);
+    if (postContext != undefined)
+        states.push(MatchFrom(fromTapeName, toTapeName, postContext));
+
+    // Determine if the vocabulary for fromTape is a subset of the vocabulary
+    // of toTape, in which case toTape could match the target replacement pattern.
+    // sameVocab is used to determine what matchAnythingElse should match, but
+    // is not needed if replacing at the start or end of text.
+    
+    var sameVocab: boolean = false;
+    var replaceState: AstComponent = Seq(...states);
+
+    const tapeCollection: TapeCollection = replaceState.getAllTapes();
+    const fromTape: Tape | undefined = tapeCollection.matchTape(fromTapeName);
+    if (fromTape != undefined) {
+        const fromVocab: string = fromTape.fromToken(fromTapeName, fromTape.any()).join('');
+        sameVocab = tapeCollection.inVocab(toTapeName, fromVocab)
+    }
+
+    console.log(`same vocab = ${sameVocab}`);
+
+    function matchAnythingElse(replaceNone: boolean = false) {
+        const dotStar: AstComponent = Rep(Any(fromTapeName), 0, maxExtraChars);
+        // 1. If the fromTape vocab for the replacement operation contains some
+        //    characters that are not in the corresponding toTape vocab, then
+        //    extra text matched before and after the replacement cannot possibly
+        //    contain the from replacement pattern. Furthermore, we don't want to
+        //    add those characters to the toTape vocab, so instead we match .*
+        // 2. If we are matching an instance at the start of text (beginsWith),
+        //    or end of text (endsWith) then matchAnythingElse needs to match any
+        //    other instances of the replacement pattern, so we need to match .*
+        if( !sameVocab || (beginsWith && !replaceNone) || (endsWith && !replaceNone)) {
+            console.log("simple match from");
+            return MatchFrom(fromTapeName, toTapeName, dotStar)
+        }
+        var fromInstance: AstComponent[] = [];
+        if (preContext != undefined)
+            fromInstance.push(preContext);
+        fromInstance.push(fromState);
+        if (postContext != undefined)
+            fromInstance.push(postContext);
+        var notState: AstComponent;
+        if (beginsWith && replaceNone)
+            notState = Not(Seq(...fromInstance, dotStar)); //, maxExtraChars);
+        else if (endsWith && replaceNone)
+            notState = Not(Seq(dotStar, ...fromInstance)); //, maxExtraChars);
+        else
+            notState = Not(Seq(dotStar, ...fromInstance, dotStar)) //, maxExtraChars);
+        return MatchFrom(fromTapeName, toTapeName, notState)
+    }
+
+    if (! endsWith)
+        states.push(matchAnythingElse());
+
+    const replaceOne: AstComponent = Seq(...states);
+    var replaceMultiple: AstComponent = Rep(replaceOne, minReps, maxReps);
+    if (repetitionPatch && maxReps <= 100) {
+        var multiples: AstComponent[] = [];
+        for (let n=Math.max(1, minReps); n < maxReps+1; n++) {
+            multiples.push(Seq(...Array.from({length: n}).map(x => replaceOne)));
+        }
+        replaceMultiple = Uni(...multiples);
+    }
+
+    if (beginsWith)
+        replaceState = replaceOne;
+    else if (endsWith)
+        replaceState = Seq(matchAnythingElse(), replaceOne);
+    else
+        replaceState = Seq(matchAnythingElse(), replaceMultiple);
+
+    if (minReps > 0)
+        return replaceState
+    // ??? NOTE: matchAnythingElse(true) with beginsWith can result in an
+    // "infinite" loop when generate is called (especially if maxChars is
+    // high) because the match on notState is not respecting maxExtraChars
+    // for some reason.
+    return(Uni(matchAnythingElse(true), replaceState));
 }

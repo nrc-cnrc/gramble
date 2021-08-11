@@ -6,6 +6,7 @@ import { StringDict } from "../src/util";
 import { dirname, basename } from "path";
 import { TextDevEnvironment } from "../src/textInterface";
 import { Header } from "../src/headers";
+import { TapeCollection } from "../src/tapes";
 
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
@@ -125,6 +126,26 @@ export function testAstHasTapes(
         }
     });
 }
+
+export function testHasVocab(
+    component: AstComponent,
+    expectedVocab: {[tape: string]: number}
+): void {
+    const tapeCollection = new TapeCollection();
+    component.collectVocab(tapeCollection, []);
+    for (const tapeName in expectedVocab) {
+        const tape = tapeCollection.matchTape(tapeName);
+        const expectedNum = expectedVocab[tapeName];
+        it(`should have ${expectedNum} tokens in the ${tapeName} vocab`, function() {
+            expect(tape).to.not.be.undefined;
+            if (tape == undefined) {
+                return;
+            }
+            expect(tape.vocabSize).to.equal(expectedNum);
+        });
+    }
+}
+
 
 export function testAstHasSymbols(
     component: AstComponent,

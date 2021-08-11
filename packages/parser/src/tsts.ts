@@ -7,7 +7,7 @@
 
 import { AstComponent, AstNamespace, AstAlternation, AstEpsilon } from "./ast";
 import { CellPos, DummyCell } from "./util";
-import { BINARY_OPS, DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, parseHeaderCell, RESERVED_WORDS } from "./headers";
+import { BINARY_OPS, DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
 
 
@@ -45,6 +45,15 @@ export class TstHeader extends TstComponent {
     ) {
         super(cell);
         this.header = parseHeaderCell(cell.text);
+
+        if (this.header instanceof ReservedErrorHeader) { 
+            this.cell.markError("error", `Reserved word in header`, 
+                 `This header contains a reserved word in an invalid position`); 
+        } else if (this.header instanceof ErrorHeader) {
+            this.cell.markError("error", `Invalid header`, 
+                `This header cannot be parsed.`); 
+        }
+
     }
 
     public mark(): void {
@@ -57,11 +66,6 @@ export class TstHeader extends TstComponent {
     }
 
     public headerToAST(left: AstComponent, content: SheetCell): AstComponent {
-
-        if (this.header instanceof ErrorHeader) {
-            this.cell.markError("warning", `Missing/invalid header`, 
-                `Cannot associate this cell with a valid header above`); 
-        }
 
         const ast = this.header.toAST(left, content.text, content);
         ast.cell = content;

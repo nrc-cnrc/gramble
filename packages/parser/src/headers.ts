@@ -299,7 +299,9 @@ export class EqualsHeader extends LogicHeader {
         content: Cell
     ): AstComponent {
         if (leftNeighbor == undefined) {
-            throw new Error("'equals/startswith/endswith/contains' requires content to its left.");
+            content.markError("error", "Filtering empty grammar",
+                "'equals/startswith/endswith/contains' requires content to its left.");
+            return new AstEpsilon(content);
         }
 
         if (leftNeighbor instanceof AstSequence) {
@@ -410,8 +412,8 @@ export class ErrorHeader extends LiteralHeader {
         text: string,
         content: Cell
     ): AstComponent {
-        content.markError("error", `Invalid header: ${this.text}`,
-            `Cannot parse the header ${this.text}`)
+        content.markError("warning", `Invalid header: ${this.text}`,
+            `This content is associated with an invalid header above, ignoring`)
         return new AstEpsilon(content);
     }
 }
@@ -423,8 +425,8 @@ export class ReservedErrorHeader extends ErrorHeader {
         text: string,
         content: Cell
     ): AstComponent {
-        content.markError("error", `Reserved in header: ${this.text}`,
-            `Headers cannot contain reserved words, in this case "${this.text}"`)
+        content.markError("warning", `Invalid header: ${this.text}`,
+            `This content is associated with an invalid header above, ignoring`)
         return new AstEpsilon(content);
     }
 
