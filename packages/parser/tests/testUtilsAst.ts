@@ -5,7 +5,6 @@ import { Gramble } from "../src/gramble";
 import { StringDict } from "../src/util";
 import { dirname, basename } from "path";
 import { TextDevEnvironment } from "../src/textInterface";
-import { Header } from "../src/headers";
 import { TapeCollection } from "../src/tapes";
 
 export const t1 = (s: string) => Lit("t1", s);
@@ -72,6 +71,7 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
         }
     });
 }
+
 export function testGrammarUncompiled(
     grammar: Root,
     expectedResults: StringDict[], 
@@ -81,7 +81,7 @@ export function testGrammarUncompiled(
 ): void {
     var outputs: StringDict[] = [];
     try {
-        outputs = [...grammar.generate(symbolName, false, maxRecursion, maxChars)];
+        outputs = [...grammar.generate(symbolName, {}, false, maxRecursion, maxChars)];
     } catch (e) {
         it("Unexpected Exception", function() {
             console.log(e);

@@ -18,6 +18,7 @@ import {
     constructMemo,
     constructMatch
 } from "./derivs";
+import { LiteralHeader } from "./headers";
 
 import { RenamedTape, Tape, TapeCollection } from "./tapes";
 import { Cell, DummyCell, flatten, Gen, setDifference, setUnion, StringDict } from "./util";
@@ -213,11 +214,6 @@ export class AstSequence extends AstNAry {
         const childExprs = this.children.map(s => s.constructExpr(ns));
         return constructSequence(...childExprs);
     }
-
-    /*
-    public append(newChild: AstComponent): AstComponent {
-        return Seq(...this.children, newChild);
-    } */
 
     public finalChild(): AstComponent {
         if (this.children.length == 0) {
@@ -533,13 +529,6 @@ export class AstMatch extends AstUnary {
         super(cell, child);
     }
 
-    public calculateTapes(stack: CounterStack): Set<string> {
-        if (this.tapes == undefined) {
-            this.tapes = setUnion(this.child.calculateTapes(stack), this.relevantTapes)
-        }
-        return this.tapes;
-    }
-
     public constructExpr(ns: Root): Expr {
         const childExpr = this.child.constructExpr(ns);
         return constructMatch(childExpr, this.relevantTapes);
@@ -796,6 +785,13 @@ export class AstEmbed extends AstAtomic {
 
 export class Root implements INamespace {
 
+    /**
+     * If we're memoizing results, something has to keep track of the 
+     * tapes (and thus vocab) between invocations of generate, or else 
+     * those results will potentially be nonsense on later invocations.
+     */
+    protected allTapes: TapeCollection | undefined = undefined;
+
     constructor(
         public components: Map<string, AstComponent> = new Map(),
         public exprs: Map<string, Expr> = new Map(),
@@ -803,18 +799,10 @@ export class Root implements INamespace {
     ) { }
 
     public addComponent(name: string, comp: AstComponent): void {
-        //if (this.components.has(name)) {
-            // shouldn't happen due to alpha conversion, but check
-            //throw new Error(`Redefining symbol ${name}`);
-        //}
         this.components.set(name, comp);
     }
 
     public addSymbol(name: string, state: Expr): void {
-        //if (this.exprs.has(name)) {
-            // shouldn't happen due to alpha conversion, but check
-            //throw new Error(`Redefining symbol ${name}`);
-        //}
         this.exprs.set(name, state);
     }
     
@@ -835,7 +823,6 @@ export class Root implements INamespace {
         return this.components.get(name);
     }
     
-
     public allSymbols(): string[] {
         return [...this.exprs.keys()];
     }
@@ -859,23 +846,83 @@ export class Root implements INamespace {
 
     public *generate(
         symbolName: string = "__MAIN__",
+        query: StringDict | undefined = undefined,
         random: boolean = false,
         maxRecursion: number = 4, 
         maxChars: number = 1000
     ): Gen<StringDict> {
-        const expr = this.getSymbol(symbolName);
-        if (expr == undefined) {
-            throw new Error(`Cannot generate from undefined symbol ${symbolName}`);
-        }
 
-        const component = this.components.get(symbolName);
+        let component = this.components.get(symbolName);
         if (component == undefined) {
             throw new Error(`Cannot generate from undefined symbol ${symbolName}`);
         }
-        const allTapes = new TapeCollection();
-        component.collectVocab(allTapes);
-        yield* expr.generate(allTapes, random, maxRecursion, maxChars);
+
+        if (this.allTapes == undefined) {
+            this.allTapes = new TapeCollection();
+            component.collectVocab(this.allTapes);
+        }
+
+        if (query != undefined) {
+                
+            // create the query, if applicable
+            const queryLiterals: AstComponent[] = [];
+            for (const tapeName in query) {
+                const value = query[tapeName];
+                const inputLiteral = new AstLiteral(DUMMY_CELL, tapeName, value);
+                queryLiterals.push(inputLiteral);
+            }
+            const queryComponent = new AstSequence(DUMMY_CELL, queryLiterals);
+
+            // in case there's extra vocab in the query, add it to the tapes/vocab
+            queryComponent.collectVocab(this.allTapes);
+
+            // filter the grammar with the query
+            component = new AstFilter(DUMMY_CELL, component, queryComponent);
+            
+            // make sure the new grammar has tapes
+            const stack = new CounterStack(2);
+            const t = component.calculateTapes(stack);
+            
+        }
+        
+        const expr = component.constructExpr(this);
+        yield* expr.generate(this.allTapes, random, maxRecursion, maxChars);
     }
+
+    /*
+    public *parse(inputs: StringDict,
+                randomize: boolean = false,
+                maxRecursion: number = 4, 
+                maxChars: number = 1000): Gen<StringDict> {
+
+        const inputLiterals: AstComponent[] = [];
+        for (const tapeName in inputs) {
+            const value = inputs[tapeName];
+            const inputLiteral = new AstLiteral(DUMMY_CELL, tapeName, value);
+            inputLiterals.push(inputLiteral);
+        }
+
+        var startState: AstComponent = this;
+
+        if (inputLiterals.length > 0) {
+            const inputSeq = Seq(...inputLiterals);
+            startState = Filter(startState, inputSeq); 
+            const tapeCollection = this.getAllTapes(); // in case this state has already
+                    // been compiled, we need to start the algorithm with the same vocab.
+                    // if it hasn't been compiled, .allTapes always starts as undefined anyway,
+                    // so it's no change.
+            inputSeq.collectVocab(tapeCollection, []);   
+                                        // add any new characters in the inputs to the vocab
+                                        //  this would actually happen automatically
+                                        // anyway, but I'd rather do it explicitly here 
+                                        // than rely on an undocumented side-effect
+            startState.allTapes = tapeCollection; 
+        }
+
+        yield *startState.generate(randomize, maxRecursion, maxChars);
+    }
+
+    */
 }
 
 

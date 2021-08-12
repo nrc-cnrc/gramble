@@ -39,6 +39,7 @@
     "testNegation": "mocha -r ts-node/register tests/testNegationAst.ts",
     "testJoins": "mocha -r ts-node/register tests/testJoinsAst.ts",
     "testRepeat": "mocha -r ts-node/register tests/testRepeatAst.ts",
+    "testIntersection": "mocha -r ts-node/register tests/testIntersectionAst.ts",
     "testDot": "mocha -r ts-node/register tests/testDotAst.ts",
     "testMatch": "mocha -r ts-node/register tests/testMatchAst.ts",
     "testMatchRename": "mocha -r ts-node/register tests/testMatchRenameAst.ts",

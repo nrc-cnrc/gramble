@@ -61,10 +61,10 @@ describe(`${path.basename(module.filename)}`, function() {
         describe("grammar2", function() {
             testAstHasTapes(grammar2, []);
             testAst(grammar2, [{}]);
-        });
+        }); 
 
         describe("grammar", function() {
-            testAstHasTapes(grammar, ['t1', 't2']);
+            //testAstHasTapes(grammar, ['t1', 't2']);
             //testHasNoVocab(grammar, 't1');
             //testHasNoVocab(grammar, 't2');
             testAst(grammar, [{}]);
@@ -232,8 +232,7 @@ describe(`${path.basename(module.filename)}`, function() {
                             {t1: 'goodbye', t2: 'goodbye'}]);
         });
     });
-
-    */
+*/
 
     // 9. t1 to t2 of (t1:hello|t1:goodbye)+(t1:world|t1:kitty)
     describe('9. t1 to t2 of (t1:hello|t1:goodbye)+(t1:world|t1:kitty)', function() {
@@ -594,5 +593,5 @@ describe(`${path.basename(module.filename)}`, function() {
                                             {t1: 'ihii', t2: 'ihii'}]);
         });
     });
-
+ 
 });

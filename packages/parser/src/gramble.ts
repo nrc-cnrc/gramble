@@ -66,12 +66,12 @@ export class Gramble {
     }
 
     public generate(symbolName: string = "",
-            inputs: StringDict = {},
+            restriction: StringDict = {},
             maxResults: number = Infinity,
             maxRecursion: number = 4, 
             maxChars: number = 1000): StringDict[] {
 
-        const gen = this.getRoot().generate(symbolName, false, maxRecursion, maxChars);
+        const gen = this.getRoot().generate(symbolName, restriction, false, maxRecursion, maxChars);
         //const gen = startState.parse(inputs, false, maxRecursion, maxChars);
         return iterTake(gen, maxResults);
     }
@@ -99,7 +99,7 @@ export class Gramble {
 
         let results: StringDict[] = [];
         for (let i = 0; i < maxTries; i++) {
-            const gen = this.getRoot().generate(symbolName, true, maxRecursion, maxChars);
+            const gen = this.getRoot().generate(symbolName, restriction, true, maxRecursion, maxChars);
             results = results.concat(iterTake(gen, 1));
             if (results.length >= numSamples) {
                 break;

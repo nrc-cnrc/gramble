@@ -1164,10 +1164,6 @@ class AstSequence extends AstNAry {
         const childExprs = this.children.map(s => s.constructExpr(ns));
         return derivs_1.constructSequence(...childExprs);
     }
-    /*
-    public append(newChild: AstComponent): AstComponent {
-        return Seq(...this.children, newChild);
-    } */
     finalChild() {
         if (this.children.length == 0) {
             // shouldn't be possible so long as client used constructX methods,
@@ -1411,12 +1407,6 @@ class AstMatch extends AstUnary {
         super(cell, child);
         this.relevantTapes = relevantTapes;
     }
-    calculateTapes(stack) {
-        if (this.tapes == undefined) {
-            this.tapes = util_1.setUnion(this.child.calculateTapes(stack), this.relevantTapes);
-        }
-        return this.tapes;
-    }
     constructExpr(ns) {
         const childExpr = this.child.constructExpr(ns);
         return derivs_1.constructMatch(childExpr, this.relevantTapes);
@@ -1638,19 +1628,17 @@ class Root {
         this.components = components;
         this.exprs = exprs;
         this.tapes = tapes;
+        /**
+         * If we're memoizing results, something has to keep track of the
+         * tapes (and thus vocab) between invocations of generate, or else
+         * those results will potentially be nonsense on later invocations.
+         */
+        this.allTapes = undefined;
     }
     addComponent(name, comp) {
-        //if (this.components.has(name)) {
-        // shouldn't happen due to alpha conversion, but check
-        //throw new Error(`Redefining symbol ${name}`);
-        //}
         this.components.set(name, comp);
     }
     addSymbol(name, state) {
-        //if (this.exprs.has(name)) {
-        // shouldn't happen due to alpha conversion, but check
-        //throw new Error(`Redefining symbol ${name}`);
-        //}
         this.exprs.set(name, state);
     }
     addTapes(name, tapes) {
@@ -1674,18 +1662,34 @@ class Root {
         return tapes;
     }
     compileSymbol(name, allTapes, stack, compileLevel) { }
-    *generate(symbolName = "__MAIN__", random = false, maxRecursion = 4, maxChars = 1000) {
-        const expr = this.getSymbol(symbolName);
-        if (expr == undefined) {
-            throw new Error(`Cannot generate from undefined symbol ${symbolName}`);
-        }
-        const component = this.components.get(symbolName);
+    *generate(symbolName = "__MAIN__", query = undefined, random = false, maxRecursion = 4, maxChars = 1000) {
+        let component = this.components.get(symbolName);
         if (component == undefined) {
             throw new Error(`Cannot generate from undefined symbol ${symbolName}`);
         }
-        const allTapes = new tapes_1.TapeCollection();
-        component.collectVocab(allTapes);
-        yield* expr.generate(allTapes, random, maxRecursion, maxChars);
+        if (this.allTapes == undefined) {
+            this.allTapes = new tapes_1.TapeCollection();
+            component.collectVocab(this.allTapes);
+        }
+        if (query != undefined) {
+            // create the query, if applicable
+            const queryLiterals = [];
+            for (const tapeName in query) {
+                const value = query[tapeName];
+                const inputLiteral = new AstLiteral(DUMMY_CELL, tapeName, value);
+                queryLiterals.push(inputLiteral);
+            }
+            const queryComponent = new AstSequence(DUMMY_CELL, queryLiterals);
+            // in case there's extra vocab in the query, add it to the tapes/vocab
+            queryComponent.collectVocab(this.allTapes);
+            // filter the grammar with the query
+            component = new AstFilter(DUMMY_CELL, component, queryComponent);
+            // make sure the new grammar has tapes
+            const stack = new derivs_1.CounterStack(2);
+            const t = component.calculateTapes(stack);
+        }
+        const expr = component.constructExpr(this);
+        yield* expr.generate(this.allTapes, random, maxRecursion, maxChars);
     }
 }
 exports.Root = Root;
@@ -2089,7 +2093,7 @@ exports.CounterStack = CounterStack;
  * simultaneously constructing and traversing a FSA.  Calculating the Brz. derivative of
  * expression A with respect to some character "c" can be conceptualized as following
  * the transition, labeled "c", between a node corresponding to A and a node
- * corresponding to its derivative expression.
+ * corresponding to its derivative expression.)
  *
  * There are three kinds of "transitions" that we can follow:
  *
@@ -2101,7 +2105,7 @@ exports.CounterStack = CounterStack;
  *    disjointDeriv(T, c): Determinizes the derivative; in our case that means that making
  *            sure the returned character sets are disjoint.  This is necessary for
  *            getting negation right, and we also call this at the highest level to
- *            eliminate trivially-identical results.
+ *            collapse trivially-identical results.
  *
  *    delta(T): A derivative w.r.t. epsilon: it returns only those languages where the
  *            contents of tape T are epsilon.
@@ -2190,6 +2194,7 @@ class Expr {
         while (stateQueue.length > 0) {
             let nextQueue = [];
             for (let [tapes, prevOutput, prevExpr, chars] of stateQueue) {
+                //console.log(`prevExpr is ${prevExpr.id}`);
                 if (chars >= maxChars) {
                     continue;
                 }
@@ -2198,6 +2203,7 @@ class Expr {
                     continue;
                 }
                 if (tapes.length == 0) {
+                    //console.log(`no tapes left`);
                     continue;
                 }
                 // rotate the tapes so that we don't keep trying the same one every time
@@ -2206,8 +2212,10 @@ class Expr {
                 for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, tapes_1.ANY_CHAR, stack)) {
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nextQueue.push([tapes, nextOutput, cNext, chars + 1]);
+                    //console.log(`D^${cTape.tapeName} is ${cNext.id}`);
                 }
                 const delta = prevExpr.delta(tapeToTry, stack);
+                //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
                 if (!(delta instanceof NullExpr)) {
                     const newTapes = tapes.slice(1);
                     nextQueue.push([newTapes, prevOutput, delta, chars]);
@@ -3013,8 +3021,8 @@ class Gramble {
         }
         return this.root;
     }
-    generate(symbolName = "", inputs = {}, maxResults = Infinity, maxRecursion = 4, maxChars = 1000) {
-        const gen = this.getRoot().generate(symbolName, false, maxRecursion, maxChars);
+    generate(symbolName = "", restriction = {}, maxResults = Infinity, maxRecursion = 4, maxChars = 1000) {
+        const gen = this.getRoot().generate(symbolName, restriction, false, maxRecursion, maxChars);
         //const gen = startState.parse(inputs, false, maxRecursion, maxChars);
         return util_1.iterTake(gen, maxResults);
     }
@@ -3034,7 +3042,7 @@ class Gramble {
     sample(symbolName = "", numSamples = 1, restriction = {}, maxTries = 1000, maxRecursion = 4, maxChars = 1000) {
         let results = [];
         for (let i = 0; i < maxTries; i++) {
-            const gen = this.getRoot().generate(symbolName, true, maxRecursion, maxChars);
+            const gen = this.getRoot().generate(symbolName, restriction, true, maxRecursion, maxChars);
             results = results.concat(util_1.iterTake(gen, 1));
             if (results.length >= numSamples) {
                 break;
@@ -4741,7 +4749,7 @@ class TstTable extends TstEnclosure {
         const headerCell = this.headersByCol[cell.pos.col];
         if (headerCell == undefined) {
             if (cell.text.length != 0) {
-                cell.markError("error", `Ignoring cell: ${cell.text}`, "Cannot associate this cell with any valid header above; ignoring.");
+                cell.markError("warning", `Ignoring cell: ${cell.text}`, "Cannot associate this cell with any valid header above; ignoring.");
             }
             return;
         }

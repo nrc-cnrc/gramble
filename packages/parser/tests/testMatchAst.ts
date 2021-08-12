@@ -1,8 +1,8 @@
 import { 
     Uni, 
     Match, 
-    Seq, Any, Join, Filter, Rep, MatchDot, Dot, MatchDotRep, MatchDotRep2, MatchDotStar, MatchDotStar2,
-    //Dot, MatchDot, MatchDotRep, MatchDotStar, MatchDotRep2, MatchDotStar2
+    Seq, Any, Join, Filter, MatchDot, Dot, 
+    MatchDotRep, MatchDotRep2, MatchDotStar, MatchDotStar2,
 } from "../src/ast";
 
 import { 

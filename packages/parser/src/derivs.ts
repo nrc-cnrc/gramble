@@ -160,7 +160,7 @@ export interface INamespace {
  * simultaneously constructing and traversing a FSA.  Calculating the Brz. derivative of
  * expression A with respect to some character "c" can be conceptualized as following
  * the transition, labeled "c", between a node corresponding to A and a node 
- * corresponding to its derivative expression.
+ * corresponding to its derivative expression.)
  * 
  * There are three kinds of "transitions" that we can follow:
  * 
@@ -172,7 +172,7 @@ export interface INamespace {
  *    disjointDeriv(T, c): Determinizes the derivative; in our case that means that making
  *            sure the returned character sets are disjoint.  This is necessary for
  *            getting negation right, and we also call this at the highest level to 
- *            eliminate trivially-identical results.
+ *            collapse trivially-identical results.
  * 
  *    delta(T): A derivative w.r.t. epsilon: it returns only those languages where the
  *            contents of tape T are epsilon.
@@ -332,6 +332,7 @@ export abstract class Expr {
             let nextQueue: [Tape[], MultiTapeOutput, Expr, number][] = [];
             for (let [tapes, prevOutput, prevExpr, chars] of stateQueue) {
 
+                //console.log(`prevExpr is ${prevExpr.id}`);
                 if (chars >= maxChars) {
                     continue;
                 }
@@ -342,6 +343,7 @@ export abstract class Expr {
                 }
                 
                 if (tapes.length == 0) {
+                    //console.log(`no tapes left`);
                     continue; 
                 }
 
@@ -351,10 +353,12 @@ export abstract class Expr {
                 const tapeToTry = tapes[0];
                 for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
                     const nextOutput = prevOutput.add(cTape, cTarget);
-                    nextQueue.push([tapes, nextOutput, cNext, chars+1]);
+                    nextQueue.push([tapes, nextOutput, cNext, chars+1]);  
+                    //console.log(`D^${cTape.tapeName} is ${cNext.id}`);
                 }
 
                 const delta = prevExpr.delta(tapeToTry, stack);
+                //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
                 if (!(delta instanceof NullExpr)) {                    
                     const newTapes = tapes.slice(1);
                     nextQueue.push([newTapes, prevOutput, delta, chars]);

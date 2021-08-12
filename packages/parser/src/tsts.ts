@@ -493,7 +493,7 @@ export class TstTable extends TstEnclosure {
         const headerCell = this.headersByCol[cell.pos.col];
         if (headerCell == undefined) {
             if (cell.text.length != 0) {
-                cell.markError("error", `Ignoring cell: ${cell.text}`,
+                cell.markError("warning", `Ignoring cell: ${cell.text}`,
                     "Cannot associate this cell with any valid header above; ignoring.");
             }
             return;

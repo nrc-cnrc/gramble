@@ -1,5 +1,5 @@
 
-import { Seq, Uni, Intersect, Epsilon, AstComponent } from "../src/ast";
+import { Seq, Uni, Intersect, Epsilon, AstComponent, Rep } from "../src/ast";
 import { t1, t2, testAst } from './testUtilsAst';
 
 import * as path from 'path';
@@ -37,6 +37,12 @@ const TESTS: Test[] = [
         "desc":     'Intersecting ε & t1:hello',
         "grammar":  Intersect(Epsilon(), t1("hello")),
         "results":  []
+    },
+    
+    {
+        "desc":     'Intersecting ε & (t1:hello)*',
+        "grammar":  Intersect(Epsilon(), Rep(t1("hello"))),
+        "results":  [{}]
     },
 
     {
@@ -334,7 +340,6 @@ const TESTS: Test[] = [
         "grammar":  Intersect(Seq(t1("h"), t2("foo"), t1("ello")), Seq(t1("hello"), t2("foo"))),
         "results":  [{t1: "hello", t2: "foo"}]
     },
-    
 ];
 
 describe(`${path.basename(module.filename)}`, function() {
