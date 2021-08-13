@@ -122,7 +122,7 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Rename(Embed("a"), "t2", "t3") });
 
         testAstHasTapes(grammar, ["t1", "t3"]);
-        testAst(grammar, [{t1: "hi", t3: "world"}], "test.b");
+        testAst(grammar, [{t1: "hi", t3: "world"}], "b");
     });
 
 });

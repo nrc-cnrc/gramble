@@ -49,6 +49,7 @@
     "testSheetsCond": "mocha -r ts-node/register tests/testSheetsCond.ts",
     "testMultiSheet": "mocha -r ts-node/register tests/testMultiSheet.ts",
     "testCellParser": "mocha -r ts-node/register tests/testCellParser.ts",
+    "testUnitTests": "mocha -r ts-node/register tests/testUnitTests.ts",
     "testReplace": "mocha -r ts-node/register tests/testReplace.ts"
   },
   "bugs": {

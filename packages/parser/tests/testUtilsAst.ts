@@ -1,6 +1,6 @@
 
 import { assert, expect } from "chai";
-import { AstComponent, Lit, Root } from "../src/ast";
+import { AstComponent, CounterStack, Lit } from "../src/ast";
 import { Gramble } from "../src/gramble";
 import { StringDict } from "../src/util";
 import { dirname, basename } from "path";
@@ -72,16 +72,16 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
     });
 }
 
-export function testGrammarUncompiled(
-    grammar: Root,
+function testAstAux(
+    grammar: AstComponent,
     expectedResults: StringDict[], 
-    symbolName: string = "__MAIN__",
+    symbolName: string = "",
     maxRecursion: number = 4, 
     maxChars: number = 1000
 ): void {
     var outputs: StringDict[] = [];
     try {
-        outputs = [...grammar.generate(symbolName, {}, false, maxRecursion, maxChars)];
+        outputs = [...grammar.generate(symbolName, undefined, false, maxRecursion, maxChars)];
     } catch (e) {
         it("Unexpected Exception", function() {
             console.log(e);
@@ -95,31 +95,41 @@ export function testGrammarUncompiled(
 export function testAst(
     component: AstComponent,
     expectedResults: StringDict[],
-    symbolName: string = "__MAIN__",
+    symbolName: string = "",
     maxRecursion: number = 4,
     maxChars: number = 1000
 ): void {
-    const root = component.getRoot();
-    describe(`Generating from ${symbolName}`, function() {
-        testGrammarUncompiled(root, expectedResults, symbolName, 
+    if (symbolName == "") {
+        testAstAux(component, expectedResults, symbolName,
             maxRecursion, maxChars);
-    });
+    } else {
+        describe(`Generating from \${${symbolName}}`, function() {
+            testAstAux(component, expectedResults, symbolName, 
+                maxRecursion, maxChars);
+        });
+    }   
 }
 
 export function testAstHasTapes(
     component: AstComponent,
     expectedTapes: string[],
-    symbolName: string = "__MAIN__",
+    symbolName: string = "",
     maxRecursion: number = 4,
     maxChars: number = 1000
 ): void {
-    const root = component.getRoot();
-    let tapes = [...root.getTapes(symbolName)];
-    tapes = tapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
-                                // leave out any internal-only tapes, like those created 
-                                // by a Drop().
+    const stack = new CounterStack(2);
+    let target = component.getSymbol(symbolName);
+    
     const bSet = new Set(expectedTapes);
     it(`should have tapes [${[...bSet]}]`, function() {
+        expect(target).to.not.be.undefined;
+        if (target == undefined) {
+            return;
+        }
+        let tapes = [...target.calculateTapes(stack)];
+        tapes = tapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
+                                    // leave out any internal-only tapes, like those created 
+                                    // by a Drop().
         expect(tapes.length).to.equal(bSet.size);
         for (const a of tapes) {
             expect(bSet).to.contain(a);
@@ -146,39 +156,30 @@ export function testHasVocab(
     }
 }
 
-
 export function testAstHasSymbols(
     component: AstComponent,
     expectedSymbols: string[]
 ): void {
-    const root = component.getRoot();
-    let symbolNames = new Set(root.allSymbols());
-    const bSet = new Set(expectedSymbols);
     it(`should have symbols [${expectedSymbols}]`, function() {
         for (const s of expectedSymbols) {
-            expect(symbolNames).to.contain(s);
+            expect(component.getSymbol(s)).to.not.be.undefined;
         }
     });
-}
-
+} 
 
 export function testAstDoesNotHaveSymbols(
     component: AstComponent,
     expectedSymbols: string[]
 ): void {
-    const root = component.getRoot();
-    let symbolNames = new Set(root.allSymbols());
-    const bSet = new Set(expectedSymbols);
     it(`should have symbols [${expectedSymbols}]`, function() {
         for (const s of expectedSymbols) {
-            expect(symbolNames).to.not.contain(s);
+            expect(component.getSymbol(s)).to.be.undefined;
         }
     });
 }
 
-
 export function testErrors(project: Gramble, expectedErrors: [string, number, number, string][]) {
-    const root = project.getRoot();
+
     const devEnv = project.devEnv;
     it(`should have ${expectedErrors.length} errors/warnings`, function() {
         try {
@@ -202,6 +203,7 @@ export function testErrors(project: Gramble, expectedErrors: [string, number, nu
     }
 }
 
+/*
 export function testSymbols(project: Gramble, expectedSymbols: string[]): void {
     for (const symbolName of expectedSymbols) {
         it (`should have a symbol named "${symbolName}"`, function() {
@@ -213,7 +215,7 @@ export function testSymbols(project: Gramble, expectedSymbols: string[]): void {
             }
         });
     }
-}
+} */
 
 /*
 export function testStructure(project: Project, expectedOps: [string, string[]][]) {
@@ -247,12 +249,12 @@ export function testStructure(project: Project, expectedOps: [string, string[]][
 
 export function testProject(project: Gramble,
                             expectedResults: StringDict[], 
-                            symbolName: string = "__MAIN__",
+                            symbolName: string = "",
                             maxRecursion: number = 4, 
                             maxChars: number = 1000): void {
-    const root = project.getRoot();
+    const ast = project.getAST();
     describe(`Generating from ${symbolName}`, function() {
-        testGrammarUncompiled(root, expectedResults, symbolName, 
+        testAstAux(ast, expectedResults, symbolName, 
             maxRecursion, maxChars);
     });
 }

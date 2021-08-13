@@ -2,10 +2,10 @@ import { Seq, Uni, Join, Embed, Ns, Epsilon, Null } from "../src/ast";
 import { 
     t1, t2, t3, 
     testAstHasTapes, 
+    testAstHasSymbols,
+    testAstDoesNotHaveSymbols,
     //testHasVocab, 
     testAst,
-    testAstHasSymbols,
-    testAstDoesNotHaveSymbols, 
     //makeTestNamespace
 } from './testUtilsAst';
 
@@ -20,16 +20,15 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Embed("a") });
         testAstHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
-        testAst(grammar, [{t1: "hi"}], "test.b");
+        testAst(grammar, [{t1: "hi"}], "b");
     });
     
-
     describe('Symbol containing ε', function() {
         const grammar = Ns("test", 
                         { "a": Epsilon(),
                           "b": Embed("a") });
         //testHasVocab(grammar, {t1: 2});
-        testAst(grammar, [{}], "test.b");
+        testAst(grammar, [{}], "b");
     });
 
     describe('Symbol containing ε+ε', function() {
@@ -37,7 +36,7 @@ describe(`${path.basename(module.filename)}`, function() {
                         { "a": Seq(Epsilon(), Epsilon()),
                           "b": Embed("a") });
         //testHasVocab(grammar, {t1: 2});
-        testAst(grammar, [{}], "test.b");
+        testAst(grammar, [{}], "b");
     });
 
     describe('Symbol containing ∅', function() {
@@ -45,7 +44,7 @@ describe(`${path.basename(module.filename)}`, function() {
                         { "a": Null(),
                           "b": Embed("a") });
         //testHasVocab(grammar, {t1: 2});
-        testAst(grammar, [], "test.b");
+        testAst(grammar, [], "b");
     });
 
     describe('Lowercase assignment, uppercase reference', function() {
@@ -54,7 +53,7 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Embed("A") });
         testAstHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
-        testAst(grammar, [{t1: "hi"}], "test.b");
+        testAst(grammar, [{t1: "hi"}], "b");
     });
 
     describe('Uppercase assignment, lowercase reference', function() {
@@ -63,14 +62,14 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Embed("a") });
         testAstHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
-        testAst(grammar, [{t1: "hi"}], "test.b");
+        testAst(grammar, [{t1: "hi"}], "b");
     });
 
     describe('Symbol containing t1:hi+t1:world', function() {
         const grammar = Ns("test",
                         { "a": Seq(t1("hi"), t1("world")),
                           "b": Embed("a") });
-        testAst(grammar, [{t1: "hiworld"}], "test.b");
+        testAst(grammar, [{t1: "hiworld"}], "b");
     });
     
     describe('Two sequences referencing sym t1:hi+t1:world', function() {
@@ -78,7 +77,7 @@ describe(`${path.basename(module.filename)}`, function() {
                         { "a": Seq(t1("h"), t1("i")),
                           "b": Uni(Seq(Embed("a"), t1("world")),
                                    Seq(Embed("a"), t1("kitty")))});
-        testAst(grammar, [{t1: "hiworld"}, {t1:"hikitty"}], "test.b");
+        testAst(grammar, [{t1: "hiworld"}, {t1:"hikitty"}], "b");
     });
 
     describe('Symbol containing t1:hi+t2:world', function() {
@@ -87,7 +86,7 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Embed("a") });
         testAstHasTapes(grammar, ["t1", "t2"]);
         //testHasVocab(grammar, {t1: 2});
-        testAst(grammar, [{t1: "hi", t2: "world"}], "test.b");
+        testAst(grammar, [{t1: "hi", t2: "world"}], "b");
     });
 
     describe('Symbol containing t1:hi|t1:goodbye', function() {
@@ -95,21 +94,21 @@ describe(`${path.basename(module.filename)}`, function() {
                         { "a": Uni(t1("hi"), t1("goodbye")),
                           "b": Embed("a") });
         testAst(grammar, [{t1: "hi"},
-                              {t1: "goodbye"}], "test.b");
+                              {t1: "goodbye"}], "b");
     });
 
     describe('Symbol of (t1:hi ⋈ t1:hi+t2:bye)', function() {
         const grammar = Ns("test",
                         { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))), 
                           "b": Embed("hi2bye") });
-        testAst(grammar, [{t1: "hi", t2: "bye"}], "test.b");
+        testAst(grammar, [{t1: "hi", t2: "bye"}], "b");
     });
 
     describe('Joining sym(t1:hi ⋈ t1:hi+t2:bye) ⋈ t2:bye+t3:yo', function() {
         const grammar = Ns("test",
                     { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))),
                             "b": Join(Embed("hi2bye"), Seq(t2("bye"), t3("yo"))) });
-        testAst(grammar, [{t1: "hi", t2: "bye", t3: "yo"}], "test.b");
+        testAst(grammar, [{t1: "hi", t2: "bye", t3: "yo"}], "b");
     });
 
     describe('Joining t1:hi ⋈ sym(t1:hi+t2:bye ⋈ t2:bye+t3:yo)', function() {
@@ -117,7 +116,7 @@ describe(`${path.basename(module.filename)}`, function() {
                     { "hi2yo": Join(Seq(t1("hi"), t2("bye")), 
                                 Seq(t2("bye"), t3("yo"))),
                             "b": Join(t1("hi"), Embed("hi2yo")) });
-        testAst(grammar, [{t1: "hi", t2: "bye", t3: "yo"}], "test.b");
+        testAst(grammar, [{t1: "hi", t2: "bye", t3: "yo"}], "b");
     });
 
     describe('Joining of sym(t1:hi ⋈ t1:hi+t2:bye)+t2:world', function() {
@@ -125,15 +124,14 @@ describe(`${path.basename(module.filename)}`, function() {
                         { "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))),
                           "b": Seq(Embed("hi2bye"), t2("world")) });
         
-        testAst(grammar, [{t1: "hi", t2: "byeworld"}], "test.b");
+        testAst(grammar, [{t1: "hi", t2: "byeworld"}], "b");
     });
 
     describe('Simple namespace, generating from default symbol', function() {
         const grammar = Ns("myNamespace");
         grammar.addSymbol("x", t1("hello"));
 
-        testAstHasSymbols(grammar, [ "myNamespace.x" ]);
-        testAstDoesNotHaveSymbols(grammar, [ "x" ]);
+        testAstHasSymbols(grammar, [ "x" ]);
 
         testAstHasTapes(grammar, [ "t1" ]);
         testAst(grammar, [{t1: "hello"}]);
@@ -146,8 +144,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const outer = Ns("outerNamespace");
         outer.addSymbol("innerNamespace", inner);
 
-        testAstHasSymbols(outer, [ "outerNamespace.innerNamespace.x" ]);
-        testAstDoesNotHaveSymbols(outer, [ "outerNamespace.x", "innerNamespace.x", "x" ]);
+        testAstHasSymbols(outer, [ "innerNamespace.x" ]);
+        testAstDoesNotHaveSymbols(outer, [ "x" ]);
 
         testAst(outer, [{t1: "hello"}]);
     });
@@ -159,17 +157,16 @@ describe(`${path.basename(module.filename)}`, function() {
         outer.addSymbol("x", t2("goodbye"));
         outer.addSymbol("innerNamespace", inner);
 
-        testAstHasSymbols(outer, [ "outerNamespace.innerNamespace.x",
-                                    "outerNamespace.x" ]);
-        testAstDoesNotHaveSymbols(outer, [ "innerNamespace.x", "x" ]);
+        testAstHasSymbols(outer, [ "innerNamespace.x",
+                                    "x" ]);
 
         testAstHasTapes(outer, [ "t1" ]);
-        testAstHasTapes(outer, [ "t1" ], "outerNamespace.innerNamespace.x");
-        testAstHasTapes(outer, [ "t2" ], "outerNamespace.x");
+        testAstHasTapes(outer, [ "t1" ], "innerNamespace.x");
+        testAstHasTapes(outer, [ "t2" ], "x");
 
         testAst(outer, [{t1: "hello"}]);
-        testAst(outer, [{t1: "hello"}], "outerNamespace.innerNamespace.x");
-        testAst(outer, [{t2: "goodbye"}], "outerNamespace.x");
+        testAst(outer, [{t1: "hello"}], "innerNamespace.x");
+        testAst(outer, [{t2: "goodbye"}], "x");
 
     });
 
@@ -180,17 +177,16 @@ describe(`${path.basename(module.filename)}`, function() {
         outer.addSymbol("x", t2("goodbye"));
         outer.addSymbol("ns", inner);
 
-        testAstHasSymbols(outer, [ "ns.ns.x",
-                                    "ns.x" ]);
-        testAstDoesNotHaveSymbols(outer, [ "x" ]);
+        testAstHasSymbols(outer, [ "ns.x",
+                                    "x" ]);
 
         testAstHasTapes(outer, [ "t1" ]);
-        testAstHasTapes(outer, [ "t1" ], "ns.ns.x");
-        testAstHasTapes(outer, [ "t2" ], "ns.x");
+        testAstHasTapes(outer, [ "t1" ], "ns.x");
+        testAstHasTapes(outer, [ "t2" ], "x");
 
         testAst(outer, [{t1: "hello"}]);
-        testAst(outer, [{t1: "hello"}], "ns.ns.x");
-        testAst(outer, [{t2: "goodbye"}], "ns.x");
+        testAst(outer, [{t1: "hello"}], "ns.x");
+        testAst(outer, [{t2: "goodbye"}], "x");
 
     });
 
@@ -204,7 +200,7 @@ describe(`${path.basename(module.filename)}`, function() {
         outer.addSymbol("ns", inner);
         const global = Ns("test");
         global.addSymbol("ns", outer);
-        testAst(global, [{t1: "hello"}], "test.ns.ns.y");
+        testAst(global, [{t1: "hello"}], "ns.ns.y");
     });
 
     describe('Nested namespaces with identical names, and a symbol in the outer referring to a symbol in the inner', function() {
@@ -216,7 +212,7 @@ describe(`${path.basename(module.filename)}`, function() {
         outer.addSymbol("ns", inner);
         const global = Ns("test");
         global.addSymbol("ns", outer);
-        testAst(global, [{t1: "hello"}], "test.ns.y");
+        testAst(global, [{t1: "hello"}], "ns.y");
     });
     
     describe('Nested namespaces where an embed in outer refers to inner', function() {
@@ -226,13 +222,12 @@ describe(`${path.basename(module.filename)}`, function() {
         outer.addSymbol("inner", inner);
         outer.addSymbol("x", Embed("inner.x"));
 
-        testAstHasSymbols(outer, [ "outer.inner.x",
-                                    "outer.x" ]);
-        testAstDoesNotHaveSymbols(outer, [ "inner.x", "x" ]);
+        testAstHasSymbols(outer, [ "inner.x",
+                                    "x" ]);
 
         testAst(outer, [{t1: "hello"}]);
-        testAst(outer, [{t1: "hello"}], "outer.inner.x");
-        testAst(outer, [{t1: "hello"}], "outer.x");
+        testAst(outer, [{t1: "hello"}], "inner.x");
+        testAst(outer, [{t1: "hello"}], "x");
 
     });
 
@@ -245,13 +240,13 @@ describe(`${path.basename(module.filename)}`, function() {
         outer.addSymbol("inner1", inner1);
         outer.addSymbol("inner2", inner2);
 
-        testAstHasSymbols(outer, [ "outer.inner1.x",
-                                    "outer.inner2.x" ]);
-        testAstDoesNotHaveSymbols(outer, [ "outer.x", "x" ]);
+        testAstHasSymbols(outer, [ "inner1.x",
+                                    "inner2.x" ]);
+        testAstDoesNotHaveSymbols(outer, [ "x" ]);
 
         testAst(outer, [{t1: "hello"}]);
-        testAst(outer, [{t1: "hello"}], "outer.inner1.x");
-        testAst(outer, [{t1: "hello"}], "outer.inner2.x");
+        testAst(outer, [{t1: "hello"}], "inner1.x");
+        testAst(outer, [{t1: "hello"}], "inner2.x");
 
     }); 
 
@@ -264,13 +259,13 @@ describe(`${path.basename(module.filename)}`, function() {
         outer.addSymbol("inner1", inner1);
         outer.addSymbol("inner2", inner2);
 
-        testAstHasSymbols(outer, [ "outer.inner1.x",
-                                    "outer.inner2.x" ]);
-        testAstDoesNotHaveSymbols(outer, [ "outer.x", "x" ]);
+        testAstHasSymbols(outer, [ "inner1.x",
+                                    "inner2.x" ]);
+        testAstDoesNotHaveSymbols(outer, [ "x" ]);
 
         testAst(outer, [{t1: "hello"}]);
-        testAst(outer, [{t1: "hello"}], "outer.inner1.x");
-        testAst(outer, [{t1: "hello"}], "outer.inner2.x");
+        testAst(outer, [{t1: "hello"}], "inner1.x");
+        testAst(outer, [{t1: "hello"}], "inner2.x");
 
     }); 
 });

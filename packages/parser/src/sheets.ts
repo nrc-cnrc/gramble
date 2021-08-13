@@ -1,6 +1,10 @@
 import { BINARY_OPS } from "./headers";
-import { TstAssignment, TstBinaryOp, TstComment, TstEnclosure, TstHeader, TstProject, TstSheet, TstTable, TstTableOp, TstTestNotSuite, TstTestSuite } from "./tsts";
-import { Cell, CellPos, DevEnvironment } from "./util";
+import { 
+    TstAssignment, TstBinaryOp, TstComment, 
+    TstEnclosure, TstHeader, TstProject, 
+    TstSheet, TstTable, TstTableOp, 
+    TstUnitTest, TstNegativeUnitTest, TstComponent } from "./tsts";
+import { Cell, CellPos, DevEnvironment, Gen, StringDict } from "./util";
 
 
 /**
@@ -39,9 +43,9 @@ function constructOp(cell: SheetCell): TstEnclosure {
     } else if (trimmedTextLower == "table") {
         newEnclosure = new TstTableOp(cell);
     } else if (trimmedTextLower == "test") {
-        newEnclosure = new TstTestSuite(cell);
+        newEnclosure = new TstUnitTest(cell);
     } else if (trimmedTextLower == "testnot") {
-        newEnclosure = new TstTestNotSuite(cell);
+        newEnclosure = new TstNegativeUnitTest(cell);
     } else if (cell.pos.col == 0) {
         // if it's none of these special operators, it's an assignment,
         // but note that assignments can only occur in column 0.  if an 
@@ -59,7 +63,25 @@ function constructOp(cell: SheetCell): TstEnclosure {
     return newEnclosure;
 }
 
-export class SheetProject {
+export abstract class SheetComponent {
+
+    public abstract toTST(): TstComponent;
+
+    public *generate(
+        symbolName: string = "",
+        query: StringDict = {},
+        random: boolean = false,
+        maxRecursion: number = 4, 
+        maxChars: number = 1000
+    ): Gen<StringDict> {
+        yield* this.toTST().generate(symbolName, query, 
+                    random, maxRecursion, maxChars);
+
+    }
+
+}
+
+export class SheetProject extends SheetComponent {
 
     protected sheets: {[name: string]: Sheet} = {};
 
@@ -67,8 +89,8 @@ export class SheetProject {
         public devEnv: DevEnvironment,
         public mainSheetName: string
     ) { 
+        super();
         this.addSheet(mainSheetName);
-
     }
     
     public hasSheet(name: string): boolean {
@@ -168,13 +190,15 @@ export class SheetProject {
 
 }
 
-export class Sheet {
+export class Sheet extends SheetComponent {
 
     constructor(
         public project: SheetProject,
         public name: string,
         public cells: string[][]
-    ) { }
+    ) { 
+        super();
+    }
 
     //public cells: SheetCell[][] = [];
 

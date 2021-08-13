@@ -179,7 +179,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "ooo"},
                               {t1: "oooo"},
                               {t1: "ooooo"}],
-                    "__MAIN__", undefined, 6);
+                    "", undefined, 6);
     });
 
     describe('t1:o*', function() {
@@ -190,7 +190,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "ooo"},
                               {t1: "oooo"},
                               {t1: "ooooo"}],
-                    "__MAIN__", undefined, 6);
+                    "", undefined, 6);
     });
 
     describe('t1:h*+t1:i', function() {
@@ -201,7 +201,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "hhhi"},
                               {t1: "hhhhi"},
                               {t1: "hhhhhi"}],
-                    "__MAIN__", undefined, 7);
+                    "", undefined, 7);
     });
     
     describe('t1:h+t1:i*', function() {
@@ -212,7 +212,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "hiii"},
                               {t1: "hiiii"},
                               {t1: "hiiiii"}],
-                    "__MAIN__", undefined, 7);
+                    "", undefined, 7);
     });
     
     describe('(t1:h+t1:i)*', function() {
@@ -221,7 +221,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "hi"},
                               {t1: "hihi"},
                               {t1: "hihihi"}],
-                    "__MAIN__", undefined, 7);
+                    "", undefined, 7);
     });
 
     
@@ -231,7 +231,7 @@ describe(`${path.basename(module.filename)}`, function() {
                             {"t1":"h","t2":"i"},
                             {"t1":"hh","t2":"ii"},
                             {"t1":"hhh","t2":"iii"}],
-                    "__MAIN__", undefined, 7);
+                    "", undefined, 7);
     });
 
     describe('(t1:h|t2:i)*', function() {
@@ -246,7 +246,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 {"t1":"hh","t2":"i"},
                                 {"t1":"h","t2":"ii"},
                                 {"t2":"iii"}],
-                    "__MAIN__", undefined, 4);
+                    "", undefined, 4);
     });
 
     describe('(t1:a+t2:a|t1:b+t2:b)*', function() {
@@ -259,7 +259,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 {"t1":"ab","t2":"ab"},
                                 {"t1":"ba","t2":"ba"},
                                 {"t1":"bb","t2":"bb"}],
-                    "__MAIN__", undefined, 5);
+                    "", undefined, 5);
     });
 
     describe('Filtering t1:h[ t2:h* ]', function() {

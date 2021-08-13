@@ -16,9 +16,9 @@ import {
     constructNegation,
     NULL,
     constructMemo,
-    constructMatch
+    constructMatch,
+    SymbolTable
 } from "./derivs";
-import { LiteralHeader } from "./headers";
 
 import { RenamedTape, Tape, TapeCollection } from "./tapes";
 import { Cell, DummyCell, flatten, Gen, setDifference, setUnion, StringDict } from "./util";
@@ -52,15 +52,17 @@ export { CounterStack, Expr };
 
 export abstract class AstComponent {
 
+    protected expr: Expr | undefined = undefined;
+    public tapes: Set<string> | undefined = undefined;
+
     constructor(
         public cell: Cell
     ) { }
 
-    public tapes: Set<string> | undefined = undefined;
 
     public abstract getChildren(): AstComponent[];
 
-    public abstract constructExpr(ns: Root): Expr;
+    public abstract constructExpr(symbols: SymbolTable): Expr;
 
     
     /**
@@ -73,6 +75,19 @@ export abstract class AstComponent {
     public collectVocab(tapes: Tape, stack: string[] = []): void { 
         for (const child of this.getChildren()) {
             child.collectVocab(tapes, stack);
+        }
+    }
+
+    public runUnitTests(): void {
+        this.qualifyNames();
+        this.calculateTapes(new CounterStack(2));
+        this.constructExpr({});
+        this.runUnitTestsAux();
+    }
+
+    public runUnitTestsAux(): void {
+        for (const child of this.getChildren()) {
+            child.runUnitTestsAux();
         }
     }
 
@@ -95,16 +110,50 @@ export abstract class AstComponent {
         return tapes;
     }
 
-    public getRoot(): Root {
+    public allSymbols(): string[] {
+        return [];
+    }
+    
+    public getSymbol(name: string): AstComponent | undefined {
+        if (name == "") {
+            return this;
+        }
+        return undefined;
+    }
+
+    public *generate(
+        symbolName: string = "",
+        query: StringDict = {},
+        random: boolean = false,
+        maxRecursion: number = 4, 
+        maxChars: number = 1000
+    ): Gen<StringDict> {
+
         this.qualifyNames();
-        const stack = new CounterStack(2);
-        const tapes = this.calculateTapes(stack);
-        const root = new Root();
-        const expr = this.constructExpr(root);
-        root.addComponent("__MAIN__", this);
-        root.addSymbol("__MAIN__", expr);
-        root.addTapes("__MAIN__", tapes);
-        return root;
+        this.calculateTapes(new CounterStack(2));
+        this.constructExpr({});
+
+        let targetComponent = this.getSymbol(symbolName);
+        if (targetComponent == undefined) {
+            throw new Error(`Missing symbol: ${symbolName}`);
+        }
+        const allTapes = new TapeCollection();
+        targetComponent.collectVocab(allTapes);
+
+        if (Object.keys(query).length > 0) {
+            const queryLiterals: AstComponent[] = [];
+            for (const [key, value] of Object.entries(query)) {
+                const lit = new AstLiteral(DUMMY_CELL, key, value);
+                queryLiterals.push(lit);
+            }
+            const querySeq = new AstSequence(DUMMY_CELL, queryLiterals);
+            targetComponent = new AstFilter(DUMMY_CELL, targetComponent, querySeq);
+        }
+
+        targetComponent.calculateTapes(new CounterStack(2));
+        targetComponent.collectVocab(allTapes); // in case there's more vocab
+        const expr = targetComponent.constructExpr({});
+        yield* expr.generate(allTapes, random, maxRecursion, maxChars);
     }
 }
 
@@ -123,12 +172,15 @@ export class AstEpsilon extends AstAtomic {
         return this.tapes;
     }
 
-    public constructExpr(ns: Root): Expr {
-        return EPSILON;
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            this.expr = EPSILON;
+        }
+        return this.expr;
     }
 }
 
-class AstNull extends AstAtomic {
+export class AstNull extends AstAtomic {
 
     public calculateTapes(stack: CounterStack): Set<string> {
         if (this.tapes == undefined) {
@@ -137,8 +189,11 @@ class AstNull extends AstAtomic {
         return this.tapes;
     }
 
-    public constructExpr(ns: Root): Expr {
-        return NULL;
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            return NULL;
+        }
+        return this.expr;
     }
 }
 
@@ -164,8 +219,11 @@ export class AstLiteral extends AstAtomic {
         return this.tapes;
     }
 
-    public constructExpr(ns: Root): Expr {
-        return constructLiteral(this.tape, this.text);
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            this.expr = constructLiteral(this.tape, this.text);
+        }
+        return this.expr;
     }
 }
 
@@ -189,8 +247,11 @@ export class AstDot extends AstAtomic {
         return this.tapes;
     }
 
-    public constructExpr(ns: Root): Expr {
-        return constructDot(this.tape);
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            this.expr = constructDot(this.tape);
+        }
+        return this.expr;
     }
 }
 
@@ -210,9 +271,12 @@ abstract class AstNAry extends AstComponent {
 
 export class AstSequence extends AstNAry {
 
-    public constructExpr(ns: Root): Expr {
-        const childExprs = this.children.map(s => s.constructExpr(ns));
-        return constructSequence(...childExprs);
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {        
+            const childExprs = this.children.map(s => s.constructExpr(symbols));
+            this.expr = constructSequence(...childExprs);
+        }
+        return this.expr;
     }
 
     public finalChild(): AstComponent {
@@ -236,9 +300,12 @@ export class AstSequence extends AstNAry {
 
 export class AstAlternation extends AstNAry {
 
-    public constructExpr(ns: Root): Expr {
-        const childExprs = this.children.map(s => s.constructExpr(ns));
-        return constructAlternation(...childExprs);
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const childExprs = this.children.map(s => s.constructExpr(symbols));
+            this.expr = constructAlternation(...childExprs);
+        } 
+        return this.expr;
     }
 }
 
@@ -259,10 +326,13 @@ abstract class AstBinary extends AstComponent {
 
 export class AstIntersection extends AstBinary {
 
-    public constructExpr(ns: Root): Expr {
-        const left = this.child1.constructExpr(ns);
-        const right = this.child2.constructExpr(ns);
-        return constructIntersection(left, right);
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const left = this.child1.constructExpr(symbols);
+            const right = this.child2.constructExpr(symbols);
+            this.expr = constructIntersection(left, right);
+        }
+        return this.expr;
     }
 }
 
@@ -277,83 +347,96 @@ function fillOutWithDotStar(state: Expr, tapes: Set<string>) {
 
 export class AstJoin extends AstBinary {
 
-    public constructExpr(ns: Root): Expr {
-        if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
+                throw new Error("Getting Brz expression with undefined tapes");
+            }
+
+            const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
+            const child2OnlyTapes = setDifference(this.child2.tapes, this.child1.tapes);
+
+            const child1 = this.child1.constructExpr(symbols);
+            const child1Etc = fillOutWithDotStar(child1, child2OnlyTapes);
+            const child2 = this.child2.constructExpr(symbols);
+            const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
+            this.expr = constructIntersection(child1Etc, child2Etc);
         }
-
-        const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
-        const child2OnlyTapes = setDifference(this.child2.tapes, this.child1.tapes);
-
-        const child1 = this.child1.constructExpr(ns);
-        const child1Etc = fillOutWithDotStar(child1, child2OnlyTapes);
-        const child2 = this.child2.constructExpr(ns);
-        const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
-        return constructIntersection(child1Etc, child2Etc);
+        return this.expr;
     }
 
 }
 
 export class AstFilter extends AstBinary {
 
-    public constructExpr(ns: Root): Expr {
-        if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
+                throw new Error("Getting Brz expression with undefined tapes");
+            }
+
+            const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
+
+            const child1 = this.child1.constructExpr(symbols);
+            const child2 = this.child2.constructExpr(symbols);
+            const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
+            this.expr = constructIntersection(child1, child2Etc);
         }
+        return this.expr;
 
-        const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
-
-        const child1 = this.child1.constructExpr(ns);
-        const child2 = this.child2.constructExpr(ns);
-        const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
-        return constructIntersection(child1, child2Etc);
     }
 }
 
 export class AstStartsWith extends AstBinary {
 
-    public constructExpr(ns: Root): Expr {
-        if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
+                throw new Error("Getting Brz expression with undefined tapes");
+            }
+
+            const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
+
+            const child1 = this.child1.constructExpr(symbols);
+            var child2 = this.child2.constructExpr(symbols);
+
+            for (const tape of this.child2.tapes) {
+                const dot = constructDot(tape);
+                const dotStar = constructStar(dot);
+                child2 = constructBinaryConcat(child2, dotStar);
+            }
+
+            const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
+            this.expr = constructIntersection(child1, child2Etc);
         }
-
-        const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
-
-        const child1 = this.child1.constructExpr(ns);
-        var child2 = this.child2.constructExpr(ns);
-
-        for (const tape of this.child2.tapes) {
-            const dot = constructDot(tape);
-            const dotStar = constructStar(dot);
-            child2 = constructBinaryConcat(child2, dotStar);
-        }
-
-        const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
-        return constructIntersection(child1, child2Etc);
+        return this.expr;
     }
 
 }
 
 export class AstEndsWith extends AstBinary {
 
-    public constructExpr(ns: Root): Expr {
-        if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
+                throw new Error("Getting Brz expression with undefined tapes");
+            }
+
+            const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
+
+            const child1 = this.child1.constructExpr(symbols);
+            var child2 = this.child2.constructExpr(symbols);
+
+            for (const tape of this.child2.tapes) {
+                const dot = constructDot(tape);
+                const dotStar = constructStar(dot);
+                child2 = constructBinaryConcat(dotStar, child2);
+            }
+
+            const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
+            this.expr = constructIntersection(child1, child2Etc);
         }
-
-        const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
-
-        const child1 = this.child1.constructExpr(ns);
-        var child2 = this.child2.constructExpr(ns);
-
-        for (const tape of this.child2.tapes) {
-            const dot = constructDot(tape);
-            const dotStar = constructStar(dot);
-            child2 = constructBinaryConcat(dotStar, child2);
-        }
-
-        const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
-        return constructIntersection(child1, child2Etc);
+        return this.expr;
     }
 
 }
@@ -361,30 +444,32 @@ export class AstEndsWith extends AstBinary {
 
 export class AstContains extends AstBinary {
 
-    public constructExpr(ns: Root): Expr {
-        if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
+                throw new Error("Getting Brz expression with undefined tapes");
+            }
+
+            const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
+
+            const child1 = this.child1.constructExpr(symbols);
+            var child2 = this.child2.constructExpr(symbols);
+
+            for (const tape of this.child2.tapes) {
+                const dot = constructDot(tape);
+                const dotStar = constructStar(dot);
+                child2 = constructSequence(dotStar, child2, dotStar);
+            }
+
+            const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
+            this.expr = constructIntersection(child1, child2Etc);
         }
-
-        const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
-
-        const child1 = this.child1.constructExpr(ns);
-        var child2 = this.child2.constructExpr(ns);
-
-        for (const tape of this.child2.tapes) {
-            const dot = constructDot(tape);
-            const dotStar = constructStar(dot);
-            child2 = constructSequence(dotStar, child2, dotStar);
-        }
-
-        const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
-        return constructIntersection(child1, child2Etc);
+        return this.expr;
     }
 
 }
 
-
-export abstract class AstUnary extends AstComponent {
+export class AstUnary extends AstComponent {
 
     constructor(
         cell: Cell,
@@ -395,6 +480,10 @@ export abstract class AstUnary extends AstComponent {
 
     public getChildren(): AstComponent[] { 
         return [this.child]; 
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        return this.child.constructExpr(symbols);
     }
 }
 
@@ -428,9 +517,12 @@ export class AstRename extends AstUnary {
         return this.tapes;
     }
     
-    public constructExpr(ns: Root): Expr {
-        const childExpr = this.child.constructExpr(ns);
-        return constructRename(childExpr, this.fromTape, this.toTape);
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const childExpr = this.child.constructExpr(symbols);
+            this.expr = constructRename(childExpr, this.fromTape, this.toTape);
+        }
+        return this.expr;
     }
 }
 
@@ -445,21 +537,27 @@ export class AstRepeat extends AstUnary {
         super(cell, child);
     }
 
-    public constructExpr(ns: Root): Expr {
-        const childExpr = this.child.constructExpr(ns);
-        return constructRepeat(childExpr, this.minReps, this.maxReps);
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const childExpr = this.child.constructExpr(symbols);
+            this.expr = constructRepeat(childExpr, this.minReps, this.maxReps);
+        }
+        return this.expr;
     }
 }
 
 export class AstNegation extends AstUnary {
 
-    public constructExpr(ns: Root): Expr {
-        if (this.child.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
-        }
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            if (this.child.tapes == undefined) {
+                throw new Error("Getting Brz expression with undefined tapes");
+            }
 
-        const childExpr = this.child.constructExpr(ns);
-        return constructNegation(childExpr, this.child.tapes);
+            const childExpr = this.child.constructExpr(symbols);
+            this.expr = constructNegation(childExpr, this.child.tapes);
+        }
+        return this.expr;
     }
 }
 
@@ -501,21 +599,24 @@ export class AstHide extends AstUnary {
         return this.tapes;
     }
     
-    public constructExpr(ns: Root): Expr {
+    public constructExpr(symbols: SymbolTable): Expr {
 
-        if (this.child.tapes == undefined) {
-            throw new Error("Trying to construct an expression before tapes are calculated");
-        }
-
-        if (!this.child.tapes.has(this.tape)) {            
-            if (this.cell != undefined) {
-                this.cell.markError("error", "Hiding missing tape",
-                `The grammar to the left does not contain the tape ${this.tape}. Available tapes: [${[...this.child.tapes]}]`);
+        if (this.expr == undefined) {
+            if (this.child.tapes == undefined) {
+                throw new Error("Trying to construct an expression before tapes are calculated");
             }
-        }
 
-        const childExpr = this.child.constructExpr(ns);
-        return constructRename(childExpr, this.tape, this.toTape);
+            if (!this.child.tapes.has(this.tape)) {            
+                if (this.cell != undefined) {
+                    this.cell.markError("error", "Hiding missing tape",
+                    `The grammar to the left does not contain the tape ${this.tape}. Available tapes: [${[...this.child.tapes]}]`);
+                }
+            }
+
+            const childExpr = this.child.constructExpr(symbols);
+            this.expr = constructRename(childExpr, this.tape, this.toTape);
+        }
+        return this.expr;
     }
 }
 
@@ -529,9 +630,12 @@ export class AstMatch extends AstUnary {
         super(cell, child);
     }
 
-    public constructExpr(ns: Root): Expr {
-        const childExpr = this.child.constructExpr(ns);
-        return constructMatch(childExpr, this.relevantTapes);
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const childExpr = this.child.constructExpr(symbols);
+            this.expr = constructMatch(childExpr, this.relevantTapes);
+        }
+        return this.expr;
     }
 }
 
@@ -562,11 +666,27 @@ export class AstNamespace extends AstComponent {
     }
 
     public getSymbol(symbolName: string): AstComponent | undefined {
-        return this.symbols.get(symbolName);
+
+        if (symbolName == "") {
+            return this;
+        }
+        const pieces = symbolName.split(".");
+        const child = this.symbols.get(pieces[0]);
+        if (child == undefined) {
+            return undefined;
+        }
+        const remnant = pieces.slice(1).join(".");
+        return child.getSymbol(remnant);
     }
 
     public allSymbols(): string[] {
-        return [...this.symbols.keys()];
+        const results: string[] = [];
+        for (const [name, referent] of this.symbols.entries()) {
+            results.push(name);
+            for (const subname of referent.allSymbols())
+            results.push(`${name}.${subname}`);
+        }
+        return results;
     }
 
     public getChildren(): AstComponent[] { 
@@ -686,33 +806,32 @@ export class AstNamespace extends AstComponent {
         lastChild.collectVocab(tapes, stack);
     }
 
-
     /**
      * The Brz expression for a Namespace object is that of 
      * its last-defined child.  (Note that JS Maps are ordered;
      * you can rely on the last-entered entry to be the last
      * entry when you iterate.)
      */
-    public constructExpr(ns: Root): Expr {
+    public constructExpr(symbols: SymbolTable): Expr {
 
-        let expr: Expr = EPSILON;
+        if (this.expr == undefined) {
+            this.expr = EPSILON // just in case
 
-        for (const [name, referent] of this.symbols) {
-            const qualifiedName = this.qualifiedNames.get(name);
-            if (qualifiedName == undefined) {
-                throw new Error("Getting Brz expressions without having qualified names yet");
+            for (const [name, referent] of this.symbols) {
+                const qualifiedName = this.qualifiedNames.get(name);
+                if (qualifiedName == undefined) {
+                    throw new Error("Getting Brz expressions without having qualified names yet");
+                }
+                if (referent.tapes == undefined) {
+                    throw new Error("Getting Brz expressions without having calculated tapes");
+                }
+                this.expr = referent.constructExpr(symbols);
+                // memoize every expr
+                this.expr = constructMemo(this.expr);
+                symbols[qualifiedName] = this.expr;
             }
-            if (referent.tapes == undefined) {
-                throw new Error("Getting Brz expressions without having calculated tapes");
-            }
-            expr = referent.constructExpr(ns);
-            // memoize every expr
-            expr = constructMemo(expr);
-            ns.addComponent(qualifiedName, referent);
-            ns.addSymbol(qualifiedName, expr);
-            ns.addTapes(qualifiedName, referent.tapes);
         }
-        return expr;
+        return this.expr;
     }
 }
 
@@ -772,159 +891,66 @@ export class AstEmbed extends AstAtomic {
         this.referent.collectVocab(tapes, newStack);
     }
 
-    public constructExpr(ns: Root): Expr {
-        if (this.referent == undefined) {
-            if (this.cell != undefined) {
-                this.cell.markError("error", "Unknown symbol", `Undefined symbol ${this.name}`);
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            if (this.referent == undefined) {
+                if (this.cell != undefined) {
+                    this.cell.markError("error", "Unknown symbol", `Undefined symbol ${this.name}`);
+                }
+                return EPSILON;
             }
-            return EPSILON;
+            this.expr = constructEmbed(this.qualifiedName, symbols);
         }
-        return constructEmbed(this.qualifiedName, ns);
+        return this.expr;
     }
 }
 
-export class Root implements INamespace {
-
-    /**
-     * If we're memoizing results, something has to keep track of the 
-     * tapes (and thus vocab) between invocations of generate, or else 
-     * those results will potentially be nonsense on later invocations.
-     */
-    protected allTapes: TapeCollection | undefined = undefined;
+export class AstUnitTest extends AstUnary {
 
     constructor(
-        public components: Map<string, AstComponent> = new Map(),
-        public exprs: Map<string, Expr> = new Map(),
-        public tapes: Map<string, Set<string>> = new Map()
-    ) { }
-
-    public addComponent(name: string, comp: AstComponent): void {
-        this.components.set(name, comp);
+        cell: Cell,
+        child: AstComponent,
+        protected tests: AstComponent[]
+    ) {
+        super(cell, child)
     }
 
-    public addSymbol(name: string, state: Expr): void {
-        this.exprs.set(name, state);
-    }
-    
-    public addTapes(name: string, tapes: Set<string>): void {
-        this.tapes.set(name, tapes);
-    }
+    public runUnitTestsAux(): void {
+        super.runUnitTestsAux();
 
-    public register(symbolName: string): void { }
-
-    public getSymbol(
-        name: string, 
-        stack: CounterStack | undefined = undefined
-    ): Expr | undefined {
-        return this.exprs.get(name);
-    }
-
-    public getComponent(name: string): AstComponent | undefined {
-        return this.components.get(name);
-    }
-    
-    public allSymbols(): string[] {
-        return [...this.exprs.keys()];
-    }
-
-    public getTapes(
-        name: string
-    ): Set<string> {
-        const tapes = this.tapes.get(name);
-        if (tapes == undefined) {
-            return new Set();
+        for (const test of this.tests) {
+            const testingState = new AstFilter(test.cell, this.child, test);
+            const results = [...testingState.generate()];
+            this.markResults(test.cell, results);
         }
-        return tapes;
     }
 
-    public compileSymbol(
-        name: string, 
-        allTapes: TapeCollection, 
-        stack: CounterStack,
-        compileLevel: number
-    ): void { }
-
-    public *generate(
-        symbolName: string = "__MAIN__",
-        query: StringDict | undefined = undefined,
-        random: boolean = false,
-        maxRecursion: number = 4, 
-        maxChars: number = 1000
-    ): Gen<StringDict> {
-
-        let component = this.components.get(symbolName);
-        if (component == undefined) {
-            throw new Error(`Cannot generate from undefined symbol ${symbolName}`);
+    public markResults(testCell: Cell, results: StringDict[]): void {
+        if (results.length == 0) {
+            testCell.markError("error", "Failed unit test",
+                "The grammar above has no outputs compatible with this row.");
         }
-
-        if (this.allTapes == undefined) {
-            this.allTapes = new TapeCollection();
-            component.collectVocab(this.allTapes);
-        }
-
-        if (query != undefined) {
-                
-            // create the query, if applicable
-            const queryLiterals: AstComponent[] = [];
-            for (const tapeName in query) {
-                const value = query[tapeName];
-                const inputLiteral = new AstLiteral(DUMMY_CELL, tapeName, value);
-                queryLiterals.push(inputLiteral);
-            }
-            const queryComponent = new AstSequence(DUMMY_CELL, queryLiterals);
-
-            // in case there's extra vocab in the query, add it to the tapes/vocab
-            queryComponent.collectVocab(this.allTapes);
-
-            // filter the grammar with the query
-            component = new AstFilter(DUMMY_CELL, component, queryComponent);
-            
-            // make sure the new grammar has tapes
-            const stack = new CounterStack(2);
-            const t = component.calculateTapes(stack);
-            
-        }
-        
-        const expr = component.constructExpr(this);
-        yield* expr.generate(this.allTapes, random, maxRecursion, maxChars);
     }
 
-    /*
-    public *parse(inputs: StringDict,
-                randomize: boolean = false,
-                maxRecursion: number = 4, 
-                maxChars: number = 1000): Gen<StringDict> {
-
-        const inputLiterals: AstComponent[] = [];
-        for (const tapeName in inputs) {
-            const value = inputs[tapeName];
-            const inputLiteral = new AstLiteral(DUMMY_CELL, tapeName, value);
-            inputLiterals.push(inputLiteral);
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            this.expr = this.child.constructExpr(symbols);
         }
-
-        var startState: AstComponent = this;
-
-        if (inputLiterals.length > 0) {
-            const inputSeq = Seq(...inputLiterals);
-            startState = Filter(startState, inputSeq); 
-            const tapeCollection = this.getAllTapes(); // in case this state has already
-                    // been compiled, we need to start the algorithm with the same vocab.
-                    // if it hasn't been compiled, .allTapes always starts as undefined anyway,
-                    // so it's no change.
-            inputSeq.collectVocab(tapeCollection, []);   
-                                        // add any new characters in the inputs to the vocab
-                                        //  this would actually happen automatically
-                                        // anyway, but I'd rather do it explicitly here 
-                                        // than rely on an undocumented side-effect
-            startState.allTapes = tapeCollection; 
-        }
-
-        yield *startState.generate(randomize, maxRecursion, maxChars);
+        return this.expr;
     }
-
-    */
 }
 
+
+export class AstNegativeUnitTest extends AstUnitTest {
+
+    public markResults(testCell: Cell, results: StringDict[]): void {
+        if (results.length != 0) {
+            testCell.markError("error", "Failed unit test",
+                "The grammar above has outputs compatible with this row.");
+        }
+    } 
+
+}
 
 const DUMMY_CELL = new DummyCell();
 

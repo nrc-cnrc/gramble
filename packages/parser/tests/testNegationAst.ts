@@ -119,7 +119,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('~(~t1:hello)', function() {
         const grammar = Not(Not(t1("hello")));
-        testAst(grammar, [{t1: "hello"}], "__MAIN__", 4, 30);
+        testAst(grammar, [{t1: "hello"}], "", 4, 30);
     });
 
     describe('~t1:hi', function() {
@@ -137,7 +137,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii' }, { t1: 'ihhh' }, { t1: 'ihhi' },
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }];
-        testAst(grammar, expectedResults, "__MAIN__", 4, 5);
+        testAst(grammar, expectedResults, "", 4, 5);
     });
 
     
@@ -156,7 +156,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii' }, { t1: 'ihhh' }, { t1: 'ihhi' },
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }];
-        testAst(grammar, expectedResults, "__MAIN__", 4, 5);
+        testAst(grammar, expectedResults, "", 4, 5);
     });
     
     
@@ -184,7 +184,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }, 
             { t2: "hi"}];
-        testAst(grammar, expectedResults, "__MAIN__", 4, 5);
+        testAst(grammar, expectedResults, "", 4, 5);
     });
     
     describe('~t1:h', function() {
@@ -195,7 +195,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hh' },  
             { t1: 'hhh' },
             { t1: 'hhhh' }];
-        testAst(grammar, expectedResults, "__MAIN__", 4, 5);
+        testAst(grammar, expectedResults, "", 4, 5);
     });
 
     
@@ -207,7 +207,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhh' },  
             { t1: 'hhhh' },
             { t1: 'hhhhh' }];
-        testAst(grammar, expectedResults, "__MAIN__", 4, 6);
+        testAst(grammar, expectedResults, "", 4, 6);
     });
 
     describe('(~t1:h)+t1:h', function() {
@@ -218,7 +218,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhh' },  
             { t1: 'hhhh' },
             { t1: 'hhhhh' }];
-        testAst(grammar, expectedResults, "__MAIN__", 4, 6);
+        testAst(grammar, expectedResults, "", 4, 6);
     });
     
     describe('~t1:h{0,1}', function() {
@@ -228,7 +228,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hh' },         
             { t1: 'hhh' },
             { t1: 'hhhh' }];
-        testAst(grammar, expectedResults, "__MAIN__", 4, 5);
+        testAst(grammar, expectedResults, "", 4, 5);
     });
 
 
@@ -238,7 +238,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {},            
             { t1: 'hhhh' }];
-        testAst(grammar, expectedResults, "__MAIN__", 4, 5);
+        testAst(grammar, expectedResults, "", 4, 5);
     });
 
     describe('Join(~t1:hi & t2:hi)', function() {
@@ -256,7 +256,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii', t2: "hi" }, { t1: 'ihhh', t2: "hi" }, { t1: 'ihhi', t2: "hi" },
             { t1: 'ihih', t2: "hi" }, { t1: 'ihii', t2: "hi" }, { t1: 'iihh', t2: "hi" },
             { t1: 'iihi', t2: "hi" }, { t1: 'iiih', t2: "hi" }, { t1: 'iiii', t2: "hi" }];
-        testAst(grammar, expectedResults, "__MAIN__", 4, 7);
+        testAst(grammar, expectedResults, "", 4, 7);
     });
     
     describe('Join(t2:hi & ~t1:hi)', function() {
@@ -279,7 +279,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t2: 'hi', t1: 'ihih' }, { t2: 'hi', t1: 'ihii' },
             { t2: 'hi', t1: 'iihh' }, { t2: 'hi', t1: 'iihi' },
             { t2: 'hi', t1: 'iiih' }, { t2: 'hi', t1: 'iiii' }];
-        testAst(grammar, expectedResults, "__MAIN__", 4, 7);
+        testAst(grammar, expectedResults, "", 4, 7);
     }); 
 
     describe('~(t1:h+t2:h)', function() {
@@ -294,7 +294,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"i","t1":"hh"},
             {"t2":"iii"},
             {"t1":"hhh"}];
-            testAst(grammar, expectedResults, "__MAIN__", 4, 4);
+            testAst(grammar, expectedResults, "", 4, 4);
     }); 
 
     describe('~(t1:h|t2:h)', function() {
@@ -304,7 +304,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"ii"},            {"t1":"hh"},
             {"t2":"ii","t1":"h"},   {"t2":"i","t1":"hh"},
             {"t2":"iii"},           {"t1":"hhh"}];
-            testAst(grammar, expectedResults, "__MAIN__", 4, 4);
+            testAst(grammar, expectedResults, "", 4, 4);
     }); 
 
 });

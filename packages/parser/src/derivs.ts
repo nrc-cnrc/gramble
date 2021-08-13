@@ -107,6 +107,8 @@ import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } f
  * have to take an extra step to do so.
  */
 
+export type SymbolTable = {[key: string]: Expr};
+
 export class CounterStack {
 
     constructor(
@@ -706,19 +708,19 @@ class IntersectExpr extends BinaryExpr {
 
     constructor(
         public symbolName: string,
-        public namespace: INamespace,
+        public symbols: SymbolTable,
         public _child: Expr | undefined = undefined
     ) { 
         super();
     }
 
     public get id(): string {
-        return `${this.constructor.name}(${this.symbolName})`;
+        return `\${${this.symbolName}}`;
     }
 
     public getChild(stack: CounterStack | undefined = undefined): Expr {
         if (this._child == undefined) {
-            const child = this.namespace.getSymbol(this.symbolName, stack);
+            const child = this.symbols[this.symbolName];
             if (child == undefined) {
                 // this is an error, due to the programmer referring to an undefined
                 // symbol, but now is not the time to complain. 
@@ -752,7 +754,7 @@ class IntersectExpr extends BinaryExpr {
 
         for (const [childchildTape, childTarget, childNext] of 
                         child.deriv(tape, target, stack)) {
-            const successor = new EmbedExpr(this.symbolName, this.namespace, childNext);
+            const successor = constructEmbed(this.symbolName, this.symbols, childNext);
             yield [childchildTape, childTarget, successor];
         }
     }
@@ -1267,12 +1269,19 @@ export function constructRepeat(
     return constructMaybe(constructSequence(child, tail));
 }
 
-export function constructEmbed(symbolName: string, ns: INamespace): Expr {
-    const symbol = ns.getSymbol(symbolName, undefined);
-    if (symbol instanceof EpsilonExpr) {
+export function constructEmbed(
+    symbolName: string, 
+    symbols: SymbolTable,
+    child: Expr | undefined = undefined
+): Expr {
+    const symbol = symbols[symbolName];
+    if (symbol != undefined && symbol instanceof EpsilonExpr) {
         return symbol;
     }
-    return new EmbedExpr(symbolName, ns);
+    if (child != undefined && child instanceof EpsilonExpr) {
+        return child;
+    }
+    return new EmbedExpr(symbolName, symbols, child);
 }
 
 export function constructNegation(child: Expr, tapes: Set<string>): Expr {

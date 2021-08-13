@@ -5,17 +5,36 @@
  * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { AstComponent, AstNamespace, AstAlternation, AstEpsilon } from "./ast";
-import { CellPos, DummyCell } from "./util";
+import { AstComponent, AstNamespace, AstAlternation, AstEpsilon, AstUnitTest, AstNegativeUnitTest, AstUnary, AstNull } from "./ast";
+import { CellPos, DummyCell, Gen, StringDict } from "./util";
 import { BINARY_OPS, DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
 
-
 export abstract class TstComponent {
+
+    public *generate(
+        symbolName: string = "",
+        query: StringDict = {},
+        random: boolean = false,
+        maxRecursion: number = 4, 
+        maxChars: number = 1000
+    ): Gen<StringDict> {
+        yield* this.toAST().generate(symbolName, query, 
+                    random, maxRecursion, maxChars);
+
+    }
+
+    public abstract toAST(): AstComponent;
+
+}
+
+export abstract class TstCellComponent extends TstComponent {
 
     constructor(
         public cell: SheetCell
-    ) { }
+    ) { 
+        super();
+    }
 
     public get text(): string {
         return this.cell.text;
@@ -34,9 +53,14 @@ export abstract class TstComponent {
     public markWarning(shortMsg: string, msg: string): void {
         this.cell.markError("warning", shortMsg, msg);
     }
+    
+    public toAST(): AstComponent {
+        return new AstEpsilon(this.cell);
+    }
+
 }
 
-export class TstHeader extends TstComponent {
+export class TstHeader extends TstCellComponent {
 
     protected header: Header;
 
@@ -74,7 +98,7 @@ export class TstHeader extends TstComponent {
 
 }
 
-export class TstHeadedCell extends TstComponent {
+export class TstHeadedCell extends TstCellComponent {
 
     constructor(
         public prev: TstHeadedCell | undefined,
@@ -107,7 +131,7 @@ export class TstHeadedCell extends TstComponent {
 }
 
 
-export class TstComment extends TstComponent {
+export class TstComment extends TstCellComponent {
 
     public mark(): void {
         this.cell.markComment();
@@ -155,7 +179,7 @@ export class TstComment extends TstComponent {
  * 2 and the B table are its params.  (For example, 3 might represent "or", and thus
  * the union of the grammar represented by 2 and the grammar represented by the B table.
  */
-export class TstEnclosure extends TstComponent {
+export class TstEnclosure extends TstCellComponent {
 
     public specRow: number = -1;
     
@@ -285,9 +309,7 @@ export class TstTableOp extends TstEnclosure {
     }
 }
 
-abstract class TstAbstractTestSuite extends TstEnclosure {
-
-    protected tests: TstHeadedCell[] = [];
+export class TstUnitTest extends TstEnclosure {
 
     /**
      * "test" is an operator that takes two tables, one above (spatially speaking)
@@ -301,7 +323,7 @@ abstract class TstAbstractTestSuite extends TstEnclosure {
         
         if (this.sibling == undefined) {
             this.markError("Wayward test",
-                "There should be something above this 'test' command for us to test");
+                "There should be something above this 'test' command to test");
             return new AstEpsilon(this.cell);
         }
 
@@ -324,17 +346,54 @@ abstract class TstAbstractTestSuite extends TstEnclosure {
             return siblingAst;
         }
 
-        this.tests = this.child.rows;
-        return siblingAst;
+        const testAST = this.child.toAST();
+        const testASTs = testAST.getChildren();
+        return new AstUnitTest(this.cell, siblingAst, testASTs);
     }
 
 }
 
-export class TstTestSuite extends TstAbstractTestSuite {
+export class TstNegativeUnitTest extends TstEnclosure {
 
-}
+    /**
+     * "test" is an operator that takes two tables, one above (spatially speaking)
+     * and one to the right, and makes sure that each line of the one to the right
+     * has an output when filtering the table above.
+     * 
+     * Test doesn't make any change to the State it returns; adding a "test" below
+     * a grammar returns the exact same grammar as otherwise.  
+     */
+    public toAST(): AstComponent {
+        
+        if (this.sibling == undefined) {
+            this.markError("Wayward test",
+                "There should be something above this 'testnot' command to test");
+            return new AstEpsilon(this.cell);
+        }
 
-export class TstTestNotSuite extends TstAbstractTestSuite {
+        const siblingAst = this.sibling.toAST();
+
+        if (this.child == undefined) {
+            this.markWarning("Empty test",
+                "'testnot' seems to be missing something to test; " +
+                "something should be in the cell to the right.");
+            return siblingAst; // whereas usually we result in the 
+                            // empty grammar upon erroring, in this case
+                            // we don't want to let a flubbed "test" command 
+                            // obliterate the grammar it was meant to test!
+        }
+        
+        if (!(this.child instanceof TstTable)) {
+            this.markError("Cannot execute tests",
+                "You can't nest another operator to the right of a testnot block, " + 
+                "it has to be a content table.");
+            return siblingAst;
+        }
+
+        const testAST = this.child.toAST();
+        const testASTs = testAST.getChildren();
+        return new AstNegativeUnitTest(this.cell, siblingAst, testASTs);
+    }
 
 }
 
@@ -431,14 +490,13 @@ export class TstSheet extends TstEnclosure {
 
 }
 
-export class TstProject {
+export class TstProject extends TstComponent {
 
     protected sheets: {[name: string]: TstSheet} = {};
 
     public addSheet(sheet: TstSheet): void {
         this.sheets[sheet.name] = sheet;
     }
-
     
     public toAST(): AstComponent {
 
@@ -481,7 +539,7 @@ export class TstTable extends TstEnclosure {
     /**
      * Each row is represented by the last cell in that row
      */
-    public rows: TstHeadedCell[] = [];
+    public rows: TstRow[] = [];
     
     public addHeader(headerCell: TstHeader): void {        
         this.headersByCol[headerCell.pos.col] = headerCell;
@@ -500,18 +558,12 @@ export class TstTable extends TstEnclosure {
         }
 
         if (this.rows.length == 0 || cell.pos.row != this.rows[this.rows.length-1].pos.row) {
-            // we need to start an new row, make a new cell with no prev sibling
-            const newRow = new TstHeadedCell(undefined, headerCell, cell);
-            newRow.mark();
-            this.rows.push(newRow);
-            return;
+            // we need to start an new row
+            this.rows.push(new TstRow(cell));
         }
 
-        // we're continuing an old row, use the last one as the previous sibling
         const lastRow = this.rows[this.rows.length-1];
-        const newRow = new TstHeadedCell(lastRow, headerCell, cell);
-        newRow.mark();
-        this.rows[this.rows.length-1] = newRow;
+        lastRow.addContent(headerCell, cell);
 
     }
 
@@ -529,6 +581,23 @@ export class TstTable extends TstEnclosure {
                                  .filter(ast => !(ast instanceof AstEpsilon));
         return new AstAlternation(this.cell, rowStates);
     }
-
 }
 
+export class TstRow extends TstCellComponent {
+
+    public lastCell: TstHeadedCell | undefined = undefined;
+
+    public addContent(header: TstHeader, cell: SheetCell): void {
+        const newCell = new TstHeadedCell(this.lastCell, header, cell);
+        newCell.mark();
+        this.lastCell = newCell;
+    }
+
+    public toAST(): AstComponent {
+        if (this.lastCell == undefined) {
+            return new AstNull(this.cell);  // shouldn't happen
+        }
+        const child = this.lastCell.toAST();
+        return new AstUnary(this.cell, child);
+    }
+}

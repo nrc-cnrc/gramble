@@ -89,7 +89,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testAstHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
-        testAst(grammar, [{t1: "hi"}], "test.b");
+        testAst(grammar, [{t1: "hi"}], "b");
     });
 
 });
