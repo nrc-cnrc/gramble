@@ -12,7 +12,7 @@ import {
     t1, t2, t3, t4, t5,
     testAstHasTapes,
     testAst
-} from "./testUtilsAst";
+} from "./testUtils";
 
 import * as path from 'path';
 

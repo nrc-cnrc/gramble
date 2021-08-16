@@ -1,4 +1,4 @@
-import { testProject, testErrors, sheetFromFile } from "./testUtilsAst";
+import { testProject, testErrors, sheetFromFile } from "./testUtils";
 
 import * as path from 'path';
 

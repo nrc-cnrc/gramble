@@ -9,7 +9,7 @@ import {
     t1, t2, testAstHasTapes, 
     //testHasVocab, 
     testAst 
-} from './testUtilsAst';
+} from './testUtils';
 
 import * as path from 'path';
 

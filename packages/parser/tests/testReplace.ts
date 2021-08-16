@@ -12,7 +12,7 @@ import {
     testHasVocab,
     testAst, 
     //testParseMultiple
-} from './testUtilsAst';
+} from './testUtils';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";

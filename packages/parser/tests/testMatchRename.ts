@@ -16,7 +16,7 @@ import {
     //testHasVocab, 
     //testHasNoVocab,  
     testAst
-} from './testUtilsAst';
+} from './testUtils';
 
 import * as path from 'path';
 

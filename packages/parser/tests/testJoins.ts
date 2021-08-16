@@ -4,7 +4,7 @@ import {
     t1, t2, t3, 
     testAstHasTapes,
     testAst 
-} from './testUtilsAst';
+} from './testUtils';
 
 import * as path from 'path';
 

@@ -7,7 +7,7 @@ import {
     //testHasVocab, 
     testAst,
     //makeTestNamespace
-} from './testUtilsAst';
+} from './testUtils';
 
 import * as path from 'path';
 

@@ -1,5 +1,5 @@
 import { Seq, Join, Hide, Rename, Filter, Ns, Embed } from "../src/ast";
-import { t1, t2, t3, testAstHasTapes, testAst } from './testUtilsAst';
+import { t1, t2, t3, testAstHasTapes, testAst } from './testUtils';
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {

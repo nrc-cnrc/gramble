@@ -1,6 +1,6 @@
 import { Uni, Join, Not, Rep, Seq, Null, Epsilon } from "../src/ast";
 import { t1, t2, 
-    testAstHasTapes, testAst } from './testUtilsAst';
+    testAstHasTapes, testAst } from './testUtils';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";

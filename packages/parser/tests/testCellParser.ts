@@ -7,7 +7,7 @@ import {
 
 import * as path from 'path';
 import { expect } from "chai";
-import { testIsType } from "./testUtilsAst";
+import { testIsType } from "./testUtils";
 
 describe(`${path.basename(module.filename)}`, function() {
 

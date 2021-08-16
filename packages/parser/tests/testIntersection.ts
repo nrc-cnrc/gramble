@@ -1,6 +1,6 @@
 
 import { Seq, Uni, Intersect, Epsilon, AstComponent, Rep } from "../src/ast";
-import { t1, t2, testAst } from './testUtilsAst';
+import { t1, t2, testAst } from './testUtils';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";

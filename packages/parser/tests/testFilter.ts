@@ -1,6 +1,6 @@
 
 import { Seq, Uni, Filter, Epsilon } from "../src/ast";
-import { t1, t2, t3, testAst } from './testUtilsAst';
+import { t1, t2, t3, testAst } from './testUtils';
 
 import * as path from 'path';
 
