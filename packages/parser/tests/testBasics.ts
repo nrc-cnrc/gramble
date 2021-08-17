@@ -1,6 +1,6 @@
 
 import { Epsilon, Seq, Uni } from "../src/ast";
-import { t1, t2, testAstHasTapes, testAst } from './testUtils';
+import { t1, t2, testHasTapes, testAst } from './testUtils';
 
 import * as path from 'path';
 
@@ -8,68 +8,68 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Literal t1:hello', function() {
         const grammar = t1("hello");
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "hello"}]);
     });
     
     describe('Literal t1:""', function() {
         const grammar = t1("");
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{}]);
     });
 
     describe('Just ε', function() {
         const grammar = Epsilon();
-        testAstHasTapes(grammar, []);
+        testHasTapes(grammar, []);
         testAst(grammar, [{}]);
     });
 
     describe('Sequence t1:hello+test:world', function() {
         const grammar = Seq(t1("hello"), t1("world"));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "helloworld"}]);
     });
 
     describe('Empty sequence', function() {
         const grammar = Seq();
-        testAstHasTapes(grammar, []);
+        testHasTapes(grammar, []);
         testAst(grammar, [{}]);
     });
 
     describe('Sequence of one ε', function() {
         const grammar = Seq(Epsilon());
-        testAstHasTapes(grammar, []);
+        testHasTapes(grammar, []);
         testAst(grammar, [{}]);
     });
 
     describe('ε+ε', function() {
         const grammar = Seq(Epsilon(), Epsilon());
-        testAstHasTapes(grammar, []);
+        testHasTapes(grammar, []);
         testAst(grammar, [{}]);
     });
 
     describe('t1:hello+Seq()', function() {
         const grammar = Seq(t1("hello"), Seq());
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "hello"}]);
     });
     
     
     describe('Seq()+t1:hello', function() {
         const grammar = Seq(Seq(), t1("hello"));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "hello"}]);
     });
 
     describe('t1:hello+Seq(ε)', function() {
         const grammar = Seq(t1("hello"), Seq(Epsilon()));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "hello"}]);
     });
     
     describe('t1:hello+(ε+ε)', function() {
         const grammar = Seq(t1("hello"), Seq(Epsilon(), Epsilon()));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "hello"}]);
     });
 
@@ -125,7 +125,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('t1:hi+t2:yo', function() {
         const grammar = Seq(t1("hi"), t2("yo"));
-        testAstHasTapes(grammar, ["t1", "t2"]);
+        testHasTapes(grammar, ["t1", "t2"]);
         testAst(grammar, [{t1: "hi", t2: "yo"}]);
     });
 
@@ -156,7 +156,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Alt of different tapes: t1:hello|t2:goodbye', function() {
         const grammar = Uni(t1("hello"), t2("goodbye"));
-        testAstHasTapes(grammar, ["t1", "t2"]);
+        testHasTapes(grammar, ["t1", "t2"]);
         testAst(grammar, [{t1: "hello"},
                               {t2: "goodbye"}]);
     });
@@ -195,25 +195,25 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Empty union', function() {
         const grammar = Uni();
-        testAstHasTapes(grammar, []);
+        testHasTapes(grammar, []);
         testAst(grammar, []);
     });
 
     describe('Union of one ε', function() {
         const grammar = Uni(Epsilon());
-        testAstHasTapes(grammar, []);
+        testHasTapes(grammar, []);
         testAst(grammar, [{}]);
     });
 
     describe('ε|ε', function() {
         const grammar = Uni(Epsilon(), Epsilon());
-        testAstHasTapes(grammar, []);
+        testHasTapes(grammar, []);
         testAst(grammar, [{}]);
     });
 
     describe('t1(hello)+(ε|ε)', function() {
         const grammar = Seq(t1("hello"), Uni(Epsilon(), Epsilon()));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "hello"}]);
     }); 
     

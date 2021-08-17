@@ -1,6 +1,6 @@
 import { Uni, Join, Not, Rep, Seq, Null, Epsilon } from "../src/ast";
 import { t1, t2, 
-    testAstHasTapes, testAst } from './testUtils';
+    testHasTapes, testAst } from './testUtils';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";
@@ -19,7 +19,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Join(t1:foo & ~t1:hello)', function() {
         const grammar = Join(t1("foo"), Not(t1("hello")));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 5});
         testAst(grammar, [{t1: "foo"}]);
     });
@@ -124,7 +124,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('~t1:hi', function() {
         const grammar = Not(t1("hi"));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
             {},             { t1: 'h' },    { t1: 'i' },
@@ -143,7 +143,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('~(t1:h+t1:i)', function() {
         const grammar = Not(Seq(t1("h"), t1("i")));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
             {},             { t1: 'h' },    { t1: 'i' },
@@ -169,7 +169,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Alt ~t1:hi | t2:hi', function() {
         const grammar = Uni(Not(t1("hi")), t2("hi"));
-        testAstHasTapes(grammar, ["t1", "t2"]);
+        testHasTapes(grammar, ["t1", "t2"]);
         //testHasVocab(grammar, {t1: 2});
         //testHasVocab(grammar, {t2: 2});
         const expectedResults: StringDict[] = [

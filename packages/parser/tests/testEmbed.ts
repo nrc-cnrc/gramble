@@ -1,7 +1,7 @@
 import { Seq, Uni, Join, Embed, Ns, Epsilon, Null } from "../src/ast";
 import { 
     t1, t2, t3, 
-    testAstHasTapes, 
+    testHasTapes, 
     testAstHasSymbols,
     testAstDoesNotHaveSymbols,
     //testHasVocab, 
@@ -18,7 +18,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Ns("test", 
                         { "a": t1("hi"),
                           "b": Embed("a") });
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
         testAst(grammar, [{t1: "hi"}], "b");
     });
@@ -51,7 +51,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Ns("test", 
                         { "a": t1("hi"),
                           "b": Embed("A") });
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
         testAst(grammar, [{t1: "hi"}], "b");
     });
@@ -60,7 +60,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Ns("test", 
                         { "A": t1("hi"),
                           "b": Embed("a") });
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
         testAst(grammar, [{t1: "hi"}], "b");
     });
@@ -84,7 +84,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Ns("test", 
                         { "a": Seq(t1("hi"), t2("world")),
                           "b": Embed("a") });
-        testAstHasTapes(grammar, ["t1", "t2"]);
+        testHasTapes(grammar, ["t1", "t2"]);
         //testHasVocab(grammar, {t1: 2});
         testAst(grammar, [{t1: "hi", t2: "world"}], "b");
     });
@@ -133,7 +133,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testAstHasSymbols(grammar, [ "x" ]);
 
-        testAstHasTapes(grammar, [ "t1" ]);
+        testHasTapes(grammar, [ "t1" ]);
         testAst(grammar, [{t1: "hello"}]);
     });
 
@@ -160,9 +160,9 @@ describe(`${path.basename(module.filename)}`, function() {
         testAstHasSymbols(outer, [ "innerNamespace.x",
                                     "x" ]);
 
-        testAstHasTapes(outer, [ "t1" ]);
-        testAstHasTapes(outer, [ "t1" ], "innerNamespace.x");
-        testAstHasTapes(outer, [ "t2" ], "x");
+        testHasTapes(outer, [ "t1" ]);
+        testHasTapes(outer, [ "t1" ], "innerNamespace.x");
+        testHasTapes(outer, [ "t2" ], "x");
 
         testAst(outer, [{t1: "hello"}]);
         testAst(outer, [{t1: "hello"}], "innerNamespace.x");
@@ -180,9 +180,9 @@ describe(`${path.basename(module.filename)}`, function() {
         testAstHasSymbols(outer, [ "ns.x",
                                     "x" ]);
 
-        testAstHasTapes(outer, [ "t1" ]);
-        testAstHasTapes(outer, [ "t1" ], "ns.x");
-        testAstHasTapes(outer, [ "t2" ], "x");
+        testHasTapes(outer, [ "t1" ]);
+        testHasTapes(outer, [ "t1" ], "ns.x");
+        testHasTapes(outer, [ "t2" ], "x");
 
         testAst(outer, [{t1: "hello"}]);
         testAst(outer, [{t1: "hello"}], "ns.x");

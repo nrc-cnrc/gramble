@@ -1,5 +1,6 @@
 import { Gen, setDifference, shuffleArray, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
+import { Null } from "./ast";
 
 /**
  * This is the parsing/generation engine that underlies Gramble.
@@ -335,6 +336,7 @@ export abstract class Expr {
             for (let [tapes, prevOutput, prevExpr, chars] of stateQueue) {
 
                 //console.log(`prevExpr is ${prevExpr.id}`);
+                //console.log(`prevOutput is ${JSON.stringify([...prevOutput.toStrings(false)])}`);
                 if (chars >= maxChars) {
                     continue;
                 }
@@ -354,9 +356,10 @@ export abstract class Expr {
 
                 const tapeToTry = tapes[0];
                 for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
+                    
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nextQueue.push([tapes, nextOutput, cNext, chars+1]);  
-                    //console.log(`D^${cTape.tapeName} is ${cNext.id}`);
+                    //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
                 }
 
                 const delta = prevExpr.delta(tapeToTry, stack);
@@ -561,7 +564,8 @@ class LiteralExpr extends Expr {
     }
 
     protected getToken(tape: Tape): Token {
-        return tape.tokenize(tape.tapeName, this.text[this.index])[0];
+        //return tape.tokenize(tape.tapeName, this.text[this.index])[0];
+        return new Token(tape.toBits(tape.tapeName, this.text[this.index]));
     }
 
     public *deriv(
@@ -613,7 +617,7 @@ export abstract class BinaryExpr extends Expr {
 class ConcatExpr extends BinaryExpr {
 
     public get id(): string {
-        return `(${this.child1.id}+${this.child2.id})`;
+        return `${this.child1.id}+${this.child2.id}`;
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
@@ -916,9 +920,16 @@ class RenameExpr extends UnaryExpr {
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
+        if (tape.tapeName == this.fromTape) {
+            return this;
+        }
         tape = new RenamedTape(tape, this.fromTape, this.toTape);
         const newChild = this.child.delta(tape, stack);
         return constructRename(newChild, this.fromTape, this.toTape);
+    }
+    
+    public get id(): string {
+        return `${this.fromTape}->${this.toTape}(${this.child.id})`;
     }
 
     public *deriv(
@@ -947,15 +958,20 @@ class NegationExpr extends UnaryExpr {
 
     constructor(
         child: Expr,
-        public tapes: Set<string>
+        public tapes: Set<string>,
+        public maxChars: number = Infinity
     ) { 
         super(child);
+    }
+
+    public get id(): string {
+        return `~${this.maxChars}(${this.child.id})`;
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
         const childDelta = this.child.delta(tape, stack);
         const remainingTapes = setDifference(this.tapes, new Set([tape.tapeName]));
-        return constructNegation(childDelta, remainingTapes);
+        return constructNegation(childDelta, remainingTapes, this.maxChars);
     }
     
     public *deriv(
@@ -968,12 +984,16 @@ class NegationExpr extends UnaryExpr {
             return;
         }
 
+        if (this.maxChars == 0) {
+            return;
+        }
+
         var remainder = new Token(target.bits.clone());
 
         for (const [childTape, childText, childNext] of 
                 this.child.disjointDeriv(tape, target, stack)) {
             remainder = remainder.andNot(childText);
-            const successor = constructNegation(childNext, this.tapes);
+            const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
             yield [childTape, childText, successor];
         }
 
@@ -985,7 +1005,7 @@ class NegationExpr extends UnaryExpr {
         // cases where we've (in FSA terms) "fallen off" the graph,
         // and are now at a special consume-anything state that always
         // succeeds.
-        yield [tape, remainder, constructUniverse(this.tapes)];
+        yield [tape, remainder, constructUniverse(this.tapes, this.maxChars-1)];
     }
 }
 
@@ -1000,7 +1020,7 @@ export class MatchExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `Match(${Object.values(this.buffers).map(b=>b.id).join("+")},${this.child.id}`;
+        return `Match(${Object.values(this.buffers).map(b=>b.id)}, ${this.child.id})`;
     }
 
     public delta(
@@ -1023,14 +1043,12 @@ export class MatchExpr extends UnaryExpr {
             }
             newBuffers[tape.tapeName] = deltaBuffer;
         }
-        var result: Expr = this.child;
-        for (const mTapeName of this.tapes) {
-            const mTape = tape.getTape(mTapeName);
-            if (mTape == undefined) {
-                throw new Error(`Cannot find tape ${mTape}`);
-            }
-            result = result.delta(mTape, stack);
-        }
+
+        var bufSeq = constructSequence(...Object.values(newBuffers));
+        var result: Expr = this.child.delta(tape, stack);
+        return constructIntersection(bufSeq, result);
+        
+
         if (!(result instanceof NullExpr)) {
             return constructSequence(...Object.values(newBuffers), result);
         } else {
@@ -1242,7 +1260,7 @@ export function constructStar(child: Expr): Expr {
 }
 
 /**
- * Creates A{min,max} from A.  Distinguished from createStar
+ * Creates A{min,max} from A.  Distinguished from constructStar
  * in that that only works for A{0,infinity}, whereas this
  * works for any values of {min,max}.
  */
@@ -1284,22 +1302,34 @@ export function constructEmbed(
     return new EmbedExpr(symbolName, symbols, child);
 }
 
-export function constructNegation(child: Expr, tapes: Set<string>): Expr {
+export function constructNegation(
+    child: Expr, 
+    tapes: Set<string>,
+    maxChars: number = Infinity
+): Expr {
     if (child instanceof NullExpr) {
-        return constructUniverse(tapes);
+        return constructUniverse(tapes, maxChars);
     }
     if (child instanceof NegationExpr) {
         return child.child;
     }
-    return new NegationExpr(child, tapes);
+    return new NegationExpr(child, tapes, maxChars);
 }
 
 export function constructDotStar(tape: string): Expr {
     return constructStar(constructDot(tape));
 }
 
-export function constructUniverse(tapes: Set<string>): Expr {
-    return constructSequence(...[...tapes].map(t => constructDotStar(t)));
+export function constructDotRep(tape: string, maxReps:number=Infinity): Expr {
+    return constructRepeat(constructDot(tape), 0, maxReps);
+}
+
+export function constructUniverse(
+    tapes: Set<string>, 
+    maxReps: number = Infinity
+): Expr {
+    return constructSequence(...[...tapes]
+                .map(t => constructDotRep(t, maxReps)));
 
 }
 

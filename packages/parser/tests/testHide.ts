@@ -1,12 +1,12 @@
 import { Seq, Join, Hide, Rename, Filter, Ns, Embed } from "../src/ast";
-import { t1, t2, t3, testAstHasTapes, testAst } from './testUtils';
+import { t1, t2, t3, testHasTapes, testAst } from './testUtils';
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('hide(t2) of t1:hello+t2:foo', function() {
         const grammar = Hide(Seq(t1("hello"), t2("foo")), "t2");
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 4});
         testAst(grammar, [{t1: "hello"}]);
     });
@@ -52,21 +52,21 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Renane t1=>t3 if hide(t2) of t1:hello+t2:foo', function() {
         const grammar = Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"), "t1", "t3")
-        testAstHasTapes(grammar, ["t3"]);
+        testHasTapes(grammar, ["t3"]);
         //testHasVocab(grammar, {t3: 4});
         testAst(grammar, [{t3: "hello"}]);
     });
 
     describe('Rename t2=>t3 of hide(t2) of t1:hello+t2:foo', function() {
         const grammar = Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"), "t2", "t3")
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 4});
         testAst(grammar, [{t1: "hello"}]);
     });
 
     describe('Rename t1=>t3 of hide(t2) of t1:hello+t2:foo', function() {
         const grammar = Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"), "t1", "t3")
-        testAstHasTapes(grammar, ["t3"]);
+        testHasTapes(grammar, ["t3"]);
         //testHasVocab(grammar, {t3: 4});
         testAst(grammar, [{t3: "hello"}]);
     });
@@ -87,7 +87,7 @@ describe(`${path.basename(module.filename)}`, function() {
                         { "a": Seq(t1("hi"), t2("world")),
                           "b": Hide(Embed("a"), "t2") });
 
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
         testAst(grammar, [{t1: "hi"}], "b");
     });

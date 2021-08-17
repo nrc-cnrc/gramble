@@ -1,6 +1,6 @@
 
 import { Seq, Join, Rep, Epsilon, Filter, Uni, Any } from "../src/ast";
-import { t1, t2, testAstHasTapes, testAst } from './testUtils';
+import { t1, t2, testHasTapes, testAst } from './testUtils';
 
 import * as path from 'path';
 
@@ -8,7 +8,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Between 0 and 1 Os: t1:o{0,1}', function() {
         const grammar = Rep(t1("o"), 0, 1);
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{},
                               {t1: "o"}]);
     });
@@ -265,20 +265,20 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Filtering t1:h[ t2:h* ]', function() {
         const grammar = Filter(t1("h"),
                                  Rep(t2("h")));
-        testAstHasTapes(grammar, ['t1', 't2']);
+        testHasTapes(grammar, ['t1', 't2']);
         testAst(grammar, [{t1:"h"}]);
     });
     
     describe('Filtering t1:h[ (t1:h|t2:h)* ]', function() {
         const grammar = Filter(t1("h"),
                                  Rep(Uni(t1("h"), t2("h"))));
-        testAstHasTapes(grammar, ['t1', 't2']);
+        testHasTapes(grammar, ['t1', 't2']);
         testAst(grammar, [{'t1': 'h'}]);
     });
 
     describe('Seq t1:h+ε*', function() {
         const grammar = Seq(t1("h"), Rep(Epsilon()));
-        testAstHasTapes(grammar, ['t1']);
+        testHasTapes(grammar, ['t1']);
         testAst(grammar, [{'t1': 'h'}]);
     });
 

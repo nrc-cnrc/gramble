@@ -5,12 +5,15 @@ import {
     Uni, 
     Filter, 
     Ns,
-    Embed
+    Embed,
+    Intersect,
+    Rep,
+    Any
 } from "../src/ast";
 
 import { 
     t1, t2, t3, t4, t5,
-    testAstHasTapes,
+    testHasTapes,
     testAst
 } from "./testUtils";
 
@@ -20,7 +23,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Rename(t2/t1) of t1:hello', function() {
         const grammar = Rename(t1("hello"), "t1", "t2");
-        testAstHasTapes(grammar, ["t2"]);
+        testHasTapes(grammar, ["t2"]);
         //testHasNoVocab(grammar, "t1");
         //testHasVocab(grammar, {t2: 4});
         testAst(grammar, [{t2: "hello"}]);
@@ -28,20 +31,20 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Rename(t2/t1) of t1:hi+t2:wo', function() {
         const grammar = Rename(Seq(t1("hi"), t2("wo")), "t1", "t2");
-        testAstHasTapes(grammar, ["t2"]);
+        testHasTapes(grammar, ["t2"]);
         //testHasVocab(grammar, {t2: 4});
         testAst(grammar, [{t2: "hiwo"}]);
     }); 
 
     describe('Rename(t5/t1) of t1:hello+t2:foo', function() {
         const grammar = Rename(Seq(t1("hello"), t2("foo")), "t3", "t4");
-        testAstHasTapes(grammar, ["t1", "t2"]);
+        testHasTapes(grammar, ["t1", "t2"]);
         testAst(grammar, [{t1: "hello", t2: "foo"}]);
     });
         
     describe('rename(t1:hello+t5:foo) from t1 to t2', function() {
         const grammar = Rename(Seq(t1("hello"), t5("foo")), "t1", "t2");
-        testAstHasTapes(grammar, ["t2", "t5"]);
+        testHasTapes(grammar, ["t2", "t5"]);
         //testHasVocab(grammar, {"t2": 4, "t5": 2});
         //testHasNoVocab(grammar, "t1");
         testAst(grammar, [{t2: "hello", t5: "foo"}]);
@@ -50,7 +53,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Alt(rename(t1:hello+t5:foo) t1 -> t2|rename(t1:hello+t5:foo) t1->t3)', function() {
         const grammar = Uni(Rename(Seq(t1("hello"), t5("foo")), "t1", "t2"),
                         Rename(Seq(t1("hello"), t5("foo")), "t1", "t3"));
-        testAstHasTapes(grammar, ["t2", "t3", "t5"]);
+        testHasTapes(grammar, ["t2", "t3", "t5"]);
         //testHasVocab(grammar, {"t2": 4, "t3": 4, "t5": 2});
         //testHasNoVocab(grammar, "t1");
         testAst(grammar, [{t2: "hello", t5: "foo"}, {t3: "hello", t5: "foo"}]);
@@ -68,6 +71,27 @@ describe(`${path.basename(module.filename)}`, function() {
                               {"t2":"hi","t1":"hello","t4":"goodbye","t5":"foo"},
                               {"t2":"hi","t3":"hello","t1":"goodbye","t5":"foo"}]);
     }); */
+
+    
+    describe('Intersecting t2:hello & rename(t2/t1, t1:hello))', function() {
+        const grammar = Intersect(t2("hello"),
+                             Rename(t1("hello"), "t1", "t2"));
+        testAst(grammar, [{t2: "hello"}]);
+    });
+
+    
+    describe('Intersecting t2:hello & rename(t1/t2, t2:hello))', function() {
+        const grammar = Intersect(t2("hello"),
+                             Rename(t2("hello"), "t2", "t1"));
+        testAst(grammar, []);
+    });
+
+    
+    describe('Intersecting t2:hello & rename(t1/t2, t2:hello))', function() {
+        const grammar = Intersect(Seq(t2("hello"), Rep(Any("t1"))),
+                             Rename(t2("hello"), "t2", "t1"));
+        testAst(grammar, []);
+    });
 
     describe('Joining t2:hello & rename(t2/t1, t1:hello))', function() {
         const grammar = Join(t2("hello"),
@@ -111,7 +135,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Filtering of t2:hiwo & rename(t2/t1) of t1:hi+t2:wo', function() {
         const grammar = Filter(t2("hiwo"), Rename(Seq(t1("hi"), t2("wo")), "t1", "t2"));
-        testAstHasTapes(grammar, ["t2"]);
+        testHasTapes(grammar, ["t2"]);
         //testHasVocab(grammar, {t2: 4});
         testAst(grammar, [{t2: "hiwo"}]);
     }); 
@@ -121,7 +145,7 @@ describe(`${path.basename(module.filename)}`, function() {
                         { "a": Seq(t1("hi"), t2("world")),
                           "b": Rename(Embed("a"), "t2", "t3") });
 
-        testAstHasTapes(grammar, ["t1", "t3"]);
+        testHasTapes(grammar, ["t1", "t3"]);
         testAst(grammar, [{t1: "hi", t3: "world"}], "b");
     });
 

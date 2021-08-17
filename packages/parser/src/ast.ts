@@ -548,6 +548,14 @@ export class AstRepeat extends AstUnary {
 
 export class AstNegation extends AstUnary {
 
+    constructor(
+        cell: Cell,
+        child: AstComponent,
+        public maxReps: number = Infinity
+    ) {
+        super(cell, child);
+    }
+
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
             if (this.child.tapes == undefined) {
@@ -555,7 +563,7 @@ export class AstNegation extends AstUnary {
             }
 
             const childExpr = this.child.constructExpr(symbols);
-            this.expr = constructNegation(childExpr, this.child.tapes);
+            this.expr = constructNegation(childExpr, this.child.tapes, this.maxReps);
         }
         return this.expr;
     }
@@ -1055,8 +1063,8 @@ export function Rename(child: AstComponent, fromTape: string, toTape: string): A
     return new AstRename(DUMMY_CELL, child, fromTape, toTape);
 }
 
-export function Not(child: AstComponent): AstNegation {
-    return new AstNegation(DUMMY_CELL, child);
+export function Not(child: AstComponent, maxChars:number=Infinity): AstNegation {
+    return new AstNegation(DUMMY_CELL, child, maxChars);
 }
 
 export function Ns(
@@ -1074,6 +1082,9 @@ export function Hide(child: AstComponent, tape: string, name: string = ""): AstH
     return new AstHide(DUMMY_CELL, child, tape, name);
 }
 
+export function Vocab(tape: string, text: string): AstComponent {
+    return Rep(Lit(tape, text), 0, 0)
+}
 
 /**
   * Replace implements general phonological replacement rules.
@@ -1130,8 +1141,6 @@ export function Replace(
         sameVocab = tapeCollection.inVocab(toTapeName, fromVocab)
     }
 
-    console.log(`same vocab = ${sameVocab}`);
-
     function matchAnythingElse(replaceNone: boolean = false) {
         const dotStar: AstComponent = Rep(Any(fromTapeName), 0, maxExtraChars);
         // 1. If the fromTape vocab for the replacement operation contains some
@@ -1143,7 +1152,6 @@ export function Replace(
         //    or end of text (endsWith) then matchAnythingElse needs to match any
         //    other instances of the replacement pattern, so we need to match .*
         if( !sameVocab || (beginsWith && !replaceNone) || (endsWith && !replaceNone)) {
-            console.log("simple match from");
             return MatchFrom(fromTapeName, toTapeName, dotStar)
         }
         var fromInstance: AstComponent[] = [];
@@ -1154,11 +1162,11 @@ export function Replace(
             fromInstance.push(postContext);
         var notState: AstComponent;
         if (beginsWith && replaceNone)
-            notState = Not(Seq(...fromInstance, dotStar)); //, maxExtraChars);
+            notState = Not(Seq(...fromInstance, dotStar), maxExtraChars);
         else if (endsWith && replaceNone)
-            notState = Not(Seq(dotStar, ...fromInstance)); //, maxExtraChars);
+            notState = Not(Seq(dotStar, ...fromInstance), maxExtraChars);
         else
-            notState = Not(Seq(dotStar, ...fromInstance, dotStar)) //, maxExtraChars);
+            notState = Not(Seq(dotStar, ...fromInstance, dotStar), maxExtraChars);
         return MatchFrom(fromTapeName, toTapeName, notState)
     }
 
@@ -1167,21 +1175,22 @@ export function Replace(
 
     const replaceOne: AstComponent = Seq(...states);
     var replaceMultiple: AstComponent = Rep(replaceOne, minReps, maxReps);
-    if (repetitionPatch && maxReps <= 100) {
+    
+    /*if (repetitionPatch && maxReps <= 100) {
         var multiples: AstComponent[] = [];
         for (let n=Math.max(1, minReps); n < maxReps+1; n++) {
             multiples.push(Seq(...Array.from({length: n}).map(x => replaceOne)));
         }
         replaceMultiple = Uni(...multiples);
-    }
+    } */
 
     if (beginsWith)
         replaceState = replaceOne;
     else if (endsWith)
         replaceState = Seq(matchAnythingElse(), replaceOne);
-    else
+    else 
         replaceState = Seq(matchAnythingElse(), replaceMultiple);
-
+        
     if (minReps > 0)
         return replaceState
     // ??? NOTE: matchAnythingElse(true) with beginsWith can result in an

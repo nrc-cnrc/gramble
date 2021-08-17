@@ -1,5 +1,5 @@
 import { Seq, Join, Any, Filter, Uni, Epsilon } from "../src/ast";
-import { testAstHasTapes, t1, t2, testAst } from './testUtils';
+import { testHasTapes, t1, t2, testAst } from './testUtils';
 
 import * as path from 'path';
 
@@ -7,31 +7,31 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('t1:hi + t1:.', function() {
         const grammar = Seq(t1("hi"), Any("t1"));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "hih"}, {t1: "hii"}]);
     });
 
     describe('t1:. + t1:hi', function() {
         const grammar = Seq(Any("t1"), t1("hi"));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "hhi"}, {t1: "ihi"}]);
     });
 
     describe('Maybe t1:.', function() {
         const grammar = Uni(Epsilon(), Any("t1"));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{}]);
     });
 
     describe('Joining t1:h & t1:.', function() {
         const grammar = Join(t1("h"), Any("t1"));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "h"}]);
     });
 
     describe('Joining t1:hello & t1:.ello', function() {
         const grammar = Join(t1("hello"), Seq(Any("t1"), t1('ello')));
-        testAstHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "hello"}]);
     });
 

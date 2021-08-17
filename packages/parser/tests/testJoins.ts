@@ -2,7 +2,7 @@
 import { Seq, Uni, Join, Epsilon } from "../src/ast";
 import { 
     t1, t2, t3, 
-    testAstHasTapes,
+    testHasTapes,
     testAst 
 } from './testUtils';
 
@@ -17,7 +17,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Joining t1:hello & t2:foo', function() {
         const grammar = Join(t1("hello"), t2("foo"));
-        testAstHasTapes(grammar, ["t1", "t2"]);
+        testHasTapes(grammar, ["t1", "t2"]);
         testAst(grammar, [{t1: "hello", t2: "foo"}]);
     });
 

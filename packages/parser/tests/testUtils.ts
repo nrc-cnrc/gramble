@@ -110,12 +110,10 @@ export function testAst(
     }   
 }
 
-export function testAstHasTapes(
+export function testHasTapes(
     component: AstComponent,
     expectedTapes: string[],
-    symbolName: string = "",
-    maxRecursion: number = 4,
-    maxChars: number = 1000
+    symbolName: string = ""
 ): void {
     const stack = new CounterStack(2);
     let target = component.getSymbol(symbolName);
@@ -265,4 +263,30 @@ export function sheetFromFile(path: string): Gramble {
     const devEnv = new TextDevEnvironment(dir);
     const project = new Gramble(devEnv, sheetName);
     return project;
+}
+
+
+export type InputResultsPair = [StringDict, StringDict[]];
+
+export function testParseMultiple(grammar: AstComponent, 
+                                    inputResultsPairs: InputResultsPair[],
+                                    maxRecursion: number | undefined, 
+                                    maxChars: number | undefined): void {
+    for (const [inputs, expectedResults] of inputResultsPairs) {
+        describe(`testing parse ${JSON.stringify(inputs)} ` + 
+                 `against ${JSON.stringify(expectedResults)}.`, function() {
+            var outputs: StringDict[] = [];
+            try {    
+                //grammar = grammar.compile(2, maxRecursion);
+                outputs = [...grammar.generate(undefined, inputs, false, maxRecursion, maxChars)];
+            } catch (e) {
+                it("Unexpected Exception", function() {
+                    console.log(e);
+                    assert.fail(e);
+                });
+            }
+            testNumOutputs(outputs, expectedResults.length);
+            testMatchOutputs(outputs, expectedResults);    
+        });
+    }
 }
