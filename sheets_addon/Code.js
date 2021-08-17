@@ -128,6 +128,36 @@ class GoogleSheetsDevEnvironment {
         this.centerStyler = new CenterStyler();
     }
 
+    message(msg) {
+        if (msg["type"] == "error") {
+            this.markError(msg["sheet"], msg["row"],
+                msg["col"], msg["shortMsg"], msg["longMsg"],
+                "error");
+        } else if (msg["type"] == "warning") {
+            this.markError(msg["sheet"], msg["row"],
+                msg["col"], msg["shortMsg"], msg["longMsg"],
+                "warning");
+        } else if (msg["type"] == "info") {
+            this.markError(msg["sheet"], msg["row"],
+                msg["col"], msg["shortMsg"], msg["longMsg"],
+                "info");
+        } else if (msg["type"] == "comment") {
+            this.markComment(msg["sheet"], 
+                msg["row"], msg["col"]);
+        } else if (msg["type"] == "header") {
+            this.markHeader(msg["sheet"], msg["row"],
+                msg["col"], msg["color"]);
+        } else if (msg["type"] == "command") {
+            this.markCommand(msg["sheet"], 
+                msg["row"], msg["col"]);
+        } else if (msg["type"] == "content") {
+            this.markContent(msg["sheet"], msg["row"],
+                msg["col"], msg["color"]);
+        } else {
+            console.log(`unknown message: ${msg}`);
+        }
+    }
+
     hasSource(sheetName) {
         var sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
         return (sheet != undefined);
@@ -330,6 +360,7 @@ function makeProject() {
 
     const devEnv = new GoogleSheetsDevEnvironment(sheetName);
     const project = new gramble.Gramble(devEnv, sheetName);
+    project.runUnitTests();
     return [project, devEnv];
 }
 

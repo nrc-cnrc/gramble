@@ -44,14 +44,8 @@ export abstract class TstCellComponent extends TstComponent {
         return this.cell.pos;
     }
 
-    public mark(): void { }
-
-    public markError(shortMsg: string, msg: string): void {
-        this.cell.markError("error", shortMsg, msg);
-    }
-
-    public markWarning(shortMsg: string, msg: string): void {
-        this.cell.markError("warning", shortMsg, msg);
+    public message(msg: any): void {
+        this.cell.message(msg);
     }
     
     public toAST(): AstComponent {
@@ -71,18 +65,18 @@ export class TstHeader extends TstCellComponent {
         this.header = parseHeaderCell(cell.text);
 
         if (this.header instanceof ReservedErrorHeader) { 
-            this.cell.markError("error", `Reserved word in header`, 
-                 `This header contains a reserved word in an invalid position`); 
+            this.cell.message({
+                type: "error", 
+                shortMsg: `Reserved word in header`, 
+                longMsg: `This header contains a reserved word in an invalid position`
+            });
         } else if (this.header instanceof ErrorHeader) {
-            this.cell.markError("error", `Invalid header`, 
-                `This header cannot be parsed.`); 
+            this.cell.message({
+                type: "error",
+                shortMsg: "Invalid header",
+                longMsg: `This header cannot be parsed.`
+            });
         }
-
-    }
-
-    public mark(): void {
-        const color = this.getColor(0.1);
-        this.cell.markHeader(color);
     }
 
     public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string {
@@ -90,7 +84,6 @@ export class TstHeader extends TstCellComponent {
     }
 
     public headerToAST(left: AstComponent, content: SheetCell): AstComponent {
-
         const ast = this.header.toAST(left, content.text, content);
         ast.cell = content;
         return ast;
@@ -106,11 +99,6 @@ export class TstHeadedCell extends TstCellComponent {
         content: SheetCell
     ) { 
         super(content);
-    }
-
-    public mark(): void {
-        const color = this.header.getColor(0.1);
-        this.cell.markContent(color);
     }
 
     public toAST(): AstComponent {
@@ -132,10 +120,6 @@ export class TstHeadedCell extends TstCellComponent {
 
 
 export class TstComment extends TstCellComponent {
-
-    public mark(): void {
-        this.cell.markComment();
-    }
 
     public toAST(): AstComponent {
         return new AstEpsilon(this.cell);
@@ -205,10 +189,6 @@ export class TstEnclosure extends TstCellComponent {
         super(cell);
         this.specRow = cell.pos.row;
     }
-
-    public mark(): void {
-        this.cell.markCommand();
-    }
     
     public toAST(): AstComponent {
 
@@ -237,10 +217,13 @@ export class TstEnclosure extends TstCellComponent {
 
         if (this.child != undefined && 
             this.child.pos.col != child.pos.col) {
-            child.markWarning("Unexpected operator",
-                "This operator is in an unexpected column.  Did you mean for it " +
+            child.message({
+                type: "warning",
+                shortMsg: "Unexpected operator",
+                longMsg: "This operator is in an unexpected column.  Did you mean for it " +
                 `to be in column ${this.child.pos.col}, ` + 
-                `so that it's under the operator in cell ${this.child.pos}?`);
+                `so that it's under the operator in cell ${this.child.pos}?`
+            });
         }
 
         child.sibling = this.child;
@@ -264,17 +247,23 @@ export class TstBinaryOp extends TstEnclosure {
         let siblingAst: AstComponent = new AstEpsilon(this.cell);
 
         if (this.child == undefined) {
-            this.markError(`Missing argument to '${trimmedText}'`, 
-                `'${trimmedText}' is missing a second argument; ` +
-                "something should be in the cell to the right.");
+            this.message({
+                type: "error",
+                shortMsg: `Missing argument to '${trimmedText}'`, 
+                longMsg: `'${trimmedText}' is missing a second argument; ` +
+                "something should be in the cell to the right."
+            });
         } else {
             childAst = this.child.toAST();
         }
 
         if (this.sibling == undefined) {
-            this.markError(`Missing argument to '${trimmedText}'`,
-                `'${trimmedText}' is missing a first argument; ` +
-                "something should be in a cell above this.");
+            this.message({
+                type: "error",
+                shortMsg: `Missing argument to '${trimmedText}'`,
+                longMsg:`'${trimmedText}' is missing a first argument; ` +
+                "something should be in a cell above this."
+            });
         } else {
             siblingAst = this.sibling.toAST();
         }
@@ -299,9 +288,12 @@ export class TstTableOp extends TstEnclosure {
         }
 
         if (this.child == undefined) {
-            this.markWarning("Empty table",
-                "'table' seems to be missing a table; " + 
-                "something should be in the cell to the right.")
+            this.message({
+                type: "warning",
+                shortMsg: "Empty table",
+                longMsg: "'table' seems to be missing a table; " + 
+                "something should be in the cell to the right."
+            });
             return new AstEpsilon(this.cell);
         }
 
@@ -315,24 +307,27 @@ export class TstUnitTest extends TstEnclosure {
      * "test" is an operator that takes two tables, one above (spatially speaking)
      * and one to the right, and makes sure that each line of the one to the right
      * has an output when filtering the table above.
-     * 
-     * Test doesn't make any change to the State it returns; adding a "test" below
-     * a grammar returns the exact same grammar as otherwise.  
      */
     public toAST(): AstComponent {
         
         if (this.sibling == undefined) {
-            this.markError("Wayward test",
-                "There should be something above this 'test' command to test");
+            this.message({
+                type: "warning",
+                shortMsg: "Wayward test",
+                longMsg: "There should be something above this 'test' command to test"
+            });
             return new AstEpsilon(this.cell);
         }
 
         const siblingAst = this.sibling.toAST();
 
         if (this.child == undefined) {
-            this.markWarning("Empty test",
-                "'test' seems to be missing something to test; " +
-                "something should be in the cell to the right.");
+            this.message({
+                type: "warning",
+                shortMsg: "Empty test",
+                longMsg: "'test' seems to be missing something to test; " +
+                "something should be in the cell to the right."
+            });
             return siblingAst; // whereas usually we result in the 
                             // empty grammar upon erroring, in this case
                             // we don't want to let a flubbed "test" command 
@@ -340,9 +335,12 @@ export class TstUnitTest extends TstEnclosure {
         }
         
         if (!(this.child instanceof TstTable)) {
-            this.markError("Cannot execute tests",
-                "You can't nest another operator to the right of a test block, " + 
-                "it has to be a content table.");
+            this.message({
+                type: "error",
+                shortMsg: "Cannot execute tests",
+                longMsg: "You can't nest another operator to the right of a test block, " + 
+                "it has to be a content table."
+            });
             return siblingAst;
         }
 
@@ -356,27 +354,30 @@ export class TstUnitTest extends TstEnclosure {
 export class TstNegativeUnitTest extends TstEnclosure {
 
     /**
-     * "test" is an operator that takes two tables, one above (spatially speaking)
+     * "testnot" is an operator that takes two tables, one above (spatially speaking)
      * and one to the right, and makes sure that each line of the one to the right
-     * has an output when filtering the table above.
-     * 
-     * Test doesn't make any change to the State it returns; adding a "test" below
-     * a grammar returns the exact same grammar as otherwise.  
+     * has no output when filtering the table above.
      */
     public toAST(): AstComponent {
         
         if (this.sibling == undefined) {
-            this.markError("Wayward test",
-                "There should be something above this 'testnot' command to test");
+            this.message({
+                type: "error",
+                shortMsg: "Wayward test",
+                longMsg: "There should be something above this 'testnot' command to test"
+            });
             return new AstEpsilon(this.cell);
         }
 
         const siblingAst = this.sibling.toAST();
 
         if (this.child == undefined) {
-            this.markWarning("Empty test",
-                "'testnot' seems to be missing something to test; " +
-                "something should be in the cell to the right.");
+            this.message({
+                type: "warning",
+                shortMsg: "Empty test",
+                longMsg: "'testnot' seems to be missing something to test; " +
+                "something should be in the cell to the right."
+            });
             return siblingAst; // whereas usually we result in the 
                             // empty grammar upon erroring, in this case
                             // we don't want to let a flubbed "test" command 
@@ -384,9 +385,12 @@ export class TstNegativeUnitTest extends TstEnclosure {
         }
         
         if (!(this.child instanceof TstTable)) {
-            this.markError("Cannot execute tests",
-                "You can't nest another operator to the right of a testnot block, " + 
-                "it has to be a content table.");
+            this.message({
+                type: "error",
+                shortMsg: "Cannot execute tests",
+                longMsg: "You can't nest another operator to the right of a testnot block, " + 
+                "it has to be a content table."
+            });
             return siblingAst;
         }
 
@@ -408,23 +412,33 @@ export class TstAssignment extends TstEnclosure {
 
         if (RESERVED_WORDS.has(trimmedTextLower)) {
             // oops, assigning to a reserved word
-            this.markError("Assignment to reserved word", 
-                "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
-                `reserved word ${trimmedText}.  Choose a different symbol name.`);            
+            this.message({
+                type: "error",
+                shortMsg: "Assignment to reserved word", 
+                longMsg: "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
+                `reserved word ${trimmedText}.  Choose a different symbol name.`
+            });            
         }
 
         if (this.child == undefined) {
             // oops, empty "right side" of the assignment!
-            this.markWarning("Empty assignment", 
-                `This looks like an assignment to a symbol ${trimmedText}, ` +
-                "but there's nothing to the right of it.");
+            this.message({
+                type: "warning",
+                shortMsg: "Empty assignment", 
+                longMsg: `This looks like an assignment to a symbol ${trimmedText}, ` +
+                "but there's nothing to the right of it."
+            });
             return;
         }
 
         try {
             ns.addSymbol(trimmedText, ast);
         } catch (e) {
-            this.markError('Invalid assignment', (e as Error).message);
+            this.message({
+                type: "error",
+                shortMsg: 'Invalid assignment', 
+                longMsg: (e as Error).message
+            });
         }
     }
 
@@ -551,8 +565,11 @@ export class TstTable extends TstEnclosure {
         const headerCell = this.headersByCol[cell.pos.col];
         if (headerCell == undefined) {
             if (cell.text.length != 0) {
-                cell.markError("warning", `Ignoring cell: ${cell.text}`,
-                    "Cannot associate this cell with any valid header above; ignoring.");
+                cell.message({
+                    type: "warning",
+                    shortMsg: `Ignoring cell: ${cell.text}`,
+                    longMsg: "Cannot associate this cell with any valid header above; ignoring."
+                });
             }
             return;
         }
@@ -589,7 +606,10 @@ export class TstRow extends TstCellComponent {
 
     public addContent(header: TstHeader, cell: SheetCell): void {
         const newCell = new TstHeadedCell(this.lastCell, header, cell);
-        newCell.mark();
+        cell.message({ 
+            type: "content", 
+            color: header.getColor(0.1) 
+        });
         this.lastCell = newCell;
     }
 

@@ -37,6 +37,18 @@ export class SimpleDevEnvironment implements DevEnvironment {
         this.sources[sheetName] = cells;
     }
 
+    public message(msg: any): void {
+        if (msg["type"] == "error") {
+            this.markError(msg["sheet"], msg["row"],
+                msg["col"], msg["shortMsg"], msg["longMsg"],
+                "error");
+        } else if (msg["type"] == "warning") {
+            this.markError(msg["sheet"], msg["row"],
+                msg["col"], msg["shortMsg"], msg["longMsg"],
+                "warning");
+        }
+    }
+
     public markError(sheet: string, 
                      row: number, 
                      col: number, 
@@ -95,13 +107,7 @@ export class SimpleDevEnvironment implements DevEnvironment {
         }
         return result;
     }
-    
-    public markContent(sheet: string, row: number, col: number, tape: string): void {}
-    public markComment(sheet: string, row: number, col: number): void {}
-    public markHeader(sheet: string, row: number, col: number, color: string): void {}
-    public markCommand(sheet: string, row: number, col: number): void {}
-    public markSymbol(sheet: string, row: number, col: number): void {}
-    public setColor(tape: string, color: string): void {}
+
     public highlight(): void {}
 
     public alert(msg: string): void { }

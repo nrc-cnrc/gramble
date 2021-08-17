@@ -89,7 +89,6 @@ export class EmbedHeader extends AtomicHeader {
         content: Cell
     ): AstComponent {
         const cellAST = new AstEmbed(content, text);
-        cellAST.cell = content;
         return new AstSequence(content, [left, cellAST]);
     }
 
@@ -118,7 +117,6 @@ export class HideHeader extends AtomicHeader {
         var result = left;
         for (const tape of text.split("/")) {
             result = new AstHide(content, result, tape.trim());
-            result.cell = content;
         }
         return result;
     }
@@ -212,7 +210,11 @@ class RenameHeader extends UnaryHeader {
         content: Cell
     ): AstComponent {
         if (!(this.child instanceof LiteralHeader)) {
-            content.markError("error", "Renaming error", "Rename (>) needs to have a tape name after it");
+            content.message({
+                type: "error",
+                shortMsg: "Renaming error",
+                longMsg: "Rename (>) needs to have a tape name after it"
+            })
             return new AstEpsilon(content);
         }
         const ast = new AstRename(content, left, text, this.child.text);
@@ -299,8 +301,11 @@ export class EqualsHeader extends LogicHeader {
         content: Cell
     ): AstComponent {
         if (leftNeighbor == undefined) {
-            content.markError("error", "Filtering empty grammar",
-                "'equals/startswith/endswith/contains' requires content to its left.");
+            content.message({
+                type: "error",
+                shortMsg: "Filtering empty grammar",
+                longMsg: "'equals/startswith/endswith/contains' requires content to its left."
+            });
             return new AstEpsilon(content);
         }
 
@@ -412,8 +417,11 @@ export class ErrorHeader extends LiteralHeader {
         text: string,
         content: Cell
     ): AstComponent {
-        content.markError("warning", `Invalid header: ${this.text}`,
-            `This content is associated with an invalid header above, ignoring`)
+        content.message({
+            type: "warning",
+            shortMsg: `Invalid header: ${this.text}`,
+            longMsg: `This content is associated with an invalid header above, ignoring`
+        });
         return new AstEpsilon(content);
     }
 }
@@ -425,8 +433,11 @@ export class ReservedErrorHeader extends ErrorHeader {
         text: string,
         content: Cell
     ): AstComponent {
-        content.markError("warning", `Invalid header: ${this.text}`,
-            `This content is associated with an invalid header above, ignoring`)
+        content.message({
+            type: "warning",
+            shortMsg: `Invalid header: ${this.text}`,
+            longMsg: `This content is associated with an invalid header above, ignoring`
+        });
         return new AstEpsilon(content);
     }
 

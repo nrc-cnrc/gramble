@@ -27,17 +27,15 @@ export class CellPos {
 }
 
 export interface Cell {
-    markHeader(color: string): void;
-    markError(severity: "error" | "warning", shortMsg: string, longMsg: string): void;
-    markComment(): void;
-    markCommand(): void;
+
+    message(msg: any): void;
+
 }
 
-export class DummyCell {
-    markHeader(color: string): void {}
-    markError(severity: "error" | "warning", shortMsg: string, longMsg: string): void {}
-    markComment(): void {}
-    markCommand(): void {}
+export class DummyCell implements Cell {
+
+    message(msg: any): void { }
+
 }
 
 /**
@@ -59,7 +57,10 @@ export interface DevEnvironment {
 
     addSourceAsText(sheetName: string, text: string): void;
     addSourceAsCells(sheetName: string, cells: string[][]): void;
-    markError(sheet: string, row: number, col: number, 
+    
+    message(msg: any): void;
+    
+    /* markError(sheet: string, row: number, col: number, 
             shortMsg: string, msg: string, level?: "error"|"warning"|"info"): void;
     markContent(sheet: string, row: number, col: number, tape: string): void;
     markComment(sheet: string, row: number, col: number): void;
@@ -67,6 +68,8 @@ export interface DevEnvironment {
     markCommand(sheet: string, row: number, col: number): void;
     markSymbol(sheet: string, row: number, col: number): void;
     setColor(tapeName: string, color: string): void;
+    */
+
     highlight(): void;
     alert(msg: string): void;
 }

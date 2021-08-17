@@ -59,6 +59,9 @@ export abstract class AstComponent {
         public cell: Cell
     ) { }
 
+    public message(msg: any): void {
+        this.cell.message(msg);
+    }
 
     public abstract getChildren(): AstComponent[];
 
@@ -616,8 +619,12 @@ export class AstHide extends AstUnary {
 
             if (!this.child.tapes.has(this.tape)) {            
                 if (this.cell != undefined) {
-                    this.cell.markError("error", "Hiding missing tape",
-                    `The grammar to the left does not contain the tape ${this.tape}. Available tapes: [${[...this.child.tapes]}]`);
+                    this.message({
+                        type: "error", 
+                        shortMsg: "Hiding missing tape",
+                        longMsg: `The grammar to the left does not contain the tape ${this.tape}. " +
+                            " Available tapes: [${[...this.child.tapes]}]`
+                    });
                 }
             }
 
@@ -902,9 +909,11 @@ export class AstEmbed extends AstAtomic {
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
             if (this.referent == undefined) {
-                if (this.cell != undefined) {
-                    this.cell.markError("error", "Unknown symbol", `Undefined symbol ${this.name}`);
-                }
+                this.message({
+                    type: "error", 
+                    shortMsg: "Unknown symbol", 
+                    longMsg: `Undefined symbol: ${this.name}`
+                });
                 return EPSILON;
             }
             this.expr = constructEmbed(this.qualifiedName, symbols);
@@ -929,14 +938,23 @@ export class AstUnitTest extends AstUnary {
         for (const test of this.tests) {
             const testingState = new AstFilter(test.cell, this.child, test);
             const results = [...testingState.generate()];
-            this.markResults(test.cell, results);
+            this.markResults(test, results);
         }
     }
 
-    public markResults(testCell: Cell, results: StringDict[]): void {
+    public markResults(test: AstComponent, results: StringDict[]): void {
         if (results.length == 0) {
-            testCell.markError("error", "Failed unit test",
-                "The grammar above has no outputs compatible with this row.");
+            test.message({
+                type: "error", 
+                shortMsg: "Failed unit test",
+                longMsg: "The grammar above has no outputs compatible with this row."
+            });
+        } else {
+            test.message({
+                type: "info",
+                shortMsg: "Unit test successful",
+                longMsg: "The grammar above has outputs compatible with this row."
+            });
         }
     }
 
@@ -951,10 +969,19 @@ export class AstUnitTest extends AstUnary {
 
 export class AstNegativeUnitTest extends AstUnitTest {
 
-    public markResults(testCell: Cell, results: StringDict[]): void {
-        if (results.length != 0) {
-            testCell.markError("error", "Failed unit test",
-                "The grammar above has outputs compatible with this row.");
+    public markResults(test: AstComponent, results: StringDict[]): void {
+        if (results.length > 0) {
+            test.message({
+                type: "error", 
+                shortMsg: "Failed unit test",
+                longMsg: "The grammar above incorrectly has outputs compatible with this row."
+            });
+        } else {
+            test.message({
+                type: "info",
+                shortMsg: "Unit test successful",
+                longMsg: "The grammar above correctly has no outputs compatible with this row."
+            });
         }
     } 
 

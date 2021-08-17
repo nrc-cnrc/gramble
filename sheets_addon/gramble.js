@@ -1011,7 +1011,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Not = exports.Rename = exports.MatchFrom = exports.MatchDotStar2 = exports.MatchDotStar = exports.MatchDotRep2 = exports.MatchDotRep = exports.MatchDot = exports.Dot = exports.Match = exports.Embed = exports.Null = exports.Epsilon = exports.Rep = exports.Contains = exports.EndsWith = exports.StartsWith = exports.Join = exports.Filter = exports.Intersect = exports.Any = exports.Lit = exports.Maybe = exports.Uni = exports.Seq = exports.AstNegativeUnitTest = exports.AstUnitTest = exports.AstEmbed = exports.AstNamespace = exports.AstMatch = exports.AstHide = exports.AstNegation = exports.AstRepeat = exports.AstRename = exports.AstUnary = exports.AstContains = exports.AstEndsWith = exports.AstStartsWith = exports.AstFilter = exports.AstJoin = exports.AstIntersection = exports.AstAlternation = exports.AstSequence = exports.AstDot = exports.AstLiteral = exports.AstNull = exports.AstEpsilon = exports.AstComponent = exports.Expr = exports.CounterStack = void 0;
-exports.Replace = exports.Hide = exports.Ns = void 0;
+exports.Replace = exports.Vocab = exports.Hide = exports.Ns = void 0;
 const derivs_1 = require("./derivs");
 Object.defineProperty(exports, "CounterStack", { enumerable: true, get: function () { return derivs_1.CounterStack; } });
 Object.defineProperty(exports, "Expr", { enumerable: true, get: function () { return derivs_1.Expr; } });
@@ -1045,6 +1045,9 @@ class AstComponent {
         this.cell = cell;
         this.expr = undefined;
         this.tapes = undefined;
+    }
+    message(msg) {
+        this.cell.message(msg);
     }
     /**
      * Collects all explicitly mentioned characters in the grammar for all tapes.
@@ -1430,13 +1433,17 @@ class AstRepeat extends AstUnary {
 }
 exports.AstRepeat = AstRepeat;
 class AstNegation extends AstUnary {
+    constructor(cell, child, maxReps = Infinity) {
+        super(cell, child);
+        this.maxReps = maxReps;
+    }
     constructExpr(symbols) {
         if (this.expr == undefined) {
             if (this.child.tapes == undefined) {
                 throw new Error("Getting Brz expression with undefined tapes");
             }
             const childExpr = this.child.constructExpr(symbols);
-            this.expr = derivs_1.constructNegation(childExpr, this.child.tapes);
+            this.expr = derivs_1.constructNegation(childExpr, this.child.tapes, this.maxReps);
         }
         return this.expr;
     }
@@ -1478,7 +1485,12 @@ class AstHide extends AstUnary {
             }
             if (!this.child.tapes.has(this.tape)) {
                 if (this.cell != undefined) {
-                    this.cell.markError("error", "Hiding missing tape", `The grammar to the left does not contain the tape ${this.tape}. Available tapes: [${[...this.child.tapes]}]`);
+                    this.message({
+                        type: "error",
+                        shortMsg: "Hiding missing tape",
+                        longMsg: `The grammar to the left does not contain the tape ${this.tape}. " +
+                            " Available tapes: [${[...this.child.tapes]}]`
+                    });
                 }
             }
             const childExpr = this.child.constructExpr(symbols);
@@ -1719,9 +1731,11 @@ class AstEmbed extends AstAtomic {
     constructExpr(symbols) {
         if (this.expr == undefined) {
             if (this.referent == undefined) {
-                if (this.cell != undefined) {
-                    this.cell.markError("error", "Unknown symbol", `Undefined symbol ${this.name}`);
-                }
+                this.message({
+                    type: "error",
+                    shortMsg: "Unknown symbol",
+                    longMsg: `Undefined symbol: ${this.name}`
+                });
                 return derivs_1.EPSILON;
             }
             this.expr = derivs_1.constructEmbed(this.qualifiedName, symbols);
@@ -1740,12 +1754,23 @@ class AstUnitTest extends AstUnary {
         for (const test of this.tests) {
             const testingState = new AstFilter(test.cell, this.child, test);
             const results = [...testingState.generate()];
-            this.markResults(test.cell, results);
+            this.markResults(test, results);
         }
     }
-    markResults(testCell, results) {
+    markResults(test, results) {
         if (results.length == 0) {
-            testCell.markError("error", "Failed unit test", "The grammar above has no outputs compatible with this row.");
+            test.message({
+                type: "error",
+                shortMsg: "Failed unit test",
+                longMsg: "The grammar above has no outputs compatible with this row."
+            });
+        }
+        else {
+            test.message({
+                type: "info",
+                shortMsg: "Unit test successful",
+                longMsg: "The grammar above has outputs compatible with this row."
+            });
         }
     }
     constructExpr(symbols) {
@@ -1757,9 +1782,20 @@ class AstUnitTest extends AstUnary {
 }
 exports.AstUnitTest = AstUnitTest;
 class AstNegativeUnitTest extends AstUnitTest {
-    markResults(testCell, results) {
-        if (results.length != 0) {
-            testCell.markError("error", "Failed unit test", "The grammar above has outputs compatible with this row.");
+    markResults(test, results) {
+        if (results.length > 0) {
+            test.message({
+                type: "error",
+                shortMsg: "Failed unit test",
+                longMsg: "The grammar above incorrectly has outputs compatible with this row."
+            });
+        }
+        else {
+            test.message({
+                type: "info",
+                shortMsg: "Unit test successful",
+                longMsg: "The grammar above correctly has no outputs compatible with this row."
+            });
         }
     }
 }
@@ -1861,8 +1897,8 @@ function Rename(child, fromTape, toTape) {
     return new AstRename(DUMMY_CELL, child, fromTape, toTape);
 }
 exports.Rename = Rename;
-function Not(child) {
-    return new AstNegation(DUMMY_CELL, child);
+function Not(child, maxChars = Infinity) {
+    return new AstNegation(DUMMY_CELL, child, maxChars);
 }
 exports.Not = Not;
 function Ns(name, symbols = {}) {
@@ -1877,6 +1913,10 @@ function Hide(child, tape, name = "") {
     return new AstHide(DUMMY_CELL, child, tape, name);
 }
 exports.Hide = Hide;
+function Vocab(tape, text) {
+    return Rep(Lit(tape, text), 0, 0);
+}
+exports.Vocab = Vocab;
 /**
   * Replace implements general phonological replacement rules.
   *
@@ -1919,7 +1959,6 @@ function Replace(fromTapeName, toTapeName, fromState, toState, preContext, postC
         const fromVocab = fromTape.fromToken(fromTapeName, fromTape.any()).join('');
         sameVocab = tapeCollection.inVocab(toTapeName, fromVocab);
     }
-    console.log(`same vocab = ${sameVocab}`);
     function matchAnythingElse(replaceNone = false) {
         const dotStar = Rep(Any(fromTapeName), 0, maxExtraChars);
         // 1. If the fromTape vocab for the replacement operation contains some
@@ -1931,7 +1970,6 @@ function Replace(fromTapeName, toTapeName, fromState, toState, preContext, postC
         //    or end of text (endsWith) then matchAnythingElse needs to match any
         //    other instances of the replacement pattern, so we need to match .*
         if (!sameVocab || (beginsWith && !replaceNone) || (endsWith && !replaceNone)) {
-            console.log("simple match from");
             return MatchFrom(fromTapeName, toTapeName, dotStar);
         }
         var fromInstance = [];
@@ -1942,24 +1980,24 @@ function Replace(fromTapeName, toTapeName, fromState, toState, preContext, postC
             fromInstance.push(postContext);
         var notState;
         if (beginsWith && replaceNone)
-            notState = Not(Seq(...fromInstance, dotStar)); //, maxExtraChars);
+            notState = Not(Seq(...fromInstance, dotStar), maxExtraChars);
         else if (endsWith && replaceNone)
-            notState = Not(Seq(dotStar, ...fromInstance)); //, maxExtraChars);
+            notState = Not(Seq(dotStar, ...fromInstance), maxExtraChars);
         else
-            notState = Not(Seq(dotStar, ...fromInstance, dotStar)); //, maxExtraChars);
+            notState = Not(Seq(dotStar, ...fromInstance, dotStar), maxExtraChars);
         return MatchFrom(fromTapeName, toTapeName, notState);
     }
     if (!endsWith)
         states.push(matchAnythingElse());
     const replaceOne = Seq(...states);
     var replaceMultiple = Rep(replaceOne, minReps, maxReps);
-    if (repetitionPatch && maxReps <= 100) {
-        var multiples = [];
-        for (let n = Math.max(1, minReps); n < maxReps + 1; n++) {
-            multiples.push(Seq(...Array.from({ length: n }).map(x => replaceOne)));
+    /*if (repetitionPatch && maxReps <= 100) {
+        var multiples: AstComponent[] = [];
+        for (let n=Math.max(1, minReps); n < maxReps+1; n++) {
+            multiples.push(Seq(...Array.from({length: n}).map(x => replaceOne)));
         }
         replaceMultiple = Uni(...multiples);
-    }
+    } */
     if (beginsWith)
         replaceState = replaceOne;
     else if (endsWith)
@@ -2022,7 +2060,7 @@ exports.parseBooleanCell = parseBooleanCell;
 },{"./miniParser":8}],4:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.constructMemo = exports.constructRename = exports.constructMatch = exports.constructUniverse = exports.constructDotStar = exports.constructNegation = exports.constructEmbed = exports.constructRepeat = exports.constructStar = exports.constructMaybe = exports.constructIntersection = exports.constructAlternation = exports.constructSequence = exports.constructBinaryUnion = exports.constructBinaryConcat = exports.constructListExpr = exports.constructDot = exports.constructLiteral = exports.NULL = exports.EPSILON = exports.MatchExpr = exports.UnionExpr = exports.BinaryExpr = exports.NullExpr = exports.EpsilonExpr = exports.Expr = exports.CounterStack = void 0;
+exports.constructMemo = exports.constructRename = exports.constructMatch = exports.constructUniverse = exports.constructDotRep = exports.constructDotStar = exports.constructNegation = exports.constructEmbed = exports.constructRepeat = exports.constructStar = exports.constructMaybe = exports.constructIntersection = exports.constructAlternation = exports.constructSequence = exports.constructBinaryUnion = exports.constructBinaryConcat = exports.constructListExpr = exports.constructDot = exports.constructLiteral = exports.NULL = exports.EPSILON = exports.MatchExpr = exports.UnionExpr = exports.BinaryExpr = exports.NullExpr = exports.EpsilonExpr = exports.Expr = exports.CounterStack = void 0;
 const util_1 = require("./util");
 const tapes_1 = require("./tapes");
 class CounterStack {
@@ -2162,6 +2200,7 @@ class Expr {
             let nextQueue = [];
             for (let [tapes, prevOutput, prevExpr, chars] of stateQueue) {
                 //console.log(`prevExpr is ${prevExpr.id}`);
+                //console.log(`prevOutput is ${JSON.stringify([...prevOutput.toStrings(false)])}`);
                 if (chars >= maxChars) {
                     continue;
                 }
@@ -2179,7 +2218,7 @@ class Expr {
                 for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, tapes_1.ANY_CHAR, stack)) {
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nextQueue.push([tapes, nextOutput, cNext, chars + 1]);
-                    //console.log(`D^${cTape.tapeName} is ${cNext.id}`);
+                    //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
                 }
                 const delta = prevExpr.delta(tapeToTry, stack);
                 //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
@@ -2331,7 +2370,8 @@ class LiteralExpr extends Expr {
         tapes.tokenize(this.tapeName, this.text);
     }
     getToken(tape) {
-        return tape.tokenize(tape.tapeName, this.text[this.index])[0];
+        //return tape.tokenize(tape.tapeName, this.text[this.index])[0];
+        return new tapes_1.Token(tape.toBits(tape.tapeName, this.text[this.index]));
     }
     *deriv(tape, target, stack) {
         if (this.index >= this.text.length) {
@@ -2367,7 +2407,7 @@ class BinaryExpr extends Expr {
 exports.BinaryExpr = BinaryExpr;
 class ConcatExpr extends BinaryExpr {
     get id() {
-        return `(${this.child1.id}+${this.child2.id})`;
+        return `${this.child1.id}+${this.child2.id}`;
     }
     delta(tape, stack) {
         return constructBinaryConcat(this.child1.delta(tape, stack), this.child2.delta(tape, stack));
@@ -2584,9 +2624,15 @@ class RenameExpr extends UnaryExpr {
         this.toTape = toTape;
     }
     delta(tape, stack) {
+        if (tape.tapeName == this.fromTape) {
+            return this;
+        }
         tape = new tapes_1.RenamedTape(tape, this.fromTape, this.toTape);
         const newChild = this.child.delta(tape, stack);
         return constructRename(newChild, this.fromTape, this.toTape);
+    }
+    get id() {
+        return `${this.fromTape}->${this.toTape}(${this.child.id})`;
     }
     *deriv(tape, target, stack) {
         if (tape.tapeName == this.fromTape) {
@@ -2602,23 +2648,30 @@ class RenameExpr extends UnaryExpr {
     }
 }
 class NegationExpr extends UnaryExpr {
-    constructor(child, tapes) {
+    constructor(child, tapes, maxChars = Infinity) {
         super(child);
         this.tapes = tapes;
+        this.maxChars = maxChars;
+    }
+    get id() {
+        return `~${this.maxChars}(${this.child.id})`;
     }
     delta(tape, stack) {
         const childDelta = this.child.delta(tape, stack);
         const remainingTapes = util_1.setDifference(this.tapes, new Set([tape.tapeName]));
-        return constructNegation(childDelta, remainingTapes);
+        return constructNegation(childDelta, remainingTapes, this.maxChars);
     }
     *deriv(tape, target, stack) {
         if (!this.tapes.has(tape.tapeName)) {
             return;
         }
+        if (this.maxChars == 0) {
+            return;
+        }
         var remainder = new tapes_1.Token(target.bits.clone());
         for (const [childTape, childText, childNext] of this.child.disjointDeriv(tape, target, stack)) {
             remainder = remainder.andNot(childText);
-            const successor = constructNegation(childNext, this.tapes);
+            const successor = constructNegation(childNext, this.tapes, this.maxChars - 1);
             yield [childTape, childText, successor];
         }
         if (remainder.isEmpty()) {
@@ -2628,7 +2681,7 @@ class NegationExpr extends UnaryExpr {
         // cases where we've (in FSA terms) "fallen off" the graph,
         // and are now at a special consume-anything state that always
         // succeeds.
-        yield [tape, remainder, constructUniverse(this.tapes)];
+        yield [tape, remainder, constructUniverse(this.tapes, this.maxChars - 1)];
     }
 }
 class MatchExpr extends UnaryExpr {
@@ -2638,7 +2691,7 @@ class MatchExpr extends UnaryExpr {
         this.buffers = buffers;
     }
     get id() {
-        return `Match(${Object.values(this.buffers).map(b => b.id).join("+")},${this.child.id}`;
+        return `Match(${Object.values(this.buffers).map(b => b.id)}, ${this.child.id})`;
     }
     delta(tape, stack) {
         if (!this.tapes.has(tape.tapeName)) {
@@ -2656,14 +2709,9 @@ class MatchExpr extends UnaryExpr {
             }
             newBuffers[tape.tapeName] = deltaBuffer;
         }
-        var result = this.child;
-        for (const mTapeName of this.tapes) {
-            const mTape = tape.getTape(mTapeName);
-            if (mTape == undefined) {
-                throw new Error(`Cannot find tape ${mTape}`);
-            }
-            result = result.delta(mTape, stack);
-        }
+        var bufSeq = constructSequence(...Object.values(newBuffers));
+        var result = this.child.delta(tape, stack);
+        return constructIntersection(bufSeq, result);
         if (!(result instanceof NullExpr)) {
             return constructSequence(...Object.values(newBuffers), result);
         }
@@ -2855,7 +2903,7 @@ function constructStar(child) {
 }
 exports.constructStar = constructStar;
 /**
- * Creates A{min,max} from A.  Distinguished from createStar
+ * Creates A{min,max} from A.  Distinguished from constructStar
  * in that that only works for A{0,infinity}, whereas this
  * works for any values of {min,max}.
  */
@@ -2889,22 +2937,27 @@ function constructEmbed(symbolName, symbols, child = undefined) {
     return new EmbedExpr(symbolName, symbols, child);
 }
 exports.constructEmbed = constructEmbed;
-function constructNegation(child, tapes) {
+function constructNegation(child, tapes, maxChars = Infinity) {
     if (child instanceof NullExpr) {
-        return constructUniverse(tapes);
+        return constructUniverse(tapes, maxChars);
     }
     if (child instanceof NegationExpr) {
         return child.child;
     }
-    return new NegationExpr(child, tapes);
+    return new NegationExpr(child, tapes, maxChars);
 }
 exports.constructNegation = constructNegation;
 function constructDotStar(tape) {
     return constructStar(constructDot(tape));
 }
 exports.constructDotStar = constructDotStar;
-function constructUniverse(tapes) {
-    return constructSequence(...[...tapes].map(t => constructDotStar(t)));
+function constructDotRep(tape, maxReps = Infinity) {
+    return constructRepeat(constructDot(tape), 0, maxReps);
+}
+exports.constructDotRep = constructDotRep;
+function constructUniverse(tapes, maxReps = Infinity) {
+    return constructSequence(...[...tapes]
+        .map(t => constructDotRep(t, maxReps)));
 }
 exports.constructUniverse = constructUniverse;
 function constructMatch(child, tapes, buffers = {}) {
@@ -3085,7 +3138,6 @@ class EmbedHeader extends AtomicHeader {
     }
     toAST(left, text, content) {
         const cellAST = new ast_1.AstEmbed(content, text);
-        cellAST.cell = content;
         return new ast_1.AstSequence(content, [left, cellAST]);
     }
 }
@@ -3107,7 +3159,6 @@ class HideHeader extends AtomicHeader {
         var result = left;
         for (const tape of text.split("/")) {
             result = new ast_1.AstHide(content, result, tape.trim());
-            result.cell = content;
         }
         return result;
     }
@@ -3174,7 +3225,11 @@ exports.MaybeHeader = MaybeHeader;
 class RenameHeader extends UnaryHeader {
     toAST(left, text, content) {
         if (!(this.child instanceof LiteralHeader)) {
-            content.markError("error", "Renaming error", "Rename (>) needs to have a tape name after it");
+            content.message({
+                type: "error",
+                shortMsg: "Renaming error",
+                longMsg: "Rename (>) needs to have a tape name after it"
+            });
             return new ast_1.AstEpsilon(content);
         }
         const ast = new ast_1.AstRename(content, left, text, this.child.text);
@@ -3235,7 +3290,11 @@ exports.LogicHeader = LogicHeader;
 class EqualsHeader extends LogicHeader {
     merge(leftNeighbor, state, content) {
         if (leftNeighbor == undefined) {
-            content.markError("error", "Filtering empty grammar", "'equals/startswith/endswith/contains' requires content to its left.");
+            content.message({
+                type: "error",
+                shortMsg: "Filtering empty grammar",
+                longMsg: "'equals/startswith/endswith/contains' requires content to its left."
+            });
             return new ast_1.AstEpsilon(content);
         }
         if (leftNeighbor instanceof ast_1.AstSequence) {
@@ -3309,14 +3368,22 @@ class SlashHeader extends BinaryHeader {
 exports.SlashHeader = SlashHeader;
 class ErrorHeader extends LiteralHeader {
     toAST(left, text, content) {
-        content.markError("warning", `Invalid header: ${this.text}`, `This content is associated with an invalid header above, ignoring`);
+        content.message({
+            type: "warning",
+            shortMsg: `Invalid header: ${this.text}`,
+            longMsg: `This content is associated with an invalid header above, ignoring`
+        });
         return new ast_1.AstEpsilon(content);
     }
 }
 exports.ErrorHeader = ErrorHeader;
 class ReservedErrorHeader extends ErrorHeader {
     toAST(left, text, content) {
-        content.markError("warning", `Invalid header: ${this.text}`, `This content is associated with an invalid header above, ignoring`);
+        content.message({
+            type: "warning",
+            shortMsg: `Invalid header: ${this.text}`,
+            longMsg: `This content is associated with an invalid header above, ignoring`
+        });
         return new ast_1.AstEpsilon(content);
     }
 }
@@ -3579,9 +3646,13 @@ function constructOp(cell) {
         // like making sure that the child and/or sibling are compiled and 
         // checked for errors.
         newEnclosure = new tsts_1.TstEnclosure(cell);
-        cell.markError("error", "Unknown operator", `Operator ${trimmedText} not recognized.`);
+        cell.message({
+            type: "error",
+            shortMsg: "Unknown operator",
+            longMsg: `Operator ${trimmedText} not recognized.`
+        });
     }
-    newEnclosure.mark();
+    cell.message({ type: "command" });
     return newEnclosure;
 }
 class SheetComponent {
@@ -3645,20 +3716,8 @@ class SheetProject extends SheetComponent {
         result.addSheet(mainTstSheet);
         return result;
     }
-    markError(sheet, row, col, shortMsg, longMsg, severity) {
-        this.devEnv.markError(sheet, row, col, shortMsg, longMsg, severity);
-    }
-    markComment(sheet, row, col) {
-        this.devEnv.markComment(sheet, row, col);
-    }
-    markCommand(sheet, row, col) {
-        this.devEnv.markCommand(sheet, row, col);
-    }
-    markHeader(name, row, col, color) {
-        this.devEnv.markHeader(name, row, col, color);
-    }
-    markContent(name, row, col, color) {
-        this.devEnv.markContent(name, row, col, color);
+    message(msg) {
+        this.devEnv.message(msg);
     }
 }
 exports.SheetProject = SheetProject;
@@ -3670,20 +3729,9 @@ class Sheet extends SheetComponent {
         this.cells = cells;
     }
     //public cells: SheetCell[][] = [];
-    markError(row, col, severity, shortMsg, longMsg) {
-        this.project.markError(this.name, row, col, shortMsg, longMsg, severity);
-    }
-    markHeader(row, col, color) {
-        this.project.markHeader(this.name, row, col, color);
-    }
-    markContent(row, col, color) {
-        this.project.markContent(this.name, row, col, color);
-    }
-    markComment(row, col) {
-        this.project.markComment(this.name, row, col);
-    }
-    markCommand(row, col) {
-        this.project.markCommand(this.name, row, col);
+    message(msg) {
+        msg["sheet"] = this.name;
+        this.project.message(msg);
     }
     /**
      * Parses a grid of cells into a syntax tree -- specifically, a "Tabular Syntax Tree (TST)" that
@@ -3738,7 +3786,7 @@ class Sheet extends SheetComponent {
                 const cell = new SheetCell(this, cellText, rowIndex, colIndex);
                 if (rowIsComment) {
                     const comment = new tsts_1.TstComment(cell);
-                    comment.mark();
+                    cell.message({ type: "comment" });
                     continue;
                 }
                 let top = stack[stack.length - 1];
@@ -3772,14 +3820,21 @@ class Sheet extends SheetComponent {
                         stack.push(newTop);
                     }
                     catch (e) {
-                        cell.markError("error", `Unexpected operator: ${cell.text}`, "This looks like an operator, but only a header can follow a header.");
+                        cell.message({
+                            type: "error",
+                            shortMsg: `Unexpected operator: ${cell.text}`,
+                            longMsg: "This looks like an operator, but only a header can follow a header."
+                        });
                     }
                     continue;
                 }
                 // it's a header
                 try {
                     const headerCell = new tsts_1.TstHeader(cell);
-                    headerCell.mark();
+                    cell.message({
+                        type: "header",
+                        color: headerCell.getColor(0.1)
+                    });
                     if (!(top.tst instanceof tsts_1.TstTable)) {
                         const newTable = new tsts_1.TstTable(cell);
                         top.tst.addChild(newTable);
@@ -3789,7 +3844,11 @@ class Sheet extends SheetComponent {
                     top.tst.addHeader(headerCell);
                 }
                 catch (e) {
-                    cell.markError("error", `Invalid header: ${cell.text}`, e.message);
+                    cell.message({
+                        type: "error",
+                        shortMsg: `Invalid header: ${cell.text}`,
+                        longMsg: e.message
+                    });
                 }
             }
         }
@@ -3804,20 +3863,10 @@ class SheetCell {
         this.row = row;
         this.col = col;
     }
-    markHeader(color) {
-        this.sheet.markHeader(this.row, this.col, color);
-    }
-    markContent(color) {
-        this.sheet.markContent(this.row, this.col, color);
-    }
-    markError(severity, shortMsg, longMsg) {
-        this.sheet.markError(this.row, this.col, severity, shortMsg, longMsg);
-    }
-    markComment() {
-        this.sheet.markComment(this.pos.row, this.pos.col);
-    }
-    markCommand() {
-        this.sheet.markCommand(this.pos.row, this.pos.col);
+    message(msg) {
+        msg["row"] = this.row;
+        msg["col"] = this.col;
+        this.sheet.message(msg);
     }
     get pos() {
         return new util_1.CellPos(this.sheet.name, this.row, this.col);
@@ -4372,12 +4421,8 @@ class TstCellComponent extends TstComponent {
     get pos() {
         return this.cell.pos;
     }
-    mark() { }
-    markError(shortMsg, msg) {
-        this.cell.markError("error", shortMsg, msg);
-    }
-    markWarning(shortMsg, msg) {
-        this.cell.markError("warning", shortMsg, msg);
+    message(msg) {
+        this.cell.message(msg);
     }
     toAST() {
         return new ast_1.AstEpsilon(this.cell);
@@ -4389,15 +4434,19 @@ class TstHeader extends TstCellComponent {
         super(cell);
         this.header = headers_1.parseHeaderCell(cell.text);
         if (this.header instanceof headers_1.ReservedErrorHeader) {
-            this.cell.markError("error", `Reserved word in header`, `This header contains a reserved word in an invalid position`);
+            this.cell.message({
+                type: "error",
+                shortMsg: `Reserved word in header`,
+                longMsg: `This header contains a reserved word in an invalid position`
+            });
         }
         else if (this.header instanceof headers_1.ErrorHeader) {
-            this.cell.markError("error", `Invalid header`, `This header cannot be parsed.`);
+            this.cell.message({
+                type: "error",
+                shortMsg: "Invalid header",
+                longMsg: `This header cannot be parsed.`
+            });
         }
-    }
-    mark() {
-        const color = this.getColor(0.1);
-        this.cell.markHeader(color);
     }
     getColor(saturation = headers_1.DEFAULT_SATURATION, value = headers_1.DEFAULT_VALUE) {
         return this.header.getColor(saturation, value);
@@ -4415,10 +4464,6 @@ class TstHeadedCell extends TstCellComponent {
         this.prev = prev;
         this.header = header;
     }
-    mark() {
-        const color = this.header.getColor(0.1);
-        this.cell.markContent(color);
-    }
     toAST() {
         let prevAst = new ast_1.AstEpsilon(this.cell);
         if (this.prev != undefined) {
@@ -4432,9 +4477,6 @@ class TstHeadedCell extends TstCellComponent {
 }
 exports.TstHeadedCell = TstHeadedCell;
 class TstComment extends TstCellComponent {
-    mark() {
-        this.cell.markComment();
-    }
     toAST() {
         return new ast_1.AstEpsilon(this.cell);
     }
@@ -4496,9 +4538,6 @@ class TstEnclosure extends TstCellComponent {
         this.child = undefined;
         this.specRow = cell.pos.row;
     }
-    mark() {
-        this.cell.markCommand();
-    }
     toAST() {
         // we only ever end up in this base EncloseComponent compile if it wasn't
         // a known operator.  this is an error, but we flag it for the programmer
@@ -4518,9 +4557,13 @@ class TstEnclosure extends TstCellComponent {
     addChild(child) {
         if (this.child != undefined &&
             this.child.pos.col != child.pos.col) {
-            child.markWarning("Unexpected operator", "This operator is in an unexpected column.  Did you mean for it " +
-                `to be in column ${this.child.pos.col}, ` +
-                `so that it's under the operator in cell ${this.child.pos}?`);
+            child.message({
+                type: "warning",
+                shortMsg: "Unexpected operator",
+                longMsg: "This operator is in an unexpected column.  Did you mean for it " +
+                    `to be in column ${this.child.pos.col}, ` +
+                    `so that it's under the operator in cell ${this.child.pos}?`
+            });
         }
         child.sibling = this.child;
         this.child = child;
@@ -4535,15 +4578,23 @@ class TstBinaryOp extends TstEnclosure {
         let childAst = new ast_1.AstEpsilon(this.cell);
         let siblingAst = new ast_1.AstEpsilon(this.cell);
         if (this.child == undefined) {
-            this.markError(`Missing argument to '${trimmedText}'`, `'${trimmedText}' is missing a second argument; ` +
-                "something should be in the cell to the right.");
+            this.message({
+                type: "error",
+                shortMsg: `Missing argument to '${trimmedText}'`,
+                longMsg: `'${trimmedText}' is missing a second argument; ` +
+                    "something should be in the cell to the right."
+            });
         }
         else {
             childAst = this.child.toAST();
         }
         if (this.sibling == undefined) {
-            this.markError(`Missing argument to '${trimmedText}'`, `'${trimmedText}' is missing a first argument; ` +
-                "something should be in a cell above this.");
+            this.message({
+                type: "error",
+                shortMsg: `Missing argument to '${trimmedText}'`,
+                longMsg: `'${trimmedText}' is missing a first argument; ` +
+                    "something should be in a cell above this."
+            });
         }
         else {
             siblingAst = this.sibling.toAST();
@@ -4562,8 +4613,12 @@ class TstTableOp extends TstEnclosure {
             this.sibling.toAST();
         }
         if (this.child == undefined) {
-            this.markWarning("Empty table", "'table' seems to be missing a table; " +
-                "something should be in the cell to the right.");
+            this.message({
+                type: "warning",
+                shortMsg: "Empty table",
+                longMsg: "'table' seems to be missing a table; " +
+                    "something should be in the cell to the right."
+            });
             return new ast_1.AstEpsilon(this.cell);
         }
         return this.child.toAST();
@@ -4575,27 +4630,36 @@ class TstUnitTest extends TstEnclosure {
      * "test" is an operator that takes two tables, one above (spatially speaking)
      * and one to the right, and makes sure that each line of the one to the right
      * has an output when filtering the table above.
-     *
-     * Test doesn't make any change to the State it returns; adding a "test" below
-     * a grammar returns the exact same grammar as otherwise.
      */
     toAST() {
         if (this.sibling == undefined) {
-            this.markError("Wayward test", "There should be something above this 'test' command to test");
+            this.message({
+                type: "warning",
+                shortMsg: "Wayward test",
+                longMsg: "There should be something above this 'test' command to test"
+            });
             return new ast_1.AstEpsilon(this.cell);
         }
         const siblingAst = this.sibling.toAST();
         if (this.child == undefined) {
-            this.markWarning("Empty test", "'test' seems to be missing something to test; " +
-                "something should be in the cell to the right.");
+            this.message({
+                type: "warning",
+                shortMsg: "Empty test",
+                longMsg: "'test' seems to be missing something to test; " +
+                    "something should be in the cell to the right."
+            });
             return siblingAst; // whereas usually we result in the 
             // empty grammar upon erroring, in this case
             // we don't want to let a flubbed "test" command 
             // obliterate the grammar it was meant to test!
         }
         if (!(this.child instanceof TstTable)) {
-            this.markError("Cannot execute tests", "You can't nest another operator to the right of a test block, " +
-                "it has to be a content table.");
+            this.message({
+                type: "error",
+                shortMsg: "Cannot execute tests",
+                longMsg: "You can't nest another operator to the right of a test block, " +
+                    "it has to be a content table."
+            });
             return siblingAst;
         }
         const testAST = this.child.toAST();
@@ -4606,30 +4670,39 @@ class TstUnitTest extends TstEnclosure {
 exports.TstUnitTest = TstUnitTest;
 class TstNegativeUnitTest extends TstEnclosure {
     /**
-     * "test" is an operator that takes two tables, one above (spatially speaking)
+     * "testnot" is an operator that takes two tables, one above (spatially speaking)
      * and one to the right, and makes sure that each line of the one to the right
-     * has an output when filtering the table above.
-     *
-     * Test doesn't make any change to the State it returns; adding a "test" below
-     * a grammar returns the exact same grammar as otherwise.
+     * has no output when filtering the table above.
      */
     toAST() {
         if (this.sibling == undefined) {
-            this.markError("Wayward test", "There should be something above this 'testnot' command to test");
+            this.message({
+                type: "error",
+                shortMsg: "Wayward test",
+                longMsg: "There should be something above this 'testnot' command to test"
+            });
             return new ast_1.AstEpsilon(this.cell);
         }
         const siblingAst = this.sibling.toAST();
         if (this.child == undefined) {
-            this.markWarning("Empty test", "'testnot' seems to be missing something to test; " +
-                "something should be in the cell to the right.");
+            this.message({
+                type: "warning",
+                shortMsg: "Empty test",
+                longMsg: "'testnot' seems to be missing something to test; " +
+                    "something should be in the cell to the right."
+            });
             return siblingAst; // whereas usually we result in the 
             // empty grammar upon erroring, in this case
             // we don't want to let a flubbed "test" command 
             // obliterate the grammar it was meant to test!
         }
         if (!(this.child instanceof TstTable)) {
-            this.markError("Cannot execute tests", "You can't nest another operator to the right of a testnot block, " +
-                "it has to be a content table.");
+            this.message({
+                type: "error",
+                shortMsg: "Cannot execute tests",
+                longMsg: "You can't nest another operator to the right of a testnot block, " +
+                    "it has to be a content table."
+            });
             return siblingAst;
         }
         const testAST = this.child.toAST();
@@ -4645,20 +4718,32 @@ class TstAssignment extends TstEnclosure {
         const trimmedTextLower = trimmedText.toLowerCase();
         if (headers_1.RESERVED_WORDS.has(trimmedTextLower)) {
             // oops, assigning to a reserved word
-            this.markError("Assignment to reserved word", "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
-                `reserved word ${trimmedText}.  Choose a different symbol name.`);
+            this.message({
+                type: "error",
+                shortMsg: "Assignment to reserved word",
+                longMsg: "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
+                    `reserved word ${trimmedText}.  Choose a different symbol name.`
+            });
         }
         if (this.child == undefined) {
             // oops, empty "right side" of the assignment!
-            this.markWarning("Empty assignment", `This looks like an assignment to a symbol ${trimmedText}, ` +
-                "but there's nothing to the right of it.");
+            this.message({
+                type: "warning",
+                shortMsg: "Empty assignment",
+                longMsg: `This looks like an assignment to a symbol ${trimmedText}, ` +
+                    "but there's nothing to the right of it."
+            });
             return;
         }
         try {
             ns.addSymbol(trimmedText, ast);
         }
         catch (e) {
-            this.markError('Invalid assignment', e.message);
+            this.message({
+                type: "error",
+                shortMsg: 'Invalid assignment',
+                longMsg: e.message
+            });
         }
     }
     toAST() {
@@ -4764,7 +4849,11 @@ class TstTable extends TstEnclosure {
         const headerCell = this.headersByCol[cell.pos.col];
         if (headerCell == undefined) {
             if (cell.text.length != 0) {
-                cell.markError("warning", `Ignoring cell: ${cell.text}`, "Cannot associate this cell with any valid header above; ignoring.");
+                cell.message({
+                    type: "warning",
+                    shortMsg: `Ignoring cell: ${cell.text}`,
+                    longMsg: "Cannot associate this cell with any valid header above; ignoring."
+                });
             }
             return;
         }
@@ -4795,7 +4884,10 @@ class TstRow extends TstCellComponent {
     }
     addContent(header, cell) {
         const newCell = new TstHeadedCell(this.lastCell, header, cell);
-        newCell.mark();
+        cell.message({
+            type: "content",
+            color: header.getColor(0.1)
+        });
         this.lastCell = newCell;
     }
     toAST() {
@@ -4833,10 +4925,7 @@ class CellPos {
 }
 exports.CellPos = CellPos;
 class DummyCell {
-    markHeader(color) { }
-    markError(severity, shortMsg, longMsg) { }
-    markComment() { }
-    markCommand() { }
+    message(msg) { }
 }
 exports.DummyCell = DummyCell;
 exports.DUMMY_POSITION = new CellPos("?", -1, -1);

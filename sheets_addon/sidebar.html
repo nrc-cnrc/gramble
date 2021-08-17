@@ -54,6 +54,18 @@
                     return this.cellsBySheet[lowercaseName];
                 }
 
+                message(msg) {
+                    if (msg["type"] == "error") {
+                        this.markError(msg["sheet"], msg["row"],
+                            msg["col"], msg["shortMsg"], msg["longMsg"],
+                            "error");
+                    } else if (msg["type"] == "warning") {
+                        this.markError(msg["sheet"], msg["row"],
+                            msg["col"], msg["shortMsg"], msg["longMsg"],
+                            "warning");
+                    }
+                }
+                
                 markError(sheet, row, col, shortMsg, msg, level = "error") {
                     this.errorMsgs.push([sheet, row, col, shortMsg, msg, level]);
                 }
@@ -139,6 +151,7 @@
                 
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
                 project = new gramble.Gramble(devEnv, currentSheetName);
+                project.runUnitTests();
 
                 createErrorButtons(devEnv.errorMsgs, currentSheetName);
                 reloadSymbols(currentSheetName);

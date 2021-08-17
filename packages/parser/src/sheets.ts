@@ -57,9 +57,13 @@ function constructOp(cell: SheetCell): TstEnclosure {
         // like making sure that the child and/or sibling are compiled and 
         // checked for errors.
         newEnclosure = new TstEnclosure(cell);
-        cell.markError("error", "Unknown operator", `Operator ${trimmedText} not recognized.`);
+        cell.message({
+            type: "error",
+            shortMsg: "Unknown operator", 
+            longMsg: `Operator ${trimmedText} not recognized.`
+        });
     }
-    newEnclosure.mark();
+    cell.message({ type: "command" });
     return newEnclosure;
 }
 
@@ -153,41 +157,9 @@ export class SheetProject extends SheetComponent {
         return result;
     }
 
-    public markError(
-        sheet: string,
-        row: number,
-        col: number,
-        shortMsg: string,
-        longMsg: string,
-        severity: "error" | "warning"
-    ) {
-        this.devEnv.markError(sheet, row, col, shortMsg, longMsg, severity);
+    public message(msg: any): void {
+        this.devEnv.message(msg);
     }
-
-    public markComment(
-        sheet: string,
-        row: number,
-        col: number
-    ): void {
-        this.devEnv.markComment(sheet, row, col);
-    }
-
-    public markCommand(
-        sheet: string,
-        row: number,
-        col: number
-    ): void {
-        this.devEnv.markCommand(sheet, row, col);
-    }
-
-    markHeader(name: string, row: number, col: number, color: string) {
-        this.devEnv.markHeader(name, row, col, color);
-    }
-
-    markContent(name: string, row: number, col: number, color: string) {
-        this.devEnv.markContent(name, row, col, color);
-    }
-
 }
 
 export class Sheet extends SheetComponent {
@@ -202,30 +174,9 @@ export class Sheet extends SheetComponent {
 
     //public cells: SheetCell[][] = [];
 
-    public markError(
-        row: number,
-        col: number,
-        severity: "error" | "warning",
-        shortMsg: string,
-        longMsg: string
-    ) {
-        this.project.markError(this.name, row, col, shortMsg, longMsg, severity);
-    }
-
-    public markHeader(row: number, col: number, color: string): void {
-        this.project.markHeader(this.name, row, col, color);
-    }
-
-    public markContent(row: number, col: number, color: string): void {
-        this.project.markContent(this.name, row, col, color);
-    }
-
-    public markComment(row: number, col: number): void {
-        this.project.markComment(this.name, row, col);
-    }
-
-    public markCommand(row: number, col: number): void {
-        this.project.markCommand(this.name, row, col);
+    public message(msg: any): void {
+        msg["sheet"] = this.name;
+        this.project.message(msg);
     }
 
     /**
@@ -291,7 +242,7 @@ export class Sheet extends SheetComponent {
                 
                 if (rowIsComment) {
                     const comment = new TstComment(cell);
-                    comment.mark();
+                    cell.message({ type: "comment" });
                     continue;
                 }
 
@@ -329,8 +280,11 @@ export class Sheet extends SheetComponent {
                         const newTop = { tst: newOp, row: rowIndex, col: colIndex };
                         stack.push(newTop);
                     } catch (e) {
-                        cell.markError("error", `Unexpected operator: ${cell.text}`, 
-                            "This looks like an operator, but only a header can follow a header.");
+                        cell.message({
+                            type: "error",
+                            shortMsg: `Unexpected operator: ${cell.text}`,
+                            longMsg: "This looks like an operator, but only a header can follow a header."
+                        });
                     }
                     continue;
                 } 
@@ -338,7 +292,10 @@ export class Sheet extends SheetComponent {
                 // it's a header
                 try {
                     const headerCell = new TstHeader(cell);
-                    headerCell.mark(); 
+                    cell.message({ 
+                        type: "header", 
+                        color: headerCell.getColor(0.1) 
+                    });
                     
                     if (!(top.tst instanceof TstTable)) {
                         const newTable = new TstTable(cell);
@@ -348,8 +305,11 @@ export class Sheet extends SheetComponent {
                     }
                     (top.tst as TstTable).addHeader(headerCell);
                 } catch(e) {
-                    cell.markError("error", `Invalid header: ${cell.text}`,
-                        (e as Error).message);
+                    cell.message({
+                        type: "error",
+                        shortMsg:`Invalid header: ${cell.text}`,
+                        longMsg: (e as Error).message
+                    });
                 }
             }
         }
@@ -367,33 +327,13 @@ export class SheetCell implements Cell {
         public col: number
     ) {  }
 
-    public markHeader(color: string): void {
-        this.sheet.markHeader(this.row, this.col, color);
-    }
-    
-    public markContent(color: string): void {
-        this.sheet.markContent(this.row, this.col, color);
-    }
-    
-    public markError(
-        severity: "error" | "warning",
-        shortMsg: string,
-        longMsg: string
-    ): void {
-        this.sheet.markError(this.row, this.col, severity, shortMsg, longMsg);
-    }
-
-    
-    public markComment(): void {
-        this.sheet.markComment(this.pos.row, this.pos.col);
-    }
-
-    
-    public markCommand(): void {
-        this.sheet.markCommand(this.pos.row, this.pos.col);
+    public message(msg: any): void {
+        msg["row"] = this.row;
+        msg["col"] = this.col;
+        this.sheet.message(msg);
     }
 
     public get pos(): CellPos {
         return new CellPos(this.sheet.name, this.row, this.col);
-    }
+    } 
 }
