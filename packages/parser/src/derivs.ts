@@ -141,18 +141,6 @@ export class CounterStack {
     }
 }
 
-export interface INamespace {
-    register(symbolName: string): void;
-    getSymbol(name: string, stack: CounterStack | undefined): Expr | undefined;
-    addSymbol(name: string, expr: Expr): void;
-    compileSymbol(
-        name: string, 
-        allTapes: TapeCollection, 
-        stack: CounterStack,
-        compileLevel: number
-    ): void;
-}
-
 /**
  * Expr
  * 

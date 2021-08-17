@@ -2,7 +2,6 @@ import {
     CounterStack, 
     Expr, 
     EPSILON,
-    INamespace, 
     constructRepeat,
     constructSequence,
     constructAlternation,
