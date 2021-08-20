@@ -547,10 +547,6 @@ class LiteralExpr extends Expr {
         return NULL;
     }
 
-    public collectVocab(tapes: Tape, stack: string[]): void {
-        tapes.tokenize(this.tapeName, this.text);
-    }
-
     protected getToken(tape: Tape): Token {
         //return tape.tokenize(tape.tapeName, this.text[this.index])[0];
         return new Token(tape.toBits(tape.tapeName, this.text[this.index]));

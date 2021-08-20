@@ -110,3 +110,6 @@ dist
 .project
 .settings
 .pydevproject
+
+# GSuite deployments
+deployments/

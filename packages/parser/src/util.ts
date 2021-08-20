@@ -60,16 +60,6 @@ export interface DevEnvironment {
     
     message(msg: any): void;
     
-    /* markError(sheet: string, row: number, col: number, 
-            shortMsg: string, msg: string, level?: "error"|"warning"|"info"): void;
-    markContent(sheet: string, row: number, col: number, tape: string): void;
-    markComment(sheet: string, row: number, col: number): void;
-    markHeader(sheet: string, row: number, col: number, color: string): void;
-    markCommand(sheet: string, row: number, col: number): void;
-    markSymbol(sheet: string, row: number, col: number): void;
-    setColor(tapeName: string, color: string): void;
-    */
-
     highlight(): void;
     alert(msg: string): void;
 }
