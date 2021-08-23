@@ -90,18 +90,14 @@ export class Gramble {
     public sample(symbolName: string = "",
         numSamples: number = 1,
         restriction: StringDict | undefined = undefined,
-        maxTries: number = 1000,
         maxRecursion: number = 4, 
         maxChars: number = 1000
     ): StringDict[] {
 
         let results: StringDict[] = [];
-        for (let i = 0; i < maxTries; i++) {
+        for (let i = 0; i < numSamples; i++) {
             const gen = this.getAST().generate(symbolName, restriction, true, maxRecursion, maxChars);
             results = results.concat(iterTake(gen, 1));
-            if (results.length >= numSamples) {
-                break;
-            }
         }
         return results;
     } 
