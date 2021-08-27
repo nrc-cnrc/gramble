@@ -1,7 +1,12 @@
 
 /**
- * This file describes the parser that turns spreadsheets into abstract
- * syntax trees -- [AstComponent]s from ast.ts -- which are in turn transformed
+ * TSTS -- "tabular syntax trees" -- represent the structure of the program
+ * in terms of the high-level tabular syntax: the structures, operators, headers,
+ * content, etc. that the programmer is laying out on the grid.  (As opposed to the
+ * more abstract grammar that they're representing thereby.)  
+ * 
+ * 
+ * - which are in turn transformed
  * into the expressions that the parse/generation engine actually operates on.
  */
 

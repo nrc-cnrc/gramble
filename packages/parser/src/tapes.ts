@@ -30,6 +30,8 @@ import { Gen, StringDict } from "./util";
 
 class SingleTapeOutput {
 
+    public cache: string[] | undefined = undefined;
+
     constructor(
         public tape: Tape,
         public token: Token,
@@ -43,6 +45,7 @@ class SingleTapeOutput {
         return new SingleTapeOutput(tape, token, this);
     }
 
+    
     public *getStrings(random: boolean = false): Gen<string> {
 
         var results: string[] = [ "" ];
@@ -69,7 +72,28 @@ class SingleTapeOutput {
         }
 
         yield* results;
-    }
+    } 
+
+    /*
+    public *getStrings(random: boolean = false): Gen<string> {
+
+        if (this.cache == undefined) {
+            this.cache = [];
+            let prevStrings = [ "" ];
+            if (this.prev != undefined) {
+                prevStrings = [...this.prev.getStrings(random)];
+            }
+                
+            for (const s of prevStrings) {
+                for (const c of this.tape.fromBits(this.tape.tapeName, this.token.bits)) {
+                    this.cache.push(s + c);
+                }
+            } 
+        }
+
+        yield* this.cache;
+
+    } */
 }
 
 /**

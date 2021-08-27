@@ -1,5 +1,5 @@
 import { CounterStack, AstComponent } from "./ast";
-import { DevEnvironment, iterTake, StringDict } from "./util";
+import { DevEnvironment, Gen, iterTake, StringDict } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 
@@ -66,11 +66,19 @@ export class Gramble {
     public generate(symbolName: string = "",
             restriction: StringDict = {},
             maxResults: number = Infinity,
-            maxRecursion: number = 4, 
+            maxRecursion: number = 2, 
             maxChars: number = 1000): StringDict[] {
 
         const gen = this.getAST().generate(symbolName, restriction, false, maxRecursion, maxChars);
         return iterTake(gen, maxResults);
+    }
+    
+    public *generateStream(symbolName: string = "",
+            restriction: StringDict = {},
+            maxRecursion: number = 2, 
+            maxChars: number = 1000): Gen<StringDict> {
+
+        yield* this.getAST().generate(symbolName, restriction, false, maxRecursion, maxChars);
     }
 
     public stripHiddenFields(entries: StringDict[]): StringDict[] {

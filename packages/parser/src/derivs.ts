@@ -1,6 +1,5 @@
 import { Gen, setDifference, shuffleArray, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
-import { Null } from "./ast";
 
 /**
  * This is the parsing/generation engine that underlies Gramble.
@@ -304,14 +303,77 @@ export abstract class Expr {
             return;
         } 
 
-        yield* this.generateBreadthFirst(allTapes, stack, maxChars);
+        yield* this.generateDepthFirst(allTapes, stack, maxChars);
+    }
+
+    public *generateDepthFirst(
+        allTapes: TapeCollection,
+        stack: CounterStack,
+        maxChars: number = 1000
+    ): Gen<StringDict> {
+        const initialOutput: MultiTapeOutput = new MultiTapeOutput();
+        const startingTapes = [...allTapes.tapes.values()];
+        var stateStack: [Tape[], MultiTapeOutput, Expr, number][] = [[startingTapes, initialOutput, this, 0]];
+
+        while (stateStack.length > 0) {
+
+            let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
+            let prev = stateStack.pop();
+
+            if (prev == undefined) {
+                break; // won't happen if stateStack.length > 0 anyway, just for linting
+            }
+
+            let [tapes, prevOutput, prevExpr, chars] = prev;
+            
+            //console.log(`prevExpr is ${prevExpr.id}`);
+
+            if (chars >= maxChars) {
+                continue;
+            }
+
+            if (prevExpr instanceof EpsilonExpr) {
+                yield* prevOutput.toStrings(false);
+                continue;
+            }
+            
+            if (tapes.length == 0) {
+                continue; 
+            }
+
+            // rotate the tapes so that we don't keep trying the same one every time
+            tapes = [... tapes.slice(1), tapes[0]];
+
+            const tapeToTry = tapes[0];
+
+            //try {
+                for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
+                    const nextOutput = prevOutput.add(cTape, cTarget);
+                    nexts.push([tapes, nextOutput, cNext, chars+1]);
+                }
+
+                const delta = prevExpr.delta(tapeToTry, stack);
+                if (!(delta instanceof NullExpr)) {                    
+                    const newTapes = tapes.slice(1);
+                    nexts.push([newTapes, prevOutput, delta, chars]);
+                }
+
+            //} catch (e) {
+            //    console.log(`failed`);
+            //    console.log(`state stack size = ${stateStack.length}`);
+            //    return;
+            //}
+
+            shuffleArray(nexts);
+            stateStack = stateStack.concat(nexts);
+        }
     }
 
     public *generateBreadthFirst(
         allTapes: TapeCollection,
         stack: CounterStack,
         maxChars: number = 1000
-    ) {
+    ): Gen<StringDict> {
 
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
 
@@ -323,8 +385,9 @@ export abstract class Expr {
             let nextQueue: [Tape[], MultiTapeOutput, Expr, number][] = [];
             for (let [tapes, prevOutput, prevExpr, chars] of stateQueue) {
 
-                //console.log(`prevExpr is ${prevExpr.id}`);
+                console.log(`prevExpr is ${prevExpr.id}`);
                 //console.log(`prevOutput is ${JSON.stringify([...prevOutput.toStrings(false)])}`);
+                
                 if (chars >= maxChars) {
                     continue;
                 }
@@ -343,18 +406,18 @@ export abstract class Expr {
                 tapes = [... tapes.slice(1), tapes[0]];
 
                 const tapeToTry = tapes[0];
+                
                 for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
                     
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nextQueue.push([tapes, nextOutput, cNext, chars+1]);  
                     //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
                 }
-
-                const delta = prevExpr.delta(tapeToTry, stack);
-                //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
-                if (!(delta instanceof NullExpr)) {                    
-                    const newTapes = tapes.slice(1);
-                    nextQueue.push([newTapes, prevOutput, delta, chars]);
+                    const delta = prevExpr.delta(tapeToTry, stack);
+                    //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
+                    if (!(delta instanceof NullExpr)) {                    
+                        const newTapes = tapes.slice(1);
+                        nextQueue.push([newTapes, prevOutput, delta, chars]);
                 }
             }
             stateQueue = nextQueue;
@@ -365,7 +428,7 @@ export abstract class Expr {
         allTapes: TapeCollection,
         stack: CounterStack,
         maxChars: number = 1000
-    ) {
+    ): Gen<StringDict> {
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
 
         const startingTapes = [...allTapes.tapes.values()];
@@ -509,6 +572,41 @@ class DotExpr extends Expr {
         yield [matchedTape, target, EPSILON];
     }
 }
+
+
+class DotStarExpr extends Expr {
+    
+    constructor(
+        public tapeName: string
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        return `${this.tapeName}:.*`;
+    }
+    
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return this;
+        }
+        return EPSILON;
+    }
+
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return;
+        }
+        yield [matchedTape, target, this];
+    }
+}
+
 
 /**
  * Recognizes/emits a literal string on a particular tape.  
@@ -668,10 +766,10 @@ class IntersectExpr extends BinaryExpr {
         stack: CounterStack
     ): Gen<[Tape, Token, Expr]> {
         for (const [c1tape, c1target, c1next] of 
-            this.child1.deriv(tape, target, stack)) {
+            this.child1.disjointDeriv(tape, target, stack)) {
 
             for (const [c2tape, c2target, c2next] of 
-                    this.child2.deriv(c1tape, c1target, stack)) {
+                    this.child2.disjointDeriv(c1tape, c1target, stack)) {
                 const successor = constructIntersection(c1next, c2next);
                 yield [c2tape, c2target, successor];
             }
@@ -937,6 +1035,7 @@ class RenameExpr extends UnaryExpr {
         }
     }
 }
+
 
 class NegationExpr extends UnaryExpr {
 
@@ -1301,7 +1400,7 @@ export function constructNegation(
 }
 
 export function constructDotStar(tape: string): Expr {
-    return constructStar(constructDot(tape));
+    return new DotStarExpr(tape);
 }
 
 export function constructDotRep(tape: string, maxReps:number=Infinity): Expr {

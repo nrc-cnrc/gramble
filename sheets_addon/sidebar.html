@@ -398,7 +398,16 @@
                 const inputs = getCurrentInputs();
                 
                 let startTime = Date.now();
-                let results = project.generate(symbolName, inputs);
+                let results = [];
+                
+                console.log(`starting generation stream`);
+                const counterP = document.getElementById("numResults");
+                for (const result of project.generateStream(symbolName, inputs)) {
+                    results.push(result);
+                    //counterP.innerHTML = `${results.length}`;
+                    //console.log(result);
+                }
+
                 console.log(`Generated results, elapsed time = ${Date.now()-startTime}ms`);
                 
                 // strip hidden fields from the results
@@ -541,6 +550,7 @@
 
         <table id="resultsTable"> </table>
 
+        <p id="numResults">0</p>
 
     </body>
 </html>

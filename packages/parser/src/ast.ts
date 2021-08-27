@@ -16,18 +16,43 @@ import {
     NULL,
     constructMemo,
     constructMatch,
-    SymbolTable
+    SymbolTable,
+    constructDotStar,
 } from "./derivs";
 
-import { RenamedTape, Tape, TapeCollection } from "./tapes";
-import { Cell, DummyCell, flatten, Gen, setDifference, setUnion, StringDict } from "./util";
+import { 
+    RenamedTape, 
+    Tape, 
+    TapeCollection 
+} from "./tapes";
+
+import { 
+    Cell, 
+    DummyCell, 
+    flatten, 
+    Gen, 
+    setDifference, 
+    setIntersection, 
+    StringDict 
+} from "./util";
 
 export { CounterStack, Expr };
 
-
 /**
- * Abstract syntax tree (AST) components are responsible for the following
- * operations:
+ * Abstract syntax tree (AST) components represent the linguistic grammar that the
+ * programmer is expressing (in terms of sequences, alternations, joins and filters,
+ * etc.), as opposed to its specific layout on the spreadsheet grids (the "tabular
+ * syntax tree or TST), but also as opposed to the specific algebraic expressions
+ * that our Brzozowski-style algorithm is juggling (which are even lower-level; a 
+ * single "operation" in our AST might even correspond to a dozen or so lower-level
+ * ops.)
+ * 
+ * It's the main level at which we (the compiler) can ask, "Does this grammar 
+ * make any sense?  Do the symbols actually refer to defined things?  Is the 
+ * programmer doing things like defining filters that can't possibly have any output
+ * because they refer to non-existant fields?"
+ * 
+ * AST components are responsible for the following operations:
  * 
  *   * qualifying and resolving symbol names (e.g., figuring out that
  *     a particular reference to VERB refers to, say, the VERB symbol in the
@@ -37,7 +62,7 @@ export { CounterStack, Expr };
  *   * working out what tapes a particular component refers to.  This is 
  *     necessary for some complex operations (like "startswith embed:X"); 
  *     it's too early to infer tapes when the sheet is parsed (X might refer
- *     to a symbol that hasn't been parsed at all yet), but it still has to 
+ *     to a symbol that hasn't been parsed at all yet), but it still has to be
  *     done before expressions are generated because otherwise we don't 
  *     always know what expressions to generate.
  * 
@@ -66,7 +91,6 @@ export abstract class AstComponent {
 
     public abstract constructExpr(symbols: SymbolTable): Expr;
 
-    
     /**
      * Collects all explicitly mentioned characters in the grammar for all tapes.
      * 
@@ -127,7 +151,7 @@ export abstract class AstComponent {
         symbolName: string = "",
         query: StringDict = {},
         random: boolean = false,
-        maxRecursion: number = 4, 
+        maxRecursion: number = 2, 
         maxChars: number = 1000
     ): Gen<StringDict> {
 
@@ -340,8 +364,7 @@ export class AstIntersection extends AstBinary {
 
 function fillOutWithDotStar(state: Expr, tapes: Set<string>) {
     for (const tape of tapes) {
-        const dot = constructDot(tape);
-        const dotStar = constructStar(dot);
+        const dotStar = constructDotStar(tape);
         state = constructBinaryConcat(state, dotStar);
     } 
     return state;
@@ -376,13 +399,18 @@ export class AstFilter extends AstBinary {
             if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
                 throw new Error("Getting Brz expression with undefined tapes");
             }
-
+            
             const child1OnlyTapes = setDifference(this.child1.tapes, this.child2.tapes);
 
             const child1 = this.child1.constructExpr(symbols);
             const child2 = this.child2.constructExpr(symbols);
             const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
             this.expr = constructIntersection(child1, child2Etc);
+            
+
+            //this.expr = constructFilter(this.child1.constructExpr(symbols),
+            //                            this.child2.constructExpr(symbols),
+            //                            setIntersection(this.child1.tapes, this.child2.tapes));
         }
         return this.expr;
 
@@ -841,7 +869,7 @@ export class AstNamespace extends AstComponent {
                 }
                 this.expr = referent.constructExpr(symbols);
                 // memoize every expr
-                this.expr = constructMemo(this.expr);
+                //this.expr = constructMemo(this.expr);
                 symbols[qualifiedName] = this.expr;
             }
         }
