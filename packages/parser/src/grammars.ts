@@ -20,7 +20,7 @@ import {
     constructDotStar,
     constructFilter,
     constructJoin,
-} from "./derivs";
+} from "./exprs";
 
 import { 
     RenamedTape, 
@@ -43,7 +43,7 @@ import {
 export { CounterStack, Expr };
 
 /**
- * Abstract syntax tree (AST) components represent the linguistic grammar that the
+ * Grammar components represent the linguistic grammar that the
  * programmer is expressing (in terms of sequences, alternations, joins and filters,
  * etc.), as opposed to its specific layout on the spreadsheet grids (the "tabular
  * syntax tree or TST), but also as opposed to the specific algebraic expressions
@@ -56,7 +56,7 @@ export { CounterStack, Expr };
  * programmer doing things like defining filters that can't possibly have any output
  * because they refer to non-existant fields?"
  * 
- * AST components are responsible for the following operations:
+ * Grammar components are responsible for the following operations:
  * 
  *   * qualifying and resolving symbol names (e.g., figuring out that
  *     a particular reference to VERB refers to, say, the VERB symbol in the
@@ -78,7 +78,7 @@ export { CounterStack, Expr };
  *     component.
  */
 
-export abstract class AstComponent {
+export abstract class GrammarComponent {
 
     protected expr: Expr | undefined = undefined;
     public tapes: string[] | undefined = undefined;
@@ -91,7 +91,7 @@ export abstract class AstComponent {
         this.cell.message(msg);
     }
 
-    public abstract getChildren(): AstComponent[];
+    public abstract getChildren(): GrammarComponent[];
 
     public abstract constructExpr(symbols: SymbolTable): Expr;
 
@@ -131,7 +131,7 @@ export abstract class AstComponent {
         return this.tapes;
     }
 
-    public qualifyNames(nsStack: AstNamespace[] = []): string[] {
+    public qualifyNames(nsStack: NamespaceGrammar[] = []): string[] {
         return flatten(this.getChildren().map(c => c.qualifyNames(nsStack)));
     }
 
@@ -145,7 +145,7 @@ export abstract class AstComponent {
         return [];
     }
     
-    public getSymbol(name: string): AstComponent | undefined {
+    public getSymbol(name: string): GrammarComponent | undefined {
         if (name == "") {
             return this;
         }
@@ -172,13 +172,13 @@ export abstract class AstComponent {
         targetComponent.collectVocab(allTapes);
 
         if (Object.keys(query).length > 0) {
-            const queryLiterals: AstComponent[] = [];
+            const queryLiterals: GrammarComponent[] = [];
             for (const [key, value] of Object.entries(query)) {
-                const lit = new AstLiteral(DUMMY_CELL, key, value);
+                const lit = new LiteralGrammar(DUMMY_CELL, key, value);
                 queryLiterals.push(lit);
             }
-            const querySeq = new AstSequence(DUMMY_CELL, queryLiterals);
-            targetComponent = new AstFilter(DUMMY_CELL, targetComponent, querySeq);
+            const querySeq = new SequenceGrammar(DUMMY_CELL, queryLiterals);
+            targetComponent = new FilterGrammar(DUMMY_CELL, targetComponent, querySeq);
         }
 
         targetComponent.calculateTapes(new CounterStack(2));
@@ -188,13 +188,13 @@ export abstract class AstComponent {
     }
 }
 
-abstract class AstAtomic extends AstComponent {
+abstract class AtomicGrammar extends GrammarComponent {
 
-    public getChildren(): AstComponent[] { return []; }
+    public getChildren(): GrammarComponent[] { return []; }
 
 }
 
-export class AstEpsilon extends AstAtomic {
+export class EpsilonGrammar extends AtomicGrammar {
 
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
@@ -211,7 +211,7 @@ export class AstEpsilon extends AstAtomic {
     }
 }
 
-export class AstNull extends AstAtomic {
+export class NullGrammar extends AtomicGrammar {
 
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
@@ -229,7 +229,7 @@ export class AstNull extends AstAtomic {
 }
 
 
-export class AstLiteral extends AstAtomic {
+export class LiteralGrammar extends AtomicGrammar {
 
     constructor(
         cell: Cell,
@@ -258,7 +258,7 @@ export class AstLiteral extends AstAtomic {
     }
 }
 
-export class AstDot extends AstAtomic {
+export class DotGrammar extends AtomicGrammar {
 
     constructor(
         cell: Cell,
@@ -286,21 +286,21 @@ export class AstDot extends AstAtomic {
     }
 }
 
-abstract class AstNAry extends AstComponent {
+abstract class NAryGrammar extends GrammarComponent {
 
     constructor(
         cell: Cell,
-        public children: AstComponent[]
+        public children: GrammarComponent[]
     ) {
         super(cell);
     }
     
-    public getChildren(): AstComponent[] { 
+    public getChildren(): GrammarComponent[] { 
         return this.children; 
     }
 }
 
-export class AstSequence extends AstNAry {
+export class SequenceGrammar extends NAryGrammar {
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {        
@@ -310,16 +310,16 @@ export class AstSequence extends AstNAry {
         return this.expr;
     }
 
-    public finalChild(): AstComponent {
+    public finalChild(): GrammarComponent {
         if (this.children.length == 0) {
             // shouldn't be possible so long as client used constructX methods,
             // but just in case
-            return new AstEpsilon(DUMMY_CELL);
+            return new EpsilonGrammar(DUMMY_CELL);
         }
         return this.children[this.children.length-1];
     }
 
-    public nonFinalChildren(): AstComponent[] {
+    public nonFinalChildren(): GrammarComponent[] {
         if (this.children.length <= 1) {
             // shouldn't be possible so long as client used constructX methods,
             // but just in case
@@ -329,7 +329,7 @@ export class AstSequence extends AstNAry {
     }
 }
 
-export class AstAlternation extends AstNAry {
+export class AlternationGrammar extends NAryGrammar {
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
@@ -340,22 +340,22 @@ export class AstAlternation extends AstNAry {
     }
 }
 
-abstract class AstBinary extends AstComponent {
+abstract class BinaryGrammar extends GrammarComponent {
 
     constructor(
         cell: Cell,
-        public child1: AstComponent,
-        public child2: AstComponent
+        public child1: GrammarComponent,
+        public child2: GrammarComponent
     ) {
         super(cell);
     }
     
-    public getChildren(): AstComponent[] { 
+    public getChildren(): GrammarComponent[] { 
         return [this.child1, this.child2];
     }
 }
 
-export class AstIntersection extends AstBinary {
+export class IntersectionGrammar extends BinaryGrammar {
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
@@ -367,15 +367,16 @@ export class AstIntersection extends AstBinary {
     }
 }
 
+/*
 function fillOutWithDotStar(state: Expr, tapes: string[]) {
     for (const tape of tapes) {
         const dotStar = constructDotStar(tape);
         state = constructBinaryConcat(state, dotStar);
     } 
     return state;
-}
+} */
 
-export class AstJoin extends AstBinary {
+export class JoinGrammar extends BinaryGrammar {
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
@@ -404,7 +405,7 @@ export class AstJoin extends AstBinary {
 
 }
 
-export class AstFilter extends AstBinary {
+export class FilterGrammar extends BinaryGrammar {
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
@@ -435,7 +436,7 @@ export class AstFilter extends AstBinary {
     }
 }
 
-export class AstStartsWith extends AstFilter {
+export class StartsWithGrammar extends FilterGrammar {
     
     protected constructFilter(symbols: SymbolTable) {
         if (this.child2.tapes == undefined) {
@@ -454,7 +455,7 @@ export class AstStartsWith extends AstFilter {
 
 }
 
-export class AstEndsWith extends AstFilter {
+export class EndsWithGrammar extends FilterGrammar {
 
     protected constructFilter(symbols: SymbolTable) {
         if (this.child2.tapes == undefined) {
@@ -473,7 +474,7 @@ export class AstEndsWith extends AstFilter {
 }
 
 
-export class AstContains extends AstFilter {
+export class ContainsGrammar extends FilterGrammar {
     
     protected constructFilter(symbols: SymbolTable) {
         if (this.child2.tapes == undefined) {
@@ -492,16 +493,16 @@ export class AstContains extends AstFilter {
 
 }
 
-export class AstUnary extends AstComponent {
+export class UnaryGrammar extends GrammarComponent {
 
     constructor(
         cell: Cell,
-        public child: AstComponent
+        public child: GrammarComponent
     ) {
         super(cell);
     }
 
-    public getChildren(): AstComponent[] { 
+    public getChildren(): GrammarComponent[] { 
         return [this.child]; 
     }
 
@@ -510,11 +511,11 @@ export class AstUnary extends AstComponent {
     }
 }
 
-export class AstRename extends AstUnary {
+export class RenameGrammar extends UnaryGrammar {
 
     constructor(
         cell: Cell,
-        child: AstComponent,
+        child: GrammarComponent,
         public fromTape: string,
         public toTape: string
     ) {
@@ -550,11 +551,11 @@ export class AstRename extends AstUnary {
     }
 }
 
-export class AstRepeat extends AstUnary {
+export class RepeatGrammar extends UnaryGrammar {
 
     constructor(
         cell: Cell,
-        child: AstComponent,
+        child: GrammarComponent,
         public minReps: number = 0,
         public maxReps: number = Infinity
     ) {
@@ -570,11 +571,11 @@ export class AstRepeat extends AstUnary {
     }
 }
 
-export class AstNegation extends AstUnary {
+export class NegationGrammar extends UnaryGrammar {
 
     constructor(
         cell: Cell,
-        child: AstComponent,
+        child: GrammarComponent,
         public maxReps: number = Infinity
     ) {
         super(cell, child);
@@ -594,13 +595,13 @@ export class AstNegation extends AstUnary {
 }
 
 let HIDE_INDEX = 0; 
-export class AstHide extends AstUnary {
+export class HideGrammar extends UnaryGrammar {
 
     public toTape: string;
 
     constructor(
         cell: Cell,
-        child: AstComponent,
+        child: GrammarComponent,
         public tape: string,
         name: string = ""
     ) {
@@ -654,11 +655,11 @@ export class AstHide extends AstUnary {
     }
 }
 
-export class AstMatch extends AstUnary {
+export class MatchGrammar extends UnaryGrammar {
 
     constructor(
         cell: Cell,
-        child: AstComponent,
+        child: GrammarComponent,
         public relevantTapes: Set<string>
     ) {
         super(cell, child);
@@ -673,7 +674,7 @@ export class AstMatch extends AstUnary {
     }
 }
 
-export class AstNamespace extends AstComponent {
+export class NamespaceGrammar extends GrammarComponent {
 
     constructor(
         cell: Cell,
@@ -683,10 +684,10 @@ export class AstNamespace extends AstComponent {
     }
 
     public qualifiedNames: Map<string, string> = new Map();
-    public symbols: Map<string, AstComponent> = new Map();
-    public default: AstComponent = new AstEpsilon(DUMMY_CELL);
+    public symbols: Map<string, GrammarComponent> = new Map();
+    public default: GrammarComponent = new EpsilonGrammar(DUMMY_CELL);
 
-    public addSymbol(symbolName: string, component: AstComponent): void {
+    public addSymbol(symbolName: string, component: GrammarComponent): void {
 
         if (symbolName.indexOf(".") != -1) {
             throw new Error(`Symbol names cannot have . in them`);
@@ -699,7 +700,7 @@ export class AstNamespace extends AstComponent {
         this.symbols.set(symbolName, component);
     }
 
-    public getSymbol(symbolName: string): AstComponent | undefined {
+    public getSymbol(symbolName: string): GrammarComponent | undefined {
 
         if (symbolName == "") {
             return this;
@@ -723,8 +724,8 @@ export class AstNamespace extends AstComponent {
         return results;
     }
 
-    public getChildren(): AstComponent[] { 
-        const results: AstComponent[] = [];
+    public getChildren(): GrammarComponent[] { 
+        const results: GrammarComponent[] = [];
         for (const referent of this.symbols.values()) {
             if (results.indexOf(referent) == -1) {
                 results.push(referent);
@@ -733,12 +734,12 @@ export class AstNamespace extends AstComponent {
         return results;
     }
 
-    public calculateQualifiedName(name: string, nsStack: AstNamespace[]) {
+    public calculateQualifiedName(name: string, nsStack: NamespaceGrammar[]) {
         const namePrefixes = nsStack.map(n => n.name).filter(s => s.length > 0);
         return [...namePrefixes, name].join(".");
     }
     
-    public qualifyNames(nsStack: AstNamespace[] = []): string[] {
+    public qualifyNames(nsStack: NamespaceGrammar[] = []): string[] {
         let unqualifiedNames: string[] = [];
         const newStack = [ ...nsStack, this ];
         for (const [symbolName, referent] of this.symbols) {
@@ -753,7 +754,7 @@ export class AstNamespace extends AstComponent {
      * Looks up an unqualified name in this namespace's symbol table,
      * case-insensitive.
      */
-    public resolveNameLocal(name: string): [string, AstComponent] | undefined {
+    public resolveNameLocal(name: string): [string, GrammarComponent] | undefined {
         for (const symbolName of this.symbols.keys()) {
             if (name.toLowerCase() == symbolName.toLowerCase()) {
                 const referent = this.symbols.get(symbolName);
@@ -766,8 +767,8 @@ export class AstNamespace extends AstComponent {
 
     public resolveName(
         unqualifiedName: string, 
-        nsStack: AstNamespace[]
-    ): [string, AstComponent] | undefined {
+        nsStack: NamespaceGrammar[]
+    ): [string, GrammarComponent] | undefined {
 
         // split into (potentially) namespace prefix(es) and symbol name
         const namePieces = unqualifiedName.split(".");
@@ -799,7 +800,7 @@ export class AstNamespace extends AstComponent {
         }
 
         const [localName, referent] = child;
-        if (!(referent instanceof AstNamespace)) {
+        if (!(referent instanceof NamespaceGrammar)) {
             // if symbol X isn't a namespace, "X.Y" can't refer to anything real
             return undefined;
         }
@@ -869,10 +870,10 @@ export class AstNamespace extends AstComponent {
     }
 }
 
-export class AstEmbed extends AstAtomic {
+export class EmbedGrammar extends AtomicGrammar {
 
     public qualifiedName: string;
-    public referent: AstComponent | undefined = undefined;
+    public referent: GrammarComponent | undefined = undefined;
 
     constructor(
         cell: Cell,
@@ -882,8 +883,8 @@ export class AstEmbed extends AstAtomic {
         this.qualifiedName = name;
     }
 
-    public qualifyNames(nsStack: AstNamespace[] = []): string[] {
-        let resolution: [string, AstComponent] | undefined = undefined;
+    public qualifyNames(nsStack: NamespaceGrammar[] = []): string[] {
+        let resolution: [string, GrammarComponent] | undefined = undefined;
         for (let i = nsStack.length-1; i >=0; i--) {
             // we go down the stack asking each to resolve it
             const subStack = nsStack.slice(0, i+1);
@@ -941,12 +942,12 @@ export class AstEmbed extends AstAtomic {
     }
 }
 
-export class AstUnitTest extends AstUnary {
+export class UnitTestGrammar extends UnaryGrammar {
 
     constructor(
         cell: Cell,
-        child: AstComponent,
-        protected tests: AstComponent[]
+        child: GrammarComponent,
+        protected tests: GrammarComponent[]
     ) {
         super(cell, child)
     }
@@ -955,13 +956,13 @@ export class AstUnitTest extends AstUnary {
         super.runUnitTestsAux();
 
         for (const test of this.tests) {
-            const testingState = new AstFilter(test.cell, this.child, test);
+            const testingState = new FilterGrammar(test.cell, this.child, test);
             const results = [...testingState.generate()];
             this.markResults(test, results);
         }
     }
 
-    public markResults(test: AstComponent, results: StringDict[]): void {
+    public markResults(test: GrammarComponent, results: StringDict[]): void {
         if (results.length == 0) {
             test.message({
                 type: "error", 
@@ -986,9 +987,9 @@ export class AstUnitTest extends AstUnary {
 }
 
 
-export class AstNegativeUnitTest extends AstUnitTest {
+export class NegativeUnitTestGrammar extends UnitTestGrammar {
 
-    public markResults(test: AstComponent, results: StringDict[]): void {
+    public markResults(test: GrammarComponent, results: StringDict[]): void {
         if (results.length > 0) {
             test.message({
                 type: "error", 
@@ -1008,127 +1009,127 @@ export class AstNegativeUnitTest extends AstUnitTest {
 
 const DUMMY_CELL = new DummyCell();
 
-export function Seq(...children: AstComponent[]): AstSequence {
-    return new AstSequence(DUMMY_CELL, children);
+export function Seq(...children: GrammarComponent[]): SequenceGrammar {
+    return new SequenceGrammar(DUMMY_CELL, children);
 }
 
-export function Uni(...children: AstComponent[]): AstAlternation {
-    return new AstAlternation(DUMMY_CELL, children);
+export function Uni(...children: GrammarComponent[]): AlternationGrammar {
+    return new AlternationGrammar(DUMMY_CELL, children);
 }
 
-export function Maybe(child: AstComponent): AstAlternation {
+export function Maybe(child: GrammarComponent): AlternationGrammar {
     return Uni(child, Epsilon());
 }
 
-export function Lit(tape: string, text: string): AstLiteral {
-    return new AstLiteral(DUMMY_CELL, tape, text);
+export function Lit(tape: string, text: string): LiteralGrammar {
+    return new LiteralGrammar(DUMMY_CELL, tape, text);
 }
 
-export function Any(tape: string): AstDot {
-    return new AstDot(DUMMY_CELL, tape);
+export function Any(tape: string): DotGrammar {
+    return new DotGrammar(DUMMY_CELL, tape);
 }
 
-export function Intersect(child1: AstComponent, child2: AstComponent): AstIntersection {
-    return new AstIntersection(DUMMY_CELL, child1, child2);
+export function Intersect(child1: GrammarComponent, child2: GrammarComponent): IntersectionGrammar {
+    return new IntersectionGrammar(DUMMY_CELL, child1, child2);
 }
 
-export function Filter(child1: AstComponent, child2: AstComponent): AstFilter {
-    return new AstFilter(DUMMY_CELL, child1, child2);
+export function Filter(child1: GrammarComponent, child2: GrammarComponent): FilterGrammar {
+    return new FilterGrammar(DUMMY_CELL, child1, child2);
 }
 
-export function Join(child1: AstComponent, child2: AstComponent): AstJoin {
-    return new AstJoin(DUMMY_CELL, child1, child2);
+export function Join(child1: GrammarComponent, child2: GrammarComponent): JoinGrammar {
+    return new JoinGrammar(DUMMY_CELL, child1, child2);
 }
 
-export function StartsWith(child1: AstComponent, child2: AstComponent): AstStartsWith {
-    return new AstStartsWith(DUMMY_CELL, child1, child2);
+export function StartsWith(child1: GrammarComponent, child2: GrammarComponent): StartsWithGrammar {
+    return new StartsWithGrammar(DUMMY_CELL, child1, child2);
 }
 
-export function EndsWith(child1: AstComponent, child2: AstComponent): AstEndsWith {
-    return new AstEndsWith(DUMMY_CELL, child1, child2);
+export function EndsWith(child1: GrammarComponent, child2: GrammarComponent): EndsWithGrammar {
+    return new EndsWithGrammar(DUMMY_CELL, child1, child2);
 }
 
-export function Contains(child1: AstComponent, child2: AstComponent): AstContains {
-    return new AstContains(DUMMY_CELL, child1, child2);
+export function Contains(child1: GrammarComponent, child2: GrammarComponent): ContainsGrammar {
+    return new ContainsGrammar(DUMMY_CELL, child1, child2);
 }
 
 export function Rep(
-    child: AstComponent, 
+    child: GrammarComponent, 
     minReps: number = 0, 
     maxReps: number = Infinity
 ) {
-    return new AstRepeat(DUMMY_CELL, child, minReps, maxReps);
+    return new RepeatGrammar(DUMMY_CELL, child, minReps, maxReps);
 }
 
-export function Epsilon(): AstEpsilon {
-    return new AstEpsilon(DUMMY_CELL);
+export function Epsilon(): EpsilonGrammar {
+    return new EpsilonGrammar(DUMMY_CELL);
 }
 
-export function Null(): AstNull {
-    return new AstNull(DUMMY_CELL);
+export function Null(): NullGrammar {
+    return new NullGrammar(DUMMY_CELL);
 }
 
-export function Embed(name: string): AstEmbed {
-    return new AstEmbed(DUMMY_CELL, name);
+export function Embed(name: string): EmbedGrammar {
+    return new EmbedGrammar(DUMMY_CELL, name);
 }
 
-export function Match(child: AstComponent, ...tapes: string[]): AstMatch {
-    return new AstMatch(DUMMY_CELL, child, new Set(tapes));
+export function Match(child: GrammarComponent, ...tapes: string[]): MatchGrammar {
+    return new MatchGrammar(DUMMY_CELL, child, new Set(tapes));
 }
 
-export function Dot(...tapes: string[]): AstSequence {
+export function Dot(...tapes: string[]): SequenceGrammar {
     return Seq(...tapes.map(t => Any(t)));
 }
 
-export function MatchDot(...tapes: string[]): AstMatch {
+export function MatchDot(...tapes: string[]): MatchGrammar {
     return Match(Dot(...tapes), ...tapes);
 }
 
-export function MatchDotRep(minReps: number = 0, maxReps: number = Infinity, ...tapes: string[]): AstMatch {
+export function MatchDotRep(minReps: number = 0, maxReps: number = Infinity, ...tapes: string[]): MatchGrammar {
     return Match(Rep(Dot(...tapes), minReps, maxReps), ...tapes)
 }
 
-export function MatchDotRep2(minReps: number = 0, maxReps: number = Infinity, ...tapes: string[]): AstMatch {
+export function MatchDotRep2(minReps: number = 0, maxReps: number = Infinity, ...tapes: string[]): MatchGrammar {
     return Match(Seq(...tapes.map((t: string) => Rep(Any(t), minReps, maxReps))), ...tapes);
 }
 
-export function MatchDotStar(...tapes: string[]): AstMatch {
+export function MatchDotStar(...tapes: string[]): MatchGrammar {
     return MatchDotRep(0, Infinity, ...tapes)
 }
 
-export function MatchDotStar2(...tapes: string[]): AstMatch {
+export function MatchDotStar2(...tapes: string[]): MatchGrammar {
     return MatchDotRep2(0, Infinity, ...tapes)
 }
 
-export function MatchFrom(firstTape: string, secondTape: string, state: AstComponent): AstComponent {
+export function MatchFrom(firstTape: string, secondTape: string, state: GrammarComponent): GrammarComponent {
     return Match(Seq(state, Rename(state, firstTape, secondTape)),
                  firstTape, secondTape);
 }
 
-export function Rename(child: AstComponent, fromTape: string, toTape: string): AstRename {
-    return new AstRename(DUMMY_CELL, child, fromTape, toTape);
+export function Rename(child: GrammarComponent, fromTape: string, toTape: string): RenameGrammar {
+    return new RenameGrammar(DUMMY_CELL, child, fromTape, toTape);
 }
 
-export function Not(child: AstComponent, maxChars:number=Infinity): AstNegation {
-    return new AstNegation(DUMMY_CELL, child, maxChars);
+export function Not(child: GrammarComponent, maxChars:number=Infinity): NegationGrammar {
+    return new NegationGrammar(DUMMY_CELL, child, maxChars);
 }
 
 export function Ns(
     name: string, 
-    symbols: {[name: string]: AstComponent} = {}
-): AstNamespace {
-    const result = new AstNamespace(DUMMY_CELL, name);
+    symbols: {[name: string]: GrammarComponent} = {}
+): NamespaceGrammar {
+    const result = new NamespaceGrammar(DUMMY_CELL, name);
     for (const [symbolName, component] of Object.entries(symbols)) {
         result.addSymbol(symbolName, component);
     }
     return result;
 }
 
-export function Hide(child: AstComponent, tape: string, name: string = ""): AstHide {
-    return new AstHide(DUMMY_CELL, child, tape, name);
+export function Hide(child: GrammarComponent, tape: string, name: string = ""): HideGrammar {
+    return new HideGrammar(DUMMY_CELL, child, tape, name);
 }
 
-export function Vocab(tape: string, text: string): AstComponent {
+export function Vocab(tape: string, text: string): GrammarComponent {
     return Rep(Lit(tape, text), 0, 0)
 }
 
@@ -1153,19 +1154,19 @@ export function Vocab(tape: string, text: string): AstComponent {
 */
 export function Replace(
     fromTapeName: string, toTapeName: string,
-    fromState: AstComponent, toState: AstComponent,
-    preContext: AstComponent | undefined, postContext: AstComponent | undefined,
+    fromState: GrammarComponent, toState: GrammarComponent,
+    preContext: GrammarComponent | undefined, postContext: GrammarComponent | undefined,
     beginsWith: Boolean = false, endsWith: boolean = false,
     minReps: number = 0, maxReps: number = Infinity,
     maxExtraChars: number = 100,
     repetitionPatch: Boolean = false
-): AstComponent {
+): GrammarComponent {
     if (beginsWith || endsWith) {
         maxReps = Math.max(1, maxReps);
         minReps = Math.min(minReps, maxReps);
     }
 
-    var states: AstComponent[] = [];
+    var states: GrammarComponent[] = [];
     if (preContext != undefined)
         states.push(MatchFrom(fromTapeName, toTapeName, preContext));
     states.push(fromState, toState);
@@ -1178,7 +1179,7 @@ export function Replace(
     // is not needed if replacing at the start or end of text.
     
     var sameVocab: boolean = false;
-    var replaceState: AstComponent = Seq(...states);
+    var replaceState: GrammarComponent = Seq(...states);
 
     const tapeCollection: TapeCollection = replaceState.getAllTapes();
     const fromTape: Tape | undefined = tapeCollection.matchTape(fromTapeName);
@@ -1188,7 +1189,7 @@ export function Replace(
     }
 
     function matchAnythingElse(replaceNone: boolean = false) {
-        const dotStar: AstComponent = Rep(Any(fromTapeName), 0, maxExtraChars);
+        const dotStar: GrammarComponent = Rep(Any(fromTapeName), 0, maxExtraChars);
         // 1. If the fromTape vocab for the replacement operation contains some
         //    characters that are not in the corresponding toTape vocab, then
         //    extra text matched before and after the replacement cannot possibly
@@ -1200,13 +1201,13 @@ export function Replace(
         if( !sameVocab || (beginsWith && !replaceNone) || (endsWith && !replaceNone)) {
             return MatchFrom(fromTapeName, toTapeName, dotStar)
         }
-        var fromInstance: AstComponent[] = [];
+        var fromInstance: GrammarComponent[] = [];
         if (preContext != undefined)
             fromInstance.push(preContext);
         fromInstance.push(fromState);
         if (postContext != undefined)
             fromInstance.push(postContext);
-        var notState: AstComponent;
+        var notState: GrammarComponent;
         if (beginsWith && replaceNone)
             notState = Not(Seq(...fromInstance, dotStar), maxExtraChars);
         else if (endsWith && replaceNone)
@@ -1219,8 +1220,8 @@ export function Replace(
     if (! endsWith)
         states.push(matchAnythingElse());
 
-    const replaceOne: AstComponent = Seq(...states);
-    var replaceMultiple: AstComponent = Rep(replaceOne, minReps, maxReps);
+    const replaceOne: GrammarComponent = Seq(...states);
+    var replaceMultiple: GrammarComponent = Rep(replaceOne, minReps, maxReps);
     
     /*if (repetitionPatch && maxReps <= 100) {
         var multiples: AstComponent[] = [];

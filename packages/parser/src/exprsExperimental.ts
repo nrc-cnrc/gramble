@@ -1,4 +1,4 @@
-import { BinaryExpr, constructListExpr, CounterStack, EpsilonExpr, Expr, NULL, NullExpr, UnionExpr } from "./derivs";
+import { BinaryExpr, constructListExpr, CounterStack, EpsilonExpr, Expr, NULL, NullExpr, UnionExpr } from "./exprs";
 import { Tape, Token } from "./tapes";
 import { Gen } from "./util";
 

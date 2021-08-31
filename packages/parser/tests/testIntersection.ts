@@ -1,11 +1,11 @@
 
-import { Seq, Uni, Intersect, Epsilon, AstComponent, Rep } from "../src/ast";
-import { t1, t2, testAst } from './testUtils';
+import { Seq, Uni, Intersect, Epsilon, GrammarComponent, Rep } from "../src/grammars";
+import { t1, t2, testGrammar } from './testUtils';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";
 
-type Test = { "desc": string, "grammar": AstComponent, "results": StringDict[] };
+type Test = { "desc": string, "grammar": GrammarComponent, "results": StringDict[] };
 
 const TESTS: Test[] = [
 
@@ -362,7 +362,7 @@ describe(`${path.basename(module.filename)}`, function() {
                 throw new Error(`Test ${test["desc"]} has no associated results`);
             }
 
-            testAst(grammar, test["results"]);
+            testGrammar(grammar, test["results"]);
 
         });
 

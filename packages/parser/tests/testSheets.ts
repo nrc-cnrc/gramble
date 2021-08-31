@@ -1,4 +1,4 @@
-import { testProject, testErrors, sheetFromFile } from "./testUtils";
+import { testGramble, testErrors, sheetFromFile } from "./testUtils";
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
@@ -14,7 +14,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["table",   ["child", "child"]]
         ]); */
         //testSymbols(project, ["word"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
@@ -29,7 +29,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["word",    ["child"]]
         ]); */
         //testSymbols(project, ["word"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
@@ -40,7 +40,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/bareGrammar.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
@@ -51,7 +51,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/bareGrammarWithTable.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
@@ -69,7 +69,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["verb",    ["child", "sibling", "sibling"]],
             ["table",   ["child", "child"]] */
         //testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -90,7 +90,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["table",   ["child", "child"]]
         ]); */
         //testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -105,7 +105,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testErrors(project, []);
         //testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -120,7 +120,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testErrors(project, []);
         //testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -134,7 +134,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testErrors(project, []);
         //testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -147,7 +147,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/bareGrammarWithEmbeds.csv");
         testErrors(project, []);
         //testSymbols(project, ["verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -161,7 +161,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
         testErrors(project, []);
         //testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -183,7 +183,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["table",    ["child", "child", "sibling"]]
         ]); */
         //testSymbols(project, ["word", "verb"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
             { text: "ummoo", gloss: "[1SG]jump" },
             { text: "foobar", gloss: "run[2SG]" },
@@ -198,7 +198,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["missingSymbol", 6, 3, "error"]
         ]);
         //testSymbols(project, ["word", "verb"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
@@ -214,7 +214,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["table",      ["child", "child", "sibling"]],
         ]); */
         //testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run[1SG]", lang: "foobese" },
             { text: "moobar", gloss: "jump[1SG]", lang: "foobese" },
             { text: "foobaz", gloss: "run[2SG]", lang: "foobese" },
@@ -232,7 +232,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["table",      ["child", "child", "sibling"]],
         ]); */
         //testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run[1SG]", subj: "1SG" },
             { text: "moobar", gloss: "jump[1SG]", subj: "1SG" },
         ]);
@@ -243,7 +243,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/maybeHeader.csv");
         
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foo" },
             { text: "moo" },
             { text: "foobar" },
@@ -257,7 +257,7 @@ describe(`${path.basename(module.filename)}`, function() {
         
         testErrors(project, []);
         //testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -274,7 +274,7 @@ describe(`${path.basename(module.filename)}`, function() {
         
         testErrors(project, []);
         //testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -289,7 +289,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/slashHeader.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "foo-1SG" },
             { text: "moobar", gloss: "moo-1SG" },
             { text: "foobaz", gloss: "foo-2SG" },
@@ -302,7 +302,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/commentHeader.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
@@ -313,7 +313,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/headerWithParens.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foo", gloss: "foo" },
             { text: "moo", gloss: "moo" }
         ]);
@@ -387,7 +387,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/hide.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foo" }
         ]);
     });
@@ -400,7 +400,7 @@ describe(`${path.basename(module.filename)}`, function() {
             [["hideIrrelevant", 1, 4, "error"]]
         );
         
-        testProject(project, [
+        testGramble(project, [
             { text: "foo", gloss: "run" }
         ]);
     });
@@ -410,7 +410,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/hideEmbed.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run[1SG]", subj: "[1SG]" },
             { text: "moobar", gloss: "jump[1SG]", subj: "[1SG]" },
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
@@ -425,7 +425,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/doubleHide.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run[1SG]" },
             { text: "moobar", gloss: "jump[1SG]" },
             { text: "foobaz", gloss: "run[2SG]" },
@@ -440,7 +440,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/doubleHideSlash.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run[1SG]" },
             { text: "moobar", gloss: "jump[1SG]" },
             { text: "foobaz", gloss: "run[2SG]" },

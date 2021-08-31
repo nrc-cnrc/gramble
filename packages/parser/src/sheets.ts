@@ -122,11 +122,11 @@ export class SheetProject extends SheetComponent {
         this.sheets[sheetName] = sheet;
 
         const tst = this.toTST();
-        const ast = tst.toAST();
+        const grammar = tst.toGrammar();
 
         // check to see if any names didn't get resolved
         const unresolvedNames: Set<string> = new Set(); 
-        for (const name of ast.qualifyNames()) {
+        for (const name of grammar.qualifyNames()) {
             const firstPart = name.split(".")[0];
             unresolvedNames.add(firstPart);
         }

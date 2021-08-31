@@ -3,12 +3,12 @@ import {
     Match, 
     Seq, Any, Join, Filter, MatchDot, Dot, 
     MatchDotRep, MatchDotRep2, MatchDotStar, MatchDotStar2,
-} from "../src/ast";
+} from "../src/grammars";
 
 import { 
     t1, t2, testHasTapes, 
     //testHasVocab, 
-    testAst 
+    testGrammar 
 } from './testUtils';
 
 import * as path from 'path';
@@ -20,7 +20,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Match(Seq(t1("h"), t2("h")), "t1", "t2");
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 2. Match(t1:h|i,t2:h|i)
@@ -29,7 +29,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 Uni(t2("h"), t2("i"))), "t1", "t2");
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'},
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'},
                           {'t1': 'i', 't2': 'i'}])
     });
 
@@ -41,7 +41,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 t1("hi"), t2("ih"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hhi', 't2': 'hih'},
+        testGrammar(grammar, [{'t1': 'hhi', 't2': 'hih'},
                           {'t1': 'ihi', 't2': 'iih'}]);
     });
 
@@ -52,7 +52,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     Uni(t2("h"), t2("i"))), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hih', 't2': 'ihh'},
+        testGrammar(grammar, [{'t1': 'hih', 't2': 'ihh'},
                           {'t1': 'hii', 't2': 'ihi'}]);
     });
 
@@ -63,7 +63,7 @@ describe(`${path.basename(module.filename)}`, function() {
                         t1("hi"), t2("ih"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hhi', 't2': 'hih'},
+        testGrammar(grammar, [{'t1': 'hhi', 't2': 'hih'},
                           {'t1': 'ihi', 't2': 'iih'}]);
     });
 
@@ -74,7 +74,7 @@ describe(`${path.basename(module.filename)}`, function() {
                         Match(Seq(Any("t1"), Any("t2")), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hih', 't2': 'ihh'},
+        testGrammar(grammar, [{'t1': 'hih', 't2': 'ihh'},
                          {'t1': 'hii', 't2': 'ihi'}]);
     });
 
@@ -84,7 +84,7 @@ describe(`${path.basename(module.filename)}`, function() {
                         t1("hi"), t2("ih"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     }); 
 
     // 8. Match(t1:.|t2:.,t1,t2) + t1:hi+t2:hi
@@ -93,7 +93,7 @@ describe(`${path.basename(module.filename)}`, function() {
                         t1("hi"), t2("ih"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 9. Match(.,t1,t2) + t1:hi+t2:ih
@@ -101,7 +101,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(MatchDot("t1", "t2"), t1("hi"), t2("ih"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hhi', 't2': 'hih'},
+        testGrammar(grammar, [{'t1': 'hhi', 't2': 'hih'},
                                     {'t1': 'ihi', 't2': 'iih'}]);
     });
     
@@ -111,7 +111,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(t1("hi"), t2("ih"), MatchDot("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hih', 't2': 'ihh'},
+        testGrammar(grammar, [{'t1': 'hih', 't2': 'ihh'},
                           {'t1': 'hii', 't2': 'ihi'}]);
     });
 
@@ -120,7 +120,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(MatchDot("t1", "t2"), t1("hi"), t2("hello"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 4});
-        testAst(grammar, [{'t1': 'hhi', 't2': 'hhello'}]);
+        testGrammar(grammar, [{'t1': 'hhi', 't2': 'hhello'}]);
     });
 
     // 12. Match(..,t1,t2) + t1:hi+t2:ih
@@ -129,7 +129,7 @@ describe(`${path.basename(module.filename)}`, function() {
                         t1("hi"), t2("ih"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hhhi', 't2': 'hhih'},
+        testGrammar(grammar, [{'t1': 'hhhi', 't2': 'hhih'},
                           {'t1': 'hihi', 't2': 'hiih'},
                           {'t1': 'ihhi', 't2': 'ihih'},
                           {'t1': 'iihi', 't2': 'iiih'}]);
@@ -140,7 +140,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(MatchDotRep(2, 2, "t1", "t2"), t1("hi"), t2("ih"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hhhi', 't2': 'hhih'},
+        testGrammar(grammar, [{'t1': 'hhhi', 't2': 'hhih'},
                           {'t1': 'hihi', 't2': 'hiih'},
                           {'t1': 'ihhi', 't2': 'ihih'},
                           {'t1': 'iihi', 't2': 'iiih'}]);
@@ -151,7 +151,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(MatchDotRep2(2, 2, "t1", "t2"), t1("hi"), t2("ih"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hhhi', 't2': 'hhih'},
+        testGrammar(grammar, [{'t1': 'hhhi', 't2': 'hhih'},
                                     {'t1': 'hihi', 't2': 'hiih'},
                                     {'t1': 'ihhi', 't2': 'ihih'},
                                     {'t1': 'iihi', 't2': 'iiih'}]);
@@ -162,7 +162,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(t1("hi"), t2("ih"), MatchDotRep(2, 2, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hihh', 't2': 'ihhh'},
+        testGrammar(grammar, [{'t1': 'hihh', 't2': 'ihhh'},
                                     {'t1': 'hihi', 't2': 'ihhi'},
                                     {'t1': 'hiih', 't2': 'ihih'},
                                     {'t1': 'hiii', 't2': 'ihii'}]);
@@ -173,7 +173,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(t1("hi"), t2("ih"), MatchDotRep2(2, 2, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hihh', 't2': 'ihhh'},
+        testGrammar(grammar, [{'t1': 'hihh', 't2': 'ihhh'},
                                     {'t1': 'hihi', 't2': 'ihhi'},
                                     {'t1': 'hiih', 't2': 'ihih'},
                                     {'t1': 'hiii', 't2': 'ihii'}]);
@@ -185,7 +185,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(MatchDotStar("t1", "t2"), t1("hi"), t2("ih"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'ih'},
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
                                     {'t1': 'hhi', 't2': 'hih'},
                                     {'t1': 'ihi', 't2': 'iih'},
                                     {'t1': 'hhhi', 't2': 'hhih'},
@@ -209,7 +209,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(MatchDotStar2("t1", "t2"), t1("hi"), t2("ih"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'ih'},
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
                                     {'t1': 'hhi', 't2': 'hih'},
                                     {'t1': 'ihi', 't2': 'iih'},
                                     {'t1': 'hhhi', 't2': 'hhih'},
@@ -232,7 +232,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(t1("hi"), t2("ih"), MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'ih'},
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
                                     {'t1': 'hih', 't2': 'ihh'},
                                     {'t1': 'hii', 't2': 'ihi'},
                                     {'t1': 'hihh', 't2': 'ihhh'},
@@ -255,7 +255,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(t1("hi"), t2("ih"), MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'ih'},
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
                                     {'t1': 'hih', 't2': 'ihh'},
                                     {'t1': 'hii', 't2': 'ihi'},
                                     {'t1': 'hihh', 't2': 'ihhh'},
@@ -281,7 +281,7 @@ describe(`${path.basename(module.filename)}`, function() {
                         Seq(t1("hi"), t2("ih")));
     testHasTapes(grammar, ['t1', 't2']);
     //testHasVocab(grammar, {'t1': 2, 't2': 2});
-    testAst(grammar, [{'t1': 'hh', 't2': 'hh'},
+    testGrammar(grammar, [{'t1': 'hh', 't2': 'hh'},
                                     {'t1': 'hi', 't2': 'hi'},
                                     {'t1': 'ih', 't2': 'ih'},
                                     {'t1': 'ii', 't2': 'ii'},
@@ -294,7 +294,7 @@ describe(`${path.basename(module.filename)}`, function() {
                         Match(Seq(Dot("t1", "t2"), Dot("t1", "t2")), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
          //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'ih'},
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
                                     {'t1': 'hh', 't2': 'hh'},
                                     {'t1': 'hi', 't2': 'hi'},
                                     {'t1': 'ih', 't2': 'ih'},
@@ -306,7 +306,7 @@ describe(`${path.basename(module.filename)}`, function() {
     const grammar = Uni(MatchDotStar("t1", "t2"), Seq(t1("hi"), t2("ih")));
     testHasTapes(grammar, ['t1', 't2']);
     //testHasVocab(grammar, {'t1': 2, 't2': 2});
-    testAst(grammar, [{},
+    testGrammar(grammar, [{},
                                     {'t1': 'h', 't2': 'h'},
                                     {'t1': 'i', 't2': 'i'},
                                     {'t1': 'hh', 't2': 'hh'},
@@ -331,7 +331,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Uni(MatchDotStar2("t1", "t2"), Seq(t1("hi"), t2("ih")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{},
+        testGrammar(grammar, [{},
                                     {'t1': 'h', 't2': 'h'},
                                     {'t1': 'i', 't2': 'i'},
                                     {'t1': 'hh', 't2': 'hh'},
@@ -355,7 +355,7 @@ describe(`${path.basename(module.filename)}`, function() {
     const grammar = Uni(Seq(t1("hi"), t2("ih")), MatchDotStar("t1", "t2"));
     testHasTapes(grammar, ['t1', 't2']);
     //testHasVocab(grammar, {'t1': 2, 't2': 2});
-    testAst(grammar, [{'t1': 'hi', 't2': 'ih'},
+    testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
                                     {},
                                     {'t1': 'h', 't2': 'h'},
                                     {'t1': 'i', 't2': 'i'},
@@ -379,7 +379,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Uni(Seq(t1("hi"), t2("ih")), MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'ih'},
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
                                     {},
                                     {'t1': 'h', 't2': 'h'},
                                     {'t1': 'i', 't2': 'i'},
@@ -405,7 +405,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(Seq(t1("h"), t2("h")), MatchDot("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 22. Filter Match(.,t1,t2) & t1:h+t2:h
@@ -413,7 +413,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(MatchDot("t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 23. Join t1:h+t2:h & Match(.,t1,t2)
@@ -421,7 +421,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(Seq(t1("h"), t2("h")), MatchDot("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 24. Join Match(.,t1,t2) & t1:h+t2:h
@@ -429,7 +429,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(MatchDot("t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 25a. Filter t1:h+t2:h & Match(.{0,3},t1,t2)
@@ -437,7 +437,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(Seq(t1("h"), t2("h")), MatchDotRep(0, 3, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 25b. Filter t1:h+t2:h & Match(.{0,3},t1,t2)
@@ -445,7 +445,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(Seq(t1("h"), t2("h")), MatchDotRep2(0, 3, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 26a. Filter Match(.{0,3},t1,t2) & t1:h+t2:h
@@ -453,7 +453,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(MatchDotRep(0, 3, "t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 26b. Filter Match(.{0,3},t1,t2) & t1:h+t2:h
@@ -461,7 +461,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(MatchDotRep2(0, 3, "t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 27a. Join t1:h+t2:h & Match(.{0,3},t1,t2)
@@ -469,7 +469,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(Seq(t1("h"), t2("h")), MatchDotRep(0, 3, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 27b. Join t1:h+t2:h & Match(.{0,3},t1,t2)
@@ -477,7 +477,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(Seq(t1("h"), t2("h")), MatchDotRep2(0, 3, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 28a. Join Match(.{0,3},t1,t2) & t1:h+t2:h
@@ -485,7 +485,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(MatchDotRep(0, 3, "t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 28b. Join Match(.{0,3},t1,t2) & t1:h+t2:h
@@ -493,7 +493,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(MatchDotRep2(0, 3, "t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 29a. Filter t1:h+t2:h & Match(.*,t1,t2)
@@ -501,7 +501,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(Seq(t1("h"), t2("h")), MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 29b. Filter t1:h+t2:h & Match(.*,t1,t2)
@@ -509,7 +509,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(Seq(t1("h"), t2("h")), MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 30a. Filter Match(.*,t1,t2) & t1:h+t2:h
@@ -517,7 +517,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(MatchDotStar("t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 30b. Filter Match(.*,t1,t2) & t1:h+t2:h
@@ -525,7 +525,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(MatchDotStar2("t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 31a. Join t1:h+t2:h & Match(.*,t1,t2)
@@ -533,7 +533,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(Seq(t1("h"), t2("h")), MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 31b. Join t1:h+t2:h & Match(.*,t1,t2)
@@ -541,7 +541,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(Seq(t1("h"), t2("h")), MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 32a. Join Match(.*,t1,t2) & t1:h+t2:h
@@ -549,7 +549,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(MatchDotStar("t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
     // 32b. Join Match(.*,t1,t2) & t1:h+t2:h
@@ -557,7 +557,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(MatchDotStar2("t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 1, 't2': 1});
-        testAst(grammar, [{'t1': 'h', 't2': 'h'}]);
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
 
@@ -567,7 +567,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     Match(Seq(Dot("t1", "t2"), Dot("t1", "t2")), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 34. Filter Match(..,t1,t2) & t1:hi+t2:hi
@@ -576,7 +576,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     Seq(t1("hi"), t2("hi")),);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 35. Join t1:hi+t2:hi & Match(..,t1,t2)
@@ -585,7 +585,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 Match(Seq(Dot("t1", "t2"), Dot("t1", "t2")), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 36. Join Match(..,t1,t2) & t1:hi+t2:hi
@@ -594,7 +594,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 Seq(t1("hi"), t2("hi")),);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
 
@@ -603,7 +603,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(Seq(t1("hi"), t2("hi")), MatchDotRep(2, 2, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 37b. Filter t1:hi+t2:hi & Match(.{2},t1,t2)
@@ -611,7 +611,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(Seq(t1("hi"), t2("hi")), MatchDotRep2(2, 2, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 38a. Filter Match(.{2},t1,t2) & t1:hi+t2:hi
@@ -619,7 +619,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(MatchDotRep(2, 2, "t1", "t2"), Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 38b. Filter Match(.{2},t1,t2) & t1:hi+t2:hi
@@ -627,7 +627,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(MatchDotRep2(2, 2, "t1", "t2"), Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 39a. Join t1:hi+t2:hi & Match(.{2},t1,t2)
@@ -635,7 +635,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(Seq(t1("hi"), t2("hi")), MatchDotRep(2, 2, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 39b. Join t1:hi+t2:hi & Match(.{2},t1,t2)
@@ -643,7 +643,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(Seq(t1("hi"), t2("hi")), MatchDotRep2(2, 2, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 40a. Join Match(.{2},t1,t2) & t1:hi+t2:hi
@@ -651,7 +651,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(MatchDotRep(2, 2, "t1", "t2"), Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 40b. Join Match(.{2},t1,t2) & t1:hi+t2:hi
@@ -659,7 +659,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(MatchDotRep2(2, 2, "t1", "t2"), Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
 
@@ -668,7 +668,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(Seq(t1("hi"), t2("hi")), MatchDotRep(0, 3, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 41b. Filter t1:hi+t2:hi & Match(.{0.3),t1,t2)
@@ -676,7 +676,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(Seq(t1("hi"), t2("hi")), MatchDotRep2(0, 3, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 42a. Filter Match(.{0.3),t1,t2) & t1:hi+t2:hi
@@ -684,7 +684,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(MatchDotRep(0, 3, "t1", "t2"), Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 42b. Filter Match(.{0.3),t1,t2) & t1:hi+t2:hi
@@ -692,7 +692,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(MatchDotRep2(0, 3, "t1", "t2"), Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 43a. Join t1:hi+t2:hi & Match(.{0.3),t1,t2)
@@ -700,7 +700,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(Seq(t1("hi"), t2("hi")), MatchDotRep(0, 3, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 43b. Join t1:hi+t2:hi & Match(.{0.3),t1,t2)
@@ -708,7 +708,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(Seq(t1("hi"), t2("hi")), MatchDotRep2(0, 3, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 44a. Join Match(.{0.3),t1,t2) & t1:hi+t2:hi
@@ -716,7 +716,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(MatchDotRep(0, 3, "t1", "t2"), Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
     // 44b. Join Match(.{0.3),t1,t2) & t1:hi+t2:hi
@@ -724,7 +724,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(MatchDotRep2(0, 3, "t1", "t2"), Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
-        testAst(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
     });
 
 
@@ -734,7 +734,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     MatchDotRep(3, 7, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 45b. Filter t1:hello+t2:hello & Match(.{3,7},t1,t2)
@@ -743,7 +743,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     MatchDotRep2(3, 7, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 46a. Filter Match(.{3,7},t1,t2) & t1:hello+t2:hello
@@ -752,7 +752,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     Seq(t1("hello"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 46b. Filter Match(.{3,7},t1,t2) & t1:hello+t2:hello
@@ -761,7 +761,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     Seq(t1("hello"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 47a. Join t1:hello+t2:hello & Match(.{3,7},t1,t2)
@@ -770,7 +770,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 MatchDotRep(3, 7, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 47b. Join t1:hello+t2:hello & Match(.{3,7},t1,t2)
@@ -779,7 +779,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 MatchDotRep2(3, 7, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 48a. Join Match(.{3,7},t1,t2) & t1:hello+t2:hello
@@ -788,7 +788,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 Seq(t1("hello"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 48b. Join Match(.{3,7},t1,t2) & t1:hello+t2:hello
@@ -797,7 +797,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 Seq(t1("hello"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
 
@@ -807,7 +807,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 49b. Filter t1:hello+t2:hello & Match(.*,t1,t2)
@@ -816,7 +816,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 50a. Filter Match(.*,t1,t2) & t1:hello+t2:hello
@@ -825,7 +825,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     Seq(t1("hello"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 50b. Filter Match(.*,t1,t2) & t1:hello+t2:hello
@@ -834,7 +834,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     Seq(t1("hello"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 51a. Join t1:hello+t2:hello & Match(.*,t1,t2)
@@ -842,7 +842,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(Seq(t1("hello"), t2("hello")), MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 51b. Join t1:hello+t2:hello & Match(.*,t1,t2)
@@ -850,7 +850,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(Seq(t1("hello"), t2("hello")), MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 52a. Join Match(.*,t1,t2) & t1:hello+t2:hello
@@ -858,7 +858,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(MatchDotStar("t1", "t2"), Seq(t1("hello"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
     // 52b. Join Match(.*,t1,t2) & t1:hello+t2:hello
@@ -866,7 +866,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(MatchDotStar2("t1", "t2"), Seq(t1("hello"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 4});
-        testAst(grammar, [{'t1': 'hello', 't2': 'hello'}]);
+        testGrammar(grammar, [{'t1': 'hello', 't2': 'hello'}]);
     });
 
 
@@ -875,7 +875,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(Seq(t1("he"), t2("hello")), MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 4});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 53b. Filter t1:he+t2:hello & Match(.*,t1,t2)
@@ -883,7 +883,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(Seq(t1("he"), t2("hello")), MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 4});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 54a. Filter Match(.*,t1,t2) & t1:he+t2:hello
@@ -891,7 +891,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(MatchDotStar("t1", "t2"), Seq(t1("he"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 4});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 54b. Filter Match(.*,t1,t2) & t1:he+t2:hello
@@ -899,7 +899,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(MatchDotStar2("t1", "t2"), Seq(t1("he"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 4});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 55a. Join t1:he+t2:hello & Match(.*,t1,t2)
@@ -907,7 +907,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(Seq(t1("he"), t2("hello")), MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 4});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 55b. Join t1:he+t2:hello & Match(.*,t1,t2)
@@ -915,7 +915,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(Seq(t1("he"), t2("hello")), MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 4});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 56a. Join Match(.*,t1,t2) & t1:he+t2:hello
@@ -923,7 +923,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(MatchDotStar("t1", "t2"), Seq(t1("he"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 4});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 56b. Join Match(.*,t1,t2) & t1:he+t2:hello
@@ -931,7 +931,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(MatchDotStar2("t1", "t2"), Seq(t1("he"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 4});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
 
@@ -940,7 +940,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(Seq(t1("hello"), t2("hell")), MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 3});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 57b. Filter t1:hello+t2:hell & Match(.*,t1,t2)
@@ -948,7 +948,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(Seq(t1("hello"), t2("hell")), MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 3});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 58a. Filter Match(.*,t1,t2) & t1:hello+t2:hell
@@ -956,7 +956,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(MatchDotStar("t1", "t2"), Seq(t1("hello"), t2("hell")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 3});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 58b. Filter Match(.*,t1,t2) & t1:hello+t2:hell
@@ -964,7 +964,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Filter(MatchDotStar2("t1", "t2"), Seq(t1("hello"), t2("hell")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 3});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 59a. Join t1:hello+t2:hell & Match(.*,t1,t2)
@@ -972,7 +972,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(Seq(t1("hello"), t2("hell")), MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 3});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 59b. Join t1:hello+t2:hell & Match(.*,t1,t2)
@@ -980,7 +980,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(Seq(t1("hello"), t2("hell")), MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 3});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 60a. Join Match(.*,t1,t2) & t1:hello+t2:hell
@@ -988,7 +988,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(MatchDotStar("t1", "t2"), Seq(t1("hello"), t2("hell")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 3});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // 60b. Join Match(.*,t1,t2) & t1:hello+t2:hell
@@ -996,7 +996,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar =  Join(MatchDotStar2("t1", "t2"), Seq(t1("hello"), t2("hell")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 4, 't2': 3});
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
     
 });

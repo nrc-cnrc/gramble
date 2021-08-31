@@ -1,9 +1,9 @@
-import { Seq, Uni, Join, Embed, Ns } from "../src/ast";
+import { Seq, Uni, Join, Embed, Ns } from "../src/grammars";
 import { 
     t1, t2, t3, 
     testHasTapes, 
     //testHasVocab, 
-    testAst, 
+    testGrammar, 
     //makeTestNamespace
 } from './testUtils';
 

@@ -1,6 +1,6 @@
 
 import { assert, expect } from "chai";
-import { AstComponent, CounterStack, Lit } from "../src/ast";
+import { GrammarComponent, CounterStack, Lit } from "../src/grammars";
 import { Gramble } from "../src/gramble";
 import { StringDict } from "../src/util";
 import { dirname, basename } from "path";
@@ -72,8 +72,8 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
     });
 }
 
-function testAstAux(
-    grammar: AstComponent,
+function testGrammarAux(
+    grammar: GrammarComponent,
     expectedResults: StringDict[], 
     symbolName: string = "",
     maxRecursion: number = 4, 
@@ -92,26 +92,26 @@ function testAstAux(
     testMatchOutputs(outputs, expectedResults);
 }
 
-export function testAst(
-    component: AstComponent,
+export function testGrammar(
+    component: GrammarComponent,
     expectedResults: StringDict[],
     symbolName: string = "",
     maxRecursion: number = 4,
     maxChars: number = 1000
 ): void {
     if (symbolName == "") {
-        testAstAux(component, expectedResults, symbolName,
+        testGrammarAux(component, expectedResults, symbolName,
             maxRecursion, maxChars);
     } else {
         describe(`Generating from \${${symbolName}}`, function() {
-            testAstAux(component, expectedResults, symbolName, 
+            testGrammarAux(component, expectedResults, symbolName, 
                 maxRecursion, maxChars);
         });
     }   
 }
 
 export function testHasTapes(
-    component: AstComponent,
+    component: GrammarComponent,
     expectedTapes: string[],
     symbolName: string = ""
 ): void {
@@ -136,7 +136,7 @@ export function testHasTapes(
 }
 
 export function testHasVocab(
-    component: AstComponent,
+    component: GrammarComponent,
     expectedVocab: {[tape: string]: number}
 ): void {
     const tapeCollection = new TapeCollection();
@@ -154,8 +154,8 @@ export function testHasVocab(
     }
 }
 
-export function testAstHasSymbols(
-    component: AstComponent,
+export function testHasSymbols(
+    component: GrammarComponent,
     expectedSymbols: string[]
 ): void {
     it(`should have symbols [${expectedSymbols}]`, function() {
@@ -165,8 +165,8 @@ export function testAstHasSymbols(
     });
 } 
 
-export function testAstDoesNotHaveSymbols(
-    component: AstComponent,
+export function testDoesNotHaveSymbols(
+    component: GrammarComponent,
     expectedSymbols: string[]
 ): void {
     it(`should have symbols [${expectedSymbols}]`, function() {
@@ -176,9 +176,9 @@ export function testAstDoesNotHaveSymbols(
     });
 }
 
-export function testErrors(project: Gramble, expectedErrors: [string, number, number, string][]) {
+export function testErrors(gramble: Gramble, expectedErrors: [string, number, number, string][]) {
 
-    const devEnv = project.devEnv;
+    const devEnv = gramble.devEnv;
     it(`should have ${expectedErrors.length} errors/warnings`, function() {
         try {
             expect(devEnv.numErrors("any")).to.equal(expectedErrors.length);
@@ -201,58 +201,14 @@ export function testErrors(project: Gramble, expectedErrors: [string, number, nu
     }
 }
 
-/*
-export function testSymbols(project: Gramble, expectedSymbols: string[]): void {
-    for (const symbolName of expectedSymbols) {
-        it (`should have a symbol named "${symbolName}"`, function() {
-            try {
-                expect(project.getSymbol(symbolName)).to.not.be.undefined;
-            } catch (e) {
-                console.log(`available symbols: [${project.allSymbols()}]`);
-                throw e;
-            }
-        });
-    }
-} */
-
-/*
-export function testStructure(project: Project, expectedOps: [string, string[]][]) {
-    const sheet = project.getDefaultSheet();
-    for (const [text, relationship] of expectedOps) {
-        const relationshipMsg = relationship.join("'s ");
-        it(`should have "${text}" as its ${relationshipMsg}`, function() {
-            var relative: TstEnclosure | undefined = sheet;
-            for (const rel of relationship) {
-                if (rel == "child" && relative != undefined) {
-                    relative = relative.child;
-                } else if (rel == "sibling"  && relative != undefined) {
-                    relative = relative.sibling;
-                } else {
-                    assert.fail("There is no relationship of that name");
-                }
-                expect(relative).to.not.be.undefined;
-                if (relative == undefined) return;
-            }
-            if (relative == undefined) return;
-            var relativeText = relative.text;
-            if (relativeText.endsWith(":")) {
-                relativeText = relativeText.slice(0, relativeText.length-1).trim();
-            }
-            expect(relativeText).to.equal(text);
-        });
-    }
-
-}
-*/
-
-export function testProject(project: Gramble,
+export function testGramble(gramble: Gramble,
                             expectedResults: StringDict[], 
                             symbolName: string = "",
                             maxRecursion: number = 4, 
                             maxChars: number = 1000): void {
-    const ast = project.getAST();
+    const grammar = gramble.getGrammar();
     describe(`Generating from ${symbolName}`, function() {
-        testAstAux(ast, expectedResults, symbolName, 
+        testGrammarAux(grammar, expectedResults, symbolName, 
             maxRecursion, maxChars);
     });
 }
@@ -261,14 +217,14 @@ export function sheetFromFile(path: string): Gramble {
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
     const devEnv = new TextDevEnvironment(dir);
-    const project = new Gramble(devEnv, sheetName);
-    return project;
+    const gramble = new Gramble(devEnv, sheetName);
+    return gramble;
 }
 
 
 export type InputResultsPair = [StringDict, StringDict[]];
 
-export function testParseMultiple(grammar: AstComponent, 
+export function testParseMultiple(grammar: GrammarComponent, 
                                     inputResultsPairs: InputResultsPair[],
                                     maxRecursion: number | undefined, 
                                     maxChars: number | undefined): void {

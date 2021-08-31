@@ -3,7 +3,7 @@ import {
     CPNegation,
     CPAlternation,
     parseBooleanCell
-} from "../src/cellParser";
+} from "../src/cells";
 
 import * as path from 'path';
 import { expect } from "chai";

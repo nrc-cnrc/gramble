@@ -1,4 +1,4 @@
-import { CounterStack, AstComponent } from "./ast";
+import { CounterStack, GrammarComponent } from "./grammars";
 import { DevEnvironment, Gen, iterTake, StringDict } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
@@ -7,13 +7,13 @@ type GrambleError = { sheet: string, row: number, col: number, msg: string, leve
 
 /**
  * A Gramble object acts as a Facade (in the GoF sense) for the client to interact with, so that they
- * don't necessarily have to understand the ways DevEnvironments, Sheet objects, TSTs, ASTs, and deriv objects
+ * don't necessarily have to understand the ways DevEnvironments, Sheet objects, TSTs, Grammars, and deriv objects
  * all interact.
  */
 export class Gramble {
 
     public sheetProject: SheetProject;
-    public ast: AstComponent | undefined = undefined;
+    public grammar: GrammarComponent | undefined = undefined;
 
     constructor(
         public devEnv: DevEnvironment,
@@ -23,11 +23,11 @@ export class Gramble {
     }
 
     public allSymbols(): string[] {
-        return this.getAST().allSymbols();
+        return this.getGrammar().allSymbols();
     }
     
-    public getSymbol(symbolName: string): AstComponent | undefined {
-        return this.getAST().getSymbol(symbolName);
+    public getSymbol(symbolName: string): GrammarComponent | undefined {
+        return this.getGrammar().getSymbol(symbolName);
     }
 
     public getErrors(): GrambleError[] {
@@ -36,9 +36,9 @@ export class Gramble {
     }
     
     public getTapeNames(symbolName: string): [string, string][] {
-        const ast = this.getAST();
-        ast.qualifyNames();
-        const target = ast.getSymbol(symbolName);
+        const grammar = this.getGrammar();
+        grammar.qualifyNames();
+        const target = grammar.getSymbol(symbolName);
         if (target == undefined) {
             throw new Error(`Cannot find symbol ${symbolName}`);
         }
@@ -51,16 +51,16 @@ export class Gramble {
         return results;
     }
 
-    public getAST(): AstComponent {
-        if (this.ast == undefined) {
+    public getGrammar(): GrammarComponent {
+        if (this.grammar == undefined) {
             const tst = this.sheetProject.toTST();
-            this.ast = tst.toAST();
+            this.grammar = tst.toGrammar();
         }
-        return this.ast;
+        return this.grammar;
     } 
 
     public runUnitTests(): void {
-        this.getAST().runUnitTests();
+        this.getGrammar().runUnitTests();
     }
 
     public generate(symbolName: string = "",
@@ -69,7 +69,7 @@ export class Gramble {
             maxRecursion: number = 2, 
             maxChars: number = 1000): StringDict[] {
 
-        const gen = this.getAST().generate(symbolName, restriction, false, maxRecursion, maxChars);
+        const gen = this.getGrammar().generate(symbolName, restriction, false, maxRecursion, maxChars);
         return iterTake(gen, maxResults);
     }
     
@@ -78,7 +78,7 @@ export class Gramble {
             maxRecursion: number = 2, 
             maxChars: number = 1000): Gen<StringDict> {
 
-        yield* this.getAST().generate(symbolName, restriction, false, maxRecursion, maxChars);
+        yield* this.getGrammar().generate(symbolName, restriction, false, maxRecursion, maxChars);
     }
 
     public stripHiddenFields(entries: StringDict[]): StringDict[] {
@@ -104,7 +104,7 @@ export class Gramble {
 
         let results: StringDict[] = [];
         for (let i = 0; i < numSamples; i++) {
-            const gen = this.getAST().generate(symbolName, restriction, true, maxRecursion, maxChars);
+            const gen = this.getGrammar().generate(symbolName, restriction, true, maxRecursion, maxChars);
             results = results.concat(iterTake(gen, 1));
         }
         return results;

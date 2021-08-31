@@ -1,4 +1,4 @@
-import { testProject, testErrors, sheetFromFile } from "./testUtils";
+import { testGramble, testErrors, sheetFromFile } from "./testUtils";
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
@@ -9,7 +9,7 @@ describe(`${path.basename(module.filename)}`, function() {
         project.runUnitTests();
         testErrors(project, []);
         //testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -23,7 +23,7 @@ describe(`${path.basename(module.filename)}`, function() {
         project.runUnitTests();
         testErrors(project, []);
         //testSymbols(project, ["word", "verb", "suffix"]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -41,7 +41,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["embedGrammarWithFailedTests", 15, 2, "error"],
             ["embedGrammarWithFailedTests", 16, 2, "error"],
         ]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -57,7 +57,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["failingNegativeTests", 13, 2, "error"]
         ]);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },

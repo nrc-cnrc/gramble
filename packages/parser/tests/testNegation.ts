@@ -1,6 +1,6 @@
-import { Uni, Join, Not, Rep, Seq, Null, Epsilon } from "../src/ast";
+import { Uni, Join, Not, Rep, Seq, Null, Epsilon } from "../src/grammars";
 import { t1, t2, 
-    testHasTapes, testAst } from './testUtils';
+    testHasTapes, testGrammar } from './testUtils';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";
@@ -9,75 +9,75 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Negation of empty set: ~0', function() {
         const grammar = Not(Null());
-        testAst(grammar, [{}]);
+        testGrammar(grammar, [{}]);
     });
 
     describe('Negation of epsilon: ~e', function() {
         const grammar = Not(Epsilon());
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     describe('Join(t1:foo & ~t1:hello)', function() {
         const grammar = Join(t1("foo"), Not(t1("hello")));
         testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 5});
-        testAst(grammar, [{t1: "foo"}]);
+        testGrammar(grammar, [{t1: "foo"}]);
     });
 
 
     describe('Join(t1:hello & ~t1:hello)', function() {
         const grammar = Join(t1("hello"), Not(t1("hello")));
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     describe('Join(t1:hell & ~t1:hello)', function() {
         const grammar = Join(t1("hell"), Not(t1("hello")));
-        testAst(grammar, [{t1: "hell"}]);
+        testGrammar(grammar, [{t1: "hell"}]);
     });
 
     describe('Join(t1:helloo & ~t1:hello)', function() {
         const grammar = Join(t1("helloo"), Not(t1("hello")));
-        testAst(grammar, [{t1: "helloo"}]);
+        testGrammar(grammar, [{t1: "helloo"}]);
     });
 
     describe('Join(~t1:hello & t1:foo)', function() {
         const grammar = Join(Not(t1("hello")), t1("foo"));
-        testAst(grammar, [{t1: "foo"}]);
+        testGrammar(grammar, [{t1: "foo"}]);
     });
 
     describe('Join(~t1:hello & t1:hell)', function() {
         const grammar = Join(Not(t1("hello")), t1("hell"));
-        testAst(grammar, [{t1: "hell"}]);
+        testGrammar(grammar, [{t1: "hell"}]);
     });
 
     describe('Join(~t1:hello & t1:helloo)', function() {
         const grammar = Join(Not(t1("hello")), t1("helloo"));
-        testAst(grammar, [{t1: "helloo"}]);
+        testGrammar(grammar, [{t1: "helloo"}]);
     });
 
     describe('Join(t1:foo & ~(t1:hello|t1:world)', function() {
         const grammar = Join(t1("foo"), Not(Uni(t1("hello"), t1("world"))));
-        testAst(grammar, [{t1: "foo"}]);
+        testGrammar(grammar, [{t1: "foo"}]);
     });
 
     describe('Join(t1:hello & ~(t1:hello|t1:world)', function() {
         const grammar = Join(t1("hello"), Not(Uni(t1("hello"), t1("world"))));
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     describe('Join(t1:world & ~(t1:hello|t1:world)', function() {
         const grammar = Join(t1("world"), Not(Uni(t1("hello"), t1("world"))));
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     describe('Join(~(t1:hello|t1:world) & t1:foo)', function() {
         const grammar = Join(Not(Uni(t1("hello"), t1("world"))), t1("foo"));
-        testAst(grammar, [{t1: "foo"}]);
+        testGrammar(grammar, [{t1: "foo"}]);
     });
 
     describe('Join(~(t1:hello|t1:world) & t1:hello)', function() {
         const grammar = Join(Not(Uni(t1("hello"), t1("world"))), t1("hello"));
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     
@@ -92,12 +92,12 @@ describe(`${path.basename(module.filename)}`, function() {
     // this works correctly.
     describe('Join(~(t1:hello|t1:help) & t1:hello)', function() {
         const grammar = Join(Not(Uni(t1("hello"), t1("help"))), t1("hello"));
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     describe('Join(t1:hello & ~(t1:hello|t1:help))', function() {
         const grammar = Join(t1("hello"), Not(Uni(t1("hello"), t1("help"))));
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     // This one is testing the same thing, but the problem is more subtle.  Improperly
@@ -109,17 +109,17 @@ describe(`${path.basename(module.filename)}`, function() {
     // on "hello" just like before.
     describe('Join(~(t1:h*hello) & t1:hello)', function() {
         const grammar = Join(Not(Seq(Rep(t1("h"),0,2), t1("hello"))), t1("hhello"));
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     describe('Join( & t1:hello & ~(t1:h*hello))', function() {
         const grammar = Join(t1("hhello"), Not(Seq(Rep(t1("h"),0,2), t1("hello"))));
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     describe('~(~t1:hello)', function() {
         const grammar = Not(Not(t1("hello")));
-        testAst(grammar, [{t1: "hello"}], "", 4, 30);
+        testGrammar(grammar, [{t1: "hello"}], "", 4, 30);
     });
 
     describe('~t1:hi', function() {
@@ -137,7 +137,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii' }, { t1: 'ihhh' }, { t1: 'ihhi' },
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }];
-        testAst(grammar, expectedResults, "", 4, 5);
+        testGrammar(grammar, expectedResults, "", 4, 5);
     });
 
     
@@ -156,14 +156,14 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii' }, { t1: 'ihhh' }, { t1: 'ihhi' },
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }];
-        testAst(grammar, expectedResults, "", 4, 5);
+        testGrammar(grammar, expectedResults, "", 4, 5);
     });
     
     
 
     describe('Alt Join(~t1:hello & t1:helloo) | t2:foobar', function() {
         const grammar = Uni(Join(Not(t1("hello")), t1("helloo")), t2("foobar"));
-        testAst(grammar, [{t1: "helloo"},
+        testGrammar(grammar, [{t1: "helloo"},
                               {t2: "foobar"}]);
     });
 
@@ -184,7 +184,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }, 
             { t2: "hi"}];
-        testAst(grammar, expectedResults, "", 4, 5);
+        testGrammar(grammar, expectedResults, "", 4, 5);
     });
     
     describe('~t1:h', function() {
@@ -195,7 +195,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hh' },  
             { t1: 'hhh' },
             { t1: 'hhhh' }];
-        testAst(grammar, expectedResults, "", 4, 5);
+        testGrammar(grammar, expectedResults, "", 4, 5);
     });
 
     
@@ -207,7 +207,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhh' },  
             { t1: 'hhhh' },
             { t1: 'hhhhh' }];
-        testAst(grammar, expectedResults, "", 4, 6);
+        testGrammar(grammar, expectedResults, "", 4, 6);
     });
 
     describe('(~t1:h)+t1:h', function() {
@@ -218,7 +218,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhh' },  
             { t1: 'hhhh' },
             { t1: 'hhhhh' }];
-        testAst(grammar, expectedResults, "", 4, 6);
+        testGrammar(grammar, expectedResults, "", 4, 6);
     });
     
     describe('~t1:h{0,1}', function() {
@@ -228,7 +228,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hh' },         
             { t1: 'hhh' },
             { t1: 'hhhh' }];
-        testAst(grammar, expectedResults, "", 4, 5);
+        testGrammar(grammar, expectedResults, "", 4, 5);
     });
 
 
@@ -238,7 +238,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {},            
             { t1: 'hhhh' }];
-        testAst(grammar, expectedResults, "", 4, 5);
+        testGrammar(grammar, expectedResults, "", 4, 5);
     });
 
     describe('Join(~t1:hi & t2:hi)', function() {
@@ -256,7 +256,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii', t2: "hi" }, { t1: 'ihhh', t2: "hi" }, { t1: 'ihhi', t2: "hi" },
             { t1: 'ihih', t2: "hi" }, { t1: 'ihii', t2: "hi" }, { t1: 'iihh', t2: "hi" },
             { t1: 'iihi', t2: "hi" }, { t1: 'iiih', t2: "hi" }, { t1: 'iiii', t2: "hi" }];
-        testAst(grammar, expectedResults, "", 4, 7);
+        testGrammar(grammar, expectedResults, "", 4, 7);
     });
     
     describe('Join(t2:hi & ~t1:hi)', function() {
@@ -279,7 +279,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t2: 'hi', t1: 'ihih' }, { t2: 'hi', t1: 'ihii' },
             { t2: 'hi', t1: 'iihh' }, { t2: 'hi', t1: 'iihi' },
             { t2: 'hi', t1: 'iiih' }, { t2: 'hi', t1: 'iiii' }];
-        testAst(grammar, expectedResults, "", 4, 7);
+        testGrammar(grammar, expectedResults, "", 4, 7);
     }); 
 
     describe('~(t1:h+t2:h)', function() {
@@ -294,7 +294,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"i","t1":"hh"},
             {"t2":"iii"},
             {"t1":"hhh"}];
-            testAst(grammar, expectedResults, "", 4, 4);
+            testGrammar(grammar, expectedResults, "", 4, 4);
     }); 
 
     describe('~(t1:h|t2:h)', function() {
@@ -304,7 +304,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"ii"},            {"t1":"hh"},
             {"t2":"ii","t1":"h"},   {"t2":"i","t1":"hh"},
             {"t2":"iii"},           {"t1":"hhh"}];
-            testAst(grammar, expectedResults, "", 4, 4);
+            testGrammar(grammar, expectedResults, "", 4, 4);
     }); 
 
 });

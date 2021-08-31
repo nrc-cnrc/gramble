@@ -9,12 +9,12 @@ import {
     Intersect,
     Rep,
     Any
-} from "../src/ast";
+} from "../src/grammars";
 
 import { 
     t1, t2, t3, t4, t5,
     testHasTapes,
-    testAst
+    testGrammar
 } from "./testUtils";
 
 import * as path from 'path';
@@ -26,20 +26,20 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ["t2"]);
         //testHasNoVocab(grammar, "t1");
         //testHasVocab(grammar, {t2: 4});
-        testAst(grammar, [{t2: "hello"}]);
+        testGrammar(grammar, [{t2: "hello"}]);
     });
 
     describe('Rename(t2/t1) of t1:hi+t2:wo', function() {
         const grammar = Rename(Seq(t1("hi"), t2("wo")), "t1", "t2");
         testHasTapes(grammar, ["t2"]);
         //testHasVocab(grammar, {t2: 4});
-        testAst(grammar, [{t2: "hiwo"}]);
+        testGrammar(grammar, [{t2: "hiwo"}]);
     }); 
 
     describe('Rename(t5/t1) of t1:hello+t2:foo', function() {
         const grammar = Rename(Seq(t1("hello"), t2("foo")), "t3", "t4");
         testHasTapes(grammar, ["t1", "t2"]);
-        testAst(grammar, [{t1: "hello", t2: "foo"}]);
+        testGrammar(grammar, [{t1: "hello", t2: "foo"}]);
     });
         
     describe('rename(t1:hello+t5:foo) from t1 to t2', function() {
@@ -47,7 +47,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ["t2", "t5"]);
         //testHasVocab(grammar, {"t2": 4, "t5": 2});
         //testHasNoVocab(grammar, "t1");
-        testAst(grammar, [{t2: "hello", t5: "foo"}]);
+        testGrammar(grammar, [{t2: "hello", t5: "foo"}]);
     });
 
     describe('Alt(rename(t1:hello+t5:foo) t1 -> t2|rename(t1:hello+t5:foo) t1->t3)', function() {
@@ -56,7 +56,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ["t2", "t3", "t5"]);
         //testHasVocab(grammar, {"t2": 4, "t3": 4, "t5": 2});
         //testHasNoVocab(grammar, "t1");
-        testAst(grammar, [{t2: "hello", t5: "foo"}, {t3: "hello", t5: "foo"}]);
+        testGrammar(grammar, [{t2: "hello", t5: "foo"}, {t3: "hello", t5: "foo"}]);
     });
 
     /*
@@ -76,68 +76,68 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Intersecting t2:hello & rename(t2/t1, t1:hello))', function() {
         const grammar = Intersect(t2("hello"),
                              Rename(t1("hello"), "t1", "t2"));
-        testAst(grammar, [{t2: "hello"}]);
+        testGrammar(grammar, [{t2: "hello"}]);
     });
 
     
     describe('Intersecting t2:hello & rename(t1/t2, t2:hello))', function() {
         const grammar = Intersect(t2("hello"),
                              Rename(t2("hello"), "t2", "t1"));
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     
     describe('Intersecting t2:hello & rename(t1/t2, t2:hello))', function() {
         const grammar = Intersect(Seq(t2("hello"), Rep(Any("t1"))),
                              Rename(t2("hello"), "t2", "t1"));
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     describe('Joining t2:hello & rename(t2/t1, t1:hello))', function() {
         const grammar = Join(t2("hello"),
                              Rename(t1("hello"), "t1", "t2"));
-        testAst(grammar, [{t2: "hello"}]);
+        testGrammar(grammar, [{t2: "hello"}]);
     });
 
     describe('Joining rename(t2/t1, t1:hello)) & t2:hello', function() {
         const grammar = Join(Rename(t1("hello"), "t1", "t2"),
                              t2("hello"));
-        testAst(grammar, [{t2: "hello"}]);
+        testGrammar(grammar, [{t2: "hello"}]);
     });
 
     describe('Joining rename(t2/t1, t1:hello+t3:foo)) & t2:hello', function() {
         const grammar = Join(Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"),
                              t2("hello"));
-        testAst(grammar, [{t2: "hello", t3: "foo"}]);
+        testGrammar(grammar, [{t2: "hello", t3: "foo"}]);
     });
 
     describe('Joining t2:hello & rename(t2/t1, t1:hello+t3:foo)) & ', function() {
         const grammar = Join(t2("hello"), Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"));
-        testAst(grammar, [{t2: "hello", t3: "foo"}]);
+        testGrammar(grammar, [{t2: "hello", t3: "foo"}]);
     });
 
     describe('Joining t3:foo & rename(t2/t1, t1:hello+t3:foo)) & ', function() {
         const grammar = Join(t3("foo"), Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"));
-        testAst(grammar, [{t2: "hello", t3: "foo"}]);
+        testGrammar(grammar, [{t2: "hello", t3: "foo"}]);
     });
 
     describe('Joining rename(t2/t1, t1:hello+t3:foo)) & t2:hello+t3:bar', function() {
         const grammar = Join(Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"),
                              Seq(t2("hello"), t3("bar")));
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
 
     describe('Joining t2:hello+t3:bar & rename(t2/t1, t1:hello+t3:foo))', function() {
         const grammar = Join(Seq(t2("hello"), t3("bar")),
                              Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"));
-        testAst(grammar, []);
+        testGrammar(grammar, []);
     });
     
     describe('Filtering of t2:hiwo & rename(t2/t1) of t1:hi+t2:wo', function() {
         const grammar = Filter(t2("hiwo"), Rename(Seq(t1("hi"), t2("wo")), "t1", "t2"));
         testHasTapes(grammar, ["t2"]);
         //testHasVocab(grammar, {t2: 4});
-        testAst(grammar, [{t2: "hiwo"}]);
+        testGrammar(grammar, [{t2: "hiwo"}]);
     }); 
     
     describe('Rename t2->t3 of symbol t1:hi+t2:world', function() {
@@ -146,7 +146,7 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Rename(Embed("a"), "t2", "t3") });
 
         testHasTapes(grammar, ["t1", "t3"]);
-        testAst(grammar, [{t1: "hi", t3: "world"}], "b");
+        testGrammar(grammar, [{t1: "hi", t3: "world"}], "b");
     });
 
 });

@@ -10,7 +10,7 @@
  * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { AstComponent, AstNamespace, AstAlternation, AstEpsilon, AstUnitTest, AstNegativeUnitTest, AstUnary, AstNull } from "./ast";
+import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, UnaryGrammar, NullGrammar } from "./grammars";
 import { CellPos, DummyCell, Gen, StringDict } from "./util";
 import { BINARY_OPS, DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
@@ -24,12 +24,12 @@ export abstract class TstComponent {
         maxRecursion: number = 4, 
         maxChars: number = 1000
     ): Gen<StringDict> {
-        yield* this.toAST().generate(symbolName, query, 
+        yield* this.toGrammar().generate(symbolName, query, 
                     random, maxRecursion, maxChars);
 
     }
 
-    public abstract toAST(): AstComponent;
+    public abstract toGrammar(): GrammarComponent;
 
 }
 
@@ -53,8 +53,8 @@ export abstract class TstCellComponent extends TstComponent {
         this.cell.message(msg);
     }
     
-    public toAST(): AstComponent {
-        return new AstEpsilon(this.cell);
+    public toGrammar(): GrammarComponent {
+        return new EpsilonGrammar(this.cell);
     }
 
 }
@@ -88,10 +88,10 @@ export class TstHeader extends TstCellComponent {
         return this.header.getColor(saturation, value);
     }
 
-    public headerToAST(left: AstComponent, content: SheetCell): AstComponent {
-        const ast = this.header.toAST(left, content.text, content);
-        ast.cell = content;
-        return ast;
+    public headerToGrammar(left: GrammarComponent, content: SheetCell): GrammarComponent {
+        const grammar = this.header.toGrammar(left, content.text, content);
+        grammar.cell = content;
+        return grammar;
     }
 
 }
@@ -106,19 +106,19 @@ export class TstHeadedCell extends TstCellComponent {
         super(content);
     }
 
-    public toAST(): AstComponent {
+    public toGrammar(): GrammarComponent {
 
-        let prevAst: AstComponent = new AstEpsilon(this.cell);
+        let prevGrammar: GrammarComponent = new EpsilonGrammar(this.cell);
 
         if (this.prev != undefined) {
-            prevAst = this.prev.toAST();
+            prevGrammar = this.prev.toGrammar();
         }
         
         if (this.cell.text.length == 0) {
-            return prevAst;
+            return prevGrammar;
         }
 
-        return this.header.headerToAST(prevAst, this.cell);
+        return this.header.headerToGrammar(prevGrammar, this.cell);
     }
 
 }
@@ -126,8 +126,8 @@ export class TstHeadedCell extends TstCellComponent {
 
 export class TstComment extends TstCellComponent {
 
-    public toAST(): AstComponent {
-        return new AstEpsilon(this.cell);
+    public toGrammar(): GrammarComponent {
+        return new EpsilonGrammar(this.cell);
     }
 }
 
@@ -195,7 +195,7 @@ export class TstEnclosure extends TstCellComponent {
         this.specRow = cell.pos.row;
     }
     
-    public toAST(): AstComponent {
+    public toGrammar(): GrammarComponent {
 
         // we only ever end up in this base EncloseComponent compile if it wasn't
         // a known operator.  this is an error, but we flag it for the programmer
@@ -205,14 +205,14 @@ export class TstEnclosure extends TstCellComponent {
         // its sibling's state (if a sibling is present), and if not, as its child's 
         // state (if present), and if not, the empty grammar.
 
-        let result: AstComponent = new AstEpsilon(this.cell);
+        let result: GrammarComponent = new EpsilonGrammar(this.cell);
 
         if (this.child != undefined) {
-            result = this.child.toAST();
+            result = this.child.toGrammar();
         }
 
         if (this.sibling != undefined) {
-            result = this.sibling.toAST();
+            result = this.sibling.toGrammar();
         }
 
         return result;
@@ -241,15 +241,15 @@ export class TstEnclosure extends TstCellComponent {
 
 export class TstBinaryOp extends TstEnclosure {
 
-    public toAST(): AstComponent {
+    public toGrammar(): GrammarComponent {
 
         const trimmedText = this.text.slice(0, 
                         this.text.length-1).trim();
 
         const op = BINARY_OPS[trimmedText];
                             
-        let childAst: AstComponent = new AstEpsilon(this.cell);
-        let siblingAst: AstComponent = new AstEpsilon(this.cell);
+        let childGrammar: GrammarComponent = new EpsilonGrammar(this.cell);
+        let siblingGrammar: GrammarComponent = new EpsilonGrammar(this.cell);
 
         if (this.child == undefined) {
             this.message({
@@ -259,7 +259,7 @@ export class TstBinaryOp extends TstEnclosure {
                 "something should be in the cell to the right."
             });
         } else {
-            childAst = this.child.toAST();
+            childGrammar = this.child.toGrammar();
         }
 
         if (this.sibling == undefined) {
@@ -270,10 +270,10 @@ export class TstBinaryOp extends TstEnclosure {
                 "something should be in a cell above this."
             });
         } else {
-            siblingAst = this.sibling.toAST();
+            siblingGrammar = this.sibling.toGrammar();
         }
 
-        return op(this.cell, siblingAst, childAst);
+        return op(this.cell, siblingGrammar, childGrammar);
     }
 }
 
@@ -285,11 +285,11 @@ export class TstApply extends TstEnclosure {
 
 export class TstTableOp extends TstEnclosure {
 
-    public toAST(): AstComponent {
+    public toGrammar(): GrammarComponent {
 
         if (this.sibling != undefined) {
             // TODO: Content obliteration warning
-            this.sibling.toAST();
+            this.sibling.toGrammar();
         }
 
         if (this.child == undefined) {
@@ -299,10 +299,10 @@ export class TstTableOp extends TstEnclosure {
                 longMsg: "'table' seems to be missing a table; " + 
                 "something should be in the cell to the right."
             });
-            return new AstEpsilon(this.cell);
+            return new EpsilonGrammar(this.cell);
         }
 
-        return this.child.toAST();
+        return this.child.toGrammar();
     }
 }
 
@@ -313,7 +313,7 @@ export class TstUnitTest extends TstEnclosure {
      * and one to the right, and makes sure that each line of the one to the right
      * has an output when filtering the table above.
      */
-    public toAST(): AstComponent {
+    public toGrammar(): GrammarComponent {
         
         if (this.sibling == undefined) {
             this.message({
@@ -321,10 +321,10 @@ export class TstUnitTest extends TstEnclosure {
                 shortMsg: "Wayward test",
                 longMsg: "There should be something above this 'test' command to test"
             });
-            return new AstEpsilon(this.cell);
+            return new EpsilonGrammar(this.cell);
         }
 
-        const siblingAst = this.sibling.toAST();
+        const siblingGrammar = this.sibling.toGrammar();
 
         if (this.child == undefined) {
             this.message({
@@ -333,7 +333,7 @@ export class TstUnitTest extends TstEnclosure {
                 longMsg: "'test' seems to be missing something to test; " +
                 "something should be in the cell to the right."
             });
-            return siblingAst; // whereas usually we result in the 
+            return siblingGrammar; // whereas usually we result in the 
                             // empty grammar upon erroring, in this case
                             // we don't want to let a flubbed "test" command 
                             // obliterate the grammar it was meant to test!
@@ -346,12 +346,12 @@ export class TstUnitTest extends TstEnclosure {
                 longMsg: "You can't nest another operator to the right of a test block, " + 
                 "it has to be a content table."
             });
-            return siblingAst;
+            return siblingGrammar;
         }
 
-        const testAST = this.child.toAST();
-        const testASTs = testAST.getChildren();
-        return new AstUnitTest(this.cell, siblingAst, testASTs);
+        const testGrammar = this.child.toGrammar();
+        const testGrammars = testGrammar.getChildren();
+        return new UnitTestGrammar(this.cell, siblingGrammar, testGrammars);
     }
 
 }
@@ -363,7 +363,7 @@ export class TstNegativeUnitTest extends TstEnclosure {
      * and one to the right, and makes sure that each line of the one to the right
      * has no output when filtering the table above.
      */
-    public toAST(): AstComponent {
+    public toGrammar(): GrammarComponent {
         
         if (this.sibling == undefined) {
             this.message({
@@ -371,10 +371,10 @@ export class TstNegativeUnitTest extends TstEnclosure {
                 shortMsg: "Wayward test",
                 longMsg: "There should be something above this 'testnot' command to test"
             });
-            return new AstEpsilon(this.cell);
+            return new EpsilonGrammar(this.cell);
         }
 
-        const siblingAst = this.sibling.toAST();
+        const siblingGrammar = this.sibling.toGrammar();
 
         if (this.child == undefined) {
             this.message({
@@ -383,7 +383,7 @@ export class TstNegativeUnitTest extends TstEnclosure {
                 longMsg: "'testnot' seems to be missing something to test; " +
                 "something should be in the cell to the right."
             });
-            return siblingAst; // whereas usually we result in the 
+            return siblingGrammar; // whereas usually we result in the 
                             // empty grammar upon erroring, in this case
                             // we don't want to let a flubbed "test" command 
                             // obliterate the grammar it was meant to test!
@@ -396,12 +396,12 @@ export class TstNegativeUnitTest extends TstEnclosure {
                 longMsg: "You can't nest another operator to the right of a testnot block, " + 
                 "it has to be a content table."
             });
-            return siblingAst;
+            return siblingGrammar;
         }
 
-        const testAST = this.child.toAST();
-        const testASTs = testAST.getChildren();
-        return new AstNegativeUnitTest(this.cell, siblingAst, testASTs);
+        const testGrammar = this.child.toGrammar();
+        const testGrammars = testGrammar.getChildren();
+        return new NegativeUnitTestGrammar(this.cell, siblingGrammar, testGrammars);
     }
 
 }
@@ -409,7 +409,7 @@ export class TstNegativeUnitTest extends TstEnclosure {
 
 export class TstAssignment extends TstEnclosure {
 
-    public assign(ns: AstNamespace, ast: AstComponent): void {
+    public assign(ns: NamespaceGrammar, grammar: GrammarComponent): void {
         
         // determine what symbol you're assigning to
         const trimmedText = this.text.slice(0, this.text.length-1).trim();
@@ -437,7 +437,7 @@ export class TstAssignment extends TstEnclosure {
         }
 
         try {
-            ns.addSymbol(trimmedText, ast);
+            ns.addSymbol(trimmedText, grammar);
         } catch (e) {
             this.message({
                 type: "error",
@@ -447,13 +447,13 @@ export class TstAssignment extends TstEnclosure {
         }
     }
 
-    public toAST(): AstComponent {
+    public toGrammar(): GrammarComponent {
 
         if (this.child != undefined) {
-            return this.child.toAST();
+            return this.child.toGrammar();
         }
 
-        return new AstEpsilon(this.cell);
+        return new EpsilonGrammar(this.cell);
     }
 }
 
@@ -476,20 +476,20 @@ export class TstSheet extends TstEnclosure {
         return children;
     }
 
-    public toAST(): AstComponent {
+    public toGrammar(): GrammarComponent {
 
-        const ns = new AstNamespace(this.cell, this.name);
+        const ns = new NamespaceGrammar(this.cell, this.name);
 
         if (this.child == undefined) {
             return ns;
         }
 
         let child: TstEnclosure | undefined = undefined;
-        let ast: AstComponent | undefined = undefined;
+        let grammar: GrammarComponent | undefined = undefined;
         for (child of this.getChildren()) {
-            ast = child.toAST();
+            grammar = child.toGrammar();
             if (child instanceof TstAssignment) {
-                child.assign(ns, ast);
+                child.assign(ns, grammar);
             }
         }
         
@@ -500,8 +500,8 @@ export class TstSheet extends TstEnclosure {
         // still has to be called *something* in order to be stored in the namespace;
         // we call it "__DEFAULT__".  We never actually call it by that name anywhere, 
         // although you could.
-        if (child != undefined && ast != undefined && !(child instanceof TstAssignment)) {
-            ns.addSymbol("__DEFAULT__", ast);
+        if (child != undefined && grammar != undefined && !(child instanceof TstAssignment)) {
+            ns.addSymbol("__DEFAULT__", grammar);
         }
 
         return ns;
@@ -517,13 +517,13 @@ export class TstProject extends TstComponent {
         this.sheets[sheet.name] = sheet;
     }
     
-    public toAST(): AstComponent {
+    public toGrammar(): GrammarComponent {
 
-        const ns = new AstNamespace(new DummyCell(), "");
+        const ns = new NamespaceGrammar(new DummyCell(), "");
 
         for (const [name, sheet] of Object.entries(this.sheets)) {
-            const ast = sheet.toAST();
-            ns.addSymbol(name, ast);
+            const grammar = sheet.toGrammar();
+            ns.addSymbol(name, grammar);
         }
 
         return ns;
@@ -593,15 +593,15 @@ export class TstTable extends TstEnclosure {
         throw new Error("TstTables cannot have children");
     }
 
-    public toAST(): AstComponent {
+    public toGrammar(): GrammarComponent {
 
         if (this.sibling != undefined) {
-            this.sibling.toAST();
+            this.sibling.toGrammar();
         }
 
-        var rowStates = this.rows.map(row => row.toAST())
-                                 .filter(ast => !(ast instanceof AstEpsilon));
-        return new AstAlternation(this.cell, rowStates);
+        var rowStates = this.rows.map(row => row.toGrammar())
+                                 .filter(g => !(g instanceof EpsilonGrammar));
+        return new AlternationGrammar(this.cell, rowStates);
     }
 }
 
@@ -618,11 +618,11 @@ export class TstRow extends TstCellComponent {
         this.lastCell = newCell;
     }
 
-    public toAST(): AstComponent {
+    public toGrammar(): GrammarComponent {
         if (this.lastCell == undefined) {
-            return new AstNull(this.cell);  // shouldn't happen
+            return new NullGrammar(this.cell);  // shouldn't happen
         }
-        const child = this.lastCell.toAST();
-        return new AstUnary(this.cell, child);
+        const child = this.lastCell.toGrammar();
+        return new UnaryGrammar(this.cell, child);
     }
 }

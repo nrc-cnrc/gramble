@@ -1,4 +1,4 @@
-import { testProject, testErrors, sheetFromFile } from "./testUtils";
+import { testGramble, testErrors, sheetFromFile } from "./testUtils";
 
 import * as path from 'path';
 
@@ -9,7 +9,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/externalRef.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -22,7 +22,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/lowercaseExternalRef.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -35,7 +35,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/externalBareRef.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -48,7 +48,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/externalBareRefToBareGrammar.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -62,7 +62,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["missingExternalRef", 1, 1, "warning"]
         ]);
-        testProject(project, [
+        testGramble(project, [
             { text: "able" }
         ]);
     });
@@ -73,7 +73,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["missingSheet", 1, 1, "warning"]
         ]);
-        testProject(project, [
+        testGramble(project, [
             { text: "able" }
         ]);
     });
@@ -83,7 +83,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/externalRefCycle.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },

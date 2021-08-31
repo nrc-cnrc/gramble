@@ -10,14 +10,14 @@ import {
     Seq,
     Vocab, 
     //Vocab 
-} from "../src/ast";
+} from "../src/grammars";
 
 import { 
     InputResultsPair, 
     t1, t2, 
     testHasTapes, 
     testHasVocab,
-    testAst, 
+    testGrammar, 
     testParseMultiple
 } from './testUtils';
 
@@ -49,7 +49,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hallo'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     // 2. Replace e by a in hello: e -> a {1+} || h_llo$
@@ -73,7 +73,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'olhello', t2: 'olhallo'},
             {t1: 'oohello', t2: 'oohallo'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100); 
+        testGrammar(grammar, expectedResults, undefined, undefined, 100); 
     });
 
     
@@ -111,7 +111,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'olhello', t2: 'olhallo'},
             {t1: 'oohello', t2: 'oohallo'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     
@@ -136,7 +136,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hellool', t2: 'hallool'},
             {t1: 'hellooo', t2: 'hallooo'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     // 5. Replace e by a in hello: e -> a {0+} || ^h_llo
@@ -173,7 +173,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hellool', t2: 'hallool'},
             {t1: 'hellooo', t2: 'hallooo'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     // 6. Replace e by a in hello: e -> a {1,5} || h_llo
@@ -218,7 +218,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'olhello', t2: 'olhallo'},
             {t1: 'oohello', t2: 'oohallo'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 15);
+        testGrammar(grammar, expectedResults, undefined, undefined, 15);
     });
 
     
@@ -267,7 +267,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhellhelh', t2: 'lhallhalh'},
             {t1: 'lhellhell', t2: 'lhallhall'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 19);
+        testGrammar(grammar, expectedResults, undefined, undefined, 19);
     });
 
     
@@ -318,7 +318,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhellhelh', t2: 'lhallhalh'},
             {t1: 'lhellhell', t2: 'lhallhall'},
         ];
-        testAst(grammar, expectedResults, undefined, 19);
+        testGrammar(grammar, expectedResults, undefined, 19);
     });
 
     
@@ -412,7 +412,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hhhehhheh', t2: 'hhhahhhah'},
             {t1: 'hhhehhhehh', t2: 'hhhahhhahh'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     
@@ -464,7 +464,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hhhehhheh', t2: 'hhhahhhah'},
             {t1: 'hhhehhhehh', t2: 'hhhahhhahh'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     
@@ -515,7 +515,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'llelllell', t2: 'llalllall'},
             {t1: 'llelllelll', t2: 'llalllalll'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     
@@ -567,7 +567,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leleh', t2: 'lalah'},
             {t1: 'lelel', t2: 'lalal'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     // 15. Replace e by a: e -> a {0,3} (vocab hel/hal)
@@ -707,7 +707,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhellhele', t2: 'lheellheele'},
             {t1: 'lhellhell', t2: 'lheellheell'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     }); 
     
 
@@ -759,7 +759,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hellle', t2: 'heellle'},
             {t1: 'hellll', t2: 'heellll'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     // 18. Replace e by ee in hel: e -> ee {0+} || ^h_l
@@ -862,7 +862,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'llehel', t2: 'lleheel'},
             {t1: 'lllhel', t2: 'lllheel'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     
@@ -967,7 +967,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'eheeheh', t2: 'eheeeheeh'},
             {t1: 'eheehee', t2: 'eheeeheee'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     // 22. Replace e by ee in el: e -> ee {0,2} || _l
@@ -1017,7 +1017,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lellele', t2: 'leelleele'},
             {t1: 'lellell', t2: 'leelleell'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     
@@ -1070,7 +1070,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leleh', t2: 'leeleeh'},
             {t1: 'lelel', t2: 'leeleel'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     
@@ -1166,7 +1166,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lheellheele', t2: 'lhellhele'},
             {t1: 'lheellheell', t2: 'lhellhell'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     // 25. Replace ee by e in hee: ee -> e {0,2} || h_
@@ -1216,7 +1216,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'eheeeheeh', t2: 'eheeheh'},
             {t1: 'eheeeheee', t2: 'eheehee'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     // 26. Replace ee by e in eel: ee -> e {0,2} || _l
@@ -1266,7 +1266,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leelleele', t2: 'lellele'},
             {t1: 'leelleell', t2: 'lellell'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
 
@@ -1363,7 +1363,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leeleeh', t2: 'leleh'},
             {t1: 'leeleel', t2: 'lelel'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     
@@ -1414,7 +1414,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhllhlh', t2: 'lhallhalh'},
             {t1: 'lhllhll', t2: 'lhallhall'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
     
@@ -1465,6 +1465,6 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhellhelh', t2: 'lhllhlh'},
             {t1: 'lhellhell', t2: 'lhllhll'},
         ];
-        testAst(grammar, expectedResults, undefined, undefined, 100);
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 });

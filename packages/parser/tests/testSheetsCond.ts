@@ -1,4 +1,4 @@
-import { testProject, testErrors, sheetFromFile } from "./testUtils";
+import { testGramble, testErrors, sheetFromFile } from "./testUtils";
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
@@ -132,7 +132,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/simpleEquals.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             {"pos":"v","text":"goo"},
             {"pos":"v","text":"foo"}
         ]);
@@ -144,7 +144,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/equalsHeader.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" }
         ]);
@@ -155,7 +155,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/nestedEquals.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]", trans: "INTR" },
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]", trans: "INTR" }
         ]);
@@ -166,7 +166,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/equalsOr.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
             { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
@@ -179,7 +179,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/equalsEmbed.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
             { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
@@ -192,7 +192,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/equalsEmbedAfter.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
             { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
@@ -207,7 +207,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/equalsNot.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
             { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
@@ -221,7 +221,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/equalsNegatedEmbed.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             {gloss: "run[1SG]", subj: "[1SG]", text: "foobar"},
             {gloss: "jump[1SG]", subj: "[1SG]", text: "moobar"}
         ]);
@@ -232,7 +232,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/startsWith.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
             { text: "ungoo", gloss: "[1SG]climb" }
         ]);
@@ -243,7 +243,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/startsWithOr.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
             { text: "ummoo", gloss: "[1SG]jump" },
             { text: "ungoo", gloss: "[1SG]climb" }
@@ -255,7 +255,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/startsWithNot.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
             { text: "ummoo", gloss: "[1SG]jump" },
             { text: "ungoo", gloss: "[1SG]climb" }
@@ -267,7 +267,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/startsWithEmbed.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
             { text: "ummoo", gloss: "[1SG]jump" },
             { text: "ungoo", gloss: "[1SG]climb" }
@@ -279,7 +279,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/startsWithEmbedAfter.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
             { text: "ummoo", gloss: "[1SG]jump" },
             { text: "ungoo", gloss: "[1SG]climb" }
@@ -292,7 +292,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/startsWithNegatedEmbed.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
             { text: "ummoo", gloss: "[1SG]jump" },
             { text: "ungoo", gloss: "[1SG]climb" }
@@ -304,7 +304,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/startsWithEquals.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run", trans: "[INTR]" },
             { text: "ungoo", gloss: "[1SG]climb", trans: "[INTR]" },
             { text: "moo", gloss: "[1SG]see", trans: "[TR]" }
@@ -316,7 +316,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/equalsStartsWith.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run", trans: "[INTR]" },
             { text: "ungoo", gloss: "[1SG]climb", trans: "[INTR]" },
             { text: "moo", gloss: "[1SG]see", trans: "[TR]" },
@@ -328,7 +328,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/endsWith.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]" },
             { text: "foobazk", gloss: "jump[1SG]" }
         ]);
@@ -339,7 +339,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/endsWithOr.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]" },
             { text: "foobazk", gloss: "jump[1SG]" },
             { text: "foobask", gloss: "climb[1SG]" }
@@ -351,7 +351,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/endsWithNot.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]" },
             { text: "foobazk", gloss: "jump[1SG]" },
             { text: "foobask", gloss: "climb[1SG]" }
@@ -363,7 +363,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/endsWithEmbed.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]" },
             { text: "foobazk", gloss: "jump[1SG]" },
             { text: "foobask", gloss: "climb[1SG]" }
@@ -375,7 +375,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/endsWithEmbedAfter.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]" },
             { text: "foobazk", gloss: "jump[1SG]" },
             { text: "foobask", gloss: "climb[1SG]" }
@@ -388,7 +388,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/endsWithEmbedNot.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run[1SG]" },
             { text: "foobor", gloss: "jump[1SG]" },
             { text: "foobaru", gloss: "climb[1SG]" }
@@ -400,7 +400,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/endsWithComplexEmbed.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run[1SG]" },
             { text: "foobor", gloss: "jump[1SG]" },
             { text: "foobart", gloss: "climb[1SG]" },
@@ -413,7 +413,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/endsWithEquals.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]", trans: "INTR" },
             { text: "foobazk", gloss: "jump[1SG]", trans: "INTR" },
             { text: "foobas", gloss: "see[1SG]", trans: "TR" }
@@ -425,7 +425,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/equalsEndsWith.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]", trans: "INTR" },
             { text: "foobazk", gloss: "jump[1SG]", trans: "INTR" },
             { text: "foobas", gloss: "see[1SG]", trans: "TR" }
@@ -437,7 +437,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/startsWithEndsWith.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "umfooz", gloss: "[1SG]jump" }
         ]);
     });
@@ -448,7 +448,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/containsHeader.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" }
         ]);
@@ -459,7 +459,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/containsOr.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
@@ -472,7 +472,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/containsNot.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
@@ -486,7 +486,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/containsEmbed.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
@@ -499,7 +499,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/containsEmbedAfter.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
@@ -513,7 +513,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/containsNegatedEmbed.csv");
 
         testErrors(project, []);
-        testProject(project, [
+        testGramble(project, [
             { text: "foobar", gloss: "run[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
             { text: "moobar", gloss: "jump[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
         ]);

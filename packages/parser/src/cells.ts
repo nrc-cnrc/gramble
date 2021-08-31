@@ -1,8 +1,9 @@
 import { MPDelay, MPAlternation, MPSequence, MPUnreserved, MPParser, miniParse } from "./miniParser";
 
 /**
- * This module uses the "MiniParser" engine to parse the contents of a cell with logical operators 
- * (e.g. ~ and |) into a structured format for later processing.
+ * This module is concerned with cells that have operators in them (e.g. ~ and |),
+ * which need to be parsed into more complex structures in order that (in combination
+ * with Headers) we can assign them the right Grammar objects and later Expr objects.
  */
 
 export interface CPResult { }

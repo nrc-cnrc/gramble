@@ -1,9 +1,9 @@
 import { 
-    AstAlternation,
-    AstComponent, AstContains, AstEmbed, AstEndsWith, AstEpsilon, AstFilter, AstHide, AstJoin, AstLiteral, AstNegation, AstRename, AstSequence, AstStartsWith, Epsilon
-} from "./ast";
+    AlternationGrammar,
+    GrammarComponent, ContainsGrammar, EmbedGrammar, EndsWithGrammar, EpsilonGrammar, FilterGrammar, HideGrammar, JoinGrammar, LiteralGrammar, NegationGrammar, RenameGrammar, SequenceGrammar, StartsWithGrammar, Epsilon
+} from "./grammars";
 
-import { CPAlternation, CPNegation, CPResult, CPUnreserved, parseBooleanCell } from "./cellParser";
+import { CPAlternation, CPNegation, CPResult, CPUnreserved, parseBooleanCell } from "./cells";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPReserved, MPSequence, MPUnreserved } from "./miniParser";
 import { Cell, HSVtoRGB, RGBtoString } from "./util";
 
@@ -25,7 +25,7 @@ export const DEFAULT_VALUE = 1.0;
  * 
  * Header objects are responsible for:
  * 
- * * compiling the text of the cells beneath them into [AstComponent]s, and merging them (usually by
+ * * compiling the text of the cells beneath them into [GrammarComponent]s, and merging them (usually by
  *   concatenation) with cells to their left.
  * 
  * * calculating the appropriate background color for their cells and the cells in their column. 
@@ -35,17 +35,17 @@ export const DEFAULT_VALUE = 1.0;
  export abstract class Header {
 
     /**
-     * One of the primary responsibilities of the header tree is to construct the appropriate AST
-     * for a cell, from the AST to its left and a string.  This string is usually the text of the 
+     * One of the primary responsibilities of the header tree is to construct the appropriate grammar object
+     * for a cell, from the grammar to its left and a string.  This string is usually the text of the 
      * cell in question, but (in the case of cells that we parse like "~(A|B)" it could be a substring
      * of this.  (That's why we need a separate text param and don't just grab it from content.text.)
      * 
-     * @param left The already-constructed AST corresponding to the cell to the left of the content cell
+     * @param left The already-constructed grammar corresponding to the cell to the left of the content cell
      * @param text A string expressing the content to be compiled, in light of this header
      * @param content The cell that ultimately provided the text string
-     * @returns The AST corresponding to this header/content pair
+     * @returns The grammar corresponding to this header/content pair
      */
-    public abstract toAST(left: AstComponent, text: string, content: Cell): AstComponent;
+    public abstract toGrammar(left: GrammarComponent, text: string, content: Cell): GrammarComponent;
     public abstract getColor(saturation: number, value: number): string;
 }
 
@@ -83,13 +83,13 @@ export class EmbedHeader extends AtomicHeader {
         return "embed";
     }
 
-    public toAST(
-        left: AstComponent, 
+    public toGrammar(
+        left: GrammarComponent, 
         text: string,
         content: Cell
-    ): AstComponent {
-        const cellAST = new AstEmbed(content, text);
-        return new AstSequence(content, [left, cellAST]);
+    ): GrammarComponent {
+        const cellGrammar = new EmbedGrammar(content, text);
+        return new SequenceGrammar(content, [left, cellGrammar]);
     }
 
 }
@@ -109,14 +109,14 @@ export class HideHeader extends AtomicHeader {
         return "hide";
     }
     
-    public toAST(
-        left: AstComponent, 
+    public toGrammar(
+        left: GrammarComponent, 
         text: string,
         content: Cell
-    ): AstComponent {
+    ): GrammarComponent {
         var result = left;
         for (const tape of text.split("/")) {
-            result = new AstHide(content, result, tape.trim());
+            result = new HideGrammar(content, result, tape.trim());
         }
         return result;
     }
@@ -133,13 +133,13 @@ export class LiteralHeader extends AtomicHeader {
         super();
     }
 
-    public toAST(
-        left: AstComponent, 
+    public toGrammar(
+        left: GrammarComponent, 
         text: string,
         content: Cell
-    ): AstComponent {
-        const ast = new AstLiteral(content, this.text, text);
-        return new AstSequence(content, [left, ast]);
+    ): GrammarComponent {
+        const grammar = new LiteralGrammar(content, this.text, text);
+        return new SequenceGrammar(content, [left, grammar]);
     }
 }
 
@@ -157,10 +157,10 @@ export class CommentHeader extends Header {
         return "#FFFFFF";
     }
 
-    public toAST(
-        left: AstComponent, 
+    public toGrammar(
+        left: GrammarComponent, 
         text: string
-    ): AstComponent {
+    ): GrammarComponent {
         return left;
     }    
 }
@@ -188,14 +188,14 @@ abstract class UnaryHeader extends Header {
  */
 export class MaybeHeader extends UnaryHeader {
 
-    public toAST(
-        left: AstComponent, 
+    public toGrammar(
+        left: GrammarComponent, 
         text: string,
         content: Cell
-    ): AstComponent {
-        const childAST = this.child.toAST(new AstEpsilon(content), text, content);
-        const ast = new AstAlternation(content, [childAST, new AstEpsilon(content)]);
-        return new AstSequence(content, [left, ast]);
+    ): GrammarComponent {
+        const childGrammar = this.child.toGrammar(new EpsilonGrammar(content), text, content);
+        const grammar = new AlternationGrammar(content, [childGrammar, new EpsilonGrammar(content)]);
+        return new SequenceGrammar(content, [left, grammar]);
     }
 }
 
@@ -204,21 +204,20 @@ export class MaybeHeader extends UnaryHeader {
  */
 class RenameHeader extends UnaryHeader {
 
-    public toAST(
-        left: AstComponent, 
+    public toGrammar(
+        left: GrammarComponent, 
         text: string,
         content: Cell
-    ): AstComponent {
+    ): GrammarComponent {
         if (!(this.child instanceof LiteralHeader)) {
             content.message({
                 type: "error",
                 shortMsg: "Renaming error",
                 longMsg: "Rename (>) needs to have a tape name after it"
             })
-            return new AstEpsilon(content);
+            return new EpsilonGrammar(content);
         }
-        const ast = new AstRename(content, left, text, this.child.text);
-        return ast;
+        return new RenameGrammar(content, left, text, this.child.text);
     }
 }
 
@@ -235,51 +234,51 @@ class RenameHeader extends UnaryHeader {
 export class LogicHeader extends UnaryHeader {
 
     public merge(
-        left: AstComponent | undefined, 
-        ast: AstComponent,
+        left: GrammarComponent | undefined, 
+        child: GrammarComponent,
         content: Cell
-    ): AstComponent {
+    ): GrammarComponent {
         if (left == undefined) {
-            return ast;
+            return child;
         }
-        return new AstSequence(content, [left, ast]);
+        return new SequenceGrammar(content, [left, child]);
     }
 
-    public toAstPiece(
+    public toGrammarPiece(
         parsedText: CPResult,
         content: Cell
-    ): AstComponent {
+    ): GrammarComponent {
 
         if (parsedText instanceof CPUnreserved) {
-            return this.child.toAST(new AstEpsilon(content), parsedText.text, content);
+            return this.child.toGrammar(new EpsilonGrammar(content), parsedText.text, content);
         }
 
         if (parsedText instanceof CPNegation) {
-            const childAst = this.toAstPiece(parsedText.child, content);
-            return new AstNegation(content, childAst);
+            const childGrammar = this.toGrammarPiece(parsedText.child, content);
+            return new NegationGrammar(content, childGrammar);
         }
 
         if (parsedText instanceof CPAlternation) {
-            const child1Ast = this.toAstPiece(parsedText.child1, content);
-            const child2Ast = this.toAstPiece(parsedText.child2, content);
-            return new AstAlternation(content, [child1Ast, child2Ast]);
+            const child1Grammar = this.toGrammarPiece(parsedText.child1, content);
+            const child2Grammar = this.toGrammarPiece(parsedText.child2, content);
+            return new AlternationGrammar(content, [child1Grammar, child2Grammar]);
         }
 
         throw new Error(`Error constructing boolean expression: ${parsedText}`);
     }
 
-    public toAST(
-        left: AstComponent, 
+    public toGrammar(
+        left: GrammarComponent, 
         text: string,
         content: Cell
-    ): AstComponent {
+    ): GrammarComponent {
 
         if (text.length == 0) {
             return left;
         }
 
         const parsedText = parseBooleanCell(text);
-        const c = this.toAstPiece(parsedText, content);
+        const c = this.toGrammarPiece(parsedText, content);
         return this.merge(left, c, content);
     }
 }
@@ -296,20 +295,20 @@ export class LogicHeader extends UnaryHeader {
 export class EqualsHeader extends LogicHeader {
     
     public merge(
-        leftNeighbor: AstComponent | undefined, 
-        state: AstComponent,
+        leftNeighbor: GrammarComponent | undefined, 
+        state: GrammarComponent,
         content: Cell
-    ): AstComponent {
+    ): GrammarComponent {
         if (leftNeighbor == undefined) {
             content.message({
                 type: "error",
                 shortMsg: "Filtering empty grammar",
                 longMsg: "'equals/startswith/endswith/contains' requires content to its left."
             });
-            return new AstEpsilon(content);
+            return new EpsilonGrammar(content);
         }
 
-        if (leftNeighbor instanceof AstSequence) {
+        if (leftNeighbor instanceof SequenceGrammar) {
             // if your left neighbor is a concat state we have to do something a little special,
             // because startswith only scopes over the cell immediately to the left.  (if you let
             // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
@@ -317,18 +316,18 @@ export class EqualsHeader extends LogicHeader {
             const lastChild = leftNeighbor.finalChild();
             const filter = this.constructFilter(lastChild, state, content);
             const remainingChildren = leftNeighbor.nonFinalChildren();
-            return new AstSequence(content, [...remainingChildren, filter]);
+            return new SequenceGrammar(content, [...remainingChildren, filter]);
         }
 
         return this.constructFilter(leftNeighbor, state, content);
     }
 
     public constructFilter(
-        leftNeighbor: AstComponent, 
-        condition: AstComponent,
+        leftNeighbor: GrammarComponent, 
+        condition: GrammarComponent,
         content: Cell
-    ): AstComponent {
-        return new AstFilter(content, leftNeighbor, condition);
+    ): GrammarComponent {
+        return new FilterGrammar(content, leftNeighbor, condition);
     }
 }
 
@@ -339,11 +338,11 @@ export class EqualsHeader extends LogicHeader {
 export class StartsWithHeader extends EqualsHeader {
 
     public constructFilter(
-        leftNeighbor: AstComponent, 
-        condition: AstComponent,
+        leftNeighbor: GrammarComponent, 
+        condition: GrammarComponent,
         content: Cell
-    ): AstComponent {
-        return new AstStartsWith(content, leftNeighbor, condition);
+    ): GrammarComponent {
+        return new StartsWithGrammar(content, leftNeighbor, condition);
     }
 }
 
@@ -354,11 +353,11 @@ export class StartsWithHeader extends EqualsHeader {
 export class EndsWithHeader extends EqualsHeader {
 
     public constructFilter(
-        leftNeighbor: AstComponent, 
-        condition: AstComponent,
+        leftNeighbor: GrammarComponent, 
+        condition: GrammarComponent,
         content: Cell
-    ): AstComponent {
-        return new AstEndsWith(content, leftNeighbor, condition);
+    ): GrammarComponent {
+        return new EndsWithGrammar(content, leftNeighbor, condition);
     }
 }
 
@@ -369,11 +368,11 @@ export class EndsWithHeader extends EqualsHeader {
 export class ContainsHeader extends EqualsHeader {
     
     public constructFilter(
-        leftNeighbor: AstComponent, 
-        condition: AstComponent,
+        leftNeighbor: GrammarComponent, 
+        condition: GrammarComponent,
         content: Cell
-    ): AstComponent {
-        return new AstContains(content, leftNeighbor, condition);
+    ): GrammarComponent {
+        return new ContainsGrammar(content, leftNeighbor, condition);
     }
 }
 
@@ -400,45 +399,45 @@ export class SlashHeader extends BinaryHeader {
         super(child1, child2);
     }
     
-    public toAST(
-        left: AstComponent, 
+    public toGrammar(
+        left: GrammarComponent, 
         text: string,
         content: Cell
-    ): AstComponent {
-        const childAst1 = this.child1.toAST(left, text, content);
-        return this.child2.toAST(childAst1, text, content);
+    ): GrammarComponent {
+        const child1Grammar = this.child1.toGrammar(left, text, content);
+        return this.child2.toGrammar(child1Grammar, text, content);
     }
 }
 
 export class ErrorHeader extends LiteralHeader {
 
-    public toAST(
-        left: AstComponent, 
+    public toGrammar(
+        left: GrammarComponent, 
         text: string,
         content: Cell
-    ): AstComponent {
+    ): GrammarComponent {
         content.message({
             type: "warning",
             shortMsg: `Invalid header: ${this.text}`,
             longMsg: `This content is associated with an invalid header above, ignoring`
         });
-        return new AstEpsilon(content);
+        return new EpsilonGrammar(content);
     }
 }
 
 export class ReservedErrorHeader extends ErrorHeader {
 
-    public toAST(
-        left: AstComponent, 
+    public toGrammar(
+        left: GrammarComponent, 
         text: string,
         content: Cell
-    ): AstComponent {
+    ): GrammarComponent {
         content.message({
             type: "warning",
             shortMsg: `Invalid header: ${this.text}`,
             longMsg: `This content is associated with an invalid header above, ignoring`
         });
-        return new AstEpsilon(content);
+        return new EpsilonGrammar(content);
     }
 
 }
@@ -465,11 +464,11 @@ export const RESERVED_HEADERS = [
     "contains" 
 ];
 
-type BinaryOp = (cell: Cell, c1: AstComponent, c2: AstComponent) => AstComponent;
+type BinaryOp = (cell: Cell, c1: GrammarComponent, c2: GrammarComponent) => GrammarComponent;
 export const BINARY_OPS: {[opName: string]: BinaryOp} = {
-    "or": (cell, c1, c2) => new AstAlternation(cell, [c1, c2]),
-    "concat": (cell, c1, c2) => new AstSequence(cell, [c1, c2]),
-    "join": (cell, c1, c2) => new AstJoin(cell, c1, c2),
+    "or": (cell, c1, c2) => new AlternationGrammar(cell, [c1, c2]),
+    "concat": (cell, c1, c2) => new SequenceGrammar(cell, [c1, c2]),
+    "join": (cell, c1, c2) => new JoinGrammar(cell, c1, c2),
 }
 
 export const RESERVED_OPS: Set<string> = new Set([ ...Object.keys(BINARY_OPS), "table", "test", "testnot" ]);
