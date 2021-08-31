@@ -777,6 +777,106 @@ class IntersectExpr extends BinaryExpr {
     } 
 }
 
+
+class FilterExpr extends BinaryExpr {
+
+    constructor(
+        child1: Expr,
+        child2: Expr,
+        public tapes: Set<string>
+    ) {
+        super(child1, child2);
+    }
+
+    
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        return constructFilter( this.child1.delta(tape, stack),
+                                   this.child2.delta(tape, stack), this.tapes);
+    }
+
+    public *deriv(
+        tape: Tape,
+        target: Token,               
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+
+        if (!this.tapes.has(tape.tapeName)) {
+            for (const [c1tape, c1target, c1next] of 
+                    this.child1.disjointDeriv(tape, target, stack)) {
+                const successor = constructFilter(c1next, this.child2, this.tapes);
+                yield [c1tape, c1target, successor];
+            }
+            return;
+        }
+        
+        for (const [c2tape, c2target, c2next] of 
+            this.child2.disjointDeriv(tape, target, stack)) {
+
+            for (const [c1tape, c1target, c1next] of 
+                    this.child1.disjointDeriv(c2tape, c2target, stack)) {
+                const successor = constructFilter(c1next, c2next, this.tapes);
+                yield [c1tape, c1target, successor];
+            }
+        }
+    } 
+
+}
+
+
+class JoinExpr extends BinaryExpr {
+
+    constructor(
+        child1: Expr,
+        child2: Expr,
+        public tapes1: Set<string>,
+        public tapes2: Set<string>
+    ) {
+        super(child1, child2);
+    }
+
+    
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        return constructJoin( this.child1.delta(tape, stack),
+                                   this.child2.delta(tape, stack), this.tapes1, this.tapes2);
+    }
+
+    public *deriv(
+        tape: Tape,
+        target: Token,               
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+
+        if (!this.tapes2.has(tape.tapeName)) {
+            for (const [c1tape, c1target, c1next] of 
+                    this.child1.disjointDeriv(tape, target, stack)) {
+                const successor = constructJoin(c1next, this.child2, this.tapes1, this.tapes2);
+                yield [c1tape, c1target, successor];
+            }
+            return;
+        }
+        
+        if (!this.tapes1.has(tape.tapeName)) {
+            for (const [c2tape, c2target, c2next] of 
+                    this.child2.disjointDeriv(tape, target, stack)) {
+                const successor = constructJoin(this.child1, c2next, this.tapes1, this.tapes2);
+                yield [c2tape, c2target, successor];
+            }
+            return;
+        }
+        
+        for (const [c2tape, c2target, c2next] of 
+            this.child2.disjointDeriv(tape, target, stack)) {
+
+            for (const [c1tape, c1target, c1next] of 
+                    this.child1.disjointDeriv(c2tape, c2target, stack)) {
+                const successor = constructJoin(c1next, c2next, this.tapes1, this.tapes2);
+                yield [c1tape, c1target, successor];
+            }
+        }
+    } 
+
+}
+
 /**
  * The parser that handles arbitrary subgrammars referred to by a symbol name; this is what makes
  * recursion possible.
@@ -1452,4 +1552,30 @@ export function constructMemo(child: Expr): Expr {
         return child;
     }
     return new MemoExpr(child);
+}
+
+export function constructFilter(c1: Expr, c2: Expr, tapes: Set<string>): Expr {
+    if (c1 instanceof NullExpr) {
+        return c1;
+    }
+    if (c2 instanceof NullExpr) {
+        return c2;
+    }
+    if (c1 instanceof EpsilonExpr && c2 instanceof EpsilonExpr) {
+        return c1;
+    }
+    return new FilterExpr(c1, c2, tapes);
+}
+
+export function constructJoin(c1: Expr, c2: Expr, tapes1: Set<string>, tapes2: Set<string>): Expr {
+    if (c1 instanceof NullExpr) {
+        return c1;
+    }
+    if (c2 instanceof NullExpr) {
+        return c2;
+    }
+    if (c1 instanceof EpsilonExpr && c2 instanceof EpsilonExpr) {
+        return c1;
+    }
+    return new JoinExpr(c1, c2, tapes1, tapes2);
 }

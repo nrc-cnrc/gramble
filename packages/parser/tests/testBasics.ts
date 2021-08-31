@@ -24,7 +24,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testAst(grammar, [{}]);
     });
 
-    describe('Sequence t1:hello+test:world', function() {
+    describe('Sequence t1:hello+t1:world', function() {
         const grammar = Seq(t1("hello"), t1("world"));
         testHasTapes(grammar, ["t1"]);
         testAst(grammar, [{t1: "helloworld"}]);
