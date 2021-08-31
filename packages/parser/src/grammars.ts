@@ -35,6 +35,7 @@ import {
     Gen, 
     listDifference, 
     listIntersection, 
+    listUnique, 
     setDifference, 
     setIntersection, 
     StringDict 
@@ -125,8 +126,7 @@ export abstract class GrammarComponent {
         if (this.tapes == undefined) {
             const childTapes = this.getChildren().map(
                                 s => s.calculateTapes(stack));
-            this.tapes = flatten(childTapes);
-            this.tapes = [...new Set(this.tapes)];
+            this.tapes = listUnique(flatten(childTapes));
         }
         return this.tapes;
     }
@@ -181,10 +181,20 @@ export abstract class GrammarComponent {
             targetComponent = new FilterGrammar(DUMMY_CELL, targetComponent, querySeq);
         }
 
-        targetComponent.calculateTapes(new CounterStack(2));
+        const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
         targetComponent.collectVocab(allTapes); // in case there's more vocab
         const expr = targetComponent.constructExpr({});
-        yield* expr.generate(allTapes, random, maxRecursion, maxChars);
+        
+        const tapes: Tape[] = [];
+        for (const tapeName of tapePriority) {
+            const actualTape = allTapes.matchTape(tapeName);
+            if (actualTape == undefined) {
+                throw new Error(`cannot find priority tape ${tapeName}`);
+            }
+            tapes.push(actualTape);
+        }        
+        
+        yield* expr.generate(tapes, random, maxRecursion, maxChars);
     }
 }
 
@@ -378,22 +388,21 @@ function fillOutWithDotStar(state: Expr, tapes: string[]) {
 
 export class JoinGrammar extends BinaryGrammar {
 
+    public calculateTapes(stack: CounterStack): string[] {
+        if (this.tapes == undefined) {
+            const child1Tapes = this.child1.calculateTapes(stack);
+            const child2Tapes = this.child2.calculateTapes(stack);
+            const intersection = listIntersection(child1Tapes, child2Tapes);
+            this.tapes = listUnique([...intersection, ...child1Tapes, ...child2Tapes]);
+        }
+        return this.tapes;
+    }
+
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
             if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
                 throw new Error("Getting Brz expression with undefined tapes");
             }
-
-            /*
-            const child1OnlyTapes = listDifference(this.child1.tapes, this.child2.tapes);
-            const child2OnlyTapes = listDifference(this.child2.tapes, this.child1.tapes);
-
-            const child1 = this.child1.constructExpr(symbols);
-            const child1Etc = fillOutWithDotStar(child1, child2OnlyTapes);
-            const child2 = this.child2.constructExpr(symbols);
-            const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
-            this.expr = constructIntersection(child1Etc, child2Etc);
-            */
 
             return constructJoin(this.child1.constructExpr(symbols), 
                                 this.child2.constructExpr(symbols), 
@@ -407,20 +416,20 @@ export class JoinGrammar extends BinaryGrammar {
 
 export class FilterGrammar extends BinaryGrammar {
 
+    public calculateTapes(stack: CounterStack): string[] {
+        if (this.tapes == undefined) {
+            const child1Tapes = this.child1.calculateTapes(stack);
+            const child2Tapes = this.child2.calculateTapes(stack);
+            this.tapes = listUnique([...child2Tapes, ...child1Tapes]);
+        }
+        return this.tapes;
+    }
+
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
             if (this.child1.tapes == undefined || this.child2.tapes == undefined) {
                 throw new Error("Getting Brz expression with undefined tapes");
             }
-            
-            /*
-            const child1OnlyTapes = listDifference(this.child1.tapes, this.child2.tapes);
-
-            const child1 = this.child1.constructExpr(symbols);
-            const child2 = this.child2.constructExpr(symbols);
-            const child2Etc = fillOutWithDotStar(child2, child1OnlyTapes);
-            this.expr = constructIntersection(child2Etc, child1);
-            */
 
             const expr1 = this.child1.constructExpr(symbols)
             const expr2 = this.constructFilter(symbols);
@@ -537,7 +546,7 @@ export class RenameGrammar extends UnaryGrammar {
                     this.tapes.push(tapeName);
                 }
             }
-            this.tapes = [... new Set(this.tapes)];
+            this.tapes = listUnique(this.tapes);
         }
         return this.tapes;
     }

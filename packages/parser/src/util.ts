@@ -153,6 +153,10 @@ export function flatten<T>(ss: Iterable<Iterable<T>>): T[] {
     return results;
 }
 
+export function listUnique<T>(lst: T[]): T[] {
+    return [... new Set(lst)];
+}
+
 export function setIntersection<T>(s1: Set<T>, s2: Set<T>): Set<T> {
     return new Set([...s1].filter(i => s2.has(i)));
 }

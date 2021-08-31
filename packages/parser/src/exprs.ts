@@ -290,7 +290,7 @@ export abstract class Expr {
      * @returns a generator of { tape: string } dictionaries, one for each successful traversal. 
      */
     public *generate(
-        allTapes: TapeCollection,
+        tapes: Tape[],
         random: boolean = false,
         maxRecursion: number = 4, 
         maxChars: number = 1000
@@ -299,21 +299,20 @@ export abstract class Expr {
         const stack = new CounterStack(maxRecursion);
 
         if (random) {
-            yield* this.generateRandom(allTapes, stack, maxChars);
+            yield* this.generateRandom(tapes, stack, maxChars);
             return;
         } 
 
-        yield* this.generateDepthFirst(allTapes, stack, maxChars);
+        yield* this.generateDepthFirst(tapes, stack, maxChars);
     }
 
     public *generateDepthFirst(
-        allTapes: TapeCollection,
+        tapes: Tape[],
         stack: CounterStack,
         maxChars: number = 1000
     ): Gen<StringDict> {
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
-        const startingTapes = [...allTapes.tapes.values()];
-        var stateStack: [Tape[], MultiTapeOutput, Expr, number][] = [[startingTapes, initialOutput, this, 0]];
+        var stateStack: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
 
         while (stateStack.length > 0) {
 
@@ -342,7 +341,7 @@ export abstract class Expr {
             }
 
             // rotate the tapes so that we don't keep trying the same one every time
-            tapes = [... tapes.slice(1), tapes[0]];
+            //tapes = [... tapes.slice(1), tapes[0]];
 
             const tapeToTry = tapes[0];
 
@@ -370,16 +369,13 @@ export abstract class Expr {
     }
 
     public *generateBreadthFirst(
-        allTapes: TapeCollection,
+        tapes: Tape[],
         stack: CounterStack,
         maxChars: number = 1000
     ): Gen<StringDict> {
 
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
-
-        const startingTapes = [...allTapes.tapes.values()];
-
-        var stateQueue: [Tape[], MultiTapeOutput, Expr, number][] = [[startingTapes, initialOutput, this, 0]];
+        var stateQueue: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
 
         while (stateQueue.length > 0) {
             let nextQueue: [Tape[], MultiTapeOutput, Expr, number][] = [];
@@ -403,7 +399,7 @@ export abstract class Expr {
                 }
 
                 // rotate the tapes so that we don't keep trying the same one every time
-                tapes = [... tapes.slice(1), tapes[0]];
+                //tapes = [... tapes.slice(1), tapes[0]];
 
                 const tapeToTry = tapes[0];
                 
@@ -425,15 +421,13 @@ export abstract class Expr {
     }
 
     public *generateRandom(
-        allTapes: TapeCollection,
+        tapes: Tape[],
         stack: CounterStack,
         maxChars: number = 1000
     ): Gen<StringDict> {
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
 
-        const startingTapes = [...allTapes.tapes.values()];
-
-        var stateStack: [Tape[], MultiTapeOutput, Expr, number][] = [[startingTapes, initialOutput, this, 0]];
+        var stateStack: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
         const candidates: MultiTapeOutput[] = [];
 
         while (stateStack.length > 0) {
@@ -465,7 +459,7 @@ export abstract class Expr {
             }
 
             // rotate the tapes so that we don't keep trying the same one every time
-            tapes = [... tapes.slice(1), tapes[0]];
+            //tapes = [... tapes.slice(1), tapes[0]];
 
             const tapeToTry = tapes[0];
             for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
