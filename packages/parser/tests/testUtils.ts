@@ -115,6 +115,8 @@ export function testHasTapes(
     expectedTapes: string[],
     symbolName: string = ""
 ): void {
+    component.qualifyNames();
+
     const stack = new CounterStack(2);
     let target = component.getSymbol(symbolName);
     
@@ -135,10 +137,28 @@ export function testHasTapes(
     });
 }
 
+export function testHasConcatTapes(
+    component: GrammarComponent,
+    expectedTapes: string[]
+): void {
+    const bSet = new Set(expectedTapes);
+    it(`should have concatenable tapes [${[...bSet]}]`, function() {
+        let tapes = [...component.determineConcatenability()];
+        tapes = tapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
+                                    // leave out any internal-only tapes, like those created 
+                                    // by a Drop().
+        expect(tapes.length).to.equal(bSet.size);
+        for (const a of tapes) {
+            expect(bSet).to.contain(a);
+        }
+    });
+}
+
 export function testHasVocab(
     component: GrammarComponent,
     expectedVocab: {[tape: string]: number}
 ): void {
+    component.determineConcatenability();
     const tapeCollection = new TapeCollection();
     component.collectVocab(tapeCollection, []);
     for (const tapeName in expectedVocab) {

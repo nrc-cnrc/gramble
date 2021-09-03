@@ -6,6 +6,7 @@ import {
     testDoesNotHaveSymbols,
     //testHasVocab, 
     testGrammar,
+    testHasVocab,
     //makeTestNamespace
 } from './testUtils';
 
@@ -137,7 +138,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-
     describe('Nested namespaces, generating from default symbols', function() {
         const inner = Ns("innerNamespace");
         inner.addSymbol("x", t1("hello"));
@@ -190,7 +190,6 @@ describe(`${path.basename(module.filename)}`, function() {
 
     });
 
-    
     describe('Nested namespaces with identical names, and a symbol in the inner referring to a symbol in the inner', function() {
         const inner = Ns("ns");
         inner.addSymbol("x", t1("hello"));
@@ -268,4 +267,5 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(outer, [{t1: "hello"}], "inner2.x");
 
     }); 
+
 });

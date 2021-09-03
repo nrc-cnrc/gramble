@@ -601,6 +601,62 @@ class DotStarExpr extends Expr {
     }
 }
 
+class TokenizedLiteralExpr extends Expr {
+
+    constructor(
+        public tapeName: string,
+        public text: string[],
+        public index: number = 0
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        const index = this.index > 0 ? `[${this.index}]` : ""; 
+        return `${this.tapeName}:${this.text.join("")}${index}`;
+    }
+
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return this;
+        }
+        if (this.index >= this.text.length) {
+            return EPSILON;
+        }
+        return NULL;
+    }
+
+    protected getToken(tape: Tape): Token {
+        //return tape.tokenize(tape.tapeName, this.text[this.index])[0];
+        return new Token(tape.toBits(tape.tapeName, this.text[this.index]));
+    }
+
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+
+        if (this.index >= this.text.length) {
+            return;
+        }
+
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return;
+        }
+
+        const bits = this.getToken(matchedTape);
+        const result = matchedTape.match(bits, target);
+        if (result.isEmpty()) {
+            return;
+        }
+        const nextExpr = constructTokenizedLiteral(this.tapeName, this.text, this.index+1);
+        yield [matchedTape, result, nextExpr];
+
+    }
+}
 
 /**
  * Recognizes/emits a literal string on a particular tape.  
@@ -1325,8 +1381,12 @@ export const EPSILON = new EpsilonExpr();
 export const NULL = new NullExpr();
 //export const UNIVERSE = new UniverseExpr();
 
-export function constructLiteral(tape: string, text: string): Expr {
+export function constructLiteral(tape: string, text: string, index: number = 0): Expr {
     return new LiteralExpr(tape, text);
+}
+
+export function constructTokenizedLiteral(tape: string, text: string[], index: number = 0): Expr {
+    return new TokenizedLiteralExpr(tape, text, index);
 }
 
 export function constructDot(tape: string): Expr {

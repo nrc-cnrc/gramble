@@ -194,7 +194,7 @@ export abstract class Tape {
         throw new Error(`Not implemented`);
     }
 
-    public tokenize(tapeName: string, str: string): Token[] {
+    public tokenize(tapeName: string, str: string, concatenable: boolean): [string, Token][] {
         throw new Error(`Not implemented`);
     }
 
@@ -359,24 +359,33 @@ export class StringTape extends Tape {
         return new Token(str1.bits.and(str2.bits));
     }
 
-    public tokenize(tapeName: string, str: string): Token[] {
+    public tokenize(tapeName: string, str: string, concatenable: boolean): [string, Token][] {
         
         if (tapeName != this.tapeName) {
             throw new Error(`Trying to add a character from tape ${tapeName} to tape ${this.tapeName}`);
         }
 
-        const results: Token[] = [];
-        for (const c of str.split("")) {
-
-            var index = this.strToIndex.get(c);
-
-            if (index == undefined) {
-                index = this.registerToken(c);
-            }
-            const newToken = new Token(this.toBits(tapeName, c));
-            results.push(newToken);
+        if (str.length == 0) {
+            return [];
         }
-        return results;
+
+        const results: Token[] = [];
+
+        if (!concatenable) {
+            // if it's not concatenable, there's no danger in treating the 
+            // whole thing as a unit
+            return [[str, this.toBitsAndRegister(str)]];
+        }
+
+        return str.split("").map(c => [c, this.toBitsAndRegister(c)]);
+    }
+
+    public toBitsAndRegister(c: string): Token {
+        let index = this.strToIndex.get(c);
+        if (index == undefined) {
+            index = this.registerToken(c);
+        }
+        return new Token(this.toBits(this.tapeName, c));
     }
 
     public registerToken(token: string): number {
@@ -435,12 +444,12 @@ class FlagTape extends StringTape {
         return [];
     }
 
-    public tokenize(tapeName: string, str: string): Token[] {
+    public tokenize(tapeName: string, str: string): [string, Token][] {
         var index = this.strToIndex.get(str);
         if (index == undefined) {
             index = this.registerToken(str);
         } 
-        return [new Token(this.toBits(tapeName, str))];
+        return [[str, new Token(this.toBits(tapeName, str))]];
     }
 }
 
@@ -490,13 +499,13 @@ export class TapeCollection extends Tape {
         return "__ANY_TAPE__";
     }
     
-    public tokenize(tapeName: string, str: string): Token[] {
+    public tokenize(tapeName: string, str: string, concatenable: boolean): [string, Token][] {
         var tape = this.tapes.get(tapeName);
         if (tape == undefined) {
             tape = new StringTape(this, tapeName);
             this.tapes.set(tapeName, tape);
         }
-        return tape.tokenize(tapeName, str);
+        return tape.tokenize(tapeName, str, concatenable);
     }
 
     public matchTape(tapeName: string): Tape | undefined {
@@ -619,9 +628,9 @@ export class RenamedTape extends Tape {
         return new RenamedTape(newChild, this.fromTape, this.toTape);
     }
 
-    public tokenize(tapeName: string, str: string): Token[] {
+    public tokenize(tapeName: string, str: string, concatenable: boolean): [string, Token][] {
         tapeName = this.adjustTapeName(tapeName);
-        return this.child.tokenize(tapeName, str);
+        return this.child.tokenize(tapeName, str, concatenable);
     }
 
     public getTape(tapeName: string): Tape | undefined {

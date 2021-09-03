@@ -1,6 +1,6 @@
 
 import { Epsilon, Seq, Uni } from "../src/grammars";
-import { t1, t2, testHasTapes, testGrammar } from './testUtils';
+import { t1, t2, testHasTapes, testGrammar, testHasVocab } from './testUtils';
 
 import * as path from 'path';
 
@@ -216,5 +216,4 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ["t1"]);
         testGrammar(grammar, [{t1: "hello"}]);
     }); 
-    
 });
