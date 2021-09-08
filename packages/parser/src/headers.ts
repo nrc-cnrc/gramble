@@ -1,6 +1,5 @@
 import { 
-    AlternationGrammar,
-    GrammarComponent, ContainsGrammar, EmbedGrammar, EndsWithGrammar, EpsilonGrammar, FilterGrammar, HideGrammar, JoinGrammar, LiteralGrammar, NegationGrammar, RenameGrammar, SequenceGrammar, StartsWithGrammar, Epsilon
+    AlternationGrammar, ContainsGrammar, EmbedGrammar, EndsWithGrammar, EpsilonGrammar, FilterGrammar, HideGrammar, JoinGrammar, LiteralGrammar, NegationGrammar, RenameGrammar, SequenceGrammar, StartsWithGrammar, Epsilon, GrammarComponent
 } from "./grammars";
 
 import { CPAlternation, CPNegation, CPResult, CPUnreserved, parseBooleanCell } from "./cells";
@@ -25,7 +24,7 @@ export const DEFAULT_VALUE = 1.0;
  * 
  * Header objects are responsible for:
  * 
- * * compiling the text of the cells beneath them into [GrammarComponent]s, and merging them (usually by
+ * * compiling the text of the cells beneath them into [ExpressionComponent]s, and merging them (usually by
  *   concatenation) with cells to their left.
  * 
  * * calculating the appropriate background color for their cells and the cells in their column. 

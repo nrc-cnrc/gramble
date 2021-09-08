@@ -3,6 +3,18 @@ import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
+    
+    describe('Simple grammar with unit tests', function() {
+
+        const project = sheetFromFile("./tests/csvs/simpleGrammarWithTests.csv");
+        project.runUnitTests();
+        testErrors(project, []);
+        //testSymbols(project, ["word", "verb", "suffix"]);
+        testGramble(project, [
+            { text: "foobar", gloss: "run-1SG" }
+        ]);
+    });
+
     describe('Embeds and unit tests', function() {
 
         const project = sheetFromFile("./tests/csvs/embedGrammarWithTests.csv");

@@ -83,7 +83,7 @@ export { CounterStack, Expr };
 
 export abstract class GrammarComponent {
 
-    protected expr: Expr | undefined = undefined;
+    public expr: Expr | undefined = undefined;
     public tapes: string[] | undefined = undefined;
 
     constructor(
@@ -96,7 +96,7 @@ export abstract class GrammarComponent {
 
     public abstract getChildren(): GrammarComponent[];
 
-    public abstract constructExpr(symbols: SymbolTable): Expr;
+    //public abstract constructExpr(symbols: SymbolTable): Expr;
 
     public determineConcatenability(): Set<string> {
         const stack = new CounterStack(2);
@@ -162,6 +162,8 @@ export abstract class GrammarComponent {
         this.qualifyNames();
         this.calculateTapes(new CounterStack(2));
         this.determineConcatenability();
+        const allTapes = new TapeCollection();
+        this.collectVocab(allTapes);
         this.constructExpr({});
         this.runUnitTestsAux();
     }
@@ -191,15 +193,21 @@ export abstract class GrammarComponent {
         return tapes;
     }
 
-    public allSymbols(): string[] {
-        return [];
-    }
-    
+    public abstract constructExpr(symbolTable: {[name: string]: Expr}): Expr;
+
     public getSymbol(name: string): GrammarComponent | undefined {
         if (name == "") {
             return this;
         }
         return undefined;
+    }
+
+    public getDefaultSymbol(): GrammarComponent {
+        return this;
+    }
+    
+    public allSymbols(): string[] {
+        return [];
     }
 
     public *generate(
@@ -219,9 +227,8 @@ export abstract class GrammarComponent {
         }
         const allTapes = new TapeCollection();
 
-        targetComponent.determineConcatenability();
-        targetComponent.collectVocab(allTapes);
-
+        this.determineConcatenability();
+        this.collectVocab(allTapes);
         this.constructExpr({});
 
         if (Object.keys(query).length > 0) {
@@ -539,6 +546,14 @@ export class FilterGrammar extends BinaryGrammar {
 
 export class StartsWithGrammar extends FilterGrammar {
     
+    
+    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
+        if (this.tapes == undefined) {
+            throw new Error("Attempting to determine concatenability before calculating tapes");
+        };
+        return this.tapes.indexOf(tapeName) != -1;
+    }
+
     protected constructFilter(symbols: SymbolTable) {
         if (this.child2.tapes == undefined) {
             throw new Error("Getting Brz expression with undefined tapes");
@@ -557,6 +572,14 @@ export class StartsWithGrammar extends FilterGrammar {
 }
 
 export class EndsWithGrammar extends FilterGrammar {
+
+    
+    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
+        if (this.tapes == undefined) {
+            throw new Error("Attempting to determine concatenability before calculating tapes");
+        };
+        return this.tapes.indexOf(tapeName) != -1;
+    }
 
     protected constructFilter(symbols: SymbolTable) {
         if (this.child2.tapes == undefined) {
@@ -577,6 +600,13 @@ export class EndsWithGrammar extends FilterGrammar {
 
 export class ContainsGrammar extends FilterGrammar {
     
+    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
+        if (this.tapes == undefined) {
+            throw new Error("Attempting to determine concatenability before calculating tapes");
+        };
+        return this.tapes.indexOf(tapeName) != -1;
+    }
+
     protected constructFilter(symbols: SymbolTable) {
         if (this.child2.tapes == undefined) {
             throw new Error("Getting Brz expression with undefined tapes");
@@ -715,6 +745,17 @@ export class NegationGrammar extends UnaryGrammar {
         super(cell, child);
     }
 
+    /**
+     * As implemented, Negation treats its tapes as non-atomic, so any tape
+     * going through negation ends up being concatenable.
+     */
+    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
+        if (this.tapes == undefined) {
+            throw new Error("Attempting to determine concatenability before calculating tapes");
+        };
+        return this.tapes.indexOf(tapeName) != -1;
+    }
+
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
             if (this.child.tapes == undefined) {
@@ -834,11 +875,20 @@ export class NamespaceGrammar extends GrammarComponent {
         this.symbols.set(symbolName, component);
     }
 
+    public getDefaultSymbol(): GrammarComponent {
+        if (this.symbols.size == 0) {
+            return new EpsilonGrammar(this.cell);
+        }
+
+        return [...this.symbols.values()][this.symbols.size-1].getDefaultSymbol();
+    }
+
     public getSymbol(symbolName: string): GrammarComponent | undefined {
 
         if (symbolName == "") {
-            return this;
+            return this.getDefaultSymbol();
         }
+
         const pieces = symbolName.split(".");
         const child = this.symbols.get(pieces[0]);
         if (child == undefined) {
@@ -868,7 +918,7 @@ export class NamespaceGrammar extends GrammarComponent {
         return results;
     }
 
-    public calculateQualifiedName(name: string, nsStack: NamespaceGrammar[]) {
+    public calculateQualifiedName(name: string, nsStack: NamespaceGrammar[]): string {
         const namePrefixes = nsStack.map(n => n.name).filter(s => s.length > 0);
         return [...namePrefixes, name].join(".");
     }
@@ -923,7 +973,7 @@ export class NamespaceGrammar extends GrammarComponent {
             // filled out yet
             const [localName, referent] = localResult;
             const newName = this.calculateQualifiedName(localName, nsStack);
-            return [newName, referent];
+            return [newName, referent.getDefaultSymbol()];
         }
 
         // it's got a namespace prefix
@@ -945,35 +995,18 @@ export class NamespaceGrammar extends GrammarComponent {
         return referent.resolveName(remnant, newStack);  // try the child
     }
 
-    /**
-     * Although an NamespaceGrammar contains many children,
-     * upon evaluation it acts as if it's its last-defined
-     * symbol -- so its tapes are the tapes of the last symbol,
-     * rather than the union of its children's tapes.
-     * 
-     * However, we still calculate those tapes of earlier children,
-     * so that it fills their .tapes property, which other operations
-     * care about.
-     */
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
             this.tapes = [];
             for (const [name, referent] of this.symbols) {
                 const tapes = referent.calculateTapes(stack);
-                this.tapes = tapes;
+                this.tapes.push(...tapes);
             }
+            this.tapes = listUnique(this.tapes);
         }
         return this.tapes;
     }
 
-    /**
-     * We treat concatenability cautiously w.r.t. namespaces.  It's not just
-     * that a tape is concatenable if it's concatenable w.r.t. the default symbol,
-     * it's concatenable if it's concatenable w.r.t ANY symbol.  We don't want
-     * to determine that some literal is nonconcat, treat it as a unit, and then
-     * when generating from some other symbol run it through a replacement or 
-     * anything.
-     */
     public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
         for (const child of this.symbols.values()) {
             if (child.tapeIsConcatenable(tapeName, stack)) {
@@ -989,30 +1022,17 @@ export class NamespaceGrammar extends GrammarComponent {
         }
     }
 
-    /**
-     * The same as calculateTapes and constructExpr, we only count
-     * the last-defined symbol for this calculation
-     */
     public collectVocab(tapes: Tape, stack: string[] = []): void {
-        const children = [...this.symbols.values()];
-        if (children.length == 0) {
-            return;
+        for (const child of this.symbols.values()) {
+            child.collectVocab(tapes, stack);
         }
-        const lastChild = children[children.length-1];
-        lastChild.collectVocab(tapes, stack);
     }
 
-    /**
-     * The Brz expression for a Namespace object is that of 
-     * its last-defined child.  (Note that JS Maps are ordered;
-     * you can rely on the last-entered entry to be the last
-     * entry when you iterate.)
-     */
-    public constructExpr(symbols: SymbolTable): Expr {
+    public constructExpr(symbols: {[name: string]: Expr}): Expr {
 
         if (this.expr == undefined) {
-            this.expr = EPSILON // for if there are no symbols
 
+            this.expr = EPSILON; // just in case there are no symbols to iterate through
             for (const [name, referent] of this.symbols) {
                 const qualifiedName = this.qualifiedNames.get(name);
                 if (qualifiedName == undefined) {
@@ -1021,12 +1041,15 @@ export class NamespaceGrammar extends GrammarComponent {
                 if (referent.tapes == undefined) {
                     throw new Error("Getting Brz expressions without having calculated tapes");
                 }
-                this.expr = referent.constructExpr(symbols);
+
+                this.expr = referent.constructExpr(symbols);            
+                symbols[qualifiedName] = this.expr;
+                
                 // memoize every expr
                 //this.expr = constructMemo(this.expr);
-                symbols[qualifiedName] = this.expr;
             }
         }
+
         return this.expr;
     }
 }
@@ -1284,7 +1307,7 @@ export function MatchDotStar2(...tapes: string[]): MatchGrammar {
     return MatchDotRep2(0, Infinity, ...tapes)
 }
 
-export function MatchFrom(firstTape: string, secondTape: string, state: GrammarComponent): GrammarComponent {
+export function MatchFrom(firstTape: string, secondTape: string, state: GrammarComponent): MatchGrammar {
     return Match(Seq(state, Rename(state, firstTape, secondTape)),
                  firstTape, secondTape);
 }
@@ -1371,7 +1394,7 @@ export function Replace(
         sameVocab = tapeCollection.inVocab(toTapeName, fromVocab)
     }
 
-    function matchAnythingElse(replaceNone: boolean = false) {
+    function matchAnythingElse(replaceNone: boolean = false): GrammarComponent {
         const dotStar: GrammarComponent = Rep(Any(fromTapeName), 0, maxExtraChars);
         // 1. If the fromTape vocab for the replacement operation contains some
         //    characters that are not in the corresponding toTape vocab, then

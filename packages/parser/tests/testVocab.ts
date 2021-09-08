@@ -108,7 +108,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     Rename(Embed("a"), "t1", "t3")) });
         testHasTapes(grammar, ["t2", "t3"]);
         testHasConcatTapes(grammar, []);
-        testHasVocab(grammar, { t2: 1, t3: 1 });
+        testHasVocab(grammar, { t1: 1, t2: 1, t3: 1 });
     });
 
     
@@ -118,8 +118,8 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Uni(Seq(Rename(Embed("a"), "t1", "t2"), t2("world")),
                                     Rename(Embed("a"), "t1", "t3")) });
         testHasTapes(grammar, ["t2", "t3"]);
-        testHasConcatTapes(grammar, ["t2", "t3"]);
-        testHasVocab(grammar, { t2: 7, t3: 2 });
+        testHasConcatTapes(grammar, ["t1", "t2", "t3"]);
+        testHasVocab(grammar, { t1: 2, t2: 7, t3: 2 });
     });
 
     
@@ -129,7 +129,7 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Uni(Rename(Embed("a"), "t1", "t2"),
                                     Seq(Rename(Embed("a"), "t1", "t3"), t3("world"))) });
         testHasTapes(grammar, ["t2", "t3"]);
-        testHasConcatTapes(grammar, ["t2", "t3"]);
-        testHasVocab(grammar, { t2: 2, t3: 7 });
+        testHasConcatTapes(grammar, ["t1", "t2", "t3"]);
+        testHasVocab(grammar, { t1: 2, t2: 2, t3: 7 });
     });
 });

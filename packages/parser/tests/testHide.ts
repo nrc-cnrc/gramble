@@ -88,6 +88,7 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Hide(Embed("a"), "t2") });
 
         testHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"], "b");
         //testHasVocab(grammar, {t1: 2});
         testGrammar(grammar, [{t1: "hi"}], "b");
     });
