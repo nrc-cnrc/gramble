@@ -620,6 +620,9 @@ export class RenamedTape extends Tape {
     }
 
     public matchTape(tapeName: string): Tape | undefined {
+        if (tapeName == this.toTape) {
+            return undefined;
+        }
         tapeName = this.adjustTapeName(tapeName);
         const newChild = this.child.matchTape(tapeName);
         if (newChild == undefined) {

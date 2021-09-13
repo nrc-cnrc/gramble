@@ -613,7 +613,7 @@ class TokenizedLiteralExpr extends Expr {
 
     public get id(): string {
         const index = this.index > 0 ? `[${this.index}]` : ""; 
-        return `${this.tapeName}:${this.text.join("")}${index}`;
+        return `${this.tapeName}:${this.text.join("+")}${index}`;
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {

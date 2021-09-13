@@ -10,7 +10,7 @@
  * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, UnaryGrammar, NullGrammar } from "./grammars";
+import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, UnaryGrammar, NullGrammar, GenOptions } from "./grammars";
 import { CellPos, DummyCell, Gen, StringDict } from "./util";
 import { BINARY_OPS, DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
@@ -24,8 +24,14 @@ export abstract class TstComponent {
         maxRecursion: number = 4, 
         maxChars: number = 1000
     ): Gen<StringDict> {
-        yield* this.toGrammar().generate(symbolName, query, 
-                    random, maxRecursion, maxChars);
+        
+        const opt: GenOptions = {
+            multichar: true,
+            random: false,
+            maxRecursion: maxRecursion,
+            maxChars: maxChars
+        }
+        yield* this.toGrammar().generate(symbolName, query, opt);
 
     }
 

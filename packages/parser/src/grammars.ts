@@ -45,6 +45,13 @@ import {
 
 export { CounterStack, Expr };
 
+export class GenOptions {
+    public multichar: boolean = true;
+    public random: boolean = false;
+    public maxRecursion: number = 2; 
+    public maxChars: number = 1000;
+}
+
 /**
  * Grammar components represent the linguistic grammar that the
  * programmer is expressing (in terms of sequences, alternations, joins and filters,
@@ -98,9 +105,18 @@ export abstract class GrammarComponent {
 
     //public abstract constructExpr(symbols: SymbolTable): Expr;
 
-    public determineConcatenability(): Set<string> {
+    public determineConcatenability(opt: GenOptions): Set<string> {
+
         const stack = new CounterStack(2);
         const tapes = this.calculateTapes(stack);
+
+        if (opt.multichar == false) {
+            // if the multichar optimization isn't on, then all tapes are concatenable
+            for (const tape of tapes) {
+                this.setConcatenable(tape);
+            }
+            return new Set(tapes);
+        }
 
         const concatenableTapes: Set<string> = new Set();
 
@@ -158,19 +174,19 @@ export abstract class GrammarComponent {
         }
     }
 
-    public runUnitTests(): void {
+    public runUnitTests(opt: GenOptions): void {
         this.qualifyNames();
         this.calculateTapes(new CounterStack(2));
-        this.determineConcatenability();
+        this.determineConcatenability(opt);
         const allTapes = new TapeCollection();
         this.collectVocab(allTapes);
         this.constructExpr({});
-        this.runUnitTestsAux();
+        this.runUnitTestsAux(opt);
     }
 
-    public runUnitTestsAux(): void {
+    public runUnitTestsAux(opt: GenOptions): void {
         for (const child of this.getChildren()) {
-            child.runUnitTestsAux();
+            child.runUnitTestsAux(opt);
         }
     }
 
@@ -213,9 +229,7 @@ export abstract class GrammarComponent {
     public *generate(
         symbolName: string = "",
         query: StringDict = {},
-        random: boolean = false,
-        maxRecursion: number = 2, 
-        maxChars: number = 1000
+        opt: GenOptions
     ): Gen<StringDict> {
 
         this.qualifyNames();
@@ -227,7 +241,7 @@ export abstract class GrammarComponent {
         }
         const allTapes = new TapeCollection();
 
-        this.determineConcatenability();
+        this.determineConcatenability(opt);
         this.collectVocab(allTapes);
         this.constructExpr({});
 
@@ -242,7 +256,7 @@ export abstract class GrammarComponent {
         }
 
         const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
-        targetComponent.determineConcatenability();
+        targetComponent.determineConcatenability(opt);
         targetComponent.collectVocab(allTapes); // in case there's more vocab
         const expr = targetComponent.constructExpr({});
         
@@ -254,8 +268,8 @@ export abstract class GrammarComponent {
             }
             tapes.push(actualTape);
         }        
-        
-        yield* expr.generate(tapes, random, maxRecursion, maxChars);
+        //console.log(`expr = ${expr.id}`);
+        yield* expr.generate(tapes, opt.random, opt.maxRecursion, opt.maxChars);
     }
 }
 
@@ -1158,12 +1172,12 @@ export class UnitTestGrammar extends UnaryGrammar {
         super(cell, child)
     }
 
-    public runUnitTestsAux(): void {
-        super.runUnitTestsAux();
+    public runUnitTestsAux(opt: GenOptions): void {
+        super.runUnitTestsAux(opt);
 
         for (const test of this.tests) {
             const testingState = new FilterGrammar(test.cell, this.child, test);
-            const results = [...testingState.generate()];
+            const results = [...testingState.generate("", {}, opt)];
             this.markResults(test, results);
         }
     }

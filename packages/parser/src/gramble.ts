@@ -1,4 +1,4 @@
-import { CounterStack, GrammarComponent } from "./grammars";
+import { CounterStack, GenOptions, GrammarComponent } from "./grammars";
 import { DevEnvironment, Gen, iterTake, StringDict } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
@@ -60,7 +60,8 @@ export class Gramble {
     } 
 
     public runUnitTests(): void {
-        this.getGrammar().runUnitTests();
+        const opt = new GenOptions();
+        this.getGrammar().runUnitTests(opt);
     }
 
     public generate(symbolName: string = "",
@@ -69,7 +70,13 @@ export class Gramble {
             maxRecursion: number = 2, 
             maxChars: number = 1000): StringDict[] {
 
-        const gen = this.getGrammar().generate(symbolName, restriction, false, maxRecursion, maxChars);
+        const opt: GenOptions = {
+            multichar: true,
+            random: false,
+            maxRecursion: maxRecursion,
+            maxChars: maxChars
+        }
+        const gen = this.getGrammar().generate(symbolName, restriction, opt);
         return iterTake(gen, maxResults);
     }
     
@@ -78,7 +85,13 @@ export class Gramble {
             maxRecursion: number = 2, 
             maxChars: number = 1000): Gen<StringDict> {
 
-        yield* this.getGrammar().generate(symbolName, restriction, false, maxRecursion, maxChars);
+        const opt: GenOptions = {
+            multichar: true,
+            random: false,
+            maxRecursion: maxRecursion,
+            maxChars: maxChars
+        }
+        yield* this.getGrammar().generate(symbolName, restriction, opt);
     }
 
     public stripHiddenFields(entries: StringDict[]): StringDict[] {
@@ -102,9 +115,16 @@ export class Gramble {
         maxChars: number = 1000
     ): StringDict[] {
 
+        const opt: GenOptions = {
+            multichar: true,
+            random: true,
+            maxRecursion: maxRecursion,
+            maxChars: maxChars
+        }
+
         let results: StringDict[] = [];
         for (let i = 0; i < numSamples; i++) {
-            const gen = this.getGrammar().generate(symbolName, restriction, true, maxRecursion, maxChars);
+            const gen = this.getGrammar().generate(symbolName, restriction, opt);
             results = results.concat(iterTake(gen, 1));
         }
         return results;

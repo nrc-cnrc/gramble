@@ -1,6 +1,6 @@
 
 import { assert, expect } from "chai";
-import { GrammarComponent, CounterStack, Lit } from "../src/grammars";
+import { GrammarComponent, CounterStack, Lit, GenOptions } from "../src/grammars";
 import { Gramble } from "../src/gramble";
 import { StringDict } from "../src/util";
 import { dirname, basename } from "path";
@@ -77,11 +77,20 @@ function testGrammarAux(
     expectedResults: StringDict[], 
     symbolName: string = "",
     maxRecursion: number = 4, 
-    maxChars: number = 1000
+    maxChars: number = 1000,
+    multichar: boolean = false
 ): void {
     var outputs: StringDict[] = [];
+    
+    const opt: GenOptions = {
+        multichar: multichar,
+        random: false,
+        maxRecursion: maxRecursion,
+        maxChars: maxChars
+    }
+
     try {
-        outputs = [...grammar.generate(symbolName, undefined, false, maxRecursion, maxChars)];
+        outputs = [...grammar.generate(symbolName, undefined, opt)];
     } catch (e) {
         it("Unexpected Exception", function() {
             console.log(e);
@@ -97,15 +106,16 @@ export function testGrammar(
     expectedResults: StringDict[],
     symbolName: string = "",
     maxRecursion: number = 4,
-    maxChars: number = 1000
+    maxChars: number = 1000,
+    multichar: boolean = true
 ): void {
     if (symbolName == "") {
         testGrammarAux(component, expectedResults, symbolName,
-            maxRecursion, maxChars);
+            maxRecursion, maxChars, multichar);
     } else {
         describe(`Generating from \${${symbolName}}`, function() {
             testGrammarAux(component, expectedResults, symbolName, 
-                maxRecursion, maxChars);
+                maxRecursion, maxChars, multichar);
         });
     }   
 }
@@ -143,7 +153,15 @@ export function testHasConcatTapes(
 ): void {
     const bSet = new Set(expectedTapes);
     it(`should have concatenable tapes [${[...bSet]}]`, function() {
-        let tapes = [...component.determineConcatenability()];
+        
+        const opt: GenOptions = {
+            multichar: true,
+            random: true,
+            maxRecursion: 2,
+            maxChars: 1000
+        }
+            
+        let tapes = [...component.determineConcatenability(opt)];
         tapes = tapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
                                     // leave out any internal-only tapes, like those created 
                                     // by a Drop().
@@ -156,9 +174,18 @@ export function testHasConcatTapes(
 
 export function testHasVocab(
     component: GrammarComponent,
-    expectedVocab: {[tape: string]: number}
+    expectedVocab: {[tape: string]: number},
+    multichar: boolean = true
 ): void {
-    component.determineConcatenability();
+
+    const opt: GenOptions = {
+        multichar: multichar,
+        random: true,
+        maxRecursion: 2,
+        maxChars: 1000
+    }
+
+    component.determineConcatenability(opt);
     const tapeCollection = new TapeCollection();
     component.collectVocab(tapeCollection, []);
     for (const tapeName in expectedVocab) {
@@ -246,15 +273,25 @@ export type InputResultsPair = [StringDict, StringDict[]];
 
 export function testParseMultiple(grammar: GrammarComponent, 
                                     inputResultsPairs: InputResultsPair[],
-                                    maxRecursion: number | undefined, 
-                                    maxChars: number | undefined): void {
+                                    maxRecursion: number = 4, 
+                                    maxChars: number = 1000,
+                                    multichar: boolean = false): void {
+
+                                        
+    const opt: GenOptions = {
+        multichar: multichar,
+        random: false,
+        maxRecursion: maxRecursion,
+        maxChars: maxChars
+    }
+
     for (const [inputs, expectedResults] of inputResultsPairs) {
         describe(`testing parse ${JSON.stringify(inputs)} ` + 
                  `against ${JSON.stringify(expectedResults)}.`, function() {
             var outputs: StringDict[] = [];
             try {    
                 //grammar = grammar.compile(2, maxRecursion);
-                outputs = [...grammar.generate(undefined, inputs, false, maxRecursion, maxChars)];
+                outputs = [...grammar.generate("", inputs, opt)];
             } catch (e) {
                 it("Unexpected Exception", function() {
                     console.log(e);
