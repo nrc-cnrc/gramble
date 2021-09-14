@@ -629,6 +629,14 @@ export class TstRow extends TstCellComponent {
             return new NullGrammar(this.cell);  // shouldn't happen
         }
         const child = this.lastCell.toGrammar();
+
+        // Rows are a bit strange w.r.t. cells because they are associated
+        // semantically with their last cell (since their cells form a left-branching 
+        // linked list), but errors (like a failing unit test associated with this 
+        // row) should be reported in the first cell.  If we just returned the child
+        // here, errors would be reported in the last cell.  This looks weird compared
+        // to putting them in the first cell, so we need a semantically trivial wrapper
+        // grammar to associate this row's errors with the appropriate cell.
         return new UnaryGrammar(this.cell, child);
     }
 }

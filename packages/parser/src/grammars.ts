@@ -103,8 +103,6 @@ export abstract class GrammarComponent {
 
     public abstract getChildren(): GrammarComponent[];
 
-    //public abstract constructExpr(symbols: SymbolTable): Expr;
-
     public determineConcatenability(tapes: string[], opt: GenOptions): Set<string> {
 
         if (opt.multichar == false) {
@@ -305,7 +303,7 @@ export class NullGrammar extends AtomicGrammar {
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
-            return NULL;
+            return this.expr = NULL;
         }
         return this.expr;
     }
@@ -515,7 +513,7 @@ export class JoinGrammar extends BinaryGrammar {
                 throw new Error("Getting Brz expression with undefined tapes");
             }
 
-            return constructJoin(this.child1.constructExpr(symbols), 
+            this.expr = constructJoin(this.child1.constructExpr(symbols), 
                                 this.child2.constructExpr(symbols), 
                                     new Set(this.child1.tapes),
                                     new Set(this.child2.tapes));
@@ -650,7 +648,10 @@ export class UnaryGrammar extends GrammarComponent {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        return this.child.constructExpr(symbols);
+        if (this.expr == undefined) {
+            this.expr = this.child.constructExpr(symbols);
+        }
+        return this.expr;
     }
 }
 
