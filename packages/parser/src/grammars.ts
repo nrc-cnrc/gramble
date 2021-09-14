@@ -105,10 +105,7 @@ export abstract class GrammarComponent {
 
     //public abstract constructExpr(symbols: SymbolTable): Expr;
 
-    public determineConcatenability(opt: GenOptions): Set<string> {
-
-        const stack = new CounterStack(2);
-        const tapes = this.calculateTapes(stack);
+    public determineConcatenability(tapes: string[], opt: GenOptions): Set<string> {
 
         if (opt.multichar == false) {
             // if the multichar optimization isn't on, then all tapes are concatenable
@@ -176,8 +173,8 @@ export abstract class GrammarComponent {
 
     public runUnitTests(opt: GenOptions): void {
         this.qualifyNames();
-        this.calculateTapes(new CounterStack(2));
-        this.determineConcatenability(opt);
+        const tapes = this.calculateTapes(new CounterStack(2));
+        this.determineConcatenability(tapes, opt);
         const allTapes = new TapeCollection();
         this.collectVocab(allTapes);
         this.constructExpr({});
@@ -233,15 +230,16 @@ export abstract class GrammarComponent {
     ): Gen<StringDict> {
 
         this.qualifyNames();
-        this.calculateTapes(new CounterStack(2));
+        const tapes = this.calculateTapes(new CounterStack(2));
 
         let targetComponent = this.getSymbol(symbolName);
         if (targetComponent == undefined) {
             throw new Error(`Missing symbol: ${symbolName}`);
         }
-        const allTapes = new TapeCollection();
 
-        this.determineConcatenability(opt);
+        this.determineConcatenability(tapes, opt);
+        
+        const allTapes = new TapeCollection();
         this.collectVocab(allTapes);
         this.constructExpr({});
 
@@ -256,20 +254,20 @@ export abstract class GrammarComponent {
         }
 
         const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
-        targetComponent.determineConcatenability(opt);
+        targetComponent.determineConcatenability(tapePriority, opt);
         targetComponent.collectVocab(allTapes); // in case there's more vocab
         const expr = targetComponent.constructExpr({});
         
-        const tapes: Tape[] = [];
+        const prioritizedTapes: Tape[] = [];
         for (const tapeName of tapePriority) {
             const actualTape = allTapes.matchTape(tapeName);
             if (actualTape == undefined) {
                 throw new Error(`cannot find priority tape ${tapeName}`);
             }
-            tapes.push(actualTape);
+            prioritizedTapes.push(actualTape);
         }        
-        //console.log(`expr = ${expr.id}`);
-        yield* expr.generate(tapes, opt.random, opt.maxRecursion, opt.maxChars);
+        console.log(`expr = ${expr.id}`);
+        yield* expr.generate(prioritizedTapes, opt.random, opt.maxRecursion, opt.maxChars);
     }
 }
 

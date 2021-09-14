@@ -102,7 +102,7 @@ function testGrammarAux(
 }
 
 export function testGrammar(
-    component: GrammarComponent,
+    grammar: GrammarComponent,
     expectedResults: StringDict[],
     symbolName: string = "",
     maxRecursion: number = 4,
@@ -110,25 +110,25 @@ export function testGrammar(
     multichar: boolean = true
 ): void {
     if (symbolName == "") {
-        testGrammarAux(component, expectedResults, symbolName,
+        testGrammarAux(grammar, expectedResults, symbolName,
             maxRecursion, maxChars, multichar);
     } else {
         describe(`Generating from \${${symbolName}}`, function() {
-            testGrammarAux(component, expectedResults, symbolName, 
+            testGrammarAux(grammar, expectedResults, symbolName, 
                 maxRecursion, maxChars, multichar);
         });
     }   
 }
 
 export function testHasTapes(
-    component: GrammarComponent,
+    grammar: GrammarComponent,
     expectedTapes: string[],
     symbolName: string = ""
 ): void {
-    component.qualifyNames();
+    grammar.qualifyNames();
 
     const stack = new CounterStack(2);
-    let target = component.getSymbol(symbolName);
+    let target = grammar.getSymbol(symbolName);
     
     const bSet = new Set(expectedTapes);
     it(`should have tapes [${[...bSet]}]`, function() {
@@ -148,7 +148,7 @@ export function testHasTapes(
 }
 
 export function testHasConcatTapes(
-    component: GrammarComponent,
+    grammar: GrammarComponent,
     expectedTapes: string[]
 ): void {
     const bSet = new Set(expectedTapes);
@@ -160,20 +160,21 @@ export function testHasConcatTapes(
             maxRecursion: 2,
             maxChars: 1000
         }
-            
-        let tapes = [...component.determineConcatenability(opt)];
-        tapes = tapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
+
+        const tapes = grammar.calculateTapes(new CounterStack(2));
+        let concatTapes = [...grammar.determineConcatenability(tapes, opt)];
+        concatTapes = concatTapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
                                     // leave out any internal-only tapes, like those created 
                                     // by a Drop().
-        expect(tapes.length).to.equal(bSet.size);
-        for (const a of tapes) {
+        expect(concatTapes.length).to.equal(bSet.size);
+        for (const a of concatTapes) {
             expect(bSet).to.contain(a);
         }
     });
 }
 
 export function testHasVocab(
-    component: GrammarComponent,
+    grammar: GrammarComponent,
     expectedVocab: {[tape: string]: number},
     multichar: boolean = true
 ): void {
@@ -185,9 +186,10 @@ export function testHasVocab(
         maxChars: 1000
     }
 
-    component.determineConcatenability(opt);
+    const tapes = grammar.calculateTapes(new CounterStack(2));
+    grammar.determineConcatenability(tapes, opt);
     const tapeCollection = new TapeCollection();
-    component.collectVocab(tapeCollection, []);
+    grammar.collectVocab(tapeCollection);
     for (const tapeName in expectedVocab) {
         const tape = tapeCollection.matchTape(tapeName);
         const expectedNum = expectedVocab[tapeName];
@@ -202,23 +204,23 @@ export function testHasVocab(
 }
 
 export function testHasSymbols(
-    component: GrammarComponent,
+    grammar: GrammarComponent,
     expectedSymbols: string[]
 ): void {
     it(`should have symbols [${expectedSymbols}]`, function() {
         for (const s of expectedSymbols) {
-            expect(component.getSymbol(s)).to.not.be.undefined;
+            expect(grammar.getSymbol(s)).to.not.be.undefined;
         }
     });
 } 
 
 export function testDoesNotHaveSymbols(
-    component: GrammarComponent,
+    grammar: GrammarComponent,
     expectedSymbols: string[]
 ): void {
     it(`should have symbols [${expectedSymbols}]`, function() {
         for (const s of expectedSymbols) {
-            expect(component.getSymbol(s)).to.be.undefined;
+            expect(grammar.getSymbol(s)).to.be.undefined;
         }
     });
 }
@@ -248,11 +250,13 @@ export function testErrors(gramble: Gramble, expectedErrors: [string, number, nu
     }
 }
 
-export function testGramble(gramble: Gramble,
-                            expectedResults: StringDict[], 
-                            symbolName: string = "",
-                            maxRecursion: number = 4, 
-                            maxChars: number = 1000): void {
+export function testGramble(
+    gramble: Gramble,
+    expectedResults: StringDict[], 
+    symbolName: string = "",
+    maxRecursion: number = 4, 
+    maxChars: number = 1000
+): void {
     const grammar = gramble.getGrammar();
     describe(`Generating from ${symbolName}`, function() {
         testGrammarAux(grammar, expectedResults, symbolName, 

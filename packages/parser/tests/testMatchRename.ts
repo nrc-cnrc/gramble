@@ -15,7 +15,8 @@ import {
     testHasTapes, 
     //testHasVocab, 
     //testHasNoVocab,  
-    testGrammar
+    testGrammar,
+    testHasVocab
 } from './testUtils';
 
 import * as path from 'path';
@@ -30,19 +31,19 @@ describe(`${path.basename(module.filename)}`, function() {
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);
-            //testHasVocab(grammar1, {t1: 4});
+            testHasVocab(grammar1, {t1: 1});
             testGrammar(grammar1, [{t1: 'hello'}]);
         });
 
         describe("grammar2", function() {
             testHasTapes(grammar2, ['t2']);
-            //testHasVocab(grammar2, {t2: 4});
+            testHasVocab(grammar2, {t2: 1});
             testGrammar(grammar2, [{t2: 'hello'}]);
         });
 
         describe("grammar", function() {
             testHasTapes(grammar, ['t1', 't2']);
-            //testHasVocab(grammar, {t1: 4, t2: 4});
+            testHasVocab(grammar, {t1: 1, t2: 1});
             testGrammar(grammar, [{t1: 'hello', t2: 'hello'}]);
         });
     });

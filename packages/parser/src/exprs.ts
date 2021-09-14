@@ -616,6 +616,11 @@ class TokenizedLiteralExpr extends Expr {
         return `${this.tapeName}:${this.text.join("+")}${index}`;
     }
 
+    public getText(): string[] {
+        // Return the remaining text for this LiteralState.
+        return this.text.slice(this.index);
+    }
+
     public delta(tape: Tape, stack: CounterStack): Expr {
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
@@ -720,7 +725,7 @@ class LiteralExpr extends Expr {
         if (result.isEmpty()) {
             return;
         }
-        const nextExpr = new LiteralExpr(this.tapeName, this.text, this.index+1);
+        const nextExpr = constructLiteral(this.tapeName, this.text, this.index+1);
         yield [matchedTape, result, nextExpr];
 
     }
@@ -1312,7 +1317,7 @@ export class MatchExpr extends UnaryExpr {
                 // STEP A: Are we matching something already buffered?
                 const c1buffer = this.buffers[c1tape.tapeName]
                 var c1bufMatched = false;
-                if (c1buffer instanceof LiteralExpr) {
+                if (c1buffer instanceof TokenizedLiteralExpr) {
 
                     // that means we already matched a character on a different
                     // tape previously and now need to make sure it also matches
@@ -1337,18 +1342,18 @@ export class MatchExpr extends UnaryExpr {
                             }
                             continue;
                         }
-                        var prevText: string = "";
-                        if (buffer instanceof LiteralExpr) {
+                        var prevText: string[] = [];
+                        if (buffer instanceof TokenizedLiteralExpr) {
                             // that means we already found stuff we needed to match,
                             // so we add to that
                             prevText = buffer.getText();
                         }
-                        newBuffers[tapeName] = new LiteralExpr(tapeName, prevText + c);
+                        newBuffers[tapeName] = constructTokenizedLiteral(tapeName, [...prevText, c]);
                     }
                 }
                 
                 // STEP C: Match the buffer
-                if (c1buffer instanceof LiteralExpr) {
+                if (c1buffer instanceof TokenizedLiteralExpr) {
                     // that means we already matched a character on a different tape
                     // previously and now need to make sure it also matches on this
                     // tape
