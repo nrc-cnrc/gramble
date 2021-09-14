@@ -266,7 +266,7 @@ export abstract class GrammarComponent {
             }
             prioritizedTapes.push(actualTape);
         }        
-        console.log(`expr = ${expr.id}`);
+        //console.log(`expr = ${expr.id}`);
         yield* expr.generate(prioritizedTapes, opt.random, opt.maxRecursion, opt.maxChars);
     }
 }
@@ -1402,8 +1402,8 @@ export function Replace(
     const tapeCollection: TapeCollection = replaceState.getAllTapes();
     const fromTape: Tape | undefined = tapeCollection.matchTape(fromTapeName);
     if (fromTape != undefined) {
-        const fromVocab: string = fromTape.fromToken(fromTapeName, fromTape.any()).join('');
-        sameVocab = tapeCollection.inVocab(toTapeName, fromVocab)
+        const fromVocab: string[] = fromTape.fromToken(fromTapeName, fromTape.any());
+        sameVocab = tapeCollection.inVocab(toTapeName, fromVocab);
     }
 
     function matchAnythingElse(replaceNone: boolean = false): GrammarComponent {
