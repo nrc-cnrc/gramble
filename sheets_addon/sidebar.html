@@ -151,7 +151,7 @@
                 
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
                 project = new gramble.Gramble(devEnv, currentSheetName);
-                project.runUnitTests();
+                //project.runUnitTests();
 
                 createErrorButtons(devEnv.errorMsgs, currentSheetName);
                 reloadSymbols(currentSheetName);
@@ -172,6 +172,17 @@
                 inputTable.style.visibility = "visible";
                 sampleTable.style.visibility = "visible";
                 resultsTable.style.visibility = "visible";
+            }
+
+            function runUnitTests() {
+
+                if (project == undefined) {
+                    throw new Error("Trying to reload symbols without a project");
+                }
+
+                project.runUnitTests();
+                createErrorButtons(devEnv.errorMsgs, currentSheetName);
+
             }
 
             function createErrorButtons(errorMsgs, currentSheetName) {
@@ -401,7 +412,7 @@
                 let results = [];
                 
                 console.log(`starting generation stream`);
-                const counterP = document.getElementById("numResults");
+                //const counterP = document.getElementById("numResults");
                 for (const result of project.generateStream(symbolName, inputs)) {
                     results.push(result);
                     //counterP.innerHTML = `${results.length}`;

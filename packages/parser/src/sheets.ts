@@ -116,6 +116,7 @@ export class SheetProject extends SheetComponent {
             return;
         }
 
+        console.log(`loading source file ${sheetName}`);
         const cells = this.devEnv.loadSource(sheetName);
 
         const sheet = new Sheet(this, sheetName, cells);

@@ -1028,6 +1028,13 @@ abstract class UnaryExpr extends Expr {
 
 class MemoExpr extends UnaryExpr {
 
+
+    constructor(
+        child: Expr,
+        public limit: number = 3
+    ) {
+        super(child);
+    }
     public acceptingOnStart: {[tape: string]: boolean} = {};
     public transitionsByTape: {[tape: string]: [Tape, Token, Expr][]} = {};
 
@@ -1043,7 +1050,7 @@ class MemoExpr extends UnaryExpr {
 
     public delta(tape: Tape, stack: CounterStack): Expr {
         const childNext = this.child.delta(tape, stack);
-        return constructMemo(childNext);
+        return constructMemo(childNext, this.limit);
     }
 
     public *deriv(
@@ -1101,7 +1108,7 @@ class MemoExpr extends UnaryExpr {
             }
 
             const shared = cTarget.and(remainder);
-            const successor = constructMemo(cNext);
+            const successor = constructMemo(cNext, this.limit - 1);
             yield [cTape, shared, successor];
             this.addTransition(tape, cTape, shared, successor);
             remainder = remainder.andNot(shared);
@@ -1603,14 +1610,17 @@ export function constructRename(
     return new RenameExpr(child, fromTape, toTape);
 }
 
-export function constructMemo(child: Expr): Expr {
+export function constructMemo(child: Expr, limit: number = 3): Expr {
+    if (limit <= 0) {
+        return child;
+    }
     if (child instanceof EpsilonExpr) {
         return child;
     }
     if (child instanceof NullExpr) {
         return child;
     }
-    return new MemoExpr(child);
+    return new MemoExpr(child, limit);
 }
 
 export function constructFilter(c1: Expr, c2: Expr, tapes: Set<string>): Expr {

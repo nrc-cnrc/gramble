@@ -92,6 +92,7 @@ export abstract class GrammarComponent {
 
     public expr: Expr | undefined = undefined;
     public tapes: string[] | undefined = undefined;
+    public concatenableTapes: Set<string> = new Set(); 
 
     constructor(
         public cell: Cell
@@ -108,12 +109,14 @@ export abstract class GrammarComponent {
         if (opt.multichar == false) {
             // if the multichar optimization isn't on, then all tapes are concatenable
             for (const tape of tapes) {
+                //console.log(`setting ${tape} to concatenable`);
                 this.setConcatenable(tape);
             }
+            //console.log(`concatenable tapes = ${tapes}`);
             return new Set(tapes);
         }
 
-        const concatenableTapes: Set<string> = new Set();
+        const results: Set<string> = new Set();
 
         // in the following loop of loops, we want to keep testing
         // until no tapes change their status (i.e. change from being
@@ -122,19 +125,20 @@ export abstract class GrammarComponent {
         while (dirty) {
             dirty = false;
             for (const tape of tapes) {
-                if (concatenableTapes.has(tape)) {
+                if (results.has(tape)) {
                     continue;
                 }
 
                 if (this.tapeIsConcatenable(tape)) {
+                    //console.log(`setting ${tape} to concatenable, restarting`);
                     dirty = true;
-                    concatenableTapes.add(tape);
+                    results.add(tape);
                     this.setConcatenable(tape);
                 }
             }
         }
 
-        return concatenableTapes;
+        return results;
     }
 
     /**
@@ -151,6 +155,11 @@ export abstract class GrammarComponent {
     }
 
     public setConcatenable(tapeName: string, stack: string[] = []): void {
+        if (this.concatenableTapes.has(tapeName)) {
+            return;
+        }
+
+        this.concatenableTapes.add(tapeName);
         for (const child of this.getChildren()) {
             child.setConcatenable(tapeName, stack);
         }
@@ -227,6 +236,7 @@ export abstract class GrammarComponent {
         opt: GenOptions
     ): Gen<StringDict> {
 
+        console.log(`compiling`);
         this.qualifyNames();
         const tapes = this.calculateTapes(new CounterStack(2));
 
@@ -264,7 +274,7 @@ export abstract class GrammarComponent {
             }
             prioritizedTapes.push(actualTape);
         }        
-        //console.log(`expr = ${expr.id}`);
+        console.log(`expr = ${expr.id}`);
         yield* expr.generate(prioritizedTapes, opt.random, opt.maxRecursion, opt.maxChars);
     }
 }
@@ -335,6 +345,7 @@ export class LiteralGrammar extends AtomicGrammar {
 
     public setConcatenable(tapeName: string, stack: string[] = []): void {
         if (tapeName == this.tape) {
+            //console.log(`setting ${this.tape}:${this.text} to concatenable`);
             this.concatenable = true;
         }
     }
@@ -1059,7 +1070,7 @@ export class NamespaceGrammar extends GrammarComponent {
                 symbols[qualifiedName] = this.expr;
                 
                 // memoize every expr
-                //this.expr = constructMemo(this.expr);
+                //this.expr = constructMemo(this.expr, 10);
             }
         }
 

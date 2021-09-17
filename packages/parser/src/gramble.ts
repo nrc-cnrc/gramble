@@ -64,14 +64,17 @@ export class Gramble {
         this.getGrammar().runUnitTests(opt);
     }
 
-    public generate(symbolName: string = "",
-            restriction: StringDict = {},
-            maxResults: number = Infinity,
-            maxRecursion: number = 2, 
-            maxChars: number = 1000): StringDict[] {
+    public generate(
+        symbolName: string = "",
+        restriction: StringDict = {},
+        maxResults: number = Infinity,
+        maxRecursion: number = 2, 
+        maxChars: number = 1000,
+        multichar: boolean = true
+    ): StringDict[] {
 
         const opt: GenOptions = {
-            multichar: true,
+            multichar: multichar,
             random: false,
             maxRecursion: maxRecursion,
             maxChars: maxChars
@@ -80,13 +83,16 @@ export class Gramble {
         return iterTake(gen, maxResults);
     }
     
-    public *generateStream(symbolName: string = "",
-            restriction: StringDict = {},
-            maxRecursion: number = 2, 
-            maxChars: number = 1000): Gen<StringDict> {
+    public *generateStream(
+        symbolName: string = "",
+        restriction: StringDict = {},
+        maxRecursion: number = 2, 
+        maxChars: number = 1000,
+        multichar: boolean = true
+    ): Gen<StringDict> {
 
         const opt: GenOptions = {
-            multichar: true,
+            multichar: multichar,
             random: false,
             maxRecursion: maxRecursion,
             maxChars: maxChars
@@ -112,11 +118,12 @@ export class Gramble {
         numSamples: number = 1,
         restriction: StringDict | undefined = undefined,
         maxRecursion: number = 4, 
-        maxChars: number = 1000
+        maxChars: number = 1000,
+        multichar: boolean = true
     ): StringDict[] {
 
         const opt: GenOptions = {
-            multichar: true,
+            multichar: multichar,
             random: true,
             maxRecursion: maxRecursion,
             maxChars: maxChars
