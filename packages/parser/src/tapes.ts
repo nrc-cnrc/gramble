@@ -194,7 +194,7 @@ export abstract class Tape {
         throw new Error(`Not implemented`);
     }
 
-    public tokenize(tapeName: string, str: string, concatenable: boolean): [string, Token][] {
+    public tokenize(tapeName: string, str: string): [string, Token][] {
         throw new Error(`Not implemented`);
     }
 
@@ -359,7 +359,7 @@ export class StringTape extends Tape {
         return new Token(str1.bits.and(str2.bits));
     }
 
-    public tokenize(tapeName: string, str: string, concatenable: boolean): [string, Token][] {
+    public tokenize(tapeName: string, str: string): [string, Token][] {
         
         if (tapeName != this.tapeName) {
             throw new Error(`Trying to add a character from tape ${tapeName} to tape ${this.tapeName}`);
@@ -370,12 +370,6 @@ export class StringTape extends Tape {
         }
 
         const results: Token[] = [];
-
-        if (!concatenable) {
-            // if it's not concatenable, there's no danger in treating the 
-            // whole thing as a unit
-            return [[str, this.toBitsAndRegister(str)]];
-        }
 
         return str.split("").map(c => [c, this.toBitsAndRegister(c)]);
     }
@@ -499,13 +493,13 @@ export class TapeCollection extends Tape {
         return "__ANY_TAPE__";
     }
     
-    public tokenize(tapeName: string, str: string, concatenable: boolean): [string, Token][] {
+    public tokenize(tapeName: string, str: string): [string, Token][] {
         var tape = this.tapes.get(tapeName);
         if (tape == undefined) {
             tape = new StringTape(this, tapeName);
             this.tapes.set(tapeName, tape);
         }
-        return tape.tokenize(tapeName, str, concatenable);
+        return tape.tokenize(tapeName, str);
     }
 
     public matchTape(tapeName: string): Tape | undefined {
@@ -631,9 +625,9 @@ export class RenamedTape extends Tape {
         return new RenamedTape(newChild, this.fromTape, this.toTape);
     }
 
-    public tokenize(tapeName: string, str: string, concatenable: boolean): [string, Token][] {
+    public tokenize(tapeName: string, str: string): [string, Token][] {
         tapeName = this.adjustTapeName(tapeName);
-        return this.child.tokenize(tapeName, str, concatenable);
+        return this.child.tokenize(tapeName, str);
     }
 
     public getTape(tapeName: string): Tape | undefined {

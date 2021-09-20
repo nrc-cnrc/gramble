@@ -77,13 +77,11 @@ function testGrammarAux(
     expectedResults: StringDict[], 
     symbolName: string = "",
     maxRecursion: number = 4, 
-    maxChars: number = 1000,
-    multichar: boolean = false
+    maxChars: number = 1000
 ): void {
     var outputs: StringDict[] = [];
     
     const opt: GenOptions = {
-        multichar: multichar,
         random: false,
         maxRecursion: maxRecursion,
         maxChars: maxChars
@@ -107,15 +105,14 @@ export function testGrammar(
     symbolName: string = "",
     maxRecursion: number = 4,
     maxChars: number = 1000,
-    multichar: boolean = true
 ): void {
     if (symbolName == "") {
         testGrammarAux(grammar, expectedResults, symbolName,
-            maxRecursion, maxChars, multichar);
+            maxRecursion, maxChars);
     } else {
         describe(`Generating from \${${symbolName}}`, function() {
             testGrammarAux(grammar, expectedResults, symbolName, 
-                maxRecursion, maxChars, multichar);
+                maxRecursion, maxChars);
         });
     }   
 }
@@ -147,47 +144,18 @@ export function testHasTapes(
     });
 }
 
-export function testHasConcatTapes(
-    grammar: GrammarComponent,
-    expectedTapes: string[]
-): void {
-    const bSet = new Set(expectedTapes);
-    it(`should have concatenable tapes [${[...bSet]}]`, function() {
-        
-        const opt: GenOptions = {
-            multichar: true,
-            random: true,
-            maxRecursion: 2,
-            maxChars: 1000
-        }
-
-        const tapes = grammar.calculateTapes(new CounterStack(2));
-        let concatTapes = [...grammar.determineConcatenability(tapes, opt)];
-        concatTapes = concatTapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
-                                    // leave out any internal-only tapes, like those created 
-                                    // by a Drop().
-        expect(concatTapes.length).to.equal(bSet.size);
-        for (const a of concatTapes) {
-            expect(bSet).to.contain(a);
-        }
-    });
-}
-
 export function testHasVocab(
     grammar: GrammarComponent,
-    expectedVocab: {[tape: string]: number},
-    multichar: boolean = true
+    expectedVocab: {[tape: string]: number}
 ): void {
 
     const opt: GenOptions = {
-        multichar: multichar,
         random: true,
         maxRecursion: 2,
         maxChars: 1000
     }
 
     const tapes = grammar.calculateTapes(new CounterStack(2));
-    grammar.determineConcatenability(tapes, opt);
     const tapeCollection = new TapeCollection();
     grammar.collectVocab(tapeCollection);
     for (const tapeName in expectedVocab) {
@@ -278,12 +246,10 @@ export type InputResultsPair = [StringDict, StringDict[]];
 export function testParseMultiple(grammar: GrammarComponent, 
                                     inputResultsPairs: InputResultsPair[],
                                     maxRecursion: number = 4, 
-                                    maxChars: number = 1000,
-                                    multichar: boolean = false): void {
+                                    maxChars: number = 1000): void {
 
                                         
     const opt: GenOptions = {
-        multichar: multichar,
         random: false,
         maxRecursion: maxRecursion,
         maxChars: maxChars

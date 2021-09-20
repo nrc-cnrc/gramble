@@ -1,4 +1,4 @@
-import { BinaryExpr, constructListExpr, CounterStack, EpsilonExpr, Expr, NULL, NullExpr, UnionExpr } from "./exprs";
+import { BinaryExpr, constructListExpr, CounterStack, EPSILON, EpsilonExpr, Expr, NULL, NullExpr, UnionExpr } from "./exprs";
 import { Tape, Token } from "./tapes";
 import { Gen } from "./util";
 
@@ -128,4 +128,3 @@ export function constructBinaryDisjointUnion(c1: Expr, c2: Expr): Expr {
     }
     return new DisjointUnionExpr(c1, c2);
 }
-

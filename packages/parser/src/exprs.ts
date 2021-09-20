@@ -49,7 +49,7 @@ import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } f
  *   𝛿(L2) = {""}
  * 
  *   L2 = { "abc", "de", "f" }
- *   𝛿(L2) = 0
+ *   𝛿(L2) = {}
  * 
  * Brzozowski proved that all regular grammars have only finitely many derivatives (even if 
  * the grammar itself generates infinitely).
@@ -345,7 +345,6 @@ export abstract class Expr {
 
             const tapeToTry = tapes[0];
 
-            //try {
                 for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nexts.push([tapes, nextOutput, cNext, chars+1]);
@@ -356,12 +355,6 @@ export abstract class Expr {
                     const newTapes = tapes.slice(1);
                     nexts.push([newTapes, prevOutput, delta, chars]);
                 }
-
-            //} catch (e) {
-            //    console.log(`failed`);
-            //    console.log(`state stack size = ${stateStack.length}`);
-            //    return;
-            //}
 
             shuffleArray(nexts);
             stateStack = stateStack.concat(nexts);
@@ -601,7 +594,7 @@ class DotStarExpr extends Expr {
     }
 }
 
-class TokenizedLiteralExpr extends Expr {
+class LiteralExpr extends Expr {
 
     constructor(
         public tapeName: string,
@@ -657,80 +650,10 @@ class TokenizedLiteralExpr extends Expr {
         if (result.isEmpty()) {
             return;
         }
-        const nextExpr = constructTokenizedLiteral(this.tapeName, this.text, this.index+1);
-        yield [matchedTape, result, nextExpr];
-
-    }
-}
-
-/**
- * Recognizes/emits a literal string on a particular tape.  
- * Inside, it's just a string like "foo"; upon successfully 
- * matching "f" we construct a successor state looking for 
- * "oo", and so on.
- */
-class LiteralExpr extends Expr {
-
-    constructor(
-        public tapeName: string,
-        public text: string,
-        public index: number = 0
-    ) { 
-        super();
-    }
-
-    public get id(): string {
-        const index = this.index > 0 ? `[${this.index}]` : ""; 
-        return `${this.tapeName}:${this.text}${index}`;
-    }
-
-    public getText(): string {
-        // Return the remaining text for this LiteralState.
-        return this.text.slice(this.index);
-    }
-
-    public delta(tape: Tape, stack: CounterStack): Expr {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
-            return this;
-        }
-        if (this.index >= this.text.length) {
-            return EPSILON;
-        }
-        return NULL;
-    }
-
-    protected getToken(tape: Tape): Token {
-        //return tape.tokenize(tape.tapeName, this.text[this.index])[0];
-        return new Token(tape.toBits(tape.tapeName, this.text[this.index]));
-    }
-
-    public *deriv(
-        tape: Tape, 
-        target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
-
-        if (this.index >= this.text.length) {
-            return;
-        }
-
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
-            return;
-        }
-
-        const bits = this.getToken(matchedTape);
-        const result = matchedTape.match(bits, target);
-        if (result.isEmpty()) {
-            return;
-        }
         const nextExpr = constructLiteral(this.tapeName, this.text, this.index+1);
         yield [matchedTape, result, nextExpr];
 
     }
-
-
 }
 
 /**
@@ -1324,7 +1247,7 @@ export class MatchExpr extends UnaryExpr {
                 // STEP A: Are we matching something already buffered?
                 const c1buffer = this.buffers[c1tape.tapeName]
                 var c1bufMatched = false;
-                if (c1buffer instanceof TokenizedLiteralExpr) {
+                if (c1buffer instanceof LiteralExpr) {
 
                     // that means we already matched a character on a different
                     // tape previously and now need to make sure it also matches
@@ -1350,17 +1273,17 @@ export class MatchExpr extends UnaryExpr {
                             continue;
                         }
                         var prevText: string[] = [];
-                        if (buffer instanceof TokenizedLiteralExpr) {
+                        if (buffer instanceof LiteralExpr) {
                             // that means we already found stuff we needed to match,
                             // so we add to that
                             prevText = buffer.getText();
                         }
-                        newBuffers[tapeName] = constructTokenizedLiteral(tapeName, [...prevText, c]);
+                        newBuffers[tapeName] = constructLiteral(tapeName, [...prevText, c]);
                     }
                 }
                 
                 // STEP C: Match the buffer
-                if (c1buffer instanceof TokenizedLiteralExpr) {
+                if (c1buffer instanceof LiteralExpr) {
                     // that means we already matched a character on a different tape
                     // previously and now need to make sure it also matches on this
                     // tape
@@ -1393,12 +1316,8 @@ export const EPSILON = new EpsilonExpr();
 export const NULL = new NullExpr();
 //export const UNIVERSE = new UniverseExpr();
 
-export function constructLiteral(tape: string, text: string, index: number = 0): Expr {
-    return new LiteralExpr(tape, text);
-}
-
-export function constructTokenizedLiteral(tape: string, text: string[], index: number = 0): Expr {
-    return new TokenizedLiteralExpr(tape, text, index);
+export function constructLiteral(tape: string, text: string[], index: number = 0): Expr {
+    return new LiteralExpr(tape, text, index);
 }
 
 export function constructDot(tape: string): Expr {

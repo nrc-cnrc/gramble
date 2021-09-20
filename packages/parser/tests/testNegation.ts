@@ -256,7 +256,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii', t2: "hi" }, { t1: 'ihhh', t2: "hi" }, { t1: 'ihhi', t2: "hi" },
             { t1: 'ihih', t2: "hi" }, { t1: 'ihii', t2: "hi" }, { t1: 'iihh', t2: "hi" },
             { t1: 'iihi', t2: "hi" }, { t1: 'iiih', t2: "hi" }, { t1: 'iiii', t2: "hi" }];
-        testGrammar(grammar, expectedResults, "", 4, 7, false);
+        testGrammar(grammar, expectedResults, "", 4, 7);
     });
     
     describe('Join(t2:hi & ~t1:hi)', function() {
@@ -279,7 +279,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t2: 'hi', t1: 'ihih' }, { t2: 'hi', t1: 'ihii' },
             { t2: 'hi', t1: 'iihh' }, { t2: 'hi', t1: 'iihi' },
             { t2: 'hi', t1: 'iiih' }, { t2: 'hi', t1: 'iiii' }];
-        testGrammar(grammar, expectedResults, "", 4, 7, false);
+        testGrammar(grammar, expectedResults, "", 4, 7);
     }); 
 
     describe('~(t1:h+t2:h)', function() {

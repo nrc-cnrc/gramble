@@ -26,7 +26,6 @@ export abstract class TstComponent {
     ): Gen<StringDict> {
         
         const opt: GenOptions = {
-            multichar: true,
             random: false,
             maxRecursion: maxRecursion,
             maxChars: maxChars

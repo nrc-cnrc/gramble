@@ -8,7 +8,6 @@ import {
     constructBinaryConcat,
     constructIntersection,
     constructStar,
-    constructLiteral,
     constructDot,
     constructEmbed,
     constructRename,
@@ -20,7 +19,7 @@ import {
     constructDotStar,
     constructFilter,
     constructJoin,
-    constructTokenizedLiteral,
+    constructLiteral,
 } from "./exprs";
 
 import { 
@@ -46,7 +45,6 @@ import {
 export { CounterStack, Expr };
 
 export class GenOptions {
-    public multichar: boolean = true;
     public random: boolean = false;
     public maxRecursion: number = 2; 
     public maxChars: number = 1000;
@@ -104,67 +102,6 @@ export abstract class GrammarComponent {
 
     public abstract getChildren(): GrammarComponent[];
 
-    public determineConcatenability(tapes: string[], opt: GenOptions): Set<string> {
-
-        if (opt.multichar == false) {
-            // if the multichar optimization isn't on, then all tapes are concatenable
-            for (const tape of tapes) {
-                //console.log(`setting ${tape} to concatenable`);
-                this.setConcatenable(tape);
-            }
-            //console.log(`concatenable tapes = ${tapes}`);
-            return new Set(tapes);
-        }
-
-        const results: Set<string> = new Set();
-
-        // in the following loop of loops, we want to keep testing
-        // until no tapes change their status (i.e. change from being
-        // non-concat to concat).
-        let dirty = true;
-        while (dirty) {
-            dirty = false;
-            for (const tape of tapes) {
-                if (results.has(tape)) {
-                    continue;
-                }
-
-                if (this.tapeIsConcatenable(tape)) {
-                    //console.log(`setting ${tape} to concatenable, restarting`);
-                    dirty = true;
-                    results.add(tape);
-                    this.setConcatenable(tape);
-                }
-            }
-        }
-
-        return results;
-    }
-
-    /**
-     * Determines if, at any point in the grammar, it's possible to 
-     * concatenate this tape with itself.
-     */
-    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
-        for (const child of this.getChildren()) {
-            if (child.tapeIsConcatenable(tapeName, stack)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public setConcatenable(tapeName: string, stack: string[] = []): void {
-        if (this.concatenableTapes.has(tapeName)) {
-            return;
-        }
-
-        this.concatenableTapes.add(tapeName);
-        for (const child of this.getChildren()) {
-            child.setConcatenable(tapeName, stack);
-        }
-    }
-
     /**
      * Collects all explicitly mentioned characters in the grammar for all tapes.
      * 
@@ -181,7 +118,6 @@ export abstract class GrammarComponent {
     public runUnitTests(opt: GenOptions): void {
         this.qualifyNames();
         const tapes = this.calculateTapes(new CounterStack(2));
-        this.determineConcatenability(tapes, opt);
         const allTapes = new TapeCollection();
         this.collectVocab(allTapes);
         this.constructExpr({});
@@ -236,7 +172,7 @@ export abstract class GrammarComponent {
         opt: GenOptions
     ): Gen<StringDict> {
 
-        console.log(`compiling`);
+        //console.log(`compiling`);
         this.qualifyNames();
         const tapes = this.calculateTapes(new CounterStack(2));
 
@@ -244,8 +180,6 @@ export abstract class GrammarComponent {
         if (targetComponent == undefined) {
             throw new Error(`Missing symbol: ${symbolName}`);
         }
-
-        this.determineConcatenability(tapes, opt);
         
         const allTapes = new TapeCollection();
         this.collectVocab(allTapes);
@@ -262,7 +196,6 @@ export abstract class GrammarComponent {
         }
 
         const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
-        targetComponent.determineConcatenability(tapePriority, opt);
         targetComponent.collectVocab(allTapes); // in case there's more vocab
         const expr = targetComponent.constructExpr({});
         
@@ -274,7 +207,7 @@ export abstract class GrammarComponent {
             }
             prioritizedTapes.push(actualTape);
         }        
-        console.log(`expr = ${expr.id}`);
+        //console.log(`expr = ${expr.id}`);
         yield* expr.generate(prioritizedTapes, opt.random, opt.maxRecursion, opt.maxChars);
     }
 }
@@ -321,7 +254,6 @@ export class NullGrammar extends AtomicGrammar {
 
 export class LiteralGrammar extends AtomicGrammar {
 
-    protected concatenable: boolean = false;
     protected tokens: string[] = [];
 
     constructor(
@@ -333,21 +265,7 @@ export class LiteralGrammar extends AtomicGrammar {
     }
 
     public collectVocab(tapes: Tape, stack: string[] = []): void {
-        this.tokens = tapes.tokenize(this.tape, this.text, this.concatenable).map(([s,t]) => s);
-    }
-    
-    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
-        if (tapeName == this.tape) {
-            return this.concatenable;
-        }
-        return false;
-    }
-
-    public setConcatenable(tapeName: string, stack: string[] = []): void {
-        if (tapeName == this.tape) {
-            //console.log(`setting ${this.tape}:${this.text} to concatenable`);
-            this.concatenable = true;
-        }
+        this.tokens = tapes.tokenize(this.tape, this.text).map(([s,t]) => s);
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -359,7 +277,7 @@ export class LiteralGrammar extends AtomicGrammar {
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
-            this.expr = constructTokenizedLiteral(this.tape, this.tokens);
+            this.expr = constructLiteral(this.tape, this.tokens);
         }
         return this.expr;
     }
@@ -375,7 +293,7 @@ export class DotGrammar extends AtomicGrammar {
     }
 
     public collectVocab(tapes: Tape, stack: string[] = []): void {
-        tapes.tokenize(this.tape, "", true);
+        tapes.tokenize(this.tape, "");
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -415,29 +333,6 @@ export class SequenceGrammar extends NAryGrammar {
             this.expr = constructSequence(...childExprs);
         }
         return this.expr;
-    }
-
-     public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
-        if (super.tapeIsConcatenable(tapeName, stack)) {
-            return true;
-        }
-
-        // here we see if any tape is present in more than one child; if so,
-        // the tape is concatenable
-        let tapeSeenOnce = false;
-        for (const child of this.getChildren()) {
-            if (child.tapes == undefined) {
-                throw new Error(`Trying to determine concatenability before calculating tapes`);
-            }
-            if (child.tapes.indexOf(tapeName) == -1) {
-                continue;
-            }
-            if (tapeSeenOnce) {
-                return true;
-            }
-            tapeSeenOnce = true;
-        }
-        return false;
     }
 
     public finalChild(): GrammarComponent {
@@ -566,14 +461,6 @@ export class FilterGrammar extends BinaryGrammar {
 }
 
 export class StartsWithGrammar extends FilterGrammar {
-    
-    
-    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
-        if (this.tapes == undefined) {
-            throw new Error("Attempting to determine concatenability before calculating tapes");
-        };
-        return this.tapes.indexOf(tapeName) != -1;
-    }
 
     protected constructFilter(symbols: SymbolTable) {
         if (this.child2.tapes == undefined) {
@@ -594,14 +481,6 @@ export class StartsWithGrammar extends FilterGrammar {
 
 export class EndsWithGrammar extends FilterGrammar {
 
-    
-    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
-        if (this.tapes == undefined) {
-            throw new Error("Attempting to determine concatenability before calculating tapes");
-        };
-        return this.tapes.indexOf(tapeName) != -1;
-    }
-
     protected constructFilter(symbols: SymbolTable) {
         if (this.child2.tapes == undefined) {
             throw new Error("Getting Brz expression with undefined tapes");
@@ -620,13 +499,6 @@ export class EndsWithGrammar extends FilterGrammar {
 
 
 export class ContainsGrammar extends FilterGrammar {
-    
-    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
-        if (this.tapes == undefined) {
-            throw new Error("Attempting to determine concatenability before calculating tapes");
-        };
-        return this.tapes.indexOf(tapeName) != -1;
-    }
 
     protected constructFilter(symbols: SymbolTable) {
         if (this.child2.tapes == undefined) {
@@ -682,26 +554,6 @@ export class RenameGrammar extends UnaryGrammar {
         this.child.collectVocab(tapes, stack);
     }
 
-    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
-        if (tapeName == this.fromTape) {
-            return false;
-        }
-        if (tapeName == this.toTape) {
-            tapeName = this.fromTape;
-        }
-        return this.child.tapeIsConcatenable(tapeName, stack);
-    }
-
-    public setConcatenable(tapeName: string, stack: string[] = []): void {
-        if (tapeName == this.fromTape) {
-            return;
-        }
-        if (tapeName == this.toTape) {
-            tapeName = this.fromTape;
-        }
-        this.child.setConcatenable(tapeName, stack);
-    }
-
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
             this.tapes = [];
@@ -737,19 +589,6 @@ export class RepeatGrammar extends UnaryGrammar {
         super(cell, child);
     }
 
-     public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
-        if (super.tapeIsConcatenable(tapeName, stack)) {
-            return true;
-        }
-        
-        // if this repetition is nontrivial (allows more than one rep) and 
-        // references this tape, then the tape is concatenable.
-        if (this.tapes == undefined) {
-            throw new Error("Attempting to determine concatenability before calculating tapes");
-        }
-        return this.maxReps > 1 && this.tapes.indexOf(tapeName) != -1;
-    }
-
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
             const childExpr = this.child.constructExpr(symbols);
@@ -767,17 +606,6 @@ export class NegationGrammar extends UnaryGrammar {
         public maxReps: number = Infinity
     ) {
         super(cell, child);
-    }
-
-    /**
-     * As implemented, Negation treats its tapes as non-atomic, so any tape
-     * going through negation ends up being concatenable.
-     */
-    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
-        if (this.tapes == undefined) {
-            throw new Error("Attempting to determine concatenability before calculating tapes");
-        };
-        return this.tapes.indexOf(tapeName) != -1;
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
@@ -1031,21 +859,6 @@ export class NamespaceGrammar extends GrammarComponent {
         return this.tapes;
     }
 
-    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
-        for (const child of this.symbols.values()) {
-            if (child.tapeIsConcatenable(tapeName, stack)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    public setConcatenable(tapeName: string, stack: string[] = []): void {
-        for (const child of this.symbols.values()) {
-            child.setConcatenable(tapeName, stack);
-        }
-    }
-
     public collectVocab(tapes: Tape, stack: string[] = []): void {
         for (const child of this.symbols.values()) {
             child.collectVocab(tapes, stack);
@@ -1123,28 +936,6 @@ export class EmbedGrammar extends AtomicGrammar {
         return this.tapes;
     }
 
-    public tapeIsConcatenable(tapeName: string, stack: string[] = []): boolean {
-        if (this.referent == undefined) {
-            return false; // failed to find the referent, so it's epsilon
-        }
-        if (stack.indexOf(this.qualifiedName) != -1) {
-            return false;
-        }
-        const newStack = [...stack, this.qualifiedName];
-        return this.referent.tapeIsConcatenable(tapeName, newStack);
-    }
-
-    public setConcatenable(tapeName: string, stack: string[] = []): void {
-        if (this.referent == undefined) {
-            return; // failed to find the referent, so it's epsilon
-        }
-        if (stack.indexOf(this.qualifiedName) != -1) {
-            return;
-        }
-        const newStack = [...stack, this.qualifiedName];
-        this.referent.setConcatenable(tapeName, newStack);
-    }
-    
     public collectVocab(tapes: Tape, stack: string[] = []): void {
         if (this.referent == undefined) {
             return; // failed to find the referent, so it's epsilon
