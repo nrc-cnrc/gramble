@@ -1515,6 +1515,12 @@ export function constructMatch(
     return new MatchExpr(child, tapes, buffers);
 }
 
+
+export function constructMatchFrom(firstTape: string, secondTape: string, state: Expr): Expr {
+    return constructMatch(constructSequence(state, constructRename(state, firstTape, secondTape)),
+                 new Set([firstTape, secondTape]));
+}
+
 export function constructRename(
     child: Expr, 
     fromTape: string, 

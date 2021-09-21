@@ -463,14 +463,7 @@ export const RESERVED_HEADERS = [
     "contains" 
 ];
 
-type BinaryOp = (cell: Cell, c1: GrammarComponent, c2: GrammarComponent) => GrammarComponent;
-export const BINARY_OPS: {[opName: string]: BinaryOp} = {
-    "or": (cell, c1, c2) => new AlternationGrammar(cell, [c1, c2]),
-    "concat": (cell, c1, c2) => new SequenceGrammar(cell, [c1, c2]),
-    "join": (cell, c1, c2) => new JoinGrammar(cell, c1, c2),
-}
-
-export const RESERVED_OPS: Set<string> = new Set([ ...Object.keys(BINARY_OPS), "table", "test", "testnot" ]);
+export const RESERVED_OPS: Set<string> = new Set(["table", "test", "testnot", "or", "concat", "join", "replace"]);
 
 export const RESERVED_WORDS = new Set([...SYMBOL, ...RESERVED_HEADERS, ...RESERVED_OPS]);
 

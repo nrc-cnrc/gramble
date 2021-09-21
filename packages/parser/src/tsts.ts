@@ -10,10 +10,18 @@
  * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, UnaryGrammar, NullGrammar, GenOptions } from "./grammars";
-import { CellPos, DummyCell, Gen, StringDict } from "./util";
-import { BINARY_OPS, DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
+import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, UnaryGrammar, NullGrammar, GenOptions, SequenceGrammar, JoinGrammar } from "./grammars";
+import { Cell, CellPos, DummyCell, Gen, StringDict } from "./util";
+import { DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
+
+
+type BinaryOp = (cell: Cell, c1: GrammarComponent, c2: GrammarComponent) => GrammarComponent;
+export const BINARY_OPS: {[opName: string]: BinaryOp} = {
+    "or": (cell, c1, c2) => new AlternationGrammar(cell, [c1, c2]),
+    "concat": (cell, c1, c2) => new SequenceGrammar(cell, [c1, c2]),
+    "join": (cell, c1, c2) => new JoinGrammar(cell, c1, c2),
+}
 
 export abstract class TstComponent {
 
@@ -26,7 +34,7 @@ export abstract class TstComponent {
     ): Gen<StringDict> {
         
         const opt: GenOptions = {
-            random: false,
+            random: random,
             maxRecursion: maxRecursion,
             maxChars: maxChars
         }

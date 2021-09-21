@@ -467,7 +467,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
-    
     // 13. Replace e by a in he: e -> a {0,2} || _l
     describe('13. Replace e by a in he: e -> a {0,2} || _l', function() {
         const grammar = Replace("t1", "t2", t1("e"), t2("a"), undefined, t1("l"),
@@ -919,7 +918,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to), undefined, 100);
     });
 
-    
     // 21. Replace e by ee in he: e -> ee {0,2} || h_
     describe('21. Replace e by ee in he: e -> ee {0,2} || h_', function() {
         const grammar = Replace("t1", "t2", t1("e"), t2("ee"), t1("h"), undefined,
@@ -1366,7 +1364,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
-    
     // 28. Insert a in h_l: 0 -> a {0,2} || h_l
     describe('28. Insert a in h_l: 0 -> a {0,2} || h_l', function() {
         const grammar = Replace("t1", "t2", Epsilon(), t2("a"), t1("h"), t1("l"),

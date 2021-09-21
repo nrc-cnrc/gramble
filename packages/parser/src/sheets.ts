@@ -1,11 +1,9 @@
-import { BINARY_OPS } from "./headers";
 import { 
     TstAssignment, TstBinaryOp, TstComment, 
     TstEnclosure, TstHeader, TstProject, 
     TstSheet, TstTable, TstTableOp, 
-    TstUnitTest, TstNegativeUnitTest, TstComponent } from "./tsts";
+    TstUnitTest, TstNegativeUnitTest, TstComponent, BINARY_OPS } from "./tsts";
 import { Cell, CellPos, DevEnvironment, Gen, StringDict } from "./util";
-
 
 /**
  * Determines whether a line is empty
@@ -26,7 +24,6 @@ import { Cell, CellPos, DevEnvironment, Gen, StringDict } from "./util";
 
     return true;
 }
-
 
 function constructOp(cell: SheetCell): TstEnclosure {
     

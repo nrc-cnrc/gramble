@@ -20,6 +20,7 @@ import {
     constructFilter,
     constructJoin,
     constructLiteral,
+    constructMatchFrom,
 } from "./exprs";
 
 import { 
@@ -1154,6 +1155,19 @@ export function Vocab(tape: string, text: string): GrammarComponent {
     return Rep(Lit(tape, text), 0, 0)
 }
 
+export function Replace(
+    fromTapeName: string, toTapeName: string,
+    fromState: GrammarComponent, toState: GrammarComponent,
+    preContext: GrammarComponent | undefined, postContext: GrammarComponent | undefined,
+    beginsWith: Boolean = false, endsWith: boolean = false,
+    minReps: number = 0, maxReps: number = Infinity,
+    maxExtraChars: number = 100,
+    repetitionPatch: Boolean = false
+): GrammarComponent {
+    return new ReplaceGrammar(DUMMY_CELL, fromTapeName, toTapeName, fromState, toState, 
+        preContext, postContext, beginsWith, endsWith, minReps, maxReps, maxExtraChars);
+}
+
 /**
   * Replace implements general phonological replacement rules.
   * 
@@ -1173,6 +1187,172 @@ export function Vocab(tape: string, text: string): GrammarComponent {
   *         between the old ConcatState and RepetitionState.
   *     Note: repetitionPatch may not be true if maxReps > 100
 */
+export class ReplaceGrammar extends GrammarComponent {
+    
+
+    constructor(
+        cell: Cell,
+        public fromTapeName: string, 
+        public toTapeName: string,
+        public fromState: GrammarComponent, 
+        public toState: GrammarComponent,
+        public preContext: GrammarComponent | undefined, 
+        public postContext: GrammarComponent | undefined,
+        public beginsWith: Boolean = false, 
+        public endsWith: boolean = false,
+        public minReps: number = 0, 
+        public maxReps: number = Infinity,
+        public maxExtraChars: number = 100,
+    ) {
+        super(cell);
+    }
+
+    public getChildren(): GrammarComponent[] { 
+        const children: GrammarComponent[] = [this.fromState, this.toState]; 
+        if (this.preContext != undefined) {
+            children.push(this.preContext);
+        }
+        if (this.postContext != undefined) {
+            children.push(this.postContext);
+        }
+        return children;
+    }
+
+    public calculateTapes(stack: CounterStack): string[] {
+        if (this.tapes == undefined) {
+            this.tapes = super.calculateTapes(stack);
+            this.tapes.push(this.fromTapeName);
+            this.tapes.push(this.toTapeName);
+            this.tapes = listUnique(this.tapes);
+        }
+        return this.tapes;
+    }
+
+    public collectVocab(tapes: Tape, stack: string[] = []): void {
+        // first, collect vocabulary as normal
+        super.collectVocab(tapes, stack);
+        tapes.tokenize(this.fromTapeName, "");
+        tapes.tokenize(this.toTapeName, "");
+
+        // however, we also need to collect vocab from the contexts as if it were on the toTape
+        tapes = new RenamedTape(tapes, this.fromTapeName, this.toTapeName);
+        if (this.preContext != undefined) {
+            this.preContext.collectVocab(tapes, stack);
+        }
+        if (this.postContext != undefined) {
+            this.postContext.collectVocab(tapes, stack);
+        }
+    }
+
+    public constructExpr(symbolTable: { [name: string]: Expr; }): Expr {
+        
+        if (this.beginsWith || this.endsWith) {
+            this.maxReps = Math.max(1, this.maxReps);
+            this.minReps = Math.min(this.minReps, this.maxReps);
+        }
+
+        let preContextExpr: Expr | undefined = undefined;
+        let postContextExpr: Expr | undefined = undefined;
+        const fromExpr: Expr = this.fromState.constructExpr(symbolTable);
+        const toExpr: Expr = this.toState.constructExpr(symbolTable);
+        var grammars: GrammarComponent[] = [this.fromState, this.toState];
+        var states: Expr[] = [];
+
+        if (this.preContext != undefined) {
+            preContextExpr = this.preContext.constructExpr(symbolTable);
+            grammars.push(this.preContext);
+            states.push(constructMatchFrom(this.fromTapeName, this.toTapeName, preContextExpr));
+        }
+        states.push(fromExpr, toExpr);
+        if (this.postContext != undefined) {
+            postContextExpr = this.postContext.constructExpr(symbolTable);
+            grammars.push(this.postContext);
+            states.push(constructMatchFrom(this.fromTapeName, this.toTapeName, postContextExpr));
+        }
+
+        var sameVocab: boolean = false;
+        const tapeCollection: TapeCollection = this.getAllTapes();
+        const fromTape: Tape | undefined = tapeCollection.matchTape(this.fromTapeName);
+        if (fromTape != undefined) {
+            const fromVocab: string[] = fromTape.fromToken(this.fromTapeName, fromTape.any());
+            sameVocab = tapeCollection.inVocab(this.toTapeName, fromVocab);
+        }
+
+        const that = this;
+
+        function matchAnythingElse(replaceNone: boolean = false): Expr {
+            const dotStar: Expr = constructRepeat(constructDot(that.fromTapeName), 0, that.maxExtraChars);
+            // 1. If the fromTape vocab for the replacement operation contains some
+            //    characters that are not in the corresponding toTape vocab, then
+            //    extra text matched before and after the replacement cannot possibly
+            //    contain the from replacement pattern. Furthermore, we don't want to
+            //    add those characters to the toTape vocab, so instead we match .*
+            // 2. If we are matching an instance at the start of text (beginsWith),
+            //    or end of text (endsWith) then matchAnythingElse needs to match any
+            //    other instances of the replacement pattern, so we need to match .*
+            if( !sameVocab || (that.beginsWith && !replaceNone) || (that.endsWith && !replaceNone)) {
+                return constructMatchFrom(that.fromTapeName, that.toTapeName, dotStar)
+            }
+            var fromInstance: Expr[] = [];
+            if (preContextExpr != undefined)
+                fromInstance.push(preContextExpr);
+            fromInstance.push(fromExpr);
+            if (postContextExpr != undefined)
+                fromInstance.push(postContextExpr);
+            
+
+            // figure out what tapes need to be negated
+            const negatedTapes: string[] = [];
+            if (that.fromState.tapes == undefined || 
+                (that.preContext != undefined && that.preContext.tapes == undefined) ||
+                (that.preContext != undefined && that.preContext.tapes == undefined)) {
+                throw new Error("Trying to construct expr for replace before calculating tapes");
+            }
+            negatedTapes.push(...that.fromState.tapes);
+            if (that.preContext != undefined && that.preContext.tapes != undefined) {
+                negatedTapes.push(...that.preContext.tapes);
+            }
+            if (that.postContext != undefined && that.postContext.tapes != undefined) {
+                negatedTapes.push(...that.postContext.tapes);
+            }
+
+            var notState: Expr;
+            if (that.beginsWith && replaceNone) {
+                notState = constructNegation(constructSequence(...fromInstance, dotStar), new Set(negatedTapes), that.maxExtraChars);
+            }
+            else if (that.endsWith && replaceNone)
+                notState = constructNegation(constructSequence(dotStar, ...fromInstance), new Set(negatedTapes), that.maxExtraChars);
+            else
+                notState = constructNegation(constructSequence(dotStar, ...fromInstance, dotStar), new Set(negatedTapes), that.maxExtraChars);
+            return constructMatchFrom(that.fromTapeName, that.toTapeName, notState)
+        }
+        
+        if (!this.endsWith)
+            states.push(matchAnythingElse());
+
+        const replaceOne: Expr = constructSequence(...states);
+        var replaceMultiple: Expr = constructRepeat(replaceOne, this.minReps, this.maxReps);
+
+        let result: Expr;
+        if (this.beginsWith)
+            result = replaceOne;
+        else if (this.endsWith)
+            result = constructSequence(matchAnythingElse(), replaceOne);
+        else 
+            result = constructSequence(matchAnythingElse(), replaceMultiple);
+            
+        if (this.minReps > 0)
+            return result
+        // ??? NOTE: matchAnythingElse(true) with beginsWith can result in an
+        // "infinite" loop when generate is called (especially if maxChars is
+        // high) because the match on notState is not respecting maxExtraChars
+        // for some reason.
+        return(constructAlternation(matchAnythingElse(true), result));
+
+    }
+}
+
+/*
 export function Replace(
     fromTapeName: string, toTapeName: string,
     fromState: GrammarComponent, toState: GrammarComponent,
@@ -1243,14 +1423,6 @@ export function Replace(
 
     const replaceOne: GrammarComponent = Seq(...states);
     var replaceMultiple: GrammarComponent = Rep(replaceOne, minReps, maxReps);
-    
-    /*if (repetitionPatch && maxReps <= 100) {
-        var multiples: GrammarComponent[] = [];
-        for (let n=Math.max(1, minReps); n < maxReps+1; n++) {
-            multiples.push(Seq(...Array.from({length: n}).map(x => replaceOne)));
-        }
-        replaceMultiple = Uni(...multiples);
-    } */
 
     if (beginsWith)
         replaceState = replaceOne;
@@ -1267,3 +1439,4 @@ export function Replace(
     // for some reason.
     return(Uni(matchAnythingElse(true), replaceState));
 }
+*/
