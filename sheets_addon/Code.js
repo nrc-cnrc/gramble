@@ -364,6 +364,12 @@ function makeProject() {
     return [project, devEnv];
 }
 
+function runUnitTests() {
+    const [project, devEnv] = makeProject();
+    project.runUnitTests();
+    devEnv.highlight();
+} 
+
 function highlight() {
     const [project, devEnv] = makeProject();
     devEnv.highlight();
@@ -501,6 +507,8 @@ function onOpen() {
     ui.createMenu('Gramble')
     
         .addItem('Show sidebar', 'showSidebar')
+        .addSeparator()
+        .addItem('Run unit tests', 'runUnitTests')
         .addSeparator()
         .addItem('Highlight', 'highlight')
         .addItem('Comment', 'GrambleComment')
