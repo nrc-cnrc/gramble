@@ -151,6 +151,7 @@
                 
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
                 project = new gramble.Gramble(devEnv, currentSheetName);
+                project.runChecks();
                 //project.runUnitTests();
 
                 createErrorButtons(devEnv.errorMsgs, currentSheetName);

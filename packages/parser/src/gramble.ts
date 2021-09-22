@@ -55,9 +55,14 @@ export class Gramble {
         if (this.grammar == undefined) {
             const tst = this.sheetProject.toTST();
             this.grammar = tst.toGrammar();
+            this.grammar.runChecks();
         }
         return this.grammar;
     } 
+
+    public runChecks(): void {
+        this.getGrammar();
+    }
 
     public runUnitTests(): void {
         const opt = new GenOptions();

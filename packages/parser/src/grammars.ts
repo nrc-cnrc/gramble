@@ -116,6 +116,18 @@ export abstract class GrammarComponent {
         }
     }
 
+    public runChecks(): void {
+        this.qualifyNames();
+        this.calculateTapes(new CounterStack(2));
+        this.runChecksAux();
+    }
+
+    public runChecksAux(): void {
+        for (const child of this.getChildren()) {
+            child.runChecksAux();
+        }
+    }
+
     public runUnitTests(opt: GenOptions): void {
         this.qualifyNames();
         const tapes = this.calculateTapes(new CounterStack(2));
@@ -569,6 +581,32 @@ export class RenameGrammar extends UnaryGrammar {
         }
         return this.tapes;
     }
+
+    public runChecksAux(): void {
+        
+        super.runChecksAux();
+
+        if (this.child.tapes == undefined) {
+            throw new Error("Trying to run checks before tapes are calculated");
+        }
+
+        if (this.child.tapes.indexOf(this.fromTape) == -1) {   
+            this.message({
+                type: "error", 
+                shortMsg: "Renaming missing tape",
+                longMsg: `The grammar to the left does not contain the tape ${this.fromTape}. ` +
+                    ` Available tapes: [${[...this.child.tapes]}]`
+            });
+        }
+
+        if (this.child.tapes.indexOf(this.toTape) != -1) {   
+            this.message({
+                type: "error", 
+                shortMsg: "Destination tape already exists",
+                longMsg: `The grammar to the left already contains the tape ${this.fromTape}. `
+            });
+        }
+    }
     
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
@@ -660,22 +698,27 @@ export class HideGrammar extends UnaryGrammar {
         return this.tapes;
     }
     
+    public runChecksAux(): void {
+        
+        super.runChecksAux();
+
+        if (this.child.tapes == undefined) {
+            throw new Error("Trying to run checks before tapes are calculated");
+        }
+
+        if (this.child.tapes.indexOf(this.tape) == -1) {   
+            this.message({
+                type: "error", 
+                shortMsg: "Hiding missing tape",
+                longMsg: `The grammar to the left does not contain the tape ${this.tape}. ` +
+                    ` Available tapes: [${[...this.child.tapes]}]`
+            });
+        }
+    }
+
     public constructExpr(symbols: SymbolTable): Expr {
 
         if (this.expr == undefined) {
-            if (this.child.tapes == undefined) {
-                throw new Error("Trying to construct an expression before tapes are calculated");
-            }
-
-            if (this.child.tapes.indexOf(this.tape) == -1) {   
-                this.message({
-                    type: "error", 
-                    shortMsg: "Hiding missing tape",
-                    longMsg: `The grammar to the left does not contain the tape ${this.tape}. " +
-                        " Available tapes: [${[...this.child.tapes]}]`
-                });
-            }
-
             const childExpr = this.child.constructExpr(symbols);
             this.expr = constructRename(childExpr, this.tape, this.toTape);
         }
@@ -948,17 +991,22 @@ export class EmbedGrammar extends AtomicGrammar {
         this.referent.collectVocab(tapes, newStack);
     }
 
+    public runChecksAux(): void {
+        if (this.referent == undefined) {
+            this.message({
+                type: "error", 
+                shortMsg: "Unknown symbol", 
+                longMsg: `Undefined symbol: ${this.name}`
+            });
+        }
+    }
+
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
-            if (this.referent == undefined) {
-                this.message({
-                    type: "error", 
-                    shortMsg: "Unknown symbol", 
-                    longMsg: `Undefined symbol: ${this.name}`
-                });
-                return EPSILON;
+            this.expr = EPSILON;
+            if (this.referent != undefined) {
+                this.expr = constructEmbed(this.qualifiedName, symbols);
             }
-            this.expr = constructEmbed(this.qualifiedName, symbols);
         }
         return this.expr;
     }

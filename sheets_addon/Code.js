@@ -360,6 +360,7 @@ function makeProject() {
 
     const devEnv = new GoogleSheetsDevEnvironment(sheetName);
     const project = new gramble.Gramble(devEnv, sheetName);
+    project.runChecks();
     //project.runUnitTests();
     return [project, devEnv];
 }
