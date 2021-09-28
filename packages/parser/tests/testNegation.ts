@@ -306,5 +306,28 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"iii"},           {"t1":"hhh"}];
             testGrammar(grammar, expectedResults, "", 4, 4);
     }); 
+    
+    describe('~t1:he maxChars=3', function() {
+        const grammar = Not(t1("he"), 3);
+        testHasTapes(grammar, ["t1"]);
+        // testHasVocab(grammar, {t1: 2});
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: 'h'},
+            {t1: 'e'},
+            {t1: 'hh'},
+            {t1: 'eh'},
+            {t1: 'ee'},
+            {t1: 'heh'},
+            {t1: 'hee'},
+            {t1: 'hhh'},
+            {t1: 'hhe'},
+            {t1: 'ehh'},
+            {t1: 'ehe'},
+            {t1: 'eeh'},
+            {t1: 'eee'},
+        ];
+        testGrammar(grammar, expectedResults, "", 4, 100);
+    });
 
 });
