@@ -2,7 +2,7 @@ import {
     TstAssignment, TstBinaryOp, TstComment, 
     TstEnclosure, TstHeader, TstProject, 
     TstSheet, TstTable, TstTableOp, 
-    TstUnitTest, TstNegativeUnitTest, TstComponent, BINARY_OPS } from "./tsts";
+    TstUnitTest, TstNegativeUnitTest, TstComponent, BINARY_OPS, TstReplace } from "./tsts";
 import { Cell, CellPos, DevEnvironment, Gen, StringDict } from "./util";
 
 /**
@@ -43,6 +43,8 @@ function constructOp(cell: SheetCell): TstEnclosure {
         newEnclosure = new TstUnitTest(cell);
     } else if (trimmedTextLower == "testnot") {
         newEnclosure = new TstNegativeUnitTest(cell);
+    } else if (trimmedTextLower == "replace") {
+        newEnclosure = new TstReplace(cell);
     } else if (cell.pos.col == 0) {
         // if it's none of these special operators, it's an assignment,
         // but note that assignments can only occur in column 0.  if an 

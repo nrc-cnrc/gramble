@@ -51,7 +51,7 @@
     "testCellParser": "mocha -r ts-node/register tests/testCellParser.ts",
     "testUnitTests": "mocha -r ts-node/register tests/testUnitTests.ts",
     "testReplace": "mocha -r ts-node/register tests/testReplace.ts",
-    "testVocab": "mocha -r ts-node/register tests/testVocab.ts"
+    "testParams": "mocha -r ts-node/register tests/testParams.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"

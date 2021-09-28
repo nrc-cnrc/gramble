@@ -12,7 +12,7 @@
 
 import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, UnaryGrammar, NullGrammar, GenOptions, SequenceGrammar, JoinGrammar } from "./grammars";
 import { Cell, CellPos, DummyCell, Gen, StringDict } from "./util";
-import { DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
+import { DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, ParamDict, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
 
 
@@ -44,6 +44,27 @@ export abstract class TstComponent {
 
     public abstract toGrammar(): GrammarComponent;
 
+    /**
+     * Most kinds of components only represent a grammar, that will be
+     * interpreted as a single parameter to an operation like "join" or "concat".
+     * 
+     * However, some operations (like replacement rules) take more than just one
+     * parameter, meaning we need some way to specify them by name or position.  Given
+     * that replacement rules can take a lot of params (because they can specify conditions
+     * on any number of tapes), named params are probably better than positional ones for our
+     * purposes.
+     * 
+     * This function is like toGrammar(), but instead of returning a single grammar,
+     * returns a dictionary of grammars keyed to parameter names.  Ultimately, only [TstParam]
+     * objects add an actual parameter name; everything else contributes an empty param name
+     * "__".
+     */
+    public toParams(): ParamDict {
+        return { "__": this.toGrammar()};
+    }
+
+    public abstract toParamsTable(): [Cell, ParamDict][];
+
 }
 
 export abstract class TstCellComponent extends TstComponent {
@@ -68,6 +89,15 @@ export abstract class TstCellComponent extends TstComponent {
     
     public toGrammar(): GrammarComponent {
         return new EpsilonGrammar(this.cell);
+    }
+
+    public toParamsTable(): [Cell, ParamDict][] {
+        this.message({
+            type: "error", 
+            shortMsg: `Unexpected operator`, 
+            longMsg: `The operator to the left expects a table of parameters, not another operator.`
+        });
+        return [];
     }
 
 }
@@ -103,8 +133,14 @@ export class TstHeader extends TstCellComponent {
 
     public headerToGrammar(left: GrammarComponent, content: SheetCell): GrammarComponent {
         const grammar = this.header.toGrammar(left, content.text, content);
-        grammar.cell = content;
+        //grammar.cell = content;
         return grammar;
+    }
+    
+    public headerToParams(left: ParamDict, content: SheetCell): ParamDict {
+        const params = this.header.toParams(left, content.text, content);
+        //grammar.cell = content;
+        return params;
     }
 
 }
@@ -127,15 +163,30 @@ export class TstHeadedCell extends TstCellComponent {
             prevGrammar = this.prev.toGrammar();
         }
         
+        /*
         if (this.cell.text.length == 0) {
             return prevGrammar;
         }
+        */
 
         return this.header.headerToGrammar(prevGrammar, this.cell);
     }
+    
+    public toParams(): ParamDict {
 
+        let prevParams: ParamDict = {};
+
+        if (this.prev != undefined) {
+            prevParams = this.prev.toParams();
+        }
+        
+        if (this.cell.text.length == 0) {
+            return prevParams;
+        }
+
+        return this.header.headerToParams(prevParams, this.cell);
+    }
 }
-
 
 export class TstComment extends TstCellComponent {
 
@@ -290,10 +341,42 @@ export class TstBinaryOp extends TstEnclosure {
     }
 }
 
-export class TstApply extends TstEnclosure {
+export class TstReplace extends TstEnclosure {
 
-    
+    public toGrammar(): GrammarComponent {
+        
+        // we're not actually doing anything with the params yet, just
+        // testing that we can actually gather them appropriately.
+        
+        let params: [Cell, ParamDict][] = [];
+        let siblingGrammar: GrammarComponent = new EpsilonGrammar(this.cell);
 
+        if (this.child == undefined) {
+            this.message({
+                type: "error",
+                shortMsg: `Replace missing parameters`, 
+                longMsg: `'replace:' doesn't have any parameters; ` +
+                "something should be in the cells to the right."
+            });
+        } else {
+            params = this.child.toParamsTable();
+            //console.log(params);
+        }
+
+        if (this.sibling == undefined) {
+            this.message({
+                type: "error",
+                shortMsg: `Missing argument to replace'`,
+                longMsg:`'replace:' needs a grammar to operate on; ` +
+                "something should be in a cell above this."
+            });
+        } else {
+            siblingGrammar = this.sibling.toGrammar();
+        }
+
+        return siblingGrammar;
+
+    }
 }
 
 export class TstTableOp extends TstEnclosure {
@@ -316,6 +399,22 @@ export class TstTableOp extends TstEnclosure {
         }
 
         return this.child.toGrammar();
+    }
+
+    public toParamsTable(): [Cell, ParamDict][] {
+        
+        if (this.child == undefined) {
+            this.message({
+                type: "warning",
+                shortMsg: "Empty table",
+                longMsg: "'table' seems to be missing a table; " + 
+                "something should be in the cell to the right."
+            });
+            return [];
+        }
+
+        return this.child.toParamsTable();
+
     }
 }
 
@@ -362,8 +461,22 @@ export class TstUnitTest extends TstEnclosure {
             return siblingGrammar;
         }
 
-        const testGrammar = this.child.toGrammar();
-        const testGrammars = testGrammar.getChildren();
+        const testGrammars: GrammarComponent[] = [];
+
+        for (const [cell, paramDict] of this.child.toParamsTable()) {
+            for (const [key, grammar] of Object.entries(paramDict)) {
+                if (key != "__") {
+                    grammar.message({
+                        type: "warning",
+                        shortMsg: "Wayward parameter name",
+                        longMsg: `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`
+                    });
+                    continue;
+                }
+                const testGrammar = new UnaryGrammar(cell, grammar);
+                testGrammars.push(testGrammar);
+            }
+        }
         return new UnitTestGrammar(this.cell, siblingGrammar, testGrammars);
     }
 
@@ -412,8 +525,22 @@ export class TstNegativeUnitTest extends TstEnclosure {
             return siblingGrammar;
         }
 
-        const testGrammar = this.child.toGrammar();
-        const testGrammars = testGrammar.getChildren();
+        const testGrammars: GrammarComponent[] = [];
+
+        for (const [cell, paramDict] of this.child.toParamsTable()) {
+            for (const [key, grammar] of Object.entries(paramDict)) {
+                if (key != "__") {
+                    grammar.message({
+                        type: "warning",
+                        shortMsg: "Wayward parameter name",
+                        longMsg: `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`
+                    });
+                    continue;
+                }
+                const testGrammar = new UnaryGrammar(cell, grammar);
+                testGrammars.push(testGrammar);
+            }
+        }
         return new NegativeUnitTestGrammar(this.cell, siblingGrammar, testGrammars);
     }
 
@@ -542,6 +669,10 @@ export class TstProject extends TstComponent {
         return ns;
     }
 
+    public toParamsTable(): [Cell, ParamDict][] {
+        throw new Error("not implemented");
+    }
+
 }
 
 /**
@@ -607,14 +738,42 @@ export class TstTable extends TstEnclosure {
     }
 
     public toGrammar(): GrammarComponent {
+        // unless it's being interpreted as a paramTable, tables
+        // have the semantics of alternation
+        const alternatives: GrammarComponent[] = [];
 
-        if (this.sibling != undefined) {
-            this.sibling.toGrammar();
+        for (const [cell, paramDict] of this.toParamsTable()) {
+            for (const [key, grammar] of Object.entries(paramDict)) {
+                if (key != "__") {
+                    // there's a wayward parameter name in the headers
+                    grammar.message({
+                        type: "warning",
+                        shortMsg: "Wayward parameter name",
+                        longMsg: `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`
+                    });
+                    continue;
+                }
+
+                if (grammar instanceof EpsilonGrammar) {
+                    // if a row evaluates as empty, don't consider it an
+                    // alternative
+                    continue;
+                }
+
+                alternatives.push(grammar);
+            }
         }
 
-        var rowStates = this.rows.map(row => row.toGrammar())
-                                 .filter(g => !(g instanceof EpsilonGrammar));
-        return new AlternationGrammar(this.cell, rowStates);
+        return new AlternationGrammar(this.cell, alternatives);
+    }
+
+    public toParamsTable(): [Cell, ParamDict][] {
+        
+        if (this.sibling != undefined) {
+            this.sibling.toGrammar(); // shouldn't happen but just in case
+        }
+
+        return this.rows.map(row => [row.cell, row.toParams()]);
     }
 }
 
@@ -645,5 +804,12 @@ export class TstRow extends TstCellComponent {
         // to putting them in the first cell, so we need a semantically trivial wrapper
         // grammar to associate this row's errors with the appropriate cell.
         return new UnaryGrammar(this.cell, child);
+    }
+    
+    public toParams(): ParamDict {
+        if (this.lastCell == undefined) {
+            return {};  // shouldn't happen
+        }
+        return this.lastCell.toParams();
     }
 }

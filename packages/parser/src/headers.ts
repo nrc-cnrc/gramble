@@ -9,6 +9,9 @@ import { Cell, HSVtoRGB, RGBtoString } from "./util";
 export const DEFAULT_SATURATION = 0.1;
 export const DEFAULT_VALUE = 1.0;
 
+
+export type ParamDict = {[key: string]: GrammarComponent};
+
 /**
  * A Header is a cell in the top row of a table, consisting of one of
  * 
@@ -46,6 +49,23 @@ export const DEFAULT_VALUE = 1.0;
      */
     public abstract toGrammar(left: GrammarComponent, text: string, content: Cell): GrammarComponent;
     public abstract getColor(saturation: number, value: number): string;
+
+    public getParamName(): string {
+        return "__";
+    }
+
+    public toParams(left: ParamDict, text: string, content: Cell): ParamDict {
+        const paramName = this.getParamName();
+        const result: ParamDict = {};
+        Object.assign(result, left);
+        if (paramName in left) {
+            result[paramName] = this.toGrammar(left[paramName], text, content);
+        } else {
+            const eps = new EpsilonGrammar(content);
+            result[paramName] = this.toGrammar(eps, text, content);
+        }
+        return result;
+    }
 }
 
 /**
@@ -179,6 +199,46 @@ abstract class UnaryHeader extends Header {
 
     public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
         return this.child.getColor(saturation, value);
+    }
+
+    public toGrammar(
+        left: GrammarComponent, 
+        text: string,
+        content: Cell
+    ): GrammarComponent {
+        return this.child.toGrammar(left, text, content);
+    }
+}
+
+
+
+/**
+ * Header that constructs optional parsers, e.g. "maybe text"
+ */
+ export class ToHeader extends UnaryHeader {
+
+    public getParamName(): string {
+        return "to";
+    }
+}
+
+/**
+ * Header that constructs optional parsers, e.g. "maybe text"
+ */
+ export class BeforeHeader extends UnaryHeader {
+
+    public getParamName(): string {
+        return "before";
+    }
+}
+
+/**
+ * Header that constructs optional parsers, e.g. "maybe text"
+ */
+ export class AfterHeader extends UnaryHeader {
+
+    public getParamName(): string {
+        return "after";
     }
 }
 
@@ -460,10 +520,21 @@ export const RESERVED_HEADERS = [
     "equals", 
     "startswith", 
     "endswith", 
-    "contains" 
+    "contains",
+    "to",
+    "before",
+    "after"
 ];
 
-export const RESERVED_OPS: Set<string> = new Set(["table", "test", "testnot", "or", "concat", "join", "replace"]);
+export const RESERVED_OPS: Set<string> = new Set([
+    "table", 
+    "test", 
+    "testnot", 
+    "or", 
+    "concat", 
+    "join", 
+    "replace"
+]);
 
 export const RESERVED_WORDS = new Set([...SYMBOL, ...RESERVED_HEADERS, ...RESERVED_OPS]);
 
@@ -478,8 +549,11 @@ function tokenize(text: string): string[] {
 }
 
 var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
-    MPAlternation(HP_MAYBE, HP_SLASH, HP_RENAME, HP_EQUALS, 
-                HP_STARTSWITH, HP_ENDSWITH, HP_CONTAINS, HP_SUBEXPR)
+    MPAlternation(
+        HP_MAYBE, HP_TO, HP_BEFORE, 
+        HP_AFTER, HP_SLASH, HP_RENAME, 
+        HP_EQUALS, HP_STARTSWITH, HP_ENDSWITH, 
+        HP_CONTAINS, HP_SUBEXPR)
 );
 
 var HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
@@ -525,6 +599,22 @@ const HP_REVEAL = MPSequence<Header>(
 const HP_MAYBE = MPSequence<Header>(
     ["maybe", HP_NON_COMMENT_EXPR],
     (child) => new MaybeHeader(child)
+);
+
+const HP_TO = MPSequence<Header>(
+    ["to", HP_NON_COMMENT_EXPR],
+    (child) => new ToHeader(child)
+);
+
+
+const HP_BEFORE = MPSequence<Header>(
+    ["before", HP_NON_COMMENT_EXPR],
+    (child) => new BeforeHeader(child)
+);
+
+const HP_AFTER = MPSequence<Header>(
+    ["after", HP_NON_COMMENT_EXPR],
+    (child) => new AfterHeader(child)
 );
 
 const HP_LOGIC = MPSequence<Header>(
