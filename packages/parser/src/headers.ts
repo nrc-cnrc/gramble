@@ -210,49 +210,17 @@ abstract class UnaryHeader extends Header {
     }
 }
 
+export class TagHeader extends UnaryHeader {
 
-
-/**
- * Header that tags its content as "from" for the purposes of
- * named parameters.
- */
- export class FromHeader extends UnaryHeader {
-
-    public getParamName(): string {
-        return "from";
+    constructor(
+        public tag: string,
+        child: Header
+    ) {
+        super(child);
     }
-}
-
-/**
- * Header that tags its content as "to" for the purposes of
- * named parameters.
- */
- export class ToHeader extends UnaryHeader {
 
     public getParamName(): string {
-        return "to";
-    }
-}
-
-/**
- * Header that tags its content as "before" for the purposes of
- * named parameters.
- */
- export class BeforeHeader extends UnaryHeader {
-
-    public getParamName(): string {
-        return "before";
-    }
-}
-
-/**
- * Header that tags its content as "after" for the purposes of
- * named parameters.
- */
- export class AfterHeader extends UnaryHeader {
-
-    public getParamName(): string {
-        return "after";
+        return this.tag;
     }
 }
 
@@ -525,6 +493,14 @@ export class ReservedErrorHeader extends ErrorHeader {
  */
 
 const SYMBOL = [ "(", ")", "%", "/",  ">", ":" ];
+
+export const REPLACE_PARAMS = [
+    "from",
+    "to",
+    "pre",
+    "post"
+]
+
 export const RESERVED_HEADERS = [
     "embed", 
     "maybe", 
@@ -535,10 +511,7 @@ export const RESERVED_HEADERS = [
     "startswith", 
     "endswith", 
     "contains",
-    "from",
-    "to",
-    "before",
-    "after"
+    ...REPLACE_PARAMS
 ];
 
 export const RESERVED_OPS: Set<string> = new Set([
@@ -566,7 +539,7 @@ function tokenize(text: string): string[] {
 var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlternation(
         HP_MAYBE, HP_FROM, HP_TO, 
-        HP_BEFORE, HP_AFTER, HP_SLASH, 
+        HP_PRE, HP_POST, HP_SLASH, 
         HP_RENAME, HP_EQUALS, HP_STARTSWITH, 
         HP_ENDSWITH, HP_CONTAINS, HP_SUBEXPR)
 );
@@ -616,26 +589,24 @@ const HP_MAYBE = MPSequence<Header>(
     (child) => new MaybeHeader(child)
 );
 
-
 const HP_FROM = MPSequence<Header>(
     ["from", HP_NON_COMMENT_EXPR],
-    (child) => new FromHeader(child)
+    (child) => new TagHeader("from", child)
 );
 
 const HP_TO = MPSequence<Header>(
     ["to", HP_NON_COMMENT_EXPR],
-    (child) => new ToHeader(child)
+    (child) => new TagHeader("to", child)
 );
 
-
-const HP_BEFORE = MPSequence<Header>(
-    ["before", HP_NON_COMMENT_EXPR],
-    (child) => new BeforeHeader(child)
+const HP_PRE = MPSequence<Header>(
+    ["pre", HP_NON_COMMENT_EXPR],
+    (child) => new TagHeader("pre", child)
 );
 
-const HP_AFTER = MPSequence<Header>(
-    ["after", HP_NON_COMMENT_EXPR],
-    (child) => new AfterHeader(child)
+const HP_POST = MPSequence<Header>(
+    ["post", HP_NON_COMMENT_EXPR],
+    (child) => new TagHeader("post", child)
 );
 
 const HP_LOGIC = MPSequence<Header>(

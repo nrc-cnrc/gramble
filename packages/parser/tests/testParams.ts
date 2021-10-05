@@ -1,52 +1,79 @@
-import { testGramble, testErrors, sheetFromFile, testHasTapes, testHasVocab } from "./testUtils";
+import { testGramble, testErrors, sheetFromFile } from "./testUtils";
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Simple replace', function() {
-
         const project = sheetFromFile("./tests/csvs/simpleReplace.csv");
-        const grammar = project.getGrammar();
         testErrors(project, []);
-
-        testHasTapes(grammar, ['text', 'surface']);
-        testHasVocab(grammar, {text: 2, surface: 3});
-
         testGramble(project, [
             {"text":"aba","surface":"ava"}
         ]);
     });
+    
+    describe('Simple replace with pre', function() {
+        const project = sheetFromFile("./tests/csvs/replaceWithPre.csv");
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"aba","surface":"ava"},
+            {"text":"arba","surface":"arba"}
+        ]);
+    });
 
-    /*
+    describe('Simple replace with post', function() {
+        const project = sheetFromFile("./tests/csvs/replaceWithPost.csv");
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"aba","surface":"ava"},
+            {"text":"abra","surface":"abra"}
+        ]);
+    });
+
+    describe('Simple replace with pre and post', function() {
+        const project = sheetFromFile("./tests/csvs/replaceWithPrePost.csv");
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"aba","surface":"ava"},
+            {"text":"abra","surface":"abra"},
+            {"text":"arba","surface":"arba"}
+        ]);
+    });
+
+    describe('Replacing with an embedded grammar', function() {
+
+        const project = sheetFromFile("./tests/csvs/replaceWithEmbed.csv");
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "surface": "foovaz", "gloss":"run-2SG"},
+            {"text":"foobar", "surface": "foovar", "gloss":"run-1SG"},
+            {"text":"moo", "surface": "moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "surface": "moovaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "surface": "moovar", "gloss":"jump-1SG"}
+        ]);
+    });
+
     describe('Replace with a table: op nested underneath', function() {
 
         const project = sheetFromFile("./tests/csvs/replaceWithTableOp.csv");
 
         testErrors(project, []);
         testGramble(project, [
-            {"text":"foo","gloss":"run.3SG"},
-            {"text":"foobaz","gloss":"run-2SG"},
-            {"text":"foobar","gloss":"run-1SG"},
-            {"text":"moo","gloss":"jump.3SG"},
-            {"text":"moobaz","gloss":"jump-2SG"},
-            {"text":"moobar","gloss":"jump-1SG"}
+            {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "surface": "foovaz", "gloss":"run-2SG"},
+            {"text":"foobar", "surface": "foovar", "gloss":"run-1SG"},
+            {"text":"moo", "surface": "moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "surface": "moovaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "surface": "moovar", "gloss":"jump-1SG"}
         ]);
     });
-
     
     describe('Replace with a test: op nested underneath', function() {
 
         const project = sheetFromFile("./tests/csvs/replaceWithTestOp.csv");
 
         testErrors(project, [["replaceWithTestOp", 12, 2, "error"]]);
-        testGramble(project, [
-            {"text":"foo","gloss":"run.3SG"},
-            {"text":"foobaz","gloss":"run-2SG"},
-            {"text":"foobar","gloss":"run-1SG"},
-            {"text":"moo","gloss":"jump.3SG"},
-            {"text":"moobaz","gloss":"jump-2SG"},
-            {"text":"moobar","gloss":"jump-1SG"}
-        ]);
+        testGramble(project, []);
     });
     
     describe('Param headers in ordinary tables', function() {
@@ -66,5 +93,4 @@ describe(`${path.basename(module.filename)}`, function() {
             {"gloss":"jump","text":"baz"}
         ]);
     });
-    */
 });

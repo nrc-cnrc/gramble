@@ -2,7 +2,7 @@ verb:, table:, to text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-suffix:, table:, text, before gloss
+suffix:, table:, text, post gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
     ,       ,    , .3SG

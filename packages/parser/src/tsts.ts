@@ -395,13 +395,13 @@ export class TstReplace extends TstEnclosure {
                 continue;
             }
             const toArg = paramDict["to"];
-            const beforeArg = "before" in paramDict 
-                                    ? paramDict["before"] 
-                                    : new EpsilonGrammar(this.cell); 
-            const afterArg = "after" in paramDict
-                                    ? paramDict["after"]
+            const preArg = "pre" in paramDict
+                                    ? paramDict["pre"]
                                     : new EpsilonGrammar(this.cell);
-            const replaceRule = new ReplaceGrammar(this.cell, fromArg, toArg, afterArg, beforeArg);
+            const postArg = "post" in paramDict 
+                                    ? paramDict["post"] 
+                                    : new EpsilonGrammar(this.cell); 
+            const replaceRule = new ReplaceGrammar(this.cell, fromArg, toArg, preArg, postArg);
             replaceRules.push(replaceRule);
         }
 

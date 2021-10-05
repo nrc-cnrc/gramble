@@ -10,7 +10,8 @@ import {
     EqualsHeader, 
     EndsWithHeader, 
     StartsWithHeader, 
-    ContainsHeader
+    ContainsHeader,
+    TagHeader
 } from "../src/headers";
 
 import * as path from 'path';
@@ -109,6 +110,71 @@ describe(`${path.basename(module.filename)}`, function() {
         testIsType(header.child, LiteralHeader, "child");
     });
 
+    describe('Header "pre text"', function() {
+        const header = parseHeaderCell("pre text");
+        testIsType(header, TagHeader);
+
+        if (!(header instanceof TagHeader)) {
+            return;
+        }
+
+        testIsType(header.child, LiteralHeader, "child");
+    });
+    
+    describe('Header "post text"', function() {
+        const header = parseHeaderCell("pre text");
+        testIsType(header, TagHeader);
+
+        if (!(header instanceof TagHeader)) {
+            return;
+        }
+
+        testIsType(header.child, LiteralHeader, "child");
+    });
+    
+    describe('Header "from text"', function() {
+        const header = parseHeaderCell("pre text");
+        testIsType(header, TagHeader);
+
+        if (!(header instanceof TagHeader)) {
+            return;
+        }
+
+        testIsType(header.child, LiteralHeader, "child");
+    });
+    
+    describe('Header "to text"', function() {
+        const header = parseHeaderCell("pre text");
+        testIsType(header, TagHeader);
+
+        if (!(header instanceof TagHeader)) {
+            return;
+        }
+
+        testIsType(header.child, LiteralHeader, "child");
+    });
+    
+    describe('Header "pre(text)"', function() {
+        const header = parseHeaderCell("pre(text)");
+        testIsType(header, TagHeader);
+
+        if (!(header instanceof TagHeader)) {
+            return;
+        }
+
+        testIsType(header.child, LiteralHeader, "child");
+    });
+    
+    describe('Header "(pre text)"', function() {
+        const header = parseHeaderCell("(pre text)");
+        testIsType(header, TagHeader);
+
+        if (!(header instanceof TagHeader)) {
+            return;
+        }
+
+        testIsType(header.child, LiteralHeader, "child");
+    });
     
     describe('Header "blarg text"', function() {
 

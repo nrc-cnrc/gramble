@@ -1243,6 +1243,28 @@ export function Vocab(tape: string, text: string): GrammarComponent {
     return Rep(Lit(tape, text), 0, 0)
 }
 
+
+/**
+  * Replace implements general phonological replacement rules.
+  * 
+  * NOTE: The defaults for this convenience function differ from those 
+  * in the constructor of ReplaceGrammar.  These are the defaults appropriate
+  * for testing, whereas the defaults in ReplaceGrammar are appropriate for
+  * the purposes of converting tabular syntax into grammars.
+  * 
+  * fromTapeName: name of the input (target) tape
+  * toTapeName: name of the output (change) tape
+  * fromState: input (target) State (on fromTape)
+  * toState: output (change) State (on toTape)
+  * preContext: context to match before the target fromState (on fromTape)
+  * postContext: context to match after the target fromState (on fromTape)
+  * beginsWith: set to True to match at the start of fromTape
+  * endsWith: set to True to match at the end of fromTape
+  * minReps: minimum number of times the replace rule is applied; normally 0.
+  * maxReps: maximum number of times the replace rule is applied
+  * maxExtraChars: a character limiter for extra characters at start/end
+  * vocabBypass: do we copy the vocab from the "from" tape to the "to" tape?
+*/
 export function Replace(
     fromState: GrammarComponent, toState: GrammarComponent,
     preContext: GrammarComponent | undefined, postContext: GrammarComponent | undefined,
@@ -1256,25 +1278,6 @@ export function Replace(
         minReps, maxReps, maxExtraChars, vocabBypass);
 }
 
-/**
-  * Replace implements general phonological replacement rules.
-  * 
-  * fromTapeName: name of the input (target) tape
-  * toTapeName: name of the output (change) tape
-  * fromState: input (target) State (on fromTape)
-  * toState: output (change) State (on toTape)
-  * preContext: context to match before the target fromState (on fromTape)
-  * postContext: context to match after the target fromState (on fromTape)
-  * beginsWith: set to True to match at the start of fromTape
-  * endsWith: set to True to match at the end of fromTape
-  * minReps: minimum number of times the replace rule is applied; normally 0.
-  * maxReps: maximum number of times the replace rule is applied
-  * maxExtraChars: a character limiter for extra characters at start/end
-  * repetitionPatch: if True, expand replacement repetition using Uni
-  *     repetitionPatch is a workaround for a bug resulting in a bad interaction
-  *         between the old ConcatState and RepetitionState.
-  *     Note: repetitionPatch may not be true if maxReps > 100
-*/
 export class ReplaceGrammar extends GrammarComponent {
     
     public fromTapeName: string = "__UNKNOWN_TAPE__";
@@ -1290,7 +1293,7 @@ export class ReplaceGrammar extends GrammarComponent {
         public endsWith: boolean = false,
         public minReps: number = 0, 
         public maxReps: number = Infinity,
-        public maxExtraChars: number = 2,
+        public maxExtraChars: number = Infinity,
         public vocabBypass: boolean = true
     ) {
         super(cell);
