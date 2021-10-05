@@ -1,4 +1,4 @@
-import { testGramble, testErrors, sheetFromFile } from "./testUtils";
+import { testGramble, testErrors, sheetFromFile, testHasTapes, testHasVocab } from "./testUtils";
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
@@ -6,18 +6,18 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Simple replace', function() {
 
         const project = sheetFromFile("./tests/csvs/simpleReplace.csv");
-
+        const grammar = project.getGrammar();
         testErrors(project, []);
+
+        testHasTapes(grammar, ['text', 'surface']);
+        testHasVocab(grammar, {text: 2, surface: 3});
+
         testGramble(project, [
-            {"text":"foo","gloss":"run.3SG"},
-            {"text":"foobaz","gloss":"run-2SG"},
-            {"text":"foobar","gloss":"run-1SG"},
-            {"text":"moo","gloss":"jump.3SG"},
-            {"text":"moobaz","gloss":"jump-2SG"},
-            {"text":"moobar","gloss":"jump-1SG"}
+            {"text":"aba","surface":"ava"}
         ]);
     });
 
+    /*
     describe('Replace with a table: op nested underneath', function() {
 
         const project = sheetFromFile("./tests/csvs/replaceWithTableOp.csv");
@@ -66,4 +66,5 @@ describe(`${path.basename(module.filename)}`, function() {
             {"gloss":"jump","text":"baz"}
         ]);
     });
+    */
 });

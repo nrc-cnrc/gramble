@@ -42,7 +42,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 1. Replace e by a in hello: e -> a {1+} || ^h_llo$
     describe('1. Replace e by a in hello: e -> a {1+} || ^h_llo$', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), t1("h"), t1("llo"),
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"),
                                        true, true, 1);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
@@ -54,7 +54,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 2. Replace e by a in hello: e -> a {1+} || h_llo$
     describe('2. Replace e by a in hello: e -> a {1+} || h_llo$', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), t1("h"), t1("llo"),
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"),
                                        false, true, 1, Infinity, 2);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
@@ -79,7 +79,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     // 3. Replace e by a in hello: e -> a {0+} || h_llo$
     describe('3. Replace e by a in hello: e -> a {0+} || h_llo$', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), t1("h"), t1("llo"),
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"),
                                        false, true, 0, Infinity, 2);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
@@ -117,7 +117,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     // 4. Replace e by a in hello: e -> a {1+} || ^h_llo
     describe('4. Replace e by a in hello: e -> a {1+} || ^h_llo', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), t1("h"), t1("llo"),
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"),
                                        true, false, 1, Infinity, 2);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
@@ -141,7 +141,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 5. Replace e by a in hello: e -> a {0+} || ^h_llo
     describe('5. Replace e by a in hello: e -> a {0+} || ^h_llo', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), t1("h"), t1("llo"),
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"),
                                        true, false, 0, Infinity, 2);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
@@ -178,7 +178,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 6. Replace e by a in hello: e -> a {1,5} || h_llo
     describe('6. Replace e by a in hello: e -> a {1,5} || h_llo', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), t1("h"), t1("llo"),
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"),
                                        false, false, 1, 5, 3);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
@@ -224,7 +224,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     // 7. Replace e by a in hel: e -> a {1+} || h_l
     describe('7. Replace e by a in hel: e -> a {1+} || h_l', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), t1("h"), t1("l"),
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        false, false, 1, Infinity, 1);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -273,7 +273,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     // 8. Replace e by a in hel: e -> a {0,2} || h_l
     describe('8. Replace e by a in hel: e -> a {0,2} || h_l', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), t1("h"), t1("l"),
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        false, false, 0, 2, 1);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -324,7 +324,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     // 9. Replace e by a in hel: e -> a {1} || h_l
     describe('9. Replace e by a in hel: e -> a {1} || h_l', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), t1("h"), t1("l"),
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        false, false, 1, 1, 5);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -342,7 +342,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 10. Replace e by a in hel: e -> a {0,3} || h_l
     describe('10. Replace e by a in hel: e -> a {0,3} || h_l', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), t1("h"), t1("l"),
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        false, false, 0, 3, 4);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -367,7 +367,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     // 11. Replace e by a in he: e -> a {0,2} || h_0
     describe('11. Replace e by a in he: e -> a {0,2} || h_0', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), t1("h"), Epsilon(),
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), Epsilon(),
                                        false, false, 0, 2, 2);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
@@ -419,7 +419,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 12. Replace e by a in he: e -> a {0,2} || h_
     describe('12. Replace e by a in he: e -> a {0,2} || h_', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), t1("h"), undefined,
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), undefined,
                                        false, false, 0, 2, 2);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
@@ -469,7 +469,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 13. Replace e by a in he: e -> a {0,2} || _l
     describe('13. Replace e by a in he: e -> a {0,2} || _l', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("a"), undefined, t1("l"),
+        const grammar = Replace(t1("e"), t2("a"), undefined, t1("l"),
                                        false, false, 0, 2, 2);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
@@ -521,7 +521,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 14. Replace e by a: e -> a {0,2} (vocab hel/hal)
     describe('14. Replace e by a: e -> a {0,2} (vocab hel/hal)', function() {
         const grammar = Seq(Vocab('t1', "hl"), Vocab('t2', "hl"),
-                                   Replace("t1", "t2", t1("e"), t2("a"), undefined, undefined,
+                                   Replace(t1("e"), t2("a"), undefined, undefined,
                                            false, false, 0, 2, 1));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -572,7 +572,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 15. Replace e by a: e -> a {0,3} (vocab hel/hal)
     describe('15. Replace e by a: e -> a {0,3} (vocab hel/hal)', function() {
         const grammar = Seq(Vocab('t1', "hl"), Vocab('t2', "hl"),
-                                   Replace("t1", "t2", t1("e"), t2("a"), undefined, undefined,
+                                   Replace(t1("e"), t2("a"), undefined, undefined,
                                            false, false, 0, 3, 2));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -616,7 +616,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 16. Replace e by ee in hel: e -> ee {0,2} || h_l
     describe('16. Replace e by ee in hel: e -> ee {0,2} || h_l', function() {
-        const grammar = Seq(Replace("t1", "t2", t1("e"), t2("ee"), t1("h"), t1("l"),
+        const grammar = Seq(Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        false, false, 0, 2, 1));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -712,7 +712,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 17. Replace e by ee in hel: e -> ee {1+} || ^h_l
     describe('17. Replace e by ee in hel: e -> ee {1+} || ^h_l', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("ee"), t1("h"), t1("l"),
+        const grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        true, false, 1, Infinity, 3);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -763,7 +763,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 18. Replace e by ee in hel: e -> ee {0+} || ^h_l
     describe('18. Replace e by ee in hel: e -> ee {0+} || ^h_l', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("ee"), t1("h"), t1("l"),
+        const grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        true, false, 0, Infinity, 4);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -815,7 +815,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 19. Replace e by ee in hel: e -> ee {1+} || h_l$
     describe('19. Replace e by ee in hel: e -> ee {1+} || h_l$', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("ee"), t1("h"), t1("l"),
+        const grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        false, true, 1, Infinity, 3);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -867,7 +867,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     // 20. Replace e by ee in hel: e -> ee {0+} || h_l$
     describe('20. Replace e by ee in hel: e -> ee {0+} || h_l$', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("ee"), t1("h"), t1("l"),
+        const grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        false, true, 0, Infinity, 4);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -920,7 +920,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 21. Replace e by ee in he: e -> ee {0,2} || h_
     describe('21. Replace e by ee in he: e -> ee {0,2} || h_', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("ee"), t1("h"), undefined,
+        const grammar = Replace(t1("e"), t2("ee"), t1("h"), undefined,
                                        false, false, 0, 2, 1);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
@@ -970,7 +970,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 22. Replace e by ee in el: e -> ee {0,2} || _l
     describe('22. Replace e by ee in el: e -> ee {0,2} || _l', function() {
-        const grammar = Replace("t1", "t2", t1("e"), t2("ee"), undefined, t1("l"),
+        const grammar = Replace(t1("e"), t2("ee"), undefined, t1("l"),
                                        false, false, 0, 2, 1);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
@@ -1023,7 +1023,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 23. Replace e by ee: e -> ee {0,2} (vocab hel/hel)
     describe('23. Replace e by ee: e -> ee {0,2} (vocab hel/hel)', function() {
         const grammar = Seq(Vocab('t1', "hl"), Vocab('t2', "hl"),
-                                   Replace("t1", "t2", t1("e"), t2("ee"), undefined, undefined,
+                                   Replace(t1("e"), t2("ee"), undefined, undefined,
                                            false, false, 0, 2, 1));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -1074,7 +1074,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     // 24. Replace ee by e in heel: ee -> e {0,2} || h_l
     describe('24. Replace ee by e in heel: ee -> e {0,2} || h_l', function() {
-        const grammar = Replace("t1", "t2", t1("ee"), t2("e"), t1("h"), t1("l"),
+        const grammar = Replace(t1("ee"), t2("e"), t1("h"), t1("l"),
                                            false, false, 0, 2, 1);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -1169,7 +1169,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 25. Replace ee by e in hee: ee -> e {0,2} || h_
     describe('25. Replace ee by e in hee: ee -> e {0,2} || h_', function() {
-        const grammar = Replace("t1", "t2", t1("ee"), t2("e"), t1("h"), undefined,
+        const grammar = Replace(t1("ee"), t2("e"), t1("h"), undefined,
                                            false, false, 0, 2, 1);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
@@ -1219,7 +1219,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 26. Replace ee by e in eel: ee -> e {0,2} || _l
     describe('26. Replace e by ee in eel: ee -> e {0,2} || _l', function() {
-        const grammar = Replace("t1", "t2", t1("ee"), t2("e"), undefined, t1("l"),
+        const grammar = Replace(t1("ee"), t2("e"), undefined, t1("l"),
                                            false, false, 0, 2, 1);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
@@ -1271,7 +1271,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 27. Replace ee by e: ee -> e {0,2} (vocab hel/hel)
     describe('27. Replace ee by e: ee -> e {0,2} (vocab hel/hel)', function() {
         const grammar = Seq(Vocab('t1', "hl"), Vocab('t2', "hl"),
-                                   Replace("t1", "t2", t1("ee"), t2("e"), undefined, undefined,
+                                   Replace(t1("ee"), t2("e"), undefined, undefined,
                                            false, false, 0, 2, 1));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -1366,7 +1366,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 28. Insert a in h_l: 0 -> a {0,2} || h_l
     describe('28. Insert a in h_l: 0 -> a {0,2} || h_l', function() {
-        const grammar = Replace("t1", "t2", Epsilon(), t2("a"), t1("h"), t1("l"),
+        const grammar = Replace(t1(""), t2("a"), t1("h"), t1("l"),
                                            false, false, 0, 2, 1);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
@@ -1417,7 +1417,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     // 29. Delete e in hel: e -> 0 {0,2} || h_l
     describe('29. Delete e in hel: e -> 0 {0,2} || h_l', function() {
-        const grammar = Replace("t1", "t2", t1("e"), Epsilon(), t1("h"), t1("l"),
+        const grammar = Replace(t1("e"), t2(""), t1("h"), t1("l"),
                                            false, false, 0, 2, 1);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 2});

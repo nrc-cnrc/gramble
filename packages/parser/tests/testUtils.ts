@@ -155,9 +155,10 @@ export function testHasVocab(
         maxChars: 1000
     }
 
-    const tapes = grammar.calculateTapes(new CounterStack(2));
+    grammar.calculateTapes(new CounterStack(2));
     const tapeCollection = new TapeCollection();
     grammar.collectVocab(tapeCollection);
+    grammar.copyVocab(tapeCollection);
     for (const tapeName in expectedVocab) {
         const tape = tapeCollection.matchTape(tapeName);
         const expectedNum = expectedVocab[tapeName];

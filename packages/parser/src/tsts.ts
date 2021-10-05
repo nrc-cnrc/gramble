@@ -10,7 +10,7 @@
  * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, UnaryGrammar, NullGrammar, GenOptions, SequenceGrammar, JoinGrammar } from "./grammars";
+import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, UnaryGrammar, NullGrammar, GenOptions, SequenceGrammar, JoinGrammar, ReplaceGrammar } from "./grammars";
 import { Cell, CellPos, DummyCell, Gen, StringDict } from "./util";
 import { DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, ParamDict, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
@@ -55,7 +55,7 @@ export abstract class TstComponent {
      * purposes.
      * 
      * This function is like toGrammar(), but instead of returning a single grammar,
-     * returns a dictionary of grammars keyed to parameter names.  Ultimately, only [TstParam]
+     * returns a dictionary of grammars keyed to parameter names.  Ultimately, only [ParamHeader]
      * objects add an actual parameter name; everything else contributes an empty param name
      * "__".
      */
@@ -347,7 +347,7 @@ export class TstReplace extends TstEnclosure {
         
         // we're not actually doing anything with the params yet, just
         // testing that we can actually gather them appropriately.
-        
+
         let params: [Cell, ParamDict][] = [];
         let siblingGrammar: GrammarComponent = new EpsilonGrammar(this.cell);
 
@@ -374,7 +374,39 @@ export class TstReplace extends TstEnclosure {
             siblingGrammar = this.sibling.toGrammar();
         }
 
-        return siblingGrammar;
+        const replaceRules: ReplaceGrammar[] = [];
+
+        for (const [cell, paramDict] of params) {
+            if (!("from" in paramDict)) {
+                this.message({
+                    type: "error",
+                    shortMsg: `Missing 'from' argument to replace'`,
+                    longMsg:"'replace:' requires a 'from' argument (e.g. 'from text')"
+                });
+                continue;
+            }
+            const fromArg = paramDict["from"];
+            if (!("to" in paramDict)) {
+                this.message({
+                    type: "error",
+                    shortMsg: `Missing 'to' argument to replace'`,
+                    longMsg:"'replace:' requires a 'to' argument (e.g. 'to text')"
+                });
+                continue;
+            }
+            const toArg = paramDict["to"];
+            const beforeArg = "before" in paramDict 
+                                    ? paramDict["before"] 
+                                    : new EpsilonGrammar(this.cell); 
+            const afterArg = "after" in paramDict
+                                    ? paramDict["after"]
+                                    : new EpsilonGrammar(this.cell);
+            const replaceRule = new ReplaceGrammar(this.cell, fromArg, toArg, afterArg, beforeArg);
+            replaceRules.push(replaceRule);
+        }
+
+        const replaceAlternation = new AlternationGrammar(this.cell, replaceRules);
+        return new JoinGrammar(this.cell, siblingGrammar, replaceAlternation);
 
     }
 }

@@ -10,5 +10,5 @@ suffix:, table:, text, gloss
 word:, table:, embed, embed
     ,       , verb, suffix
     ,       ,     ,
-    , replace:, table:, from text, to surface
-    ,         ,       , b,  v
+    , replace:, from text, to surface
+    ,         , b,  v

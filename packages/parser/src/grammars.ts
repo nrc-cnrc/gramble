@@ -116,6 +116,16 @@ export abstract class GrammarComponent {
         }
     }
 
+    /**
+     * When necessary, copies existing characters from other tapes into tapes that 
+     * will need them.
+     */
+     public copyVocab(tapes: Tape, stack: string[] = []): void { 
+        for (const child of this.getChildren()) {
+            child.copyVocab(tapes, stack);
+        }
+    }
+
     public runChecks(): void {
         this.qualifyNames();
         this.calculateTapes(new CounterStack(2));
@@ -133,6 +143,7 @@ export abstract class GrammarComponent {
         const tapes = this.calculateTapes(new CounterStack(2));
         const allTapes = new TapeCollection();
         this.collectVocab(allTapes);
+        this.copyVocab(allTapes);
         this.constructExpr({});
         this.runUnitTestsAux(opt);
     }
@@ -196,6 +207,7 @@ export abstract class GrammarComponent {
         
         const allTapes = new TapeCollection();
         this.collectVocab(allTapes);
+        this.copyVocab(allTapes);
         this.constructExpr({});
 
         if (Object.keys(query).length > 0) {
@@ -210,6 +222,7 @@ export abstract class GrammarComponent {
 
         const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
         targetComponent.collectVocab(allTapes); // in case there's more vocab
+        targetComponent.copyVocab(allTapes);
         const expr = targetComponent.constructExpr({});
         
         const prioritizedTapes: Tape[] = [];
@@ -567,6 +580,11 @@ export class RenameGrammar extends UnaryGrammar {
         this.child.collectVocab(tapes, stack);
     }
 
+    public copyVocab(tapes: Tape, stack: string[] = []): void {
+        tapes = new RenamedTape(tapes, this.fromTape, this.toTape);
+        this.child.copyVocab(tapes, stack);
+    }
+
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
             this.tapes = [];
@@ -682,6 +700,11 @@ export class HideGrammar extends UnaryGrammar {
     public collectVocab(tapes: Tape, stack: string[] = []): void {
         tapes = new RenamedTape(tapes, this.tape, this.toTape);
         this.child.collectVocab(tapes, stack);
+    }
+    
+    public copyVocab(tapes: Tape, stack: string[] = []): void {
+        tapes = new RenamedTape(tapes, this.tape, this.toTape);
+        this.child.copyVocab(tapes, stack);
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -909,6 +932,12 @@ export class NamespaceGrammar extends GrammarComponent {
         }
     }
 
+    public copyVocab(tapes: Tape, stack: string[] = []): void {
+        for (const child of this.symbols.values()) {
+            child.copyVocab(tapes, stack);
+        }
+    }
+
     public constructExpr(symbols: {[name: string]: Expr}): Expr {
 
         if (this.expr == undefined) {
@@ -989,6 +1018,17 @@ export class EmbedGrammar extends AtomicGrammar {
         }
         const newStack = [...stack, this.qualifiedName];
         this.referent.collectVocab(tapes, newStack);
+    }
+    
+    public copyVocab(tapes: Tape, stack: string[] = []): void {
+        if (this.referent == undefined) {
+            return; // failed to find the referent, so it's epsilon
+        }
+        if (stack.indexOf(this.qualifiedName) != -1) {
+            return;
+        }
+        const newStack = [...stack, this.qualifiedName];
+        this.referent.copyVocab(tapes, newStack);
     }
 
     public runChecksAux(): void {
@@ -1204,16 +1244,16 @@ export function Vocab(tape: string, text: string): GrammarComponent {
 }
 
 export function Replace(
-    fromTapeName: string, toTapeName: string,
     fromState: GrammarComponent, toState: GrammarComponent,
     preContext: GrammarComponent | undefined, postContext: GrammarComponent | undefined,
     beginsWith: Boolean = false, endsWith: boolean = false,
     minReps: number = 0, maxReps: number = Infinity,
     maxExtraChars: number = 100,
-    repetitionPatch: Boolean = false
+    vocabBypass: boolean = false
 ): GrammarComponent {
-    return new ReplaceGrammar(DUMMY_CELL, fromTapeName, toTapeName, fromState, toState, 
-        preContext, postContext, beginsWith, endsWith, minReps, maxReps, maxExtraChars);
+    return new ReplaceGrammar(DUMMY_CELL, fromState, toState, 
+        preContext, postContext, beginsWith, endsWith, 
+        minReps, maxReps, maxExtraChars, vocabBypass);
 }
 
 /**
@@ -1237,11 +1277,11 @@ export function Replace(
 */
 export class ReplaceGrammar extends GrammarComponent {
     
+    public fromTapeName: string = "__UNKNOWN_TAPE__";
+    public toTapeName: string = "__UNKNOWN_TAPE__";
 
     constructor(
         cell: Cell,
-        public fromTapeName: string, 
-        public toTapeName: string,
         public fromState: GrammarComponent, 
         public toState: GrammarComponent,
         public preContext: GrammarComponent | undefined, 
@@ -1250,7 +1290,8 @@ export class ReplaceGrammar extends GrammarComponent {
         public endsWith: boolean = false,
         public minReps: number = 0, 
         public maxReps: number = Infinity,
-        public maxExtraChars: number = 100,
+        public maxExtraChars: number = 2,
+        public vocabBypass: boolean = true
     ) {
         super(cell);
     }
@@ -1269,9 +1310,31 @@ export class ReplaceGrammar extends GrammarComponent {
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
             this.tapes = super.calculateTapes(stack);
-            this.tapes.push(this.fromTapeName);
-            this.tapes.push(this.toTapeName);
-            this.tapes = listUnique(this.tapes);
+            
+            if (this.toState.tapes == undefined || this.toState.tapes.length != 1) {
+                this.message({
+                    type: "error", 
+                    shortMsg: "Only 1-tape 'to' allowed", 
+                    longMsg: `The 'to' argument of a replacement can only reference 1 tape; this references ${this.toState.tapes?.length}.`
+                });
+            } else {
+                this.toTapeName = this.toState.tapes[0];
+            }
+
+            
+            if (this.fromState.tapes == undefined || this.fromState.tapes.length != 1) {
+                this.message({
+                    type: "error", 
+                    shortMsg: "Only 1-tape 'from' allowed", 
+                    longMsg: `The 'from' argument of a replacement can only reference 1 tape; this references ${this.toState.tapes?.length}.`
+                });
+            } else {
+                this.fromTapeName = this.fromState.tapes[0];
+            }
+            
+            //this.tapes.push(this.fromTapeName);
+            //this.tapes.push(this.toTapeName);
+            //this.tapes = listUnique(this.tapes);
         }
         return this.tapes;
     }
@@ -1279,16 +1342,38 @@ export class ReplaceGrammar extends GrammarComponent {
     public collectVocab(tapes: Tape, stack: string[] = []): void {
         // first, collect vocabulary as normal
         super.collectVocab(tapes, stack);
-        tapes.tokenize(this.fromTapeName, "");
-        tapes.tokenize(this.toTapeName, "");
+        //tapes.tokenize(this.fromTapeName, "");
+        //tapes.tokenize(this.toTapeName, "");
 
         // however, we also need to collect vocab from the contexts as if it were on the toTape
         tapes = new RenamedTape(tapes, this.fromTapeName, this.toTapeName);
+        
+        if (this.vocabBypass) {
+            this.fromState.collectVocab(tapes, stack);
+        }
         if (this.preContext != undefined) {
             this.preContext.collectVocab(tapes, stack);
         }
         if (this.postContext != undefined) {
             this.postContext.collectVocab(tapes, stack);
+        }
+    }
+
+    public copyVocab(tapes: Tape, stack: string[] = []): void { 
+        super.copyVocab(tapes, stack);
+        if (this.vocabBypass) {
+            const fromTape = tapes.matchTape(this.fromTapeName);
+            if (fromTape == undefined) {
+                throw new Error(`Cannot find origin tape ${this.fromTapeName} during vocab copy`);
+            }
+            const toTape = tapes.matchTape(this.toTapeName);
+            if (toTape == undefined) {
+                throw new Error(`Cannot find destination tape ${this.toTapeName} during vocab copy`);
+            }
+            const fromVocab: string[] = fromTape.fromToken(this.fromTapeName, fromTape.any());
+            for (const token of fromVocab) {
+                toTape.tokenize(this.toTapeName, token);
+            }
         }
     }
 
@@ -1318,12 +1403,14 @@ export class ReplaceGrammar extends GrammarComponent {
             states.push(constructMatchFrom(this.fromTapeName, this.toTapeName, postContextExpr));
         }
 
-        var sameVocab: boolean = false;
-        const tapeCollection: TapeCollection = this.getAllTapes();
-        const fromTape: Tape | undefined = tapeCollection.matchTape(this.fromTapeName);
-        if (fromTape != undefined) {
-            const fromVocab: string[] = fromTape.fromToken(this.fromTapeName, fromTape.any());
-            sameVocab = tapeCollection.inVocab(this.toTapeName, fromVocab);
+        var sameVocab: boolean = this.vocabBypass;
+        if (!sameVocab) {
+            const tapeCollection: TapeCollection = this.getAllTapes();
+            const fromTape: Tape | undefined = tapeCollection.matchTape(this.fromTapeName);
+            if (fromTape != undefined) {
+                const fromVocab: string[] = fromTape.fromToken(this.fromTapeName, fromTape.any());
+                sameVocab = tapeCollection.inVocab(this.toTapeName, fromVocab);
+            }
         }
 
         const that = this;

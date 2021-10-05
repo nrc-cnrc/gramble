@@ -213,7 +213,19 @@ abstract class UnaryHeader extends Header {
 
 
 /**
- * Header that constructs optional parsers, e.g. "maybe text"
+ * Header that tags its content as "from" for the purposes of
+ * named parameters.
+ */
+ export class FromHeader extends UnaryHeader {
+
+    public getParamName(): string {
+        return "from";
+    }
+}
+
+/**
+ * Header that tags its content as "to" for the purposes of
+ * named parameters.
  */
  export class ToHeader extends UnaryHeader {
 
@@ -223,7 +235,8 @@ abstract class UnaryHeader extends Header {
 }
 
 /**
- * Header that constructs optional parsers, e.g. "maybe text"
+ * Header that tags its content as "before" for the purposes of
+ * named parameters.
  */
  export class BeforeHeader extends UnaryHeader {
 
@@ -233,7 +246,8 @@ abstract class UnaryHeader extends Header {
 }
 
 /**
- * Header that constructs optional parsers, e.g. "maybe text"
+ * Header that tags its content as "after" for the purposes of
+ * named parameters.
  */
  export class AfterHeader extends UnaryHeader {
 
@@ -521,6 +535,7 @@ export const RESERVED_HEADERS = [
     "startswith", 
     "endswith", 
     "contains",
+    "from",
     "to",
     "before",
     "after"
@@ -550,10 +565,10 @@ function tokenize(text: string): string[] {
 
 var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlternation(
-        HP_MAYBE, HP_TO, HP_BEFORE, 
-        HP_AFTER, HP_SLASH, HP_RENAME, 
-        HP_EQUALS, HP_STARTSWITH, HP_ENDSWITH, 
-        HP_CONTAINS, HP_SUBEXPR)
+        HP_MAYBE, HP_FROM, HP_TO, 
+        HP_BEFORE, HP_AFTER, HP_SLASH, 
+        HP_RENAME, HP_EQUALS, HP_STARTSWITH, 
+        HP_ENDSWITH, HP_CONTAINS, HP_SUBEXPR)
 );
 
 var HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
@@ -599,6 +614,12 @@ const HP_REVEAL = MPSequence<Header>(
 const HP_MAYBE = MPSequence<Header>(
     ["maybe", HP_NON_COMMENT_EXPR],
     (child) => new MaybeHeader(child)
+);
+
+
+const HP_FROM = MPSequence<Header>(
+    ["from", HP_NON_COMMENT_EXPR],
+    (child) => new FromHeader(child)
 );
 
 const HP_TO = MPSequence<Header>(
