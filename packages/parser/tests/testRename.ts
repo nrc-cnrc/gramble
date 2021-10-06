@@ -21,7 +21,7 @@ import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe('Rename(t2/t1) of t1:hello', function() {
+    describe('Rename(t1->t2 of t1:hello', function() {
         const grammar = Rename(t1("hello"), "t1", "t2");
         testHasTapes(grammar, ["t2"]);
         //testHasNoVocab(grammar, "t1");
@@ -29,7 +29,14 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t2: "hello"}]);
     });
 
-    //
+    describe('Rename(t1->t1 of t1:hello', function() {
+        const grammar = Rename(t1("hello"), "t1", "t1");
+        testHasTapes(grammar, ["t1"]);
+        //testHasNoVocab(grammar, "t1");
+        //testHasVocab(grammar, {t2: 4});
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
     describe('Rename(t2/t1) of t1:hi+t2:wo', function() {
         const grammar = Rename(Seq(t1("hi"), t2("wo")), "t1", "t2");
         testHasTapes(grammar, ["t2"]);

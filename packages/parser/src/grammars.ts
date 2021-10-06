@@ -617,7 +617,7 @@ export class RenameGrammar extends UnaryGrammar {
             });
         }
 
-        if (this.child.tapes.indexOf(this.toTape) != -1) {   
+        if (this.fromTape != this.toTape && this.child.tapes.indexOf(this.toTape) != -1) {   
             this.message({
                 type: "error", 
                 shortMsg: "Destination tape already exists",
@@ -1323,7 +1323,6 @@ export class ReplaceGrammar extends GrammarComponent {
             } else {
                 this.toTapeName = this.toState.tapes[0];
             }
-
             
             if (this.fromState.tapes == undefined || this.fromState.tapes.length != 1) {
                 this.message({

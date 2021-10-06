@@ -93,4 +93,5 @@ describe(`${path.basename(module.filename)}`, function() {
             {"gloss":"jump","text":"baz"}
         ]);
     });
+
 });

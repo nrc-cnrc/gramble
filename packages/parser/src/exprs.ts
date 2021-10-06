@@ -1087,7 +1087,7 @@ class RenameExpr extends UnaryExpr {
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
-        if (tape.tapeName == this.fromTape) {
+        if (tape.tapeName != this.toTape && tape.tapeName == this.fromTape) {
             return this;
         }
         tape = new RenamedTape(tape, this.fromTape, this.toTape);
@@ -1105,7 +1105,7 @@ class RenameExpr extends UnaryExpr {
         stack: CounterStack
     ): Gen<[Tape, Token, Expr]> {
 
-        if (tape.tapeName == this.fromTape) {
+        if (tape.tapeName != this.toTape && tape.tapeName == this.fromTape) {
             return;
         }
 
