@@ -1211,9 +1211,10 @@ export function MatchDotStar2(...tapes: string[]): MatchGrammar {
     return MatchDotRep2(0, Infinity, ...tapes)
 }
 
-export function MatchFrom(firstTape: string, secondTape: string, state: GrammarComponent): MatchGrammar {
-    return Match(Seq(state, Rename(state, firstTape, secondTape)),
-                 firstTape, secondTape);
+export function MatchFrom(state:GrammarComponent, firstTape: string, ...otherTapes: string[]): MatchGrammar {
+    // Construct a Match for multiple tapes given a grammar for the first tape. 
+    return Match(Seq(state, ...otherTapes.map((t: string) => Rename(state, firstTape, t))),
+                 firstTape, ...otherTapes);
 }
 
 export function Rename(child: GrammarComponent, fromTape: string, toTape: string): RenameGrammar {
@@ -1396,13 +1397,13 @@ export class ReplaceGrammar extends GrammarComponent {
         if (this.preContext != undefined) {
             preContextExpr = this.preContext.constructExpr(symbolTable);
             grammars.push(this.preContext);
-            states.push(constructMatchFrom(this.fromTapeName, this.toTapeName, preContextExpr));
+            states.push(constructMatchFrom(preContextExpr, this.fromTapeName, this.toTapeName));
         }
         states.push(fromExpr, toExpr);
         if (this.postContext != undefined) {
             postContextExpr = this.postContext.constructExpr(symbolTable);
             grammars.push(this.postContext);
-            states.push(constructMatchFrom(this.fromTapeName, this.toTapeName, postContextExpr));
+            states.push(constructMatchFrom(postContextExpr, this.fromTapeName, this.toTapeName));
         }
 
         var sameVocab: boolean = this.vocabBypass;
@@ -1428,7 +1429,7 @@ export class ReplaceGrammar extends GrammarComponent {
             //    or end of text (endsWith) then matchAnythingElse needs to match any
             //    other instances of the replacement pattern, so we need to match .*
             if( !sameVocab || (that.beginsWith && !replaceNone) || (that.endsWith && !replaceNone)) {
-                return constructMatchFrom(that.fromTapeName, that.toTapeName, dotStar)
+                return constructMatchFrom(dotStar, that.fromTapeName, that.toTapeName)
             }
             var fromInstance: Expr[] = [];
             if (preContextExpr != undefined)
@@ -1461,7 +1462,7 @@ export class ReplaceGrammar extends GrammarComponent {
                 notState = constructNegation(constructSequence(dotStar, ...fromInstance), new Set(negatedTapes), that.maxExtraChars);
             else
                 notState = constructNegation(constructSequence(dotStar, ...fromInstance, dotStar), new Set(negatedTapes), that.maxExtraChars);
-            return constructMatchFrom(that.fromTapeName, that.toTapeName, notState)
+            return constructMatchFrom(notState, that.fromTapeName, that.toTapeName)
         }
         
         if (!this.endsWith)

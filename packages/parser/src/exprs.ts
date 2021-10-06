@@ -1260,18 +1260,9 @@ export class MatchExpr extends UnaryExpr {
 
                 // STEP B: If not, constrain my successors to match this on other tapes
                 const newBuffers: {[key: string]: Expr} = {};
-                //Object.assign(newBuffers, this.buffers);
-                if (!c1bufMatched) {
-                    for (const tapeName of this.tapes.keys()) {
-                        const buffer = this.buffers[tapeName];
-                        if (tapeName == c1tape.tapeName) {
-                            // we're going to match it in a moment, don't need to match
-                            // it again!
-                            if (buffer != undefined) {
-                                newBuffers[tapeName] = buffer;
-                            }
-                            continue;
-                        }
+                for (const tapeName of this.tapes.keys()) {
+                    const buffer = this.buffers[tapeName];
+                    if (!c1bufMatched && tapeName != c1tape.tapeName) {
                         var prevText: string[] = [];
                         if (buffer instanceof LiteralExpr) {
                             // that means we already found stuff we needed to match,
@@ -1279,6 +1270,10 @@ export class MatchExpr extends UnaryExpr {
                             prevText = buffer.getText();
                         }
                         newBuffers[tapeName] = constructLiteral(tapeName, [...prevText, c]);
+                    } else {
+                        if (buffer != undefined) {
+                            newBuffers[tapeName] = buffer;
+                        }
                     }
                 }
                 
@@ -1516,9 +1511,11 @@ export function constructMatch(
 }
 
 
-export function constructMatchFrom(firstTape: string, secondTape: string, state: Expr): Expr {
-    return constructMatch(constructSequence(state, constructRename(state, firstTape, secondTape)),
-                 new Set([firstTape, secondTape]));
+export function constructMatchFrom(state: Expr, firstTape: string, ...otherTapes: string[]): Expr {
+    // Construct a Match for multiple tapes given a expression for the first tape. 
+    return constructMatch(constructSequence(state,
+                            ...otherTapes.map((t: string) => constructRename(state, firstTape, t))),
+                          new Set([firstTape, ...otherTapes]));
 }
 
 export function constructRename(
