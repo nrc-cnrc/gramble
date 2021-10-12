@@ -52,6 +52,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
 
+    /*
     // 2. Replace e by a in hello: e -> a {1+} || h_llo$
     describe('2. Replace e by a in hello: e -> a {1+} || h_llo$', function() {
         const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"),
@@ -1464,4 +1465,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
+
+    */
 });

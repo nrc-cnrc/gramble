@@ -11,6 +11,13 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
+    describe('hide(t2) of t1:hello', function() {
+        const grammar = Hide(t1("hello"), "t2");
+        testHasTapes(grammar, ["t1"]);
+        //testHasVocab(grammar, {t1: 4});
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
     describe('hide(t2, t1:hello+t2:foo)+t2:bar', function() {
         const grammar = Seq(Hide(Seq(t1("hello"), t2("fooo")), "t2"),
                             t2("bar"));

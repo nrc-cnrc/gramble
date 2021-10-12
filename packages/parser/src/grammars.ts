@@ -101,6 +101,8 @@ export abstract class GrammarComponent {
         this.cell.message(msg);
     }
 
+    public abstract acceptTransformation(t: GrammarTransformation): GrammarComponent;
+    
     public abstract getChildren(): GrammarComponent[];
 
     /**
@@ -198,7 +200,11 @@ export abstract class GrammarComponent {
 
         //console.log(`compiling`);
         this.qualifyNames();
-        const tapes = this.calculateTapes(new CounterStack(2));
+        this.calculateTapes(new CounterStack(2));
+
+        const transformation = new GrammarTransformation();
+        this.acceptTransformation(transformation);
+        this.calculateTapes(new CounterStack(2));
 
         let targetComponent = this.getSymbol(symbolName);
         if (targetComponent == undefined) {
@@ -246,6 +252,10 @@ abstract class AtomicGrammar extends GrammarComponent {
 
 export class EpsilonGrammar extends AtomicGrammar {
 
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformEpsilon(this);
+    }
+
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
             this.tapes = [];
@@ -262,6 +272,10 @@ export class EpsilonGrammar extends AtomicGrammar {
 }
 
 export class NullGrammar extends AtomicGrammar {
+
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformNull(this);
+    }
 
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
@@ -281,6 +295,10 @@ export class NullGrammar extends AtomicGrammar {
 export class LiteralGrammar extends AtomicGrammar {
 
     protected tokens: string[] = [];
+    
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformLiteral(this);
+    }
 
     constructor(
         cell: Cell,
@@ -317,6 +335,10 @@ export class DotGrammar extends AtomicGrammar {
     ) {
         super(cell);
     }
+    
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformDot(this);
+    }
 
     public collectVocab(tapes: Tape, stack: string[] = []): void {
         tapes.tokenize(this.tape, "");
@@ -352,6 +374,10 @@ abstract class NAryGrammar extends GrammarComponent {
 }
 
 export class SequenceGrammar extends NAryGrammar {
+    
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformSequence(this);
+    }
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {        
@@ -382,6 +408,10 @@ export class SequenceGrammar extends NAryGrammar {
 
 export class AlternationGrammar extends NAryGrammar {
 
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformAlternation(this);
+    }
+
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
             const childExprs = this.children.map(s => s.constructExpr(symbols));
@@ -407,6 +437,10 @@ abstract class BinaryGrammar extends GrammarComponent {
 }
 
 export class IntersectionGrammar extends BinaryGrammar {
+    
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformIntersection(this);
+    }
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
@@ -428,6 +462,10 @@ function fillOutWithDotStar(state: Expr, tapes: string[]) {
 } */
 
 export class JoinGrammar extends BinaryGrammar {
+
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformJoin(this);
+    }
 
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
@@ -456,6 +494,10 @@ export class JoinGrammar extends BinaryGrammar {
 }
 
 export class FilterGrammar extends BinaryGrammar {
+
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformFilter(this);
+    }
 
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
@@ -488,6 +530,10 @@ export class FilterGrammar extends BinaryGrammar {
 
 export class StartsWithGrammar extends FilterGrammar {
 
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformStartsWith(this);
+    }
+
     protected constructFilter(symbols: SymbolTable) {
         if (this.child2.tapes == undefined) {
             throw new Error("Getting Brz expression with undefined tapes");
@@ -507,6 +553,10 @@ export class StartsWithGrammar extends FilterGrammar {
 
 export class EndsWithGrammar extends FilterGrammar {
 
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformEndsWith(this);
+    }
+
     protected constructFilter(symbols: SymbolTable) {
         if (this.child2.tapes == undefined) {
             throw new Error("Getting Brz expression with undefined tapes");
@@ -525,6 +575,10 @@ export class EndsWithGrammar extends FilterGrammar {
 
 
 export class ContainsGrammar extends FilterGrammar {
+
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformContains(this);
+    }
 
     protected constructFilter(symbols: SymbolTable) {
         if (this.child2.tapes == undefined) {
@@ -552,6 +606,10 @@ export class UnaryGrammar extends GrammarComponent {
         super(cell);
     }
 
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformUnary(this);
+    }
+
     public getChildren(): GrammarComponent[] { 
         return [this.child]; 
     }
@@ -573,6 +631,10 @@ export class RenameGrammar extends UnaryGrammar {
         public toTape: string
     ) {
         super(cell, child);
+    }
+    
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformRename(this);
     }
 
     public collectVocab(tapes: Tape, stack: string[] = []): void {
@@ -645,6 +707,10 @@ export class RepeatGrammar extends UnaryGrammar {
     ) {
         super(cell, child);
     }
+    
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformRepeat(this);
+    }
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
@@ -663,6 +729,10 @@ export class NegationGrammar extends UnaryGrammar {
         public maxReps: number = Infinity
     ) {
         super(cell, child);
+    }
+
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformNegation(this);
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
@@ -687,7 +757,7 @@ export class HideGrammar extends UnaryGrammar {
         cell: Cell,
         child: GrammarComponent,
         public tape: string,
-        name: string = ""
+        public name: string = ""
     ) {
         super(cell, child);
         if (name == "") {
@@ -780,6 +850,10 @@ export class NamespaceGrammar extends GrammarComponent {
     public qualifiedNames: Map<string, string> = new Map();
     public symbols: Map<string, GrammarComponent> = new Map();
     public default: GrammarComponent = new EpsilonGrammar(DUMMY_CELL);
+
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformNamespace(this);
+    }
 
     public addSymbol(symbolName: string, component: GrammarComponent): void {
 
@@ -975,6 +1049,10 @@ export class EmbedGrammar extends AtomicGrammar {
     ) {
         super(cell);
         this.qualifiedName = name;
+    }
+
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformEmbed(this);
     }
 
     public qualifyNames(nsStack: NamespaceGrammar[] = []): string[] {
@@ -1278,10 +1356,120 @@ export function Replace(
         minReps, maxReps, maxExtraChars, vocabBypass);
 }
 
+
+/**
+ * JoinReplace is a special kind of join that understands how
+ * tape renaming has to work in the case of replace rules
+ */
+export class JoinReplaceGrammar extends GrammarComponent {
+
+    //public renameTapeName: string | undefined = undefined;
+    public fromTapeName: string | undefined = undefined;
+    //public renamedChild: GrammarComponent | undefined = undefined;
+    protected ruleTapes: string[] = [];
+
+    constructor(
+        cell: Cell,
+        public child: GrammarComponent,
+        public rules: ReplaceGrammar[]
+    ) {
+        super(cell);
+    }
+
+    
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformJoinReplace(this);
+    }
+
+    public getChildren(): GrammarComponent[] {
+        return [ this.child, ...this.rules ];
+    }
+    
+    public calculateTapes(stack: CounterStack): string[] {
+        if (this.tapes == undefined) {
+
+            for (const rule of this.rules) {
+                // iterate through the rules to see what tape (if any) needs to be hidden
+                this.ruleTapes.push(...rule.calculateTapes(stack));
+
+                //console.log(`rule fromtape = ${rule.fromTapeName}, rule renametape = ${rule.renameTapeName}`);
+                if (rule.fromTapeName != undefined) {
+                    if (this.fromTapeName != undefined && this.fromTapeName != rule.fromTapeName) {
+                        rule.message({
+                            type: "error",
+                            shortMsg: "Inconsistent fields in to/from",
+                            longMsg: "Each rule in a block of rules needs to " +
+                              "agree on what the to/from fields are. "
+                        });
+                        continue;
+                    }
+                    this.fromTapeName = rule.fromTapeName;
+                }
+
+                /*
+                if (rule.renameTapeName != undefined) {
+                    if (this.renameTapeName != undefined && this.renameTapeName != rule.renameTapeName) {
+                        rule.message({
+                            type: "error",
+                            shortMsg: "Inconsistent fields in to/from",
+                            longMsg: "Each rule in a block of rules needs to " +
+                              "agree on what the to/from fields are. "
+                        });
+                        continue;
+                    }
+                    this.renameTapeName = rule.renameTapeName;
+                }
+                */
+            }
+
+            //console.log(`renamed tape name is ${this.renameTapeName}`);
+
+            /*
+            if (this.fromTapeName == undefined || this.renameTapeName == undefined) {
+                this.message({
+                    type: "error",
+                    shortMsg: "Unclear 'from' field.",
+                    longMsg: "It's unclear here what field should be considered " +
+                      "the 'from' field for the purposes of these replacement rules."
+                });
+                this.renamedChild = this.child;
+            } else {
+                this.renamedChild = new RenameGrammar(this.cell, this.child, this.fromTapeName, this.renameTapeName);
+            }
+            */
+
+            const childTapes = this.child.calculateTapes(stack);
+            this.tapes = listUnique([...childTapes, ...this.ruleTapes]);
+        }
+        return this.tapes;
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const ruleExprs = this.rules.map(r => r.constructExpr(symbols));
+            const ruleExpr = constructAlternation(...ruleExprs);
+
+            /*
+            if (this.renamedChild == undefined || this.renamedChild.tapes == undefined) {
+                throw new Error(`Constructing JoinReplace grammar without having calculated tapes`);
+            } */
+            this.expr = constructJoin(this.child.constructExpr(symbols), 
+                                    ruleExpr,
+                                    new Set(this.child.tapes),
+                                    new Set(this.ruleTapes));
+        }
+        return this.expr;
+    }
+}
+
+
+let REPLACE_INDEX: number = 0;
+
 export class ReplaceGrammar extends GrammarComponent {
     
     public fromTapeName: string = "__UNKNOWN_TAPE__";
     public toTapeName: string = "__UNKNOWN_TAPE__";
+    public renameTapeName: string = "__UNKNOWN_TAPE__";
 
     constructor(
         cell: Cell,
@@ -1299,6 +1487,10 @@ export class ReplaceGrammar extends GrammarComponent {
         super(cell);
     }
 
+    public acceptTransformation(t: GrammarTransformation): GrammarComponent {
+        return t.transformReplace(this);
+    }
+
     public getChildren(): GrammarComponent[] { 
         const children: GrammarComponent[] = [this.fromState, this.toState]; 
         if (this.preContext != undefined) {
@@ -1313,7 +1505,6 @@ export class ReplaceGrammar extends GrammarComponent {
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
             this.tapes = super.calculateTapes(stack);
-            
             if (this.toState.tapes == undefined || this.toState.tapes.length != 1) {
                 this.message({
                     type: "error", 
@@ -1323,7 +1514,6 @@ export class ReplaceGrammar extends GrammarComponent {
             } else {
                 this.toTapeName = this.toState.tapes[0];
             }
-            
             if (this.fromState.tapes == undefined || this.fromState.tapes.length != 1) {
                 this.message({
                     type: "error", 
@@ -1577,3 +1767,136 @@ export function Replace(
     return(Uni(matchAnythingElse(true), replaceState));
 }
 */
+
+class GrammarTransformation {
+
+    public transformEpsilon(g: EpsilonGrammar): GrammarComponent {
+        return g;
+    }
+
+    public transformNull(g: NullGrammar): GrammarComponent {
+        return g;
+    }
+
+    public transformLiteral(g: LiteralGrammar): GrammarComponent {
+        return g;
+    }
+
+    public transformDot(g: DotGrammar): GrammarComponent {
+        return g;
+    }
+
+    public transformSequence(g: SequenceGrammar): GrammarComponent {
+        const newChildren = g.children.map(c => c.acceptTransformation(this));
+        return new SequenceGrammar(g.cell, newChildren);
+    }
+
+    public transformAlternation(g: AlternationGrammar): GrammarComponent {
+        const newChildren = g.children.map(c => c.acceptTransformation(this));
+        return new AlternationGrammar(g.cell, newChildren);
+    }
+
+    public transformIntersection(g: IntersectionGrammar): GrammarComponent {
+        const newChild1 = g.child1.acceptTransformation(this);
+        const newChild2 = g.child2.acceptTransformation(this);
+        return new IntersectionGrammar(g.cell, newChild1, newChild2);
+    }
+
+    public transformJoin(g: JoinGrammar): GrammarComponent {
+        const newChild1 = g.child1.acceptTransformation(this);
+        const newChild2 = g.child2.acceptTransformation(this);
+        return new JoinGrammar(g.cell, newChild1, newChild2);     
+    }
+
+    public transformFilter(g: FilterGrammar): GrammarComponent {
+        const newChild1 = g.child1.acceptTransformation(this);
+        const newChild2 = g.child2.acceptTransformation(this);
+        return new FilterGrammar(g.cell, newChild1, newChild2);
+    }
+
+    public transformStartsWith(g: StartsWithGrammar): GrammarComponent {
+        const newChild1 = g.child1.acceptTransformation(this);
+        const newChild2 = g.child2.acceptTransformation(this);
+        return new StartsWithGrammar(g.cell, newChild1, newChild2);
+    }
+
+    public transformEndsWith(g: EndsWithGrammar): GrammarComponent {
+        const newChild1 = g.child1.acceptTransformation(this);
+        const newChild2 = g.child2.acceptTransformation(this);
+        return new EndsWithGrammar(g.cell, newChild1, newChild2);
+    }
+
+    public transformContains(g: ContainsGrammar): GrammarComponent {
+        const newChild1 = g.child1.acceptTransformation(this);
+        const newChild2 = g.child2.acceptTransformation(this);
+        return new ContainsGrammar(g.cell, newChild1, newChild2);
+    }
+
+    public transformMatch(g: MatchGrammar): GrammarComponent {
+        const newChild = g.child.acceptTransformation(this);
+        return new MatchGrammar(g.cell, newChild, g.relevantTapes);
+    }
+
+    public transformReplace(g: ReplaceGrammar): GrammarComponent {
+        const newFrom = g.fromState.acceptTransformation(this);
+        const newTo = g.fromState.acceptTransformation(this);
+        const newPre = g.preContext?.acceptTransformation(this);
+        const newPost = g.postContext?.acceptTransformation(this);
+        return new ReplaceGrammar(g.cell, newFrom, newTo, newPre, newPost,
+            g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars,
+            g.vocabBypass);
+    }
+    
+    public transformEmbed(g: EmbedGrammar): GrammarComponent {
+        return g;
+    }
+
+    public transformNamespace(g: NamespaceGrammar): GrammarComponent {
+        const result = new NamespaceGrammar(g.cell, g.name);
+        for (const [name, child] of g.symbols) {
+            const newChild = child.acceptTransformation(this);
+            result.addSymbol(name, newChild);
+        }
+        return result;
+    }
+
+    public transformRepeat(g: RepeatGrammar): GrammarComponent {
+        const newChild = g.child.acceptTransformation(this);
+        return new RepeatGrammar(g.cell, newChild, g.minReps, g.maxReps);
+    }
+
+    public transformUnary(g: UnaryGrammar): GrammarComponent {
+        const newChild = g.child.acceptTransformation(this);
+        return new UnaryGrammar(g.cell, newChild);
+    }
+
+    public transformJoinReplace(g: JoinReplaceGrammar): GrammarComponent {
+        const newChild = g.child.acceptTransformation(this);
+        const newRules = g.rules.map(r => r.acceptTransformation(this));
+        return new JoinReplaceGrammar(g.cell, newChild, 
+            newRules as ReplaceGrammar[]);
+    }
+
+    public transformNegation(g: NegationGrammar): GrammarComponent {
+        const newChild = g.child.acceptTransformation(this);
+        return new NegationGrammar(g.cell, newChild, g.maxReps);
+    }
+
+    public transformRename(g: RenameGrammar): GrammarComponent {
+        const newChild = g.child.acceptTransformation(this);
+        return new RenameGrammar(g.cell, newChild, g.fromTape, g.toTape);
+    }
+
+    public transformHide(g: HideGrammar): GrammarComponent {
+        const newChild = g.child.acceptTransformation(this);
+        return new HideGrammar(g.cell, newChild, g.tape, g.name);
+    }
+}
+
+class ReplaceTapeTransformation {
+
+
+
+
+
+}

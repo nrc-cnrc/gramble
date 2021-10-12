@@ -10,7 +10,7 @@
  * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, UnaryGrammar, NullGrammar, GenOptions, SequenceGrammar, JoinGrammar, ReplaceGrammar } from "./grammars";
+import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, UnaryGrammar, NullGrammar, GenOptions, SequenceGrammar, JoinGrammar, ReplaceGrammar, JoinReplaceGrammar } from "./grammars";
 import { Cell, CellPos, DummyCell, Gen, StringDict } from "./util";
 import { DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, ParamDict, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
@@ -405,9 +405,8 @@ export class TstReplace extends TstEnclosure {
             replaceRules.push(replaceRule);
         }
 
-        const replaceAlternation = new AlternationGrammar(this.cell, replaceRules);
-        return new JoinGrammar(this.cell, siblingGrammar, replaceAlternation);
-
+        //const replaceAlternation = new AlternationGrammar(this.cell, replaceRules);
+        return new JoinReplaceGrammar(this.cell, siblingGrammar, replaceRules);
     }
 }
 

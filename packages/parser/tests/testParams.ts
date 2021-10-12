@@ -11,6 +11,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    /*
     describe('Simple replace with pre', function() {
         const project = sheetFromFile("./tests/csvs/replaceWithPre.csv");
         testErrors(project, []);
@@ -93,5 +94,5 @@ describe(`${path.basename(module.filename)}`, function() {
             {"gloss":"jump","text":"baz"}
         ]);
     });
-
+    */
 });
