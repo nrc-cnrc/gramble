@@ -336,4 +336,8 @@ export class SheetCell implements Cell {
     public get pos(): CellPos {
         return new CellPos(this.sheet.name, this.row, this.col);
     } 
+
+    public get id(): string {
+        return `${this.sheet.name}:${this.row}:${this.col}`;
+    }
 }

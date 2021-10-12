@@ -202,19 +202,22 @@ export abstract class GrammarComponent {
         this.qualifyNames();
         this.calculateTapes(new CounterStack(2));
 
-        const transformation = new GrammarTransformation();
-        this.acceptTransformation(transformation);
-        this.calculateTapes(new CounterStack(2));
+        const transformation = new ReplaceTapeTransformation();
+        const transformedThis = this.acceptTransformation(transformation);
 
-        let targetComponent = this.getSymbol(symbolName);
+        // recalc internal the state after transformation
+        transformedThis.qualifyNames();
+        transformedThis.calculateTapes(new CounterStack(2));
+
+        let targetComponent = transformedThis.getSymbol(symbolName);
         if (targetComponent == undefined) {
             throw new Error(`Missing symbol: ${symbolName}`);
         }
-        
+
         const allTapes = new TapeCollection();
-        this.collectVocab(allTapes);
-        this.copyVocab(allTapes);
-        this.constructExpr({});
+        transformedThis.collectVocab(allTapes);
+        transformedThis.copyVocab(allTapes);
+        transformedThis.constructExpr({});
 
         if (Object.keys(query).length > 0) {
             const queryLiterals: GrammarComponent[] = [];
@@ -1818,7 +1821,7 @@ class GrammarTransformation {
 
     public transformReplace(g: ReplaceGrammar): GrammarComponent {
         const newFrom = g.fromState.acceptTransformation(this);
-        const newTo = g.fromState.acceptTransformation(this);
+        const newTo = g.toState.acceptTransformation(this);
         const newPre = g.preContext?.acceptTransformation(this);
         const newPost = g.postContext?.acceptTransformation(this);
         return new ReplaceGrammar(g.cell, newFrom, newTo, newPre, newPost,
@@ -1872,10 +1875,63 @@ class GrammarTransformation {
     }
 }
 
-class ReplaceTapeTransformation {
+class ReplaceTapeTransformation extends GrammarTransformation{
 
+    public transformJoinReplace(g: JoinReplaceGrammar): GrammarComponent {
+        let newChild = g.child.acceptTransformation(this);
+        const newRules = g.rules.map(r => r.acceptTransformation(this));
 
+        let fromTape: string | undefined = undefined;
+        let replaceTape: string | undefined = undefined;
+        for (const rule of newRules as ReplaceGrammar[]) {
+            const ruleFromTape = (rule.fromState as RenameGrammar).fromTape;
+            const ruleReplaceTape = (rule.fromState as RenameGrammar).toTape;
+            if ((replaceTape != undefined && ruleReplaceTape != replaceTape) ||
+                (fromTape != undefined && fromTape != ruleFromTape)) {
+                rule.message({
+                    type: "error", 
+                    shortMsg: "Incompatible from/to tapes", 
+                    longMsg: `The rule on this line refers to different tapes than previous lines.`
+                });
+                //console.log(`errored`);
+                continue;
+            }
+            fromTape = ruleFromTape;
+            replaceTape = ruleReplaceTape;
+        }
 
+        if (fromTape != undefined && replaceTape != undefined) {
+            //console.log(`JoinReplace: Replacing ${fromTape} with ${replaceTape}`);
+            newChild = new RenameGrammar(newChild.cell, newChild, fromTape, replaceTape);
+        }
 
+        return new JoinReplaceGrammar(g.cell, newChild, newRules as ReplaceGrammar[]);
+    }
+
+    public transformReplace(g: ReplaceGrammar): GrammarComponent {
+
+        if (g.tapes == undefined) {
+            throw new Error(`Performing ReplaceTape transformation without having calculated tapes`);
+        }
+
+        const replaceTapeName = (g.fromTapeName == g.toTapeName) 
+                    ? `__REPLACE${g.cell.id}_${g.fromTapeName}`
+                    : g.fromTapeName;
+
+        //console.log(`Replace: Replacing ${g.fromTapeName} with ${replaceTapeName}`);
+
+        const newFrom = g.fromState.acceptTransformation(this);
+        const newTo = g.toState.acceptTransformation(this);
+        const newPre = g.preContext.acceptTransformation(this);
+        const newPost = g.postContext.acceptTransformation(this);
+
+        const renamedFrom = new RenameGrammar(newFrom.cell, newFrom, g.fromTapeName, replaceTapeName);
+        const renamedPre = new RenameGrammar(newPre.cell, newPre, g.fromTapeName, replaceTapeName);
+        const renamedPost = new RenameGrammar(newPost.cell, newPost, g.fromTapeName, replaceTapeName);
+
+        return new ReplaceGrammar(g.cell, renamedFrom, newTo, renamedPre, renamedPost,
+            g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars,
+            g.vocabBypass);
+    }
 
 }

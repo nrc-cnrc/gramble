@@ -10,8 +10,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"aba","surface":"ava"}
         ]);
     });
-    
-    /*
+
     describe('Simple replace with pre', function() {
         const project = sheetFromFile("./tests/csvs/replaceWithPre.csv");
         testErrors(project, []);
@@ -68,6 +67,23 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"moobar", "surface": "moovar", "gloss":"jump-1SG"}
         ]);
     });
+
+    describe('Replace with same tape name in "to" and "from"', function() {
+        const project = sheetFromFile("./tests/csvs/sameTapeReplace.csv");
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"ava"}
+        ]);
+    });
+    
+    describe('Replace with pre/post and same tape name', function() {
+        const project = sheetFromFile("./tests/csvs/sameTapeReplace.csv");
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"ava"}
+        ]);
+    });
+    
     
     describe('Replace with a test: op nested underneath', function() {
 
@@ -94,5 +110,4 @@ describe(`${path.basename(module.filename)}`, function() {
             {"gloss":"jump","text":"baz"}
         ]);
     });
-    */
 });

@@ -29,12 +29,16 @@ export class CellPos {
 export interface Cell {
 
     message(msg: any): void;
+    readonly id: string;
 
 }
 
 export class DummyCell implements Cell {
 
-    message(msg: any): void { }
+    public message(msg: any): void { }
+    public get id(): string {
+        return "NOWHERE";
+    }
 
 }
 
