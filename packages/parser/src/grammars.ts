@@ -1289,9 +1289,10 @@ export function MatchDotStar2(...tapes: string[]): MatchGrammar {
     return MatchDotRep2(0, Infinity, ...tapes)
 }
 
-export function MatchFrom(firstTape: string, secondTape: string, state: GrammarComponent): MatchGrammar {
-    return Match(Seq(state, Rename(state, firstTape, secondTape)),
-                 firstTape, secondTape);
+export function MatchFrom(state:GrammarComponent, firstTape: string, ...otherTapes: string[]): MatchGrammar {
+    // Construct a Match for multiple tapes given a grammar for the first tape. 
+    return Match(Seq(state, ...otherTapes.map((t: string) => Rename(state, firstTape, t))),
+                 firstTape, ...otherTapes);
 }
 
 export function Rename(child: GrammarComponent, fromTape: string, toTape: string): RenameGrammar {
@@ -1345,7 +1346,7 @@ export function Vocab(tape: string, text: string): GrammarComponent {
 */
 export function Replace(
     fromState: GrammarComponent, toState: GrammarComponent,
-    preContext: GrammarComponent | undefined, postContext: GrammarComponent | undefined,
+    preContext: GrammarComponent = Epsilon(), postContext: GrammarComponent = Epsilon(),
     beginsWith: Boolean = false, endsWith: boolean = false,
     minReps: number = 0, maxReps: number = Infinity,
     maxExtraChars: number = 100,
@@ -1475,8 +1476,8 @@ export class ReplaceGrammar extends GrammarComponent {
         cell: Cell,
         public fromState: GrammarComponent, 
         public toState: GrammarComponent,
-        public preContext: GrammarComponent | undefined, 
-        public postContext: GrammarComponent | undefined,
+        public preContext: GrammarComponent = Epsilon(), 
+        public postContext: GrammarComponent = Epsilon(),
         public beginsWith: Boolean = false, 
         public endsWith: boolean = false,
         public minReps: number = 0, 
@@ -1492,14 +1493,7 @@ export class ReplaceGrammar extends GrammarComponent {
     }
 
     public getChildren(): GrammarComponent[] { 
-        const children: GrammarComponent[] = [this.fromState, this.toState]; 
-        if (this.preContext != undefined) {
-            children.push(this.preContext);
-        }
-        if (this.postContext != undefined) {
-            children.push(this.postContext);
-        }
-        return children;
+        return [this.fromState, this.toState, this.preContext, this.postContext];
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -1543,12 +1537,8 @@ export class ReplaceGrammar extends GrammarComponent {
         if (this.vocabBypass) {
             this.fromState.collectVocab(tapes, stack);
         }
-        if (this.preContext != undefined) {
-            this.preContext.collectVocab(tapes, stack);
-        }
-        if (this.postContext != undefined) {
-            this.postContext.collectVocab(tapes, stack);
-        }
+        this.preContext.collectVocab(tapes, stack);
+        this.postContext.collectVocab(tapes, stack);
     }
 
     public copyVocab(tapes: Tape, stack: string[] = []): void { 
@@ -1576,24 +1566,16 @@ export class ReplaceGrammar extends GrammarComponent {
             this.minReps = Math.min(this.minReps, this.maxReps);
         }
 
-        let preContextExpr: Expr | undefined = undefined;
-        let postContextExpr: Expr | undefined = undefined;
         const fromExpr: Expr = this.fromState.constructExpr(symbolTable);
         const toExpr: Expr = this.toState.constructExpr(symbolTable);
-        var grammars: GrammarComponent[] = [this.fromState, this.toState];
-        var states: Expr[] = [];
-
-        if (this.preContext != undefined) {
-            preContextExpr = this.preContext.constructExpr(symbolTable);
-            grammars.push(this.preContext);
-            states.push(constructMatchFrom(this.fromTapeName, this.toTapeName, preContextExpr));
-        }
-        states.push(fromExpr, toExpr);
-        if (this.postContext != undefined) {
-            postContextExpr = this.postContext.constructExpr(symbolTable);
-            grammars.push(this.postContext);
-            states.push(constructMatchFrom(this.fromTapeName, this.toTapeName, postContextExpr));
-        }
+        const preContextExpr: Expr = this.preContext.constructExpr(symbolTable);
+        const postContextExpr: Expr = this.postContext.constructExpr(symbolTable);
+        const states: Expr[] = [
+            constructMatchFrom(preContextExpr, this.fromTapeName, this.toTapeName),
+            fromExpr,
+            toExpr,
+            constructMatchFrom(postContextExpr, this.fromTapeName, this.toTapeName)
+        ];
 
         var sameVocab: boolean = this.vocabBypass;
         if (!sameVocab) {
@@ -1618,40 +1600,37 @@ export class ReplaceGrammar extends GrammarComponent {
             //    or end of text (endsWith) then matchAnythingElse needs to match any
             //    other instances of the replacement pattern, so we need to match .*
             if( !sameVocab || (that.beginsWith && !replaceNone) || (that.endsWith && !replaceNone)) {
-                return constructMatchFrom(that.fromTapeName, that.toTapeName, dotStar)
+                return constructMatchFrom(dotStar, that.fromTapeName, that.toTapeName)
             }
-            var fromInstance: Expr[] = [];
-            if (preContextExpr != undefined)
-                fromInstance.push(preContextExpr);
-            fromInstance.push(fromExpr);
-            if (postContextExpr != undefined)
-                fromInstance.push(postContextExpr);
-            
+            const fromInstance: Expr[] = [preContextExpr, fromExpr, postContextExpr];
 
             // figure out what tapes need to be negated
             const negatedTapes: string[] = [];
             if (that.fromState.tapes == undefined || 
-                (that.preContext != undefined && that.preContext.tapes == undefined) ||
-                (that.preContext != undefined && that.preContext.tapes == undefined)) {
+                that.preContext.tapes == undefined ||
+                that.postContext.tapes == undefined) {
                 throw new Error("Trying to construct expr for replace before calculating tapes");
             }
             negatedTapes.push(...that.fromState.tapes);
-            if (that.preContext != undefined && that.preContext.tapes != undefined) {
+            if (that.preContext.tapes != undefined) {
                 negatedTapes.push(...that.preContext.tapes);
             }
-            if (that.postContext != undefined && that.postContext.tapes != undefined) {
+            if (that.postContext.tapes != undefined) {
                 negatedTapes.push(...that.postContext.tapes);
             }
 
             var notState: Expr;
             if (that.beginsWith && replaceNone) {
-                notState = constructNegation(constructSequence(...fromInstance, dotStar), new Set(negatedTapes), that.maxExtraChars);
+                notState = constructNegation(constructSequence(...fromInstance, dotStar),
+                                             new Set(negatedTapes), that.maxExtraChars);
             }
             else if (that.endsWith && replaceNone)
-                notState = constructNegation(constructSequence(dotStar, ...fromInstance), new Set(negatedTapes), that.maxExtraChars);
+                notState = constructNegation(constructSequence(dotStar, ...fromInstance),
+                                             new Set(negatedTapes), that.maxExtraChars);
             else
-                notState = constructNegation(constructSequence(dotStar, ...fromInstance, dotStar), new Set(negatedTapes), that.maxExtraChars);
-            return constructMatchFrom(that.fromTapeName, that.toTapeName, notState)
+                notState = constructNegation(constructSequence(dotStar, ...fromInstance, dotStar),
+                                             new Set(negatedTapes), that.maxExtraChars);
+            return constructMatchFrom(notState, that.fromTapeName, that.toTapeName)
         }
         
         if (!this.endsWith)
