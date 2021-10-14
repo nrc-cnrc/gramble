@@ -1,5 +1,5 @@
 import { 
-    AlternationGrammar, ContainsGrammar, EmbedGrammar, EndsWithGrammar, EpsilonGrammar, FilterGrammar, HideGrammar, JoinGrammar, LiteralGrammar, NegationGrammar, RenameGrammar, SequenceGrammar, StartsWithGrammar, Epsilon, GrammarComponent
+    AlternationGrammar, ContainsGrammar, UnresolvedEmbedGrammar, EndsWithGrammar, EpsilonGrammar, FilterGrammar, HideGrammar, JoinGrammar, LiteralGrammar, NegationGrammar, RenameGrammar, SequenceGrammar, StartsWithGrammar, Epsilon, GrammarComponent
 } from "./grammars";
 
 import { CPAlternation, CPNegation, CPResult, CPUnreserved, parseBooleanCell } from "./cells";
@@ -107,7 +107,7 @@ export class EmbedHeader extends AtomicHeader {
         text: string,
         content: Cell
     ): GrammarComponent {
-        const cellGrammar = new EmbedGrammar(content, text);
+        const cellGrammar = new UnresolvedEmbedGrammar(content, text);
         return new SequenceGrammar(content, [left, cellGrammar]);
     }
 

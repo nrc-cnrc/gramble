@@ -345,12 +345,15 @@ export abstract class Expr {
 
             const tapeToTry = tapes[0];
 
-                for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
+                for (const [cTape, cTarget, cNext] of 
+                        prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
+                    //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nexts.push([tapes, nextOutput, cNext, chars+1]);
                 }
 
                 const delta = prevExpr.delta(tapeToTry, stack);
+                //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
                 if (!(delta instanceof NullExpr)) {                    
                     const newTapes = tapes.slice(1);
                     nexts.push([newTapes, prevOutput, delta, chars]);
@@ -374,7 +377,7 @@ export abstract class Expr {
             let nextQueue: [Tape[], MultiTapeOutput, Expr, number][] = [];
             for (let [tapes, prevOutput, prevExpr, chars] of stateQueue) {
 
-                console.log(`prevExpr is ${prevExpr.id}`);
+                //console.log(`prevExpr is ${prevExpr.id}`);
                 //console.log(`prevOutput is ${JSON.stringify([...prevOutput.toStrings(false)])}`);
                 
                 if (chars >= maxChars) {
@@ -888,9 +891,11 @@ class JoinExpr extends BinaryExpr {
             if (child == undefined) {
                 // this is an error, due to the programmer referring to an undefined
                 // symbol, but now is not the time to complain. 
+                //console.log(`error, can't find ${this.symbolName} in symbol table, symbol table contains ${Object.keys(this.symbols)}`);
                 return EPSILON;
             } 
             this._child = child;
+            //console.log(`found the child, it's ${child.id}`);
         }
         return this._child;
     }

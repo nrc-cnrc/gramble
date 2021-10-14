@@ -1,6 +1,6 @@
 
 import { assert, expect } from "chai";
-import { GrammarComponent, CounterStack, Lit, GenOptions } from "../src/grammars";
+import { GrammarComponent, CounterStack, Lit, GenOptions, NameQualifier } from "../src/grammars";
 import { Gramble } from "../src/gramble";
 import { StringDict } from "../src/util";
 import { dirname, basename } from "path";
@@ -122,19 +122,21 @@ export function testHasTapes(
     expectedTapes: string[],
     symbolName: string = ""
 ): void {
-    grammar.qualifyNames();
+    const nameQualifier = new NameQualifier();
+    grammar = nameQualifier.transform(grammar);
 
     const stack = new CounterStack(2);
+    
+    let tapes = [...grammar.calculateTapes(stack)];
     let target = grammar.getSymbol(symbolName);
     
     const bSet = new Set(expectedTapes);
     it(`should have tapes [${[...bSet]}]`, function() {
         expect(target).to.not.be.undefined;
-        if (target == undefined) {
+        if (target == undefined || target.tapes == undefined) {
             return;
         }
-        let tapes = [...target.calculateTapes(stack)];
-        tapes = tapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
+        tapes = target.tapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
                                     // leave out any internal-only tapes, like those created 
                                     // by a Drop().
         expect(tapes.length).to.equal(bSet.size);
@@ -176,6 +178,8 @@ export function testHasSymbols(
     grammar: GrammarComponent,
     expectedSymbols: string[]
 ): void {
+    const nameQualifier = new NameQualifier()
+    grammar = nameQualifier.transform(grammar);
     it(`should have symbols [${expectedSymbols}]`, function() {
         for (const s of expectedSymbols) {
             expect(grammar.getSymbol(s)).to.not.be.undefined;

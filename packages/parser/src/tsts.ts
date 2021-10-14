@@ -607,6 +607,15 @@ export class TstAssignment extends TstEnclosure {
             return;
         }
 
+        if (trimmedText.indexOf(".") != -1) {
+            this.message({
+                type: "warning",
+                shortMsg: "Symbol name contains .", 
+                longMsg: "You can't assign to a name that contains a period."
+            });
+            return;
+        }
+
         try {
             ns.addSymbol(trimmedText, grammar);
         } catch (e) {
@@ -692,8 +701,11 @@ export class TstProject extends TstComponent {
 
         const ns = new NamespaceGrammar(new DummyCell(), "");
 
-        for (const [name, sheet] of Object.entries(this.sheets)) {
+        for (let [name, sheet] of Object.entries(this.sheets)) {
             const grammar = sheet.toGrammar();
+            if (name.indexOf(".") != -1) {
+                name = name.replace(".", "_");
+            }
             ns.addSymbol(name, grammar);
         }
 

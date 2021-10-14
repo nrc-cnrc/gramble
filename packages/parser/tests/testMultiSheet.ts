@@ -90,8 +90,6 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobazable", gloss: "jump-2SG" }
         ]);
     });
-    
-
 });
 
 

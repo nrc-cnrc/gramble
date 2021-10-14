@@ -1,4 +1,4 @@
-import { CounterStack, GenOptions, GrammarComponent } from "./grammars";
+import { CounterStack, GenOptions, GrammarComponent, NameQualifier } from "./grammars";
 import { DevEnvironment, Gen, iterTake, StringDict } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
@@ -36,8 +36,9 @@ export class Gramble {
     }
     
     public getTapeNames(symbolName: string): [string, string][] {
-        const grammar = this.getGrammar();
-        grammar.qualifyNames();
+        let grammar = this.getGrammar();
+        const nameResolver = new NameQualifier();
+        grammar = nameResolver.transform(grammar);
         const target = grammar.getSymbol(symbolName);
         if (target == undefined) {
             throw new Error(`Cannot find symbol ${symbolName}`);

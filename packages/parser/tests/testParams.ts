@@ -84,6 +84,15 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    describe('Replace with pre/post and same tape name', function() {
+        const project = sheetFromFile("./tests/csvs/sameTapeReplaceWithPrePost.csv");
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"ava"},
+            {"text":"abra"},
+            {"text":"arba"}
+        ]);
+    });
     
     describe('Replace with a test: op nested underneath', function() {
 

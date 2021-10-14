@@ -149,7 +149,7 @@ describe(`${path.basename(module.filename)}`, function() {
     }); 
     
     describe('Rename t2->t3 of symbol t1:hi+t2:world', function() {
-        const grammar = Ns("test", 
+        const grammar = Ns("", 
                         { "a": Seq(t1("hi"), t2("world")),
                           "b": Rename(Embed("a"), "t2", "t3") });
 

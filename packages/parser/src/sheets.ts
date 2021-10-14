@@ -1,3 +1,4 @@
+import { NameQualifier } from "./grammars";
 import { 
     TstAssignment, TstBinaryOp, TstComment, 
     TstEnclosure, TstHeader, TstProject, 
@@ -122,18 +123,22 @@ export class SheetProject extends SheetComponent {
         this.sheets[sheetName] = sheet;
 
         const tst = this.toTST();
-        const grammar = tst.toGrammar();
+        let grammar = tst.toGrammar();
 
         // check to see if any names didn't get resolved
+
+        const nameQualifier = new NameQualifier();
+        grammar = nameQualifier.transform(grammar);
+
         const unresolvedNames: Set<string> = new Set(); 
-        for (const name of grammar.qualifyNames()) {
+        for (const name of grammar.getUnresolvedNames()) {
             const firstPart = name.split(".")[0];
             unresolvedNames.add(firstPart);
         }
 
         for (const possibleSheetName of unresolvedNames) {
             this.addSheet(possibleSheetName);
-        }
+        } 
 
         return;
     }
