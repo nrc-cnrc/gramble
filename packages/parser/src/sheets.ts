@@ -71,18 +71,6 @@ export abstract class SheetComponent {
 
     public abstract toTST(): TstComponent;
 
-    public *generate(
-        symbolName: string = "",
-        query: StringDict = {},
-        random: boolean = false,
-        maxRecursion: number = 4, 
-        maxChars: number = 1000
-    ): Gen<StringDict> {
-        yield* this.toTST().generate(symbolName, query, 
-                    random, maxRecursion, maxChars);
-
-    }
-
 }
 
 export class SheetProject extends SheetComponent {
@@ -110,7 +98,7 @@ export class SheetProject extends SheetComponent {
 
         if (!this.devEnv.hasSource(sheetName)) {
             // this is probably a programmer error, in which they've attempted
-            // to reference a non-existant symbol, and we're trying to load it as
+            // to reference a non-existent symbol, and we're trying to load it as
             // a possible source file.  we don't freak out about it here, though;
             // that symbol will generate an error message at the appropriate place.
             return;
@@ -247,7 +235,7 @@ export class Sheet extends SheetComponent {
                 
                 if (rowIsComment) {
                     const comment = new TstComment(cell);
-                    cell.message({ type: "comment" });
+                    comment.message({ type: "comment" });
                     continue;
                 }
 

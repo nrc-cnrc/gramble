@@ -1,11 +1,10 @@
 
 import { assert, expect } from "chai";
 import { GrammarComponent, CounterStack, Lit, GenOptions, NameQualifier } from "../src/grammars";
-import { Gramble } from "../src/gramble";
+import { Interpreter } from "../src/interpreter";
 import { StringDict } from "../src/util";
 import { dirname, basename } from "path";
 import { TextDevEnvironment } from "../src/textInterface";
-import { TapeCollection } from "../src/tapes";
 
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
@@ -73,22 +72,16 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
 }
 
 function testGrammarAux(
-    grammar: GrammarComponent,
+    interpreter: Interpreter,
     expectedResults: StringDict[], 
     symbolName: string = "",
     maxRecursion: number = 4, 
     maxChars: number = 1000
 ): void {
     var outputs: StringDict[] = [];
-    
-    const opt: GenOptions = {
-        random: false,
-        maxRecursion: maxRecursion,
-        maxChars: maxChars
-    }
 
     try {
-        outputs = [...grammar.generate(symbolName, undefined, opt)];
+        outputs = [...interpreter.generate(symbolName, {}, Infinity, maxRecursion, maxChars)];
     } catch (e) {
         it("Unexpected Exception", function() {
             console.log(e);
@@ -106,12 +99,13 @@ export function testGrammar(
     maxRecursion: number = 4,
     maxChars: number = 1000,
 ): void {
+    const interpreter = Interpreter.fromGrammar(grammar);
     if (symbolName == "") {
-        testGrammarAux(grammar, expectedResults, symbolName,
+        testGrammarAux(interpreter, expectedResults, symbolName,
             maxRecursion, maxChars);
     } else {
         describe(`Generating from \${${symbolName}}`, function() {
-            testGrammarAux(grammar, expectedResults, symbolName, 
+            testGrammarAux(interpreter, expectedResults, symbolName, 
                 maxRecursion, maxChars);
         });
     }   
@@ -122,13 +116,9 @@ export function testHasTapes(
     expectedTapes: string[],
     symbolName: string = ""
 ): void {
-    const nameQualifier = new NameQualifier();
-    grammar = nameQualifier.transform(grammar);
-
-    const stack = new CounterStack(2);
-    
-    let tapes = [...grammar.calculateTapes(stack)];
-    let target = grammar.getSymbol(symbolName);
+    const interpreter = Interpreter.fromGrammar(grammar);
+    interpreter.prepare();
+    let target = interpreter.grammar.getSymbol(symbolName);
     
     const bSet = new Set(expectedTapes);
     it(`should have tapes [${[...bSet]}]`, function() {
@@ -136,7 +126,7 @@ export function testHasTapes(
         if (target == undefined || target.tapes == undefined) {
             return;
         }
-        tapes = target.tapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
+        const tapes = target.tapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
                                     // leave out any internal-only tapes, like those created 
                                     // by a Drop().
         expect(tapes.length).to.equal(bSet.size);
@@ -151,18 +141,11 @@ export function testHasVocab(
     expectedVocab: {[tape: string]: number}
 ): void {
 
-    const opt: GenOptions = {
-        random: true,
-        maxRecursion: 2,
-        maxChars: 1000
-    }
+    const interpreter = Interpreter.fromGrammar(grammar);
+    interpreter.prepare();
 
-    grammar.calculateTapes(new CounterStack(2));
-    const tapeCollection = new TapeCollection();
-    grammar.collectVocab(tapeCollection);
-    grammar.copyVocab(tapeCollection);
     for (const tapeName in expectedVocab) {
-        const tape = tapeCollection.matchTape(tapeName);
+        const tape = interpreter.tapeObjs.matchTape(tapeName);
         const expectedNum = expectedVocab[tapeName];
         it(`should have ${expectedNum} tokens in the ${tapeName} vocab`, function() {
             expect(tape).to.not.be.undefined;
@@ -178,14 +161,15 @@ export function testHasSymbols(
     grammar: GrammarComponent,
     expectedSymbols: string[]
 ): void {
-    const nameQualifier = new NameQualifier()
-    grammar = nameQualifier.transform(grammar);
+    const interpreter = Interpreter.fromGrammar(grammar);
+    interpreter.prepare();
     it(`should have symbols [${expectedSymbols}]`, function() {
         for (const s of expectedSymbols) {
-            expect(grammar.getSymbol(s)).to.not.be.undefined;
+            expect(interpreter.getSymbol(s)).to.not.be.undefined;
         }
     });
 } 
+
 
 export function testDoesNotHaveSymbols(
     grammar: GrammarComponent,
@@ -198,9 +182,10 @@ export function testDoesNotHaveSymbols(
     });
 }
 
-export function testErrors(gramble: Gramble, expectedErrors: [string, number, number, string][]) {
+export function testErrors(interpreter: Interpreter, expectedErrors: [string, number, number, string][]) {
 
-    const devEnv = gramble.devEnv;
+    interpreter.runChecks();
+    const devEnv = interpreter.devEnv;
     it(`should have ${expectedErrors.length} errors/warnings`, function() {
         try {
             expect(devEnv.numErrors("any")).to.equal(expectedErrors.length);
@@ -224,25 +209,23 @@ export function testErrors(gramble: Gramble, expectedErrors: [string, number, nu
 }
 
 export function testGramble(
-    gramble: Gramble,
+    interpreter: Interpreter,
     expectedResults: StringDict[], 
     symbolName: string = "",
     maxRecursion: number = 4, 
     maxChars: number = 1000
 ): void {
-    const grammar = gramble.getGrammar();
     describe(`Generating from ${symbolName}`, function() {
-        testGrammarAux(grammar, expectedResults, symbolName, 
+        testGrammarAux(interpreter, expectedResults, symbolName, 
             maxRecursion, maxChars);
     });
 }
 
-export function sheetFromFile(path: string): Gramble {
+export function sheetFromFile(path: string): Interpreter {
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
     const devEnv = new TextDevEnvironment(dir);
-    const gramble = new Gramble(devEnv, sheetName);
-    return gramble;
+    return Interpreter.fromSheet(devEnv, sheetName);
 }
 
 
@@ -253,20 +236,14 @@ export function testParseMultiple(grammar: GrammarComponent,
                                     maxRecursion: number = 4, 
                                     maxChars: number = 1000): void {
 
-                                        
-    const opt: GenOptions = {
-        random: false,
-        maxRecursion: maxRecursion,
-        maxChars: maxChars
-    }
-
     for (const [inputs, expectedResults] of inputResultsPairs) {
         describe(`testing parse ${JSON.stringify(inputs)} ` + 
                  `against ${JSON.stringify(expectedResults)}.`, function() {
             var outputs: StringDict[] = [];
             try {    
                 //grammar = grammar.compile(2, maxRecursion);
-                outputs = [...grammar.generate("", inputs, opt)];
+                const interpreter = Interpreter.fromGrammar(grammar);
+                outputs = [...interpreter.generate("", inputs, Infinity, maxRecursion, maxChars)];
             } catch (e) {
                 it("Unexpected Exception", function() {
                     console.log(e);

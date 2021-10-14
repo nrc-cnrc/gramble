@@ -1,4 +1,4 @@
-import { Gramble } from "./gramble";
+import { Interpreter } from "./interpreter";
 import { DevEnvironment } from "./util";
 
-export { Gramble, DevEnvironment };
+export { Interpreter as Gramble, DevEnvironment };

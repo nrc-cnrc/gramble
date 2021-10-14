@@ -306,5 +306,4 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(outer, [{t1: "hello"}], "outer.inner2.x");
 
     }); 
-
 });

@@ -10,7 +10,7 @@
  * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, UnaryGrammar, NullGrammar, GenOptions, SequenceGrammar, JoinGrammar, ReplaceGrammar, JoinReplaceGrammar } from "./grammars";
+import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, NullGrammar, SequenceGrammar, JoinGrammar, ReplaceGrammar, JoinReplaceGrammar } from "./grammars";
 import { Cell, CellPos, DummyCell, Gen, StringDict } from "./util";
 import { DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, ParamDict, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
@@ -24,23 +24,6 @@ export const BINARY_OPS: {[opName: string]: BinaryOp} = {
 }
 
 export abstract class TstComponent {
-
-    public *generate(
-        symbolName: string = "",
-        query: StringDict = {},
-        random: boolean = false,
-        maxRecursion: number = 4, 
-        maxChars: number = 1000
-    ): Gen<StringDict> {
-        
-        const opt: GenOptions = {
-            random: random,
-            maxRecursion: maxRecursion,
-            maxChars: maxChars
-        }
-        yield* this.toGrammar().generate(symbolName, query, opt);
-
-    }
 
     public abstract toGrammar(): GrammarComponent;
 
@@ -492,7 +475,7 @@ export class TstUnitTest extends TstEnclosure {
             return siblingGrammar;
         }
 
-        const testGrammars: GrammarComponent[] = [];
+        let result = siblingGrammar;
 
         for (const [cell, paramDict] of this.child.toParamsTable()) {
             for (const [key, grammar] of Object.entries(paramDict)) {
@@ -504,11 +487,10 @@ export class TstUnitTest extends TstEnclosure {
                     });
                     continue;
                 }
-                const testGrammar = new UnaryGrammar(cell, grammar);
-                testGrammars.push(testGrammar);
+                result = new UnitTestGrammar(cell, result, grammar);
             }
         }
-        return new UnitTestGrammar(this.cell, siblingGrammar, testGrammars);
+        return result;
     }
 
 }
@@ -556,7 +538,7 @@ export class TstNegativeUnitTest extends TstEnclosure {
             return siblingGrammar;
         }
 
-        const testGrammars: GrammarComponent[] = [];
+        let result = siblingGrammar;
 
         for (const [cell, paramDict] of this.child.toParamsTable()) {
             for (const [key, grammar] of Object.entries(paramDict)) {
@@ -568,11 +550,10 @@ export class TstNegativeUnitTest extends TstEnclosure {
                     });
                     continue;
                 }
-                const testGrammar = new UnaryGrammar(cell, grammar);
-                testGrammars.push(testGrammar);
-            }
+                result = new NegativeUnitTestGrammar(cell, result, grammar);
+            }   
         }
-        return new NegativeUnitTestGrammar(this.cell, siblingGrammar, testGrammars);
+        return result;
     }
 
 }
@@ -837,16 +818,7 @@ export class TstRow extends TstCellComponent {
         if (this.lastCell == undefined) {
             return new NullGrammar(this.cell);  // shouldn't happen
         }
-        const child = this.lastCell.toGrammar();
-
-        // Rows are a bit strange w.r.t. cells because they are associated
-        // semantically with their last cell (since their cells form a left-branching 
-        // linked list), but errors (like a failing unit test associated with this 
-        // row) should be reported in the first cell.  If we just returned the child
-        // here, errors would be reported in the last cell.  This looks weird compared
-        // to putting them in the first cell, so we need a semantically trivial wrapper
-        // grammar to associate this row's errors with the appropriate cell.
-        return new UnaryGrammar(this.cell, child);
+        return this.lastCell.toGrammar();
     }
     
     public toParams(): ParamDict {

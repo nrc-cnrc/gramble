@@ -1,5 +1,5 @@
-import { Gramble } from "./gramble";
+import { Interpreter } from "./interpreter";
 import { DevEnvironment } from "./util";
 import { TextDevEnvironment } from "./textInterface";
 
-export { Gramble, DevEnvironment, TextDevEnvironment };
+export { Interpreter as Gramble, DevEnvironment, TextDevEnvironment };

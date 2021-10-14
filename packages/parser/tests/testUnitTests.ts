@@ -6,22 +6,22 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Simple grammar with unit tests', function() {
 
-        const project = sheetFromFile("./tests/csvs/simpleGrammarWithTests.csv");
-        project.runUnitTests();
-        testErrors(project, []);
-        //testSymbols(project, ["word", "verb", "suffix"]);
-        testGramble(project, [
+        const interpreter = sheetFromFile("./tests/csvs/simpleGrammarWithTests.csv");
+        interpreter.runUnitTests();
+        testErrors(interpreter, []);
+        //testSymbols(interpreter, ["word", "verb", "suffix"]);
+        testGramble(interpreter, [
             { text: "foobar", gloss: "run-1SG" }
         ]);
     });
 
     describe('Embeds and unit tests', function() {
 
-        const project = sheetFromFile("./tests/csvs/embedGrammarWithTests.csv");
-        project.runUnitTests();
-        testErrors(project, []);
-        //testSymbols(project, ["word", "verb", "suffix"]);
-        testGramble(project, [
+        const interpreter = sheetFromFile("./tests/csvs/embedGrammarWithTests.csv");
+        interpreter.runUnitTests();
+        testErrors(interpreter, []);
+        //testSymbols(interpreter, ["word", "verb", "suffix"]);
+        testGramble(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -31,11 +31,11 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Negative tests', function() {
 
-        const project = sheetFromFile("./tests/csvs/negativeTests.csv");
-        project.runUnitTests();
-        testErrors(project, []);
-        //testSymbols(project, ["word", "verb", "suffix"]);
-        testGramble(project, [
+        const interpreter = sheetFromFile("./tests/csvs/negativeTests.csv");
+        interpreter.runUnitTests();
+        testErrors(interpreter, []);
+        //testSymbols(interpreter, ["word", "verb", "suffix"]);
+        testGramble(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -45,15 +45,15 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Failing unit tests', function() {
 
-        const project = sheetFromFile("./tests/csvs/embedGrammarWithFailedTests.csv");
-        project.runUnitTests();
+        const interpreter = sheetFromFile("./tests/csvs/embedGrammarWithFailedTests.csv");
+        interpreter.runUnitTests();
         
-        testErrors(project, [
+        testErrors(interpreter, [
             ["embedGrammarWithFailedTests", 14, 2, "error"],
             ["embedGrammarWithFailedTests", 15, 2, "error"],
             ["embedGrammarWithFailedTests", 16, 2, "error"],
         ]);
-        testGramble(project, [
+        testGramble(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -63,13 +63,13 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Failing negative tests', function() {
 
-        const project = sheetFromFile("./tests/csvs/failingNegativeTests.csv");
-        project.runUnitTests();
+        const interpreter = sheetFromFile("./tests/csvs/failingNegativeTests.csv");
+        interpreter.runUnitTests();
         
-        testErrors(project, [
+        testErrors(interpreter, [
             ["failingNegativeTests", 13, 2, "error"]
         ]);
-        testGramble(project, [
+        testGramble(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
