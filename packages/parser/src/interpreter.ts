@@ -182,11 +182,11 @@ export class Interpreter {
             targetComponent = new FilterGrammar(DUMMY_CELL, targetComponent, querySeq);
             tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
-            // collectVocab on the original target isn't going to catch 
-            // anything more, and copyVocab isn't going to do anything 
-            // because none of the new structure does any vocab copying.  
-            // So all we have to do is:
+            // we have to collect any new vocab, but only from the new material
             querySeq.collectVocab(this.tapeObjs);
+            // we still have to copy though, in case the query added new vocab
+            // to something that's eventually a "from" tape of a replace
+            targetComponent.copyVocab(this.tapeObjs);
         
         }
 
@@ -220,11 +220,12 @@ export class Interpreter {
 
             const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
-            // collectVocab on the child isn't going to catch anything more, and
-            // copyVocab isn't going to do anything because none of the new
-            // structure does any vocab copying.  So all we have to do is:
-            test.test.collectVocab(this.tapeObjs); // in case there's more vocab
-            
+            // we have to collect any new vocab, but only from the new material
+            test.test.collectVocab(this.tapeObjs);
+            // we still have to copy though, in case the query added new vocab
+            // to something that's eventually a "from" tape of a replace
+            targetComponent.copyVocab(this.tapeObjs);
+
             expr = targetComponent.constructExpr(symbolTable);
 
             const prioritizedTapes: Tape[] = [];
