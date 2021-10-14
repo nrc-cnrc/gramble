@@ -1,11 +1,11 @@
 
-import { Seq, Uni, Intersect, Epsilon, GrammarComponent, Rep } from "../src/grammars";
+import { Seq, Uni, Intersect, Epsilon, Grammar, Rep } from "../src/grammars";
 import { t1, t2, testGrammar } from './testUtils';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";
 
-type Test = { "desc": string, "grammar": GrammarComponent, "results": StringDict[] };
+type Test = { "desc": string, "grammar": Grammar, "results": StringDict[] };
 
 const TESTS: Test[] = [
 

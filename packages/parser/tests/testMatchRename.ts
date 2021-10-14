@@ -1,5 +1,5 @@
 import { 
-    GrammarComponent, 
+    Grammar, 
     Epsilon, 
     Seq, 
     Uni, 
@@ -25,9 +25,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 1. Sequence t1:hello + t1 to t2 of t1:hello
     describe('1. Sequence t1:hello + t1 to t2 of t1:hello', function() {
-        const grammar1: GrammarComponent = t1("hello");
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar1: Grammar = t1("hello");
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);
@@ -50,9 +50,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 2. t1 to t2 of Empty grammar
     describe('2. t1 to t2 of Empty grammar', function() {
-        const grammar1: GrammarComponent = Epsilon();
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar1: Grammar = Epsilon();
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, []);
@@ -74,9 +74,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 3. t1 to t2 of t1:hello+t1:world
     describe('3. t1 to t2 of t1:hello+t1:world', function() {
-        const grammar1: GrammarComponent = Seq(t1("hello"), t1("world"));
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar1: Grammar = Seq(t1("hello"), t1("world"));
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);
@@ -127,9 +127,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 5. t1 to t2 of Nested sequence (t1:hello+t1:,)+t1:world
     describe('5. t1 to t2 of Nested sequence (t1:hello+t1:,)+t1:world', function() {
-        const grammar1: GrammarComponent = Seq(Seq(t1("hello"), t1(", ")), t1("world"));
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar1: Grammar = Seq(Seq(t1("hello"), t1(", ")), t1("world"));
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);
@@ -152,9 +152,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 6. t1 to t2 of t1:hello|t1:goodbye
     describe('6. t1 to t2 of t1:hello|t1:goodbye', function() {
-        const grammar1: GrammarComponent = Uni(t1("hello"), t1("goodbye"));
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar1: Grammar = Uni(t1("hello"), t1("goodbye"));
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);
@@ -241,10 +241,10 @@ describe(`${path.basename(module.filename)}`, function() {
 */
     // 9. t1 to t2 of (t1:hello|t1:goodbye)+(t1:world|t1:kitty)
     describe('9. t1 to t2 of (t1:hello|t1:goodbye)+(t1:world|t1:kitty)', function() {
-        const grammar1: GrammarComponent = Seq(Uni(t1("hello"), t1("goodbye")),
+        const grammar1: Grammar = Seq(Uni(t1("hello"), t1("goodbye")),
                                     Uni(t1("world"), t1("kitty")));
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);
@@ -276,10 +276,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 10. t1 to t2 of (t1:hello+t1:kitty)|(t1:goodbye+t1:world)
     describe('10. t1 to t2 of (t1:hello+t1:kitty)|(t1:goodbye+t1:world)', function() {
-        const grammar1: GrammarComponent = Uni(Seq(t1("hello"), t1("kitty")),
+        const grammar1: Grammar = Uni(Seq(t1("hello"), t1("kitty")),
                                     Seq(t1("goodbye"), t1("world")));
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);
@@ -305,9 +305,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 11. t1 to t2 of t1:hi+t1:.
     describe('11. t1 to t2 of t1:hi+t1:.', function() {
-        const grammar1: GrammarComponent = Seq(t1("hi"), Any("t1"));
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar1: Grammar = Seq(t1("hi"), Any("t1"));
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);
@@ -333,9 +333,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 12. t1 to t2 of joining t1:hello & t1:.ello
     describe('12. t1 to t2 of t1:hello & t1:.ello', function() {
-        const grammar1: GrammarComponent = Join(t1("hello"), Seq(Any("t1"), t1('ello')));
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar1: Grammar = Join(t1("hello"), Seq(Any("t1"), t1('ello')));
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);
@@ -415,9 +415,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 15. t1 to t2 of t1:o{0,1}
     describe('15. t1 to t2 of t1:o{0,1}', function() {
-        const grammar1: GrammarComponent = Rep(t1("o"), 0, 1);
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar1: Grammar = Rep(t1("o"), 0, 1);
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);
@@ -480,9 +480,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 17. t1 to t2 of t1:na{1,4}
     describe('17. t1 to t2 of t1:na{1,4}', function() {
-        const grammar1: GrammarComponent = Rep(t1("na"), 1, 4);
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar1: Grammar = Rep(t1("na"), 1, 4);
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);
@@ -514,9 +514,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 18. t1 to t2 of t1:.{0,2}+t1:hi
     describe('18. t1 to t2 of t1:.{0,2}+t1:hi', function() {
-        const grammar1: GrammarComponent = Seq(Rep(Any("t1"), 0, 2), t1("hi"));
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 2), t1("hi"));
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);
@@ -557,9 +557,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 19. t1 to t2 of t1:.{0,1}+t1:hi+t1:.{0,1}
     describe('19. t1 to t2 of t1:.{0,1}+t1:hi+t1:.{0,1}', function() {
-        const grammar1: GrammarComponent = Seq(Rep(Any("t1"), 0, 1), t1("hi"), Rep(Any("t1"), 0, 1));
-        const grammar2: GrammarComponent = Rename(grammar1, "t1", "t2");
-        const grammar: GrammarComponent = Match(Seq(grammar1, grammar2), "t1", "t2");
+        const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 1), t1("hi"), Rep(Any("t1"), 0, 1));
+        const grammar2: Grammar = Rename(grammar1, "t1", "t2");
+        const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
 
         describe("grammar1", function() {
             testHasTapes(grammar1, ['t1']);

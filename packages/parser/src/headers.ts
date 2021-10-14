@@ -1,5 +1,5 @@
 import { 
-    AlternationGrammar, ContainsGrammar, UnresolvedEmbedGrammar, EndsWithGrammar, EpsilonGrammar, FilterGrammar, HideGrammar, JoinGrammar, LiteralGrammar, NegationGrammar, RenameGrammar, SequenceGrammar, StartsWithGrammar, Epsilon, GrammarComponent
+    AlternationGrammar, ContainsGrammar, UnresolvedEmbedGrammar, EndsWithGrammar, EpsilonGrammar, FilterGrammar, HideGrammar, JoinGrammar, LiteralGrammar, NegationGrammar, RenameGrammar, SequenceGrammar, StartsWithGrammar, Epsilon, Grammar
 } from "./grammars";
 
 import { CPAlternation, CPNegation, CPResult, CPUnreserved, parseBooleanCell } from "./cells";
@@ -10,7 +10,7 @@ export const DEFAULT_SATURATION = 0.1;
 export const DEFAULT_VALUE = 1.0;
 
 
-export type ParamDict = {[key: string]: GrammarComponent};
+export type ParamDict = {[key: string]: Grammar};
 
 /**
  * A Header is a cell in the top row of a table, consisting of one of
@@ -27,7 +27,7 @@ export type ParamDict = {[key: string]: GrammarComponent};
  * 
  * Header objects are responsible for:
  * 
- * * compiling the text of the cells beneath them into [ExpressionComponent]s, and merging them (usually by
+ * * compiling the text of the cells beneath them into [Grammars]s, and merging them (usually by
  *   concatenation) with cells to their left.
  * 
  * * calculating the appropriate background color for their cells and the cells in their column. 
@@ -47,7 +47,7 @@ export type ParamDict = {[key: string]: GrammarComponent};
      * @param content The cell that ultimately provided the text string
      * @returns The grammar corresponding to this header/content pair
      */
-    public abstract toGrammar(left: GrammarComponent, text: string, content: Cell): GrammarComponent;
+    public abstract toGrammar(left: Grammar, text: string, content: Cell): Grammar;
     public abstract getColor(saturation: number, value: number): string;
 
     public getParamName(): string {
@@ -103,10 +103,10 @@ export class EmbedHeader extends AtomicHeader {
     }
 
     public toGrammar(
-        left: GrammarComponent, 
+        left: Grammar, 
         text: string,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         const cellGrammar = new UnresolvedEmbedGrammar(content, text);
         return new SequenceGrammar(content, [left, cellGrammar]);
     }
@@ -129,10 +129,10 @@ export class HideHeader extends AtomicHeader {
     }
     
     public toGrammar(
-        left: GrammarComponent, 
+        left: Grammar, 
         text: string,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         var result = left;
         for (const tape of text.split("/")) {
             result = new HideGrammar(content, result, tape.trim());
@@ -153,10 +153,10 @@ export class LiteralHeader extends AtomicHeader {
     }
 
     public toGrammar(
-        left: GrammarComponent, 
+        left: Grammar, 
         text: string,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         const grammar = new LiteralGrammar(content, this.text, text);
         return new SequenceGrammar(content, [left, grammar]);
     }
@@ -177,9 +177,9 @@ export class CommentHeader extends Header {
     }
 
     public toGrammar(
-        left: GrammarComponent, 
+        left: Grammar, 
         text: string
-    ): GrammarComponent {
+    ): Grammar {
         return left;
     }    
 }
@@ -202,10 +202,10 @@ abstract class UnaryHeader extends Header {
     }
 
     public toGrammar(
-        left: GrammarComponent, 
+        left: Grammar, 
         text: string,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         return this.child.toGrammar(left, text, content);
     }
 }
@@ -230,10 +230,10 @@ export class TagHeader extends UnaryHeader {
 export class MaybeHeader extends UnaryHeader {
 
     public toGrammar(
-        left: GrammarComponent, 
+        left: Grammar, 
         text: string,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         const childGrammar = this.child.toGrammar(new EpsilonGrammar(content), text, content);
         const grammar = new AlternationGrammar(content, [childGrammar, new EpsilonGrammar(content)]);
         return new SequenceGrammar(content, [left, grammar]);
@@ -246,10 +246,10 @@ export class MaybeHeader extends UnaryHeader {
 class RenameHeader extends UnaryHeader {
 
     public toGrammar(
-        left: GrammarComponent, 
+        left: Grammar, 
         text: string,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         if (!(this.child instanceof LiteralHeader)) {
             content.message({
                 type: "error",
@@ -275,10 +275,10 @@ class RenameHeader extends UnaryHeader {
 export class LogicHeader extends UnaryHeader {
 
     public merge(
-        left: GrammarComponent | undefined, 
-        child: GrammarComponent,
+        left: Grammar | undefined, 
+        child: Grammar,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         if (left == undefined) {
             return child;
         }
@@ -288,7 +288,7 @@ export class LogicHeader extends UnaryHeader {
     public toGrammarPiece(
         parsedText: CPResult,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
 
         if (parsedText instanceof CPUnreserved) {
             return this.child.toGrammar(new EpsilonGrammar(content), parsedText.text, content);
@@ -309,10 +309,10 @@ export class LogicHeader extends UnaryHeader {
     }
 
     public toGrammar(
-        left: GrammarComponent, 
+        left: Grammar, 
         text: string,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
 
         if (text.length == 0) {
             return left;
@@ -336,10 +336,10 @@ export class LogicHeader extends UnaryHeader {
 export class EqualsHeader extends LogicHeader {
     
     public merge(
-        leftNeighbor: GrammarComponent | undefined, 
-        state: GrammarComponent,
+        leftNeighbor: Grammar | undefined, 
+        state: Grammar,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         if (leftNeighbor == undefined) {
             content.message({
                 type: "error",
@@ -364,10 +364,10 @@ export class EqualsHeader extends LogicHeader {
     }
 
     public constructFilter(
-        leftNeighbor: GrammarComponent, 
-        condition: GrammarComponent,
+        leftNeighbor: Grammar, 
+        condition: Grammar,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         return new FilterGrammar(content, leftNeighbor, condition);
     }
 }
@@ -379,10 +379,10 @@ export class EqualsHeader extends LogicHeader {
 export class StartsWithHeader extends EqualsHeader {
 
     public constructFilter(
-        leftNeighbor: GrammarComponent, 
-        condition: GrammarComponent,
+        leftNeighbor: Grammar, 
+        condition: Grammar,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         return new StartsWithGrammar(content, leftNeighbor, condition);
     }
 }
@@ -394,10 +394,10 @@ export class StartsWithHeader extends EqualsHeader {
 export class EndsWithHeader extends EqualsHeader {
 
     public constructFilter(
-        leftNeighbor: GrammarComponent, 
-        condition: GrammarComponent,
+        leftNeighbor: Grammar, 
+        condition: Grammar,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         return new EndsWithGrammar(content, leftNeighbor, condition);
     }
 }
@@ -409,10 +409,10 @@ export class EndsWithHeader extends EqualsHeader {
 export class ContainsHeader extends EqualsHeader {
     
     public constructFilter(
-        leftNeighbor: GrammarComponent, 
-        condition: GrammarComponent,
+        leftNeighbor: Grammar, 
+        condition: Grammar,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         return new ContainsGrammar(content, leftNeighbor, condition);
     }
 }
@@ -441,10 +441,10 @@ export class SlashHeader extends BinaryHeader {
     }
     
     public toGrammar(
-        left: GrammarComponent, 
+        left: Grammar, 
         text: string,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         const child1Grammar = this.child1.toGrammar(left, text, content);
         return this.child2.toGrammar(child1Grammar, text, content);
     }
@@ -453,10 +453,10 @@ export class SlashHeader extends BinaryHeader {
 export class ErrorHeader extends LiteralHeader {
 
     public toGrammar(
-        left: GrammarComponent, 
+        left: Grammar, 
         text: string,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         content.message({
             type: "warning",
             shortMsg: `Invalid header: ${this.text}`,
@@ -469,10 +469,10 @@ export class ErrorHeader extends LiteralHeader {
 export class ReservedErrorHeader extends ErrorHeader {
 
     public toGrammar(
-        left: GrammarComponent, 
+        left: Grammar, 
         text: string,
         content: Cell
-    ): GrammarComponent {
+    ): Grammar {
         content.message({
             type: "warning",
             shortMsg: `Invalid header: ${this.text}`,

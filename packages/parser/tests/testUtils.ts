@@ -1,6 +1,6 @@
 
 import { assert, expect } from "chai";
-import { GrammarComponent, CounterStack, Lit, GenOptions, NameQualifier } from "../src/grammars";
+import { Grammar, Lit } from "../src/grammars";
 import { Interpreter } from "../src/interpreter";
 import { StringDict } from "../src/util";
 import { dirname, basename } from "path";
@@ -93,7 +93,7 @@ function testGrammarAux(
 }
 
 export function testGrammar(
-    grammar: GrammarComponent,
+    grammar: Grammar,
     expectedResults: StringDict[],
     symbolName: string = "",
     maxRecursion: number = 4,
@@ -112,12 +112,11 @@ export function testGrammar(
 }
 
 export function testHasTapes(
-    grammar: GrammarComponent,
+    grammar: Grammar,
     expectedTapes: string[],
     symbolName: string = ""
 ): void {
     const interpreter = Interpreter.fromGrammar(grammar);
-    interpreter.prepare();
     let target = interpreter.grammar.getSymbol(symbolName);
     
     const bSet = new Set(expectedTapes);
@@ -137,12 +136,11 @@ export function testHasTapes(
 }
 
 export function testHasVocab(
-    grammar: GrammarComponent,
+    grammar: Grammar,
     expectedVocab: {[tape: string]: number}
 ): void {
 
     const interpreter = Interpreter.fromGrammar(grammar);
-    interpreter.prepare();
 
     for (const tapeName in expectedVocab) {
         const tape = interpreter.tapeObjs.matchTape(tapeName);
@@ -158,26 +156,27 @@ export function testHasVocab(
 }
 
 export function testHasSymbols(
-    grammar: GrammarComponent,
+    grammar: Grammar,
     expectedSymbols: string[]
 ): void {
     const interpreter = Interpreter.fromGrammar(grammar);
-    interpreter.prepare();
+    const symbols = interpreter.allSymbols();
     it(`should have symbols [${expectedSymbols}]`, function() {
         for (const s of expectedSymbols) {
-            expect(interpreter.getSymbol(s)).to.not.be.undefined;
+            expect(symbols).to.include(s);
         }
     });
 } 
 
-
 export function testDoesNotHaveSymbols(
-    grammar: GrammarComponent,
+    grammar: Grammar,
     expectedSymbols: string[]
 ): void {
+    const interpreter = Interpreter.fromGrammar(grammar);
+    const symbols = interpreter.allSymbols();
     it(`should have symbols [${expectedSymbols}]`, function() {
         for (const s of expectedSymbols) {
-            expect(grammar.getSymbol(s)).to.be.undefined;
+            expect(symbols).to.not.include(s);
         }
     });
 }
@@ -231,7 +230,7 @@ export function sheetFromFile(path: string): Interpreter {
 
 export type InputResultsPair = [StringDict, StringDict[]];
 
-export function testParseMultiple(grammar: GrammarComponent, 
+export function testParseMultiple(grammar: Grammar, 
                                     inputResultsPairs: InputResultsPair[],
                                     maxRecursion: number = 4, 
                                     maxChars: number = 1000): void {

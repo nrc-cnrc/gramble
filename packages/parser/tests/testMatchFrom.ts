@@ -1,5 +1,5 @@
 import { 
-    GrammarComponent, 
+    Grammar, 
     Epsilon, 
     Seq, 
     Uni, 
@@ -30,8 +30,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 1. MatchFrom t1, t2, t1:hello
     describe('1. MatchFrom t1, t2, t1:hello', function() {
-        const grammar1: GrammarComponent = t1("hello");
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = t1("hello");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
         ];
@@ -42,8 +42,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 2. MatchFrom t1, t2, ε
     describe('2. MatchFrom t1, t2, ε', function() {
-        const grammar1: GrammarComponent = Epsilon();
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Epsilon();
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {},
         ];
@@ -57,8 +57,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 3. MatchFrom t1, t2, t1:hello+t1:world
     describe('3. MatchFrom t1, t2, t1:hello+t1:world', function() {
-        const grammar1: GrammarComponent = Seq(t1("hello"), t1("world"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Seq(t1("hello"), t1("world"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'helloworld', t2: 'helloworld'},
         ];
@@ -69,8 +69,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 4. MatchFrom t1, t2, t1:hello+t4:goodbye
     describe('4. MatchFrom t1, t2, t1:hello+t4:goodbye', function() {
-        const grammar1: GrammarComponent = Seq(t1("hello"), t4("goodbye"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Seq(t1("hello"), t4("goodbye"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t4: 'goodbyegoodbye'},
         ];
@@ -82,8 +82,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 5. MatchFrom t1, t2, t4:goodbye+t1:hello
     describe('5. MatchFrom t1, t2, t4:goodbye+t1:hello', function() {
-        const grammar1: GrammarComponent = Seq(t4("goodbye"), t1("hello"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Seq(t4("goodbye"), t1("hello"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t4: 'goodbyegoodbye'},
         ];
@@ -95,8 +95,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 6. MatchFrom t1, t2, Nested sequence (t1:hello+t1:,)+t1:world
     describe('6. MatchFrom t1, t2, Nested sequence (t1:hello+t1:,)+t1:world', function() {
-        const grammar1: GrammarComponent = Seq(Seq(t1("hello"), t1(", ")), t1("world"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Seq(Seq(t1("hello"), t1(", ")), t1("world"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello, world', t2: 'hello, world'},
         ];
@@ -107,8 +107,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 7. MatchFrom t1, t2, t1:hello|t1:goodbye
     describe('7. MatchFrom t1, t2, t1:hello|t1:goodbye', function() {
-        const grammar1: GrammarComponent = Uni(t1("hello"), t1("goodbye"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Uni(t1("hello"), t1("goodbye"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
             {t1: 'goodbye', t2: 'goodbye'},
@@ -120,8 +120,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 8. MatchFrom t1, t2, t1:hello|t4:goodbye
     describe('8. MatchFrom t1, t2, t1:hello|t4:goodbye', function() {
-        const grammar1: GrammarComponent = Uni(t1("hello"), t4("goodbye"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Uni(t1("hello"), t4("goodbye"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
             {t4: 'goodbyegoodbye'},
@@ -134,8 +134,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 9. MatchFrom t1, t2, t4:goodbye|t1:hello
     describe('9. MatchFrom t1, t2, t4:goodbye|t1:hello', function() {
-        const grammar1: GrammarComponent = Uni(t4("goodbye"), t1("hello"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Uni(t4("goodbye"), t1("hello"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
             {t4: 'goodbyegoodbye'},
@@ -148,9 +148,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 10. MatchFrom t1, t2, (t1:hello|t1:goodbye)+(t1:world|t1:kitty)
     describe('10. MatchFrom t1, t2, (t1:hello|t1:goodbye)+(t1:world|t1:kitty)', function() {
-        const grammar1: GrammarComponent = Seq(Uni(t1("hello"), t1("goodbye")),
+        const grammar1: Grammar = Seq(Uni(t1("hello"), t1("goodbye")),
                                     Uni(t1("world"), t1("kitty")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'helloworld', t2: 'helloworld'},
             {t1: 'goodbyeworld', t2: 'goodbyeworld'},
@@ -164,9 +164,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 11. MatchFrom t1, t2, (t1:hello+t1:kitty)|(t1:goodbye+t1:world)
     describe('11. MatchFrom t1, t2, (t1:hello+t1:kitty)|(t1:goodbye+t1:world)', function() {
-        const grammar1: GrammarComponent = Uni(Seq(t1("hello"), t1("kitty")),
+        const grammar1: Grammar = Uni(Seq(t1("hello"), t1("kitty")),
                                     Seq(t1("goodbye"), t1("world")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t2: 'hellokitty'},
             {t1: 'goodbyeworld', t2: 'goodbyeworld'},
@@ -178,8 +178,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 12. MatchFrom t1, t2, t1:hi+t1:.
     describe('12. MatchFrom t1, t2, t1:hi+t1:.', function() {
-        const grammar1: GrammarComponent = Seq(t1("hi"), Any("t1"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Seq(t1("hi"), Any("t1"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hih', t2: 'hih'},
             {t1: 'hii', t2: 'hii'},
@@ -191,8 +191,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 13. MatchFrom t1, t2, Join t1:hello & t1:.ello
     describe('13. MatchFrom t1, t2, Join t1:hello & t1:.ello', function() {
-        const grammar1: GrammarComponent = Join(t1("hello"), Seq(Any("t1"), t1('ello')));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Join(t1("hello"), Seq(Any("t1"), t1('ello')));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
         ];
@@ -203,8 +203,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 14. MatchFrom t1, t2, Join t1:hello & t4:world
     describe('14. MatchFrom t1, t2, Join t1:hello & t4:world', function() {
-        const grammar1: GrammarComponent = Join(t1("hello"), t4('world'));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Join(t1("hello"), t4('world'));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t4: 'worldworld'},
         ];
@@ -216,8 +216,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 15. MatchFrom t1, t2, Join t4:world & t1:hello
     describe('15. MatchFrom t1, t2, Join t4:world & t1:hello', function() {
-        const grammar1: GrammarComponent = Join(t4('world'), t1("hello"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Join(t4('world'), t1("hello"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t4: 'worldworld'},
         ];
@@ -229,10 +229,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 16. MatchFrom t2, t3 Join t1:hello+t1:kitty & (t1:hello+t2:goodbye+t1:kitty)+t2:world
     describe('16. MatchFrom t2, t3, t4, Join t1:hello+t1:kitty & (t1:hello+t2:goodbye+t1:kitty)+t2:world', function() {
-        const grammar1: GrammarComponent = Join(Seq(t1("hello"), t1("kitty")),
+        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")),
                                                 Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                                                     t2("world")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t2", "t3");
+        const grammar: Grammar = MatchFrom(grammar1, "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokittyhellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld'},
         ];
@@ -244,10 +244,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 17. MatchFrom t2, t3 Join (t1:hello+t2:goodbye+t1:kitty)+t2:world & t1:hello+t1:kitty
     describe('17. MatchFrom t2, t3, t4, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world & t1:hello+t1:kitty', function() {
-        const grammar1: GrammarComponent = Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
+        const grammar1: Grammar = Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                                                     t2("world")),
                                                 Seq(t1("hello"), t1("kitty")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t2", "t3");
+        const grammar: Grammar = MatchFrom(grammar1, "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokittyhellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld'},
         ];
@@ -259,10 +259,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 18. MatchFrom t1, t3, Join t1:hello+t1:kitty & (t1:hello+t2:goodbye+t1:kitty)+t2:world
     describe('18. MatchFrom t1, t3, Join t1:hello+t1:kitty & (t1:hello+t2:goodbye+t1:kitty)+t2:world', function() {
-        const grammar1: GrammarComponent = Join(Seq(t1("hello"), t1("kitty")),
+        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")),
                                                 Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                                                     t2("world")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t3");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworldgoodbyeworld'},
         ];
@@ -274,10 +274,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 19. MatchFrom t1, t3, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world & t1:hello+t1:kitty
     describe('19. MatchFrom t1, t3, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world & t1:hello+t1:kitty', function() {
-        const grammar1: GrammarComponent = Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
+        const grammar1: Grammar = Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                                                     t2("world")),
                                                 Seq(t1("hello"), t1("kitty")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t3");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworldgoodbyeworld'},
         ];
@@ -289,10 +289,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 20. MatchFrom t1, t3, Join t1:hello+t1:kitty & (t2:goodbye+t1:hello+t2:world)+t1:kitty
     describe('20. MatchFrom t1, t3, Join t1:hello+t1:kitty & (t2:goodbye+t1:hello+t2:world)+t1:kitty', function() {
-        const grammar1: GrammarComponent = Join(Seq(t1("hello"), t1("kitty")),
+        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")),
                                                 Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
                                                     t1("kitty")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t3");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworldgoodbyeworld'},
         ];
@@ -304,10 +304,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 21. MatchFrom t1, t3, Join (t2:goodbye+t1:hello+t2:world)+t1:kitty & t1:hello+t1:kitty
     describe('21. MatchFrom t1, t3, Join t1:hello+t1:kitty & (t2:goodbye+t1:hello+t2:world)+t1:kitty', function() {
-        const grammar1: GrammarComponent = Join(Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
+        const grammar1: Grammar = Join(Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
                                                     t1("kitty")),
                                                 Seq(t1("hello"), t1("kitty")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t3");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworldgoodbyeworld'},
         ];
@@ -319,8 +319,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 22. MatchFrom t1, t2, t1:o{0,1}
     describe('22. MatchFrom t1, t2, t1:o{0,1}', function() {
-        const grammar1: GrammarComponent = Rep(t1("o"), 0, 1);
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Rep(t1("o"), 0, 1);
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {},
             {t1: 'o', t2: 'o'},
@@ -332,9 +332,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 23. MatchFrom t1, t2, Join t1:h{1,4}+t4:world+t1:ello & the same
     describe('23. MatchFrom t1, t2, Join t1:h{1,4}+t4:world+t1:ello & the same', function() {
-        const grammar1: GrammarComponent = Join(Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")),
+        const grammar1: Grammar = Join(Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")),
                                      Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t4: 'worldworld'},
             {t1: 'hhello', t2: 'hhello', t4: 'worldworld'},
@@ -349,9 +349,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 24. MatchFrom t1, t2, Join t4:world+t1:h{1,4}+t1:ello & the same
     describe('24. MatchFrom t1, t2, Join t4:world+t1:h{1,4}+t1:ello & the same', function() {
-        const grammar1: GrammarComponent = Join(Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")),
+        const grammar1: Grammar = Join(Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")),
                                      Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t4: 'worldworld'},
             {t1: 'hhello', t2: 'hhello', t4: 'worldworld'},
@@ -366,8 +366,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 25. MatchFrom t1, t2, t1:na{1,4}
     describe('25. MatchFrom t1, t2, t1:na{1,4}', function() {
-        const grammar1: GrammarComponent = Rep(t1("na"), 1, 4);
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Rep(t1("na"), 1, 4);
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'na', t2: 'na'},
             {t1: 'nana', t2: 'nana'},
@@ -381,8 +381,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 26. MatchFrom t1, t2, t1:.{0,2}+t1:hi
     describe('26. MatchFrom t1, t2, t1:.{0,2}+t1:hi', function() {
-        const grammar1: GrammarComponent = Seq(Rep(Any("t1"), 0, 2), t1("hi"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 2), t1("hi"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi'},
             {t1: 'ihi', t2: 'ihi'},
@@ -399,8 +399,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 27. MatchFrom t1, t2, t1:.{0,1}+t1:hi+t1:.{0,1}
     describe('27. MatchFrom t1, t2, t1:.{0,1}+t1:hi+t1:.{0,1}', function() {
-        const grammar1: GrammarComponent = Seq(Rep(Any("t1"), 0, 1), t1("hi"), Rep(Any("t1"), 0, 1));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2");
+        const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 1), t1("hi"), Rep(Any("t1"), 0, 1));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi'},
             {t1: 'hhi', t2: 'hhi'},
@@ -419,8 +419,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 28. MatchFrom t1, t2, t1:.* with vocab "hi"
     describe('28. MatchFrom t1, t2, t1:.* with vocab "hi"', function() {
-        const grammar1: GrammarComponent = Rep(Any("t1"));
-        const grammar: GrammarComponent = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), MatchFrom(grammar1, "t1", "t2"));
+        const grammar1: Grammar = Rep(Any("t1"));
+        const grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), MatchFrom(grammar1, "t1", "t2"));
         const expectedResults: StringDict[] = [
             {},
             {t1: 'h', t2: 'h'},
@@ -447,8 +447,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 1. MatchFrom t1, t2, t3, t1:hello
     describe('1. MatchFrom t1, t2, t3, t1:hello', function() {
-        const grammar1: GrammarComponent = t1("hello");
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = t1("hello");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
         ];
@@ -459,8 +459,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 2. MatchFrom t1, t2, t3, ε
     describe('2. MatchFrom t1, t2, t3, ε', function() {
-        const grammar1: GrammarComponent = Epsilon();
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Epsilon();
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {},
         ];
@@ -475,8 +475,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 3. MatchFrom t1, t2, t3, t1:hello+t1:world
     describe('3. MatchFrom t1, t2, t3, t1:hello+t1:world', function() {
-        const grammar1: GrammarComponent = Seq(t1("hello"), t1("world"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Seq(t1("hello"), t1("world"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'helloworld', t2: 'helloworld', t3: 'helloworld'},
         ];
@@ -487,8 +487,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 4. MatchFrom t1, t2, t3, t1:hello+t4:goodbye
     describe('4. MatchFrom t1, t2, t3, t1:hello+t4:goodbye', function() {
-        const grammar1: GrammarComponent = Seq(t1("hello"), t4("goodbye"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Seq(t1("hello"), t4("goodbye"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'goodbyegoodbyegoodbye'},
         ];
@@ -500,8 +500,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 5. MatchFrom t1, t2, t3, t4:goodbye+t1:hello
     describe('5. MatchFrom t1, t2, t3, t4:goodbye+t1:hello', function() {
-        const grammar1: GrammarComponent = Seq(t4("goodbye"), t1("hello"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Seq(t4("goodbye"), t1("hello"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'goodbyegoodbyegoodbye'},
         ];
@@ -513,8 +513,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 6. MatchFrom t1, t2, t3, Nested sequence (t1:hello+t1:,)+t1:world
     describe('6. MatchFrom t1, t2, t3, Nested sequence (t1:hello+t1:,)+t1:world', function() {
-        const grammar1: GrammarComponent = Seq(Seq(t1("hello"), t1(", ")), t1("world"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Seq(Seq(t1("hello"), t1(", ")), t1("world"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello, world', t2: 'hello, world', t3: 'hello, world'},
         ];
@@ -525,8 +525,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 7. MatchFrom t1, t2, t3, t1:hello|t1:goodbye
     describe('7. MatchFrom t1, t2, t3, t1:hello|t1:goodbye', function() {
-        const grammar1: GrammarComponent = Uni(t1("hello"), t1("goodbye"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Uni(t1("hello"), t1("goodbye"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
             {t1: 'goodbye', t2: 'goodbye', t3: 'goodbye'},
@@ -538,8 +538,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 8. MatchFrom t1, t2, t3, t1:hello|t4:goodbye
     describe('8. MatchFrom t1, t2, t3, t1:hello|t4:goodbye', function() {
-        const grammar1: GrammarComponent = Uni(t1("hello"), t4("goodbye"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Uni(t1("hello"), t4("goodbye"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
             {t4: 'goodbyegoodbyegoodbye'},
@@ -552,8 +552,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 9. MatchFrom t1, t2, t3, t4:goodbye|t1:hello
     describe('9. MatchFrom t1, t2, t3, t4:goodbye|t1:hello', function() {
-        const grammar1: GrammarComponent = Uni(t4("goodbye"), t1("hello"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Uni(t4("goodbye"), t1("hello"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
             {t4: 'goodbyegoodbyegoodbye'},
@@ -566,9 +566,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 10. MatchFrom t1, t2, t3, (t1:hello|t1:goodbye)+(t1:world|t1:kitty)
     describe('10. MatchFrom t1, t2, t3, (t1:hello|t1:goodbye)+(t1:world|t1:kitty)', function() {
-        const grammar1: GrammarComponent = Seq(Uni(t1("hello"), t1("goodbye")),
+        const grammar1: Grammar = Seq(Uni(t1("hello"), t1("goodbye")),
                                     Uni(t1("world"), t1("kitty")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'helloworld', t2: 'helloworld', t3: 'helloworld'},
             {t1: 'goodbyeworld', t2: 'goodbyeworld', t3: 'goodbyeworld'},
@@ -582,9 +582,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 11. MatchFrom t1, t2, t3, (t1:hello+t1:kitty)|(t1:goodbye+t1:world)
     describe('11. MatchFrom t1, t2, t3, (t1:hello+t1:kitty)|(t1:goodbye+t1:world)', function() {
-        const grammar1: GrammarComponent = Uni(Seq(t1("hello"), t1("kitty")),
+        const grammar1: Grammar = Uni(Seq(t1("hello"), t1("kitty")),
                                     Seq(t1("goodbye"), t1("world")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t2: 'hellokitty', t3: 'hellokitty'},
             {t1: 'goodbyeworld', t2: 'goodbyeworld', t3: 'goodbyeworld'},
@@ -596,8 +596,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 12. MatchFrom t1, t2, t3, t1:hi+t1:.
     describe('12. MatchFrom t1, t2, t3, t1:hi+t1:.', function() {
-        const grammar1: GrammarComponent = Seq(t1("hi"), Any("t1"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Seq(t1("hi"), Any("t1"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hih', t2: 'hih', t3: 'hih'},
             {t1: 'hii', t2: 'hii', t3: 'hii'},
@@ -609,8 +609,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 13. MatchFrom t1, t2, t3, Join t1:hello & t1:.ello
     describe('13. MatchFrom t1, t2, t3, t1:hello & t1:.ello', function() {
-        const grammar1: GrammarComponent = Join(t1("hello"), Seq(Any("t1"), t1('ello')));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Join(t1("hello"), Seq(Any("t1"), t1('ello')));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
         ];
@@ -621,8 +621,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 14. MatchFrom t1, t2, t3 Join t1:hello & t4:world
     describe('14. MatchFrom t1, t2, t3 Join t1:hello & t4:world', function() {
-        const grammar1: GrammarComponent = Join(t1("hello"), t4('world'));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Join(t1("hello"), t4('world'));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'worldworldworld'},
         ];
@@ -634,8 +634,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 15. MatchFrom t1, t2, t3 Join t4:world & t1:hello
     describe('15. MatchFrom t1, t2, t3 Join t4:world & t1:hello', function() {
-        const grammar1: GrammarComponent = Join(t4('world'), t1("hello"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Join(t4('world'), t1("hello"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'worldworldworld'},
         ];
@@ -647,10 +647,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 16. MatchFrom t2, t3, t4, Join t1:hello+t1:kitty & (t1:hello+t2:goodbye+t1:kitty)+t2:world
     describe('16. MatchFrom t2, t3, t4, Join t1:hello+t1:kitty & (t1:hello+t2:goodbye+t1:kitty)+t2:world', function() {
-        const grammar1: GrammarComponent = Join(Seq(t1("hello"), t1("kitty")),
+        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")),
                                                 Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                                                     t2("world")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t2", "t3", "t4");
+        const grammar: Grammar = MatchFrom(grammar1, "t2", "t3", "t4");
         const expectedResults: StringDict[] = [
             {t1: 'hellokittyhellokittyhellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld', t4: 'goodbyeworld'},
         ];
@@ -662,10 +662,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 17. MatchFrom t2, t3, t4, Join t1:hello+t2:goodbye+t1:kitty)+t2:world & t1:hello+t1:kitty
     describe('17. MatchFrom t2, t3, t4, Join t1:hello+t2:goodbye+t1:kitty)+t2:world & t1:hello+t1:kitty', function() {
-        const grammar1: GrammarComponent = Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
+        const grammar1: Grammar = Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                                                     t2("world")),
                                                 Seq(t1("hello"), t1("kitty")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t2", "t3", "t4");
+        const grammar: Grammar = MatchFrom(grammar1, "t2", "t3", "t4");
         const expectedResults: StringDict[] = [
             {t1: 'hellokittyhellokittyhellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld', t4: 'goodbyeworld'},
         ];
@@ -677,10 +677,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 18. MatchFrom t1, t3, t4, Join t1:hello+t1:kitty & (t1:hello+t2:goodbye+t1:kitty)+t2:world
     describe('18. MatchFrom t1, t3, t4, Join t1:hello+t1:kitty & (t1:hello+t2:goodbye+t1:kitty)+t2:world', function() {
-        const grammar1: GrammarComponent = Join(Seq(t1("hello"), t1("kitty")),
+        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")),
                                                 Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                                                     t2("world")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t3", "t4");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t3", "t4");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworldgoodbyeworldgoodbyeworld'},
         ];
@@ -692,10 +692,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 19. MatchFrom t1, t3, t4, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world & t1:hello+t1:kitty
     describe('19. MatchFrom t1, t3, t4, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world & t1:hello+t1:kitty', function() {
-        const grammar1: GrammarComponent = Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
+        const grammar1: Grammar = Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                                                     t2("world")),
                                                 Seq(t1("hello"), t1("kitty")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t3", "t4");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t3", "t4");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworldgoodbyeworldgoodbyeworld'},
         ];
@@ -707,10 +707,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 20. MatchFrom t1, t3, t4, Join t1:hello+t1:kitty & (t2:goodbye+t1:hello+t2:world)+t1:kitty
     describe('20. MatchFrom t1, t3, t4, Join t1:hello+t1:kitty & (t2:goodbye+t1:hello+t2:world)+t1:kitty', function() {
-        const grammar1: GrammarComponent = Join(Seq(t1("hello"), t1("kitty")),
+        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")),
                                                 Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
                                                     t1("kitty")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t3", "t4");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t3", "t4");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworldgoodbyeworldgoodbyeworld'},
         ];
@@ -722,10 +722,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 21. MatchFrom t1, t3, t4, Join (t2:goodbye+t1:hello+t2:world)+t1:kitty & t1:hello+t1:kitty
     describe('21. MatchFrom t1, t3, t4, Join (t2:goodbye+t1:hello+t2:world)+t1:kitty & t1:hello+t1:kitty', function() {
-        const grammar1: GrammarComponent = Join(Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
+        const grammar1: Grammar = Join(Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
                                                     t1("kitty")),
                                                 Seq(t1("hello"), t1("kitty")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t3", "t4");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t3", "t4");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworldgoodbyeworldgoodbyeworld'},
         ];
@@ -737,8 +737,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 22. MatchFrom t1, t2, t3, t1:o{0,1}
     describe('22. MatchFrom t1, t2, t3, t1:o{0,1}', function() {
-        const grammar1: GrammarComponent = Rep(t1("o"), 0, 1);
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Rep(t1("o"), 0, 1);
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {},
             {t1: 'o', t2: 'o', t3: 'o'},
@@ -750,9 +750,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 23. MatchFrom t1, t2, t3, Join t1:h{1,4}+t4:world+t1:ello & the same
     describe('23. MatchFrom t1, t2, t3, Join t1:h{1,4}+t4:world+t1:ello & the same', function() {
-        const grammar1: GrammarComponent = Join(Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")),
+        const grammar1: Grammar = Join(Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")),
                                      Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'worldworldworld'},
             {t1: 'hhello', t2: 'hhello', t3: 'hhello', t4: 'worldworldworld'},
@@ -767,9 +767,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 24. MatchFrom t1, t2, t3, Join t4:world+t1:h{1,4}+t1:ello & the same
     describe('24. MatchFrom t1, t2, t3, Join t4:world+t1:h{1,4}+t1:ello & the same', function() {
-        const grammar1: GrammarComponent = Join(Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")),
+        const grammar1: Grammar = Join(Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")),
                                      Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'worldworldworld'},
             {t1: 'hhello', t2: 'hhello', t3: 'hhello', t4: 'worldworldworld'},
@@ -784,8 +784,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 25. MatchFrom t1, t2, t3, t1:na{1,4}
     describe('25. MatchFrom t1, t2, t3, t1:na{1,4}', function() {
-        const grammar1: GrammarComponent = Rep(t1("na"), 1, 4);
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Rep(t1("na"), 1, 4);
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'na', t2: 'na', t3: 'na'},
             {t1: 'nana', t2: 'nana', t3: 'nana'},
@@ -799,8 +799,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 26. MatchFrom t1, t2, t3, t1:.{0,2}+t1:hi
     describe('26. MatchFrom t1, t2, t3, t1:.{0,2}+t1:hi', function() {
-        const grammar1: GrammarComponent = Seq(Rep(Any("t1"), 0, 2), t1("hi"));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 2), t1("hi"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi', t3: 'hi'},
             {t1: 'ihi', t2: 'ihi', t3: 'ihi'},
@@ -817,8 +817,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 27. MatchFrom t1, t2, t3, t1:.{0,1}+t1:hi+t1:.{0,1}
     describe('27. MatchFrom t1, t2, t3, t1:.{0,1}+t1:hi+t1:.{0,1}', function() {
-        const grammar1: GrammarComponent = Seq(Rep(Any("t1"), 0, 1), t1("hi"), Rep(Any("t1"), 0, 1));
-        const grammar: GrammarComponent = MatchFrom(grammar1, "t1", "t2", "t3");
+        const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 1), t1("hi"), Rep(Any("t1"), 0, 1));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi', t3: 'hi'},
             {t1: 'hhi', t2: 'hhi', t3: 'hhi'},
@@ -837,8 +837,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 28. MatchFrom t1, t2, t3, t1:.* with vocab "hi"
     describe('28. MatchFrom t1, t2, t3, t1:.* with vocab "hi"', function() {
-        const grammar1: GrammarComponent = Rep(Any("t1"));
-        const grammar: GrammarComponent = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), Vocab("t3", "ZXhi"),
+        const grammar1: Grammar = Rep(Any("t1"));
+        const grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), Vocab("t3", "ZXhi"),
                                    MatchFrom(grammar1, "t1", "t2", "t3"));
         const expectedResults: StringDict[] = [
             {},

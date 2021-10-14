@@ -10,13 +10,13 @@
  * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { GrammarComponent, NamespaceGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, NullGrammar, SequenceGrammar, JoinGrammar, ReplaceGrammar, JoinReplaceGrammar } from "./grammars";
+import { Grammar, NsGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, NullGrammar, SequenceGrammar, JoinGrammar, ReplaceGrammar, JoinReplaceGrammar } from "./grammars";
 import { Cell, CellPos, DummyCell, Gen, StringDict } from "./util";
 import { DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, ParamDict, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
 
 
-type BinaryOp = (cell: Cell, c1: GrammarComponent, c2: GrammarComponent) => GrammarComponent;
+type BinaryOp = (cell: Cell, c1: Grammar, c2: Grammar) => Grammar;
 export const BINARY_OPS: {[opName: string]: BinaryOp} = {
     "or": (cell, c1, c2) => new AlternationGrammar(cell, [c1, c2]),
     "concat": (cell, c1, c2) => new SequenceGrammar(cell, [c1, c2]),
@@ -25,7 +25,7 @@ export const BINARY_OPS: {[opName: string]: BinaryOp} = {
 
 export abstract class TstComponent {
 
-    public abstract toGrammar(): GrammarComponent;
+    public abstract toGrammar(): Grammar;
 
     /**
      * Most kinds of components only represent a grammar, that will be
@@ -70,7 +70,7 @@ export abstract class TstCellComponent extends TstComponent {
         this.cell.message(msg);
     }
     
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
         return new EpsilonGrammar(this.cell);
     }
 
@@ -114,7 +114,7 @@ export class TstHeader extends TstCellComponent {
         return this.header.getColor(saturation, value);
     }
 
-    public headerToGrammar(left: GrammarComponent, content: SheetCell): GrammarComponent {
+    public headerToGrammar(left: Grammar, content: SheetCell): Grammar {
         const grammar = this.header.toGrammar(left, content.text, content);
         //grammar.cell = content;
         return grammar;
@@ -138,9 +138,9 @@ export class TstHeadedCell extends TstCellComponent {
         super(content);
     }
 
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
 
-        let prevGrammar: GrammarComponent = new EpsilonGrammar(this.cell);
+        let prevGrammar: Grammar = new EpsilonGrammar(this.cell);
 
         if (this.prev != undefined) {
             prevGrammar = this.prev.toGrammar();
@@ -173,7 +173,7 @@ export class TstHeadedCell extends TstCellComponent {
 
 export class TstComment extends TstCellComponent {
 
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
         return new EpsilonGrammar(this.cell);
     }
 }
@@ -242,7 +242,7 @@ export class TstEnclosure extends TstCellComponent {
         this.specRow = cell.pos.row;
     }
     
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
 
         // we only ever end up in this base EncloseComponent compile if it wasn't
         // a known operator.  this is an error, but we flag it for the programmer
@@ -252,7 +252,7 @@ export class TstEnclosure extends TstCellComponent {
         // its sibling's state (if a sibling is present), and if not, as its child's 
         // state (if present), and if not, the empty grammar.
 
-        let result: GrammarComponent = new EpsilonGrammar(this.cell);
+        let result: Grammar = new EpsilonGrammar(this.cell);
 
         if (this.child != undefined) {
             result = this.child.toGrammar();
@@ -288,15 +288,15 @@ export class TstEnclosure extends TstCellComponent {
 
 export class TstBinaryOp extends TstEnclosure {
 
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
 
         const trimmedText = this.text.slice(0, 
                         this.text.length-1).trim();
 
         const op = BINARY_OPS[trimmedText];
                             
-        let childGrammar: GrammarComponent = new EpsilonGrammar(this.cell);
-        let siblingGrammar: GrammarComponent = new EpsilonGrammar(this.cell);
+        let childGrammar: Grammar = new EpsilonGrammar(this.cell);
+        let siblingGrammar: Grammar = new EpsilonGrammar(this.cell);
 
         if (this.child == undefined) {
             this.message({
@@ -326,13 +326,13 @@ export class TstBinaryOp extends TstEnclosure {
 
 export class TstReplace extends TstEnclosure {
 
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
         
         // we're not actually doing anything with the params yet, just
         // testing that we can actually gather them appropriately.
 
         let params: [Cell, ParamDict][] = [];
-        let siblingGrammar: GrammarComponent = new EpsilonGrammar(this.cell);
+        let siblingGrammar: Grammar = new EpsilonGrammar(this.cell);
 
         if (this.child == undefined) {
             this.message({
@@ -395,7 +395,7 @@ export class TstReplace extends TstEnclosure {
 
 export class TstTableOp extends TstEnclosure {
 
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
 
         if (this.sibling != undefined) {
             // TODO: Content obliteration warning
@@ -439,7 +439,7 @@ export class TstUnitTest extends TstEnclosure {
      * and one to the right, and makes sure that each line of the one to the right
      * has an output when filtering the table above.
      */
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
         
         if (this.sibling == undefined) {
             this.message({
@@ -502,7 +502,7 @@ export class TstNegativeUnitTest extends TstEnclosure {
      * and one to the right, and makes sure that each line of the one to the right
      * has no output when filtering the table above.
      */
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
         
         if (this.sibling == undefined) {
             this.message({
@@ -561,7 +561,7 @@ export class TstNegativeUnitTest extends TstEnclosure {
 
 export class TstAssignment extends TstEnclosure {
 
-    public assign(ns: NamespaceGrammar, grammar: GrammarComponent): void {
+    public assign(ns: NsGrammar, grammar: Grammar): void {
         
         // determine what symbol you're assigning to
         const trimmedText = this.text.slice(0, this.text.length-1).trim();
@@ -608,7 +608,7 @@ export class TstAssignment extends TstEnclosure {
         }
     }
 
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
 
         if (this.child != undefined) {
             return this.child.toGrammar();
@@ -637,16 +637,16 @@ export class TstSheet extends TstEnclosure {
         return children;
     }
 
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
 
-        const ns = new NamespaceGrammar(this.cell, this.name);
+        const ns = new NsGrammar(this.cell, this.name);
 
         if (this.child == undefined) {
             return ns;
         }
 
         let child: TstEnclosure | undefined = undefined;
-        let grammar: GrammarComponent | undefined = undefined;
+        let grammar: Grammar | undefined = undefined;
         for (child of this.getChildren()) {
             grammar = child.toGrammar();
             if (child instanceof TstAssignment) {
@@ -678,9 +678,9 @@ export class TstProject extends TstComponent {
         this.sheets[sheet.name] = sheet;
     }
     
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
 
-        const ns = new NamespaceGrammar(new DummyCell(), "");
+        const ns = new NsGrammar(new DummyCell(), "");
 
         for (let [name, sheet] of Object.entries(this.sheets)) {
             const grammar = sheet.toGrammar();
@@ -761,10 +761,10 @@ export class TstTable extends TstEnclosure {
         throw new Error("TstTables cannot have children");
     }
 
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
         // unless it's being interpreted as a paramTable, tables
         // have the semantics of alternation
-        const alternatives: GrammarComponent[] = [];
+        const alternatives: Grammar[] = [];
 
         for (const [cell, paramDict] of this.toParamsTable()) {
             for (const [key, grammar] of Object.entries(paramDict)) {
@@ -814,7 +814,7 @@ export class TstRow extends TstCellComponent {
         this.lastCell = newCell;
     }
 
-    public toGrammar(): GrammarComponent {
+    public toGrammar(): Grammar {
         if (this.lastCell == undefined) {
             return new NullGrammar(this.cell);  // shouldn't happen
         }

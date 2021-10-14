@@ -1,4 +1,4 @@
-import { NameQualifier } from "./grammars";
+import { NameQualifier } from "./transforms";
 import { 
     TstAssignment, TstBinaryOp, TstComment, 
     TstEnclosure, TstHeader, TstProject, 
