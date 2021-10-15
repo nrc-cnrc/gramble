@@ -1,5 +1,3 @@
-//import {DevEnvironment, Project, getBackgroundColor, getForegroundColor} from "@gramble/gramble";
-
 function alert(msg) {
     SpreadsheetApp.getUi().alert(msg);
 }
@@ -359,7 +357,7 @@ function makeProject() {
     const sheetName = sheet.getName();
 
     const devEnv = new GoogleSheetsDevEnvironment(sheetName);
-    const project = new gramble.Gramble(devEnv, sheetName);
+    const project = gramble.Interpreter.fromSheet(devEnv, sheetName);
     project.runChecks();
     //project.runUnitTests();
     return [project, devEnv];

@@ -150,7 +150,7 @@
                 previousSheetName = currentSheetName;
                 
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
-                project = new gramble.Gramble(devEnv, currentSheetName);
+                project = gramble.Interpreter.fromSheet(devEnv, currentSheetName);
                 project.runChecks();
                 //project.runUnitTests();
 
