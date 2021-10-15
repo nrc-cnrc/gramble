@@ -186,6 +186,10 @@ export abstract class Tape {
         throw new Error(`Not implemented`);
     }
     
+    public none(): Token {
+        throw new Error(`Not implemented`);
+    }
+    
     public *plus(tapeName: string, other: BitSet): Gen<Tape> {
         throw new Error(`Not implemented`);
     }
@@ -194,7 +198,11 @@ export abstract class Tape {
         throw new Error(`Not implemented`);
     }
 
-    public tokenize(tapeName: string, str: string): [string, Token][] {
+    public tokenize(
+        tapeName: string, 
+        str: string, 
+        atomic: boolean = false
+    ): [string, Token][] {
         throw new Error(`Not implemented`);
     }
 
@@ -242,6 +250,10 @@ export class Token {
         return new Token(this.bits.andNot(other.bits));
     }
 
+    public or(other: Token): Token {
+        return new Token(this.bits.or(other.bits));
+    }
+    
     public isEmpty(): boolean {
         return this.bits.isEmpty();
     }
@@ -351,6 +363,10 @@ export class StringTape extends Tape {
         return new Token( new BitSet().flip());
     }
 
+    public none(): Token {
+        return new Token( new BitSet());
+    }
+
     public add(str1: string, str2: string): string[] {
         return [str1 + str2];
     }
@@ -359,7 +375,11 @@ export class StringTape extends Tape {
         return new Token(str1.bits.and(str2.bits));
     }
 
-    public tokenize(tapeName: string, str: string): [string, Token][] {
+    public tokenize(
+        tapeName: string, 
+        str: string, 
+        atomic: boolean = false
+    ): [string, Token][] {
         
         if (tapeName != this.tapeName) {
             throw new Error(`Trying to add a character from tape ${tapeName} to tape ${this.tapeName}`);
@@ -367,6 +387,10 @@ export class StringTape extends Tape {
 
         if (str.length == 0) {
             return [];
+        }
+
+        if (atomic) {
+            return [[str, this.toBitsAndRegister(str)]];
         }
 
         const results: Token[] = [];
@@ -438,7 +462,11 @@ class FlagTape extends StringTape {
         return [];
     }
 
-    public tokenize(tapeName: string, str: string): [string, Token][] {
+    public tokenize(
+        tapeName: string, 
+        str: string, 
+        atomic: boolean = false
+    ): [string, Token][] {
         var index = this.strToIndex.get(str);
         if (index == undefined) {
             index = this.registerToken(str);
@@ -493,7 +521,11 @@ export class TapeCollection extends Tape {
         return "__ANY_TAPE__";
     }
     
-    public tokenize(tapeName: string, str: string): [string, Token][] {
+    public tokenize(
+        tapeName: string, 
+        str: string, 
+        atomic: boolean = false
+    ): [string, Token][] {
         var tape = this.tapes.get(tapeName);
         if (tape == undefined) {
             tape = new StringTape(this, tapeName);
@@ -625,7 +657,11 @@ export class RenamedTape extends Tape {
         return new RenamedTape(newChild, this.fromTape, this.toTape);
     }
 
-    public tokenize(tapeName: string, str: string): [string, Token][] {
+    public tokenize(
+        tapeName: string, 
+        str: string, 
+        atomic: boolean = false
+    ): [string, Token][] {
         tapeName = this.adjustTapeName(tapeName);
         return this.child.tokenize(tapeName, str);
     }

@@ -3,7 +3,7 @@ import {
     GenOptions, Grammar, 
     LiteralGrammar, SequenceGrammar 
 } from "./grammars";
-import { DevEnvironment, DummyCell, Gen, iterTake, StringDict } from "./util";
+import { DevEnvironment, Gen, iterTake, StringDict } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";

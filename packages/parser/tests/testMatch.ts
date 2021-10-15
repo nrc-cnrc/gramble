@@ -2,7 +2,7 @@ import {
     Uni, 
     Match, 
     Seq, Any, Join, Filter, MatchDot, Dot, 
-    MatchDotRep, MatchDotRep2, MatchDotStar, MatchDotStar2,
+    MatchDotRep, MatchDotRep2, MatchDotStar, MatchDotStar2, CharSet,
 } from "../src/grammars";
 
 import { 
@@ -27,6 +27,35 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('2: matching t1/t2 of h|i', function() {
         const grammar = Match(Seq(Uni(t1("h"), t1("i")), 
                                 Uni(t2("h"), t2("i"))), "t1", "t2");
+        testHasTapes(grammar, ['t1', 't2']);
+        //testHasVocab(grammar, {'t1': 2, 't2': 2});
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'},
+                          {'t1': 'i', 't2': 'i'}])
+    });
+
+    
+    describe('2a: matching t1/t2 of [hi]', function() {
+        const grammar = Match(Seq(CharSet("t1", ["h", "i"]), 
+                        CharSet("t2", ["h", "i"])), "t1", "t2");
+        testHasTapes(grammar, ['t1', 't2']);
+        //testHasVocab(grammar, {'t1': 2, 't2': 2});
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'},
+                          {'t1': 'i', 't2': 'i'}])
+    });
+
+    
+    describe('2b: matching t1:[hi] and t2:h|i', function() {
+        const grammar = Match(Seq(CharSet("t1", ["h", "i"]), 
+                            Uni(t2("h"), t2("i"))), "t1", "t2");
+        testHasTapes(grammar, ['t1', 't2']);
+        //testHasVocab(grammar, {'t1': 2, 't2': 2});
+        testGrammar(grammar, [{'t1': 'h', 't2': 'h'},
+                          {'t1': 'i', 't2': 'i'}])
+    });
+    
+    describe('2c: matching t1:h|i and t2:[hi]', function() {
+        const grammar = Match(Seq(Uni(t1("h"), t1("i")), 
+                        CharSet("t2", ["h", "i"])), "t1", "t2");
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
         testGrammar(grammar, [{'t1': 'h', 't2': 'h'},

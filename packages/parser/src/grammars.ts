@@ -21,6 +21,7 @@ import {
     constructJoin,
     constructLiteral,
     constructMatchFrom,
+    constructCharSet,
 } from "./exprs";
 
 import { 
@@ -54,6 +55,7 @@ export class GenOptions {
 export interface GrammarTransform<T> {
     transformEpsilon(g: EpsilonGrammar, ns: NsGrammar, args: T): Grammar;
     transformNull(g: NullGrammar, ns: NsGrammar, args: T): Grammar;
+    transformCharSet(g: CharSetGrammar, ns: NsGrammar, args: T): Grammar;
     transformLiteral(g: LiteralGrammar, ns: NsGrammar, args: T): Grammar;
     transformDot(g: DotGrammar, ns: NsGrammar, args: T): Grammar;
     transformSequence(g: SequenceGrammar, ns: NsGrammar, args: T): Grammar;
@@ -272,13 +274,44 @@ export class NullGrammar extends AtomicGrammar {
     }
 }
 
+export class CharSetGrammar extends AtomicGrammar {
+
+    constructor(
+        cell: Cell,
+        public tape: string,
+        public chars: string[]
+    ) {
+        super(cell);
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformCharSet(this, ns, args);
+    }
+
+    public calculateTapes(stack: CounterStack): string[] {
+        if (this.tapes == undefined) {
+            this.tapes = [this.tape];
+        }
+        return this.tapes;
+    }
+
+    public collectVocab(tapes: Tape, stack: string[] = []): void {
+        for (const char of this.chars) {
+            tapes.tokenize(this.tape, char, true);
+        }
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            this.expr = constructCharSet(this.tape, this.chars);
+        }
+        return this.expr;
+    }
+}
+
 export class LiteralGrammar extends AtomicGrammar {
 
     protected tokens: string[] = [];
-    
-    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
-        return t.transformLiteral(this, ns, args);
-    }
 
     constructor(
         cell: Cell,
@@ -286,6 +319,10 @@ export class LiteralGrammar extends AtomicGrammar {
         public text: string
     ) {
         super(cell);
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformLiteral(this, ns, args);
     }
 
     public collectVocab(tapes: Tape, stack: string[] = []): void {
@@ -1176,6 +1213,10 @@ export function Uni(...children: Grammar[]): AlternationGrammar {
 
 export function Maybe(child: Grammar): AlternationGrammar {
     return Uni(child, Epsilon());
+}
+
+export function CharSet(tape: string, chars: string[]): CharSetGrammar {
+    return new CharSetGrammar(DUMMY_CELL, tape, chars);
 }
 
 export function Lit(tape: string, text: string): LiteralGrammar {

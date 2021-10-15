@@ -1,5 +1,5 @@
 
-import { Epsilon, Seq, Uni } from "../src/grammars";
+import { CharSet, Epsilon, Seq, Uni } from "../src/grammars";
 import { t1, t2, testHasTapes, testGrammar, testHasVocab } from './testUtils';
 
 import * as path from 'path';
@@ -215,5 +215,24 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(t1("hello"), Uni(Epsilon(), Epsilon()));
         testHasTapes(grammar, ["t1"]);
         testGrammar(grammar, [{t1: "hello"}]);
+    }); 
+
+    describe('t1:[hi]', function() {
+        const grammar = CharSet("t1", ["h", "i"]);
+        testHasTapes(grammar, ["t1"]);
+        testGrammar(grammar, [{t1: "h"}, {t1: "i"}]);
+    }); 
+
+    
+    describe('t1:[hi]+t1:[hi]', function() {
+        const grammar = Seq(CharSet("t1", ["h", "i"]), 
+                        CharSet("t1", ["h", "i"]));
+        testHasTapes(grammar, ["t1"]);
+        testGrammar(grammar, [
+            {t1: "hh"}, 
+            {t1: "hi"}, 
+            {t1: "ih"}, 
+            {t1: "ii"}
+        ]);
     }); 
 });

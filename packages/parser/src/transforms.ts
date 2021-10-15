@@ -8,7 +8,8 @@ import {
     NsGrammar, NegationGrammar, NegativeUnitTestGrammar, 
     NullGrammar, RenameGrammar, RepeatGrammar, ReplaceGrammar, 
     SequenceGrammar, StartsWithGrammar, UnitTestGrammar, 
-    UnresolvedEmbedGrammar 
+    UnresolvedEmbedGrammar, 
+    CharSetGrammar
 } from "./grammars";
 
 class IdentityTransform<T> implements GrammarTransform<T> {
@@ -18,6 +19,10 @@ class IdentityTransform<T> implements GrammarTransform<T> {
     }
 
     public transformNull(g: NullGrammar, ns: NsGrammar, args: T): Grammar {
+        return g;
+    }
+
+    public transformCharSet(g: CharSetGrammar, ns: NsGrammar, args: T): Grammar {
         return g;
     }
 

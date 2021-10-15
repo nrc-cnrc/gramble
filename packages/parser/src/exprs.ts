@@ -1,5 +1,5 @@
 import { Gen, setDifference, shuffleArray, StringDict } from "./util";
-import { MultiTapeOutput, Tape, RenamedTape, TapeCollection, Token, ANY_CHAR } from "./tapes";
+import { MultiTapeOutput, Tape, RenamedTape, Token, ANY_CHAR } from "./tapes";
 
 /**
  * This is the parsing/generation engine that underlies Gramble.
@@ -563,6 +563,55 @@ class DotExpr extends Expr {
     }
 }
 
+class CharSetExpr extends Expr {
+    
+    constructor(
+        public tapeName: string,
+        public chars: string[]
+    ) {
+        super();
+    }
+    
+    public get id(): string {
+        return `${this.tapeName}:{${this.chars.join("|")}}`;
+    }
+
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return this;
+        }
+        return NULL;
+    }
+
+    protected getToken(tape: Tape): Token {
+        //return tape.tokenize(tape.tapeName, this.text[this.index])[0];
+        let result = tape.none();
+        for (const char of this.chars) {
+            const t = new Token(tape.toBits(tape.tapeName, char));
+            result = result.or(t);
+        }
+        return result;
+    }
+
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return;
+        }
+
+        const bits = this.getToken(matchedTape);
+        const result = matchedTape.match(bits, target);
+        if (result.isEmpty()) {
+            return;
+        }
+        yield [matchedTape, result, EPSILON];
+    }
+}
 
 class DotStarExpr extends Expr {
     
@@ -596,6 +645,8 @@ class DotStarExpr extends Expr {
         yield [matchedTape, target, this];
     }
 }
+
+
 
 class LiteralExpr extends Expr {
 
@@ -1221,12 +1272,12 @@ export class MatchExpr extends UnaryExpr {
         var result: Expr = this.child.delta(tape, stack);
         return constructIntersection(bufSeq, result);
         
-
+        /*
         if (!(result instanceof NullExpr)) {
             return constructSequence(...Object.values(newBuffers), result);
         } else {
             return NULL;
-        }
+        } */
     }
 
     public *deriv(
@@ -1318,6 +1369,10 @@ export const NULL = new NullExpr();
 
 export function constructLiteral(tape: string, text: string[], index: number = 0): Expr {
     return new LiteralExpr(tape, text, index);
+}
+
+export function constructCharSet(tape: string, chars: string[]): CharSetExpr {
+    return new CharSetExpr(tape, chars);
 }
 
 export function constructDot(tape: string): Expr {
