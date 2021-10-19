@@ -120,7 +120,8 @@ class IdentityTransform<T> implements GrammarTransform<T> {
     public transformUnitTest(g: UnitTestGrammar, ns: NsGrammar, args: T): Grammar {
         const newChild = g.child.accept(this, ns, args);
         const newTest = g.test.accept(this, ns, args);
-        return new UnitTestGrammar(g.cell, newChild, newTest);
+        const newUniques = g.uniques.map(u => u.accept(this, ns, args)) as LiteralGrammar[];
+        return new UnitTestGrammar(g.cell, newChild, newTest, newUniques);
     }
 
     public transformNegativeUnitTest(g: NegativeUnitTestGrammar, ns: NsGrammar, args: T): Grammar {

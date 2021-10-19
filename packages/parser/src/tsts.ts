@@ -10,7 +10,7 @@
  * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { Grammar, NsGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, NullGrammar, SequenceGrammar, JoinGrammar, ReplaceGrammar, JoinReplaceGrammar } from "./grammars";
+import { Grammar, NsGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, NullGrammar, SequenceGrammar, JoinGrammar, ReplaceGrammar, JoinReplaceGrammar, LiteralGrammar } from "./grammars";
 import { Cell, CellPos, DummyCell, Gen, StringDict } from "./util";
 import { DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, ParamDict, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
@@ -326,6 +326,7 @@ export class TstBinaryOp extends TstEnclosure {
 
 export class TstReplace extends TstEnclosure {
 
+    public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
     public toGrammar(): Grammar {
         
         // we're not actually doing anything with the params yet, just
@@ -343,7 +344,6 @@ export class TstReplace extends TstEnclosure {
             });
         } else {
             params = this.child.toParamsTable();
-            //console.log(params);
         }
 
         if (this.sibling == undefined) {
@@ -360,6 +360,26 @@ export class TstReplace extends TstEnclosure {
         const replaceRules: ReplaceGrammar[] = [];
 
         for (const [cell, paramDict] of params) {
+
+            for (const [key, grammar] of Object.entries(paramDict)) {
+                if (key == "__") {
+                    grammar.message({
+                        type: "warning",
+                        shortMsg: "Missing parameter name",
+                        longMsg: `The operator to the left doesn't allow unnamed parameters.`
+                    });
+                    continue;
+                }
+                if (TstReplace.VALID_PARAMS.indexOf(key) == -1) {
+                    grammar.message({
+                        type: "warning",
+                        shortMsg: "Wayward parameter name",
+                        longMsg: `The operator to the left doesn't allow parameters '${key}', so this cell will be ignored.`
+                    });
+                    continue;
+                }
+            }
+
             if (!("from" in paramDict)) {
                 this.message({
                     type: "error",
@@ -386,6 +406,10 @@ export class TstReplace extends TstEnclosure {
                                     : new EpsilonGrammar(this.cell); 
             const replaceRule = new ReplaceGrammar(this.cell, fromArg, toArg, preArg, postArg);
             replaceRules.push(replaceRule);
+        }
+
+        if (replaceRules.length == 0) {
+            return siblingGrammar;  // in case every rule fails, at least generate something
         }
 
         //const replaceAlternation = new AlternationGrammar(this.cell, replaceRules);
@@ -434,6 +458,8 @@ export class TstTableOp extends TstEnclosure {
 
 export class TstUnitTest extends TstEnclosure {
 
+    public static VALID_PARAMS = [ "__", "unique" ];
+
     /**
      * "test" is an operator that takes two tables, one above (spatially speaking)
      * and one to the right, and makes sure that each line of the one to the right
@@ -479,16 +505,42 @@ export class TstUnitTest extends TstEnclosure {
 
         for (const [cell, paramDict] of this.child.toParamsTable()) {
             for (const [key, grammar] of Object.entries(paramDict)) {
-                if (key != "__") {
+                if (TstUnitTest.VALID_PARAMS.indexOf(key) == -1) {
                     grammar.message({
                         type: "warning",
                         shortMsg: "Wayward parameter name",
-                        longMsg: `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`
+                        longMsg: `The operator to the left doesn't allow paramaters '${key}', so this cell will be ignored.`
                     });
                     continue;
                 }
-                result = new UnitTestGrammar(cell, result, grammar);
             }
+            const testInputs = paramDict["__"];
+            if (testInputs == undefined) {
+                cell.message({
+                    type: "error",
+                    shortMsg: "Missing test inputs",
+                    longMsg: `This test line does not have any inputs.`
+                });
+                continue;
+            }
+
+            let uniques: LiteralGrammar[] = [];
+            const unique = paramDict["unique"];
+
+            if (unique != undefined) {
+                try {
+                    uniques = unique.getLiterals();
+                } catch {
+                    cell.message({
+                        type: "error",
+                        shortMsg: "Ill-formed unique",
+                        longMsg: `Somewhere in this row there is an ill-formed uniqueness constraint.  ` +
+                                `Uniqueness constrains can only be literals.`
+                    });
+                    continue;
+                }
+            }
+            result = new UnitTestGrammar(cell, result, testInputs, uniques);
         }
         return result;
     }

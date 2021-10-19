@@ -1,0 +1,14 @@
+verb:, table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+suffix:, table:, text, gloss
+    ,       , bar, -1SG
+    ,       , baz, -2SG
+    ,       ,    , .3SG
+
+word:, table:, embed, embed
+    ,       , verb, suffix
+    ,       ,     ,
+    , replace:, from text, to surface, unique surface
+    ,         , b,  v,   v

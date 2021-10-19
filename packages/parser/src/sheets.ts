@@ -230,7 +230,7 @@ export class Sheet extends SheetComponent {
             
             for (var colIndex = 0; colIndex < this.cells[rowIndex].length; colIndex++) {
     
-                const cellText = this.cells[rowIndex][colIndex].trim();
+                const cellText = this.cells[rowIndex][colIndex].trim().normalize();
                 const cell = new SheetCell(this, cellText, rowIndex, colIndex);
                 
                 if (rowIsComment) {

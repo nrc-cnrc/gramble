@@ -29,6 +29,11 @@ export class Interpreter {
     // functionality, but even if we're not, it doesn't hurt to keep these around.)
     public tapeObjs: TapeCollection = new TapeCollection();
 
+    // the symbol table doesn't change in between invocations because queries
+    // and unit tests are only filters containing sequences of literals -- nothing
+    // that could change the meaning of a symbol.
+    public symbolTable: SymbolTable = {};
+
     constructor(
         public devEnv: DevEnvironment,
         public grammar: Grammar
@@ -163,10 +168,9 @@ export class Interpreter {
         query: StringDict = {},
         opt: GenOptions
     ): Gen<StringDict> {
-        const symbolTable: SymbolTable = {};
         let tapePriority = this.grammar.calculateTapes(new CounterStack(2));
         
-        let expr = this.grammar.constructExpr(symbolTable);
+        let expr = this.grammar.constructExpr(this.symbolTable);
 
         let targetComponent = this.grammar.getSymbol(symbolName);
         if (targetComponent == undefined) {
@@ -190,7 +194,7 @@ export class Interpreter {
         
         }
 
-        expr = targetComponent.constructExpr(symbolTable);
+        expr = targetComponent.constructExpr(this.symbolTable);
 
         //console.log(`expr = ${expr.id}`);
 
@@ -208,8 +212,7 @@ export class Interpreter {
 
     public runUnitTests(): void {
         const opt = new GenOptions();
-        const symbolTable: SymbolTable = {};
-        let expr = this.grammar.constructExpr(symbolTable);
+        let expr = this.grammar.constructExpr(this.symbolTable);
 
         const tests = this.grammar.gatherUnitTests();
 
@@ -226,7 +229,7 @@ export class Interpreter {
             // to something that's eventually a "from" tape of a replace
             targetComponent.copyVocab(this.tapeObjs);
 
-            expr = targetComponent.constructExpr(symbolTable);
+            expr = targetComponent.constructExpr(this.symbolTable);
 
             const prioritizedTapes: Tape[] = [];
             for (const tapeName of tapePriority) {
@@ -238,7 +241,7 @@ export class Interpreter {
             }        
 
             const results = [...expr.generate(prioritizedTapes, opt.random, opt.maxRecursion, opt.maxChars)];
-            test.markResults(results);
+            test.evalResults(results);
         }
     }
 }

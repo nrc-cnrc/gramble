@@ -2,7 +2,7 @@
 import { assert, expect } from "chai";
 import { Grammar, Lit } from "../src/grammars";
 import { Interpreter } from "../src/interpreter";
-import { StringDict } from "../src/util";
+import { StringDict, tokenizeUnicode } from "../src/util";
 import { dirname, basename } from "path";
 import { TextDevEnvironment } from "../src/textInterface";
 
@@ -11,6 +11,16 @@ export const t2 = (s: string) => Lit("t2", s);
 export const t3 = (s: string) => Lit("t3", s);
 export const t4 = (s: string) => Lit("t4", s);
 export const t5 = (s: string) => Lit("t5", s);
+
+export function testTokenize(s: string, expectedResult: string[]): void {
+    s = s.normalize('NFD');
+    const result = tokenizeUnicode(s);
+    expectedResult = expectedResult.map(s => s.normalize('NFD'));
+    it(`${s} should tokenize to [${expectedResult.join(" ")}]`, function() {
+        expect(result).to.deep.equal(expectedResult);
+    });
+
+}
 
 export function testIsType(obj: any, type: any,  objName: string = ""): void {
     const msg = (objName != "") ? `have ${objName} ` : ""; 

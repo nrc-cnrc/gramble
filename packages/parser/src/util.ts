@@ -1,3 +1,4 @@
+import { getCategory } from 'unicode-properties';
 
 export type Gen<T> = Generator<T, void, undefined>;
 
@@ -69,6 +70,57 @@ export interface DevEnvironment {
 }
 
 export const DUMMY_POSITION = new CellPos("?", -1, -1);
+
+const MARK_CATEGORIES = [ 'Lm', 'Sk', 'Mc', 'Me', 'Mn' ];
+function isDiacritic(c: string) {
+    const codePoint = c.charCodeAt(0);
+    const category = getCategory(codePoint);
+    return MARK_CATEGORIES.indexOf(category) != -1;
+}
+
+export function tokenizeUnicode(str: string): string[] {
+
+    const results: string[] = [];
+    var anticipate = false;
+    var buffer: string[] = [];
+    for (const c of str) {
+
+        // there are three cases where we push to the buffer
+        // but don't join/emit it yet: tie characters, diacritical
+        // marks, and when we've previously seen a tie character and
+        // haven't consumed the character it ties
+        if (c == '\u0361' || c == '\u035C') {
+            buffer.push(c);
+            anticipate = true;
+            continue;
+        }
+
+        if (isDiacritic(c)) {
+            buffer.push(c);
+            continue;
+        }
+
+        if (anticipate) {
+            buffer.push(c);
+            anticipate = false;
+            continue;
+        }
+
+        // it's not special, it starts a new token
+        if (buffer.length > 0) {
+            results.push(buffer.join(""));
+            buffer = [];
+        }
+        buffer.push(c);
+
+    }
+
+    if (buffer.length > 0) {
+        results.push(buffer.join(""));
+    }
+
+    return results;
+}
 
 function sum(a: number[]): number {
     var s = 0;

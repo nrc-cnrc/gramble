@@ -147,6 +147,10 @@ export abstract class Grammar {
         ns: NsGrammar,
         args: T
     ): Grammar;
+
+    public getLiterals(): LiteralGrammar[] {
+        throw new Error(`Cannot get literals from this grammar`);
+    }
     
     public abstract getChildren(): Grammar[];
 
@@ -208,7 +212,7 @@ export abstract class Grammar {
         return tapes;
     }
 
-    public abstract constructExpr(symbolTable: {[name: string]: Expr}): Expr;
+    public abstract constructExpr(symbolTable: SymbolTable): Expr;
 
     public getSymbol(name: string): Grammar | undefined {
         if (name == "") {
@@ -236,6 +240,10 @@ export class EpsilonGrammar extends AtomicGrammar {
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformEpsilon(this, ns, args);
+    }
+
+    public getLiterals(): LiteralGrammar[] {
+        return [];
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -325,6 +333,10 @@ export class LiteralGrammar extends AtomicGrammar {
         return t.transformLiteral(this, ns, args);
     }
 
+    public getLiterals(): LiteralGrammar[] {
+        return [this];
+    }
+
     public collectVocab(tapes: Tape, stack: string[] = []): void {
         this.tokens = tapes.tokenize(this.tape, this.text).map(([s,t]) => s);
     }
@@ -394,6 +406,10 @@ export class SequenceGrammar extends NAryGrammar {
     
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformSequence(this, ns, args);
+    }
+
+    public getLiterals(): LiteralGrammar[] {
+        return flatten(this.children.map(c => c.getLiterals()));
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
@@ -1001,16 +1017,18 @@ export class NsGrammar extends Grammar {
         }
     }
 
-    public constructExpr(symbols: {[name: string]: Expr}): Expr {
+    public constructExpr(symbols: SymbolTable): Expr {
 
         if (this.expr == undefined) {
 
             this.expr = EPSILON;
             for (const [name, referent] of this.symbols) {
-                //console.log(`adding ${name} to symbol table, it's a ${referent.constructor.name}`);      
-                symbols[name] = referent.constructExpr(symbols);
-                // memoize every expr
-                //this.expr = constructMemo(this.expr, 10);
+                if (name in symbols) {
+                    continue;  // don't bother, it won't have changed.
+                }
+                let expr = referent.constructExpr(symbols);
+                expr = constructMemo(expr, 3);
+                symbols[name] = expr;
             }
         }
 
@@ -1135,9 +1153,10 @@ export class UnitTestGrammar extends UnaryGrammar {
     constructor(
         cell: Cell,
         child: Grammar,
-        public test: Grammar
+        public test: Grammar,
+        public uniques: LiteralGrammar[] = []
     ) {
-        super(cell, child)
+        super(cell, child);
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -1148,19 +1167,41 @@ export class UnitTestGrammar extends UnaryGrammar {
         return [...super.gatherUnitTests(), this];
     }
 
-    public markResults(results: StringDict[]): void {
+    public evalResults(results: StringDict[]): void {
+
         if (results.length == 0) {
             this.message({
                 type: "error", 
                 shortMsg: "Failed unit test",
-                longMsg: "The grammar above has no outputs compatible with this row."
+                longMsg: "The grammar above has no outputs compatible with these inputs."
             });
         } else {
             this.message({
                 type: "info",
                 shortMsg: "Unit test successful",
-                longMsg: "The grammar above has outputs compatible with this row."
+                longMsg: "The grammar above has outputs compatible with these inputs."
             });
+        }
+
+        uniqueLoop: for (const unique of this.uniques) {
+            resultLoop: for (const result of results) {
+                if (result[unique.tape] != unique.text) {
+                    unique.message({
+                        type: "error",
+                        shortMsg: "Failed unit test",
+                        longMsg: `An output on this line has a conflicting result for this field: ${result[unique.tape]}`
+                    });
+                    break resultLoop;
+                }
+                if (!(unique.tape in result)) {
+                    unique.message({
+                        type: "error",
+                        shortMsg: "Failed unit test",
+                        longMsg: `An output on this line does not contain a ${unique.tape} field: ${Object.entries(result)}`
+                    });
+                    break uniqueLoop;
+                }
+            }
         }
     }
 
@@ -1183,18 +1224,18 @@ export class NegativeUnitTestGrammar extends UnitTestGrammar {
         return [...super.gatherUnitTests(), this];
     }
 
-    public markResults(results: StringDict[]): void {
+    public evalResults(results: StringDict[]): void {
         if (results.length > 0) {
             this.message({
                 type: "error", 
                 shortMsg: "Failed unit test",
-                longMsg: "The grammar above incorrectly has outputs compatible with this row."
+                longMsg: "The grammar above incorrectly has outputs compatible with these inputs."
             });
         } else {
             this.message({
                 type: "info",
                 shortMsg: "Unit test successful",
-                longMsg: "The grammar above correctly has no outputs compatible with this row."
+                longMsg: "The grammar above correctly has no outputs compatible with these inputs."
             });
         }
     } 
@@ -1548,7 +1589,7 @@ export class ReplaceGrammar extends Grammar {
         }
     }
 
-    public constructExpr(symbolTable: { [name: string]: Expr; }): Expr {
+    public constructExpr(symbolTable: SymbolTable): Expr {
         
         if (this.beginsWith || this.endsWith) {
             this.maxReps = Math.max(1, this.maxReps);
@@ -1566,7 +1607,7 @@ export class ReplaceGrammar extends Grammar {
             constructMatchFrom(postContextExpr, this.fromTapeName, this.toTapeName)
         ];
 
-        var sameVocab: boolean = this.vocabBypass;
+        let sameVocab: boolean = this.vocabBypass;
         if (!sameVocab) {
             const tapeCollection: TapeCollection = this.getAllTapes();
             const fromTape: Tape | undefined = tapeCollection.matchTape(this.fromTapeName);
@@ -1604,7 +1645,7 @@ export class ReplaceGrammar extends Grammar {
             negatedTapes.push(...that.preContext.tapes);
             negatedTapes.push(...that.postContext.tapes);
 
-            var notState: Expr;
+            let notState: Expr;
             if (that.beginsWith && replaceNone) {
                 notState = constructNegation(constructSequence(...fromInstance, dotStar),
                                              new Set(negatedTapes), that.maxExtraChars);
@@ -1622,7 +1663,7 @@ export class ReplaceGrammar extends Grammar {
             states.push(matchAnythingElse());
 
         const replaceOne: Expr = constructSequence(...states);
-        var replaceMultiple: Expr = constructRepeat(replaceOne, this.minReps, this.maxReps);
+        let replaceMultiple: Expr = constructRepeat(replaceOne, this.minReps, this.maxReps);
 
         let result: Expr;
         if (this.beginsWith)

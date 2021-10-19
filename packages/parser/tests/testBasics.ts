@@ -223,7 +223,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "h"}, {t1: "i"}]);
     }); 
 
-    
     describe('t1:[hi]+t1:[hi]', function() {
         const grammar = Seq(CharSet("t1", ["h", "i"]), 
                         CharSet("t1", ["h", "i"]));

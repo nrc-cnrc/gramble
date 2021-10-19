@@ -12,6 +12,10 @@
     "noFallthroughCasesInSwitch": true,
     "rootDir": "./src",
     "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+        "*": [ "src/@types/*"]
+    },
     "sourceMap": true,
     "tsBuildInfoFile": "../../.build-cache/gramble.tsbuildinfo",
     "types": [

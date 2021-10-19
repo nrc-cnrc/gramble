@@ -501,6 +501,10 @@ export const REPLACE_PARAMS = [
     "post"
 ]
 
+export const TEST_PARAMS = [
+    "unique"
+]
+
 export const RESERVED_HEADERS = [
     "embed", 
     "maybe", 
@@ -511,7 +515,8 @@ export const RESERVED_HEADERS = [
     "startswith", 
     "endswith", 
     "contains",
-    ...REPLACE_PARAMS
+    ...REPLACE_PARAMS,
+    ...TEST_PARAMS
 ];
 
 export const RESERVED_OPS: Set<string> = new Set([
@@ -539,7 +544,7 @@ function tokenize(text: string): string[] {
 var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlternation(
         HP_MAYBE, HP_FROM, HP_TO, 
-        HP_PRE, HP_POST, HP_SLASH, 
+        HP_PRE, HP_POST, HP_UNIQUE, HP_SLASH, 
         HP_RENAME, HP_EQUALS, HP_STARTSWITH, 
         HP_ENDSWITH, HP_CONTAINS, HP_SUBEXPR)
 );
@@ -607,6 +612,11 @@ const HP_PRE = MPSequence<Header>(
 const HP_POST = MPSequence<Header>(
     ["post", HP_NON_COMMENT_EXPR],
     (child) => new TagHeader("post", child)
+);
+
+const HP_UNIQUE = MPSequence<Header>(
+    ["unique", HP_NON_COMMENT_EXPR],
+    (child) => new TagHeader("unique", child)
 );
 
 const HP_LOGIC = MPSequence<Header>(

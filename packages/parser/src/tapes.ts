@@ -1,5 +1,5 @@
 import { BitSet } from "bitset";
-import { Gen, StringDict } from "./util";
+import { Gen, StringDict, tokenizeUnicode } from "./util";
 
 
 /**
@@ -253,7 +253,7 @@ export class Token {
     public or(other: Token): Token {
         return new Token(this.bits.or(other.bits));
     }
-    
+
     public isEmpty(): boolean {
         return this.bits.isEmpty();
     }
@@ -393,9 +393,8 @@ export class StringTape extends Tape {
             return [[str, this.toBitsAndRegister(str)]];
         }
 
-        const results: Token[] = [];
-
-        return str.split("").map(c => [c, this.toBitsAndRegister(c)]);
+        const tokens = tokenizeUnicode(str);
+        return tokens.map(c => [c, this.toBitsAndRegister(c)]);
     }
 
     public toBitsAndRegister(c: string): Token {

@@ -99,10 +99,86 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/csvs/replaceWithTestOp.csv");
 
         testErrors(project, [["replaceWithTestOp", 12, 2, "error"]]);
-        testGramble(project, []);
+        testGramble(project, [
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
+        ]);
     });
     
-    describe('Param headers in ordinary tables', function() {
+    describe('Replace with invalid param', function() {
+
+        const project = sheetFromFile("./tests/csvs/replaceWithInvalidParam.csv");
+
+        testErrors(project, [
+            ["replaceWithInvalidParam",13,4,"error"]
+        ]);        
+        testGramble(project, [
+            {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "surface": "foovaz", "gloss":"run-2SG"},
+            {"text":"foobar", "surface": "foovar", "gloss":"run-1SG"},
+            {"text":"moo", "surface": "moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "surface": "moovaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "surface": "moovar", "gloss":"jump-1SG"}
+        ]);
+    });
+
+    describe('Replace with an unnamed param', function() {
+
+        const project = sheetFromFile("./tests/csvs/replaceWithUnnamedParam.csv");
+
+        testErrors(project, [
+            ["replaceWithUnnamedParam",13,4,"error"]
+        ]);        
+        testGramble(project, [
+            {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "surface": "foovaz", "gloss":"run-2SG"},
+            {"text":"foobar", "surface": "foovar", "gloss":"run-1SG"},
+            {"text":"moo", "surface": "moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "surface": "moovaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "surface": "moovar", "gloss":"jump-1SG"}
+        ]);
+    });
+
+    describe('Replace with missing "from" param', function() {
+
+        const project = sheetFromFile("./tests/csvs/replaceWithMissingFrom.csv");
+
+        testErrors(project, [
+            ["replaceWithMissingFrom",12,1,"error"]
+        ]);        
+        testGramble(project, [
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
+        ]);
+    });
+
+    
+    describe('Replace with missing "to" param', function() {
+
+        const project = sheetFromFile("./tests/csvs/replaceWithMissingTo.csv");
+
+        testErrors(project, [
+            ["replaceWithMissingTo",12,1,"error"]
+        ]);        
+        testGramble(project, [
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
+        ]);
+    });
+
+    describe('Replace param headers in ordinary tables', function() {
 
         const project = sheetFromFile("./tests/csvs/waywardParam.csv");
 
@@ -118,5 +194,5 @@ describe(`${path.basename(module.filename)}`, function() {
             {"gloss":"jump","text":"bar"},
             {"gloss":"jump","text":"baz"}
         ]);
-    });
+    }); 
 });

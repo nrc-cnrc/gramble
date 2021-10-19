@@ -238,13 +238,13 @@ export abstract class Expr {
         stack: CounterStack
     ): Gen<[Tape, Token, Expr]> {
 
-        var results: [Tape, Token, Expr][] = [];
-        var nextExprs: [Tape, Token, Expr][] = [... this.deriv(tape, target, stack)];
+        let results: [Tape, Token, Expr][] = [];
+        let nextExprs: [Tape, Token, Expr][] = [... this.deriv(tape, target, stack)];
         
-        for (var [nextTape, nextBits, next] of nextExprs) {
+        for (let [nextTape, nextBits, next] of nextExprs) {
 
-            var newResults: [Tape, Token, Expr][] = [];
-            for (var [otherTape, otherBits, otherNext] of results) {
+            let newResults: [Tape, Token, Expr][] = [];
+            for (let [otherTape, otherBits, otherNext] of results) {
                 if (nextTape.tapeName != otherTape.tapeName) {
                     newResults.push([otherTape, otherBits, otherNext]);
                     continue;
@@ -312,7 +312,7 @@ export abstract class Expr {
         maxChars: number = 1000
     ): Gen<StringDict> {
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
-        var stateStack: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
+        let stateStack: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
 
         while (stateStack.length > 0) {
 
@@ -371,7 +371,7 @@ export abstract class Expr {
     ): Gen<StringDict> {
 
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
-        var stateQueue: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
+        let stateQueue: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
 
         while (stateQueue.length > 0) {
             let nextQueue: [Tape[], MultiTapeOutput, Expr, number][] = [];
@@ -423,7 +423,7 @@ export abstract class Expr {
     ): Gen<StringDict> {
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
 
-        var stateStack: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
+        let stateStack: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
         const candidates: MultiTapeOutput[] = [];
 
         while (stateStack.length > 0) {
@@ -1038,13 +1038,13 @@ class MemoExpr extends UnaryExpr {
         stack: CounterStack
     ): Gen<[Tape, Token, Expr]> {
 
-        var transitions = this.transitionsByTape[tape.tapeName];
+        let transitions = this.transitionsByTape[tape.tapeName];
         if (transitions == undefined) {
             this.transitionsByTape[tape.tapeName] = [];
             transitions = [];
         }
 
-        var remainder = new Token(target.bits.clone());
+        let remainder = new Token(target.bits.clone());
 
         // first we go through results we've tried before
         for (const [origResultTape, token, next] of transitions) {
@@ -1052,9 +1052,13 @@ class MemoExpr extends UnaryExpr {
                 yield [origResultTape, token, next];
                 return;
             } */
+
+            if (remainder.isEmpty()) {
+                return;
+            }
             
             if (next instanceof NullExpr) {
-                break;
+                continue;
             }
 
             const matchedTape = tape.matchTape(origResultTape.tapeName);
@@ -1062,7 +1066,7 @@ class MemoExpr extends UnaryExpr {
                 throw new Error(`Failed to match ${tape.tapeName} to ${origResultTape.tapeName}..?`);
             }
             
-            const resultToken = matchedTape.match(token, target);
+            const resultToken = matchedTape.match(token, remainder);
             if (resultToken.isEmpty()) {
                 continue;
             }
@@ -1070,21 +1074,20 @@ class MemoExpr extends UnaryExpr {
             yield [matchedTape, resultToken, next];
 
             remainder = remainder.andNot(resultToken);
-            if (remainder.isEmpty()) {
-                return;
-            }
         }
 
         if (remainder.isEmpty()) {
             return;
         }
 
-        // if we get here, remainder is non-empty
+        // if we get here, remainder is non-empty, meaning we haven't
+        // yet memoized everything.  we have to ask the child about 
+        // what remains.
         for (const [cTape, cTarget, cNext] of this.child.disjointDeriv(tape, remainder, stack)) {
             
-            if (cNext instanceof NullExpr) {
-                continue;
-            }
+            //if (cNext instanceof NullExpr) {
+            //    continue;
+            //}
 
             const shared = cTarget.and(remainder);
             const successor = constructMemo(cNext, this.limit - 1);
@@ -1094,10 +1097,6 @@ class MemoExpr extends UnaryExpr {
             if (remainder.isEmpty()) {
                 return;
             }
-        }
-
-        if (remainder.isEmpty()) {
-            return;
         }
 
         // if we get here, there are characters that don't match any result.  we don't
@@ -1167,7 +1166,7 @@ class RenameExpr extends UnaryExpr {
 
         tape = new RenamedTape(tape, this.fromTape, this.toTape);
     
-        for (var [childTape, childTarget, childNext] of 
+        for (let [childTape, childTarget, childNext] of 
                 this.child.deriv(tape, target, stack)) {
             if (childTape instanceof RenamedTape) {
                 childTape = childTape.child;
@@ -1212,7 +1211,7 @@ class NegationExpr extends UnaryExpr {
             return;
         }
 
-        var remainder = new Token(target.bits.clone());
+        let remainder = new Token(target.bits.clone());
 
         for (const [childTape, childText, childNext] of 
                 this.child.disjointDeriv(tape, target, stack)) {
@@ -1268,8 +1267,8 @@ export class MatchExpr extends UnaryExpr {
             newBuffers[tape.tapeName] = deltaBuffer;
         }
 
-        var bufSeq = constructSequence(...Object.values(newBuffers));
-        var result: Expr = this.child.delta(tape, stack);
+        let bufSeq = constructSequence(...Object.values(newBuffers));
+        let result: Expr = this.child.delta(tape, stack);
         return constructIntersection(bufSeq, result);
         
         /*
@@ -1302,7 +1301,7 @@ export class MatchExpr extends UnaryExpr {
                 
                 // STEP A: Are we matching something already buffered?
                 const c1buffer = this.buffers[c1tape.tapeName]
-                var c1bufMatched = false;
+                let c1bufMatched = false;
                 if (c1buffer instanceof LiteralExpr) {
 
                     // that means we already matched a character on a different
@@ -1319,7 +1318,7 @@ export class MatchExpr extends UnaryExpr {
                 for (const tapeName of this.tapes.keys()) {
                     const buffer = this.buffers[tapeName];
                     if (!c1bufMatched && tapeName != c1tape.tapeName) {
-                        var prevText: string[] = [];
+                        let prevText: string[] = [];
                         if (buffer instanceof LiteralExpr) {
                             // that means we already found stuff we needed to match,
                             // so we add to that
