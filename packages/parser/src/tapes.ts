@@ -44,7 +44,6 @@ class SingleTapeOutput {
         }
         return new SingleTapeOutput(tape, token, this);
     }
-
     
     public *getStrings(random: boolean = false): Gen<string> {
 

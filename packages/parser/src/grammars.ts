@@ -1027,7 +1027,7 @@ export class NsGrammar extends Grammar {
                     continue;  // don't bother, it won't have changed.
                 }
                 let expr = referent.constructExpr(symbols);
-                expr = constructMemo(expr, 3);
+                //expr = constructMemo(expr, 3);
                 symbols[name] = expr;
             }
         }

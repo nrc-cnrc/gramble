@@ -5,6 +5,10 @@
       "target": "es6",
       "module": "commonjs",
       "outDir": "dist",
+      "baseUrl": "../packages/parser/",
+      "paths": {
+          "*": [ "src/@types/*"]
+      },
       "strict": true, 
       "noImplicitAny": true,
       "strictNullChecks": true,

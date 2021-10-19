@@ -130,8 +130,13 @@
                 loadingP.style.display = "block";
 
                 // ask for the latest data from GSuite
+
+                let startTime = Date.now();
+
                 const responseFromGSuite = await scriptRunPromise().getAllCells();
                 
+                console.log(`Got data from GSuite, elapsed time = ${msToTime(Date.now()-startTime)}`);
+
                 if (!responseFromGSuite["success"]) {
                     throw new Error("Failed to communicate with Google Sheets backend: " +
                         `${responseFromGSuite["message"]}`);
@@ -150,7 +155,7 @@
                 previousSheetName = currentSheetName;
                 
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
-                project = gramble.Interpreter.fromSheet(devEnv, currentSheetName);
+                project = gramble.Interpreter.fromSheet(devEnv, currentSheetName, true);
                 project.runChecks();
                 //project.runUnitTests();
 
@@ -323,8 +328,10 @@
                 let results = project.sample(symbolName, 5, CURRENT_INPUTS);
                 console.log(`Generated results, elapsed time = ${msToTime(Date.now()-startTime)}`);
 
+                //startTime = Date.now();
                 // strip hidden fields from the results
-                results = project.stripHiddenFields(results);
+                //results = project.stripHiddenFields(results);
+                //console.log(`Stripped hidden fields, elapsed time = ${msToTime(Date.now()-startTime)}`);
 
                 for (let i = 0; i < results.length; i++) {
                     displayRecord(results[i], resultsTable);
@@ -432,8 +439,10 @@
 
                 console.log(`Generated results, elapsed time = ${msToTime(Date.now()-startTime)}`);
                 
+                //startTime = Date.now();
                 // strip hidden fields from the results
-                results = project.stripHiddenFields(results);
+                //results = project.stripHiddenFields(results);
+                //console.log(`Stripped hidden fields, elapsed time = ${msToTime(Date.now()-startTime)}`);
 
                 // determine what format to output in
                 let formatSelect = document.getElementById("downloadFormatSelect");
@@ -470,8 +479,10 @@
                 let results = project.generate(symbolName, inputs);
                 console.log(`Generated results, elapsed time = ${msToTime(Date.now()-startTime)}`);
                 
+                //startTime = Date.now();
                 // strip hidden fields from the results
-                results = project.stripHiddenFields(results);
+                //results = project.stripHiddenFields(results);
+                //console.log(`Stripped hidden fields, elapsed time = ${msToTime(Date.now()-startTime)}`);
 
                 // determine what tape names are relevant to this symbol
                 const tapeInfo = project.getTapeNames(symbolName);
@@ -481,7 +492,6 @@
                 const sheetName = symbolName.replace(".", "_") + "_generated";
                 await scriptRunPromise().makeNewSheet(symbolName, sheetName, resultsTable);
             }
-
             
             async function sampleToNewSheet() {
                 
@@ -493,8 +503,10 @@
                 let results = project.sample(symbolName, 50, inputs);
                 console.log(`Generated results, elapsed time = ${msToTime(Date.now()-startTime)}`);
                 
+                //startTime = Date.now();
                 // strip hidden fields from the results
-                results = project.stripHiddenFields(results);
+                //results = project.stripHiddenFields(results);
+                //console.log(`Stripped hidden fields, elapsed time = ${msToTime(Date.now()-startTime)}`);
 
                 // determine what tape names are relevant to this symbol
                 const tapeInfo = project.getTapeNames(symbolName);

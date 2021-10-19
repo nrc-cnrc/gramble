@@ -3,7 +3,7 @@ import {
     GenOptions, Grammar, 
     LiteralGrammar, SequenceGrammar 
 } from "./grammars";
-import { DevEnvironment, Gen, iterTake, StringDict } from "./util";
+import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
@@ -36,34 +36,68 @@ export class Interpreter {
 
     constructor(
         public devEnv: DevEnvironment,
-        public grammar: Grammar
+        public grammar: Grammar,
+        public verbose: boolean = false
     ) { 
-        // replace unqualified names (e.g. "x") with 
-        // fully-qualified ones (e.g. "Namespace.x")
-        const nameQualifier = new NameQualifier();
-        this.grammar = nameQualifier.transform(this.grammar);
 
-        // adjust tape names for replacement rules
-        const replaceAdjuster = new ReplaceAdjuster();
-        this.grammar = replaceAdjuster.transform(this.grammar);
+        timeIt("Qualified names", verbose, () => {
+            const nameQualifier = new NameQualifier();
+            this.grammar = nameQualifier.transform(this.grammar);
+        });
 
-        // recalculate tapes
-        this.grammar.calculateTapes(new CounterStack(2));
-        // collect vocabulary
-        this.tapeObjs = new TapeCollection();
-        this.grammar.collectVocab(this.tapeObjs);
-        this.grammar.copyVocab(this.tapeObjs);
+        timeIt("Adjusted tape names", verbose, () => {
+            const replaceAdjuster = new ReplaceAdjuster();
+            this.grammar = replaceAdjuster.transform(this.grammar);
+        });
+
+        timeIt("Collected vocab", verbose, () => {
+            // recalculate tapes
+            this.grammar.calculateTapes(new CounterStack(2));
+            // collect vocabulary
+            this.tapeObjs = new TapeCollection();
+            this.grammar.collectVocab(this.tapeObjs);
+
+        });
+
+        timeIt("Copied vocab", verbose, () => {
+            // copy the vocab if necessary
+            this.grammar.copyVocab(this.tapeObjs);
+        });
 
     }
 
-    public static fromSheet(devEnv: DevEnvironment, mainSheetName: string): Interpreter {
+    public static fromSheet(
+        devEnv: DevEnvironment, 
+        mainSheetName: string,
+        verbose: boolean = false
+    ): Interpreter {
+
+        // First, load all the sheets
+        let startTime = Date.now();
         const sheetProject = new SheetProject(devEnv, mainSheetName);
+        
+        if (verbose) {
+            const elapsedTime = msToTime(Date.now() - startTime);
+            console.log(`Sheets loaded; ${elapsedTime}`);
+        }
+        
+        startTime = Date.now();
+
         const tst = sheetProject.toTST();
         const grammar = tst.toGrammar();
-        return new Interpreter(devEnv, grammar);
+
+        if (verbose) {
+            const elapsedTime = msToTime(Date.now() - startTime);
+            console.log(`Converted to grammar; ${elapsedTime}`);
+        }
+
+        return new Interpreter(devEnv, grammar, verbose);
     }
 
-    public static fromGrammar(grammar: Grammar): Interpreter {
+    public static fromGrammar(
+        grammar: Grammar, 
+        verbose: boolean = false
+    ): Interpreter {
         const devEnv = new SimpleDevEnvironment();
         return new Interpreter(devEnv, grammar);
     }
@@ -136,8 +170,8 @@ export class Interpreter {
             results.push(result);
         }
         return results;
-    }
-
+    } 
+    
     public sample(symbolName: string = "",
         numSamples: number = 1,
         restriction: StringDict | undefined = undefined,
@@ -172,7 +206,7 @@ export class Interpreter {
         for (const [key, value] of Object.entries(query)) {
             query[key] = value.normalize('NFD');
         }
-        
+
         let tapePriority = this.grammar.calculateTapes(new CounterStack(2));
         
         let expr = this.grammar.constructExpr(this.symbolTable);

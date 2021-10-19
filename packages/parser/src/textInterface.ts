@@ -1,6 +1,7 @@
-import { SyntaxError, cellSplit, SimpleDevEnvironment } from "./devEnv";
+import { SyntaxError, SimpleDevEnvironment } from "./devEnv";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { parseCSV } from "./util";
 
 /**
  * TODO: Replace the naive CSV handling of cellSplit() with the robust
@@ -30,7 +31,7 @@ export class TextDevEnvironment extends SimpleDevEnvironment {
         } catch {
             const path = join(this.dirname, sheet + ".csv");
             const text = readFileSync(path, 'utf8');
-            return cellSplit(text);
+            return parseCSV(text);
         }
     }
 

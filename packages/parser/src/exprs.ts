@@ -348,6 +348,13 @@ export abstract class Expr {
                 for (const [cTape, cTarget, cNext] of 
                         prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
                     //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
+                    
+                    if (cTape.tapeName.startsWith("__")) {
+                        // don't bother to add hidden characters
+                        nexts.push([tapes, prevOutput, cNext, chars]);
+                        continue;
+                    }
+
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nexts.push([tapes, nextOutput, cNext, chars+1]);
                 }
@@ -374,7 +381,7 @@ export abstract class Expr {
         let stateQueue: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
 
         while (stateQueue.length > 0) {
-            let nextQueue: [Tape[], MultiTapeOutput, Expr, number][] = [];
+            let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
             for (let [tapes, prevOutput, prevExpr, chars] of stateQueue) {
 
                 //console.log(`prevExpr is ${prevExpr.id}`);
@@ -401,18 +408,24 @@ export abstract class Expr {
                 
                 for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
                     
+                    if (cTape.tapeName.startsWith("__")) {
+                        // don't bother to add hidden characters
+                        nexts.push([tapes, prevOutput, cNext, chars]);
+                        continue;
+                    }
+
                     const nextOutput = prevOutput.add(cTape, cTarget);
-                    nextQueue.push([tapes, nextOutput, cNext, chars+1]);  
+                    nexts.push([tapes, nextOutput, cNext, chars+1]);  
                     //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
                 }
                     const delta = prevExpr.delta(tapeToTry, stack);
                     //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
                     if (!(delta instanceof NullExpr)) {                    
                         const newTapes = tapes.slice(1);
-                        nextQueue.push([newTapes, prevOutput, delta, chars]);
+                        nexts.push([newTapes, prevOutput, delta, chars]);
                 }
             }
-            stateQueue = nextQueue;
+            stateQueue = nexts;
         }
     }
 
@@ -459,6 +472,13 @@ export abstract class Expr {
 
             const tapeToTry = tapes[0];
             for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
+                
+                if (cTape.tapeName.startsWith("__")) {
+                    // don't bother to add hidden characters
+                    nexts.push([tapes, prevOutput, cNext, chars]);
+                    continue;
+                }
+                
                 const nextOutput = prevOutput.add(cTape, cTarget);
                 nexts.push([tapes, nextOutput, cNext, chars+1]);
             }

@@ -122,6 +122,90 @@ export function tokenizeUnicode(str: string): string[] {
     return results;
 }
 
+export function timeIt(desc: string, verbose: boolean, func: any) {
+    const startTime = Date.now();
+    func();
+    if (verbose) {
+        const elapsedTime = msToTime(Date.now() - startTime);
+        console.log(`${desc}: ${elapsedTime}`);
+    }
+}
+
+export function msToTime(s: number): string {
+    const ms = s % 1000;
+    s = (s - ms) / 1000;
+    const secs = s % 60;
+    s = (s - secs) / 60;
+    const mins = s % 60;
+    const hrs = (s - mins) / 60;
+    return `${hrs}h ${mins}m ${secs}.${ms}s`;
+}
+
+
+export function parseCSV(str: string): string[][] {
+    var arr: string[][] = [];
+    var quote = false;  // 'true' means we're inside a quoted field
+    var row = 0;
+    var col = 0;
+
+    // Iterate over each character, keep track of current row and column (of the returned array)
+    for (var c = 0; c < str.length; c++) {
+        var cc = str[c];                       // Current character
+        var nc = str[c+1];                     // Next character
+        arr[row] = arr[row] || [];             // Create a new row if necessary
+        arr[row][col] = arr[row][col] || '';   // Create a new column (start with empty string) if necessary
+
+        // If the current character is a quotation mark, and we're inside a
+        // quoted field, and the next character is also a quotation mark,
+        // add a quotation mark to the current column and skip the next character
+        if (cc == '"' && quote && nc == '"') { 
+            arr[row][col] += cc; 
+            ++c; 
+            continue; 
+        }
+
+        // If it's just one quotation mark, begin/end quoted field
+        if (cc == '"') {
+            quote = !quote; 
+            continue; 
+        }
+
+        // If it's a comma and we're not in a quoted field, move on to the next column
+        if (cc == ',' && !quote) { 
+            ++col; 
+            continue; 
+        }
+
+        // If it's a newline (CRLF) and we're not in a quoted field, skip the next character
+        // and move on to the next row and move to column 0 of that new row
+        if (cc == '\r' && nc == '\n' && !quote) { 
+            ++row; 
+            col = 0; 
+            ++c; 
+            continue; 
+        }
+
+        // If it's a newline (LF or CR) and we're not in a quoted field,
+        // move on to the next row and move to column 0 of that new row
+        if (cc == '\n' && !quote) { 
+            ++row; 
+            col = 0; 
+            continue; 
+        }
+
+        if (cc == '\r' && !quote) { 
+            ++row; 
+            col = 0; 
+            continue; 
+        }
+
+        // Otherwise, append the current character to the current column
+        arr[row][col] += cc;
+    }
+
+    return arr;
+}
+
 function sum(a: number[]): number {
     var s = 0;
     for (var i = 0; i < a.length; i++) s += a[i];

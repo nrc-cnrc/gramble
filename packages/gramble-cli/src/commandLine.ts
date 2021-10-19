@@ -1,15 +1,9 @@
 #!/usr/bin/env ts-node-script
 
-import { Gramble, TextDevEnvironment } from "@gramble/parser";
-
-import { parse as papaparse, ParseResult } from "papaparse";
-import { createReadStream, createWriteStream, existsSync } from "fs";
-
-import { basename, dirname, parse as filenameParse } from "path";
-import { Readable, Writable } from "stream";
-
-import { fromStream } from "./fileIO";
-
+import { Interpreter, TextDevEnvironment } from "@gramble/parser";
+import { createWriteStream, existsSync } from "fs";
+import { basename, dirname } from "path";
+import { Writable } from "stream";
 import * as commandLineArgs from "command-line-args";
 import * as commandLineUsage from "command-line-usage";
 
@@ -17,12 +11,14 @@ import * as commandLineUsage from "command-line-usage";
 // See: man 3 sysexits
 const EXIT_USAGE = 64;
 
-export function sheetFromFile(path: string): Gramble {
+type StringDict = {[key: string]: string};
+
+export function sheetFromFile(path: string): Interpreter {
 
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
     const devEnv = new TextDevEnvironment(dir);
-    const project = new Gramble(devEnv, sheetName);
+    const project = Interpreter.fromSheet(devEnv, sheetName);
     return project;
 }
 
@@ -162,22 +158,12 @@ function fileExistsOrFail(filename: string) {
   }
 }
 
-function getInputStream(input: string | undefined): Readable {
-  if (input == undefined) {
-    return process.stdin;
-  }
-  fileExistsOrFail(input);
-  return createReadStream(input, "utf8");
-}
-
 function getOutputStream(output: string | undefined): Writable {
   if (output == undefined) {
     return process.stdout;
   }
   return createWriteStream(output, "utf8");
 }
-
-//const proj = new NodeTextProject();
 
 /* first - parse the main command */
 const commandDefinition = [{ name: "command", defaultOption: true }];
@@ -237,9 +223,9 @@ const commands: { [name: string]: Command } = {
             name: "symbol",
             alias: "s",
             type: String,
-            defaultValue: "__MAIN__",
+            defaultValue: "",
             typeLabel: "{underline name}",
-            description: "symbol to start generation. Defaults to `MAIN`",
+            description: "symbol to start generation. Defaults to '', the default symbol",
         },
         {
             name: "output",
@@ -249,16 +235,18 @@ const commands: { [name: string]: Command } = {
             description: "write output to {underline file}",
         },
         {
-            name: "otier",
+            name: "format",
+            alias: "f",
             type: String,
-            typeLabel: "{underline tier}",
-            description: "only output {underline tier}, instead of JSON",
+            typeLabel: "csv|json",
+            defaultValue: "csv",
+            description: "write output in CSV or JSON formats",
         },
         {
             name: "max",
             alias: "m",
             type: Number,
-            defaultValue: -1,
+            defaultValue: Infinity,
             typeLabel: "{underline n}",
             description:
             "generate at most {underline n} terms [default: unlimited]",
@@ -269,9 +257,15 @@ const commands: { [name: string]: Command } = {
         fileExistsOrFail(options.source);
 
         const outputStream = getOutputStream(options.output);
-        const proj = sheetFromFile(options.source);
-        const result = proj.generate(options.symbol);
-        outputStream.write(JSON.stringify(result) + "\n");
+        const interpreter = sheetFromFile(options.source);
+        const labels = interpreter.getTapeNames(options.symbol);
+        const labelNames = labels.map(([name, color]) => name);
+        const generator = interpreter.generateStream(options.symbol, {});
+        if (options.format.toLowerCase() == 'csv') {
+            generateToCSV(outputStream, generator, labelNames);
+        } else {
+            generateToJSON(outputStream, generator);
+        }
     },
   },
 /*
@@ -473,4 +467,42 @@ function usageError(message: string): never {
 function printUsage() {
   let usage = commandLineUsage(sections);
   console.log(usage);
+}
+
+function resultToCSV(labels: string[], entry: StringDict): string {
+    const replacer = (key: string, value:string | null) => value === null ? '' : value;
+    return labels.map(label => JSON.stringify(entry[label], replacer)).join(',');
+}
+
+type Gen<T> = Generator<T, void, undefined>;
+
+function generateToCSV(
+    outputStream: Writable,    
+    generator: Gen<StringDict>, 
+    labels: string[]
+): void {
+    const replacer = (key: string, value:string | null) => value === null ? '' : value;
+    outputStream.write(labels.join(",") + "\n");
+    for (const entry of generator) {
+        const line = labels.map(label => 
+            JSON.stringify(entry[label], replacer));
+        outputStream.write(line.join(",") + "\n");
+    }
+}
+
+function generateToJSON(
+    outputStream: Writable,
+    generator: Gen<StringDict>
+): void {
+    outputStream.write("[\n");
+    let firstLine = true;
+    for (const entry of generator) {
+        if (!firstLine) {
+            outputStream.write(",\n");
+        }
+        firstLine = false;
+        const line = JSON.stringify(entry);
+        outputStream.write("  " + line);
+    }
+    outputStream.write("\n]");
 }
