@@ -1,5 +1,10 @@
 import { Interpreter } from "./interpreter";
-import { DevEnvironment } from "./util";
+import { DevEnvironment, timeIt } from "./util";
 import { TextDevEnvironment } from "./textInterface";
 
-export { Interpreter, DevEnvironment, TextDevEnvironment };
+export { 
+    Interpreter, 
+    DevEnvironment, 
+    TextDevEnvironment,
+    timeIt
+};

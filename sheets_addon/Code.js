@@ -11,8 +11,8 @@ const NOTE_COLORS = new Map([
 const COMMENT_FONT_COLOR = "#449944";
 
 function letterFromNumber(n) { // number -> string
-    var letter = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(n % 26)
-    var concat = Math.floor(n / 26);
+    let letter = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(n % 26)
+    let concat = Math.floor(n / 26);
     return concat > 0 ? letterFromNumber(concat-1) + letter : letter;
 };
 
@@ -157,12 +157,12 @@ class GoogleSheetsDevEnvironment {
     }
 
     hasSource(sheetName) {
-        var sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
+        let sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
         return (sheet != undefined);
     }
 
     loadSource(sheetName) {
-        var sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
+        let sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
         if (sheet == undefined) {
             throw new Error(`There is no sheet named ${sheetName}`);
         }
@@ -181,7 +181,7 @@ class GoogleSheetsDevEnvironment {
         if (color == undefined) {
             throw new Error("Color undefined: " + level);
         }
-        var noteStyler = this.noteStylers.get(msg);
+        let noteStyler = this.noteStylers.get(msg);
         if (noteStyler == undefined) {
             noteStyler = new NoteStyler(msg, color)
             this.noteStylers.set(msg, noteStyler);
@@ -195,7 +195,7 @@ class GoogleSheetsDevEnvironment {
             return;
         }
 
-        var colorStyler = this.fgColorStylers.get(COMMENT_FONT_COLOR);
+        let colorStyler = this.fgColorStylers.get(COMMENT_FONT_COLOR);
         if (colorStyler == undefined) {
             colorStyler = new FontColorStyler(COMMENT_FONT_COLOR);
             this.fgColorStylers.set(COMMENT_FONT_COLOR, colorStyler);
@@ -210,7 +210,7 @@ class GoogleSheetsDevEnvironment {
             return;
         }
 
-        var bgColorStyler = this.bgColorStylers.get(color);
+        let bgColorStyler = this.bgColorStylers.get(color);
         if (bgColorStyler == undefined) {
             bgColorStyler = new BackgroundColorStyler(color);
             this.bgColorStylers.set(color, bgColorStyler);
@@ -235,7 +235,7 @@ class GoogleSheetsDevEnvironment {
             return;
         }
 
-        var bgColorStyler = this.bgColorStylers.get(color);
+        let bgColorStyler = this.bgColorStylers.get(color);
         if (bgColorStyler == undefined) {
             bgColorStyler = new BackgroundColorStyler(color);
             this.bgColorStylers.set(color, bgColorStyler);
@@ -273,8 +273,8 @@ class GoogleSheetsDevEnvironment {
 
     highlight() {
 
-        var spreadsheet = SpreadsheetApp.getActive();
-        var sheet = spreadsheet.getActiveSheet();
+        let spreadsheet = SpreadsheetApp.getActive();
+        let sheet = spreadsheet.getActiveSheet();
         sheet.clearNotes();
         sheet.clearFormats();
         for (const styler of this.bgColorStylers.values()) {
@@ -308,16 +308,16 @@ function showDialog(htmlString: string, title: string = ""): void {
 */
 
 function GrambleComment() {
-    var spreadsheet = SpreadsheetApp.getActive();
-    var sheet = spreadsheet.getActiveSheet();
-    var range = sheet.getActiveRange();
+    let spreadsheet = SpreadsheetApp.getActive();
+    let sheet = spreadsheet.getActiveSheet();
+    let range = sheet.getActiveRange();
     if (range == undefined) {
         return;
     }
-    var row_start = range.getRowIndex();
-    var row_end = range.getLastRow();
+    let row_start = range.getRowIndex();
+    let row_end = range.getLastRow();
 
-    for (var i = row_start; i <= row_end; i++) {
+    for (let i = row_start; i <= row_end; i++) {
         let subrange = sheet.getRange(i, 1);
         let value = subrange.getValue();
         if (value.trim().startsWith('#')) {
@@ -330,16 +330,16 @@ function GrambleComment() {
 }
 
 function GrambleUncomment() {
-    var spreadsheet = SpreadsheetApp.getActive();
-    var sheet = spreadsheet.getActiveSheet();
-    var range = sheet.getActiveRange();
+    let spreadsheet = SpreadsheetApp.getActive();
+    let sheet = spreadsheet.getActiveSheet();
+    let range = sheet.getActiveRange();
     if (range == undefined) {
         return;
     }
-    var row_start = range.getRowIndex();
-    var row_end = range.getLastRow();
+    let row_start = range.getRowIndex();
+    let row_end = range.getLastRow();
 
-    for (var i = row_start; i <= row_end; i++) {
+    for (let i = row_start; i <= row_end; i++) {
         let subrange = sheet.getRange(i, 1);
         let value = subrange.getValue();
         if (!value.trim().startsWith('%%')) {
@@ -375,7 +375,7 @@ function highlight() {
 } 
 
 function showSidebar() {
-    var html = HtmlService.createTemplateFromFile('sidebar')
+    let html = HtmlService.createTemplateFromFile('sidebar')
         .evaluate()
         .setTitle('Gramble Control Panel');
     SpreadsheetApp.getUi() // Or DocumentApp or SlidesApp or FormApp.
@@ -391,20 +391,20 @@ function makeNewSheet(symbolName, sheetName, data) {
 
     let newSymbolName = sheetName + "_1";
 
-    var activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    let activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
 
-    var newSheet = activeSpreadsheet.getSheetByName(newSymbolName);
+    let newSheet = activeSpreadsheet.getSheetByName(newSymbolName);
     
     while (newSheet != null) {
         // Keep incrementing the sheet name until you find an unused one 
-        var sheetNameParts = newSymbolName.split("_");
-        var lastPart = sheetNameParts[sheetNameParts.length-1];
-        var num = 0;
+        let sheetNameParts = newSymbolName.split("_");
+        let lastPart = sheetNameParts[sheetNameParts.length-1];
+        let num = 0;
         if (/^\d+$/.test(lastPart)) {
-            var num = parseInt(lastPart);        
+            num = parseInt(lastPart);        
             sheetNameParts.pop();
         }
-        var numAsStr = (num+1).toString();
+        let numAsStr = (num+1).toString();
         sheetNameParts.push(numAsStr);
         newSymbolName = sheetNameParts.join("_");
         newSheet = activeSpreadsheet.getSheetByName(newSymbolName);
@@ -481,7 +481,7 @@ function getAllCells() {
  */
 function autoEnabled_(optSet) {
     try {
-      var autoState = PropertiesService.getUserProperties().getProperty('autoState');
+      let autoState = PropertiesService.getUserProperties().getProperty('autoState');
     }
     catch (e) {
       // Called with ScriptApp.AuthMode.NONE

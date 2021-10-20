@@ -1,6 +1,10 @@
 #!/usr/bin/env ts-node-script
 
-import { Interpreter, TextDevEnvironment } from "@gramble/parser";
+import { 
+    Interpreter, 
+    TextDevEnvironment,
+    timeIt
+} from "@gramble/parser";
 import { createWriteStream, existsSync } from "fs";
 import { basename, dirname } from "path";
 import { Writable } from "stream";
@@ -13,144 +17,14 @@ const EXIT_USAGE = 64;
 
 type StringDict = {[key: string]: string};
 
-export function sheetFromFile(path: string): Interpreter {
+export function sheetFromFile(path: string, verbose: boolean): Interpreter {
 
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
     const devEnv = new TextDevEnvironment(dir);
-    const project = Interpreter.fromSheet(devEnv, sheetName);
+    const project = Interpreter.fromSheet(devEnv, sheetName, verbose);
     return project;
 }
-
-/*
-class NodeTextProject extends TextProject {
-  private delim: string = "\t";
-
-  public addFile(filename: string): Promise<string> {
-    if (filenameParse(filename).ext.toLowerCase() == ".csv") {
-      this.delim = ",";
-    }
-    const readStream = createReadStream(filename, "utf8");
-    const basename = filenameParse(filename).name;
-    return fromStream(readStream, (error, l, rownum) =>
-      this.addText(l, rownum, basename)
-    );
-  }
-
-  public addText(text: string, rownum: number, filename: string) {
-    papaparse(text, {
-      delimiter: this.delim,
-      complete: (line) => this.addParsedRow(line, rownum, filename),
-    });
-  }
-
-  public addParsedRow(row: ParseResult, rownum: number, filename: string) {
-    for (const data of row.data as string[][]) {
-      // should always only be one of these
-      this.addRow(data, filename, rownum);
-    }
-    for (const error of row.errors) {
-      this.devEnv.markError(filename, rownum, -1, error.message, "error");
-    }
-  }
-
-  public parseStream(
-    inputStream: Readable,
-    outputStream: Writable,
-    asTier: string,
-    randomize: boolean = false,
-    maxResults: number = -1,
-    outputTier: string | undefined = undefined,
-    symbolName: string = "MAIN"
-  ): Promise<string> {
-    return fromStream(
-      inputStream,
-      (error: Error | any, line: string, rownum: number) => {
-        const input = { [asTier]: line.trim() };
-        const result = this.parse(
-          input,
-          symbolName,
-          randomize,
-          maxResults,
-          true
-        );
-        const resultFlattened = this.flatten(result);
-        this.writeToOutput(outputStream, resultFlattened, outputTier);
-      }
-    );
-  }
-
-  public parseStreamTokenized(
-    inputStream: Readable,
-    outputStream: Writable,
-    asTier: string,
-    randomize: boolean = false,
-    outputTier: string,
-    symbolName: string = "MAIN"
-  ): Promise<void> {
-    return fromStream(
-      inputStream,
-      (error: Error | any, line: string, rownum: number) => {
-        for (const token of line.split(" ")) {
-          if (token.startsWith("&") && token.endsWith(";")) {
-            outputStream.write(token + " ");
-            continue;
-          }
-          if (token[0] !== token[0].toLowerCase()) {
-            outputStream.write(token + " ");
-            continue;
-          }
-          const input = { [asTier]: token.trim() };
-          const result = this.parse(input, symbolName, randomize, 1, true);
-          const resultFlattened = this.flatten(result);
-          const tierResults = resultFlattened
-            .map((o) => o[outputTier])
-            .join(" ");
-          outputStream.write(tierResults + " ");
-        }
-        outputStream.write("\n");
-      }
-    );
-  }
-
-  public generateStream(
-    outputStream: Writable,
-    maxResults: number = -1,
-    outputTier: string | undefined = undefined,
-    symbolName: string = "MAIN"
-  ): void {
-    const result = this.generate(symbolName, false, maxResults, true);
-    const resultFlattened = this.flatten(result);
-    this.writeToOutput(outputStream, resultFlattened, outputTier, "\n");
-  }
-
-  public sampleStream(
-    outputStream: Writable,
-    maxResults: number = 1,
-    outputTier: string | undefined = undefined,
-    symbolName: string = "MAIN"
-  ): void {
-    const result = this.sample(symbolName, maxResults, true);
-    const resultFlattened = this.flatten(result);
-    this.writeToOutput(outputStream, resultFlattened, outputTier, "\n");
-  }
-
-  public writeToOutput(
-    outputStream: Writable,
-    result: { [key: string]: string }[],
-    outputTier: string | undefined = undefined,
-    delim: string = ", "
-  ) {
-    if (outputTier != undefined) {
-      const tierResults = result.map((o) => o[outputTier]).join(delim);
-      outputStream.write(tierResults + "\n");
-    } else {
-      outputStream.write(JSON.stringify(result) + "\n");
-    }
-  }
-}
-
-*/
 
 function fileExistsOrFail(filename: string) {
   if (!existsSync(filename)) {
@@ -251,24 +125,34 @@ const commands: { [name: string]: Command } = {
             description:
             "generate at most {underline n} terms [default: unlimited]",
         },
+        {
+            name: "verbose",
+            alias: "v",
+            type: Boolean,
+            defaultValue: false,
+            description:
+            "log error and info messages",
+        },
     ],
 
     run(options: commandLineArgs.CommandLineOptions) {
         fileExistsOrFail(options.source);
 
         const outputStream = getOutputStream(options.output);
-        const interpreter = sheetFromFile(options.source);
+        const interpreter = sheetFromFile(options.source, options.verbose);
         const labels = interpreter.getTapeNames(options.symbol);
         const labelNames = labels.map(([name, color]) => name);
         const generator = interpreter.generateStream(options.symbol, {});
-        if (options.format.toLowerCase() == 'csv') {
-            generateToCSV(outputStream, generator, labelNames);
-        } else {
-            generateToJSON(outputStream, generator);
-        }
+        timeIt("Generation complete", options.verbose, () => {
+            if (options.format.toLowerCase() == 'csv') {
+                generateToCSV(outputStream, generator, labelNames);
+            } else {
+                generateToJSON(outputStream, generator);
+            }
+        });
     },
   },
-/*
+
   sample: {
     synopsis: "sample [--output|-o {underline file}] {underline source}",
     options: [
@@ -278,41 +162,64 @@ const commands: { [name: string]: Command } = {
         defaultOption: true,
       },
       {
+        name: "symbol",
+        alias: "s",
+        type: String,
+        defaultValue: "",
+        typeLabel: "{underline name}",
+        description: "symbol to start generation. Defaults to '', the default symbol",
+      },
+      {
         name: "output",
         alias: "o",
         type: String,
         typeLabel: "{underline file}",
         description: "write output to {underline file}",
-      },
+      },        
       {
-        name: "otier",
+        name: "format",
+        alias: "f",
         type: String,
-        typeLabel: "{underline tier}",
-        description: "only output {underline tier}, instead of JSON",
+        typeLabel: "csv|json",
+        defaultValue: "csv",
+        description: "write output in CSV or JSON formats",
       },
       {
-        name: "max",
-        alias: "m",
+        name: "num",
+        alias: "n",
         type: Number,
-        defaultValue: -1,
+        defaultValue: 5,
         typeLabel: "{underline n}",
-        description: "restrict number of outputs for each word",
-      },
+        description: "sample {underline n} terms [default: 5]",
+      },        
+      {
+        name: "verbose",
+        alias: "v",
+        type: Boolean,
+        defaultValue: false,
+        description:
+        "log error and info messages",
+    },
     ],
 
-    run(options) {
-      fileExistsOrFail(options.source);
-      const outputStream = getOutputStream(options.output);
-      proj
-        .addFile(options.source)
-        .then(() => proj.compile())
-        .then(() => proj.devEnv.highlight())
-        .then(() =>
-          proj.sampleStream(outputStream, options.max, options.otier)
-        );
+    run(options: commandLineArgs.CommandLineOptions) {
+        fileExistsOrFail(options.source);
+
+        const outputStream = getOutputStream(options.output);
+        const interpreter = sheetFromFile(options.source, options.verbose);
+        const labels = interpreter.getTapeNames(options.symbol);
+        const labelNames = labels.map(([name, color]) => name);
+        const generator = interpreter.sampleStream(options.symbol, options.num, {});
+        timeIt("Sampling complete", options.verbose, () => {
+            if (options.format.toLowerCase() == 'csv') {
+                generateToCSV(outputStream, generator, labelNames);
+            } else {
+                generateToJSON(outputStream, generator);
+            }
+        });
     },
   },
-
+/*
   parse: {
     synopsis: [
       "parse --itier={underline tier} [--otier={underline tier}] [--random] [--max={underline n}] {underline source}",

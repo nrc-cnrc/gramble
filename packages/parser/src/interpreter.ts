@@ -193,6 +193,26 @@ export class Interpreter {
         return results;
     } 
 
+    public *sampleStream(symbolName: string = "",
+        numSamples: number = 1,
+        restriction: StringDict | undefined = undefined,
+        maxRecursion: number = 4, 
+        maxChars: number = 1000
+    ): Gen<StringDict> {
+
+        const opt: GenOptions = {
+            random: true,
+            maxRecursion: maxRecursion,
+            maxChars: maxChars
+        }
+
+        let results: StringDict[] = [];
+        for (let i = 0; i < numSamples; i++) {
+            const gen = this.generateAux(symbolName, restriction, opt);
+            yield* iterTake(gen, 1);
+        }
+    } 
+
     public runChecks(): void {
         this.grammar.runChecksAux();
     }

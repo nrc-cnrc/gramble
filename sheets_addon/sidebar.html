@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>Gramble by Examble</title>
+        <title>Gramble Control Panel</title>
         <?!= include('grambleWrapped'); ?>
         <?!= include('style'); ?>
     </head>
@@ -131,12 +131,8 @@
 
                 // ask for the latest data from GSuite
 
-                let startTime = Date.now();
-
-                const responseFromGSuite = await scriptRunPromise().getAllCells();
+                let responseFromGSuite = await scriptRunPromise().getAllCells();
                 
-                console.log(`Got data from GSuite, elapsed time = ${msToTime(Date.now()-startTime)}`);
-
                 if (!responseFromGSuite["success"]) {
                     throw new Error("Failed to communicate with Google Sheets backend: " +
                         `${responseFromGSuite["message"]}`);
@@ -191,6 +187,7 @@
 
             }
 
+            /*
             function msToTime(s) {
                 const ms = s % 1000;
                 s = (s - ms) / 1000;
@@ -199,7 +196,7 @@
                 const mins = s % 60;
                 const hrs = (s - mins) / 60;
                 return `${hrs}h ${mins}m ${secs}.${ms}s`;
-            }
+            } */
 
             function createErrorButtons(errorMsgs, currentSheetName) {
 
@@ -325,9 +322,11 @@
                 }
 
                 let startTime = Date.now();
-                let results = project.sample(symbolName, 5, CURRENT_INPUTS);
-                console.log(`Generated results, elapsed time = ${msToTime(Date.now()-startTime)}`);
 
+                let results = gramble.timeIt("Generated results", true, () => 
+                    project.sample(symbolName, 5, CURRENT_INPUTS)
+                );
+                
                 //startTime = Date.now();
                 // strip hidden fields from the results
                 //results = project.stripHiddenFields(results);
@@ -429,16 +428,12 @@
                 let startTime = Date.now();
                 let results = [];
                 
-                console.log(`starting generation stream`);
-                //const counterP = document.getElementById("numResults");
-                for (const result of project.generateStream(symbolName, inputs)) {
-                    results.push(result);
-                    //counterP.innerHTML = `${results.length}`;
-                    //console.log(result);
-                }
+                gramble.timeIt("Generated results", true, () => {
+                    for (const result of project.generateStream(symbolName, inputs)) {
+                        results.push(result);
+                    }
+                });
 
-                console.log(`Generated results, elapsed time = ${msToTime(Date.now()-startTime)}`);
-                
                 //startTime = Date.now();
                 // strip hidden fields from the results
                 //results = project.stripHiddenFields(results);
@@ -475,9 +470,9 @@
 
                 const inputs = getCurrentInputs();
                 
-                let startTime = Date.now();
-                let results = project.generate(symbolName, inputs);
-                console.log(`Generated results, elapsed time = ${msToTime(Date.now()-startTime)}`);
+                gramble.timeIt("Generated results", true, () => 
+                    results = project.generate(symbolName, inputs)
+                );
                 
                 //startTime = Date.now();
                 // strip hidden fields from the results
@@ -500,8 +495,10 @@
                 const inputs = getCurrentInputs();
                 
                 let startTime = Date.now();
-                let results = project.sample(symbolName, 50, inputs);
-                console.log(`Generated results, elapsed time = ${msToTime(Date.now()-startTime)}`);
+
+                let results = gramble.timeIt("Generated results", true, () =>
+                    project.sample(symbolName, 50, inputs)
+                );
                 
                 //startTime = Date.now();
                 // strip hidden fields from the results

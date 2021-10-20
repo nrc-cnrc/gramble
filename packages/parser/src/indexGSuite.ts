@@ -1,4 +1,8 @@
 import { Interpreter } from "./interpreter";
-import { DevEnvironment } from "./util";
+import { DevEnvironment, timeIt } from "./util";
 
-export { Interpreter, DevEnvironment };
+export { 
+    Interpreter, 
+    DevEnvironment, 
+    timeIt 
+};

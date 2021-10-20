@@ -1,4 +1,4 @@
-import { DevEnvironment } from "./util";
+import { DevEnvironment, parseCSV } from "./util";
 
 
 export function posToStr(sheet: string, row: number, col: number) {
@@ -6,10 +6,6 @@ export function posToStr(sheet: string, row: number, col: number) {
 }
 
 export type SyntaxError = [string, number, number, string, "error"|"warning"|"info"];
-
-export function cellSplit(s: string): string[][] {
-    return s.split("\n").map((line) => line.split(","));
-}
 
 export class SimpleDevEnvironment implements DevEnvironment {
 
@@ -28,8 +24,8 @@ export class SimpleDevEnvironment implements DevEnvironment {
         return this.sources[sheet];
     }
 
-    public addSourceAsText(sheetName: string, text: string) {
-        const cells = cellSplit(text);
+    public addSourceAsText(sheetName: string, text: string): void {
+        const cells = parseCSV(text);
         this.addSourceAsCells(sheetName, cells);
     }
 

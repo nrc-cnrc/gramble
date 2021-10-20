@@ -122,13 +122,14 @@ export function tokenizeUnicode(str: string): string[] {
     return results;
 }
 
-export function timeIt(desc: string, verbose: boolean, func: any) {
+export function timeIt<T>(desc: string, verbose: boolean, func: () => T): T {
     const startTime = Date.now();
-    func();
+    const results = func();
     if (verbose) {
         const elapsedTime = msToTime(Date.now() - startTime);
         console.log(`${desc}: ${elapsedTime}`);
     }
+    return results;
 }
 
 export function msToTime(s: number): string {
