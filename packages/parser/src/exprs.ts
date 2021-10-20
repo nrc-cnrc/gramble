@@ -57,9 +57,8 @@ import { MultiTapeOutput, Tape, RenamedTape, Token, ANY_CHAR } from "./tapes";
  * You can generate from a grammar L by trying each possible letter for c, and then, for 
  * each derivative L' in D_c(L), trying each possible letter again to get L'' in D_c(L'), etc.
  * If you put those letters c into a tree, you've got L again, but this time in trie form. 
- * That's basically what we're doing!  Except it'd be silly to actually iterate through all the possible
- * letters; instead we represent our vocabulary of possible letters as a set of bits and do bitwise
- * operations on them. 
+ * That's basically what we're doing!  Except we're not iterating through each letter each time; 
+ * instead we're using sets of letters (expressed as bit sets).
  * 
  * A lot of our implementation of this algorithm uses the metaphor that these are states in a state
  * machine that has not been fully constructed yet.  You can picture the process of taking a Brz. 
@@ -312,17 +311,11 @@ export abstract class Expr {
         maxChars: number = 1000
     ): Gen<StringDict> {
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
-        let stateStack: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
-
-        while (stateStack.length > 0) {
+        let states: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
+        let prev: [Tape[], MultiTapeOutput, Expr, number] | undefined = undefined;
+        while (prev = states.pop()) {
 
             let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
-            let prev = stateStack.pop();
-
-            if (prev == undefined) {
-                break; // won't happen if stateStack.length > 0 anyway, just for linting
-            }
-
             let [tapes, prevOutput, prevExpr, chars] = prev;
             
             //console.log(`prevExpr is ${prevExpr.id}`);
@@ -339,35 +332,37 @@ export abstract class Expr {
             if (tapes.length == 0) {
                 continue; 
             }
-
-            // rotate the tapes so that we don't keep trying the same one every time
-            //tapes = [... tapes.slice(1), tapes[0]];
+            
+            // rotate the tapes occasionally so that we don't just 
+            // keep trying the same one every time
+            //if (Math.random() < 0.2) {
+            //    tapes = [... tapes.slice(1), tapes[0]];
+            //}
 
             const tapeToTry = tapes[0];
 
-                for (const [cTape, cTarget, cNext] of 
-                        prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
-                    //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
-                    
-                    if (cTape.tapeName.startsWith("__")) {
-                        // don't bother to add hidden characters
-                        nexts.push([tapes, prevOutput, cNext, chars]);
-                        continue;
-                    }
+            for (const [cTape, cTarget, cNext] of 
+                    prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
+                //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
 
-                    const nextOutput = prevOutput.add(cTape, cTarget);
-                    nexts.push([tapes, nextOutput, cNext, chars+1]);
+                if (cTape.tapeName.startsWith("__")) {
+                    // don't bother to add hidden characters
+                    nexts.push([tapes, prevOutput, cNext, chars]);
+                    continue;
                 }
 
-                const delta = prevExpr.delta(tapeToTry, stack);
-                //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
-                if (!(delta instanceof NullExpr)) {                    
-                    const newTapes = tapes.slice(1);
-                    nexts.push([newTapes, prevOutput, delta, chars]);
-                }
+                const nextOutput = prevOutput.add(cTape, cTarget);
+                nexts.push([tapes, nextOutput, cNext, chars+1]);
+            }
 
-            shuffleArray(nexts);
-            stateStack = stateStack.concat(nexts);
+            const delta = prevExpr.delta(tapeToTry, stack);
+            //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
+            if (!(delta instanceof NullExpr)) {                    
+                const newTapes = tapes.slice(1);
+                nexts.push([newTapes, prevOutput, delta, chars]);
+            }
+
+            states.push(...nexts);
         }
     }
 
@@ -378,11 +373,11 @@ export abstract class Expr {
     ): Gen<StringDict> {
 
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
-        let stateQueue: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
+        let states: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
 
-        while (stateQueue.length > 0) {
+        while (states.length > 0) {
             let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
-            for (let [tapes, prevOutput, prevExpr, chars] of stateQueue) {
+            for (let [tapes, prevOutput, prevExpr, chars] of states) {
 
                 //console.log(`prevExpr is ${prevExpr.id}`);
                 //console.log(`prevOutput is ${JSON.stringify([...prevOutput.toStrings(false)])}`);
@@ -418,14 +413,16 @@ export abstract class Expr {
                     nexts.push([tapes, nextOutput, cNext, chars+1]);  
                     //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
                 }
-                    const delta = prevExpr.delta(tapeToTry, stack);
-                    //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
-                    if (!(delta instanceof NullExpr)) {                    
-                        const newTapes = tapes.slice(1);
-                        nexts.push([newTapes, prevOutput, delta, chars]);
+
+                const delta = prevExpr.delta(tapeToTry, stack);
+                //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
+                if (!(delta instanceof NullExpr)) {                    
+                    const newTapes = tapes.slice(1);
+                    nexts.push([newTapes, prevOutput, delta, chars]);
                 }
+
             }
-            stateQueue = nexts;
+            states = nexts;
         }
     }
 
@@ -436,10 +433,11 @@ export abstract class Expr {
     ): Gen<StringDict> {
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
 
-        let stateStack: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
+        let states: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
         const candidates: MultiTapeOutput[] = [];
 
-        while (stateStack.length > 0) {
+        let prev: [Tape[], MultiTapeOutput, Expr, number] | undefined = undefined;
+        while (prev = states.pop()) {
 
             // first, see if it's time to randomly emit a result
             if (Math.random() < 0.1 && candidates.length > 0) {
@@ -449,10 +447,6 @@ export abstract class Expr {
             }
 
             let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
-            let prev = stateStack.pop();
-            if (prev == undefined) {
-                break; // won't happen if stateStack.length > 0 anyway, just for linting
-            }
             let [tapes, prevOutput, prevExpr, chars] = prev;
             if (chars >= maxChars) {
                 continue;
@@ -478,7 +472,7 @@ export abstract class Expr {
                     nexts.push([tapes, prevOutput, cNext, chars]);
                     continue;
                 }
-                
+
                 const nextOutput = prevOutput.add(cTape, cTarget);
                 nexts.push([tapes, nextOutput, cNext, chars+1]);
             }
@@ -490,7 +484,7 @@ export abstract class Expr {
             }
 
             shuffleArray(nexts);
-            stateStack = stateStack.concat(nexts);
+            states.push(...nexts);
         }
 
         if (candidates.length == 0) {

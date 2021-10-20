@@ -327,11 +327,6 @@
                     project.sample(symbolName, 5, CURRENT_INPUTS)
                 );
                 
-                //startTime = Date.now();
-                // strip hidden fields from the results
-                //results = project.stripHiddenFields(results);
-                //console.log(`Stripped hidden fields, elapsed time = ${msToTime(Date.now()-startTime)}`);
-
                 for (let i = 0; i < results.length; i++) {
                     displayRecord(results[i], resultsTable);
                 }
@@ -434,11 +429,6 @@
                     }
                 });
 
-                //startTime = Date.now();
-                // strip hidden fields from the results
-                //results = project.stripHiddenFields(results);
-                //console.log(`Stripped hidden fields, elapsed time = ${msToTime(Date.now()-startTime)}`);
-
                 // determine what format to output in
                 let formatSelect = document.getElementById("downloadFormatSelect");
                 const downloadFormat = formatSelect.value;
@@ -474,11 +464,6 @@
                     results = project.generate(symbolName, inputs)
                 );
                 
-                //startTime = Date.now();
-                // strip hidden fields from the results
-                //results = project.stripHiddenFields(results);
-                //console.log(`Stripped hidden fields, elapsed time = ${msToTime(Date.now()-startTime)}`);
-
                 // determine what tape names are relevant to this symbol
                 const tapeInfo = project.getTapeNames(symbolName);
                 const tapeNames = tapeInfo.map(([k, v]) => k);
@@ -500,11 +485,6 @@
                     project.sample(symbolName, 50, inputs)
                 );
                 
-                //startTime = Date.now();
-                // strip hidden fields from the results
-                //results = project.stripHiddenFields(results);
-                //console.log(`Stripped hidden fields, elapsed time = ${msToTime(Date.now()-startTime)}`);
-
                 // determine what tape names are relevant to this symbol
                 const tapeInfo = project.getTapeNames(symbolName);
                 const tapeNames = tapeInfo.map(([k, v]) => k);

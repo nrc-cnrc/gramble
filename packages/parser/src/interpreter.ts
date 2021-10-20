@@ -7,7 +7,7 @@ import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt } from "./u
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
-import { SymbolTable } from "./exprs";
+import { Expr, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { NameQualifier, ReplaceAdjuster } from "./transforms";
 
@@ -138,7 +138,8 @@ export class Interpreter {
             maxChars: maxChars
         }
 
-        const gen = this.generateAux(symbolName, restriction, opt);
+        const gen = this.generateStream(symbolName, 
+            restriction, maxRecursion, maxChars);
         return iterTake(gen, maxResults);
     }
     
@@ -154,23 +155,9 @@ export class Interpreter {
             maxRecursion: maxRecursion,
             maxChars: maxChars
         }
-        
-        yield* this.generateAux(symbolName, restriction, opt);
+        const [expr, tapes] = this.prepareExpr(symbolName, restriction, opt);
+        yield* expr.generate(tapes, opt.random, opt.maxRecursion, opt.maxChars);
     }
-
-    public stripHiddenFields(entries: StringDict[]): StringDict[] {
-        const results: StringDict[] = [];
-        for (const entry of entries) {
-            const result: StringDict = {};
-            for (const [key, value] of Object.entries(entry)) {
-                if (!key.startsWith("__")) {
-                    result[key] = value;
-                }
-            }
-            results.push(result);
-        }
-        return results;
-    } 
     
     public sample(symbolName: string = "",
         numSamples: number = 1,
@@ -178,19 +165,8 @@ export class Interpreter {
         maxRecursion: number = 4, 
         maxChars: number = 1000
     ): StringDict[] {
-
-        const opt: GenOptions = {
-            random: true,
-            maxRecursion: maxRecursion,
-            maxChars: maxChars
-        }
-
-        let results: StringDict[] = [];
-        for (let i = 0; i < numSamples; i++) {
-            const gen = this.generateAux(symbolName, restriction, opt);
-            results = results.concat(iterTake(gen, 1));
-        }
-        return results;
+        return [...this.sampleStream(symbolName, 
+            numSamples, restriction, maxRecursion, maxChars)];
     } 
 
     public *sampleStream(symbolName: string = "",
@@ -206,9 +182,9 @@ export class Interpreter {
             maxChars: maxChars
         }
 
-        let results: StringDict[] = [];
+        const [expr, tapes] = this.prepareExpr(symbolName, restriction, opt);
         for (let i = 0; i < numSamples; i++) {
-            const gen = this.generateAux(symbolName, restriction, opt);
+            const gen = expr.generate(tapes, opt.random, opt.maxRecursion, opt.maxChars);
             yield* iterTake(gen, 1);
         }
     } 
@@ -217,11 +193,11 @@ export class Interpreter {
         this.grammar.runChecksAux();
     }
     
-    public *generateAux(
+    public prepareExpr(
         symbolName: string = "",
         query: StringDict = {},
         opt: GenOptions
-    ): Gen<StringDict> {
+    ): [Expr, Tape[]] {
 
         for (const [key, value] of Object.entries(query)) {
             query[key] = value.normalize('NFD');
@@ -265,8 +241,8 @@ export class Interpreter {
             }
             prioritizedTapes.push(actualTape);
         }        
-        
-        yield* expr.generate(prioritizedTapes, opt.random, opt.maxRecursion, opt.maxChars);
+
+        return [expr, prioritizedTapes];    
     }
 
     public runUnitTests(): void {
