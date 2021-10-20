@@ -1,11 +1,11 @@
-import { testGramble, testErrors, sheetFromFile } from "./testUtils";
+import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Simple grammar with unit tests', function() {
 
-        const interpreter = sheetFromFile("./tests/csvs/simpleGrammarWithTests.csv");
+        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/simpleGrammarWithTests.csv");
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         //testSymbols(interpreter, ["word", "verb", "suffix"]);
@@ -16,7 +16,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Embeds and unit tests', function() {
 
-        const interpreter = sheetFromFile("./tests/csvs/embedGrammarWithTests.csv");
+        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/embedGrammarWithTests.csv");
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         //testSymbols(interpreter, ["word", "verb", "suffix"]);
@@ -30,7 +30,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Negative tests', function() {
 
-        const interpreter = sheetFromFile("./tests/csvs/negativeTests.csv");
+        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/negativeTests.csv");
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         //testSymbols(interpreter, ["word", "verb", "suffix"]);
@@ -44,7 +44,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Failing unit tests', function() {
 
-        const interpreter = sheetFromFile("./tests/csvs/embedGrammarWithFailedTests.csv");
+        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/embedGrammarWithFailedTests.csv");
         interpreter.runUnitTests();
         
         testErrors(interpreter, [
@@ -62,7 +62,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Failing negative tests', function() {
 
-        const interpreter = sheetFromFile("./tests/csvs/failingNegativeTests.csv");
+        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/failingNegativeTests.csv");
         interpreter.runUnitTests();
         
         testErrors(interpreter, [
@@ -78,7 +78,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Uniqueness tests', function() {
 
-        const interpreter = sheetFromFile("./tests/csvs/uniquenessTests.csv");
+        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/uniquenessTests.csv");
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         testGramble(interpreter, [
@@ -90,7 +90,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Uniqueness tests with multiple uniqueness fields', function() {
-        const interpreter = sheetFromFile("./tests/csvs/uniquenessTestsMulti.csv");
+        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/uniquenessTestsMulti.csv");
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         testGramble(interpreter, [
@@ -103,7 +103,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Uniqueness tests failing', function() {
 
-        const interpreter = sheetFromFile("./tests/csvs/uniquenessTestsFailing.csv");
+        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/uniquenessTestsFailing.csv");
         interpreter.runUnitTests();
         testErrors(interpreter, [
             ["uniquenessTestsFailing",14,3,"error"],
@@ -123,7 +123,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Uniqueness tests failing due to missing field', function() {
 
-        const interpreter = sheetFromFile("./tests/csvs/uniquenessTestsMissingField.csv");
+        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/uniquenessTestsMissingField.csv");
         interpreter.runUnitTests();
         testErrors(interpreter, [
             ["uniquenessTestsMissingField",14,3,"error"]
@@ -140,7 +140,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('Uniqueness tests with multiple uniqueness fields, failing', function() {
-        const interpreter = sheetFromFile("./tests/csvs/uniquenessTestsFailingMulti.csv");
+        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/uniquenessTestsFailingMulti.csv");
         interpreter.runUnitTests();
         testErrors(interpreter, [
             ["uniquenessTestsFailingMulti",14,4,"error"]

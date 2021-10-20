@@ -1,4 +1,4 @@
-import { testGramble, testErrors, sheetFromFile } from "./testUtils";
+import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
 
 import * as path from 'path';
 
@@ -6,7 +6,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Multi-sheet project', function() {
 
-        const project = sheetFromFile("./tests/csvs/externalRef.csv");
+        const project = sheetFromFile("./tests/sheets/multi/csvs/externalRef.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -19,7 +19,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Multi-sheet project with lowercase sheet reference', function() {
 
-        const project = sheetFromFile("./tests/csvs/lowercaseExternalRef.csv");
+        const project = sheetFromFile("./tests/sheets/multi/csvs/lowercaseExternalRef.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -32,7 +32,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Multi-sheet project with a "bare" sheet reference', function() {
 
-        const project = sheetFromFile("./tests/csvs/externalBareRef.csv");
+        const project = sheetFromFile("./tests/sheets/multi/csvs/externalBareRef.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -45,7 +45,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Multi-sheet project with a "bare" reference to "bare" grammar', function() {
 
-        const project = sheetFromFile("./tests/csvs/externalBareRefToBareGrammar.csv");
+        const project = sheetFromFile("./tests/sheets/multi/csvs/externalBareRefToBareGrammar.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -58,7 +58,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Multi-sheet project with missing symbol in imported sheet', function() {
 
-        const project = sheetFromFile("./tests/csvs/missingExternalRef.csv");
+        const project = sheetFromFile("./tests/sheets/multi/csvs/missingExternalRef.csv");
         testErrors(project, [
             ["missingExternalRef", 1, 1, "warning"]
         ]);
@@ -69,7 +69,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Multi-sheet project referencing non-existent sheet', function() {
 
-        const project = sheetFromFile("./tests/csvs/missingSheet.csv");
+        const project = sheetFromFile("./tests/sheets/multi/csvs/missingSheet.csv");
         testErrors(project, [
             ["missingSheet", 1, 1, "warning"]
         ]);
@@ -80,7 +80,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Multi-sheet project where the imported sheet references the original', function() {
 
-        const project = sheetFromFile("./tests/csvs/externalRefCycle.csv");
+        const project = sheetFromFile("./tests/sheets/multi/csvs/externalRefCycle.csv");
 
         testErrors(project, []);
         testGramble(project, [

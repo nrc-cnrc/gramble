@@ -46,23 +46,12 @@ function constructOp(cell: SheetCell): TstEnclosure {
         newEnclosure = new TstNegativeUnitTest(cell);
     } else if (trimmedTextLower == "replace") {
         newEnclosure = new TstReplace(cell);
-    } else if (cell.pos.col == 0) {
+    } else {
         // if it's none of these special operators, it's an assignment,
         // but note that assignments can only occur in column 0.  if an 
         // unknown word appears elsewhere in the tree, it's an error.
         newEnclosure = new TstAssignment(cell);
-    } else {
-        // this is an error, flag it for the programmer.  EnclosureComponent
-        // defines some useful default behavior in case of this kind of error,
-        // like making sure that the child and/or sibling are compiled and 
-        // checked for errors.
-        newEnclosure = new TstEnclosure(cell);
-        cell.message({
-            type: "error",
-            shortMsg: "Unknown operator", 
-            longMsg: `Operator ${trimmedText} not recognized.`
-        });
-    }
+    } 
     cell.message({ type: "command" });
     return newEnclosure;
 }

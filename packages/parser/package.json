@@ -29,7 +29,9 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
-    "test": "mocha -r ts-node/register tests/*.ts",
+
+    "test": "mocha -r ts-node/register tests/*.ts tests/sheets/*/*.ts",
+    
     "testHeaders": "mocha -r ts-node/register tests/testHeaders.ts",
     "testProperties": "mocha -r ts-node/register tests/property/testProperties.ts",
     "testHide": "mocha -r ts-node/register tests/testHide.ts",
@@ -46,14 +48,19 @@
     "testMatchFrom": "mocha -r ts-node/register tests/testMatchFrom.ts",
     "testEmbed": "mocha -r ts-node/register tests/testEmbed.ts",
     "testRecursion": "mocha -r ts-node/register tests/testRecursion.ts",
-    "testSheets": "mocha -r ts-node/register tests/testSheets.ts",
-    "testSheetsCond": "mocha -r ts-node/register tests/testSheetsCond.ts",
-    "testMultiSheet": "mocha -r ts-node/register tests/testMultiSheet.ts",
     "testCellParser": "mocha -r ts-node/register tests/testCellParser.ts",
-    "testUnitTests": "mocha -r ts-node/register tests/testUnitTests.ts",
     "testReplace": "mocha -r ts-node/register tests/testReplace.ts",
-    "testSheetsReplace": "mocha -r ts-node/register tests/testSheetsReplace.ts",
-    "testTokenize": "mocha -r ts-node/register tests/testTokenize.ts"
+    "testTokenize": "mocha -r ts-node/register tests/testTokenize.ts",
+
+    "testSheets": "mocha -r ts-node/register tests/sheets/basics/*.ts",
+    "testSheetsFilters": "mocha -r ts-node/register tests/sheets/filters/*.ts",
+    "testMultiSheet": "mocha -r ts-node/register tests/sheets/multi/*.ts",
+    "testUnitTests": "mocha -r ts-node/register tests/sheets/unitTests/*.ts",
+    "testSheetsReplace": "mocha -r ts-node/register tests/sheets/replace/*.ts",
+    "testSheetsCasing": "mocha -r ts-node/register tests/sheets/casing/*.ts",
+    "testSheetsBare": "mocha -r ts-node/register tests/sheets/bare/*.ts",
+    "testSheetsOps": "mocha -r ts-node/register tests/sheets/ops/*.ts",
+    "testSheetsHide": "mocha -r ts-node/register tests/sheets/hide/*.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"

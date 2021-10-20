@@ -1,135 +1,11 @@
-import { testGramble, testErrors, sheetFromFile } from "./testUtils";
+import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    /*
-    describe('Join header', function() {
-
-        const project = sheetFromFile("./tests/csvs/flagHeader.csv");
-
-        testErrors(project, []);
-        testProject(project, [
-            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
-            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" }
-        ]);
-    });
-
-    describe('Join header with alt value', function() {
-
-        const project = sheetFromFile("./tests/csvs/flagHeaderWithOr.csv");
-
-        testErrors(project, []);
-        testProject(project, [
-            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
-            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
-            { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
-            { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
-        ]);
-    });
-    
-    describe('Join header on wrong side', function() {
-
-        // Flag headers only restrict things if they're on the left side!
-
-        const project = sheetFromFile("./tests/csvs/flagHeaderOnLeft.csv");
-
-        testErrors(project, []);
-        testProject(project, [
-            { text: "foobar", gloss: "run[1SG]", subj: "[2SG][1SG]"  },
-            { text: "moobar", gloss: "jump[1SG]", subj: "[2SG][1SG]"  },
-            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG][2SG]"  },
-            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG][2SG]"  }
-        ]);
-    });
-
-    describe('Trivial Join header', function() {
-
-        const project = sheetFromFile("./tests/csvs/trivialFlagHeader.csv");
-
-        testErrors(project, []);
-        testProject(project, [
-            { text: "foobar", gloss: "run[1SG]", subj: "[1SG]", mood: "[IMP]" },
-            { text: "moobar", gloss: "jump[1SG]", subj: "[1SG]", mood: "[IMP]" },
-            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]", mood: "[IMP]" },
-            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]", mood: "[IMP]" }
-        ]);
-    });
-
-    describe('Complex Join header', function() {
-
-        const project = sheetFromFile("./tests/csvs/complexFlagHeader.csv");
-
-        testErrors(project, []);
-        testProject(project, [
-            { text: "foobeez", gloss: "run[IMP]", subj: "[IMP]", mood: "[IMP]" },
-            { text: "moobeez", gloss: "jump[IMP]", subj: "[IMP]", mood: "[IMP]" }
-        ]);
-    });
-
-    
-    describe('Complex Join header, other direction', function() {
-
-        const project = sheetFromFile("./tests/csvs/complexFlagHeader2.csv");
-
-        testErrors(project, []);
-        testProject(project, [
-            { text: "foobeez", gloss: "run[IMP]", subj: "[IMP]", mood: "[IMP]" },
-            { text: "moobeez", gloss: "jump[IMP]", subj: "[IMP]", mood: "[IMP]" }
-        ]);
-    });
-
-    describe('Join header around a slash header', function() {
-
-        const project = sheetFromFile("./tests/csvs/complexFlagHeader3.csv");
-
-        testErrors(project, []);
-        testProject(project, [
-            { text: "foobeez", gloss: "run[IMP]", subj: "[IMP]", mood: "[IMP]" },
-            { text: "moobeez", gloss: "jump[IMP]", subj: "[IMP]", mood: "[IMP]" }
-        ]);
-    });
-
-    describe('@X/@Y header', function() {
-
-        const project = sheetFromFile("./tests/csvs/complexFlagHeader4.csv");
-
-        testErrors(project, []);
-        testProject(project, [
-            { text: "foobeez", gloss: "run[IMP]", subj: "[IMP]", mood: "[IMP]" },
-            { text: "moobeez", gloss: "jump[IMP]", subj: "[IMP]", mood: "[IMP]" }
-        ]);
-    });
-
-    
-    describe('X/@Y/Z header', function() {
-
-        const project = sheetFromFile("./tests/csvs/complexFlagHeader5.csv");
-
-        testErrors(project, []);
-        testProject(project, [
-            { text: "foobeez", gloss: "run[IMP]", subj: "[IMP]", mood: "[IMP]", order: "[IMP]" },
-            { text: "moobeez", gloss: "jump[IMP]", subj: "[IMP]", mood: "[IMP]", order: "[IMP]" }
-        ]);
-    });
-
-    describe('@embed header', function() {
-
-        const project = sheetFromFile("./tests/csvs/flagEmbed.csv");
-    
-        testErrors(project, []);
-        testProject(project, [
-            {"subj":"[2SG]",    "text":"foobaz",    "gloss":"run[2SG]"},
-            {"subj":"[IMP]",    "text":"foobeez",   "gloss":"run[IMP]"},
-            {"subj":"[2SG]",    "text":"moobaz",    "gloss":"jump[2SG]"},
-            {"subj":"[IMP]",    "text":"moobeez",   "gloss":"jump[IMP]"}
-        ]);
-    });
-    */
-
     describe('Simple equals', function() {
 
-        const project = sheetFromFile("./tests/csvs/simpleEquals.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/simpleEquals.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -141,7 +17,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Equals to the left of a sequence', function() {
 
-        const project = sheetFromFile("./tests/csvs/equalsHeader.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/equalsHeader.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -152,7 +28,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Nested equals header', function() {
 
-        const project = sheetFromFile("./tests/csvs/nestedEquals.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/nestedEquals.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -163,7 +39,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Equals header with alt value', function() {
 
-        const project = sheetFromFile("./tests/csvs/equalsOr.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/equalsOr.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -176,7 +52,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Equals embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/equalsEmbed.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/equalsEmbed.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -189,7 +65,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Equals embed where the symbol is defined later', function() {
 
-        const project = sheetFromFile("./tests/csvs/equalsEmbedAfter.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/equalsEmbedAfter.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -204,7 +80,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Equals header with not value', function() {
 
-        const project = sheetFromFile("./tests/csvs/equalsNot.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/equalsNot.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -218,7 +94,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Equals header with not embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/equalsNegatedEmbed.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/equalsNegatedEmbed.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -229,7 +105,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('startswith header', function() {
 
-        const project = sheetFromFile("./tests/csvs/startsWith.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/startsWith.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -240,7 +116,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('startswith header with alt value', function() {
 
-        const project = sheetFromFile("./tests/csvs/startsWithOr.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/startsWithOr.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -252,7 +128,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('startswith header with not value', function() {
 
-        const project = sheetFromFile("./tests/csvs/startsWithNot.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/startsWithNot.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -264,7 +140,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('startswith embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/startsWithEmbed.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/startsWithEmbed.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -276,7 +152,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('startswith embed where the symbol is defined later', function() {
 
-        const project = sheetFromFile("./tests/csvs/startsWithEmbedAfter.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/startsWithEmbedAfter.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -289,7 +165,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('startswith negated embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/startsWithNegatedEmbed.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/startsWithNegatedEmbed.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -301,7 +177,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('startswith and equals modifying same embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/startsWithEquals.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/startsWithEquals.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -313,7 +189,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('equals and startswith modifying same embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/equalsStartsWith.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/equalsStartsWith.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -325,7 +201,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('endswith header', function() {
 
-        const project = sheetFromFile("./tests/csvs/endsWith.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/endsWith.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -336,7 +212,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('endswith header with alt value', function() {
 
-        const project = sheetFromFile("./tests/csvs/endsWithOr.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/endsWithOr.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -348,7 +224,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('endswith header with not value', function() {
 
-        const project = sheetFromFile("./tests/csvs/endsWithNot.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/endsWithNot.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -360,7 +236,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('endswith embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/endsWithEmbed.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/endsWithEmbed.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -372,7 +248,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('endswith embed where the symbol is defined later', function() {
 
-        const project = sheetFromFile("./tests/csvs/endsWithEmbedAfter.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/endsWithEmbedAfter.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -385,7 +261,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('endswith negated embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/endsWithEmbedNot.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/endsWithEmbedNot.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -397,7 +273,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('endswith complex embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/endsWithComplexEmbed.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/endsWithComplexEmbed.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -410,7 +286,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('endswith and equals modifying same embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/endsWithEquals.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/endsWithEquals.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -422,7 +298,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('equals and endswith modifying same embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/equalsEndsWith.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/equalsEndsWith.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -434,7 +310,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('startswith and endswith modifying same embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/startsWithEndsWith.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/startsWithEndsWith.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -445,7 +321,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Contains header', function() {
 
-        const project = sheetFromFile("./tests/csvs/containsHeader.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/containsHeader.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -456,7 +332,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Contains header with alt value', function() {
 
-        const project = sheetFromFile("./tests/csvs/containsOr.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/containsOr.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -469,7 +345,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Contains header with not value', function() {
 
-        const project = sheetFromFile("./tests/csvs/containsNot.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/containsNot.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -483,7 +359,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Contains header with embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/containsEmbed.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/containsEmbed.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -496,7 +372,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Contains header where the condition is defined after', function() {
 
-        const project = sheetFromFile("./tests/csvs/containsEmbedAfter.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/containsEmbedAfter.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -510,7 +386,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Contains header with negated embed', function() {
 
-        const project = sheetFromFile("./tests/csvs/containsNegatedEmbed.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/containsNegatedEmbed.csv");
 
         testErrors(project, []);
         testGramble(project, [
