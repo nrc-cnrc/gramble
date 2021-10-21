@@ -889,11 +889,6 @@ export class NsGrammar extends Grammar {
     }
 
     public addSymbol(symbolName: string, component: Grammar): void {
-
-        const symbol = this.resolveNameLocal(symbolName);
-        if (symbol != undefined) {
-            throw new Error(`Symbol ${symbolName} already defined.`);
-        }
         this.symbols.set(symbolName, component);
     }
 
@@ -911,7 +906,14 @@ export class NsGrammar extends Grammar {
             return this.getDefaultSymbol();
         }
 
-        return this.symbols.get(symbolName);
+        const result = this.resolveNameLocal(symbolName);
+        if (result == undefined) {
+            return undefined;
+        }
+        
+        const [name, referent] = result;
+        return referent;
+        
     }
 
     public allSymbols(): string[] {

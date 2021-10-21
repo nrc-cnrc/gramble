@@ -8,7 +8,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/simpleGrammarWithTests.csv");
         interpreter.runUnitTests();
         testErrors(interpreter, []);
-        //testSymbols(interpreter, ["word", "verb", "suffix"]);
         testGramble(interpreter, [
             { text: "foobar", gloss: "run-1SG" }
         ]);
@@ -19,7 +18,32 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/embedGrammarWithTests.csv");
         interpreter.runUnitTests();
         testErrors(interpreter, []);
-        //testSymbols(interpreter, ["word", "verb", "suffix"]);
+        testGramble(interpreter, [
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ]);
+    });
+
+    describe('Testing a default grammar', function() {
+
+        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/testingDefaultGrammar.csv");
+        interpreter.runUnitTests();
+        testErrors(interpreter, []);
+        testGramble(interpreter, [
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ]);
+    });
+
+    describe('Testing a grammar directly underneath (without "table:" op)', function() {
+
+        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/testingWithoutTableOp.csv");
+        interpreter.runUnitTests();
+        testErrors(interpreter, []);
         testGramble(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -33,7 +57,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/negativeTests.csv");
         interpreter.runUnitTests();
         testErrors(interpreter, []);
-        //testSymbols(interpreter, ["word", "verb", "suffix"]);
         testGramble(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },

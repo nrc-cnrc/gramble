@@ -256,7 +256,7 @@ export class TstComment extends TstCellComponent {
  * 2 and the B table are its params.  (For example, 3 might represent "or", and thus
  * the union of the grammar represented by 2 and the grammar represented by the B table.
  */
-export class TstEnclosure extends TstCellComponent {
+export abstract class TstEnclosure extends TstCellComponent {
 
     public specRow: number = -1;
     
@@ -281,15 +281,6 @@ export class TstEnclosure extends TstCellComponent {
     ) {
         super(cell);
         this.specRow = cell.pos.row;
-    }
-    
-    public assignToNamespace(
-        ns: NsGrammar | undefined,
-        lastChild: boolean
-    ): void {
-        this.sibling.assignToNamespace(ns, false);
-        this.child.assignToNamespace(undefined, false);
-        super.assignToNamespace(ns, lastChild);
     }
     
     public toGrammar(): Grammar {
@@ -327,9 +318,73 @@ export class TstEnclosure extends TstCellComponent {
 
 }
 
+export class TstTableOp extends TstEnclosure {
+
+    public assignToNamespace(
+        ns: NsGrammar | undefined,
+        lastChild: boolean
+    ): void {
+        this.sibling.assignToNamespace(ns, false);
+        this.child.assignToNamespace(undefined, false);
+        super.assignToNamespace(ns, lastChild);
+    }
+    
+    public toGrammar(): Grammar {
+        
+        if (this.child instanceof TstEmpty) {
+            this.message({
+                type: "warning",
+                shortMsg: "Empty table",
+                longMsg: "'table' seems to be missing a table; " + 
+                "something should be in the cell to the right."
+            });
+        }
+
+
+        this.sibling.toGrammar();  // it's erroneous, but this will at
+                                // least run checks within it
+        
+        return this.child.toGrammar();
+    }
+
+    public toParamsTable(): [Cell, ParamDict][] {
+        
+        if (this.sibling instanceof TstCellComponent) {
+            // it's not empty, so it'll get obliterated
+            this.sibling.message({
+                type: "warning",
+                shortMsg: "Obliterated content",
+                longMsg: "This content gets ignored because it's followed by a table below."
+            });
+        }
+
+        if (this.child instanceof TstEmpty) {
+            this.message({
+                type: "warning",
+                shortMsg: "Empty table",
+                longMsg: "'table' seems to be missing a table; " + 
+                "something should be in the cell to the right."
+            });
+        }
+
+        this.sibling.toGrammar(); // it's erroneous, but this will at
+                                // least run checks within it
+        return this.child.toParamsTable();
+
+    }
+}
 
 export class TstBinaryOp extends TstEnclosure {
 
+    public assignToNamespace(
+        ns: NsGrammar | undefined,
+        lastChild: boolean
+    ): void {
+        this.sibling.assignToNamespace(undefined, false);
+        this.child.assignToNamespace(undefined, false);
+        super.assignToNamespace(ns, lastChild);
+    }
+    
     public toGrammar(): Grammar {
 
         const trimmedText = this.text.slice(0, 
@@ -360,9 +415,10 @@ export class TstBinaryOp extends TstEnclosure {
     }
 }
 
-export class TstReplace extends TstEnclosure {
+export class TstReplace extends TstBinaryOp {
 
     public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
+
     public toGrammar(): Grammar {
 
         if (this.child instanceof TstEmpty) {
@@ -445,65 +501,18 @@ export class TstReplace extends TstEnclosure {
     }
 }
 
-export class TstTableOp extends TstEnclosure {
-
-    public toGrammar(): Grammar {
-
-        if (this.sibling instanceof TstCellComponent) {
-            // it's not empty, so it'll get obliterated
-            this.sibling.message({
-                type: "warning",
-                shortMsg: "Obliterated content",
-                longMsg: "This content gets ignored because it's followed by a table below."
-            });
-        }
-        
-        if (this.child instanceof TstEmpty) {
-            this.message({
-                type: "warning",
-                shortMsg: "Empty table",
-                longMsg: "'table' seems to be missing a table; " + 
-                "something should be in the cell to the right."
-            });
-        }
-
-
-        this.sibling.toGrammar();  // it's erroneous, but this will at
-                                // least run checks within it
-        
-        return this.child.toGrammar();
-    }
-
-    public toParamsTable(): [Cell, ParamDict][] {
-        
-        if (this.sibling instanceof TstCellComponent) {
-            // it's not empty, so it'll get obliterated
-            this.sibling.message({
-                type: "warning",
-                shortMsg: "Obliterated content",
-                longMsg: "This content gets ignored because it's followed by a table below."
-            });
-        }
-
-        if (this.child instanceof TstEmpty) {
-            this.message({
-                type: "warning",
-                shortMsg: "Empty table",
-                longMsg: "'table' seems to be missing a table; " + 
-                "something should be in the cell to the right."
-            });
-        }
-
-        this.sibling.toGrammar(); // it's erroneous, but this will at
-                                // least run checks within it
-        return this.child.toParamsTable();
-
-    }
-}
-
 export class TstUnitTest extends TstEnclosure {
 
     public static VALID_PARAMS = [ "__", "unique" ];
+
+    public assignToNamespace(
+        ns: NsGrammar | undefined,
+        lastChild: boolean
+    ): void {
+        this.sibling.assignToNamespace(ns, true);
+        this.child.assignToNamespace(undefined, false);
+        super.assignToNamespace(ns, lastChild);
+    }
 
     /**
      * "test" is an operator that takes two tables, one above (spatially speaking)
@@ -592,7 +601,7 @@ export class TstUnitTest extends TstEnclosure {
 
 }
 
-export class TstNegativeUnitTest extends TstEnclosure {
+export class TstNegativeUnitTest extends TstUnitTest {
 
     /**
      * "testnot" is an operator that takes two tables, one above (spatially speaking)
@@ -707,16 +716,18 @@ export class TstAssignment extends TstEnclosure {
             return;
         }
 
-        try {
-            const grammar = this.toGrammar();
-            ns.addSymbol(trimmedText, grammar);
-        } catch (e) {
+        const referent = ns.getSymbol(trimmedText);
+        if (referent != undefined) {
+            // we're reassigning an existing symbol!
             this.message({
                 type: "error",
-                shortMsg: 'Invalid assignment', 
-                longMsg: (e as Error).message
+                shortMsg: 'Reassigning existing symbol', 
+                longMsg: `The symbol ${trimmedText} already refers to the grammar at ${referent.cell.id}`
             });
+            return;
         }
+
+        ns.addSymbol(trimmedText, this.toGrammar());
     }
     
     public toGrammar(): Grammar {
@@ -825,6 +836,15 @@ export class TstTable extends TstEnclosure {
      */
     public rows: TstRow[] = [];
     
+    public assignToNamespace(
+        ns: NsGrammar | undefined,
+        lastChild: boolean
+    ): void {
+        this.sibling.assignToNamespace(ns, false);
+        this.child.assignToNamespace(undefined, false);
+        super.assignToNamespace(ns, lastChild);
+    }
+
     public addHeader(headerCell: TstHeader): void {        
         this.headersByCol[headerCell.pos.col] = headerCell;
     }

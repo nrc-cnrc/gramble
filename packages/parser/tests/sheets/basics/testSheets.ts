@@ -176,12 +176,25 @@ describe(`${path.basename(module.filename)}`, function() {
             ["inappropriateAssignment", 9, 1, "error"]
         ]);
     });
+
+    describe('Assignment to the right of a binary op', function() {
+        const project = sheetFromFile("./tests/sheets/basics/csvs/assignmentSiblingOp.csv");
+        testErrors(project, [
+            ["assignmentSiblingOp", 12, 2, "error"]
+        ]);
+    });
+
+    describe('Assignment above a binary op', function() {
+        const project = sheetFromFile("./tests/sheets/basics/csvs/assignmentChildOp.csv");
+        testErrors(project, [
+            ["assignmentChildOp", 9, 1, "error"]
+        ]);
+    });
     
     describe('Content obliteration by table', function() {
         const project = sheetFromFile("./tests/sheets/basics/csvs/obliterationByTable.csv");
         testErrors(project, [
-            ["obliterationByTable",0,0,"error"],
-            ["obliterationByTable",0,0,"warning"]
+            ["obliterationByTable",0,0,"error"]
         ]);
     });
 

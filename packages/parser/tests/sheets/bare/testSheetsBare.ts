@@ -38,4 +38,21 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Bare grammar with embeds and table', function() {
+        const project = sheetFromFile("./tests/sheets/bare/csvs/bareGrammarWithEmbedsAndTable.csv");
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ]);
+    });
+
+    describe('Content obliteration by bare table', function() {
+        const project = sheetFromFile("./tests/sheets/bare/csvs/obliterationByBareTable.csv");
+        testErrors(project, [
+            ["obliterationByBareTable",0,0,"error"]
+        ]);
+    });
 });
