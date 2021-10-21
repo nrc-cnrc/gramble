@@ -58,6 +58,10 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["emptyTable", 1, 1, "warning"]
         ]);
+        testGramble(project, [
+            {"text":"baz","gloss":"-2SG"},
+            {"text":"bar","gloss":"-1SG"}
+        ]);
     });
 
     describe('Op missing sibling argument', function() {
@@ -65,12 +69,24 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["opMissingSibling", 9, 1, "warning"]
         ]);
+        testGramble(project, [
+            {},
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
+        ]);
     });
 
     describe('Op missing child argument', function() {
         const project = sheetFromFile("./tests/sheets/basics/csvs/opMissingChild.csv");
         testErrors(project, [
             ["opMissingChild", 12, 1, "warning"]
+        ]);
+        testGramble(project, [
+            {},
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
         ]);
     });
 
@@ -149,11 +165,16 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+
     describe('Unparseable header', function() {
         const project = sheetFromFile("./tests/sheets/basics/csvs/unparseableHeader.csv");
         testErrors(project, [
             ["unparseableHeader", 8, 3, "error"],
             ["unparseableHeader", 9, 3, "warning"]
+        ]);
+        testGramble(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
         ]);
     });
 
@@ -162,8 +183,10 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["childOnSameLine", 4, 4, "error"]
         ]);
+        testGramble(project, [
+            {"text":"foobarbaz","gloss":"run-1SG-2SG"}
+        ]);
     });
-    
 
     describe('Reserved word as header', function() {
         const project = sheetFromFile("./tests/sheets/basics/csvs/headerUsingReservedWord.csv");
@@ -171,17 +194,32 @@ describe(`${path.basename(module.filename)}`, function() {
             ["headerUsingReservedWord", 4, 4, "error"],
             ["headerUsingReservedWord", 5, 4, "warning"]
         ]);
+        testGramble(project, [
+            {"text":"foobar","gloss":"run-1SG"}
+        ]);
     });
 
     describe('Assignment to a reserved word', function() {
         const project = sheetFromFile("./tests/sheets/basics/csvs/assignmentToReservedWord.csv");
-        testErrors(project, [["assignmentToReservedWord", 1, 0, "error"]]);
+        testErrors(project, [
+            ["assignmentToReservedWord", 1, 0, "error"]
+        ]);
+        testGramble(project, [
+            {"text":"moobaz","gloss":"jump-2SG"},
+            {"text":"moobar","gloss":"jump-1SG"},
+            {"text":"foobaz","gloss":"run-2SG"},
+            {"text":"foobar","gloss":"run-1SG"}
+        ]);
     });
 
     describe('Reassigning a symbol', function() {
         const project = sheetFromFile("./tests/sheets/basics/csvs/reassigningSymbol.csv");
         testErrors(project, [
             ["reassigningSymbol", 4, 0, "error"]
+        ]);
+        testGramble(project, [
+            {"text":"moo","gloss":"jump"},
+            {"text":"foo","gloss":"run"}
         ]);
     });
 
@@ -190,6 +228,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["emptyAssignment", 0, 0, "error"]
         ]);
+        testGramble(project, [{}]);
     });
     
 
@@ -198,12 +237,26 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["inappropriateAssignment", 9, 1, "error"]
         ]);
+        testGramble(project, [
+            {"text":"moobaz","gloss":"jump-2SG"},
+            {"text":"moobar","gloss":"jump-1SG"},
+            {"text":"foobaz","gloss":"run-2SG"},
+            {"text":"foobar","gloss":"run-1SG"}
+        ]);
     });
 
     describe('Assignment to the right of a binary op', function() {
         const project = sheetFromFile("./tests/sheets/basics/csvs/assignmentSiblingOp.csv");
         testErrors(project, [
             ["assignmentSiblingOp", 12, 2, "error"]
+        ]);
+        testGramble(project, [
+            {"text":"moo","gloss":"jump"},
+            {"text":"moobaz","gloss":"jump-2SG"},
+            {"text":"moobar","gloss":"jump-1SG"},
+            {"text":"foo","gloss":"run"},
+            {"text":"foobaz","gloss":"run-2SG"},
+            {"text":"foobar","gloss":"run-1SG"}
         ]);
     });
 
@@ -212,12 +265,24 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["assignmentChildOp", 9, 1, "error"]
         ]);
+        testGramble(project, [
+            {"text":"moo","gloss":"jump"},
+            {"text":"moobaz","gloss":"jump-2SG"},
+            {"text":"moobar","gloss":"jump-1SG"},
+            {"text":"foo","gloss":"run"},
+            {"text":"foobaz","gloss":"run-2SG"},
+            {"text":"foobar","gloss":"run-1SG"}
+        ]);
     });
     
     describe('Content obliteration by table', function() {
         const project = sheetFromFile("./tests/sheets/basics/csvs/obliterationByTable.csv");
         testErrors(project, [
             ["obliterationByTable",0,0,"error"]
+        ]);
+        testGramble(project, [
+            {"text":"baz"},
+            {"text":"bar"}
         ]);
     });
 
@@ -226,13 +291,24 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["obliterationByAssignment",0,0,"error"]
         ]);
+        testGramble(project, [
+            {"text":"baz"},
+            {"text":"bar"}
+        ]);
     });
-
 
     describe('Nested tables', function() {
 
         const project = sheetFromFile("./tests/sheets/basics/csvs/nestedTables.csv");
         testErrors(project, []);
+        testGramble(project, [
+            {"text":"moo","gloss":"jump","finite":"false"},
+            {"text":"moobaz","gloss":"jump-2SG","finite":"true"},
+            {"text":"moobar","gloss":"jump-1SG","finite":"true"},
+            {"text":"foo","gloss":"run","finite":"false"},
+            {"text":"foobaz","gloss":"run-2SG","finite":"true"},
+            {"text":"foobar","gloss":"run-1SG","finite":"true"}
+        ]);
     });
 
     describe('Grammar with weird indentation', function() {
@@ -241,8 +317,28 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["weirdIndentation", 10, 1, "warning"]
         ]);
+        testGramble(project, [
+            {"text":"foobar","gloss":"run-1SG","finite":"true"}
+        ]);
     });
 
+    describe('Replace param headers in ordinary tables', function() {
+
+        const project = sheetFromFile("./tests/sheets/basics/csvs/waywardParam.csv");
+
+        testErrors(project, [
+            ["waywardParam", 1, 2, "warning"],
+            ["waywardParam", 2, 2, "warning"],
+            ["waywardParam", 5, 3, "warning"],
+            ["waywardParam", 6, 3, "warning"],
+            ["waywardParam", 7, 3, "warning"]]);
+        testGramble(project, [
+            {"gloss":"run","text":"baz"},
+            {"gloss":"run","text":"bar"},
+            {"gloss":"jump","text":"bar"},
+            {"gloss":"jump","text":"baz"}
+        ]);
+    }); 
 });
 
 

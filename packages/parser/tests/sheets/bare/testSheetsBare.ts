@@ -54,5 +54,9 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["obliterationByBareTable",0,0,"error"]
         ]);
+        testGramble(project, [
+            {"text":"baz"},
+            {"text":"bar"}
+        ]);
     });
 });

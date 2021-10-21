@@ -16,7 +16,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    
     describe('Uppercase embed header', function() {
 
         const project = sheetFromFile("./tests/sheets/casing/csvs/uppercaseEmbed.csv");
@@ -72,5 +71,4 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
 });

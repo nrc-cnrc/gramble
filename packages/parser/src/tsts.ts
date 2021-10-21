@@ -514,7 +514,7 @@ export class TstUnitTest extends TstEnclosure {
         
         if (this.sibling instanceof TstEmpty) {
             this.message({
-                type: "warning",
+                type: "error",
                 shortMsg: "Wayward test",
                 longMsg: "There should be something above this 'test' command to test"
             });
@@ -536,7 +536,7 @@ export class TstUnitTest extends TstEnclosure {
                             // obliterate the grammar it was meant to test!
         }
         
-        if (!(this.child instanceof TstTable)) {
+        if (!(this.child instanceof TstTable) && !(this.child instanceof TstTableOp)) {
             this.message({
                 type: "error",
                 shortMsg: "Cannot execute tests",
@@ -625,7 +625,7 @@ export class TstNegativeUnitTest extends TstUnitTest {
                             // obliterate the grammar it was meant to test!
         }
         
-        if (!(this.child instanceof TstTable)) {
+        if (!(this.child instanceof TstTable) && !(this.child instanceof TstTableOp)) {
             this.message({
                 type: "error",
                 shortMsg: "Cannot execute tests",

@@ -10,14 +10,12 @@ suffix:, table:, text, gloss
 word:, table:, table:, embed, embed
     ,       ,      , verb, suffix 
     ,
-    ,       , join:, up, down
-    ,      ,       , foo, fu
+    ,       , join:, finite
+    ,      ,       , true
 
-    , or:, table:, embed, embed
-    ,       ,      , verb, suffix 
+    , or:, table:, embed
+    ,       ,      , verb 
     ,
-    ,       , join:, up, down
-    ,      ,       , foo, fo:
+    ,       , join:, finite
+    ,       ,       , false
     , 
-    , join:, up, down,
-    ,       , r, z

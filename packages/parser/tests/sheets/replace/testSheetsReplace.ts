@@ -200,21 +200,4 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Replace param headers in ordinary tables', function() {
-
-        const project = sheetFromFile("./tests/sheets/replace/csvs/waywardParam.csv");
-
-        testErrors(project, [
-            ["waywardParam", 1, 2, "warning"],
-            ["waywardParam", 2, 2, "warning"],
-            ["waywardParam", 5, 3, "warning"],
-            ["waywardParam", 6, 3, "warning"],
-            ["waywardParam", 7, 3, "warning"]]);
-        testGramble(project, [
-            {"gloss":"run","text":"baz"},
-            {"gloss":"run","text":"bar"},
-            {"gloss":"jump","text":"bar"},
-            {"gloss":"jump","text":"baz"}
-        ]);
-    }); 
 });

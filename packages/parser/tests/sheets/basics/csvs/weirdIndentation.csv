@@ -8,5 +8,5 @@ suffix:, table:, text, gloss
 word:,       , table:, embed, embed
     ,       ,       , verb, suffix 
     ,
-    , join:, up, down
-    ,      , foo, fo:
+    , join:, finite
+    ,      , true

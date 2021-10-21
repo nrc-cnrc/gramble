@@ -462,7 +462,7 @@ export class ErrorHeader extends LiteralHeader {
             shortMsg: `Invalid header: ${this.text}`,
             longMsg: `This content is associated with an invalid header above, ignoring`
         });
-        return new EpsilonGrammar(content);
+        return left;
     }
 }
 
@@ -478,7 +478,7 @@ export class ReservedErrorHeader extends ErrorHeader {
             shortMsg: `Invalid header: ${this.text}`,
             longMsg: `This content is associated with an invalid header above, ignoring`
         });
-        return new EpsilonGrammar(content);
+        return left;
     }
 
 }
