@@ -3,10 +3,14 @@ import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
+    describe('Empty grammar', function() {
+        const project = sheetFromFile("./tests/sheets/bare/csvs/emptyGrammar.csv");
+        testErrors(project, []);
+        testGramble(project, [{}]);
+    });
+
     describe('Bare grammar', function() {
-
         const project = sheetFromFile("./tests/sheets/bare/csvs/bareGrammar.csv");
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foo", gloss: "run" },
@@ -15,9 +19,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Bare grammar with table', function() {
-
         const project = sheetFromFile("./tests/sheets/bare/csvs/bareGrammarWithTable.csv");
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foo", gloss: "run" },
@@ -26,7 +28,6 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Bare grammar with embeds', function() {
-
         const project = sheetFromFile("./tests/sheets/bare/csvs/bareGrammarWithEmbeds.csv");
         testErrors(project, []);
         testGramble(project, [
@@ -36,6 +37,5 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobaz", gloss: "jump-2SG" }
         ]);
     });
-
 
 });

@@ -163,6 +163,36 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Empty assignment', function() {
+        const project = sheetFromFile("./tests/sheets/basics/csvs/emptyAssignment.csv");
+        testErrors(project, [
+            ["emptyAssignment", 0, 0, "error"]
+        ]);
+    });
+
+    describe('Inappropriate assignment', function() {
+        const project = sheetFromFile("./tests/sheets/basics/csvs/inappropriateAssignment.csv");
+        testErrors(project, [
+            ["inappropriateAssignment", 9, 1, "error"]
+        ]);
+    });
+    
+    describe('Content obliteration by table', function() {
+        const project = sheetFromFile("./tests/sheets/basics/csvs/obliterationByTable.csv");
+        testErrors(project, [
+            ["obliterationByTable",0,0,"error"],
+            ["obliterationByTable",0,0,"warning"]
+        ]);
+    });
+
+    describe('Content obliteration by assignment', function() {
+        const project = sheetFromFile("./tests/sheets/basics/csvs/obliterationByAssignment.csv");
+        testErrors(project, [
+            ["obliterationByAssignment",0,0,"error"]
+        ]);
+    });
+
+
     describe('Nested tables', function() {
 
         const project = sheetFromFile("./tests/sheets/basics/csvs/nestedTables.csv");

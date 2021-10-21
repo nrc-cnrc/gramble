@@ -1,9 +1,9 @@
 import { NameQualifier } from "./transforms";
 import { 
-    TstAssignment, TstBinaryOp, TstComment, 
+    TstAssignment, TstBinaryOp, TstEmpty, 
     TstEnclosure, TstHeader, TstProject, 
     TstSheet, TstTable, TstTableOp, 
-    TstUnitTest, TstNegativeUnitTest, TstComponent, BINARY_OPS, TstReplace } from "./tsts";
+    TstUnitTest, TstNegativeUnitTest, TstComponent, BINARY_OPS, TstReplace, TstComment } from "./tsts";
 import { Cell, CellPos, DevEnvironment, Gen, StringDict } from "./util";
 
 /**

@@ -10,7 +10,7 @@
  * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { Grammar, NsGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, NullGrammar, SequenceGrammar, JoinGrammar, ReplaceGrammar, JoinReplaceGrammar, LiteralGrammar } from "./grammars";
+import { Grammar, NsGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, NullGrammar, SequenceGrammar, JoinGrammar, ReplaceGrammar, JoinReplaceGrammar, LiteralGrammar, DUMMY_CELL } from "./grammars";
 import { Cell, CellPos, DummyCell } from "./util";
 import { DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, ParamDict, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 import { SheetCell } from "./sheets";
@@ -46,10 +46,29 @@ export abstract class TstComponent {
         return { "__": this.toGrammar()};
     }
 
-    public abstract toParamsTable(): [Cell, ParamDict][];
+    public assignToNamespace(
+        ns: NsGrammar | undefined,
+        lastChild: boolean
+    ): void {
+        if (ns == undefined) {
+            // there's nothing to do
+            return;
+        }
 
+        if (lastChild) {
+            // whatever this is, it's the default
+            ns.addSymbol("__DEFAULT__", this.toGrammar());
+            return;
+        }
+    }
+
+    public abstract toParamsTable(): [Cell, ParamDict][];
 }
 
+/**
+ * A TstCellComponent is just any TstComponent that has a
+ * cell.
+ */
 export abstract class TstCellComponent extends TstComponent {
 
     constructor(
@@ -68,6 +87,27 @@ export abstract class TstCellComponent extends TstComponent {
 
     public message(msg: any): void {
         this.cell.message(msg);
+    }
+    
+    public assignToNamespace(
+        ns: NsGrammar | undefined,
+        lastChild: boolean
+    ): void {
+        super.assignToNamespace(ns, lastChild);
+
+        if (ns != undefined && !lastChild) {
+            // We're directly under a namespace, but we're not an assignment.
+            // (TstAssignment overrides this, so we can't be an assignment.)
+            // We're also not the last child, so we won't be assigned to 
+            // the default symbol.  Any content is going to be lost, so 
+            // issue an error
+            this.message({
+                type: "error",
+                shortMsg: `Expected assignment`,
+                longMsg: 'We expect an assignment to a symbol here (e.g. "VERB:").' + 
+                    "Did you forget a colon at the end?"
+            });
+        }
     }
     
     public toGrammar(): Grammar {
@@ -115,15 +155,11 @@ export class TstHeader extends TstCellComponent {
     }
 
     public headerToGrammar(left: Grammar, content: SheetCell): Grammar {
-        const grammar = this.header.toGrammar(left, content.text, content);
-        //grammar.cell = content;
-        return grammar;
+        return this.header.toGrammar(left, content.text, content);
     }
     
     public headerToParams(left: ParamDict, content: SheetCell): ParamDict {
-        const params = this.header.toParams(left, content.text, content);
-        //grammar.cell = content;
-        return params;
+        return this.header.toParams(left, content.text, content);
     }
 
 }
@@ -145,12 +181,6 @@ export class TstHeadedCell extends TstCellComponent {
         if (this.prev != undefined) {
             prevGrammar = this.prev.toGrammar();
         }
-        
-        /*
-        if (this.cell.text.length == 0) {
-            return prevGrammar;
-        }
-        */
 
         return this.header.headerToGrammar(prevGrammar, this.cell);
     }
@@ -171,13 +201,24 @@ export class TstHeadedCell extends TstCellComponent {
     }
 }
 
+export class TstEmpty extends TstComponent {
+
+    public toGrammar(): Grammar {
+        return new EpsilonGrammar(DUMMY_CELL);
+    }
+    
+    public toParamsTable(): [Cell, ParamDict][] {
+        return [];
+    }
+}
+
 export class TstComment extends TstCellComponent {
 
     public toGrammar(): Grammar {
         return new EpsilonGrammar(this.cell);
     }
-}
 
+}
 
 /**
  * An enclosure represents a single-cell unit containing a command or identifier (call that the "startCell"),
@@ -224,7 +265,7 @@ export class TstEnclosure extends TstCellComponent {
      * the same parent, but appeared before this component, usually directly
      * above this one).
      */
-    public sibling: TstEnclosure | undefined = undefined;
+    public sibling: TstComponent = new TstEmpty();
 
     /**
      * The last-defined child of the component (i.e. of all the components
@@ -233,13 +274,22 @@ export class TstEnclosure extends TstCellComponent {
      * parent's child and the previous child (if any) becomes the new child's
      * sibling.
      */
-    public child: TstEnclosure | undefined = undefined;
+    public child: TstComponent = new TstEmpty();
 
     constructor(
         cell: SheetCell,
     ) {
         super(cell);
         this.specRow = cell.pos.row;
+    }
+    
+    public assignToNamespace(
+        ns: NsGrammar | undefined,
+        lastChild: boolean
+    ): void {
+        this.sibling.assignToNamespace(ns, false);
+        this.child.assignToNamespace(undefined, false);
+        super.assignToNamespace(ns, lastChild);
     }
     
     public toGrammar(): Grammar {
@@ -252,22 +302,14 @@ export class TstEnclosure extends TstCellComponent {
         // its sibling's state (if a sibling is present), and if not, as its child's 
         // state (if present), and if not, the empty grammar.
 
-        let result: Grammar = new EpsilonGrammar(this.cell);
-
-        if (this.child != undefined) {
-            result = this.child.toGrammar();
-        }
-
-        if (this.sibling != undefined) {
-            result = this.sibling.toGrammar();
-        }
-
+        let result = this.child.toGrammar();
+        result = this.sibling.toGrammar();
         return result;
     }
 
     public addChild(child: TstEnclosure): TstEnclosure {
 
-        if (this.child != undefined && 
+        if (this.child instanceof TstEnclosure && 
             this.child.pos.col != child.pos.col) {
             child.message({
                 type: "warning",
@@ -292,34 +334,28 @@ export class TstBinaryOp extends TstEnclosure {
 
         const trimmedText = this.text.slice(0, 
                         this.text.length-1).trim();
-
-        const op = BINARY_OPS[trimmedText];
-                            
-        let childGrammar: Grammar = new EpsilonGrammar(this.cell);
-        let siblingGrammar: Grammar = new EpsilonGrammar(this.cell);
-
-        if (this.child == undefined) {
+   
+        if (this.child instanceof TstEmpty) {
             this.message({
                 type: "error",
                 shortMsg: `Missing argument to '${trimmedText}'`, 
                 longMsg: `'${trimmedText}' is missing a second argument; ` +
                 "something should be in the cell to the right."
             });
-        } else {
-            childGrammar = this.child.toGrammar();
         }
 
-        if (this.sibling == undefined) {
+        if (this.sibling instanceof TstEmpty) {
             this.message({
                 type: "error",
                 shortMsg: `Missing argument to '${trimmedText}'`,
                 longMsg:`'${trimmedText}' is missing a first argument; ` +
                 "something should be in a cell above this."
             });
-        } else {
-            siblingGrammar = this.sibling.toGrammar();
-        }
+        } 
 
+        const op = BINARY_OPS[trimmedText];
+        let childGrammar = this.child.toGrammar();
+        let siblingGrammar = this.sibling.toGrammar();
         return op(this.cell, siblingGrammar, childGrammar);
     }
 }
@@ -328,35 +364,27 @@ export class TstReplace extends TstEnclosure {
 
     public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
     public toGrammar(): Grammar {
-        
-        // we're not actually doing anything with the params yet, just
-        // testing that we can actually gather them appropriately.
 
-        let params: [Cell, ParamDict][] = [];
-        let siblingGrammar: Grammar = new EpsilonGrammar(this.cell);
-
-        if (this.child == undefined) {
+        if (this.child instanceof TstEmpty) {
             this.message({
                 type: "error",
                 shortMsg: `Replace missing parameters`, 
                 longMsg: `'replace:' doesn't have any parameters; ` +
                 "something should be in the cells to the right."
             });
-        } else {
-            params = this.child.toParamsTable();
-        }
+        } 
 
-        if (this.sibling == undefined) {
+        if (this.sibling instanceof TstEmpty) {
             this.message({
                 type: "error",
                 shortMsg: `Missing argument to replace'`,
                 longMsg:`'replace:' needs a grammar to operate on; ` +
                 "something should be in a cell above this."
             });
-        } else {
-            siblingGrammar = this.sibling.toGrammar();
         }
 
+        let params = this.child.toParamsTable();
+        let siblingGrammar = this.sibling.toGrammar();
         const replaceRules: ReplaceGrammar[] = [];
 
         for (const [cell, paramDict] of params) {
@@ -421,36 +449,53 @@ export class TstTableOp extends TstEnclosure {
 
     public toGrammar(): Grammar {
 
-        if (this.sibling != undefined) {
-            // TODO: Content obliteration warning
-            this.sibling.toGrammar();
+        if (this.sibling instanceof TstCellComponent) {
+            // it's not empty, so it'll get obliterated
+            this.sibling.message({
+                type: "warning",
+                shortMsg: "Obliterated content",
+                longMsg: "This content gets ignored because it's followed by a table below."
+            });
         }
-
-        if (this.child == undefined) {
+        
+        if (this.child instanceof TstEmpty) {
             this.message({
                 type: "warning",
                 shortMsg: "Empty table",
                 longMsg: "'table' seems to be missing a table; " + 
                 "something should be in the cell to the right."
             });
-            return new EpsilonGrammar(this.cell);
         }
 
+
+        this.sibling.toGrammar();  // it's erroneous, but this will at
+                                // least run checks within it
+        
         return this.child.toGrammar();
     }
 
     public toParamsTable(): [Cell, ParamDict][] {
         
-        if (this.child == undefined) {
+        if (this.sibling instanceof TstCellComponent) {
+            // it's not empty, so it'll get obliterated
+            this.sibling.message({
+                type: "warning",
+                shortMsg: "Obliterated content",
+                longMsg: "This content gets ignored because it's followed by a table below."
+            });
+        }
+
+        if (this.child instanceof TstEmpty) {
             this.message({
                 type: "warning",
                 shortMsg: "Empty table",
                 longMsg: "'table' seems to be missing a table; " + 
                 "something should be in the cell to the right."
             });
-            return [];
         }
 
+        this.sibling.toGrammar(); // it's erroneous, but this will at
+                                // least run checks within it
         return this.child.toParamsTable();
 
     }
@@ -467,7 +512,7 @@ export class TstUnitTest extends TstEnclosure {
      */
     public toGrammar(): Grammar {
         
-        if (this.sibling == undefined) {
+        if (this.sibling instanceof TstEmpty) {
             this.message({
                 type: "warning",
                 shortMsg: "Wayward test",
@@ -478,7 +523,7 @@ export class TstUnitTest extends TstEnclosure {
 
         const siblingGrammar = this.sibling.toGrammar();
 
-        if (this.child == undefined) {
+        if (this.child instanceof TstEmpty) {
             this.message({
                 type: "warning",
                 shortMsg: "Empty test",
@@ -556,7 +601,7 @@ export class TstNegativeUnitTest extends TstEnclosure {
      */
     public toGrammar(): Grammar {
         
-        if (this.sibling == undefined) {
+        if (this.sibling instanceof TstEmpty) {
             this.message({
                 type: "error",
                 shortMsg: "Wayward test",
@@ -567,7 +612,7 @@ export class TstNegativeUnitTest extends TstEnclosure {
 
         const siblingGrammar = this.sibling.toGrammar();
 
-        if (this.child == undefined) {
+        if (this.child instanceof TstEmpty) {
             this.message({
                 type: "warning",
                 shortMsg: "Empty test",
@@ -607,15 +652,18 @@ export class TstNegativeUnitTest extends TstEnclosure {
         }
         return result;
     }
-
 }
-
 
 export class TstAssignment extends TstEnclosure {
 
-    public assign(ns: NsGrammar, grammar: Grammar): void {
-        
-        // determine what symbol you're assigning to
+    public assignToNamespace(
+        ns: NsGrammar | undefined,
+        lastChild: boolean
+    ): void {
+
+        this.sibling.assignToNamespace(ns, false);
+        this.child.assignToNamespace(undefined, false);
+
         const trimmedText = this.text.slice(0, this.text.length-1).trim();
         const trimmedTextLower = trimmedText.toLowerCase();
 
@@ -629,7 +677,7 @@ export class TstAssignment extends TstEnclosure {
             });            
         }
 
-        if (this.child == undefined) {
+        if (this.child instanceof TstEmpty) {
             // oops, empty "right side" of the assignment!
             this.message({
                 type: "warning",
@@ -649,7 +697,18 @@ export class TstAssignment extends TstEnclosure {
             return;
         }
 
+        if (ns == undefined) {
+            this.message({
+                type: "error",
+                shortMsg: "Wayward assignment",
+                longMsg: `This looks like an assignment to a symbol ${trimmedText}, ` +
+                    "but an assignment can't be here."
+            });
+            return;
+        }
+
         try {
+            const grammar = this.toGrammar();
             ns.addSymbol(trimmedText, grammar);
         } catch (e) {
             this.message({
@@ -659,7 +718,7 @@ export class TstAssignment extends TstEnclosure {
             });
         }
     }
-
+    
     public toGrammar(): Grammar {
 
         if (this.child != undefined) {
@@ -679,44 +738,21 @@ export class TstSheet extends TstEnclosure {
         super(cell);
     }
 
-    public getChildren(): TstEnclosure[] {
-        let children: TstEnclosure[] = [];
-        let c: TstEnclosure | undefined = this.child;
-        while (c != undefined) {
+    public getChildren(): TstComponent[] {
+        let children: TstComponent[] = [];
+        let c: TstComponent | undefined = this.child;
+        while (!(c instanceof TstEmpty)) {
             children = [c, ...children];
-            c = c.sibling;
+            if (c instanceof TstEnclosure) {
+                c = c.sibling;
+            }
         }
         return children;
     }
 
     public toGrammar(): Grammar {
-
         const ns = new NsGrammar(this.cell, this.name);
-
-        if (this.child == undefined) {
-            return ns;
-        }
-
-        let child: TstEnclosure | undefined = undefined;
-        let grammar: Grammar | undefined = undefined;
-        for (child of this.getChildren()) {
-            grammar = child.toGrammar();
-            if (child instanceof TstAssignment) {
-                child.assign(ns, grammar);
-            }
-        }
-        
-        // The last child of a sheet is its "default" value; if you refer to 
-        // a sheet without naming any particular symbol defined in that sheet, 
-        // its value is the value of the last expression on the sheet.  This
-        // last expression does not necessarily have to be an assignment, but it 
-        // still has to be called *something* in order to be stored in the namespace;
-        // we call it "__DEFAULT__".  We never actually call it by that name anywhere, 
-        // although you could.
-        if (child != undefined && grammar != undefined && !(child instanceof TstAssignment)) {
-            ns.addSymbol("__DEFAULT__", grammar);
-        }
-
+        this.child.assignToNamespace(ns, true);
         return ns;
     }
 
@@ -728,6 +764,15 @@ export class TstProject extends TstComponent {
 
     public addSheet(sheet: TstSheet): void {
         this.sheets[sheet.name] = sheet;
+    }
+
+    public assignToNamespace(
+        ns: NsGrammar | undefined,
+        lastChild: boolean
+    ): void {
+        // It shouldn't even be possible to get here; projects 
+        // are never children of namespaces.
+        throw new Error("Not implemented");
     }
     
     public toGrammar(): Grammar {
