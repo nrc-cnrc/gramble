@@ -142,6 +142,28 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"moobar", "surface": "moovar", "gloss":"jump-1SG"}
         ]);
     });
+    
+    describe('Replace with no sibling', function() {
+
+        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithNoSibling.csv");
+
+        testErrors(project, [
+            ["replaceWithNoSibling",0,1,"error"]
+        ]);        
+        testGramble(project, [{}]);
+    });
+
+    describe('Replace with no child', function() {
+
+        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithNoChild.csv");
+
+        testErrors(project, [
+            ["replaceWithNoChild",3,1,"error"]
+        ]);        
+        testGramble(project, [
+            {"text":"aba"}
+        ]);
+    });
 
     describe('Replace with missing "from" param', function() {
 

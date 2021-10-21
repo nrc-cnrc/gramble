@@ -53,6 +53,27 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Empty "table:" op', function() {
+        const project = sheetFromFile("./tests/sheets/basics/csvs/emptyTable.csv");
+        testErrors(project, [
+            ["emptyTable", 1, 1, "warning"]
+        ]);
+    });
+
+    describe('Op missing sibling argument', function() {
+        const project = sheetFromFile("./tests/sheets/basics/csvs/opMissingSibling.csv");
+        testErrors(project, [
+            ["opMissingSibling", 9, 1, "warning"]
+        ]);
+    });
+
+    describe('Op missing child argument', function() {
+        const project = sheetFromFile("./tests/sheets/basics/csvs/opMissingChild.csv");
+        testErrors(project, [
+            ["opMissingChild", 12, 1, "warning"]
+        ]);
+    });
+
     describe('Reference to a missing symbol', function() {
 
         const project = sheetFromFile("./tests/sheets/basics/csvs/missingSymbol.csv");
@@ -129,7 +150,6 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Unparseable header', function() {
-
         const project = sheetFromFile("./tests/sheets/basics/csvs/unparseableHeader.csv");
         testErrors(project, [
             ["unparseableHeader", 8, 3, "error"],
@@ -138,7 +158,6 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Two children on the same line', function() {
-
         const project = sheetFromFile("./tests/sheets/basics/csvs/childOnSameLine.csv");
         testErrors(project, [
             ["childOnSameLine", 4, 4, "error"]
@@ -147,7 +166,6 @@ describe(`${path.basename(module.filename)}`, function() {
     
 
     describe('Reserved word as header', function() {
-
         const project = sheetFromFile("./tests/sheets/basics/csvs/headerUsingReservedWord.csv");
         testErrors(project, [
             ["headerUsingReservedWord", 4, 4, "error"],
@@ -155,8 +173,12 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Reassigning a symbol', function() {
+    describe('Assignment to a reserved word', function() {
+        const project = sheetFromFile("./tests/sheets/basics/csvs/assignmentToReservedWord.csv");
+        testErrors(project, [["assignmentToReservedWord", 1, 0, "error"]]);
+    });
 
+    describe('Reassigning a symbol', function() {
         const project = sheetFromFile("./tests/sheets/basics/csvs/reassigningSymbol.csv");
         testErrors(project, [
             ["reassigningSymbol", 4, 0, "error"]
@@ -169,6 +191,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["emptyAssignment", 0, 0, "error"]
         ]);
     });
+    
 
     describe('Inappropriate assignment', function() {
         const project = sheetFromFile("./tests/sheets/basics/csvs/inappropriateAssignment.csv");

@@ -349,15 +349,6 @@ export class TstTableOp extends TstEnclosure {
 
     public toParamsTable(): [Cell, ParamDict][] {
         
-        if (this.sibling instanceof TstCellComponent) {
-            // it's not empty, so it'll get obliterated
-            this.sibling.message({
-                type: "warning",
-                shortMsg: "Obliterated content",
-                longMsg: "This content gets ignored because it's followed by a table below."
-            });
-        }
-
         if (this.child instanceof TstEmpty) {
             this.message({
                 type: "warning",

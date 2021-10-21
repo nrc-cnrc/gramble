@@ -910,7 +910,7 @@ export class NsGrammar extends Grammar {
         if (result == undefined) {
             return undefined;
         }
-        
+
         const [name, referent] = result;
         return referent;
         
@@ -1430,7 +1430,6 @@ export class JoinReplaceGrammar extends Grammar {
         super(cell);
     }
 
-    
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformJoinReplace(this, ns, args);
     }
@@ -1443,7 +1442,7 @@ export class JoinReplaceGrammar extends Grammar {
         if (this.tapes == undefined) {
 
             for (const rule of this.rules) {
-                // iterate through the rules to see what tape (if any) needs to be hidden
+                // iterate through the rules to see what tape needs to be renamed, and to what
                 this.ruleTapes.push(...rule.calculateTapes(stack));
 
                 let fromTapeName: string | undefined = undefined;
@@ -1485,11 +1484,6 @@ export class JoinReplaceGrammar extends Grammar {
         if (this.expr == undefined) {
             const ruleExprs = this.rules.map(r => r.constructExpr(symbols));
             const ruleExpr = constructAlternation(...ruleExprs);
-
-            /*
-            if (this.renamedChild == undefined || this.renamedChild.tapes == undefined) {
-                throw new Error(`Constructing JoinReplace grammar without having calculated tapes`);
-            } */
             this.expr = constructJoin(this.child.constructExpr(symbols), 
                                     ruleExpr,
                                     new Set(this.child.tapes),

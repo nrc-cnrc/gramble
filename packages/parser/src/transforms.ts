@@ -238,6 +238,11 @@ export class ReplaceAdjuster extends IdentityTransform<void>{
         args: void
     ): Grammar {
 
+        if (g.tapes == undefined || g.child.tapes == undefined) {
+            // really only for linting
+            throw new Error("Adjusting tapes before calculating them in the first place.");   
+        }
+
         let newChild = g.child.accept(this, ns, args);
         const newRules = g.rules.map(r => r.accept(this, ns, args));
 
@@ -256,6 +261,14 @@ export class ReplaceAdjuster extends IdentityTransform<void>{
         }
 
         if (fromTape != undefined && replaceTape != undefined) {
+            
+            if (g.child.tapes.indexOf(fromTape) == -1) {
+                // if replace is replacing a tape not relevant to the child,
+                // then we generate infinitely -- which is correct but not what
+                // anyone wants.  so ignore the replacement entirely.
+                return newChild;
+            }
+            
             // DUMMY_CELL because this rename may be invalid, but we don't want
             // it to be reported to the user because the compiler did it
             newChild = new RenameGrammar(DUMMY_CELL, newChild, fromTape, replaceTape);

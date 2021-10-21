@@ -31,7 +31,9 @@
     "prepare": "npm run build",
 
     "test": "mocha -r ts-node/register tests/*.ts tests/sheets/*/*.ts",
-    
+    "testGrammars": "mocha -r ts-node/register tests/*.ts",
+    "testSheets": "mocha -r ts-node/register tests/sheets/*/*.ts",
+
     "testHeaders": "mocha -r ts-node/register tests/testHeaders.ts",
     "testProperties": "mocha -r ts-node/register tests/property/testProperties.ts",
     "testHide": "mocha -r ts-node/register tests/testHide.ts",
@@ -52,7 +54,7 @@
     "testReplace": "mocha -r ts-node/register tests/testReplace.ts",
     "testTokenize": "mocha -r ts-node/register tests/testTokenize.ts",
 
-    "testSheets": "mocha -r ts-node/register tests/sheets/basics/*.ts",
+    "testSheetsBasics": "mocha -r ts-node/register tests/sheets/basics/*.ts",
     "testSheetsFilters": "mocha -r ts-node/register tests/sheets/filters/*.ts",
     "testMultiSheet": "mocha -r ts-node/register tests/sheets/multi/*.ts",
     "testUnitTests": "mocha -r ts-node/register tests/sheets/unitTests/*.ts",
