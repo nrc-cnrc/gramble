@@ -52,6 +52,12 @@ import { Gen } from "./util";
 
 export type MPParser<T> = (input: string[]) => Gen<[T, string[]]>
 
+export function MPEmpty<T>(nullResult: T): MPParser<T> {
+    return function*(input: string[]) {
+        yield [nullResult, input];
+    }
+}
+
 /**
  * Delay the evaluation of a parser X to allow reference to a parser before it's defined (e.g. for
  * grammars that recurse).  You probably don't need this if your parsers are defined "function X(...){...}",
@@ -73,10 +79,12 @@ export function MPReserved<T>(
     caseSensitive: boolean = false    
 ): MPParser<T> {
     return function*(input: string[]) {
-        
+        if (input.length == 0) {
+            return;
+        }
         const firstToken = caseSensitive ? input[0] 
                                          : input[0].toLowerCase();
-        if (input.length == 0 || !reserved.has(firstToken)) {
+        if (!reserved.has(firstToken)) {
             return;
         }
         yield [constr(input[0]), input.slice(1)];
@@ -92,10 +100,12 @@ export function MPUnreserved<T>(
     caseSensitive: boolean = false    
 ): MPParser<T> {
     return function*(input: string[]) {
-        
+        if (input.length == 0) {
+            return;
+        }
         const firstToken = caseSensitive ? input[0] 
                                          : input[0].toLowerCase();
-        if (input.length == 0 || reserved.has(firstToken)) {
+        if (reserved.has(firstToken)) {
             return;
         }
         yield [constr(input[0]), input.slice(1)];

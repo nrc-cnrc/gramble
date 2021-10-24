@@ -1,4 +1,4 @@
-import { MPDelay, MPAlternation, MPSequence, MPUnreserved, MPParser, miniParse } from "./miniParser";
+import { MPDelay, MPAlternation, MPSequence, MPUnreserved, MPParser, miniParse, MPEmpty } from "./miniParser";
 
 /**
  * This module is concerned with cells that have operators in them (e.g. ~ and |),
@@ -29,24 +29,31 @@ export class CPAlternation implements CPResult {
     ) { }
 }
 
+export class CPEmpty implements CPResult {}
+
 var EXPR: MPParser<CPResult> = MPDelay(() =>
-    MPAlternation(NEGATION, ALTERNATION, SUBEXPR)
+    MPAlternation(ALTERNATION, SUBEXPR)
+);
+
+var TOPLEVEL_EXPR: MPParser<CPResult> = MPDelay(() =>
+    MPAlternation(EXPR, EMPTY)
 );
 
 var SUBEXPR: MPParser<CPResult> = MPDelay(() =>
-    MPAlternation(UNRESERVED, PARENS)
+    MPAlternation(UNRESERVED, PARENS, NEGATION)
 );
 
 const RESERVED = new Set(["(", ")", "~", "|"]);
 const UNRESERVED = MPUnreserved<CPResult>(RESERVED, (s) => new CPUnreserved(s));
+const EMPTY = MPEmpty<CPResult>(new CPEmpty());
 
 const PARENS = MPSequence(
-    ["(", EXPR, ")"],
+    ["(", TOPLEVEL_EXPR, ")"],
     (child) => child 
 )
 
 const NEGATION = MPSequence(
-    ["~", EXPR],
+    ["~", SUBEXPR],
     (child) => new CPNegation(child)
 );
 
@@ -66,7 +73,7 @@ function tokenize(text: string): string[] {
 }
 
 export function parseBooleanCell(text: string): CPResult {
-    return miniParse(tokenize, EXPR, text);
+    return miniParse(tokenize, TOPLEVEL_EXPR, text);
 }
 
 

@@ -93,7 +93,7 @@ export class SheetProject extends SheetComponent {
             return;
         }
 
-        console.log(`loading source file ${sheetName}`);
+        //console.log(`loading source file ${sheetName}`);
         const cells = this.devEnv.loadSource(sheetName);
 
         const sheet = new Sheet(this, sheetName, cells);
@@ -135,7 +135,6 @@ export class SheetProject extends SheetComponent {
         }
 
         const mainTstSheet = this.sheets[this.mainSheetName].toTST();
-        console.log(`mainTstSheet is a ${mainTstSheet.constructor.name}`);
         project.addChild(mainTstSheet);
         return project;
     }

@@ -25,6 +25,21 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Filter(Epsilon(), t1("hello"));
         testGrammar(grammar, []);
     });
+    
+    describe('Filter t1:hello[t1:""]', function() {
+        const grammar = Filter(t1("hello"), t1(""));
+        testGrammar(grammar, []);
+    });
+
+    describe('Filter t1:""[t1:""]', function() {
+        const grammar = Filter(t1(""), t1(""));
+        testGrammar(grammar, [{}]);
+    });
+
+    describe('Filter (t1:hello|t1:"")[t1:""]', function() {
+        const grammar = Filter(Uni(t1("hello"), t1("")), t1(""));
+        testGrammar(grammar, [{}]);
+    });
 
     describe('Filter t1:h[t1:hello]', function() {
         const grammar = Filter(t1("h"), t1("hello"));

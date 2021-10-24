@@ -1,0 +1,7 @@
+
+root:, text, gloss
+     , foobar, run
+     , foobaz, jump
+
+word:, embed, endswith text, text, gloss
+     , root, , q, [1SG]

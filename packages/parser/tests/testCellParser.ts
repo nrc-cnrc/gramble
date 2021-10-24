@@ -2,7 +2,8 @@ import {
     CPUnreserved,
     CPNegation,
     CPAlternation,
-    parseBooleanCell
+    parseBooleanCell,
+    CPEmpty
 } from "../src/cells";
 
 import * as path from 'path';
@@ -10,6 +11,16 @@ import { expect } from "chai";
 import { testIsType } from "./testUtils";
 
 describe(`${path.basename(module.filename)}`, function() {
+
+    describe('Cell ""', function() {
+        const cell = parseBooleanCell("");
+        testIsType(cell, CPEmpty);
+    });
+
+    describe('Cell "()"', function() {
+        const cell = parseBooleanCell("()");
+        testIsType(cell, CPEmpty);
+    });
 
     describe('Cell "1SG"', function() {
         const cell = parseBooleanCell("1SG");
@@ -95,14 +106,30 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Cell "|1SG"', function() {
         it ("should fail to parse", function() {
-            expect(parseBooleanCell.bind('|1SG')).to.throw;
+            expect(() => parseBooleanCell('|1SG')).to.throw();
         });
     });
     
     describe('Cell "1SG|"', function() {
         it ("should fail to parse", function() {
-            expect(parseBooleanCell.bind('1SG|')).to.throw;
+            expect(() => parseBooleanCell('1SG|')).to.throw();
         });
+    });
+    
+    describe('Cell "1SG|()"', function() {
+        const cell = parseBooleanCell("1SG|()");
+        testIsType(cell, CPAlternation);
+        if (!(cell instanceof CPAlternation)) { return; }
+        testIsType(cell.child1, CPUnreserved, "child1");
+        testIsType(cell.child2, CPEmpty, "child2");
+    });
+
+    describe('Cell "()|2SG"', function() {
+        const cell = parseBooleanCell("()|2SG");
+        testIsType(cell, CPAlternation);
+        if (!(cell instanceof CPAlternation)) { return; }
+        testIsType(cell.child1, CPEmpty, "child1");
+        testIsType(cell.child2, CPUnreserved, "child2");
     });
     
     describe('Cell "(1SG)|(2SG)"', function() {
@@ -121,21 +148,45 @@ describe(`${path.basename(module.filename)}`, function() {
         testIsType(cell.child2, CPUnreserved, "child2");
     });
 
+    describe('Cell "~(1SG|2SG)"', function() {
+        const cell = parseBooleanCell("~(1SG|2SG)");
+        testIsType(cell, CPNegation);
+        if (!(cell instanceof CPNegation)) { return; }
+        testIsType(cell.child, CPAlternation, "child");
+        if (!(cell.child instanceof CPAlternation)) { return; }
+        testIsType(cell.child.child1, CPUnreserved, "child1");
+        testIsType(cell.child.child2, CPUnreserved, "child2");
+    });
+
+    describe('Cell "~1SG|2SG"', function() {
+        const cell = parseBooleanCell("~1SG|2SG");
+        testIsType(cell, CPAlternation);
+        if (!(cell instanceof CPAlternation)) { return; }
+        testIsType(cell.child1, CPNegation, "child1");
+        testIsType(cell.child2, CPUnreserved, "child2");
+    });
+
     describe('Cell "(1SG|)2SG"', function() {
         it ("should fail to parse", function() {
-            expect(parseBooleanCell.bind('(1SG|)2SG')).to.throw;
+            expect(() => parseBooleanCell('(1SG|)2SG')).to.throw();
         });
     });
     
     describe('Cell "|"', function() {
         it ("should fail to parse", function() {
-            expect(parseBooleanCell.bind('|')).to.throw;
+            expect(() => parseBooleanCell('|')).to.throw();
         });
     });
 
     describe('Cell "~|1SG"', function() {
         it ("should fail to parse", function() {
-            expect(parseBooleanCell.bind('~|1SG')).to.throw;
+            expect(() => parseBooleanCell('~|1SG')).to.throw();
+        });
+    });
+    
+    describe('Cell "~1SG|"', function() {
+        it ("should fail to parse", function() {
+            expect(() => parseBooleanCell('~1SG|')).to.throw();
         });
     });
 

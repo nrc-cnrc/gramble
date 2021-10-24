@@ -14,7 +14,31 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
+    describe('Equals with an empty-string condition', function() {
+
+        const project = sheetFromFile("./tests/sheets/filters/csvs/equalsEmptyString.csv");
+
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"mooba","gloss":"jump"},
+            {"text":"fooba","gloss":"run"},
+        ]);
+    });
+
+    describe('Equals with an ill-formed filter', function() {
+
+        const project = sheetFromFile("./tests/sheets/filters/csvs/illFormedFilter.csv");
+
+        testErrors(project, [
+            ["illFormedFilter", 7, 3, "error"]
+        ]);
+        testGramble(project, [
+            {"text":"goo","pos":"v"},
+            {"text":"moo","pos":"n"},
+            {"text":"foo","pos":"v"}
+        ]);
+    });
+
     describe('Equals to the left of a sequence', function() {
 
         const project = sheetFromFile("./tests/sheets/filters/csvs/equalsHeader.csv");
@@ -47,6 +71,19 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
             { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
             { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
+        ]);
+    });
+
+    describe('Equals with an alt and empty-string', function() {
+
+        const project = sheetFromFile("./tests/sheets/filters/csvs/equalsOrEmptyString.csv");
+
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
+            {"text":"mooba","gloss":"jump"},
+            {"text":"fooba","gloss":"run"},
         ]);
     });
 
@@ -113,6 +150,18 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "ungoo", gloss: "[1SG]climb" }
         ]);
     });
+
+    describe('startswith empty string', function() {
+
+        const project = sheetFromFile("./tests/sheets/filters/csvs/startsWithEmptyString.csv");
+
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "unfoo", gloss: "[1SG]run" },
+            { text: "ungoo", gloss: "[1SG]climb" }
+        ]);
+    });
+    
     
     describe('startswith header with alt value', function() {
 
@@ -207,6 +256,17 @@ describe(`${path.basename(module.filename)}`, function() {
         testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]" },
             { text: "foobazk", gloss: "jump[1SG]" }
+        ]);
+    });
+
+    describe('endswith empty string', function() {
+
+        const project = sheetFromFile("./tests/sheets/filters/csvs/endsWithEmptyString.csv");
+
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "foobarq", gloss: "run[1SG]" },
+            { text: "foobazq", gloss: "jump[1SG]" }
         ]);
     });
 
@@ -321,12 +381,25 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Contains header', function() {
 
-        const project = sheetFromFile("./tests/sheets/filters/csvs/containsHeader.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/containsGrammar.csv");
 
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" }
+        ]);
+    });
+
+    describe('Contains empty string', function() {
+
+        const project = sheetFromFile("./tests/sheets/filters/csvs/containsEmptyString.csv");
+
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"moobaz","gloss":"jump[2SG.SUBJ]","subj":"[2SG.SUBJ]"},
+            {"text":"moobar","gloss":"jump[1SG.SUBJ]","subj":"[1SG.SUBJ]"},
+            {"text":"foobaz","gloss":"run[2SG.SUBJ]","subj":"[2SG.SUBJ]"},
+            {"text":"foobar","gloss":"run[1SG.SUBJ]","subj":"[1SG.SUBJ]"}
         ]);
     });
 
@@ -394,7 +467,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobar", gloss: "jump[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
         ]);
     });
-    
+
 });
 
 

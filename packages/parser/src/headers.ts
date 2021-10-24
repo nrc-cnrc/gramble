@@ -2,7 +2,7 @@ import {
     AlternationGrammar, ContainsGrammar, UnresolvedEmbedGrammar, EndsWithGrammar, EpsilonGrammar, FilterGrammar, HideGrammar, JoinGrammar, LiteralGrammar, NegationGrammar, RenameGrammar, SequenceGrammar, StartsWithGrammar, Epsilon, Grammar
 } from "./grammars";
 
-import { CPAlternation, CPNegation, CPResult, CPUnreserved, parseBooleanCell } from "./cells";
+import { CPAlternation, CPEmpty, CPNegation, CPResult, CPUnreserved, parseBooleanCell } from "./cells";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPReserved, MPSequence, MPUnreserved } from "./miniParser";
 import { Cell, HSVtoRGB, RGBtoString } from "./util";
 
@@ -275,13 +275,10 @@ class RenameHeader extends UnaryHeader {
 export class LogicHeader extends UnaryHeader {
 
     public merge(
-        left: Grammar | undefined, 
+        left: Grammar, 
         child: Grammar,
         content: Cell
     ): Grammar {
-        if (left == undefined) {
-            return child;
-        }
         return new SequenceGrammar(content, [left, child]);
     }
 
@@ -289,6 +286,10 @@ export class LogicHeader extends UnaryHeader {
         parsedText: CPResult,
         content: Cell
     ): Grammar {
+
+        if (parsedText instanceof CPEmpty) {
+            return this.child.toGrammar(new EpsilonGrammar(content), "", content);
+        }
 
         if (parsedText instanceof CPUnreserved) {
             return this.child.toGrammar(new EpsilonGrammar(content), parsedText.text, content);
@@ -313,14 +314,20 @@ export class LogicHeader extends UnaryHeader {
         text: string,
         content: Cell
     ): Grammar {
-
-        if (text.length == 0) {
+        try {
+            const parsedText = parseBooleanCell(text);
+            const c = this.toGrammarPiece(parsedText, content);
+            return this.merge(left, c, content);
+        } catch {
+            content.message({
+                type: "error",
+                shortMsg: `Invalid condition: ${content.text}`,
+                longMsg: "This cell cannot be parsed into a valid filter condition. " +
+                    "Note that ~, |, (, and ) are special symbols when underneath " +
+                    " equals/startswith/endswith/contains."
+            });
             return left;
         }
-
-        const parsedText = parseBooleanCell(text);
-        const c = this.toGrammarPiece(parsedText, content);
-        return this.merge(left, c, content);
     }
 }
 
@@ -336,18 +343,10 @@ export class LogicHeader extends UnaryHeader {
 export class EqualsHeader extends LogicHeader {
     
     public merge(
-        leftNeighbor: Grammar | undefined, 
+        leftNeighbor: Grammar, 
         state: Grammar,
         content: Cell
     ): Grammar {
-        if (leftNeighbor == undefined) {
-            content.message({
-                type: "error",
-                shortMsg: "Filtering empty grammar",
-                longMsg: "'equals/startswith/endswith/contains' requires content to its left."
-            });
-            return new EpsilonGrammar(content);
-        }
 
         if (leftNeighbor instanceof SequenceGrammar) {
             // if your left neighbor is a concat state we have to do something a little special,

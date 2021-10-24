@@ -835,7 +835,6 @@ export class TstAssignment extends TstEnclosure {
             return;
         }
 
-        console.log(`adding symbol ${trimmedText} to namespace ${ns.name}`);
         ns.addSymbol(trimmedText, this.toGrammar());
     }
     
