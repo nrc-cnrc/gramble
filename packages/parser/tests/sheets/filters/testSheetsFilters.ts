@@ -105,7 +105,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('startswith header', function() {
 
-        const project = sheetFromFile("./tests/sheets/filters/csvs/startsWith.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/startsWithGrammar.csv");
 
         testErrors(project, []);
         testGramble(project, [
@@ -201,7 +201,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('endswith header', function() {
 
-        const project = sheetFromFile("./tests/sheets/filters/csvs/endsWith.csv");
+        const project = sheetFromFile("./tests/sheets/filters/csvs/endsWithGrammar.csv");
 
         testErrors(project, []);
         testGramble(project, [

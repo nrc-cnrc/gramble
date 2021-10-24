@@ -31,14 +31,25 @@ export interface Cell {
 
     message(msg: any): void;
     readonly id: string;
+    readonly pos: CellPos;
+    readonly text: string;
 
 }
 
+const DUMMY_POS = new CellPos();
 export class DummyCell implements Cell {
 
     public message(msg: any): void { }
     public get id(): string {
         return "NOWHERE";
+    }
+
+    public get pos(): CellPos {
+        return DUMMY_POS;
+    }
+
+    public get text(): string {
+        return "";
     }
 
 }

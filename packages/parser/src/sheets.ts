@@ -2,7 +2,7 @@ import { NameQualifier } from "./transforms";
 import { 
     TstAssignment, TstBinaryOp, TstEmpty, 
     TstEnclosure, TstHeader, TstProject, 
-    TstSheet, TstTable, TstTableOp, 
+    TstNamespace, TstTable, TstTableOp, 
     TstUnitTest, TstNegativeUnitTest, TstComponent, BINARY_OPS, TstReplace, TstComment } from "./tsts";
 import { Cell, CellPos, DevEnvironment, Gen, StringDict } from "./util";
 
@@ -93,7 +93,7 @@ export class SheetProject extends SheetComponent {
             return;
         }
 
-        //console.log(`loading source file ${sheetName}`);
+        console.log(`loading source file ${sheetName}`);
         const cells = this.devEnv.loadSource(sheetName);
 
         const sheet = new Sheet(this, sheetName, cells);
@@ -121,22 +121,23 @@ export class SheetProject extends SheetComponent {
     }
 
     public toTST(): TstProject {
-        const result = new TstProject();
+        const project = new TstProject();
         for (const [sheetName, sheet] of Object.entries(this.sheets)) {
             if (sheetName == this.mainSheetName) {
                 continue; // save this for last
             }
             const tstSheet = sheet.toTST();
-            result.addSheet(tstSheet);
+            project.addChild(tstSheet);
         }
 
         if (!(this.mainSheetName in this.sheets)) { 
-            return result; // unset or incorrect main sheet name
+            return project; // unset or incorrect main sheet name
         }
 
         const mainTstSheet = this.sheets[this.mainSheetName].toTST();
-        result.addSheet(mainTstSheet);
-        return result;
+        console.log(`mainTstSheet is a ${mainTstSheet.constructor.name}`);
+        project.addChild(mainTstSheet);
+        return project;
     }
 
     public message(msg: any): void {
@@ -198,12 +199,12 @@ export class Sheet extends SheetComponent {
      * felt that was information not relevant to the object itself.  It's only relevant to this algorithm,
      * so it should just stay here.
      */
-    public toTST(): TstSheet {
+    public toTST(): TstNamespace {
     
-        // sheets are treated as having an invisible cell containing "__START__" at 0, -1
-        var startCell: SheetCell = new SheetCell(this, "__START__", 0, -1);
+        // sheets are treated as having an invisible cell containing their names at 0, -1
+        var startCell: SheetCell = new SheetCell(this, this.name, 0, -1);
 
-        var result = new TstSheet(this.name, startCell);
+        var result = new TstNamespace(this.name, startCell);
 
         var stack: {tst: TstEnclosure, row: number, col: number}[] = 
                 [{ tst: result, row: 0, col: -1 }];

@@ -6,7 +6,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Hide header', function() {
 
-        const project = sheetFromFile("./tests/sheets/hide/csvs/hide.csv");
+        const project = sheetFromFile("./tests/sheets/hide/csvs/hideGrammar.csv");
 
         testErrors(project, []);
         testGramble(project, [

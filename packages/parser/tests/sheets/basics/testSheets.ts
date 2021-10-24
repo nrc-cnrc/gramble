@@ -165,7 +165,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-
     describe('Unparseable header', function() {
         const project = sheetFromFile("./tests/sheets/basics/csvs/unparseableHeader.csv");
         testErrors(project, [
@@ -203,6 +202,19 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile("./tests/sheets/basics/csvs/assignmentToReservedWord.csv");
         testErrors(project, [
             ["assignmentToReservedWord", 1, 0, "error"]
+        ]);
+        testGramble(project, [
+            {"text":"moobaz","gloss":"jump-2SG"},
+            {"text":"moobar","gloss":"jump-1SG"},
+            {"text":"foobaz","gloss":"run-2SG"},
+            {"text":"foobar","gloss":"run-1SG"}
+        ]);
+    });
+
+    describe('Sheet name using a reserved word', function() {
+        const project = sheetFromFile("./tests/sheets/basics/csvs/maybe.csv");
+        testErrors(project, [
+            ["maybe", 0, -1, "error"]
         ]);
         testGramble(project, [
             {"text":"moobaz","gloss":"jump-2SG"},
@@ -330,15 +342,15 @@ describe(`${path.basename(module.filename)}`, function() {
             ["waywardParam", 1, 2, "warning"],
             ["waywardParam", 2, 2, "warning"],
             ["waywardParam", 5, 3, "warning"],
-            ["waywardParam", 6, 3, "warning"],
-            ["waywardParam", 7, 3, "warning"]]);
+            ["waywardParam", 6, 3, "warning"]
+        ]);
         testGramble(project, [
             {"gloss":"run","text":"baz"},
             {"gloss":"run","text":"bar"},
             {"gloss":"jump","text":"bar"},
             {"gloss":"jump","text":"baz"}
         ]);
-    }); 
+    });
 });
 
 

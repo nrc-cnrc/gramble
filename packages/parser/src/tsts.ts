@@ -13,7 +13,6 @@
 import { Grammar, NsGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, NullGrammar, SequenceGrammar, JoinGrammar, ReplaceGrammar, JoinReplaceGrammar, LiteralGrammar, DUMMY_CELL } from "./grammars";
 import { Cell, CellPos, DummyCell } from "./util";
 import { DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, ParamDict, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
-import { SheetCell } from "./sheets";
 
 
 type BinaryOp = (cell: Cell, c1: Grammar, c2: Grammar) => Grammar;
@@ -72,7 +71,7 @@ export abstract class TstComponent {
 export abstract class TstCellComponent extends TstComponent {
 
     constructor(
-        public cell: SheetCell
+        public cell: Cell
     ) { 
         super();
     }
@@ -130,7 +129,7 @@ export class TstHeader extends TstCellComponent {
     protected header: Header;
 
     constructor(
-        cell: SheetCell
+        cell: Cell
     ) {
         super(cell);
         this.header = parseHeaderCell(cell.text);
@@ -154,11 +153,11 @@ export class TstHeader extends TstCellComponent {
         return this.header.getColor(saturation, value);
     }
 
-    public headerToGrammar(left: Grammar, content: SheetCell): Grammar {
+    public headerToGrammar(left: Grammar, content: Cell): Grammar {
         return this.header.toGrammar(left, content.text, content);
     }
     
-    public headerToParams(left: ParamDict, content: SheetCell): ParamDict {
+    public headerToParams(left: ParamDict, content: Cell): ParamDict {
         return this.header.toParams(left, content.text, content);
     }
 
@@ -167,36 +166,20 @@ export class TstHeader extends TstCellComponent {
 export class TstHeadedCell extends TstCellComponent {
 
     constructor(
-        public prev: TstHeadedCell | undefined,
+        public prev: TstComponent,
         public header: TstHeader,
-        content: SheetCell
+        content: Cell
     ) { 
         super(content);
     }
 
     public toGrammar(): Grammar {
-
-        let prevGrammar: Grammar = new EpsilonGrammar(this.cell);
-
-        if (this.prev != undefined) {
-            prevGrammar = this.prev.toGrammar();
-        }
-
+        const prevGrammar = this.prev.toGrammar();
         return this.header.headerToGrammar(prevGrammar, this.cell);
     }
     
     public toParams(): ParamDict {
-
-        let prevParams: ParamDict = {};
-
-        if (this.prev != undefined) {
-            prevParams = this.prev.toParams();
-        }
-        
-        if (this.cell.text.length == 0) {
-            return prevParams;
-        }
-
+        const prevParams = this.prev.toParams();
         return this.header.headerToParams(prevParams, this.cell);
     }
 }
@@ -277,7 +260,7 @@ export abstract class TstEnclosure extends TstCellComponent {
     public child: TstComponent = new TstEmpty();
 
     constructor(
-        cell: SheetCell,
+        cell: Cell,
     ) {
         super(cell);
         this.specRow = cell.pos.row;
@@ -487,7 +470,6 @@ export class TstReplace extends TstBinaryOp {
             return siblingGrammar;  // in case every rule fails, at least generate something
         }
 
-        //const replaceAlternation = new AlternationGrammar(this.cell, replaceRules);
         return new JoinReplaceGrammar(this.cell, siblingGrammar, replaceRules);
     }
 }
@@ -654,149 +636,6 @@ export class TstNegativeUnitTest extends TstUnitTest {
     }
 }
 
-export class TstAssignment extends TstEnclosure {
-
-    public assignToNamespace(
-        ns: NsGrammar | undefined,
-        lastChild: boolean
-    ): void {
-
-        this.sibling.assignToNamespace(ns, false);
-        this.child.assignToNamespace(undefined, false);
-
-        const trimmedText = this.text.slice(0, this.text.length-1).trim();
-        const trimmedTextLower = trimmedText.toLowerCase();
-
-        if (RESERVED_WORDS.has(trimmedTextLower)) {
-            // oops, assigning to a reserved word
-            this.message({
-                type: "error",
-                shortMsg: "Assignment to reserved word", 
-                longMsg: "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
-                `reserved word ${trimmedText}.  Choose a different symbol name.`
-            });            
-        }
-
-        if (this.child instanceof TstEmpty) {
-            // oops, empty "right side" of the assignment!
-            this.message({
-                type: "warning",
-                shortMsg: "Empty assignment", 
-                longMsg: `This looks like an assignment to a symbol ${trimmedText}, ` +
-                "but there's nothing to the right of it."
-            });
-            return;
-        }
-
-        if (trimmedText.indexOf(".") != -1) {
-            this.message({
-                type: "warning",
-                shortMsg: "Symbol name contains .", 
-                longMsg: "You can't assign to a name that contains a period."
-            });
-            return;
-        }
-
-        if (ns == undefined) {
-            this.message({
-                type: "error",
-                shortMsg: "Wayward assignment",
-                longMsg: `This looks like an assignment to a symbol ${trimmedText}, ` +
-                    "but an assignment can't be here."
-            });
-            return;
-        }
-
-        const referent = ns.getSymbol(trimmedText);
-        if (referent != undefined) {
-            // we're reassigning an existing symbol!
-            this.message({
-                type: "error",
-                shortMsg: 'Reassigning existing symbol', 
-                longMsg: `The symbol ${trimmedText} already refers to the grammar at ${referent.cell.id}`
-            });
-            return;
-        }
-
-        ns.addSymbol(trimmedText, this.toGrammar());
-    }
-    
-    public toGrammar(): Grammar {
-
-        if (this.child != undefined) {
-            return this.child.toGrammar();
-        }
-
-        return new EpsilonGrammar(this.cell);
-    }
-}
-
-export class TstSheet extends TstEnclosure {
-
-    constructor(
-        public name: string,
-        cell: SheetCell
-    ) { 
-        super(cell);
-    }
-
-    public getChildren(): TstComponent[] {
-        let children: TstComponent[] = [];
-        let c: TstComponent | undefined = this.child;
-        while (!(c instanceof TstEmpty)) {
-            children = [c, ...children];
-            if (c instanceof TstEnclosure) {
-                c = c.sibling;
-            }
-        }
-        return children;
-    }
-
-    public toGrammar(): Grammar {
-        const ns = new NsGrammar(this.cell, this.name);
-        this.child.assignToNamespace(ns, true);
-        return ns;
-    }
-
-}
-
-export class TstProject extends TstComponent {
-
-    protected sheets: {[name: string]: TstSheet} = {};
-
-    public addSheet(sheet: TstSheet): void {
-        this.sheets[sheet.name] = sheet;
-    }
-
-    public assignToNamespace(
-        ns: NsGrammar | undefined,
-        lastChild: boolean
-    ): void {
-        // It shouldn't even be possible to get here; projects 
-        // are never children of namespaces.
-        throw new Error("Not implemented");
-    }
-    
-    public toGrammar(): Grammar {
-
-        const ns = new NsGrammar(new DummyCell(), "");
-
-        for (let [name, sheet] of Object.entries(this.sheets)) {
-            const grammar = sheet.toGrammar();
-            if (name.indexOf(".") != -1) {
-                name = name.replace(".", "_");
-            }
-            ns.addSymbol(name, grammar);
-        }
-
-        return ns;
-    }
-
-    public toParamsTable(): [Cell, ParamDict][] {
-        throw new Error("not implemented");
-    }
-
-}
 
 /**
  * A TstTable is a rectangular region of the grid consisting of a header row
@@ -840,7 +679,7 @@ export class TstTable extends TstEnclosure {
         this.headersByCol[headerCell.pos.col] = headerCell;
     }
 
-    public addContent(cell: SheetCell): void {
+    public addContent(cell: Cell): void {
         
         // make sure we have a header
         const headerCell = this.headersByCol[cell.pos.col];
@@ -900,20 +739,17 @@ export class TstTable extends TstEnclosure {
     }
 
     public toParamsTable(): [Cell, ParamDict][] {
-        
-        if (this.sibling != undefined) {
-            this.sibling.toGrammar(); // shouldn't happen but just in case
-        }
-
+        this.sibling.toGrammar(); // in case there's an erroneous sibling,
+                                    // this will at least run some checks on it
         return this.rows.map(row => [row.cell, row.toParams()]);
     }
 }
 
 export class TstRow extends TstCellComponent {
 
-    public lastCell: TstHeadedCell | undefined = undefined;
+    public lastCell: TstComponent = new TstEmpty();
 
-    public addContent(header: TstHeader, cell: SheetCell): void {
+    public addContent(header: TstHeader, cell: Cell): void {
         const newCell = new TstHeadedCell(this.lastCell, header, cell);
         cell.message({ 
             type: "content", 
@@ -923,16 +759,133 @@ export class TstRow extends TstCellComponent {
     }
 
     public toGrammar(): Grammar {
-        if (this.lastCell == undefined) {
-            return new NullGrammar(this.cell);  // shouldn't happen
-        }
         return this.lastCell.toGrammar();
     }
     
     public toParams(): ParamDict {
-        if (this.lastCell == undefined) {
-            return {};  // shouldn't happen
-        }
         return this.lastCell.toParams();
+    }
+}
+
+export class TstAssignment extends TstEnclosure {
+
+    public assignToNamespace(
+        ns: NsGrammar | undefined,
+        lastChild: boolean  // we don't need to use last child -- regardless of
+                            // whether this is the last child, it's getting added,
+                            // and if it's last, well, it's last!
+    ): void {
+
+        this.sibling.assignToNamespace(ns, false);
+        this.child.assignToNamespace(undefined, false);
+
+        const trimmedText = this.text.endsWith(":")
+                            ? this.text.slice(0, this.text.length-1).trim()
+                            : this.text
+        const trimmedTextLower = trimmedText.toLowerCase();
+
+        if (RESERVED_WORDS.has(trimmedTextLower)) {
+            // oops, assigning to a reserved word
+            this.message({
+                type: "error",
+                shortMsg: "Assignment to reserved word", 
+                longMsg: "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
+                `reserved word ${trimmedText}.  Choose a different symbol name.`
+            });            
+        }
+
+        if (this.child instanceof TstEmpty) {
+            // oops, empty "right side" of the assignment!
+            this.message({
+                type: "warning",
+                shortMsg: "Empty assignment", 
+                longMsg: `This looks like an assignment to a symbol ${trimmedText}, ` +
+                "but there's nothing to the right of it."
+            });
+            return;
+        }
+
+        if (trimmedText.indexOf(".") != -1) {
+            this.message({
+                type: "warning",
+                shortMsg: "Symbol name contains .", 
+                longMsg: "You can't assign to a name that contains a period."
+            });
+            return;
+        }
+
+        if (ns == undefined) {
+            this.message({
+                type: "error",
+                shortMsg: "Wayward assignment",
+                longMsg: `This looks like an assignment to a symbol ${trimmedText}, ` +
+                    "but an assignment can't be here."
+            });
+            return;
+        }
+
+        const referent = ns.getSymbol(trimmedText);
+        if (referent != undefined) {
+            // we're reassigning an existing symbol!
+            this.message({
+                type: "error",
+                shortMsg: 'Reassigning existing symbol', 
+                longMsg: `The symbol ${trimmedText} already refers to the grammar at ${referent.cell.id}`
+            });
+            return;
+        }
+
+        console.log(`adding symbol ${trimmedText} to namespace ${ns.name}`);
+        ns.addSymbol(trimmedText, this.toGrammar());
+    }
+    
+    public toGrammar(): Grammar {
+        return this.child.toGrammar();
+    }
+}
+
+export class TstNamespace extends TstEnclosure {
+
+    constructor(
+        public name: string,
+        cell: Cell
+    ) { 
+        super(cell);
+    }
+
+    public toGrammar(): Grammar {
+        const ns = new NsGrammar(this.cell, this.name);
+        this.child.assignToNamespace(ns, true);
+        return ns;
+    }
+
+}
+
+export class TstProject extends TstNamespace {
+
+    constructor() {
+        super("", DUMMY_CELL);
+    }
+
+    /**
+     * TstProject overrides addChild() because it needs to treat
+     * is added children specially.  Its children are all sheets (and thus
+     * namespaces) but unlike ordinary things that we assign, there's no 
+     * actual "name:" cell to the left of these, their name is the name of the
+     * source file or worksheet they come from.  This is represented as a 
+     * "virtual" cell that we constructed earlier, but at some point we have 
+     * to turn that cell into an assignment; that's what we do here.
+     */
+    public addChild(child: TstEnclosure): TstEnclosure {
+
+        if (!(child instanceof TstNamespace)) {
+            throw new Error("Attempting to add a non-namespace to a project");
+        }
+
+        // first wrap it in an assignment
+        const newChild = new TstAssignment(child.cell);
+        newChild.addChild(child);
+        // then add the assign as our own child
+        return super.addChild(newChild);
     }
 }
