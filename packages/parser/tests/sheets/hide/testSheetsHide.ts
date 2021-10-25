@@ -1,13 +1,12 @@
 import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
 
+const DIR = `${path.dirname(module.filename)}/csvs`;
+
 describe(`${path.basename(module.filename)}`, function() {
 
-
     describe('Hide header', function() {
-
-        const project = sheetFromFile("./tests/sheets/hide/csvs/hideGrammar.csv");
-
+        const project = sheetFromFile(`${DIR}/hideGrammar.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "foo" }
@@ -15,22 +14,17 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Hiding an irrelevant tape', function() {
-
-        const project = sheetFromFile("./tests/sheets/hide/csvs/hideIrrelevant.csv");
-
+        const project = sheetFromFile(`${DIR}/hideIrrelevant.csv`);
         testErrors(project, 
             [["hideIrrelevant", 1, 4, "error"]]
         );
-        
         testGramble(project, [
             { text: "foo", gloss: "run" }
         ]);
     });
 
     describe('Hide header with embeds', function() {
-
-        const project = sheetFromFile("./tests/sheets/hide/csvs/hideEmbed.csv");
-
+        const project = sheetFromFile(`${DIR}/hideEmbed.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run[1SG]", subj: "[1SG]" },
@@ -43,9 +37,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Two hide headers', function() {
-
-        const project = sheetFromFile("./tests/sheets/hide/csvs/doubleHide.csv");
-
+        const project = sheetFromFile(`${DIR}/doubleHide.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run[1SG]" },
@@ -58,9 +50,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Hide header with a slash value', function() {
-
-        const project = sheetFromFile("./tests/sheets/hide/csvs/doubleHideSlash.csv");
-
+        const project = sheetFromFile(`${DIR}/doubleHideSlash.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run[1SG]" },
@@ -71,6 +61,4 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moo", gloss: "jump[3SG]" }
         ]);
     });
-
-
 });

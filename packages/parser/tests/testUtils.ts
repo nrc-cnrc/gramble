@@ -4,6 +4,7 @@ import { Grammar, Lit } from "../src/grammars";
 import { Interpreter } from "../src/interpreter";
 import { StringDict, tokenizeUnicode } from "../src/util";
 import { dirname, basename } from "path";
+import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
 
 export const t1 = (s: string) => Lit("t1", s);
@@ -231,6 +232,9 @@ export function testGramble(
 }
 
 export function sheetFromFile(path: string): Interpreter {
+    if (!existsSync(path)) {
+        throw new Error(`Cannot find file ${path}`);
+    }
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
     const devEnv = new TextDevEnvironment(dir);

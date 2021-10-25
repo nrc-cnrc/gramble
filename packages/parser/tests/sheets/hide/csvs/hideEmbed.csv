@@ -1,5 +1,5 @@
 
-verb:, table:, text, gloss, pov
+verb:, table:, text, gloss, pos
     ,       , foo, run, v
     ,       , moo, jump, v
 
@@ -9,4 +9,4 @@ suffix:, table:, text, gloss/subj
     ,       ,    , [3SG]
 
 word:, table:, embed, embed, hide
-    ,       , verb, suffix, pov
+    ,       , verb, suffix, pos

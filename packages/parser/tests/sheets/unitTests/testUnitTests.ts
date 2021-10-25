@@ -1,11 +1,12 @@
 import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
 
+const DIR = `${path.dirname(module.filename)}/csvs`;
+
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Simple grammar with unit tests', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/simpleGrammarWithTests.csv");
+        const interpreter = sheetFromFile(`${DIR}/simpleGrammarWithTests.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         testGramble(interpreter, [
@@ -14,8 +15,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Embeds and unit tests', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/embedGrammarWithTests.csv");
+        const interpreter = sheetFromFile(`${DIR}/embedGrammarWithTests.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         testGramble(interpreter, [
@@ -27,8 +27,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Testing a default grammar', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/testingDefaultGrammar.csv");
+        const interpreter = sheetFromFile(`${DIR}/testingDefaultGrammar.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         testGramble(interpreter, [
@@ -40,8 +39,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Testing a grammar directly underneath (without "table:" op)', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/testingWithoutTableOp.csv");
+        const interpreter = sheetFromFile(`${DIR}/testingWithoutTableOp.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         testGramble(interpreter, [
@@ -53,8 +51,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Negative tests', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/negativeTests.csv");
+        const interpreter = sheetFromFile(`${DIR}/negativeTests.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         testGramble(interpreter, [
@@ -66,10 +63,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Failing unit tests', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/embedGrammarWithFailedTests.csv");
+        const interpreter = sheetFromFile(`${DIR}/embedGrammarWithFailedTests.csv`);
         interpreter.runUnitTests();
-        
         testErrors(interpreter, [
             ["embedGrammarWithFailedTests", 14, 2, "error"],
             ["embedGrammarWithFailedTests", 15, 2, "error"],
@@ -84,10 +79,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Failing negative tests', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/failingNegativeTests.csv");
+        const interpreter = sheetFromFile(`${DIR}/failingNegativeTests.csv`);
         interpreter.runUnitTests();
-        
         testErrors(interpreter, [
             ["failingNegativeTests", 13, 2, "error"]
         ]);
@@ -100,10 +93,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Testing nothing', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/testingNothing.csv");
+        const interpreter = sheetFromFile(`${DIR}/testingNothing.csv`);
         interpreter.runUnitTests();
-        
         testErrors(interpreter, [
             ["testingNothing", 9, 1, "error"]
         ]);
@@ -111,10 +102,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Negative testing nothing', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/negativeTestingNothing.csv");
+        const interpreter = sheetFromFile(`${DIR}/negativeTestingNothing.csv`);
         interpreter.runUnitTests();
-        
         testErrors(interpreter, [
             ["negativeTestingNothing", 9, 1, "error"]
         ]);
@@ -122,8 +111,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Missing unit tests', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/missingTests.csv");
+        const interpreter = sheetFromFile(`${DIR}/missingTests.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
             ["missingTests",12,1,"warning"]
@@ -137,8 +125,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Missing negative unit tests', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/missingNegativeTests.csv");
+        const interpreter = sheetFromFile(`${DIR}/missingNegativeTests.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
             ["missingNegativeTests",12,1,"warning"]
@@ -152,8 +139,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('table: op under unit test', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/tableUnderUnitTest.csv");
+        const interpreter = sheetFromFile(`${DIR}/tableUnderUnitTest.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         testGramble(interpreter, [
@@ -165,8 +151,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('table: op under negative unit test', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/tableUnderNegativeUnitTest.csv");
+        const interpreter = sheetFromFile(`${DIR}/tableUnderNegativeUnitTest.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         testGramble(interpreter, [
@@ -178,8 +163,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('or: op under unit test', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/opUnderUnitTest.csv");
+        const interpreter = sheetFromFile(`${DIR}/opUnderUnitTest.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
             ["opUnderUnitTest",12,1,"error"]
@@ -193,8 +177,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('or: op under negative unit test', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/opUnderNegativeUnitTest.csv");
+        const interpreter = sheetFromFile(`${DIR}/opUnderNegativeUnitTest.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
             ["opUnderNegativeUnitTest",12,1,"error"]
@@ -208,8 +191,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Test: op with bad param', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/testWithBadParam.csv");
+        const interpreter = sheetFromFile(`${DIR}/testWithBadParam.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
             ["testWithBadParam",13,3,"warning"],
@@ -225,8 +207,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Testnot: op with bad param', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/testnotWithBadParam.csv");
+        const interpreter = sheetFromFile(`${DIR}/testnotWithBadParam.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
             ["testnotWithBadParam",13,3,"warning"],
@@ -241,8 +222,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Uniqueness tests', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/uniquenessTests.csv");
+        const interpreter = sheetFromFile(`${DIR}/uniquenessTests.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         testGramble(interpreter, [
@@ -254,7 +234,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Uniqueness tests with multiple uniqueness fields', function() {
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/uniquenessTestsMulti.csv");
+        const interpreter = sheetFromFile(`${DIR}/uniquenessTestsMulti.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, []);
         testGramble(interpreter, [
@@ -266,8 +246,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Uniqueness tests failing', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/uniquenessTestsFailing.csv");
+        const interpreter = sheetFromFile(`${DIR}/uniquenessTestsFailing.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
             ["uniquenessTestsFailing",14,3,"error"],
@@ -286,8 +265,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('Uniqueness tests failing due to missing field', function() {
-
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/uniquenessTestsMissingField.csv");
+        const interpreter = sheetFromFile(`${DIR}/uniquenessTestsMissingField.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
             ["uniquenessTestsMissingField",14,3,"error"]
@@ -304,7 +282,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('Uniqueness tests with multiple uniqueness fields, failing', function() {
-        const interpreter = sheetFromFile("./tests/sheets/unitTests/csvs/uniquenessTestsFailingMulti.csv");
+        const interpreter = sheetFromFile(`${DIR}/uniquenessTestsFailingMulti.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
             ["uniquenessTestsFailingMulti",14,4,"error"]

@@ -1,10 +1,12 @@
 import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
 
+const DIR = `${path.dirname(module.filename)}/csvs`;
+
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Simple replace', function() {
-        const project = sheetFromFile("./tests/sheets/replace/csvs/simpleReplace.csv");
+        const project = sheetFromFile(`${DIR}/simpleReplace.csv`);
         testErrors(project, []);
         testGramble(project, [
             {"text":"aba","surface":"ava"}
@@ -12,7 +14,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Simple replace with pre', function() {
-        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithPre.csv");
+        const project = sheetFromFile(`${DIR}/replaceWithPre.csv`);
         testErrors(project, []);
         testGramble(project, [
             {"text":"aba","surface":"ava"},
@@ -21,7 +23,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Simple replace with post', function() {
-        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithPost.csv");
+        const project = sheetFromFile(`${DIR}/replaceWithPost.csv`);
         testErrors(project, []);
         testGramble(project, [
             {"text":"aba","surface":"ava"},
@@ -30,7 +32,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Simple replace with pre and post', function() {
-        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithPrePost.csv");
+        const project = sheetFromFile(`${DIR}/replaceWithPrePost.csv`);
         testErrors(project, []);
         testGramble(project, [
             {"text":"aba","surface":"ava"},
@@ -41,7 +43,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Replacing with an embedded grammar', function() {
 
-        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithEmbed.csv");
+        const project = sheetFromFile(`${DIR}/replaceWithEmbed.csv`);
         testErrors(project, []);
         testGramble(project, [
             {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
@@ -55,7 +57,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Replace with a table: op nested underneath', function() {
 
-        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithTableOp.csv");
+        const project = sheetFromFile(`${DIR}/replaceWithTableOp.csv`);
 
         testErrors(project, []);
         testGramble(project, [
@@ -69,7 +71,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Replace with same tape name in "to" and "from"', function() {
-        const project = sheetFromFile("./tests/sheets/replace/csvs/sameTapeReplace.csv");
+        const project = sheetFromFile(`${DIR}/sameTapeReplace.csv`);
         testErrors(project, []);
         testGramble(project, [
             {"text":"ava"}
@@ -77,7 +79,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Replace with pre/post and same tape name', function() {
-        const project = sheetFromFile("./tests/sheets/replace/csvs/sameTapeReplace.csv");
+        const project = sheetFromFile(`${DIR}/sameTapeReplace.csv`);
         testErrors(project, []);
         testGramble(project, [
             {"text":"ava"}
@@ -85,7 +87,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Replace with pre/post and same tape name', function() {
-        const project = sheetFromFile("./tests/sheets/replace/csvs/sameTapeReplaceWithPrePost.csv");
+        const project = sheetFromFile(`${DIR}/sameTapeReplaceWithPrePost.csv`);
         testErrors(project, []);
         testGramble(project, [
             {"text":"ava"},
@@ -96,7 +98,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Replace with a test: op nested underneath', function() {
 
-        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithTestOp.csv");
+        const project = sheetFromFile(`${DIR}/replaceWithTestOp.csv`);
 
         testErrors(project, [["replaceWithTestOp", 12, 2, "error"]]);
         testGramble(project, [
@@ -111,7 +113,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Replace with invalid param', function() {
 
-        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithInvalidParam.csv");
+        const project = sheetFromFile(`${DIR}/replaceWithInvalidParam.csv`);
 
         testErrors(project, [
             ["replaceWithInvalidParam",13,4,"error"]
@@ -128,7 +130,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Replace with an unnamed param', function() {
 
-        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithUnnamedParam.csv");
+        const project = sheetFromFile(`${DIR}/replaceWithUnnamedParam.csv`);
 
         testErrors(project, [
             ["replaceWithUnnamedParam",13,4,"error"]
@@ -145,7 +147,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Replace with no sibling', function() {
 
-        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithNoSibling.csv");
+        const project = sheetFromFile(`${DIR}/replaceWithNoSibling.csv`);
 
         testErrors(project, [
             ["replaceWithNoSibling",0,1,"error"]
@@ -155,7 +157,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Replace with no child', function() {
 
-        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithNoChild.csv");
+        const project = sheetFromFile(`${DIR}/replaceWithNoChild.csv`);
 
         testErrors(project, [
             ["replaceWithNoChild",3,1,"error"]
@@ -167,7 +169,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Replace with missing "from" param', function() {
 
-        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithMissingFrom.csv");
+        const project = sheetFromFile(`${DIR}/replaceWithMissingFrom.csv`);
 
         testErrors(project, [
             ["replaceWithMissingFrom",12,1,"error"]
@@ -185,7 +187,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Replace with missing "to" param', function() {
 
-        const project = sheetFromFile("./tests/sheets/replace/csvs/replaceWithMissingTo.csv");
+        const project = sheetFromFile(`${DIR}/replaceWithMissingTo.csv`);
 
         testErrors(project, [
             ["replaceWithMissingTo",12,1,"error"]

@@ -1,12 +1,12 @@
 import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
 
+const DIR = `${path.dirname(module.filename)}/csvs`;
+
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Uppercase table: ops', function() {
-
-        const project = sheetFromFile("./tests/sheets/casing/csvs/uppercaseTable.csv");
-
+        const project = sheetFromFile(`${DIR}/uppercaseTable.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
@@ -17,9 +17,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Uppercase embed header', function() {
-
-        const project = sheetFromFile("./tests/sheets/casing/csvs/uppercaseEmbed.csv");
-
+        const project = sheetFromFile(`${DIR}/uppercaseEmbed.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
@@ -28,12 +26,9 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobaz", gloss: "jump-2SG" }
         ]);
     });
-
     
     describe('Uppercase reference to lowercase symbol', function() {
-
-        const project = sheetFromFile("./tests/sheets/casing/csvs/uppercaseSymbol.csv");
-
+        const project = sheetFromFile(`${DIR}/uppercaseSymbol.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
@@ -44,9 +39,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Lowercase reference to uppercase symbol', function() {
-
-        const project = sheetFromFile("./tests/sheets/casing/csvs/lowercaseSymbol.csv");
-
+        const project = sheetFromFile(`${DIR}/lowercaseSymbol.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },
@@ -57,9 +50,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('"MAYBE X" header to test header case insensitivity', function() {
-
-        const project = sheetFromFile("./tests/sheets/casing/csvs/uppercaseMaybe.csv");
-        
+        const project = sheetFromFile(`${DIR}/uppercaseMaybe.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run-1SG" },

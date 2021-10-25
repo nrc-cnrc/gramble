@@ -1,11 +1,12 @@
 import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
 
+const DIR = `${path.dirname(module.filename)}/csvs`;
+
 describe(`${path.basename(module.filename)}`, function() {
 
-
     describe('or: operation', function() {
-        const project = sheetFromFile("./tests/sheets/ops/csvs/orOp.csv");
+        const project = sheetFromFile(`${DIR}/orOp.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -15,10 +16,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-
     describe('Grammar with embeds and an irrelevant join', function() {
-
-        const project = sheetFromFile("./tests/sheets/ops/csvs/irrelevantJoin.csv");
+        const project = sheetFromFile(`${DIR}/irrelevantJoin.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run[1SG]", lang: "foobese" },
@@ -29,15 +28,12 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Grammar with embeds and a relevant join', function() {
-
-        const project = sheetFromFile("./tests/sheets/ops/csvs/relevantJoin.csv");
+        const project = sheetFromFile(`${DIR}/relevantJoin.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run[1SG]", subj: "1SG" },
             { text: "moobar", gloss: "jump[1SG]", subj: "1SG" },
         ]);
     });
-
-
 
 });

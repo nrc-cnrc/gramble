@@ -2,10 +2,10 @@ verb:, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-suffix:, table:, text, gloss
-    ,       , bar, -1SG
-    ,       , baz, -2SG
-    ,       ,    , .3SG
+suffix:, table:, pos, text, gloss
+    ,       , v, bar, -1SG
+    ,       , v, baz, -2SG
+    ,       , v,   , .3SG
 
 word:, table:, embed, embed
     ,       , verb, suffix
