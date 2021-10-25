@@ -8,8 +8,8 @@ import {
     Replace, 
     //Empty, 
     Seq,
-    Vocab, 
-    //Vocab 
+    Uni,
+    Vocab
 } from "../src/grammars";
 
 import { 
@@ -1461,6 +1461,165 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhelhhell', t2: 'lhlhhll'},
             {t1: 'lhellhelh', t2: 'lhllhlh'},
             {t1: 'lhellhell', t2: 'lhllhll'},
+        ];
+        testGrammar(grammar, expectedResults, undefined, undefined, 100);
+    });
+
+    // 30a. Replace e by a in hel: e -> a || h_l|y
+    describe('30a. Replace e by a in hel and hey: e -> a {1} || h_l|y', function() {
+        const grammar = Replace(t1("e"), t2("a"), t1("h"), Uni(t1("l"), t1("y")),
+                                       false, false, 0, 2, 5);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 4, t2: 4});
+        const from_to: StringDict[] = [
+            {t1: 'hl', t2: 'hl'},
+            {t1: 'hel', t2: 'hal'},
+            {t1: 'hhel', t2: 'hhal'},
+            {t1: 'hhell', t2: 'hhall'},
+            {t1: 'hlhhelllll', t2: 'hlhhalllll'},
+            {t1: 'hey', t2: 'hay'},
+            {t1: 'hhey', t2: 'hhay'},
+            {t1: 'hheyy', t2: 'hhayy'},
+            {t1: 'hlhheyyyyy', t2: 'hlhhayyyyy'},
+            {t1: 'helhel', t2: 'halhal'},
+            {t1: 'heyhey', t2: 'hayhay'},
+            {t1: 'helhey', t2: 'halhay'},
+            {t1: 'heh'},
+            {t1: 'lel'},
+        ];
+        testParseMultiple(grammar, inputResultsPairs(from_to), undefined, 100);
+    });
+
+    // 30b. Replace e by a in hel: e -> a || h|y_l
+    describe('30b. Replace e by a in hel and yel: e -> a {1} || h|y_l', function() {
+        const grammar = Replace(t1("e"), t2("a"), Uni(t1("h"), t1("y")), t1("l"),
+                                       false, false, 0, 2, 5);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 4, t2: 4});
+        const from_to: StringDict[] = [
+            {t1: 'hl', t2: 'hl'},
+            {t1: 'hel', t2: 'hal'},
+            {t1: 'hhel', t2: 'hhal'},
+            {t1: 'hhell', t2: 'hhall'},
+            {t1: 'hlhhelllll', t2: 'hlhhalllll'},
+            {t1: 'yel', t2: 'yal'},
+            {t1: 'yyel', t2: 'yyal'},
+            {t1: 'yyell', t2: 'yyall'},
+            {t1: 'ylyyelllll', t2: 'ylyyalllll'},
+            {t1: 'helhel', t2: 'halhal'},
+            {t1: 'yelyel', t2: 'yalyal'},
+            {t1: 'helyel', t2: 'halyal'},
+            {t1: 'heh'},
+            {t1: 'lel'},
+        ];
+        testParseMultiple(grammar, inputResultsPairs(from_to), undefined, 100);
+    });
+
+    // 30c. Replace e by a in hel: e -> a || h_~h
+    describe('30c. Replace e by a in hel and hey: e -> a {1} || h_~h', function() {
+        const grammar = Seq(Replace(t1("e"), t2("a"), t1("h"), Not(t1("h")),
+                                       false, false, 0, 2, 5), 
+                                Vocab('t1','l'), Vocab('t1', 'y'),
+                                Vocab('t2','l'), Vocab('t2', 'y'));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 4, t2: 4});
+        const from_to: StringDict[] = [
+            {t1: 'hl', t2: 'hl'},
+            {t1: 'hel', t2: 'hal'},
+            {t1: 'hhel', t2: 'hhal'},
+            {t1: 'hhell', t2: 'hhall'},
+            {t1: 'hlhhelllll', t2: 'hlhhalllll'},
+            {t1: 'hey', t2: 'hay'},
+            {t1: 'hhey', t2: 'hhay'},
+            {t1: 'hheyy', t2: 'hhayy'},
+            {t1: 'hlhheyyyyy', t2: 'hlhhayyyyy'},
+            {t1: 'helhel', t2: 'halhal'},
+            {t1: 'heyhey', t2: 'hayhay'},
+            {t1: 'helhey', t2: 'halhay'},
+            {t1: 'heh'},
+            {t1: 'lel'},
+        ];
+        testParseMultiple(grammar, inputResultsPairs(from_to), undefined, 100);
+    });
+
+    // 30d. Replace e by a in hel: e -> a || h|y_l
+    describe('30d. Replace e by a in hel and yel: e -> a {1} || ~l_l', function() {
+        const grammar = Seq(Replace(t1("e"), t2("a"), Not(t1("l")), t1("l"),
+                                       false, false, 0, 2, 5), 
+                            Vocab('t1','h'), Vocab('t1', 'y'),
+                            Vocab('t2','h'), Vocab('t2', 'y'));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 4, t2: 4});
+        const from_to: StringDict[] = [
+            {t1: 'hl', t2: 'hl'},
+            {t1: 'hel', t2: 'hal'},
+            {t1: 'hhel', t2: 'hhal'},
+            {t1: 'hhell', t2: 'hhall'},
+            {t1: 'hlhhelllll', t2: 'hlhhalllll'},
+            {t1: 'yel', t2: 'yal'},
+            {t1: 'yyel', t2: 'yyal'},
+            {t1: 'yyell', t2: 'yyall'},
+            {t1: 'ylyyelllll', t2: 'ylyyalllll'},
+            {t1: 'helhel', t2: 'halhal'},
+            {t1: 'yelyel', t2: 'yalyal'},
+            {t1: 'helyel', t2: 'halyal'},
+            {t1: 'heh'},
+            {t1: 'lel'},
+        ];
+        testParseMultiple(grammar, inputResultsPairs(from_to), undefined, 100);
+    });
+
+    // 30e. Replace e or o by a in hel: e|o -> a || h_l
+    describe('30e. Replace e|o by a in hel and hey: e -> a {1} || h|l', function() {
+        const grammar = Replace(Uni(t1("e"), t1("o")), t2("a"), t1("h"), t1("l"),
+                                       false, false, 0, 2, 5);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 4, t2: 3});
+        const from_to: StringDict[] = [
+            {t1: 'hl', t2: 'hl'},
+            {t1: 'hel', t2: 'hal'},
+            {t1: 'hhel', t2: 'hhal'},
+            {t1: 'hhell', t2: 'hhall'},
+            {t1: 'hol', t2: 'hal'},
+            {t1: 'hhol', t2: 'hhal'},
+            {t1: 'hholl', t2: 'hhall'},
+            {t1: 'helhel', t2: 'halhal'},
+            {t1: 'helhol', t2: 'halhal'},
+            {t1: 'holhol', t2: 'halhal'},
+            {t1: 'heh'},
+            {t1: 'lel'},
+        ];
+        testParseMultiple(grammar, inputResultsPairs(from_to), undefined, 100);
+    });
+    
+    // 30f. Replace e or o by a in hel: e|o -> a || h_l
+    describe('30f. Replace e|o by a in hel and hey: e -> a {1} || h_l', function() {
+        const grammar = Replace(t1("e"), Uni(t2("a"), t2("o")), t1("h"), t1("l"),                          
+                                    false, false, 0, 1, 1);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 4});
+        const expectedResults: StringDict[] = [
+            {},
+            {"t1":"h","t2":"h"},
+            {"t1":"l","t2":"l"},
+            {"t1":"hel","t2":"hol"},
+            {"t1":"hel","t2":"hal"},
+            {"t1":"hell","t2":"holl"},
+            {"t1":"hell","t2":"hall"},
+            {"t1":"helh","t2":"holh"},
+            {"t1":"helh","t2":"halh"},
+            {"t1":"hhel","t2":"hhol"},
+            {"t1":"hhel","t2":"hhal"},
+            {"t1":"hhell","t2":"hholl"},
+            {"t1":"hhell","t2":"hhall"},
+            {"t1":"hhelh","t2":"hholh"},
+            {"t1":"hhelh","t2":"hhalh"},
+            {"t1":"lhel","t2":"lhol"},
+            {"t1":"lhel","t2":"lhal"},
+            {"t1":"lhell","t2":"lholl"},
+            {"t1":"lhell","t2":"lhall"},
+            {"t1":"lhelh","t2":"lholh"},
+            {"t1":"lhelh","t2":"lhalh"}
         ];
         testGrammar(grammar, expectedResults, undefined, undefined, 100);
     });
