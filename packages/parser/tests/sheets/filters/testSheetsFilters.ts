@@ -6,9 +6,7 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Simple equals', function() {
-
         const project = sheetFromFile(`${DIR}/simpleEquals.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             {"pos":"v","text":"goo"},
@@ -17,9 +15,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Equals with an empty-string condition', function() {
-
         const project = sheetFromFile(`${DIR}/equalsEmptyString.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             {"text":"mooba","gloss":"jump"},
@@ -28,9 +24,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Equals with an ill-formed filter', function() {
-
         const project = sheetFromFile(`${DIR}/illFormedFilter.csv`);
-
         testErrors(project, [
             ["illFormedFilter", 7, 3, "error"]
         ]);
@@ -42,9 +36,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Equals to the left of a sequence', function() {
-
         const project = sheetFromFile(`${DIR}/equalsHeader.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
@@ -52,10 +44,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Nested equals header', function() {
-
+    describe('Nested equals', function() {
         const project = sheetFromFile(`${DIR}/nestedEquals.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]", trans: "INTR" },
@@ -63,10 +53,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Equals header with alt value', function() {
-
+    describe('Equals with alt value', function() {
         const project = sheetFromFile(`${DIR}/equalsOr.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
@@ -77,9 +65,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Equals with an alt and empty-string', function() {
-
         const project = sheetFromFile(`${DIR}/equalsOrEmptyString.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
@@ -90,9 +76,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Equals embed', function() {
-
         const project = sheetFromFile(`${DIR}/equalsEmbed.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
@@ -103,9 +87,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Equals embed where the symbol is defined later', function() {
-
         const project = sheetFromFile(`${DIR}/equalsEmbedAfter.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
@@ -117,10 +99,8 @@ describe(`${path.basename(module.filename)}`, function() {
         );
     });
     
-    describe('Equals header with not value', function() {
-
+    describe('Equals with not value', function() {
         const project = sheetFromFile(`${DIR}/equalsNot.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
@@ -130,11 +110,17 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
-    describe('Equals header with not embed', function() {
+    describe('Equals with neither value', function() {
+        const project = sheetFromFile(`${DIR}/equalsNotOr.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" }
+        ]);
+    });
 
+    describe('Equals with not embed', function() {
         const project = sheetFromFile(`${DIR}/equalsNegatedEmbed.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             {gloss: "run[1SG]", subj: "[1SG]", text: "foobar"},
@@ -142,10 +128,30 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('startswith header', function() {
+    describe('Equals with a slash header', function() {
+        const project = sheetFromFile(`${DIR}/equalsSlash.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"foo","pos":"v","class":"v"}
+        ]);
+    });
+    
+    describe('Equals with a slash header and an alt value', function() {
+        // the alt scopes over the slash, which ends up ruling out
+        // the line where pos=v and class=n.  i'm not sure this is 
+        // the correct scope for this, intuitively, but this is a 
+        // weird thing to try anyway so it's not a priority.  this is 
+        // really more to test whether it works at all.
+        const project = sheetFromFile(`${DIR}/equalsSlashOr.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"moo","pos":"n","class":"n"},
+            {"text":"foo","pos":"v","class":"v"}
+        ]);
+    });
 
+    describe('startswith', function() {
         const project = sheetFromFile(`${DIR}/startsWithGrammar.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -154,9 +160,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('startswith empty string', function() {
-
         const project = sheetFromFile(`${DIR}/startsWithEmptyString.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "unfoo", gloss: "[1SG]run" },
@@ -165,10 +169,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     
-    describe('startswith header with alt value', function() {
-
+    describe('startswith with alt value', function() {
         const project = sheetFromFile(`${DIR}/startsWithOr.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -177,10 +179,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('startswith header with not value', function() {
-
+    describe('startswith with not value', function() {
         const project = sheetFromFile(`${DIR}/startsWithNot.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -190,9 +190,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('startswith embed', function() {
-
         const project = sheetFromFile(`${DIR}/startsWithEmbed.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -202,9 +200,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('startswith embed where the symbol is defined later', function() {
-
         const project = sheetFromFile(`${DIR}/startsWithEmbedAfter.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -215,9 +211,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('startswith negated embed', function() {
-
         const project = sheetFromFile(`${DIR}/startsWithNegatedEmbed.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -227,9 +221,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('startswith and equals modifying same embed', function() {
-
         const project = sheetFromFile(`${DIR}/startsWithEquals.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run", trans: "[INTR]" },
@@ -239,9 +231,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('equals and startswith modifying same embed', function() {
-
         const project = sheetFromFile(`${DIR}/equalsStartsWith.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "umfoo", gloss: "[1SG]run", trans: "[INTR]" },
@@ -250,10 +240,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('endswith header', function() {
-
+    describe('endswith', function() {
         const project = sheetFromFile(`${DIR}/endsWithGrammar.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]" },
@@ -262,9 +250,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('endswith empty string', function() {
-
         const project = sheetFromFile(`${DIR}/endsWithEmptyString.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]" },
@@ -272,10 +258,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('endswith header with alt value', function() {
-
+    describe('endswith with alt value', function() {
         const project = sheetFromFile(`${DIR}/endsWithOr.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]" },
@@ -284,10 +268,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('endswith header with not value', function() {
-
+    describe('endswith with not value', function() {
         const project = sheetFromFile(`${DIR}/endsWithNot.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]" },
@@ -297,9 +279,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('endswith embed', function() {
-
         const project = sheetFromFile(`${DIR}/endsWithEmbed.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]" },
@@ -309,9 +289,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('endswith embed where the symbol is defined later', function() {
-
         const project = sheetFromFile(`${DIR}/endsWithEmbedAfter.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]" },
@@ -322,9 +300,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('endswith negated embed', function() {
-
         const project = sheetFromFile(`${DIR}/endsWithEmbedNot.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run[1SG]" },
@@ -334,9 +310,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('endswith complex embed', function() {
-
         const project = sheetFromFile(`${DIR}/endsWithComplexEmbed.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run[1SG]" },
@@ -347,9 +321,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('endswith and equals modifying same embed', function() {
-
         const project = sheetFromFile(`${DIR}/endsWithEquals.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]", trans: "INTR" },
@@ -359,9 +331,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('equals and endswith modifying same embed', function() {
-
         const project = sheetFromFile(`${DIR}/equalsEndsWith.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobarq", gloss: "run[1SG]", trans: "INTR" },
@@ -371,20 +341,15 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('startswith and endswith modifying same embed', function() {
-
         const project = sheetFromFile(`${DIR}/startsWithEndsWith.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "umfooz", gloss: "[1SG]jump" }
         ]);
     });
-
     
-    describe('Contains header', function() {
-
+    describe('Contains', function() {
         const project = sheetFromFile(`${DIR}/containsGrammar.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
@@ -393,9 +358,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Contains empty string', function() {
-
         const project = sheetFromFile(`${DIR}/containsEmptyString.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             {"text":"moobaz","gloss":"jump[2SG.SUBJ]","subj":"[2SG.SUBJ]"},
@@ -405,10 +368,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Contains header with alt value', function() {
-
+    describe('Contains with alt value', function() {
         const project = sheetFromFile(`${DIR}/containsOr.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
@@ -418,10 +379,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Contains header with not value', function() {
-
+    describe('Contains with not value', function() {
         const project = sheetFromFile(`${DIR}/containsNot.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
@@ -431,11 +390,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     }); 
 
-    
-    describe('Contains header with embed', function() {
-
+    describe('Contains with embed', function() {
         const project = sheetFromFile(`${DIR}/containsEmbed.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
@@ -445,10 +401,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Contains header where the condition is defined after', function() {
-
+    describe('Contains where the condition is defined after', function() {
         const project = sheetFromFile(`${DIR}/containsEmbedAfter.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
@@ -459,10 +413,8 @@ describe(`${path.basename(module.filename)}`, function() {
         "containsEmbedAfter.word");
     });
 
-    describe('Contains header with negated embed', function() {
-
+    describe('Contains with negated embed', function() {
         const project = sheetFromFile(`${DIR}/containsNegatedEmbed.csv`);
-
         testErrors(project, []);
         testGramble(project, [
             { text: "foobar", gloss: "run[1SG.SUBJ]", subj: "[1SG.SUBJ]" },

@@ -1,0 +1,12 @@
+
+verb:, table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+suffix:, table:, text, gloss/subj
+    ,       , bar, [1SG]
+    ,       , baz, [2SG]
+    ,       ,    , [3SG]
+
+word:, table:, embed, embed, equals subj
+    ,       , verb, suffix, ~([1SG]|[3SG])
