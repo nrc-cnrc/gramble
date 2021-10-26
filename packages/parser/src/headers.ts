@@ -263,7 +263,7 @@ class RenameHeader extends UnaryHeader {
 }
 
 /**
- * The command "logic X:Y" allows the use of ~ and | in the cell
+ * The command "re X:Y" allows the use of ~ and | in the cell
  * to mean "not" and "or" respectively, rather than have their literal usage.
  * 
  * e.g. "~(A|B)" is interpreted as "neither A nor B" rather than this literal string.
@@ -272,7 +272,7 @@ class RenameHeader extends UnaryHeader {
  * startsWith", etc.) that allow and parse boolean-algebra expressions 
  * in their fields.
  */
-export class LogicHeader extends UnaryHeader {
+export class RegexHeader extends UnaryHeader {
 
     public merge(
         left: Grammar, 
@@ -340,7 +340,7 @@ export class LogicHeader extends UnaryHeader {
  * These constrain N to either start with X (that is, Filter(N, X.*)) or end with X 
  * (that is, Filter(N, .*X)), or contain X (Filter(N, .*X.*)).
  */
-export class EqualsHeader extends LogicHeader {
+export class EqualsHeader extends RegexHeader {
     
     public merge(
         leftNeighbor: Grammar, 
@@ -551,7 +551,7 @@ var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
 var HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
     MPAlternation(HP_UNRESERVED, HP_EMBED, HP_HIDE, 
     //HP_REVEAL, 
-    HP_LOGIC, 
+    HP_REGEX, 
     HP_PARENS,
     HP_RESERVED_OP)
 );
@@ -618,9 +618,9 @@ const HP_UNIQUE = MPSequence<Header>(
     (child) => new TagHeader("unique", child)
 );
 
-const HP_LOGIC = MPSequence<Header>(
-    ["logic", HP_NON_COMMENT_EXPR],
-    (child) => new LogicHeader(child)
+const HP_REGEX = MPSequence<Header>(
+    ["re", HP_NON_COMMENT_EXPR],
+    (child) => new RegexHeader(child)
 );
 
 const HP_SLASH = MPSequence<Header>(

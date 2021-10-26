@@ -64,7 +64,8 @@
     "testSheetsBare": "mocha -r ts-node/register tests/sheets/bare/*.ts",
     "testSheetsOps": "mocha -r ts-node/register tests/sheets/ops/*.ts",
     "testSheetsHide": "mocha -r ts-node/register tests/sheets/hide/*.ts",
-    "testSheetsRename": "mocha -r ts-node/register tests/sheets/rename/*.ts"
+    "testSheetsRename": "mocha -r ts-node/register tests/sheets/rename/*.ts",
+    "testRegex": "mocha -r ts-node/register tests/sheets/regex/*.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"

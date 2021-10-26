@@ -67,9 +67,31 @@ const tokenizer = new RegExp("(" +
                             ")");
 
 function tokenize(text: string): string[] {
-    return text.split(tokenizer).filter(
-        (s: string) => s !== undefined && s !== ''
-    );
+    console.log(`text was ${text}`);
+    let results: string[] = [ "" ];
+    for (var i = 0; i < text.length; i++) {
+        const c1 = text[i];
+        const c2 = text[i+1];
+        if (c1 == '\\') {
+            results[results.length-1] = results[results.length-1] +
+                                    ((c2 != undefined) ? c2 : "");
+            ++i;
+            continue;
+        } 
+
+        if (RESERVED.has(c1)) {
+            results.push(c1);
+            results.push("");
+            continue;
+        }
+
+        results[results.length-1] = results[results.length-1] + c1;
+
+    }
+    results = results.filter(s => s.length > 0);
+    console.log(`results were [${results.join(",")}]`);
+    return results;
+
 }
 
 export function parseBooleanCell(text: string): CPResult {

@@ -36,11 +36,20 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Equals to the left of a sequence', function() {
-        const project = sheetFromFile(`${DIR}/equalsHeader.csv`);
+        const project = sheetFromFile(`${DIR}/equalsGrammar.csv`);
         testErrors(project, []);
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" }
+        ]);
+    });
+
+    describe('Equals containing escaped parens', function() {
+        const project = sheetFromFile(`${DIR}/equalsWithEscapes.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "foobaz", gloss: "run(2SG)", subj: "(2SG)" },
+            { text: "moobaz", gloss: "jump(2SG)", subj: "(2SG)" }
         ]);
     });
 

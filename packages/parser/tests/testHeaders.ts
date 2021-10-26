@@ -57,14 +57,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("%");
         testIsType(header, CommentHeader);
     });
-
     
     describe('Header "(text)"', function() {
         const header = parseHeaderCell("(text)");
         testIsType(header, LiteralHeader);
     });
 
-    
     describe('Header "(text"', function() {
         const header = parseHeaderCell("(text");
         testIsType(header, ErrorHeader);
@@ -74,7 +72,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("text)");
         testIsType(header, ErrorHeader);
     });
-
 
     describe('Header "maybe text"', function() {
         const header = parseHeaderCell("maybe text");

@@ -34,20 +34,24 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Cell "(1SG"', function() {
         it ("should fail to parse", function() {
-            expect(parseBooleanCell.bind('(text')).to.throw;
+            expect(() => parseBooleanCell('(text')).to.throw();
         });
     });
 
     describe('Cell "1SG)"', function() {
         it ("should fail to parse", function() {
-            expect(parseBooleanCell.bind('1SG)')).to.throw;
+            expect(() => parseBooleanCell('1SG)')).to.throw();
         });
     });
-    
-    describe('Cell "()"', function() {
-        it ("should fail to parse", function() {
-            expect(parseBooleanCell.bind('()')).to.throw;
-        });
+
+    describe('Cell "\\(1SG"', function() {
+        const cell = parseBooleanCell("\\(1SG");
+        testIsType(cell, CPUnreserved);
+    });
+
+    describe('Cell "1SG\\)"', function() {
+        const cell = parseBooleanCell("1SG\\)");
+        testIsType(cell, CPUnreserved);
     });
     
     describe('Cell "((1SG))"', function() {
@@ -62,6 +66,11 @@ describe(`${path.basename(module.filename)}`, function() {
         testIsType(cell.child, CPUnreserved, "child");
     });
 
+    describe('Cell "\\~1SG"', function() {
+        const cell = parseBooleanCell("\\~1SG");
+        testIsType(cell, CPUnreserved);
+    });
+
     describe('Cell "~ 1SG"', function() {
         const cell = parseBooleanCell("~ 1SG");
         testIsType(cell, CPNegation);
@@ -71,13 +80,13 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Cell "~"', function() {
         it ("should fail to parse", function() {
-            expect(parseBooleanCell.bind('~')).to.throw;
+            expect(() => parseBooleanCell('~')).to.throw();
         });
     });
 
     describe('Cell "1SG~"', function() {
         it ("should fail to parse", function() {
-            expect(parseBooleanCell.bind('1SG~')).to.throw;
+            expect(() => parseBooleanCell('1SG~')).to.throw();
         });
     });
 
@@ -103,7 +112,11 @@ describe(`${path.basename(module.filename)}`, function() {
         testIsType(cell.child2, CPUnreserved, "child2");
     });
 
-    
+    describe('Cell "1SG\\|2SG"', function() {
+        const cell = parseBooleanCell("1SG\\|2SG");
+        testIsType(cell, CPUnreserved);
+    });
+
     describe('Cell "|1SG"', function() {
         it ("should fail to parse", function() {
             expect(() => parseBooleanCell('|1SG')).to.throw();
