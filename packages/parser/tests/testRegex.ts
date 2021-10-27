@@ -1,10 +1,10 @@
 import { 
-    CPUnreserved,
-    CPNegation,
-    CPAlternation,
-    parseBooleanCell,
-    CPSequence
-} from "../src/cells";
+    LiteralRegex,
+    NegationRegex,
+    AlternationRegex,
+    parseRegex,
+    SequenceRegex
+} from "../src/regex";
 
 import * as path from 'path';
 import { expect } from "chai";

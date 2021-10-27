@@ -14,7 +14,7 @@ import {
  * with Headers) we can assign them the right Grammar objects and later Expr objects.
  */
 
-export interface CPResult { 
+export interface Regex { 
     
     /**
      * The IDs of CPResult are deliberately chosen to NOT look like their
@@ -24,7 +24,7 @@ export interface CPResult {
     readonly id: string;
 }
 
-export class CPError {
+export class ErrorRegex {
 
     constructor(
         public text: string
@@ -35,7 +35,7 @@ export class CPError {
     }
 }
 
-export class CPUnreserved implements CPResult {
+export class LiteralRegex implements Regex {
     
     constructor(
         public text: string
@@ -48,10 +48,10 @@ export class CPUnreserved implements CPResult {
     }
 }
 
-export class CPStar implements CPResult {
+export class StarRegex implements Regex {
 
     constructor(
-        public child: CPResult
+        public child: Regex
     ) { }
 
     public get id(): string {
@@ -59,10 +59,10 @@ export class CPStar implements CPResult {
     }
 }
 
-export class CPQuestionMark implements CPResult {
+export class QuestionRegex implements Regex {
 
     constructor(
-        public child: CPResult
+        public child: Regex
     ) { }
 
     public get id(): string {
@@ -70,10 +70,10 @@ export class CPQuestionMark implements CPResult {
     }
 }
 
-export class CPPlus implements CPResult {
+export class PlusRegex implements Regex {
 
     constructor(
-        public child: CPResult
+        public child: Regex
     ) { }
 
     public get id(): string {
@@ -81,9 +81,10 @@ export class CPPlus implements CPResult {
     }
 }
 
-export class CPNegation implements CPResult {
+export class NegationRegex implements Regex {
+
     constructor(
-        public child: CPResult
+        public child: Regex
     ) { }
 
     public get id(): string {
@@ -91,10 +92,11 @@ export class CPNegation implements CPResult {
     }
 }
 
-export class CPAlternation implements CPResult {
+export class AlternationRegex implements Regex {
+
     constructor(
-        public child1: CPResult,
-        public child2: CPResult
+        public child1: Regex,
+        public child2: Regex
     ) { }
     
     public get id(): string {
@@ -102,9 +104,10 @@ export class CPAlternation implements CPResult {
     }
 }
 
-export class CPSequence implements CPResult {
+export class SequenceRegex implements Regex {
+    
     constructor(
-        public children: CPResult[]
+        public children: Regex[]
     ) { }
 
     public get id(): string {
@@ -112,39 +115,39 @@ export class CPSequence implements CPResult {
     }
 }
 
-var EXPR: MPParser<CPResult> = MPDelay(() =>
+var EXPR: MPParser<Regex> = MPDelay(() =>
     MPAlternation(ALTERNATION, SUBEXPR)
 );
 
-var SUBEXPR: MPParser<CPResult> = MPDelay(() =>
+var SUBEXPR: MPParser<Regex> = MPDelay(() =>
     MPAlternation(NEGATION, STAR, QUES, PLUS, SUBSUBEXPR)
 );
 
-var SUBSUBEXPR: MPParser<CPResult> = MPDelay(() =>
+var SUBSUBEXPR: MPParser<Regex> = MPDelay(() =>
     MPAlternation(UNRESERVED, PARENS)
 );
 
 const RESERVED = new Set(["(", ")", "~", "|", "*", "?", "+"]);
-const UNRESERVED = MPUnreserved<CPResult>(RESERVED, (s) => new CPUnreserved(s));
+const UNRESERVED = MPUnreserved<Regex>(RESERVED, (s) => new LiteralRegex(s));
 
 const TOPLEVEL_EXPR = MPRepetition(
     EXPR, 
-    (...children) => new CPSequence(children)
+    (...children) => new SequenceRegex(children)
 );
 
 const STAR = MPSequence(
     [ SUBSUBEXPR, "*" ],
-    (child) => new CPStar(child)
+    (child) => new StarRegex(child)
 )
 
 const QUES = MPSequence(
     [ SUBSUBEXPR, "?" ],
-    (child) => new CPQuestionMark(child)
+    (child) => new QuestionRegex(child)
 )
 
 const PLUS = MPSequence(
     [ SUBSUBEXPR, "+" ],
-    (child) => new CPPlus(child)
+    (child) => new PlusRegex(child)
 )
 
 const PARENS = MPSequence(
@@ -154,12 +157,12 @@ const PARENS = MPSequence(
 
 const NEGATION = MPSequence(
     ["~", SUBEXPR],
-    (child) => new CPNegation(child)
+    (child) => new NegationRegex(child)
 );
 
 const ALTERNATION = MPSequence(
     [SUBEXPR, "|", EXPR],
-    (c1, c2) => new CPAlternation(c1, c2)
+    (c1, c2) => new AlternationRegex(c1, c2)
 );
 
 function tokenize(text: string): string[] {
@@ -188,11 +191,11 @@ function tokenize(text: string): string[] {
 
 }
 
-export function parseBooleanCell(text: string): CPResult {
+export function parseRegex(text: string): Regex {
     const results = miniParse(tokenize, TOPLEVEL_EXPR, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new CPError(text);
+        return new ErrorRegex(text);
     }
     if (results.length > 1) {
         // if this happens, it's an error on our part

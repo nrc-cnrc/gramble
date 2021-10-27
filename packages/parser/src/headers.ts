@@ -1,9 +1,39 @@
 import { 
-    AlternationGrammar, ContainsGrammar, UnresolvedEmbedGrammar, EndsWithGrammar, EpsilonGrammar, FilterGrammar, HideGrammar, JoinGrammar, LiteralGrammar, NegationGrammar, RenameGrammar, SequenceGrammar, StartsWithGrammar, Epsilon, Grammar, RepeatGrammar
+    AlternationGrammar, 
+    ContainsGrammar, 
+    UnresolvedEmbedGrammar, 
+    EndsWithGrammar, 
+    EpsilonGrammar, 
+    FilterGrammar, 
+    HideGrammar, 
+    LiteralGrammar, 
+    NegationGrammar, 
+    RenameGrammar, 
+    SequenceGrammar, 
+    StartsWithGrammar, 
+    Grammar, 
+    RepeatGrammar
 } from "./grammars";
 
-import { CPAlternation, CPError, CPNegation, CPPlus, CPQuestionMark, CPResult, CPSequence, CPStar, CPUnreserved, parseBooleanCell } from "./cells";
-import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPReserved, MPSequence, MPUnreserved } from "./miniParser";
+import { 
+    AlternationRegex, 
+    ErrorRegex, 
+    NegationRegex, 
+    PlusRegex, 
+    QuestionRegex, 
+    Regex, 
+    SequenceRegex, 
+    StarRegex, 
+    LiteralRegex, 
+    parseRegex 
+} from "./regex";
+
+import { 
+    miniParse, MPAlternation, MPComment, 
+    MPDelay, MPParser, MPReserved, 
+    MPSequence, MPUnreserved 
+} from "./miniParser";
+
 import { Cell, HSVtoRGB, RGBtoString } from "./util";
 
 export const DEFAULT_SATURATION = 0.1;
@@ -263,13 +293,13 @@ class RenameHeader extends UnaryHeader {
 }
 
 /**
- * The command "re X:Y" allows the use of ~ and | in the cell
- * to mean "not" and "or" respectively, rather than have their literal usage.
+ * The command "re X:Y" allows the use of regex operators and negation
+ *  in the cells beneath.
  * 
  * e.g. "~(A|B)" is interpreted as "neither A nor B" rather than this literal string.
  * 
  * This is also the ancestor class of all other headers (e.g. "equals", 
- * startsWith", etc.) that allow and parse boolean-algebra expressions 
+ * startsWith", etc.) that allow and parse regular expressions 
  * in their fields.
  */
 export class RegexHeader extends UnaryHeader {
@@ -283,11 +313,11 @@ export class RegexHeader extends UnaryHeader {
     }
 
     public toGrammarPiece(
-        parsedText: CPResult,
+        parsedText: Regex,
         content: Cell
     ): Grammar {
 
-        if (parsedText instanceof CPError) {
+        if (parsedText instanceof ErrorRegex) {
             content.message({
                 type: "error",
                 shortMsg: "Cannot parse regex",
@@ -296,7 +326,7 @@ export class RegexHeader extends UnaryHeader {
             return new EpsilonGrammar(content);
         }
 
-        if (parsedText instanceof CPSequence) {
+        if (parsedText instanceof SequenceRegex) {
             if (parsedText.children.length == 0) {
                 return this.child.toGrammar(new EpsilonGrammar(content), "", content);
             }
@@ -306,31 +336,31 @@ export class RegexHeader extends UnaryHeader {
             return new SequenceGrammar(content, childGrammars);
         }
 
-        if (parsedText instanceof CPStar) {
+        if (parsedText instanceof StarRegex) {
             const childGrammar = this.toGrammarPiece(parsedText.child, content);
             return new RepeatGrammar(content, childGrammar);
         }
         
-        if (parsedText instanceof CPQuestionMark) {
+        if (parsedText instanceof QuestionRegex) {
             const childGrammar = this.toGrammarPiece(parsedText.child, content);
             return new RepeatGrammar(content, childGrammar, 0, 1);
         }
         
-        if (parsedText instanceof CPPlus) {
+        if (parsedText instanceof PlusRegex) {
             const childGrammar = this.toGrammarPiece(parsedText.child, content);
             return new RepeatGrammar(content, childGrammar, 1);
         }
 
-        if (parsedText instanceof CPUnreserved) {
+        if (parsedText instanceof LiteralRegex) {
             return this.child.toGrammar(new EpsilonGrammar(content), parsedText.text, content);
         }
 
-        if (parsedText instanceof CPNegation) {
+        if (parsedText instanceof NegationRegex) {
             const childGrammar = this.toGrammarPiece(parsedText.child, content);
             return new NegationGrammar(content, childGrammar);
         }
 
-        if (parsedText instanceof CPAlternation) {
+        if (parsedText instanceof AlternationRegex) {
             const child1Grammar = this.toGrammarPiece(parsedText.child1, content);
             const child2Grammar = this.toGrammarPiece(parsedText.child2, content);
             return new AlternationGrammar(content, [child1Grammar, child2Grammar]);
@@ -344,7 +374,7 @@ export class RegexHeader extends UnaryHeader {
         text: string,
         content: Cell
     ): Grammar {
-        const parsedText = parseBooleanCell(text);
+        const parsedText = parseRegex(text);
         const c = this.toGrammarPiece(parsedText, content);
         return this.merge(left, c, content);
     }
@@ -599,13 +629,6 @@ const HP_HIDE = MPSequence<Header>(
     ["hide"],
     () => new HideHeader()
 );
-
-/*
-const HP_REVEAL = MPSequence<Header>(
-    ["reveal"],
-    () => new RevealHeader("reveal")
-);
-*/
 
 const HP_MAYBE = MPSequence<Header>(
     ["maybe", HP_NON_COMMENT_EXPR],

@@ -6,7 +6,7 @@ import { StringDict, tokenizeUnicode } from "../src/util";
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
-import { CPResult, parseBooleanCell } from "../src/cells";
+import { Regex, parseRegex } from "../src/regex";
 
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
@@ -31,7 +31,7 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
 }
 
 export function testCellID(cell: string, expectedID: string) {
-    const result = parseBooleanCell(cell);
+    const result = parseRegex(cell);
     it(`"${cell}" should have an id of ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });

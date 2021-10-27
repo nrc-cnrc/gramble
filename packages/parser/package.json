@@ -50,7 +50,7 @@
     "testMatchFrom": "mocha -r ts-node/register tests/testMatchFrom.ts",
     "testEmbed": "mocha -r ts-node/register tests/testEmbed.ts",
     "testRecursion": "mocha -r ts-node/register tests/testRecursion.ts",
-    "testCellParser": "mocha -r ts-node/register tests/testCellParser.ts",
+    "testRegex": "mocha -r ts-node/register tests/testRegex.ts",
     "testReplace": "mocha -r ts-node/register tests/testReplace.ts",
     "testTokenize": "mocha -r ts-node/register tests/testTokenize.ts",
 
@@ -65,7 +65,7 @@
     "testSheetsOps": "mocha -r ts-node/register tests/sheets/ops/*.ts",
     "testSheetsHide": "mocha -r ts-node/register tests/sheets/hide/*.ts",
     "testSheetsRename": "mocha -r ts-node/register tests/sheets/rename/*.ts",
-    "testRegex": "mocha -r ts-node/register tests/sheets/regex/*.ts"
+    "testSheetsRegex": "mocha -r ts-node/register tests/sheets/regex/*.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"
