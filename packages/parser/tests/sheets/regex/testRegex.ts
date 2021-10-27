@@ -63,4 +63,30 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Regex including sequence', function() {
+        const project = sheetFromFile(`${DIR}/regexSequence.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "foo", gloss: "1SG" },
+        ]);
+    });
+
+    describe('Regex including sequence and alternation', function() {
+        const project = sheetFromFile(`${DIR}/regexSequenceOr.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "foo", gloss: "1SG" },
+            { text: "foo", gloss: "2SG" },
+        ]);
+    });
+
+    describe('Regex including sequence and negation', function() {
+        const project = sheetFromFile(`${DIR}/regexSequenceNot.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "foo", gloss: "1SG" },
+            { text: "goo", gloss: "2SG" },
+        ]);
+    });
+
 });

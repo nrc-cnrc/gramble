@@ -2,7 +2,7 @@ import {
     AlternationGrammar, ContainsGrammar, UnresolvedEmbedGrammar, EndsWithGrammar, EpsilonGrammar, FilterGrammar, HideGrammar, JoinGrammar, LiteralGrammar, NegationGrammar, RenameGrammar, SequenceGrammar, StartsWithGrammar, Epsilon, Grammar
 } from "./grammars";
 
-import { CPAlternation, CPEmpty, CPNegation, CPResult, CPUnreserved, parseBooleanCell } from "./cells";
+import { CPAlternation, CPError, CPNegation, CPResult, CPSequence, CPUnreserved, parseBooleanCell } from "./cells";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPReserved, MPSequence, MPUnreserved } from "./miniParser";
 import { Cell, HSVtoRGB, RGBtoString } from "./util";
 
@@ -287,8 +287,23 @@ export class RegexHeader extends UnaryHeader {
         content: Cell
     ): Grammar {
 
-        if (parsedText instanceof CPEmpty) {
-            return this.child.toGrammar(new EpsilonGrammar(content), "", content);
+        if (parsedText instanceof CPError) {
+            content.message({
+                type: "error",
+                shortMsg: "Cannot parse regex",
+                longMsg: "Cannot parse the regex in this cell"
+            })
+            return new EpsilonGrammar(content);
+        }
+
+        if (parsedText instanceof CPSequence) {
+            if (parsedText.children.length == 0) {
+                return this.child.toGrammar(new EpsilonGrammar(content), "", content);
+            }
+            
+            const childGrammars = parsedText.children.map(c => 
+                                    this.toGrammarPiece(c, content));
+            return new SequenceGrammar(content, childGrammars);
         }
 
         if (parsedText instanceof CPUnreserved) {
@@ -314,20 +329,9 @@ export class RegexHeader extends UnaryHeader {
         text: string,
         content: Cell
     ): Grammar {
-        try {
-            const parsedText = parseBooleanCell(text);
-            const c = this.toGrammarPiece(parsedText, content);
-            return this.merge(left, c, content);
-        } catch {
-            content.message({
-                type: "error",
-                shortMsg: `Invalid condition: ${content.text}`,
-                longMsg: "This cell cannot be parsed into a valid filter condition. " +
-                    "Note that ~, |, (, and ) are special symbols when underneath " +
-                    " equals/startswith/endswith/contains."
-            });
-            return left;
-        }
+        const parsedText = parseBooleanCell(text);
+        const c = this.toGrammarPiece(parsedText, content);
+        return this.merge(left, c, content);
     }
 }
 
@@ -661,9 +665,15 @@ const HP_CONTAINS = MPSequence<Header>(
 var HP_EXPR: MPParser<Header> = MPAlternation(HP_COMMENT, HP_NON_COMMENT_EXPR);
 
 export function parseHeaderCell(text: string): Header {
-    try {
-        return miniParse(tokenize, HP_EXPR, text);
-    } catch (e) {
+
+    const results = miniParse(tokenize, HP_EXPR, text);
+    if (results.length == 0) {
+        // if there are no results, the programmer made a syntax error
         return new ErrorHeader(text);
     }
+    if (results.length > 1) {
+        // if this happens, it's an error on our part
+        throw new Error("Ambiguous, cannot uniquely parse ${text}");
+    }
+    return results[0];
 }

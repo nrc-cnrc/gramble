@@ -6,6 +6,7 @@ import { StringDict, tokenizeUnicode } from "../src/util";
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
+import { CPResult, parseBooleanCell } from "../src/cells";
 
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
@@ -27,6 +28,13 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
     const msg = (objName != "") ? `have ${objName} ` : ""; 
     it(`should ${msg}be of type ${type.name}`, function() {
         expect(obj instanceof type).to.be.true;
+    });
+}
+
+export function testCellID(cell: string, expectedID: string) {
+    const result = parseBooleanCell(cell);
+    it(`"${cell}" should have an id of ${expectedID}`, function() {
+        expect(result.id).to.equal(expectedID);
     });
 }
 

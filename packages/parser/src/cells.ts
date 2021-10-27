@@ -1,4 +1,12 @@
-import { MPDelay, MPAlternation, MPSequence, MPUnreserved, MPParser, miniParse, MPEmpty } from "./miniParser";
+import { 
+    MPDelay, 
+    MPAlternation, 
+    MPSequence, 
+    MPUnreserved, 
+    MPParser, 
+    miniParse,
+    MPRepetition 
+} from "./miniParser";
 
 /**
  * This module is concerned with cells that have operators in them (e.g. ~ and |),
@@ -6,13 +14,37 @@ import { MPDelay, MPAlternation, MPSequence, MPUnreserved, MPParser, miniParse, 
  * with Headers) we can assign them the right Grammar objects and later Expr objects.
  */
 
-export interface CPResult { }
+export interface CPResult { 
+    
+    /**
+     * The IDs of CPResult are deliberately chosen to NOT look like their
+     * string when expressed as a regex.  That makes it easy to see from the ID
+     * when the regex has been parsed incorrectly.
+     */
+    readonly id: string;
+}
+
+export class CPError {
+
+    constructor(
+        public text: string
+    ) { }
+
+    public get id(): string {
+        return `ERR`;
+    }
+}
 
 export class CPUnreserved implements CPResult {
+    
     constructor(
         public text: string
     ) { 
         this.text = text.trim();
+    }
+
+    public get id(): string {
+        return this.text;
     }
 }
 
@@ -20,6 +52,10 @@ export class CPNegation implements CPResult {
     constructor(
         public child: CPResult
     ) { }
+
+    public get id(): string {
+        return `NOT[${this.child.id}]`;
+    }
 }
 
 export class CPAlternation implements CPResult {
@@ -27,16 +63,24 @@ export class CPAlternation implements CPResult {
         public child1: CPResult,
         public child2: CPResult
     ) { }
+    
+    public get id(): string {
+        return `OR[${this.child1.id},${this.child2.id}]`;
+    }
 }
 
-export class CPEmpty implements CPResult {}
+export class CPSequence implements CPResult {
+    constructor(
+        public children: CPResult[]
+    ) { }
+
+    public get id(): string {
+        return `[${this.children.map(c=>c.id).join(",")}]`;
+    }
+}
 
 var EXPR: MPParser<CPResult> = MPDelay(() =>
     MPAlternation(ALTERNATION, SUBEXPR)
-);
-
-var TOPLEVEL_EXPR: MPParser<CPResult> = MPDelay(() =>
-    MPAlternation(EXPR, EMPTY)
 );
 
 var SUBEXPR: MPParser<CPResult> = MPDelay(() =>
@@ -45,12 +89,16 @@ var SUBEXPR: MPParser<CPResult> = MPDelay(() =>
 
 const RESERVED = new Set(["(", ")", "~", "|"]);
 const UNRESERVED = MPUnreserved<CPResult>(RESERVED, (s) => new CPUnreserved(s));
-const EMPTY = MPEmpty<CPResult>(new CPEmpty());
+
+const TOPLEVEL_EXPR = MPRepetition(
+    EXPR, 
+    (...children) => new CPSequence(children)
+);
 
 const PARENS = MPSequence(
     ["(", TOPLEVEL_EXPR, ")"],
     (child) => child 
-)
+);
 
 const NEGATION = MPSequence(
     ["~", SUBEXPR],
@@ -60,14 +108,9 @@ const NEGATION = MPSequence(
 const ALTERNATION = MPSequence(
     [SUBEXPR, "|", EXPR],
     (c1, c2) => new CPAlternation(c1, c2)
-)
-
-const tokenizer = new RegExp("(" + 
-                            [...RESERVED].map(s => "\\"+s).join("|") + 
-                            ")");
+);
 
 function tokenize(text: string): string[] {
-    console.log(`text was ${text}`);
     let results: string[] = [ "" ];
     for (var i = 0; i < text.length; i++) {
         const c1 = text[i];
@@ -89,13 +132,22 @@ function tokenize(text: string): string[] {
 
     }
     results = results.filter(s => s.length > 0);
-    console.log(`results were [${results.join(",")}]`);
     return results;
 
 }
 
 export function parseBooleanCell(text: string): CPResult {
-    return miniParse(tokenize, TOPLEVEL_EXPR, text);
+    const results = miniParse(tokenize, TOPLEVEL_EXPR, text);
+    if (results.length == 0) {
+        // if there are no results, the programmer made a syntax error
+        return new CPError(text);
+    }
+    if (results.length > 1) {
+        // if this happens, it's an error on our part
+        console.log([...results]);
+        throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
+    }
+    return results[0];
 }
 
 

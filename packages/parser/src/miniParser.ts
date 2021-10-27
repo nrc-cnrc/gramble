@@ -52,12 +52,6 @@ import { Gen } from "./util";
 
 export type MPParser<T> = (input: string[]) => Gen<[T, string[]]>
 
-export function MPEmpty<T>(nullResult: T): MPParser<T> {
-    return function*(input: string[]) {
-        yield [nullResult, input];
-    }
-}
-
 /**
  * Delay the evaluation of a parser X to allow reference to a parser before it's defined (e.g. for
  * grammars that recurse).  You probably don't need this if your parsers are defined "function X(...){...}",
@@ -137,10 +131,10 @@ export function MPSequence<T>(
 ): MPParser<T> {
     return function*(input: string[]) {
 
-        var results: [T[], string[]][] = [[[], input]];
+        let results: [T[], string[]][] = [[[], input]];
 
         for (const child of children) {
-            var newResults: [T[], string[]][] = [];
+            let newResults: [T[], string[]][] = [];
             for (const [existingOutputs, existingRemnant] of results) {
                 if (typeof child == "string") {
                     if (existingRemnant.length == 0) {
@@ -170,6 +164,30 @@ export function MPSequence<T>(
     }
 }
 
+export function MPRepetition<T>(
+    child: MPParser<T>,
+    constr: (...children: T[]) => T,
+    minReps: number = 0,
+    maxReps: number = Infinity
+): MPParser<T> {
+    return function*(input: string[]) {
+        let results: [T[], string[]][] = [[[], input]];
+        for (let reps = 0; reps <= maxReps && results.length > 0; reps++) {
+            let newResults: [T[], string[]][] = [];
+            for (const [existingOutputs, existingRemnant] of results) {
+                if (reps >= minReps) {
+                    yield [constr(...existingOutputs), existingRemnant];
+                }
+                for (const [output2, remnant2] of child(existingRemnant)) {
+                    const newOutput: T[] = [...existingOutputs, output2];
+                    newResults.push([newOutput, remnant2]);
+                }
+            }
+            results = newResults;
+        }  
+    }
+}
+
 /**
  * The result of MPAlternation(A, B)(X) is just the union of the results of applying A(X) and B(X).
  */
@@ -193,19 +211,11 @@ export function miniParse<T>(
     tokenizer: (text: string) => string[],
     grammar: MPParser<T>,
     text: string
-): T {
+): T[] {
     const pieces = tokenizer(text);
-    var result = [... grammar(pieces)];
+    let results = [... grammar(pieces)];
     // result is a list of [header, remaining_tokens] pairs.  
     // we only want results where there are no remaining tokens.
-    result = result.filter(([t, r]) => r.length == 0);
-
-    if (result.length == 0) {
-        // if there are no results, the programmer made a syntax error
-        throw new Error(`Cannot parse: ${text}`);
-    }
-    if (result.length > 1) {
-        throw new Error(`Ambiguous, cannot uniquely parse: ${text}.`);
-    }
-    return result[0][0];
+    return results.filter(([t, r]) => r.length == 0)
+                      .map(([t, r]) => t);
 }

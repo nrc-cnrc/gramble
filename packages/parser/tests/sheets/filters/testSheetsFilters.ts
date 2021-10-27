@@ -9,8 +9,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/simpleEquals.csv`);
         testErrors(project, []);
         testGramble(project, [
-            {"pos":"v","text":"goo"},
-            {"pos":"v","text":"foo"}
+            { pos:"v", text:"goo"},
+            { pos:"v", text:"foo"}
         ]);
     });
 
@@ -18,8 +18,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/equalsEmptyString.csv`);
         testErrors(project, []);
         testGramble(project, [
-            {"text":"mooba","gloss":"jump"},
-            {"text":"fooba","gloss":"run"},
+            { text:"mooba", gloss:"jump"},
+            { text:"fooba", gloss:"run"},
         ]);
     });
 
@@ -29,9 +29,9 @@ describe(`${path.basename(module.filename)}`, function() {
             ["illFormedFilter", 7, 3, "error"]
         ]);
         testGramble(project, [
-            {"text":"goo","pos":"v"},
-            {"text":"moo","pos":"n"},
-            {"text":"foo","pos":"v"}
+            { text:"goo", pos:"v"},
+            { text:"moo", pos:"n"},
+            { text:"foo", pos:"v"}
         ]);
     });
 
@@ -79,8 +79,39 @@ describe(`${path.basename(module.filename)}`, function() {
         testGramble(project, [
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
-            {"text":"mooba","gloss":"jump"},
-            {"text":"fooba","gloss":"run"},
+            { text:"mooba", gloss:"jump"},
+            { text:"fooba", gloss:"run"},
+        ]);
+    });
+
+    describe('Equals with a sequence', function() {
+        const project = sheetFromFile(`${DIR}/equalsSeq.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" }
+        ]);
+    });
+    
+    describe('Equals with a sequence with alt', function() {
+        const project = sheetFromFile(`${DIR}/equalsSeqOr.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text:"moobar", gloss:"jump[1SG]", subj:"[1SG]"},
+            { text:"moobaz", gloss:"jump[2SG]", subj:"[2SG]"},
+            { text:"foobar", gloss:"run[1SG]", subj:"[1SG]"},
+            { text:"foobaz", gloss:"run[2SG]", subj:"[2SG]"}
+        ]);
+    });
+
+    describe('Equals with a sequence with not', function() {
+        const project = sheetFromFile(`${DIR}/equalsSeqNot.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text:"moobar", gloss:"jump[1SG]", subj:"[1SG]"},
+            { text:"moobaz", gloss:"jump[2SG]", subj:"[2SG]"},
+            { text:"foobar", gloss:"run[1SG]", subj:"[1SG]"},
+            { text:"foobaz", gloss:"run[2SG]", subj:"[2SG]"}
         ]);
     });
 
@@ -141,7 +172,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/equalsSlash.csv`);
         testErrors(project, []);
         testGramble(project, [
-            {"text":"foo","pos":"v","class":"v"}
+            { text:"foo", pos:"v", class:"v"}
         ]);
     });
     
@@ -154,8 +185,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/equalsSlashOr.csv`);
         testErrors(project, []);
         testGramble(project, [
-            {"text":"moo","pos":"n","class":"n"},
-            {"text":"foo","pos":"v","class":"v"}
+            { text:"moo", pos:"n", class:"n"},
+            { text:"foo", pos:"v", class:"v"}
         ]);
     });
 
@@ -370,10 +401,10 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/containsEmptyString.csv`);
         testErrors(project, []);
         testGramble(project, [
-            {"text":"moobaz","gloss":"jump[2SG.SUBJ]","subj":"[2SG.SUBJ]"},
-            {"text":"moobar","gloss":"jump[1SG.SUBJ]","subj":"[1SG.SUBJ]"},
-            {"text":"foobaz","gloss":"run[2SG.SUBJ]","subj":"[2SG.SUBJ]"},
-            {"text":"foobar","gloss":"run[1SG.SUBJ]","subj":"[1SG.SUBJ]"}
+            { text:"moobaz", gloss:"jump[2SG.SUBJ]", subj:"[2SG.SUBJ]"},
+            { text:"moobar", gloss:"jump[1SG.SUBJ]", subj:"[1SG.SUBJ]"},
+            { text:"foobaz", gloss:"run[2SG.SUBJ]", subj:"[2SG.SUBJ]"},
+            { text:"foobar", gloss:"run[1SG.SUBJ]", subj:"[1SG.SUBJ]"}
         ]);
     });
 
