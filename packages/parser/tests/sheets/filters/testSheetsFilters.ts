@@ -115,6 +115,63 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Equals with a repetition', function() {
+        const project = sheetFromFile(`${DIR}/equalsRep.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { gloss:"be" },
+            { text:"foo", gloss:"run"},
+            { text:"foofoo", gloss:"run.impf"}
+        ]);
+    });
+
+    describe('Equals with a sequence with repetition', function() {
+        const project = sheetFromFile(`${DIR}/equalsSeqRep.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text:"bar", gloss:"be"},
+            { text:"foobar", gloss:"run"},
+            { text:"foofoobar", gloss:"run.impf"}
+        ]);
+    });
+
+    describe('Equals with a question', function() {
+        const project = sheetFromFile(`${DIR}/equalsQues.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { gloss:"be" },
+            { text:"foo", gloss:"run"},
+        ]);
+    });
+
+    describe('Equals with a sequence with question', function() {
+        const project = sheetFromFile(`${DIR}/equalsSeqQues.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text:"bar", gloss:"be"},
+            { text:"foobar", gloss:"run"},
+        ]);
+    });
+
+    describe('Equals with a plus', function() {
+        const project = sheetFromFile(`${DIR}/equalsPlus.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text:"foo", gloss:"run"},
+            { text:"foofoo", gloss:"run.impf"}
+        ]);
+    });
+
+    describe('Equals with a sequence with plus', function() {
+        const project = sheetFromFile(`${DIR}/equalsSeqPlus.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text:"foobar", gloss:"run"},
+            { text:"foofoobar", gloss:"run.impf"}
+        ]);
+    });
+
+
     describe('Equals embed', function() {
         const project = sheetFromFile(`${DIR}/equalsEmbed.csv`);
         testErrors(project, []);

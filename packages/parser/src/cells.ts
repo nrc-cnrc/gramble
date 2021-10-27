@@ -48,6 +48,39 @@ export class CPUnreserved implements CPResult {
     }
 }
 
+export class CPStar implements CPResult {
+
+    constructor(
+        public child: CPResult
+    ) { }
+
+    public get id(): string {
+        return `STAR[${this.child.id}]`;
+    }
+}
+
+export class CPQuestionMark implements CPResult {
+
+    constructor(
+        public child: CPResult
+    ) { }
+
+    public get id(): string {
+        return `QUES[${this.child.id}]`;
+    }
+}
+
+export class CPPlus implements CPResult {
+
+    constructor(
+        public child: CPResult
+    ) { }
+
+    public get id(): string {
+        return `PLUS[${this.child.id}]`;
+    }
+}
+
 export class CPNegation implements CPResult {
     constructor(
         public child: CPResult
@@ -84,16 +117,35 @@ var EXPR: MPParser<CPResult> = MPDelay(() =>
 );
 
 var SUBEXPR: MPParser<CPResult> = MPDelay(() =>
-    MPAlternation(UNRESERVED, PARENS, NEGATION)
+    MPAlternation(NEGATION, STAR, QUES, PLUS, SUBSUBEXPR)
 );
 
-const RESERVED = new Set(["(", ")", "~", "|"]);
+var SUBSUBEXPR: MPParser<CPResult> = MPDelay(() =>
+    MPAlternation(UNRESERVED, PARENS)
+);
+
+const RESERVED = new Set(["(", ")", "~", "|", "*", "?", "+"]);
 const UNRESERVED = MPUnreserved<CPResult>(RESERVED, (s) => new CPUnreserved(s));
 
 const TOPLEVEL_EXPR = MPRepetition(
     EXPR, 
     (...children) => new CPSequence(children)
 );
+
+const STAR = MPSequence(
+    [ SUBSUBEXPR, "*" ],
+    (child) => new CPStar(child)
+)
+
+const QUES = MPSequence(
+    [ SUBSUBEXPR, "?" ],
+    (child) => new CPQuestionMark(child)
+)
+
+const PLUS = MPSequence(
+    [ SUBSUBEXPR, "+" ],
+    (child) => new CPPlus(child)
+)
 
 const PARENS = MPSequence(
     ["(", TOPLEVEL_EXPR, ")"],

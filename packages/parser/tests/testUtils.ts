@@ -21,7 +21,6 @@ export function testTokenize(s: string, expectedResult: string[]): void {
     it(`${s} should tokenize to [${expectedResult.join(" ")}]`, function() {
         expect(result).to.deep.equal(expectedResult);
     });
-
 }
 
 export function testIsType(obj: any, type: any,  objName: string = ""): void {

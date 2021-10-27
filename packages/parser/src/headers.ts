@@ -1,8 +1,8 @@
 import { 
-    AlternationGrammar, ContainsGrammar, UnresolvedEmbedGrammar, EndsWithGrammar, EpsilonGrammar, FilterGrammar, HideGrammar, JoinGrammar, LiteralGrammar, NegationGrammar, RenameGrammar, SequenceGrammar, StartsWithGrammar, Epsilon, Grammar
+    AlternationGrammar, ContainsGrammar, UnresolvedEmbedGrammar, EndsWithGrammar, EpsilonGrammar, FilterGrammar, HideGrammar, JoinGrammar, LiteralGrammar, NegationGrammar, RenameGrammar, SequenceGrammar, StartsWithGrammar, Epsilon, Grammar, RepeatGrammar
 } from "./grammars";
 
-import { CPAlternation, CPError, CPNegation, CPResult, CPSequence, CPUnreserved, parseBooleanCell } from "./cells";
+import { CPAlternation, CPError, CPNegation, CPPlus, CPQuestionMark, CPResult, CPSequence, CPStar, CPUnreserved, parseBooleanCell } from "./cells";
 import { miniParse, MPAlternation, MPComment, MPDelay, MPParser, MPReserved, MPSequence, MPUnreserved } from "./miniParser";
 import { Cell, HSVtoRGB, RGBtoString } from "./util";
 
@@ -300,10 +300,25 @@ export class RegexHeader extends UnaryHeader {
             if (parsedText.children.length == 0) {
                 return this.child.toGrammar(new EpsilonGrammar(content), "", content);
             }
-            
+
             const childGrammars = parsedText.children.map(c => 
                                     this.toGrammarPiece(c, content));
             return new SequenceGrammar(content, childGrammars);
+        }
+
+        if (parsedText instanceof CPStar) {
+            const childGrammar = this.toGrammarPiece(parsedText.child, content);
+            return new RepeatGrammar(content, childGrammar);
+        }
+        
+        if (parsedText instanceof CPQuestionMark) {
+            const childGrammar = this.toGrammarPiece(parsedText.child, content);
+            return new RepeatGrammar(content, childGrammar, 0, 1);
+        }
+        
+        if (parsedText instanceof CPPlus) {
+            const childGrammar = this.toGrammarPiece(parsedText.child, content);
+            return new RepeatGrammar(content, childGrammar, 1);
         }
 
         if (parsedText instanceof CPUnreserved) {
