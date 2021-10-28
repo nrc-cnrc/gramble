@@ -233,17 +233,16 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Equals with a slash header and an alt value', function() {
-        // the alt scopes over the slash, which ends up ruling out
-        // the line where pos=v and class=n.  i'm not sure this is 
-        // the correct scope for this, intuitively, but this is a 
-        // weird thing to try anyway so it's not a priority.  this is 
-        // really more to test whether it works at all.
+    describe('Equals re with a slash header', function() {
         const project = sheetFromFile(`${DIR}/equalsSlashOr.csv`);
-        testErrors(project, []);
+        testErrors(project, [
+            ["equalsSlashOr", 8, 3, "error"]
+        ]);
         testGramble(project, [
-            { text:"moo", pos:"n", class:"n"},
-            { text:"foo", pos:"v", class:"v"}
+            {"text":"boo","pos":"a","class":"a"},
+            {"text":"goo","pos":"v","class":"n"},
+            {"text":"moo","pos":"n","class":"n"},
+            {"text":"foo","pos":"v","class":"v"}
         ]);
     });
 

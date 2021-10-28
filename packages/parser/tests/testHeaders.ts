@@ -2,7 +2,6 @@ import {
     parseHeaderCell, 
     SlashHeader, 
     CommentHeader, 
-    //JoinHeader, 
     MaybeHeader, 
     HideHeader, 
     LiteralHeader, 
@@ -12,11 +11,11 @@ import {
     StartsWithHeader, 
     ContainsHeader,
     TagHeader,
-    ErrorHeader
+    ErrorHeader,
+    RegexHeader
 } from "../src/headers";
 
 import * as path from 'path';
-import { expect } from "chai";
 import { testIsType } from "./testUtils";
 
 describe(`${path.basename(module.filename)}`, function() {
@@ -70,6 +69,40 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Header "text)"', function() {
         const header = parseHeaderCell("text)");
+        testIsType(header, ErrorHeader);
+    });
+
+    describe('Header "text/gloss"', function() {
+        const header = parseHeaderCell("text/gloss");
+        testIsType(header, SlashHeader);
+        if (!(header instanceof SlashHeader)) { return; }
+        testIsType(header.child1, LiteralHeader, "child1");
+        testIsType(header.child2, LiteralHeader, "child2");
+    });
+    
+    describe('Header "(text)/(gloss)"', function() {
+        const header = parseHeaderCell("(text)/(gloss)");
+        testIsType(header, SlashHeader);
+        if (!(header instanceof SlashHeader)) { return; }
+        testIsType(header.child1, LiteralHeader, "child1");
+        testIsType(header.child2, LiteralHeader, "child2");
+    });
+
+    describe('Header "(text/gloss)"', function() {
+        const header = parseHeaderCell("(text/gloss)");
+        testIsType(header, SlashHeader);
+        if (!(header instanceof SlashHeader)) { return; }
+        testIsType(header.child1, LiteralHeader, "child1");
+        testIsType(header.child2, LiteralHeader, "child2");
+    });
+    
+    describe('Header "/text"', function() {
+        const header = parseHeaderCell("/text");
+        testIsType(header, ErrorHeader);
+    });
+    
+    describe('Header "text/"', function() {
+        const header = parseHeaderCell("text/");
         testIsType(header, ErrorHeader);
     });
 
@@ -140,51 +173,20 @@ describe(`${path.basename(module.filename)}`, function() {
         const header = parseHeaderCell("blarg text");
         testIsType(header, ErrorHeader);
     });
-
-    /*
-    describe('Header "@text"', function() {
-        const header = parseHeaderCell("@text");
-
-        testIsType(header, JoinHeader);
-
-        if (!(header instanceof JoinHeader)) {
-            return;
-        }
-
+    
+    describe('Header "re text"', function() {
+        const header = parseHeaderCell("re text");
+        testIsType(header, RegexHeader);
+        if (!(header instanceof RegexHeader)) { return; }
         testIsType(header.child, LiteralHeader, "child");
-        testHeaderHasText(header.child, "text", "child");
     });
 
-    
-    describe('Header "@(text)"', function() {
-        const header = parseHeaderCell("@(text)");
-
-        testIsType(header, JoinHeader);
-
-        if (!(header instanceof JoinHeader)) {
-            return;
-        }
-
-        testIsType(header.child, LiteralHeader, "child");
-        testHeaderHasText(header.child, "text", "child");
+    describe('Header "re text/gloss"', function() {
+        const header = parseHeaderCell("re text/gloss");
+        testIsType(header, RegexHeader);
+        if (!(header instanceof RegexHeader)) { return; }
+        testIsType(header.child, SlashHeader, "child");
     });
-
-    
-    describe('Header "(@text)"', function() {
-        const header = parseHeaderCell("(@text)");
-
-        testIsType(header, JoinHeader);
-
-        if (!(header instanceof JoinHeader)) {
-            return;
-        }
-
-        testIsType(header.child, LiteralHeader, "child");
-        testHeaderHasText(header.child, "text", "child");
-    });
-
-    */
-    
     
     describe('Header "equals text"', function() {
         const header = parseHeaderCell("equals text");
@@ -193,31 +195,24 @@ describe(`${path.basename(module.filename)}`, function() {
         testIsType(header.child, LiteralHeader, "child");
     });
 
-    /*
-    describe('Header "equals @text"', function() {
-        const header = parseHeaderCell("equals @text");
-
+    describe('Header "equals re text"', function() {
+        const header = parseHeaderCell("equals re text");
         testIsType(header, EqualsHeader);
-
-        if (!(header instanceof EqualsHeader)) {
-            return;
-        }
-
-        testIsType(header.child, JoinHeader, "child");
-        testHeaderHasText(header.child, "@", "child");
-    }); */
-
+        if (!(header instanceof EqualsHeader)) { return; }
+        testIsType(header.child, RegexHeader, "child");
+        if (!(header.child instanceof RegexHeader)) { return; }
+        testIsType(header.child.child, LiteralHeader, "child's child");
+    });    
     
-    describe('Header "startswith text"', function() {
-        const header = parseHeaderCell("startswith text");
+    describe('Header "starts text"', function() {
+        const header = parseHeaderCell("starts text");
         testIsType(header, StartsWithHeader);
         if (!(header instanceof StartsWithHeader)) { return; }
         testIsType(header.child, LiteralHeader, "child");
     });
     
-    
-    describe('Header "endswith text"', function() {
-        const header = parseHeaderCell("endswith text");
+    describe('Header "ends text"', function() {
+        const header = parseHeaderCell("ends text");
         testIsType(header, EndsWithHeader);
         if (!(header instanceof EndsWithHeader)) { return; }
         testIsType(header.child, LiteralHeader, "child");
@@ -229,43 +224,6 @@ describe(`${path.basename(module.filename)}`, function() {
         if (!(header instanceof ContainsHeader)) { return; }
         testIsType(header.child, LiteralHeader, "child");
     });
-
-    describe('Header "text/gloss"', function() {
-        const header = parseHeaderCell("text/gloss");
-        testIsType(header, SlashHeader);
-        if (!(header instanceof SlashHeader)) { return; }
-        testIsType(header.child1, LiteralHeader, "child1");
-        testIsType(header.child2, LiteralHeader, "child2");
-    });
-
-    
-    describe('Header "(text)/(gloss)"', function() {
-        const header = parseHeaderCell("(text)/(gloss)");
-        testIsType(header, SlashHeader);
-        if (!(header instanceof SlashHeader)) { return; }
-        testIsType(header.child1, LiteralHeader, "child1");
-        testIsType(header.child2, LiteralHeader, "child2");
-    });
-
-    describe('Header "(text/gloss)"', function() {
-        const header = parseHeaderCell("(text/gloss)");
-        testIsType(header, SlashHeader);
-        if (!(header instanceof SlashHeader)) { return; }
-        testIsType(header.child1, LiteralHeader, "child1");
-        testIsType(header.child2, LiteralHeader, "child2");
-    });
-    
-    describe('Header "/text"', function() {
-        const header = parseHeaderCell("/text");
-        testIsType(header, ErrorHeader);
-    });
-
-    
-    describe('Header "text/"', function() {
-        const header = parseHeaderCell("text/");
-        testIsType(header, ErrorHeader);
-    });
-
     
     describe('Header "maybe"', function() {
         const header = parseHeaderCell("maybe");

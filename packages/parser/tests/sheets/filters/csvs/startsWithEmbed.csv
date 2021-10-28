@@ -12,6 +12,6 @@ root:, text, gloss
      , moo, jump
      , goo, climb
 
-word:, text, gloss, embed, startswith embed
+word:, text, gloss, embed, starts embed
      , um, [1SG], root, labials
      , un, [1SG], root, nonlabials

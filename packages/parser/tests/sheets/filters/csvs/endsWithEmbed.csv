@@ -11,6 +11,6 @@ root:, text, gloss
      , foobaz, jump
      , foobas, climb
 
-word:, embed, endswith embed, text, gloss
+word:, embed, ends embed, text, gloss
      , root, uvulars, q, [1SG]
      , root, nonuvulars, k, [1SG]

@@ -299,18 +299,10 @@ class RenameHeader extends UnaryHeader {
  * e.g. "~(A|B)" is interpreted as "neither A nor B" rather than this literal string.
  * 
  * This is also the ancestor class of all other headers (e.g. "equals", 
- * startsWith", etc.) that allow and parse regular expressions 
+ * starts", etc.) that allow and parse regular expressions 
  * in their fields.
  */
 export class RegexHeader extends UnaryHeader {
-
-    public merge(
-        left: Grammar, 
-        child: Grammar,
-        content: Cell
-    ): Grammar {
-        return new SequenceGrammar(content, [left, child]);
-    }
 
     public toGrammarPiece(
         parsedText: Regex,
@@ -374,11 +366,23 @@ export class RegexHeader extends UnaryHeader {
         text: string,
         content: Cell
     ): Grammar {
+
+        if (!(this.child instanceof LiteralHeader 
+                    || this.child instanceof EmbedHeader)) {
+            content.message({
+                type: "error",
+                shortMsg: "Renaming error",
+                longMsg: `"re" can only be followed by a tape name or "embed"`
+            })
+            return new EpsilonGrammar(content);
+        }
+
         const parsedText = parseRegex(text);
         const c = this.toGrammarPiece(parsedText, content);
-        return this.merge(left, c, content);
+        return new SequenceGrammar(content, [left, c]);
     }
 }
+
 
 /**
  * EqualsHeader puts a constraint on the state of the immediately preceding cell (call this state N)
@@ -389,7 +393,7 @@ export class RegexHeader extends UnaryHeader {
  * These constrain N to either start with X (that is, Filter(N, X.*)) or end with X 
  * (that is, Filter(N, .*X)), or contain X (Filter(N, .*X.*)).
  */
-export class EqualsHeader extends RegexHeader {
+export class EqualsHeader extends UnaryHeader {
     
     public merge(
         leftNeighbor: Grammar, 
@@ -417,6 +421,15 @@ export class EqualsHeader extends RegexHeader {
         content: Cell
     ): Grammar {
         return new FilterGrammar(content, leftNeighbor, condition);
+    }
+    
+    public toGrammar(
+        left: Grammar, 
+        text: string,
+        content: Cell
+    ): Grammar {
+        const childGrammar = this.child.toGrammar(new EpsilonGrammar(content), text, content)
+        return this.merge(left, childGrammar, content);
     }
 }
 
@@ -560,8 +573,8 @@ export const RESERVED_HEADERS = [
     "hide", 
     //"reveal", 
     "equals", 
-    "startswith", 
-    "endswith", 
+    "starts", 
+    "ends", 
     "contains",
     ...REPLACE_PARAMS,
     ...TEST_PARAMS
@@ -591,18 +604,16 @@ function tokenize(text: string): string[] {
 
 var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlternation(
-        HP_MAYBE, HP_FROM, HP_TO, 
-        HP_PRE, HP_POST, HP_UNIQUE, HP_SLASH, 
+        HP_MAYBE, HP_FROM, HP_TO, HP_SLASH,
+        HP_PRE, HP_POST, HP_UNIQUE, HP_REGEX,
         HP_RENAME, HP_EQUALS, HP_STARTSWITH, 
         HP_ENDSWITH, HP_CONTAINS, HP_SUBEXPR)
 );
 
 var HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
-    MPAlternation(HP_UNRESERVED, HP_EMBED, HP_HIDE, 
-    //HP_REVEAL, 
-    HP_REGEX, 
-    HP_PARENS,
-    HP_RESERVED_OP)
+    MPAlternation(
+        HP_UNRESERVED, HP_EMBED, HP_HIDE, 
+        HP_PARENS, HP_RESERVED_OP)
 );
 
 const HP_COMMENT = MPComment<Header>(
@@ -686,12 +697,12 @@ const HP_EQUALS = MPSequence<Header>(
 );
 
 const HP_STARTSWITH = MPSequence<Header>(
-    ["startswith", HP_NON_COMMENT_EXPR],
+    ["starts", HP_NON_COMMENT_EXPR],
     (child) => new StartsWithHeader(child)
 );
 
 const HP_ENDSWITH = MPSequence<Header>(
-    ["endswith", HP_NON_COMMENT_EXPR],
+    ["ends", HP_NON_COMMENT_EXPR],
     (child) => new EndsWithHeader(child)
 );
 
@@ -711,7 +722,7 @@ export function parseHeaderCell(text: string): Header {
     }
     if (results.length > 1) {
         // if this happens, it's an error on our part
-        throw new Error("Ambiguous, cannot uniquely parse ${text}");
+        throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
     }
     return results[0];
 }

@@ -12,6 +12,6 @@ root:, text, gloss
      , foobo, jump
      , foobar, climb
 
-word:, embed, endswith embed, text, gloss
+word:, embed, ends re embed, text, gloss
      , root, vowels, r, [1SG]
      , root, ~vowels, u, [1SG]

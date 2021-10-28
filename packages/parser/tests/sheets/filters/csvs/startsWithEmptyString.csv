@@ -3,5 +3,5 @@ root:, text, gloss
      , foo, run
      , goo, climb
 
-word:, text, gloss, embed, startswith text
+word:, text, gloss, embed, starts text
      , un, [1SG], root, 

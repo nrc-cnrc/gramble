@@ -5,5 +5,5 @@ root:, text, gloss,
      , fooz, jump, 
      , goom, sing, 
 
-word:, text, gloss, embed, startswith text, endswith text
+word:, text, gloss, embed, starts text, ends text
      , um, [1SG], root, f, z

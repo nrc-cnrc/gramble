@@ -4,7 +4,7 @@ root:, text, gloss, trans
      , foobaz, jump, INTR
      , foobas, see, TR
 
-word:, embed, equals trans, endswith text, text, gloss
+word:, embed, equals trans, ends text, text, gloss
      , root, INTR, r, q, [1SG]
      , root, INTR, z, k, [1SG]
      , root, TR,  ,  , [1SG]

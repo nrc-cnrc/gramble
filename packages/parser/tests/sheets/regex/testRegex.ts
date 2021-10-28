@@ -5,6 +5,22 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
 
+    describe('Trivial regex', function() {
+        const project = sheetFromFile(`${DIR}/regexTrivial.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "foo", gloss: "1SG" },
+        ]);
+    });
+
+    describe('Re header with slash value', function() {
+        const project = sheetFromFile(`${DIR}/regexSlash.csv`);
+        testErrors(project, [
+            ["regexSlash", 1, 3, "error"]
+        ]);
+        testGramble(project, []);
+    });
+
     describe('Regex including alternation', function() {
         const project = sheetFromFile(`${DIR}/regexAlternation.csv`);
         testErrors(project, []);
@@ -126,5 +142,38 @@ describe(`${path.basename(module.filename)}`, function() {
             { text:"googoobar", gloss:"jump.impf"}
         ]);
     });
+
+    
+    describe('Re embed', function() {
+        const project = sheetFromFile(`${DIR}/reEmbed.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"foobar"},
+            {"text":"moobar"}
+        ]);
+    });
+
+    describe('Re embed with alternation', function() {
+        const project = sheetFromFile(`${DIR}/reEmbedAlt.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"boobar"},
+            {"text":"goobar"},
+            {"text":"foobar"},
+            {"text":"moobar"}
+        ]);
+    });
+
+    describe('Re embed with sequence', function() {
+        const project = sheetFromFile(`${DIR}/reEmbedSeq.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"fooboobar"},
+            {"text":"foogoobar"},
+            {"text":"mooboobar"},
+            {"text":"moogoobar"}
+        ]);
+    });
+
 
 });
