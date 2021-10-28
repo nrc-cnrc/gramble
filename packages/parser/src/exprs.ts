@@ -140,8 +140,6 @@ export class CounterStack {
 }
 
 /**
- * Expr
- * 
  * Expr is the basic class of the parser; it represents a symbolic 
  * expression like A|B or epsilon+(C&D).  These expressions also represent 
  * "states" or "nodes" in a (potentially abstract) state graph; this class was
@@ -318,6 +316,8 @@ export abstract class Expr {
             let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
             let [tapes, prevOutput, prevExpr, chars] = prev;
             
+            //console.log();
+            //console.log(`remaining tapes are ${tapes.map(t => t.tapeName)}`);
             //console.log(`prevExpr is ${prevExpr.id}`);
 
             if (chars >= maxChars) {
@@ -674,7 +674,7 @@ class LiteralExpr extends Expr {
 
     public get id(): string {
         const index = this.index > 0 ? `[${this.index}]` : ""; 
-        return `${this.tapeName}:${this.text.join("+")}${index}`;
+        return `${this.tapeName}:${this.text.join("")}${index}`;
     }
 
     public getText(): string[] {
@@ -745,6 +745,17 @@ export abstract class BinaryExpr extends Expr {
 class ConcatExpr extends BinaryExpr {
 
     public get id(): string {
+        const child2ID = this.child2.id;
+
+        if ((this.child1 instanceof LiteralExpr ||
+            this.child1 instanceof DotStarExpr ||
+            this.child1 instanceof DotExpr) && 
+            child2ID.startsWith(this.child1.tapeName)) {
+            // abbreviate!
+            const child2IDTrunc = child2ID.slice(this.child1.tapeName.length+1);
+            return this.child1.id + child2IDTrunc;
+        }
+
         return `${this.child1.id}+${this.child2.id}`;
     }
 
@@ -880,7 +891,10 @@ class JoinExpr extends BinaryExpr {
         super(child1, child2);
     }
 
-    
+    public get id(): string {
+        return `(${this.child1.id}&&${this.child2.id})`;
+    }
+
     public delta(tape: Tape, stack: CounterStack): Expr {
         return constructJoin( this.child1.delta(tape, stack),
                                    this.child2.delta(tape, stack), this.tapes1, this.tapes2);
@@ -947,7 +961,7 @@ class JoinExpr extends BinaryExpr {
     }
 
     public get id(): string {
-        return `\${${this.symbolName}}`;
+        return `\$${this.symbolName}`;
     }
 
     public getChild(stack: CounterStack | undefined = undefined): Expr {
@@ -1165,7 +1179,7 @@ class RenameExpr extends UnaryExpr {
     }
     
     public get id(): string {
-        return `${this.fromTape}->${this.toTape}(${this.child.id})`;
+        return `${this.fromTape}>${this.toTape}(${this.child.id})`;
     }
 
     public *deriv(
@@ -1202,7 +1216,7 @@ class NegationExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `~${this.maxChars}(${this.child.id})`;
+        return `~(${this.child.id})`;
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
@@ -1257,7 +1271,7 @@ export class MatchExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `Match(${Object.values(this.buffers).map(b=>b.id)}, ${this.child.id})`;
+        return `Match${[...this.tapes]}(${Object.values(this.buffers).map(b=>b.id)}, ${this.child.id})`;
     }
 
     public delta(
@@ -1557,6 +1571,9 @@ export function constructDotStar(tape: string): Expr {
 }
 
 export function constructDotRep(tape: string, maxReps:number=Infinity): Expr {
+    if (maxReps == Infinity) {
+        return constructDotStar(tape);
+    }
     return constructRepeat(constructDot(tape), 0, maxReps);
 }
 
@@ -1601,6 +1618,15 @@ export function constructRename(
     }
     if (child instanceof NullExpr) {
         return child;
+    }
+    if (child instanceof LiteralExpr && child.tapeName == fromTape) {
+        return new LiteralExpr(toTape, child.text, child.index);
+    }
+    if (child instanceof DotExpr && child.tapeName == fromTape) {
+        return new DotExpr(fromTape);
+    }
+    if (child instanceof DotStarExpr && child.tapeName == fromTape) {
+        return new DotStarExpr(fromTape);
     }
     return new RenameExpr(child, fromTape, toTape);
 }

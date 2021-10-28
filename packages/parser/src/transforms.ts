@@ -218,6 +218,8 @@ export class NameQualifier extends IdentityTransform<NsGrammar[] > {
 
 export class ReplaceAdjuster extends IdentityTransform<void>{
 
+    public replaceIndex: number = 0;
+    
     public transform(g: Grammar): Grammar {
 
         if (!(g instanceof NsGrammar)) {
@@ -274,7 +276,9 @@ export class ReplaceAdjuster extends IdentityTransform<void>{
             newChild = new RenameGrammar(DUMMY_CELL, newChild, fromTape, replaceTape);
         }
 
-        return new JoinReplaceGrammar(g.cell, newChild, newRules as ReplaceGrammar[]);
+        const child2 = new AlternationGrammar(g.cell, newRules);
+        return new JoinGrammar(g.cell, newChild, child2);
+        //return new JoinReplaceGrammar(g.cell, newChild, newRules as ReplaceGrammar[]);
     }
 
     public transformReplace(
@@ -288,7 +292,7 @@ export class ReplaceAdjuster extends IdentityTransform<void>{
         }
 
         const replaceTapeName = (g.fromTapeName == g.toTapeName) 
-                    ? `__REPLACE${g.cell.id}_${g.fromTapeName}`
+                    ? `__R${g.cell.pos.sheet}:${g.cell.pos.row}`
                     : g.fromTapeName;
 
         const newFrom = g.fromState.accept(this, ns, args);

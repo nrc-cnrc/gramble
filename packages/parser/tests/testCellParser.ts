@@ -1,14 +1,5 @@
-import { 
-    LiteralRegex,
-    NegationRegex,
-    AlternationRegex,
-    parseRegex,
-    SequenceRegex
-} from "../src/regex";
-
 import * as path from 'path';
-import { expect } from "chai";
-import { testCellID, testIsType } from "./testUtils";
+import { testCellID } from "./testUtils";
 
 describe(`${path.basename(module.filename)}`, function() {
 

@@ -16,12 +16,12 @@ import {
     constructMemo,
     constructMatch,
     SymbolTable,
-    constructDotStar,
     constructFilter,
     constructJoin,
     constructLiteral,
     constructMatchFrom,
     constructCharSet,
+    constructDotRep,
 } from "./exprs";
 
 import { 
@@ -1046,7 +1046,6 @@ export class EmbedGrammar extends AtomicGrammar {
         public namespace: NsGrammar
     ) {
         super(cell);
-        //console.log(`creating embed ${name} with associated namespace "${namespace.name}"`);
     }
     
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -1070,7 +1069,6 @@ export class EmbedGrammar extends AtomicGrammar {
                 const newStack = stack.add(this.name);
                 this.tapes = this.getReferent().calculateTapes(newStack);
             }
-            //console.log(`tapes for ${this.name} are [${this.tapes}]`);
         }
         return this.tapes;
     }
@@ -1120,7 +1118,6 @@ export class UnresolvedEmbedGrammar extends AtomicGrammar {
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
             this.tapes = [];
-            //console.log(`warning, getting tapes from unresolved ${this.name}`);
         }
         return this.tapes;
     }
@@ -1616,7 +1613,7 @@ export class ReplaceGrammar extends Grammar {
         const that = this;
 
         function matchAnythingElse(replaceNone: boolean = false): Expr {
-            const dotStar: Expr = constructRepeat(constructDot(that.fromTapeName), 0, that.maxExtraChars);
+            const dotStar: Expr = constructDotRep(that.fromTapeName, that.maxExtraChars);
             // 1. If the fromTape vocab for the replacement operation contains some
             //    characters that are not in the corresponding toTape vocab, then
             //    extra text matched before and after the replacement cannot possibly

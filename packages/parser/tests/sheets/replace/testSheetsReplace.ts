@@ -200,4 +200,12 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Replacement of a grammar containing an embed', function() {
+        const project = sheetFromFile(`${DIR}/replaceEmbed.csv`);
+        testErrors(project, []);        
+        testGramble(project, [
+            { text: "goo"}
+        ]);
+    });
+
 });

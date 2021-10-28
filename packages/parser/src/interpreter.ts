@@ -204,7 +204,6 @@ export class Interpreter {
         }
 
         let tapePriority = this.grammar.calculateTapes(new CounterStack(2));
-        
         let expr = this.grammar.constructExpr(this.symbolTable);
 
         let targetComponent = this.grammar.getSymbol(symbolName);
@@ -213,6 +212,8 @@ export class Interpreter {
             throw new Error(`Missing symbol: ${symbolName}; choices are [${allSymbols}]`);
         }
 
+        tapePriority = targetComponent.calculateTapes(new CounterStack(2));
+        
         if (Object.keys(query).length > 0) {
             const queryLiterals = Object.entries(query).map(([key, value]) => {
                 return new LiteralGrammar(DUMMY_CELL, key, value);

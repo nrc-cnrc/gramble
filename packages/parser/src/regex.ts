@@ -17,7 +17,7 @@ import {
 export interface Regex { 
     
     /**
-     * The IDs of CPResult are deliberately chosen to NOT look like their
+     * The IDs of Regex objects are deliberately chosen to NOT look like their
      * string when expressed as a regex.  That makes it easy to see from the ID
      * when the regex has been parsed incorrectly.
      */
@@ -105,7 +105,7 @@ export class AlternationRegex implements Regex {
 }
 
 export class SequenceRegex implements Regex {
-    
+
     constructor(
         public children: Regex[]
     ) { }
