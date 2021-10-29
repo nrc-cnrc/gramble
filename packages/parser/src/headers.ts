@@ -36,7 +36,7 @@ import {
 
 import { Cell, HSVtoRGB, RGBtoString } from "./util";
 
-export const DEFAULT_SATURATION = 0.1;
+export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
 
 
@@ -78,7 +78,9 @@ export type ParamDict = {[key: string]: Grammar};
      * @returns The grammar corresponding to this header/content pair
      */
     public abstract toGrammar(left: Grammar, text: string, content: Cell): Grammar;
-    public abstract getColor(saturation: number, value: number): string;
+    public abstract getFontColor(): string;
+    public abstract getBackgroundColor(saturation: number, value: number): string;
+    public abstract get id(): string;
 
     public getParamName(): string {
         return "__";
@@ -106,7 +108,15 @@ abstract class AtomicHeader extends Header {
 
     public abstract get text(): string;
     
-    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
+    public get id(): string {
+        return this.text;
+    }
+
+    public getFontColor(): string {
+        return "#000000";
+    }
+
+    public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
         return RGBtoString(...HSVtoRGB(this.hue, saturation, value));
     }
 
@@ -182,6 +192,10 @@ export class LiteralHeader extends AtomicHeader {
         super();
     }
 
+    public getFontColor() {
+        return "#064a3f";
+    }
+
     public toGrammar(
         left: Grammar, 
         text: string,
@@ -198,11 +212,19 @@ export class LiteralHeader extends AtomicHeader {
  */
 export class CommentHeader extends Header { 
 
+    public get id(): string {
+        return "%";
+    }
+    
+    public getFontColor() {
+        return "#669944";
+    }
+
     public get hue(): number {
         return 0;
     }
     
-    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
+    public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
         return "#FFFFFF";
     }
 
@@ -227,8 +249,12 @@ abstract class UnaryHeader extends Header {
         super();
     }
 
-    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
-        return this.child.getColor(saturation, value);
+    public getFontColor() {
+        return this.child.getFontColor();
+    }
+
+    public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
+        return this.child.getBackgroundColor(saturation, value);
     }
 
     public toGrammar(
@@ -249,6 +275,10 @@ export class TagHeader extends UnaryHeader {
         super(child);
     }
 
+    public get id(): string {
+        return `${this.tag}:${this.child.id}`;
+    }
+
     public getParamName(): string {
         return this.tag;
     }
@@ -258,6 +288,10 @@ export class TagHeader extends UnaryHeader {
  * Header that constructs optional parsers, e.g. "maybe text"
  */
 export class MaybeHeader extends UnaryHeader {
+
+    public get id(): string {
+        return `MAYBE[${this.child.id}]`;
+    }
 
     public toGrammar(
         left: Grammar, 
@@ -274,6 +308,10 @@ export class MaybeHeader extends UnaryHeader {
  * Header that constructs renames
  */
 class RenameHeader extends UnaryHeader {
+
+    public get id(): string {
+        return `RENAME[${this.child.id}]`;
+    }
 
     public toGrammar(
         left: Grammar, 
@@ -303,6 +341,14 @@ class RenameHeader extends UnaryHeader {
  * in their fields.
  */
 export class RegexHeader extends UnaryHeader {
+
+    public get id(): string {
+        return `RE[${this.child.id}]`;
+    }
+
+    public getFontColor() {
+        return "#bd1128";
+    }
 
     public toGrammarPiece(
         parsedText: Regex,
@@ -395,6 +441,10 @@ export class RegexHeader extends UnaryHeader {
  */
 export class EqualsHeader extends UnaryHeader {
     
+    public get id(): string {
+        return `EQUALS[${this.child.id}]`;
+    }
+
     public merge(
         leftNeighbor: Grammar, 
         state: Grammar,
@@ -439,6 +489,10 @@ export class EqualsHeader extends UnaryHeader {
  */
 export class StartsWithHeader extends EqualsHeader {
 
+    public get id(): string {
+        return `STARTS[${this.child.id}]`;
+    }
+
     public constructFilter(
         leftNeighbor: Grammar, 
         condition: Grammar,
@@ -453,6 +507,10 @@ export class StartsWithHeader extends EqualsHeader {
  * end with X (that is, Filter(N, .*X))
  */
 export class EndsWithHeader extends EqualsHeader {
+
+    public get id(): string {
+        return `ENDS[${this.child.id}]`;
+    }
 
     public constructFilter(
         leftNeighbor: Grammar, 
@@ -469,6 +527,10 @@ export class EndsWithHeader extends EqualsHeader {
  */
 export class ContainsHeader extends EqualsHeader {
     
+    public get id(): string {
+        return `CONTAINS[${this.child.id}]`;
+    }
+
     public constructFilter(
         leftNeighbor: Grammar, 
         condition: Grammar,
@@ -487,8 +549,8 @@ abstract class BinaryHeader extends Header {
         super();
     }
 
-    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
-        return this.child1.getColor(saturation, value);
+    public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
+        return this.child1.getBackgroundColor(saturation, value);
     }
 }
 
@@ -499,6 +561,14 @@ export class SlashHeader extends BinaryHeader {
         public child2: Header
     ) { 
         super(child1, child2);
+    }
+    
+    public get id(): string {
+        return `SLASH[${this.child1.id},${this.child2.id}]`;
+    }
+
+    public getFontColor() {
+        return this.child1.getFontColor();
     }
     
     public toGrammar(
@@ -512,6 +582,10 @@ export class SlashHeader extends BinaryHeader {
 }
 
 export class ErrorHeader extends LiteralHeader {
+
+    public get id(): string {
+        return "ERR";
+    }
 
     public toGrammar(
         left: Grammar, 

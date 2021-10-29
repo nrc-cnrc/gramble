@@ -149,8 +149,12 @@ export class TstHeader extends TstCellComponent {
         }
     }
 
-    public getColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string {
-        return this.header.getColor(saturation, value);
+    public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string {
+        return this.header.getBackgroundColor(saturation, value);
+    }
+
+    public getFontColor(): string {
+        return this.header.getFontColor();
     }
 
     public headerToGrammar(left: Grammar, content: Cell): Grammar {
@@ -753,7 +757,8 @@ export class TstRow extends TstCellComponent {
         const newCell = new TstHeadedCell(this.lastCell, header, cell);
         cell.message({ 
             type: "content", 
-            color: header.getColor(0.1) 
+            color: header.getBackgroundColor(),
+            fontColor: header.getFontColor()
         });
         this.lastCell = newCell;
     }

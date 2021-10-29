@@ -8,7 +8,7 @@ const NOTE_COLORS = new Map([
     ["info", "#88FF99"]
 ]);
 
-const COMMENT_FONT_COLOR = "#449944";
+const COMMENT_FONT_COLOR = "#669944";
 
 function letterFromNumber(n) { // number -> string
     let letter = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(n % 26)
@@ -119,7 +119,7 @@ class GoogleSheetsDevEnvironment {
         this.currentSheetName = currentSheetName;
         this.noteStylers = new Map(); // :Map<string, NoteStyler>
         this.bgColorStylers  = new Map(); // :Map<string, BackgroundColorStyler>
-        this.fgColorStylers = new Map(); // :Map<string, FontColorStyler>
+        this.fontColorStylers = new Map(); // :Map<string, FontColorStyler>
         this.italicStyler = new ItalicStyler();
         this.borderStyler = new BorderStyler();
         this.boldStyler = new BoldStyler();
@@ -150,7 +150,7 @@ class GoogleSheetsDevEnvironment {
                 msg["row"], msg["col"]);
         } else if (msg["type"] == "content") {
             this.markContent(msg["sheet"], msg["row"],
-                msg["col"], msg["color"]);
+                msg["col"], msg["color"], msg["fontColor"]);
         } else {
             console.log(`unknown message: ${msg}`);
         }
@@ -195,10 +195,10 @@ class GoogleSheetsDevEnvironment {
             return;
         }
 
-        let colorStyler = this.fgColorStylers.get(COMMENT_FONT_COLOR);
+        let colorStyler = this.fontColorStylers.get(COMMENT_FONT_COLOR);
         if (colorStyler == undefined) {
             colorStyler = new FontColorStyler(COMMENT_FONT_COLOR);
-            this.fgColorStylers.set(COMMENT_FONT_COLOR, colorStyler);
+            this.fontColorStylers.set(COMMENT_FONT_COLOR, colorStyler);
         }
         colorStyler.addCell(sheet, row, col);
         this.italicStyler.addCell(sheet, row, col);
@@ -216,20 +216,13 @@ class GoogleSheetsDevEnvironment {
             this.bgColorStylers.set(color, bgColorStyler);
         }
         bgColorStyler.addCell(sheet, row, col);
-        /*
-        const fgColor = getForegroundColor(tier);
-        if (!this.fgColorStylers.has(fgColor)) {
-            this.fgColorStylers.set(fgColor, new FontColorStyler(fgColor));
-        }
-        this.fgColorStylers.get(fgColor)?.addCell(row, col);
-        */
         this.borderStyler.addCell(sheet, row, col);
         this.boldStyler.addCell(sheet, row, col);
         this.centerStyler.addCell(sheet, row, col);
     }
 
 
-    markContent(sheet, row, col, color) {
+    markContent(sheet, row, col, color, fontColor) {
 
         if (sheet != this.currentSheetName) {
             return;
@@ -241,13 +234,13 @@ class GoogleSheetsDevEnvironment {
             this.bgColorStylers.set(color, bgColorStyler);
         }
         bgColorStyler.addCell(sheet, row, col);
-        /* const fgColor = getForegroundColor(tier);
-        if (!this.fgColorStylers.has(fgColor)) {
-            this.fgColorStylers.set(fgColor, new FontColorStyler(fgColor));
+
+        let fontColorStyler = this.fontColorStylers.get(fontColor);
+        if (fontColorStyler == undefined) {
+            fontColorStyler = new FontColorStyler(fontColor);
+            this.fontColorStylers.set(fontColor, fontColorStyler);
         }
-        this.fgColorStylers.get(fgColor)?.addCell(row, col);
-        */
-       
+        fontColorStyler.addCell(sheet, row, col);
         this.centerStyler.addCell(sheet, row, col);
     }
 
@@ -281,7 +274,7 @@ class GoogleSheetsDevEnvironment {
             styler.applyToSheet(sheet);
         }
         
-        for (const styler of this.fgColorStylers.values()) {
+        for (const styler of this.fontColorStylers.values()) {
             styler.applyToSheet(sheet);
         }
         this.italicStyler.applyToSheet(sheet);

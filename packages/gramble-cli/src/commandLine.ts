@@ -141,15 +141,14 @@ const commands: { [name: string]: Command } = {
         const outputStream = getOutputStream(options.output);
         const interpreter = sheetFromFile(options.source, options.verbose);
         const labels = interpreter.getTapeNames(options.symbol);
-        const labelNames = labels.map(([name, color]) => name);
         const generator = interpreter.generateStream(options.symbol, {});
-        timeIt("Generation complete", options.verbose, () => {
+        timeIt(() => {
             if (options.format.toLowerCase() == 'csv') {
-                generateToCSV(outputStream, generator, labelNames);
+                generateToCSV(outputStream, generator, labels);
             } else {
                 generateToJSON(outputStream, generator);
             }
-        });
+        }, options.verbose, "Generation complete", "Starting generation");
     },
   },
 
@@ -208,15 +207,14 @@ const commands: { [name: string]: Command } = {
         const outputStream = getOutputStream(options.output);
         const interpreter = sheetFromFile(options.source, options.verbose);
         const labels = interpreter.getTapeNames(options.symbol);
-        const labelNames = labels.map(([name, color]) => name);
         const generator = interpreter.sampleStream(options.symbol, options.num, {});
-        timeIt("Sampling complete", options.verbose, () => {
+        timeIt(() => {
             if (options.format.toLowerCase() == 'csv') {
-                generateToCSV(outputStream, generator, labelNames);
+                generateToCSV(outputStream, generator, labels);
             } else {
                 generateToJSON(outputStream, generator);
             }
-        });
+        }, options.verbose, "Sampling commplete", "Started sampling");
     },
   },
 /*

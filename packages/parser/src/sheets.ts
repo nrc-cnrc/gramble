@@ -276,7 +276,7 @@ export class Sheet extends SheetComponent {
                     const headerCell = new TstHeader(cell);
                     cell.message({ 
                         type: "header", 
-                        color: headerCell.getColor(0.1) 
+                        color: headerCell.getBackgroundColor(0.14) 
                     });
                     
                     if (!(top.tst instanceof TstTable)) {

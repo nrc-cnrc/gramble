@@ -7,6 +7,7 @@ import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
 import { Regex, parseRegex } from "../src/regex";
+import { parseHeaderCell } from "../src/headers";
 
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
@@ -27,6 +28,13 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
     const msg = (objName != "") ? `have ${objName} ` : ""; 
     it(`should ${msg}be of type ${type.name}`, function() {
         expect(obj instanceof type).to.be.true;
+    });
+}
+
+export function testHeaderID(header: string, expectedID: string) {
+    const result = parseHeaderCell(header);
+    it(`"${header}" should have an id of ${expectedID}`, function() {
+        expect(result.id).to.equal(expectedID);
     });
 }
 

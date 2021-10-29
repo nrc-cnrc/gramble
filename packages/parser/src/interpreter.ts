@@ -34,35 +34,38 @@ export class Interpreter {
     // that could change the meaning of a symbol.
     public symbolTable: SymbolTable = {};
 
+    // for convenience, rather than parse it as a header every time
+    public tapeColors: {[tapeName: string]: string} = {};
+
     constructor(
         public devEnv: DevEnvironment,
         public grammar: Grammar,
         public verbose: boolean = false
     ) { 
 
-        timeIt("Qualified names", verbose, () => {
+        timeIt(() => {
             const nameQualifier = new NameQualifier();
             this.grammar = nameQualifier.transform(this.grammar);
-        });
+        }, verbose, "Qualified names");
 
-        timeIt("Adjusted tape names", verbose, () => {
+        timeIt(() => {
             const replaceAdjuster = new ReplaceAdjuster();
             this.grammar = replaceAdjuster.transform(this.grammar);
-        });
+        }, verbose, "Adjusted tape names");
 
-        timeIt("Collected vocab", verbose, () => {
+        timeIt(() => {
             // recalculate tapes
             this.grammar.calculateTapes(new CounterStack(2));
             // collect vocabulary
             this.tapeObjs = new TapeCollection();
             this.grammar.collectVocab(this.tapeObjs);
 
-        });
+        }, verbose, "Collected vocab");
 
-        timeIt("Copied vocab", verbose, () => {
+        timeIt(() => {
             // copy the vocab if necessary
             this.grammar.copyVocab(this.tapeObjs);
-        });
+        }, verbose, "Copied vocab");
 
     }
 
@@ -111,17 +114,24 @@ export class Interpreter {
             { return { sheet: sheet, row: row, col:col, msg:msg, level:level }});
     }
     
-    public getTapeNames(symbolName: string): [string, string][] {
+    public getTapeNames(symbolName: string): string[] {
         const target = this.grammar.getSymbol(symbolName);
         if (target == undefined || target.tapes == undefined) {
             throw new Error(`Cannot find symbol ${symbolName}`);
         }
-        const results: [string, string][] = [];
-        for (const tapeName of target.tapes) {
+        return target.tapes;
+    }
+
+    public getTapeColor(
+        tapeName: string, 
+        saturation: number = 0.2,
+        value: number = 1.0
+    ): string {
+        if (!(tapeName in this.tapeColors)) {
             const header = parseHeaderCell(tapeName);
-            results.push([tapeName, header.getColor(0.2, 1.0)]);
+            this.tapeColors[tapeName] = header.getBackgroundColor(saturation, value);
         }
-        return results;
+        return this.tapeColors[tapeName];
     }
 
     public generate(

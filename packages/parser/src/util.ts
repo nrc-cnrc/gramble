@@ -133,12 +133,20 @@ export function tokenizeUnicode(str: string): string[] {
     return results;
 }
 
-export function timeIt<T>(desc: string, verbose: boolean, func: () => T): T {
+export function timeIt<T>(
+    func: () => T, 
+    verbose: boolean = true,
+    message: string = "",
+    startMessage: string = "",
+): T {
+    if (verbose && startMessage.length > 0) {
+        console.log(startMessage);
+    }
     const startTime = Date.now();
     const results = func();
     if (verbose) {
         const elapsedTime = msToTime(Date.now() - startTime);
-        console.log(`${desc}: ${elapsedTime}`);
+        console.log(`${message}: ${elapsedTime}`);
     }
     return results;
 }

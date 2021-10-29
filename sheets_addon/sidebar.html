@@ -272,12 +272,14 @@
                 }
 
                 CURRENT_TAPES = project.getTapeNames(currentSymbol)
-                                       .filter(([s, c]) => !s.startsWith("__"));
+                                       .filter(s => !s.startsWith("__"));
                                             // tapes that start with __ are internal/hidden/mangled,
                                             // we don't want to present them to the user in the interface
 
                 const inputTable = document.getElementById("inputTable");
-                for (const [tapeName, color] of CURRENT_TAPES) {
+                for (const tapeName of CURRENT_TAPES) {
+                    const color = project.getTapeColor(tapeName, 0.2);
+
                     const tr = document.createElement("tr");
                     tr.classList.add("tapeInputTr");
                     tr.style.backgroundColor = color;
@@ -312,7 +314,7 @@
                 }
 
                 CURRENT_INPUTS = {};
-                for (const [tapeName, color] of CURRENT_TAPES) {
+                for (const tapeName of CURRENT_TAPES) {
                     const input = document.getElementById(`input_${tapeName}`);
                     const value = input.value.trim();
                     if (value.length == 0) {
@@ -321,11 +323,9 @@
                     CURRENT_INPUTS[tapeName] = value;
                 }
 
-                let startTime = Date.now();
-
-                let results = gramble.timeIt("Generated results", true, () => 
-                    project.sample(symbolName, 5, CURRENT_INPUTS)
-                );
+                let results = gramble.timeIt(() => 
+                    project.sample(symbolName, 5, CURRENT_INPUTS),
+                    true, "Sampling complete", "Started sampling");
                 
                 for (let i = 0; i < results.length; i++) {
                     displayRecord(results[i], resultsTable);
@@ -335,11 +335,13 @@
             function displayRecord(record, table) {
 
                 
-                for (const [key, color] of CURRENT_TAPES) {
-
-                    if (!record.hasOwnProperty(key)) {
+                for (const tapeName of CURRENT_TAPES) {
+                    
+                    if (!record.hasOwnProperty(tapeName)) {
                         continue;
                     }
+                    
+                    const color = project.getTapeColor(tapeName, 0.1);
 
                     let tr = table.insertRow();
                     tr.classList.add("resultsTr");
@@ -347,11 +349,11 @@
                     
                     let keyCell = tr.insertCell();
                     keyCell.classList.add("resultsKey");
-                    keyCell.appendChild(document.createTextNode(key));
+                    keyCell.appendChild(document.createTextNode(tapeName));
 
                     let valueCell = tr.insertCell();
                     valueCell.classList.add("resultsValue");
-                    valueCell.appendChild(document.createTextNode(record[key]));
+                    valueCell.appendChild(document.createTextNode(record[tapeName]));
                 }
 
                 let blankRow = table.insertRow();
@@ -381,7 +383,7 @@
 
             function getCurrentInputs() {
                 const results = {};
-                for (const [tapeName, color] of CURRENT_TAPES) {
+                for (const tapeName of CURRENT_TAPES) {
                     const input = document.getElementById(`input_${tapeName}`);
                     const value = input.value.trim();
                     if (value.length == 0) {
@@ -415,19 +417,18 @@
                 const symbolName = getCurrentSymbolName();
 
                 // determine what tape names are relevant to this symbol
-                const tapeInfo = project.getTapeNames(symbolName);
-                const tapeNames = tapeInfo.map(([k, v]) => k);
+                const tapeNames = project.getTapeNames(symbolName);
 
                 const inputs = getCurrentInputs();
                 
                 let startTime = Date.now();
                 let results = [];
                 
-                gramble.timeIt("Generated results", true, () => {
+                gramble.timeIt(() => {
                     for (const result of project.generateStream(symbolName, inputs)) {
                         results.push(result);
                     }
-                });
+                }, true, "Generation complete", "Started generating");
 
                 // determine what format to output in
                 let formatSelect = document.getElementById("downloadFormatSelect");
@@ -460,13 +461,13 @@
 
                 const inputs = getCurrentInputs();
                 
-                gramble.timeIt("Generated results", true, () => 
-                    results = project.generate(symbolName, inputs)
+                gramble.timeIt(() => 
+                    results = project.generate(symbolName, inputs),
+                    true, "Generation complete", "Started generating"
                 );
                 
                 // determine what tape names are relevant to this symbol
-                const tapeInfo = project.getTapeNames(symbolName);
-                const tapeNames = tapeInfo.map(([k, v]) => k);
+                const tapeNames = project.getTapeNames(symbolName);
 
                 const resultsTable = resultsToTable(tapeNames, results)
                 const sheetName = symbolName.replace(".", "_") + "_generated";
@@ -481,13 +482,13 @@
                 
                 let startTime = Date.now();
 
-                let results = gramble.timeIt("Generated results", true, () =>
-                    project.sample(symbolName, 50, inputs)
+                let results = gramble.timeIt(() =>
+                    project.sample(symbolName, 50, inputs),
+                    true, "Sampling complete", "Started sampling"
                 );
                 
                 // determine what tape names are relevant to this symbol
-                const tapeInfo = project.getTapeNames(symbolName);
-                const tapeNames = tapeInfo.map(([k, v]) => k);
+                const tapeNames = project.getTapeNames(symbolName);
 
                 const resultsTable = resultsToTable(tapeNames, results)
                 const sheetName = symbolName.replace(".", "_") + "_sampled";
