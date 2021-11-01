@@ -27,9 +27,12 @@ export function sheetFromFile(path: string, verbose: boolean): Interpreter {
 }
 
 function fileExistsOrFail(filename: string) {
-  if (!existsSync(filename)) {
-    usageError(`Cannot find file ${filename}`);
-  }
+    if (filename == undefined) {
+        usageError(`Must provide a filename`);
+    }
+    if (!existsSync(filename)) {
+        usageError(`Cannot find file ${filename}`);
+    }
 }
 
 function getOutputStream(output: string | undefined): Writable {
@@ -140,6 +143,12 @@ const commands: { [name: string]: Command } = {
 
         const outputStream = getOutputStream(options.output);
         const interpreter = sheetFromFile(options.source, options.verbose);
+
+        if (options.verbose) {
+            interpreter.runChecks();
+            interpreter.devEnv.logErrors();
+        }
+
         const labels = interpreter.getTapeNames(options.symbol);
         const generator = interpreter.generateStream(options.symbol, {});
         timeIt(() => {
@@ -206,6 +215,12 @@ const commands: { [name: string]: Command } = {
 
         const outputStream = getOutputStream(options.output);
         const interpreter = sheetFromFile(options.source, options.verbose);
+
+        if (options.verbose) {
+            interpreter.runChecks();
+            interpreter.devEnv.logErrors();
+        }
+
         const labels = interpreter.getTapeNames(options.symbol);
         const generator = interpreter.sampleStream(options.symbol, options.num, {});
         timeIt(() => {
