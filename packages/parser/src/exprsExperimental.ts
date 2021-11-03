@@ -1,4 +1,4 @@
-import { BinaryExpr, constructListExpr, CounterStack, EpsilonExpr, Expr, NULL, NullExpr, UnionExpr } from "./exprs";
+import { BinaryExpr, constructListExpr, CounterStack, EpsilonExpr, Expr, NULL, NullExpr, UnaryExpr, UnionExpr } from "./exprs";
 import { Tape, Token } from "./tapes";
 import { Gen } from "./util";
 
@@ -127,4 +127,217 @@ export function constructBinaryDisjointUnion(c1: Expr, c2: Expr): Expr {
         return constructBinaryDisjointUnion(head, tail);
     }
     return new DisjointUnionExpr(c1, c2);
+}
+
+
+class FlatMemoExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public limit: number = 3
+    ) {
+        super(child);
+    }
+
+    //public acceptingOnStart: {[tape: string]: boolean} = {};
+    public memoizedDelta: {[tape: string]: Expr} = {};
+    public memoizedBits: {[tape: string]: Token} = {};
+    public transitions: {[tape: string]: {[c: string]: Expr}} = {};
+
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        if (tape.tapeName in this.memoizedDelta) {
+            return this.memoizedDelta[tape.tapeName]
+        }
+        const childExpr = this.child.delta(tape, stack);
+        const nextExpr = constructMemo(childExpr, this.limit);
+        this.memoizedDelta[tape.tapeName] = nextExpr;
+        return nextExpr;
+    }
+        
+    public *disjointDeriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+        yield* this.deriv(tape, target, stack);
+    }
+
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+
+        if (!(tape.tapeName in this.transitions)) {
+            this.transitions[tape.tapeName] = {}
+        }
+
+        if (!(tape.tapeName in this.memoizedBits)) {
+            this.memoizedBits[tape.tapeName] = tape.none();
+        }
+
+        const alreadyMemoized = this.memoizedBits[tape.tapeName];
+        const targetMemoized = target.and(alreadyMemoized);
+        const targetUnmemoized = target.andNot(alreadyMemoized);
+
+        //console.log(`looking for ${tape.fromToken(tape.tapeName, target)}`);
+        //console.log(`already memoized ${tape.fromToken(tape.tapeName, alreadyMemoized)}`);
+
+        // first go through any memoized results
+        for (const c of tape.fromToken(tape.tapeName, targetMemoized)) {
+            const nextToken = new Token(tape.toBits(tape.tapeName, c));
+            const nextExpr = this.transitions[tape.tapeName][c];
+            if (nextExpr == undefined) {
+                throw new Error(`we thought we had memoized ${c} but hadn't`);
+            }
+            if (nextExpr instanceof NullExpr) {
+                continue;
+            }
+            yield [tape, nextToken, nextExpr];
+        }
+
+        let remainder: Token = new Token(targetUnmemoized.bits.clone());
+        // then take the remainder and memoize them
+        for (const [childTape, childToken, childExpr] of 
+                this.child.disjointDeriv(tape, targetUnmemoized, stack)) {
+            remainder = remainder.andNot(childToken); // remove them from the remainder
+            this.memoizedBits[childTape.tapeName] = this.memoizedBits[childTape.tapeName].or(childToken)
+            for (const c of childTape.fromToken(tape.tapeName, childToken)) {
+                this.transitions[childTape.tapeName][c] = childExpr;
+                const nextToken = new Token(tape.toBits(tape.tapeName, c));
+                const nextExpr = constructMemo(childExpr, this.limit -1);
+                yield [tape, nextToken, nextExpr];
+            }
+        }
+
+        // any remaining bits are null
+        this.memoizedBits[tape.tapeName] = this.memoizedBits[tape.tapeName].or(remainder);
+        for (const c of tape.fromToken(tape.tapeName, remainder)) {
+            this.transitions[tape.tapeName][c] = NULL;
+        }
+    }
+}
+
+class MemoExpr extends UnaryExpr {
+
+
+    constructor(
+        child: Expr,
+        public limit: number = 3
+    ) {
+        super(child);
+    }
+
+    //public acceptingOnStart: {[tape: string]: boolean} = {};
+    public transitionsByTape: {[tape: string]: [Tape, Token, Expr][]} = {};
+
+    public addTransition(queryTape: Tape,
+                        resultTape: Tape,
+                        token: Token,
+                        next: Expr): void {
+        if (!(queryTape.tapeName in this.transitionsByTape)) {
+            this.transitionsByTape[queryTape.tapeName] = [];
+        }
+        this.transitionsByTape[queryTape.tapeName].push([resultTape, token, next]);
+    }
+
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        const childNext = this.child.delta(tape, stack);
+        return constructMemo(childNext, this.limit);
+    }
+        
+    public *disjointDeriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+        yield* this.deriv(tape, target, stack);
+    }
+
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+
+        let transitions = this.transitionsByTape[tape.tapeName];
+        if (transitions == undefined) {
+            this.transitionsByTape[tape.tapeName] = [];
+            transitions = [];
+        }
+
+        let remainder = new Token(target.bits.clone());
+
+        // first we go through results we've tried before
+        for (const [origResultTape, token, next] of transitions) {
+            /*if (origResultTape.isTrivial) { // no vocab, so no possible results
+                yield [origResultTape, token, next];
+                return;
+            } */
+
+            if (remainder.isEmpty()) {
+                return;
+            }
+            
+            if (next instanceof NullExpr) {
+                continue;
+            }
+
+            const matchedTape = tape.matchTape(origResultTape.tapeName);
+            if (matchedTape == undefined) {
+                throw new Error(`Failed to match ${tape.tapeName} to ${origResultTape.tapeName}..?`);
+            }
+            
+            const resultToken = matchedTape.match(token, remainder);
+            if (resultToken.isEmpty()) {
+                continue;
+            }
+            
+            yield [matchedTape, resultToken, next];
+
+            remainder = remainder.andNot(resultToken);
+        }
+
+        if (remainder.isEmpty()) {
+            return;
+        }
+
+        // if we get here, remainder is non-empty, meaning we haven't
+        // yet memoized everything.  we have to ask the child about 
+        // what remains.
+        for (const [cTape, cTarget, cNext] of this.child.disjointDeriv(tape, remainder, stack)) {
+            
+            //if (cNext instanceof NullExpr) {
+            //    continue;
+            //}
+
+            const shared = cTarget.and(remainder);
+            const successor = constructMemo(cNext, this.limit - 1);
+            yield [cTape, shared, successor];
+            this.addTransition(tape, cTape, shared, successor);
+            remainder = remainder.andNot(shared);
+            if (remainder.isEmpty()) {
+                return;
+            }
+        }
+
+        // if we get here, there are characters that don't match any result.  we don't
+        // want to forever keep querying the child for characters we know don't have any 
+        // result, so we remember that they're Null
+        this.addTransition(tape, tape, remainder, NULL);
+    }
+}
+
+
+export function constructMemo(child: Expr, limit: number = 3): Expr {
+    if (limit <= 0) {
+        return child;
+    }
+    if (child instanceof EpsilonExpr) {
+        return child;
+    }
+    if (child instanceof NullExpr) {
+        return child;
+    }
+    return new FlatMemoExpr(child, limit);
 }

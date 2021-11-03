@@ -624,6 +624,10 @@ export class RenamedTape extends Tape {
         return this.child.any();
     }
 
+    public none(): Token {
+        return this.child.none();
+    }
+
     public add(str1: string, str2: string): string[] {
         return this.child.add(str1, str2);
     }

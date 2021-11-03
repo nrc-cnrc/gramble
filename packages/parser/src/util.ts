@@ -1,4 +1,6 @@
+import BitSet from 'bitset';
 import { getCategory } from 'unicode-properties';
+import { Token } from './tapes';
 
 export type Gen<T> = Generator<T, void, undefined>;
 
@@ -149,6 +151,11 @@ export function timeIt<T>(
         console.log(`${message}: ${elapsedTime}`);
     }
     return results;
+}
+
+const NUM_COMPS = 1000000000;
+function randomAlphaIndex(): number {
+    return Math.floor(Math.random()*26);
 }
 
 export function msToTime(s: number): string {

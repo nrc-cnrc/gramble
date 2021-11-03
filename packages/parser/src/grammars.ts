@@ -13,7 +13,7 @@ import {
     constructRename,
     constructNegation,
     NULL,
-    constructMemo,
+    //constructMemo,
     constructMatch,
     SymbolTable,
     constructFilter,

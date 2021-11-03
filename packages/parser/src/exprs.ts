@@ -1,5 +1,6 @@
 import { Gen, setDifference, shuffleArray, StringDict } from "./util";
 import { MultiTapeOutput, Tape, RenamedTape, Token, ANY_CHAR } from "./tapes";
+import BitSet from "bitset";
 
 /**
  * This is the parsing/generation engine that underlies Gramble.
@@ -230,6 +231,31 @@ export abstract class Expr {
      */ 
 
     public *disjointDeriv(
+        tape: Tape,
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+        const results: {[c: string]: Expr[]} = {};
+        for (const [childTape, childToken, childExpr] of
+                this.deriv(tape, target, stack)) {
+            for (const c of tape.fromBits(childTape.tapeName, childToken.bits)) {
+                if (!(c in results)) {
+                    results[c] = [];
+                }
+                results[c].push(childExpr);
+            }
+        }
+
+        for (const c in results) {
+            const nextToken = tape.toToken(tape.tapeName, c);
+            const nextExprs = results[c];
+            const nextExpr = constructAlternation(...nextExprs);
+            yield [tape, nextToken, nextExpr];
+        }
+    }
+
+    /*
+    public *disjointDeriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
@@ -269,6 +295,7 @@ export abstract class Expr {
         }
         yield *results;
     }
+    */
 
     /**
      * Performs a breadth-first traversal of the graph.  This will be the function that most 
@@ -337,7 +364,7 @@ export abstract class Expr {
             // keep trying the same one every time
             //if (Math.random() < 0.2) {
             //    tapes = [... tapes.slice(1), tapes[0]];
-            //}
+            //}         
 
             const tapeToTry = tapes[0];
 
@@ -1009,7 +1036,7 @@ class JoinExpr extends BinaryExpr {
 }
 
 /**
- * Abstract base class for states with only one child state.  Typically, UnaryExprs
+ * Abstract base class for expressions with only one child state.  Typically, UnaryExprs
  * handle derivatives by forwarding on the call to their child, and doing something special
  * before or after.  For example, [EmbedExprs] do a check a stack of symbol names to see
  * whether they've passed the allowable recursion limit, and [RenameExpr]s change what
@@ -1020,7 +1047,7 @@ class JoinExpr extends BinaryExpr {
  * (If it tried to take it as a param, or construct it during its own construction, this wouldn't 
  * work, because the EmbedExpr's child can be that EmbedExpr itself.)
  */
-abstract class UnaryExpr extends Expr {
+export abstract class UnaryExpr extends Expr {
 
     constructor(
         public child: Expr
@@ -1033,106 +1060,6 @@ abstract class UnaryExpr extends Expr {
     }
 }
 
-class MemoExpr extends UnaryExpr {
-
-
-    constructor(
-        child: Expr,
-        public limit: number = 3
-    ) {
-        super(child);
-    }
-    public acceptingOnStart: {[tape: string]: boolean} = {};
-    public transitionsByTape: {[tape: string]: [Tape, Token, Expr][]} = {};
-
-    public addTransition(queryTape: Tape,
-                        resultTape: Tape,
-                        token: Token,
-                        next: Expr): void {
-        if (!(queryTape.tapeName in this.transitionsByTape)) {
-            this.transitionsByTape[queryTape.tapeName] = [];
-        }
-        this.transitionsByTape[queryTape.tapeName].push([resultTape, token, next]);
-    }
-
-    public delta(tape: Tape, stack: CounterStack): Expr {
-        const childNext = this.child.delta(tape, stack);
-        return constructMemo(childNext, this.limit);
-    }
-
-    public *deriv(
-        tape: Tape, 
-        target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
-
-        let transitions = this.transitionsByTape[tape.tapeName];
-        if (transitions == undefined) {
-            this.transitionsByTape[tape.tapeName] = [];
-            transitions = [];
-        }
-
-        let remainder = new Token(target.bits.clone());
-
-        // first we go through results we've tried before
-        for (const [origResultTape, token, next] of transitions) {
-            /*if (origResultTape.isTrivial) { // no vocab, so no possible results
-                yield [origResultTape, token, next];
-                return;
-            } */
-
-            if (remainder.isEmpty()) {
-                return;
-            }
-            
-            if (next instanceof NullExpr) {
-                continue;
-            }
-
-            const matchedTape = tape.matchTape(origResultTape.tapeName);
-            if (matchedTape == undefined) {
-                throw new Error(`Failed to match ${tape.tapeName} to ${origResultTape.tapeName}..?`);
-            }
-            
-            const resultToken = matchedTape.match(token, remainder);
-            if (resultToken.isEmpty()) {
-                continue;
-            }
-            
-            yield [matchedTape, resultToken, next];
-
-            remainder = remainder.andNot(resultToken);
-        }
-
-        if (remainder.isEmpty()) {
-            return;
-        }
-
-        // if we get here, remainder is non-empty, meaning we haven't
-        // yet memoized everything.  we have to ask the child about 
-        // what remains.
-        for (const [cTape, cTarget, cNext] of this.child.disjointDeriv(tape, remainder, stack)) {
-            
-            //if (cNext instanceof NullExpr) {
-            //    continue;
-            //}
-
-            const shared = cTarget.and(remainder);
-            const successor = constructMemo(cNext, this.limit - 1);
-            yield [cTape, shared, successor];
-            this.addTransition(tape, cTape, shared, successor);
-            remainder = remainder.andNot(shared);
-            if (remainder.isEmpty()) {
-                return;
-            }
-        }
-
-        // if we get here, there are characters that don't match any result.  we don't
-        // want to forever keep querying the child for characters we know don't have any 
-        // result, so we remember that they're Null
-        this.addTransition(tape, tape, remainder, NULL);
-    }
-}
 
 class StarExpr extends UnaryExpr {
 
@@ -1254,7 +1181,7 @@ class NegationExpr extends UnaryExpr {
 
         // any chars not yet consumed by the above represent
         // cases where we've (in FSA terms) "fallen off" the graph,
-        // and are now at a special consume-anything state that always
+        // and are now at a special consume-anything expression that always
         // succeeds.
         yield [tape, remainder, constructUniverse(this.tapes, this.maxChars-1)];
     }
@@ -1631,18 +1558,6 @@ export function constructRename(
     return new RenameExpr(child, fromTape, toTape);
 }
 
-export function constructMemo(child: Expr, limit: number = 3): Expr {
-    if (limit <= 0) {
-        return child;
-    }
-    if (child instanceof EpsilonExpr) {
-        return child;
-    }
-    if (child instanceof NullExpr) {
-        return child;
-    }
-    return new MemoExpr(child, limit);
-}
 
 export function constructFilter(c1: Expr, c2: Expr, tapes: Set<string>): Expr {
     if (c1 instanceof NullExpr) {
