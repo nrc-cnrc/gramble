@@ -140,6 +140,9 @@ export class CounterStack {
     }
 }
 
+const ANY_CHAR_STR = "__ANY_CHAR__";
+
+
 /**
  * Expr is the basic class of the parser; it represents a symbolic 
  * expression like A|B or epsilon+(C&D).  These expressions also represent 
@@ -177,6 +180,20 @@ export abstract class Expr {
      * unique; right now they're often not.
      */
     public abstract get id(): string;
+
+    public abstract concreteDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): Gen<[string, Expr]>;
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+        return {};
+    }
 
     public abstract delta(tape: Tape, stack: CounterStack): Expr;
 
@@ -251,6 +268,27 @@ export abstract class Expr {
             const nextExprs = results[c];
             const nextExpr = constructAlternation(...nextExprs);
             yield [tape, nextToken, nextExpr];
+        }
+    }
+
+    public *disjointConcreteDeriv(
+        tape: Tape,
+        target: string,
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+        const results: {[c: string]: Expr[]} = {};
+        for (const [childToken, childExpr] of
+            this.concreteDeriv(tape, target, stack)) {
+            if (!(childToken in results)) {
+                results[childToken] = [];
+            }
+            results[childToken].push(childExpr);
+        }
+
+        for (const c in results) {
+            const nextExprs = results[c];
+            const nextExpr = constructAlternation(...nextExprs);
+            yield [c, nextExpr];
         }
     }
 
@@ -368,17 +406,163 @@ export abstract class Expr {
 
             const tapeToTry = tapes[0];
 
-            for (const [cTape, cTarget, cNext] of 
-                    prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
+            for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
                 //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
 
-                if (cTape.tapeName.startsWith("__")) {
+                if (tapeToTry.tapeName.startsWith("__")) {
+                    // don't bother to add hidden characters
+                    nexts.push([tapes, prevOutput, cNext, chars]);
+                    continue;
+                }
+                
+                const nextOutput = prevOutput.add(tapeToTry, cTarget);
+                nexts.push([tapes, nextOutput, cNext, chars+1]);
+            }
+
+            const delta = prevExpr.delta(tapeToTry, stack);
+            //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
+            if (!(delta instanceof NullExpr)) {                    
+                const newTapes = tapes.slice(1);
+                nexts.push([newTapes, prevOutput, delta, chars]);
+            }
+
+            states.push(...nexts);
+        }
+    }
+
+    
+    public *generateDepthFirstDict(
+        tapes: Tape[],
+        stack: CounterStack,
+        maxChars: number = 1000
+    ): Gen<StringDict> {
+        const initialOutput: MultiTapeOutput = new MultiTapeOutput();
+        let states: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
+        let prev: [Tape[], MultiTapeOutput, Expr, number] | undefined = undefined;
+        while (prev = states.pop()) {
+
+            let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
+            let [tapes, prevOutput, prevExpr, chars] = prev;
+            
+            //console.log();
+            //console.log(`remaining tapes are ${tapes.map(t => t.tapeName)}`);
+            //console.log(`prevExpr is ${prevExpr.id}`);
+
+            if (chars >= maxChars) {
+                continue;
+            }
+
+            if (prevExpr instanceof EpsilonExpr) {
+                yield* prevOutput.toStrings(false);
+                continue;
+            }
+            
+            if (tapes.length == 0) {
+                continue; 
+            }
+            
+            // rotate the tapes occasionally so that we don't just 
+            // keep trying the same one every time
+            //if (Math.random() < 0.2) {
+            //    tapes = [... tapes.slice(1), tapes[0]];
+            //}         
+
+            const tapeToTry = tapes[0];
+
+            for (const [cTarget, cNext] of Object.entries(
+                    prevExpr.dictDeriv(tapeToTry, ANY_CHAR_STR, stack))) {
+                //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
+
+                if (tapeToTry.tapeName.startsWith("__")) {
                     // don't bother to add hidden characters
                     nexts.push([tapes, prevOutput, cNext, chars]);
                     continue;
                 }
 
-                const nextOutput = prevOutput.add(cTape, cTarget);
+                if (cTarget == ANY_CHAR_STR) {
+                    for (const c of tapeToTry.fromToken(tapeToTry.tapeName, ANY_CHAR)) {
+                        const cToken = tapeToTry.toToken(tapeToTry.tapeName, c);
+                        const nextOutput = prevOutput.add(tapeToTry, cToken);
+                        nexts.push([tapes, nextOutput, cNext, chars+1]);
+                    }
+                    continue;
+                }
+
+                const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget);
+                const nextOutput = prevOutput.add(tapeToTry, cToken);
+                nexts.push([tapes, nextOutput, cNext, chars+1]);
+            }
+
+            const delta = prevExpr.delta(tapeToTry, stack);
+            //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
+            if (!(delta instanceof NullExpr)) {                    
+                const newTapes = tapes.slice(1);
+                nexts.push([newTapes, prevOutput, delta, chars]);
+            }
+
+            states.push(...nexts);
+        }
+    }
+
+    
+    public *generateDepthFirstConcrete(
+        tapes: Tape[],
+        stack: CounterStack,
+        maxChars: number = 1000
+    ): Gen<StringDict> {
+        const initialOutput: MultiTapeOutput = new MultiTapeOutput();
+        let states: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
+        let prev: [Tape[], MultiTapeOutput, Expr, number] | undefined = undefined;
+        while (prev = states.pop()) {
+
+            let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
+            let [tapes, prevOutput, prevExpr, chars] = prev;
+            
+            //console.log();
+            //console.log(`remaining tapes are ${tapes.map(t => t.tapeName)}`);
+            //console.log(`prevExpr is ${prevExpr.id}`);
+
+            if (chars >= maxChars) {
+                continue;
+            }
+
+            if (prevExpr instanceof EpsilonExpr) {
+                yield* prevOutput.toStrings(false);
+                continue;
+            }
+            
+            if (tapes.length == 0) {
+                continue; 
+            }
+            
+            // rotate the tapes occasionally so that we don't just 
+            // keep trying the same one every time
+            //if (Math.random() < 0.2) {
+            //    tapes = [... tapes.slice(1), tapes[0]];
+            //}         
+
+            const tapeToTry = tapes[0];
+
+            for (const [cTarget, cNext] of prevExpr.disjointConcreteDeriv(tapeToTry, ANY_CHAR_STR, stack)) {
+                //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
+
+                if (tapeToTry.tapeName.startsWith("__")) {
+                    // don't bother to add hidden characters
+                    nexts.push([tapes, prevOutput, cNext, chars]);
+                    continue;
+                }
+
+                if (cTarget == ANY_CHAR_STR) {
+                    for (const c of tapeToTry.fromToken(tapeToTry.tapeName, ANY_CHAR)) {
+                        const cToken = tapeToTry.toToken(tapeToTry.tapeName, c);
+                        const nextOutput = prevOutput.add(tapeToTry, cToken);
+                        nexts.push([tapes, nextOutput, cNext, chars+1]);
+                    }
+                    continue;
+                }
+
+                const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget);
+                const nextOutput = prevOutput.add(tapeToTry, cToken);
                 nexts.push([tapes, nextOutput, cNext, chars+1]);
             }
 
@@ -428,15 +612,17 @@ export abstract class Expr {
 
                 const tapeToTry = tapes[0];
                 
+                //for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
+                  
                 for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
                     
-                    if (cTape.tapeName.startsWith("__")) {
+                    if (tapeToTry.tapeName.startsWith("__")) {
                         // don't bother to add hidden characters
                         nexts.push([tapes, prevOutput, cNext, chars]);
                         continue;
                     }
-
-                    const nextOutput = prevOutput.add(cTape, cTarget);
+                    //const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget); 
+                    const nextOutput = prevOutput.add(tapeToTry, cTarget);
                     nexts.push([tapes, nextOutput, cNext, chars+1]);  
                     //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
                 }
@@ -525,6 +711,36 @@ export abstract class Expr {
 }
 
 
+type ExprDict = {[c: string]: Expr};
+
+function addToExprDict(d: ExprDict, c: string, e: Expr): ExprDict {
+    if (c in d) {
+        d[c] = constructBinaryUnion(e, d[c]);
+    } else {
+        d[c] = e;
+    }
+    return d;
+}
+
+/*
+function wrapExprDictInPlace(d: ExprDict, f: (e: Expr) => Expr): ExprDict {
+    for (const c in d) {
+        d[c] = f(d[c]);
+    }
+    return d;
+} */
+
+function mergeExprDictInPlace(d1: ExprDict, d2: ExprDict): ExprDict {
+    for (const c in d2) {
+        if (c in d1) {
+            d1[c] = constructBinaryUnion(d2[c], d1[c]);
+        } else {
+            d1[c] = d2[c];
+        }
+    }
+    return d1;
+}
+
 /**
  * An expression denoting the language with one entry, that's epsilon on all tapes.
  */
@@ -543,6 +759,13 @@ export class EpsilonExpr extends Expr {
         target: Token,
         stack: CounterStack
     ): Gen<[Tape, Token, Expr]> { }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): Gen<[string, Expr]> { }
+
 }
 
 /**
@@ -563,6 +786,12 @@ export class NullExpr extends Expr {
         target: Token,
         stack: CounterStack
     ): Gen<[Tape, Token, Expr]> { }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): Gen<[string, Expr]> { }
 
 }
 
@@ -601,6 +830,30 @@ class DotExpr extends Expr {
             return;
         }
         yield [matchedTape, target, EPSILON];
+    }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): Gen<[string, Expr]> { 
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return;
+        }
+        yield [target, EPSILON];
+    }
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return {};
+        }
+        return {[target]: EPSILON};
     }
 }
 
@@ -652,6 +905,54 @@ class CharSetExpr extends Expr {
         }
         yield [matchedTape, result, EPSILON];
     }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return;
+        }
+
+        if (target == ANY_CHAR_STR) {
+            for (const c of this.chars) {
+                yield [c, EPSILON];
+            }
+            return;
+        }
+
+        if (this.chars.indexOf(target) != -1) {
+            yield [target, EPSILON];
+        }
+    }
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return {};
+        }
+
+        if (target == ANY_CHAR_STR) {
+            const result: ExprDict = {};
+            for (const c of this.chars) {
+                addToExprDict(result, c, EPSILON);
+            }
+            return result;
+        }
+
+        if (this.chars.indexOf(target) != -1) {
+            return { [target]: EPSILON};
+        }
+
+        return {};
+    }
+    
 }
 
 class DotStarExpr extends Expr {
@@ -685,9 +986,32 @@ class DotStarExpr extends Expr {
         }
         yield [matchedTape, target, this];
     }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return;
+        }
+        yield [target, this];
+    }
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return {};
+        }
+        return { [target]: this};
+    }
+    
 }
-
-
 
 class LiteralExpr extends Expr {
 
@@ -748,6 +1072,50 @@ class LiteralExpr extends Expr {
         const nextExpr = constructLiteral(this.tapeName, this.text, this.index+1);
         yield [matchedTape, result, nextExpr];
 
+    }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+
+        if (this.index >= this.text.length) {
+            return;
+        }
+
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return;
+        }
+
+        if (target == ANY_CHAR_STR || target == this.text[this.index]) {
+            const nextExpr = constructLiteral(this.tapeName, this.text, this.index+1);
+            yield [this.text[this.index], nextExpr];
+        }
+    }
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+
+        if (this.index >= this.text.length) {
+            return {};
+        }
+
+        const matchedTape = tape.matchTape(this.tapeName);
+        if (matchedTape == undefined) {
+            return {};
+        }
+
+        if (target == ANY_CHAR_STR || target == this.text[this.index]) {
+            const nextExpr = constructLiteral(this.tapeName, this.text, this.index+1);
+            return { [this.text[this.index]] : nextExpr};
+        }
+
+        return {};
     }
 }
 
@@ -810,6 +1178,47 @@ class ConcatExpr extends BinaryExpr {
             yield [c2tape, c2target, successor];
         }
     }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+
+        for (const [c1target, c1next] of
+                this.child1.concreteDeriv(tape, target, stack)) {
+            yield [c1target, 
+                constructBinaryConcat(c1next, this.child2)];
+        }
+
+        const c1next = this.child1.delta(tape, stack);
+        for (const [c2target, c2next] of
+                this.child2.concreteDeriv(tape, target, stack)) {
+            const successor = constructBinaryConcat(c1next, c2next);
+            yield [c2target, successor];
+        }
+    }
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+        const result = this.child1.dictDeriv(tape, target, stack);
+        for (const c in result) {
+            result[c] = constructBinaryConcat(result[c], this.child2);
+        }
+        //wrapExprDictInPlace(result, (e)=>constructBinaryConcat(e, this.child2));
+        
+        const c1next = this.child1.delta(tape, stack);
+        const c2dict = this.child2.dictDeriv(tape, target, stack);
+        //wrapExprDictInPlace(c2dict, (e)=>constructBinaryConcat(c1next, e));
+        for (const c in c2dict) {
+            c2dict[c] = constructBinaryConcat(c1next, c2dict[c]);
+        }
+        mergeExprDictInPlace(result, c2dict);
+        return result;
+    }
 }
 
 export class UnionExpr extends BinaryExpr {
@@ -830,6 +1239,26 @@ export class UnionExpr extends BinaryExpr {
     ): Gen<[Tape, Token, Expr]> {
         yield* this.child1.deriv(tape, target, stack);
         yield* this.child2.deriv(tape, target, stack);
+    }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+        yield* this.child1.concreteDeriv(tape, target, stack);
+        yield* this.child2.concreteDeriv(tape, target, stack);
+    }
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+        const result = this.child1.dictDeriv(tape, target, stack);
+        const c2dict = this.child2.dictDeriv(tape, target, stack);
+        mergeExprDictInPlace(result, c2dict);
+        return result;
     }
 }
 
@@ -859,6 +1288,43 @@ class IntersectExpr extends BinaryExpr {
             }
         }
     } 
+
+    public *concreteDeriv(
+        tape: Tape,
+        target: string,               
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+        for (const [c1target, c1next] of 
+            this.child1.disjointConcreteDeriv(tape, target, stack)) {
+
+            for (const [c2target, c2next] of 
+                    this.child2.disjointConcreteDeriv(tape, c1target, stack)) {
+                const successor = constructIntersection(c1next, c2next);
+                yield [c2target, successor];
+            }
+        }
+    } 
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+        const results: ExprDict = {};
+
+        const c1dict = this.child1.dictDeriv(tape, target, stack);
+        for (const [c1str, c1next] of Object.entries(c1dict)) {
+            const c2dict = this.child2.dictDeriv(tape, c1str, stack);
+            //wrapExprDictInPlace(c2dict, (e)=>constructIntersection(c1next, e));
+            for (const c in c2dict) {
+                c2dict[c] = constructIntersection(c1next, c2dict[c]);
+            }
+            
+            mergeExprDictInPlace(results, c2dict);
+        }
+
+        return results;
+    }
 }
 
 
@@ -903,7 +1369,60 @@ class FilterExpr extends BinaryExpr {
             }
         }
     } 
+    
+    public *concreteDeriv(
+        tape: Tape,
+        target: string,               
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
 
+        if (!this.tapes.has(tape.tapeName)) {
+            for (const [c1target, c1next] of 
+                    this.child1.disjointConcreteDeriv(tape, target, stack)) {
+                const successor = constructFilter(c1next, this.child2, this.tapes);
+                yield [c1target, successor];
+            }
+            return;
+        }
+        
+        for (const [c2target, c2next] of 
+            this.child2.disjointConcreteDeriv(tape, target, stack)) {
+
+            for (const [c1target, c1next] of 
+                    this.child1.disjointConcreteDeriv(tape, c2target, stack)) {
+                const successor = constructFilter(c1next, c2next, this.tapes);
+                yield [c1target, successor];
+            }
+        }
+    } 
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+
+        if (!this.tapes.has(tape.tapeName)) {
+            const c1dict = this.child1.dictDeriv(tape, target, stack);
+            //wrapExprDictInPlace(c1dict, (e)=>constructFilter(e, this.child2, this.tapes));
+            for (const c in c1dict) {
+                c1dict[c] = constructFilter(c1dict[c], this.child2, this.tapes);
+            }
+            return c1dict;
+        }
+        
+        const results: ExprDict = {};
+        const c2dict = this.child2.dictDeriv(tape, target, stack);
+        for (const [c2str, c2next] of Object.entries(c2dict)) {
+            const c1dict = this.child1.dictDeriv(tape, c2str, stack);
+            //wrapExprDictInPlace(c1dict, (e)=>constructFilter(e, c2next, this.tapes));
+            for (const c in c1dict) {
+                c1dict[c] = constructFilter(c1dict[c], c2next, this.tapes);
+            }
+            mergeExprDictInPlace(results, c1dict);
+        }
+        return results;
+    }
 }
 
 
@@ -961,6 +1480,80 @@ class JoinExpr extends BinaryExpr {
             }
         }
     } 
+
+    
+    public *concreteDeriv(
+        tape: Tape,
+        target: string,               
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+
+        if (!this.tapes2.has(tape.tapeName)) {
+            for (const [c1target, c1next] of 
+                    this.child1.disjointConcreteDeriv(tape, target, stack)) {
+                const successor = constructJoin(c1next, this.child2, this.tapes1, this.tapes2);
+                yield [c1target, successor];
+            }
+            return;
+        }
+        
+        if (!this.tapes1.has(tape.tapeName)) {
+            for (const [c2target, c2next] of 
+                    this.child2.disjointConcreteDeriv(tape, target, stack)) {
+                const successor = constructJoin(this.child1, c2next, this.tapes1, this.tapes2);
+                yield [c2target, successor];
+            }
+            return;
+        }
+        
+        for (const [c2target, c2next] of 
+            this.child2.disjointConcreteDeriv(tape, target, stack)) {
+
+            for (const [c1target, c1next] of 
+                    this.child1.disjointConcreteDeriv(tape, c2target, stack)) {
+                const successor = constructJoin(c1next, c2next, this.tapes1, this.tapes2);
+                yield [c1target, successor];
+            }
+        }
+    } 
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+
+        if (!this.tapes2.has(tape.tapeName)) {
+            const c1dict = this.child1.dictDeriv(tape, target, stack);
+            //wrapExprDictInPlace(c1dict, (e)=>constructJoin(e, this.child2, this.tapes1, this.tapes2));
+            for (const c in c1dict) {
+                c1dict[c] = constructJoin(c1dict[c], this.child2, this.tapes1, this.tapes2);
+            }
+            return c1dict;
+        }
+
+        if (!this.tapes1.has(tape.tapeName)) {
+            const c2dict = this.child2.dictDeriv(tape, target, stack);
+            //wrapExprDictInPlace(c2dict, (e)=>constructJoin(this.child1, e, this.tapes1, this.tapes2));
+            for (const c in c2dict) {
+                c2dict[c] = constructJoin(this.child1, c2dict[c], this.tapes1, this.tapes2);
+            }
+            return c2dict;
+        }
+
+        const results: ExprDict = {};
+        const c2dict = this.child2.dictDeriv(tape, target, stack);
+        for (const [c2str, c2next] of Object.entries(c2dict)) {
+            const c1dict = this.child1.dictDeriv(tape, c2str, stack);
+            //wrapExprDictInPlace(c1dict, (e)=>constructJoin(e, c2next, this.tapes1, this.tapes2));
+            for (const c in c1dict) {
+                c1dict[c] = constructJoin(c1dict[c], c2next, this.tapes1, this.tapes2);
+            }
+            mergeExprDictInPlace(results, c1dict);
+        }
+        return results;
+    }
+
 
 }
 
@@ -1027,10 +1620,51 @@ class JoinExpr extends BinaryExpr {
         stack = stack.add(this.symbolName);
         let child = this.getChild(stack);
 
-        for (const [childchildTape, childTarget, childNext] of 
+        for (const [childTape, childTarget, childNext] of 
                         child.deriv(tape, target, stack)) {
             const successor = constructEmbed(this.symbolName, this.symbols, childNext);
-            yield [childchildTape, childTarget, successor];
+            yield [childTape, childTarget, successor];
+        }
+    }
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+        if (stack.exceedsMax(this.symbolName)) {
+            return {};
+        }
+
+        stack = stack.add(this.symbolName);
+        let child = this.getChild(stack);
+
+        const results = child.dictDeriv(tape, target, stack);
+        //wrapExprDictInPlace(results, (e)=>constructEmbed(this.symbolName, this.symbols, e));
+        for (const c in results) {
+            results[c] = constructEmbed(this.symbolName, this.symbols, results[c]);
+        }
+        return results;
+    }
+
+    
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+
+        if (stack.exceedsMax(this.symbolName)) {
+            return;
+        }
+
+        stack = stack.add(this.symbolName);
+        let child = this.getChild(stack);
+
+        for (const [childTarget, childNext] of 
+                        child.concreteDeriv(tape, target, stack)) {
+            const successor = constructEmbed(this.symbolName, this.symbols, childNext);
+            yield [childTarget, successor];
         }
     }
 }
@@ -1081,6 +1715,30 @@ class StarExpr extends UnaryExpr {
             yield [cTape, cTarget, successor];
         }
     }
+    
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+        for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack)) {
+            const successor = constructBinaryConcat(cNext, this);
+            yield [cTarget, successor];
+        }
+    }
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+        const results = this.child.dictDeriv(tape, target, stack);
+        //wrapExprDictInPlace(results, (e)=>constructBinaryConcat(e, this));
+        for (const c in results) {
+            results[c] = constructBinaryConcat(results[c], this);    
+        }
+        return results;
+    }
 }
 
 /**
@@ -1126,8 +1784,45 @@ class RenameExpr extends UnaryExpr {
             if (childTape instanceof RenamedTape) {
                 childTape = childTape.child;
             }
-            yield [childTape, childTarget, new RenameExpr(childNext, this.fromTape, this.toTape)];
+            yield [childTape, childTarget, constructRename(childNext, this.fromTape, this.toTape)];
         }
+    }
+    
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+        if (tape.tapeName != this.toTape && tape.tapeName == this.fromTape) {
+            return;
+        }
+
+        tape = new RenamedTape(tape, this.fromTape, this.toTape);
+    
+        for (let [childTarget, childNext] of 
+                this.child.concreteDeriv(tape, target, stack)) {
+            yield [childTarget, constructRename(childNext, this.fromTape, this.toTape)];
+        }
+    }
+    
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+
+        if (tape.tapeName != this.toTape && tape.tapeName == this.fromTape) {
+            return {};
+        }
+
+        tape = new RenamedTape(tape, this.fromTape, this.toTape);
+        const results = this.child.dictDeriv(tape, target, stack);
+        //wrapExprDictInPlace(results, (e)=>constructRename(e, this.fromTape, this.toTape));
+        for (const c in results) {
+            results[c] = constructRename(results[c], this.fromTape, this.toTape);
+        }
+        return results;
+
     }
 }
 
@@ -1185,6 +1880,109 @@ class NegationExpr extends UnaryExpr {
         // succeeds.
         yield [tape, remainder, constructUniverse(this.tapes, this.maxChars-1)];
     }
+    
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+
+        if (!this.tapes.has(tape.tapeName)) {
+            return;
+        }
+
+        if (this.maxChars == 0) {
+            return;
+        }
+
+        let remainder: Token;
+
+        if (target == ANY_CHAR_STR) {
+            remainder = tape.any();
+        } else {
+            remainder = tape.toToken(tape.tapeName, target);
+        }
+
+        for (const [childText, childNext] of 
+                this.child.disjointConcreteDeriv(tape, target, stack)) {
+            if (childText == ANY_CHAR_STR) {
+                continue;
+            }
+
+            const childToken = tape.toToken(tape.tapeName, childText);
+            remainder = remainder.andNot(childToken);
+            const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
+            yield [childText, successor];
+        }
+
+        if (remainder.isEmpty()) {
+            return;
+        }
+
+        // any chars not yet consumed by the above represent
+        // cases where we've (in FSA terms) "fallen off" the graph,
+        // and are now at a special consume-anything expression that always
+        // succeeds.
+        for (const c of tape.fromToken(tape.tapeName, remainder)) {
+            yield [c, constructUniverse(this.tapes, this.maxChars-1)];
+        }
+    }
+
+    public dictDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack
+    ): ExprDict {
+
+        if (!this.tapes.has(tape.tapeName)) {
+            return {};
+        }
+
+        if (this.maxChars == 0) {
+            return {};
+        }
+
+        const results: ExprDict = {};
+
+        let remainder = (target == ANY_CHAR_STR)
+                        ? tape.any()
+                        : tape.toToken(tape.tapeName, target);
+
+        const cDict = this.child.dictDeriv(tape, target, stack);
+
+        for (const [cStr, cNext] of Object.entries(cDict)) {
+            let childToken: Token;
+            let cs: string[] = [];
+            if (cStr == ANY_CHAR_STR) {
+                childToken = tape.any();
+                cs = tape.fromToken(tape.tapeName, childToken);
+            } else {
+                childToken = tape.toToken(tape.tapeName, cStr);
+                cs = [cStr];
+            }
+            remainder = remainder.andNot(childToken);
+            const successor = constructNegation(cNext, this.tapes, this.maxChars-1);
+            for (const c of cs) {
+                addToExprDict(results, c, successor);  
+            }   
+        }
+        
+        if (remainder.isEmpty()) {
+            return results;
+        }
+
+        // any chars not yet consumed by the above represent
+        // cases where we've (in FSA terms) "fallen off" the graph,
+        // and are now at a special consume-anything expression that always
+        // succeeds.
+        for (const c of tape.fromToken(tape.tapeName, remainder)) {
+            const nextExpr = constructUniverse(this.tapes, this.maxChars-1);
+            addToExprDict(results, c, nextExpr);
+        }
+
+        return results;
+    }
+
 }
 
 export class MatchExpr extends UnaryExpr {
@@ -1313,6 +2111,158 @@ export class MatchExpr extends UnaryExpr {
                 }
             }
         }
+    }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack
+    ): Gen<[string, Expr]> {
+        
+
+        for (const [c1target, c1next] of 
+            this.child.concreteDeriv(tape, target, stack)) {
+
+            if (!this.tapes.has(tape.tapeName)) {
+                yield [c1target, constructMatch(c1next, this.tapes, this.buffers)];
+                continue;
+            }
+
+            
+            const cs = (c1target == ANY_CHAR_STR) 
+                        ? tape.fromToken(tape.tapeName, tape.any())
+                        : [c1target];
+
+            // We need to match each character separately.
+            for (const c of cs) {
+                
+                // STEP A: Are we matching something already buffered?
+                const c1buffer = this.buffers[tape.tapeName]
+                let c1bufMatched = false;
+                if (c1buffer instanceof LiteralExpr) {
+
+                    // that means we already matched a character on a different
+                    // tape previously and now need to make sure it also matches
+                    // this character on this tape
+                    for (const [bufTarget, bufNext] of 
+                            c1buffer.concreteDeriv(tape, c, stack)) {
+                        c1bufMatched = true;
+                    }
+                }
+
+                // STEP B: If not, constrain my successors to match this on other tapes
+                const newBuffers: {[key: string]: Expr} = {};
+                for (const tapeName of this.tapes.keys()) {
+                    const buffer = this.buffers[tapeName];
+                    if (!c1bufMatched && tapeName != tape.tapeName) {
+                        let prevText: string[] = [];
+                        if (buffer instanceof LiteralExpr) {
+                            // that means we already found stuff we needed to match,
+                            // so we add to that
+                            prevText = buffer.getText();
+                        }
+                        newBuffers[tapeName] = constructLiteral(tapeName, [...prevText, c]);
+                    } else {
+                        if (buffer != undefined) {
+                            newBuffers[tapeName] = buffer;
+                        }
+                    }
+                }
+                
+                // STEP C: Match the buffer
+                if (c1buffer instanceof LiteralExpr) {
+                    // that means we already matched a character on a different tape
+                    // previously and now need to make sure it also matches on this
+                    // tape
+                    for (const [bufTarget, bufNext] of 
+                            c1buffer.concreteDeriv(tape, c, stack)) {
+                        // We expect at most one match here.
+                        // We expect bufTape == c1Tape,
+                        //   bufTape == c1Tape
+                        //   bufTarget == cTarget
+                        //   bufMatched == c1Matched
+                        //assert(bufTape == c1tape, "tape does not match");
+                        //assert(bufTarget == cTarget, "target does not match");
+                        //assert(bufMatched == c1matched, "matched does not match");
+                        newBuffers[tape.tapeName] = bufNext;
+
+                        yield [c, constructMatch(c1next, this.tapes, newBuffers)];
+                    }
+                } else {
+                    // my predecessors have not previously required me to match
+                    // anything in particular on this tape
+                    yield [c, constructMatch(c1next, this.tapes, newBuffers)]
+                }
+            }
+        }
+
+    }
+
+    
+    public dictDeriv(
+        tape: Tape, 
+        target: string,
+        symbolStack: CounterStack
+    ): ExprDict {
+
+        const results: ExprDict = {};
+
+        const c1dict = this.child.dictDeriv(tape, target, symbolStack);
+
+        for (const [c1target, c1next] of Object.entries(c1dict)) {
+
+            if (!this.tapes.has(tape.tapeName)) {
+                addToExprDict(results, c1target, constructMatch(c1next, this.tapes, this.buffers));
+                continue;
+            }
+
+            const cs = (c1target == ANY_CHAR_STR) 
+                        ? tape.fromToken(tape.tapeName, tape.any())
+                        : [c1target];
+
+            // We need to match each character separately.
+            for (const c of cs) {
+
+                // STEP A: Are we matching something already buffered?
+                const c1buffer = this.buffers[tape.tapeName]
+                let c1bufMatched = false;
+                if (c1buffer instanceof LiteralExpr) {
+                    const c1bufDeriv = c1buffer.dictDeriv(tape, c, symbolStack);
+                    for (const [bufTarget, bufNext] of Object.entries(c1bufDeriv)) {
+                        c1bufMatched = true;
+                    }
+                }
+
+                // STEP B: If not, constrain my successors to match this on other tapes
+                const newBuffers: {[key: string]: Expr} = {};
+                for (const tapeName of this.tapes.keys()) {
+                    const buffer = this.buffers[tapeName];
+                    if (!c1bufMatched && tapeName != tape.tapeName) {
+                        let prevText: string[] = [];
+                        if (buffer instanceof LiteralExpr) {
+                            prevText = buffer.getText();
+                        }
+                        newBuffers[tapeName] = constructLiteral(tapeName, [...prevText, c]);
+                    } else {
+                        if (buffer != undefined) {
+                            newBuffers[tapeName] = buffer;
+                        }
+                    }
+                }
+                
+                // STEP C: Match the buffer
+                if (c1buffer instanceof LiteralExpr) {
+                    const c1bufDeriv = c1buffer.dictDeriv(tape, c, symbolStack);
+                    for (const [bufTarget, bufNext] of Object.entries(c1bufDeriv)) {
+                        newBuffers[tape.tapeName] = bufNext;
+                        addToExprDict(results, c, constructMatch(c1next, this.tapes, newBuffers));
+                    }
+                } else {
+                    addToExprDict(results, c, constructMatch(c1next, this.tapes, newBuffers));
+                }
+            }
+        }
+        return results;
     }
 }
 
@@ -1510,7 +2460,6 @@ export function constructUniverse(
 ): Expr {
     return constructSequence(...[...tapes]
                 .map(t => constructDotRep(t, maxReps)));
-
 }
 
 export function constructMatch(
@@ -1547,13 +2496,10 @@ export function constructRename(
         return child;
     }
     if (child instanceof LiteralExpr && child.tapeName == fromTape) {
-        return new LiteralExpr(toTape, child.text, child.index);
+        return constructLiteral(toTape, child.text, child.index);
     }
     if (child instanceof DotExpr && child.tapeName == fromTape) {
-        return new DotExpr(fromTape);
-    }
-    if (child instanceof DotStarExpr && child.tapeName == fromTape) {
-        return new DotStarExpr(fromTape);
+        return constructDot(fromTape);
     }
     return new RenameExpr(child, fromTape, toTape);
 }
