@@ -1,6 +1,10 @@
 import { BitSet } from "bitset";
 import { Gen, StringDict, tokenizeUnicode } from "./util";
 
+export enum ParseDirection {
+    LTR,
+    RTL
+}
 
 /**
  * Outputs
@@ -49,25 +53,28 @@ class SingleTapeOutput {
 
         var results: string[] = [ "" ];
 
-        var currentTape: SingleTapeOutput | undefined = this;
+        var currentOutput: SingleTapeOutput | undefined = this;
 
         // step backward through the current object and its prevs, building the output strings from
         // right to left.  (you might think this would be more elegant to be done recursively, but it blows
         // the stack when stringifying long outputs.)
-        while (currentTape != undefined) {
+        while (currentOutput != undefined) {
             const newResults: string[] = [];
-            let possibleChars = currentTape.tape.fromBits(currentTape.tape.tapeName, currentTape.token.bits);
+            let possibleChars = currentOutput.tape.fromBits(currentOutput.tape.tapeName, currentOutput.token.bits);
             if (random) {
                 // if we're randomizing, just choose one possible char
                 possibleChars = [possibleChars[Math.floor(Math.random() * possibleChars.length)]];
             }
             for (const c of possibleChars) {   
                 for (const existingResult of results) {
-                    newResults.push(c + existingResult);
+                    const newStr = (currentOutput.tape.direction == ParseDirection.LTR)
+                                    ? c + existingResult
+                                    : existingResult + c;
+                    newResults.push(newStr);
                 }
             }
             results = newResults;
-            currentTape = currentTape.prev;
+            currentOutput = currentOutput.prev;
         }
 
         yield* results;
@@ -138,8 +145,6 @@ export class MultiTapeOutput {
 } 
 
 
-
-
 /**
  * Tape
  * 
@@ -154,6 +159,8 @@ export class MultiTapeOutput {
  */
 export abstract class Tape {
     
+    public direction: ParseDirection = ParseDirection.RTL;
+
     constructor(
         public parent: TapeCollection | undefined = undefined
     ) { }
