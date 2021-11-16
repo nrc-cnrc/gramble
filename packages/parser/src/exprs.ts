@@ -1736,7 +1736,7 @@ export class MatchExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `Match${[...this.tapes]}(${Object.values(this.buffers).map(b=>b.id)}, ${this.child.id})`;
+        return `Match_${[...this.tapes]}(${Object.values(this.buffers).map(b=>b.id)}, ${this.child.id})`;
     }
 
     public delta(

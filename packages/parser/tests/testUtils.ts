@@ -9,6 +9,9 @@ import { TextDevEnvironment } from "../src/textInterface";
 import { Regex, parseRegex } from "../src/regex";
 import { parseHeaderCell } from "../src/headers";
 
+const DEBUG_MAX_RECURSION: number = 4;      // 4
+const DEBUG_MAX_CHARS: number = 100;        // 100
+
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
 export const t3 = (s: string) => Lit("t3", s);
@@ -105,6 +108,9 @@ function testGrammarAux(
     maxChars: number = 1000
 ): void {
     var outputs: StringDict[] = [];
+
+    maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
+    maxChars = Math.min(maxChars, DEBUG_MAX_CHARS);
 
     try {
         outputs = [...interpreter.generate(symbolName, {}, Infinity, maxRecursion, maxChars)];
@@ -264,6 +270,9 @@ export function testParseMultiple(grammar: Grammar,
                                     maxRecursion: number = 4, 
                                     maxChars: number = 1000): void {
 
+    maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
+    maxChars = Math.min(maxChars, DEBUG_MAX_CHARS);
+                                    
     for (const [inputs, expectedResults] of inputResultsPairs) {
         describe(`testing parse ${JSON.stringify(inputs)} ` + 
                  `against ${JSON.stringify(expectedResults)}.`, function() {
