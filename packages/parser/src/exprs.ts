@@ -1806,6 +1806,7 @@ export class NewMatchExpr extends UnaryExpr {
     }
 }
 
+/*
 export class MatchExpr extends UnaryExpr {
 
     constructor(
@@ -1845,12 +1846,6 @@ export class MatchExpr extends UnaryExpr {
         let result: Expr = this.child.delta(tape, stack);
         return constructIntersection(bufSeq, result);
         
-        /*
-        if (!(result instanceof NullExpr)) {
-            return constructSequence(...Object.values(newBuffers), result);
-        } else {
-            return NULL;
-        } */
     }
 
     public *deriv(
@@ -2025,6 +2020,7 @@ export class MatchExpr extends UnaryExpr {
 
     }
 }
+*/
 
 /* CONVENIENCE FUNCTIONS */
 export const EPSILON = new EpsilonExpr();
@@ -2240,9 +2236,8 @@ export function constructMatch(
     if (child instanceof NullExpr) {
         return child;
     }
-    return new MatchExpr(child, tapes, buffers);
+    return new NewMatchExpr(child, tapes);
 }
-
 
 export function constructMatchFrom(state: Expr, firstTape: string, ...otherTapes: string[]): Expr {
     // Construct a Match for multiple tapes given a expression for the first tape. 
