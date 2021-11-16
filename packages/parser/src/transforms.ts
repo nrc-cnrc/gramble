@@ -90,8 +90,9 @@ class IdentityTransform<T> implements GrammarTransform<T> {
         const newTo = g.toState.accept(this, ns, args);
         const newPre = g.preContext?.accept(this, ns, args);
         const newPost = g.postContext?.accept(this, ns, args);
-        return new ReplaceGrammar(g.cell, newFrom, newTo, newPre, newPost,
-            g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars,
+        const newOther = g.otherContext?.accept(this, ns, args);
+        return new ReplaceGrammar(g.cell, newFrom, newTo, newPre, newPost, newOther,
+            g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,
             g.vocabBypass);
     }
     
@@ -299,6 +300,7 @@ export class ReplaceAdjuster extends IdentityTransform<void>{
         const newTo = g.toState.accept(this, ns, args);
         const newPre = g.preContext.accept(this, ns, args);
         const newPost = g.postContext.accept(this, ns, args);
+        const newOther = g.otherContext.accept(this, ns, args);
 
         // DUMMY_CELL because this rename may be invalid, but we don't want
         // it reported to the user because the compiler did it
@@ -306,8 +308,8 @@ export class ReplaceAdjuster extends IdentityTransform<void>{
         const renamedPre = new RenameGrammar(DUMMY_CELL, newPre, g.fromTapeName, replaceTapeName);
         const renamedPost = new RenameGrammar(DUMMY_CELL, newPost, g.fromTapeName, replaceTapeName);
 
-        return new ReplaceGrammar(g.cell, renamedFrom, newTo, renamedPre, renamedPost,
-            g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars,
+        return new ReplaceGrammar(g.cell, renamedFrom, newTo, renamedPre, renamedPost, newOther,
+            g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,
             g.vocabBypass);
     }
 
