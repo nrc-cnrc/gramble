@@ -1725,6 +1725,87 @@ class NegationExpr extends UnaryExpr {
     }
 }
 
+export class NewMatchExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public tapes: Set<string>
+    ) {
+        super(child);
+    }
+
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        
+        if (!this.tapes.has(tape.tapeName)) {
+            // it's not a tape we're matching
+            const nextExpr = this.child.delta(tape, stack);
+            return constructMatch(nextExpr, this.tapes);
+        }
+
+        let result: Expr = this.child;
+        for (const t of this.tapes) {
+            const tapeToTry = tape.getTape(t);
+            if (tapeToTry == undefined) {
+                throw new Error("something went wrong, couldn't find tape ${tape}");
+            }
+            result = result.delta(tapeToTry, stack);
+        }
+        return result;
+    }
+
+    public *deriv(tape: Tape, target: Token, stack: CounterStack): Gen<[Tape, Token, Expr]> {
+        throw new Error("Method not implemented.");
+    }
+    
+    public *concreteDeriv(tape: Tape, target: string, stack: CounterStack): Gen<[string, Expr]> {
+        
+        if (!this.tapes.has(tape.tapeName)) {
+            // it's not a tape we're matching
+            for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack)) {
+                yield [cTarget, constructMatch(cNext, this.tapes)];
+            }
+            return;
+        }
+
+        let results: [string, Expr][] = [[target, this.child]];
+        for (const t of this.tapes) {
+            //console.log(`matching on ${t}`);
+            const tapeToTry = tape.getTape(t);
+            if (tapeToTry == undefined) {
+                throw new Error(`something went wrong, couldn't find tape ${tape}`);
+            }
+            
+            const nextResults: [string, Expr][] = [];
+            for (const [prevTarget, prevExpr] of results) {
+                //console.log(`trying to match ${prevTarget} on ${prevExpr.id}`);
+                for (const [cTarget, cNext] of prevExpr.concreteDeriv(tapeToTry, prevTarget, stack)) {
+                    nextResults.push([cTarget, cNext]);
+                }
+            }
+            results = nextResults;    
+        }
+
+        for (const [nextTarget, nextExpr] of results) {
+            
+            const cs = (nextTarget == ANY_CHAR_STR) 
+                        ? tape.fromToken(tape.tapeName, tape.any())
+                        : [nextTarget];
+
+            for (const c of cs) {
+                let bufferedNext: Expr = constructMatch(nextExpr, this.tapes);
+                for (const matchTape of this.tapes) {
+                    if (matchTape == tape.tapeName) {
+                        continue;
+                    }
+                    const lit = constructLiteral(matchTape, [c]);
+                    bufferedNext = constructSequence(bufferedNext, lit);
+                }
+                yield [c, bufferedNext];
+            }
+        }
+    }
+}
+
 export class MatchExpr extends UnaryExpr {
 
     constructor(

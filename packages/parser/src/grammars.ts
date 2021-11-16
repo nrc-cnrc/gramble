@@ -1373,40 +1373,6 @@ export function Vocab(tape: string, text: string): Grammar {
 }
 
 
-/**
-  * Replace implements general phonological replacement rules.
-  * 
-  * NOTE: The defaults for this convenience function differ from those 
-  * in the constructor of ReplaceGrammar.  These are the defaults appropriate
-  * for testing, whereas the defaults in ReplaceGrammar are appropriate for
-  * the purposes of converting tabular syntax into grammars.
-  * 
-  * fromTapeName: name of the input (target) tape
-  * toTapeName: name of the output (change) tape
-  * fromState: input (target) State (on fromTape)
-  * toState: output (change) State (on toTape)
-  * preContext: context to match before the target fromState (on fromTape)
-  * postContext: context to match after the target fromState (on fromTape)
-  * beginsWith: set to True to match at the start of fromTape
-  * endsWith: set to True to match at the end of fromTape
-  * minReps: minimum number of times the replace rule is applied; normally 0.
-  * maxReps: maximum number of times the replace rule is applied
-  * maxExtraChars: a character limiter for extra characters at start/end
-  * vocabBypass: do we copy the vocab from the "from" tape to the "to" tape?
-*/
-export function Replace(
-    fromState: Grammar, toState: Grammar,
-    preContext: Grammar = Epsilon(), postContext: Grammar = Epsilon(),
-    beginsWith: Boolean = false, endsWith: boolean = false,
-    minReps: number = 0, maxReps: number = Infinity,
-    maxExtraChars: number = 100,
-    vocabBypass: boolean = false
-): Grammar {
-    return new ReplaceGrammar(DUMMY_CELL, fromState, toState, 
-        preContext, postContext, beginsWith, endsWith, 
-        minReps, maxReps, maxExtraChars, vocabBypass);
-}
-
 
 /**
  * JoinReplace is a special kind of join that understands how
@@ -1675,4 +1641,43 @@ export class ReplaceGrammar extends Grammar {
         return(constructAlternation(matchAnythingElse(true), result));
 
     }
+}
+
+
+/**
+  * Replace implements general phonological replacement rules.
+  * 
+  * NOTE: The defaults for this convenience function differ from those 
+  * in the constructor of ReplaceGrammar.  These are the defaults appropriate
+  * for testing, whereas the defaults in ReplaceGrammar are appropriate for
+  * the purposes of converting tabular syntax into grammars.
+  * 
+  * fromTapeName: name of the input (target) tape
+  * toTapeName: name of the output (change) tape
+  * fromState: input (target) State (on fromTape)
+  * toState: output (change) State (on toTape)
+  * preContext: context to match before the target fromState (on fromTape)
+  * postContext: context to match after the target fromState (on fromTape)
+  * beginsWith: set to True to match at the start of fromTape
+  * endsWith: set to True to match at the end of fromTape
+  * minReps: minimum number of times the replace rule is applied; normally 0.
+  * maxReps: maximum number of times the replace rule is applied
+  * maxExtraChars: a character limiter for extra characters at start/end
+  * vocabBypass: do we copy the vocab from the "from" tape to the "to" tape?
+*/
+export function Replace(
+    fromState: Grammar, toState: Grammar,
+    preContext: Grammar = Epsilon(), postContext: Grammar = Epsilon(),
+    beginsWith: Boolean = false, endsWith: boolean = false,
+    minReps: number = 0, maxReps: number = Infinity,
+    maxExtraChars: number = 100,
+    vocabBypass: boolean = false
+): ReplaceGrammar {
+    return new ReplaceGrammar(DUMMY_CELL, fromState, toState, 
+        preContext, postContext, beginsWith, endsWith, 
+        minReps, maxReps, maxExtraChars, vocabBypass);
+}
+
+export function JoinReplace(child: Grammar, rules: ReplaceGrammar[]): Grammar {
+    return new JoinReplaceGrammar(DUMMY_CELL, child, rules);
 }

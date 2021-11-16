@@ -859,7 +859,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         // testHasVocab(grammar, {t1: 2, t2: 4, t3: 4});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION, /*12*/ 8);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION, 8);
     });
-
+    
 });
