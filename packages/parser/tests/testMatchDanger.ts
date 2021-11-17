@@ -43,8 +43,6 @@ function ReplaceBypass(
 }
 
 describe(`${path.basename(module.filename)}`, function() {
-    
-    /*
 
     // 61. t1/t2:hi+Match(t1:hi, t2:.*)
     describe('1a: t1/t2:hi+Match(t1:hi, t2:.*)', function() {
@@ -118,7 +116,5 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     }); 
-
-    */
 
 });

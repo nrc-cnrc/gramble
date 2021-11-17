@@ -459,7 +459,7 @@ export abstract class Expr {
 
             // rotate the tapes so that we don't just 
             // keep trying the same one every time
-            //tapes = [... tapes.slice(1), tapes[0]];
+            tapes = [... tapes.slice(1), tapes[0]];
 
             for (const [cTarget, cNext] of prevExpr.disjointConcreteDeriv(tapeToTry, ANY_CHAR_STR, stack)) {
                 //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
