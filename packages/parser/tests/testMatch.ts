@@ -1029,47 +1029,4 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, []);
     });
 
-    /*
-
-    //These two tests (which are commented out because they can take way
-    //    too long to run) illustrate how we can manipulate tape priority
-    //    to make a MatchState run effectively forever, even if it doesn't 
-    //    have any valid output (61c/d) or has one very short output (61a/b).
-
-    // 61. t1/t2:hi+Match(t1:hi, t2:.*)
-    describe('61: t1/t2:hi+Match(t1:hi, t2:.*)', function() {
-        const grammar =  Seq(t1("hi"), t2("hi"), Match(Seq(t1("hi"), Rep(Dot("t2"))), "t1", "t2"));
-        testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, [
-            { t1: "hihi", t2: "hihi" }
-        ], undefined, 4, 100);
-    }); 
-
-    // 61b. t1/t2:hi+Match(t1:hi, t2:.*)
-    describe('61b: t2/t1:hi+Match(t1:hi, t2:.*)', function() {
-        const grammar =  Seq(t2("hi"), t1("hi"), Match(Seq(t1("hi"), Rep(Dot("t2"))), "t1", "t2"));
-        testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, [
-            { t1: "hihi", t2: "hihi" }
-        ], undefined, 4, 100);
-    }); 
-
-    // 61b. t1/t2:hi+Match(t1:hi, t2:.*)
-    // can't succeed -- "a" isn't in the t2 vocab
-    describe('61c: t1:ha+t2:hi+Match(t1:ha, t2:.*)', function() {
-        const grammar =  Seq(t1("ha"), t2("hi"), Match(Seq(t1("ha"), Rep(Dot("t2"))), "t1", "t2"));
-        testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, [], undefined, 4, 100);
-    }); 
-
-    // 61b. t1/t2:hi+Match(t1:hi, t2:.*)
-    // can't succeed -- "a" isn't in the t2 vocab -- but can churn effectively forever
-    describe('61d: t2:hi+t2:ha+Match(t1:ha, t2:.*)', function() {
-        const grammar =  Seq(t2("hi"), t1("ha"), Match(Seq(t1("ha"), Rep(Dot("t2"))), "t1", "t2"));
-        testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, [], undefined, 4, 100);
-    }); 
-
-    */
-
 });

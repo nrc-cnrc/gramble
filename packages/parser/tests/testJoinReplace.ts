@@ -17,18 +17,14 @@ import {
 } from "../src/grammars";
 
 import { 
-    InputResultsPair, 
     t1, t2, 
     testHasTapes, 
     testHasVocab,
     testGrammar, 
-    testParseMultiple
 } from './testUtils';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";
-import { EPSILON } from "../src/exprs";
-
 
 export function ReplaceBypass(
     fromState: Grammar, toState: Grammar,
@@ -44,9 +40,8 @@ export function ReplaceBypass(
 }
 
 describe(`${path.basename(module.filename)}`, function() {
-
     
-    describe('0a. Replace i by o in i: i -> a, only using Join', function() {
+    describe('0a. Replace i by o in i: i -> o, only using Join', function() {
         const grammar = Join(t1("i"),
                          ReplaceBypass(t1("i"), t2("o")));
         testHasTapes(grammar, ['t1', 't2']);
@@ -68,7 +63,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('0c. Replace i by o in ip: i -> a, only using Join', function() {
+    describe('0c. Replace i by o in ip: i -> o, only using Join', function() {
         const grammar = Join(t1("ip"),
                          ReplaceBypass(t1("i"), t2("o")));
         testHasTapes(grammar, ['t1', 't2']);
@@ -79,7 +74,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('0d. Replace i by o in hip: i -> a, only using Join', function() {
+    describe('0d. Replace i by o in hip: i -> o, only using Join', function() {
         const grammar = Join(t1("hip"),
                          ReplaceBypass(t1("i"), t2("o")));
         testHasTapes(grammar, ['t1', 't2']);

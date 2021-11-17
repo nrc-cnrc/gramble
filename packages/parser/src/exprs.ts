@@ -1806,7 +1806,6 @@ export class NewMatchExpr extends UnaryExpr {
     }
 }
 
-/*
 export class MatchExpr extends UnaryExpr {
 
     constructor(
@@ -2020,7 +2019,6 @@ export class MatchExpr extends UnaryExpr {
 
     }
 }
-*/
 
 /* CONVENIENCE FUNCTIONS */
 export const EPSILON = new EpsilonExpr();

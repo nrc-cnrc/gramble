@@ -861,5 +861,4 @@ describe(`${path.basename(module.filename)}`, function() {
         // testHasVocab(grammar, {t1: 2, t2: 4, t3: 4});
         testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION, 8);
     });
-    
 });
