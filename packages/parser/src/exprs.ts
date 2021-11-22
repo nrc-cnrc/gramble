@@ -1769,7 +1769,6 @@ export class NewMatchExpr extends UnaryExpr {
 
         let results: [string, Expr][] = [[target, this.child]];
         for (const t of this.tapes) {
-            //console.log(`matching on ${t}`);
             const tapeToTry = tape.getTape(t);
             if (tapeToTry == undefined) {
                 throw new Error(`something went wrong, couldn't find tape ${tape}`);
@@ -1777,7 +1776,6 @@ export class NewMatchExpr extends UnaryExpr {
             
             const nextResults: [string, Expr][] = [];
             for (const [prevTarget, prevExpr] of results) {
-                //console.log(`trying to match ${prevTarget} on ${prevExpr.id}`);
                 for (const [cTarget, cNext] of prevExpr.concreteDeriv(tapeToTry, prevTarget, stack)) {
                     nextResults.push([cTarget, cNext]);
                 }

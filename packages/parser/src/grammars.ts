@@ -189,7 +189,9 @@ export abstract class Grammar {
 
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
-            const childTapes = this.getChildren().map(
+            const children = this.getChildren();
+            //const children = this.getChildren().reverse();
+            const childTapes = children.map(
                                 s => s.calculateTapes(stack));
             this.tapes = listUnique(flatten(childTapes));
         }
