@@ -50,6 +50,7 @@ export class GenOptions {
     public random: boolean = false;
     public maxRecursion: number = 2; 
     public maxChars: number = 1000;
+    public direction: "LTR" | "RTL" = "RTL"
 }
 
 export interface GrammarTransform<T> {

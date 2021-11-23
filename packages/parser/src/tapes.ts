@@ -1,10 +1,6 @@
 import { BitSet } from "bitset";
+import { GenOptions } from "./exprs";
 import { Gen, StringDict, tokenizeUnicode } from "./util";
-
-export enum ParseDirection {
-    LTR,
-    RTL
-}
 
 /**
  * Outputs
@@ -49,7 +45,9 @@ class SingleTapeOutput {
         return new SingleTapeOutput(tape, token, this);
     }
     
-    public *getStrings(random: boolean = false): Gen<string> {
+    public *getStrings(
+        opt: GenOptions
+    ): Gen<string> {
 
         var results: string[] = [ "" ];
 
@@ -61,13 +59,13 @@ class SingleTapeOutput {
         while (currentOutput != undefined) {
             const newResults: string[] = [];
             let possibleChars = currentOutput.tape.fromBits(currentOutput.tape.tapeName, currentOutput.token.bits);
-            if (random) {
+            if (opt.random) {
                 // if we're randomizing, just choose one possible char
                 possibleChars = [possibleChars[Math.floor(Math.random() * possibleChars.length)]];
             }
             for (const c of possibleChars) {   
                 for (const existingResult of results) {
-                    const newStr = (currentOutput.tape.direction == ParseDirection.LTR)
+                    const newStr = (opt.direction == "LTR")
                                     ? c + existingResult
                                     : existingResult + c;
                     newResults.push(newStr);
@@ -127,11 +125,11 @@ export class MultiTapeOutput {
         return result;
     }
 
-    public toStrings(random: boolean = false): StringDict[] {
+    public toStrings(opt: GenOptions): StringDict[] {
         var results: StringDict[] = [ {} ];
         for (const [tapeName, tape] of this.singleTapeOutputs) {
             var newResults: StringDict[] = [];
-            for (const str of tape.getStrings(random)) {
+            for (const str of tape.getStrings(opt)) {
                 for (const result of results) {
                     const newResult: StringDict = Object.assign({}, result);
                     newResult[tapeName] = str;
@@ -158,8 +156,6 @@ export class MultiTapeOutput {
  * each other.
  */
 export abstract class Tape {
-    
-    public direction: ParseDirection = ParseDirection.RTL;
 
     constructor(
         public parent: TapeCollection | undefined = undefined

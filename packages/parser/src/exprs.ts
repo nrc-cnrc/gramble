@@ -1,5 +1,5 @@
 import { Gen, setDifference, shuffleArray, StringDict } from "./util";
-import { MultiTapeOutput, Tape, RenamedTape, Token, ANY_CHAR, ParseDirection } from "./tapes";
+import { MultiTapeOutput, Tape, RenamedTape, Token, ANY_CHAR } from "./tapes";
 
 /**
  * This is the parsing/generation engine that underlies Gramble.
@@ -106,6 +106,13 @@ import { MultiTapeOutput, Tape, RenamedTape, Token, ANY_CHAR, ParseDirection } f
  * have to take an extra step to do so.
  */
 
+export class GenOptions {
+    public random: boolean = false;
+    public maxRecursion: number = 2; 
+    public maxChars: number = 1000;
+    public direction: "LTR" | "RTL" = "RTL"
+}
+
 export type SymbolTable = {[key: string]: Expr};
 
 export class CounterStack {
@@ -182,7 +189,8 @@ export abstract class Expr {
     public abstract concreteDeriv(
         tape: Tape, 
         target: string, 
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]>;
 
     public abstract delta(tape: Tape, stack: CounterStack): Expr;
@@ -264,11 +272,12 @@ export abstract class Expr {
     public *disjointConcreteDeriv(
         tape: Tape,
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
         const results: {[c: string]: Expr[]} = {};
         for (const [childToken, childExpr] of
-            this.concreteDeriv(tape, target, stack)) {
+            this.concreteDeriv(tape, target, stack, opt)) {
             if (!(childToken in results)) {
                 results[childToken] = [];
             }
@@ -343,21 +352,20 @@ export abstract class Expr {
      */
     public *generate(
         tapes: Tape[],
-        random: boolean = false,
-        maxRecursion: number = 4, 
-        maxChars: number = 1000
+        opt: GenOptions
     ): Gen<StringDict> {
     
-        const stack = new CounterStack(maxRecursion);
+        const stack = new CounterStack(opt.maxRecursion);
 
-        if (random) {
-            yield* this.generateRandom(tapes, stack, maxChars);
+        if (opt.random) {
+            yield* this.generateRandom(tapes, stack, opt);
             return;
         } 
 
-        yield* this.generateDepthFirstConcrete(tapes, stack, maxChars);
+        yield* this.generateDepthFirstConcrete(tapes, stack, opt);
     }
 
+    /*
     public *generateDepthFirst(
         tapes: Tape[],
         stack: CounterStack,
@@ -380,7 +388,7 @@ export abstract class Expr {
             }
 
             if (prevExpr instanceof EpsilonExpr) {
-                yield* prevOutput.toStrings(false);
+                yield* prevOutput.toStrings(opt);
                 continue;
             }
             
@@ -417,11 +425,12 @@ export abstract class Expr {
             states.push(...nexts);
         }
     }
+    */
     
     public *generateDepthFirstConcrete(
         tapes: Tape[],
         stack: CounterStack,
-        maxChars: number = 1000
+        opt: GenOptions
     ): Gen<StringDict> {
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
         let states: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
@@ -435,12 +444,12 @@ export abstract class Expr {
             //console.log(`remaining tapes are ${tapes.map(t => t.tapeName)}`);
             //console.log(`prevExpr is ${prevExpr.id}`);
 
-            if (chars >= maxChars) {
+            if (chars >= opt.maxChars) {
                 continue;
             }
 
             if (prevExpr instanceof EpsilonExpr) {
-                yield* prevOutput.toStrings(false);
+                yield* prevOutput.toStrings(opt);
                 continue;
             }
             
@@ -461,7 +470,8 @@ export abstract class Expr {
             // keep trying the same one every time
             tapes = [... tapes.slice(1), tapes[0]];
 
-            for (const [cTarget, cNext] of prevExpr.disjointConcreteDeriv(tapeToTry, ANY_CHAR_STR, stack)) {
+            for (const [cTarget, cNext] of 
+                    prevExpr.disjointConcreteDeriv(tapeToTry, ANY_CHAR_STR, stack, opt)) {
                 //console.log(`D^${cTape.tapeName}_${cTarget.stringify(cTape)} is ${cNext.id}`);
 
                 if (tapeToTry.tapeName.startsWith("__")) {
@@ -489,6 +499,7 @@ export abstract class Expr {
         }
     }
 
+    /*
     public *generateBreadthFirst(
         tapes: Tape[],
         stack: CounterStack,
@@ -510,7 +521,7 @@ export abstract class Expr {
                 }
 
                 if (prevExpr instanceof EpsilonExpr) {
-                    yield* prevOutput.toStrings(false);
+                    yield* prevOutput.toStrings(opt);
                     continue;
                 }
                 
@@ -550,11 +561,12 @@ export abstract class Expr {
             states = nexts;
         }
     }
+*/
 
     public *generateRandom(
         tapes: Tape[],
         stack: CounterStack,
-        maxChars: number = 1000
+        opt: GenOptions
     ): Gen<StringDict> {
         const initialOutput: MultiTapeOutput = new MultiTapeOutput();
 
@@ -568,12 +580,12 @@ export abstract class Expr {
             if (Math.random() < 0.1 && candidates.length > 0) {
                 const candidateIndex = Math.floor(Math.random()*candidates.length);
                 const candidateOutput = candidates.splice(candidateIndex, 1)[0];
-                yield* candidateOutput.toStrings(true);
+                yield* candidateOutput.toStrings(opt);
             }
 
             let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
             let [tapes, prevOutput, prevExpr, chars] = prev;
-            if (chars >= maxChars) {
+            if (chars >= opt.maxChars) {
                 continue;
             }
 
@@ -590,15 +602,25 @@ export abstract class Expr {
             //tapes = [... tapes.slice(1), tapes[0]];
 
             const tapeToTry = tapes[0];
-            for (const [cTape, cTarget, cNext] of prevExpr.disjointDeriv(tapeToTry, ANY_CHAR, stack)) {
+            for (const [cTarget, cNext] of prevExpr.concreteDeriv(tapeToTry, ANY_CHAR_STR, stack, opt)) {
                 
-                if (cTape.tapeName.startsWith("__")) {
+                if (tapeToTry.tapeName.startsWith("__")) {
                     // don't bother to add hidden characters
                     nexts.push([tapes, prevOutput, cNext, chars]);
                     continue;
                 }
 
-                const nextOutput = prevOutput.add(cTape, cTarget);
+                if (cTarget == ANY_CHAR_STR) {
+                    for (const c of tapeToTry.fromToken(tapeToTry.tapeName, ANY_CHAR)) {
+                        const cToken = tapeToTry.toToken(tapeToTry.tapeName, c);
+                        const nextOutput = prevOutput.add(tapeToTry, cToken);
+                        nexts.push([tapes, nextOutput, cNext, chars+1]);
+                    }
+                    continue;
+                }
+
+                const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget);
+                const nextOutput = prevOutput.add(tapeToTry, cToken);
                 nexts.push([tapes, nextOutput, cNext, chars+1]);
             }
 
@@ -618,7 +640,7 @@ export abstract class Expr {
 
         const candidateIndex = Math.floor(Math.random()*candidates.length);
         const candidateOutput = candidates.splice(candidateIndex, 1)[0];
-        yield* candidateOutput.toStrings(true);
+        yield* candidateOutput.toStrings(opt);
     }
 }
 
@@ -1075,18 +1097,19 @@ class ConcatExpr extends BinaryExpr {
     public *concreteDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
 
         for (const [c1target, c1next] of
-                this.child1.concreteDeriv(tape, target, stack)) {
+                this.child1.concreteDeriv(tape, target, stack, opt)) {
             yield [c1target, 
                 constructBinaryConcat(c1next, this.child2)];
         }
 
         const c1next = this.child1.delta(tape, stack);
         for (const [c2target, c2next] of
-                this.child2.concreteDeriv(tape, target, stack)) {
+                this.child2.concreteDeriv(tape, target, stack, opt)) {
             const successor = constructBinaryConcat(c1next, c2next);
             yield [c2target, successor];
         }
@@ -1123,18 +1146,19 @@ class RTLConcatExpr extends ConcatExpr {
     public *concreteDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
 
         for (const [c2target, c2next] of
-                this.child2.concreteDeriv(tape, target, stack)) {
+                this.child2.concreteDeriv(tape, target, stack, opt)) {
             yield [c2target, 
                 constructBinaryConcat(this.child1, c2next)];
         }
 
         const c2next = this.child2.delta(tape, stack);
         for (const [c1target, c1next] of
-                this.child1.concreteDeriv(tape, target, stack)) {
+                this.child1.concreteDeriv(tape, target, stack, opt)) {
             const successor = constructBinaryConcat(c1next, c2next);
             yield [c1target, successor];
         }
@@ -1164,10 +1188,11 @@ export class UnionExpr extends BinaryExpr {
     public *concreteDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
-        yield* this.child1.concreteDeriv(tape, target, stack);
-        yield* this.child2.concreteDeriv(tape, target, stack);
+        yield* this.child1.concreteDeriv(tape, target, stack, opt);
+        yield* this.child2.concreteDeriv(tape, target, stack, opt);
     }
 }
 
@@ -1201,13 +1226,14 @@ class IntersectExpr extends BinaryExpr {
     public *concreteDeriv(
         tape: Tape,
         target: string,               
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
         for (const [c1target, c1next] of 
-            this.child1.disjointConcreteDeriv(tape, target, stack)) {
+            this.child1.disjointConcreteDeriv(tape, target, stack, opt)) {
 
             for (const [c2target, c2next] of 
-                    this.child2.disjointConcreteDeriv(tape, c1target, stack)) {
+                    this.child2.disjointConcreteDeriv(tape, c1target, stack, opt)) {
                 const successor = constructIntersection(c1next, c2next);
                 yield [c2target, successor];
             }
@@ -1260,12 +1286,13 @@ class FilterExpr extends BinaryExpr {
     public *concreteDeriv(
         tape: Tape,
         target: string,               
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
 
         if (!this.tapes.has(tape.tapeName)) {
             for (const [c1target, c1next] of 
-                    this.child1.disjointConcreteDeriv(tape, target, stack)) {
+                    this.child1.disjointConcreteDeriv(tape, target, stack, opt)) {
                 const successor = constructFilter(c1next, this.child2, this.tapes);
                 yield [c1target, successor];
             }
@@ -1273,10 +1300,10 @@ class FilterExpr extends BinaryExpr {
         }
         
         for (const [c2target, c2next] of 
-            this.child2.disjointConcreteDeriv(tape, target, stack)) {
+            this.child2.disjointConcreteDeriv(tape, target, stack, opt)) {
 
             for (const [c1target, c1next] of 
-                    this.child1.disjointConcreteDeriv(tape, c2target, stack)) {
+                    this.child1.disjointConcreteDeriv(tape, c2target, stack, opt)) {
                 const successor = constructFilter(c1next, c2next, this.tapes);
                 yield [c1target, successor];
             }
@@ -1343,12 +1370,13 @@ class JoinExpr extends BinaryExpr {
     public *concreteDeriv(
         tape: Tape,
         target: string,               
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
 
         if (!this.tapes2.has(tape.tapeName)) {
             for (const [c1target, c1next] of 
-                    this.child1.disjointConcreteDeriv(tape, target, stack)) {
+                    this.child1.disjointConcreteDeriv(tape, target, stack, opt)) {
                 const successor = constructJoin(c1next, this.child2, this.tapes1, this.tapes2);
                 yield [c1target, successor];
             }
@@ -1357,7 +1385,7 @@ class JoinExpr extends BinaryExpr {
         
         if (!this.tapes1.has(tape.tapeName)) {
             for (const [c2target, c2next] of 
-                    this.child2.disjointConcreteDeriv(tape, target, stack)) {
+                    this.child2.disjointConcreteDeriv(tape, target, stack, opt)) {
                 const successor = constructJoin(this.child1, c2next, this.tapes1, this.tapes2);
                 yield [c2target, successor];
             }
@@ -1365,10 +1393,10 @@ class JoinExpr extends BinaryExpr {
         }
         
         for (const [c2target, c2next] of 
-            this.child2.disjointConcreteDeriv(tape, target, stack)) {
+            this.child2.disjointConcreteDeriv(tape, target, stack, opt)) {
 
             for (const [c1target, c1next] of 
-                    this.child1.disjointConcreteDeriv(tape, c2target, stack)) {
+                    this.child1.disjointConcreteDeriv(tape, c2target, stack, opt)) {
                 const successor = constructJoin(c1next, c2next, this.tapes1, this.tapes2);
                 yield [c1target, successor];
             }
@@ -1450,7 +1478,8 @@ class JoinExpr extends BinaryExpr {
     public *concreteDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
 
         if (stack.exceedsMax(this.symbolName)) {
@@ -1461,7 +1490,7 @@ class JoinExpr extends BinaryExpr {
         let child = this.getChild(stack);
 
         for (const [childTarget, childNext] of 
-                        child.concreteDeriv(tape, target, stack)) {
+                        child.concreteDeriv(tape, target, stack, opt)) {
             const successor = constructEmbed(this.symbolName, this.symbols, childNext);
             yield [childTarget, successor];
         }
@@ -1518,9 +1547,10 @@ class StarExpr extends UnaryExpr {
     public *concreteDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
-        for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack)) {
+        for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack, opt)) {
             const successor = constructBinaryConcat(cNext, this);
             yield [cTarget, successor];
         }
@@ -1547,9 +1577,10 @@ class RTLStarExpr extends StarExpr {
     public *concreteDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
-        for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack)) {
+        for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack, opt)) {
             const successor = constructBinaryConcat(this, cNext);
             yield [cTarget, successor];
         }
@@ -1606,7 +1637,8 @@ class RenameExpr extends UnaryExpr {
     public *concreteDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
         if (tape.tapeName != this.toTape && tape.tapeName == this.fromTape) {
             return;
@@ -1615,7 +1647,7 @@ class RenameExpr extends UnaryExpr {
         tape = new RenamedTape(tape, this.fromTape, this.toTape);
     
         for (let [childTarget, childNext] of 
-                this.child.concreteDeriv(tape, target, stack)) {
+                this.child.concreteDeriv(tape, target, stack, opt)) {
             yield [childTarget, constructRename(childNext, this.fromTape, this.toTape)];
         }
     }
@@ -1680,7 +1712,8 @@ class NegationExpr extends UnaryExpr {
     public *concreteDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
 
         if (!this.tapes.has(tape.tapeName)) {
@@ -1700,7 +1733,7 @@ class NegationExpr extends UnaryExpr {
         }
 
         for (const [childText, childNext] of 
-                this.child.disjointConcreteDeriv(tape, target, stack)) {
+                this.child.disjointConcreteDeriv(tape, target, stack, opt)) {
             if (childText == ANY_CHAR_STR) {
                 continue;
             }
@@ -1757,11 +1790,16 @@ export class NewMatchExpr extends UnaryExpr {
         throw new Error("Method not implemented.");
     }
     
-    public *concreteDeriv(tape: Tape, target: string, stack: CounterStack): Gen<[string, Expr]> {
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string, 
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[string, Expr]> {
         
         if (!this.tapes.has(tape.tapeName)) {
             // it's not a tape we're matching
-            for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack)) {
+            for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack, opt)) {
                 yield [cTarget, constructMatch(cNext, this.tapes)];
             }
             return;
@@ -1776,7 +1814,7 @@ export class NewMatchExpr extends UnaryExpr {
             
             const nextResults: [string, Expr][] = [];
             for (const [prevTarget, prevExpr] of results) {
-                for (const [cTarget, cNext] of prevExpr.concreteDeriv(tapeToTry, prevTarget, stack)) {
+                for (const [cTarget, cNext] of prevExpr.concreteDeriv(tapeToTry, prevTarget, stack, opt)) {
                     nextResults.push([cTarget, cNext]);
                 }
             }
@@ -1890,9 +1928,7 @@ export class MatchExpr extends UnaryExpr {
                             // so we add to that
                             prevText = buffer.getText();
                         }
-                        const newTokens = (tape.direction == ParseDirection.LTR)
-                                        ? [...prevText, c]
-                                        : [c, ...prevText];
+                        const newTokens = [c, ...prevText];
                         newBuffers[tapeName] = constructLiteral(tapeName, newTokens);
                     } else {
                         if (buffer != undefined) {
@@ -1932,12 +1968,13 @@ export class MatchExpr extends UnaryExpr {
     public *concreteDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
         
 
         for (const [c1target, c1next] of 
-            this.child.concreteDeriv(tape, target, stack)) {
+            this.child.concreteDeriv(tape, target, stack, opt)) {
 
             if (!this.tapes.has(tape.tapeName)) {
                 yield [c1target, constructMatch(c1next, this.tapes, this.buffers)];
@@ -1977,7 +2014,7 @@ export class MatchExpr extends UnaryExpr {
                             // so we add to that
                             prevText = buffer.getText();
                         }
-                        const newTokens = (tape.direction == ParseDirection.LTR)
+                        const newTokens = (opt.direction == "LTR")
                                         ? [...prevText, c]
                                         : [c, ...prevText];
                         newBuffers[tapeName] = constructLiteral(tapeName, newTokens);

@@ -1,13 +1,12 @@
 import { 
-    CounterStack, DUMMY_CELL, FilterGrammar, 
-    GenOptions, Grammar, 
+    CounterStack, DUMMY_CELL, FilterGrammar, Grammar, 
     LiteralGrammar, SequenceGrammar 
 } from "./grammars";
 import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
-import { Expr, SymbolTable } from "./exprs";
+import { Expr, GenOptions, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { NameQualifier, ReplaceAdjuster } from "./transforms";
 
@@ -145,7 +144,8 @@ export class Interpreter {
         const opt: GenOptions = {
             random: false,
             maxRecursion: maxRecursion,
-            maxChars: maxChars
+            maxChars: maxChars,
+            direction: "RTL"
         }
 
         const gen = this.generateStream(symbolName, 
@@ -163,10 +163,11 @@ export class Interpreter {
         const opt: GenOptions = {
             random: false,
             maxRecursion: maxRecursion,
-            maxChars: maxChars
+            maxChars: maxChars,
+            direction: "RTL"
         }
         const [expr, tapes] = this.prepareExpr(symbolName, restriction, opt);
-        yield* expr.generate(tapes, opt.random, opt.maxRecursion, opt.maxChars);
+        yield* expr.generate(tapes, opt);
     }
     
     public sample(symbolName: string = "",
@@ -189,12 +190,13 @@ export class Interpreter {
         const opt: GenOptions = {
             random: true,
             maxRecursion: maxRecursion,
-            maxChars: maxChars
+            maxChars: maxChars,
+            direction: "RTL"
         }
 
         const [expr, tapes] = this.prepareExpr(symbolName, restriction, opt);
         for (let i = 0; i < numSamples; i++) {
-            const gen = expr.generate(tapes, opt.random, opt.maxRecursion, opt.maxChars);
+            const gen = expr.generate(tapes, opt);
             yield* iterTake(gen, 1);
         }
     } 
@@ -286,7 +288,7 @@ export class Interpreter {
                 prioritizedTapes.push(actualTape);
             }        
 
-            const results = [...expr.generate(prioritizedTapes, opt.random, opt.maxRecursion, opt.maxChars)];
+            const results = [...expr.generate(prioritizedTapes, opt)];
             test.evalResults(results);
         }
     }
