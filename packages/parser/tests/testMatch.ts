@@ -2,7 +2,8 @@ import {
     Uni, 
     Match, 
     Seq, Any, Join, Filter, MatchDot, Dot, 
-    MatchDotRep, MatchDotRep2, MatchDotStar, MatchDotStar2, CharSet,
+    MatchDotRep, MatchDotRep2, MatchDotStar, 
+    MatchDotStar2, CharSet, Rep,
 } from "../src/grammars";
 
 import { 
@@ -1027,5 +1028,5 @@ describe(`${path.basename(module.filename)}`, function() {
         //testHasVocab(grammar, {'t1': 4, 't2': 3});
         testGrammar(grammar, []);
     });
-    
+
 });

@@ -189,7 +189,9 @@ export abstract class Grammar {
 
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
-            const childTapes = this.getChildren().map(
+            const children = this.getChildren();
+            //const children = this.getChildren().reverse();
+            const childTapes = children.map(
                                 s => s.calculateTapes(stack));
             this.tapes = listUnique(flatten(childTapes));
         }
@@ -1403,7 +1405,7 @@ export function Replace(
     maxExtraChars: number = 100,
     maxCopyChars: number = maxExtraChars,
     vocabBypass: boolean = false
-): Grammar {
+): ReplaceGrammar {
     return new ReplaceGrammar(DUMMY_CELL, fromState, toState, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
         minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass);
