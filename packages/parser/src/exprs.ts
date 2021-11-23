@@ -598,10 +598,17 @@ export abstract class Expr {
                 continue; 
             }
 
-            // rotate the tapes so that we don't keep trying the same one every time
-            //tapes = [... tapes.slice(1), tapes[0]];
-
             const tapeToTry = tapes[0];
+
+            const delta = prevExpr.delta(tapeToTry, stack);
+            if (!(delta instanceof NullExpr)) {                    
+                const newTapes = tapes.slice(1);
+                nexts.push([newTapes, prevOutput, delta, chars]);
+            }
+
+            // rotate the tapes so that we don't keep trying the same one every time
+            tapes = [... tapes.slice(1), tapes[0]];
+
             for (const [cTarget, cNext] of prevExpr.concreteDeriv(tapeToTry, ANY_CHAR_STR, stack, opt)) {
                 
                 if (tapeToTry.tapeName.startsWith("__")) {
@@ -624,11 +631,6 @@ export abstract class Expr {
                 nexts.push([tapes, nextOutput, cNext, chars+1]);
             }
 
-            const delta = prevExpr.delta(tapeToTry, stack);
-            if (!(delta instanceof NullExpr)) {                    
-                const newTapes = tapes.slice(1);
-                nexts.push([newTapes, prevOutput, delta, chars]);
-            }
 
             shuffleArray(nexts);
             states.push(...nexts);
