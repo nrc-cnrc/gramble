@@ -1,6 +1,6 @@
-import { Uni, Join, Not, Rep, Seq, Null, Epsilon } from "../src/grammars";
+import { Uni, Join, Not, Rep, Seq, Null, Epsilon, Dot, Any, Vocab } from "../src/grammars";
 import { t1, t2, 
-    testHasTapes, testGrammar } from './testUtils';
+    testHasTapes, testHasVocab, testGrammar } from './testUtils';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";
@@ -307,7 +307,7 @@ describe(`${path.basename(module.filename)}`, function() {
             testGrammar(grammar, expectedResults, "", 4, 4);
     }); 
     
-    describe('~t1:he maxChars=3', function() {
+    describe('~(t1:he,3)', function() {
         const grammar = Not(t1("he"), 3);
         testHasTapes(grammar, ["t1"]);
         // testHasVocab(grammar, {t1: 2});
@@ -330,4 +330,127 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, "", 4, 100);
     });
 
+    // Testing negation with "dot".
+
+    describe('Dot-1. ~(.i,3)', function() {
+        const notGrammar = Not(Seq(Any('t1'), t1('i')), 3);
+        const grammar = notGrammar;
+        testHasTapes(grammar, ['t1']);
+        // testHasVocab(grammar, {t1: 1});
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "i"},
+            {t1: "iii"},
+            // should not have:
+            // {t1: "ii"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 100);
+    });
+
+    describe('Dot-2. ~(.,2) with vocab "hi"', function() {
+        const notGrammar = Not(Any('t1'), 2);
+        const grammar = Seq(Vocab('t1', 'hi'), notGrammar);
+        testHasTapes(grammar, ['t1']);
+        testHasVocab(grammar, {t1: 2});
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "hh"},
+            {t1: "hi"},
+            {t1: "ih"},
+            {t1: "ii"},
+            // should not have:
+            // {t1: "h"},
+            // {t1: "i"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 100);
+    });
+
+    describe('Dot-3. ~(.i,2) with vocab "hi"', function() {
+        const notGrammar = Not(Seq(Any('t1'), t1('i')), 2);
+        const grammar = Seq(Vocab('t1', 'hi'), notGrammar);
+        testHasTapes(grammar, ['t1']);
+        testHasVocab(grammar, {t1: 2});
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "h"},
+            {t1: "i"},
+            {t1: "hh"},
+            {t1: "ih"},
+            // should not have:
+            // {t1: "hi"},
+            // {t1: "ii"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 100);
+    });
+
+    describe('Dot-4. ~(.i,2) with vocab "hi"', function() {
+        const notGrammar = Not(Seq(Dot('t1'), t1('i')), 2);
+        const grammar = Seq(Vocab('t1', 'hi'), notGrammar);
+        testHasTapes(grammar, ['t1']);
+        testHasVocab(grammar, {t1: 2});
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "h"},
+            {t1: "i"},
+            {t1: "hh"},
+            {t1: "ih"},
+            // should not have:
+            // {t1: "hi"},
+            // {t1: "ii"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 100);
+    });
+
+    describe('Dot-5. ~(.{0,1}i,3) with vocab "hi"', function() {
+        const dotStarGrammar1 = Rep(Dot('t1'), 0, 1);
+        const notGrammar = Not(Seq(dotStarGrammar1, t1('i')), 3);
+        const grammar = Seq(Vocab('t1', 'hi'), notGrammar);
+        testHasTapes(grammar, ['t1']);
+        testHasVocab(grammar, {t1: 2});
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "h"},
+            {t1: "hh"},
+            {t1: "ih"},
+            {t1: "hhh"},
+            {t1: "hhi"},
+            {t1: "hih"},
+            {t1: "hii"},
+            {t1: "ihh"},
+            {t1: "ihi"},
+            {t1: "iih"},
+            {t1: "iii"},
+            // should not have:
+            // {t1: "hi"},
+            // {t1: "ii"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 100);
+    });
+
+    describe('Dot-6. ~(.{0,3}i,3) with vocab "hi"', function() {
+            const dotStarGrammar1 = Rep(Dot('t1'), 0, 3);
+            const notGrammar = Not(Seq(dotStarGrammar1, t1('i')), 3);
+            const grammar = Seq(Vocab('t1', 'hi'), notGrammar);
+            testHasTapes(grammar, ['t1']);
+            testHasVocab(grammar, {t1: 2});
+            const expectedResults: StringDict[] = [
+                {},
+                {t1: "h"},
+                {t1: "hh"},
+                {t1: "ih"},
+                {t1: "hhh"},
+                {t1: "hih"},
+                {t1: "ihh"},
+                {t1: "iih"},
+                // should not have:
+                // {t1: "hi"},
+                // {t1: "ii"},
+                // {t1: "hhi"},
+                // {t1: "hii"},
+                // {t1: "ihi"},
+                // {t1: "iii"},
+            ];
+            testGrammar(grammar, expectedResults, '', 4, 100);
+        });
+    
 });
