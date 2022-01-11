@@ -346,7 +346,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults, '', 4, 100);
     });
-
+    
     describe('Dot-2. ~(.,2) with vocab "hi"', function() {
         const notGrammar = Not(Any('t1'), 2);
         const grammar = Seq(Vocab('t1', 'hi'), notGrammar);

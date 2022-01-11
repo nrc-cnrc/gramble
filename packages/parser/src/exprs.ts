@@ -746,7 +746,14 @@ class DotExpr extends Expr {
         if (matchedTape == undefined) {
             return;
         }
-        yield [target, EPSILON];
+        if (target != ANY_CHAR_STR) {
+            yield [target, EPSILON];
+            return;
+        }
+
+        for (let c of tape.fromToken(tape.tapeName, tape.any())) {
+            yield [c, EPSILON];
+        }
     }
 }
 
