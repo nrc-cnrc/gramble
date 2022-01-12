@@ -26,6 +26,8 @@ import {
 import * as path from 'path';
 import { StringDict } from "../src/util";
 
+const und = undefined;
+
 function ReplaceBypass(
     fromState: Grammar, toState: Grammar,
     preContext: Grammar = Epsilon(), postContext: Grammar = Epsilon(),
@@ -33,11 +35,12 @@ function ReplaceBypass(
     beginsWith: boolean = false, endsWith: boolean = false,
     minReps: number = 0, maxReps: number = Infinity,
     maxExtraChars: number = 100,
+    maxCopyChars: number = Infinity,
     vocabBypass: boolean = true
 ): ReplaceGrammar {
     return Replace(fromState, toState, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
-        minReps, maxReps, maxExtraChars, Infinity, vocabBypass);
+        minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass);
 }
 
 describe(`${path.basename(module.filename)}`, function() {
@@ -78,6 +81,18 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('0d. Replace i by o in hip: i -> o, only using Join', function() {
         const grammar = Join(t1("hip"),
                          ReplaceBypass(t1("i"), t2("o")));
+                        //  ReplaceBypass(t1("i"), t2("o"), und, und, und, false, false, 0, Infinity, 100, Infinity));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 4});
+        const expectedResults: StringDict[] = [
+            {t1: 'hip', t2: 'hop'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('0d-1. Replace i by o in hip: i -> o, only using Join', function() {
+        const grammar = Join(t1("hip"),
+                         ReplaceBypass(t1("i"), t2("o"), und, und, und, false, false, 0, Infinity, 100, 100));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         const expectedResults: StringDict[] = [
@@ -129,6 +144,131 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
+
+    describe('0j. Replace i by o with vocab hi: i -> o {0,3}, but no join/filter', function() {
+        const grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'),
+                            ReplaceBypass(t1("i"), t2("o"), und, und, und, false, false, 0, 3, 3, Infinity));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: "ihh", t2: "ohh"},
+            {t1: "hhh", t2: "hhh"},
+            {t1: "hh", t2: "hh"},
+            {t1: "hih", t2: "hoh"},
+            {t1: "iih", t2: "ooh"},
+            {t1: "ih", t2: "oh"},
+            {t1: "h", t2: "h"},
+            {t1: "hhi", t2: "hho"},
+            {t1: "ihi", t2: "oho"},
+            {t1: "hi", t2: "ho"},
+            {t1: "hii", t2: "hoo"},
+            {t1: "iii", t2: "ooo"},
+            {t1: "ii", t2: "oo"},
+            {t1: "i", t2: "o"},
+            {},
+            // should not include
+            // {t1: "ihh", t2: "ihh"},
+            // {t1: "iih", t2: "iih"},
+            // {t1: "hih", t2: "hih"},
+            // {t1: "hii", t2: "hii"},
+            // {t1: "hhi", t2: "hhi"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 7);
+    });
+
+    describe('0j-1. Replace i by o with vocab hi: i -> o {0,3}, but no join/filter', function() {
+        const grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'),
+                            ReplaceBypass(t1("i"), t2("o"), und, und, und, false, false, 0, 3, 3, 6));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: "ihh", t2: "ohh"},
+            {t1: "hhh", t2: "hhh"},
+            {t1: "hh", t2: "hh"},
+            {t1: "hih", t2: "hoh"},
+            {t1: "iih", t2: "ooh"},
+            {t1: "ih", t2: "oh"},
+            {t1: "h", t2: "h"},
+            {t1: "hhi", t2: "hho"},
+            {t1: "ihi", t2: "oho"},
+            {t1: "hi", t2: "ho"},
+            {t1: "hii", t2: "hoo"},
+            {t1: "iii", t2: "ooo"},
+            {t1: "ii", t2: "oo"},
+            {t1: "i", t2: "o"},
+            {},
+            // should not include
+            // {t1: "ihh", t2: "ihh"},
+            // {t1: "iih", t2: "iih"},
+            // {t1: "hih", t2: "hih"},
+            // {t1: "hii", t2: "hii"},
+            // {t1: "hhi", t2: "hhi"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 7);
+    });
+
+    describe('0j-2. Replace i by o with vocab hi: i -> o {0,3}, but no join/filter', function() {
+        const grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'),
+                            ReplaceBypass(t1("i"), t2("o"), und, und, und, false, false, 0, 3, 3, 2000));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: "ihh", t2: "ohh"},
+            {t1: "hhh", t2: "hhh"},
+            {t1: "hh", t2: "hh"},
+            {t1: "hih", t2: "hoh"},
+            {t1: "iih", t2: "ooh"},
+            {t1: "ih", t2: "oh"},
+            {t1: "h", t2: "h"},
+            {t1: "hhi", t2: "hho"},
+            {t1: "ihi", t2: "oho"},
+            {t1: "hi", t2: "ho"},
+            {t1: "hii", t2: "hoo"},
+            {t1: "iii", t2: "ooo"},
+            {t1: "ii", t2: "oo"},
+            {t1: "i", t2: "o"},
+            {},
+            // should not include
+            // {t1: "ihh", t2: "ihh"},
+            // {t1: "iih", t2: "iih"},
+            // {t1: "hih", t2: "hih"},
+            // {t1: "hii", t2: "hii"},
+            // {t1: "hhi", t2: "hhi"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 7);
+    });
+
+    describe('0j-3. Replace i by o with vocab hi: i -> o {0,3}, but no join/filter', function() {
+        const grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'),
+                            ReplaceBypass(t1("i"), t2("o"), und, und, und, false, false, 0, 3, 3, 2500));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: "ihh", t2: "ohh"},
+            {t1: "hhh", t2: "hhh"},
+            {t1: "hh", t2: "hh"},
+            {t1: "hih", t2: "hoh"},
+            {t1: "iih", t2: "ooh"},
+            {t1: "ih", t2: "oh"},
+            {t1: "h", t2: "h"},
+            {t1: "hhi", t2: "hho"},
+            {t1: "ihi", t2: "oho"},
+            {t1: "hi", t2: "ho"},
+            {t1: "hii", t2: "hoo"},
+            {t1: "iii", t2: "ooo"},
+            {t1: "ii", t2: "oo"},
+            {t1: "i", t2: "o"},
+            {},
+            // should not include
+            // {t1: "ihh", t2: "ihh"},
+            // {t1: "iih", t2: "iih"},
+            // {t1: "hih", t2: "hih"},
+            // {t1: "hii", t2: "hii"},
+            // {t1: "hhi", t2: "hhi"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 7);
+    });
+
 
     
     /*
