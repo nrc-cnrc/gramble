@@ -870,7 +870,15 @@ class DotStarExpr extends Expr {
         if (matchedTape == undefined) {
             return;
         }
-        yield [target, this];
+        // yield [target, this];
+        if (target != ANY_CHAR_STR) {
+            yield [target, this];
+            return;
+        }
+
+        for (let c of tape.fromToken(tape.tapeName, tape.any())) {
+            yield [c, this];
+        }
     }
     
 }
