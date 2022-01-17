@@ -746,6 +746,7 @@ class DotExpr extends Expr {
         if (matchedTape == undefined) {
             return;
         }
+        
         if (target != ANY_CHAR_STR) {
             yield [target, EPSILON];
             return;

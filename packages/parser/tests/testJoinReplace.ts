@@ -44,14 +44,16 @@ function ReplaceBypass(
 }
 
 describe(`${path.basename(module.filename)}`, function() {
-    
+
     describe('0a. Replace i by o in i: i -> o, only using Join', function() {
-        const grammar = Join(t1("i"),
+        const grammar = Join(Uni(t1("i"), t1("o"), t1("a")),
                          ReplaceBypass(t1("i"), t2("o")));
         testHasTapes(grammar, ['t1', 't2']);
-        testHasVocab(grammar, {t1: 1, t2: 2});
+        testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
             {t1: 'i', t2: 'o'},
+            {t1: 'o', t2: 'o'},
+            {t1: 'a', t2: 'a'},
         ];
         testGrammar(grammar, expectedResults);
     });
@@ -103,11 +105,13 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('0e. Replace i by o in i: i -> o, only using Filter', function() {
         const grammar = Filter(ReplaceBypass(t1("i"), t2("o")),
-                                t1("i"));
+                                Uni(t1("i"), t1("o"), t1("a")));
         testHasTapes(grammar, ['t1', 't2']);
-        testHasVocab(grammar, {t1: 1, t2: 2});
+        testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
             {t1: 'i', t2: 'o'},
+            {t1: 'o', t2: 'o'},
+            {t1: 'a', t2: 'a'},
         ];
         testGrammar(grammar, expectedResults);
     });
@@ -136,11 +140,13 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('0h. Replace i by o in hip: i -> o, only using Filter', function() {
         const grammar = Filter(ReplaceBypass(t1("i"), t2("o")),
-                                t1("hip"));
+                                Uni(t1("hip"), t1("hap"), t1("hop")));
         testHasTapes(grammar, ['t1', 't2']);
-        testHasVocab(grammar, {t1: 3, t2: 4});
+        testHasVocab(grammar, {t1: 5, t2: 5});
         const expectedResults: StringDict[] = [
             {t1: 'hip', t2: 'hop'},
+            {t1: 'hap', t2: 'hap'},
+            {t1: 'hop', t2: 'hop'},
         ];
         testGrammar(grammar, expectedResults);
     });
@@ -269,8 +275,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, '', 4, 7);
     });
 
-
-    
     /*
     // 1. Replace e by a in hello: e -> a
     describe('1. Replace e by a in hello: e -> a', function() {
