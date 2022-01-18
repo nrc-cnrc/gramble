@@ -7,7 +7,6 @@ import {
     constructAlternation,
     constructBinaryConcat,
     constructIntersection,
-    constructStar,
     constructDot,
     constructEmbed,
     constructRename,
@@ -574,7 +573,7 @@ export class StartsWithGrammar extends FilterGrammar {
         let child2 = this.child2.constructExpr(symbols);
         for (const tape of this.child2.tapes) {
             const dot = constructDot(tape);
-            const dotStar = constructStar(dot);
+            const dotStar = constructRepeat(dot);
             child2 = constructBinaryConcat(child2, dotStar);
         }
 
@@ -597,7 +596,7 @@ export class EndsWithGrammar extends FilterGrammar {
         let child2 = this.child2.constructExpr(symbols);
         for (const tape of this.child2.tapes) {
             const dot = constructDot(tape);
-            const dotStar = constructStar(dot);
+            const dotStar = constructRepeat(dot);
             child2 = constructBinaryConcat(dotStar, child2);
         }
 
@@ -620,7 +619,7 @@ export class ContainsGrammar extends FilterGrammar {
         let child2 = this.child2.constructExpr(symbols);
         for (const tape of this.child2.tapes) {
             const dot = constructDot(tape);
-            const dotStar = constructStar(dot);
+            const dotStar = constructRepeat(dot);
             child2 = constructSequence(dotStar, child2, dotStar);
         }
 

@@ -1,6 +1,6 @@
 
 import { Seq, Join, Rep, Epsilon, Filter, Uni, Any } from "../src/grammars";
-import { t1, t2, testHasTapes, testGrammar } from './testUtils';
+import { t1, t2, testHasTapes, testGrammar, testHasVocab } from './testUtils';
 
 import * as path from 'path';
 
@@ -21,7 +21,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "oooo"}]);
     });
 
-    describe('Between 1 and 4 Os: t1:o{1,4}, plus an t2 foo', function() {
+    describe('Between 1 and 4 Os: t1:o{1,4}, plus a t2:foo', function() {
         const grammar = Seq(Rep(t1("o"), 1, 4), t2("foo"));
         testGrammar(grammar, [{t1: "o", t2: "foo"},
                               {t1: "oo", t2: "foo"},
@@ -29,8 +29,9 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "oooo", t2: "foo"}]);
     });
 
-    describe('t2 foo + Between 1 and 4 Os: t1:o{1,4}', function() {
+    describe('t2:foo + Between 1 and 4 Os: t1:o{1,4}', function() {
         const grammar = Seq(t2("foo"), Rep(t1("o"), 1, 4));
+        testHasVocab(grammar, {t1: 1, t2: 2});
         testGrammar(grammar, [{t1: "o", t2: "foo"},
                               {t1: "oo", t2: "foo"},
                               {t1: "ooo", t2: "foo"},
@@ -110,7 +111,6 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "hhhello", t2: "world"},
                               {t1: "hhhhello", t2: "world"}]);
     });
-
     
     describe('Filtering t1:na{0,2} & ε', function() {
         const grammar = Filter(Rep(t1("na"), 0, 2), Epsilon());
