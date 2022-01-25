@@ -110,8 +110,10 @@ export class GenOptions {
     public random: boolean = false;
     public maxRecursion: number = 2; 
     public maxChars: number = 1000;
-    public direction: "LTR" | "RTL" = "RTL"
+    public direction: "LTR" | "RTL" = "RTL";
 }
+
+const VERBOSE: boolean = false;
 
 export type SymbolTable = {[key: string]: Expr};
 
@@ -440,9 +442,9 @@ export abstract class Expr {
             let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
             let [tapes, prevOutput, prevExpr, chars] = prev;
             
-            //console.log();
-            //console.log(`remaining tapes are ${tapes.map(t => t.tapeName)}`);
-            //console.log(`prevExpr is ${prevExpr.id}`);
+            if (VERBOSE) {
+                console.log(`prevExpr is ${prevExpr.id}`);
+            }
 
             if (chars >= opt.maxChars) {
                 continue;
@@ -460,7 +462,9 @@ export abstract class Expr {
             const tapeToTry = tapes[0];
 
             const delta = prevExpr.delta(tapeToTry, stack);
-            //console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
+            if (VERBOSE) {
+                console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
+            }
             if (!(delta instanceof NullExpr)) {                    
                 const newTapes = tapes.slice(1);
                 nexts.push([newTapes, prevOutput, delta, chars]);
@@ -472,7 +476,10 @@ export abstract class Expr {
 
             for (const [cTarget, cNext] of 
                     prevExpr.disjointConcreteDeriv(tapeToTry, ANY_CHAR_STR, stack, opt)) {
-                //console.log(`D^${tapeToTry.tapeName}_${cTarget} is ${cNext.id}`);
+                
+                if (VERBOSE) {
+                    console.log(`D^${tapeToTry.tapeName}_${cTarget} is ${cNext.id}`);
+                }
 
                 if (tapeToTry.tapeName.startsWith("__")) {
                     // don't bother to add hidden characters
@@ -1183,24 +1190,32 @@ class RTLConcatExpr extends ConcatExpr {
     }
 }
 
-export class UnionExpr extends BinaryExpr {
-    
+export class ArrayUnionExpr extends Expr {
+
+    constructor(
+        public children: Expr[]
+    ) { 
+        super()
+    }
+
     public get id(): string {
-        return `(${this.child1.id}|${this.child2.id})`;
+        return "(" + this.children.map(c => c.id).join("|") + ")";
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
-        return constructBinaryUnion( this.child1.delta(tape, stack),
-                             this.child2.delta(tape, stack));
+        const newChildren = this.children.map(c => c.delta(tape, stack));
+        const result = constructAlternation(...newChildren);
+        return result;
     }
 
     public *deriv(
-        tape: Tape, 
+        tape: Tape,
         target: Token,
         stack: CounterStack
     ): Gen<[Tape, Token, Expr]> {
-        yield* this.child1.deriv(tape, target, stack);
-        yield* this.child2.deriv(tape, target, stack);
+        for (const child of this.children) {
+            yield* child.deriv(tape, target, stack);
+        }
     }
 
     public *concreteDeriv(
@@ -1209,9 +1224,11 @@ export class UnionExpr extends BinaryExpr {
         stack: CounterStack,
         opt: GenOptions
     ): Gen<[string, Expr]> {
-        yield* this.child1.concreteDeriv(tape, target, stack, opt);
-        yield* this.child2.concreteDeriv(tape, target, stack, opt);
+        for (const child of this.children) {
+            yield* child.concreteDeriv(tape, target, stack, opt);
+        }
     }
+
 }
 
 class IntersectExpr extends BinaryExpr {
@@ -2181,30 +2198,33 @@ export function constructBinaryConcat(c1: Expr, c2: Expr): Expr {
     return new RTLConcatExpr(c1, c2);
 }
 
-export function constructBinaryUnion(c1: Expr, c2: Expr): Expr {
-    if (c1 instanceof NullExpr) {
-        return c2;
-    }
-    if (c2 instanceof NullExpr) {
-        return c1;
-    }
-    if (c1 instanceof EpsilonExpr && c2 instanceof EpsilonExpr) {
-        return c1;
-    }
-    if (c1 instanceof UnionExpr) {
-        const head = c1.child1;
-        const tail = constructBinaryUnion(c1.child2, c2);
-        return constructBinaryUnion(head, tail);
-    }
-    return new UnionExpr(c1, c2);
-}
-
 export function constructSequence(...children: Expr[]): Expr {
     return constructListExpr(children, constructBinaryConcat, EPSILON, false);
 }
 
 export function constructAlternation(...children: Expr[]): Expr {
-    return constructListExpr(children, constructBinaryUnion, NULL, true);
+    const newChildren: Expr[] = [];
+    let foundEpsilon: boolean = false;
+    for (const child of children) {
+        if (child instanceof NullExpr) {
+            continue;
+        }
+        if (child instanceof EpsilonExpr) {
+            if (foundEpsilon) {
+                continue;
+            }
+            foundEpsilon = true;
+        }
+        newChildren.push(child);
+    }
+
+    if (newChildren.length == 0) {
+        return NULL;
+    }
+    if (newChildren.length == 1) {
+        return newChildren[0];
+    }
+    return new ArrayUnionExpr(newChildren);
 }
 
 export function constructIntersection(c1: Expr, c2: Expr): Expr {

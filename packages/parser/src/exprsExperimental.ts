@@ -1,4 +1,4 @@
-import { BinaryExpr, constructListExpr, CounterStack, EpsilonExpr, Expr, NULL, NullExpr, UnaryExpr, UnionExpr } from "./exprs";
+import { BinaryExpr, constructListExpr, CounterStack, EpsilonExpr, Expr, NULL, NullExpr, UnaryExpr } from "./exprs";
 import { Tape, Token } from "./tapes";
 import { Gen } from "./util";
 
@@ -373,3 +373,57 @@ export function constructMemo(child: Expr, limit: number = 3): Expr {
     }
     return new FlatMemoExpr(child, limit);
 }
+
+/*
+export class UnionExpr extends BinaryExpr {
+    
+    public get id(): string {
+        return `(${this.child1.id}|${this.child2.id})`;
+    }
+
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        return constructBinaryUnion( this.child1.delta(tape, stack),
+                             this.child2.delta(tape, stack));
+    }
+
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+        yield* this.child1.deriv(tape, target, stack);
+        yield* this.child2.deriv(tape, target, stack);
+    }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[string, Expr]> {
+        yield* this.child1.concreteDeriv(tape, target, stack, opt);
+        yield* this.child2.concreteDeriv(tape, target, stack, opt);
+    }
+}
+*/
+
+
+/*
+export function constructBinaryUnion(c1: Expr, c2: Expr): Expr {
+    if (c1 instanceof NullExpr) {
+        return c2;
+    }
+    if (c2 instanceof NullExpr) {
+        return c1;
+    }
+    if (c1 instanceof EpsilonExpr && c2 instanceof EpsilonExpr) {
+        return c1;
+    }
+    if (c1 instanceof UnionExpr) {
+        const head = c1.child1;
+        const tail = constructBinaryUnion(c1.child2, c2);
+        return constructBinaryUnion(head, tail);
+    }
+    return new UnionExpr(c1, c2);
+}
+*/
