@@ -57,14 +57,13 @@ export class Interpreter {
             const tapeNames = this.grammar.calculateTapes(new CounterStack(2));
             // collect vocabulary
             this.tapeObjs = new TapeCollection();
-            //this.grammar.collectVocab(this.tapeObjs);
             this.grammar.collectAllVocab(this.tapeObjs);
 
         }, verbose, "Collected vocab");
 
         timeIt(() => {
             // copy the vocab if necessary
-            this.grammar.copyVocab(this.tapeObjs);
+            this.grammar.copyVocab(this.tapeObjs, new Set());
         }, verbose, "Copied vocab");
 
     }
@@ -141,14 +140,6 @@ export class Interpreter {
         maxRecursion: number = 2, 
         maxChars: number = 1000
     ): StringDict[] {
-
-        const opt: GenOptions = {
-            random: false,
-            maxRecursion: maxRecursion,
-            maxChars: maxChars,
-            direction: "RTL"
-        }
-
         const gen = this.generateStream(symbolName, 
             restriction, maxRecursion, maxChars);
         return iterTake(gen, maxResults);
@@ -236,24 +227,14 @@ export class Interpreter {
             tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
-            
-            //querySeq.collectVocab(this.tapeObjs);
-
-            //const tapeNameSet1 = new Set(tapePriority);
-            //const tapeNameSet2 = this.tapeObjs.getTapeNames();
-            //if (!setEquals(tapeNameSet1, tapeNameSet2)) {
-            //    throw new Error(`Sets not equal: ${[...tapeNameSet1]} != ${[...tapeNameSet2]}`)
-            //}
             querySeq.collectAllVocab(this.tapeObjs);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
-            targetComponent.copyVocab(this.tapeObjs);
+            targetComponent.copyVocab(this.tapeObjs, new Set());
         
         }
 
         expr = targetComponent.constructExpr(this.symbolTable);
-
-        //console.log(`expr = ${expr.id}`);
 
         const prioritizedTapes: Tape[] = [];
         for (const tapeName of tapePriority) {
@@ -281,11 +262,10 @@ export class Interpreter {
             const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
-            //test.test.collectVocab(this.tapeObjs);
             test.test.collectAllVocab(this.tapeObjs);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
-            targetComponent.copyVocab(this.tapeObjs);
+            targetComponent.copyVocab(this.tapeObjs, new Set());
 
             expr = targetComponent.constructExpr(this.symbolTable);
 
