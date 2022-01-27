@@ -320,6 +320,12 @@ export function flatten<T>(ss: Iterable<Iterable<T>>): T[] {
     return results;
 }
 
+export function setEquals<T>(as: Set<T>, bs: Set<T>) {
+    if (as.size !== bs.size) return false;
+    for (var a of as) if (!bs.has(a)) return false;
+    return true;
+}
+
 export function listUnique<T>(lst: T[]): T[] {
     return [... new Set(lst)];
 }

@@ -162,6 +162,7 @@ export abstract class Tape {
     ) { }
 
     public abstract readonly tapeName: string;
+    public abstract readonly globalName: string;
 
     public abstract readonly isTrivial: boolean;
 
@@ -283,6 +284,10 @@ export class StringTape extends Tape {
         public indexToStr: Map<number, string> = new Map()
     ) { 
         super(parent);
+    }
+    
+    public get globalName(): string {
+        return this.tapeName;
     }
 
     public get isTrivial(): boolean {
@@ -522,6 +527,13 @@ export class TapeCollection extends Tape {
         return "__ANY_TAPE__";
     }
     
+    public get globalName(): string {
+        if (this.tapes.size == 0) {
+            return "__NO_TAPE__";
+        }
+        return "__ANY_TAPE__";
+    }
+    
     public tokenize(
         tapeName: string, 
         str: string, 
@@ -612,6 +624,10 @@ export class RenamedTape extends Tape {
             return this.fromTape;
         }
         return childName;
+    }
+
+    public get globalName(): string {
+        return this.child.globalName;
     }
     
     public inVocab(tapeName: string, strs: string[]): boolean {

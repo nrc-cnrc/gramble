@@ -161,6 +161,19 @@ export abstract class Grammar {
      * @param stack What symbols we've already collected from, to prevent inappropriate recursion
      * @returns vocab 
      */
+    public collectAllVocab(tapes: TapeCollection) {
+        const stack = new CounterStack(2);
+        const tapeNames = this.calculateTapes(stack);
+        for (const tapeName of tapeNames) {
+            tapes.tokenize(tapeName, ""); // initialize it just in case
+            const tape = tapes.matchTape(tapeName);
+            if (tape == undefined) {
+                continue; // shouldn't happen, we just initialized it a few lines ago
+            }
+            this.collectVocab(tape, []);
+        }
+    }
+    
     public collectVocab(tapes: Tape, stack: string[] = []): void { 
         for (const child of this.getChildren()) {
             child.collectVocab(tapes, stack);
@@ -210,7 +223,7 @@ export abstract class Grammar {
 
     public getAllTapes(): TapeCollection {
         const tapes = new TapeCollection();
-        this.collectVocab(tapes, []);
+        this.collectAllVocab(tapes);
         return tapes;
     }
 
@@ -304,10 +317,14 @@ export class CharSetGrammar extends AtomicGrammar {
         }
         return this.tapes;
     }
-
+    
     public collectVocab(tapes: Tape, stack: string[] = []): void {
+        const tape = tapes.matchTape(this.tape);
+        if (tape == undefined) {
+            return;
+        }
         for (const char of this.chars) {
-            tapes.tokenize(this.tape, char, true);
+            tape.tokenize(this.tape, char, true);
         }
     }
 
@@ -338,9 +355,13 @@ export class LiteralGrammar extends AtomicGrammar {
     public getLiterals(): LiteralGrammar[] {
         return [this];
     }
-
+    
     public collectVocab(tapes: Tape, stack: string[] = []): void {
-        this.tokens = tapes.tokenize(this.tape, this.text).map(([s,t]) => s);
+        const tape = tapes.matchTape(this.tape);
+        if (tape == undefined) {
+            return;
+        }
+        this.tokens = tape.tokenize(this.tape, this.text).map(([s,t]) => s);
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -370,10 +391,15 @@ export class DotGrammar extends AtomicGrammar {
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformDot(this, ns, args);
     }
-
+    
     public collectVocab(tapes: Tape, stack: string[] = []): void {
-        tapes.tokenize(this.tape, "");
+        const tape = tapes.matchTape(this.tape);
+        if (tape == undefined) {
+            return;
+        }
+        tape.tokenize(this.tape, "");
     }
+
 
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
@@ -663,7 +689,7 @@ export class RenameGrammar extends UnaryGrammar {
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformRename(this, ns, args);
     }
-
+    
     public collectVocab(tapes: Tape, stack: string[] = []): void {
         tapes = new RenamedTape(tapes, this.fromTape, this.toTape);
         this.child.collectVocab(tapes, stack);
@@ -797,7 +823,7 @@ export class HideGrammar extends UnaryGrammar {
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformHide(this, ns, args);
     }
-
+    
     public collectVocab(tapes: Tape, stack: string[] = []): void {
         tapes = new RenamedTape(tapes, this.tape, this.toTape);
         this.child.collectVocab(tapes, stack);
@@ -1042,6 +1068,13 @@ export class NsGrammar extends Grammar {
 
 export class EmbedGrammar extends AtomicGrammar {
 
+    /** this one keeps track of who's already collected/copied vocab from 
+        the referent.  otherwise we end up traversing the grammar
+        way too many times and it slows compilation
+    */
+    public vocabCollectedBy: Set<string> = new Set();
+    public vocabCopiedBy: Set<string> = new Set();
+
     constructor(
         cell: Cell,
         public name: string,
@@ -1074,19 +1107,28 @@ export class EmbedGrammar extends AtomicGrammar {
         }
         return this.tapes;
     }
-
+    
     public collectVocab(tapes: Tape, stack: string[] = []): void {
         if (stack.indexOf(this.name) != -1) {
             return;
         }
+        if (this.vocabCollectedBy.has(tapes.globalName)) {
+            return;
+        }
+        this.vocabCollectedBy.add(tapes.globalName);
         const newStack = [...stack, this.name];
         this.getReferent().collectVocab(tapes, newStack);
     }
+    
     
     public copyVocab(tapes: Tape, stack: string[] = []): void {
         if (stack.indexOf(this.name) != -1) {
             return;
         }
+        if (this.vocabCopiedBy.has(tapes.globalName)) {
+            return;
+        }
+        this.vocabCopiedBy.add(tapes.globalName);
         const newStack = [...stack, this.name];
         this.getReferent().copyVocab(tapes, newStack);
     }
@@ -1123,10 +1165,11 @@ export class UnresolvedEmbedGrammar extends AtomicGrammar {
         }
         return this.tapes;
     }
-
+    
     public collectVocab(tapes: Tape, stack: string[] = []): void {
         return;
     }
+    
     
     public copyVocab(tapes: Tape, stack: string[] = []): void {
         return;

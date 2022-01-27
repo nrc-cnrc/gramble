@@ -1557,73 +1557,6 @@ export abstract class UnaryExpr extends Expr {
     }
 }
 
-/*
-class StarExpr extends UnaryExpr {
-
-    public get id(): string {
-        return `${this.child.id}*`;
-    }
-
-    public delta(tape: Tape, stack: CounterStack): Expr {
-        return constructStar(this.child.delta(tape, stack));
-    }
-
-    public *deriv(
-        tape: Tape, 
-        target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
-        for (const [cTape, cTarget, cNext] of this.child.deriv(tape, target, stack)) {
-            const successor = constructBinaryConcat(cNext, this);
-            yield [cTape, cTarget, successor];
-        }
-    }
-    
-    public *concreteDeriv(
-        tape: Tape, 
-        target: string,
-        stack: CounterStack,
-        opt: GenOptions
-    ): Gen<[string, Expr]> {
-        for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack, opt)) {
-            const successor = constructBinaryConcat(cNext, this);
-            yield [cTarget, successor];
-        }
-    }
-}
-
-class RTLStarExpr extends StarExpr {
-
-    public delta(tape: Tape, stack: CounterStack): Expr {
-        return constructStar(this.child.delta(tape, stack));
-    }
-
-    public *deriv(
-        tape: Tape, 
-        target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
-        for (const [cTape, cTarget, cNext] of this.child.deriv(tape, target, stack)) {
-            const successor = constructBinaryConcat(this, cNext);
-            yield [cTape, cTarget, successor];
-        }
-    }
-    
-    public *concreteDeriv(
-        tape: Tape, 
-        target: string,
-        stack: CounterStack,
-        opt: GenOptions
-    ): Gen<[string, Expr]> {
-        for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack, opt)) {
-            const successor = constructBinaryConcat(this, cNext);
-            yield [cTarget, successor];
-        }
-    }
-}
-*/
-
-
 class RTLRepExpr extends UnaryExpr {
 
     constructor(
@@ -2250,28 +2183,7 @@ export function constructMaybe(child: Expr): Expr {
 }
 
 /**
- * Creates A* from A.  Distinguished from createRepeat
- * in that that works for any range of reps, where as this
- * is only zero through infinity reps.
- */
-/*
-export function constructStar(child: Expr): Expr {
-    if (child instanceof EpsilonExpr) {
-        return child;
-    }
-    if (child instanceof NullExpr) {
-        return EPSILON;
-    }
-    if (child instanceof StarExpr) {
-        return child;
-    }
-    return new RTLStarExpr(child);
-} */
-
-/**
- * Creates A{min,max} from A.  Distinguished from constructStar
- * in that that only works for A{0,infinity}, whereas this
- * works for any values of {min,max}.
+ * Creates A{min,max} from A.
  */
 export function constructRepeat(
     child: Expr, 
@@ -2296,19 +2208,6 @@ export function constructRepeat(
         }
         return child;
     }
-
-    /*
-    if (minReps > 0) {
-        const head = constructSequence(...Array(minReps).fill(child))
-        const tail = constructRepeat(child, 0, maxReps - minReps);
-        return constructSequence(head, tail);
-    }
-    if (maxReps == Infinity) {
-        return constructStar(child);
-    }
-    const tail = constructRepeat(child, 0, maxReps - 1);
-    return constructMaybe(constructSequence(tail, child));
-    */
 
     return new RTLRepExpr(child, minReps, maxReps);
 }

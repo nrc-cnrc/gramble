@@ -2,7 +2,7 @@ import {
     CounterStack, DUMMY_CELL, FilterGrammar, Grammar, 
     LiteralGrammar, SequenceGrammar 
 } from "./grammars";
-import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt } from "./util";
+import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals} from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
@@ -54,10 +54,11 @@ export class Interpreter {
 
         timeIt(() => {
             // recalculate tapes
-            this.grammar.calculateTapes(new CounterStack(2));
+            const tapeNames = this.grammar.calculateTapes(new CounterStack(2));
             // collect vocabulary
             this.tapeObjs = new TapeCollection();
-            this.grammar.collectVocab(this.tapeObjs);
+            //this.grammar.collectVocab(this.tapeObjs);
+            this.grammar.collectAllVocab(this.tapeObjs);
 
         }, verbose, "Collected vocab");
 
@@ -235,7 +236,15 @@ export class Interpreter {
             tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
-            querySeq.collectVocab(this.tapeObjs);
+            
+            //querySeq.collectVocab(this.tapeObjs);
+
+            //const tapeNameSet1 = new Set(tapePriority);
+            //const tapeNameSet2 = this.tapeObjs.getTapeNames();
+            //if (!setEquals(tapeNameSet1, tapeNameSet2)) {
+            //    throw new Error(`Sets not equal: ${[...tapeNameSet1]} != ${[...tapeNameSet2]}`)
+            //}
+            querySeq.collectAllVocab(this.tapeObjs);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
             targetComponent.copyVocab(this.tapeObjs);
@@ -272,7 +281,8 @@ export class Interpreter {
             const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
-            test.test.collectVocab(this.tapeObjs);
+            //test.test.collectVocab(this.tapeObjs);
+            test.test.collectAllVocab(this.tapeObjs);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
             targetComponent.copyVocab(this.tapeObjs);
