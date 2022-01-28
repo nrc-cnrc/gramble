@@ -438,6 +438,11 @@
                     }
                 }, true, "Generation complete", "Started generating");
 
+                if (results.length == 0) {
+                    alert("No results found.");
+                    return;
+                }
+
                 // determine what format to output in
                 let formatSelect = document.getElementById("downloadFormatSelect");
                 const downloadFormat = formatSelect.value;
@@ -468,11 +473,16 @@
                 const symbolName = getCurrentSymbolName();
 
                 const inputs = getCurrentInputs();
-                
-                gramble.timeIt(() => 
-                    results = project.generate(symbolName, inputs),
+
+                let results = gramble.timeIt(() => 
+                    project.generate(symbolName, inputs),
                     true, "Generation complete", "Started generating"
                 );
+
+                if (results.length == 0) {
+                    alert("No results found.");
+                    return;
+                }
                 
                 // determine what tape names are relevant to this symbol
                 const tapeNames = project.getTapeNames(symbolName);
@@ -494,6 +504,11 @@
                     project.sample(symbolName, 50, inputs),
                     true, "Sampling complete", "Started sampling"
                 );
+
+                if (results.length == 0) {
+                    alert("No results found.");
+                    return;
+                }
                 
                 // determine what tape names are relevant to this symbol
                 const tapeNames = project.getTapeNames(symbolName);
