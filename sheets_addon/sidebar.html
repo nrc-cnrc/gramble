@@ -327,6 +327,14 @@
                     project.sample(symbolName, 1, CURRENT_INPUTS),
                     true, "Sampling complete", "Started sampling");
                 
+                if (results.length == 0) {
+                    let tr = resultsTable.insertRow();
+                    tr.classList.add("resultsTr");
+                    let cell = tr.insertCell();
+                    tr.classList.add("resultsKey");
+                    cell.appendChild(document.createTextNode("No results found."));
+                }
+
                 for (let i = 0; i < results.length; i++) {
                     displayRecord(results[i], resultsTable);
                 }
