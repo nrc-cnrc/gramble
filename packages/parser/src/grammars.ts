@@ -799,7 +799,7 @@ export class HideGrammar extends UnaryGrammar {
     ) {
         super(cell, child);
         if (name == "") {
-            name = `HIDDEN${HIDE_INDEX}`;
+            this.name = `HIDDEN${HIDE_INDEX}`;
             HIDE_INDEX++;
         }
         this.toTape = `__${name}_${tape}`;

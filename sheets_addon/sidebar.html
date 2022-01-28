@@ -324,7 +324,7 @@
                 }
 
                 let results = gramble.timeIt(() => 
-                    project.sample(symbolName, 5, CURRENT_INPUTS),
+                    project.sample(symbolName, 1, CURRENT_INPUTS),
                     true, "Sampling complete", "Started sampling");
                 
                 for (let i = 0; i < results.length; i++) {

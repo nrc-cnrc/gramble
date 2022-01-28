@@ -57,6 +57,13 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t2: "hello"}]);
     });
 
+    describe('Rename t1=>t2 of hide(t2) of t1:hello+t2:foo', function() {
+        const grammar = Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"), "t1", "t2")
+        testHasTapes(grammar, ["t2"]);
+        //testHasVocab(grammar, {t2: 4});
+        testGrammar(grammar, [{t2: "hello"}]);
+    });
+
     describe('Renane t1=>t3 if hide(t2) of t1:hello+t2:foo', function() {
         const grammar = Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"), "t1", "t3")
         testHasTapes(grammar, ["t3"]);
@@ -71,13 +78,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Rename t1=>t3 of hide(t2) of t1:hello+t2:foo', function() {
-        const grammar = Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"), "t1", "t3")
-        testHasTapes(grammar, ["t3"]);
-        //testHasVocab(grammar, {t3: 4});
-        testGrammar(grammar, [{t3: "hello"}]);
-    });
-
     describe('Filter using a field and then hide it', function() {
         const grammar = Hide(Filter(Seq(t1("hello"), t2("foo")), t2("foo")), "t2");
         testGrammar(grammar, [{t1: "hello"}]);
@@ -87,7 +87,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Hide(Filter(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3"), t2("foo")), "t2");
         testGrammar(grammar, [{t1: "hello"}]);
     });
-
     
     describe('Hide t2 of symbol t1:hi+t2:world', function() {
         const grammar = Ns("", 
@@ -98,6 +97,16 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ["t1"], "b");
         //testHasVocab(grammar, {t1: 2});
         testGrammar(grammar, [{t1: "hi"}], "b");
+    });
+
+    describe('Embed of hide(t2) of t1:hello+t2:foo', function() {
+        const grammar = Ns("test", {
+                "b": Hide(Seq(t1("hi"), t2("fo")), "t2"),
+                "c": Embed("b")
+        });
+        testHasTapes(grammar, ["t1"]);
+        //testHasVocab(grammar, {t1: 4});
+        testGrammar(grammar, [{t1: "hi"}]);
     });
 
 });

@@ -165,7 +165,7 @@ export function msToTime(s: number): string {
     s = (s - secs) / 60;
     const mins = s % 60;
     const hrs = (s - mins) / 60;
-    return `${hrs}h ${mins}m ${secs}.${ms}s`;
+    return `${hrs}h ${mins}m ${secs}.${ms.toString().padStart(3,"0")}s`;
 }
 
 
