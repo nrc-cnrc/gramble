@@ -21,6 +21,7 @@ import {
     constructMatchFrom,
     constructCharSet,
     constructDotRep,
+    constructDotStar,
 } from "./exprs";
 
 import { 
@@ -585,8 +586,7 @@ export class StartsWithGrammar extends FilterGrammar {
 
         let child2 = this.child2.constructExpr(symbols);
         for (const tape of this.child2.tapes) {
-            const dot = constructDot(tape);
-            const dotStar = constructRepeat(dot);
+            const dotStar = constructDotStar(tape);
             child2 = constructBinaryConcat(child2, dotStar);
         }
 
@@ -608,8 +608,7 @@ export class EndsWithGrammar extends FilterGrammar {
 
         let child2 = this.child2.constructExpr(symbols);
         for (const tape of this.child2.tapes) {
-            const dot = constructDot(tape);
-            const dotStar = constructRepeat(dot);
+            const dotStar = constructDotStar(tape);
             child2 = constructBinaryConcat(dotStar, child2);
         }
 
@@ -631,8 +630,7 @@ export class ContainsGrammar extends FilterGrammar {
 
         let child2 = this.child2.constructExpr(symbols);
         for (const tape of this.child2.tapes) {
-            const dot = constructDot(tape);
-            const dotStar = constructRepeat(dot);
+            const dotStar = constructDotStar(tape);
             child2 = constructSequence(dotStar, child2, dotStar);
         }
 
@@ -1089,18 +1087,18 @@ export class EmbedGrammar extends AtomicGrammar {
     }
     
     public collectVocab(tapes: Tape, symbolsVisited: Set<string>): void {
-        if (symbolsVisited.has(tapes.globalName)) {
+        if (symbolsVisited.has(this.name)) {
             return;
         }
-        symbolsVisited.add(tapes.globalName);
+        symbolsVisited.add(this.name);
         this.getReferent().collectVocab(tapes, symbolsVisited);
     }
     
     public copyVocab(tapes: Tape, symbolsVisited: Set<string>): void {
-        if (symbolsVisited.has(tapes.globalName)) {
+        if (symbolsVisited.has(this.name)) {
             return;
         }
-        symbolsVisited.add(tapes.globalName);
+        symbolsVisited.add(this.name);
         this.getReferent().copyVocab(tapes, symbolsVisited);
     }
 

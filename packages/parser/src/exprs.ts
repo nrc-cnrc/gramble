@@ -1,5 +1,5 @@
 import { Gen, setDifference, shuffleArray, StringDict } from "./util";
-import { MultiTapeOutput, Tape, RenamedTape, Token, ANY_CHAR } from "./tapes";
+import { Tape, RenamedTape, Token, ANY_CHAR, OutputTrie } from "./tapes";
 
 /**
  * This is the parsing/generation engine that underlies Gramble.
@@ -434,12 +434,12 @@ export abstract class Expr {
         stack: CounterStack,
         opt: GenOptions
     ): Gen<StringDict> {
-        const initialOutput: MultiTapeOutput = new MultiTapeOutput();
-        let states: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
-        let prev: [Tape[], MultiTapeOutput, Expr, number] | undefined = undefined;
+        const initialOutput: OutputTrie = new OutputTrie();
+        let states: [Tape[], OutputTrie, Expr, number][] = [[tapes, initialOutput, this, 0]];
+        let prev: [Tape[], OutputTrie, Expr, number] | undefined = undefined;
         while (prev = states.pop()) {
 
-            let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
+            let nexts: [Tape[], OutputTrie, Expr, number][] = [];
             let [tapes, prevOutput, prevExpr, chars] = prev;
             
             if (VERBOSE) {
@@ -451,7 +451,7 @@ export abstract class Expr {
             }
 
             if (prevExpr instanceof EpsilonExpr) {
-                yield* prevOutput.toStrings(opt);
+                yield prevOutput.toDict(opt);
                 continue;
             }
             
@@ -489,15 +489,15 @@ export abstract class Expr {
 
                 if (cTarget == ANY_CHAR_STR) {
                     for (const c of tapeToTry.fromToken(tapeToTry.tapeName, ANY_CHAR)) {
-                        const cToken = tapeToTry.toToken(tapeToTry.tapeName, c);
-                        const nextOutput = prevOutput.add(tapeToTry, cToken);
+                        //const cToken = tapeToTry.toToken(tapeToTry.tapeName, c);
+                        const nextOutput = prevOutput.add(tapeToTry.tapeName, c);
                         nexts.push([tapes, nextOutput, cNext, chars+1]);
                     }
                     continue;
                 }
 
-                const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget);
-                const nextOutput = prevOutput.add(tapeToTry, cToken);
+                //const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget);
+                const nextOutput = prevOutput.add(tapeToTry.tapeName, cTarget);
                 nexts.push([tapes, nextOutput, cNext, chars+1]);
             }
 
@@ -575,22 +575,22 @@ export abstract class Expr {
         stack: CounterStack,
         opt: GenOptions
     ): Gen<StringDict> {
-        const initialOutput: MultiTapeOutput = new MultiTapeOutput();
+        const initialOutput: OutputTrie = new OutputTrie();
 
-        let states: [Tape[], MultiTapeOutput, Expr, number][] = [[tapes, initialOutput, this, 0]];
-        const candidates: MultiTapeOutput[] = [];
+        let states: [Tape[], OutputTrie, Expr, number][] = [[tapes, initialOutput, this, 0]];
+        const candidates: OutputTrie[] = [];
 
-        let prev: [Tape[], MultiTapeOutput, Expr, number] | undefined = undefined;
+        let prev: [Tape[], OutputTrie, Expr, number] | undefined = undefined;
         while (prev = states.pop()) {
 
             // first, see if it's time to randomly emit a result
             if (Math.random() < 0.1 && candidates.length > 0) {
                 const candidateIndex = Math.floor(Math.random()*candidates.length);
                 const candidateOutput = candidates.splice(candidateIndex, 1)[0];
-                yield* candidateOutput.toStrings(opt);
+                yield candidateOutput.toDict(opt);
             }
 
-            let nexts: [Tape[], MultiTapeOutput, Expr, number][] = [];
+            let nexts: [Tape[], OutputTrie, Expr, number][] = [];
             let [tapes, prevOutput, prevExpr, chars] = prev;
             if (chars >= opt.maxChars) {
                 continue;
@@ -626,18 +626,17 @@ export abstract class Expr {
 
                 if (cTarget == ANY_CHAR_STR) {
                     for (const c of tapeToTry.fromToken(tapeToTry.tapeName, ANY_CHAR)) {
-                        const cToken = tapeToTry.toToken(tapeToTry.tapeName, c);
-                        const nextOutput = prevOutput.add(tapeToTry, cToken);
+                        //const cToken = tapeToTry.toToken(tapeToTry.tapeName, c);
+                        const nextOutput = prevOutput.add(tapeToTry.tapeName, c);
                         nexts.push([tapes, nextOutput, cNext, chars+1]);
                     }
                     continue;
                 }
 
-                const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget);
-                const nextOutput = prevOutput.add(tapeToTry, cToken);
+                //const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget);
+                const nextOutput = prevOutput.add(tapeToTry.tapeName, cTarget);
                 nexts.push([tapes, nextOutput, cNext, chars+1]);
             }
-
 
             shuffleArray(nexts);
             states.push(...nexts);
@@ -649,7 +648,7 @@ export abstract class Expr {
 
         const candidateIndex = Math.floor(Math.random()*candidates.length);
         const candidateOutput = candidates.splice(candidateIndex, 1)[0];
-        yield* candidateOutput.toStrings(opt);
+        yield candidateOutput.toDict(opt);
     }
 }
 
@@ -753,15 +752,20 @@ class DotExpr extends Expr {
         if (matchedTape == undefined) {
             return;
         }
-        
-        if (target != ANY_CHAR_STR) {
-            yield [target, EPSILON];
+
+        if (target == ANY_CHAR_STR) {
+            for (let c of tape.fromToken(tape.tapeName, tape.any())) {
+                yield [c, EPSILON];
+            }
             return;
         }
 
-        for (let c of tape.fromToken(tape.tapeName, tape.any())) {
-            yield [c, EPSILON];
+        if (!tape.inVocab(tape.tapeName, [target])) {
+            return;
         }
+        
+        yield [target, EPSILON];
+
     }
 }
 
@@ -878,17 +882,22 @@ class DotStarExpr extends Expr {
         if (matchedTape == undefined) {
             return;
         }
-        // yield [target, this];
-        if (target != ANY_CHAR_STR) {
-            yield [target, this];
+
+
+        if (target == ANY_CHAR_STR) {
+            for (let c of tape.fromToken(tape.tapeName, tape.any())) {
+                yield [c, this];
+            }
             return;
         }
 
-        for (let c of tape.fromToken(tape.tapeName, tape.any())) {
-            yield [c, this];
+        if (!tape.inVocab(tape.tapeName, [target])) {
+            return;
         }
+        
+        yield [target, this];
     }
-    
+   
 }
 
 class LiteralExpr extends Expr {

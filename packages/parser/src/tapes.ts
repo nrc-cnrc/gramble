@@ -3,7 +3,7 @@ import { GenOptions } from "./exprs";
 import { Gen, StringDict, tokenizeUnicode } from "./util";
 
 /**
- * Outputs
+ * OutputTrie
  * 
  * The outputs of this algorithm are kept as tries, since that's the natural
  * shape of a set of outputs from a non-deterministic parsing algorithm.  (E.g., if
@@ -12,135 +12,55 @@ import { Gen, StringDict, tokenizeUnicode } from "./util";
  * and less space than copying it twice and concatenating it.  Especially if "z" ends
  * up being a false path and we end up discarding it; that would mean we had copied/
  * concatenated for nothing.)   
- * 
- * It used to be that we just kept every tape output in one trie (like an output
- * might have characters on different tapes interleaved).  That's fine when it's guaranteed
- * that every concatenation succeeds (like for string concatenation), but when it's something like
- * flag concatenation (which can fail), that means we have to search backwards through the trie
- * to find the most recent output on the relevant tape.  So now, outputs are segregated by tape.
- * A SingleTapeOutput represents the output on a given tape, and then there's a separate object that
- * represents a collection of them (by keeping a pointer to the appropriate output along each tape).
- * 
- * TODO: There's currently some conceptual duplication between these Outputs and the various Tape
- * objects, which store *information* about tapes (like their names and vocabs) without storing any
- * actual outputs onto those tapes.  Each Output is associated with a particular Tape, there are collections
- * of both corresponding to each other, etc.  We should eventually refactor these so that there's only
- * one hierarchy of objects, "tapes" to which you can write and also know their own information.
  */
+export class OutputTrie {
 
-class SingleTapeOutput {
-
-    public cache: string[] | undefined = undefined;
-
-    constructor(
-        public tape: Tape,
-        public token: Token,
-        public prev: SingleTapeOutput | undefined = undefined
-    ) { }
-
-    public add(tape: Tape, token: Token) {
-        if (tape.tapeName != this.tape.tapeName) {
-            throw new Error(`Incompatible tapes: ${tape.tapeName}, ${this.tape.tapeName}`);
-        }
-        return new SingleTapeOutput(tape, token, this);
+    public add(tape: string, token: string) {
+        return new OutputTrieLeaf(tape, token, this);
     }
-    
-    public *getStrings(
+
+    public toDict(
         opt: GenOptions
-    ): Gen<string> {
+    ): StringDict {
 
-        var results: string[] = [ "" ];
+        var result: StringDict = {};
 
-        var currentOutput: SingleTapeOutput | undefined = this;
+        var currentOutput: OutputTrie = this;
 
-        // step backward through the current object and its prevs, building the output strings from
-        // right to left.  (you might think this would be more elegant to be done recursively, but it blows
+        // step backward through the current object and its prevs, building 
+        // the output strings from end to beginning.  (you might think this 
+        // would be more elegant to be done recursively, but it blows
         // the stack when stringifying long outputs.)
-        while (currentOutput != undefined) {
-            const newResults: string[] = [];
-            let possibleChars = currentOutput.tape.fromBits(currentOutput.tape.tapeName, currentOutput.token.bits);
-            if (opt.random) {
-                // if we're randomizing, just choose one possible char
-                possibleChars = [possibleChars[Math.floor(Math.random() * possibleChars.length)]];
+        while (currentOutput instanceof OutputTrieLeaf) {
+            if (!(currentOutput.tape in result)) {
+                result[currentOutput.tape] = "";
             }
-            for (const c of possibleChars) {   
-                for (const existingResult of results) {
-                    const newStr = (opt.direction == "LTR")
-                                    ? c + existingResult
-                                    : existingResult + c;
-                    newResults.push(newStr);
-                }
-            }
-            results = newResults;
+            const oldStr = result[currentOutput.tape];
+            const newStr = (opt.direction == "LTR")
+                            ? currentOutput.token + oldStr
+                            : oldStr + currentOutput.token;
+            result[currentOutput.tape] = newStr
             currentOutput = currentOutput.prev;
         }
 
-        yield* results;
+        return result;
     } 
 
-    /*
-    public *getStrings(random: boolean = false): Gen<string> {
-
-        if (this.cache == undefined) {
-            this.cache = [];
-            let prevStrings = [ "" ];
-            if (this.prev != undefined) {
-                prevStrings = [...this.prev.getStrings(random)];
-            }
-                
-            for (const s of prevStrings) {
-                for (const c of this.tape.fromBits(this.tape.tapeName, this.token.bits)) {
-                    this.cache.push(s + c);
-                }
-            } 
-        }
-
-        yield* this.cache;
-
-    } */
 }
 
-/**
- * Multi tape output
- * 
- * This stores a collection of outputs on different tapes, by storing a collection of pointers to them.
- * When you add a <tape, char> pair to it (say, <text,b>), you return a new MultiTapeOutput that now
- * points to a new SingleTapeOutput corresponding to "text" -- the new one with "b" added -- and keep 
- * all the old pointers the same.
- */
-export class MultiTapeOutput {
+export class OutputTrieLeaf extends OutputTrie {
 
-    public singleTapeOutputs: Map<string, SingleTapeOutput> = new Map();
-
-    public add(tape: Tape, token: Token) {
-        if (tape.isTrivial) {
-            return this;
-        }
-
-        const result = new MultiTapeOutput();
-        result.singleTapeOutputs = new Map(this.singleTapeOutputs);
-        const prev = this.singleTapeOutputs.get(tape.tapeName);
-        const newTape = new SingleTapeOutput(tape, token, prev);
-        result.singleTapeOutputs.set(tape.tapeName, newTape);
-        return result;
+    constructor(
+        public tape: string,
+        public token: string,
+        public prev: OutputTrie
+    ) { 
+        super();
     }
 
-    public toStrings(opt: GenOptions): StringDict[] {
-        var results: StringDict[] = [ {} ];
-        for (const [tapeName, tape] of this.singleTapeOutputs) {
-            var newResults: StringDict[] = [];
-            for (const str of tape.getStrings(opt)) {
-                for (const result of results) {
-                    const newResult: StringDict = Object.assign({}, result);
-                    newResult[tapeName] = str;
-                    newResults.push(newResult);
-                }
-            }
-            results = newResults;
-        }
-        return results;
-    }
-} 
+}
+
+
 
 
 /**
@@ -150,10 +70,6 @@ export class MultiTapeOutput {
  * its possible vocabulary is, what counts as concatenation and matching, etc.).  It doesn't,
  * however, encapsulate a tape in the sense of keeping a sequence of character outputs; that
  * would be encapsulated by the Output objects above.
- * 
- * TODO: Refactor Outputs and Tapes so that they're all one kind of object, because currently
- * we're keeping a duplicated hierarchy in which the Output and Tape class hierarchies mirror 
- * each other.
  */
 export abstract class Tape {
 
@@ -162,7 +78,6 @@ export abstract class Tape {
     ) { }
 
     public abstract readonly tapeName: string;
-    public abstract readonly globalName: string;
 
     public abstract readonly isTrivial: boolean;
 
@@ -284,10 +199,6 @@ export class StringTape extends Tape {
         public indexToStr: Map<number, string> = new Map()
     ) { 
         super(parent);
-    }
-    
-    public get globalName(): string {
-        return this.tapeName;
     }
 
     public get isTrivial(): boolean {
@@ -527,13 +438,6 @@ export class TapeCollection extends Tape {
         return "__ANY_TAPE__";
     }
     
-    public get globalName(): string {
-        if (this.tapes.size == 0) {
-            return "__NO_TAPE__";
-        }
-        return "__ANY_TAPE__";
-    }
-    
     public tokenize(
         tapeName: string, 
         str: string, 
@@ -624,10 +528,6 @@ export class RenamedTape extends Tape {
             return this.fromTape;
         }
         return childName;
-    }
-
-    public get globalName(): string {
-        return this.child.globalName;
     }
     
     public inVocab(tapeName: string, strs: string[]): boolean {
