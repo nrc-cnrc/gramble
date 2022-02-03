@@ -1765,4 +1765,109 @@ describe(`${path.basename(module.filename)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION, 100);
     });
 
+    // The following tests check that copy-through is working for any size (i.e.
+    // any value of maxCopyChars), and were moved here from testJoinReplace
+    // where they were used to track down issues with ReplaceGrammar and
+    // DotStarExpr. Until recently, only ReplaceGrammar was using DotStarExpr
+    // (via constructDotRep), but now StartsWithGrammar, EndsWithGrammar, and
+    // ContainsGrammar do too, so other unit tests may test DotStarExpr as well. 
+    describe('35a. Replace i by o with vocab hi: i -> o {0,3} with maxCopyChars=Infinity', function() {
+        const grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'),
+                            Replace(t1("i"), t2("o"),
+                                    EMPTY_CONTEXT,EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                    false, false, 0, 3, 3, Infinity, true));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: "ihh", t2: "ohh"},
+            {t1: "hhh", t2: "hhh"},
+            {t1: "hh", t2: "hh"},
+            {t1: "hih", t2: "hoh"},
+            {t1: "iih", t2: "ooh"},
+            {t1: "ih", t2: "oh"},
+            {t1: "h", t2: "h"},
+            {t1: "hhi", t2: "hho"},
+            {t1: "ihi", t2: "oho"},
+            {t1: "hi", t2: "ho"},
+            {t1: "hii", t2: "hoo"},
+            {t1: "iii", t2: "ooo"},
+            {t1: "ii", t2: "oo"},
+            {t1: "i", t2: "o"},
+            {},
+            // should not include
+            // {t1: "ihh", t2: "ihh"},
+            // {t1: "iih", t2: "iih"},
+            // {t1: "hih", t2: "hih"},
+            // {t1: "hii", t2: "hii"},
+            // {t1: "hhi", t2: "hhi"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 7);
+    });
+
+    describe('35b. Replace i by o with vocab hi: i -> o {0,3} with maxCopyChars=6', function() {
+        const grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'),
+                            Replace(t1("i"), t2("o"),
+                                    EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                    false, false, 0, 3, 3, 6, true));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: "ihh", t2: "ohh"},
+            {t1: "hhh", t2: "hhh"},
+            {t1: "hh", t2: "hh"},
+            {t1: "hih", t2: "hoh"},
+            {t1: "iih", t2: "ooh"},
+            {t1: "ih", t2: "oh"},
+            {t1: "h", t2: "h"},
+            {t1: "hhi", t2: "hho"},
+            {t1: "ihi", t2: "oho"},
+            {t1: "hi", t2: "ho"},
+            {t1: "hii", t2: "hoo"},
+            {t1: "iii", t2: "ooo"},
+            {t1: "ii", t2: "oo"},
+            {t1: "i", t2: "o"},
+            {},
+            // should not include
+            // {t1: "ihh", t2: "ihh"},
+            // {t1: "iih", t2: "iih"},
+            // {t1: "hih", t2: "hih"},
+            // {t1: "hii", t2: "hii"},
+            // {t1: "hhi", t2: "hhi"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 7);
+    });
+
+    describe('35c. Replace i by o with vocab hi: i -> o {0,3}, with maxCopyChars=2500', function() {
+        const grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'),
+                            Replace(t1("i"), t2("o"),
+                                    EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                    false, false, 0, 3, 3, 2500, true));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: "ihh", t2: "ohh"},
+            {t1: "hhh", t2: "hhh"},
+            {t1: "hh", t2: "hh"},
+            {t1: "hih", t2: "hoh"},
+            {t1: "iih", t2: "ooh"},
+            {t1: "ih", t2: "oh"},
+            {t1: "h", t2: "h"},
+            {t1: "hhi", t2: "hho"},
+            {t1: "ihi", t2: "oho"},
+            {t1: "hi", t2: "ho"},
+            {t1: "hii", t2: "hoo"},
+            {t1: "iii", t2: "ooo"},
+            {t1: "ii", t2: "oo"},
+            {t1: "i", t2: "o"},
+            {},
+            // should not include
+            // {t1: "ihh", t2: "ihh"},
+            // {t1: "iih", t2: "iih"},
+            // {t1: "hih", t2: "hih"},
+            // {t1: "hii", t2: "hii"},
+            // {t1: "hhi", t2: "hhi"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 7);
+    });
+
 });

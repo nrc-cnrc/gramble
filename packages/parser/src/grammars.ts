@@ -1423,6 +1423,12 @@ export function Replace(
         minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass);
 }
 
+export function JoinReplace(
+    child: Grammar,
+    rules: ReplaceGrammar[],
+): JoinReplaceGrammar {
+    return new JoinReplaceGrammar(DUMMY_CELL, child, rules);
+}
 
 /**
  * JoinReplace is a special kind of join that understands how
