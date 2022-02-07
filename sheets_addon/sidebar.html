@@ -429,7 +429,6 @@
 
                 const inputs = getCurrentInputs();
                 
-                let startTime = Date.now();
                 let results = [];
                 
                 gramble.timeIt(() => {
@@ -497,8 +496,6 @@
                 const symbolName = getCurrentSymbolName();
 
                 const inputs = getCurrentInputs();
-                
-                let startTime = Date.now();
 
                 let results = gramble.timeIt(() =>
                     project.sample(symbolName, 50, inputs),

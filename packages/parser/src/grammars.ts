@@ -1154,7 +1154,6 @@ export class UnresolvedEmbedGrammar extends AtomicGrammar {
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
-            //console.log(`warning, unresolved embed ${this.name}`);
             this.expr = EPSILON;
         }
         return this.expr;

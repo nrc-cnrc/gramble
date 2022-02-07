@@ -246,10 +246,15 @@ export function testGramble(
     maxRecursion: number = 4, 
     maxChars: number = 1000
 ): void {
-    describe(`Generating from ${symbolName}`, function() {
-        testGrammarAux(interpreter, expectedResults, symbolName, 
+    if (symbolName == "") {
+        testGrammarAux(interpreter, expectedResults, symbolName,
             maxRecursion, maxChars);
-    });
+    } else {
+        describe(`Generating from ${symbolName}`, function() {
+            testGrammarAux(interpreter, expectedResults, symbolName, 
+                maxRecursion, maxChars);
+        });
+    }
 }
 
 export function sheetFromFile(path: string): Interpreter {

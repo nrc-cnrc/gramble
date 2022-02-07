@@ -278,7 +278,8 @@ export class ReplaceAdjuster extends IdentityTransform<void>{
         }
 
         const child2 = new AlternationGrammar(g.cell, newRules);
-        return new JoinGrammar(g.cell, newChild, child2);
+        const result = new JoinGrammar(g.cell, newChild, child2);
+        return result;
         //return new JoinReplaceGrammar(g.cell, newChild, newRules as ReplaceGrammar[]);
     }
 
@@ -308,9 +309,10 @@ export class ReplaceAdjuster extends IdentityTransform<void>{
         const renamedPre = new RenameGrammar(DUMMY_CELL, newPre, g.fromTapeName, replaceTapeName);
         const renamedPost = new RenameGrammar(DUMMY_CELL, newPost, g.fromTapeName, replaceTapeName);
 
-        return new ReplaceGrammar(g.cell, renamedFrom, newTo, renamedPre, renamedPost, newOther,
+        const result = new ReplaceGrammar(g.cell, renamedFrom, newTo, renamedPre, renamedPost, newOther,
             g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,
             g.vocabBypass);
+        return result;
     }
 
 }

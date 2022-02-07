@@ -217,7 +217,7 @@ export class Interpreter {
         }
 
         tapePriority = targetComponent.calculateTapes(new CounterStack(2));
-        
+
         if (Object.keys(query).length > 0) {
             const queryLiterals = Object.entries(query).map(([key, value]) => {
                 return new LiteralGrammar(DUMMY_CELL, key, value);

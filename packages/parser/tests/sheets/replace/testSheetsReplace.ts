@@ -1,4 +1,4 @@
-import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
+import { testGramble, testErrors, sheetFromFile, testHasTapes } from "../../testUtils";
 import * as path from 'path';
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
@@ -207,5 +207,47 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "goo"}
         ]);
     });
+
+    describe('Nested replace', function() {
+        const project = sheetFromFile(`${DIR}/nestedReplace.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {text: "b", text2: "v", text3: "w"}
+        ]);
+    });
+    
+    describe('Nested replace 2', function() {
+        const project = sheetFromFile(`${DIR}/nestedReplace2.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {text: "ab", text2: "av", text3: "ev"}
+        ]);
+    });
+    
+
+    describe('Nested replace 3', function() {
+        const project = sheetFromFile(`${DIR}/nestedReplace3.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {text: "aba", text2: "ava", text3: "awa"}
+        ]);
+    });
+
+    describe('Nested replace same tape', function() {
+        const project = sheetFromFile(`${DIR}/nestedReplaceSameTape.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {text: "w"}
+        ], undefined, 4, 4);
+    });
+    
+    describe('Nested replace same tape 2', function() {
+        const project = sheetFromFile(`${DIR}/nestedReplaceSameTape2.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {text: "ev"}
+        ], undefined, 4, 5);
+    });
+
 
 });

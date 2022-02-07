@@ -443,7 +443,10 @@ export abstract class Expr {
             let [tapes, prevOutput, prevExpr, chars] = prev;
             
             if (VERBOSE) {
+                console.log();
+                console.log(`prevOutput is ${JSON.stringify(prevOutput.toDict(opt))}`);
                 console.log(`prevExpr is ${prevExpr.id}`);
+                console.log(`remaining tapes are ${tapes.map(t => t.tapeName)}`);
             }
 
             if (chars >= opt.maxChars) {
@@ -1791,6 +1794,10 @@ export class NewMatchExpr extends UnaryExpr {
         super(child);
     }
 
+    public get id(): string {
+        return `M(${this.child.id})`;
+    }
+
     public delta(tape: Tape, stack: CounterStack): Expr {
         
         if (!this.tapes.has(tape.tapeName)) {
@@ -1803,7 +1810,7 @@ export class NewMatchExpr extends UnaryExpr {
         for (const t of this.tapes) {
             const tapeToTry = tape.getTape(t);
             if (tapeToTry == undefined) {
-                throw new Error("something went wrong, couldn't find tape ${tape}");
+                throw new Error(`something went wrong in delta, couldn't find tape ${t} relative to tape ${tape.tapeName}`);
             }
             result = result.delta(tapeToTry, stack);
         }
@@ -1833,7 +1840,7 @@ export class NewMatchExpr extends UnaryExpr {
         for (const t of this.tapes) {
             const tapeToTry = tape.getTape(t);
             if (tapeToTry == undefined) {
-                throw new Error(`something went wrong, couldn't find tape ${tape}`);
+                throw new Error(`something went wrong in deriv, couldn't find tape ${t}`);
             }
             
             const nextResults: [string, Expr][] = [];
@@ -1995,7 +2002,6 @@ export class MatchExpr extends UnaryExpr {
         stack: CounterStack,
         opt: GenOptions
     ): Gen<[string, Expr]> {
-        
 
         for (const [c1target, c1next] of 
             this.child.concreteDeriv(tape, target, stack, opt)) {

@@ -73,10 +73,6 @@ export class OutputTrieLeaf extends OutputTrie {
  */
 export abstract class Tape {
 
-    constructor(
-        public parent: TapeCollection | undefined = undefined
-    ) { }
-
     public abstract readonly tapeName: string;
 
     public abstract readonly isTrivial: boolean;
@@ -85,12 +81,7 @@ export abstract class Tape {
 
     public abstract inVocab(tapeName: string, strs: string[]): boolean;
     
-    public getTape(tapeName: string): Tape | undefined {
-        if (this.parent == undefined) {
-            return undefined;
-        }
-        return this.parent.getTape(tapeName);
-    }
+    public abstract getTape(tapeName: string): Tape | undefined;
 
     public add(str1: string, str2: string): string[] {
         throw new Error(`Not implemented`);
@@ -191,14 +182,14 @@ export const NO_CHAR: Token = new Token(new BitSet());
 export class StringTape extends Tape {
 
     constructor(
-        parent: TapeCollection,
+        public parent: TapeCollection,
         public tapeName: string,
         public current: Token | undefined = undefined,
         public prev: StringTape | undefined = undefined,
         public strToIndex: Map<string, number> = new Map(),
         public indexToStr: Map<number, string> = new Map()
     ) { 
-        super(parent);
+        super();
     }
 
     public get isTrivial(): boolean {
@@ -211,6 +202,13 @@ export class StringTape extends Tape {
 
     public getTapeNames(): Set<string> {
         return new Set([this.tapeName]);
+    }
+
+    public getTape(tapeName: string): Tape | undefined {
+        if (this.parent == undefined) {
+            throw new Error(`Orphaned tape: ${this.tapeName}`);
+        }
+        return this.parent.getTape(tapeName);
     }
 
     public inVocab(tapeName: string, strs: string[]): boolean {
@@ -370,6 +368,8 @@ export class StringTape extends Tape {
  * 
  * At the moment this isn't used anywhere.
  */
+
+/*
 class FlagTape extends StringTape {
 
     public add(oldResults: string, newResult: string): string[] {
@@ -390,7 +390,7 @@ class FlagTape extends StringTape {
         } 
         return [[str, new Token(this.toBits(tapeName, str))]];
     }
-}
+} */
 
 /**
  * This contains information about all the tapes.  When we do a "free query" in the state machine,
@@ -455,6 +455,7 @@ export class TapeCollection extends Tape {
         return this.tapes.get(tapeName);
     }
 
+    /*
     public split(tapeNames: Set<string>): [TapeCollection, TapeCollection] {
         const wheat = new TapeCollection();
         const chaff = new TapeCollection();
@@ -466,7 +467,7 @@ export class TapeCollection extends Tape {
             chaff.tapes.set(tapeName, tape);
         }
         return [wheat, chaff];
-    }
+    } */
 
     public get size(): number {
         return this.tapes.size;
@@ -559,7 +560,6 @@ export class RenamedTape extends Tape {
         return (tapeName == this.fromTape) ? this.toTape : tapeName;
     }
 
-    
     public getTapeNames(): Set<string> {
         const result = [...this.child.getTapeNames()]
                        .filter(s => this.adjustTapeName(s));
@@ -588,11 +588,8 @@ export class RenamedTape extends Tape {
     }
 
     public getTape(tapeName: string): Tape | undefined {
-        if (this.parent == undefined) {
-            return undefined;
-        }
         tapeName = this.adjustTapeName(tapeName);
-        return this.parent.getTape(tapeName);
+        return this.child.getTape(tapeName);
     }
 
     public toBits(tapeName: string, char: string): BitSet {
