@@ -139,6 +139,11 @@ export abstract class Grammar {
         public cell: Cell
     ) { }
 
+    /**
+     * A string ID for the grammar, for debugging purposes.
+     */
+    public abstract get id(): string;
+
     public message(msg: any): void {
         this.cell.message(msg);
     }
@@ -250,6 +255,10 @@ abstract class AtomicGrammar extends Grammar {
 
 export class EpsilonGrammar extends AtomicGrammar {
 
+    public get id(): string {
+        return 'ε';
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformEpsilon(this, ns, args);
     }
@@ -274,7 +283,11 @@ export class EpsilonGrammar extends AtomicGrammar {
 }
 
 export class NullGrammar extends AtomicGrammar {
-
+    
+    public get id(): string {
+        return "∅";
+    }
+    
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformNull(this, ns, args);
     }
@@ -302,6 +315,10 @@ export class CharSetGrammar extends AtomicGrammar {
         public chars: string[]
     ) {
         super(cell);
+    }
+
+    public get id(): string {
+        return `CharSet(${this.chars.join(",")})`
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -345,6 +362,10 @@ export class LiteralGrammar extends AtomicGrammar {
         super(cell);
     }
 
+    public get id(): string {
+        return `Literal(${this.tape}:${this.text})`;
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformLiteral(this, ns, args);
     }
@@ -384,6 +405,10 @@ export class DotGrammar extends AtomicGrammar {
     ) {
         super(cell);
     }
+
+    public get id(): string {
+        return `Dot(${this.tape})`;
+    }
     
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformDot(this, ns, args);
@@ -419,6 +444,11 @@ abstract class NAryGrammar extends Grammar {
 }
 
 export class SequenceGrammar extends NAryGrammar {
+
+    public get id(): string {
+        const cs = this.children.map(c => c.id).join(",");
+        return `Seq(${cs})`;
+    }
     
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformSequence(this, ns, args);
@@ -456,6 +486,11 @@ export class AlternationGrammar extends NAryGrammar {
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformAlternation(this, ns, args);
     }
+    
+    public get id(): string {
+        const cs = this.children.map(c => c.id).join(",");
+        return `Uni(${cs})`;
+    }
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
@@ -483,6 +518,10 @@ abstract class BinaryGrammar extends Grammar {
 
 export class IntersectionGrammar extends BinaryGrammar {
     
+    public get id(): string {
+        return `Intersect(${this.child1.id},${this.child2.id})`;
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformIntersection(this, ns, args);
     }
@@ -507,6 +546,10 @@ function fillOutWithDotStar(state: Expr, tapes: string[]) {
 } */
 
 export class JoinGrammar extends BinaryGrammar {
+    
+    public get id(): string {
+        return `Join(${this.child1.id},${this.child2.id})`;
+    }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformJoin(this, ns, args);
@@ -539,6 +582,10 @@ export class JoinGrammar extends BinaryGrammar {
 }
 
 export class FilterGrammar extends BinaryGrammar {
+
+    public get id(): string {
+        return `Filter(${this.child1.id},${this.child2.id})`;
+    }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformFilter(this, ns, args);
@@ -575,6 +622,10 @@ export class FilterGrammar extends BinaryGrammar {
 
 export class StartsWithGrammar extends FilterGrammar {
 
+    public get id(): string {
+        return `StartsWith(${this.child1.id},${this.child2.id})`;
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformStartsWith(this, ns, args);
     }
@@ -597,6 +648,10 @@ export class StartsWithGrammar extends FilterGrammar {
 
 export class EndsWithGrammar extends FilterGrammar {
 
+    public get id(): string {
+        return `EndsWith(${this.child1.id},${this.child2.id})`;
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformEndsWith(this, ns, args);
     }
@@ -618,6 +673,10 @@ export class EndsWithGrammar extends FilterGrammar {
 
 
 export class ContainsGrammar extends FilterGrammar {
+
+    public get id(): string {
+        return `Contains(${this.child1.id},${this.child2.id})`;
+    }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformContains(this, ns, args);
@@ -671,6 +730,10 @@ export class RenameGrammar extends UnaryGrammar {
         super(cell, child);
     }
     
+    public get id(): string {
+        return `Rename(${this.child.id},${this.fromTape},${this.toTape})`;
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformRename(this, ns, args);
     }
@@ -745,6 +808,10 @@ export class RepeatGrammar extends UnaryGrammar {
     ) {
         super(cell, child);
     }
+
+    public get id(): string {
+        return `Repeat(${this.child.id},${this.minReps},${this.maxReps})`;
+    }
     
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformRepeat(this, ns, args);
@@ -767,6 +834,10 @@ export class NegationGrammar extends UnaryGrammar {
         public maxReps: number = Infinity
     ) {
         super(cell, child);
+    }
+    
+    public get id(): string {
+        return `Not(${this.child.id})`;
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -803,6 +874,10 @@ export class HideGrammar extends UnaryGrammar {
             HIDE_INDEX++;
         }
         this.toTape = `__${name}_${tape}`;
+    }
+    
+    public get id(): string {
+        return `Hide(${this.child.id},${this.tape})`;
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -871,6 +946,10 @@ export class MatchGrammar extends UnaryGrammar {
         super(cell, child);
     }
 
+    public get id(): string {
+        return `Match(${this.child.id},${[...this.relevantTapes]})`;
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformMatch(this, ns, args);
     }
@@ -891,6 +970,14 @@ export class NsGrammar extends Grammar {
         public name: string
     ) {
         super(cell);
+    }
+
+    public get id(): string {
+        let results: string[] = [];
+        for (const [k, v] of this.symbols.entries()) {
+            results.push(`${k}:${v.id}`);
+        }
+        return `Ns(${results.join(",")})`;
     }
 
     //public qualifiedNames: Map<string, string> = new Map();
@@ -1060,6 +1147,10 @@ export class EmbedGrammar extends AtomicGrammar {
     ) {
         super(cell);
     }
+
+    public get id(): string {
+        return `Embed(${this.name})`;
+    }
     
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformEmbed(this, ns, args);
@@ -1119,6 +1210,10 @@ export class UnresolvedEmbedGrammar extends AtomicGrammar {
     ) {
         super(cell);
     }
+    
+    public get id(): string {
+        return `Embed(${this.name})`;
+    }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformUnresolvedEmbed(this, ns, args);
@@ -1161,6 +1256,10 @@ export class UnresolvedEmbedGrammar extends AtomicGrammar {
 }
 
 export class UnitTestGrammar extends UnaryGrammar {
+
+    public get id(): string {
+        return this.child.id;
+    }
 
     constructor(
         cell: Cell,
@@ -1435,6 +1534,11 @@ export function JoinReplace(
  */
 export class JoinReplaceGrammar extends Grammar {
 
+    public get id(): string {
+        const cs = this.rules.map(r => r.id).join(",");
+        return `JoinReplace(${this.child.id},${cs})`;
+    }
+
     //public renameTapeName: string | undefined = undefined;
     //public fromTapeName: string | undefined = undefined;
     //public renamedChild: GrammarComponent | undefined = undefined;
@@ -1512,6 +1616,10 @@ export class JoinReplaceGrammar extends Grammar {
 }
 
 export class ReplaceGrammar extends Grammar {
+
+    public get id(): string {
+        return `Replace(${this.fromState.id}->${this.toState.id}|${this.preContext.id}_${this.postContext.id})`;
+    }
     
     public fromTapeName: string = "__UNKNOWN_TAPE__";
     public toTapeName: string = "__UNKNOWN_TAPE__";
@@ -1606,7 +1714,14 @@ export class ReplaceGrammar extends Grammar {
         }
     }
 
-    public constructExpr(symbolTable: SymbolTable): Expr {        
+    public constructExpr(symbolTable: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            this.expr = this.constructExprAux(symbolTable);
+        }
+        return this.expr;
+    }
+
+    public constructExprAux(symbolTable: SymbolTable): Expr {   
         if (this.beginsWith || this.endsWith) {
             this.maxReps = Math.max(1, this.maxReps);
             this.minReps = Math.min(this.minReps, this.maxReps);

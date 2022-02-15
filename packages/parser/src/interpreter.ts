@@ -42,6 +42,8 @@ export class Interpreter {
         public verbose: boolean = false
     ) { 
 
+        //console.log(this.grammar.id);
+
         timeIt(() => {
             const nameQualifier = new NameQualifier();
             this.grammar = nameQualifier.transform(this.grammar);
@@ -51,6 +53,8 @@ export class Interpreter {
             const replaceAdjuster = new ReplaceAdjuster();
             this.grammar = replaceAdjuster.transform(this.grammar);
         }, verbose, "Adjusted tape names");
+
+        //console.log(this.grammar.id);
 
         timeIt(() => {
             // recalculate tapes

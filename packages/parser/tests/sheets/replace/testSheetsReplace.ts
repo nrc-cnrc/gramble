@@ -208,16 +208,16 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Nested replace', function() {
-        const project = sheetFromFile(`${DIR}/nestedReplace.csv`);
+    describe('Nested replace, different tapes', function() {
+        const project = sheetFromFile(`${DIR}/nestedDifferent.csv`);
         testErrors(project, []);
         testGramble(project, [
             {text: "b", text2: "v", text3: "w"}
         ]);
     });
     
-    describe('Nested replace 2', function() {
-        const project = sheetFromFile(`${DIR}/nestedReplace2.csv`);
+    describe('Nested replace, different tapes 2', function() {
+        const project = sheetFromFile(`${DIR}/nestedDifferent2.csv`);
         testErrors(project, []);
         testGramble(project, [
             {text: "ab", text2: "av", text3: "ev"}
@@ -225,8 +225,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
 
-    describe('Nested replace 3', function() {
-        const project = sheetFromFile(`${DIR}/nestedReplace3.csv`);
+    describe('Nested replace, different tapes 3', function() {
+        const project = sheetFromFile(`${DIR}/nestedDifferent3.csv`);
         testErrors(project, []);
         testGramble(project, [
             {text: "aba", text2: "ava", text3: "awa"}
@@ -234,7 +234,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Nested replace same tape', function() {
-        const project = sheetFromFile(`${DIR}/nestedReplaceSameTape.csv`);
+        const project = sheetFromFile(`${DIR}/nestedSame.csv`);
         testErrors(project, []);
         testGramble(project, [
             {text: "w"}
@@ -242,12 +242,27 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Nested replace same tape 2', function() {
-        const project = sheetFromFile(`${DIR}/nestedReplaceSameTape2.csv`);
+        const project = sheetFromFile(`${DIR}/nestedSame2.csv`);
         testErrors(project, []);
         testGramble(project, [
             {text: "ev"}
         ], undefined, 4, 5);
     });
 
+    describe('Different-tape replace nested inside a same-tape replace', function() {
+        const project = sheetFromFile(`${DIR}/nestedDifferentInsideSame.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {text: "b", text2: "w"}
+        ], undefined, 4, 5);
+    });
+    
+    describe('Same-tape replace nested inside a different-tape replace', function() {
+        const project = sheetFromFile(`${DIR}/nestedSameInsideDifferent.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {text: "v", text2: "w"}
+        ], undefined, 4, 5);
+    }); 
 
 });
