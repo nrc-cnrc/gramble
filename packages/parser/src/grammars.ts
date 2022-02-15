@@ -468,7 +468,7 @@ export class SequenceGrammar extends NAryGrammar {
 
     public finalChild(): Grammar {
         if (this.children.length == 0) {
-            return new EpsilonGrammar(DUMMY_CELL);
+            return new EpsilonGrammar(new DummyCell());
         }
         return this.children[this.children.length-1];
     }
@@ -1353,14 +1353,12 @@ export class NegativeUnitTestGrammar extends UnitTestGrammar {
 
 }
 
-export const DUMMY_CELL = new DummyCell();
-
 export function Seq(...children: Grammar[]): SequenceGrammar {
-    return new SequenceGrammar(DUMMY_CELL, children);
+    return new SequenceGrammar(new DummyCell(), children);
 }
 
 export function Uni(...children: Grammar[]): AlternationGrammar {
-    return new AlternationGrammar(DUMMY_CELL, children);
+    return new AlternationGrammar(new DummyCell(), children);
 }
 
 export function Maybe(child: Grammar): AlternationGrammar {
@@ -1368,39 +1366,39 @@ export function Maybe(child: Grammar): AlternationGrammar {
 }
 
 export function CharSet(tape: string, chars: string[]): CharSetGrammar {
-    return new CharSetGrammar(DUMMY_CELL, tape, chars);
+    return new CharSetGrammar(new DummyCell(), tape, chars);
 }
 
 export function Lit(tape: string, text: string): LiteralGrammar {
-    return new LiteralGrammar(DUMMY_CELL, tape, text);
+    return new LiteralGrammar(new DummyCell(), tape, text);
 }
 
 export function Any(tape: string): DotGrammar {
-    return new DotGrammar(DUMMY_CELL, tape);
+    return new DotGrammar(new DummyCell(), tape);
 }
 
 export function Intersect(child1: Grammar, child2: Grammar): IntersectionGrammar {
-    return new IntersectionGrammar(DUMMY_CELL, child1, child2);
+    return new IntersectionGrammar(new DummyCell(), child1, child2);
 }
 
 export function Filter(child1: Grammar, child2: Grammar): FilterGrammar {
-    return new FilterGrammar(DUMMY_CELL, child1, child2);
+    return new FilterGrammar(new DummyCell(), child1, child2);
 }
 
 export function Join(child1: Grammar, child2: Grammar): JoinGrammar {
-    return new JoinGrammar(DUMMY_CELL, child1, child2);
+    return new JoinGrammar(new DummyCell(), child1, child2);
 }
 
 export function StartsWith(child1: Grammar, child2: Grammar): StartsWithGrammar {
-    return new StartsWithGrammar(DUMMY_CELL, child1, child2);
+    return new StartsWithGrammar(new DummyCell(), child1, child2);
 }
 
 export function EndsWith(child1: Grammar, child2: Grammar): EndsWithGrammar {
-    return new EndsWithGrammar(DUMMY_CELL, child1, child2);
+    return new EndsWithGrammar(new DummyCell(), child1, child2);
 }
 
 export function Contains(child1: Grammar, child2: Grammar): ContainsGrammar {
-    return new ContainsGrammar(DUMMY_CELL, child1, child2);
+    return new ContainsGrammar(new DummyCell(), child1, child2);
 }
 
 export function Rep(
@@ -1408,23 +1406,23 @@ export function Rep(
     minReps: number = 0, 
     maxReps: number = Infinity
 ) {
-    return new RepeatGrammar(DUMMY_CELL, child, minReps, maxReps);
+    return new RepeatGrammar(new DummyCell(), child, minReps, maxReps);
 }
 
 export function Epsilon(): EpsilonGrammar {
-    return new EpsilonGrammar(DUMMY_CELL);
+    return new EpsilonGrammar(new DummyCell());
 }
 
 export function Null(): NullGrammar {
-    return new NullGrammar(DUMMY_CELL);
+    return new NullGrammar(new DummyCell());
 }
 
 export function Embed(name: string): UnresolvedEmbedGrammar {
-    return new UnresolvedEmbedGrammar(DUMMY_CELL, name);
+    return new UnresolvedEmbedGrammar(new DummyCell(), name);
 }
 
 export function Match(child: Grammar, ...tapes: string[]): MatchGrammar {
-    return new MatchGrammar(DUMMY_CELL, child, new Set(tapes));
+    return new MatchGrammar(new DummyCell(), child, new Set(tapes));
 }
 
 export function Dot(...tapes: string[]): SequenceGrammar {
@@ -1458,18 +1456,18 @@ export function MatchFrom(state:Grammar, firstTape: string, ...otherTapes: strin
 }
 
 export function Rename(child: Grammar, fromTape: string, toTape: string): RenameGrammar {
-    return new RenameGrammar(DUMMY_CELL, child, fromTape, toTape);
+    return new RenameGrammar(new DummyCell(), child, fromTape, toTape);
 }
 
 export function Not(child: Grammar, maxChars:number=Infinity): NegationGrammar {
-    return new NegationGrammar(DUMMY_CELL, child, maxChars);
+    return new NegationGrammar(new DummyCell(), child, maxChars);
 }
 
 export function Ns(
     name: string, 
     symbols: {[name: string]: Grammar} = {}
 ): NsGrammar {
-    const result = new NsGrammar(DUMMY_CELL, name);
+    const result = new NsGrammar(new DummyCell(), name);
     for (const [symbolName, component] of Object.entries(symbols)) {
         result.addSymbol(symbolName, component);
     }
@@ -1477,7 +1475,7 @@ export function Ns(
 }
 
 export function Hide(child: Grammar, tape: string, name: string = ""): HideGrammar {
-    return new HideGrammar(DUMMY_CELL, child, tape, name);
+    return new HideGrammar(new DummyCell(), child, tape, name);
 }
 
 export function Vocab(tape: string, text: string): Grammar {
@@ -1516,7 +1514,7 @@ export function Replace(
     maxCopyChars: number = maxExtraChars,
     vocabBypass: boolean = false
 ): ReplaceGrammar {
-    return new ReplaceGrammar(DUMMY_CELL, fromState, toState, 
+    return new ReplaceGrammar(new DummyCell(), fromState, toState, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
         minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass);
 }
@@ -1525,7 +1523,7 @@ export function JoinReplace(
     child: Grammar,
     rules: ReplaceGrammar[],
 ): JoinReplaceGrammar {
-    return new JoinReplaceGrammar(DUMMY_CELL, child, rules);
+    return new JoinReplaceGrammar(new DummyCell(), child, rules);
 }
 
 /**

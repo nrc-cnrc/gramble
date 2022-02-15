@@ -13,7 +13,8 @@ import {
     t1, t2, 
     testHasTapes, 
     testHasVocab,
-    testGrammar, 
+    testGrammar,
+    t3, 
 } from './testUtils';
 
 import * as path from 'path';
@@ -95,13 +96,65 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     // 1b. Replace e by a in hello: e -> a, same tape
-    describe('1b. Replace e by a in hello: e -> a', function() {
+    describe('1b. Replace e by a in hello: e -> a, same tape', function() {
         const grammar = JoinReplace(t1("hello"),
                                     [ReplaceBypass(t1("e"), t1("a"))]);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 5});
         const expectedResults: StringDict[] = [
             {t1: 'hallo'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('2a. Replace e by a, then a by u, in hello: e -> a, a -> u', function() {
+        const innerReplace = JoinReplace(t1("hello"),
+                                    [ReplaceBypass(t1("e"), t2("a"))]);
+        const grammar = JoinReplace(innerReplace, 
+                                [ ReplaceBypass(t2("a"), t3("u"))]);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1: 4, t2:5, t3:6});
+        const expectedResults: StringDict[] = [
+            {t1: 'hello', t2: 'hallo', t3: "hullo"},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+    
+    describe('2b. Replace e by a, then a by u, in hello: e -> a, a -> u, same tape', function() {
+        const innerReplace = JoinReplace(t1("hello"),
+                                    [ReplaceBypass(t1("e"), t1("a"))]);
+        const grammar = JoinReplace(innerReplace, 
+                                [ ReplaceBypass(t1("a"), t1("u"))]);
+        testHasTapes(grammar, ['t1']);
+        testHasVocab(grammar, {t1: 6});
+        const expectedResults: StringDict[] = [
+            {t1: "hullo"},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('2c. Replace e by a (same tape), then a by u (diff tape), in hello', function() {
+        const innerReplace = JoinReplace(t1("hello"),
+                                    [ReplaceBypass(t1("e"), t1("a"))]);
+        const grammar = JoinReplace(innerReplace, 
+                                [ ReplaceBypass(t1("a"), t2("u"))]);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 5, t2: 6});
+        const expectedResults: StringDict[] = [
+            {t1: "hallo", t2: "hullo"},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('2d. Replace e by a (diff tape), then a by u (same tape), in hello', function() {
+        const innerReplace = JoinReplace(t1("hello"),
+                                    [ReplaceBypass(t1("e"), t2("a"))]);
+        const grammar = JoinReplace(innerReplace, 
+                                [ ReplaceBypass(t2("a"), t2("u"))]);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 4, t2: 6});
+        const expectedResults: StringDict[] = [
+            {t1: "hello", t2: "hullo"},
         ];
         testGrammar(grammar, expectedResults);
     });

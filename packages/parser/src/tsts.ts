@@ -10,7 +10,12 @@
  * into the expressions that the parse/generation engine actually operates on.
  */
 
-import { Grammar, NsGrammar, AlternationGrammar, EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, NullGrammar, SequenceGrammar, JoinGrammar, ReplaceGrammar, JoinReplaceGrammar, LiteralGrammar, DUMMY_CELL } from "./grammars";
+import { 
+    Grammar, NsGrammar, AlternationGrammar, 
+    EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, 
+    SequenceGrammar, JoinGrammar, ReplaceGrammar, 
+    JoinReplaceGrammar, LiteralGrammar 
+} from "./grammars";
 import { Cell, CellPos, DummyCell } from "./util";
 import { DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, ParamDict, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
 
@@ -191,7 +196,7 @@ export class TstHeadedCell extends TstCellComponent {
 export class TstEmpty extends TstComponent {
 
     public toGrammar(): Grammar {
-        return new EpsilonGrammar(DUMMY_CELL);
+        return new EpsilonGrammar(new DummyCell());
     }
     
     public toParamsTable(): [Cell, ParamDict][] {
@@ -868,7 +873,7 @@ export class TstNamespace extends TstEnclosure {
 export class TstProject extends TstNamespace {
 
     constructor() {
-        super("", DUMMY_CELL);
+        super("", new DummyCell());
     }
 
     /**

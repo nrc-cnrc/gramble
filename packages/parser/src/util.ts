@@ -38,16 +38,20 @@ export interface Cell {
 
 }
 
-const DUMMY_POS = new CellPos();
+let DUMMY_ROW: number = 0;
+
 export class DummyCell implements Cell {
 
-    public message(msg: any): void { }
-    public get id(): string {
-        return "NOWHERE";
+    public pos: CellPos;
+
+    constructor() {
+        this.pos = new CellPos("__", DUMMY_ROW++, 0);
     }
 
-    public get pos(): CellPos {
-        return DUMMY_POS;
+    public message(msg: any): void { }
+
+    public get id(): string {
+        return `D${this.pos.row}`;
     }
 
     public get text(): string {

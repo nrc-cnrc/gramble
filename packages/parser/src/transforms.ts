@@ -1,6 +1,6 @@
 import { 
     AlternationGrammar, ContainsGrammar, CounterStack, 
-    DotGrammar, DUMMY_CELL, EmbedGrammar, EndsWithGrammar, 
+    DotGrammar, EmbedGrammar, EndsWithGrammar, 
     EpsilonGrammar, FilterGrammar, Grammar, 
     GrammarTransform, 
     HideGrammar, IntersectionGrammar, JoinGrammar, 
@@ -11,6 +11,7 @@ import {
     UnresolvedEmbedGrammar, 
     CharSetGrammar
 } from "./grammars";
+import { DummyCell } from "./util";
 
 class IdentityTransform<T> implements GrammarTransform<T> {
 
@@ -274,7 +275,7 @@ export class ReplaceAdjuster extends IdentityTransform<void>{
             
             // DUMMY_CELL because this rename may be invalid, but we don't want
             // it to be reported to the user because the compiler did it
-            newChild = new RenameGrammar(DUMMY_CELL, newChild, fromTape, replaceTape);
+            newChild = new RenameGrammar(new DummyCell(), newChild, fromTape, replaceTape);
         }
 
         const child2 = new AlternationGrammar(g.cell, newRules);
@@ -303,11 +304,11 @@ export class ReplaceAdjuster extends IdentityTransform<void>{
         const newPost = g.postContext.accept(this, ns, args);
         const newOther = g.otherContext.accept(this, ns, args);
 
-        // DUMMY_CELL because this rename may be invalid, but we don't want
+        // We use a dummy cell because this rename may be invalid, but we don't want
         // it reported to the user because the compiler did it
-        const renamedFrom = new RenameGrammar(DUMMY_CELL, newFrom, g.fromTapeName, replaceTapeName);
-        const renamedPre = new RenameGrammar(DUMMY_CELL, newPre, g.fromTapeName, replaceTapeName);
-        const renamedPost = new RenameGrammar(DUMMY_CELL, newPost, g.fromTapeName, replaceTapeName);
+        const renamedFrom = new RenameGrammar(new DummyCell(), newFrom, g.fromTapeName, replaceTapeName);
+        const renamedPre = new RenameGrammar(new DummyCell(), newPre, g.fromTapeName, replaceTapeName);
+        const renamedPost = new RenameGrammar(new DummyCell(), newPost, g.fromTapeName, replaceTapeName);
 
         const result = new ReplaceGrammar(g.cell, renamedFrom, newTo, renamedPre, renamedPost, newOther,
             g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,

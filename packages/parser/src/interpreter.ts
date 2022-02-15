@@ -1,8 +1,8 @@
 import { 
-    CounterStack, DUMMY_CELL, FilterGrammar, Grammar, 
+    CounterStack, FilterGrammar, Grammar, 
     LiteralGrammar, SequenceGrammar 
 } from "./grammars";
-import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals} from "./util";
+import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell} from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
@@ -224,10 +224,10 @@ export class Interpreter {
 
         if (Object.keys(query).length > 0) {
             const queryLiterals = Object.entries(query).map(([key, value]) => {
-                return new LiteralGrammar(DUMMY_CELL, key, value);
+                return new LiteralGrammar(new DummyCell(), key, value);
             });
-            const querySeq = new SequenceGrammar(DUMMY_CELL, queryLiterals);
-            targetComponent = new FilterGrammar(DUMMY_CELL, targetComponent, querySeq);
+            const querySeq = new SequenceGrammar(new DummyCell(), queryLiterals);
+            targetComponent = new FilterGrammar(new DummyCell(), targetComponent, querySeq);
             tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
