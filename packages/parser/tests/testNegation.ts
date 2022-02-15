@@ -117,7 +117,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, []);
     });
 
-    describe('~(~t1:hello)', function() {
+    describe('Double negation: ~(~t1:hello)', function() {
         const grammar = Not(Not(t1("hello")));
         testGrammar(grammar, [{t1: "hello"}], "", 4, 30);
     });

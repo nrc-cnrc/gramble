@@ -52,6 +52,7 @@
     "testRegex": "mocha -r ts-node/register tests/testRegex.ts",
     "testReplace": "mocha -r ts-node/register tests/testReplace.ts",
     "testJoinReplace": "mocha -r ts-node/register tests/testJoinReplace.ts",
+    "testNotReplace": "mocha -r ts-node/register tests/testNotReplace.ts",
     "testTokenize": "mocha -r ts-node/register tests/testTokenize.ts",
     "testSheetsBasics": "mocha -r ts-node/register tests/sheets/basics/*.ts",
     "testSyntaxErrors": "mocha -r ts-node/register tests/sheets/syntaxErrors/*.ts",

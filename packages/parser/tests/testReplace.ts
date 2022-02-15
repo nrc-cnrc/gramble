@@ -23,7 +23,6 @@ import {
 
 import * as path from 'path';
 import { StringDict } from "../src/util";
-import { EPSILON } from "../src/exprs";
 
 const EMPTY: string = '';
 

@@ -159,5 +159,26 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
+    describe('3a. Replace e -> e in hello', function() {
+        const grammar = JoinReplace(t1("hello"),
+                                    [ReplaceBypass(t1("e"), t2("e"))]);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 4, t2: 4});
+        const expectedResults: StringDict[] = [
+            {t1: 'hello', t2: 'hello'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('3b. Replace e -> e in hello, same tape', function() {
+        const grammar = JoinReplace(t1("hello"),
+                                    [ReplaceBypass(t1("e"), t1("e"))]);
+        testHasTapes(grammar, ['t1']);
+        testHasVocab(grammar, {t1: 4});
+        const expectedResults: StringDict[] = [
+            {t1: 'hello'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
 
 });

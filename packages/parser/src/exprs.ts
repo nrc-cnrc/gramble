@@ -486,7 +486,7 @@ export abstract class Expr {
 
                 if (tapeToTry.tapeName.startsWith("__")) {
                     // don't bother to add hidden characters
-                    nexts.push([tapes, prevOutput, cNext, chars]);
+                    nexts.push([tapes, prevOutput, cNext, chars+1]);
                     continue;
                 }
 
