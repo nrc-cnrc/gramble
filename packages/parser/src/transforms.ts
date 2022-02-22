@@ -1,15 +1,13 @@
 import { 
-    AlternationGrammar, ContainsGrammar, CounterStack, 
-    DotGrammar, EmbedGrammar, EndsWithGrammar, 
-    EpsilonGrammar, FilterGrammar, Grammar, 
-    GrammarTransform, 
-    HideGrammar, IntersectionGrammar, JoinGrammar, 
-    JoinReplaceGrammar, LiteralGrammar, MatchGrammar, 
-    NsGrammar, NegationGrammar, NegativeUnitTestGrammar, 
-    NullGrammar, RenameGrammar, RepeatGrammar, ReplaceGrammar, 
-    SequenceGrammar, StartsWithGrammar, UnitTestGrammar, 
-    UnresolvedEmbedGrammar, 
-    CharSetGrammar
+    AlternationGrammar, CharSetGrammar, ContainsGrammar,
+    CounterStack, DotGrammar, EmbedGrammar, EndsWithGrammar,
+    EpsilonGrammar, FilterGrammar, Grammar, GrammarTransform,
+    HideGrammar, IntersectionGrammar, JoinGrammar,
+    JoinReplaceGrammar, LiteralGrammar, MatchGrammar,
+    NsGrammar, NegationGrammar, NegativeUnitTestGrammar,
+    NullGrammar, RenameGrammar, RepeatGrammar, ReplaceGrammar,
+    SequenceGrammar, StartsWithGrammar, UnitTestGrammar,
+    UnresolvedEmbedGrammar
 } from "./grammars";
 import { DummyCell } from "./util";
 
@@ -87,8 +85,8 @@ class IdentityTransform<T> implements GrammarTransform<T> {
     }
 
     public transformReplace(g: ReplaceGrammar, ns: NsGrammar, args: T): Grammar {
-        const newFrom = g.fromState.accept(this, ns, args);
-        const newTo = g.toState.accept(this, ns, args);
+        const newFrom = g.fromGrammar.accept(this, ns, args);
+        const newTo = g.toGrammar.accept(this, ns, args);
         const newPre = g.preContext?.accept(this, ns, args);
         const newPost = g.postContext?.accept(this, ns, args);
         const newOther = g.otherContext?.accept(this, ns, args);
@@ -253,8 +251,8 @@ export class ReplaceAdjuster extends IdentityTransform<void>{
         let fromTape: string | undefined = undefined;
         let replaceTape: string | undefined = undefined;
         for (const rule of newRules as ReplaceGrammar[]) {
-            const ruleFromTape = (rule.fromState as RenameGrammar).fromTape;
-            const ruleReplaceTape = (rule.fromState as RenameGrammar).toTape;
+            const ruleFromTape = (rule.fromGrammar as RenameGrammar).fromTape;
+            const ruleReplaceTape = (rule.fromGrammar as RenameGrammar).toTape;
             if ((replaceTape != undefined && ruleReplaceTape != replaceTape) ||
                 (fromTape != undefined && fromTape != ruleFromTape)) {
                 // this is an error, but caught/reported elsewhere
@@ -294,12 +292,14 @@ export class ReplaceAdjuster extends IdentityTransform<void>{
             throw new Error(`Performing ReplaceTape transformation without having calculated tapes`);
         }
 
-        const replaceTapeName = (g.fromTapeName == g.toTapeName) 
-                    ? `__R${g.cell.pos.sheet}:${g.cell.pos.row}`
-                    : g.fromTapeName;
+        let replaceTapeName = g.fromTapeName;
+        for (const toTapeName of g.toTapeNames) {
+            if (g.fromTapeName == toTapeName)
+                replaceTapeName = `__R${g.cell.pos.sheet}:${g.cell.pos.row}`
+        }
 
-        const newFrom = g.fromState.accept(this, ns, args);
-        const newTo = g.toState.accept(this, ns, args);
+        const newFrom = g.fromGrammar.accept(this, ns, args);
+        const newTo = g.toGrammar.accept(this, ns, args);
         const newPre = g.preContext.accept(this, ns, args);
         const newPost = g.postContext.accept(this, ns, args);
         const newOther = g.otherContext.accept(this, ns, args);

@@ -17,7 +17,16 @@ import {
     JoinReplaceGrammar, LiteralGrammar 
 } from "./grammars";
 import { Cell, CellPos, DummyCell } from "./util";
-import { DEFAULT_SATURATION, DEFAULT_VALUE, ErrorHeader, Header, ParamDict, parseHeaderCell, ReservedErrorHeader, RESERVED_WORDS } from "./headers";
+import {
+    DEFAULT_SATURATION,
+    DEFAULT_VALUE,
+    ErrorHeader,
+    Header,
+    ParamDict,
+    parseHeaderCell,
+    ReservedErrorHeader,
+    RESERVED_WORDS
+} from "./headers";
 
 
 type BinaryOp = (cell: Cell, c1: Grammar, c2: Grammar) => Grammar;

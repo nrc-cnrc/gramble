@@ -1491,11 +1491,11 @@ export function Vocab(tape: string, text: string): Grammar {
   * for testing, whereas the defaults in ReplaceGrammar are appropriate for
   * the purposes of converting tabular syntax into grammars.
   * 
-  * fromState: input (target) State (on fromTape)
-  * toState: output (change) State (on toTape)
-  * preContext: context to match before the target fromState (on fromTape)
-  * postContext: context to match after the target fromState (on fromTape)
-  * otherContext: context to match on other tapes (other than fromTape & toTape)
+  * fromGrammar: input (target) Grammar (on fromTape)
+  * toGrammar: output (change) Grammar (on one or more toTapes)
+  * preContext: context to match before the target fromGrammar (on fromTape)
+  * postContext: context to match after the target fromGrammar (on fromTape)
+  * otherContext: context to match on other tapes (other than fromTape & toTapes)
   * beginsWith: set to True to match at the start of fromTape
   * endsWith: set to True to match at the end of fromTape
   * minReps: minimum number of times the replace rule is applied; normally 0
@@ -1505,7 +1505,7 @@ export function Vocab(tape: string, text: string): Grammar {
   * vocabBypass: do we copy the vocab from the "from" tape to the "to" tape?
 */
 export function Replace(
-    fromState: Grammar, toState: Grammar,
+    fromGrammar: Grammar, toGrammar: Grammar,
     preContext: Grammar = Epsilon(), postContext: Grammar = Epsilon(),
     otherContext: Grammar = Epsilon(),
     beginsWith: boolean = false, endsWith: boolean = false,
@@ -1514,7 +1514,7 @@ export function Replace(
     maxCopyChars: number = maxExtraChars,
     vocabBypass: boolean = false
 ): ReplaceGrammar {
-    return new ReplaceGrammar(new DummyCell(), fromState, toState, 
+    return new ReplaceGrammar(new DummyCell(), fromGrammar, toGrammar, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
         minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass);
 }
@@ -1579,18 +1579,18 @@ export class JoinReplaceGrammar extends Grammar {
                     fromTapeName = rule.fromTapeName;
                 }
 
-                let toTapeName: string | undefined = undefined;
-                if (rule.toTapeName != undefined) {
-                    if (toTapeName != undefined && toTapeName != rule.toTapeName) {
+                let toTapeNames: string[] = [];
+                if (rule.toTapeNames.length) {
+                    if (toTapeNames.length && listDifference(toTapeNames, rule.toTapeNames).length) {
                         rule.message({
                             type: "error",
                             shortMsg: "Inconsistent to fields",
-                            longMsg: "Each rule in a block of rules needs to " +
+                            longMsg: "All rules in a block of rules need to " +
                               "agree on what the 'to' fields are. "
                         });
                         continue;
                     }
-                    toTapeName = rule.toTapeName;
+                    toTapeNames = rule.toTapeNames;
                 }
             }
 
@@ -1616,22 +1616,22 @@ export class JoinReplaceGrammar extends Grammar {
 export class ReplaceGrammar extends Grammar {
 
     public get id(): string {
-        return `Replace(${this.fromState.id}->${this.toState.id}|${this.preContext.id}_${this.postContext.id})`;
+        return `Replace(${this.fromGrammar.id}->${this.toGrammar.id}|${this.preContext.id}_${this.postContext.id})`;
     }
     
     public fromTapeName: string = "__UNKNOWN_TAPE__";
-    public toTapeName: string = "__UNKNOWN_TAPE__";
+    public toTapeNames: string[] = [];
 
     constructor(
         cell: Cell,
-        public fromState: Grammar, 
-        public toState: Grammar,
-        public preContext: Grammar = Epsilon(), 
+        public fromGrammar: Grammar,
+        public toGrammar: Grammar,
+        public preContext: Grammar = Epsilon(),
         public postContext: Grammar = Epsilon(),
         public otherContext: Grammar = Epsilon(),
-        public beginsWith: boolean = false, 
+        public beginsWith: boolean = false,
         public endsWith: boolean = false,
-        public minReps: number = 0, 
+        public minReps: number = 0,
         public maxReps: number = Infinity,
         public maxExtraChars: number = Infinity,
         public maxCopyChars: number = maxExtraChars,
@@ -1645,34 +1645,30 @@ export class ReplaceGrammar extends Grammar {
     }
 
     public getChildren(): Grammar[] { 
-        return [this.fromState, this.toState, this.preContext, this.postContext, this.otherContext];
+        return [this.fromGrammar, this.toGrammar, this.preContext, this.postContext, this.otherContext];
     }
 
     public calculateTapes(stack: CounterStack): string[] {
         if (this.tapes == undefined) {
             this.tapes = super.calculateTapes(stack);
-            if (this.toState.tapes == undefined || this.toState.tapes.length != 1) {
+            if (this.toGrammar.tapes == undefined || this.toGrammar.tapes.length == 0) {
                 this.message({
                     type: "error", 
-                    shortMsg: "Only 1-tape 'to' allowed", 
-                    longMsg: `The 'to' argument of a replacement can only reference 1 tape; this references ${this.toState.tapes?.length}.`
+                    shortMsg: "At least 1 tape-'to' required", 
+                    longMsg: `The 'to' argument of a replacement must reference at least 1 tape; this references ${this.toGrammar.tapes?.length}.`
                 });
             } else {
-                this.toTapeName = this.toState.tapes[0];
+                this.toTapeNames.push(...this.toGrammar.tapes);
             }
-            if (this.fromState.tapes == undefined || this.fromState.tapes.length != 1) {
+            if (this.fromGrammar.tapes == undefined || this.fromGrammar.tapes.length != 1) {
                 this.message({
                     type: "error", 
                     shortMsg: "Only 1-tape 'from' allowed", 
-                    longMsg: `The 'from' argument of a replacement can only reference 1 tape; this references ${this.toState.tapes?.length}.`
+                    longMsg: `The 'from' argument of a replacement can only reference 1 tape; this references ${this.fromGrammar.tapes?.length}.`
                 });
             } else {
-                this.fromTapeName = this.fromState.tapes[0];
+                this.fromTapeName = this.fromGrammar.tapes[0];
             }
-            
-            //this.tapes.push(this.fromTapeName);
-            //this.tapes.push(this.toTapeName);
-            //this.tapes = listUnique(this.tapes);
         }
         return this.tapes;
     }
@@ -1680,18 +1676,17 @@ export class ReplaceGrammar extends Grammar {
     public collectVocab(tapes: Tape, symbolsVisited: Set<string>): void {
         // first, collect vocabulary as normal
         super.collectVocab(tapes, symbolsVisited);
-        //tapes.tokenize(this.fromTapeName, "");
-        //tapes.tokenize(this.toTapeName, "");
 
-        // however, we also need to collect vocab from the contexts as if it were on the toTape
-        tapes = new RenamedTape(tapes, this.fromTapeName, this.toTapeName);
-        
-        if (this.vocabBypass) {
-            this.fromState.collectVocab(tapes, symbolsVisited);
+        // however, we also need to collect vocab from the contexts as if it were on a toTape
+        for (const toTapeName of this.toTapeNames) {
+            let renamed: Tape = new RenamedTape(tapes, this.fromTapeName, toTapeName);
+            if (this.vocabBypass) {
+                this.fromGrammar.collectVocab(renamed, symbolsVisited);
+            }
+            this.preContext.collectVocab(renamed, symbolsVisited);
+            this.postContext.collectVocab(renamed, symbolsVisited);
+            this.otherContext.collectVocab(renamed, symbolsVisited);
         }
-        this.preContext.collectVocab(tapes, symbolsVisited);
-        this.postContext.collectVocab(tapes, symbolsVisited);
-        this.otherContext.collectVocab(tapes, symbolsVisited);
     }
 
     public copyVocab(tapes: Tape, symbolsVisited: Set<string>): void { 
@@ -1701,13 +1696,15 @@ export class ReplaceGrammar extends Grammar {
             if (fromTape == undefined) {
                 throw new Error(`Cannot find origin tape ${this.fromTapeName} during vocab copy`);
             }
-            const toTape = tapes.matchTape(this.toTapeName);
-            if (toTape == undefined) {
-                throw new Error(`Cannot find destination tape ${this.toTapeName} during vocab copy`);
-            }
             const fromVocab: string[] = fromTape.fromToken(this.fromTapeName, fromTape.any());
-            for (const token of fromVocab) {
-                toTape.tokenize(this.toTapeName, token);
+            for (const toTapeName of this.toTapeNames) {
+                const toTape = tapes.matchTape(toTapeName);
+                if (toTape == undefined) {
+                    throw new Error(`Cannot find destination tape ${toTapeName} during vocab copy`);
+                }
+                for (const token of fromVocab) {
+                    toTape.tokenize(toTapeName, token);
+                }
             }
         }
     }
@@ -1725,24 +1722,35 @@ export class ReplaceGrammar extends Grammar {
             this.minReps = Math.min(this.minReps, this.maxReps);
         }
 
-        const fromExpr: Expr = this.fromState.constructExpr(symbolTable);
-        const toExpr: Expr = this.toState.constructExpr(symbolTable);
+        const fromExpr: Expr = this.fromGrammar.constructExpr(symbolTable);
+        const toExpr: Expr = this.toGrammar.constructExpr(symbolTable);
         const preContextExpr: Expr = this.preContext.constructExpr(symbolTable);
         const postContextExpr: Expr = this.postContext.constructExpr(symbolTable);
         let states: Expr[] = [
-            constructMatchFrom(preContextExpr, this.fromTapeName, this.toTapeName),
+            constructMatchFrom(preContextExpr, this.fromTapeName, ...this.toTapeNames),
             fromExpr,
             toExpr,
-            constructMatchFrom(postContextExpr, this.fromTapeName, this.toTapeName)
+            constructMatchFrom(postContextExpr, this.fromTapeName, ...this.toTapeNames)
         ];
 
-        let sameVocab: boolean = this.vocabBypass;
-        if (!sameVocab) {
+        // Determine is the toTape vocabs are supersets of the fromTape vocab.
+        // Note: if the vocabBypass parameter is set, then we treat as if the
+        // toTape vocabs are supersets of the fromTape vocab without checking.
+        let supersetVocab: boolean = this.vocabBypass;
+        if (!supersetVocab) {
             const tapeCollection: TapeCollection = this.getAllTapes();
             const fromTape: Tape | undefined = tapeCollection.matchTape(this.fromTapeName);
             if (fromTape != undefined) {
                 const fromVocab: string[] = fromTape.fromToken(this.fromTapeName, fromTape.any());
-                sameVocab = tapeCollection.inVocab(this.toTapeName, fromVocab);
+                // The following code sets sameVocab to true if the vocab of ANY
+                // toTape is a superset of the fromTape vocab.
+                // Perhaps we should throw an Error if some toTape vocabs are
+                // supersets of the fromTape vocab and some are not.
+                for (const toTapeName of this.toTapeNames) {
+                    if (tapeCollection.inVocab(toTapeName, fromVocab)) {
+                        supersetVocab = true;
+                    }
+                }
             }
         }
 
@@ -1759,34 +1767,34 @@ export class ReplaceGrammar extends Grammar {
             // 2. If we are matching an instance at the start of text (beginsWith),
             //    or end of text (endsWith) then matchAnythingElse needs to match any
             //    other instances of the replacement pattern, so we need to match .*
-            if( !sameVocab || (that.beginsWith && !replaceNone) || (that.endsWith && !replaceNone)) {
-                return constructMatchFrom(dotStar, that.fromTapeName, that.toTapeName)
+            if( !supersetVocab || (that.beginsWith && !replaceNone) || (that.endsWith && !replaceNone)) {
+                return constructMatchFrom(dotStar, that.fromTapeName, ...that.toTapeNames)
             }
             const fromInstance: Expr[] = [preContextExpr, fromExpr, postContextExpr];
 
             // figure out what tapes need to be negated
             const negatedTapes: string[] = [];
-            if (that.fromState.tapes == undefined || 
+            if (that.fromGrammar.tapes == undefined || 
                 that.preContext.tapes == undefined ||
                 that.postContext.tapes == undefined) {
                 throw new Error("Trying to construct expr for replace before calculating tapes");
             }
-            negatedTapes.push(...that.fromState.tapes);
+            negatedTapes.push(...that.fromGrammar.tapes);
             negatedTapes.push(...that.preContext.tapes);
             negatedTapes.push(...that.postContext.tapes);
 
-            let notState: Expr;
+            let notGrammar: Expr;
             if (that.beginsWith && replaceNone) {
-                notState = constructNegation(constructSequence(...fromInstance, dotStar),
-                                             new Set(negatedTapes), maxExtraChars);
+                notGrammar = constructNegation(constructSequence(...fromInstance, dotStar),
+                                               new Set(negatedTapes), maxExtraChars);
             }
             else if (that.endsWith && replaceNone)
-                notState = constructNegation(constructSequence(dotStar, ...fromInstance),
-                                             new Set(negatedTapes), maxExtraChars);
+                notGrammar = constructNegation(constructSequence(dotStar, ...fromInstance),
+                                               new Set(negatedTapes), maxExtraChars);
             else
-                notState = constructNegation(constructSequence(dotStar, ...fromInstance, dotStar),
-                                             new Set(negatedTapes), maxExtraChars);
-            return constructMatchFrom(notState, that.fromTapeName, that.toTapeName)
+                notGrammar = constructNegation(constructSequence(dotStar, ...fromInstance, dotStar),
+                                               new Set(negatedTapes), maxExtraChars);
+            return constructMatchFrom(notGrammar, that.fromTapeName, ...that.toTapeNames)
         }
         
         if (!this.endsWith)
@@ -1820,7 +1828,7 @@ export class ReplaceGrammar extends Grammar {
                                                                     new Set(negatedTapes),
                                                                     this.maxCopyChars);
                 const matchDotStar: Expr = constructMatchFrom(constructDotRep(this.fromTapeName, this.maxCopyChars),
-                                                              this.fromTapeName, this.toTapeName)
+                                                              this.fromTapeName, ...this.toTapeNames)
                 copyExpr = constructAlternation(constructSequence(matchAnythingElse(true, this.maxCopyChars), otherContextExpr),
                                                 constructSequence(matchDotStar, negatedOtherContext));
             }

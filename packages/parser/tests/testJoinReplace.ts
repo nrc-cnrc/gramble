@@ -3,25 +3,24 @@ import {
     Grammar,
     Join,
     JoinReplace,
-    Replace, 
-    ReplaceGrammar, 
+    Replace,
+    ReplaceGrammar,
     Seq,
     Uni,
 } from "../src/grammars";
 
 import { 
-    t1, t2, 
-    testHasTapes, 
+    t1, t2, t3,
+    testHasTapes,
     testHasVocab,
     testGrammar,
-    t3, 
 } from './testUtils';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";
 
 function ReplaceBypass(
-    fromState: Grammar, toState: Grammar,
+    fromGrammar: Grammar, toGrammar: Grammar,
     preContext: Grammar = Epsilon(), postContext: Grammar = Epsilon(),
     otherContext: Grammar = Epsilon(),
     beginsWith: boolean = false, endsWith: boolean = false,
@@ -30,7 +29,7 @@ function ReplaceBypass(
     maxCopyChars: number = Infinity,
     vocabBypass: boolean = true
 ): ReplaceGrammar {
-    return Replace(fromState, toState, 
+    return Replace(fromGrammar, toGrammar, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
         minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass);
 }
