@@ -37,7 +37,7 @@ function ReplaceBypass(
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe('1a. Replace i by a in hi: i -> a', function() {
+    describe('1a. JoinReplace i by a in i: i -> a', function() {
         const grammar = JoinReplace(t1("i"),
                                     [ReplaceBypass(t1("i"), t2("a"))]);
         testHasTapes(grammar, ['t1', 't2']);
@@ -87,7 +87,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, undefined, 4, 3);
     });
 
-    describe('2a. Replace i by a in i: i -> a', function() {
+    describe('2a. JoinReplace i by a in i: i -> a, same tape', function() {
         const grammar = JoinReplace(t1("i"),
                                     [ReplaceBypass(t1("i"), t1("a"))]);
         testHasTapes(grammar, ['t1']);
@@ -197,6 +197,100 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"aa"}, {"t2":"a"}
         ];
         testGrammar(grammar, expectedResults, undefined, 4, 5);
+    });
+
+    describe('4a. Replace i by a: i -> a', function() {
+        const grammar = ReplaceBypass(t1("i"), t2("a"));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t1: 'i', t2: 'a'},
+            {},
+        ];
+        testGrammar(grammar, expectedResults, undefined, 4, 3);
+    });
+
+    describe('4b. Negation of results of 4a', function() {
+        const grammar = Seq(Vocab("t2", "ai"),
+                            Not(Uni(Epsilon(), Seq(t1("i"), t2("a")))));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {"t2":"i","t1":"i"},
+            {"t1":"ii"},
+            {"t1":"i"},
+            {"t2":"ii"},
+            {"t2":"ai"},
+            {"t2":"i"},
+            {"t2":"ia"},
+            {"t2":"aa"},
+            {"t2":"a"},
+        ];
+        testGrammar(grammar, expectedResults, undefined, 4, 3);
+    });
+
+    describe('4c. Negation of grammar of 4a', function() {
+        const grammar = Not(ReplaceBypass(t1("i"), t2("a")));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            // Should include:
+            {"t2":"i","t1":"i"},
+            // Does include:
+            {"t1":"ii"},
+            {"t1":"i"},
+            {"t2":"ii"},
+            {"t2":"ai"},
+            {"t2":"i"},
+            {"t2":"ia"},
+            {"t2":"aa"},
+            {"t2":"a"},
+        ];
+        testGrammar(grammar, expectedResults, undefined, 4, 3);
+    });
+
+    describe('5a. Replace i by a: i -> a, same tape', function() {
+        const grammar = ReplaceBypass(t1("i"), t1("a"));
+        testHasTapes(grammar, ['t1']);
+        testHasVocab(grammar, {t1: 2});
+        const expectedResults: StringDict[] = [
+            {t1: 'a'},
+            {t1: 'aa'},
+            {},
+        ];
+        testGrammar(grammar, expectedResults, undefined, 4, 5);
+    });
+
+    describe('5b. Negation of results of 5a', function() {
+        const grammar = Seq(Vocab("t1", "ai"),
+                            Not(Uni(Epsilon(), t1("a"), t1("aa"))));
+        testHasTapes(grammar, ['t1']);
+        testHasVocab(grammar, {t1: 2});
+        const expectedResults: StringDict[] = [
+            {t1: 'ii'},
+            {t1: 'ai'},
+            {t1: 'i'},
+            {t1: 'ia'},
+        ];
+        testGrammar(grammar, expectedResults, undefined, 4, 3);
+    });
+    
+    describe('5c. Negation of grammar of 5a', function() {
+        const grammar = Not(ReplaceBypass(t1("i"), t1("a")));
+        testHasTapes(grammar, ['t1']);
+        testHasVocab(grammar, {t1: 2});
+        const expectedResults: StringDict[] = [
+            {t1: 'ii'},
+            {t1: 'ai'},
+            {t1: 'i'},
+            {t1: 'ia'},
+            // Should not include
+            // {},
+            // {},
+            // {t1: "a"},
+            // {t1: "aa"},
+        ];
+        testGrammar(grammar, expectedResults, undefined, 4, /*5*/3);
     });
 
 });
