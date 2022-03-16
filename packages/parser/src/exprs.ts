@@ -447,6 +447,7 @@ export abstract class Expr {
                 console.log(`prevOutput is ${JSON.stringify(prevOutput.toDict(opt))}`);
                 console.log(`prevExpr is ${prevExpr.id}`);
                 console.log(`remaining tapes are ${tapes.map(t => t.tapeName)}`);
+                console.log(`chars is ${chars}`);
             }
 
             if (chars >= opt.maxChars) {
@@ -454,6 +455,9 @@ export abstract class Expr {
             }
 
             if (prevExpr instanceof EpsilonExpr) {
+                if (VERBOSE) {
+                    console.log(`YIELD ${JSON.stringify(prevOutput.toDict(opt))} `)
+                }
                 yield prevOutput.toDict(opt);
                 continue;
             }
@@ -998,7 +1002,7 @@ class RTLLiteralExpr extends LiteralExpr {
     }
 
     public get id(): string {
-        const index = this.index > 0 ? `[${this.index}]` : ""; 
+        const index = this.index < this.text.length-1 ? `[${this.index}]` : ""; 
         return `${this.tapeName}:${this.text.join("")}${index}`;
     }
 
@@ -1693,7 +1697,7 @@ class NegationExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `~(${this.child.id})`;
+        return `~(${this.child.id},max=${this.maxChars})`;
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
