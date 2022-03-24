@@ -7,6 +7,7 @@ import { StringDict } from "../src/util";
 
 describe(`${path.basename(module.filename)}`, function() {
 
+    /*
     describe('Negation of empty set: ~0', function() {
         const grammar = Not(Null());
         testGrammar(grammar, [{}]);
@@ -39,6 +40,14 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(t1("helloo"), Not(t1("hello")));
         testGrammar(grammar, [{t1: "helloo"}]);
     });
+    */
+
+    describe('Join(t1:hello & (t1:hello|~t1:hello))', function() {
+        const grammar = Join(t1("hello"), Uni(t1("hello"), Not(t1("hello"))));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    /*
 
     describe('Join(~t1:hello & t1:foo)', function() {
         const grammar = Join(Not(t1("hello")), t1("foo"));
@@ -452,5 +461,5 @@ describe(`${path.basename(module.filename)}`, function() {
             ];
             testGrammar(grammar, expectedResults, '', 4, 100);
         });
-    
+   */ 
 });

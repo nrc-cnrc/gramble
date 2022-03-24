@@ -463,6 +463,11 @@ export abstract class Expr {
             }
             
             if (tapes.length == 0) {
+                if (!(prevExpr instanceof NullExpr || prevExpr instanceof EpsilonExpr)) {
+                    if (VERBOSE) {
+                        console.log(`warning, nontrivial expr at end: ${prevExpr.id}`);
+                    }
+                }
                 continue; 
             }
                 
@@ -1302,6 +1307,10 @@ class FilterExpr extends BinaryExpr {
     ) {
         super(child1, child2);
     }
+    
+    public get id(): string {
+        return `${this.child1.id}[${this.child2.id}]`;
+    }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
         return constructFilter( this.child1.delta(tape, stack),
@@ -1375,7 +1384,7 @@ class JoinExpr extends BinaryExpr {
     }
 
     public get id(): string {
-        return `(${this.child1.id}&&${this.child2.id})`;
+        return `(${this.child1.id}⋈${this.child2.id})`;
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
@@ -2237,10 +2246,12 @@ export function constructEmbed(
     child: Expr | undefined = undefined
 ): Expr {
     const symbol = symbols[symbolName];
-    if (symbol != undefined && symbol instanceof EpsilonExpr) {
+    if (symbol != undefined && 
+            (symbol instanceof EpsilonExpr || symbol instanceof NullExpr)) {
         return symbol;
     }
-    if (child != undefined && child instanceof EpsilonExpr) {
+    if (child != undefined && 
+        (child instanceof EpsilonExpr || child instanceof NullExpr)) {
         return child;
     }
     return new EmbedExpr(symbolName, symbols, child);
