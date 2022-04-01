@@ -7,7 +7,9 @@ import { StringDict } from "../src/util";
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    /*
+    /* I think negation relativized to no tapes can be semantically well-defined
+       but I'm iffy about letting grammars actually do that, because I think the 
+       results are counter-intuitive.
     describe('Negation of empty set: ~0', function() {
         const grammar = Not(Null());
         testGrammar(grammar, [{}]);
@@ -17,6 +19,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Not(Epsilon());
         testGrammar(grammar, []);
     });
+    
+    */
 
     describe('Join(t1:foo & ~t1:hello)', function() {
         const grammar = Join(t1("foo"), Not(t1("hello")));
@@ -40,14 +44,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(t1("helloo"), Not(t1("hello")));
         testGrammar(grammar, [{t1: "helloo"}]);
     });
-    */
 
     describe('Join(t1:hello & (t1:hello|~t1:hello))', function() {
         const grammar = Join(t1("hello"), Uni(t1("hello"), Not(t1("hello"))));
         testGrammar(grammar, [{t1: "hello"}]);
     });
-
-    /*
 
     describe('Join(~t1:hello & t1:foo)', function() {
         const grammar = Join(Not(t1("hello")), t1("foo"));
@@ -437,29 +438,28 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Dot-6. ~(.{0,3}i,3) with vocab "hi"', function() {
-            const dotStarGrammar1 = Rep(Dot('t1'), 0, 3);
-            const notGrammar = Not(Seq(dotStarGrammar1, t1('i')), 3);
-            const grammar = Seq(Vocab('t1', 'hi'), notGrammar);
-            testHasTapes(grammar, ['t1']);
-            testHasVocab(grammar, {t1: 2});
-            const expectedResults: StringDict[] = [
-                {},
-                {t1: "h"},
-                {t1: "hh"},
-                {t1: "ih"},
-                {t1: "hhh"},
-                {t1: "hih"},
-                {t1: "ihh"},
-                {t1: "iih"},
-                // should not have:
-                // {t1: "hi"},
-                // {t1: "ii"},
-                // {t1: "hhi"},
-                // {t1: "hii"},
-                // {t1: "ihi"},
-                // {t1: "iii"},
-            ];
-            testGrammar(grammar, expectedResults, '', 4, 100);
-        });
-   */ 
+        const dotStarGrammar1 = Rep(Dot('t1'), 0, 3);
+        const notGrammar = Not(Seq(dotStarGrammar1, t1('i')), 3);
+        const grammar = Seq(Vocab('t1', 'hi'), notGrammar);
+        testHasTapes(grammar, ['t1']);
+        testHasVocab(grammar, {t1: 2});
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "h"},
+            {t1: "hh"},
+            {t1: "ih"},
+            {t1: "hhh"},
+            {t1: "hih"},
+            {t1: "ihh"},
+            {t1: "iih"},
+            // should not have:
+            // {t1: "hi"},
+            // {t1: "ii"},
+            // {t1: "hhi"},
+            // {t1: "hii"},
+            // {t1: "ihi"},
+            // {t1: "iii"},
+        ];
+        testGrammar(grammar, expectedResults, '', 4, 100);
+    });
 });

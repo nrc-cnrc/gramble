@@ -8,7 +8,7 @@ import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
 import { Expr, GenOptions, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
-import { NameQualifier, ReplaceAdjuster } from "./transforms";
+import { NameQualifier, RenameFixTransform, ReplaceAdjuster } from "./transforms";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
@@ -53,6 +53,11 @@ export class Interpreter {
             const replaceAdjuster = new ReplaceAdjuster();
             this.grammar = replaceAdjuster.transform(this.grammar);
         }, verbose, "Adjusted tape names");
+
+        timeIt(() => {
+            const renameFixer = new RenameFixTransform();
+            this.grammar = renameFixer.transform(this.grammar);
+        }, verbose, "Fixed any erroneous renames");
 
         //console.log(this.grammar.id);
 

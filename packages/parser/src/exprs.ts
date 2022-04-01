@@ -1,5 +1,6 @@
 import { Gen, setDifference, shuffleArray, StringDict } from "./util";
 import { Tape, RenamedTape, Token, ANY_CHAR, OutputTrie } from "./tapes";
+import { Null } from "./grammars";
 
 /**
  * This is the parsing/generation engine that underlies Gramble.
@@ -463,11 +464,9 @@ export abstract class Expr {
             }
             
             if (tapes.length == 0) {
-                if (!(prevExpr instanceof NullExpr || prevExpr instanceof EpsilonExpr)) {
-                    if (VERBOSE) {
-                        console.log(`warning, nontrivial expr at end: ${prevExpr.id}`);
-                    }
-                }
+                /* if (!(prevExpr instanceof NullExpr || prevExpr instanceof EpsilonExpr)) {
+                    throw new Error(`warning, nontrivial expr at end: ${prevExpr.id}`);
+                } */
                 continue; 
             }
                 
@@ -1712,6 +1711,14 @@ class NegationExpr extends UnaryExpr {
     public delta(tape: Tape, stack: CounterStack): Expr {
         const childDelta = this.child.delta(tape, stack);
         const remainingTapes = setDifference(this.tapes, new Set([tape.tapeName]));
+        /*
+        if (childDelta instanceof NullExpr) {
+            return constructNegation(childDelta, remainingTapes, this.maxChars);
+        }
+        if (remainingTapes.size == 0) {
+            return NULL;
+        }
+        */
         return constructNegation(childDelta, remainingTapes, this.maxChars);
     }
     

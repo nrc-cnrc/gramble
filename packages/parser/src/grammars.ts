@@ -784,7 +784,7 @@ export class RenameGrammar extends UnaryGrammar {
             this.message({
                 type: "error", 
                 shortMsg: "Destination tape already exists",
-                longMsg: `The grammar to the left already contains the tape ${this.fromTape}. `
+                longMsg: `The grammar to the left already contains the tape ${this.toTape}. `
             });
         }
     }

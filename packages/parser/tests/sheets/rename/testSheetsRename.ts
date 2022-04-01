@@ -28,7 +28,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, 
             [["renameConflict", 1, 5, "error"]]
         );
-        testGramble(project, []);
+        testGramble(project, [{gloss:"run", text:"v"}]);
     });
 
     describe('Rename header with embeds', function() {
