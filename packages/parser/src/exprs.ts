@@ -1705,21 +1705,30 @@ class NegationExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `~(${this.child.id},max=${this.maxChars})`;
+        return `~(${this.child.id})`;
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
+        //console.log(`evaluating d^${tape.tapeName} of ${this.id}`);
         const childDelta = this.child.delta(tape, stack);
         const remainingTapes = setDifference(this.tapes, new Set([tape.tapeName]));
+        
+        let result: Expr;
         /*
         if (childDelta instanceof NullExpr) {
-            return constructNegation(childDelta, remainingTapes, this.maxChars);
+            result = constructNegation(childDelta, remainingTapes, this.maxChars);
+            console.log(`result is ${result.id}`);
+            return result;
         }
         if (remainingTapes.size == 0) {
-            return NULL;
+            result = NULL;
+            console.log(`result is ${result.id}`);
+            return result;
         }
         */
-        return constructNegation(childDelta, remainingTapes, this.maxChars);
+        result = constructNegation(childDelta, remainingTapes, this.maxChars);
+        console.log(`result is ${result.id}`);
+        return result;
     }
     
     public *deriv(
