@@ -1727,7 +1727,7 @@ class NegationExpr extends UnaryExpr {
         }
         */
         result = constructNegation(childDelta, remainingTapes, this.maxChars);
-        console.log(`result is ${result.id}`);
+        //console.log(`result is ${result.id}`);
         return result;
     }
     
