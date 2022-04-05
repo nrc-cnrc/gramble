@@ -175,6 +175,11 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
+    describe('t1:hello startswith t1:hello', function() {
+        const grammar = StartsWith(t1("hello"), t1("hello"));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
     describe('t1:hello startswith ~t1:h', function() {
         const grammar = StartsWith(t1("hello"), Not(t1("h")));
         testGrammar(grammar, []);
@@ -224,6 +229,41 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "world"}]);
     });
 
+    describe('t1:hello startswith t1:h+t1:e', function() {
+        const grammar = StartsWith(t1("hello"), Seq(t1("h"), t1("e")));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello startswith ~(t1:w)+t1:e', function() {
+        const grammar = StartsWith(t1("hello"), Seq(Not(t1("w")), t1("e")));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello startswith t1:h+~(t1:o)', function() {
+        const grammar = StartsWith(t1("hello"), Seq(t1("h"), Not(t1("o"))));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+    
+    describe('t1:hello startswith ~(t1:h)+t1:e', function() {
+        const grammar = StartsWith(t1("hello"), Seq(Not(t1("h")), t1("e")));
+        testGrammar(grammar, []);
+    });
+
+    describe('t1:hello startswith t1:h+~(t1:e)', function() {
+        const grammar = StartsWith(t1("hello"), Seq(t1("h"), Not(t1("e"))));
+        testGrammar(grammar, []);
+    });
+
+    describe('t1:hello startswith t1:wo|~(t1:k)', function() {
+        const grammar = StartsWith(t1("hello"), Uni(t1("wo"), Not(t1("k"))));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello startswith t1:wo|~(t1:h)', function() {
+        const grammar = StartsWith(t1("hello"), Uni(t1("wo"), Not(t1("h"))));
+        testGrammar(grammar, []);
+    });
+
     // ENDSWITH
 
     describe('t1:hello endswith ε', function() {
@@ -248,6 +288,11 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('t1:hello endswith t1:lo', function() {
         const grammar = EndsWith(t1("hello"), t1("lo"));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello endswith t1:hello', function() {
+        const grammar = EndsWith(t1("hello"), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
@@ -300,6 +345,43 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "world"}]);
     });
 
+    describe('t1:hello endswith t1:l+t1:o', function() {
+        const grammar = EndsWith(t1("hello"), Seq(t1("l"), t1("o")));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello endswith ~(t1:t)+t1:o', function() {
+        const grammar = EndsWith(t1("hello"), Seq(Not(t1("t")), t1("o")));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello endswith t1:h+~(t1:o)', function() {
+        const grammar = EndsWith(t1("hello"), Seq(t1("h"), Not(t1("o"))));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+    
+    describe('t1:hello endswith ~(t1:l)+t1:o', function() {
+        const grammar = EndsWith(t1("hello"), Seq(Not(t1("l")), t1("o")));
+        testGrammar(grammar, []);
+    });
+    
+    describe('t1:world endswith t1:l+~(t1:d)', function() {
+        // "hello" isn't a good example for it because hello really does 
+        // end with l~(o), because "lo" is a member of ~(o).
+        const grammar = EndsWith(t1("world"), Seq(t1("l"), Not(t1("d"))));
+        testGrammar(grammar, []);
+    });
+
+    describe('t1:hello endswith t1:ld|~(t1:y)', function() {
+        const grammar = EndsWith(t1("hello"), Uni(t1("ld"), Not(t1("y"))));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello endswith t1:ld|~(t1:o)', function() {
+        const grammar = EndsWith(t1("hello"), Uni(t1("ld"), Not(t1("o"))));
+        testGrammar(grammar, []);
+    });
+
     // CONTAINS
 
     describe('t1:hello contains ε', function() {
@@ -327,6 +409,10 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
+    describe('t1:hello contains t1:hello', function() {
+        const grammar = Contains(t1("hello"), t1("hello"));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
 
     describe('t1:hello contains t1:h', function() {
         const grammar = Contains(t1("hello"), t1("h"));
@@ -415,6 +501,46 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Contains(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Intersect(Not(t1("e")), Not(t1("i"))));
         testGrammar(grammar, [{t1: "world"}]);
+    });
+
+    describe('t1:world contains t1:r+t1:l', function() {
+        const grammar = Contains(t1("world"), Seq(t1("r"), t1("l")));
+        testGrammar(grammar, [{t1: "world"}]);
+    });
+
+    describe('t1:world contains t1:o+t1:r+t1:l', function() {
+        const grammar = Contains(t1("world"), Seq(t1("o"), t1("r"), t1("l")));
+        testGrammar(grammar, [{t1: "world"}]);
+    });
+
+    describe('t1:world contains ~(t1:t)+t1:l', function() {
+        const grammar = Contains(t1("world"), Seq(Not(t1("t")), t1("l")));
+        testGrammar(grammar, [{t1: "world"}]);
+    });
+
+    describe('t1:world contains t1:r+~(t1:t)', function() {
+        const grammar = Contains(t1("world"), Seq(t1("r"), Not(t1("t"))));
+        testGrammar(grammar, [{t1: "world"}]);
+    });
+    
+    describe('t1:world contains ~(t1:r)+t1:l', function() {
+        const grammar = Contains(t1("world"), Seq(Not(t1("r")), t1("l")));
+        testGrammar(grammar, []);
+    });
+
+    describe('t1:world contains t1:r+~(t1:l)', function() {
+        const grammar = Contains(t1("world"), Seq(t1("r"), Not(t1("l"))));
+        testGrammar(grammar, []);
+    });
+
+    describe('t1:world contains t1:he|~(t1:k)', function() {
+        const grammar = Contains(t1("world"), Uni(t1("he"), Not(t1("k"))));
+        testGrammar(grammar, [{t1: "world"}]);
+    });
+
+    describe('t1:world contains t1:he|~(t1:r)', function() {
+        const grammar = Contains(t1("world"), Uni(t1("he"), Not(t1("r"))));
+        testGrammar(grammar, []);
     });
 
 });

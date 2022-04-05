@@ -5,6 +5,7 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
 
+    /*
     describe('Simple equals', function() {
         const project = sheetFromFile(`${DIR}/simpleEquals.csv`);
         testErrors(project, []);
@@ -335,6 +336,8 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moo", gloss: "[1SG]see", trans: "[TR]" },
         ]);
     });
+
+    */
     
     describe('endswith', function() {
         const project = sheetFromFile(`${DIR}/endsWithGrammar.csv`);
@@ -345,6 +348,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    /*
     describe('endswith empty string', function() {
         const project = sheetFromFile(`${DIR}/endsWithEmptyString.csv`);
         testErrors(project, []);
@@ -518,6 +522,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    */
 });
 
 

@@ -53,7 +53,8 @@ export class GenOptions {
     public direction: "LTR" | "RTL" = "RTL"
 }
 
-export interface GrammarTransform<T> {
+export interface GrammarTransform<T> {    
+
     transformEpsilon(g: EpsilonGrammar, ns: NsGrammar, args: T): Grammar;
     transformNull(g: NullGrammar, ns: NsGrammar, args: T): Grammar;
     transformCharSet(g: CharSetGrammar, ns: NsGrammar, args: T): Grammar;
@@ -65,8 +66,11 @@ export interface GrammarTransform<T> {
     transformJoin(g: JoinGrammar, ns: NsGrammar, args: T): Grammar;
     transformFilter(g: FilterGrammar, ns: NsGrammar, args: T): Grammar;
     transformStartsWith(g: StartsWithGrammar, ns: NsGrammar, args: T): Grammar;
+    transformStartsWithFilter(g: StartsWithFilterGrammar, ns: NsGrammar, args: T): Grammar;
     transformEndsWith(g: EndsWithGrammar, ns: NsGrammar, args: T): Grammar;
+    transformEndsWithFilter(g: EndsWithFilterGrammar, ns: NsGrammar, args: T): Grammar;
     transformContains(g: ContainsGrammar, ns: NsGrammar, args: T): Grammar;
+    transformContainsFilter(g: ContainsFilterGrammar, ns: NsGrammar, args: T): Grammar;
     transformMatch(g: MatchGrammar, ns: NsGrammar, args: T): Grammar;
     transformReplace(g: ReplaceGrammar, ns: NsGrammar, args: T): Grammar;
     transformEmbed(g: EmbedGrammar, ns: NsGrammar, args: T): Grammar;
@@ -501,6 +505,27 @@ export class AlternationGrammar extends NAryGrammar {
     }
 }
 
+export abstract class UnaryGrammar extends Grammar {
+
+    constructor(
+        cell: Cell,
+        public child: Grammar
+    ) {
+        super(cell);
+    }
+
+    public getChildren(): Grammar[] { 
+        return [this.child]; 
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            this.expr = this.child.constructExpr(symbols);
+        }
+        return this.expr;
+    }
+}
+
 abstract class BinaryGrammar extends Grammar {
 
     constructor(
@@ -630,20 +655,32 @@ export class StartsWithGrammar extends FilterGrammar {
         return t.transformStartsWith(this, ns, args);
     }
 
-    protected constructFilter(symbols: SymbolTable) {
-        if (this.child2.tapes == undefined) {
+}
+
+export class StartsWithFilterGrammar extends UnaryGrammar {
+
+    public get id(): string {
+        return `StartsWithFilter(${this.child.id})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformStartsWithFilter(this, ns, args);
+    }
+    
+    public constructExpr(symbols: SymbolTable): Expr {
+
+        if (this.child.tapes == undefined) {
             throw new Error("Getting Brz expression with undefined tapes");
         }
 
-        let child2 = this.child2.constructExpr(symbols);
-        for (const tape of this.child2.tapes) {
+        let child = this.child.constructExpr(symbols);
+        for (const tape of this.child.tapes) {
             const dotStar = constructDotStar(tape);
-            child2 = constructBinaryConcat(child2, dotStar);
+            child = constructBinaryConcat(child, dotStar);
         }
 
-        return child2;
+        return child;
     }
-
 }
 
 export class EndsWithGrammar extends FilterGrammar {
@@ -656,21 +693,33 @@ export class EndsWithGrammar extends FilterGrammar {
         return t.transformEndsWith(this, ns, args);
     }
 
-    protected constructFilter(symbols: SymbolTable) {
-        if (this.child2.tapes == undefined) {
+}
+
+export class EndsWithFilterGrammar extends UnaryGrammar {
+
+    public get id(): string {
+        return `EndsWithFilter(${this.child.id})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformEndsWithFilter(this, ns, args);
+    }
+    
+    public constructExpr(symbols: SymbolTable): Expr {
+
+        if (this.child.tapes == undefined) {
             throw new Error("Getting Brz expression with undefined tapes");
         }
 
-        let child2 = this.child2.constructExpr(symbols);
-        for (const tape of this.child2.tapes) {
+        let child = this.child.constructExpr(symbols);
+        for (const tape of this.child.tapes) {
             const dotStar = constructDotStar(tape);
-            child2 = constructBinaryConcat(dotStar, child2);
+            child = constructBinaryConcat(dotStar, child);
         }
 
-        return child2;
+        return child;
     }
 }
-
 
 export class ContainsGrammar extends FilterGrammar {
 
@@ -681,41 +730,30 @@ export class ContainsGrammar extends FilterGrammar {
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformContains(this, ns, args);
     }
-
-    protected constructFilter(symbols: SymbolTable) {
-        if (this.child2.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
-        }
-
-        let child2 = this.child2.constructExpr(symbols);
-        for (const tape of this.child2.tapes) {
-            const dotStar = constructDotStar(tape);
-            child2 = constructSequence(dotStar, child2, dotStar);
-        }
-
-        return child2;
-    }
-
 }
 
-abstract class UnaryGrammar extends Grammar {
+export class ContainsFilterGrammar extends UnaryGrammar {
 
-    constructor(
-        cell: Cell,
-        public child: Grammar
-    ) {
-        super(cell);
+    public get id(): string {
+        return `ContainsFilter(${this.child.id})`;
     }
 
-    public getChildren(): Grammar[] { 
-        return [this.child]; 
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformContainsFilter(this, ns, args);
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            this.expr = this.child.constructExpr(symbols);
+        if (this.child.tapes == undefined) {
+            throw new Error("Getting Brz expression with undefined tapes");
         }
-        return this.expr;
+
+        let child = this.child.constructExpr(symbols);
+        for (const tape of this.child.tapes) {
+            const dotStar = constructDotStar(tape);
+            child = constructSequence(dotStar, child, dotStar);
+        }
+
+        return child;
     }
 }
 

@@ -1714,18 +1714,18 @@ class NegationExpr extends UnaryExpr {
         const remainingTapes = setDifference(this.tapes, new Set([tape.tapeName]));
         
         let result: Expr;
-        /*
+        
         if (childDelta instanceof NullExpr) {
             result = constructNegation(childDelta, remainingTapes, this.maxChars);
-            console.log(`result is ${result.id}`);
+            //console.log(`result is ${result.id}`);
             return result;
         }
         if (remainingTapes.size == 0) {
             result = NULL;
-            console.log(`result is ${result.id}`);
+            //console.log(`result is ${result.id}`);
             return result;
         }
-        */
+        
         result = constructNegation(childDelta, remainingTapes, this.maxChars);
         //console.log(`result is ${result.id}`);
         return result;

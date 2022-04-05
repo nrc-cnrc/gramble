@@ -8,7 +8,7 @@ import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
 import { Expr, GenOptions, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
-import { NameQualifier, RenameFixTransform, ReplaceAdjuster } from "./transforms";
+import { NameQualifier, RenameFixTransform, ReplaceAdjuster, FilterCreatorTransform } from "./transforms";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
@@ -59,7 +59,12 @@ export class Interpreter {
             this.grammar = renameFixer.transform(this.grammar);
         }, verbose, "Fixed any erroneous renames");
 
-        //console.log(this.grammar.id);
+        timeIt(() => {
+            const filterCreator = new FilterCreatorTransform();
+            this.grammar = filterCreator.transform(this.grammar);
+        }, verbose, "Created starts/ends/contains filters");
+
+        console.log(this.grammar.id);
 
         timeIt(() => {
             // recalculate tapes
@@ -253,6 +258,8 @@ export class Interpreter {
             }
             prioritizedTapes.push(actualTape);
         }        
+
+        console.log(expr.id);
 
         return [expr, prioritizedTapes];    
     }

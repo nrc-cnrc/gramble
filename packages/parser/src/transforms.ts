@@ -7,10 +7,24 @@ import {
     NsGrammar, NegationGrammar, NegativeUnitTestGrammar,
     NullGrammar, RenameGrammar, RepeatGrammar, ReplaceGrammar,
     SequenceGrammar, StartsWithGrammar, UnitTestGrammar,
-    UnresolvedEmbedGrammar
+    UnresolvedEmbedGrammar, StartsWithFilterGrammar, 
+    EndsWithFilterGrammar, ContainsFilterGrammar
 } from "./grammars";
 import { DummyCell } from "./util";
 
+/**
+ * IdentityTransform
+ * 
+ * This is a grammar transform that clones every node in the grammar tree.
+ * 
+ * It's important to note the role of the ns:NsGrammar argument to each of these. 
+ * If this weren't present, we'd be cloning EmbedGrammars as-is... and they would
+ * still refer to their old, untransformed namespaces, which contain symbols pointing
+ * to the old, untransformed grammars.  So we have to pass a reference to the new 
+ * namespace through the traversal, so that clones of the EmbedGrammars can refer to it, 
+ * instead.  (Since every transform has to do this, I made it its own argument, rather
+ * than pass it in through args.)
+ */
 class IdentityTransform<T> implements GrammarTransform<T> {
 
     public transformEpsilon(g: EpsilonGrammar, ns: NsGrammar, args: T): Grammar {
@@ -67,16 +81,31 @@ class IdentityTransform<T> implements GrammarTransform<T> {
         return new StartsWithGrammar(g.cell, newChild1, newChild2);
     }
 
+    public transformStartsWithFilter(g: StartsWithFilterGrammar, ns: NsGrammar, args: T): Grammar {
+        const newChild = g.child.accept(this, ns, args);
+        return new StartsWithFilterGrammar(g.cell, newChild);
+    }
+
     public transformEndsWith(g: EndsWithGrammar, ns: NsGrammar, args: T): Grammar {
         const newChild1 = g.child1.accept(this, ns, args);
         const newChild2 = g.child2.accept(this, ns, args);
         return new EndsWithGrammar(g.cell, newChild1, newChild2);
     }
 
+    public transformEndsWithFilter(g: EndsWithFilterGrammar, ns: NsGrammar, args: T): Grammar {
+        const newChild = g.child.accept(this, ns, args);
+        return new EndsWithFilterGrammar(g.cell, newChild);
+    }
+
     public transformContains(g: ContainsGrammar, ns: NsGrammar, args: T): Grammar {
         const newChild1 = g.child1.accept(this, ns, args);
         const newChild2 = g.child2.accept(this, ns, args);
         return new ContainsGrammar(g.cell, newChild1, newChild2);
+    }
+
+    public transformContainsFilter(g: ContainsFilterGrammar, ns: NsGrammar, args: T): Grammar {
+        const newChild = g.child.accept(this, ns, args);
+        return new ContainsFilterGrammar(g.cell, newChild);
     }
 
     public transformMatch(g: MatchGrammar, ns: NsGrammar, args: T): Grammar {
@@ -214,6 +243,151 @@ export class NameQualifier extends IdentityTransform<NsGrammar[] > {
         return g;
     }
 
+}
+
+export class FilterCreatorTransform extends IdentityTransform<void> {
+
+    public transform(g: Grammar): Grammar {
+        g.calculateTapes(new CounterStack(2));
+        return g.accept(this, g as NsGrammar, null);
+    }
+
+    public transformStartsWith(g: StartsWithGrammar, ns: NsGrammar, args: void): Grammar {
+        const newChild1 = g.child1.accept(this, ns, args);
+        const filter = new StartsWithFilterGrammar(g.child2.cell, g.child2);
+        const newFilter = filter.accept(this, ns, args);
+        return new FilterGrammar(g.cell, newChild1, newFilter);
+    }
+
+    public transformStartsWithFilter(g: StartsWithFilterGrammar, ns: NsGrammar, args: void): Grammar {
+        
+        if (g.child instanceof NegationGrammar) {
+            // this(not(x) -> not(this(x))
+            const newFilter = new StartsWithFilterGrammar(g.cell, g.child.child);
+            const newNegation = new NegationGrammar(g.child.cell, newFilter, g.child.maxReps);
+            return newNegation.accept(this, ns, args);
+        }
+
+        if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
+            // this(x+y) -> x+this(y)
+            const newChildren = [...g.child.children]; // clone the children
+            const newLastChild = new StartsWithFilterGrammar(g.cell, newChildren[newChildren.length-1]);
+            newChildren[newChildren.length-1] = newLastChild;
+            const newSequence = new SequenceGrammar(g.cell, newChildren);
+            return newSequence.accept(this, ns, args);
+        }
+        
+        if (g.child instanceof AlternationGrammar) {
+            // this(x|y) -> this(x)|this(y)
+            const newChildren = g.child.children.map(c => new StartsWithFilterGrammar(g.cell, c));
+            const newAlternation = new AlternationGrammar(g.cell, newChildren);
+            return newAlternation.accept(this, ns, args);
+        }
+
+        if (g.child instanceof IntersectionGrammar) {
+            // this(x&y) -> this(x)&this(y)
+            const newFilter1 = new StartsWithFilterGrammar(g.cell, g.child.child1);
+            const newFilter2 = new StartsWithFilterGrammar(g.cell, g.child.child2);
+            const newIntersection = new IntersectionGrammar(g.child.cell, newFilter1, newFilter2);
+            return newIntersection.accept(this, ns, args);
+        }
+
+        // plain old clone, nothing special
+        const newChild = g.child.accept(this, ns, args);
+        return new StartsWithFilterGrammar(g.cell, newChild);
+    }
+    
+    public transformEndsWith(g: StartsWithGrammar, ns: NsGrammar, args: void): Grammar {
+        const newChild1 = g.child1.accept(this, ns, args);
+        const filter = new EndsWithFilterGrammar(g.child2.cell, g.child2);
+        const newFilter = filter.accept(this, ns, args);
+        return new FilterGrammar(g.cell, newChild1, newFilter);
+    }
+
+    public transformEndsWithFilter(g: StartsWithFilterGrammar, ns: NsGrammar, args: void): Grammar {
+        
+        if (g.child instanceof NegationGrammar) {
+            // this(not(x) -> not(this(x))
+            const newFilter = new EndsWithFilterGrammar(g.cell, g.child.child);
+            const newNegation = new NegationGrammar(g.child.cell, newFilter, g.child.maxReps);
+            return newNegation.accept(this, ns, args);
+        }
+
+        if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
+            // this(x+y) -> this(x)+y
+            const newChildren = [...g.child.children]; // clone the children
+            const newFirstChild = new EndsWithFilterGrammar(g.cell, newChildren[0]);
+            newChildren[0] = newFirstChild;
+            const newSequence = new SequenceGrammar(g.cell, newChildren);
+            return newSequence.accept(this, ns, args);
+        }
+        
+        if (g.child instanceof AlternationGrammar) {
+            // this(x|y) -> this(x)|this(y)
+            const newChildren = g.child.children.map(c => new EndsWithFilterGrammar(g.cell, c));
+            const newAlternation = new AlternationGrammar(g.cell, newChildren);
+            return newAlternation.accept(this, ns, args);
+        }
+
+        if (g.child instanceof IntersectionGrammar) {
+            // this(x&y) -> this(x)&this(y)
+            const newFilter1 = new EndsWithFilterGrammar(g.cell, g.child.child1);
+            const newFilter2 = new EndsWithFilterGrammar(g.cell, g.child.child2);
+            const newIntersection = new IntersectionGrammar(g.child.cell, newFilter1, newFilter2);
+            return newIntersection.accept(this, ns, args);
+        }
+
+        // plain old clone, nothing special
+        const newChild = g.child.accept(this, ns, args);
+        return new EndsWithFilterGrammar(g.cell, newChild);
+    }
+    
+    public transformContains(g: StartsWithGrammar, ns: NsGrammar, args: void): Grammar {
+        const newChild1 = g.child1.accept(this, ns, args);
+        const filter = new ContainsFilterGrammar(g.child2.cell, g.child2);
+        const newFilter = filter.accept(this, ns, args);
+        return new FilterGrammar(g.cell, newChild1, newFilter);
+    }
+
+    public transformContainsFilter(g: ContainsFilterGrammar, ns: NsGrammar, args: void): Grammar {
+        
+        if (g.child instanceof NegationGrammar) {
+            // this(not(x) -> not(this(x))
+            const newFilter = new ContainsFilterGrammar(g.cell, g.child.child);
+            const newNegation = new NegationGrammar(g.child.cell, newFilter, g.child.maxReps);
+            return newNegation.accept(this, ns, args);
+        }
+
+        if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
+            // this(x+y) -> x+this(y)
+            const newChildren = [...g.child.children]; // clone the children
+            const newFirstChild = new EndsWithFilterGrammar(g.cell, newChildren[0]);
+            newChildren[0] = newFirstChild;
+            const newLastChild = new StartsWithFilterGrammar(g.cell, newChildren[newChildren.length-1]);
+            newChildren[newChildren.length-1] = newLastChild;
+            const newSequence = new SequenceGrammar(g.cell, newChildren);
+            return newSequence.accept(this, ns, args);
+        }
+        
+        if (g.child instanceof AlternationGrammar) {
+            // this(x|y) -> this(x)|this(y)
+            const newChildren = g.child.children.map(c => new ContainsFilterGrammar(g.cell, c));
+            const newAlternation = new AlternationGrammar(g.cell, newChildren);
+            return newAlternation.accept(this, ns, args);
+        }
+
+        if (g.child instanceof IntersectionGrammar) {
+            // this(x&y) -> this(x)&this(y)
+            const newFilter1 = new ContainsFilterGrammar(g.cell, g.child.child1);
+            const newFilter2 = new ContainsFilterGrammar(g.cell, g.child.child2);
+            const newIntersection = new IntersectionGrammar(g.child.cell, newFilter1, newFilter2);
+            return newIntersection.accept(this, ns, args);
+        }
+
+        // plain old clone, nothing special
+        const newChild = g.child.accept(this, ns, args);
+        return new ContainsFilterGrammar(g.cell, newChild);
+    }
 }
 
 export class RenameFixTransform extends IdentityTransform<void>{
