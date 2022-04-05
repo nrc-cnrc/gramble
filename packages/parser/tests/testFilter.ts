@@ -169,6 +169,21 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = StartsWith(t1("hello"), t1("h"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
+    
+    describe('t1:hello startswith ε+t1:h', function() {
+        const grammar = StartsWith(t1("hello"), Seq(Epsilon(), t1("h")));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello startswith t1:h+ε', function() {
+        const grammar = StartsWith(t1("hello"), Seq(t1("h"), Epsilon()));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello+t2:world startswith (t1:h+t2:w)', function() {
+        const grammar = StartsWith(Seq(t1("hello"), t2("world")), Seq(t1("h"), t2("w")));
+        testGrammar(grammar, [{t1: "hello", t2: "world"}]);
+    });
 
     describe('t1:hello startswith t1:he', function() {
         const grammar = StartsWith(t1("hello"), t1("he"));
@@ -180,10 +195,21 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello startswith ~t1:h', function() {
+    describe('t1:hello startswith ~(ε+t1:h)', function() {
+        const grammar = StartsWith(t1("hello"), Not(Seq(Epsilon(), t1("h"))));
+        testGrammar(grammar, []);
+    });
+
+    describe('t1:hello startswith ~(t1:h+ε)', function() {
+        const grammar = StartsWith(t1("hello"), Not(Seq(t1("h"), Epsilon())));
+        testGrammar(grammar, []);
+    });
+    
+    describe('t1:hello startswith ~(t1:h)', function() {
         const grammar = StartsWith(t1("hello"), Not(t1("h")));
         testGrammar(grammar, []);
     });
+    
     
     describe('t1:hello startswith ~t1:he', function() {
         const grammar = StartsWith(t1("hello"), Not(t1("he")));
@@ -284,6 +310,21 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('t1:hello endswith t1:o', function() {
         const grammar = EndsWith(t1("hello"), t1("o"));
         testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello endswith ε+t1:o', function() {
+        const grammar = EndsWith(t1("hello"), Seq(Epsilon(), t1("o")));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello endswith t1:o+ε', function() {
+        const grammar = EndsWith(t1("hello"), Seq(t1("o"), Epsilon()));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello+t2:world endswith (t1:o+t2:d)', function() {
+        const grammar = EndsWith(Seq(t1("hello"), t2("world")), Seq(t1("o"), t2("d")));
+        testGrammar(grammar, [{t1: "hello", t2: "world"}]);
     });
 
     describe('t1:hello endswith t1:lo', function() {
@@ -402,6 +443,21 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('t1:hello contains t1:e', function() {
         const grammar = Contains(t1("hello"), t1("e"));
         testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello contains ε+t1:e', function() {
+        const grammar = Contains(t1("hello"), Seq(Epsilon(), t1("e")));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello contains t1:e+ε', function() {
+        const grammar = Contains(t1("hello"), Seq(t1("e"), Epsilon()));
+        testGrammar(grammar, [{t1: "hello"}]);
+    });
+
+    describe('t1:hello+t2:world contains (t1:e+t2:r)', function() {
+        const grammar = Contains(Seq(t1("hello"), t2("world")), Seq(t1("e"), t2("r")));
+        testGrammar(grammar, [{t1: "hello", t2: "world"}]);
     });
     
     describe('t1:hello contains t1:el', function() {

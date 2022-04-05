@@ -1592,6 +1592,9 @@ class RTLRepExpr extends UnaryExpr {
     }
 
     public get id(): string {
+        if (this.minReps == 0 && this.maxReps == Infinity) {
+            return `(${this.child.id})*`;
+        }
         return `(${this.child.id}){${this.minReps},${this.maxReps}}`;
     }
 

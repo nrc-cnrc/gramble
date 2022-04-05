@@ -4,7 +4,7 @@ import {
     UnresolvedEmbedGrammar, 
     EndsWithGrammar, 
     EpsilonGrammar, 
-    FilterGrammar, 
+    EqualsGrammar, 
     HideGrammar, 
     LiteralGrammar, 
     NegationGrammar, 
@@ -470,7 +470,7 @@ export class EqualsHeader extends UnaryHeader {
         condition: Grammar,
         content: Cell
     ): Grammar {
-        return new FilterGrammar(content, leftNeighbor, condition);
+        return new EqualsGrammar(content, leftNeighbor, condition);
     }
     
     public toGrammar(

@@ -1,5 +1,5 @@
 import { 
-    CounterStack, FilterGrammar, Grammar, 
+    CounterStack, EqualsGrammar, Grammar, 
     LiteralGrammar, SequenceGrammar 
 } from "./grammars";
 import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell} from "./util";
@@ -237,7 +237,7 @@ export class Interpreter {
                 return new LiteralGrammar(new DummyCell(), key, value);
             });
             const querySeq = new SequenceGrammar(new DummyCell(), queryLiterals);
-            targetComponent = new FilterGrammar(new DummyCell(), targetComponent, querySeq);
+            targetComponent = new EqualsGrammar(new DummyCell(), targetComponent, querySeq);
             tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
@@ -273,7 +273,7 @@ export class Interpreter {
         for (const test of tests) {
 
             // create a filter for each test
-            const targetComponent = new FilterGrammar(test.cell, test.child, test.test);
+            const targetComponent = new EqualsGrammar(test.cell, test.child, test.test);
 
             const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             

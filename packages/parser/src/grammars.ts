@@ -64,7 +64,7 @@ export interface GrammarTransform<T> {
     transformAlternation(g: AlternationGrammar, ns: NsGrammar, args: T): Grammar;
     transformIntersection(g: IntersectionGrammar, ns: NsGrammar, args: T): Grammar;
     transformJoin(g: JoinGrammar, ns: NsGrammar, args: T): Grammar;
-    transformFilter(g: FilterGrammar, ns: NsGrammar, args: T): Grammar;
+    transformFilter(g: EqualsGrammar, ns: NsGrammar, args: T): Grammar;
     transformStartsWith(g: StartsWithGrammar, ns: NsGrammar, args: T): Grammar;
     transformStartsWithFilter(g: StartsWithFilterGrammar, ns: NsGrammar, args: T): Grammar;
     transformEndsWith(g: EndsWithGrammar, ns: NsGrammar, args: T): Grammar;
@@ -606,7 +606,7 @@ export class JoinGrammar extends BinaryGrammar {
 
 }
 
-export class FilterGrammar extends BinaryGrammar {
+export class EqualsGrammar extends BinaryGrammar {
 
     public get id(): string {
         return `Filter(${this.child1.id},${this.child2.id})`;
@@ -645,7 +645,7 @@ export class FilterGrammar extends BinaryGrammar {
     }
 }
 
-export class StartsWithGrammar extends FilterGrammar {
+export class StartsWithGrammar extends EqualsGrammar {
 
     public get id(): string {
         return `StartsWith(${this.child1.id},${this.child2.id})`;
@@ -657,7 +657,19 @@ export class StartsWithGrammar extends FilterGrammar {
 
 }
 
-export class StartsWithFilterGrammar extends UnaryGrammar {
+abstract class FilterGrammar extends UnaryGrammar {
+
+    constructor(
+        cell: Cell,
+        child: Grammar,
+        tapes: string[] | undefined = undefined
+    ) {
+        super(cell, child);
+        this.tapes = tapes;
+    }
+}
+
+export class StartsWithFilterGrammar extends FilterGrammar {
 
     public get id(): string {
         return `StartsWithFilter(${this.child.id})`;
@@ -683,7 +695,7 @@ export class StartsWithFilterGrammar extends UnaryGrammar {
     }
 }
 
-export class EndsWithGrammar extends FilterGrammar {
+export class EndsWithGrammar extends EqualsGrammar {
 
     public get id(): string {
         return `EndsWith(${this.child1.id},${this.child2.id})`;
@@ -695,7 +707,7 @@ export class EndsWithGrammar extends FilterGrammar {
 
 }
 
-export class EndsWithFilterGrammar extends UnaryGrammar {
+export class EndsWithFilterGrammar extends FilterGrammar {
 
     public get id(): string {
         return `EndsWithFilter(${this.child.id})`;
@@ -721,7 +733,7 @@ export class EndsWithFilterGrammar extends UnaryGrammar {
     }
 }
 
-export class ContainsGrammar extends FilterGrammar {
+export class ContainsGrammar extends EqualsGrammar {
 
     public get id(): string {
         return `Contains(${this.child1.id},${this.child2.id})`;
@@ -732,7 +744,7 @@ export class ContainsGrammar extends FilterGrammar {
     }
 }
 
-export class ContainsFilterGrammar extends UnaryGrammar {
+export class ContainsFilterGrammar extends FilterGrammar {
 
     public get id(): string {
         return `ContainsFilter(${this.child.id})`;
@@ -848,6 +860,9 @@ export class RepeatGrammar extends UnaryGrammar {
     }
 
     public get id(): string {
+        if (this.minReps == 0 && this.maxReps == Infinity) {
+            return `(${this.child.id})*`;
+        }
         return `Repeat(${this.child.id},${this.minReps},${this.maxReps})`;
     }
     
@@ -1419,8 +1434,8 @@ export function Intersect(child1: Grammar, child2: Grammar): IntersectionGrammar
     return new IntersectionGrammar(new DummyCell(), child1, child2);
 }
 
-export function Filter(child1: Grammar, child2: Grammar): FilterGrammar {
-    return new FilterGrammar(new DummyCell(), child1, child2);
+export function Filter(child1: Grammar, child2: Grammar): EqualsGrammar {
+    return new EqualsGrammar(new DummyCell(), child1, child2);
 }
 
 export function Join(child1: Grammar, child2: Grammar): JoinGrammar {
