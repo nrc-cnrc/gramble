@@ -1,4 +1,4 @@
-import { Seq, Join, Hide, Rename, Filter, Ns, Embed } from "../src/grammars";
+import { Seq, Join, Hide, Rename, Equals, Ns, Embed } from "../src/grammars";
 import { t1, t2, t3, testHasTapes, testGrammar } from './testUtils';
 import * as path from 'path';
 
@@ -79,12 +79,12 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Filter using a field and then hide it', function() {
-        const grammar = Hide(Filter(Seq(t1("hello"), t2("foo")), t2("foo")), "t2");
+        const grammar = Hide(Equals(Seq(t1("hello"), t2("foo")), t2("foo")), "t2");
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
     describe('Hide-filter-hide', function() {
-        const grammar = Hide(Filter(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3"), t2("foo")), "t2");
+        const grammar = Hide(Equals(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3"), t2("foo")), "t2");
         testGrammar(grammar, [{t1: "hello"}]);
     });
     

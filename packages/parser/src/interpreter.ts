@@ -8,7 +8,7 @@ import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
 import { Expr, GenOptions, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
-import { NameQualifier, RenameFixTransform, ReplaceAdjuster, FilterCreatorTransform, FlattenTransform } from "./transforms";
+import { NameQualifierTransform, RenameFixTransform, SameTapeReplaceTransform, FilterTransform, FlattenTransform } from "./transforms";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
@@ -45,12 +45,12 @@ export class Interpreter {
         //console.log(this.grammar.id);
 
         timeIt(() => {
-            const nameQualifier = new NameQualifier();
+            const nameQualifier = new NameQualifierTransform();
             this.grammar = nameQualifier.transform(this.grammar);
         }, verbose, "Qualified names");
 
         timeIt(() => {
-            const replaceAdjuster = new ReplaceAdjuster();
+            const replaceAdjuster = new SameTapeReplaceTransform();
             this.grammar = replaceAdjuster.transform(this.grammar);
         }, verbose, "Adjusted tape names");
 
@@ -65,7 +65,7 @@ export class Interpreter {
         }, verbose, "Flattened sequences/alternations");
 
         timeIt(() => {
-            const filterCreator = new FilterCreatorTransform();
+            const filterCreator = new FilterTransform();
             this.grammar = filterCreator.transform(this.grammar);
         }, verbose, "Created starts/ends/contains filters");
 

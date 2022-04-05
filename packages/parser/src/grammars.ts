@@ -65,9 +65,9 @@ export interface GrammarTransform<T> {
     transformIntersection(g: IntersectionGrammar, ns: NsGrammar, args: T): Grammar;
     transformJoin(g: JoinGrammar, ns: NsGrammar, args: T): Grammar;
     transformFilter(g: EqualsGrammar, ns: NsGrammar, args: T): Grammar;
-    transformStartsWithFilter(g: StartsWithFilterGrammar, ns: NsGrammar, args: T): Grammar;
-    transformEndsWithFilter(g: EndsWithFilterGrammar, ns: NsGrammar, args: T): Grammar;
-    transformContainsFilter(g: ContainsFilterGrammar, ns: NsGrammar, args: T): Grammar;
+    transformStarts(g: StartsGrammar, ns: NsGrammar, args: T): Grammar;
+    transformEnds(g: EndsGrammar, ns: NsGrammar, args: T): Grammar;
+    transformContains(g: ContainsGrammar, ns: NsGrammar, args: T): Grammar;
     transformMatch(g: MatchGrammar, ns: NsGrammar, args: T): Grammar;
     transformReplace(g: ReplaceGrammar, ns: NsGrammar, args: T): Grammar;
     transformEmbed(g: EmbedGrammar, ns: NsGrammar, args: T): Grammar;
@@ -652,82 +652,44 @@ abstract class FilterGrammar extends UnaryGrammar {
         super(cell, child);
         this.tapes = tapes;
     }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        // All descendants of FilterGrammar should have been replaced by
+        // other grammars by the time exprs are constructed.
+        throw new Error("not implemented");
+    }
 }
 
-export class StartsWithFilterGrammar extends FilterGrammar {
+export class StartsGrammar extends FilterGrammar {
 
     public get id(): string {
         return `StartsWithFilter(${this.child.id})`;
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
-        return t.transformStartsWithFilter(this, ns, args);
-    }
-    
-    public constructExpr(symbols: SymbolTable): Expr {
-
-        if (this.child.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
-        }
-
-        let child = this.child.constructExpr(symbols);
-        for (const tape of this.child.tapes) {
-            const dotStar = constructDotStar(tape);
-            child = constructBinaryConcat(child, dotStar);
-        }
-
-        return child;
+        return t.transformStarts(this, ns, args);
     }
 }
 
-export class EndsWithFilterGrammar extends FilterGrammar {
+export class EndsGrammar extends FilterGrammar {
 
     public get id(): string {
         return `EndsWithFilter(${this.child.id})`;
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
-        return t.transformEndsWithFilter(this, ns, args);
-    }
-    
-    public constructExpr(symbols: SymbolTable): Expr {
-
-        if (this.child.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
-        }
-
-        let child = this.child.constructExpr(symbols);
-        for (const tape of this.child.tapes) {
-            const dotStar = constructDotStar(tape);
-            child = constructBinaryConcat(dotStar, child);
-        }
-
-        return child;
+        return t.transformEnds(this, ns, args);
     }
 }
 
-export class ContainsFilterGrammar extends FilterGrammar {
+export class ContainsGrammar extends FilterGrammar {
 
     public get id(): string {
         return `ContainsFilter(${this.child.id})`;
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
-        return t.transformContainsFilter(this, ns, args);
-    }
-
-    public constructExpr(symbols: SymbolTable): Expr {
-        if (this.child.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
-        }
-
-        let child = this.child.constructExpr(symbols);
-        for (const tape of this.child.tapes) {
-            const dotStar = constructDotStar(tape);
-            child = constructSequence(dotStar, child, dotStar);
-        }
-
-        return child;
+        return t.transformContains(this, ns, args);
     }
 }
 
@@ -1396,7 +1358,7 @@ export function Intersect(child1: Grammar, child2: Grammar): IntersectionGrammar
     return new IntersectionGrammar(new DummyCell(), child1, child2);
 }
 
-export function Filter(child1: Grammar, child2: Grammar): EqualsGrammar {
+export function Equals(child1: Grammar, child2: Grammar): EqualsGrammar {
     return new EqualsGrammar(new DummyCell(), child1, child2);
 }
 
@@ -1404,18 +1366,18 @@ export function Join(child1: Grammar, child2: Grammar): JoinGrammar {
     return new JoinGrammar(new DummyCell(), child1, child2);
 }
 
-export function StartsWith(child1: Grammar, child2: Grammar): EqualsGrammar {
-    const filter = new StartsWithFilterGrammar(new DummyCell(), child2);
+export function Starts(child1: Grammar, child2: Grammar): EqualsGrammar {
+    const filter = new StartsGrammar(new DummyCell(), child2);
     return new EqualsGrammar(new DummyCell(), child1, filter);
 }
 
-export function EndsWith(child1: Grammar, child2: Grammar): EqualsGrammar {
-    const filter = new EndsWithFilterGrammar(new DummyCell(), child2);
+export function Ends(child1: Grammar, child2: Grammar): EqualsGrammar {
+    const filter = new EndsGrammar(new DummyCell(), child2);
     return new EqualsGrammar(new DummyCell(), child1, filter);
 }
 
 export function Contains(child1: Grammar, child2: Grammar): EqualsGrammar {
-    const filter = new ContainsFilterGrammar(new DummyCell(), child2);
+    const filter = new ContainsGrammar(new DummyCell(), child2);
     return new EqualsGrammar(new DummyCell(), child1, filter);
 }
 

@@ -1,4 +1,4 @@
-import { NameQualifier } from "./transforms";
+import { NameQualifierTransform } from "./transforms";
 import { 
     TstAssignment, TstBinaryOp, TstEmpty, 
     TstEnclosure, TstHeader, TstProject, 
@@ -104,7 +104,7 @@ export class SheetProject extends SheetComponent {
 
         // check to see if any names didn't get resolved
 
-        const nameQualifier = new NameQualifier();
+        const nameQualifier = new NameQualifierTransform();
         grammar = nameQualifier.transform(grammar);
 
         const unresolvedNames: Set<string> = new Set(); 
