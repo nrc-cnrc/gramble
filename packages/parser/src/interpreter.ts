@@ -8,7 +8,7 @@ import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
 import { Expr, GenOptions, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
-import { NameQualifier, RenameFixTransform, ReplaceAdjuster, FilterCreatorTransform } from "./transforms";
+import { NameQualifier, RenameFixTransform, ReplaceAdjuster, FilterCreatorTransform, FlattenTransform } from "./transforms";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
@@ -58,6 +58,11 @@ export class Interpreter {
             const renameFixer = new RenameFixTransform();
             this.grammar = renameFixer.transform(this.grammar);
         }, verbose, "Fixed any erroneous renames");
+
+        timeIt(() => {
+            const flattenTransform = new FlattenTransform();
+            this.grammar = flattenTransform.transform(this.grammar);
+        }, verbose, "Flattened sequences/alternations");
 
         timeIt(() => {
             const filterCreator = new FilterCreatorTransform();
