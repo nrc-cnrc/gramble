@@ -1,8 +1,6 @@
 import { 
     AlternationGrammar, 
-    ContainsGrammar, 
     UnresolvedEmbedGrammar, 
-    EndsWithGrammar, 
     EpsilonGrammar, 
     EqualsGrammar, 
     HideGrammar, 
@@ -10,9 +8,11 @@ import {
     NegationGrammar, 
     RenameGrammar, 
     SequenceGrammar, 
-    StartsWithGrammar, 
     Grammar, 
-    RepeatGrammar
+    RepeatGrammar,
+    StartsWithFilterGrammar,
+    EndsWithFilterGrammar,
+    ContainsFilterGrammar
 } from "./grammars";
 
 import { 
@@ -498,7 +498,8 @@ export class StartsWithHeader extends EqualsHeader {
         condition: Grammar,
         content: Cell
     ): Grammar {
-        return new StartsWithGrammar(content, leftNeighbor, condition);
+        const filter = new StartsWithFilterGrammar(content, condition);
+        return new EqualsGrammar(content, leftNeighbor, filter);
     }
 }
 
@@ -517,7 +518,8 @@ export class EndsWithHeader extends EqualsHeader {
         condition: Grammar,
         content: Cell
     ): Grammar {
-        return new EndsWithGrammar(content, leftNeighbor, condition);
+        const filter = new EndsWithFilterGrammar(content, condition);
+        return new EqualsGrammar(content, leftNeighbor, filter);
     }
 }
 
@@ -536,7 +538,8 @@ export class ContainsHeader extends EqualsHeader {
         condition: Grammar,
         content: Cell
     ): Grammar {
-        return new ContainsGrammar(content, leftNeighbor, condition);
+        const filter = new ContainsFilterGrammar(content, condition);
+        return new EqualsGrammar(content, leftNeighbor, filter);
     }
 }
 

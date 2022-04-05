@@ -1,12 +1,12 @@
 import { 
-    AlternationGrammar, CharSetGrammar, ContainsGrammar,
-    CounterStack, DotGrammar, EmbedGrammar, EndsWithGrammar,
+    AlternationGrammar, CharSetGrammar,
+    CounterStack, DotGrammar, EmbedGrammar,
     EpsilonGrammar, EqualsGrammar, Grammar, GrammarTransform,
     HideGrammar, IntersectionGrammar, JoinGrammar,
     JoinReplaceGrammar, LiteralGrammar, MatchGrammar,
     NsGrammar, NegationGrammar, NegativeUnitTestGrammar,
     NullGrammar, RenameGrammar, RepeatGrammar, ReplaceGrammar,
-    SequenceGrammar, StartsWithGrammar, UnitTestGrammar,
+    SequenceGrammar, UnitTestGrammar,
     UnresolvedEmbedGrammar, StartsWithFilterGrammar, 
     EndsWithFilterGrammar, ContainsFilterGrammar, Seq, Null
 } from "./grammars";
@@ -75,32 +75,14 @@ class IdentityTransform<T> implements GrammarTransform<T> {
         return new EqualsGrammar(g.cell, newChild1, newChild2);
     }
 
-    public transformStartsWith(g: StartsWithGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild1 = g.child1.accept(this, ns, args);
-        const newChild2 = g.child2.accept(this, ns, args);
-        return new StartsWithGrammar(g.cell, newChild1, newChild2);
-    }
-
     public transformStartsWithFilter(g: StartsWithFilterGrammar, ns: NsGrammar, args: T): Grammar {
         const newChild = g.child.accept(this, ns, args);
         return new StartsWithFilterGrammar(g.cell, newChild);
     }
 
-    public transformEndsWith(g: EndsWithGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild1 = g.child1.accept(this, ns, args);
-        const newChild2 = g.child2.accept(this, ns, args);
-        return new EndsWithGrammar(g.cell, newChild1, newChild2);
-    }
-
     public transformEndsWithFilter(g: EndsWithFilterGrammar, ns: NsGrammar, args: T): Grammar {
         const newChild = g.child.accept(this, ns, args);
         return new EndsWithFilterGrammar(g.cell, newChild);
-    }
-
-    public transformContains(g: ContainsGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild1 = g.child1.accept(this, ns, args);
-        const newChild2 = g.child2.accept(this, ns, args);
-        return new ContainsGrammar(g.cell, newChild1, newChild2);
     }
 
     public transformContainsFilter(g: ContainsFilterGrammar, ns: NsGrammar, args: T): Grammar {
@@ -296,14 +278,6 @@ export class FilterCreatorTransform extends IdentityTransform<void> {
         return g.accept(this, g as NsGrammar, null);
     }
 
-    public transformStartsWith(g: StartsWithGrammar, ns: NsGrammar, args: void): Grammar {
-        const newChild1 = g.child1.accept(this, ns, args);
-        const filter = new StartsWithFilterGrammar(g.child2.cell, g.child2);
-        filter.calculateTapes(new CounterStack(2));
-        const newFilter = filter.accept(this, ns, args);
-        return new EqualsGrammar(g.cell, newChild1, newFilter);
-    }
-
     public transformStartsWithFilter(g: StartsWithFilterGrammar, ns: NsGrammar, args: void): Grammar {
         
         if (g.tapes == undefined) {
@@ -353,14 +327,6 @@ export class FilterCreatorTransform extends IdentityTransform<void> {
         return new SequenceGrammar(g.cell, [ newChild, ...dotStars ]);
     }
     
-    public transformEndsWith(g: StartsWithGrammar, ns: NsGrammar, args: void): Grammar {
-        const newChild1 = g.child1.accept(this, ns, args);
-        const filter = new EndsWithFilterGrammar(g.child2.cell, g.child2);
-        filter.calculateTapes(new CounterStack(2));
-        const newFilter = filter.accept(this, ns, args);
-        return new EqualsGrammar(g.cell, newChild1, newFilter);
-    }
-
     public transformEndsWithFilter(g: StartsWithFilterGrammar, ns: NsGrammar, args: void): Grammar {
         
         if (g.tapes == undefined) {
@@ -409,14 +375,6 @@ export class FilterCreatorTransform extends IdentityTransform<void> {
         return new SequenceGrammar(g.cell, [ ...dotStars, newChild ]);
     }
     
-    public transformContains(g: StartsWithGrammar, ns: NsGrammar, args: void): Grammar {
-        const newChild1 = g.child1.accept(this, ns, args);
-        const filter = new ContainsFilterGrammar(g.child2.cell, g.child2);
-        filter.calculateTapes(new CounterStack(2));
-        const newFilter = filter.accept(this, ns, args);
-        return new EqualsGrammar(g.cell, newChild1, newFilter);
-    }
-
     public transformContainsFilter(g: ContainsFilterGrammar, ns: NsGrammar, args: void): Grammar {
         
         if (g.tapes == undefined) {

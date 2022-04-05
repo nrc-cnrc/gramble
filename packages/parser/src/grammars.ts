@@ -65,11 +65,8 @@ export interface GrammarTransform<T> {
     transformIntersection(g: IntersectionGrammar, ns: NsGrammar, args: T): Grammar;
     transformJoin(g: JoinGrammar, ns: NsGrammar, args: T): Grammar;
     transformFilter(g: EqualsGrammar, ns: NsGrammar, args: T): Grammar;
-    transformStartsWith(g: StartsWithGrammar, ns: NsGrammar, args: T): Grammar;
     transformStartsWithFilter(g: StartsWithFilterGrammar, ns: NsGrammar, args: T): Grammar;
-    transformEndsWith(g: EndsWithGrammar, ns: NsGrammar, args: T): Grammar;
     transformEndsWithFilter(g: EndsWithFilterGrammar, ns: NsGrammar, args: T): Grammar;
-    transformContains(g: ContainsGrammar, ns: NsGrammar, args: T): Grammar;
     transformContainsFilter(g: ContainsFilterGrammar, ns: NsGrammar, args: T): Grammar;
     transformMatch(g: MatchGrammar, ns: NsGrammar, args: T): Grammar;
     transformReplace(g: ReplaceGrammar, ns: NsGrammar, args: T): Grammar;
@@ -645,18 +642,6 @@ export class EqualsGrammar extends BinaryGrammar {
     }
 }
 
-export class StartsWithGrammar extends EqualsGrammar {
-
-    public get id(): string {
-        return `StartsWith(${this.child1.id},${this.child2.id})`;
-    }
-
-    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
-        return t.transformStartsWith(this, ns, args);
-    }
-
-}
-
 abstract class FilterGrammar extends UnaryGrammar {
 
     constructor(
@@ -695,18 +680,6 @@ export class StartsWithFilterGrammar extends FilterGrammar {
     }
 }
 
-export class EndsWithGrammar extends EqualsGrammar {
-
-    public get id(): string {
-        return `EndsWith(${this.child1.id},${this.child2.id})`;
-    }
-
-    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
-        return t.transformEndsWith(this, ns, args);
-    }
-
-}
-
 export class EndsWithFilterGrammar extends FilterGrammar {
 
     public get id(): string {
@@ -730,17 +703,6 @@ export class EndsWithFilterGrammar extends FilterGrammar {
         }
 
         return child;
-    }
-}
-
-export class ContainsGrammar extends EqualsGrammar {
-
-    public get id(): string {
-        return `Contains(${this.child1.id},${this.child2.id})`;
-    }
-
-    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
-        return t.transformContains(this, ns, args);
     }
 }
 
@@ -1442,16 +1404,19 @@ export function Join(child1: Grammar, child2: Grammar): JoinGrammar {
     return new JoinGrammar(new DummyCell(), child1, child2);
 }
 
-export function StartsWith(child1: Grammar, child2: Grammar): StartsWithGrammar {
-    return new StartsWithGrammar(new DummyCell(), child1, child2);
+export function StartsWith(child1: Grammar, child2: Grammar): EqualsGrammar {
+    const filter = new StartsWithFilterGrammar(new DummyCell(), child2);
+    return new EqualsGrammar(new DummyCell(), child1, filter);
 }
 
-export function EndsWith(child1: Grammar, child2: Grammar): EndsWithGrammar {
-    return new EndsWithGrammar(new DummyCell(), child1, child2);
+export function EndsWith(child1: Grammar, child2: Grammar): EqualsGrammar {
+    const filter = new EndsWithFilterGrammar(new DummyCell(), child2);
+    return new EqualsGrammar(new DummyCell(), child1, filter);
 }
 
-export function Contains(child1: Grammar, child2: Grammar): ContainsGrammar {
-    return new ContainsGrammar(new DummyCell(), child1, child2);
+export function Contains(child1: Grammar, child2: Grammar): EqualsGrammar {
+    const filter = new ContainsFilterGrammar(new DummyCell(), child2);
+    return new EqualsGrammar(new DummyCell(), child1, filter);
 }
 
 export function Rep(
