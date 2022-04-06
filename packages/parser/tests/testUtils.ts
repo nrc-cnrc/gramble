@@ -49,11 +49,14 @@ export function testCellID(cell: string, expectedID: string) {
 }
 
 export function testNumOutputs(outputs: StringDict[], expectedNum: number) {
-    it(`should have ${expectedNum} result(s)`, function() {
+    const date_str: string = (new Date()).toUTCString();
+    const testName: string = `should have ${expectedNum} result(s)`;
+    it(`${testName}`, function() {
         try {
             expect(outputs.length).to.equal(expectedNum);
         } catch (e) {
-            console.log(`outputs: ${JSON.stringify(outputs)}`);
+            console.log("");
+            console.log(`[${date_str}] ${testName} outputs: ${JSON.stringify(outputs)}`);
             throw e;
         }
     });
@@ -79,25 +82,86 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
     // outputs.
     //
     // Outputs can be in any order.
+    //
+    // Most tests have quite a small number of expected outputs, but some
+    // negation tests, such as those in testNotMatch can have a large number of
+    // outputs, even for a small test. In order to handle this smoothly, we now
+    // split the output comparison into blocks, the size of which depends on
+    // the number of expected/actual outputs. We also increase timeout from 2
+    // seconds (2000ms) to 10 seconds (10000ms) in order to allow us to keep the
+    // comparison blocks quite large. 
     outputs = removeHiddenFields(outputs);
-    it(`should match ${JSON.stringify(expected_outputs)}`, function() {
-        for (var expected_output of expected_outputs) {
-            try {
-                expect(outputs).to.deep.include(expected_output);
-            } catch (e) {
-                console.log(`outputs: ${JSON.stringify(outputs)}`);
-                throw e;
+
+    const date_str: string = (new Date()).toUTCString();
+
+    let incr: number = Math.max(expected_outputs.length, outputs.length, 1);
+    if (incr > 2500) {
+        incr = Math.ceil(70000 / incr) * 100;
+    }
+
+    // For running the "it" tests, we cannot use a simple loop incrementing start
+    // because start would get incremented before the test started. 
+    let starts: number[] = new Array(Math.ceil(expected_outputs.length / incr));
+    for (let i=0, start=0; i < starts.length; ++i, start+=incr)
+        starts[i] = start;
+
+    starts.forEach(function(start) {
+        const end_expected: number = Math.min(expected_outputs.length, start+incr);
+        let end_outputs: number = end_expected;
+        if (end_expected == expected_outputs.length)
+            end_outputs = outputs.length;
+        let expected_outputs_str: string;
+        if (end_expected - start < 20)
+            expected_outputs_str = JSON.stringify(expected_outputs.slice(start, end_expected));
+        else
+            expected_outputs_str = JSON.stringify(expected_outputs.slice(start, start+20)) + "...";
+        const testName = `should match items ${start}-${end_expected-1}: ${expected_outputs_str}`;
+        it(`${testName}`, function() {
+            this.timeout(10000);
+            for (let expected_output of expected_outputs.slice(start, end_expected)) {
+                try {
+                    expect(outputs).to.deep.include(expected_output);
+                } catch (e) {
+                    console.log("");
+                    console.log(`[${date_str}] ${testName} outputs: ${JSON.stringify(outputs)}`);
+                    throw e;
+                }
             }
-        }
-        for (var output of outputs) {
-            try {
-                expect(expected_outputs).to.deep.include(output);
-            } catch (e) {
-                console.log(`outputs: ${JSON.stringify(outputs)}`);
-                throw e;
+            for (let output of outputs.slice(start, end_outputs)) {
+                try {
+                    expect(expected_outputs).to.deep.include(output);
+                } catch (e) {
+                    console.log("");
+                    console.log(`[${date_str}] ${testName} outputs: ${JSON.stringify(outputs)}`);
+                    throw e;
+                }
             }
-        }
+        });
     });
+}
+
+export function generateOutputsFromGrammar(
+    grammar: Grammar,
+    symbolName: string = "",
+    maxRecursion: number = 4,
+    maxChars: number = 1000,
+): StringDict[] {
+    let outputs: StringDict[] = [];
+
+    const interpreter = Interpreter.fromGrammar(grammar);
+
+    maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
+    maxChars = Math.min(maxChars, DEBUG_MAX_CHARS);
+
+    try {
+        outputs = [...interpreter.generate(symbolName, {}, Infinity, maxRecursion, maxChars)];
+    } catch (e) {
+        it("Unexpected Exception", function() {
+            console.log(e);
+            assert.fail(e);
+        });
+    }
+    return outputs;
 }
 
 function testGrammarAux(
