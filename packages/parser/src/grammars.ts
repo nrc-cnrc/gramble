@@ -64,7 +64,7 @@ export interface GrammarTransform<T> {
     transformAlternation(g: AlternationGrammar, ns: NsGrammar, args: T): Grammar;
     transformIntersection(g: IntersectionGrammar, ns: NsGrammar, args: T): Grammar;
     transformJoin(g: JoinGrammar, ns: NsGrammar, args: T): Grammar;
-    transformFilter(g: EqualsGrammar, ns: NsGrammar, args: T): Grammar;
+    transformEquals(g: EqualsGrammar, ns: NsGrammar, args: T): Grammar;
     transformStarts(g: StartsGrammar, ns: NsGrammar, args: T): Grammar;
     transformEnds(g: EndsGrammar, ns: NsGrammar, args: T): Grammar;
     transformContains(g: ContainsGrammar, ns: NsGrammar, args: T): Grammar;
@@ -610,7 +610,7 @@ export class EqualsGrammar extends BinaryGrammar {
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
-        return t.transformFilter(this, ns, args);
+        return t.transformEquals(this, ns, args);
     }
 
     public calculateTapes(stack: CounterStack): string[] {

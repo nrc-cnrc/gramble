@@ -8,7 +8,11 @@ import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
 import { Expr, GenOptions, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
-import { NameQualifierTransform, RenameFixTransform, SameTapeReplaceTransform, FilterTransform, FlattenTransform } from "./transforms";
+import { NameQualifierTransform } from "./transforms/nameQualifier";
+import { SameTapeReplaceTransform } from "./transforms/sameTapeReplace";
+import { RenameFixTransform } from "./transforms/renameFix";
+import { FilterTransform } from "./transforms/filter";
+import { FlattenTransform } from "./transforms/flatten";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 

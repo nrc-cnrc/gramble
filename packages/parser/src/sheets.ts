@@ -1,4 +1,5 @@
-import { NameQualifierTransform } from "./transforms";
+import { NameQualifierTransform } from "./transforms/nameQualifier";
+
 import { 
     TstAssignment, TstBinaryOp, TstEmpty, 
     TstEnclosure, TstHeader, TstProject, 
