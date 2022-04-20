@@ -583,10 +583,10 @@ export abstract class Expr {
     ): Gen<StringDict> {
         const initialOutput: OutputTrie = new OutputTrie();
 
-        let states: [Tape[], OutputTrie, Expr, number][] = [[tapes, initialOutput, this, 0]];
+        let states: [Tape[], OutputTrie, Expr][] = [[tapes, initialOutput, this]];
         const candidates: OutputTrie[] = [];
 
-        let prev: [Tape[], OutputTrie, Expr, number] | undefined = undefined;
+        let prev: [Tape[], OutputTrie, Expr] | undefined = undefined;
         while (prev = states.pop()) {
 
             // first, see if it's time to randomly emit a result
@@ -596,11 +596,8 @@ export abstract class Expr {
                 yield candidateOutput.toDict(opt);
             }
 
-            let nexts: [Tape[], OutputTrie, Expr, number][] = [];
-            let [tapes, prevOutput, prevExpr, chars] = prev;
-            if (chars >= opt.maxChars) {
-                continue;
-            }
+            let nexts: [Tape[], OutputTrie, Expr][] = [];
+            let [tapes, prevOutput, prevExpr] = prev;
 
             if (prevExpr instanceof EpsilonExpr) {
                 candidates.push(prevOutput);
@@ -616,7 +613,7 @@ export abstract class Expr {
             const delta = prevExpr.delta(tapeToTry, stack);
             if (!(delta instanceof NullExpr)) {                    
                 const newTapes = tapes.slice(1);
-                nexts.push([newTapes, prevOutput, delta, chars]);
+                nexts.push([newTapes, prevOutput, delta]);
             }
 
             // rotate the tapes so that we don't keep trying the same one every time
@@ -626,7 +623,7 @@ export abstract class Expr {
                 
                 if (tapeToTry.tapeName.startsWith("__")) {
                     // don't bother to add hidden characters
-                    nexts.push([tapes, prevOutput, cNext, chars]);
+                    nexts.push([tapes, prevOutput, cNext]);
                     continue;
                 }
 
@@ -634,14 +631,14 @@ export abstract class Expr {
                     for (const c of tapeToTry.fromToken(tapeToTry.tapeName, ANY_CHAR)) {
                         //const cToken = tapeToTry.toToken(tapeToTry.tapeName, c);
                         const nextOutput = prevOutput.add(tapeToTry.tapeName, c);
-                        nexts.push([tapes, nextOutput, cNext, chars+1]);
+                        nexts.push([tapes, nextOutput, cNext]);
                     }
                     continue;
                 }
 
                 //const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget);
                 const nextOutput = prevOutput.add(tapeToTry.tapeName, cTarget);
-                nexts.push([tapes, nextOutput, cNext, chars+1]);
+                nexts.push([tapes, nextOutput, cNext]);
             }
 
             shuffleArray(nexts);
