@@ -1500,6 +1500,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION, 100);
     });
 
+    /*
     // 30c. Replace e by a in hel and hey: t1:e -> t2:a {0,2} || h_~h
     describe('30c. Replace e by a in hel and hey: t1:e -> t2:a {0,2} || h_~h', function() {
         const grammar = Seq(Replace(t1("e"), t2("a"), t1("h"), Not(t1("h")), EMPTY_CONTEXT,
@@ -1555,6 +1556,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION, 100);
     });
+
+    */
 
     // 30e. Replace e or o by a in hel: t1:e|t1:o -> t2:a {0,2} || h_l
     describe('30e. Replace e or o by a in hel: t1:e|t1:o -> t2:a {0,2} || h_l', function() {
@@ -3336,6 +3339,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION, 100);
     });
 
+    /*
     // 2-30c. Replace e by a/i in hel and hey: t1:e -> t2:a t4:i {0,2} || h_~h
     describe('2-30c. Replace e by a/i in hel and hey: t1:e -> t2:a t4:i {0,2} || h_~h', function() {
         const grammar = Seq(Replace(t1("e"), Seq(t2("a"), t4("i")),
@@ -3393,6 +3397,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION, 100);
     });
+    */
 
     // 2-30e. Replace e or o by a/i in hel and hol: t1:e|t1:o -> t2:a t4:i {0,2} || h_l
     describe('2-30e. Replace e or o by a/i in hel and hol: t1:e|t1:o -> t2:a t4:i {0,2} || h_l', function() {

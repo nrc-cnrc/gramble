@@ -37,7 +37,7 @@ function ReplaceBypass(
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe('1a. JoinReplace i by a in i: i -> a', function() {
+    describe('1a. JoinReplace i by a in i: i -> a, different tape', function() {
         const grammar = JoinReplace(t1("i"),
                                     [ReplaceBypass(t1("i"), t2("a"))]);
         testHasTapes(grammar, ['t1', 't2']);

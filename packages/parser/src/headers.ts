@@ -1,18 +1,18 @@
 import { 
     AlternationGrammar, 
-    ContainsGrammar, 
     UnresolvedEmbedGrammar, 
-    EndsWithGrammar, 
     EpsilonGrammar, 
-    FilterGrammar, 
+    EqualsGrammar, 
     HideGrammar, 
     LiteralGrammar, 
     NegationGrammar, 
     RenameGrammar, 
     SequenceGrammar, 
-    StartsWithGrammar, 
     Grammar, 
-    RepeatGrammar
+    RepeatGrammar,
+    StartsGrammar,
+    EndsGrammar,
+    ContainsGrammar
 } from "./grammars";
 
 import { 
@@ -435,7 +435,7 @@ export class RegexHeader extends UnaryHeader {
  * that Filter(N, X) -- that is, it filters the results of N such that every surviving record is a 
  * superset of X.
  * 
- * This is also the superclass of [StartsWithHeader], [EndsWithHeader], and [ContainsHeader].  
+ * This is also the superclass of [StartsHeader], [EndsHeader], and [ContainsHeader].  
  * These constrain N to either start with X (that is, Filter(N, X.*)) or end with X 
  * (that is, Filter(N, .*X)), or contain X (Filter(N, .*X.*)).
  */
@@ -453,7 +453,7 @@ export class EqualsHeader extends UnaryHeader {
 
         if (leftNeighbor instanceof SequenceGrammar) {
             // if your left neighbor is a concat state we have to do something a little special,
-            // because startswith only scopes over the cell immediately to the left.  (if you let
+            // because starts/ends/contains only scope over the cell immediately to the left.  (if you let
             // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
             // specifying in the same row, rather than the embedded thing you're trying to catch.)
             const lastChild = leftNeighbor.finalChild();
@@ -470,7 +470,7 @@ export class EqualsHeader extends UnaryHeader {
         condition: Grammar,
         content: Cell
     ): Grammar {
-        return new FilterGrammar(content, leftNeighbor, condition);
+        return new EqualsGrammar(content, leftNeighbor, condition);
     }
     
     public toGrammar(
@@ -484,10 +484,10 @@ export class EqualsHeader extends UnaryHeader {
 }
 
 /**
- * StartsWithHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to 
- * start with X (that is, Filter(N, X.*))
+ * StartsHeader is a special kind of [EqualsHeader] that only requires its predecessor (call it N) to 
+ * start with X (that is, Equals(N, X.*))
  */
-export class StartsWithHeader extends EqualsHeader {
+export class StartsHeader extends EqualsHeader {
 
     public get id(): string {
         return `STARTS[${this.child.id}]`;
@@ -498,15 +498,16 @@ export class StartsWithHeader extends EqualsHeader {
         condition: Grammar,
         content: Cell
     ): Grammar {
-        return new StartsWithGrammar(content, leftNeighbor, condition);
+        const filter = new StartsGrammar(content, condition);
+        return new EqualsGrammar(content, leftNeighbor, filter);
     }
 }
 
 /**
- * EndsWithHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to 
- * end with X (that is, Filter(N, .*X))
+ * EndsHeader is a special kind of [EqualsHeader] that only requires its predecessor (call it N) to 
+ * end with X (that is, Equals(N, .*X))
  */
-export class EndsWithHeader extends EqualsHeader {
+export class EndsHeader extends EqualsHeader {
 
     public get id(): string {
         return `ENDS[${this.child.id}]`;
@@ -517,13 +518,14 @@ export class EndsWithHeader extends EqualsHeader {
         condition: Grammar,
         content: Cell
     ): Grammar {
-        return new EndsWithGrammar(content, leftNeighbor, condition);
+        const filter = new EndsGrammar(content, condition);
+        return new EqualsGrammar(content, leftNeighbor, filter);
     }
 }
 
 /**
- * ContainsHeader is a special kind of EqualsHeader that only requires its predecessor (call it N) to 
- * contain X (that is, Filter(N, .*X.*))
+ * ContainsHeader is a special kind of [EqualsHeader] that only requires its predecessor (call it N) to 
+ * contain X (that is, Equals(N, .*X.*))
  */
 export class ContainsHeader extends EqualsHeader {
     
@@ -536,7 +538,8 @@ export class ContainsHeader extends EqualsHeader {
         condition: Grammar,
         content: Cell
     ): Grammar {
-        return new ContainsGrammar(content, leftNeighbor, condition);
+        const filter = new ContainsGrammar(content, condition);
+        return new EqualsGrammar(content, leftNeighbor, filter);
     }
 }
 
@@ -621,7 +624,7 @@ export class ReservedErrorHeader extends ErrorHeader {
 
 /**
  * What follows is a grammar and parser for the mini-language inside headers, e.g.
- * "text", "text/gloss", "startswith text", etc.
+ * "text", "text/gloss", "starts text", etc.
  * 
  * It uses the mini-parser library in miniParser.ts to construct a recursive-descent
  * parser for the grammar.
@@ -680,8 +683,8 @@ var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlternation(
         HP_MAYBE, HP_FROM, HP_TO, HP_SLASH,
         HP_PRE, HP_POST, HP_UNIQUE, HP_REGEX,
-        HP_RENAME, HP_EQUALS, HP_STARTSWITH, 
-        HP_ENDSWITH, HP_CONTAINS, HP_SUBEXPR)
+        HP_RENAME, HP_EQUALS, HP_STARTS, 
+        HP_ENDS, HP_CONTAINS, HP_SUBEXPR)
 );
 
 var HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
@@ -770,14 +773,14 @@ const HP_EQUALS = MPSequence<Header>(
     (child) => new EqualsHeader(child)
 );
 
-const HP_STARTSWITH = MPSequence<Header>(
+const HP_STARTS = MPSequence<Header>(
     ["starts", HP_NON_COMMENT_EXPR],
-    (child) => new StartsWithHeader(child)
+    (child) => new StartsHeader(child)
 );
 
-const HP_ENDSWITH = MPSequence<Header>(
+const HP_ENDS = MPSequence<Header>(
     ["ends", HP_NON_COMMENT_EXPR],
-    (child) => new EndsWithHeader(child)
+    (child) => new EndsHeader(child)
 );
 
 const HP_CONTAINS = MPSequence<Header>(

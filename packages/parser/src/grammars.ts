@@ -22,6 +22,8 @@ import {
     constructCharSet,
     constructDotRep,
     constructDotStar,
+    constructCount,
+    constructCountTape,
 } from "./exprs";
 
 import { 
@@ -53,7 +55,8 @@ export class GenOptions {
     public direction: "LTR" | "RTL" = "RTL"
 }
 
-export interface GrammarTransform<T> {
+export interface GrammarTransform<T> {    
+
     transformEpsilon(g: EpsilonGrammar, ns: NsGrammar, args: T): Grammar;
     transformNull(g: NullGrammar, ns: NsGrammar, args: T): Grammar;
     transformCharSet(g: CharSetGrammar, ns: NsGrammar, args: T): Grammar;
@@ -63,9 +66,9 @@ export interface GrammarTransform<T> {
     transformAlternation(g: AlternationGrammar, ns: NsGrammar, args: T): Grammar;
     transformIntersection(g: IntersectionGrammar, ns: NsGrammar, args: T): Grammar;
     transformJoin(g: JoinGrammar, ns: NsGrammar, args: T): Grammar;
-    transformFilter(g: FilterGrammar, ns: NsGrammar, args: T): Grammar;
-    transformStartsWith(g: StartsWithGrammar, ns: NsGrammar, args: T): Grammar;
-    transformEndsWith(g: EndsWithGrammar, ns: NsGrammar, args: T): Grammar;
+    transformEquals(g: EqualsGrammar, ns: NsGrammar, args: T): Grammar;
+    transformStarts(g: StartsGrammar, ns: NsGrammar, args: T): Grammar;
+    transformEnds(g: EndsGrammar, ns: NsGrammar, args: T): Grammar;
     transformContains(g: ContainsGrammar, ns: NsGrammar, args: T): Grammar;
     transformMatch(g: MatchGrammar, ns: NsGrammar, args: T): Grammar;
     transformReplace(g: ReplaceGrammar, ns: NsGrammar, args: T): Grammar;
@@ -79,6 +82,8 @@ export interface GrammarTransform<T> {
     transformNegation(g: NegationGrammar, ns: NsGrammar, args: T): Grammar;
     transformRename(g: RenameGrammar, ns: NsGrammar, args: T): Grammar;
     transformHide(g: HideGrammar, ns: NsGrammar, args: T): Grammar;
+    transformCount(g: CountGrammar, ns: NsGrammar, args: T): Grammar;
+    transformCountTape(g: CountTapeGrammar, ns: NsGrammar, args: T): Grammar;
 }
 
 
@@ -501,6 +506,27 @@ export class AlternationGrammar extends NAryGrammar {
     }
 }
 
+export abstract class UnaryGrammar extends Grammar {
+
+    constructor(
+        cell: Cell,
+        public child: Grammar
+    ) {
+        super(cell);
+    }
+
+    public getChildren(): Grammar[] { 
+        return [this.child]; 
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            this.expr = this.child.constructExpr(symbols);
+        }
+        return this.expr;
+    }
+}
+
 abstract class BinaryGrammar extends Grammar {
 
     constructor(
@@ -581,14 +607,14 @@ export class JoinGrammar extends BinaryGrammar {
 
 }
 
-export class FilterGrammar extends BinaryGrammar {
+export class EqualsGrammar extends BinaryGrammar {
 
     public get id(): string {
         return `Filter(${this.child1.id},${this.child2.id})`;
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
-        return t.transformFilter(this, ns, args);
+        return t.transformEquals(this, ns, args);
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -620,102 +646,117 @@ export class FilterGrammar extends BinaryGrammar {
     }
 }
 
-export class StartsWithGrammar extends FilterGrammar {
-
-    public get id(): string {
-        return `StartsWith(${this.child1.id},${this.child2.id})`;
-    }
-
-    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
-        return t.transformStartsWith(this, ns, args);
-    }
-
-    protected constructFilter(symbols: SymbolTable) {
-        if (this.child2.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
-        }
-
-        let child2 = this.child2.constructExpr(symbols);
-        for (const tape of this.child2.tapes) {
-            const dotStar = constructDotStar(tape);
-            child2 = constructBinaryConcat(child2, dotStar);
-        }
-
-        return child2;
-    }
-
-}
-
-export class EndsWithGrammar extends FilterGrammar {
-
-    public get id(): string {
-        return `EndsWith(${this.child1.id},${this.child2.id})`;
-    }
-
-    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
-        return t.transformEndsWith(this, ns, args);
-    }
-
-    protected constructFilter(symbols: SymbolTable) {
-        if (this.child2.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
-        }
-
-        let child2 = this.child2.constructExpr(symbols);
-        for (const tape of this.child2.tapes) {
-            const dotStar = constructDotStar(tape);
-            child2 = constructBinaryConcat(dotStar, child2);
-        }
-
-        return child2;
-    }
-}
-
-
-export class ContainsGrammar extends FilterGrammar {
-
-    public get id(): string {
-        return `Contains(${this.child1.id},${this.child2.id})`;
-    }
-
-    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
-        return t.transformContains(this, ns, args);
-    }
-
-    protected constructFilter(symbols: SymbolTable) {
-        if (this.child2.tapes == undefined) {
-            throw new Error("Getting Brz expression with undefined tapes");
-        }
-
-        let child2 = this.child2.constructExpr(symbols);
-        for (const tape of this.child2.tapes) {
-            const dotStar = constructDotStar(tape);
-            child2 = constructSequence(dotStar, child2, dotStar);
-        }
-
-        return child2;
-    }
-
-}
-
-abstract class UnaryGrammar extends Grammar {
+export class CountGrammar extends UnaryGrammar {
 
     constructor(
         cell: Cell,
-        public child: Grammar
+        child: Grammar,
+        public maxChars: number
     ) {
-        super(cell);
+        super(cell, child);
     }
 
-    public getChildren(): Grammar[] { 
-        return [this.child]; 
+    public get id(): string {
+        return `Count(${this.maxChars},${this.child.id})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformCount(this, ns, args);
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
-            this.expr = this.child.constructExpr(symbols);
+            const childExpr = this.child.constructExpr(symbols);
+            this.expr = constructCount(childExpr, this.maxChars);
         }
         return this.expr;
+    }
+}
+
+export class CountTapeGrammar extends UnaryGrammar {
+
+    constructor(
+        cell: Cell,
+        child: Grammar,
+        public maxChars: number
+    ) {
+        super(cell, child);
+    }
+
+    public get id(): string {
+        return `CountTape(${this.child.id})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformCountTape(this, ns, args);
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            if (this.tapes == undefined) {
+                throw new Error("Constructing expr without having calculated tapes");
+            }
+
+            const maxCharsDict: {[tape: string]: number} = {};
+            for (const tape of this.tapes) {
+                maxCharsDict[tape] = this.maxChars;
+            }
+
+            const childExpr = this.child.constructExpr(symbols);
+            this.expr = constructCountTape(childExpr, maxCharsDict);
+        }
+        return this.expr;
+    }
+}
+
+abstract class FilterGrammar extends UnaryGrammar {
+
+    constructor(
+        cell: Cell,
+        child: Grammar,
+        tapes: string[] | undefined = undefined
+    ) {
+        super(cell, child);
+        this.tapes = tapes;
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        // All descendants of FilterGrammar should have been replaced by
+        // other grammars by the time exprs are constructed.
+        throw new Error("not implemented");
+    }
+}
+
+export class StartsGrammar extends FilterGrammar {
+
+    public get id(): string {
+        return `StartsWithFilter(${this.child.id})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformStarts(this, ns, args);
+    }
+}
+
+export class EndsGrammar extends FilterGrammar {
+
+    public get id(): string {
+        return `EndsWithFilter(${this.child.id})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformEnds(this, ns, args);
+    }
+}
+
+export class ContainsGrammar extends FilterGrammar {
+
+    public get id(): string {
+        return `ContainsFilter(${this.child.id})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformContains(this, ns, args);
     }
 }
 
@@ -810,6 +851,9 @@ export class RepeatGrammar extends UnaryGrammar {
     }
 
     public get id(): string {
+        if (this.minReps == 0 && this.maxReps == Infinity) {
+            return `(${this.child.id})*`;
+        }
         return `Repeat(${this.child.id},${this.minReps},${this.maxReps})`;
     }
     
@@ -1381,24 +1425,27 @@ export function Intersect(child1: Grammar, child2: Grammar): IntersectionGrammar
     return new IntersectionGrammar(new DummyCell(), child1, child2);
 }
 
-export function Filter(child1: Grammar, child2: Grammar): FilterGrammar {
-    return new FilterGrammar(new DummyCell(), child1, child2);
+export function Equals(child1: Grammar, child2: Grammar): EqualsGrammar {
+    return new EqualsGrammar(new DummyCell(), child1, child2);
 }
 
 export function Join(child1: Grammar, child2: Grammar): JoinGrammar {
     return new JoinGrammar(new DummyCell(), child1, child2);
 }
 
-export function StartsWith(child1: Grammar, child2: Grammar): StartsWithGrammar {
-    return new StartsWithGrammar(new DummyCell(), child1, child2);
+export function Starts(child1: Grammar, child2: Grammar): EqualsGrammar {
+    const filter = new StartsGrammar(new DummyCell(), child2);
+    return new EqualsGrammar(new DummyCell(), child1, filter);
 }
 
-export function EndsWith(child1: Grammar, child2: Grammar): EndsWithGrammar {
-    return new EndsWithGrammar(new DummyCell(), child1, child2);
+export function Ends(child1: Grammar, child2: Grammar): EqualsGrammar {
+    const filter = new EndsGrammar(new DummyCell(), child2);
+    return new EqualsGrammar(new DummyCell(), child1, filter);
 }
 
-export function Contains(child1: Grammar, child2: Grammar): ContainsGrammar {
-    return new ContainsGrammar(new DummyCell(), child1, child2);
+export function Contains(child1: Grammar, child2: Grammar): EqualsGrammar {
+    const filter = new ContainsGrammar(new DummyCell(), child2);
+    return new EqualsGrammar(new DummyCell(), child1, filter);
 }
 
 export function Rep(
@@ -1482,6 +1529,13 @@ export function Vocab(tape: string, text: string): Grammar {
     return Rep(Lit(tape, text), 0, 0)
 }
 
+export function Count(maxChars: number, child: Grammar): Grammar {
+    return new CountGrammar(new DummyCell(), child, maxChars);
+}
+
+export function CountTape(maxChars: number, child: Grammar): Grammar {
+    return new CountTapeGrammar(new DummyCell(), child, maxChars);
+}
 
 /**
   * Replace implements general phonological replacement rules.

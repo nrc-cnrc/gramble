@@ -436,23 +436,18 @@ export abstract class Expr {
         opt: GenOptions
     ): Gen<StringDict> {
         const initialOutput: OutputTrie = new OutputTrie();
-        let states: [Tape[], OutputTrie, Expr, number][] = [[tapes, initialOutput, this, 0]];
-        let prev: [Tape[], OutputTrie, Expr, number] | undefined = undefined;
+        let states: [Tape[], OutputTrie, Expr][] = [[tapes, initialOutput, this]];
+        let prev: [Tape[], OutputTrie, Expr] | undefined = undefined;
         while (prev = states.pop()) {
 
-            let nexts: [Tape[], OutputTrie, Expr, number][] = [];
-            let [tapes, prevOutput, prevExpr, chars] = prev;
-            
+            let nexts: [Tape[], OutputTrie, Expr][] = [];
+            let [tapes, prevOutput, prevExpr] = prev;
+ 
             if (VERBOSE) {
                 console.log();
                 console.log(`prevOutput is ${JSON.stringify(prevOutput.toDict(opt))}`);
                 console.log(`prevExpr is ${prevExpr.id}`);
                 console.log(`remaining tapes are ${tapes.map(t => t.tapeName)}`);
-                console.log(`chars is ${chars}`);
-            }
-
-            if (chars >= opt.maxChars) {
-                continue;
             }
 
             if (prevExpr instanceof EpsilonExpr) {
@@ -464,9 +459,9 @@ export abstract class Expr {
             }
             
             if (tapes.length == 0) {
-                /* if (!(prevExpr instanceof NullExpr || prevExpr instanceof EpsilonExpr)) {
+                if (!(prevExpr instanceof NullExpr || prevExpr instanceof EpsilonExpr)) {
                     throw new Error(`warning, nontrivial expr at end: ${prevExpr.id}`);
-                } */
+                }
                 continue; 
             }
                 
@@ -478,7 +473,7 @@ export abstract class Expr {
             }
             if (!(delta instanceof NullExpr)) {                    
                 const newTapes = tapes.slice(1);
-                nexts.push([newTapes, prevOutput, delta, chars]);
+                nexts.push([newTapes, prevOutput, delta]);
             }
 
             // rotate the tapes so that we don't just 
@@ -494,22 +489,22 @@ export abstract class Expr {
 
                 if (tapeToTry.tapeName.startsWith("__")) {
                     // don't bother to add hidden characters
-                    nexts.push([tapes, prevOutput, cNext, chars+1]);
+                    nexts.push([tapes, prevOutput, cNext]);
                     continue;
-                }
+                } 
 
                 if (cTarget == ANY_CHAR_STR) {
                     for (const c of tapeToTry.fromToken(tapeToTry.tapeName, ANY_CHAR)) {
                         //const cToken = tapeToTry.toToken(tapeToTry.tapeName, c);
                         const nextOutput = prevOutput.add(tapeToTry.tapeName, c);
-                        nexts.push([tapes, nextOutput, cNext, chars+1]);
+                        nexts.push([tapes, nextOutput, cNext]);
                     }
                     continue;
                 }
 
                 //const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget);
                 const nextOutput = prevOutput.add(tapeToTry.tapeName, cTarget);
-                nexts.push([tapes, nextOutput, cNext, chars+1]);
+                nexts.push([tapes, nextOutput, cNext]);
             }
 
 
@@ -588,10 +583,10 @@ export abstract class Expr {
     ): Gen<StringDict> {
         const initialOutput: OutputTrie = new OutputTrie();
 
-        let states: [Tape[], OutputTrie, Expr, number][] = [[tapes, initialOutput, this, 0]];
+        let states: [Tape[], OutputTrie, Expr][] = [[tapes, initialOutput, this]];
         const candidates: OutputTrie[] = [];
 
-        let prev: [Tape[], OutputTrie, Expr, number] | undefined = undefined;
+        let prev: [Tape[], OutputTrie, Expr] | undefined = undefined;
         while (prev = states.pop()) {
 
             // first, see if it's time to randomly emit a result
@@ -601,11 +596,8 @@ export abstract class Expr {
                 yield candidateOutput.toDict(opt);
             }
 
-            let nexts: [Tape[], OutputTrie, Expr, number][] = [];
-            let [tapes, prevOutput, prevExpr, chars] = prev;
-            if (chars >= opt.maxChars) {
-                continue;
-            }
+            let nexts: [Tape[], OutputTrie, Expr][] = [];
+            let [tapes, prevOutput, prevExpr] = prev;
 
             if (prevExpr instanceof EpsilonExpr) {
                 candidates.push(prevOutput);
@@ -621,7 +613,7 @@ export abstract class Expr {
             const delta = prevExpr.delta(tapeToTry, stack);
             if (!(delta instanceof NullExpr)) {                    
                 const newTapes = tapes.slice(1);
-                nexts.push([newTapes, prevOutput, delta, chars]);
+                nexts.push([newTapes, prevOutput, delta]);
             }
 
             // rotate the tapes so that we don't keep trying the same one every time
@@ -631,7 +623,7 @@ export abstract class Expr {
                 
                 if (tapeToTry.tapeName.startsWith("__")) {
                     // don't bother to add hidden characters
-                    nexts.push([tapes, prevOutput, cNext, chars]);
+                    nexts.push([tapes, prevOutput, cNext]);
                     continue;
                 }
 
@@ -639,14 +631,14 @@ export abstract class Expr {
                     for (const c of tapeToTry.fromToken(tapeToTry.tapeName, ANY_CHAR)) {
                         //const cToken = tapeToTry.toToken(tapeToTry.tapeName, c);
                         const nextOutput = prevOutput.add(tapeToTry.tapeName, c);
-                        nexts.push([tapes, nextOutput, cNext, chars+1]);
+                        nexts.push([tapes, nextOutput, cNext]);
                     }
                     continue;
                 }
 
                 //const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget);
                 const nextOutput = prevOutput.add(tapeToTry.tapeName, cTarget);
-                nexts.push([tapes, nextOutput, cNext, chars+1]);
+                nexts.push([tapes, nextOutput, cNext]);
             }
 
             shuffleArray(nexts);
@@ -1581,6 +1573,123 @@ export abstract class UnaryExpr extends Expr {
     }
 }
 
+export class CountExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public maxChars: number
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `Count(${this.maxChars},${this.child.id})`;
+    }
+
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        const newChild = this.child.delta(tape, stack);
+        return constructCount(newChild, this.maxChars);
+    }
+
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+        if (this.maxChars <= 0) {
+            return;
+        }
+
+        for (const [cTape, cTarget, cNext] of this.child.deriv(tape, target, stack)) {
+            const successor = constructCount(cNext, this.maxChars-1);
+            yield [cTape, cTarget, successor];
+        }
+    }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[string, Expr]> {
+        if (this.maxChars <= 0) {
+            return;
+        }
+
+        for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack, opt)) {
+            const successor = constructCount(cNext, this.maxChars-1);
+            yield [cTarget, successor];
+        }
+    }
+}
+
+export class CountTapeExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public maxChars: {[tape: string]: number}
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `CountTape(${this.child.id})`;
+    }
+
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        const newChild = this.child.delta(tape, stack);
+        return constructCountTape(newChild, this.maxChars);
+    }
+
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+
+        if (!(tape.tapeName in this.maxChars)) {
+            return;
+        }
+
+        if (this.maxChars[tape.tapeName] <= 0) {
+            return;
+        }
+
+        for (const [cTape, cTarget, cNext] of this.child.deriv(tape, target, stack)) {
+            let newMax: {[tape: string]: number} = {};
+            Object.assign(newMax, this.maxChars);
+            newMax[tape.tapeName] -= 1;
+            const successor = constructCountTape(cNext, newMax);
+            yield [cTape, cTarget, successor];
+        }
+    }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[string, Expr]> {
+
+        if (!(tape.tapeName in this.maxChars)) {
+            return;
+        }
+
+        if (this.maxChars[tape.tapeName] <= 0) {
+            return;
+        }
+
+        for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack, opt)) {
+            let newMax: {[tape: string]: number} = {};
+            Object.assign(newMax, this.maxChars);
+            newMax[tape.tapeName] -= 1;
+            const successor = constructCountTape(cNext, newMax);
+            yield [cTarget, successor];
+        }
+    }
+}
+
+
 class RTLRepExpr extends UnaryExpr {
 
     constructor(
@@ -1592,6 +1701,9 @@ class RTLRepExpr extends UnaryExpr {
     }
 
     public get id(): string {
+        if (this.minReps == 0 && this.maxReps == Infinity) {
+            return `(${this.child.id})*`;
+        }
         return `(${this.child.id}){${this.minReps},${this.maxReps}}`;
     }
 
@@ -1714,18 +1826,18 @@ class NegationExpr extends UnaryExpr {
         const remainingTapes = setDifference(this.tapes, new Set([tape.tapeName]));
         
         let result: Expr;
-        /*
+        
         if (childDelta instanceof NullExpr) {
             result = constructNegation(childDelta, remainingTapes, this.maxChars);
-            console.log(`result is ${result.id}`);
+            //console.log(`result is ${result.id}`);
             return result;
         }
         if (remainingTapes.size == 0) {
             result = NULL;
-            console.log(`result is ${result.id}`);
+            //console.log(`result is ${result.id}`);
             return result;
         }
-        */
+        
         result = constructNegation(childDelta, remainingTapes, this.maxChars);
         //console.log(`result is ${result.id}`);
         return result;
@@ -2224,6 +2336,20 @@ export function constructIntersection(c1: Expr, c2: Expr): Expr {
 
 export function constructMaybe(child: Expr): Expr {
     return constructAlternation(child, EPSILON);
+}
+
+export function constructCount(child: Expr, maxChars: number): Expr {
+    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
+        return child;
+    }
+    return new CountExpr(child, maxChars);
+}
+
+export function constructCountTape(child: Expr, maxChars: {[t: string]: number}): Expr {
+    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
+        return child;
+    }
+    return new CountTapeExpr(child, maxChars);
 }
 
 /**

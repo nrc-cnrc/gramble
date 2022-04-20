@@ -475,6 +475,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    /*
     describe('Contains with not value', function() {
         const project = sheetFromFile(`${DIR}/containsNot.csv`);
         testErrors(project, []);
@@ -485,6 +486,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
         ]);
     }); 
+    */
 
     describe('Contains with embed', function() {
         const project = sheetFromFile(`${DIR}/containsEmbed.csv`);
@@ -509,6 +511,7 @@ describe(`${path.basename(module.filename)}`, function() {
         "containsEmbedAfter.word");
     });
 
+    /*
     describe('Contains with negated embed', function() {
         const project = sheetFromFile(`${DIR}/containsNegatedEmbed.csv`);
         testErrors(project, []);
@@ -517,7 +520,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobar", gloss: "jump[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
         ]);
     });
-
+    */
 });
 
 

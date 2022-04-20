@@ -1,20 +1,3 @@
-import { 
-    parseHeaderCell, 
-    SlashHeader, 
-    CommentHeader, 
-    MaybeHeader, 
-    HideHeader, 
-    LiteralHeader, 
-    EmbedHeader, 
-    EqualsHeader, 
-    EndsWithHeader, 
-    StartsWithHeader, 
-    ContainsHeader,
-    TagHeader,
-    ErrorHeader,
-    RegexHeader
-} from "../src/headers";
-
 import * as path from 'path';
 import { testHeaderID, testIsType } from "./testUtils";
 

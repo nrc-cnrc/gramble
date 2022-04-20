@@ -6,7 +6,7 @@ import { StringDict, tokenizeUnicode } from "../src/util";
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
-import { Regex, parseRegex } from "../src/regex";
+import { parseRegex } from "../src/regex";
 import { parseHeaderCell } from "../src/headers";
 
 const DEBUG_MAX_RECURSION: number = 4;      // 4
