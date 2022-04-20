@@ -678,7 +678,7 @@ export class CountTapeGrammar extends UnaryGrammar {
     constructor(
         cell: Cell,
         child: Grammar,
-        public maxChars: {[tape: string]: number}
+        public maxChars: number
     ) {
         super(cell, child);
     }
@@ -693,8 +693,17 @@ export class CountTapeGrammar extends UnaryGrammar {
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
+            if (this.tapes == undefined) {
+                throw new Error("Constructing expr without having calculated tapes");
+            }
+
+            const maxCharsDict: {[tape: string]: number} = {};
+            for (const tape of this.tapes) {
+                maxCharsDict[tape] = this.maxChars;
+            }
+
             const childExpr = this.child.constructExpr(symbols);
-            this.expr = constructCountTape(childExpr, this.maxChars);
+            this.expr = constructCountTape(childExpr, maxCharsDict);
         }
         return this.expr;
     }
@@ -1524,6 +1533,9 @@ export function Count(maxChars: number, child: Grammar): Grammar {
     return new CountGrammar(new DummyCell(), child, maxChars);
 }
 
+export function CountTape(maxChars: number, child: Grammar): Grammar {
+    return new CountTapeGrammar(new DummyCell(), child, maxChars);
+}
 
 /**
   * Replace implements general phonological replacement rules.
