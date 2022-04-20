@@ -1623,6 +1623,73 @@ export class CountExpr extends UnaryExpr {
     }
 }
 
+export class CountTapeExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public maxChars: {[tape: string]: number}
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `CountTape(${this.child.id})`;
+    }
+
+    public delta(tape: Tape, stack: CounterStack): Expr {
+        const newChild = this.child.delta(tape, stack);
+        return constructCountTape(newChild, this.maxChars);
+    }
+
+    public *deriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack
+    ): Gen<[Tape, Token, Expr]> {
+
+        if (!(tape.tapeName in this.maxChars)) {
+            return;
+        }
+
+        if (this.maxChars[tape.tapeName] <= 0) {
+            return;
+        }
+
+        for (const [cTape, cTarget, cNext] of this.child.deriv(tape, target, stack)) {
+            let newMax: {[tape: string]: number} = {};
+            Object.assign(newMax, this.maxChars);
+            newMax[tape.tapeName] -= 1;
+            const successor = constructCountTape(cNext, newMax);
+            yield [cTape, cTarget, successor];
+        }
+    }
+
+    public *concreteDeriv(
+        tape: Tape, 
+        target: string,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[string, Expr]> {
+
+        if (!(tape.tapeName in this.maxChars)) {
+            return;
+        }
+
+        if (this.maxChars[tape.tapeName] <= 0) {
+            return;
+        }
+
+        for (const [cTarget, cNext] of this.child.concreteDeriv(tape, target, stack, opt)) {
+            let newMax: {[tape: string]: number} = {};
+            Object.assign(newMax, this.maxChars);
+            newMax[tape.tapeName] -= 1;
+            const successor = constructCountTape(cNext, newMax);
+            yield [cTarget, successor];
+        }
+    }
+}
+
+
 class RTLRepExpr extends UnaryExpr {
 
     constructor(
@@ -2276,6 +2343,13 @@ export function constructCount(child: Expr, maxChars: number): Expr {
         return child;
     }
     return new CountExpr(child, maxChars);
+}
+
+export function constructCountTape(child: Expr, maxChars: {[t: string]: number}): Expr {
+    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
+        return child;
+    }
+    return new CountTapeExpr(child, maxChars);
 }
 
 /**

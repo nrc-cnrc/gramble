@@ -8,7 +8,7 @@ import {
     NullGrammar, RenameGrammar, RepeatGrammar, ReplaceGrammar,
     SequenceGrammar, UnitTestGrammar,
     UnresolvedEmbedGrammar, StartsGrammar, 
-    EndsGrammar, ContainsGrammar, CountGrammar
+    EndsGrammar, ContainsGrammar, CountGrammar, CountTapeGrammar
 } from "../grammars";
 
 /**
@@ -165,5 +165,10 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
     public transformCount(g: CountGrammar, ns: NsGrammar, args: T): Grammar {
         const newChild = g.child.accept(this, ns, args);
         return new CountGrammar(g.cell, newChild, g.maxChars);
+    }
+    
+    public transformCountTape(g: CountTapeGrammar, ns: NsGrammar, args: T): Grammar {
+        const newChild = g.child.accept(this, ns, args);
+        return new CountTapeGrammar(g.cell, newChild, g.maxChars);
     }
 }

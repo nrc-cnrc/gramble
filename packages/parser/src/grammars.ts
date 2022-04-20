@@ -23,6 +23,7 @@ import {
     constructDotRep,
     constructDotStar,
     constructCount,
+    constructCountTape,
 } from "./exprs";
 
 import { 
@@ -82,6 +83,7 @@ export interface GrammarTransform<T> {
     transformRename(g: RenameGrammar, ns: NsGrammar, args: T): Grammar;
     transformHide(g: HideGrammar, ns: NsGrammar, args: T): Grammar;
     transformCount(g: CountGrammar, ns: NsGrammar, args: T): Grammar;
+    transformCountTape(g: CountTapeGrammar, ns: NsGrammar, args: T): Grammar;
 }
 
 
@@ -666,6 +668,33 @@ export class CountGrammar extends UnaryGrammar {
         if (this.expr == undefined) {
             const childExpr = this.child.constructExpr(symbols);
             this.expr = constructCount(childExpr, this.maxChars);
+        }
+        return this.expr;
+    }
+}
+
+export class CountTapeGrammar extends UnaryGrammar {
+
+    constructor(
+        cell: Cell,
+        child: Grammar,
+        public maxChars: {[tape: string]: number}
+    ) {
+        super(cell, child);
+    }
+
+    public get id(): string {
+        return `CountTape(${this.child.id})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformCountTape(this, ns, args);
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const childExpr = this.child.constructExpr(symbols);
+            this.expr = constructCountTape(childExpr, this.maxChars);
         }
         return this.expr;
     }
@@ -1489,6 +1518,10 @@ export function Hide(child: Grammar, tape: string, name: string = ""): HideGramm
 
 export function Vocab(tape: string, text: string): Grammar {
     return Rep(Lit(tape, text), 0, 0)
+}
+
+export function Count(maxChars: number, child: Grammar): Grammar {
+    return new CountGrammar(new DummyCell(), child, maxChars);
 }
 
 
