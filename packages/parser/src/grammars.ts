@@ -22,6 +22,7 @@ import {
     constructCharSet,
     constructDotRep,
     constructDotStar,
+    constructCount,
 } from "./exprs";
 
 import { 
@@ -80,6 +81,7 @@ export interface GrammarTransform<T> {
     transformNegation(g: NegationGrammar, ns: NsGrammar, args: T): Grammar;
     transformRename(g: RenameGrammar, ns: NsGrammar, args: T): Grammar;
     transformHide(g: HideGrammar, ns: NsGrammar, args: T): Grammar;
+    transformCount(g: CountGrammar, ns: NsGrammar, args: T): Grammar;
 }
 
 
@@ -639,6 +641,33 @@ export class EqualsGrammar extends BinaryGrammar {
 
     protected constructFilter(symbols: SymbolTable) {
         return this.child2.constructExpr(symbols);
+    }
+}
+
+export class CountGrammar extends UnaryGrammar {
+
+    constructor(
+        cell: Cell,
+        child: Grammar,
+        public maxChars: number
+    ) {
+        super(cell, child);
+    }
+
+    public get id(): string {
+        return `Count(${this.maxChars},${this.child.id})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformCount(this, ns, args);
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const childExpr = this.child.constructExpr(symbols);
+            this.expr = constructCount(childExpr, this.maxChars);
+        }
+        return this.expr;
     }
 }
 

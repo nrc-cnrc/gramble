@@ -45,7 +45,7 @@ export class DummyCell implements Cell {
     public pos: CellPos;
 
     constructor() {
-        this.pos = new CellPos("__", DUMMY_ROW++, 0);
+        this.pos = new CellPos("", DUMMY_ROW++, 0);
     }
 
     public message(msg: any): void { }

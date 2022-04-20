@@ -1,5 +1,5 @@
 import { 
-    CounterStack, EqualsGrammar, Grammar, 
+    CounterStack, CountGrammar, EqualsGrammar, Grammar, 
     LiteralGrammar, SequenceGrammar 
 } from "./grammars";
 import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell} from "./util";
@@ -73,7 +73,7 @@ export class Interpreter {
             this.grammar = filterCreator.transform(this.grammar);
         }, verbose, "Created starts/ends/contains filters");
 
-        console.log(this.grammar.id);
+        //console.log(this.grammar.id);
 
         timeIt(() => {
             // recalculate tapes
@@ -233,31 +233,35 @@ export class Interpreter {
         let tapePriority = this.grammar.calculateTapes(new CounterStack(2));
         let expr = this.grammar.constructExpr(this.symbolTable);
 
-        let targetComponent = this.grammar.getSymbol(symbolName);
-        if (targetComponent == undefined) {
+        let targetGrammar = this.grammar.getSymbol(symbolName);
+        if (targetGrammar == undefined) {
             const allSymbols = this.grammar.allSymbols();
             throw new Error(`Missing symbol: ${symbolName}; choices are [${allSymbols}]`);
         }
 
-        tapePriority = targetComponent.calculateTapes(new CounterStack(2));
+        tapePriority = targetGrammar.calculateTapes(new CounterStack(2));
 
         if (Object.keys(query).length > 0) {
             const queryLiterals = Object.entries(query).map(([key, value]) => {
                 return new LiteralGrammar(new DummyCell(), key, value);
             });
             const querySeq = new SequenceGrammar(new DummyCell(), queryLiterals);
-            targetComponent = new EqualsGrammar(new DummyCell(), targetComponent, querySeq);
-            tapePriority = targetComponent.calculateTapes(new CounterStack(2));
+            targetGrammar = new EqualsGrammar(new DummyCell(), targetGrammar, querySeq);
+            tapePriority = targetGrammar.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
             querySeq.collectAllVocab(this.tapeObjs);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
-            targetComponent.copyVocab(this.tapeObjs, new Set());
+            targetGrammar.copyVocab(this.tapeObjs, new Set());
         
         }
+        
+        if (opt.maxChars != Infinity) {
+            targetGrammar = new CountGrammar(targetGrammar.cell, targetGrammar, opt.maxChars-1);
+        }
 
-        expr = targetComponent.constructExpr(this.symbolTable);
+        expr = targetGrammar.constructExpr(this.symbolTable);
 
         const prioritizedTapes: Tape[] = [];
         for (const tapeName of tapePriority) {
@@ -268,7 +272,7 @@ export class Interpreter {
             prioritizedTapes.push(actualTape);
         }        
 
-        console.log(expr.id);
+        //console.log(expr.id);
 
         return [expr, prioritizedTapes];    
     }

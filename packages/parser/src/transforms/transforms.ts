@@ -1,6 +1,6 @@
 import { 
     AlternationGrammar, CharSetGrammar,
-    CounterStack, DotGrammar, EmbedGrammar,
+    DotGrammar, EmbedGrammar,
     EpsilonGrammar, EqualsGrammar, Grammar, GrammarTransform,
     HideGrammar, IntersectionGrammar, JoinGrammar,
     JoinReplaceGrammar, LiteralGrammar, MatchGrammar,
@@ -8,7 +8,7 @@ import {
     NullGrammar, RenameGrammar, RepeatGrammar, ReplaceGrammar,
     SequenceGrammar, UnitTestGrammar,
     UnresolvedEmbedGrammar, StartsGrammar, 
-    EndsGrammar, ContainsGrammar, Seq, Null
+    EndsGrammar, ContainsGrammar, CountGrammar
 } from "../grammars";
 
 /**
@@ -160,5 +160,10 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
     public transformHide(g: HideGrammar, ns: NsGrammar, args: T): Grammar {
         const newChild = g.child.accept(this, ns, args);
         return new HideGrammar(g.cell, newChild, g.tape, g.name);
+    }
+
+    public transformCount(g: CountGrammar, ns: NsGrammar, args: T): Grammar {
+        const newChild = g.child.accept(this, ns, args);
+        return new CountGrammar(g.cell, newChild, g.maxChars);
     }
 }
