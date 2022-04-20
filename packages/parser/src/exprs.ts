@@ -487,11 +487,12 @@ export abstract class Expr {
                     console.log(`D^${tapeToTry.tapeName}_${cTarget} is ${cNext.id}`);
                 }
 
+                /*
                 if (tapeToTry.tapeName.startsWith("__")) {
                     // don't bother to add hidden characters
                     nexts.push([tapes, prevOutput, cNext]);
                     continue;
-                } 
+                }  */
 
                 if (cTarget == ANY_CHAR_STR) {
                     for (const c of tapeToTry.fromToken(tapeToTry.tapeName, ANY_CHAR)) {
@@ -621,11 +622,12 @@ export abstract class Expr {
 
             for (const [cTarget, cNext] of prevExpr.concreteDeriv(tapeToTry, ANY_CHAR_STR, stack, opt)) {
                 
+                /*
                 if (tapeToTry.tapeName.startsWith("__")) {
                     // don't bother to add hidden characters
                     nexts.push([tapes, prevOutput, cNext]);
                     continue;
-                }
+                } */
 
                 if (cTarget == ANY_CHAR_STR) {
                     for (const c of tapeToTry.fromToken(tapeToTry.tapeName, ANY_CHAR)) {

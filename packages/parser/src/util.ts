@@ -282,6 +282,18 @@ export function iterTake<T>(gen: Gen<T>, n: number) {
     return results;
 }
 
+export function* stripHiddenTapes(gen: Gen<StringDict>): Gen<StringDict> {
+    for (const sd of gen) {
+        const result: StringDict = {};
+        for (const tapeName in sd) {
+            if (tapeName.startsWith("__")) {
+                continue;
+            }
+            result[tapeName] = sd[tapeName];
+        }
+        yield result;
+    }
+}
 
 export function HSVtoRGB(h: number, s: number, v: number): [number, number, number] {
     var r: number, g: number, b: number, i: number, 

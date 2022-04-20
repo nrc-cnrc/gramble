@@ -2,7 +2,7 @@ import {
     CounterStack, CountGrammar, EqualsGrammar, Grammar, 
     LiteralGrammar, SequenceGrammar 
 } from "./grammars";
-import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell} from "./util";
+import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell, stripHiddenTapes} from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
@@ -161,10 +161,11 @@ export class Interpreter {
         restriction: StringDict = {},
         maxResults: number = Infinity,
         maxRecursion: number = 2, 
-        maxChars: number = 1000
+        maxChars: number = 1000,
+        stripHidden: boolean = true
     ): StringDict[] {
         const gen = this.generateStream(symbolName, 
-            restriction, maxRecursion, maxChars);
+            restriction, maxRecursion, maxChars, stripHidden);
         return iterTake(gen, maxResults);
     }
     
@@ -172,7 +173,8 @@ export class Interpreter {
         symbolName: string = "",
         restriction: StringDict = {},
         maxRecursion: number = 2, 
-        maxChars: number = 1000
+        maxChars: number = 1000,
+        stripHidden: boolean = true
     ): Gen<StringDict> {
 
         const opt: GenOptions = {
@@ -182,6 +184,12 @@ export class Interpreter {
             direction: "RTL"
         }
         const [expr, tapes] = this.prepareExpr(symbolName, restriction, opt);
+
+        if (stripHidden) {
+            yield* stripHiddenTapes(expr.generate(tapes, opt));
+            return;
+        }
+
         yield* expr.generate(tapes, opt);
     }
     
@@ -189,17 +197,19 @@ export class Interpreter {
         numSamples: number = 1,
         restriction: StringDict | undefined = undefined,
         maxRecursion: number = 4, 
-        maxChars: number = 1000
+        maxChars: number = 1000,
+        stripHidden: boolean = true
     ): StringDict[] {
         return [...this.sampleStream(symbolName, 
-            numSamples, restriction, maxRecursion, maxChars)];
+            numSamples, restriction, maxRecursion, maxChars, stripHidden)];
     } 
 
     public *sampleStream(symbolName: string = "",
         numSamples: number = 1,
         restriction: StringDict | undefined = undefined,
         maxRecursion: number = 4, 
-        maxChars: number = 1000
+        maxChars: number = 1000,
+        stripHidden: boolean = true
     ): Gen<StringDict> {
 
         const opt: GenOptions = {
@@ -211,7 +221,10 @@ export class Interpreter {
 
         const [expr, tapes] = this.prepareExpr(symbolName, restriction, opt);
         for (let i = 0; i < numSamples; i++) {
-            const gen = expr.generate(tapes, opt);
+            let gen = expr.generate(tapes, opt);
+            if (stripHidden) {
+                gen = stripHiddenTapes(expr.generate(tapes, opt));
+            }
             yield* iterTake(gen, 1);
         }
     } 
