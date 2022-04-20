@@ -772,7 +772,7 @@ export class RenameGrammar extends UnaryGrammar {
     }
     
     public get id(): string {
-        return `Rename(${this.child.id},${this.fromTape},${this.toTape})`;
+        return `Rename(${this.fromTape}>${this.toTape},${this.child.id})`;
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -1021,7 +1021,7 @@ export class NsGrammar extends Grammar {
         for (const [k, v] of this.symbols.entries()) {
             results.push(`${k}:${v.id}`);
         }
-        return `Ns(${results.join(",")})`;
+        return `Ns(\n  ${results.join("\n  ")}\n)`;
     }
 
     //public qualifiedNames: Map<string, string> = new Map();

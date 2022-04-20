@@ -588,8 +588,15 @@ export class RenamedTape extends Tape {
     }
 
     public getTape(tapeName: string): Tape | undefined {
+        if (tapeName != this.fromTape && tapeName == this.toTape) {
+            return undefined;
+        }
         tapeName = this.adjustTapeName(tapeName);
-        return this.child.getTape(tapeName);
+        const newChild = this.child.getTape(tapeName);
+        if (newChild == undefined) {
+            return undefined;
+        }
+        return new RenamedTape(newChild, this.fromTape, this.toTape);
     }
 
     public toBits(tapeName: string, char: string): BitSet {
