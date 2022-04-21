@@ -246,7 +246,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, []);
         testGramble(project, [
             {text: "ev"}
-        ], undefined, 4, 5);
+        ]);
     });
 
     describe('Different-tape replace nested inside a same-tape replace', function() {

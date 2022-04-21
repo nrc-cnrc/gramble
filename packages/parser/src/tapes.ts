@@ -494,7 +494,6 @@ export class TapeCollection extends Tape {
     }
 }
 
-
 /**
  * RenamedTapes are necessary for RenameStates to work properly.
  * 
