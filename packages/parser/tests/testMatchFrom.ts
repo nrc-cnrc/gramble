@@ -7,7 +7,8 @@ import {
     Any, 
     Rep, 
     MatchFrom,
-    Vocab
+    Vocab,
+    Count
 } from "../src/grammars";
 
 import { 
@@ -419,8 +420,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 28. MatchFrom t1, t2, t1:.* with vocab "hi"
     describe('28. MatchFrom t1, t2, t1:.* with vocab "hi"', function() {
-        const grammar1: Grammar = Rep(Any("t1"));
-        const grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), MatchFrom(grammar1, "t1", "t2"));
+        const subgrammar: Grammar = Rep(Any("t1"));
+        let grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), 
+                                    MatchFrom(subgrammar, "t1", "t2"));
+        grammar = Count(7, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: 'h', t2: 'h'},
@@ -440,7 +443,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 4});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION, 8);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
     });
 
     // MatchFrom tests with three tapes.
@@ -837,9 +840,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 28. MatchFrom t1, t2, t3, t1:.* with vocab "hi"
     describe('28. MatchFrom t1, t2, t3, t1:.* with vocab "hi"', function() {
-        const grammar1: Grammar = Rep(Any("t1"));
-        const grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), Vocab("t3", "ZXhi"),
-                                   MatchFrom(grammar1, "t1", "t2", "t3"));
+        const subgrammar: Grammar = Rep(Any("t1"));
+        let grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), Vocab("t3", "ZXhi"),
+                                   MatchFrom(subgrammar, "t1", "t2", "t3"));
+        grammar = Count(7, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: 'h', t2: 'h', t3: 'h'},
@@ -859,6 +863,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         // testHasVocab(grammar, {t1: 2, t2: 4, t3: 4});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION, 8);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
     });
 });

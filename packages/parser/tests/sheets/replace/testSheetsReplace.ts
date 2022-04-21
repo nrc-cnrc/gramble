@@ -238,7 +238,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, []);
         testGramble(project, [
             {text: "w"}
-        ], undefined, 4, 4);
+        ], undefined, 4);
     });
     
     describe('Nested replace same tape 2', function() {
@@ -254,7 +254,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, []);
         testGramble(project, [
             {text: "b", text2: "w"}
-        ], undefined, 4, 5);
+        ], undefined, 4);
     });
     
     describe('Same-tape replace nested inside a different-tape replace', function() {
@@ -262,7 +262,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, []);
         testGramble(project, [
             {text: "v", text2: "w"}
-        ], undefined, 4, 5);
+        ], undefined, 4);
     }); 
 
 });

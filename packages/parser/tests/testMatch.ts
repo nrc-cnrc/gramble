@@ -3,7 +3,7 @@ import {
     Match, 
     Seq, Any, Join, Equals, MatchDot, Dot, 
     MatchDotRep, MatchDotRep2, MatchDotStar, 
-    MatchDotStar2, CharSet, Rep,
+    MatchDotStar2, CharSet, Rep, Grammar, Count,
 } from "../src/grammars";
 
 import { 
@@ -212,7 +212,8 @@ describe(`${path.basename(module.filename)}`, function() {
     
     // 15a. Match(.*,t1,t2) + t1:hi+t2:ih
     describe('15a: Match(.*,t1,t2) + t1:hi+t2:ih', function() {
-        const grammar = Seq(MatchDotStar("t1", "t2"), t1("hi"), t2("ih"));
+        let grammar: Grammar = Seq(MatchDotStar("t1", "t2"), t1("hi"), t2("ih"));
+        grammar = Count(11, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
         testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
@@ -230,13 +231,14 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'ihihi', 't2': 'ihiih'},
                                     {'t1': 'iihhi', 't2': 'iihih'},
                                     {'t1': 'iiihi', 't2': 'iiiih'}],
-                            undefined, 4, 12);
+                            undefined, 4);
     });
 
     
     // 15b. Match(.*,t1,t2) + t1:hi+t2:ih
     describe('15b: Match(.*,t1,t2) + t1:hi+t2:ih', function() {
-        const grammar = Seq(MatchDotStar2("t1", "t2"), t1("hi"), t2("ih"));
+        let grammar: Grammar = Seq(MatchDotStar2("t1", "t2"), t1("hi"), t2("ih"));
+        grammar = Count(11, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
         testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
@@ -254,12 +256,13 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'ihihi', 't2': 'ihiih'},
                                     {'t1': 'iihhi', 't2': 'iihih'},
                                     {'t1': 'iiihi', 't2': 'iiiih'}],
-                            undefined, 4, 12);
+                            undefined, 4);
     });
 
     // 16a. t1:hi+t2:ih + Match(.*,t1,t2)
     describe('16a: t1:hi+t2:ih + Match(.*,t1,t2)', function() {
-        const grammar = Seq(t1("hi"), t2("ih"), MatchDotStar("t1", "t2"));
+        let grammar: Grammar = Seq(t1("hi"), t2("ih"), MatchDotStar("t1", "t2"));
+        grammar = Count(11, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
         testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
@@ -277,12 +280,13 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'hiihi', 't2': 'ihihi'},
                                     {'t1': 'hiiih', 't2': 'ihiih'},
                                     {'t1': 'hiiii', 't2': 'ihiii'}],
-                            undefined, 4, 12);
+                            undefined, 4);
     });
 
     // 16b. t1:hi+t2:ih + Match(.*,t1,t2)
     describe('16b: t1:hi+t2:ih + Match(.*,t1,t2)', function() {
-        const grammar = Seq(t1("hi"), t2("ih"), MatchDotStar2("t1", "t2"));
+        let grammar: Grammar = Seq(t1("hi"), t2("ih"), MatchDotStar2("t1", "t2"));
+        grammar = Count(11, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
         testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
@@ -300,27 +304,27 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'hiihi', 't2': 'ihihi'},
                                     {'t1': 'hiiih', 't2': 'ihiih'},
                                     {'t1': 'hiiii', 't2': 'ihiii'}],
-                            undefined, 4, 12);
+                            undefined, 4);
     });
 
     // Uni with Match tests
 
     // 17. Match(..,t1,t2) | t1:hi+t2:ih
     describe('17: Match(..,t1,t2) | t1:hi+t2:ih', function() {
-    const grammar = Uni(Match(Seq(Dot("t1", "t2"), Dot("t1", "t2")), "t1", "t2"),
-                        Seq(t1("hi"), t2("ih")));
-    testHasTapes(grammar, ['t1', 't2']);
-    //testHasVocab(grammar, {'t1': 2, 't2': 2});
-    testGrammar(grammar, [{'t1': 'hh', 't2': 'hh'},
-                                    {'t1': 'hi', 't2': 'hi'},
-                                    {'t1': 'ih', 't2': 'ih'},
-                                    {'t1': 'ii', 't2': 'ii'},
-                                    {'t1': 'hi', 't2': 'ih'}]);
+        const grammar = Uni(Match(Seq(Dot("t1", "t2"), Dot("t1", "t2")), "t1", "t2"),
+                            Seq(t1("hi"), t2("ih")));
+        testHasTapes(grammar, ['t1', 't2']);
+        //testHasVocab(grammar, {'t1': 2, 't2': 2});
+        testGrammar(grammar, [{'t1': 'hh', 't2': 'hh'},
+                                        {'t1': 'hi', 't2': 'hi'},
+                                        {'t1': 'ih', 't2': 'ih'},
+                                        {'t1': 'ii', 't2': 'ii'},
+                                        {'t1': 'hi', 't2': 'ih'}]);
     });
 
     // 18. t1:hi+t2:ih | Match(..,t1,t2)
     describe('18: t1:hi+t2:ih | Match(..,t1,t2)', function() {
-        const grammar = Uni(Seq(t1("hi"), t2("ih")),
+        let grammar: Grammar = Uni(Seq(t1("hi"), t2("ih")),
                         Match(Seq(Dot("t1", "t2"), Dot("t1", "t2")), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
          //testHasVocab(grammar, {'t1': 2, 't2': 2});
@@ -333,32 +337,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 19a. Match(.*,t1,t2) | t1:hi+t2:ih
     describe('19a: Match(.*,t1,t2) | t1:hi+t2:ih', function() {
-    const grammar = Uni(MatchDotStar("t1", "t2"), Seq(t1("hi"), t2("ih")));
-    testHasTapes(grammar, ['t1', 't2']);
-    //testHasVocab(grammar, {'t1': 2, 't2': 2});
-    testGrammar(grammar, [{},
-                                    {'t1': 'h', 't2': 'h'},
-                                    {'t1': 'i', 't2': 'i'},
-                                    {'t1': 'hh', 't2': 'hh'},
-                                    {'t1': 'hi', 't2': 'hi'},
-                                    {'t1': 'ih', 't2': 'ih'},
-                                    {'t1': 'ii', 't2': 'ii'},
-                                    {'t1': 'hhh', 't2': 'hhh'},
-                                    {'t1': 'hhi', 't2': 'hhi'},
-                                    {'t1': 'hih', 't2': 'hih'},
-                                    {'t1': 'hii', 't2': 'hii'},
-                                    {'t1': 'ihh', 't2': 'ihh'},
-                                    {'t1': 'ihi', 't2': 'ihi'},
-                                    {'t1': 'iih', 't2': 'iih'},
-                                    {'t1': 'iii', 't2': 'iii'},
-                                    {'t1': 'hi', 't2': 'ih'}],
-                                undefined, 4, 8);
-    });
-
-    
-    // 19b. Match(.*,t1,t2) | t1:hi+t2:ih
-    describe('19b: Match(.*,t1,t2) | t1:hi+t2:ih', function() {
-        const grammar = Uni(MatchDotStar2("t1", "t2"), Seq(t1("hi"), t2("ih")));
+        let grammar: Grammar = Uni(MatchDotStar("t1", "t2"), Seq(t1("hi"), t2("ih")));
+        grammar = Count(7, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
         testGrammar(grammar, [{},
@@ -377,16 +357,17 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'iih', 't2': 'iih'},
                                     {'t1': 'iii', 't2': 'iii'},
                                     {'t1': 'hi', 't2': 'ih'}],
-                                undefined, 4, 8);
+                                undefined, 4);
     });
 
-    // 20a. t1:hi+t2:ih | Match(.*,t1,t2)
-    describe('20a: t1:hi+t2:ih | Match(.*,t1,t2)', function() {
-    const grammar = Uni(Seq(t1("hi"), t2("ih")), MatchDotStar("t1", "t2"));
-    testHasTapes(grammar, ['t1', 't2']);
-    //testHasVocab(grammar, {'t1': 2, 't2': 2});
-    testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
-                                    {},
+    
+    // 19b. Match(.*,t1,t2) | t1:hi+t2:ih
+    describe('19b: Match(.*,t1,t2) | t1:hi+t2:ih', function() {
+        let grammar: Grammar = Uni(MatchDotStar2("t1", "t2"), Seq(t1("hi"), t2("ih")));
+        grammar = Count(7, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        //testHasVocab(grammar, {'t1': 2, 't2': 2});
+        testGrammar(grammar, [{},
                                     {'t1': 'h', 't2': 'h'},
                                     {'t1': 'i', 't2': 'i'},
                                     {'t1': 'hh', 't2': 'hh'},
@@ -400,13 +381,15 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'ihh', 't2': 'ihh'},
                                     {'t1': 'ihi', 't2': 'ihi'},
                                     {'t1': 'iih', 't2': 'iih'},
-                                    {'t1': 'iii', 't2': 'iii'}],
-                                undefined, 4, 8);
+                                    {'t1': 'iii', 't2': 'iii'},
+                                    {'t1': 'hi', 't2': 'ih'}],
+                                undefined, 4);
     });
 
-    // 20b. t1:hi+t2:ih | Match(.*,t1,t2)
-    describe('20b: t1:hi+t2:ih | Match(.*,t1,t2)', function() {
-        const grammar = Uni(Seq(t1("hi"), t2("ih")), MatchDotStar2("t1", "t2"));
+    // 20a. t1:hi+t2:ih | Match(.*,t1,t2)
+    describe('20a: t1:hi+t2:ih | Match(.*,t1,t2)', function() {
+        let grammar: Grammar = Uni(Seq(t1("hi"), t2("ih")), MatchDotStar("t1", "t2"));
+        grammar = Count(7, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {'t1': 2, 't2': 2});
         testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
@@ -425,7 +408,32 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'ihi', 't2': 'ihi'},
                                     {'t1': 'iih', 't2': 'iih'},
                                     {'t1': 'iii', 't2': 'iii'}],
-                                undefined, 4, 8);
+                                undefined, 4);
+    });
+
+    // 20b. t1:hi+t2:ih | Match(.*,t1,t2)
+    describe('20b: t1:hi+t2:ih | Match(.*,t1,t2)', function() {
+        let grammar: Grammar = Uni(Seq(t1("hi"), t2("ih")), MatchDotStar2("t1", "t2"));
+        grammar = Count(7, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        //testHasVocab(grammar, {'t1': 2, 't2': 2});
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'ih'},
+                                    {},
+                                    {'t1': 'h', 't2': 'h'},
+                                    {'t1': 'i', 't2': 'i'},
+                                    {'t1': 'hh', 't2': 'hh'},
+                                    {'t1': 'hi', 't2': 'hi'},
+                                    {'t1': 'ih', 't2': 'ih'},
+                                    {'t1': 'ii', 't2': 'ii'},
+                                    {'t1': 'hhh', 't2': 'hhh'},
+                                    {'t1': 'hhi', 't2': 'hhi'},
+                                    {'t1': 'hih', 't2': 'hih'},
+                                    {'t1': 'hii', 't2': 'hii'},
+                                    {'t1': 'ihh', 't2': 'ihh'},
+                                    {'t1': 'ihi', 't2': 'ihi'},
+                                    {'t1': 'iih', 't2': 'iih'},
+                                    {'t1': 'iii', 't2': 'iii'}],
+                                undefined, 4);
     });
 
     // Filter/Join with Match tests

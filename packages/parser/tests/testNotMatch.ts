@@ -8,7 +8,8 @@ import {
     Seq, 
     Rep, 
     Uni, 
-    Vocab
+    Vocab,
+    Count
 } from "../src/grammars";
 
 import { 
@@ -38,17 +39,19 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe.skip('1a. MatchFrom(t1>t2, t1:hi)', function() {
         const grammar1: Grammar = t1("hi");
-        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
+        let grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
+        grammar = Count(4, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe.skip('1b. Negation of 1a results: ~(t1:hi+t2:hi)', function() {
-        const grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), Infinity);
+        let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), Infinity);
+        grammar = Count(4, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'h'  , t2: 'h'  }, {t1: 'h', t2: 'hh'},  {t1: 'h', t2: 'hhh'},
             {t1: 'h'  , t2: 'hhi'}, {t1: 'h', t2: 'hi'},  {t1: 'h', t2: 'hih'},
@@ -89,13 +92,14 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     // Test 1b-1 illustrates that Negation yields the same outputs when 
     // Not.maxChars == testGrammar.maxChars-1 as when Not.maxChars == Infinity.
     describe.skip('1b-1. Negation of 1a results: ~(t1:hi+t2:hi, 4)', function() {
-        const grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 4);
+        let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 4);
+        grammar = Count(4, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'h'  , t2: 'h'  }, {t1: 'h', t2: 'hh'},  {t1: 'h', t2: 'hhh'},
             {t1: 'h'  , t2: 'hhi'}, {t1: 'h', t2: 'hi'},  {t1: 'h', t2: 'hih'},
@@ -136,13 +140,14 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     // Tests 1b-2 to 1b-4 illustrate how Negation works when
     // Not.maxChars < testGrammar.maxChars-1
     describe.skip('1b-2. Negation of 1a results: ~(t1:hi+t2:hi, 3)', function() {
-        const grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 3);
+        let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 3);
+        grammar = Count(4, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'h' , t2: 'h' }, {t1: 'h' , t2: 'hh'}, {t1: 'h', t2: 'hi'},
             {t1: 'h' , t2: 'i' }, {t1: 'h' , t2: 'ih'}, {t1: 'h', t2: 'ii'},
@@ -171,11 +176,12 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe.skip('1b-3. Negation of 1a results: ~(t1:hi+t2:hi, 2)', function() {
-        const grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 2);
+        let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 2);
+        grammar = Count(4, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'h'}, {t1: 'h', t2: 'i'},
             {t1: 'i', t2: 'h'}, {t1: 'i', t2: 'i'},
@@ -192,126 +198,152 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe.skip('1b-4. Negation of 1a results: ~(t1:hi+t2:hi, 1)', function() {
-        const grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 1);
+        let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 1);
+        grammar = Count(4, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'h'}, {t1: 'i'}, {t2: 'i'}, {t2: 'h'},
             {},
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('1. ~(MatchFrom(t1>t2,t1:hi))', function() {
         const grammar1: Grammar = t1("hi");
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"), Infinity);
-        const resultsGrammar = Not(Seq(t1("hi"), t2("hi")));
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"), Infinity);
+        grammar = Count(4, grammar);
+
+        let resultsGrammar: Grammar = Not(Seq(t1("hi"), t2("hi")));
+        resultsGrammar = Count(4, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe.skip('2a. MatchFrom(t1>t2,ε) (vocab hi)', function() {
         const grammar1: Grammar = Epsilon();
-        const grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
+        let grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
                                      MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(2, grammar);
         const expectedResults: StringDict[] = [
             {},
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 3);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe.skip('2b. Negation of 2a results: ~() (vocab hi)', function() {
-        const grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
+        let grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
                                      Not(Epsilon()));
+        grammar = Count(2, grammar);
         const expectedResults: StringDict[] = [
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 3);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('2. ~(MatchFrom(t1>t2,ε)) (vocab hi)', function() {
         const grammar1: Grammar = Epsilon();
-        const grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
+        let grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
                                      Not(MatchFrom(grammar1, "t1", "t2")));
+        grammar = Count(2, grammar);
         const expectedResults: StringDict[] = [
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 3);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('3. ~(MatchFrom(t1>t2,t1:h+t1:i))', function() {
         const grammar1: Grammar = Seq(t1("h"), t1("i"));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Seq(t1("hi"), t2("hi")));
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(4, grammar);
+
+        let resultsGrammar: Grammar = Not(Seq(t1("hi"), t2("hi")));
+        resultsGrammar = Count(4, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('4. ~(MatchFrom(t1>t2,t1:hi+t4:g))', function() {
         const grammar1: Grammar = Seq(t1("h"), t4("g"));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Seq(t1("h"), t2("h"), t4("gg")));
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(4, grammar);
+
+        let resultsGrammar: Grammar = Not(Seq(t1("h"), t2("h"), t4("gg")));
+        resultsGrammar = Count(4, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 1, t2: 1, t4: 1});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('5. ~(MatchFrom(t1>t2,t4:g+t1:hi))', function() {
         const grammar1: Grammar = Seq(t4("g"), t1("h"));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Seq(t1("h"), t2("h"), t4("gg")));
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(4, grammar);
+        
+        let resultsGrammar: Grammar = Not(Seq(t1("h"), t2("h"), t4("gg")));
+        resultsGrammar = Count(4, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 1, t2: 1, t4: 1});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     // Checking the results for this test takes a long time.
     describe.skip('6. ~(MatchFrom(t1>t2,(t1:h+t1:,)+t1:w)) w/ nested seq', function() {
         const grammar1: Grammar = Seq(Seq(t1("h"), t1(",")), t1("w"));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Seq(t1("h,w"), t2("h,w")));
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(6, grammar);
+
+        let resultsGrammar: Grammar = Not(Seq(t1("h,w"), t2("h,w")));
+        resultsGrammar = Count(6, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+        
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe.skip('7a. MatchFrom(t1>t2,t1:hi|t1:hh)', function() {
         const grammar1: Grammar = Uni(t1("hi"), t1("hh"));
-        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
+        let grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
+        grammar = Count(4, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi'},
             {t1: 'hh', t2: 'hh'},
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe.skip('7b. Negation of 7a results: ~((t1:hi+t2:hi)|(t1:hh+t2:hh))', function() {
-        const grammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")),
+        let grammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")),
                                          Seq(t1("hh"), t2("hh"))));
+        grammar = Count(4, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'h'  , t2: 'h'  }, {t1: 'h', t2: 'hh'}, {t1: 'h', t2: 'hhh'},
             {t1: 'h'  , t2: 'hhi'}, {t1: 'h', t2: 'hi'}, {t1: 'h', t2: 'hih'},
@@ -352,36 +384,40 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('7. ~(MatchFrom(t1>t2,t1:hi|t1:hh))', function() {
         const grammar1: Grammar = Uni(t1("hi"), t1("hh"));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Uni(Seq(t1("hi"), t2("hi")),
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(4, grammar);
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")),
                                        Seq(t1("hh"), t2("hh"))));
+        resultsGrammar = Count(4, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     // 8a. MatchFrom t1, t2, t1:hi|t4:g
     describe.skip('8a. MatchFrom(t1>t2,t1:hi|t4:g)', function() {
         const grammar1: Grammar = Uni(t1("hi"), t4("g"));
-        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
+        let grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
+        grammar = Count(4, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi'},
             {t4: 'gg'},
         ];
         // testHasTapes(grammar, ['t1', 't2', 't4']);
         // testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe.skip('8b. Negation of 8a results: ~((t1:hi+t2:hi)|(t4:gg))', function() {
-        const grammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("gg")));
+        let grammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("gg")));
+        grammar = Count(4, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'h' , t2: 'h' , t4: 'g'}, {t1: 'h' , t2: 'h' , t4: 'gg'}, {t1: 'h' , t2: 'hh', t4: 'g' },
             {t1: 'h' , t2: 'hi', t4: 'g'}, {t1: 'h' , t2: 'i' , t4: 'g' }, {t1: 'h' , t2: 'i' , t4: 'gg'},
@@ -435,172 +471,216 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         // testHasTapes(grammar, ['t1', 't2', 't4']);
         // testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('8. ~(MatchFrom(t1>t2,t1:hi|t4:g))', function() {
         const grammar1: Grammar = Uni(t1("hi"), t4("g"));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("gg")));
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(4, grammar);
+
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("gg")));
+        resultsGrammar = Count(4, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('9. ~(MatchFrom(t1>t2,t4:g|t1:hi))', function() {
         const grammar1: Grammar = Uni(t4("g"), t1("hi"));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("gg")));
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(4, grammar);
+
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("gg")));
+        resultsGrammar = Count(4, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+        
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('10. ~(MatchFrom(t1>t2,(t1:h|t1:i)+(t1:i|t1:h)))', function() {
         const grammar1: Grammar = Seq(Uni(t1("h"), t1("i")), Uni(t1("i"), t1("h")));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Uni(Seq(t1("hi"), t2("hi")),
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(4, grammar);
+        
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")),
                                        Seq(t1("hh"), t2("hh")),
                                        Seq(t1("ii"), t2("ii")),
                                        Seq(t1("ih"), t2("ih"))));
+        resultsGrammar = Count(4, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+        
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('11. ~(MatchFrom(t1>t2,(t1:h+t1:i)|(t1:i+t1:h)))', function() {
         const grammar1: Grammar = Uni(Seq(t1("h"), t1("i")), Seq(t1("i"), t1("h")));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Uni(Seq(t1("hi"), t2("hi")),
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(4, grammar);
+        
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")),
                                        Seq(t1("ih"), t2("ih"))));
+        resultsGrammar = Count(4, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+        
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('12. ~(MatchFrom(t1>t2,t1:hi+t1:.))', function() {
         const grammar1: Grammar = Seq(t1("hi"), Any("t1"));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Uni(Seq(t1("hih"), t2("hih")),
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(6, grammar);
+
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hih"), t2("hih")),
                                        Seq(t1("hii"), t2("hii"))));
+        resultsGrammar = Count(6, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+        
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('13. ~(MatchFrom(t1>t2,t1:o{0,1}))', function() {
         const grammar1: Grammar = Rep(t1("o"), 0, 1);
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Uni(Epsilon(),
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(4, grammar);
+
+        let resultsGrammar: Grammar = Not(Uni(Epsilon(),
                                        Seq(t1("o"), t2("o"))));
+        resultsGrammar = Count(4, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 1});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 5);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('14. ~(MatchFrom(t1>t2,Join(t1:h{0,1}+t4:g+t1:i,<same>))', function() {
         const grammar1: Grammar = Join(Seq(Rep(t1("h"), 0, 1), t4("g"), t1("i")),
                                        Seq(Rep(t1("h"), 0, 1), t4("g"), t1("i")));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Uni(Seq(t1("i"), t2("i"), t4("gg")),
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(6, grammar);
+
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("i"), t2("i"), t4("gg")),
                                        Seq(t1("hi"), t2("hi"), t4("gg"))));
+        resultsGrammar = Count(6, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('15. ~(MatchFrom(t1>t2,Join(t4:g+t1:h{0,1}+t1:i,<same>))', function() {
         const grammar1: Grammar = Join(Seq(t4("g"), Rep(t1("h"), 0, 1), t1("i")),
                                        Seq(t4("g"), Rep(t1("h"), 0, 1), t1("i")));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Uni(Seq(t1("i"), t2("i"), t4("gg")),
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(6, grammar);
+
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("i"), t2("i"), t4("gg")),
                                        Seq(t1("hi"), t2("hi"), t4("gg"))));
+        resultsGrammar = Count(6, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     // Checking the results for this test takes a long time.
     describe.skip('16. ~(MatchFrom(t1>t2,t1:na{1,2}))', function() {
         const grammar1: Grammar = Rep(t1("na"), 1, 2);
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Uni(Seq(t1("na"), t2("na")),
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(8, grammar);
+
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("na"), t2("na")),
                                        Seq(t1("nana"), t2("nana"))));
+        resultsGrammar = Count(8, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 9);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 9);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('17a. MatchFrom(t1>t2,t1:.{0}) (vocab hi)', function() {
         const grammar1: Grammar = Rep(Any("t1"), 0, 0);
-        const grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
+        let grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
                                      MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(6, grammar);
         const expectedResults: StringDict[] = [
             {},
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('17. ~(MatchFrom(t1>t2,t1:.{0})) (vocab hi)', function() {
         const grammar1: Grammar = Rep(Any("t1"), 0, 0);
-        const grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
+        let grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
                                      Not(MatchFrom(grammar1, "t1", "t2")));
+        grammar = Count(6, grammar);
+        
         // expectedResults contains all possible combinations except {}.
         // Thus, for maxChars=7, there are 769 - 1 = 768 results.
-        const resultsGrammar = Not(Seq(Vocab('t1', "hi"), Vocab ('t2', "hi")));
+        let resultsGrammar: Grammar = Not(Seq(Vocab('t1', "hi"), Vocab ('t2', "hi")));
+        resultsGrammar = Count(6, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
+
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('18. ~(MatchFrom(t1>t2,t1:.{0,1}+t1:hi))', function() {
         const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 1), t1("hi"));
-        const grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        const resultsGrammar = Not(Uni(Seq(t1("hi"), t2("hi")),
+        let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
+        grammar = Count(6, grammar);
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")),
                                        Seq(t1("hhi"), t2("hhi")),
                                        Seq(t1("ihi"), t2("ihi"))));
+        resultsGrammar = Count(6, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
     describe('19. ~(MatchFrom(t1>t2,t1:.{0,1}+t1:h+t1:.{0,1})) (vocab hi)', function() {
         const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 1), t1("h"), Rep(Any("t1"), 0, 1));
-        const grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
+        let grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
                                      Not(MatchFrom(grammar1, "t1", "t2")));
-        const resultsGrammar = Not(Uni(Seq(t1("h"), t2("h")),
+        grammar = Count(6, grammar);
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("h"), t2("h")),
                                        Seq(t1("hh"), t2("hh")),
                                        Seq(t1("hi"), t2("hi")),
                                        Seq(t1("ih"), t2("ih")),
@@ -608,11 +688,12 @@ describe(`${path.basename(module.filename)}`, function() {
                                        Seq(t1("hhi"), t2("hhi")),
                                        Seq(t1("ihh"), t2("ihh")),
                                        Seq(t1("ihi"), t2("ihi"))));
+        resultsGrammar = Count(6, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, 7);
+        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION);
     });
 
 });

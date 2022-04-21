@@ -1,4 +1,5 @@
 import { 
+    Count,
     Epsilon,
     Grammar,
     JoinReplace,
@@ -49,7 +50,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('1b. Negation of results of 1a', function() {
-        const grammar = Not(Seq(t1("i"), t2("a"), Vocab("t2", "i")));
+        let grammar: Grammar = Not(Seq(t1("i"), t2("a"), Vocab("t2", "i")));
+        grammar = Count(2, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
         const expectedResults: StringDict[] = [
@@ -64,12 +66,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"a"},
             {}
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 3);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
 
     describe('1c. Negation of grammar of 1a', function() {
-        const grammar = Not(JoinReplace(t1("i"),
+        let grammar: Grammar = Not(JoinReplace(t1("i"),
                                     [ReplaceBypass(t1("i"), t2("a"))]));
+        grammar = Count(2, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
         const expectedResults: StringDict[] = [
@@ -84,7 +87,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"a"},
             {}
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 3);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
 
     describe('2a. JoinReplace i by a in i: i -> a, same tape', function() {
@@ -99,7 +102,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('2b. Negation of results of 2a', function() {
-        const grammar = Not(Seq(t1("a"), Vocab("t1", "i")));
+        let grammar: Grammar = Not(Seq(t1("a"), Vocab("t1", "i")));
+        grammar = Count(2, grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -110,7 +114,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t1":"aa"},
             {}
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 3);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
     
     /*
@@ -122,8 +126,9 @@ describe(`${path.basename(module.filename)}`, function() {
     //    around, to be restored once that operation is available.
 
     describe('2c. Negation of grammar of 2a', function() {
-        const grammar = Not(JoinReplace(t1("i"),
+        let grammar: Grammar = Not(JoinReplace(t1("i"),
                                     [ReplaceBypass(t1("i"), t1("a"))]));
+        grammar = Count(2, grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -134,13 +139,14 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t1":"aa"},
             {}
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 3);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
 
     */
 
     describe('3a. Replace i by a', function() {
-        const grammar = ReplaceBypass(t1("i"), t2("a"));
+        let grammar: Grammar = ReplaceBypass(t1("i"), t2("a"));
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
         const expectedResults: StringDict[] = [
@@ -148,13 +154,14 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"a","t1":"i"},
             {}
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 5);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
     
     describe('3b. Negation of outputs of 3a', function() {
-        const grammar = Not(Uni(Epsilon(),
+        let grammar: Grammar = Not(Uni(Epsilon(),
                                 Seq(t1("i"), t2("a"), Vocab("t2", "i")),
                                 Seq(t1("ii"), t2("aa"))));
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
         const expectedResults: StringDict[] = [
@@ -178,11 +185,12 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"iaa"}, {"t2":"iaaa"}, {"t2":"aaaa"}, {"t2":"aaa"},
             {"t2":"aa"}, {"t2":"a"}
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 5);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
 
     describe('3c. Negation of grammar of 3a', function() {
-        const grammar = Not(ReplaceBypass(t1("i"), t2("a")));
+        let grammar: Grammar = Not(ReplaceBypass(t1("i"), t2("a")));
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
         const expectedResults: StringDict[] = [
@@ -206,23 +214,25 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"iaa"}, {"t2":"iaaa"}, {"t2":"aaaa"}, {"t2":"aaa"},
             {"t2":"aa"}, {"t2":"a"}
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 5);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
 
     describe('4a. Replace i by a: i -> a', function() {
-        const grammar = ReplaceBypass(t1("i"), t2("a"));
+        let grammar: Grammar = ReplaceBypass(t1("i"), t2("a"));
+        grammar = Count(2, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
         const expectedResults: StringDict[] = [
             {t1: 'i', t2: 'a'},
             {},
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 3);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
 
     describe('4b. Negation of results of 4a', function() {
-        const grammar = Seq(Vocab("t2", "ai"),
+        let grammar: Grammar = Seq(Vocab("t2", "ai"),
                             Not(Uni(Epsilon(), Seq(t1("i"), t2("a")))));
+        grammar = Count(2, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
         const expectedResults: StringDict[] = [
@@ -236,11 +246,12 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"aa"},
             {"t2":"a"},
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 3);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
 
     describe('4c. Negation of grammar of 4a', function() {
-        const grammar = Not(ReplaceBypass(t1("i"), t2("a")));
+        let grammar: Grammar = Not(ReplaceBypass(t1("i"), t2("a")));
+        grammar = Count(2, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
         const expectedResults: StringDict[] = [
@@ -256,11 +267,12 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"aa"},
             {"t2":"a"},
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 3);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
 
     describe('5a. Replace i by a: i -> a, same tape', function() {
-        const grammar = ReplaceBypass(t1("i"), t1("a"));
+        let grammar: Grammar = ReplaceBypass(t1("i"), t1("a"));
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -268,12 +280,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'aa'},
             {},
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 5);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
 
     describe('5b. Negation of results of 5a', function() {
-        const grammar = Seq(Vocab("t1", "ai"),
+        let grammar: Grammar = Seq(Vocab("t1", "ai"),
                             Not(Uni(Epsilon(), t1("a"), t1("aa"))));
+        grammar = Count(2, grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -282,14 +295,15 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'i'},
             {t1: 'ia'},
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 3);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
     
     /*
     // See note to 2c.
 
     describe('5c. Negation of grammar of 5a', function() {
-        const grammar = Not(ReplaceBypass(t1("i"), t1("a")));
+        let grammar: Grammar = Not(ReplaceBypass(t1("i"), t1("a")));
+        grammar = Count(2, grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -303,7 +317,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: "a"},
             // {t1: "aa"},
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, 3);
+        testGrammar(grammar, expectedResults, undefined, 4);
     });
 
     */

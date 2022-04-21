@@ -1,4 +1,4 @@
-import { Uni, Join, Not, Rep, Seq, Null, Epsilon, Dot, Any, Vocab } from "../src/grammars";
+import { Uni, Join, Not, Rep, Seq, Null, Epsilon, Dot, Any, Vocab, Grammar, Count } from "../src/grammars";
 import { t1, t2, 
     testHasTapes, testHasVocab, testGrammar } from './testUtils';
 
@@ -129,11 +129,12 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Double negation: ~(~t1:hello)', function() {
         const grammar = Not(Not(t1("hello")));
-        testGrammar(grammar, [{t1: "hello"}], "", 4, 30);
+        testGrammar(grammar, [{t1: "hello"}], "", 4);
     });
 
     describe('~t1:hi', function() {
-        const grammar = Not(t1("hi"));
+        let grammar: Grammar = Not(t1("hi"));
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -147,12 +148,13 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii' }, { t1: 'ihhh' }, { t1: 'ihhi' },
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }];
-        testGrammar(grammar, expectedResults, "", 4, 5);
+        testGrammar(grammar, expectedResults, "", 4);
     });
 
     
     describe('~(t1:h+t1:i)', function() {
-        const grammar = Not(Seq(t1("h"), t1("i")));
+        let grammar: Grammar = Not(Seq(t1("h"), t1("i")));
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -166,7 +168,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii' }, { t1: 'ihhh' }, { t1: 'ihhi' },
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }];
-        testGrammar(grammar, expectedResults, "", 4, 5);
+        testGrammar(grammar, expectedResults, "", 4);
     });
     
     
@@ -178,7 +180,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Alt ~t1:hi | t2:hi', function() {
-        const grammar = Uni(Not(t1("hi")), t2("hi"));
+        let grammar: Grammar = Uni(Not(t1("hi")), t2("hi"));
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ["t1", "t2"]);
         //testHasVocab(grammar, {t1: 2});
         //testHasVocab(grammar, {t2: 2});
@@ -194,65 +197,71 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }, 
             { t2: "hi"}];
-        testGrammar(grammar, expectedResults, "", 4, 5);
+        testGrammar(grammar, expectedResults, "", 4);
     });
     
     describe('~t1:h', function() {
-        const grammar = Not(t1("h"));
+        let grammar: Grammar = Not(t1("h"));
+        grammar = Count(4, grammar);
         //testHasVocab(grammar, {t1: 1});
         const expectedResults: StringDict[] = [
             {},            
             { t1: 'hh' },  
             { t1: 'hhh' },
             { t1: 'hhhh' }];
-        testGrammar(grammar, expectedResults, "", 4, 5);
+        testGrammar(grammar, expectedResults, "", 4);
     });
 
     
     describe('t1:h+(~t1:h)', function() {
-        const grammar = Seq(t1("h"), Not(t1("h")));
+        let grammar: Grammar = Seq(t1("h"), Not(t1("h")));
+        grammar = Count(5, grammar);
         //testHasVocab(grammar, {t1: 1});
         const expectedResults: StringDict[] = [
             { t1: 'h'},            
             { t1: 'hhh' },  
             { t1: 'hhhh' },
             { t1: 'hhhhh' }];
-        testGrammar(grammar, expectedResults, "", 4, 6);
+        testGrammar(grammar, expectedResults, "", 4);
     });
 
     describe('(~t1:h)+t1:h', function() {
-        const grammar = Seq(Not(t1("h")), t1("h"));
+        let grammar: Grammar = Seq(Not(t1("h")), t1("h"));
+        grammar = Count(5, grammar);
         //testHasVocab(grammar, {t1: 1});
         const expectedResults: StringDict[] = [
             { t1: 'h'},            
             { t1: 'hhh' },  
             { t1: 'hhhh' },
             { t1: 'hhhhh' }];
-        testGrammar(grammar, expectedResults, "", 4, 6);
+        testGrammar(grammar, expectedResults, "", 4);
     });
     
     describe('~t1:h{0,1}', function() {
-        const grammar = Not(Rep(t1("h"), 0, 1));
+        let grammar: Grammar = Not(Rep(t1("h"), 0, 1));
+        grammar = Count(4, grammar);
         //testHasVocab(grammar, {t1: 1});
         const expectedResults: StringDict[] = [
             { t1: 'hh' },         
             { t1: 'hhh' },
             { t1: 'hhhh' }];
-        testGrammar(grammar, expectedResults, "", 4, 5);
+        testGrammar(grammar, expectedResults, "", 4);
     });
 
 
     describe('~t1:h{1,2}', function() {
-        const grammar = Not(Rep(t1("h"), 1, 3));
+        let grammar: Grammar = Not(Rep(t1("h"), 1, 3));
+        grammar = Count(4, grammar);
         //testHasVocab(grammar, {t1: 1});
         const expectedResults: StringDict[] = [
             {},            
             { t1: 'hhhh' }];
-        testGrammar(grammar, expectedResults, "", 4, 5);
+        testGrammar(grammar, expectedResults, "", 4);
     });
 
     describe('Join(~t1:hi & t2:hi)', function() {
-        const grammar = Join(Not(t1("hi")), t2("hi"));
+        let grammar: Grammar = Join(Not(t1("hi")), t2("hi"));
+        grammar = Count(6, grammar);
         //testHasVocab(grammar, {t1: 2});
         //testHasVocab(grammar, {t2: 2});
         const expectedResults: StringDict[] = [
@@ -266,11 +275,12 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii', t2: "hi" }, { t1: 'ihhh', t2: "hi" }, { t1: 'ihhi', t2: "hi" },
             { t1: 'ihih', t2: "hi" }, { t1: 'ihii', t2: "hi" }, { t1: 'iihh', t2: "hi" },
             { t1: 'iihi', t2: "hi" }, { t1: 'iiih', t2: "hi" }, { t1: 'iiii', t2: "hi" }];
-        testGrammar(grammar, expectedResults, "", 4, 7);
+        testGrammar(grammar, expectedResults, "", 4);
     });
     
     describe('Join(t2:hi & ~t1:hi)', function() {
-        const grammar = Join(t2("hi"), Not(t1("hi")));
+        let grammar: Grammar = Join(t2("hi"), Not(t1("hi")));
+        grammar = Count(6, grammar);
         //testHasVocab(grammar, {t1: 2});
         //testHasVocab(grammar, {t2: 2});
         const expectedResults: StringDict[] = [
@@ -289,11 +299,12 @@ describe(`${path.basename(module.filename)}`, function() {
             { t2: 'hi', t1: 'ihih' }, { t2: 'hi', t1: 'ihii' },
             { t2: 'hi', t1: 'iihh' }, { t2: 'hi', t1: 'iihi' },
             { t2: 'hi', t1: 'iiih' }, { t2: 'hi', t1: 'iiii' }];
-        testGrammar(grammar, expectedResults, "", 4, 7);
+        testGrammar(grammar, expectedResults, "", 4);
     }); 
 
     describe('~(t1:h+t2:h)', function() {
-        const grammar = Not(Seq(t1("h"), t2("i")));
+        let grammar: Grammar = Not(Seq(t1("h"), t2("i")));
+        grammar = Count(3, grammar);
         const expectedResults: StringDict[] = [
             {},         
             {"t2":"i"},
@@ -304,17 +315,18 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"i","t1":"hh"},
             {"t2":"iii"},
             {"t1":"hhh"}];
-            testGrammar(grammar, expectedResults, "", 4, 4);
+            testGrammar(grammar, expectedResults, "", 4);
     }); 
 
     describe('~(t1:h|t2:h)', function() {
-        const grammar = Not(Uni(t1("h"), t2("i")));
+        let grammar: Grammar = Not(Uni(t1("h"), t2("i")));
+        grammar = Count(3, grammar);
         const expectedResults: StringDict[] = [
             {},                     {"t2":"i","t1":"h"},
             {"t2":"ii"},            {"t1":"hh"},
             {"t2":"ii","t1":"h"},   {"t2":"i","t1":"hh"},
             {"t2":"iii"},           {"t1":"hhh"}];
-            testGrammar(grammar, expectedResults, "", 4, 4);
+            testGrammar(grammar, expectedResults, "", 4);
     }); 
     
     describe('~(t1:he,3)', function() {
@@ -337,7 +349,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'eeh'},
             {t1: 'eee'},
         ];
-        testGrammar(grammar, expectedResults, "", 4, 100);
+        testGrammar(grammar, expectedResults, "", 4);
     });
 
     // Testing negation with "dot".
@@ -354,7 +366,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // should not have:
             // {t1: "ii"},
         ];
-        testGrammar(grammar, expectedResults, '', 4, 100);
+        testGrammar(grammar, expectedResults, '', 4);
     });
     
     describe('Dot-2. ~(.,2) with vocab "hi"', function() {
@@ -372,7 +384,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: "h"},
             // {t1: "i"},
         ];
-        testGrammar(grammar, expectedResults, '', 4, 100);
+        testGrammar(grammar, expectedResults, '', 4);
     });
 
     describe('Dot-3. ~(.i,2) with vocab "hi"', function() {
@@ -390,7 +402,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: "hi"},
             // {t1: "ii"},
         ];
-        testGrammar(grammar, expectedResults, '', 4, 100);
+        testGrammar(grammar, expectedResults, '', 4);
     });
 
     describe('Dot-4. ~(.i,2) with vocab "hi"', function() {
@@ -408,7 +420,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: "hi"},
             // {t1: "ii"},
         ];
-        testGrammar(grammar, expectedResults, '', 4, 100);
+        testGrammar(grammar, expectedResults, '', 4);
     });
 
     describe('Dot-5. ~(.{0,1}i,3) with vocab "hi"', function() {
@@ -434,7 +446,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: "hi"},
             // {t1: "ii"},
         ];
-        testGrammar(grammar, expectedResults, '', 4, 100);
+        testGrammar(grammar, expectedResults, '', 4);
     });
 
     describe('Dot-6. ~(.{0,3}i,3) with vocab "hi"', function() {
@@ -460,6 +472,6 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: "ihi"},
             // {t1: "iii"},
         ];
-        testGrammar(grammar, expectedResults, '', 4, 100);
+        testGrammar(grammar, expectedResults, '', 4);
     });
 });

@@ -1,5 +1,5 @@
 
-import { Seq, Join, Rep, Epsilon, Equals, Uni, Any } from "../src/grammars";
+import { Seq, Join, Rep, Epsilon, Equals, Uni, Any, Count, Grammar } from "../src/grammars";
 import { t1, t2, testHasTapes, testGrammar, testHasVocab } from './testUtils';
 
 import * as path from 'path';
@@ -173,69 +173,76 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('t1 with between 1 and unlimited Os: t1:o+', function() {
-        const grammar = Rep(t1("o"), 1);
+        let grammar: Grammar = Rep(t1("o"), 1);
+        grammar = Count(5, grammar);
         testGrammar(grammar, [{t1: "o"},
                               {t1: "oo"},
                               {t1: "ooo"},
                               {t1: "oooo"},
                               {t1: "ooooo"}],
-                    "", undefined, 6);
+                    "", undefined);
     });
 
     describe('t1:o*', function() {
-        const grammar = Rep(t1("o"));
+        let grammar: Grammar = Rep(t1("o"));
+        grammar = Count(5, grammar);
         testGrammar(grammar, [{},
                               {t1: "o"},
                               {t1: "oo"},
                               {t1: "ooo"},
                               {t1: "oooo"},
                               {t1: "ooooo"}],
-                    "", undefined, 6);
+                    "", undefined);
     });
 
     describe('t1:h*+t1:i', function() {
-        const grammar = Seq(Rep(t1("h")), t1("i"));
+        let grammar: Grammar = Seq(Rep(t1("h")), t1("i"));
+        grammar = Count(6, grammar);
         testGrammar(grammar, [{t1: "i"},
                               {t1: "hi"},
                               {t1: "hhi"},
                               {t1: "hhhi"},
                               {t1: "hhhhi"},
                               {t1: "hhhhhi"}],
-                    "", undefined, 7);
+                    "", undefined);
     });
     
     describe('t1:h+t1:i*', function() {
-        const grammar = Seq(t1("h"), Rep(t1("i")));
+        let grammar: Grammar = Seq(t1("h"), Rep(t1("i")));
+        grammar = Count(6, grammar);
         testGrammar(grammar, [{t1: "h"},
                               {t1: "hi"},
                               {t1: "hii"},
                               {t1: "hiii"},
                               {t1: "hiiii"},
                               {t1: "hiiiii"}],
-                    "", undefined, 7);
+                    "", undefined);
     });
     
     describe('(t1:h+t1:i)*', function() {
-        const grammar = Rep(Seq(t1("h"), t1("i")));
+        let grammar: Grammar = Rep(Seq(t1("h"), t1("i")));
+        grammar = Count(6, grammar);
         testGrammar(grammar, [{},
                               {t1: "hi"},
                               {t1: "hihi"},
                               {t1: "hihihi"}],
-                    "", undefined, 7);
+                    "", undefined);
     });
 
     
     describe('(t1:h+t2:i)*', function() {
-        const grammar = Rep(Seq(t1("h"), t2("i")));
+        let grammar: Grammar = Rep(Seq(t1("h"), t2("i")));
+        grammar = Count(6, grammar);
         testGrammar(grammar, [{},
                             {"t1":"h","t2":"i"},
                             {"t1":"hh","t2":"ii"},
                             {"t1":"hhh","t2":"iii"}],
-                    "", undefined, 7);
+                    "", undefined);
     });
 
     describe('(t1:h|t2:i)*', function() {
-        const grammar = Rep(Uni(t1("h"), t2("i")));
+        let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
+        grammar = Count(3, grammar);
         testGrammar(grammar, [{},
                                 {"t1":"h"},
                                 {"t2":"i"},
@@ -246,12 +253,13 @@ describe(`${path.basename(module.filename)}`, function() {
                                 {"t1":"hh","t2":"i"},
                                 {"t1":"h","t2":"ii"},
                                 {"t2":"iii"}],
-                    "", undefined, 4);
+                    "", undefined);
     });
 
     describe('(t1:a+t2:a|t1:b+t2:b)*', function() {
-        const grammar = Rep(Uni(Seq(t1("a"), t2("a")), 
+        let grammar: Grammar = Rep(Uni(Seq(t1("a"), t2("a")), 
                                 Seq(t1("b"), t2("b"))));
+        grammar = Count(4, grammar);
         testGrammar(grammar, [{},
                                 {"t1":"a","t2":"a"},
                                 {"t1":"b","t2":"b"},
@@ -259,7 +267,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 {"t1":"ab","t2":"ab"},
                                 {"t1":"ba","t2":"ba"},
                                 {"t1":"bb","t2":"bb"}],
-                    "", undefined, 5);
+                    "", undefined);
     });
 
     describe('Filtering t1:h[ t2:h* ]', function() {
