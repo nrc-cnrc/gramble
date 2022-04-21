@@ -113,6 +113,14 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, undefined, 4, 3);
     });
     
+    /*
+
+    // This result isn't correct for the kind of negation we've implemented (
+    //   negation relativized to a set of tapes that includes a hidden tape).  
+    //    However, we are eventually also going to need another kind of negation,
+    //    negation relativized only to visible tapes.  So let's keep this test 
+    //    around, to be restored once that operation is available.
+
     describe('2c. Negation of grammar of 2a', function() {
         const grammar = Not(JoinReplace(t1("i"),
                                     [ReplaceBypass(t1("i"), t1("a"))]));
@@ -128,6 +136,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults, undefined, 4, 3);
     });
+
+    */
 
     describe('3a. Replace i by a', function() {
         const grammar = ReplaceBypass(t1("i"), t2("a"));
@@ -275,6 +285,9 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, undefined, 4, 3);
     });
     
+    /*
+    // See note to 2c.
+
     describe('5c. Negation of grammar of 5a', function() {
         const grammar = Not(ReplaceBypass(t1("i"), t1("a")));
         testHasTapes(grammar, ['t1']);
@@ -290,7 +303,9 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: "a"},
             // {t1: "aa"},
         ];
-        testGrammar(grammar, expectedResults, undefined, 4, /*5*/3);
+        testGrammar(grammar, expectedResults, undefined, 4, 3);
     });
+
+    */
 
 });
