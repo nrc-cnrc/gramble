@@ -239,10 +239,6 @@ export class Interpreter {
         opt: GenOptions
     ): [Expr, Tape[]] {
 
-        for (const [key, value] of Object.entries(query)) {
-            query[key] = value.normalize('NFD');
-        }
-
         let tapePriority = this.grammar.calculateTapes(new CounterStack(2));
         let expr = this.grammar.constructExpr(this.symbolTable);
 
@@ -256,6 +252,8 @@ export class Interpreter {
 
         if (Object.keys(query).length > 0) {
             const queryLiterals = Object.entries(query).map(([key, value]) => {
+                key = key.normalize("NFD"); 
+                value = value.normalize("NFD");
                 return new LiteralGrammar(new DummyCell(), key, value);
             });
             const querySeq = new SequenceGrammar(new DummyCell(), queryLiterals);

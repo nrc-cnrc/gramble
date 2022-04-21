@@ -220,7 +220,7 @@ export class Sheet extends SheetComponent {
             
             for (var colIndex = 0; colIndex < this.cells[rowIndex].length; colIndex++) {
     
-                const cellText = this.cells[rowIndex][colIndex].trim().normalize();
+                const cellText = this.cells[rowIndex][colIndex].trim().normalize("NFD");
                 const cell = new SheetCell(this, cellText, rowIndex, colIndex);
                 
                 if (rowIsComment) {
