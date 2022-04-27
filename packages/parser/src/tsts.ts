@@ -865,7 +865,6 @@ export class TstAssignment extends TstEnclosure {
 export class TstNamespace extends TstEnclosure {
 
     constructor(
-        public name: string,
         cell: Cell
     ) { 
         super(cell);
@@ -882,7 +881,7 @@ export class TstNamespace extends TstEnclosure {
 export class TstProject extends TstNamespace {
 
     constructor() {
-        super("", new DummyCell());
+        super(new DummyCell());
     }
 
     /**

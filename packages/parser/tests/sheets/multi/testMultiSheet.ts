@@ -79,6 +79,28 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobazable", gloss: "jump-2SG" }
         ]);
     });
+
+    describe('Multi-sheet project with a reference to a namespace in an external document', function() {
+        const project = sheetFromFile(`${DIR}/externalRefToNs.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "foobarable", gloss: "run-1SG" },
+            { text: "moobarable", gloss: "jump-1SG" },
+            { text: "foobazable", gloss: "run-2SG" },
+            { text: "moobazable", gloss: "jump-2SG" }
+        ]);
+    });
+    
+    describe('Multi-sheet project with the external reference in a namespace', function() {
+        const project = sheetFromFile(`${DIR}/externalRefInNs.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "foobarable", gloss: "run-1SG" },
+            { text: "moobarable", gloss: "jump-1SG" },
+            { text: "foobazable", gloss: "run-2SG" },
+            { text: "moobazable", gloss: "jump-2SG" }
+        ]);
+    });
 });
 
 

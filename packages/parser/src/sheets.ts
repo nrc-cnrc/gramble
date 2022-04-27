@@ -48,6 +48,8 @@ function constructOp(cell: SheetCell): TstEnclosure {
         newEnclosure = new TstNegativeUnitTest(cell);
     } else if (trimmedTextLower == "replace") {
         newEnclosure = new TstReplace(cell);
+    } else if (trimmedTextLower == "namespace") {
+        newEnclosure = new TstNamespace(cell);
     } else {
         // if it's none of these special operators, it's an assignment,
         // but note that assignments can only occur in column 0.  if an 
@@ -59,9 +61,7 @@ function constructOp(cell: SheetCell): TstEnclosure {
 }
 
 export abstract class SheetComponent {
-
     public abstract toTST(): TstComponent;
-
 }
 
 export class SheetProject extends SheetComponent {
@@ -156,8 +156,6 @@ export class Sheet extends SheetComponent {
         super();
     }
 
-    //public cells: SheetCell[][] = [];
-
     public message(msg: any): void {
         msg["sheet"] = this.name;
         this.project.message(msg);
@@ -205,7 +203,7 @@ export class Sheet extends SheetComponent {
         // sheets are treated as having an invisible cell containing their names at 0, -1
         var startCell: SheetCell = new SheetCell(this, this.name, 0, -1);
 
-        var result = new TstNamespace(this.name, startCell);
+        var result = new TstNamespace(startCell);
 
         var stack: {tst: TstEnclosure, row: number, col: number}[] = 
                 [{ tst: result, row: 0, col: -1 }];

@@ -664,7 +664,8 @@ export const RESERVED_OPS: Set<string> = new Set([
     "or", 
     "concat", 
     "join", 
-    "replace"
+    "replace",
+    "namespace"
 ]);
 
 export const RESERVED_WORDS = new Set([...SYMBOL, ...RESERVED_HEADERS, ...RESERVED_OPS]);

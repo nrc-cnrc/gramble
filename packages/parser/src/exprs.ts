@@ -606,6 +606,9 @@ export abstract class Expr {
             }
             
             if (tapes.length == 0) {
+                if (!(prevExpr instanceof NullExpr || prevExpr instanceof EpsilonExpr)) {
+                    throw new Error(`warning, nontrivial expr at end: ${prevExpr.id}`);
+                }
                 continue; 
             }
 
