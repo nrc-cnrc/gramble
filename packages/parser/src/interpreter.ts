@@ -1,6 +1,6 @@
 import { 
     CounterStack, CountGrammar, EqualsGrammar, Grammar, 
-    LiteralGrammar, SequenceGrammar 
+    LiteralGrammar, Ns, NsGrammar, SequenceGrammar 
 } from "./grammars";
 import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell, stripHiddenTapes} from "./util";
 import { SheetProject } from "./sheets";
@@ -40,14 +40,29 @@ export class Interpreter {
     // for convenience, rather than parse it as a header every time
     public tapeColors: {[tapeName: string]: string} = {};
 
+    public grammar: NsGrammar;
+
     constructor(
         public devEnv: DevEnvironment,
-        public grammar: Grammar,
+        g: Grammar,
         public verbose: boolean = false
     ) { 
 
-        //console.log(this.grammar.id);
+        // First, all grammars within Interpreters must be namespaces.  This simplifies
+        // the API and some of the transformations that follow; rather than every part having
+        // to check whether something is a namespace or not, we wrap non-namespaces in 
+        // a trivial namespace.
+        if (g instanceof NsGrammar) {
+            this.grammar = g;
+        } else {
+            this.grammar = new NsGrammar(g.cell);
+            this.grammar.addSymbol("", g);
+        }
 
+        // Next, we perform a variety of grammar-to-grammar transformations in order
+        // to get the grammar into an executable state: symbol references fully-qualified,
+        // semantically impossible tape structures are massaged into well-formed ones, some 
+        // scope problems adjusted, etc.
         timeIt(() => {
             const nameQualifier = new NameQualifierTransform();
             this.grammar = nameQualifier.transform(this.grammar);
@@ -75,9 +90,10 @@ export class Interpreter {
 
         //console.log(this.grammar.id);
 
+        // Next we collect the vocabulary on all tapes
         timeIt(() => {
             // recalculate tapes
-            const tapeNames = this.grammar.calculateTapes(new CounterStack(2));
+            this.grammar.calculateTapes(new CounterStack(2));
             // collect vocabulary
             this.tapeObjs = new TapeCollection();
             this.grammar.collectAllVocab(this.tapeObjs);
@@ -89,6 +105,15 @@ export class Interpreter {
             this.grammar.copyVocab(this.tapeObjs, new Set());
         }, verbose, "Copied vocab");
 
+    }
+
+    public static fromCSV(
+        csv: string,
+        verbose: boolean = false
+    ): Interpreter {
+        const devEnv = new SimpleDevEnvironment();
+        devEnv.addSourceAsText("", csv);
+        return Interpreter.fromSheet(devEnv, "", verbose);
     }
 
     public static fromSheet(
@@ -124,7 +149,7 @@ export class Interpreter {
         verbose: boolean = false
     ): Interpreter {
         const devEnv = new SimpleDevEnvironment();
-        return new Interpreter(devEnv, grammar);
+        return new Interpreter(devEnv, grammar, verbose);
     }
 
     public allSymbols(): string[] {

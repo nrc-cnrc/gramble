@@ -7,12 +7,28 @@ import {
 
 import { IdentityTransform } from "./transforms";
 
+/**
+ * There's a semantic gotcha in starts/ends/contains that could throw programmers for a 
+ * loop: If we filter a string to say that it starts with not(X), then the filter will
+ * let everything through, because the empty string is a member of not(X), and every string
+ * starts with the empty string.
+ * 
+ * What the programmer really means to say here isn't "it starts with not X" but "it doesn't
+ * start with X".  (Note the scope difference.)  This isn't the scope that the actually program 
+ * has, though; the grammar structure we get from the tabular syntax tree has the structure
+ * starts(not(X)).  So we have to switch their scope, and this transform does that.
+ * 
+ * Note, however, that not every arbitrary regex that the programmer might put under a 
+ * starts filter is going to get a reasonable result when this operation is performed.  
+ * (For example, when they use a sequence where the first element is nullable and the second
+ * is negated; the result of this is not necessarily going to be what they thought it would.
+ * The trouble is that, at this point in the calculation, we don't know what's nullable; 
+ * that's only something we learn when executing the resulting grammar.)  When the programmer
+ * wants something unusual like this, it's better for the programmer to write the regex 
+ * they really want the string to match (i.e. putting the .* exactly where they intend it to
+ * be) and wrap that in an equals rather than using starts/ends/contains.
+ */
 export class FilterTransform extends IdentityTransform<void> {
-
-    public transform(g: Grammar): Grammar {
-        g.calculateTapes(new CounterStack(2));
-        return g.accept(this, g as NsGrammar, null);
-    }
 
     public transformStarts(g: StartsGrammar, ns: NsGrammar, args: void): Grammar {
         

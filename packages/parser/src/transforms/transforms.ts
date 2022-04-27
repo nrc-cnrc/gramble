@@ -8,7 +8,7 @@ import {
     NullGrammar, RenameGrammar, RepeatGrammar, ReplaceGrammar,
     SequenceGrammar, UnitTestGrammar,
     UnresolvedEmbedGrammar, StartsGrammar, 
-    EndsGrammar, ContainsGrammar, CountGrammar, CountTapeGrammar
+    EndsGrammar, ContainsGrammar, CountGrammar, CountTapeGrammar, CounterStack
 } from "../grammars";
 
 /**
@@ -25,6 +25,11 @@ import {
  * than pass it in through args.)
  */
 export class IdentityTransform<T> implements GrammarTransform<T> {
+    
+    public transform(g: NsGrammar): NsGrammar {
+        g.calculateTapes(new CounterStack(2));
+        return g.accept(this, g, null) as NsGrammar;
+    }
 
     public transformEpsilon(g: EpsilonGrammar, ns: NsGrammar, args: T): Grammar {
         return g;
@@ -114,7 +119,7 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
     }
 
     public transformNamespace(g: NsGrammar, ns: NsGrammar, args: T): Grammar {
-        const result = new NsGrammar(g.cell, g.name);
+        const result = new NsGrammar(g.cell);
         for (const [name, child] of g.symbols) {
             const newChild = child.accept(this, ns, args);
             result.addSymbol(name, newChild);

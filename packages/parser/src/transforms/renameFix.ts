@@ -5,13 +5,18 @@ import {
 
 import { IdentityTransform } from "./transforms";
 
+/**
+ * If the programmar messes up the tape structure of the program (by renaming
+ * a tape to a tape name that already exists), the resulting grammar will not be
+ * able to execute to completion.  There will be material in the grammar 
+ * that is inaccessible to delta/deriv and thus never gets delta'd away, leading
+ * to a simplification violation.
+ * 
+ * This transform fixes that by hiding the existing tape(s), so that the grammar
+ * is well-formed again and does not lead to exceptions to otherwise invariant 
+ * properties of the algorithm.
+ */
 export class RenameFixTransform extends IdentityTransform<void>{
-
-    public transform(g: Grammar): Grammar {
-        g.calculateTapes(new CounterStack(2));  // just in case.  since tapes are 
-                                                // memoized, no harm in double-checking
-        return g.accept(this, g as NsGrammar, null);
-    }
 
     public transformRename(g: RenameGrammar, ns: NsGrammar, args: void): Grammar {
 

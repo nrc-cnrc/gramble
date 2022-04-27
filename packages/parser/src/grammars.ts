@@ -1011,7 +1011,7 @@ export class NsGrammar extends Grammar {
 
     constructor(
         cell: Cell,
-        public name: string
+        //public name: string
     ) {
         super(cell);
     }
@@ -1074,9 +1074,8 @@ export class NsGrammar extends Grammar {
         return results;
     }
 
-    public calculateQualifiedName(name: string, nsStack: NsGrammar[]): string {
-        const namePrefixes = nsStack.map(n => n.name);
-        const pieces = [...namePrefixes, name].filter(s => s.length > 0);
+    public calculateQualifiedName(name: string, nsStack: string[]): string {
+        const pieces = [...nsStack, name].filter(s => s.length > 0);
         return pieces.join(".");
     }
 
@@ -1097,7 +1096,7 @@ export class NsGrammar extends Grammar {
 
     public resolveName(
         unqualifiedName: string, 
-        nsStack: NsGrammar[]
+        nsStack: string[]
     ): [string, Grammar] | undefined {
 
         // split into (potentially) namespace prefix(es) and symbol name
@@ -1135,7 +1134,7 @@ export class NsGrammar extends Grammar {
 
         // this namespace has a child of the correct name
         const remnant = namePieces.slice(1).join(".");
-        const newStack = [ ...nsStack, referent ];
+        const newStack = [ ...nsStack, localName ];
         return referent.resolveName(remnant, newStack);  // try the child
     }
 
@@ -1511,10 +1510,9 @@ export function Not(child: Grammar, maxChars:number=Infinity): NegationGrammar {
 }
 
 export function Ns(
-    name: string, 
     symbols: {[name: string]: Grammar} = {}
 ): NsGrammar {
-    const result = new NsGrammar(new DummyCell(), name);
+    const result = new NsGrammar(new DummyCell());
     for (const [symbolName, component] of Object.entries(symbols)) {
         result.addSymbol(symbolName, component);
     }

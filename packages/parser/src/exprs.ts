@@ -1928,7 +1928,7 @@ class NegationExpr extends UnaryExpr {
     }
 }
 
-export class NewMatchExpr extends UnaryExpr {
+export class MatchExpr extends UnaryExpr {
 
     constructor(
         child: Expr,
@@ -1942,7 +1942,7 @@ export class NewMatchExpr extends UnaryExpr {
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
-        
+
         if (!this.tapes.has(tape.tapeName)) {
             // it's not a tape we're matching
             const nextExpr = this.child.delta(tape, stack);
@@ -2013,218 +2013,6 @@ export class NewMatchExpr extends UnaryExpr {
                 yield [c, bufferedNext];
             }
         }
-    }
-}
-
-export class MatchExpr extends UnaryExpr {
-
-    constructor(
-        child: Expr,
-        public tapes: Set<string>,
-        public buffers: {[key: string]: Expr} = {}
-    ) {
-        super(child);
-    }
-
-    public get id(): string {
-        return `Match_${[...this.tapes]}(${Object.values(this.buffers).map(b=>b.id)}, ${this.child.id})`;
-    }
-
-    public delta(
-        tape: Tape,
-        stack: CounterStack
-    ): Expr {
-        if (!this.tapes.has(tape.tapeName)) {
-            // not a tape we care about, our result is just wrapping child.delta
-            const childDelta = this.child.delta(tape, stack);
-            return constructMatch(childDelta, this.tapes, this.buffers);
-        }
-
-        const newBuffers: {[key: string]: Expr} = {};
-        Object.assign(newBuffers, this.buffers);
-        const buffer = this.buffers[tape.tapeName];
-        if (buffer != undefined) {
-            const deltaBuffer = buffer.delta(tape, stack);
-            if (!(deltaBuffer instanceof EpsilonExpr)) {
-                return NULL;
-            }
-            newBuffers[tape.tapeName] = deltaBuffer;
-        }
-
-        let bufSeq = constructSequence(...Object.values(newBuffers));
-        let result: Expr = this.child.delta(tape, stack);
-        return constructIntersection(bufSeq, result);
-        
-    }
-
-    public *deriv(
-        tape: Tape, 
-        target: Token,
-        symbolStack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
-
-        for (const [c1tape, c1target, c1next] of 
-                    this.child.deriv(tape, target, symbolStack)) {
-
-            if (!this.tapes.has(c1tape.tapeName)) {
-                yield [c1tape, c1target, constructMatch(c1next, this.tapes, this.buffers)];
-                continue;
-            }
-
-            // We need to match each character separately.
-            for (const c of c1tape.fromToken(c1tape.tapeName, c1target)) {
-
-                // cTarget: Token = c1tape.tokenize(c1tape.tapeName, c)[0]
-                const cTarget: Token = c1tape.toToken(c1tape.tapeName, c);
-                
-                // STEP A: Are we matching something already buffered?
-                const c1buffer = this.buffers[c1tape.tapeName]
-                let c1bufMatched = false;
-                if (c1buffer instanceof LiteralExpr) {
-
-                    // that means we already matched a character on a different
-                    // tape previously and now need to make sure it also matches
-                    // this character on this tape
-                    for (const [bufTape, bufTarget, bufNext] of 
-                            c1buffer.deriv(c1tape, cTarget, symbolStack)) {
-                        c1bufMatched = true;
-                    }
-                }
-
-                // STEP B: If not, constrain my successors to match this on other tapes
-                const newBuffers: {[key: string]: Expr} = {};
-                for (const tapeName of this.tapes.keys()) {
-                    const buffer = this.buffers[tapeName];
-                    if (!c1bufMatched && tapeName != c1tape.tapeName) {
-                        let prevText: string[] = [];
-                        if (buffer instanceof LiteralExpr) {
-                            // that means we already found stuff we needed to match,
-                            // so we add to that
-                            prevText = buffer.getText();
-                        }
-                        const newTokens = [c, ...prevText];
-                        newBuffers[tapeName] = constructLiteral(tapeName, newTokens);
-                    } else {
-                        if (buffer != undefined) {
-                            newBuffers[tapeName] = buffer;
-                        }
-                    }
-                }
-                
-                // STEP C: Match the buffer
-                if (c1buffer instanceof LiteralExpr) {
-                    // that means we already matched a character on a different tape
-                    // previously and now need to make sure it also matches on this
-                    // tape
-                    for (const [bufTape, bufTarget, bufNext] of 
-                            c1buffer.deriv(c1tape, cTarget, symbolStack)) {
-                        // We expect at most one match here.
-                        // We expect bufTape == c1Tape,
-                        //   bufTape == c1Tape
-                        //   bufTarget == cTarget
-                        //   bufMatched == c1Matched
-                        //assert(bufTape == c1tape, "tape does not match");
-                        //assert(bufTarget == cTarget, "target does not match");
-                        //assert(bufMatched == c1matched, "matched does not match");
-                        newBuffers[c1tape.tapeName] = bufNext;
-
-                        yield [c1tape, cTarget, constructMatch(c1next, this.tapes, newBuffers)];
-                    }
-                } else {
-                    // my predecessors have not previously required me to match
-                    // anything in particular on this tape
-                    yield [c1tape, cTarget, constructMatch(c1next, this.tapes, newBuffers)]
-                }
-            }
-        }
-    }
-
-    public *concreteDeriv(
-        tape: Tape, 
-        target: string,
-        stack: CounterStack,
-        opt: GenOptions
-    ): Gen<[string, Expr]> {
-
-        for (const [c1target, c1next] of 
-            this.child.concreteDeriv(tape, target, stack, opt)) {
-
-            if (!this.tapes.has(tape.tapeName)) {
-                yield [c1target, constructMatch(c1next, this.tapes, this.buffers)];
-                continue;
-            }
-
-            
-            const cs = (c1target == ANY_CHAR_STR) 
-                        ? tape.fromToken(tape.tapeName, tape.any())
-                        : [c1target];
-
-            // We need to match each character separately.
-            for (const c of cs) {
-                
-                // STEP A: Are we matching something already buffered?
-                const c1buffer = this.buffers[tape.tapeName]
-                let c1bufMatched = false;
-                if (c1buffer instanceof LiteralExpr) {
-
-                    // that means we already matched a character on a different
-                    // tape previously and now need to make sure it also matches
-                    // this character on this tape
-                    for (const [bufTarget, bufNext] of 
-                            c1buffer.concreteDeriv(tape, c, stack)) {
-                        c1bufMatched = true;
-                    }
-                }
-
-                // STEP B: If not, constrain my successors to match this on other tapes
-                const newBuffers: {[key: string]: Expr} = {};
-                for (const tapeName of this.tapes.keys()) {
-                    const buffer = this.buffers[tapeName];
-                    if (!c1bufMatched && tapeName != tape.tapeName) {
-                        let prevText: string[] = [];
-                        if (buffer instanceof LiteralExpr) {
-                            // that means we already found stuff we needed to match,
-                            // so we add to that
-                            prevText = buffer.getText();
-                        }
-                        const newTokens = (opt.direction == "LTR")
-                                        ? [...prevText, c]
-                                        : [c, ...prevText];
-                        newBuffers[tapeName] = constructLiteral(tapeName, newTokens);
-                    } else {
-                        if (buffer != undefined) {
-                            newBuffers[tapeName] = buffer;
-                        }
-                    }
-                }
-                
-                // STEP C: Match the buffer
-                if (c1buffer instanceof LiteralExpr) {
-                    // that means we already matched a character on a different tape
-                    // previously and now need to make sure it also matches on this
-                    // tape
-                    for (const [bufTarget, bufNext] of 
-                            c1buffer.concreteDeriv(tape, c, stack)) {
-                        // We expect at most one match here.
-                        // We expect bufTape == c1Tape,
-                        //   bufTape == c1Tape
-                        //   bufTarget == cTarget
-                        //   bufMatched == c1Matched
-                        //assert(bufTape == c1tape, "tape does not match");
-                        //assert(bufTarget == cTarget, "target does not match");
-                        //assert(bufMatched == c1matched, "matched does not match");
-                        newBuffers[tape.tapeName] = bufNext;
-
-                        yield [c, constructMatch(c1next, this.tapes, newBuffers)];
-                    }
-                } else {
-                    // my predecessors have not previously required me to match
-                    // anything in particular on this tape
-                    yield [c, constructMatch(c1next, this.tapes, newBuffers)]
-                }
-            }
-        }
-
     }
 }
 
@@ -2445,7 +2233,7 @@ export function constructMatch(
     if (child instanceof NullExpr) {
         return child;
     }
-    return new NewMatchExpr(child, tapes);
+    return new MatchExpr(child, tapes);
 }
 
 export function constructMatchFrom(state: Expr, firstTape: string, ...otherTapes: string[]): Expr {

@@ -7,23 +7,14 @@ import {
 import { IdentityTransform } from "./transforms";
 import { DummyCell } from "../util";
 
+/**
+ * This Transform handles the behind-the-scenes renaming necessary when the programmer
+ * expresses a "from T1 to T1" replacement rule.  This can't literally be true (no output
+ * has two different strings on the same tape), so one of those two tapes has to be renamed.
+ */
 export class SameTapeReplaceTransform extends IdentityTransform<void>{
 
     public replaceIndex: number = 0;
-    
-    public transform(g: Grammar): Grammar {
-
-        if (!(g instanceof NsGrammar)) {
-            // shouldn't happen but just in case
-            const newNs = new NsGrammar(g.cell, "");
-            newNs.addSymbol("", g);
-            g = newNs;
-        }
-
-        g.calculateTapes(new CounterStack(2));  // just in case.  since tapes are 
-                                                // memoized, no harm in double-checking
-        return g.accept(this, g as NsGrammar, null);
-    }
 
     public transformJoinReplace(
         g: JoinReplaceGrammar, 

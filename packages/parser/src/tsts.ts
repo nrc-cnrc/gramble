@@ -872,7 +872,7 @@ export class TstNamespace extends TstEnclosure {
     }
 
     public toGrammar(): Grammar {
-        const ns = new NsGrammar(this.cell, this.name);
+        const ns = new NsGrammar(this.cell);
         this.child.assignToNamespace(ns, true);
         return ns;
     }

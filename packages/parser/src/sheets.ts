@@ -1,3 +1,4 @@
+import { NsGrammar } from "./grammars";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 
 import { 
@@ -101,12 +102,12 @@ export class SheetProject extends SheetComponent {
         this.sheets[sheetName] = sheet;
 
         const tst = this.toTST();
-        let grammar = tst.toGrammar();
+        let grammar = tst.toGrammar() as NsGrammar;
 
         // check to see if any names didn't get resolved
 
         const nameQualifier = new NameQualifierTransform();
-        grammar = nameQualifier.transform(grammar);
+        grammar = nameQualifier.transform(grammar) as NsGrammar;
 
         const unresolvedNames: Set<string> = new Set(); 
         for (const name of grammar.getUnresolvedNames()) {

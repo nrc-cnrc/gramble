@@ -89,9 +89,10 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Hide t2 of symbol t1:hi+t2:world', function() {
-        const grammar = Ns("", 
-                        { "a": Seq(t1("hi"), t2("world")),
-                          "b": Hide(Embed("a"), "t2") });
+        const grammar = Ns({ 
+            "a": Seq(t1("hi"), t2("world")),
+            "b": Hide(Embed("a"), "t2") 
+        });
 
         testHasTapes(grammar, ["t1"]);
         testHasTapes(grammar, ["t1"], "b");
@@ -100,9 +101,9 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Embed of hide(t2) of t1:hello+t2:foo', function() {
-        const grammar = Ns("test", {
-                "b": Hide(Seq(t1("hi"), t2("fo")), "t2"),
-                "c": Embed("b")
+        const grammar = Ns({
+            "b": Hide(Seq(t1("hi"), t2("fo")), "t2"),
+            "c": Embed("b")
         });
         testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 4});

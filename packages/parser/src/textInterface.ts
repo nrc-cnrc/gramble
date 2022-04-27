@@ -3,10 +3,6 @@ import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { parseCSV } from "./util";
 
-/**
- * TODO: Replace the naive CSV handling of cellSplit() with the robust
- * CSV parsing of papaparse.
- */
 export class TextDevEnvironment extends SimpleDevEnvironment {
 
     constructor(
