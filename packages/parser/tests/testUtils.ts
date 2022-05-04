@@ -56,7 +56,7 @@ export function testNumOutputs(outputs: StringDict[], expectedNum: number) {
             expect(outputs.length).to.equal(expectedNum);
         } catch (e) {
             console.log("");
-            console.log(`[${date_str}] ${testName} outputs: ${JSON.stringify(outputs)}`);
+            console.log(`[${date_str}] [${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
             throw e;
         }
     });
@@ -123,7 +123,7 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
                     expect(outputs).to.deep.include(expected_output);
                 } catch (e) {
                     console.log("");
-                    console.log(`[${date_str}] ${testName} outputs: ${JSON.stringify(outputs)}`);
+                    console.log(`[${date_str}] [${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
                     throw e;
                 }
             }
@@ -132,7 +132,7 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
                     expect(expected_outputs).to.deep.include(output);
                 } catch (e) {
                     console.log("");
-                    console.log(`[${date_str}] ${testName} outputs: ${JSON.stringify(outputs)}`);
+                    console.log(`[${date_str}] [${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
                     throw e;
                 }
             }
