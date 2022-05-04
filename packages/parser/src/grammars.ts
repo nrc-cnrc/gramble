@@ -1564,11 +1564,12 @@ export function Replace(
     minReps: number = 0, maxReps: number = Infinity,
     maxExtraChars: number = 100,
     maxCopyChars: number = maxExtraChars,
-    vocabBypass: boolean = false
+    vocabBypass: boolean = false,
+    hiddenTapeName: string = ""
 ): ReplaceGrammar {
     return new ReplaceGrammar(new DummyCell(), fromGrammar, toGrammar, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
-        minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass);
+        minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass, hiddenTapeName);
 }
 
 export function JoinReplace(
