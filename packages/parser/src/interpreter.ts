@@ -3,7 +3,7 @@ import {
     LiteralGrammar, Ns, NsGrammar, SequenceGrammar 
 } from "./grammars";
 import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell, stripHiddenTapes} from "./util";
-import { SheetProject } from "./sheets";
+import { Sheet, SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
 import { Expr, GenOptions, SymbolTable } from "./exprs";
@@ -25,6 +25,11 @@ type GrambleError = { sheet: string, row: number, col: number, msg: string, leve
  * Grammars, Exprs, Tapes, unit tests, etc. all interact.
  */
 export class Interpreter {
+
+    // if the grammar came from an actual gramble source project (as opposed to, e.g.,
+    // a test case constructed in code), the project object is stored here.  right now
+    // we only need this for constructing single-source projects in the GSuite interface.
+    public sheetProject: SheetProject | undefined = undefined;
 
     // we store previously-collected Tape objects because memoization
     // or compilation is going to require remembering what indices had previously
@@ -141,7 +146,9 @@ export class Interpreter {
             console.log(`Converted to grammar; ${elapsedTime}`);
         }
 
-        return new Interpreter(devEnv, grammar, verbose);
+        const result = new Interpreter(devEnv, grammar, verbose);
+        result.sheetProject = sheetProject;
+        return result;
     }
 
     public static fromGrammar(
@@ -253,6 +260,14 @@ export class Interpreter {
             yield* iterTake(gen, 1);
         }
     } 
+
+    public convertToSingleSource(): string[][] {
+        if (this.sheetProject == undefined) {
+            throw new Error('Cannot create tabular source for this project, ' + 
+                'because it did not come from source in the first place.');
+        }
+        return this.sheetProject.convertToSingleSheet();
+    }
 
     public runChecks(): void {
         this.grammar.runChecksAux();

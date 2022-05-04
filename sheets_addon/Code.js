@@ -344,26 +344,25 @@ function GrambleUncomment() {
     highlight();
 }
 
-function makeProject() {
+function makeInterpreter() {
     const spreadsheet = SpreadsheetApp.getActive();
     const sheet = spreadsheet.getActiveSheet();
     const sheetName = sheet.getName();
 
     const devEnv = new GoogleSheetsDevEnvironment(sheetName);
-    const project = gramble.Interpreter.fromSheet(devEnv, sheetName);
-    project.runChecks();
-    //project.runUnitTests();
-    return [project, devEnv];
+    const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName);
+    interpreter.runChecks();
+    return [interpreter, devEnv];
 }
 
 function runUnitTests() {
-    const [project, devEnv] = makeProject();
-    project.runUnitTests();
+    const [interpreter, devEnv] = makeInterpreter();
+    interpreter.runUnitTests();
     devEnv.highlight();
 } 
 
 function highlight() {
-    const [project, devEnv] = makeProject();
+    const [interpreter, devEnv] = makeInterpreter();
     devEnv.highlight();
 } 
 
@@ -494,7 +493,6 @@ function autoEnabled_(optSet) {
 
 function onOpen() {
     const ui = SpreadsheetApp.getUi();
-    //const project = new Gr.Project();
 
     ui.createMenu('Gramble')
     

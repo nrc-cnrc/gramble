@@ -122,6 +122,18 @@ export class SheetProject extends SheetComponent {
         return;
     }
 
+    public convertToSingleSheet(): string[][] {
+
+        const results: string[][] = [];
+
+        for (const sheet of Object.values(this.sheets)) {
+            results.push(...sheet.convertToSingleSheet());
+            results.push([]);  // add an extra line just to make it a little more readable
+        }
+
+        return results;
+    }
+
     public toTST(): TstProject {
         const project = new TstProject();
         for (const [sheetName, sheet] of Object.entries(this.sheets)) {
@@ -159,6 +171,25 @@ export class Sheet extends SheetComponent {
     public message(msg: any): void {
         msg["sheet"] = this.name;
         this.project.message(msg);
+    }
+
+    public convertToSingleSheet(): string[][] {
+
+        if (this.cells.length == 0) {
+            return [];
+        }
+
+        const results: string[][] = [[ this.name+":", "namespace:" ]];
+
+        for (const row of this.cells) {
+            if (row.length > 0 && row[0].startsWith("%%")) {
+                results.push(row);
+                continue;
+            }
+            results.push([ "", "", ...row ]);
+        }
+
+        return results;
     }
 
     /**

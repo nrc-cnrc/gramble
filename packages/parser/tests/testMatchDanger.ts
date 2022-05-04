@@ -2,19 +2,12 @@ import {
     Dot,
     Epsilon,
     Grammar,
-    Intersect,
     Join,
     Match,
-    MatchDotStar,
-    Maybe,
-    Not,
-    Rename,
     Rep,
     Replace, 
     ReplaceGrammar, 
-    //Empty, 
     Seq,
-    Uni,
     Vocab
 } from "../src/grammars";
 

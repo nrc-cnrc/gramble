@@ -187,17 +187,6 @@
 
             }
 
-            /*
-            function msToTime(s) {
-                const ms = s % 1000;
-                s = (s - ms) / 1000;
-                const secs = s % 60;
-                s = (s - secs) / 60;
-                const mins = s % 60;
-                const hrs = (s - mins) / 60;
-                return `${hrs}h ${mins}m ${secs}.${ms}s`;
-            } */
-
             function createErrorButtons(errorMsgs, currentSheetName) {
 
 
@@ -379,7 +368,7 @@
                     ...entries.map(row => labels.map(label => row[label]))
                 ];
             }
-            
+
             function resultsToCSV(labels, entries) {
                 labels = labels.filter(l => !l.startsWith("__"));
                 const replacer = (key, value) => value === null ? '' : value 
@@ -418,6 +407,23 @@
 
                 return symbolName;
 
+            }
+
+            function downloadSource() {
+                const cells = project.convertToSingleSource();
+                const text = cells.map(r => 
+                    r.map(c => JSON.stringify(c)
+                ).join(", ")).join("\n");
+
+                // create a temporary link element to download from
+                let element = document.createElement('a');
+                element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(text));
+                element.setAttribute('download', 'singleSource.csv');
+                element.style.display = 'none';
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+                return false;
             }
 
             function downloadResults() {
@@ -554,6 +560,11 @@
         </table>
 
         <table id="sampleTable">
+            <tr>
+                <td colspan="2">
+                    <button id="downloadButton" class="sidebarButton" onclick="downloadSource()">Download source</button>
+                </td>
+            </tr>
             <tr>
                 <td>
                     <button id="downloadButton" class="sidebarButton" onclick="downloadResults()">Generate &amp; download</button>
