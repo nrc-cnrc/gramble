@@ -1687,7 +1687,8 @@ export class ReplaceGrammar extends Grammar {
         public maxReps: number = Infinity,
         public maxExtraChars: number = Infinity,
         public maxCopyChars: number = maxExtraChars,
-        public vocabBypass: boolean = true
+        public vocabBypass: boolean = true,
+        public hiddenTapeName: string = "",
     ) {
         super(cell);
     }
@@ -1698,6 +1699,13 @@ export class ReplaceGrammar extends Grammar {
 
     public getChildren(): Grammar[] { 
         return [this.fromGrammar, this.toGrammar, this.preContext, this.postContext, this.otherContext];
+    }
+
+    public getHiddenTapeName(): string {
+        if (this.hiddenTapeName.length > 0) {
+            return this.hiddenTapeName;
+        }
+        return `__R${this.cell.pos.sheet}:${this.cell.pos.row}`;
     }
 
     public calculateTapes(stack: CounterStack): string[] {

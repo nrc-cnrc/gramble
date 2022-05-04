@@ -77,7 +77,7 @@ export class SameTapeReplaceTransform extends IdentityTransform<void>{
         let replaceTapeName = g.fromTapeName;
         for (const toTapeName of g.toTapeNames) {
             if (g.fromTapeName == toTapeName)
-                replaceTapeName = `__R${g.cell.pos.sheet}:${g.cell.pos.row}`
+                replaceTapeName = g.getHiddenTapeName();
         }
 
         const newFrom = g.fromGrammar.accept(this, ns, args);
