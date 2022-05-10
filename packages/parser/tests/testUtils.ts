@@ -90,7 +90,6 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
     // the number of expected/actual outputs. We also increase timeout from 2
     // seconds (2000ms) to 10 seconds (10000ms) in order to allow us to keep the
     // comparison blocks quite large. 
-    outputs = removeHiddenFields(outputs);
 
     const date_str: string = (new Date()).toUTCString();
 
@@ -143,7 +142,8 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
 export function generateOutputsFromGrammar(
     grammar: Grammar,
     symbolName: string = "",
-    maxRecursion: number = 4
+    maxRecursion: number = 4,
+    stripHidden: boolean = true
 ): StringDict[] {
     let outputs: StringDict[] = [];
 
@@ -153,7 +153,8 @@ export function generateOutputsFromGrammar(
     //maxChars = Math.min(maxChars, DEBUG_MAX_CHARS);
 
     try {
-        outputs = [...interpreter.generate(symbolName, {}, Infinity, maxRecursion)];
+        outputs = [...interpreter.generate(symbolName, {}, Infinity, maxRecursion,
+                                           undefined, stripHidden)];
     } catch (e) {
         it("Unexpected Exception", function() {
             console.log(e);
@@ -168,7 +169,8 @@ function testGrammarAux(
     expectedResults: StringDict[], 
     symbolName: string = "",
     maxRecursion: number = 4, 
-    //maxChars: number = 1000
+    //maxChars: number = 1000,
+    stripHidden: boolean = true
 ): void {
     var outputs: StringDict[] = [];
 
@@ -176,7 +178,8 @@ function testGrammarAux(
     //maxChars = Math.min(maxChars, DEBUG_MAX_CHARS);
 
     try {
-        outputs = [...interpreter.generate(symbolName, {}, Infinity, maxRecursion)];
+        outputs = [...interpreter.generate(symbolName, {}, Infinity, maxRecursion,
+                                           undefined, stripHidden)];
     } catch (e) {
         it("Unexpected Exception", function() {
             console.log(e);
@@ -192,15 +195,14 @@ export function testGrammar(
     expectedResults: StringDict[],
     symbolName: string = "",
     maxRecursion: number = 4,
+    stripHidden: boolean = true
 ): void {
     const interpreter = Interpreter.fromGrammar(grammar);
     if (symbolName == "") {
-        testGrammarAux(interpreter, expectedResults, symbolName,
-            maxRecursion);
+        testGrammarAux(interpreter, expectedResults, symbolName, maxRecursion, stripHidden);
     } else {
         describe(`Generating from \${${symbolName}}`, function() {
-            testGrammarAux(interpreter, expectedResults, symbolName, 
-                maxRecursion);
+            testGrammarAux(interpreter, expectedResults, symbolName, maxRecursion, stripHidden);
         });
     }   
 }
@@ -208,20 +210,24 @@ export function testGrammar(
 export function testHasTapes(
     grammar: Grammar,
     expectedTapes: string[],
-    symbolName: string = ""
+    symbolName: string = "",
+    stripHidden: boolean = true
 ): void {
     const interpreter = Interpreter.fromGrammar(grammar);
     let target = interpreter.grammar.getSymbol(symbolName);
     
     const bSet = new Set(expectedTapes);
-    it(`should have tapes [${[...bSet]}]`, function() {
+    it(`${symbolName} should have tapes [${[...bSet]}]`, function() {
         expect(target).to.not.be.undefined;
         if (target == undefined || target.tapes == undefined) {
             return;
         }
-        const tapes = target.tapes.filter(t => !t.startsWith("__")); // for the purpose of this comparison,
-                                    // leave out any internal-only tapes, like those created 
-                                    // by a Drop().
+        let tapes = target.tapes;
+        if (stripHidden) {
+            // for the purpose of this comparison, leave out any internal-only
+            // tapes, like those created by a Hide().
+            tapes = target.tapes.filter(t => !t.startsWith("__"));
+        }
         expect(tapes.length).to.equal(bSet.size);
         for (const a of tapes) {
             expect(bSet).to.contain(a);
