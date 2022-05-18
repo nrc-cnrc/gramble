@@ -217,7 +217,9 @@ export function testHasTapes(
     let target = interpreter.grammar.getSymbol(symbolName);
     
     const bSet = new Set(expectedTapes);
-    it(`${symbolName} should have tapes [${[...bSet]}]`, function() {
+    const date_str: string = (new Date()).toUTCString();
+    const testName: string = `${symbolName} should have tapes [${[...bSet]}]`;
+    it(`${testName}`, function() {
         expect(target).to.not.be.undefined;
         if (target == undefined || target.tapes == undefined) {
             return;
@@ -228,9 +230,15 @@ export function testHasTapes(
             // tapes, like those created by a Hide().
             tapes = target.tapes.filter(t => !t.startsWith("__"));
         }
-        expect(tapes.length).to.equal(bSet.size);
-        for (const a of tapes) {
-            expect(bSet).to.contain(a);
+        try {
+            expect(tapes.length).to.equal(bSet.size);
+            for (const a of tapes) {
+                expect(bSet).to.contain(a);
+            }
+        } catch (e) {
+            console.log("");
+            console.log(`[${date_str}] [${testName}] ${tapes.length} tapes [${tapes}]`);
+            throw e;
         }
     });
 }

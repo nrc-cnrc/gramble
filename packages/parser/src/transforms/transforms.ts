@@ -107,7 +107,7 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
         const newOther = g.otherContext?.accept(this, ns, args);
         return new ReplaceGrammar(g.cell, newFrom, newTo, newPre, newPost, newOther,
             g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,
-            g.vocabBypass);
+            g.vocabBypass, g.hiddenTapeName);
     }
     
     public transformEmbed(g: EmbedGrammar, ns: NsGrammar, args: T): Grammar {

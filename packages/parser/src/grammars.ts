@@ -1692,6 +1692,8 @@ export class ReplaceGrammar extends Grammar {
         public hiddenTapeName: string = "",
     ) {
         super(cell);
+        if (! this.hiddenTapeName.startsWith("__"))
+            this.hiddenTapeName = "__" + this.hiddenTapeName;
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
