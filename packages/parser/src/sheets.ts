@@ -1,11 +1,14 @@
 import { NsGrammar } from "./grammars";
+import { parseOpCell } from "./ops";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 
 import { 
     TstAssignment, TstBinaryOp, TstEmpty, 
     TstEnclosure, TstHeader, TstProject, 
     TstNamespace, TstTable, TstTableOp, 
-    TstUnitTest, TstNegativeUnitTest, TstComponent, BINARY_OPS, TstReplace, TstComment } from "./tsts";
+    TstUnitTest, TstNegativeUnitTest, TstComponent, BINARY_OPS, 
+    TstReplace, TstComment 
+} from "./tsts";
 import { Cell, CellPos, DevEnvironment, Gen, StringDict } from "./util";
 
 /**
@@ -26,38 +29,6 @@ import { Cell, CellPos, DevEnvironment, Gen, StringDict } from "./util";
     }
 
     return true;
-}
-
-function constructOp(cell: SheetCell): TstEnclosure {
-    
-    var newEnclosure;
-
-    if (!cell.text.endsWith(":")) {
-        throw new Error("Tried to construct an op that didn't end with ':'");
-    }
-    
-    const trimmedText = cell.text.slice(0, cell.text.length-1).trim();
-    const trimmedTextLower = trimmedText.toLowerCase();
-    if (trimmedTextLower in BINARY_OPS) {
-        newEnclosure = new TstBinaryOp(cell);
-    } else if (trimmedTextLower == "table") {
-        newEnclosure = new TstTableOp(cell);
-    } else if (trimmedTextLower == "test") {
-        newEnclosure = new TstUnitTest(cell);
-    } else if (trimmedTextLower == "testnot") {
-        newEnclosure = new TstNegativeUnitTest(cell);
-    } else if (trimmedTextLower == "replace") {
-        newEnclosure = new TstReplace(cell);
-    } else if (trimmedTextLower == "namespace") {
-        newEnclosure = new TstNamespace(cell);
-    } else {
-        // if it's none of these special operators, it's an assignment,
-        // but note that assignments can only occur in column 0.  if an 
-        // unknown word appears elsewhere in the tree, it's an error.
-        newEnclosure = new TstAssignment(cell);
-    } 
-    cell.message({ type: "command" });
-    return newEnclosure;
 }
 
 export abstract class SheetComponent {
@@ -286,11 +257,13 @@ export class Sheet extends SheetComponent {
     
                 // either we're still in the spec row, or there's no spec row yet
                 if (cellText.endsWith(":")) {
-                    // it's an operation, which starts a new enclosure
-                    const newOp = constructOp(cell);
-                    try {
-                        top.tst.addChild(newOp);
-                        const newTop = { tst: newOp, row: rowIndex, col: colIndex };
+                    // it's an operation, which starts a new enclosures
+                    const op = parseOpCell(cell.text);
+                    const newEnclosure = op.toTST(cell);
+                    cell.message({ type: "command" });
+                    try {                    
+                        top.tst.addChild(newEnclosure);
+                        const newTop = { tst: newEnclosure, row: rowIndex, col: colIndex };
                         stack.push(newTop);
                     } catch (e) {
                         cell.message({

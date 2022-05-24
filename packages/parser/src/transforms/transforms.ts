@@ -8,7 +8,7 @@ import {
     NullGrammar, RenameGrammar, RepeatGrammar, ReplaceGrammar,
     SequenceGrammar, UnitTestGrammar,
     UnresolvedEmbedGrammar, StartsGrammar, 
-    EndsGrammar, ContainsGrammar, CountGrammar, CountTapeGrammar, CounterStack
+    EndsGrammar, ContainsGrammar, CountGrammar, CountTapeGrammar, CounterStack, JoinRuleGrammar
 } from "../grammars";
 
 /**
@@ -149,6 +149,13 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
         const newChild = g.child.accept(this, ns, args);
         const newRules = g.rules.map(r => r.accept(this, ns, args));
         return new JoinReplaceGrammar(g.cell, newChild, 
+            newRules as ReplaceGrammar[]);
+    }
+
+    public transformJoinRule(g: JoinRuleGrammar, ns: NsGrammar, args: T): Grammar {
+        const newChild = g.child.accept(this, ns, args);
+        const newRules = g.rules.map(r => r.accept(this, ns, args));
+        return new JoinRuleGrammar(g.cell, g.inputTape, newChild, 
             newRules as ReplaceGrammar[]);
     }
 

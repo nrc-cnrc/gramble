@@ -182,9 +182,9 @@ export class HideHeader extends AtomicHeader {
 }
 
 /**
- * LiteralHeaders are references to a particular tape name (e.g. "text")
+ * TapeNameHeaders are references to a particular tape name (e.g. "text")
  */
-export class LiteralHeader extends AtomicHeader {
+export class TapeNameHeader extends AtomicHeader {
 
     constructor(
         public text: string
@@ -284,6 +284,55 @@ export class TagHeader extends UnaryHeader {
     }
 }
 
+export class AtomicPreHeader extends AtomicHeader {
+
+    public get text(): string {
+        return "pre";
+    }
+
+    public get id(): string {
+        return "pre";
+    }
+    
+    public getParamName(): string {
+        return "pre";
+    }
+
+    public toGrammar(
+        left: Grammar, 
+        text: string,
+        content: Cell
+    ): Grammar {
+        const grammar = new LiteralGrammar(content, "input", text);
+        return new SequenceGrammar(content, [left, grammar]);
+    }
+
+}
+
+export class AtomicPostHeader extends AtomicHeader {
+
+    public get text(): string {
+        return "post";
+    }
+
+    public get id(): string {
+        return "post";
+    }
+    
+    public getParamName(): string {
+        return "post";
+    }
+
+    public toGrammar(
+        left: Grammar, 
+        text: string,
+        content: Cell
+    ): Grammar {
+        const grammar = new LiteralGrammar(content, "input", text);
+        return new SequenceGrammar(content, [left, grammar]);
+    }
+}
+
 /**
  * Header that constructs optional parsers, e.g. "maybe text"
  */
@@ -318,7 +367,7 @@ class RenameHeader extends UnaryHeader {
         text: string,
         content: Cell
     ): Grammar {
-        if (!(this.child instanceof LiteralHeader)) {
+        if (!(this.child instanceof TapeNameHeader)) {
             content.message({
                 type: "error",
                 shortMsg: "Renaming error",
@@ -413,7 +462,7 @@ export class RegexHeader extends UnaryHeader {
         content: Cell
     ): Grammar {
 
-        if (!(this.child instanceof LiteralHeader 
+        if (!(this.child instanceof TapeNameHeader 
                     || this.child instanceof EmbedHeader)) {
             content.message({
                 type: "error",
@@ -584,7 +633,7 @@ export class SlashHeader extends BinaryHeader {
     }
 }
 
-export class ErrorHeader extends LiteralHeader {
+export class ErrorHeader extends TapeNameHeader {
 
     public get id(): string {
         return "ERR";
@@ -682,8 +731,10 @@ function tokenize(text: string): string[] {
 
 var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlternation(
-        HP_MAYBE, HP_FROM, HP_TO, HP_SLASH,
-        HP_PRE, HP_POST, HP_UNIQUE, HP_REGEX,
+        HP_MAYBE, HP_FROM, HP_SLASH,
+        HP_TO, HP_PRE, HP_POST,
+        HP_PRE_ATOMIC, HP_POST_ATOMIC,
+        HP_UNIQUE, HP_REGEX,
         HP_RENAME, HP_EQUALS, HP_STARTS, 
         HP_ENDS, HP_CONTAINS, HP_SUBEXPR)
 );
@@ -701,7 +752,7 @@ const HP_COMMENT = MPComment<Header>(
 
 const HP_UNRESERVED = MPUnreserved<Header>(
     RESERVED_WORDS, 
-    (s) => new LiteralHeader(s)
+    (s) => new TapeNameHeader(s)
 );
 
 const HP_RESERVED_OP = MPReserved<Header>(
@@ -739,9 +790,19 @@ const HP_PRE = MPSequence<Header>(
     (child) => new TagHeader("pre", child)
 );
 
+const HP_PRE_ATOMIC = MPSequence<Header>(
+    ["pre"],
+    () => new AtomicPreHeader()
+);
+
 const HP_POST = MPSequence<Header>(
     ["post", HP_NON_COMMENT_EXPR],
     (child) => new TagHeader("post", child)
+);
+
+const HP_POST_ATOMIC = MPSequence<Header>(
+    ["post"],
+    () => new AtomicPostHeader()
 );
 
 const HP_UNIQUE = MPSequence<Header>(

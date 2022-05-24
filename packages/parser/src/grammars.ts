@@ -79,6 +79,7 @@ export interface GrammarTransform<T> {
     transformUnitTest(g: UnitTestGrammar, ns: NsGrammar, args: T): Grammar;
     transformNegativeUnitTest(g: NegativeUnitTestGrammar, ns: NsGrammar, args: T): Grammar;
     transformJoinReplace(g: JoinReplaceGrammar, ns: NsGrammar, args: T): Grammar;
+    transformJoinRule(g: JoinRuleGrammar, ns: NsGrammar, args: T): Grammar;
     transformNegation(g: NegationGrammar, ns: NsGrammar, args: T): Grammar;
     transformRename(g: RenameGrammar, ns: NsGrammar, args: T): Grammar;
     transformHide(g: HideGrammar, ns: NsGrammar, args: T): Grammar;
@@ -1654,17 +1655,61 @@ export class JoinReplaceGrammar extends Grammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            const ruleExprs = this.rules.map(r => r.constructExpr(symbols));
-            const ruleExpr = constructAlternation(...ruleExprs);
-            this.expr = constructJoin(this.child.constructExpr(symbols), 
-                                    ruleExpr,
-                                    new Set(this.child.tapes),
-                                    new Set(this.ruleTapes));
-        }
-        return this.expr;
+        throw new Error("Not implemented");
     }
 }
+
+export function JoinRule(
+    inputTape: string,
+    child: Grammar,
+    rules: ReplaceGrammar[]
+): JoinRuleGrammar {
+    return new JoinRuleGrammar(new DummyCell(), inputTape, child, rules);
+}
+
+/**
+ * JoinRule is a special case of JoinReplace, where the joiner assumes
+ * that all rules are from a tape named "input" to a tape named "output".
+ * 
+ * With this restriction, we don't have to try to infer what the tape names
+ * are.
+ */
+export class JoinRuleGrammar extends Grammar {
+
+    constructor(
+        cell: Cell,
+        public inputTape: string,
+        public child: Grammar,
+        public rules: ReplaceGrammar[]
+    ) {
+        super(cell);
+    }
+
+    public get id(): string {
+        const cs = this.rules.map(r => r.id).join(",");
+        return `JoinRule(${this.child.id},${cs})`;
+    }
+    
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformJoinRule(this, ns, args);
+    }
+
+    public calculateTapes(stack: CounterStack): string[] {
+        if (this.tapes == undefined) {
+            this.tapes = this.child.calculateTapes(stack);
+        }
+        return this.tapes;
+    }
+
+    public getChildren(): Grammar[] {
+        return [ this.child, ...this.rules ];
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        throw new Error("Not implemented");
+    }    
+
+} 
 
 export class ReplaceGrammar extends Grammar {
 

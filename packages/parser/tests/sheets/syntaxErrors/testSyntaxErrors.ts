@@ -19,13 +19,12 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Assignment to a reserved word', function() {
         const project = sheetFromFile(`${DIR}/assignmentToReservedWord.csv`);
         testErrors(project, [
-            ["assignmentToReservedWord", 1, 0, "error"]
+            ["assignmentToReservedWord", 1, 0, "error"],
+            ["assignmentToReservedWord", 1, 0, "warning"]
         ]);
         testGramble(project, [
-            {"text":"moobaz","gloss":"jump-2SG"},
-            {"text":"moobar","gloss":"jump-1SG"},
-            {"text":"foobaz","gloss":"run-2SG"},
-            {"text":"foobar","gloss":"run-1SG"}
+            {"gloss":"-1SG","text":"bar"},
+            {"gloss":"-2SG","text":"baz"}
         ]);
     });
 

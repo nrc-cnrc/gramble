@@ -115,10 +115,9 @@ export abstract class TstCellComponent extends TstComponent {
             // the default symbol.  Any content is going to be lost, so 
             // issue an error
             this.message({
-                type: "error",
-                shortMsg: `Expected assignment`,
-                longMsg: 'We expect an assignment to a symbol here (e.g. "VERB:").' + 
-                    "Did you forget a colon at the end?"
+                type: "warning",
+                shortMsg: `Content unassigned`,
+                longMsg: 'This content is not assigned to any symbol, and will be disregarded'
             });
         }
     }
@@ -257,7 +256,7 @@ export class TstComment extends TstCellComponent {
  * 2 and the B table are its params.  (For example, 3 might represent "or", and thus
  * the union of the grammar represented by 2 and the grammar represented by the B table.
  */
-export abstract class TstEnclosure extends TstCellComponent {
+export class TstEnclosure extends TstCellComponent {
 
     public specRow: number = -1;
     
