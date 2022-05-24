@@ -8,7 +8,8 @@ import {
     NullGrammar, RenameGrammar, RepeatGrammar, ReplaceGrammar,
     SequenceGrammar, UnitTestGrammar,
     UnresolvedEmbedGrammar, StartsGrammar, 
-    EndsGrammar, ContainsGrammar, CountGrammar, CountTapeGrammar, CounterStack, JoinRuleGrammar
+    EndsGrammar, ContainsGrammar, CountGrammar, 
+    CountTapeGrammar, CounterStack, JoinRuleGrammar
 } from "../grammars";
 
 /**
@@ -109,7 +110,7 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
             g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,
             g.vocabBypass, g.hiddenTapeName);
     }
-    
+
     public transformEmbed(g: EmbedGrammar, ns: NsGrammar, args: T): Grammar {
         return new EmbedGrammar(g.cell, g.name, ns);
     }

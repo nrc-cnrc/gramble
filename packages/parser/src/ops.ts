@@ -7,7 +7,7 @@ import {
 } from "./miniParser";
 import { 
     TstAssignment, TstBinaryOp, TstEnclosure, TstNamespace, 
-    TstNegativeUnitTest, TstReplace, TstTableOp, TstUnitTest 
+    TstNegativeUnitTest, TstReplace, TstReplaceTape, TstTableOp, TstUnitTest 
 } from "./tsts";
 import { Cell } from "./util";
 
@@ -99,9 +99,21 @@ export class TestNotOp {
     }
 }
 
-export class ReplaceOp {
+export class AtomicReplaceOp {
     public toTST(cell: Cell): TstEnclosure {
         return new TstReplace(cell);
+    }
+}
+
+export class ReplaceOp {
+
+    constructor(
+        public child: UnreservedOp
+    ) { }
+
+    public toTST(cell: Cell): TstEnclosure {
+        const tapeName = this.child.text;
+        return new TstReplaceTape(cell, tapeName);
     }
 }
 
@@ -172,9 +184,14 @@ const OP_UNRESERVED = MPUnreserved<Op>(
     (s) => new UnreservedOp(s)
 );
 
-const OP_REPLACE = MPSequence<Op>(
+const OP_ATOMIC_REPLACE = MPSequence<Op>(
     ["replace"], 
-    () => new ReplaceOp()
+    () => new AtomicReplaceOp()
+);
+
+const OP_REPLACE = MPSequence<Op>(
+    ["replace", OP_UNRESERVED], 
+    (c) => new ReplaceOp(c as UnreservedOp)
 );
 
 const OP_RESERVED = MPReserved<Op>(
@@ -190,7 +207,8 @@ const OP_BINARY = MPReserved<Op>(
 var OP_EXPR: MPParser<Op> = MPAlternation(
     OP_TABLE, OP_NAMESPACE,
     OP_TEST, OP_TESTNOT,
-    OP_REPLACE, OP_BINARY,
+    OP_ATOMIC_REPLACE, OP_REPLACE,
+    OP_BINARY,
     OP_UNRESERVED, OP_RESERVED
 );
 
@@ -200,7 +218,8 @@ var OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
 )
 
 export function parseOpCell(text: string): Op {
-    const results = miniParse(tokenize, OP_EXPR_WITH_COLON, text);
+    const trimmedText = text.trim().toLowerCase();
+    const results = miniParse(tokenize, OP_EXPR_WITH_COLON, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
         throw new Error(`Cannot parse operator ${text}`);

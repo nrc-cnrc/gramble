@@ -309,6 +309,54 @@ export class AtomicPreHeader extends AtomicHeader {
 
 }
 
+export class AtomicFromHeader extends AtomicHeader {
+
+    public get text(): string {
+        return "from";
+    }
+
+    public get id(): string {
+        return "from";
+    }
+    
+    public getParamName(): string {
+        return "from";
+    }
+
+    public toGrammar(
+        left: Grammar, 
+        text: string,
+        content: Cell
+    ): Grammar {
+        const grammar = new LiteralGrammar(content, "input", text);
+        return new SequenceGrammar(content, [left, grammar]);
+    }
+}
+
+export class AtomicToHeader extends AtomicHeader {
+
+    public get text(): string {
+        return "to";
+    }
+
+    public get id(): string {
+        return "to";
+    }
+    
+    public getParamName(): string {
+        return "to";
+    }
+
+    public toGrammar(
+        left: Grammar, 
+        text: string,
+        content: Cell
+    ): Grammar {
+        const grammar = new LiteralGrammar(content, "output", text);
+        return new SequenceGrammar(content, [left, grammar]);
+    }
+}
+
 export class AtomicPostHeader extends AtomicHeader {
 
     public get text(): string {
@@ -733,6 +781,7 @@ var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlternation(
         HP_MAYBE, HP_FROM, HP_SLASH,
         HP_TO, HP_PRE, HP_POST,
+        HP_FROM_ATOMIC, HP_TO_ATOMIC,
         HP_PRE_ATOMIC, HP_POST_ATOMIC,
         HP_UNIQUE, HP_REGEX,
         HP_RENAME, HP_EQUALS, HP_STARTS, 
@@ -790,14 +839,25 @@ const HP_PRE = MPSequence<Header>(
     (child) => new TagHeader("pre", child)
 );
 
-const HP_PRE_ATOMIC = MPSequence<Header>(
-    ["pre"],
-    () => new AtomicPreHeader()
-);
 
 const HP_POST = MPSequence<Header>(
     ["post", HP_NON_COMMENT_EXPR],
     (child) => new TagHeader("post", child)
+);
+
+const HP_FROM_ATOMIC = MPSequence<Header>(
+    ["from"],
+    () => new AtomicFromHeader()
+);
+
+const HP_TO_ATOMIC = MPSequence<Header>(
+    ["to"],
+    () => new AtomicToHeader()
+);
+
+const HP_PRE_ATOMIC = MPSequence<Header>(
+    ["pre"],
+    () => new AtomicPreHeader()
 );
 
 const HP_POST_ATOMIC = MPSequence<Header>(

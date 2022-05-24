@@ -14,7 +14,7 @@ import {
     Grammar, NsGrammar, AlternationGrammar, 
     EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, 
     SequenceGrammar, JoinGrammar, ReplaceGrammar, 
-    JoinReplaceGrammar, LiteralGrammar 
+    JoinReplaceGrammar, LiteralGrammar, JoinRuleGrammar 
 } from "./grammars";
 import { Cell, CellPos, DummyCell } from "./util";
 import {
@@ -403,6 +403,99 @@ export class TstBinaryOp extends TstEnclosure {
         let childGrammar = this.child.toGrammar();
         let siblingGrammar = this.sibling.toGrammar();
         return op(this.cell, siblingGrammar, childGrammar);
+    }
+}
+
+export class TstReplaceTape extends TstBinaryOp {
+
+
+    public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
+
+    constructor(
+        cell: Cell,
+        public tape: string
+    ) { 
+        super(cell);
+    }
+
+    public toGrammar(): Grammar {
+
+        if (this.child instanceof TstEmpty) {
+            this.message({
+                type: "error",
+                shortMsg: `Replace missing parameters`, 
+                longMsg: `'replace:' doesn't have any parameters; ` +
+                "something should be in the cells to the right."
+            });
+        } 
+
+        if (this.sibling instanceof TstEmpty) {
+            this.message({
+                type: "error",
+                shortMsg: `Missing argument to replace'`,
+                longMsg:`'replace:' needs a grammar to operate on; ` +
+                "something should be in a cell above this."
+            });
+        }
+
+        let params = this.child.toParamsTable();
+        let siblingGrammar = this.sibling.toGrammar();
+        const replaceRules: ReplaceGrammar[] = [];
+
+        for (const [cell, paramDict] of params) {
+
+            for (const [key, grammar] of Object.entries(paramDict)) {
+                if (key == "__") {
+                    grammar.message({
+                        type: "warning",
+                        shortMsg: "Missing parameter name",
+                        longMsg: `The operator to the left doesn't allow unnamed parameters.`
+                    });
+                    continue;
+                }
+                if (TstReplace.VALID_PARAMS.indexOf(key) == -1) {
+                    grammar.message({
+                        type: "warning",
+                        shortMsg: "Wayward parameter name",
+                        longMsg: `The operator to the left doesn't allow parameters '${key}', so this cell will be ignored.`
+                    });
+                    continue;
+                }
+            }
+
+            if (!("from" in paramDict)) {
+                this.message({
+                    type: "error",
+                    shortMsg: `Missing 'from' argument to replace'`,
+                    longMsg:"'replace:' requires a 'from' argument (e.g. 'from text')"
+                });
+                continue;
+            }
+            const fromArg = paramDict["from"];
+            if (!("to" in paramDict)) {
+                this.message({
+                    type: "error",
+                    shortMsg: `Missing 'to' argument to replace'`,
+                    longMsg:"'replace:' requires a 'to' argument (e.g. 'to text')"
+                });
+                continue;
+            }
+            const toArg = paramDict["to"];
+            const preArg = "pre" in paramDict
+                                    ? paramDict["pre"]
+                                    : new EpsilonGrammar(this.cell);
+            const postArg = "post" in paramDict 
+                                    ? paramDict["post"] 
+                                    : new EpsilonGrammar(this.cell); 
+            const replaceRule = new ReplaceGrammar(this.cell, fromArg, toArg, preArg, postArg);
+            replaceRules.push(replaceRule);
+        }
+
+        if (replaceRules.length == 0) {
+            return siblingGrammar;  // in case every rule fails, at least generate something
+        }
+
+        return new JoinRuleGrammar(this.cell, this.tape, siblingGrammar, replaceRules);
     }
 }
 

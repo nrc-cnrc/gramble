@@ -13,6 +13,7 @@ import { SameTapeReplaceTransform } from "./transforms/sameTapeReplace";
 import { RenameFixTransform } from "./transforms/renameFix";
 import { FilterTransform } from "./transforms/filter";
 import { FlattenTransform } from "./transforms/flatten";
+import { RuleReplaceTransform } from "./transforms/ruleReplace";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
@@ -72,6 +73,12 @@ export class Interpreter {
             const nameQualifier = new NameQualifierTransform();
             this.grammar = nameQualifier.transform(this.grammar);
         }, verbose, "Qualified names");
+
+        
+        timeIt(() => {
+            const replaceAdjuster = new RuleReplaceTransform();
+            this.grammar = replaceAdjuster.transform(this.grammar);
+        }, verbose, "Constructed replacement rules");
 
         timeIt(() => {
             const replaceAdjuster = new SameTapeReplaceTransform();
