@@ -1,3 +1,4 @@
+import { HIDDEN_TAPE_PREFIX } from "../util";
 import { 
     CounterStack, Grammar,
     NsGrammar, RenameGrammar
@@ -35,7 +36,7 @@ export class RenameFixTransform extends IdentityTransform<void>{
                 longMsg: `The grammar to the left already contains the tape ${g.toTape}. `
             });
             
-            const errTapeName = `__ERR${g.toTape}`;
+            const errTapeName = `${HIDDEN_TAPE_PREFIX}ERR${g.toTape}`;
             const errChild = new RenameGrammar(newChild.cell, newChild, g.toTape, errTapeName);
             return new RenameGrammar(g.cell, errChild, g.fromTape, g.toTape);
         }

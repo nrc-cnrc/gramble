@@ -38,6 +38,7 @@ import {
     DummyCell, 
     flatten, 
     Gen, 
+    HIDDEN_TAPE_PREFIX, 
     listDifference, 
     listIntersection, 
     listUnique, 
@@ -918,7 +919,7 @@ export class HideGrammar extends UnaryGrammar {
             this.name = `HIDDEN${HIDE_INDEX}`;
             HIDE_INDEX++;
         }
-        this.toTape = `__${name}_${tape}`;
+        this.toTape = `${HIDDEN_TAPE_PREFIX}${name}_${tape}`;
     }
     
     public get id(): string {
@@ -1737,8 +1738,8 @@ export class ReplaceGrammar extends Grammar {
         public hiddenTapeName: string = "",
     ) {
         super(cell);
-        if (! this.hiddenTapeName.startsWith("__"))
-            this.hiddenTapeName = "__" + this.hiddenTapeName;
+        if (!this.hiddenTapeName.startsWith(HIDDEN_TAPE_PREFIX))
+            this.hiddenTapeName = HIDDEN_TAPE_PREFIX + this.hiddenTapeName;
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -1753,7 +1754,7 @@ export class ReplaceGrammar extends Grammar {
         if (this.hiddenTapeName.length > 0) {
             return this.hiddenTapeName;
         }
-        return `__R${this.cell.pos.sheet}:${this.cell.pos.row}`;
+        return `${HIDDEN_TAPE_PREFIX}R${this.cell.pos.sheet}:${this.cell.pos.row}`;
     }
 
     public calculateTapes(stack: CounterStack): string[] {

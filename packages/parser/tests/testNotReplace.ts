@@ -175,34 +175,34 @@ describe(`${path.basename(module.filename)}`, function() {
                                   [HiddenTapeNameReplaceBypass("R_HIDDEN", t1("i"), t1("a"))]);
 
         const expectedResults: StringDict[] = [
-            {__R_HIDDEN: 'i', t1: 'a'},
+            {'.R_HIDDEN': 'i', t1: 'a'},
         ];
 
-        testHasTapes(grammar, ['__R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
-        testHasVocab(grammar, {__R_HIDDEN:1, t1: 2});
+        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
+        testHasVocab(grammar, {".R_HIDDEN":1, t1: 2});
         testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('2b-hidden. Negation of results of 2a-hidden', function() {
         let grammar: Grammar = Seq(Vocab("t1", "ai"),
-                                   Not(Seq(Lit("__R_HIDDEN", "i"), t1("a"))));
+                                   Not(Seq(Lit(".R_HIDDEN", "i"), t1("a"))));
         grammar = CountTape(2, grammar);
 
         const expectedResults: StringDict[] = [
-            {__R_HIDDEN: 'i', t1: 'i'},
-            {__R_HIDDEN: 'i' , t1: 'aa'}, {__R_HIDDEN: 'i' , t1: 'ai'},
-            {__R_HIDDEN: 'i' , t1: 'ia'}, {__R_HIDDEN: 'i' , t1: 'ii'},
-            {__R_HIDDEN: 'ii', t1: 'a' }, {__R_HIDDEN: 'ii', t1: 'i' },
-            {__R_HIDDEN: 'ii', t1: 'aa'}, {__R_HIDDEN: 'ii', t1: 'ai'},
-            {__R_HIDDEN: 'ii', t1: 'ia'}, {__R_HIDDEN: 'ii', t1: 'ii'},
-            {__R_HIDDEN: 'i'}, {__R_HIDDEN: 'ii'},
+            {'.R_HIDDEN': 'i', t1: 'i'},
+            {'.R_HIDDEN': 'i' , t1: 'aa'}, {'.R_HIDDEN': 'i' , t1: 'ai'},
+            {'.R_HIDDEN': 'i' , t1: 'ia'}, {'.R_HIDDEN': 'i' , t1: 'ii'},
+            {'.R_HIDDEN': 'ii', t1: 'a' }, {'.R_HIDDEN': 'ii', t1: 'i' },
+            {'.R_HIDDEN': 'ii', t1: 'aa'}, {'.R_HIDDEN': 'ii', t1: 'ai'},
+            {'.R_HIDDEN': 'ii', t1: 'ia'}, {'.R_HIDDEN': 'ii', t1: 'ii'},
+            {'.R_HIDDEN': 'i'}, {'.R_HIDDEN': 'ii'},
             {t1: 'a' }, {t1: 'i' }, {t1: 'aa'},
             {t1: 'ai'}, {t1: 'ia'}, {t1: 'ii'},
             {},
         ];
 
-        testHasTapes(grammar, ['__R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
-        testHasVocab(grammar, {__R_HIDDEN:1, t1: 2});
+        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
+        testHasVocab(grammar, {'.R_HIDDEN':1, t1: 2});
         testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
@@ -212,13 +212,13 @@ describe(`${path.basename(module.filename)}`, function() {
         grammar = CountTape(2, grammar);
 
         let resultsGrammar: Grammar = Seq(Vocab("t1", "ai"),
-                                          Not(Seq(Lit("__R_HIDDEN", "i"), t1("a"))));
+                                          Not(Seq(Lit(".R_HIDDEN", "i"), t1("a"))));
         resultsGrammar = CountTape(2, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
 
-        testHasTapes(grammar, ['__R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
-        testHasVocab(grammar, {__R_HIDDEN:1, t1: 2});
+        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
+        testHasVocab(grammar, {".R_HIDDEN":1, t1: 2});
         testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
@@ -406,36 +406,36 @@ describe(`${path.basename(module.filename)}`, function() {
         grammar = CountTape(2, grammar);
 
         const expectedResults: StringDict[] = [
-            {__R_HIDDEN: 'i', t1: 'a'},
-            {__R_HIDDEN: 'ii', t1: 'aa'},
+            {'.R_HIDDEN': 'i', t1: 'a'},
+            {'.R_HIDDEN': 'ii', t1: 'aa'},
             {},
         ];
 
-        testHasTapes(grammar, ['__R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
-        testHasVocab(grammar, {__R_HIDDEN:1, t1: 2});
+        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
+        testHasVocab(grammar, {'.R_HIDDEN':1, t1: 2});
         testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('5b-show-hidden. Negation of results of 5a-show-hidden', function() {
         let grammar: Grammar = Seq(Vocab("t1", "ai"),
                                    Not(Uni(Epsilon(),
-                                           Seq(Lit("__R_HIDDEN", "i"), t1("a")),
-                                           Seq(Lit("__R_HIDDEN", "ii"), t1("aa")))));
+                                           Seq(Lit(".R_HIDDEN", "i"), t1("a")),
+                                           Seq(Lit(".R_HIDDEN", "ii"), t1("aa")))));
         grammar = CountTape(2, grammar);
 
         const expectedResults: StringDict[] = [
-            {__R_HIDDEN: 'i', t1: 'aa'},
-            {__R_HIDDEN: 'i', t1: 'ai'},
-            {__R_HIDDEN: 'i', t1: 'i'},
-            {__R_HIDDEN: 'i', t1: 'ia'},
-            {__R_HIDDEN: 'i', t1: 'ii'},
-            {__R_HIDDEN: 'ii', t1: 'a'},
-            {__R_HIDDEN: 'ii', t1: 'ai'},
-            {__R_HIDDEN: 'ii', t1: 'i'},
-            {__R_HIDDEN: 'ii', t1: 'ia'},
-            {__R_HIDDEN: 'ii', t1: 'ii'},
-            {__R_HIDDEN: 'i'},
-            {__R_HIDDEN: 'ii'},
+            {'.R_HIDDEN': 'i', t1: 'aa'},
+            {'.R_HIDDEN': 'i', t1: 'ai'},
+            {'.R_HIDDEN': 'i', t1: 'i'},
+            {'.R_HIDDEN': 'i', t1: 'ia'},
+            {'.R_HIDDEN': 'i', t1: 'ii'},
+            {'.R_HIDDEN': 'ii', t1: 'a'},
+            {'.R_HIDDEN': 'ii', t1: 'ai'},
+            {'.R_HIDDEN': 'ii', t1: 'i'},
+            {'.R_HIDDEN': 'ii', t1: 'ia'},
+            {'.R_HIDDEN': 'ii', t1: 'ii'},
+            {'.R_HIDDEN': 'i'},
+            {'.R_HIDDEN': 'ii'},
             {t1: 'a'},
             {t1: 'i'},
             {t1: 'aa'},
@@ -444,8 +444,8 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'ii'},
         ];
 
-        testHasTapes(grammar, ['__R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
-        testHasVocab(grammar, {__R_HIDDEN:1, t1: 2});
+        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
+        testHasVocab(grammar, {'.R_HIDDEN':1, t1: 2});
         testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
@@ -455,14 +455,14 @@ describe(`${path.basename(module.filename)}`, function() {
 
         let resultsGrammar: Grammar = Seq(Vocab("t1", "ai"),
                                           Not(Uni(Epsilon(),
-                                              Seq(Lit("__R_HIDDEN", "i"), t1("a")),
-                                              Seq(Lit("__R_HIDDEN", "ii"), t1("aa")))));
+                                              Seq(Lit(".R_HIDDEN", "i"), t1("a")),
+                                              Seq(Lit(".R_HIDDEN", "ii"), t1("aa")))));
         resultsGrammar = CountTape(2, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
 
-        testHasTapes(grammar, ['__R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
-        testHasVocab(grammar, {__R_HIDDEN:1, t1: 2});
+        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
+        testHasVocab(grammar, {".R_HIDDEN":1, t1: 2});
         testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 

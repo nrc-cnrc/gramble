@@ -1,6 +1,13 @@
-import BitSet from 'bitset';
+//import BitSet from 'bitset';
 import { getCategory } from 'unicode-properties';
-import { Token } from './tapes';
+//import { Token } from './tapes';
+
+
+// CONSTANTS
+
+export const HIDDEN_TAPE_PREFIX = ".";
+export const REPLACE_INPUT_TAPE = HIDDEN_TAPE_PREFIX + "input";
+export const REPLACE_OUTPUT_TAPE = HIDDEN_TAPE_PREFIX + "output";
 
 export type Gen<T> = Generator<T, void, undefined>;
 
@@ -286,7 +293,7 @@ export function* stripHiddenTapes(gen: Gen<StringDict>): Gen<StringDict> {
     for (const sd of gen) {
         const result: StringDict = {};
         for (const tapeName in sd) {
-            if (tapeName.startsWith("__")) {
+            if (tapeName.startsWith(HIDDEN_TAPE_PREFIX)) {
                 continue;
             }
             result[tapeName] = sd[tapeName];

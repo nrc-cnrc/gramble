@@ -61,7 +61,6 @@ export class SameTapeReplaceTransform extends IdentityTransform<void>{
         const child2 = new AlternationGrammar(g.cell, newRules);
         const result = new JoinGrammar(g.cell, newChild, child2);
         return result;
-        //return new JoinReplaceGrammar(g.cell, newChild, newRules as ReplaceGrammar[]);
     }
 
     public transformReplace(
