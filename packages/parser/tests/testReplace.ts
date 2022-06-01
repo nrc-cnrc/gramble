@@ -1,7 +1,9 @@
-import { 
+import {
+    Any,
     Count,
     Epsilon,
     Grammar,
+    Intersect,
     Not,
     Replace, 
     Seq,
@@ -49,7 +51,6 @@ const DEFAULT_MAX_RECURSION: number = 4;
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    // 1. Replace e by a in hello: t1:e -> t2:a {1+} || ^h_llo$
     describe('1. Replace e by a in hello: t1:e -> t2:a {1+} || ^h_llo$', function() {
         const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"), EMPTY_CONTEXT,
                                 true, true, 1);
@@ -58,10 +59,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hallo'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2. Replace e by a in hello: t1:e -> t2:a {1+} || h_llo$
     describe('2. Replace e by a in hello: e -> t2:a {1+} || h_llo$', function() {
         const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"), EMPTY_CONTEXT,
                                 false, true, 1, Infinity, 2);
@@ -82,10 +82,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'olhello', t2: 'olhallo'},
             {t1: 'oohello', t2: 'oohallo'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION); 
+        testGrammar(grammar, expectedResults); 
     });
 
-    // 3. Replace e by a in hello: t1:e -> t2:a {0+} || h_llo$
     describe('3. Replace e by a in hello: t1:e -> t2:a {0+} || h_llo$', function() {
         const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"), EMPTY_CONTEXT,
                                 false, true, 0, Infinity, 2);
@@ -119,10 +118,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'olhello', t2: 'olhallo'},
             {t1: 'oohello', t2: 'oohallo'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 4. Replace e by a in hello: t1:e -> t2:a {1+} || ^h_llo
     describe('4. Replace e by a in hello: t1:e -> t2:a {1+} || ^h_llo', function() {
         const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"), EMPTY_CONTEXT,
                                 true, false, 1, Infinity, 2);
@@ -143,10 +141,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hellool', t2: 'hallool'},
             {t1: 'hellooo', t2: 'hallooo'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 5. Replace e by a in hello: t1:e -> t2:a {0+} || ^h_llo
     describe('5. Replace e by a in hello: t1:e -> t2:a {0+} || ^h_llo', function() {
         const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"), EMPTY_CONTEXT,
                                 true, false, 0, Infinity, 2);
@@ -180,10 +177,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hellool', t2: 'hallool'},
             {t1: 'hellooo', t2: 'hallooo'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 6. Replace e by a in hello: t1:e -> t2:a {1,5} || h_llo
     describe('6. Replace e by a in hello: t1:e -> t2:a {1,5} || h_llo', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"), EMPTY_CONTEXT,
                                 false, false, 1, 5, 3);
@@ -226,10 +222,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'olhello', t2: 'olhallo'},
             {t1: 'oohello', t2: 'oohallo'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 7. Replace e by a in hel: t1:e -> t2:a {1+} || h_l
     describe('7. Replace e by a in hel: t1:e -> t2:a {1+} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                 false, false, 1, Infinity, 1);
@@ -275,10 +270,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhellhelh', t2: 'lhallhalh'},
             {t1: 'lhellhell', t2: 'lhallhall'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 8. Replace e by a in hel: t1:e -> t2:a {0,2} || h_l
     describe('8. Replace e by a in hel: t1:e -> t2:a {0,2} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                 false, false, 0, 2, 1);
@@ -326,10 +320,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhellhelh', t2: 'lhallhalh'},
             {t1: 'lhellhell', t2: 'lhallhall'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 9. Replace e by a in hel: t1:e -> t2:a {1} || h_l
     describe('9. Replace e by a in hel: t1:e -> t2:a {1} || h_l', function() {
         const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                 false, false, 1, 1, 5);
@@ -344,10 +337,9 @@ describe(`${path.basename(module.filename)}`, function() {
             // Invalid Inputs
             {t1: 'helhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 10. Replace e by a in hel: t1:e -> t2:a {0,3} || h_l
     describe('10. Replace e by a in hel: t1:e -> t2:a {0,3} || h_l', function() {
         const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                 false, false, 0, 3, 4);
@@ -368,10 +360,9 @@ describe(`${path.basename(module.filename)}`, function() {
             // Invalid Inputs
             {t1: 'helhhhhllllhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 11. Replace e by a in he: t1:e -> t2:a {0,2} || h_0
     describe('11. Replace e by a in he: t1:e -> t2:a {0,2} || h_0', function() {
         const grammar = Replace(t1("e"), t2("a"), t1("h"), t1(""), EMPTY_CONTEXT,
                                 false, false, 0, 2, 2);
@@ -418,10 +409,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hhhehhheh', t2: 'hhhahhhah'},
             {t1: 'hhhehhhehh', t2: 'hhhahhhahh'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 12. Replace e by a in he: t1:e -> t2:a {0,2} || h_
     describe('12. Replace e by a in he: t1:e -> t2:a {0,2} || h_', function() {
         const grammar = Replace(t1("e"), t2("a"), t1("h"), undefined, EMPTY_CONTEXT,
                                 false, false, 0, 2, 2);
@@ -468,10 +458,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hhhehhheh', t2: 'hhhahhhah'},
             {t1: 'hhhehhhehh', t2: 'hhhahhhahh'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 13. Replace e by a in he: t1:e -> t2:a {0,2} || _l
     describe('13. Replace e by a in he: t1:e -> t2:a {0,2} || _l', function() {
         const grammar = Replace(t1("e"), t2("a"), undefined, t1("l"), EMPTY_CONTEXT,
                                 false, false, 0, 2, 2);
@@ -518,13 +507,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'llelllell', t2: 'llalllall'},
             {t1: 'llelllelll', t2: 'llalllalll'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 14. Replace e by a: t1:e -> t2:a {0,2} (vocab hel/hal)
     describe('14. Replace e by a: t1:e -> t2:a {0,2} (vocab hel/hal)', function() {
-        const grammar = Seq(Vocab('t1', "hl"), Vocab('t2', "hl"),
-                            Replace(t1("e"), t2("a"), EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+        const grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hla"),
+                            Replace(t1("e"), t2("a"),
+                                    EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                     false, false, 0, 2, 1));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -569,13 +558,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leleh', t2: 'lalah'},
             {t1: 'lelel', t2: 'lalal'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 15. Replace e by a: t1:e -> t2:a {0,3} (vocab hel/hal)
     describe('15. Replace e by a: t1:e -> t2:a {0,3} (vocab hel/hal)', function() {
-        const grammar = Seq(Vocab('t1', "hl"), Vocab('t2', "hl"),
-                            Replace(t1("e"), t2("a"), EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+        const grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hla"),
+                            Replace(t1("e"), t2("a"),
+                                    EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                     false, false, 0, 3, 2));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -614,10 +603,9 @@ describe(`${path.basename(module.filename)}`, function() {
             // Invalid Inputs
             {t1: 'helhhhhellllhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), undefined);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 16. Replace e by ee in hel: t1:e -> t2:ee {0,2} || h_l
     describe('16. Replace e by ee in hel: t1:e -> t2:ee {0,2} || h_l', function() {
         const grammar = Seq(Replace(t1("e"), t2("ee"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                     false, false, 0, 2, 1));
@@ -709,10 +697,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhellhele', t2: 'lheellheele'},
             {t1: 'lhellhell', t2: 'lheellheell'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     }); 
     
-    // 17. Replace e by ee in hel: t1:e -> t2:ee {1+} || ^h_l
     describe('17. Replace e by ee in hel: t1:e -> t2:ee {1+} || ^h_l', function() {
         const grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                 true, false, 1, Infinity, 3);
@@ -760,10 +747,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hellle', t2: 'heellle'},
             {t1: 'hellll', t2: 'heellll'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 18. Replace e by ee in hel: t1:e -> t2:ee {0+} || ^h_l
     describe('18. Replace e by ee in hel: t1:e -> t2:ee {0+} || ^h_l', function() {
         const grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                 true, false, 0, Infinity, 4);
@@ -811,10 +797,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hhelh'},
             {t1: 'helhhhhellllhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 19. Replace e by ee in hel: t1:e -> t2:ee {1+} || h_l$
     describe('19. Replace e by ee in hel: t1:e -> t2:ee {1+} || h_l$', function() {
         const grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                 false, true, 1, Infinity, 3);
@@ -862,10 +847,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'llehel', t2: 'lleheel'},
             {t1: 'lllhel', t2: 'lllheel'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 20. Replace e by ee in hel: t1:e -> t2:ee {0+} || h_l$
     describe('20. Replace e by ee in hel: t1:e -> t2:ee {0+} || h_l$', function() {
         const grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                 false, true, 0, Infinity, 4);
@@ -915,10 +899,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hhelh'},
             {t1: 'helhhhhellllhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 21. Replace e by ee in he: t1:e -> t2:ee {0,2} || h_
     describe('21. Replace e by ee in he: t1:e -> t2:ee {0,2} || h_', function() {
         const grammar = Replace(t1("e"), t2("ee"), t1("h"), EMPTY_CONTEXT, EMPTY_CONTEXT,
                                 false, false, 0, 2, 1);
@@ -965,10 +948,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'eheeheh', t2: 'eheeeheeh'},
             {t1: 'eheehee', t2: 'eheeeheee'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 22. Replace e by ee in el: t1:e -> t2:ee {0,2} || _l
     describe('22. Replace e by ee in el: t1:e -> t2:ee {0,2} || _l', function() {
         const grammar = Replace(t1("e"), t2("ee"), EMPTY_CONTEXT, t1("l"), EMPTY_CONTEXT,
                                 false, false, 0, 2, 1);
@@ -1015,13 +997,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lellele', t2: 'leelleele'},
             {t1: 'lellell', t2: 'leelleell'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 23. Replace e by ee: t1:e -> t2:ee {0,2} (vocab hel/hel)
     describe('23. Replace e by ee: t1:e -> t2:ee {0,2} (vocab hel/hel)', function() {
-        const grammar = Seq(Vocab('t1', "hl"), Vocab('t2', "hl"),
-                            Replace(t1("e"), t2("ee"), EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+        const grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hle"),
+                            Replace(t1("e"), t2("ee"),
+                                    EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                     false, false, 0, 2, 1));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -1066,10 +1048,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leleh', t2: 'leeleeh'},
             {t1: 'lelel', t2: 'leeleel'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 24. Replace ee by e in heel: t1:ee -> t2:e {0,2} || h_l
     describe('24. Replace ee by e in heel: t1:ee -> t2:e {0,2} || h_l', function() {
         const grammar = Replace(t1("ee"), t2("e"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                 false, false, 0, 2, 1);
@@ -1161,10 +1142,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lheellheele', t2: 'lhellhele'},
             {t1: 'lheellheell', t2: 'lhellhell'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 25. Replace ee by e in hee: t1:ee -> t2:e {0,2} || h_
     describe('25. Replace ee by e in hee: t1:ee -> t2:e {0,2} || h_', function() {
         const grammar = Replace(t1("ee"), t2("e"), t1("h"), EMPTY_CONTEXT, EMPTY_CONTEXT,
                                 false, false, 0, 2, 1);
@@ -1211,10 +1191,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'eheeeheeh', t2: 'eheeheh'},
             {t1: 'eheeeheee', t2: 'eheehee'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 26. Replace ee by e in eel: t1:ee -> t2:e {0,2} || _l
     describe('26. Replace ee by e in eel: t1:ee -> t2:e {0,2} || _l', function() {
         const grammar = Replace(t1("ee"), t2("e"), EMPTY_CONTEXT, t1("l"), EMPTY_CONTEXT,
                                 false, false, 0, 2, 1);
@@ -1261,13 +1240,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leelleele', t2: 'lellele'},
             {t1: 'leelleell', t2: 'lellell'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 27. Replace ee by e: t1:ee -> t2:e {0,2} (vocab hel/hel)
     describe('27. Replace ee by e: t1:ee -> t2:e {0,2} (vocab hel/hel)', function() {
-        const grammar = Seq(Vocab('t1', "hl"), Vocab('t2', "hl"),
-                            Replace(t1("ee"), t2("e"), EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+        const grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hle"),
+                            Replace(t1("ee"), t2("e"),
+                                    EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                     false, false, 0, 2, 1));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
@@ -1348,10 +1327,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leeleeh', t2: 'leleh'},
             {t1: 'leeleel', t2: 'lelel'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 28. Insert a in h_l: t1:0 -> t2:a {0,2} || h_l
     describe('28. Insert a in h_l: t1:0 -> t2:a {0,2} || h_l', function() {
         const grammar = Replace(t1(""), t2("a"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                 false, false, 0, 2, 1);
@@ -1398,10 +1376,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhllhlh', t2: 'lhallhalh'},
             {t1: 'lhllhll', t2: 'lhallhall'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 29. Delete e in hel: t1:e -> t2:0 {0,2} || h_l
     describe('29. Delete e in hel: t1:e -> t2:0 {0,2} || h_l', function() {
         const grammar = Replace(t1("e"), t2(""), t1("h"), t1("l"), EMPTY_CONTEXT,
                                 false, false, 0, 2, 1);
@@ -1448,12 +1425,12 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhellhelh', t2: 'lhllhlh'},
             {t1: 'lhellhell', t2: 'lhllhll'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 30a. Replace e by a in hel and hey: t1:e -> t2:a {0,2} || h_l|y
     describe('30a. Replace e by a in hel and hey: t1:e -> t2:a {0,2} || h_l|y', function() {
-        const grammar = Replace(t1("e"), t2("a"), t1("h"), Uni(t1("l"), t1("y")), EMPTY_CONTEXT,
+        const grammar = Replace(t1("e"), t2("a"),
+                                t1("h"), Uni(t1("l"), t1("y")), EMPTY_CONTEXT,
                                 false, false, 0, 2, 5);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
@@ -1475,10 +1452,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hele'},
             {t1: 'ehey'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 30b. Replace e by a in hel and yel: t1:e -> t2:a {0,2} || h|y_l
     describe('30b. Replace e by a in hel and yel: t1:e -> t2:a {0,2} || h|y_l', function() {
         const grammar = Replace(t1("e"), t2("a"), Uni(t1("h"), t1("y")), t1("l"), EMPTY_CONTEXT,
                                 false, false, 0, 2, 5);
@@ -1502,15 +1478,16 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hele'},
             {t1: 'eyel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    /*
-    // 30c. Replace e by a in hel and hey: t1:e -> t2:a {0,2} || h_~h
-    describe('30c. Replace e by a in hel and hey: t1:e -> t2:a {0,2} || h_~h', function() {
-        const grammar = Seq(Replace(t1("e"), t2("a"), t1("h"), Not(t1("h")), EMPTY_CONTEXT,
-                                    false, false, 0, 2, 5), 
-                            Vocab('t1','ly'), Vocab('t2','ly'));
+    describe('30c. Replace e by a in hel and hey: t1:e -> t2:a {0,2} || h_(.&~h)', function() {
+        const grammar = Seq(Vocab('t1','hlye'), Vocab('t2','hlya'),
+                            Replace(t1("e"), t2("a"),
+                                    t1("h"),
+                                    Intersect(Any("t1"), Not(t1("h"))),
+                                    EMPTY_CONTEXT,
+                                    false, false, 0, 2, 5));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
         const from_to: StringDict[] = [
@@ -1531,14 +1508,16 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hele'},
             {t1: 'ehey'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 30d. Replace e by a in hel and yel: t1:e -> t2:a {0,2} || h|y_l
-    describe('30d. Replace e by a in hel and yel: t1:e -> t2:a {0,2} || ~l_l', function() {
-        const grammar = Seq(Replace(t1("e"), t2("a"), Not(t1("l")), t1("l"), EMPTY_CONTEXT,
-                                    false, false, 0, 2, 5), 
-                            Vocab('t1','hy'), Vocab('t2', 'hy'));
+    describe('30d. Replace e by a in hel and yel: t1:e -> t2:a {0,2} || (.&~l)_l', function() {
+        const grammar = Seq(Vocab('t1','hlye'), Vocab('t2', 'hlya'),
+                            Replace(t1("e"), t2("a"),
+                                    Intersect(Any("t1"), Not(t1("l"))),
+                                    t1("l"),
+                                    EMPTY_CONTEXT,
+                                    false, false, 0, 2, 5));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
         const from_to: StringDict[] = [
@@ -1559,12 +1538,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hele'},
             {t1: 'eyel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    */
-
-    // 30e. Replace e or o by a in hel: t1:e|t1:o -> t2:a {0,2} || h_l
     describe('30e. Replace e or o by a in hel: t1:e|t1:o -> t2:a {0,2} || h_l', function() {
         const grammar = Replace(Uni(t1("e"), t1("o")), t2("a"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                 false, false, 0, 2, 5);
@@ -1586,12 +1562,12 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'helo'},
             {t1: 'hole'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
     
-    // 30f. Replace e by a or o in hel: t1:e -> t2:a|t2:o {0,1} || h_l
     describe('30f. Replace e by a or o in hel: t1:e -> t2:a|t2:o {0,1} || h_l', function() {
-        const grammar = Replace(t1("e"), Uni(t2("a"), t2("o")), t1("h"), t1("l"), EMPTY_CONTEXT,                         
+        const grammar = Replace(t1("e"), Uni(t2("a"), t2("o")),
+                                t1("h"), t1("l"), EMPTY_CONTEXT,                         
                                 false, false, 0, 1, 1);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
@@ -1618,14 +1594,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhelh', t2: 'lholh'},
             {t1: 'lhelh', t2: 'lhalh'}
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 31. Replace e by a in hel: t1:e -> t2:a {0,3} || t1:h_l (vocab hel/ehal)
     // Here, we tell Replace to treat the vocabs as if the fromTape vocab is a
     // subset of the toTape vocab.
     describe('31. Replace e by a in hel: t1:e -> t2:a {0,3} || t1:h_l (vocab hel/ehal)', function() {
-        const grammar = Seq(Vocab("t2", "e"),
+        const grammar = Seq(Vocab("t2", "hlae"),
                             Replace(t1("e"), t2("a"), t1("h"), t1("l"), EMPTY_CONTEXT,
                                     false, false, 0, 3, 4, 4, true));
         testHasTapes(grammar, ['t1', 't2']);
@@ -1645,15 +1620,14 @@ describe(`${path.basename(module.filename)}`, function() {
             // Invalid Inputs
             {t1: 'helhhhhllllhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 32. Replace e by a in hel: t1:e -> t2:a {0,3} || t1:h_l (vocab hel/ehal)
     // Here, we let Replace figure out that the fromTape vocab is a subset of the
     // toTape vocab, but we have ensured that Replace sees it as such.
     describe('32. Replace e by a in hel: t1:e -> t2:a {0,3} || t1:h_l (vocab hel/ehal)', function() {
-        const grammar = Seq(Vocab("t2", "e"),
-                            Replace(t1("e"), Seq(t2("a"), Vocab("t2", "e")), 
+        const grammar = Seq(Vocab("t2", "hlae"),
+                            Replace(t1("e"), Seq(t2("a"), Vocab("t2", "hlae")), 
                                     t1("h"), t1("l"), EMPTY_CONTEXT,
                                     false, false, 0, 3, 4, 4, false));
         testHasTapes(grammar, ['t1', 't2']);
@@ -1673,10 +1647,9 @@ describe(`${path.basename(module.filename)}`, function() {
             // Invalid Inputs
             {t1: 'helhhhhllllhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 33. Replace e by a in hel: t1:e -> t2:a {0,3} || t1:h_l & t3:[1SG]
     describe('33. Replace e by a in hel: t1:e -> t2:a {0,3} || t1:h_l & t3:[1SG]', function() {
         const grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"), t3("[1SG]"),
                                 false, false, 0, 3, 4);
@@ -1701,10 +1674,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhhelhl', t3: EMPTY},
             {t1: 'lhhelhl', t3: '[1]'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 34. Replace e by a in hel: t1:e -> t2:a {0,3} || t1:h_l & t3:[1SG] (vocab hel/ehal)
     // Here, we tell Replace to treat the vocabs as if the fromTape vocab is a
     // subset of the toTape vocab.
     describe('34. Replace e by a in hel: t1:e -> t2:a {0,3} || t1:h_l & t3:[1SG] (vocab hel/ehal)', function() {
@@ -1748,7 +1720,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // Invalid Inputs
             {t1: 'helhhhhllllhel', t3: '[1SG]'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
     // The following tests check that copy-through is working for any size (i.e.
@@ -1759,9 +1731,9 @@ describe(`${path.basename(module.filename)}`, function() {
     // ContainsGrammar do too, so other unit tests may test DotStarExpr as well. 
     describe('35a. Replace i by o with vocab hi: t1:i -> t2:o {0,3} with maxCopyChars=Infinity', function() {
         let grammar: Grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'),
-                            Replace(t1("i"), t2("o"),
-                                    EMPTY_CONTEXT,EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                    false, false, 0, 3, 3, Infinity, true));
+                                   Replace(t1("i"), t2("o"),
+                                           EMPTY_CONTEXT,EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, false, 0, 3, 3, Infinity, true));
         grammar = Count(6, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
@@ -1788,14 +1760,14 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: 'hii', t2: 'hii'},
             // {t1: 'hhi', t2: 'hhi'},
         ];
-        testGrammar(grammar, expectedResults, '', 4);
+        testGrammar(grammar, expectedResults);
     });
 
     describe('35b. Replace i by o with vocab hi: t1:i -> t2:o {0,3} with maxCopyChars=6', function() {
         let grammar: Grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'),
-                            Replace(t1("i"), t2("o"),
-                                    EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                    false, false, 0, 3, 3, 6, true));
+                                   Replace(t1("i"), t2("o"),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, false, 0, 3, 3, 6, true));
         grammar = Count(6, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
@@ -1822,14 +1794,14 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: 'hii', t2: 'hii'},
             // {t1: 'hhi', t2: 'hhi'},
         ];
-        testGrammar(grammar, expectedResults, '', 4);
+        testGrammar(grammar, expectedResults);
     });
 
     describe('35c. Replace i by o with vocab hi: t1:i -> t2:o {0,3}, with maxCopyChars=2500', function() {
         let grammar: Grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'),
-                            Replace(t1("i"), t2("o"),
-                                    EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                    false, false, 0, 3, 3, 2500, true));
+                                   Replace(t1("i"), t2("o"),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, false, 0, 3, 3, 2500, true));
         grammar = Count(6, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
@@ -1856,12 +1828,11 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: 'hii', t2: 'hii'},
             // {t1: 'hhi', t2: 'hhi'},
         ];
-        testGrammar(grammar, expectedResults, '', 4);
+        testGrammar(grammar, expectedResults);
     });
 
     // Same tests with 2 'to'-tapes.
 
-    // 2-1. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {1+} || ^h_llo$
     describe('2-1. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {1+} || ^h_llo$', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                 t1("h"), t1("llo"), EMPTY_CONTEXT,
@@ -1871,10 +1842,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hallo', t4: 'haallo'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-2. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {1+} || h_llo$
     describe('2-2. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {1+} || h_llo', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                 t1("h"), t1("llo"), EMPTY_CONTEXT,
@@ -1896,10 +1866,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'olhello', t2: 'olhallo', t4: 'olhaallo'},
             {t1: 'oohello', t2: 'oohallo', t4: 'oohaallo'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION); 
+        testGrammar(grammar, expectedResults); 
     });
     
-    // 2-3. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {0+} || h_llo$
     describe('2-3. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {0+} || h_llo$', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                 t1("h"), t1("llo"), EMPTY_CONTEXT,
@@ -1934,10 +1903,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'olhello', t2: 'olhallo', t4: 'olhaallo'},
             {t1: 'oohello', t2: 'oohallo', t4: 'oohaallo'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
     
-    // 2-4. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {1+} || ^h_llo
     describe('2-4. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {1+} || ^h_llo', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                 t1("h"), t1("llo"), EMPTY_CONTEXT,
@@ -1959,10 +1927,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hellool', t2: 'hallool', t4: 'haallool'},
             {t1: 'hellooo', t2: 'hallooo', t4: 'haallooo'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-5. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {0+} || ^h_llo
     describe('2-5. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {0+} || ^h_llo', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                 t1("h"), t1("llo"), EMPTY_CONTEXT,
@@ -1997,14 +1964,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hellool', t2: 'hallool', t4: 'haallool'},
             {t1: 'hellooo', t2: 'hallooo', t4: 'haallooo'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-6. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {1,5} || h_llo
     describe('2-6. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {1,5} || h_llo', function() {
         let grammar: Grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
-                                t1("h"), t1("llo"), EMPTY_CONTEXT,
-                                false, false, 1, 5, 3);
+                                       t1("h"), t1("llo"), EMPTY_CONTEXT,
+                                       false, false, 1, 5, 3);
         grammar = Count(22, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4, t4: 4});
@@ -2044,14 +2010,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'olhello', t2: 'olhallo', t4: 'olhaallo'},
             {t1: 'oohello', t2: 'oohallo', t4: 'oohaallo'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-7. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {1+} || h_l
     describe('2-7. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {1+} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
-                                t1("h"), t1("l"), EMPTY_CONTEXT,
-                                false, false, 1, Infinity, 1);
+                                       t1("h"), t1("l"), EMPTY_CONTEXT,
+                                       false, false, 1, Infinity, 1);
         grammar = Count(30, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 3, t2: 3, t4: 3});
@@ -2094,14 +2059,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhellhelh', t2: 'lhallhalh', t4: 'lhaallhaalh'},
             {t1: 'lhellhell', t2: 'lhallhall', t4: 'lhaallhaall'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-8. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,2} || h_l
     describe('2-8. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,2} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
-                                t1("h"), t1("l"), EMPTY_CONTEXT,
-                                false, false, 0, 2, 1);
+                                       t1("h"), t1("l"), EMPTY_CONTEXT,
+                                       false, false, 0, 2, 1);
         grammar = Count(29, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 3, t2: 3, t4: 3});
@@ -2146,11 +2110,10 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhellhelh', t2: 'lhallhalh', t4: 'lhaallhaalh'},
             {t1: 'lhellhell', t2: 'lhallhall', t4: 'lhaallhaall'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
 
-    // 2-9. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {1} || h_l
     describe('2-9. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {1} || h_l', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                 t1("h"), t1("l"), EMPTY_CONTEXT,
@@ -2166,10 +2129,9 @@ describe(`${path.basename(module.filename)}`, function() {
             // Invalid Inputs
             {t1: 'helhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 2-10. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,3} || h_l
     describe('2-10. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,3} || h_l', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                 t1("h"), t1("l"), EMPTY_CONTEXT,
@@ -2191,11 +2153,10 @@ describe(`${path.basename(module.filename)}`, function() {
             // Invalid Inputs
             {t1: 'helhhhhllllhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
 
-    // 2-11. Replace e by a/aa in he: t1:e -> t2:a t4:aa {0,2} || h_0
     describe('2-11. Replace e by a/aa in he: t1:e -> t2:a t4:aa {0,2} || h_0', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                 t1("h"), t1(""), EMPTY_CONTEXT,
@@ -2243,10 +2204,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hhhehhheh', t2: 'hhhahhhah', t4: 'hhhaahhhaah'},
             {t1: 'hhhehhhehh', t2: 'hhhahhhahh', t4: 'hhhaahhhaahh'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-12. Replace e by a/aa in he: t1:e -> t2:a t4:aa {0,2} || h_
     describe('2-12. Replace e by a/aa in he: t1:e -> t2:a t4:aa {0,2} || h_', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                 t1("h"), EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2294,10 +2254,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hhhehhheh', t2: 'hhhahhhah', t4: 'hhhaahhhaah'},
             {t1: 'hhhehhhehh', t2: 'hhhahhhahh', t4: 'hhhaahhhaahh'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-13. Replace e by a/aa in he: t1:e -> t2:a t4:aa {0,2} || _l
     describe('2-13. Replace e by a/aa in he: t1:e -> t2:a t4:aa {0,2} || _l', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                 EMPTY_CONTEXT, t1("l"), EMPTY_CONTEXT,
@@ -2345,12 +2304,11 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'llelllell', t2: 'llalllall', t4: 'llaalllaall'},
             {t1: 'llelllelll', t2: 'llalllalll', t4: 'llaalllaalll'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-14. Replace e by a/aa: t1:e -> t2:a t4:aa {0,2} (vocab hel/hal)
     describe('2-14. Replace e by a/aa: t1:e -> t2:a t4:aa {0,2} (vocab hel/hal)', function() {
-        const grammar = Seq(Vocab('t1', "hl"), Vocab('t2', "hl"), Vocab('t4', "hl"),
+        const grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hla"), Vocab('t4', "hla"),
                             Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                     EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                     false, false, 0, 2, 1));
@@ -2397,12 +2355,11 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leleh', t2: 'lalah', t4: 'laalaah'},
             {t1: 'lelel', t2: 'lalal', t4: 'laalaal'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-15. Replace e by a/aa: t1:e -> t2:a t4:aa {0,3} (vocab hel/hal)
     describe('2-15. Replace e by a/aa: t1:e -> t2:a t4:aa {0,3} (vocab hel/hal)', function() {
-        const grammar = Seq(Vocab('t1', "hl"), Vocab('t2', "hl"), Vocab('t4', "hl"),
+        const grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hla"), Vocab('t4', "hla"),
                             Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                     EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                     false, false, 0, 3, 2));
@@ -2443,10 +2400,9 @@ describe(`${path.basename(module.filename)}`, function() {
             // Invalid Inputs
             {t1: 'helhhhhellllhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), undefined);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 2-16. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {0,2} || h_l
     describe('2-16. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {0,2} || h_l', function() {
         const grammar = Seq(Replace(t1("e"), Seq(t2("ee"), t4("eee")),
                                     t1("h"), t1("l"), EMPTY_CONTEXT,
@@ -2539,10 +2495,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhellhele', t2: 'lheellheele', t4: 'lheeellheeele'},
             {t1: 'lhellhell', t2: 'lheellheell', t4: 'lheeellheeell'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     }); 
     
-    // 2-17. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {1+} || ^h_l
     describe('2-17. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {1+} || ^h_l', function() {
         const grammar = Replace(t1("e"), Seq(t2("ee"), t4("eee")),
                                 t1("h"), t1("l"), EMPTY_CONTEXT,
@@ -2591,10 +2546,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hellle', t2: 'heellle', t4: 'heeellle'},
             {t1: 'hellll', t2: 'heellll', t4: 'heeellll'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-18. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {0+} || ^h_l
     describe('2-18. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {0+} || ^h_l', function() {
         const grammar = Replace(t1("e"), Seq(t2("ee"), t4("eee")),
                                 t1("h"), t1("l"), EMPTY_CONTEXT,
@@ -2643,10 +2597,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hhelh'},
             {t1: 'helhhhhellllhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 2-19. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {1+} || h_l$
     describe('2-19. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {1+} || h_l$', function() {
         const grammar = Replace(t1("e"), Seq(t2("ee"), t4("eee")),
                                 t1("h"), t1("l"), EMPTY_CONTEXT,
@@ -2695,10 +2648,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'llehel', t2: 'lleheel', t4: 'lleheeel'},
             {t1: 'lllhel', t2: 'lllheel', t4: 'lllheeel'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-20. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {0+} || h_l$
     describe('2-20. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {0+} || h_l$', function() {
         const grammar = Replace(t1("e"), Seq(t2("ee"), t4("eee")),
                                 t1("h"), t1("l"), EMPTY_CONTEXT,
@@ -2749,10 +2701,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hhelh'},
             {t1: 'helhhhhellllhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to),);
     });
 
-    // 2-21. Replace e by ee/eee in he: t1:e -> t2:ee t4:eee {0,2} || h_
     describe('2-21. Replace e by ee/eee in he: t1:e -> t2:ee t4:eee {0,2} || h_', function() {
         const grammar = Replace(t1("e"), Seq(t2("ee"), t4("eee")),
                                 t1("h"), EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2800,10 +2751,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'eheeheh', t2: 'eheeeheeh', t4: 'eheeeeheeeh'},
             {t1: 'eheehee', t2: 'eheeeheee', t4: 'eheeeeheeee'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-22. Replace e by ee/eee in el: t1:e -> t2:ee t4:eee {0,2} || _l
     describe('2-22. Replace e by ee/eee in el: t1:e -> t2:ee t4:eee {0,2} || _l', function() {
         const grammar = Replace(t1("e"), Seq(t2("ee"), t4("eee")),
                                 EMPTY_CONTEXT, t1("l"), EMPTY_CONTEXT,
@@ -2851,12 +2801,11 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lellele', t2: 'leelleele', t4: 'leeelleeele'},
             {t1: 'lellell', t2: 'leelleell', t4: 'leeelleeell'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-23. Replace e by ee/eee: t1:e -> t2:ee t4:eee {0,2} (vocab hel/hel)
     describe('2-23. Replace e by ee/eee: t1:e -> t2:ee t4:eee {0,2} (vocab hel/hel)', function() {
-        const grammar = Seq(Vocab('t1', "hl"), Vocab('t2', "hl"), Vocab('t4', "hl"),
+        const grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hle"), Vocab('t4', "hle"),
                             Replace(t1("e"), Seq(t2("ee"), t4("eee")),
                                     EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                     false, false, 0, 2, 1));
@@ -2903,10 +2852,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leleh', t2: 'leeleeh', t4: 'leeeleeeh'},
             {t1: 'lelel', t2: 'leeleel', t4: 'leeeleeel'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-24. Replace ee by e/e in heel: t1:ee -> t2:e t4:e {0,2} || h_l
     describe('2-24. Replace ee by e/e in heel: t1:ee -> t2:e t4:e {0,2} || h_l', function() {
         const grammar = Replace(t1("ee"), Seq(t2("e"), t4("e")),
                                 t1("h"), t1("l"), EMPTY_CONTEXT,
@@ -2999,10 +2947,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lheellheele', t2: 'lhellhele', t4: 'lhellhele'},
             {t1: 'lheellheell', t2: 'lhellhell', t4: 'lhellhell'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-25. Replace ee by e/e in hee: t1:ee -> t2:e t4:e {0,2} || h_
     describe('2-25. Replace ee by e/e in hee: t1:ee -> t2:e t4:e {0,2} || h_', function() {
         const grammar = Replace(t1("ee"), Seq(t2("e"), t4("e")),
                                 t1("h"), EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -3050,10 +2997,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'eheeeheeh', t2: 'eheeheh', t4: 'eheeheh'},
             {t1: 'eheeeheee', t2: 'eheehee', t4: 'eheehee'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-26. Replace ee by e in eel: t1:ee -> t2:e t4:e {0,2} || _l
     describe('2-26. Replace ee by e in eel: t1:ee -> t2:e t4:e {0,2} || _l', function() {
         const grammar = Replace(t1("ee"), Seq(t2("e"), t4("e")),
                                 EMPTY_CONTEXT, t1("l"), EMPTY_CONTEXT,
@@ -3101,12 +3047,11 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leelleele', t2: 'lellele', t4: 'lellele'},
             {t1: 'leelleell', t2: 'lellell', t4: 'lellell'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-27. Replace ee by e/e: t1:ee -> t2:e t4:e {0,2} (vocab hel/hel)
     describe('2-27. Replace ee by e/e: t1:ee -> t2:e t4:e {0,2} (vocab hel/hel)', function() {
-        const grammar = Seq(Vocab('t1', "hl"), Vocab('t2', "hl"), Vocab('t4', "hl"),
+        const grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hle"), Vocab('t4', "hle"),
                             Replace(t1("ee"), Seq(t2("e"), t4("e")),
                                     EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                     false, false, 0, 2, 1));
@@ -3189,10 +3134,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leeleeh', t2: 'leleh', t4: 'leleh'},
             {t1: 'leeleel', t2: 'lelel', t4: 'lelel'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-28. Insert a/e in h_l: t1:0 -> t2:a t4:e {0,2} || h_l
     describe('2-28. Insert a/e in h_l: t1:0 -> t2:a t4:e {0,2} || h_l', function() {
         const grammar = Replace(t1(""), Seq(t2("a"), t4("e")),
                                 t1("h"), t1("l"), EMPTY_CONTEXT,
@@ -3240,10 +3184,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhllhlh', t2: 'lhallhalh', t4: 'lhellhelh'},
             {t1: 'lhllhll', t2: 'lhallhall', t4: 'lhellhell'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-29. Delete e in hel: t1:e -> t2:0 t4:0 {0,2} || h_l
     describe('2-29. Delete e in hel: t1:e -> t2:0 t4:0 {0,2} || h_l', function() {
         const grammar = Replace(t1("e"), Seq(t2(""), t4("")),
                                 t1("h"), t1("l"), EMPTY_CONTEXT,
@@ -3291,10 +3234,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhellhelh', t2: 'lhllhlh', t4: 'lhllhlh'},
             {t1: 'lhellhell', t2: 'lhllhll', t4: 'lhllhll'},
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-30a. Replace e by a/aa in hel and hey: t1:e -> t2:a t4:aa {0,2} || h_l|y
     describe('2-30a. Replace e by a/aa in hel and hey: t1:e -> t2:a t4:aa {0,2} || h_l|y', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                 t1("h"), Uni(t1("l"), t1("y")), EMPTY_CONTEXT,
@@ -3319,10 +3261,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hele'},
             {t1: 'ehey'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 2-30b. Replace e by a/i in hel and yel: t1:e -> t2:a t4:i {0,2} || h|y_l
     describe('2-30b. Replace e by a/i in hel and yel: t1:e -> t2:a t4:i {0,2} || h|y_l', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("i")), Uni(t1("h"),
                                 t1("y")), t1("l"), EMPTY_CONTEXT,
@@ -3347,16 +3288,16 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hele'},
             {t1: 'eyel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    /*
-    // 2-30c. Replace e by a/i in hel and hey: t1:e -> t2:a t4:i {0,2} || h_~h
-    describe('2-30c. Replace e by a/i in hel and hey: t1:e -> t2:a t4:i {0,2} || h_~h', function() {
-        const grammar = Seq(Replace(t1("e"), Seq(t2("a"), t4("i")),
-                                    t1("h"), Not(t1("h")), EMPTY_CONTEXT,
-                                    false, false, 0, 2, 5), 
-                            Vocab('t1','ly'), Vocab('t2','ly'), Vocab('t4','ly'));
+    describe('2-30c. Replace e by a/i in hel and hey: t1:e -> t2:a t4:i {0,2} || h_(.&~h)', function() {
+        const grammar = Seq(Vocab('t1','hlye'), Vocab('t2','hlya'), Vocab('t4','hlyi'),
+                            Replace(t1("e"), Seq(t2("a"), t4("i")),
+                                    t1("h"),
+                                    Intersect(Any("t1"), Not(t1("h"))),
+                                    EMPTY_CONTEXT,
+                                    false, false, 0, 2, 5));
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4, t4: 4});
         const from_to: StringDict[] = [
@@ -3377,15 +3318,16 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hele'},
             {t1: 'ehey'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 2-30d. Replace e by a/i in hel and yel: t1:e -> t2:a t4:i {0,2} || h|y_l
-    describe('2-30d. Replace e by a/i in hel and yel: t1:e -> t2:a t4:i {0,2} || ~l_l', function() {
-        const grammar = Seq(Replace(t1("e"), Seq(t2("a"), t4("i")),
-                                    Not(t1("l")), t1("l"), EMPTY_CONTEXT,
-                                    false, false, 0, 2, 5), 
-                            Vocab('t1','hy'), Vocab('t2','hy'), Vocab('t4','hy'));
+    describe('2-30d. Replace e by a/i in hel and yel: t1:e -> t2:a t4:i {0,2} || (.&~l)_l', function() {
+        const grammar = Seq(Vocab('t1','hlye'), Vocab('t2','hlya'), Vocab('t4','hlyi'),
+                            Replace(t1("e"), Seq(t2("a"), t4("i")),
+                                    Intersect(Any("t1"), Not(t1("l"))),
+                                    t1("l"),
+                                    EMPTY_CONTEXT,
+                                    false, false, 0, 2, 5));
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4, t4: 4});
         const from_to: StringDict[] = [
@@ -3406,11 +3348,9 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hele'},
             {t1: 'eyel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
-    */
 
-    // 2-30e. Replace e or o by a/i in hel and hol: t1:e|t1:o -> t2:a t4:i {0,2} || h_l
     describe('2-30e. Replace e or o by a/i in hel and hol: t1:e|t1:o -> t2:a t4:i {0,2} || h_l', function() {
         const grammar = Replace(Uni(t1("e"), t1("o")), Seq(t2("a"), t4("i")),
                                 t1("h"), t1("l"), EMPTY_CONTEXT,
@@ -3433,13 +3373,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'helo'},
             {t1: 'hole'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
     
-    // 2-30f. Replace e by a/i or o/o in hel: t1:e -> t2:a t4:i | t2:o t4:o {0,1} || h_l
     describe('2-30f. Replace e by a/i or o/o in hel: t1:e -> t2:a t4:i | t2:o t4:o {0,1} || h_l', function() {
-        const grammar = Replace(t1("e"), Uni(Seq(t2("a"), t4("i")), Seq(t2("o"), t4("o"))), t1("h"), t1("l"),                        
-                                EMPTY_CONTEXT, false, false, 0, 1, 1);
+        const grammar = Replace(t1("e"), Uni(Seq(t2("a"), t4("i")), Seq(t2("o"), t4("o"))),
+                                t1("h"), t1("l"), EMPTY_CONTEXT,
+                                false, false, 0, 1, 1);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 3, t2: 4, t4: 4});
         const expectedResults: StringDict[] = [
@@ -3465,14 +3405,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhelh', t2: 'lholh', t4: 'lholh'},
             {t1: 'lhelh', t2: 'lhalh', t4: 'lhilh'}
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL_NAME, DEFAULT_MAX_RECURSION);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 2-31. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,3} || t1:h_l (vocab hel/ehal)
     // Here, we tell Replace to treat the vocabs as if the fromTape vocab is a
     // subset of the toTape vocab.
     describe('2-31. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,3} || t1:h_l (vocab hel/ehal)', function() {
-        const grammar = Seq(Vocab("t2", "e"), Vocab("t4", "e"),
+        const grammar = Seq(Vocab("t2", "hlae"), Vocab("t4", "hlae"),
                             Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                     t1("h"), t1("l"), EMPTY_CONTEXT,
                                     false, false, 0, 3, 4, 4, true));
@@ -3493,16 +3432,16 @@ describe(`${path.basename(module.filename)}`, function() {
             // Invalid Inputs
             {t1: 'helhhhhllllhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 2-32. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,3} || t1:h_l (vocab hel/ehal)
     // Here, we let Replace figure out that the fromTape vocab is a subset of the
     // toTape vocab, but we have ensured that Replace sees it as such.
     describe('2-32. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,3} || t1:h_l (vocab hel/ehal)', function() {
-        const grammar = Seq(Vocab("t2", "e"), Vocab("t4", "e"),
+        const grammar = Seq(Vocab("t2", "hlae"), Vocab("t4", "hlae"),
                             Replace(t1("e"),
-                                    Seq(t2("a"), t4("aa"), Vocab("t2", "e"), Vocab("t4", "e")), 
+                                    Seq(t2("a"), t4("aa"),
+                                        Vocab("t2", "hlae"), Vocab("t4", "hlae")), 
                                     t1("h"), t1("l"), EMPTY_CONTEXT,
                                     false, false, 0, 3, 4, 4, false));
         testHasTapes(grammar, ['t1', 't2', 't4']);
@@ -3522,10 +3461,9 @@ describe(`${path.basename(module.filename)}`, function() {
             // Invalid Inputs
             {t1: 'helhhhhllllhel'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 2-33. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,3} || t1:h_l & t3:[1SG]
     describe('2-33. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,3} || t1:h_l & t3:[1SG]', function() {
         const grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                 t1("h"), t1("l"), t3("[1SG]"),
@@ -3551,16 +3489,13 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'lhhelhl', t3: EMPTY},
             {t1: 'lhhelhl', t3: '[1]'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    // 2-34. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,3} || t1:h_l & t3:[1SG] (vocab hel/ehal)
     // Here, we tell Replace to treat the vocabs as if the fromTape vocab is a
     // subset of the toTape vocab.
     describe('2-34. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,3} || t1:h_l & t3:[1SG] (vocab hel/ehal)', function() {
-        // For debugging pusposes:
-        // const grammar = Seq(Vocab("t1", "hel"), Vocab("t2", "ehal"), Vocab("t4", "ehal"),
-        const grammar = Seq(Vocab("t2", "e"), Vocab("t4", "e"),
+        const grammar = Seq(Vocab("t2", "hlae"), Vocab("t4", "hlae"),
                             Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                     t1("h"), t1("l"), t3("[1SG]"),
                                     false, false, 0, 3, 4, 17, true));
@@ -3599,7 +3534,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // Invalid Inputs
             {t1: 'helhhhhllllhel', t3: '[1SG]'},
         ];
-        testParseMultiple(grammar, inputResultsPairs(from_to), DEFAULT_MAX_RECURSION);
+        testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
     // The following tests check that copy-through is working for any size (i.e.
@@ -3610,9 +3545,9 @@ describe(`${path.basename(module.filename)}`, function() {
     // ContainsGrammar do too, so other unit tests may test DotStarExpr as well. 
     describe('2-35a. Replace i by o/oo with vocab hi: t1:i -> t2:o t4:oo {0,3} with maxCopyChars=Infinity', function() {
         let grammar: Grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'), Vocab('t4', 'hio'),
-                            Replace(t1("i"), Seq(t2("o"), t4("oo")),
-                                    EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                    false, false, 0, 3, 3, Infinity, true));
+                                   Replace(t1("i"), Seq(t2("o"), t4("oo")),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, false, 0, 3, 3, Infinity, true));
         grammar = Count(12, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 3, t4:3});
@@ -3640,14 +3575,14 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: 'hii', t2: 'hii', t4: 'hii'},
             // {t1: 'hhi', t2: 'hhi', t4: 'hhi'},
         ];
-        testGrammar(grammar, expectedResults, '', 4);
+        testGrammar(grammar, expectedResults);
     });
 
     describe('2-35b. Replace i by o/oo with vocab hi: t1:i -> t2:o t4:oo {0,3} with maxCopyChars=6', function() {
         let grammar: Grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'), Vocab('t4', 'hio'),
-                            Replace(t1("i"), Seq(t2("o"), t4("oo")),
-                                    EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                    false, false, 0, 3, 3, 6, true));
+                                   Replace(t1("i"), Seq(t2("o"), t4("oo")),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, false, 0, 3, 3, 6, true));
         grammar = Count(12, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 3, t4:3});
@@ -3675,14 +3610,14 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: 'hii', t2: 'hii', t4: 'hii'},
             // {t1: 'hhi', t2: 'hhi', t4: 'hhi'},
         ];
-        testGrammar(grammar, expectedResults, '', 4);
+        testGrammar(grammar, expectedResults);
     });
 
     describe('2-35c. Replace i by o/oo with vocab hi: t1:i -> t2:o t4:oo {0,3}, with maxCopyChars=2500', function() {
         let grammar: Grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'), Vocab('t4', 'hio'),
-                            Replace(t1("i"), Seq(t2("o"), t4("oo")),
-                                    EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                    false, false, 0, 3, 3, 2500, true));
+                                   Replace(t1("i"), Seq(t2("o"), t4("oo")),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, false, 0, 3, 3, 2500, true));
         grammar = Count(12, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 3, t4:3});
@@ -3710,7 +3645,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: 'hii', t2: 'hii', t4: 'hii'},
             // {t1: 'hhi', t2: 'hhi', t4: 'hhi'},
         ];
-        testGrammar(grammar, expectedResults, '', 4);
+        testGrammar(grammar, expectedResults);
     });
 
 });
