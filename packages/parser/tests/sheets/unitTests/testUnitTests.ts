@@ -26,6 +26,20 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Test with an empty string', function() {
+        const interpreter = sheetFromFile(`${DIR}/testWithEmptyString.csv`);
+        interpreter.runUnitTests();
+        testErrors(interpreter, []);
+        testGramble(interpreter, [
+            { text: "foobar", gloss: "run[1SG]", subj: "[1SG]" },
+            { text: "moobar", gloss: "jump[1SG]", subj: "[1SG]" },
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
+            { text: "foobat", gloss: "run" },
+            { text: "moobat", gloss: "jump" }
+        ]);
+    });
+
     describe('Testing a default grammar', function() {
         const interpreter = sheetFromFile(`${DIR}/testingDefaultGrammar.csv`);
         interpreter.runUnitTests();
@@ -59,6 +73,20 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
             { text: "moobaz", gloss: "jump-2SG" }
+        ]);
+    });
+
+    describe('Negative test with an empty string', function() {
+        const interpreter = sheetFromFile(`${DIR}/negativeTestWithEmptyString.csv`);
+        interpreter.runUnitTests();
+        testErrors(interpreter, []);
+        testGramble(interpreter, [
+            { text: "foobar", gloss: "run[1SG]", subj: "[1SG]" },
+            { text: "moobar", gloss: "jump[1SG]", subj: "[1SG]" },
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
+            { text: "foobat", gloss: "run" },
+            { text: "moobat", gloss: "jump" }
         ]);
     });
 
