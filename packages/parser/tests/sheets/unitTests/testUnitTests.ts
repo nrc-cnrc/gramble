@@ -106,6 +106,22 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Failed test with an empty string', function() {
+        const interpreter = sheetFromFile(`${DIR}/failedTestWithEmptyString.csv`);
+        interpreter.runUnitTests();
+        testErrors(interpreter, [
+            ["failedTestWithEmptyString", 15, 2, "error"]
+        ]);
+        testGramble(interpreter, [
+            { text: "foobar", gloss: "run[1SG]", subj: "[1SG]" },
+            { text: "moobar", gloss: "jump[1SG]", subj: "[1SG]" },
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
+            { text: "foobat", gloss: "run" },
+            { text: "moobat", gloss: "jump" }
+        ]);
+    });
+
     describe('Failing negative tests', function() {
         const interpreter = sheetFromFile(`${DIR}/failingNegativeTests.csv`);
         interpreter.runUnitTests();

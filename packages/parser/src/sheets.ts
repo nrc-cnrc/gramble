@@ -3,13 +3,10 @@ import { parseOpCell } from "./ops";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 
 import { 
-    TstAssignment, TstBinaryOp, TstEmpty, 
     TstEnclosure, TstHeader, TstProject, 
-    TstNamespace, TstTable, TstTableOp, 
-    TstUnitTest, TstNegativeUnitTest, TstComponent, BINARY_OPS, 
-    TstReplace, TstComment 
+    TstNamespace, TstTable, TstComponent, TstComment 
 } from "./tsts";
-import { Cell, CellPos, DevEnvironment, Gen, StringDict } from "./util";
+import { Cell, CellPos, DevEnvironment } from "./util";
 
 /**
  * Determines whether a line is empty
@@ -209,6 +206,11 @@ export class Sheet extends SheetComponent {
 
         var stack: {tst: TstEnclosure, row: number, col: number}[] = 
                 [{ tst: result, row: 0, col: -1 }];
+
+        var maxCol: number = 0; // keep track of the rightmost column we've
+                                // encountered, because we need to pad rows until
+                                // then.  otherwise we can miss empty string content 
+                                // at the end of a line
     
         // Now iterate through the cells, left-to-right top-to-bottom
         for (var rowIndex = 0; rowIndex < this.cells.length; rowIndex++) {
@@ -219,9 +221,17 @@ export class Sheet extends SheetComponent {
     
             const rowIsComment = this.cells[rowIndex][0].trim().startsWith('%%');
             
-            for (var colIndex = 0; colIndex < this.cells[rowIndex].length; colIndex++) {
+            const colWidth = this.cells[rowIndex].length;
+            maxCol = Math.max(maxCol, colWidth);
+
+            for (var colIndex = 0; colIndex < maxCol; colIndex++) {
     
-                const cellText = this.cells[rowIndex][colIndex].trim().normalize("NFD");
+                var cellText = "";
+
+                if (colIndex < colWidth) {
+                    cellText = this.cells[rowIndex][colIndex].trim().normalize("NFD");
+                }
+                
                 const cell = new SheetCell(this, cellText, rowIndex, colIndex);
                 
                 if (rowIsComment) {

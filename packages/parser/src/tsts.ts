@@ -139,7 +139,7 @@ export abstract class TstCellComponent extends TstComponent {
 
 export class TstHeader extends TstCellComponent {
 
-    protected header: Header;
+    public header: Header;
 
     constructor(
         cell: Cell

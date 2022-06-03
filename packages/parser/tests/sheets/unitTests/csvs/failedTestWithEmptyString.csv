@@ -11,7 +11,6 @@ suffix:, table:, text, gloss/subj
 word:, table:, embed, embed
     ,       , verb, suffix 
     ,
-    , testnot:, text, gloss, subj
-    ,     , foobar, run[2SG], [1SG]
-    ,     , moobar, jump[1SG], [2SG]
+    , test:, text, gloss, subj
+    ,     , foobar, run[1SG], [1SG]
     ,     , foobar, run[1SG]
