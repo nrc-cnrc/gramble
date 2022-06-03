@@ -5,7 +5,7 @@ import {
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
-import { DummyCell } from "../util";
+import { DummyCell, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
 
 /**
  * This Transform handles the construction of implicit-tape replacement rules
@@ -49,17 +49,17 @@ export class RuleReplaceTransform extends IdentityTransform<void>{
         const newRules = g.rules.map(r => r.accept(this, ns, args));
 
         for (const rule of newRules) {
-            // first, rename the relevant tape of the child to "input"
-            result = new RenameGrammar(new DummyCell(), result, relevantTape, "input");
+            // first, rename the relevant tape of the child to ".input"
+            result = new RenameGrammar(new DummyCell(), result, relevantTape, REPLACE_INPUT_TAPE);
             // now the relevant tape is "output"
-            relevantTape = "output";
+            relevantTape = REPLACE_OUTPUT_TAPE;
             // join it with the rule
             result = new JoinGrammar(g.cell, result, rule);
             // hide the input tape
-            result = new HideGrammar(new DummyCell(), result, "input");
+            result = new HideGrammar(new DummyCell(), result, REPLACE_INPUT_TAPE);
         }
 
-        result = new RenameGrammar(new DummyCell(), result, "output", g.inputTape);
+        result = new RenameGrammar(new DummyCell(), result, REPLACE_OUTPUT_TAPE, g.inputTape);
         return result;
     }
 

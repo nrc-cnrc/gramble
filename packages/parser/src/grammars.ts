@@ -1670,7 +1670,7 @@ export function JoinRule(
 
 /**
  * JoinRule is a special case of JoinReplace, where the joiner assumes
- * that all rules are from a tape named "input" to a tape named "output".
+ * that all rules are from a tape named ".input" to a tape named ".output".
  * 
  * With this restriction, we don't have to try to infer what the tape names
  * are.

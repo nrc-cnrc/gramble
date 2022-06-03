@@ -265,4 +265,43 @@ describe(`${path.basename(module.filename)}`, function() {
         ], undefined, 4);
     }); 
 
+    describe('Replace with a regex in from', function() {
+        const project = sheetFromFile(`${DIR}/replaceFromRegex.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"aba","surface":"ava"},
+            {"text":"apa","surface":"ava"}
+        ]);
+    });
+
+    describe('Replace with a regex in to', function() {
+        const project = sheetFromFile(`${DIR}/replaceToRegex.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"aba","surface":"apa"},
+            {"text":"aba","surface":"ava"}
+        ]);
+    });
+
+    describe('Replace with a regex in pre', function() {
+        const project = sheetFromFile(`${DIR}/replacePreRegex.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"aba","surface":"ava"},
+            {"text":"arba","surface":"arba"},
+            {"text":"iba","surface":"iva"}
+        ]);
+    });
+
+    describe('Replace with a regex in post', function() {
+        const project = sheetFromFile(`${DIR}/replacePostRegex.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            {"text":"aba","surface":"ava"},
+            {"text":"abra","surface":"abra"},
+            {"text":"abi","surface":"avi"}
+        ]);
+    });
+
+
 });

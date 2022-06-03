@@ -35,6 +35,7 @@ const RESERVED_HEADERS = new Set([
     "starts", 
     "ends", 
     "contains",
+    "re",
     ...REPLACE_PARAMS,
     ...TEST_PARAMS
 ]);
