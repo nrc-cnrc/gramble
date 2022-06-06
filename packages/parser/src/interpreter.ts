@@ -3,7 +3,7 @@ import {
     LiteralGrammar, Ns, NsGrammar, SequenceGrammar 
 } from "./grammars";
 import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell, stripHiddenTapes} from "./util";
-import { Sheet, SheetProject } from "./sheets";
+import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { Tape, TapeCollection } from "./tapes";
 import { Expr, GenOptions, SymbolTable } from "./exprs";
@@ -14,7 +14,7 @@ import { RenameFixTransform } from "./transforms/renameFix";
 import { FilterTransform } from "./transforms/filter";
 import { FlattenTransform } from "./transforms/flatten";
 import { RuleReplaceTransform } from "./transforms/ruleReplace";
-import { generate, Generator } from "./generator";
+import { generate } from "./generator";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 

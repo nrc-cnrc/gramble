@@ -261,7 +261,7 @@
                 }
 
                 CURRENT_TAPES = project.getTapeNames(currentSymbol)
-                                       .filter(s => !s.startsWith("__"));
+                                       .filter(s => !s.startsWith("."));
                                             // tapes that start with __ are internal/hidden/mangled,
                                             // we don't want to present them to the user in the interface
 
@@ -362,7 +362,7 @@
             }
 
             function resultsToTable(labels, entries) {
-                labels = labels.filter(l => !l.startsWith("__"));
+                labels = labels.filter(l => !l.startsWith("."));
                 return [
                     labels,
                     ...entries.map(row => labels.map(label => row[label]))
@@ -370,7 +370,7 @@
             }
 
             function resultsToCSV(labels, entries) {
-                labels = labels.filter(l => !l.startsWith("__"));
+                labels = labels.filter(l => !l.startsWith("."));
                 const replacer = (key, value) => value === null ? '' : value 
                 return [
                     labels.join(','), // header row first

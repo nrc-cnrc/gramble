@@ -1,6 +1,6 @@
 import { BitSet } from "bitset";
 import { GenOptions } from "./exprs";
-import { Gen, StringDict, tokenizeUnicode } from "./util";
+import { Gen, shuffleArray, StringDict, tokenizeUnicode } from "./util";
 
 
 export type AbstractToken = Token | string;
@@ -41,7 +41,7 @@ export class OutputTrie<T extends AbstractToken> {
             const prev = (currentOutput as OutputTrieLeaf<T>).prev;
             for (const result of results) {
                 const oldStr = (tape.tapeName in result) ? result[tape.tapeName] : "";
-                for (const s of getStringsFromToken(tape, token)) {
+                for (const s of this.getStringsFromToken(tape, token, opt.random)) {
                     const newResult: StringDict = {};
                     Object.assign(newResult, result);
                     const newStr = (opt.direction == "LTR")
@@ -57,6 +57,21 @@ export class OutputTrie<T extends AbstractToken> {
 
         return results;
     } 
+
+    public getStringsFromToken(
+        tape: Tape, 
+        s: AbstractToken,
+        random: boolean
+    ): string[] {
+        if (s instanceof Token) {
+            const candidates = s.toStrings(tape);
+            if (random) {
+                shuffleArray(candidates);
+            }
+            return candidates;
+        }
+        return [s]; // if it's not a Token it's already a string
+    }
 }
 
 export class OutputTrieLeaf<T extends AbstractToken> extends OutputTrie<T> {
@@ -69,13 +84,6 @@ export class OutputTrieLeaf<T extends AbstractToken> extends OutputTrie<T> {
         super();
     }
 
-}
-
-function getStringsFromToken(tape: Tape, s: AbstractToken): string[] {
-    if (s instanceof Token) {
-        return s.toStrings(tape);
-    }
-    return [s]; // if it's not a Token it's already a string
 }
 
 

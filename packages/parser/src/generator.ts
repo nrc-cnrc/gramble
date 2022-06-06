@@ -28,17 +28,11 @@ export function* generate(
                         new StringGenerator();
 
     const stack = new CounterStack(opt.maxRecursion);
-
-    if (opt.random) {
-        yield* generator.generateRandom(expr, tapes, stack, opt);
-        return;
-    } 
-
-    yield* generator.generateDepthFirst(expr, tapes, stack, opt);
+    yield* generator.generate(expr, tapes, stack, opt);
 
 }
 
-export abstract class Generator<T extends AbstractToken> {
+abstract class Generator<T extends AbstractToken> {
 
     public abstract deriv(
         expr: Expr,
@@ -47,7 +41,7 @@ export abstract class Generator<T extends AbstractToken> {
         opt: GenOptions
     ): Gen<[T, Expr]>;
 
-    public *generateDepthFirst(
+    public *generate(
         expr: Expr,
         tapes: Tape[],
         stack: CounterStack,
@@ -56,7 +50,16 @@ export abstract class Generator<T extends AbstractToken> {
         const initialOutput: OutputTrie<T> = new OutputTrie<T>();
         let states: [Tape[], OutputTrie<T>, Expr][] = [[tapes, initialOutput, expr]];
         let prev: [Tape[], OutputTrie<T>, Expr] | undefined = undefined;
+        
+        // if we're generating randomly, we store candidates rather than output them immediately
+        const candidates: OutputTrie<T>[] = [];
+
         while (prev = states.pop()) {
+
+            // first, if we're random, see if it's time to stop and randomly emit a result
+            if (opt.random && Math.random() < 0.1 && candidates.length > 0) {
+                break;
+            }
 
             let nexts: [Tape[], OutputTrie<T>, Expr][] = [];
             let [tapes, prevOutput, prevExpr] = prev;
@@ -69,9 +72,19 @@ export abstract class Generator<T extends AbstractToken> {
             }
 
             if (prevExpr instanceof EpsilonExpr) {
+                // we found a valid output
+
                 if (VERBOSE) {
                     console.log(`YIELD ${JSON.stringify(prevOutput.toDict(opt))} `)
                 }
+                    
+                // if we're random, don't yield immediately, wait
+                if (opt.random) {
+                    candidates.push(prevOutput);
+                    continue;
+                }
+
+                // if we're not random, yield the result immediately.
                 yield* prevOutput.toDict(opt);
                 continue;
             }
@@ -109,11 +122,29 @@ export abstract class Generator<T extends AbstractToken> {
                 nexts.push([tapes, nextOutput, cNext]);
             }
 
+            // if random, shuffle the possibilities to search through next
+            if (opt.random) {
+                shuffleArray(nexts);
+            }
 
+            // add the new ones to the stack
             states.push(...nexts);
         }
+
+        // if we get here, we've exhausted the search.  usually we'd be done,
+        // but with randomness, it's possible to have cached all outputs but not
+        // actually yielded any.  The following does so.
+
+        if (candidates.length == 0) {
+            return;
+        }
+
+        const candidateIndex = Math.floor(Math.random()*candidates.length);
+        const candidateOutput = candidates[candidateIndex];
+        yield* candidateOutput.toDict(opt);
     } 
 
+    /*
     public *generateRandom(
         expr: Expr,
         tapes: Tape[],
@@ -163,15 +194,6 @@ export abstract class Generator<T extends AbstractToken> {
 
             for (const [cTarget, cNext] of prevExpr.stringDeriv(tapeToTry, ANY_CHAR_STR, stack, opt)) {
 
-                if (cTarget == ANY_CHAR_STR) {
-                    for (const c of tapeToTry.fromToken(tapeToTry.tapeName, tapeToTry.any())) {
-                        //const cToken = tapeToTry.toToken(tapeToTry.tapeName, c);
-                        const nextOutput = prevOutput.add(tapeToTry, c);
-                        nexts.push([tapes, nextOutput, cNext]);
-                    }
-                    continue;
-                }
-
                 //const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget);
                 const nextOutput = prevOutput.add(tapeToTry, cTarget);
                 nexts.push([tapes, nextOutput, cNext]);
@@ -189,10 +211,11 @@ export abstract class Generator<T extends AbstractToken> {
         const candidateOutput = candidates.splice(candidateIndex, 1)[0];
         yield* candidateOutput.toDict(opt);
     }
+    */
 
 }
 
-export class StringGenerator extends Generator<string> {
+class StringGenerator extends Generator<string> {
 
     public *deriv(
         expr: Expr,
@@ -205,7 +228,7 @@ export class StringGenerator extends Generator<string> {
 
 }
 
-export class BitsetGenerator extends Generator<Token> {
+class BitsetGenerator extends Generator<Token> {
         
     public *deriv(
         expr: Expr,
