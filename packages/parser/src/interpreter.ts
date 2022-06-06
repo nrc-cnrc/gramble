@@ -14,6 +14,7 @@ import { RenameFixTransform } from "./transforms/renameFix";
 import { FilterTransform } from "./transforms/filter";
 import { FlattenTransform } from "./transforms/flatten";
 import { RuleReplaceTransform } from "./transforms/ruleReplace";
+import { generate, Generator } from "./generator";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
@@ -225,11 +226,11 @@ export class Interpreter {
         const [expr, tapes] = this.prepareExpr(symbolName, restriction, opt);
 
         if (stripHidden) {
-            yield* stripHiddenTapes(expr.generate(tapes, opt));
+            yield* stripHiddenTapes(generate(expr, tapes, opt));
             return;
         }
 
-        yield* expr.generate(tapes, opt);
+        yield* generate(expr, tapes, opt);
     }
     
     public sample(symbolName: string = "",
@@ -260,9 +261,9 @@ export class Interpreter {
 
         const [expr, tapes] = this.prepareExpr(symbolName, restriction, opt);
         for (let i = 0; i < numSamples; i++) {
-            let gen = expr.generate(tapes, opt);
+            let gen = generate(expr, tapes, opt);
             if (stripHidden) {
-                gen = stripHiddenTapes(expr.generate(tapes, opt));
+                gen = stripHiddenTapes(generate(expr, tapes, opt));
             }
             yield* iterTake(gen, 1);
         }
@@ -365,7 +366,7 @@ export class Interpreter {
                 prioritizedTapes.push(actualTape);
             }        
 
-            const results = [...expr.generate(prioritizedTapes, opt)];
+            const results = [...generate(expr, prioritizedTapes, opt)];
             test.evalResults(results);
         }
     }

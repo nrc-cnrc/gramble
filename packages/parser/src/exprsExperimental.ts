@@ -18,7 +18,7 @@ class UniverseExpr extends Expr {
         return this;
     }
     
-    public *deriv(
+    public *bitsetDeriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
@@ -27,7 +27,7 @@ class UniverseExpr extends Expr {
     }
 
     
-    public *concreteDeriv(
+    public *stringDeriv(
         tape: Tape, 
         target: string,
         stack: CounterStack
@@ -56,7 +56,7 @@ class TokenExpr extends Expr {
         return NULL;
     }
         
-    public *deriv(
+    public *bitsetDeriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
@@ -74,7 +74,7 @@ class TokenExpr extends Expr {
         yield [matchedTape, result, this.next];
     }
     
-    public *concreteDeriv(
+    public *stringDeriv(
         tape: Tape, 
         target: string,
         stack: CounterStack
@@ -99,7 +99,7 @@ class DisjointUnionExpr extends BinaryExpr {
                              this.child2.delta(tape, stack));
     }
 
-    public *deriv(
+    public *bitsetDeriv(
         tape: Tape, 
         target: Token, 
         stack: CounterStack
@@ -107,7 +107,7 @@ class DisjointUnionExpr extends BinaryExpr {
         
         var remainder = new Token(target.bits.clone());
         for (const [c1tape, c1target, c1next] of 
-                this.child1.deriv(tape, target, stack)) {
+                this.child1.bitsetDeriv(tape, target, stack)) {
             yield [c1tape, c1target, c1next];
             remainder = remainder.andNot(c1target);
             if (remainder.isEmpty()) {
@@ -115,10 +115,10 @@ class DisjointUnionExpr extends BinaryExpr {
             }
         }
 
-        yield* this.child2.deriv(tape, remainder, stack);
+        yield* this.child2.bitsetDeriv(tape, remainder, stack);
     }
     
-    public *concreteDeriv(
+    public *stringDeriv(
         tape: Tape, 
         target: string,
         stack: CounterStack
@@ -173,15 +173,15 @@ class FlatMemoExpr extends UnaryExpr {
         return nextExpr;
     }
         
-    public *disjointDeriv(
+    public *disjointBitsetDeriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
     ): Gen<[Tape, Token, Expr]> {
-        yield* this.deriv(tape, target, stack);
+        yield* this.bitsetDeriv(tape, target, stack);
     }
 
-    public *deriv(
+    public *bitsetDeriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
@@ -218,7 +218,7 @@ class FlatMemoExpr extends UnaryExpr {
         let remainder: Token = new Token(targetUnmemoized.bits.clone());
         // then take the remainder and memoize them
         for (const [childTape, childToken, childExpr] of 
-                this.child.disjointDeriv(tape, targetUnmemoized, stack)) {
+                this.child.disjointBitsetDeriv(tape, targetUnmemoized, stack)) {
             remainder = remainder.andNot(childToken); // remove them from the remainder
             this.memoizedBits[childTape.tapeName] = this.memoizedBits[childTape.tapeName].or(childToken)
             for (const c of childTape.fromToken(tape.tapeName, childToken)) {
@@ -236,7 +236,7 @@ class FlatMemoExpr extends UnaryExpr {
         }
     }
     
-    public *concreteDeriv(
+    public *stringDeriv(
         tape: Tape, 
         target: string,
         stack: CounterStack
@@ -271,15 +271,15 @@ class MemoExpr extends UnaryExpr {
         return constructMemo(childNext, this.limit);
     }
         
-    public *disjointDeriv(
+    public *disjointBitsetDeriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
     ): Gen<[Tape, Token, Expr]> {
-        yield* this.deriv(tape, target, stack);
+        yield* this.bitsetDeriv(tape, target, stack);
     }
 
-    public *deriv(
+    public *bitsetDeriv(
         tape: Tape, 
         target: Token,
         stack: CounterStack
@@ -330,7 +330,7 @@ class MemoExpr extends UnaryExpr {
         // if we get here, remainder is non-empty, meaning we haven't
         // yet memoized everything.  we have to ask the child about 
         // what remains.
-        for (const [cTape, cTarget, cNext] of this.child.disjointDeriv(tape, remainder, stack)) {
+        for (const [cTape, cTarget, cNext] of this.child.disjointBitsetDeriv(tape, remainder, stack)) {
             
             //if (cNext instanceof NullExpr) {
             //    continue;
@@ -353,7 +353,7 @@ class MemoExpr extends UnaryExpr {
     }
 
     
-    public *concreteDeriv(
+    public *stringDeriv(
         tape: Tape, 
         target: string,
         stack: CounterStack

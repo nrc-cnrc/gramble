@@ -9,6 +9,12 @@ export const HIDDEN_TAPE_PREFIX = ".";
 export const REPLACE_INPUT_TAPE = HIDDEN_TAPE_PREFIX + "input";
 export const REPLACE_OUTPUT_TAPE = HIDDEN_TAPE_PREFIX + "output";
 
+
+export const ANY_CHAR_STR = "__ANY_CHAR__";
+
+export const VERBOSE: boolean = false;
+export const BITSETS_ENABLED: boolean = false; // whether to use bitsets or real strings
+
 export type Gen<T> = Generator<T, void, undefined>;
 
 

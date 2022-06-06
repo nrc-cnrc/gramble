@@ -2,6 +2,9 @@ import { BitSet } from "bitset";
 import { GenOptions } from "./exprs";
 import { Gen, StringDict, tokenizeUnicode } from "./util";
 
+
+export type AbstractToken = Token | string;
+
 /**
  * OutputTrie
  * 
@@ -13,54 +16,67 @@ import { Gen, StringDict, tokenizeUnicode } from "./util";
  * up being a false path and we end up discarding it; that would mean we had copied/
  * concatenated for nothing.)   
  */
-export class OutputTrie {
+export class OutputTrie<T extends AbstractToken> {
 
-    public add(tape: string, token: string) {
-        return new OutputTrieLeaf(tape, token, this);
+    public add(tape: Tape, token: T): OutputTrieLeaf<T> {
+        return new OutputTrieLeaf<T>(tape, token, this);
     }
 
     public toDict(
         opt: GenOptions
-    ): StringDict {
+    ): StringDict[] {
 
-        var result: StringDict = {};
+        var results: StringDict[] = [{}];
 
-        var currentOutput: OutputTrie = this;
+        var currentOutput: OutputTrie<T> = this;
 
         // step backward through the current object and its prevs, building 
         // the output strings from end to beginning.  (you might think this 
         // would be more elegant to be done recursively, but it blows
         // the stack when stringifying long outputs.)
         while (currentOutput instanceof OutputTrieLeaf) {
-            if (!(currentOutput.tape in result)) {
-                result[currentOutput.tape] = "";
+            const newResults: StringDict[] = [];
+            const tape = (currentOutput as OutputTrieLeaf<T>).tape;
+            const token = (currentOutput as OutputTrieLeaf<T>).token;
+            const prev = (currentOutput as OutputTrieLeaf<T>).prev;
+            for (const result of results) {
+                const oldStr = (tape.tapeName in result) ? result[tape.tapeName] : "";
+                for (const s of getStringsFromToken(tape, token)) {
+                    const newResult: StringDict = {};
+                    Object.assign(newResult, result);
+                    const newStr = (opt.direction == "LTR")
+                                    ? s + oldStr
+                                    : oldStr + s;
+                    newResult[tape.tapeName] = newStr;
+                    newResults.push(newResult);
+                }
             }
-            const oldStr = result[currentOutput.tape];
-            const newStr = (opt.direction == "LTR")
-                            ? currentOutput.token + oldStr
-                            : oldStr + currentOutput.token;
-            result[currentOutput.tape] = newStr
-            currentOutput = currentOutput.prev;
+            results = newResults;
+            currentOutput = prev;
         }
 
-        return result;
+        return results;
     } 
-
 }
 
-export class OutputTrieLeaf extends OutputTrie {
+export class OutputTrieLeaf<T extends AbstractToken> extends OutputTrie<T> {
 
     constructor(
-        public tape: string,
-        public token: string,
-        public prev: OutputTrie
+        public tape: Tape,
+        public token: T,
+        public prev: OutputTrie<T>
     ) { 
         super();
     }
 
 }
 
-
+function getStringsFromToken(tape: Tape, s: AbstractToken): string[] {
+    if (s instanceof Token) {
+        return s.toStrings(tape);
+    }
+    return [s]; // if it's not a Token it's already a string
+}
 
 
 /**
@@ -167,8 +183,12 @@ export class Token {
         return this.bits.isEmpty();
     }
 
+    public toStrings(tape: Tape): string[] {
+        return tape.fromBits(tape.tapeName, this.bits);
+    }
+
     public stringify(tape: Tape): string {
-        return tape.fromBits(tape.tapeName, this.bits).join("|");
+        return this.toStrings(tape).join("|");
     }
 }
 
