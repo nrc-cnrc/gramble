@@ -18,11 +18,12 @@ export type AbstractToken = Token | string;
  */
 export class OutputTrie<T extends AbstractToken> {
 
-    public add(tape: Tape, token: T): OutputTrieLeaf<T> {
-        return new OutputTrieLeaf<T>(tape, token, this);
+    public add(tapeName: string, token: T): OutputTrieLeaf<T> {
+        return new OutputTrieLeaf<T>(tapeName, token, this);
     }
 
     public toDict(
+        tapeNS: TapeNamespace,
         opt: GenOptions
     ): StringDict[] {
 
@@ -36,18 +37,22 @@ export class OutputTrie<T extends AbstractToken> {
         // the stack when stringifying long outputs.)
         while (currentOutput instanceof OutputTrieLeaf) {
             const newResults: StringDict[] = [];
-            const tape = (currentOutput as OutputTrieLeaf<T>).tape;
+            const tapeName = (currentOutput as OutputTrieLeaf<T>).tapeName;
             const token = (currentOutput as OutputTrieLeaf<T>).token;
             const prev = (currentOutput as OutputTrieLeaf<T>).prev;
+            const tape = tapeNS.get(tapeName);
+            if (tape == undefined) {
+                throw new Error(`cannot find tape ${tapeName}`);
+            }
             for (const result of results) {
-                const oldStr = (tape.name in result) ? result[tape.name] : "";
+                const oldStr = (tapeName in result) ? result[tapeName] : "";
                 for (const s of this.getStringsFromToken(tape, token, opt.random)) {
                     const newResult: StringDict = {};
                     Object.assign(newResult, result);
                     const newStr = (opt.direction == "LTR")
                                     ? s + oldStr
                                     : oldStr + s;
-                    newResult[tape.name] = newStr;
+                    newResult[tapeName] = newStr;
                     newResults.push(newResult);
                 }
             }
@@ -60,24 +65,24 @@ export class OutputTrie<T extends AbstractToken> {
 
     public getStringsFromToken(
         tape: Tape, 
-        s: AbstractToken,
+        t: AbstractToken,
         random: boolean
     ): string[] {
-        if (s instanceof Token) {
-            const candidates = s.toStrings(tape);
+        if (t instanceof Token) {
+            const candidates = tape.fromToken(t);
             if (random) {
                 shuffleArray(candidates);
             }
             return candidates;
         }
-        return [s]; // if it's not a Token it's already a string
+        return [t]; // if it's not a Token it's already a string
     }
 }
 
 export class OutputTrieLeaf<T extends AbstractToken> extends OutputTrie<T> {
 
     constructor(
-        public tape: Tape,
+        public tapeName: string,
         public token: T,
         public prev: OutputTrie<T>
     ) { 
@@ -96,10 +101,6 @@ export class OutputTrieLeaf<T extends AbstractToken> extends OutputTrie<T> {
  * would be encapsulated by the Output objects above.
  */
 export abstract class Tape {
-
-    public abstract readonly name: string;
-
-    public abstract getTapeNames(): Set<string>;
 
     public abstract inVocab(strs: string[]): boolean;
 
@@ -171,14 +172,10 @@ export class Token {
     public isEmpty(): boolean {
         return this.bits.isEmpty();
     }
-
-    public toStrings(tape: Tape): string[] {
-        return tape.fromBits(this.bits);
-    }
 }
 
-export const ANY_CHAR: Token = new Token(new BitSet().flip());
-export const NO_CHAR: Token = new Token(new BitSet());
+const ANY_CHAR: Token = new Token(new BitSet().flip());
+const NO_CHAR: Token = new Token(new BitSet());
 
 /**
  * A tape containing strings; the basic kind of tape and (right now) the only one we really use.
@@ -187,8 +184,6 @@ export const NO_CHAR: Token = new Token(new BitSet());
 export class StringTape extends Tape {
 
     constructor(
-        public parent: TapeNamespace,
-        public name: string,
         public strToIndex: Map<string, number> = new Map(),
         public indexToStr: Map<number, string> = new Map()
     ) { 
@@ -197,17 +192,6 @@ export class StringTape extends Tape {
 
     public get vocabSize(): number {
         return this.strToIndex.size;
-    }
-
-    public getTapeNames(): Set<string> {
-        return new Set([this.name]);
-    }
-
-    public getTape(name: string): Tape | undefined {
-        if (this.parent == undefined) {
-            throw new Error(`Orphaned tape: ${this.name}`);
-        }
-        return this.parent.getTape(name);
     }
 
     public inVocab(strs: string[]): boolean {
@@ -249,7 +233,7 @@ export class StringTape extends Tape {
         return tokens.map(c => [c, this.toBitsAndRegister(c)]);
     }
 
-    public toBitsAndRegister(c: string): Token {
+    protected toBitsAndRegister(c: string): Token {
         let index = this.strToIndex.get(c);
         if (index == undefined) {
             index = this.registerToken(c);
@@ -257,7 +241,7 @@ export class StringTape extends Tape {
         return new Token(this.toBits(c));
     }
 
-    public registerToken(token: string): number {
+    protected registerToken(token: string): number {
         const index = this.strToIndex.size;
         this.strToIndex.set(token, index);
         this.indexToStr.set(index, token);
@@ -289,62 +273,41 @@ export class StringTape extends Tape {
 }
 
 /**
- * This contains information about all the tapes.
+ * TapeNamespace maintains the mappings between the tapeNames and actual Tapes,
+ * which may vary within different contexts because of tape renaming.
  */
 export class TapeNamespace {
 
     public tapes: Map<string, Tape> = new Map();
 
-    public inVocab(strs: string[]): boolean {
-        throw new Error("not implemented");
-    } 
-
     public getTapeNames(): Set<string> {
         return new Set(this.tapes.keys());
     }
 
-    public getTape(name: string): Tape | undefined {
-        return this.tapes.get(name);
-    }
-
-    public get name(): string {
-        if (this.tapes.size == 0) {
-            return "__NO_TAPE__";
+    public get(tapeName: string): Tape {
+        const result = this.tapes.get(tapeName);
+        if (result == undefined) {
+            throw new Error(`Cannot find tape ${tapeName} in tape namespace, ` +
+                `available tapes are ${[...this.tapes.keys()]})`);
         }
-        return "__ANY_TAPE__";
+        return result;
     }
 
-    public createTape(name: string): Tape {
+    public createTape(tapeName: string): Tape {
         // don't remake it if it doesn't exist
-        const oldTape = this.getTape(name);
+        const oldTape = this.tapes.get(tapeName);
         if (oldTape != undefined) {
             return oldTape;
         }
 
         // make a new one if it doesn't exist
-        const newTape = new StringTape(this, name);
-        this.tapes.set(name, newTape);
+        const newTape = new StringTape();
+        this.tapes.set(tapeName, newTape);
         return newTape;
     }
 
     public get size(): number {
         return this.tapes.size;
-    }
-
-    public toBits(char: string): BitSet {
-        throw new Error("Not implemented");
-    }
-
-    public fromBits(bits: BitSet): string[] {
-        throw new Error("Not implemented");
-    } 
-
-    public any(): Token {
-        return ANY_CHAR;
-    }
-
-    public none(): Token {
-        return NO_CHAR;
     }
 }
 
@@ -375,29 +338,9 @@ export class RenamedTapeNamespace extends TapeNamespace {
     ) { 
         super();
     }
-
-    public get name(): string {
-        const childName = this.child.name;
-        if (childName == this.toTape) {
-            return this.fromTape;
-        }
-        return childName;
-    }
     
-    public inVocab(strs: string[]): boolean {
-        return this.child.inVocab(strs);
-    }
-
-    public any(): Token {
-        return this.child.any();
-    }
-
-    public none(): Token {
-        return this.child.none();
-    }
-
-    protected adjustTapeName(name: string) {
-        return (name == this.fromTape) ? this.toTape : name;
+    protected adjustTapeName(tapeName: string) {
+        return (tapeName == this.fromTape) ? this.toTape : tapeName;
     }
 
     public getTapeNames(): Set<string> {
@@ -406,19 +349,12 @@ export class RenamedTapeNamespace extends TapeNamespace {
         return new Set(result);
     }
 
-    public getTape(name: string): Tape | undefined {
-        if (name != this.fromTape && name == this.toTape) {
-            return undefined;
+    public get(tapeName: string): Tape {
+        if (tapeName != this.fromTape && tapeName == this.toTape) {
+            throw new Error(`Looking for tape ${tapeName} ` + 
+            `inside a ${this.fromTape}->${this.toTape} rename`);
         }
-        name = this.adjustTapeName(name);
-        return this.child.getTape(name);
-    }
-
-    public toBits(char: string): BitSet {
-        return this.child.toBits(char);
-    }
-
-    public fromBits(bits: BitSet): string[] {
-        return this.child.fromBits(bits);
+        tapeName = this.adjustTapeName(tapeName);
+        return this.child.get(tapeName);
     }
 }

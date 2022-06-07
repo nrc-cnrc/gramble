@@ -261,15 +261,12 @@ export abstract class Expr {
     ): Gen<[Token, Expr]> {
         const results: {[c: string]: Expr[]} = {};
 
-        const tape = tapeNS.getTape(tapeName);
-        if (tape == undefined) {
-            return;
-        }
+        const tape = tapeNS.get(tapeName);
 
         for (const [childToken, childExpr] of
                 this.bitsetDeriv(tapeName, target, tapeNS, stack, opt)) {
             let c:string;
-            for (c of childToken.toStrings(tape)) {
+            for (c of tape.fromToken(childToken)) {
                 if (!(c in results)) {
                     results[c] = [];
                 }
@@ -477,10 +474,7 @@ class DotExpr extends Expr {
             return;
         }
 
-        const tape = tapeNS.getTape(tapeName);
-        if (tape == undefined) {
-            return;
-        }
+        const tape = tapeNS.get(tapeName);
 
         if (target == ANY_CHAR_STR) {
             for (let c of tape.fromToken(tape.any())) {
@@ -543,10 +537,7 @@ class CharSetExpr extends Expr {
             return;
         }
 
-        const tape = tapeNS.getTape(tapeName);
-        if (tape == undefined) {
-            return;
-        }
+        const tape = tapeNS.get(tapeName);
 
         const bits = this.getToken(tape);
         const result = tape.match(bits, target);
@@ -628,10 +619,7 @@ class DotStarExpr extends Expr {
             return;
         }
         
-        const tape = tapeNS.getTape(tapeName);
-        if (tape == undefined) {
-            return;
-        }
+        const tape = tapeNS.get(tapeName);
 
         if (target == ANY_CHAR_STR) {
             for (let c of tape.fromToken(tape.any())) {
@@ -704,10 +692,7 @@ class LiteralExpr extends Expr {
             return;
         }
 
-        const tape = tapeNS.getTape(tapeName);
-        if (tape == undefined) {
-            return;
-        }
+        const tape = tapeNS.get(tapeName);
 
         const currentToken = this.getToken(tape);
         const result = tape.match(currentToken, target);
@@ -800,10 +785,7 @@ class RTLLiteralExpr extends LiteralExpr {
             return;
         }
 
-        const tape = tapeNS.getTape(tapeName);
-        if (tape == undefined) {
-            return;
-        }
+        const tape = tapeNS.get(tapeName);
 
         const currentToken = this.getToken(tape);
         const result = tape.match(currentToken, target);
@@ -1307,12 +1289,11 @@ class JoinExpr extends BinaryExpr {
 
     public getChild(): Expr {
         if (this._child == undefined) {
-            const child = this.symbols[this.symbolName];
+            let child = this.symbols[this.symbolName];
             if (child == undefined) {
                 // this is an error, due to the programmer referring to an undefined
                 // symbol, but now is not the time to complain. 
-                //console.log(`error, can't find ${this.symbolName} in symbol table, symbol table contains ${Object.keys(this.symbols)}`);
-                return EPSILON;
+                child = EPSILON;
             } 
             this._child = child;
         }
@@ -1757,10 +1738,7 @@ class NegationExpr extends UnaryExpr {
             return;
         }
 
-        const tape = tapeNS.getTape(tapeName);
-        if (tape == undefined) {
-            return;
-        }
+        const tape = tapeNS.get(tapeName);
 
         let remainder = tape.toToken(target);
 
@@ -1847,11 +1825,7 @@ export class MatchExpr extends UnaryExpr {
 
         let results: [string, Expr][] = [[target, this.child]];
         for (const t of this.tapes) {
-            const tapeToTry = tapeNS.getTape(t);
-            if (tapeToTry == undefined) {
-                throw new Error(`something went wrong in deriv, couldn't find tape ${t}`);
-            }
-            
+            const tapeToTry = tapeNS.get(t);
             const nextResults: [string, Expr][] = [];
             for (const [prevTarget, prevExpr] of results) {
                 for (const [cTarget, cNext] of prevExpr.stringDeriv(t, prevTarget, tapeNS, stack, opt)) {
@@ -1861,10 +1835,7 @@ export class MatchExpr extends UnaryExpr {
             results = nextResults;    
         }
 
-        const tape = tapeNS.getTape(tapeName);
-        if (tape == undefined) {
-            return;
-        }
+        const tape = tapeNS.get(tapeName);
 
         for (const [nextTarget, nextExpr] of results) {
             

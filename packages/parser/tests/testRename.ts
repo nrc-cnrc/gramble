@@ -31,6 +31,15 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t2: "hello"}]);
     });
 
+    describe('t1:hello + Rename(t1->t2 of t1:world)', function() {
+        const grammar = Seq(t1("hello"), Rename(t1("world"), "t1", "t2"));
+        testHasTapes(grammar, ["t1", "t2"]);
+        //testHasNoVocab(grammar, "t1");
+        //testHasVocab(grammar, {t2: 4});
+        testGrammar(grammar, [{t1: "hello", t2: "world"}]);
+    });
+
+
     describe('Rename(t1->t1 of t1:hello)', function() {
         const grammar = Rename(t1("hello"), "t1", "t1");
         testHasTapes(grammar, ["t1"]);

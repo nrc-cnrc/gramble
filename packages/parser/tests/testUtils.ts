@@ -251,7 +251,7 @@ export function testHasVocab(
     const interpreter = Interpreter.fromGrammar(grammar);
 
     for (const tapeName in expectedVocab) {
-        const tape = interpreter.tapeNS.getTape(tapeName);
+        const tape = interpreter.tapeNS.get(tapeName);
         const expectedNum = expectedVocab[tapeName];
         it(`should have ${expectedNum} tokens in the ${tapeName} vocab`, function() {
             expect(tape).to.not.be.undefined;

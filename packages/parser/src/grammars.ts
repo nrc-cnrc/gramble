@@ -344,10 +344,11 @@ export class CharSetGrammar extends AtomicGrammar {
         tapeNS: TapeNamespace, 
         symbolsVisited: Set<string>
     ): void { 
-        const tape = tapeNS.getTape(this.tapeName);
-        if (tape == undefined) {
+        if (tapeName != this.tapeName) {
             return;
         }
+
+        const tape = tapeNS.get(this.tapeName);
         for (const char of this.chars) {
             tape.tokenize(char, true);
         }
@@ -393,10 +394,7 @@ export class LiteralGrammar extends AtomicGrammar {
         if (tapeName != this.tapeName) {
             return;
         }
-        const tape = tapeNS.getTape(this.tapeName);
-        if (tape == undefined) {
-            return;
-        }
+        const tape = tapeNS.get(this.tapeName);
         this.tokens = tape.tokenize(this.text).map(([s,t]) => s);
     }
 
@@ -797,6 +795,10 @@ export class RenameGrammar extends UnaryGrammar {
         tapeNS: TapeNamespace, 
         symbolsVisited: Set<string>
     ): void { 
+        if (tapeName != this.toTape && tapeName == this.fromTape) {
+            return;
+        }
+
         const newTapeName = (tapeName == this.toTape) ? this.fromTape : tapeName;
         const newTapeNS = new RenamedTapeNamespace(tapeNS, this.fromTape, this.toTape);
         this.child.collectVocab(newTapeName, newTapeNS, symbolsVisited);
@@ -951,6 +953,10 @@ export class HideGrammar extends UnaryGrammar {
         tapeNS: TapeNamespace, 
         symbolsVisited: Set<string>
     ): void { 
+        if (tapeName != this.toTape && tapeName == this.tapeName) {
+            return;
+        }
+
         const newTapeName = (tapeName == this.toTape) ? this.tapeName : tapeName;
         const newTapeNS = new RenamedTapeNamespace(tapeNS, this.tapeName, this.toTape);
         this.child.collectVocab(newTapeName, newTapeNS, symbolsVisited);
@@ -1826,6 +1832,11 @@ export class ReplaceGrammar extends Grammar {
 
         // however, we also need to collect vocab from the contexts as if it were on a toTape
         for (const toTapeName of this.toTapeNames) {
+                
+            if (tapeName != toTapeName && tapeName == this.fromTapeName) {
+                continue;
+            }
+
             let newTapeName = (tapeName == toTapeName) ? this.fromTapeName : tapeName;
             let newTapeNS = new RenamedTapeNamespace(tapeNS, this.fromTapeName, toTapeName);
             if (this.vocabBypass) {
@@ -1840,16 +1851,10 @@ export class ReplaceGrammar extends Grammar {
     public copyVocab(tapeNS: TapeNamespace, symbolsVisited: Set<string>): void { 
         super.copyVocab(tapeNS, symbolsVisited);
         if (this.vocabBypass) {
-            const fromTape = tapeNS.getTape(this.fromTapeName);
-            if (fromTape == undefined) {
-                throw new Error(`Cannot find origin tape ${this.fromTapeName} during vocab copy`);
-            }
+            const fromTape = tapeNS.get(this.fromTapeName);
             const fromVocab: string[] = fromTape.fromToken(fromTape.any());
             for (const toTapeName of this.toTapeNames) {
-                const toTape = tapeNS.getTape(toTapeName);
-                if (toTape == undefined) {
-                    throw new Error(`Cannot find destination tape ${toTapeName} during vocab copy`);
-                }
+                const toTape = tapeNS.get(toTapeName);
                 for (const token of fromVocab) {
                     toTape.tokenize(token);
                 }
@@ -1886,22 +1891,20 @@ export class ReplaceGrammar extends Grammar {
         // toTape vocabs are supersets of the fromTape vocab without checking.
         let supersetVocab: boolean = this.vocabBypass;
         if (!supersetVocab) {
-            const tapeCollection: TapeNamespace = this.getAllTapes();
-            const fromTape: Tape | undefined = tapeCollection.getTape(this.fromTapeName);
-            if (fromTape != undefined) {
-                const fromVocab: string[] = fromTape.fromToken(fromTape.any());
-                // The following code sets sameVocab to true if the vocab of ANY
-                // toTape is a superset of the fromTape vocab.
-                // Perhaps we should throw an Error if some toTape vocabs are
-                // supersets of the fromTape vocab and some are not.
-                for (const toTapeName of this.toTapeNames) {
-                    const toTape = tapeCollection.getTape(toTapeName);
-                    if (toTape == undefined) {
-                        continue; // shouldn't happen, just for linting
-                    }
-                    if (toTape.inVocab(fromVocab)) {
-                        supersetVocab = true;
-                    }
+            const tapeNS: TapeNamespace = this.getAllTapes();
+            const fromTape: Tape = tapeNS.get(this.fromTapeName);
+            const fromVocab: string[] = fromTape.fromToken(fromTape.any());
+            // The following code sets sameVocab to true if the vocab of ANY
+            // toTape is a superset of the fromTape vocab.
+            // Perhaps we should throw an Error if some toTape vocabs are
+            // supersets of the fromTape vocab and some are not.
+            for (const toTapeName of this.toTapeNames) {
+                const toTape = tapeNS.get(toTapeName);
+                if (toTape == undefined) {
+                    continue; // shouldn't happen, just for linting
+                }
+                if (toTape.inVocab(fromVocab)) {
+                    supersetVocab = true;
                 }
             }
         }

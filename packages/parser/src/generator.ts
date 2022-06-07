@@ -59,8 +59,10 @@ abstract class Generator<T extends AbstractToken> {
 
         while (prev = states.pop()) {
 
-            // first, if we're random, see if it's time to stop and randomly emit a result
-            if (opt.random && Math.random() < 0.1 && candidates.length > 0) {
+            // first, if we're random, see if it's time to stop and 
+            // randomly emit a result.  candidates will only be length > 0
+            // if we're random.
+            if (candidates.length > 0 && Math.random()) {
                 break;
             }
 
@@ -69,7 +71,7 @@ abstract class Generator<T extends AbstractToken> {
  
             if (VERBOSE) {
                 console.log();
-                console.log(`prevOutput is ${JSON.stringify(prevOutput.toDict(opt))}`);
+                console.log(`prevOutput is ${JSON.stringify(prevOutput.toDict(tapeNS, opt))}`);
                 console.log(`prevExpr is ${prevExpr.id}`);
                 console.log(`remaining tapes are [${tapes})]`);
             }
@@ -78,7 +80,7 @@ abstract class Generator<T extends AbstractToken> {
                 // we found a valid output
 
                 if (VERBOSE) {
-                    console.log(`YIELD ${JSON.stringify(prevOutput.toDict(opt))} `)
+                    console.log(`YIELD ${JSON.stringify(prevOutput.toDict(tapeNS, opt))} `)
                 }
                     
                 // if we're random, don't yield immediately, wait
@@ -88,7 +90,7 @@ abstract class Generator<T extends AbstractToken> {
                 }
 
                 // if we're not random, yield the result immediately.
-                yield* prevOutput.toDict(opt);
+                yield* prevOutput.toDict(tapeNS, opt);
                 continue;
             }
             
@@ -100,10 +102,6 @@ abstract class Generator<T extends AbstractToken> {
             }
                 
             const tapeToTry = tapes[0];
-            const actualTape = tapeNS.getTape(tapeToTry);
-            if (actualTape == undefined) {
-                throw new Error(`generate asking for non-existent tape ${tapeToTry}`);
-            }
             
             const delta = prevExpr.delta(tapeToTry, tapeNS, stack, opt);
             if (VERBOSE) {
@@ -125,7 +123,7 @@ abstract class Generator<T extends AbstractToken> {
                     console.log(`D^${tapeToTry}_${cTarget} is ${cNext.id}`);
                 }
 
-                const nextOutput = prevOutput.add(actualTape, cTarget);
+                const nextOutput = prevOutput.add(tapeToTry, cTarget);
                 nexts.push([tapes, nextOutput, cNext]);
             }
 
@@ -148,7 +146,7 @@ abstract class Generator<T extends AbstractToken> {
 
         const candidateIndex = Math.floor(Math.random()*candidates.length);
         const candidateOutput = candidates[candidateIndex];
-        yield* candidateOutput.toDict(opt);
+        yield* candidateOutput.toDict(tapeNS, opt);
     } 
 
 }
@@ -176,10 +174,7 @@ class BitsetGenerator extends Generator<Token> {
         stack: CounterStack,
         opt: GenOptions
     ): Gen<[Token, Expr]> {
-        const tape = tapeNS.getTape(tapeName);
-        if (tape == undefined) {
-            throw new Error(`deriv asking for non-existent tape ${tapeName}`);
-        }
+        const tape = tapeNS.get(tapeName);
         yield* expr.disjointBitsetDeriv(tapeName, tape.any(), tapeNS, stack, opt);
     }
 
