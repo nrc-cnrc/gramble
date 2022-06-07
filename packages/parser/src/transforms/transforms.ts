@@ -172,7 +172,7 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
 
     public transformHide(g: HideGrammar, ns: NsGrammar, args: T): Grammar {
         const newChild = g.child.accept(this, ns, args);
-        return new HideGrammar(g.cell, newChild, g.tape, g.name);
+        return new HideGrammar(g.cell, newChild, g.tapeName, g.name);
     }
 
     public transformCount(g: CountGrammar, ns: NsGrammar, args: T): Grammar {

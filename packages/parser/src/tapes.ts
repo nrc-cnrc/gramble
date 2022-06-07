@@ -102,9 +102,7 @@ export abstract class Tape {
     public abstract getTapeNames(): Set<string>;
 
     public abstract inVocab(strs: string[]): boolean;
-    
-    public abstract getTape(name: string): Tape | undefined;
-    
+
     public match(str1: Token, str2: Token): Token {
         throw new Error(`Not implemented`);
     }
@@ -189,7 +187,7 @@ export const NO_CHAR: Token = new Token(new BitSet());
 export class StringTape extends Tape {
 
     constructor(
-        public parent: TapeCollection,
+        public parent: TapeNamespace,
         public name: string,
         public strToIndex: Map<string, number> = new Map(),
         public indexToStr: Map<number, string> = new Map()
@@ -293,7 +291,7 @@ export class StringTape extends Tape {
 /**
  * This contains information about all the tapes.
  */
-export class TapeCollection extends Tape {
+export class TapeNamespace {
 
     public tapes: Map<string, Tape> = new Map();
 
@@ -368,10 +366,10 @@ export class TapeCollection extends Tape {
  * vocabulary of the tape it thinks is called "down", even if outside of that RenameState the tape is called
  * "text".  
  */
-export class RenamedTape extends Tape {
+export class RenamedTapeNamespace extends TapeNamespace {
 
     constructor(
-        public child: Tape,
+        public child: TapeNamespace,
         public fromTape: string,
         public toTape: string
     ) { 
@@ -398,10 +396,6 @@ export class RenamedTape extends Tape {
         return this.child.none();
     }
 
-    public match(str1: Token, str2: Token): Token {
-        return this.child.match(str1, str2);
-    }
-
     protected adjustTapeName(name: string) {
         return (name == this.fromTape) ? this.toTape : name;
     }
@@ -412,23 +406,12 @@ export class RenamedTape extends Tape {
         return new Set(result);
     }
 
-    public tokenize(
-        str: string, 
-        atomic: boolean = false
-    ): [string, Token][] {
-        return this.child.tokenize(str);
-    }
-
     public getTape(name: string): Tape | undefined {
         if (name != this.fromTape && name == this.toTape) {
             return undefined;
         }
         name = this.adjustTapeName(name);
-        const newChild = this.child.getTape(name);
-        if (newChild == undefined) {
-            return undefined;
-        }
-        return new RenamedTape(newChild, this.fromTape, this.toTape);
+        return this.child.getTape(name);
     }
 
     public toBits(char: string): BitSet {

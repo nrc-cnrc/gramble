@@ -5,7 +5,7 @@ import {
 import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell, stripHiddenTapes} from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
-import { Tape, TapeCollection } from "./tapes";
+import { Tape, TapeNamespace } from "./tapes";
 import { Expr, GenOptions, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
@@ -37,7 +37,7 @@ export class Interpreter {
     // or compilation is going to require remembering what indices had previously
     // been assigned to which characters.  (we're not, at the moment, using that 
     // functionality, but even if we're not, it doesn't hurt to keep these around.)
-    public tapeObjs: TapeCollection = new TapeCollection();
+    public tapeNS: TapeNamespace = new TapeNamespace();
 
     // the symbol table doesn't change in between invocations because queries
     // and unit tests are only filters containing sequences of literals -- nothing
@@ -108,14 +108,14 @@ export class Interpreter {
             // recalculate tapes
             this.grammar.calculateTapes(new CounterStack(2));
             // collect vocabulary
-            this.tapeObjs = new TapeCollection();
-            this.grammar.collectAllVocab(this.tapeObjs);
+            this.tapeNS = new TapeNamespace();
+            this.grammar.collectAllVocab(this.tapeNS);
 
         }, verbose, "Collected vocab");
 
         timeIt(() => {
             // copy the vocab if necessary
-            this.grammar.copyVocab(this.tapeObjs, new Set());
+            this.grammar.copyVocab(this.tapeNS, new Set());
         }, verbose, "Copied vocab");
 
     }
@@ -223,14 +223,14 @@ export class Interpreter {
             maxChars: maxChars,
             direction: "RTL"
         }
-        const [expr, tapes] = this.prepareExpr(symbolName, restriction, opt);
+        const [expr, tapePriority] = this.prepareExpr(symbolName, restriction, opt);
 
         if (stripHidden) {
-            yield* stripHiddenTapes(generate(expr, tapes, opt));
+            yield* stripHiddenTapes(generate(expr, tapePriority, this.tapeNS, opt));
             return;
         }
 
-        yield* generate(expr, tapes, opt);
+        yield* generate(expr, tapePriority, this.tapeNS, opt);
     }
     
     public sample(symbolName: string = "",
@@ -259,11 +259,11 @@ export class Interpreter {
             direction: "RTL"
         }
 
-        const [expr, tapes] = this.prepareExpr(symbolName, restriction, opt);
+        const [expr, tapePriority] = this.prepareExpr(symbolName, restriction, opt);
         for (let i = 0; i < numSamples; i++) {
-            let gen = generate(expr, tapes, opt);
+            let gen = generate(expr, tapePriority, this.tapeNS, opt);
             if (stripHidden) {
-                gen = stripHiddenTapes(generate(expr, tapes, opt));
+                gen = stripHiddenTapes(generate(expr, tapePriority, this.tapeNS, opt));
             }
             yield* iterTake(gen, 1);
         }
@@ -285,7 +285,7 @@ export class Interpreter {
         symbolName: string = "",
         query: StringDict = {},
         opt: GenOptions
-    ): [Expr, Tape[]] {
+    ): [Expr, string[]] {
 
         let tapePriority = this.grammar.calculateTapes(new CounterStack(2));
         let expr = this.grammar.constructExpr(this.symbolTable);
@@ -309,10 +309,10 @@ export class Interpreter {
             tapePriority = targetGrammar.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
-            querySeq.collectAllVocab(this.tapeObjs);
+            querySeq.collectAllVocab(this.tapeNS);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
-            targetGrammar.copyVocab(this.tapeObjs, new Set());
+            targetGrammar.copyVocab(this.tapeNS, new Set());
         
         }
         
@@ -322,18 +322,10 @@ export class Interpreter {
 
         expr = targetGrammar.constructExpr(this.symbolTable);
 
-        const prioritizedTapes: Tape[] = [];
-        for (const tapeName of tapePriority) {
-            const actualTape = this.tapeObjs.getTape(tapeName);
-            if (actualTape == undefined) {
-                throw new Error(`cannot find priority tape ${tapeName}`);
-            }
-            prioritizedTapes.push(actualTape);
-        }        
 
         //console.log(expr.id);
 
-        return [expr, prioritizedTapes];    
+        return [expr, tapePriority];    
     }
 
     public runUnitTests(): void {
@@ -350,23 +342,14 @@ export class Interpreter {
             const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
-            test.test.collectAllVocab(this.tapeObjs);
+            test.test.collectAllVocab(this.tapeNS);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
-            targetComponent.copyVocab(this.tapeObjs, new Set());
+            targetComponent.copyVocab(this.tapeNS, new Set());
 
             expr = targetComponent.constructExpr(this.symbolTable);
 
-            const prioritizedTapes: Tape[] = [];
-            for (const tapeName of tapePriority) {
-                const actualTape = this.tapeObjs.getTape(tapeName);
-                if (actualTape == undefined) {
-                    throw new Error(`cannot find priority tape ${tapeName}`);
-                }
-                prioritizedTapes.push(actualTape);
-            }        
-
-            const results = [...generate(expr, prioritizedTapes, opt)];
+            const results = [...generate(expr, tapePriority, this.tapeNS, opt)];
             test.evalResults(results);
         }
     }

@@ -1,5 +1,5 @@
 import { CounterStack, EpsilonExpr, Expr, GenOptions, NullExpr } from "./exprs";
-import { AbstractToken, OutputTrie, Tape, Token } from "./tapes";
+import { AbstractToken, OutputTrie, Tape, TapeNamespace, Token } from "./tapes";
 import { ANY_CHAR_STR, BITSETS_ENABLED, Gen, shuffleArray, StringDict, VERBOSE } from "./util";
 
 /**
@@ -19,7 +19,8 @@ import { ANY_CHAR_STR, BITSETS_ENABLED, Gen, shuffleArray, StringDict, VERBOSE }
  */
 export function* generate(
     expr: Expr,
-    tapes: Tape[],
+    tapePriority: string[],
+    tapeNS: TapeNamespace,
     opt: GenOptions
 ): Gen<StringDict> {
 
@@ -28,7 +29,7 @@ export function* generate(
                         new StringGenerator();
 
     const stack = new CounterStack(opt.maxRecursion);
-    yield* generator.generate(expr, tapes, stack, opt);
+    yield* generator.generate(expr, tapePriority, tapeNS, stack, opt);
 
 }
 
@@ -36,20 +37,22 @@ abstract class Generator<T extends AbstractToken> {
 
     public abstract deriv(
         expr: Expr,
-        tape: Tape, 
+        tapeName: string,
+        tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
     ): Gen<[T, Expr]>;
 
     public *generate(
         expr: Expr,
-        tapes: Tape[],
+        tapePriority: string[],
+        tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
     ): Gen<StringDict> {
         const initialOutput: OutputTrie<T> = new OutputTrie<T>();
-        let states: [Tape[], OutputTrie<T>, Expr][] = [[tapes, initialOutput, expr]];
-        let prev: [Tape[], OutputTrie<T>, Expr] | undefined = undefined;
+        let states: [string[], OutputTrie<T>, Expr][] = [[tapePriority, initialOutput, expr]];
+        let prev: [string[], OutputTrie<T>, Expr] | undefined = undefined;
         
         // if we're generating randomly, we store candidates rather than output them immediately
         const candidates: OutputTrie<T>[] = [];
@@ -61,14 +64,14 @@ abstract class Generator<T extends AbstractToken> {
                 break;
             }
 
-            let nexts: [Tape[], OutputTrie<T>, Expr][] = [];
+            let nexts: [string[], OutputTrie<T>, Expr][] = [];
             let [tapes, prevOutput, prevExpr] = prev;
  
             if (VERBOSE) {
                 console.log();
                 console.log(`prevOutput is ${JSON.stringify(prevOutput.toDict(opt))}`);
                 console.log(`prevExpr is ${prevExpr.id}`);
-                console.log(`remaining tapes are ${tapes.map(t => t.name)}`);
+                console.log(`remaining tapes are [${tapes})]`);
             }
 
             if (prevExpr instanceof EpsilonExpr) {
@@ -97,10 +100,14 @@ abstract class Generator<T extends AbstractToken> {
             }
                 
             const tapeToTry = tapes[0];
-
-            const delta = prevExpr.delta(tapeToTry, stack);
+            const actualTape = tapeNS.getTape(tapeToTry);
+            if (actualTape == undefined) {
+                throw new Error(`generate asking for non-existent tape ${tapeToTry}`);
+            }
+            
+            const delta = prevExpr.delta(tapeToTry, tapeNS, stack, opt);
             if (VERBOSE) {
-                console.log(`d^${tapeToTry.name} is ${delta.id}`);
+                console.log(`d^${tapeToTry} is ${delta.id}`);
             }
             if (!(delta instanceof NullExpr)) {                    
                 const newTapes = tapes.slice(1);
@@ -112,13 +119,13 @@ abstract class Generator<T extends AbstractToken> {
             tapes = [... tapes.slice(1), tapes[0]];
 
             for (const [cTarget, cNext] of 
-                    this.deriv(prevExpr, tapeToTry, stack, opt)) {
+                    this.deriv(prevExpr, tapeToTry, tapeNS, stack, opt)) {
                 
                 if (VERBOSE) {
-                    console.log(`D^${tapeToTry.name}_${cTarget} is ${cNext.id}`);
+                    console.log(`D^${tapeToTry}_${cTarget} is ${cNext.id}`);
                 }
 
-                const nextOutput = prevOutput.add(tapeToTry, cTarget);
+                const nextOutput = prevOutput.add(actualTape, cTarget);
                 nexts.push([tapes, nextOutput, cNext]);
             }
 
@@ -150,11 +157,12 @@ class StringGenerator extends Generator<string> {
 
     public *deriv(
         expr: Expr,
-        tape: Tape,
+        tapeName: string,
+        tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
     ): Gen<[string, Expr]> {
-        yield* expr.disjointStringDeriv(tape, ANY_CHAR_STR, stack, opt);
+        yield* expr.disjointStringDeriv(tapeName, ANY_CHAR_STR, tapeNS, stack, opt);
     }
 
 }
@@ -163,14 +171,16 @@ class BitsetGenerator extends Generator<Token> {
         
     public *deriv(
         expr: Expr,
-        tape: Tape,
+        tapeName: string,
+        tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
     ): Gen<[Token, Expr]> {
-        for (const [token, next] of 
-                expr.disjointBitsetDeriv(tape, tape.any(), stack, opt)) {
-            yield [token, next];
+        const tape = tapeNS.getTape(tapeName);
+        if (tape == undefined) {
+            throw new Error(`deriv asking for non-existent tape ${tapeName}`);
         }
+        yield* expr.disjointBitsetDeriv(tapeName, tape.any(), tapeNS, stack, opt);
     }
 
 }
