@@ -93,7 +93,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
-    
+
     // 1b. Replace e by a in hello: e -> a, same tape
     describe('1b. Replace e by a in hello: e -> a, same tape', function() {
         const grammar = JoinReplace(t1("hello"),
@@ -261,5 +261,4 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
-
 });

@@ -1,5 +1,5 @@
 import { CounterStack, EpsilonExpr, Expr, GenOptions, NullExpr } from "./exprs";
-import { AbstractToken, OutputTrie, Tape, TapeNamespace, Token } from "./tapes";
+import { AbstractToken, OutputTrie, TapeNamespace, Token } from "./tapes";
 import { ANY_CHAR_STR, BITSETS_ENABLED, Gen, shuffleArray, StringDict, VERBOSE } from "./util";
 
 /**
@@ -175,7 +175,7 @@ class BitsetGenerator extends Generator<Token> {
         opt: GenOptions
     ): Gen<[Token, Expr]> {
         const tape = tapeNS.get(tapeName);
-        yield* expr.disjointBitsetDeriv(tapeName, tape.any(), tapeNS, stack, opt);
+        yield* expr.disjointBitsetDeriv(tapeName, tape.any, tapeNS, stack, opt);
     }
 
 }

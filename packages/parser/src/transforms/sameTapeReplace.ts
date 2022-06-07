@@ -1,5 +1,5 @@
 import { 
-    AlternationGrammar, CounterStack, Grammar,
+    AlternationGrammar, Grammar,
     JoinGrammar, JoinReplaceGrammar, 
     NsGrammar, RenameGrammar, ReplaceGrammar
 } from "../grammars";
@@ -76,7 +76,7 @@ export class SameTapeReplaceTransform extends IdentityTransform<void>{
         let replaceTapeName = g.fromTapeName;
         for (const toTapeName of g.toTapeNames) {
             if (g.fromTapeName == toTapeName)
-                replaceTapeName = g.getHiddenTapeName();
+                replaceTapeName = g.hiddenTapeName;
         }
 
         const newFrom = g.fromGrammar.accept(this, ns, args);

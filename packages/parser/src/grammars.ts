@@ -5,7 +5,6 @@ import {
     constructRepeat,
     constructSequence,
     constructAlternation,
-    constructBinaryConcat,
     constructIntersection,
     constructDot,
     constructEmbed,
@@ -21,29 +20,23 @@ import {
     constructMatchFrom,
     constructCharSet,
     constructDotRep,
-    constructDotStar,
     constructCount,
     constructCountTape,
 } from "./exprs";
 
 import { 
-    RenamedTapeNamespace, 
     Tape, 
     TapeNamespace, 
-    Token
 } from "./tapes";
 
 import { 
     Cell, 
     DummyCell, 
     flatten, 
-    Gen, 
     HIDDEN_TAPE_PREFIX, 
     listDifference, 
     listIntersection, 
     listUnique, 
-    setDifference, 
-    setIntersection, 
     StringDict 
 } from "./util";
 
@@ -350,7 +343,7 @@ export class CharSetGrammar extends AtomicGrammar {
 
         const tape = tapeNS.get(this.tapeName);
         for (const char of this.chars) {
-            tape.tokenize(char, true);
+            tape.tokenize(char);
         }
     }
 
@@ -800,12 +793,12 @@ export class RenameGrammar extends UnaryGrammar {
         }
 
         const newTapeName = (tapeName == this.toTape) ? this.fromTape : tapeName;
-        const newTapeNS = new RenamedTapeNamespace(tapeNS, this.fromTape, this.toTape);
+        const newTapeNS = tapeNS.rename(this.fromTape, this.toTape);
         this.child.collectVocab(newTapeName, newTapeNS, symbolsVisited);
     }
 
     public copyVocab(tapeNS: TapeNamespace, symbolsVisited: Set<string>): void {
-        const newTapeNS = new RenamedTapeNamespace(tapeNS, this.fromTape, this.toTape);
+        const newTapeNS = tapeNS.rename(this.fromTape, this.toTape);
         this.child.copyVocab(newTapeNS, symbolsVisited);
     }
 
@@ -958,12 +951,12 @@ export class HideGrammar extends UnaryGrammar {
         }
 
         const newTapeName = (tapeName == this.toTape) ? this.tapeName : tapeName;
-        const newTapeNS = new RenamedTapeNamespace(tapeNS, this.tapeName, this.toTape);
+        const newTapeNS = tapeNS.rename(this.tapeName, this.toTape);
         this.child.collectVocab(newTapeName, newTapeNS, symbolsVisited);
     }
     
     public copyVocab(tapeNS: TapeNamespace, symbolsVisited: Set<string>): void {
-        const newTapeNS = new RenamedTapeNamespace(tapeNS, this.tapeName, this.toTape);
+        const newTapeNS = tapeNS.rename(this.tapeName, this.toTape);
         this.child.copyVocab(newTapeNS, symbolsVisited);
     }
 
@@ -1778,8 +1771,11 @@ export class ReplaceGrammar extends Grammar {
         public hiddenTapeName: string = "",
     ) {
         super(cell);
-        if (!this.hiddenTapeName.startsWith(HIDDEN_TAPE_PREFIX))
+        if (this.hiddenTapeName.length == 0) {
+            this.hiddenTapeName = `${HIDDEN_TAPE_PREFIX}R${this.cell.pos.sheet}:${this.cell.pos.row}`;
+        } else if (!this.hiddenTapeName.startsWith(HIDDEN_TAPE_PREFIX)) {
             this.hiddenTapeName = HIDDEN_TAPE_PREFIX + this.hiddenTapeName;
+        }
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -1788,13 +1784,6 @@ export class ReplaceGrammar extends Grammar {
 
     public getChildren(): Grammar[] { 
         return [this.fromGrammar, this.toGrammar, this.preContext, this.postContext, this.otherContext];
-    }
-
-    public getHiddenTapeName(): string {
-        if (this.hiddenTapeName.length > 0) {
-            return this.hiddenTapeName;
-        }
-        return `${HIDDEN_TAPE_PREFIX}R${this.cell.pos.sheet}:${this.cell.pos.row}`;
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -1838,7 +1827,7 @@ export class ReplaceGrammar extends Grammar {
             }
 
             let newTapeName = (tapeName == toTapeName) ? this.fromTapeName : tapeName;
-            let newTapeNS = new RenamedTapeNamespace(tapeNS, this.fromTapeName, toTapeName);
+            let newTapeNS = tapeNS.rename(this.fromTapeName, toTapeName);
             if (this.vocabBypass) {
                 this.fromGrammar.collectVocab(newTapeName, newTapeNS, symbolsVisited);
             }
@@ -1852,7 +1841,7 @@ export class ReplaceGrammar extends Grammar {
         super.copyVocab(tapeNS, symbolsVisited);
         if (this.vocabBypass) {
             const fromTape = tapeNS.get(this.fromTapeName);
-            const fromVocab: string[] = fromTape.fromToken(fromTape.any());
+            const fromVocab: string[] = fromTape.vocab;
             for (const toTapeName of this.toTapeNames) {
                 const toTape = tapeNS.get(toTapeName);
                 for (const token of fromVocab) {
@@ -1893,7 +1882,7 @@ export class ReplaceGrammar extends Grammar {
         if (!supersetVocab) {
             const tapeNS: TapeNamespace = this.getAllTapes();
             const fromTape: Tape = tapeNS.get(this.fromTapeName);
-            const fromVocab: string[] = fromTape.fromToken(fromTape.any());
+            const fromVocab: string[] = fromTape.vocab;
             // The following code sets sameVocab to true if the vocab of ANY
             // toTape is a superset of the fromTape vocab.
             // Perhaps we should throw an Error if some toTape vocabs are

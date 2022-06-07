@@ -1,5 +1,5 @@
 import { ANY_CHAR_STR, Gen, setDifference } from "./util";
-import { Tape, RenamedTapeNamespace, Token, TapeNamespace } from "./tapes";
+import { Tape, Token, TapeNamespace } from "./tapes";
 
 /**
  * This is the parsing/generation engine that underlies Gramble.
@@ -477,7 +477,7 @@ class DotExpr extends Expr {
         const tape = tapeNS.get(tapeName);
 
         if (target == ANY_CHAR_STR) {
-            for (let c of tape.fromToken(tape.any())) {
+            for (let c of tape.vocab) {
                 yield [c, EPSILON];
             }
             return;
@@ -518,7 +518,7 @@ class CharSetExpr extends Expr {
     }
 
     protected getToken(tape: Tape): Token {
-        let result = tape.none();
+        let result = tape.none;
         for (const char of this.chars) {
             const t = tape.toToken(char);
             result = result.or(t);
@@ -622,7 +622,7 @@ class DotStarExpr extends Expr {
         const tape = tapeNS.get(tapeName);
 
         if (target == ANY_CHAR_STR) {
-            for (let c of tape.fromToken(tape.any())) {
+            for (let c of tape.vocab) {
                 yield [c, this];
             }
             return;
@@ -1596,7 +1596,7 @@ class RenameExpr extends UnaryExpr {
         }
 
         const newTapeName = (tapeName == this.toTape) ? this.fromTape : tapeName;
-        const newTapeNS = new RenamedTapeNamespace(tapeNS, this.fromTape, this.toTape);
+        const newTapeNS = tapeNS.rename(this.fromTape, this.toTape);
         const newChild = this.child.delta(newTapeName, newTapeNS, stack, opt);
         return constructRename(newChild, this.fromTape, this.toTape);
     }
@@ -1618,7 +1618,7 @@ class RenameExpr extends UnaryExpr {
         }
 
         const newTapeName = (tapeName == this.toTape) ? this.fromTape : tapeName;
-        const newTapeNS = new RenamedTapeNamespace(tapeNS, this.fromTape, this.toTape);
+        const newTapeNS = tapeNS.rename(this.fromTape, this.toTape);
     
         for (let [childTarget, childNext] of 
                 this.child.bitsetDeriv(newTapeName, target, newTapeNS, stack, opt)) {
@@ -1638,7 +1638,7 @@ class RenameExpr extends UnaryExpr {
         }
 
         const newTapeName = (tapeName == this.toTape) ? this.fromTape : tapeName;
-        const newTapeNS = new RenamedTapeNamespace(tapeNS, this.fromTape, this.toTape);
+        const newTapeNS = tapeNS.rename(this.fromTape, this.toTape);
     
         for (let [childTarget, childNext] of 
                 this.child.stringDeriv(newTapeName, target, newTapeNS, stack, opt)) {
@@ -1840,7 +1840,7 @@ export class MatchExpr extends UnaryExpr {
         for (const [nextTarget, nextExpr] of results) {
             
             const cs = (nextTarget == ANY_CHAR_STR) 
-                        ? tape.fromToken(tape.any())
+                        ? tape.vocab
                         : [nextTarget];
 
             for (const c of cs) {
