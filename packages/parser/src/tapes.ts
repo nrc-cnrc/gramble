@@ -1,6 +1,6 @@
 import { BitSet } from "bitset";
 import { GenOptions } from "./exprs";
-import { Gen, shuffleArray, StringDict, tokenizeUnicode } from "./util";
+import { ANY_CHAR_STR, Gen, shuffleArray, StringDict, tokenizeUnicode } from "./util";
 
 
 export type AbstractToken = Token | string;
@@ -151,6 +151,9 @@ export abstract class Tape {
 
     
     public toToken(tapeName: string, char: string): Token {
+        if (char == ANY_CHAR_STR) {
+            return this.any();
+        }
         return new Token(this.toBits(tapeName, char));
     }
 
@@ -175,16 +178,16 @@ export class Token {
         public bits: BitSet
     ) { }
 
-    public and(other: Token): Token {
-        return new Token(this.bits.and(other.bits));
-    }
-
     public andNot(other: Token): Token {
         return new Token(this.bits.andNot(other.bits));
     }
 
     public or(other: Token): Token {
         return new Token(this.bits.or(other.bits));
+    }
+
+    public clone(): Token {
+        return new Token(this.bits.clone());
     }
 
     public isEmpty(): boolean {
@@ -212,8 +215,6 @@ export class StringTape extends Tape {
     constructor(
         public parent: TapeCollection,
         public tapeName: string,
-        public current: Token | undefined = undefined,
-        public prev: StringTape | undefined = undefined,
         public strToIndex: Map<string, number> = new Map(),
         public indexToStr: Map<number, string> = new Map()
     ) { 
@@ -252,67 +253,12 @@ export class StringTape extends Tape {
         return true;
     }
 
-    /*
-    public *plus(tapeName: string, other: BitSet): Gen<Tape> {
-        if (tapeName != this.tapeName) {
-            return;
-        }
-        yield new StringTape(this.tapeName, other, 
-                            this, this.strToIndex, this.indexToStr);
-    }
-
-    public *times(tapeName: string, other: BitSet): Gen<Tape> {
-        if (tapeName != this.tapeName) {
-            return;
-        }
-        const result = this.current.and(other);
-        if (result.isEmpty()) {
-            return;
-        }
-        yield new StringTape(this.tapeName, result, this.prev,
-                            this.strToIndex, this.indexToStr);
-    }
-    */
-
-    /*
-    public append(token: Token) {
-        return new StringTape(this.tapeName, token,
-                this, this.strToIndex, this.indexToStr);
-    } */
-
-    public *getStrings(): Gen<string> {
-
-        var prevStrings = [""];
-        if (this.prev != undefined) {
-            prevStrings = [... this.prev.getStrings()];
-        }
-
-        if (this.current == undefined) {
-            yield* prevStrings;
-            return;
-        }
-
-        for (const s of prevStrings) {
-            for (const c of this.fromBits(this.tapeName, this.current.bits)) {
-                yield s + c;
-            }
-        }
-    }
-
     public matchTape(tapeName: string): Tape | undefined {
         return (tapeName == this.tapeName) ? this : undefined;
     }
 
     public any(): Token {
         return new Token( new BitSet().flip());
-    }
-
-    public none(): Token {
-        return new Token( new BitSet());
-    }
-
-    public add(str1: string, str2: string): string[] {
-        return [str1 + str2];
     }
 
     public match(str1: Token, str2: Token): Token {

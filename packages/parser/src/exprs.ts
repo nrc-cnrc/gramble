@@ -219,8 +219,9 @@ export abstract class Expr {
     public abstract bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]>;
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]>;
         
     /** 
      * Calculates the derivative so that the results are deterministic (or more accurately, so that all returned 
@@ -247,12 +248,13 @@ export abstract class Expr {
     public *disjointBitsetDeriv(
         tape: Tape,
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
         const results: {[c: string]: Expr[]} = {};
-        for (const [childTape, childToken, childExpr] of
-                this.bitsetDeriv(tape, target, stack)) {
-            for (const c of tape.fromBits(childTape.tapeName, childToken.bits)) {
+        for (const [childToken, childExpr] of
+                this.bitsetDeriv(tape, target, stack, opt)) {
+            for (const c of childToken.toStrings(tape)) {
                 if (!(c in results)) {
                     results[c] = [];
                 }
@@ -264,7 +266,7 @@ export abstract class Expr {
             const nextToken = tape.toToken(tape.tapeName, c);
             const nextExprs = results[c];
             const nextExpr = constructAlternation(...nextExprs);
-            yield [tape, nextToken, nextExpr];
+            yield [nextToken, nextExpr];
         }
     }
 
@@ -298,7 +300,7 @@ export abstract class Expr {
     ): Gen<[Tape, Token, Expr]> {
 
         let results: [Tape, Token, Expr][] = [];
-        let nextExprs: [Tape, Token, Expr][] = [... this.deriv(tape, target, stack)];
+        let nextExprs: [Tape, Token, Expr][] = [... this.deriv(tape, target, stack, opt)];
         
         for (let [nextTape, nextBits, next] of nextExprs) {
 
@@ -350,8 +352,9 @@ export class EpsilonExpr extends Expr {
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> { }
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> { }
 
     public *stringDeriv(
         tape: Tape, 
@@ -377,8 +380,9 @@ export class NullExpr extends Expr {
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> { }
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> { }
 
     public *stringDeriv(
         tape: Tape, 
@@ -416,13 +420,14 @@ class DotExpr extends Expr {
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
             return;
         }
-        yield [matchedTape, target, EPSILON];
+        yield [target, EPSILON];
     }
 
     public *stringDeriv(
@@ -473,10 +478,9 @@ class CharSetExpr extends Expr {
     }
 
     protected getToken(tape: Tape): Token {
-        //return tape.tokenize(tape.tapeName, this.text[this.index])[0];
         let result = tape.none();
         for (const char of this.chars) {
-            const t = new Token(tape.toBits(tape.tapeName, char));
+            const t = tape.toToken(tape.tapeName, char);
             result = result.or(t);
         }
         return result;
@@ -485,8 +489,9 @@ class CharSetExpr extends Expr {
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
             return;
@@ -497,7 +502,7 @@ class CharSetExpr extends Expr {
         if (result.isEmpty()) {
             return;
         }
-        yield [matchedTape, result, EPSILON];
+        yield [result, EPSILON];
     }
 
     public *stringDeriv(
@@ -546,13 +551,14 @@ class DotStarExpr extends Expr {
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
         const matchedTape = tape.matchTape(this.tapeName);
         if (matchedTape == undefined) {
             return;
         }
-        yield [matchedTape, target, this];
+        yield [target, this];
     }
 
     public *stringDeriv(
@@ -614,15 +620,15 @@ class LiteralExpr extends Expr {
     }
 
     protected getToken(tape: Tape): Token {
-        //return tape.tokenize(tape.tapeName, this.text[this.index])[0];
-        return new Token(tape.toBits(tape.tapeName, this.text[this.index]));
+        return tape.toToken(tape.tapeName, this.text[this.index]);
     }
 
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
 
         if (this.index >= this.text.length) {
             return;
@@ -639,7 +645,7 @@ class LiteralExpr extends Expr {
             return;
         }
         const nextExpr = constructLiteral(this.tapeName, this.text, this.index+1);
-        yield [matchedTape, result, nextExpr];
+        yield [result, nextExpr];
 
     }
 
@@ -698,15 +704,15 @@ class RTLLiteralExpr extends LiteralExpr {
     }
 
     protected getToken(tape: Tape): Token {
-        //return tape.tokenize(tape.tapeName, this.text[this.index])[0];
-        return new Token(tape.toBits(tape.tapeName, this.text[this.index]));
+        return tape.toToken(tape.tapeName, this.text[this.index]);
     }
 
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
 
         if (this.index < 0) {
             return;
@@ -723,7 +729,7 @@ class RTLLiteralExpr extends LiteralExpr {
             return;
         }
         const nextExpr = constructLiteral(this.tapeName, this.text, this.index-1);
-        yield [matchedTape, result, nextExpr];
+        yield [result, nextExpr];
 
     }
 
@@ -793,20 +799,21 @@ class ConcatExpr extends BinaryExpr {
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
 
-        for (const [c1tape, c1target, c1next] of
-                this.child1.bitsetDeriv(tape, target, stack)) {
-            yield [c1tape, c1target, 
+        for (const [c1target, c1next] of
+                this.child1.bitsetDeriv(tape, target, stack, opt)) {
+            yield [c1target, 
                 constructBinaryConcat(c1next, this.child2)];
         }
 
         const c1next = this.child1.delta(tape, stack);
-        for (const [c2tape, c2target, c2next] of
-                this.child2.bitsetDeriv(tape, target, stack)) {
+        for (const [c2target, c2next] of
+                this.child2.bitsetDeriv(tape, target, stack, opt)) {
             const successor = constructBinaryConcat(c1next, c2next);
-            yield [c2tape, c2target, successor];
+            yield [c2target, successor];
         }
     }
 
@@ -842,20 +849,21 @@ class RTLConcatExpr extends ConcatExpr {
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
 
-        for (const [c2tape, c2target, c2next] of
-                this.child2.bitsetDeriv(tape, target, stack)) {
-            yield [c2tape, c2target, 
+        for (const [c2target, c2next] of
+                this.child2.bitsetDeriv(tape, target, stack, opt)) {
+            yield [c2target, 
                 constructBinaryConcat(this.child1, c2next)];
         }
 
         const c2next = this.child2.delta(tape, stack);
-        for (const [c1tape, c1target, c1next] of
-                this.child1.bitsetDeriv(tape, target, stack)) {
+        for (const [c1target, c1next] of
+                this.child1.bitsetDeriv(tape, target, stack, opt)) {
             const successor = constructBinaryConcat(c1next, c2next);
-            yield [c1tape, c1target, successor];
+            yield [c1target, successor];
         }
     }
 
@@ -900,12 +908,13 @@ export class ArrayUnionExpr extends Expr {
     }
 
     public *bitsetDeriv(
-        tape: Tape,
+        tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
         for (const child of this.children) {
-            yield* child.bitsetDeriv(tape, target, stack);
+            yield* child.bitsetDeriv(tape, target, stack, opt);
         }
     }
 
@@ -934,17 +943,18 @@ class IntersectExpr extends BinaryExpr {
     }
 
     public *bitsetDeriv(
-        tape: Tape,
-        target: Token,               
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
-        for (const [c1tape, c1target, c1next] of 
-            this.child1.disjointBitsetDeriv(tape, target, stack)) {
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
+        for (const [c1target, c1next] of 
+            this.child1.disjointBitsetDeriv(tape, target, stack, opt)) {
 
-            for (const [c2tape, c2target, c2next] of 
-                    this.child2.disjointBitsetDeriv(c1tape, c1target, stack)) {
+            for (const [c2target, c2next] of 
+                    this.child2.disjointBitsetDeriv(tape, c1target, stack, opt)) {
                 const successor = constructIntersection(c1next, c2next);
-                yield [c2tape, c2target, successor];
+                yield [c2target, successor];
             }
         }
     } 
@@ -988,27 +998,28 @@ class FilterExpr extends BinaryExpr {
     }
 
     public *bitsetDeriv(
-        tape: Tape,
-        target: Token,               
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
 
         if (!this.tapes.has(tape.tapeName)) {
-            for (const [c1tape, c1target, c1next] of 
-                    this.child1.disjointBitsetDeriv(tape, target, stack)) {
+            for (const [c1target, c1next] of 
+                    this.child1.disjointBitsetDeriv(tape, target, stack, opt)) {
                 const successor = constructFilter(c1next, this.child2, this.tapes);
-                yield [c1tape, c1target, successor];
+                yield [c1target, successor];
             }
             return;
         }
         
-        for (const [c2tape, c2target, c2next] of 
-            this.child2.disjointBitsetDeriv(tape, target, stack)) {
+        for (const [c2target, c2next] of 
+            this.child2.disjointBitsetDeriv(tape, target, stack, opt)) {
 
-            for (const [c1tape, c1target, c1next] of 
-                    this.child1.disjointBitsetDeriv(c2tape, c2target, stack)) {
+            for (const [c1target, c1next] of 
+                    this.child1.disjointBitsetDeriv(tape, c2target, stack, opt)) {
                 const successor = constructFilter(c1next, c2next, this.tapes);
-                yield [c1tape, c1target, successor];
+                yield [c1target, successor];
             }
         }
     } 
@@ -1063,36 +1074,37 @@ class JoinExpr extends BinaryExpr {
     }
 
     public *bitsetDeriv(
-        tape: Tape,
-        target: Token,               
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
 
         if (!this.tapes2.has(tape.tapeName)) {
-            for (const [c1tape, c1target, c1next] of 
-                    this.child1.disjointBitsetDeriv(tape, target, stack)) {
+            for (const [c1target, c1next] of 
+                    this.child1.disjointBitsetDeriv(tape, target, stack, opt)) {
                 const successor = constructJoin(c1next, this.child2, this.tapes1, this.tapes2);
-                yield [c1tape, c1target, successor];
+                yield [c1target, successor];
             }
             return;
         }
         
         if (!this.tapes1.has(tape.tapeName)) {
-            for (const [c2tape, c2target, c2next] of 
-                    this.child2.disjointBitsetDeriv(tape, target, stack)) {
+            for (const [c2target, c2next] of 
+                    this.child2.disjointBitsetDeriv(tape, target, stack, opt)) {
                 const successor = constructJoin(this.child1, c2next, this.tapes1, this.tapes2);
-                yield [c2tape, c2target, successor];
+                yield [c2target, successor];
             }
             return;
         }
         
-        for (const [c2tape, c2target, c2next] of 
-            this.child2.disjointBitsetDeriv(tape, target, stack)) {
+        for (const [c2target, c2next] of 
+            this.child2.disjointBitsetDeriv(tape, target, stack, opt)) {
 
-            for (const [c1tape, c1target, c1next] of 
-                    this.child1.disjointBitsetDeriv(c2tape, c2target, stack)) {
+            for (const [c1target, c1next] of 
+                    this.child1.disjointBitsetDeriv(tape, c2target, stack, opt)) {
                 const successor = constructJoin(c1next, c2next, this.tapes1, this.tapes2);
-                yield [c1tape, c1target, successor];
+                yield [c1target, successor];
             }
         }
     } 
@@ -1188,8 +1200,9 @@ class JoinExpr extends BinaryExpr {
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
 
         if (stack.exceedsMax(this.symbolName)) {
             return;
@@ -1198,10 +1211,10 @@ class JoinExpr extends BinaryExpr {
         stack = stack.add(this.symbolName);
         let child = this.getChild(stack);
 
-        for (const [childTape, childTarget, childNext] of 
-                        child.bitsetDeriv(tape, target, stack)) {
+        for (const [childTarget, childNext] of 
+                        child.bitsetDeriv(tape, target, stack, opt)) {
             const successor = constructEmbed(this.symbolName, this.symbols, childNext);
-            yield [childTape, childTarget, successor];
+            yield [childTarget, successor];
         }
     }
     
@@ -1273,15 +1286,16 @@ export class CountExpr extends UnaryExpr {
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
         if (this.maxChars <= 0) {
             return;
         }
 
-        for (const [cTape, cTarget, cNext] of this.child.bitsetDeriv(tape, target, stack)) {
+        for (const [cTarget, cNext] of this.child.bitsetDeriv(tape, target, stack, opt)) {
             const successor = constructCount(cNext, this.maxChars-1);
-            yield [cTape, cTarget, successor];
+            yield [cTarget, successor];
         }
     }
 
@@ -1323,8 +1337,9 @@ export class CountTapeExpr extends UnaryExpr {
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
 
         if (!(tape.tapeName in this.maxChars)) {
             return;
@@ -1334,12 +1349,12 @@ export class CountTapeExpr extends UnaryExpr {
             return;
         }
 
-        for (const [cTape, cTarget, cNext] of this.child.bitsetDeriv(tape, target, stack)) {
+        for (const [cTarget, cNext] of this.child.bitsetDeriv(tape, target, stack, opt)) {
             let newMax: {[tape: string]: number} = {};
             Object.assign(newMax, this.maxChars);
             newMax[tape.tapeName] -= 1;
             const successor = constructCountTape(cNext, newMax);
-            yield [cTape, cTarget, successor];
+            yield [cTarget, successor];
         }
     }
 
@@ -1394,12 +1409,13 @@ class RTLRepExpr extends UnaryExpr {
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
-        for (const [cTape, cTarget, cNext] of this.child.bitsetDeriv(tape, target, stack)) {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
+        for (const [cTarget, cNext] of this.child.bitsetDeriv(tape, target, stack, opt)) {
             const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
             const successor = constructBinaryConcat(oneLess, cNext);
-            yield [cTape, cTarget, successor];
+            yield [cTarget, successor];
         }
     }
     
@@ -1446,8 +1462,9 @@ class RenameExpr extends UnaryExpr {
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
 
         if (tape.tapeName != this.toTape && tape.tapeName == this.fromTape) {
             return;
@@ -1455,12 +1472,9 @@ class RenameExpr extends UnaryExpr {
 
         tape = new RenamedTape(tape, this.fromTape, this.toTape);
     
-        for (let [childTape, childTarget, childNext] of 
-                this.child.bitsetDeriv(tape, target, stack)) {
-            if (childTape instanceof RenamedTape) {
-                childTape = childTape.child;
-            }
-            yield [childTape, childTarget, constructRename(childNext, this.fromTape, this.toTape)];
+        for (let [childTarget, childNext] of 
+                this.child.bitsetDeriv(tape, target, stack, opt)) {
+            yield [childTarget, constructRename(childNext, this.fromTape, this.toTape)];
         }
     }
     
@@ -1484,7 +1498,6 @@ class RenameExpr extends UnaryExpr {
     
 }
 
-
 class NegationExpr extends UnaryExpr {
 
     constructor(
@@ -1500,7 +1513,6 @@ class NegationExpr extends UnaryExpr {
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
-        //console.log(`evaluating d^${tape.tapeName} of ${this.id}`);
         const childDelta = this.child.delta(tape, stack);
         const remainingTapes = setDifference(this.tapes, new Set([tape.tapeName]));
         
@@ -1508,25 +1520,23 @@ class NegationExpr extends UnaryExpr {
         
         if (childDelta instanceof NullExpr) {
             result = constructNegation(childDelta, remainingTapes, this.maxChars);
-            //console.log(`result is ${result.id}`);
             return result;
         }
         if (remainingTapes.size == 0) {
             result = NULL;
-            //console.log(`result is ${result.id}`);
             return result;
         }
         
         result = constructNegation(childDelta, remainingTapes, this.maxChars);
-        //console.log(`result is ${result.id}`);
         return result;
     }
     
     public *bitsetDeriv(
         tape: Tape, 
         target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
 
         if (!this.tapes.has(tape.tapeName)) {
             return;
@@ -1536,13 +1546,13 @@ class NegationExpr extends UnaryExpr {
             return;
         }
 
-        let remainder = new Token(target.bits.clone());
+        let remainder = target.clone();
 
-        for (const [childTape, childText, childNext] of 
-                this.child.disjointBitsetDeriv(tape, target, stack)) {
+        for (const [childText, childNext] of 
+                this.child.disjointBitsetDeriv(tape, target, stack, opt)) {
             remainder = remainder.andNot(childText);
             const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
-            yield [childTape, childText, successor];
+            yield [childText, successor];
         }
 
         if (remainder.isEmpty()) {
@@ -1553,7 +1563,7 @@ class NegationExpr extends UnaryExpr {
         // cases where we've (in FSA terms) "fallen off" the graph,
         // and are now at a special consume-anything expression that always
         // succeeds.
-        yield [tape, remainder, constructUniverse(this.tapes, this.maxChars-1)];
+        yield [remainder, constructUniverse(this.tapes, this.maxChars-1)];
     }
     
     public *stringDeriv(
@@ -1571,20 +1581,10 @@ class NegationExpr extends UnaryExpr {
             return;
         }
 
-        let remainder: Token;
-
-        if (target == ANY_CHAR_STR) {
-            remainder = tape.any();
-        } else {
-            remainder = tape.toToken(tape.tapeName, target);
-        }
+        let remainder = tape.toToken(tape.tapeName, target);
 
         for (const [childText, childNext] of 
                 this.child.disjointStringDeriv(tape, target, stack, opt)) {
-            if (childText == ANY_CHAR_STR) {
-                continue;
-            }
-
             const childToken = tape.toToken(tape.tapeName, childText);
             remainder = remainder.andNot(childToken);
             const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
@@ -1637,7 +1637,12 @@ export class MatchExpr extends UnaryExpr {
         return result;
     }
 
-    public *bitsetDeriv(tape: Tape, target: Token, stack: CounterStack): Gen<[Tape, Token, Expr]> {
+    public *bitsetDeriv(
+        tape: Tape, 
+        target: Token,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
         throw new Error("Method not implemented.");
     }
     

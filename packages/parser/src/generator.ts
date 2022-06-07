@@ -144,75 +144,6 @@ abstract class Generator<T extends AbstractToken> {
         yield* candidateOutput.toDict(opt);
     } 
 
-    /*
-    public *generateRandom(
-        expr: Expr,
-        tapes: Tape[],
-        stack: CounterStack,
-        opt: GenOptions
-    ): Gen<StringDict> {
-        const initialOutput: OutputTrie<string> = new OutputTrie();
-
-        let states: [Tape[], OutputTrie<string>, Expr][] = [[tapes, initialOutput, expr]];
-        const candidates: OutputTrie<string>[] = [];
-
-        let prev: [Tape[], OutputTrie<string>, Expr] | undefined = undefined;
-        while (prev = states.pop()) {
-
-            // first, see if it's time to randomly emit a result
-            if (Math.random() < 0.1 && candidates.length > 0) {
-                const candidateIndex = Math.floor(Math.random()*candidates.length);
-                const candidateOutput = candidates.splice(candidateIndex, 1)[0];
-                yield* candidateOutput.toDict(opt);
-            }
-
-            let nexts: [Tape[], OutputTrie<string>, Expr][] = [];
-            let [tapes, prevOutput, prevExpr] = prev;
-
-            if (prevExpr instanceof EpsilonExpr) {
-                candidates.push(prevOutput);
-                continue;
-            }
-            
-            if (tapes.length == 0) {
-                if (!(prevExpr instanceof NullExpr || prevExpr instanceof EpsilonExpr)) {
-                    throw new Error(`warning, nontrivial expr at end: ${prevExpr.id}`);
-                }
-                continue; 
-            }
-
-            const tapeToTry = tapes[0];
-
-            const delta = prevExpr.delta(tapeToTry, stack);
-            if (!(delta instanceof NullExpr)) {                    
-                const newTapes = tapes.slice(1);
-                nexts.push([newTapes, prevOutput, delta]);
-            }
-
-            // rotate the tapes so that we don't keep trying the same one every time
-            tapes = [... tapes.slice(1), tapes[0]];
-
-            for (const [cTarget, cNext] of prevExpr.stringDeriv(tapeToTry, ANY_CHAR_STR, stack, opt)) {
-
-                //const cToken = tapeToTry.toToken(tapeToTry.tapeName, cTarget);
-                const nextOutput = prevOutput.add(tapeToTry, cTarget);
-                nexts.push([tapes, nextOutput, cNext]);
-            }
-
-            shuffleArray(nexts);
-            states.push(...nexts);
-        }
-
-        if (candidates.length == 0) {
-            return;
-        }
-
-        const candidateIndex = Math.floor(Math.random()*candidates.length);
-        const candidateOutput = candidates.splice(candidateIndex, 1)[0];
-        yield* candidateOutput.toDict(opt);
-    }
-    */
-
 }
 
 class StringGenerator extends Generator<string> {
@@ -236,8 +167,8 @@ class BitsetGenerator extends Generator<Token> {
         stack: CounterStack,
         opt: GenOptions
     ): Gen<[Token, Expr]> {
-        for (const [_, token, next] of 
-                expr.disjointBitsetDeriv(tape, tape.any(), stack)) {
+        for (const [token, next] of 
+                expr.disjointBitsetDeriv(tape, tape.any(), stack, opt)) {
             yield [token, next];
         }
     }
