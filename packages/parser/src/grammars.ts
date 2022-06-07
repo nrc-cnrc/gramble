@@ -180,11 +180,7 @@ export abstract class Grammar {
         // But it memoizes, so there's no harm in calling it again for safety.
         const tapeNames = this.calculateTapes(new CounterStack(2));
         for (const tapeName of tapeNames) {
-            tapes.tokenize(tapeName, ""); // initialize it just in case
-            const tape = tapes.matchTape(tapeName);
-            if (tape == undefined) {
-                continue; // shouldn't happen, we just initialized it a few lines ago
-            }
+            const tape = tapes.createTape(tapeName); // just in case it doesn't exist
             this.collectVocab(tape, new Set());
         }
     }
@@ -340,12 +336,12 @@ export class CharSetGrammar extends AtomicGrammar {
     }
     
     public collectVocab(tapes: Tape, symbolsVisited: Set<string>): void {
-        const tape = tapes.matchTape(this.tape);
+        const tape = tapes.getTape(this.tape);
         if (tape == undefined) {
             return;
         }
         for (const char of this.chars) {
-            tape.tokenize(this.tape, char, true);
+            tape.tokenize(char, true);
         }
     }
 
@@ -382,11 +378,11 @@ export class LiteralGrammar extends AtomicGrammar {
     }
     
     public collectVocab(tapes: Tape, symbolsVisited: Set<string>): void {
-        const tape = tapes.matchTape(this.tape);
+        const tape = tapes.getTape(this.tape);
         if (tape == undefined) {
             return;
         }
-        this.tokens = tape.tokenize(this.tape, this.text).map(([s,t]) => s);
+        this.tokens = tape.tokenize(this.text).map(([s,t]) => s);
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -1801,18 +1797,18 @@ export class ReplaceGrammar extends Grammar {
     public copyVocab(tapes: Tape, symbolsVisited: Set<string>): void { 
         super.copyVocab(tapes, symbolsVisited);
         if (this.vocabBypass) {
-            const fromTape = tapes.matchTape(this.fromTapeName);
+            const fromTape = tapes.getTape(this.fromTapeName);
             if (fromTape == undefined) {
                 throw new Error(`Cannot find origin tape ${this.fromTapeName} during vocab copy`);
             }
-            const fromVocab: string[] = fromTape.fromToken(this.fromTapeName, fromTape.any());
+            const fromVocab: string[] = fromTape.fromToken(fromTape.any());
             for (const toTapeName of this.toTapeNames) {
-                const toTape = tapes.matchTape(toTapeName);
+                const toTape = tapes.getTape(toTapeName);
                 if (toTape == undefined) {
                     throw new Error(`Cannot find destination tape ${toTapeName} during vocab copy`);
                 }
                 for (const token of fromVocab) {
-                    toTape.tokenize(toTapeName, token);
+                    toTape.tokenize(token);
                 }
             }
         }
@@ -1848,15 +1844,19 @@ export class ReplaceGrammar extends Grammar {
         let supersetVocab: boolean = this.vocabBypass;
         if (!supersetVocab) {
             const tapeCollection: TapeCollection = this.getAllTapes();
-            const fromTape: Tape | undefined = tapeCollection.matchTape(this.fromTapeName);
+            const fromTape: Tape | undefined = tapeCollection.getTape(this.fromTapeName);
             if (fromTape != undefined) {
-                const fromVocab: string[] = fromTape.fromToken(this.fromTapeName, fromTape.any());
+                const fromVocab: string[] = fromTape.fromToken(fromTape.any());
                 // The following code sets sameVocab to true if the vocab of ANY
                 // toTape is a superset of the fromTape vocab.
                 // Perhaps we should throw an Error if some toTape vocabs are
                 // supersets of the fromTape vocab and some are not.
                 for (const toTapeName of this.toTapeNames) {
-                    if (tapeCollection.inVocab(toTapeName, fromVocab)) {
+                    const toTape = tapeCollection.getTape(toTapeName);
+                    if (toTape == undefined) {
+                        continue; // shouldn't happen, just for linting
+                    }
+                    if (toTape.inVocab(fromVocab)) {
                         supersetVocab = true;
                     }
                 }

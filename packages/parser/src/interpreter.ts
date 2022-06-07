@@ -324,7 +324,7 @@ export class Interpreter {
 
         const prioritizedTapes: Tape[] = [];
         for (const tapeName of tapePriority) {
-            const actualTape = this.tapeObjs.matchTape(tapeName);
+            const actualTape = this.tapeObjs.getTape(tapeName);
             if (actualTape == undefined) {
                 throw new Error(`cannot find priority tape ${tapeName}`);
             }
@@ -359,7 +359,7 @@ export class Interpreter {
 
             const prioritizedTapes: Tape[] = [];
             for (const tapeName of tapePriority) {
-                const actualTape = this.tapeObjs.matchTape(tapeName);
+                const actualTape = this.tapeObjs.getTape(tapeName);
                 if (actualTape == undefined) {
                     throw new Error(`cannot find priority tape ${tapeName}`);
                 }

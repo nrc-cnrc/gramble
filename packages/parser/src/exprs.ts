@@ -263,7 +263,7 @@ export abstract class Expr {
         }
 
         for (const c in results) {
-            const nextToken = tape.toToken(tape.tapeName, c);
+            const nextToken = tape.toToken(c);
             const nextExprs = results[c];
             const nextExpr = constructAlternation(...nextExprs);
             yield [nextToken, nextExpr];
@@ -359,7 +359,8 @@ export class EpsilonExpr extends Expr {
     public *stringDeriv(
         tape: Tape, 
         target: string, 
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> { }
 
 }
@@ -387,7 +388,8 @@ export class NullExpr extends Expr {
     public *stringDeriv(
         tape: Tape, 
         target: string, 
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> { }
 
 }
@@ -410,8 +412,7 @@ class DotExpr extends Expr {
     }
     
     public delta(tape: Tape, stack: CounterStack): Expr {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return this;
         }
         return NULL;
@@ -423,8 +424,7 @@ class DotExpr extends Expr {
         stack: CounterStack,
         opt: GenOptions
     ): Gen<[Token, Expr]> {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return;
         }
         yield [target, EPSILON];
@@ -433,21 +433,21 @@ class DotExpr extends Expr {
     public *stringDeriv(
         tape: Tape, 
         target: string, 
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> { 
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return;
         }
 
         if (target == ANY_CHAR_STR) {
-            for (let c of tape.fromToken(tape.tapeName, tape.any())) {
+            for (let c of tape.fromToken(tape.any())) {
                 yield [c, EPSILON];
             }
             return;
         }
 
-        if (!tape.inVocab(tape.tapeName, [target])) {
+        if (!tape.inVocab([target])) {
             return;
         }
         
@@ -470,8 +470,7 @@ class CharSetExpr extends Expr {
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return this;
         }
         return NULL;
@@ -480,7 +479,7 @@ class CharSetExpr extends Expr {
     protected getToken(tape: Tape): Token {
         let result = tape.none();
         for (const char of this.chars) {
-            const t = tape.toToken(tape.tapeName, char);
+            const t = tape.toToken(char);
             result = result.or(t);
         }
         return result;
@@ -492,13 +491,12 @@ class CharSetExpr extends Expr {
         stack: CounterStack,
         opt: GenOptions
     ): Gen<[Token, Expr]> {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return;
         }
 
-        const bits = this.getToken(matchedTape);
-        const result = matchedTape.match(bits, target);
+        const bits = this.getToken(tape);
+        const result = tape.match(bits, target);
         if (result.isEmpty()) {
             return;
         }
@@ -508,10 +506,10 @@ class CharSetExpr extends Expr {
     public *stringDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return;
         }
 
@@ -541,8 +539,7 @@ class DotStarExpr extends Expr {
     }
     
     public delta(tape: Tape, stack: CounterStack): Expr {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return this;
         }
         return EPSILON;
@@ -554,8 +551,7 @@ class DotStarExpr extends Expr {
         stack: CounterStack,
         opt: GenOptions
     ): Gen<[Token, Expr]> {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return;
         }
         yield [target, this];
@@ -564,22 +560,21 @@ class DotStarExpr extends Expr {
     public *stringDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return;
         }
 
-
         if (target == ANY_CHAR_STR) {
-            for (let c of tape.fromToken(tape.tapeName, tape.any())) {
+            for (let c of tape.fromToken(tape.any())) {
                 yield [c, this];
             }
             return;
         }
 
-        if (!tape.inVocab(tape.tapeName, [target])) {
+        if (!tape.inVocab([target])) {
             return;
         }
         
@@ -609,8 +604,7 @@ class LiteralExpr extends Expr {
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return this;
         }
         if (this.index >= this.text.length) {
@@ -620,7 +614,7 @@ class LiteralExpr extends Expr {
     }
 
     protected getToken(tape: Tape): Token {
-        return tape.toToken(tape.tapeName, this.text[this.index]);
+        return tape.toToken(this.text[this.index]);
     }
 
     public *bitsetDeriv(
@@ -634,13 +628,12 @@ class LiteralExpr extends Expr {
             return;
         }
 
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return;
         }
 
-        const bits = this.getToken(matchedTape);
-        const result = matchedTape.match(bits, target);
+        const currentToken = this.getToken(tape);
+        const result = tape.match(currentToken, target);
         if (result.isEmpty()) {
             return;
         }
@@ -652,15 +645,15 @@ class LiteralExpr extends Expr {
     public *stringDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
 
         if (this.index >= this.text.length) {
             return;
         }
 
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return;
         }
 
@@ -693,18 +686,19 @@ class RTLLiteralExpr extends LiteralExpr {
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return this;
         }
+
         if (this.index < 0) {
             return EPSILON;
         }
+
         return NULL;
     }
 
     protected getToken(tape: Tape): Token {
-        return tape.toToken(tape.tapeName, this.text[this.index]);
+        return tape.toToken(this.text[this.index]);
     }
 
     public *bitsetDeriv(
@@ -718,13 +712,12 @@ class RTLLiteralExpr extends LiteralExpr {
             return;
         }
 
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return;
         }
 
-        const bits = this.getToken(matchedTape);
-        const result = matchedTape.match(bits, target);
+        const currentToken = this.getToken(tape);
+        const result = tape.match(currentToken, target);
         if (result.isEmpty()) {
             return;
         }
@@ -736,15 +729,15 @@ class RTLLiteralExpr extends LiteralExpr {
     public *stringDeriv(
         tape: Tape, 
         target: string,
-        stack: CounterStack
+        stack: CounterStack,
+        opt: GenOptions
     ): Gen<[string, Expr]> {
 
         if (this.index < 0) {
             return;
         }
 
-        const matchedTape = tape.matchTape(this.tapeName);
-        if (matchedTape == undefined) {
+        if (tape.name != this.tapeName) {
             return;
         }
 
@@ -1004,7 +997,7 @@ class FilterExpr extends BinaryExpr {
         opt: GenOptions
     ): Gen<[Token, Expr]> {
 
-        if (!this.tapes.has(tape.tapeName)) {
+        if (!this.tapes.has(tape.name)) {
             for (const [c1target, c1next] of 
                     this.child1.disjointBitsetDeriv(tape, target, stack, opt)) {
                 const successor = constructFilter(c1next, this.child2, this.tapes);
@@ -1031,7 +1024,7 @@ class FilterExpr extends BinaryExpr {
         opt: GenOptions
     ): Gen<[string, Expr]> {
 
-        if (!this.tapes.has(tape.tapeName)) {
+        if (!this.tapes.has(tape.name)) {
             for (const [c1target, c1next] of 
                     this.child1.disjointStringDeriv(tape, target, stack, opt)) {
                 const successor = constructFilter(c1next, this.child2, this.tapes);
@@ -1080,7 +1073,7 @@ class JoinExpr extends BinaryExpr {
         opt: GenOptions
     ): Gen<[Token, Expr]> {
 
-        if (!this.tapes2.has(tape.tapeName)) {
+        if (!this.tapes2.has(tape.name)) {
             for (const [c1target, c1next] of 
                     this.child1.disjointBitsetDeriv(tape, target, stack, opt)) {
                 const successor = constructJoin(c1next, this.child2, this.tapes1, this.tapes2);
@@ -1089,7 +1082,7 @@ class JoinExpr extends BinaryExpr {
             return;
         }
         
-        if (!this.tapes1.has(tape.tapeName)) {
+        if (!this.tapes1.has(tape.name)) {
             for (const [c2target, c2next] of 
                     this.child2.disjointBitsetDeriv(tape, target, stack, opt)) {
                 const successor = constructJoin(this.child1, c2next, this.tapes1, this.tapes2);
@@ -1116,7 +1109,7 @@ class JoinExpr extends BinaryExpr {
         opt: GenOptions
     ): Gen<[string, Expr]> {
 
-        if (!this.tapes2.has(tape.tapeName)) {
+        if (!this.tapes2.has(tape.name)) {
             for (const [c1target, c1next] of 
                     this.child1.disjointStringDeriv(tape, target, stack, opt)) {
                 const successor = constructJoin(c1next, this.child2, this.tapes1, this.tapes2);
@@ -1125,7 +1118,7 @@ class JoinExpr extends BinaryExpr {
             return;
         }
         
-        if (!this.tapes1.has(tape.tapeName)) {
+        if (!this.tapes1.has(tape.name)) {
             for (const [c2target, c2next] of 
                     this.child2.disjointStringDeriv(tape, target, stack, opt)) {
                 const successor = constructJoin(this.child1, c2next, this.tapes1, this.tapes2);
@@ -1341,18 +1334,18 @@ export class CountTapeExpr extends UnaryExpr {
         opt: GenOptions
     ): Gen<[Token, Expr]> {
 
-        if (!(tape.tapeName in this.maxChars)) {
+        if (!(tape.name in this.maxChars)) {
             return;
         }
 
-        if (this.maxChars[tape.tapeName] <= 0) {
+        if (this.maxChars[tape.name] <= 0) {
             return;
         }
 
         for (const [cTarget, cNext] of this.child.bitsetDeriv(tape, target, stack, opt)) {
             let newMax: {[tape: string]: number} = {};
             Object.assign(newMax, this.maxChars);
-            newMax[tape.tapeName] -= 1;
+            newMax[tape.name] -= 1;
             const successor = constructCountTape(cNext, newMax);
             yield [cTarget, successor];
         }
@@ -1365,18 +1358,18 @@ export class CountTapeExpr extends UnaryExpr {
         opt: GenOptions
     ): Gen<[string, Expr]> {
 
-        if (!(tape.tapeName in this.maxChars)) {
+        if (!(tape.name in this.maxChars)) {
             return;
         }
 
-        if (this.maxChars[tape.tapeName] <= 0) {
+        if (this.maxChars[tape.name] <= 0) {
             return;
         }
 
         for (const [cTarget, cNext] of this.child.stringDeriv(tape, target, stack, opt)) {
             let newMax: {[tape: string]: number} = {};
             Object.assign(newMax, this.maxChars);
-            newMax[tape.tapeName] -= 1;
+            newMax[tape.name] -= 1;
             const successor = constructCountTape(cNext, newMax);
             yield [cTarget, successor];
         }
@@ -1447,7 +1440,7 @@ class RenameExpr extends UnaryExpr {
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
-        if (tape.tapeName != this.toTape && tape.tapeName == this.fromTape) {
+        if (tape.name != this.toTape && tape.name == this.fromTape) {
             return this;
         }
         tape = new RenamedTape(tape, this.fromTape, this.toTape);
@@ -1466,7 +1459,7 @@ class RenameExpr extends UnaryExpr {
         opt: GenOptions
     ): Gen<[Token, Expr]> {
 
-        if (tape.tapeName != this.toTape && tape.tapeName == this.fromTape) {
+        if (tape.name != this.toTape && tape.name == this.fromTape) {
             return;
         }
 
@@ -1484,7 +1477,7 @@ class RenameExpr extends UnaryExpr {
         stack: CounterStack,
         opt: GenOptions
     ): Gen<[string, Expr]> {
-        if (tape.tapeName != this.toTape && tape.tapeName == this.fromTape) {
+        if (tape.name != this.toTape && tape.name == this.fromTape) {
             return;
         }
 
@@ -1514,7 +1507,7 @@ class NegationExpr extends UnaryExpr {
 
     public delta(tape: Tape, stack: CounterStack): Expr {
         const childDelta = this.child.delta(tape, stack);
-        const remainingTapes = setDifference(this.tapes, new Set([tape.tapeName]));
+        const remainingTapes = setDifference(this.tapes, new Set([tape.name]));
         
         let result: Expr;
         
@@ -1538,7 +1531,7 @@ class NegationExpr extends UnaryExpr {
         opt: GenOptions
     ): Gen<[Token, Expr]> {
 
-        if (!this.tapes.has(tape.tapeName)) {
+        if (!this.tapes.has(tape.name)) {
             return;
         }
 
@@ -1573,7 +1566,7 @@ class NegationExpr extends UnaryExpr {
         opt: GenOptions
     ): Gen<[string, Expr]> {
 
-        if (!this.tapes.has(tape.tapeName)) {
+        if (!this.tapes.has(tape.name)) {
             return;
         }
 
@@ -1581,11 +1574,11 @@ class NegationExpr extends UnaryExpr {
             return;
         }
 
-        let remainder = tape.toToken(tape.tapeName, target);
+        let remainder = tape.toToken(target);
 
         for (const [childText, childNext] of 
                 this.child.disjointStringDeriv(tape, target, stack, opt)) {
-            const childToken = tape.toToken(tape.tapeName, childText);
+            const childToken = tape.toToken(childText);
             remainder = remainder.andNot(childToken);
             const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
             yield [childText, successor];
@@ -1599,7 +1592,7 @@ class NegationExpr extends UnaryExpr {
         // cases where we've (in FSA terms) "fallen off" the graph,
         // and are now at a special consume-anything expression that always
         // succeeds.
-        for (const c of tape.fromToken(tape.tapeName, remainder)) {
+        for (const c of tape.fromToken(remainder)) {
             yield [c, constructUniverse(this.tapes, this.maxChars-1)];
         }
     }
@@ -1620,7 +1613,7 @@ export class MatchExpr extends UnaryExpr {
 
     public delta(tape: Tape, stack: CounterStack): Expr {
 
-        if (!this.tapes.has(tape.tapeName)) {
+        if (!this.tapes.has(tape.name)) {
             // it's not a tape we're matching
             const nextExpr = this.child.delta(tape, stack);
             return constructMatch(nextExpr, this.tapes);
@@ -1630,7 +1623,7 @@ export class MatchExpr extends UnaryExpr {
         for (const t of this.tapes) {
             const tapeToTry = tape.getTape(t);
             if (tapeToTry == undefined) {
-                throw new Error(`something went wrong in delta, couldn't find tape ${t} relative to tape ${tape.tapeName}`);
+                throw new Error(`something went wrong in delta, couldn't find tape ${t} relative to tape ${tape.name}`);
             }
             result = result.delta(tapeToTry, stack);
         }
@@ -1653,7 +1646,7 @@ export class MatchExpr extends UnaryExpr {
         opt: GenOptions
     ): Gen<[string, Expr]> {
         
-        if (!this.tapes.has(tape.tapeName)) {
+        if (!this.tapes.has(tape.name)) {
             // it's not a tape we're matching
             for (const [cTarget, cNext] of this.child.stringDeriv(tape, target, stack, opt)) {
                 yield [cTarget, constructMatch(cNext, this.tapes)];
@@ -1680,13 +1673,13 @@ export class MatchExpr extends UnaryExpr {
         for (const [nextTarget, nextExpr] of results) {
             
             const cs = (nextTarget == ANY_CHAR_STR) 
-                        ? tape.fromToken(tape.tapeName, tape.any())
+                        ? tape.fromToken(tape.any())
                         : [nextTarget];
 
             for (const c of cs) {
                 let bufferedNext: Expr = constructMatch(nextExpr, this.tapes);
                 for (const matchTape of this.tapes) {
-                    if (matchTape == tape.tapeName) {
+                    if (matchTape == tape.name) {
                         continue;
                     }
                     const lit = constructLiteral(matchTape, [c]);

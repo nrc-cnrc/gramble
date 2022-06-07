@@ -164,12 +164,12 @@ class FlatMemoExpr extends UnaryExpr {
     public transitions: {[tape: string]: {[c: string]: Expr}} = {};
 
     public delta(tape: Tape, stack: CounterStack): Expr {
-        if (tape.tapeName in this.memoizedDelta) {
-            return this.memoizedDelta[tape.tapeName]
+        if (tape.name in this.memoizedDelta) {
+            return this.memoizedDelta[tape.name]
         }
         const childExpr = this.child.delta(tape, stack);
         const nextExpr = constructMemo(childExpr, this.limit);
-        this.memoizedDelta[tape.tapeName] = nextExpr;
+        this.memoizedDelta[tape.name] = nextExpr;
         return nextExpr;
     }
         
@@ -187,15 +187,15 @@ class FlatMemoExpr extends UnaryExpr {
         stack: CounterStack
     ): Gen<[Tape, Token, Expr]> {
 
-        if (!(tape.tapeName in this.transitions)) {
-            this.transitions[tape.tapeName] = {}
+        if (!(tape.name in this.transitions)) {
+            this.transitions[tape.name] = {}
         }
 
-        if (!(tape.tapeName in this.memoizedBits)) {
-            this.memoizedBits[tape.tapeName] = tape.none();
+        if (!(tape.name in this.memoizedBits)) {
+            this.memoizedBits[tape.name] = tape.none();
         }
 
-        const alreadyMemoized = this.memoizedBits[tape.tapeName];
+        const alreadyMemoized = this.memoizedBits[tape.name];
         const targetMemoized = target.and(alreadyMemoized);
         const targetUnmemoized = target.andNot(alreadyMemoized);
 
@@ -203,9 +203,9 @@ class FlatMemoExpr extends UnaryExpr {
         //console.log(`already memoized ${tape.fromToken(tape.tapeName, alreadyMemoized)}`);
 
         // first go through any memoized results
-        for (const c of tape.fromToken(tape.tapeName, targetMemoized)) {
-            const nextToken = new Token(tape.toBits(tape.tapeName, c));
-            const nextExpr = this.transitions[tape.tapeName][c];
+        for (const c of tape.fromToken(tape.name, targetMemoized)) {
+            const nextToken = new Token(tape.toBits(tape.name, c));
+            const nextExpr = this.transitions[tape.name][c];
             if (nextExpr == undefined) {
                 throw new Error(`we thought we had memoized ${c} but hadn't`);
             }
@@ -221,18 +221,18 @@ class FlatMemoExpr extends UnaryExpr {
                 this.child.disjointBitsetDeriv(tape, targetUnmemoized, stack)) {
             remainder = remainder.andNot(childToken); // remove them from the remainder
             this.memoizedBits[childTape.tapeName] = this.memoizedBits[childTape.tapeName].or(childToken)
-            for (const c of childTape.fromToken(tape.tapeName, childToken)) {
+            for (const c of childTape.fromToken(tape.name, childToken)) {
                 this.transitions[childTape.tapeName][c] = childExpr;
-                const nextToken = new Token(tape.toBits(tape.tapeName, c));
+                const nextToken = new Token(tape.toBits(tape.name, c));
                 const nextExpr = constructMemo(childExpr, this.limit -1);
                 yield [tape, nextToken, nextExpr];
             }
         }
 
         // any remaining bits are null
-        this.memoizedBits[tape.tapeName] = this.memoizedBits[tape.tapeName].or(remainder);
-        for (const c of tape.fromToken(tape.tapeName, remainder)) {
-            this.transitions[tape.tapeName][c] = NULL;
+        this.memoizedBits[tape.name] = this.memoizedBits[tape.name].or(remainder);
+        for (const c of tape.fromToken(tape.name, remainder)) {
+            this.transitions[tape.name][c] = NULL;
         }
     }
     
@@ -260,10 +260,10 @@ class MemoExpr extends UnaryExpr {
                         resultTape: Tape,
                         token: Token,
                         next: Expr): void {
-        if (!(queryTape.tapeName in this.transitionsByTape)) {
-            this.transitionsByTape[queryTape.tapeName] = [];
+        if (!(queryTape.name in this.transitionsByTape)) {
+            this.transitionsByTape[queryTape.name] = [];
         }
-        this.transitionsByTape[queryTape.tapeName].push([resultTape, token, next]);
+        this.transitionsByTape[queryTape.name].push([resultTape, token, next]);
     }
 
     public delta(tape: Tape, stack: CounterStack): Expr {
@@ -285,9 +285,9 @@ class MemoExpr extends UnaryExpr {
         stack: CounterStack
     ): Gen<[Tape, Token, Expr]> {
 
-        let transitions = this.transitionsByTape[tape.tapeName];
+        let transitions = this.transitionsByTape[tape.name];
         if (transitions == undefined) {
-            this.transitionsByTape[tape.tapeName] = [];
+            this.transitionsByTape[tape.name] = [];
             transitions = [];
         }
 
@@ -308,9 +308,9 @@ class MemoExpr extends UnaryExpr {
                 continue;
             }
 
-            const matchedTape = tape.matchTape(origResultTape.tapeName);
+            const matchedTape = tape.matchTape(origResultTape.name);
             if (matchedTape == undefined) {
-                throw new Error(`Failed to match ${tape.tapeName} to ${origResultTape.tapeName}..?`);
+                throw new Error(`Failed to match ${tape.name} to ${origResultTape.name}..?`);
             }
             
             const resultToken = matchedTape.match(token, remainder);

@@ -68,7 +68,7 @@ abstract class Generator<T extends AbstractToken> {
                 console.log();
                 console.log(`prevOutput is ${JSON.stringify(prevOutput.toDict(opt))}`);
                 console.log(`prevExpr is ${prevExpr.id}`);
-                console.log(`remaining tapes are ${tapes.map(t => t.tapeName)}`);
+                console.log(`remaining tapes are ${tapes.map(t => t.name)}`);
             }
 
             if (prevExpr instanceof EpsilonExpr) {
@@ -100,7 +100,7 @@ abstract class Generator<T extends AbstractToken> {
 
             const delta = prevExpr.delta(tapeToTry, stack);
             if (VERBOSE) {
-                console.log(`d^${tapeToTry.tapeName} is ${delta.id}`);
+                console.log(`d^${tapeToTry.name} is ${delta.id}`);
             }
             if (!(delta instanceof NullExpr)) {                    
                 const newTapes = tapes.slice(1);
@@ -115,7 +115,7 @@ abstract class Generator<T extends AbstractToken> {
                     this.deriv(prevExpr, tapeToTry, stack, opt)) {
                 
                 if (VERBOSE) {
-                    console.log(`D^${tapeToTry.tapeName}_${cTarget} is ${cNext.id}`);
+                    console.log(`D^${tapeToTry.name}_${cTarget} is ${cNext.id}`);
                 }
 
                 const nextOutput = prevOutput.add(tapeToTry, cTarget);

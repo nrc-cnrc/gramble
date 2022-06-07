@@ -40,14 +40,14 @@ export class OutputTrie<T extends AbstractToken> {
             const token = (currentOutput as OutputTrieLeaf<T>).token;
             const prev = (currentOutput as OutputTrieLeaf<T>).prev;
             for (const result of results) {
-                const oldStr = (tape.tapeName in result) ? result[tape.tapeName] : "";
+                const oldStr = (tape.name in result) ? result[tape.name] : "";
                 for (const s of this.getStringsFromToken(tape, token, opt.random)) {
                     const newResult: StringDict = {};
                     Object.assign(newResult, result);
                     const newStr = (opt.direction == "LTR")
                                     ? s + oldStr
                                     : oldStr + s;
-                    newResult[tape.tapeName] = newStr;
+                    newResult[tape.name] = newStr;
                     newResults.push(newResult);
                 }
             }
@@ -97,19 +97,13 @@ export class OutputTrieLeaf<T extends AbstractToken> extends OutputTrie<T> {
  */
 export abstract class Tape {
 
-    public abstract readonly tapeName: string;
-
-    public abstract readonly isTrivial: boolean;
+    public abstract readonly name: string;
 
     public abstract getTapeNames(): Set<string>;
 
-    public abstract inVocab(tapeName: string, strs: string[]): boolean;
+    public abstract inVocab(strs: string[]): boolean;
     
-    public abstract getTape(tapeName: string): Tape | undefined;
-
-    public add(str1: string, str2: string): string[] {
-        throw new Error(`Not implemented`);
-    }
+    public abstract getTape(name: string): Tape | undefined;
     
     public match(str1: Token, str2: Token): Token {
         throw new Error(`Not implemented`);
@@ -123,42 +117,29 @@ export abstract class Tape {
         throw new Error(`Not implemented`);
     }
     
-    public *plus(tapeName: string, other: BitSet): Gen<Tape> {
-        throw new Error(`Not implemented`);
-    }
-
-    public *times(tapeName: string, other: BitSet): Gen<Tape> {
-        throw new Error(`Not implemented`);
-    }
-
     public tokenize(
-        tapeName: string, 
         str: string, 
         atomic: boolean = false
     ): [string, Token][] {
         throw new Error(`Not implemented`);
     }
 
-    
     public get vocabSize(): number {
         return 0;
     }
 
-    public abstract matchTape(tapeName: string): Tape | undefined;
-    //public abstract registerTokens(tapeName: string, tokens: string[]): void;
-    public abstract toBits(tapeName: string, char: string): BitSet;
-    public abstract fromBits(tapeName: string, bits: BitSet): string[];
-
+    public abstract toBits(char: string): BitSet;
+    public abstract fromBits(bits: BitSet): string[];
     
-    public toToken(tapeName: string, char: string): Token {
+    public toToken(char: string): Token {
         if (char == ANY_CHAR_STR) {
             return this.any();
         }
-        return new Token(this.toBits(tapeName, char));
+        return new Token(this.toBits(char));
     }
 
-    public fromToken(tapeName: string, token: Token): string[] {
-        return this.fromBits(tapeName, token.bits);
+    public fromToken(token: Token): string[] {
+        return this.fromBits(token.bits);
     }
 
 }
@@ -170,7 +151,6 @@ export abstract class Tape {
  * Right now we only have one kind of token, strings implemented as BitSets, but eventually this should be an
  * abstract class with (e.g.) StringToken, maybe FlagToken, ProbToken and/or LogToken (for handling weights), 
  * etc.
- * 
  */
 export class Token {
  
@@ -195,11 +175,7 @@ export class Token {
     }
 
     public toStrings(tape: Tape): string[] {
-        return tape.fromBits(tape.tapeName, this.bits);
-    }
-
-    public stringify(tape: Tape): string {
-        return this.toStrings(tape).join("|");
+        return tape.fromBits(this.bits);
     }
 }
 
@@ -214,15 +190,11 @@ export class StringTape extends Tape {
 
     constructor(
         public parent: TapeCollection,
-        public tapeName: string,
+        public name: string,
         public strToIndex: Map<string, number> = new Map(),
         public indexToStr: Map<number, string> = new Map()
     ) { 
         super();
-    }
-
-    public get isTrivial(): boolean {
-        return false;
     }
 
     public get vocabSize(): number {
@@ -230,20 +202,17 @@ export class StringTape extends Tape {
     }
 
     public getTapeNames(): Set<string> {
-        return new Set([this.tapeName]);
+        return new Set([this.name]);
     }
 
-    public getTape(tapeName: string): Tape | undefined {
+    public getTape(name: string): Tape | undefined {
         if (this.parent == undefined) {
-            throw new Error(`Orphaned tape: ${this.tapeName}`);
+            throw new Error(`Orphaned tape: ${this.name}`);
         }
-        return this.parent.getTape(tapeName);
+        return this.parent.getTape(name);
     }
 
-    public inVocab(tapeName: string, strs: string[]): boolean {
-        if (tapeName != this.tapeName) {
-            throw new Error(`Trying to check vocab for tape ${tapeName} on tape ${this.tapeName}`);
-        }
+    public inVocab(strs: string[]): boolean {
         for (const c of strs) {
             var index = this.strToIndex.get(c);
             if (index == undefined) {
@@ -253,12 +222,12 @@ export class StringTape extends Tape {
         return true;
     }
 
-    public matchTape(tapeName: string): Tape | undefined {
-        return (tapeName == this.tapeName) ? this : undefined;
-    }
-
     public any(): Token {
-        return new Token( new BitSet().flip());
+        return ANY_CHAR;
+    }
+    
+    public none(): Token {
+        return NO_CHAR;
     }
 
     public match(str1: Token, str2: Token): Token {
@@ -266,14 +235,9 @@ export class StringTape extends Tape {
     }
 
     public tokenize(
-        tapeName: string, 
         str: string, 
         atomic: boolean = false
     ): [string, Token][] {
-        
-        if (tapeName != this.tapeName) {
-            throw new Error(`Trying to add a character from tape ${tapeName} to tape ${this.tapeName}`);
-        }
 
         if (str.length == 0) {
             return [];
@@ -292,7 +256,7 @@ export class StringTape extends Tape {
         if (index == undefined) {
             index = this.registerToken(c);
         }
-        return new Token(this.toBits(this.tapeName, c));
+        return new Token(this.toBits(c));
     }
 
     public registerToken(token: string): number {
@@ -302,11 +266,7 @@ export class StringTape extends Tape {
         return index;
     }
     
-    public toBits(tapeName: string, char: string): BitSet {
-        if (tapeName != this.tapeName) {
-            throw new Error(`Trying to get bits on tape ${tapeName} from tape ${this.tapeName}`);
-        }
-        
+    public toBits(char: string): BitSet {
         const result = new BitSet();
         const index = this.strToIndex.get(char);
         if (index == undefined) {
@@ -316,11 +276,7 @@ export class StringTape extends Tape {
         return result;
     }
 
-    public fromBits(tapeName: string, bits: BitSet): string[] {
-        if (tapeName != this.tapeName) {
-            throw new Error(`Trying to get bits on tape ${tapeName} from tape ${this.tapeName}`);
-        }
-
+    public fromBits(bits: BitSet): string[] {
         const result: string[] = [];
         for (const index of bits.toArray()) {
             const char = this.indexToStr.get(index);
@@ -335,136 +291,62 @@ export class StringTape extends Tape {
 }
 
 /**
- * A tape containing flags, roughly identical to a "U" flag in XFST/LEXC.  
- * This uses a different method for "add" than a normal string tape; you can
- * always concatenate a string to a string, but trying to add a flag to a different
- * flag will fail.
- * 
- * At the moment this isn't used anywhere.
- */
-
-/*
-class FlagTape extends StringTape {
-
-    public add(oldResults: string, newResult: string): string[] {
-        if (oldResults == "" || oldResults == newResult) {
-            return [newResult];
-        }
-        return [];
-    }
-
-    public tokenize(
-        tapeName: string, 
-        str: string, 
-        atomic: boolean = false
-    ): [string, Token][] {
-        var index = this.strToIndex.get(str);
-        if (index == undefined) {
-            index = this.registerToken(str);
-        } 
-        return [[str, new Token(this.toBits(tapeName, str))]];
-    }
-} */
-
-/**
- * This contains information about all the tapes.  When we do a "free query" in the state machine,
- * what we're saying is "match anything on any tape".  Eventually, something's going to match on a particular
- * tape, so we have to have that information handy for all tapes.  (That is to say, something like a LiteralState
- * knows what tape it cares about only as a string, say, "text".  In a constrained query, we pass in a normal StringTape
- * object, and if it's the "text" tape, matchTape("text") succeeds and returns itself, and if it doesn't, 
- * matchTape("text") fails.  In a free query, we pass in one of these objects, and when we matchTape("text"), we
- * return the StringTape corresponding to "text".  That's why we need an object that collects all of them, so we
- * can return the appropriate one when it's needed.)
+ * This contains information about all the tapes.
  */
 export class TapeCollection extends Tape {
 
     public tapes: Map<string, Tape> = new Map();
-    
-    public get isTrivial(): boolean {
-        return this.tapes.size == 0;
-    }
 
-    public inVocab(tapeName: string, strs: string[]): boolean {
-        var tape = this.tapes.get(tapeName);
-        if (tape == undefined) {
-            return false;
-        }
-        return tape.inVocab(tapeName, strs);
-    }
+    public inVocab(strs: string[]): boolean {
+        throw new Error("not implemented");
+    } 
 
-    /*
-    public addTape(tape: Tape): void {
-        this.tapes.set(tape.tapeName, tape);
-    } */
-    
     public getTapeNames(): Set<string> {
         return new Set(this.tapes.keys());
     }
 
-    public getTape(tapeName: string): Tape | undefined {
-        return this.tapes.get(tapeName);
+    public getTape(name: string): Tape | undefined {
+        return this.tapes.get(name);
     }
 
-    public get tapeName(): string {
+    public get name(): string {
         if (this.tapes.size == 0) {
             return "__NO_TAPE__";
         }
         return "__ANY_TAPE__";
     }
-    
-    public tokenize(
-        tapeName: string, 
-        str: string, 
-        atomic: boolean = false
-    ): [string, Token][] {
-        var tape = this.tapes.get(tapeName);
-        if (tape == undefined) {
-            tape = new StringTape(this, tapeName);
-            this.tapes.set(tapeName, tape);
-        }
-        return tape.tokenize(tapeName, str);
-    }
 
-    public matchTape(tapeName: string): Tape | undefined {
-        return this.tapes.get(tapeName);
-    }
-
-    /*
-    public split(tapeNames: Set<string>): [TapeCollection, TapeCollection] {
-        const wheat = new TapeCollection();
-        const chaff = new TapeCollection();
-        for (const [tapeName, tape] of this.tapes.entries()) {
-            if (tapeNames.has(tapeName)) {
-                wheat.tapes.set(tapeName, tape);
-                continue;
-            } 
-            chaff.tapes.set(tapeName, tape);
+    public createTape(name: string): Tape {
+        // don't remake it if it doesn't exist
+        const oldTape = this.getTape(name);
+        if (oldTape != undefined) {
+            return oldTape;
         }
-        return [wheat, chaff];
-    } */
+
+        // make a new one if it doesn't exist
+        const newTape = new StringTape(this, name);
+        this.tapes.set(name, newTape);
+        return newTape;
+    }
 
     public get size(): number {
         return this.tapes.size;
     }
 
-    public toBits(tapeName: string, char: string): BitSet {
-        const tape = this.tapes.get(tapeName);
-        if (tape == undefined) {
-            throw new Error(`Undefined tape: ${tapeName}`);
-        }
-        return tape.toBits(tapeName, char);
+    public toBits(char: string): BitSet {
+        throw new Error("Not implemented");
     }
 
-    public fromBits(tapeName: string, bits: BitSet): string[] {
-        const tape = this.tapes.get(tapeName);
-        if (tape == undefined) {
-            throw new Error(`Undefined tape: ${tapeName}`);
-        }
-        return tape.fromBits(tapeName, bits);
-    }
+    public fromBits(bits: BitSet): string[] {
+        throw new Error("Not implemented");
+    } 
 
     public any(): Token {
         return ANY_CHAR;
+    }
+
+    public none(): Token {
+        return NO_CHAR;
     }
 }
 
@@ -496,21 +378,16 @@ export class RenamedTape extends Tape {
         super();
     }
 
-    public get tapeName(): string {
-        const childName = this.child.tapeName;
+    public get name(): string {
+        const childName = this.child.name;
         if (childName == this.toTape) {
             return this.fromTape;
         }
         return childName;
     }
     
-    public inVocab(tapeName: string, strs: string[]): boolean {
-        tapeName = this.adjustTapeName(tapeName);
-        return this.child.inVocab(tapeName, strs);
-    }
-    
-    public get isTrivial(): boolean {
-        return this.child.isTrivial;
+    public inVocab(strs: string[]): boolean {
+        return this.child.inVocab(strs);
     }
 
     public any(): Token {
@@ -521,16 +398,12 @@ export class RenamedTape extends Tape {
         return this.child.none();
     }
 
-    public add(str1: string, str2: string): string[] {
-        return this.child.add(str1, str2);
-    }
-
     public match(str1: Token, str2: Token): Token {
         return this.child.match(str1, str2);
     }
 
-    protected adjustTapeName(tapeName: string) {
-        return (tapeName == this.fromTape) ? this.toTape : tapeName;
+    protected adjustTapeName(name: string) {
+        return (name == this.fromTape) ? this.toTape : name;
     }
 
     public getTapeNames(): Set<string> {
@@ -539,46 +412,30 @@ export class RenamedTape extends Tape {
         return new Set(result);
     }
 
-    public matchTape(tapeName: string): Tape | undefined {
-        if (tapeName != this.fromTape && tapeName == this.toTape) {
-            return undefined;
-        }
-        tapeName = this.adjustTapeName(tapeName);
-        const newChild = this.child.matchTape(tapeName);
-        if (newChild == undefined) {
-            return undefined;
-        }
-        return new RenamedTape(newChild, this.fromTape, this.toTape);
-    }
-
     public tokenize(
-        tapeName: string, 
         str: string, 
         atomic: boolean = false
     ): [string, Token][] {
-        tapeName = this.adjustTapeName(tapeName);
-        return this.child.tokenize(tapeName, str);
+        return this.child.tokenize(str);
     }
 
-    public getTape(tapeName: string): Tape | undefined {
-        if (tapeName != this.fromTape && tapeName == this.toTape) {
+    public getTape(name: string): Tape | undefined {
+        if (name != this.fromTape && name == this.toTape) {
             return undefined;
         }
-        tapeName = this.adjustTapeName(tapeName);
-        const newChild = this.child.getTape(tapeName);
+        name = this.adjustTapeName(name);
+        const newChild = this.child.getTape(name);
         if (newChild == undefined) {
             return undefined;
         }
         return new RenamedTape(newChild, this.fromTape, this.toTape);
     }
 
-    public toBits(tapeName: string, char: string): BitSet {
-        tapeName = this.adjustTapeName(tapeName);
-        return this.child.toBits(tapeName, char);
+    public toBits(char: string): BitSet {
+        return this.child.toBits(char);
     }
 
-    public fromBits(tapeName: string, bits: BitSet): string[] {
-        tapeName = this.adjustTapeName(tapeName);
-        return this.child.fromBits(tapeName, bits);
+    public fromBits(bits: BitSet): string[] {
+        return this.child.fromBits(bits);
     }
 }
