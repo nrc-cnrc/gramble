@@ -1,5 +1,5 @@
 import { BinaryExpr, constructListExpr, CounterStack, EpsilonExpr, Expr, NULL, NullExpr, UnaryExpr } from "./exprs";
-import { Tape, Token } from "./tapes";
+import { Tape, BitsetToken } from "./tapes";
 import { Gen } from "./util";
 
 /**
@@ -20,9 +20,9 @@ class UniverseExpr extends Expr {
     
     public *bitsetDeriv(
         tape: Tape, 
-        target: Token,
+        target: BitsetToken,
         stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+    ): Gen<[Tape, BitsetToken, Expr]> {
         yield [tape, target, this];
     }
 
@@ -38,7 +38,7 @@ class TokenExpr extends Expr {
 
     constructor(
         public tape: string,
-        public token: Token,
+        public token: BitsetToken,
         public next: Expr
     ) {
         super();
@@ -58,9 +58,9 @@ class TokenExpr extends Expr {
         
     public *bitsetDeriv(
         tape: Tape, 
-        target: Token,
+        target: BitsetToken,
         stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+    ): Gen<[Tape, BitsetToken, Expr]> {
         
         const matchedTape = tape.matchTape(this.tape);
         if (matchedTape == undefined) {
@@ -101,11 +101,11 @@ class DisjointUnionExpr extends BinaryExpr {
 
     public *bitsetDeriv(
         tape: Tape, 
-        target: Token, 
+        target: BitsetToken, 
         stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+    ): Gen<[Tape, BitsetToken, Expr]> {
         
-        var remainder = new Token(target.bits.clone());
+        var remainder = new BitsetToken(target.bits.clone());
         for (const [c1tape, c1target, c1next] of 
                 this.child1.bitsetDeriv(tape, target, stack)) {
             yield [c1tape, c1target, c1next];
@@ -160,7 +160,7 @@ class FlatMemoExpr extends UnaryExpr {
 
     //public acceptingOnStart: {[tape: string]: boolean} = {};
     public memoizedDelta: {[tape: string]: Expr} = {};
-    public memoizedBits: {[tape: string]: Token} = {};
+    public memoizedBits: {[tape: string]: BitsetToken} = {};
     public transitions: {[tape: string]: {[c: string]: Expr}} = {};
 
     public delta(tape: Tape, stack: CounterStack): Expr {
@@ -175,17 +175,17 @@ class FlatMemoExpr extends UnaryExpr {
         
     public *disjointBitsetDeriv(
         tape: Tape, 
-        target: Token,
+        target: BitsetToken,
         stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+    ): Gen<[Tape, BitsetToken, Expr]> {
         yield* this.bitsetDeriv(tape, target, stack);
     }
 
     public *bitsetDeriv(
         tape: Tape, 
-        target: Token,
+        target: BitsetToken,
         stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+    ): Gen<[Tape, BitsetToken, Expr]> {
 
         if (!(tape.name in this.transitions)) {
             this.transitions[tape.name] = {}
@@ -204,7 +204,7 @@ class FlatMemoExpr extends UnaryExpr {
 
         // first go through any memoized results
         for (const c of tape.fromToken(tape.name, targetMemoized)) {
-            const nextToken = new Token(tape.toBits(tape.name, c));
+            const nextToken = new BitsetToken(tape.toBits(tape.name, c));
             const nextExpr = this.transitions[tape.name][c];
             if (nextExpr == undefined) {
                 throw new Error(`we thought we had memoized ${c} but hadn't`);
@@ -215,7 +215,7 @@ class FlatMemoExpr extends UnaryExpr {
             yield [tape, nextToken, nextExpr];
         }
 
-        let remainder: Token = new Token(targetUnmemoized.bits.clone());
+        let remainder: BitsetToken = new BitsetToken(targetUnmemoized.bits.clone());
         // then take the remainder and memoize them
         for (const [childTape, childToken, childExpr] of 
                 this.child.disjointBitsetDeriv(tape, targetUnmemoized, stack)) {
@@ -223,7 +223,7 @@ class FlatMemoExpr extends UnaryExpr {
             this.memoizedBits[childTape.tapeName] = this.memoizedBits[childTape.tapeName].or(childToken)
             for (const c of childTape.fromToken(tape.name, childToken)) {
                 this.transitions[childTape.tapeName][c] = childExpr;
-                const nextToken = new Token(tape.toBits(tape.name, c));
+                const nextToken = new BitsetToken(tape.toBits(tape.name, c));
                 const nextExpr = constructMemo(childExpr, this.limit -1);
                 yield [tape, nextToken, nextExpr];
             }
@@ -254,11 +254,11 @@ class MemoExpr extends UnaryExpr {
     }
 
     //public acceptingOnStart: {[tape: string]: boolean} = {};
-    public transitionsByTape: {[tape: string]: [Tape, Token, Expr][]} = {};
+    public transitionsByTape: {[tape: string]: [Tape, BitsetToken, Expr][]} = {};
 
     public addTransition(queryTape: Tape,
                         resultTape: Tape,
-                        token: Token,
+                        token: BitsetToken,
                         next: Expr): void {
         if (!(queryTape.name in this.transitionsByTape)) {
             this.transitionsByTape[queryTape.name] = [];
@@ -273,17 +273,17 @@ class MemoExpr extends UnaryExpr {
         
     public *disjointBitsetDeriv(
         tape: Tape, 
-        target: Token,
+        target: BitsetToken,
         stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+    ): Gen<[Tape, BitsetToken, Expr]> {
         yield* this.bitsetDeriv(tape, target, stack);
     }
 
     public *bitsetDeriv(
         tape: Tape, 
-        target: Token,
+        target: BitsetToken,
         stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+    ): Gen<[Tape, BitsetToken, Expr]> {
 
         let transitions = this.transitionsByTape[tape.name];
         if (transitions == undefined) {
@@ -291,7 +291,7 @@ class MemoExpr extends UnaryExpr {
             transitions = [];
         }
 
-        let remainder = new Token(target.bits.clone());
+        let remainder = new BitsetToken(target.bits.clone());
 
         // first we go through results we've tried before
         for (const [origResultTape, token, next] of transitions) {

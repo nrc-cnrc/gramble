@@ -25,7 +25,7 @@ import {
 } from "./exprs";
 
 import { 
-    adjustTapeName,
+    renameTape,
     Tape, 
     TapeNamespace, 
 } from "./tapes";
@@ -793,7 +793,7 @@ export class RenameGrammar extends UnaryGrammar {
             return;
         }
 
-        const newTapeName = adjustTapeName(tapeName, this.toTape, this.fromTape);
+        const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
         const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
         this.child.collectVocab(newTapeName, newTapeNS, symbolsVisited);
     }
@@ -951,7 +951,7 @@ export class HideGrammar extends UnaryGrammar {
             return;
         }
 
-        const newTapeName = adjustTapeName(tapeName, this.toTape, this.tapeName);
+        const newTapeName = renameTape(tapeName, this.toTape, this.tapeName);
         const newTapeNS = tapeNS.rename(this.toTape, this.tapeName);
         this.child.collectVocab(newTapeName, newTapeNS, symbolsVisited);
     }
@@ -1827,7 +1827,7 @@ export class ReplaceGrammar extends Grammar {
                 continue;
             }
 
-            let newTapeName = adjustTapeName(tapeName, toTapeName, this.fromTapeName);
+            let newTapeName = renameTape(tapeName, toTapeName, this.fromTapeName);
             let newTapeNS = tapeNS.rename(toTapeName, this.fromTapeName);
             if (this.vocabBypass) {
                 this.fromGrammar.collectVocab(newTapeName, newTapeNS, symbolsVisited);

@@ -3,7 +3,41 @@ import { GenOptions } from "./exprs";
 import { ANY_CHAR_STR, Gen, shuffleArray, StringDict, tokenizeUnicode } from "./util";
 
 
-export type AbstractToken = Token | string;
+export type Token = BitsetToken | string;
+
+/**
+ * Token
+ * 
+ * This encapsulates a token, so that parsers need not necessarily know how, exactly, a token is implemented.
+ * Right now we only have one kind of token, strings implemented as BitSets, but eventually this should be an
+ * abstract class with (e.g.) StringToken, maybe FlagToken, ProbToken and/or LogToken (for handling weights), 
+ * etc.
+ */
+ export class BitsetToken {
+ 
+    constructor(
+        public bits: BitSet
+    ) { }
+
+    public andNot(other: BitsetToken): BitsetToken {
+        return new BitsetToken(this.bits.andNot(other.bits));
+    }
+
+    public or(other: BitsetToken): BitsetToken {
+        return new BitsetToken(this.bits.or(other.bits));
+    }
+
+    public clone(): BitsetToken {
+        return new BitsetToken(this.bits.clone());
+    }
+
+    public isEmpty(): boolean {
+        return this.bits.isEmpty();
+    }
+}
+
+const ANY_CHAR: BitsetToken = new BitsetToken(new BitSet().flip());
+const NO_CHAR: BitsetToken = new BitsetToken(new BitSet());
 
 /**
  * OutputTrie
@@ -18,7 +52,7 @@ export type AbstractToken = Token | string;
  */
 export class OutputTrie {
 
-    public add(tapeName: string, token: AbstractToken): OutputTrieLeaf {
+    public add(tapeName: string, token: Token): OutputTrieLeaf {
         return new OutputTrieLeaf(tapeName, token, this);
     }
 
@@ -29,35 +63,33 @@ export class OutputTrie {
 
         var results: StringDict[] = [{}];
 
-        var currentOutput: OutputTrie = this;
+        var current: OutputTrie = this;
 
         // step backward through the current object and its prevs, building 
         // the output strings from end to beginning.  (you might think this 
         // would be more elegant to be done recursively, but it blows
         // the stack when stringifying long outputs.)
-        while (currentOutput instanceof OutputTrieLeaf) {
+        while (current instanceof OutputTrieLeaf) {
             const newResults: StringDict[] = [];
-            const tapeName = (currentOutput as OutputTrieLeaf).tapeName;
-            const token = (currentOutput as OutputTrieLeaf).token;
-            const prev = (currentOutput as OutputTrieLeaf).prev;
-            const tape = tapeNS.get(tapeName);
-            if (tape == undefined) {
-                throw new Error(`cannot find tape ${tapeName}`);
-            }
+            const tape = tapeNS.get(current.tapeName);
             for (const result of results) {
-                const oldStr = (tapeName in result) ? result[tapeName] : "";
-                for (const s of this.getStringsFromToken(tape, token, opt.random)) {
+                const oldStr = (current.tapeName in result) ? result[current.tapeName] : "";
+                const strings = this.getStringsFromToken(tape, current.token);
+                if (opt.random) {
+                    shuffleArray(strings);
+                }
+                for (const s of strings) {
                     const newResult: StringDict = {};
                     Object.assign(newResult, result);
                     const newStr = (opt.direction == "LTR")
                                     ? s + oldStr
                                     : oldStr + s;
-                    newResult[tapeName] = newStr;
+                    newResult[current.tapeName] = newStr;
                     newResults.push(newResult);
                 }
             }
             results = newResults;
-            currentOutput = prev;
+            current = current.prev;
         }
 
         return results;
@@ -65,15 +97,10 @@ export class OutputTrie {
 
     public getStringsFromToken(
         tape: Tape, 
-        t: AbstractToken,
-        random: boolean
+        t: Token
     ): string[] {
-        if (t instanceof Token) {
-            const candidates = tape.fromToken(t);
-            if (random) {
-                shuffleArray(candidates);
-            }
-            return candidates;
+        if (t instanceof BitsetToken) {
+            return tape.fromToken(t);
         }
         return [t]; // if it's not a Token it's already a string
     }
@@ -83,14 +110,13 @@ export class OutputTrieLeaf extends OutputTrie {
 
     constructor(
         public tapeName: string,
-        public token: AbstractToken,
+        public token: Token,
         public prev: OutputTrie
     ) { 
         super();
     }
 
 }
-
 
 /**
  * Tape
@@ -102,57 +128,23 @@ export class OutputTrieLeaf extends OutputTrie {
  */
 export interface Tape {
 
-    readonly any: Token;
-    readonly none: Token;
+    readonly any: BitsetToken;
+    readonly none: BitsetToken;
     readonly vocabSize: number;
     readonly vocab: string[];
     inVocab(strs: string[]): boolean;
-    match(str1: Token, str2: Token): Token;
-    tokenize(str: string): [string, Token][];
-    toToken(char: string): Token;
-    fromToken(token: Token): string[];
+    match(str1: BitsetToken, str2: BitsetToken): BitsetToken;
+    tokenize(str: string): [string, BitsetToken][];
+    toToken(char: string): BitsetToken;
+    fromToken(token: BitsetToken): string[];
 
 }
-
-/**
- * Token
- * 
- * This encapsulates a token, so that parsers need not necessarily know how, exactly, a token is implemented.
- * Right now we only have one kind of token, strings implemented as BitSets, but eventually this should be an
- * abstract class with (e.g.) StringToken, maybe FlagToken, ProbToken and/or LogToken (for handling weights), 
- * etc.
- */
-export class Token {
- 
-    constructor(
-        public bits: BitSet
-    ) { }
-
-    public andNot(other: Token): Token {
-        return new Token(this.bits.andNot(other.bits));
-    }
-
-    public or(other: Token): Token {
-        return new Token(this.bits.or(other.bits));
-    }
-
-    public clone(): Token {
-        return new Token(this.bits.clone());
-    }
-
-    public isEmpty(): boolean {
-        return this.bits.isEmpty();
-    }
-}
-
-const ANY_CHAR: Token = new Token(new BitSet().flip());
-const NO_CHAR: Token = new Token(new BitSet());
 
 /**
  * A tape containing strings; the basic kind of tape and (right now) the only one we really use.
  * (Besides a TapeCollection, which implements Tape but is really used for a different situation.)
  */
-export class StringTape implements Tape {
+class BitsetTape implements Tape {
 
     constructor(
         public strToIndex: Map<string, number> = new Map(),
@@ -177,21 +169,21 @@ export class StringTape implements Tape {
         return this.fromToken(this.any)
     }
 
-    public get any(): Token {
+    public get any(): BitsetToken {
         return ANY_CHAR;
     }
     
-    public get none(): Token {
+    public get none(): BitsetToken {
         return NO_CHAR;
     }
 
-    public match(str1: Token, str2: Token): Token {
-        return new Token(str1.bits.and(str2.bits));
+    public match(str1: BitsetToken, str2: BitsetToken): BitsetToken {
+        return new BitsetToken(str1.bits.and(str2.bits));
     }
 
     public tokenize(
         str: string
-    ): [string, Token][] {
+    ): [string, BitsetToken][] {
 
         if (str.length == 0) {
             return [];
@@ -207,12 +199,12 @@ export class StringTape implements Tape {
         return tokens.map(c => [c, this.toBitsAndRegister(c)]);
     }
 
-    protected toBitsAndRegister(c: string): Token {
+    protected toBitsAndRegister(c: string): BitsetToken {
         let index = this.strToIndex.get(c);
         if (index == undefined) {
             index = this.registerToken(c);
         }
-        return new Token(this.toBits(c));
+        return new BitsetToken(this.toBits(c));
     }
 
     protected registerToken(token: string): number {
@@ -245,14 +237,14 @@ export class StringTape implements Tape {
         return result;
     }
 
-    public toToken(char: string): Token {
+    public toToken(char: string): BitsetToken {
         if (char == ANY_CHAR_STR) {
             return this.any;
         }
-        return new Token(this.toBits(char));
+        return new BitsetToken(this.toBits(char));
     }
 
-    public fromToken(token: Token): string[] {
+    public fromToken(token: BitsetToken): string[] {
         return this.fromBits(token.bits);
     }
 }
@@ -286,7 +278,7 @@ export class TapeNamespace {
         }
 
         // make a new one if it doesn't exist
-        const newTape = new StringTape();
+        const newTape = new BitsetTape();
         this.tapes.set(tapeName, newTape);
         return newTape;
     }
@@ -331,7 +323,7 @@ class RenamedTapeNamespace extends TapeNamespace {
     
     public getTapeNames(): Set<string> {
         const result = [...this.child.getTapeNames()].map(s => 
-                    adjustTapeName(s, this.fromTape, this.toTape));
+                    renameTape(s, this.fromTape, this.toTape));
         return new Set(result);
     }
 
@@ -340,12 +332,12 @@ class RenamedTapeNamespace extends TapeNamespace {
             throw new Error(`Looking for tape ${tapeName} ` + 
             `inside a ${this.toTape}->${this.fromTape} renaming`);
         }
-        tapeName = adjustTapeName(tapeName, this.toTape, this.fromTape);
+        tapeName = renameTape(tapeName, this.toTape, this.fromTape);
         return this.child.get(tapeName);
     }
 }
 
-export function adjustTapeName(
+export function renameTape(
     tapeName: string, 
     fromTape: string, 
     toTape: string

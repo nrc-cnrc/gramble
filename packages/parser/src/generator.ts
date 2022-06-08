@@ -1,5 +1,5 @@
 import { CounterStack, EpsilonExpr, Expr, GenOptions, NullExpr } from "./exprs";
-import { AbstractToken, OutputTrie, TapeNamespace, Token } from "./tapes";
+import { Token, OutputTrie, TapeNamespace, BitsetToken } from "./tapes";
 import { ANY_CHAR_STR, BITSETS_ENABLED, Gen, shuffleArray, StringDict, VERBOSE } from "./util";
 
 /**
@@ -41,7 +41,7 @@ abstract class Generator {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[AbstractToken, Expr]>;
+    ): Gen<[Token, Expr]>;
 
     public *generate(
         expr: Expr,
@@ -159,8 +159,8 @@ class StringGenerator extends Generator {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[string, Expr]> {
-        yield* expr.disjointStringDeriv(tapeName, ANY_CHAR_STR, tapeNS, stack, opt);
+    ): Gen<[Token, Expr]> {
+        yield* expr.disjointDeriv(tapeName, ANY_CHAR_STR, tapeNS, stack, opt);
     }
 
 }
@@ -175,7 +175,7 @@ class BitsetGenerator extends Generator {
         opt: GenOptions
     ): Gen<[Token, Expr]> {
         const tape = tapeNS.get(tapeName);
-        yield* expr.disjointBitsetDeriv(tapeName, tape.any, tapeNS, stack, opt);
+        yield* expr.disjointDeriv(tapeName, tape.any, tapeNS, stack, opt);
     }
 
 }
