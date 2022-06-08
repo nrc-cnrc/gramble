@@ -16,10 +16,10 @@ export type AbstractToken = Token | string;
  * up being a false path and we end up discarding it; that would mean we had copied/
  * concatenated for nothing.)   
  */
-export class OutputTrie<T extends AbstractToken> {
+export class OutputTrie {
 
-    public add(tapeName: string, token: T): OutputTrieLeaf<T> {
-        return new OutputTrieLeaf<T>(tapeName, token, this);
+    public add(tapeName: string, token: AbstractToken): OutputTrieLeaf {
+        return new OutputTrieLeaf(tapeName, token, this);
     }
 
     public toDict(
@@ -29,7 +29,7 @@ export class OutputTrie<T extends AbstractToken> {
 
         var results: StringDict[] = [{}];
 
-        var currentOutput: OutputTrie<T> = this;
+        var currentOutput: OutputTrie = this;
 
         // step backward through the current object and its prevs, building 
         // the output strings from end to beginning.  (you might think this 
@@ -37,9 +37,9 @@ export class OutputTrie<T extends AbstractToken> {
         // the stack when stringifying long outputs.)
         while (currentOutput instanceof OutputTrieLeaf) {
             const newResults: StringDict[] = [];
-            const tapeName = (currentOutput as OutputTrieLeaf<T>).tapeName;
-            const token = (currentOutput as OutputTrieLeaf<T>).token;
-            const prev = (currentOutput as OutputTrieLeaf<T>).prev;
+            const tapeName = (currentOutput as OutputTrieLeaf).tapeName;
+            const token = (currentOutput as OutputTrieLeaf).token;
+            const prev = (currentOutput as OutputTrieLeaf).prev;
             const tape = tapeNS.get(tapeName);
             if (tape == undefined) {
                 throw new Error(`cannot find tape ${tapeName}`);
@@ -79,12 +79,12 @@ export class OutputTrie<T extends AbstractToken> {
     }
 }
 
-export class OutputTrieLeaf<T extends AbstractToken> extends OutputTrie<T> {
+export class OutputTrieLeaf extends OutputTrie {
 
     constructor(
         public tapeName: string,
-        public token: T,
-        public prev: OutputTrie<T>
+        public token: AbstractToken,
+        public prev: OutputTrie
     ) { 
         super();
     }

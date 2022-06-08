@@ -33,7 +33,7 @@ export function* generate(
 
 }
 
-abstract class Generator<T extends AbstractToken> {
+abstract class Generator {
 
     public abstract deriv(
         expr: Expr,
@@ -41,7 +41,7 @@ abstract class Generator<T extends AbstractToken> {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[T, Expr]>;
+    ): Gen<[AbstractToken, Expr]>;
 
     public *generate(
         expr: Expr,
@@ -50,12 +50,12 @@ abstract class Generator<T extends AbstractToken> {
         stack: CounterStack,
         opt: GenOptions
     ): Gen<StringDict> {
-        const initialOutput: OutputTrie<T> = new OutputTrie<T>();
-        let states: [string[], OutputTrie<T>, Expr][] = [[tapePriority, initialOutput, expr]];
-        let prev: [string[], OutputTrie<T>, Expr] | undefined = undefined;
+        const initialOutput: OutputTrie = new OutputTrie();
+        let states: [string[], OutputTrie, Expr][] = [[tapePriority, initialOutput, expr]];
+        let prev: [string[], OutputTrie, Expr] | undefined = undefined;
         
         // if we're generating randomly, we store candidates rather than output them immediately
-        const candidates: OutputTrie<T>[] = [];
+        const candidates: OutputTrie[] = [];
 
         while (prev = states.pop()) {
 
@@ -66,7 +66,7 @@ abstract class Generator<T extends AbstractToken> {
                 break;
             }
 
-            let nexts: [string[], OutputTrie<T>, Expr][] = [];
+            let nexts: [string[], OutputTrie, Expr][] = [];
             let [tapes, prevOutput, prevExpr] = prev;
  
             if (VERBOSE) {
@@ -151,7 +151,7 @@ abstract class Generator<T extends AbstractToken> {
 
 }
 
-class StringGenerator extends Generator<string> {
+class StringGenerator extends Generator {
 
     public *deriv(
         expr: Expr,
@@ -165,7 +165,7 @@ class StringGenerator extends Generator<string> {
 
 }
 
-class BitsetGenerator extends Generator<Token> {
+class BitsetGenerator extends Generator {
         
     public *deriv(
         expr: Expr,
