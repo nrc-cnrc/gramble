@@ -25,6 +25,7 @@ import {
 } from "./exprs";
 
 import { 
+    adjustTapeName,
     Tape, 
     TapeNamespace, 
 } from "./tapes";
@@ -792,13 +793,13 @@ export class RenameGrammar extends UnaryGrammar {
             return;
         }
 
-        const newTapeName = (tapeName == this.toTape) ? this.fromTape : tapeName;
-        const newTapeNS = tapeNS.rename(this.fromTape, this.toTape);
+        const newTapeName = adjustTapeName(tapeName, this.toTape, this.fromTape);
+        const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
         this.child.collectVocab(newTapeName, newTapeNS, symbolsVisited);
     }
 
     public copyVocab(tapeNS: TapeNamespace, symbolsVisited: Set<string>): void {
-        const newTapeNS = tapeNS.rename(this.fromTape, this.toTape);
+        const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
         this.child.copyVocab(newTapeNS, symbolsVisited);
     }
 
@@ -950,13 +951,13 @@ export class HideGrammar extends UnaryGrammar {
             return;
         }
 
-        const newTapeName = (tapeName == this.toTape) ? this.tapeName : tapeName;
-        const newTapeNS = tapeNS.rename(this.tapeName, this.toTape);
+        const newTapeName = adjustTapeName(tapeName, this.toTape, this.tapeName);
+        const newTapeNS = tapeNS.rename(this.toTape, this.tapeName);
         this.child.collectVocab(newTapeName, newTapeNS, symbolsVisited);
     }
     
     public copyVocab(tapeNS: TapeNamespace, symbolsVisited: Set<string>): void {
-        const newTapeNS = tapeNS.rename(this.tapeName, this.toTape);
+        const newTapeNS = tapeNS.rename(this.toTape, this.tapeName);
         this.child.copyVocab(newTapeNS, symbolsVisited);
     }
 
@@ -1826,8 +1827,8 @@ export class ReplaceGrammar extends Grammar {
                 continue;
             }
 
-            let newTapeName = (tapeName == toTapeName) ? this.fromTapeName : tapeName;
-            let newTapeNS = tapeNS.rename(this.fromTapeName, toTapeName);
+            let newTapeName = adjustTapeName(tapeName, toTapeName, this.fromTapeName);
+            let newTapeNS = tapeNS.rename(toTapeName, this.fromTapeName);
             if (this.vocabBypass) {
                 this.fromGrammar.collectVocab(newTapeName, newTapeNS, symbolsVisited);
             }

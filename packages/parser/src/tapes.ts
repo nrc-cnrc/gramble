@@ -298,22 +298,13 @@ export class TapeNamespace {
     public rename(fromTape: string, toTape: string): TapeNamespace {
         return new RenamedTapeNamespace(this, fromTape, toTape);
     }
-    
-    /*
-    public rename(fromTape: string, toTape: string): TapeNamespace {
-        const newNamespace = new TapeNamespace();
-        for (const [tapeName, tape] of this.tapes.entries()) {
-            const newTapeName = (tapeName == toTape) ? fromTape : tapeName;
-            newNamespace.tapes.set(newTapeName, tape);
-        }
-        return newNamespace;
-    } */
+
 }
 
 /**
- * RenamedTapes are necessary for RenameStates to work properly.
+ * RenamedTapeNamespaces are necessary for RenameExpr to work properly.
  * 
- * From the point of view of any particular state, it believes that particular
+ * From the point of view of any particular grammar/expr, it believes that particular
  * tapes have particular names, e.g. "text" or "gloss".  However, because renaming is
  * an operator of our relational algebra, different states may be referred to by different
  * names in different parts of the grammar.  
@@ -323,9 +314,9 @@ export class TapeNamespace {
  * the first "down" and the second "up" have the same name.  Renaming does that.
  * 
  * The simplest way to get renaming, so that each state doesn't have to understand the name structure
- * of the larger grammar, is for RenameStates to wrap tapes in a simple adaptor class that makes it seem
- * as if an existing tape has a new name.  That way, any child of a RenameState can (for example) ask for the
- * vocabulary of the tape it thinks is called "down", even if outside of that RenameState the tape is called
+ * of the larger grammar, is to wrap TapeNamespaces in a simple adaptor class that makes it seem
+ * as if an existing tape has a new name.  That way, any child of a RenameExpr can (for example) ask for the
+ * vocabulary of the tape it thinks is called "down", even if outside of that RenameExpr the tape is called
  * "text".  
  */
 class RenamedTapeNamespace extends TapeNamespace {
@@ -338,22 +329,26 @@ class RenamedTapeNamespace extends TapeNamespace {
         super();
     }
     
-    protected adjustTapeName(tapeName: string) {
-        return (tapeName == this.fromTape) ? this.toTape : tapeName;
-    }
-
     public getTapeNames(): Set<string> {
-        const result = [...this.child.getTapeNames()]
-                       .filter(s => this.adjustTapeName(s));
+        const result = [...this.child.getTapeNames()].map(s => 
+                    adjustTapeName(s, this.fromTape, this.toTape));
         return new Set(result);
     }
 
     public get(tapeName: string): Tape {
-        if (tapeName != this.fromTape && tapeName == this.toTape) {
+        if (tapeName != this.toTape && tapeName == this.fromTape) {
             throw new Error(`Looking for tape ${tapeName} ` + 
-            `inside a ${this.fromTape}->${this.toTape} rename`);
+            `inside a ${this.toTape}->${this.fromTape} renaming`);
         }
-        tapeName = this.adjustTapeName(tapeName);
+        tapeName = adjustTapeName(tapeName, this.toTape, this.fromTape);
         return this.child.get(tapeName);
     }
+}
+
+export function adjustTapeName(
+    tapeName: string, 
+    fromTape: string, 
+    toTape: string
+): string {
+    return (tapeName == fromTape) ? toTape : tapeName;
 }
