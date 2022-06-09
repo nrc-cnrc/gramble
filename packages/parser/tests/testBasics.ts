@@ -73,12 +73,12 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Sequence t1:hello+test:""', function() {
+    describe('Sequence t1:hello+t1:""', function() {
         const grammar = Seq(t1("hello"), t1(""));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Sequence test:""+t1:hello', function() {
+    describe('Sequence t1:""+t1:hello', function() {
         const grammar = Seq(t1(""), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
@@ -103,12 +103,12 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "helloworld"}]);
     });
 
-    describe('Sequence t1:ab+t1:cd+test:ef', function() {
+    describe('Sequence t1:ab+t1:cd+t1:ef', function() {
         const grammar = Seq(t1("ab"), t1("cd"), t1("ef"));
         testGrammar(grammar, [{t1: "abcdef"}]);
     });
     
-    describe('Nested sequence (t1:ab+t1:cd)+test:ef', function() {
+    describe('Nested sequence (t1:ab+t1:cd)+t1:ef', function() {
         const grammar = Seq(Seq(t1("ab"), t1("cd")), t1("ef"));
         testGrammar(grammar, [{t1: "abcdef"}]);
     });

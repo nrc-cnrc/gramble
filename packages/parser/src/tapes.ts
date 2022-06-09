@@ -1,9 +1,9 @@
 import { BitSet } from "bitset";
-import { GenOptions } from "./exprs";
-import { ANY_CHAR_STR, Gen, shuffleArray, StringDict, tokenizeUnicode } from "./util";
-
-
-export type Token = BitsetToken | string;
+import { 
+    ANY_CHAR_STR, DIRECTION_LTR, GenOptions, 
+    shuffleArray, StringDict, 
+    tokenizeUnicode 
+} from "./util";
 
 /**
  * Token
@@ -13,6 +13,8 @@ export type Token = BitsetToken | string;
  * abstract class with (e.g.) StringToken, maybe FlagToken, ProbToken and/or LogToken (for handling weights), 
  * etc.
  */
+ export type Token = BitsetToken | string;
+
  export class BitsetToken {
  
     constructor(
@@ -36,8 +38,8 @@ export type Token = BitsetToken | string;
     }
 }
 
-const ANY_CHAR: BitsetToken = new BitsetToken(new BitSet().flip());
-const NO_CHAR: BitsetToken = new BitsetToken(new BitSet());
+const ANY_CHAR_BITSET: BitsetToken = new BitsetToken(new BitSet().flip());
+const NO_CHAR_BITSET: BitsetToken = new BitsetToken(new BitSet());
 
 /**
  * OutputTrie
@@ -81,7 +83,7 @@ export class OutputTrie {
                 for (const s of strings) {
                     const newResult: StringDict = {};
                     Object.assign(newResult, result);
-                    const newStr = (opt.direction == "LTR")
+                    const newStr = (DIRECTION_LTR)
                                     ? s + oldStr
                                     : oldStr + s;
                     newResult[current.tapeName] = newStr;
@@ -170,11 +172,11 @@ class BitsetTape implements Tape {
     }
 
     public get any(): BitsetToken {
-        return ANY_CHAR;
+        return ANY_CHAR_BITSET;
     }
     
     public get none(): BitsetToken {
-        return NO_CHAR;
+        return NO_CHAR_BITSET;
     }
 
     public match(str1: BitsetToken, str2: BitsetToken): BitsetToken {

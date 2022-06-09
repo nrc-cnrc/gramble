@@ -9,11 +9,18 @@ export const HIDDEN_TAPE_PREFIX = ".";
 export const REPLACE_INPUT_TAPE = HIDDEN_TAPE_PREFIX + "input";
 export const REPLACE_OUTPUT_TAPE = HIDDEN_TAPE_PREFIX + "output";
 
-
 export const ANY_CHAR_STR = "__ANY_CHAR__";
+export const NO_CHAR_STR = "__ANY_CHAR__";
 
 export const VERBOSE: boolean = false;
 export const BITSETS_ENABLED: boolean = false; // whether to use bitsets or real strings
+export const DIRECTION_LTR: boolean = false; // whether we parse/generate from the beginning or end of words
+
+export class GenOptions {
+    public random: boolean = false;
+    public maxRecursion: number = 2; 
+    public maxChars: number = 1000;
+}
 
 export type Gen<T> = Generator<T, void, undefined>;
 

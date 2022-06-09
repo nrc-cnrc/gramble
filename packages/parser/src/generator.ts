@@ -1,6 +1,6 @@
-import { CounterStack, EpsilonExpr, Expr, GenOptions, NullExpr } from "./exprs";
+import { CounterStack, EpsilonExpr, Expr, NullExpr } from "./exprs";
 import { Token, OutputTrie, TapeNamespace, BitsetToken } from "./tapes";
-import { ANY_CHAR_STR, BITSETS_ENABLED, Gen, shuffleArray, StringDict, VERBOSE } from "./util";
+import { ANY_CHAR_STR, BITSETS_ENABLED, Gen, GenOptions, shuffleArray, StringDict, VERBOSE } from "./util";
 
 /**
  * Performs a breadth-first traversal of the graph.  This will be the function that most 

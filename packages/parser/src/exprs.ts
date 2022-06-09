@@ -1,4 +1,4 @@
-import { ANY_CHAR_STR, Gen, setDifference } from "./util";
+import { ANY_CHAR_STR, DIRECTION_LTR, Gen, GenOptions, setDifference } from "./util";
 import { Tape, BitsetToken, TapeNamespace, renameTape, Token } from "./tapes";
 
 /**
@@ -105,13 +105,6 @@ import { Tape, BitsetToken, TapeNamespace, renameTape, Token } from "./tapes";
  * programmers will be able to turn this off and allow infinite recursion, but they
  * have to take an extra step to do so.
  */
-
-export class GenOptions {
-    public random: boolean = false;
-    public maxRecursion: number = 2; 
-    public maxChars: number = 1000;
-    public direction: "LTR" | "RTL" = "RTL";
-}
 
 export type SymbolTable = {[key: string]: Expr};
 
@@ -865,7 +858,7 @@ class ConcatExpr extends BinaryExpr {
     ): Expr {
         const newChild1 = this.child1.delta(tapeName, tapeNS, stack, opt);
         const newChild2 = this.child2.delta(tapeName, tapeNS, stack, opt);
-        return constructBinaryConcat(newChild1, newChild2);
+        return constructConcat(newChild1, newChild2);
     }
 
     public *deriv(
@@ -876,57 +869,24 @@ class ConcatExpr extends BinaryExpr {
         opt: GenOptions
     ): Gen<[Token, Expr]> {
 
+        const [c1, c2] = (DIRECTION_LTR) ?
+                        [this.child1, this.child2] :
+                        [this.child2, this.child1];
+
         for (const [c1target, c1next] of
-                this.child1.deriv(tapeName, target, tapeNS, stack, opt)) {
-            yield [c1target, constructBinaryConcat(c1next, this.child2)];
+                c1.deriv(tapeName, target, tapeNS, stack, opt)) {
+            yield [c1target, constructOrderedConcat(c1next, c2)];
         }
 
-        const c1next = this.child1.delta(tapeName, tapeNS, stack, opt);
+        const c1next = c1.delta(tapeName, tapeNS, stack, opt);
         for (const [c2target, c2next] of
-                this.child2.deriv(tapeName, target, tapeNS, stack, opt)) {
-            const successor = constructBinaryConcat(c1next, c2next);
-            yield [c2target, successor];
+                c2.deriv(tapeName, target, tapeNS, stack, opt)) {
+            yield [c2target, constructOrderedConcat(c1next, c2next)];
         }
     }
 }
 
-class RTLConcatExpr extends ConcatExpr {
-
-    public delta(
-        tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
-    ): Expr {
-        const newChild1 = this.child1.delta(tapeName, tapeNS, stack, opt);
-        const newChild2 = this.child2.delta(tapeName, tapeNS, stack, opt);
-        return constructBinaryConcat(newChild1, newChild2);
-    }
-
-    public *deriv(
-        tapeName: string, 
-        target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
-    ): Gen<[Token, Expr]> {
-
-        for (const [c2target, c2next] of
-                this.child2.deriv(tapeName, target, tapeNS, stack, opt)) {
-            yield [c2target as BitsetToken, 
-                constructBinaryConcat(this.child1, c2next)];
-        }
-
-        const c2next = this.child2.delta(tapeName, tapeNS, stack, opt);
-        for (const [c1target, c1next] of
-                this.child1.deriv(tapeName, target, tapeNS, stack, opt)) {
-            const successor = constructBinaryConcat(c1next, c2next);
-            yield [c1target, successor];
-        }
-    }
-}
-
-export class ArrayUnionExpr extends Expr {
+export class UnionExpr extends Expr {
 
     constructor(
         public children: Expr[]
@@ -1313,7 +1273,7 @@ export class CountTapeExpr extends UnaryExpr {
 }
 
 
-class RTLRepExpr extends UnaryExpr {
+class RepeatExpr extends UnaryExpr {
 
     constructor(
         child: Expr,
@@ -1349,8 +1309,7 @@ class RTLRepExpr extends UnaryExpr {
     ): Gen<[Token, Expr]> {
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
             const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
-            const successor = constructBinaryConcat(oneLess, cNext);
-            yield [cTarget, successor];
+            yield [cTarget, constructOrderedConcat(cNext, oneLess)];
         }
     }
 }
@@ -1613,7 +1572,7 @@ export class MatchExpr extends UnaryExpr {
                         continue;
                     }
                     const lit = constructLiteral(matchTape, [c]);
-                    bufferedNext = constructSequence(bufferedNext, lit);
+                    bufferedNext = constructOrderedConcat(lit, bufferedNext);
                 }
                 yield [c, bufferedNext];
             }
@@ -1629,8 +1588,13 @@ export const NULL = new NullExpr();
 export function constructLiteral(
     tape: string, 
     text: string[],
-    index: number = text.length-1
+    index: number | undefined = undefined
 ): Expr {
+    if (DIRECTION_LTR) {
+        if (index == undefined) { index = 0; }
+        return new LiteralExpr(tape, text, index);
+    }
+    if (index == undefined) { index = text.length -1; }
     return new RTLLiteralExpr(tape, text, index);
 }
 
@@ -1642,31 +1606,16 @@ export function constructDot(tape: string): Expr {
     return new DotExpr(tape);
 }
 
-export function constructListExpr(
-    children: Expr[], 
-    constr: (c1: Expr, c2: Expr) => Expr,
-    nullResult: Expr, 
-    associateRight: boolean = true
-): Expr {
+export function constructOrderedConcat(firstChild: Expr, secondChild: Expr) {
 
-    if (children.length == 0) {
-        return nullResult;
+    if (DIRECTION_LTR) {
+        return constructConcat(firstChild, secondChild);
     }
+    return constructConcat(secondChild, firstChild);
 
-    if (children.length == 1) {
-        return children[0];
-    }
-    
-    if (associateRight) {
-        const c2 = constructListExpr(children.slice(1), constr, nullResult);
-        return constr(children[0], c2);
-    } else {
-        const c1 = constructListExpr(children.slice(0, children.length-1), constr, nullResult);
-        return constr(c1, children[children.length-1]);
-    }
 }
 
-export function constructBinaryConcat(c1: Expr, c2: Expr): Expr {
+export function constructConcat(c1: Expr, c2: Expr): Expr {
     if (c1 instanceof EpsilonExpr) {
         return c2;
     }
@@ -1679,11 +1628,26 @@ export function constructBinaryConcat(c1: Expr, c2: Expr): Expr {
     if (c2 instanceof NullExpr) {
         return c2;
     }
-    return new RTLConcatExpr(c1, c2);
+    return new ConcatExpr(c1, c2);
 }
 
 export function constructSequence(...children: Expr[]): Expr {
-    return constructListExpr(children, constructBinaryConcat, EPSILON, false);
+    
+    if (children.length == 0) {
+        return EPSILON;
+    }
+
+    if (children.length == 1) {
+        return children[0];
+    }
+    
+    if (DIRECTION_LTR) {
+        const c2 = constructSequence(...children.slice(1));
+        return constructConcat(children[0], c2);
+    } else {
+        const c1 = constructSequence(...children.slice(0, children.length-1));
+        return constructConcat(c1, children[children.length-1]);
+    }
 }
 
 export function constructAlternation(...children: Expr[]): Expr {
@@ -1708,7 +1672,7 @@ export function constructAlternation(...children: Expr[]): Expr {
     if (newChildren.length == 1) {
         return newChildren[0];
     }
-    return new ArrayUnionExpr(newChildren);
+    return new UnionExpr(newChildren);
 }
 
 export function constructIntersection(c1: Expr, c2: Expr): Expr {
@@ -1774,7 +1738,7 @@ export function constructRepeat(
         return child;
     }
 
-    return new RTLRepExpr(child, minReps, maxReps);
+    return new RepeatExpr(child, minReps, maxReps);
 }
 
 export function constructEmbed(

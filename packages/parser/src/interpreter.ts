@@ -2,11 +2,11 @@ import {
     CounterStack, CountGrammar, EqualsGrammar, Grammar, 
     LiteralGrammar, Ns, NsGrammar, SequenceGrammar 
 } from "./grammars";
-import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell, stripHiddenTapes} from "./util";
+import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell, stripHiddenTapes, GenOptions} from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
-import { Tape, TapeNamespace } from "./tapes";
-import { Expr, GenOptions, SymbolTable } from "./exprs";
+import { TapeNamespace } from "./tapes";
+import { Expr, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 import { SameTapeReplaceTransform } from "./transforms/sameTapeReplace";
@@ -220,8 +220,7 @@ export class Interpreter {
         const opt: GenOptions = {
             random: false,
             maxRecursion: maxRecursion,
-            maxChars: maxChars,
-            direction: "RTL"
+            maxChars: maxChars
         }
         const [expr, tapePriority] = this.prepareExpr(symbolName, restriction, opt);
 
@@ -255,8 +254,7 @@ export class Interpreter {
         const opt: GenOptions = {
             random: true,
             maxRecursion: maxRecursion,
-            maxChars: maxChars,
-            direction: "RTL"
+            maxChars: maxChars
         }
 
         const [expr, tapePriority] = this.prepareExpr(symbolName, restriction, opt);
