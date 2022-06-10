@@ -1547,9 +1547,13 @@ export class MatchExpr extends UnaryExpr {
 
         let results: [string, Expr][] = [[target, this.child]];
         for (const t of this.tapes) {
-            const tapeToTry = tapeNS.get(t);
             const nextResults: [string, Expr][] = [];
             for (const [prevTarget, prevExpr] of results) {
+                /*const actualTape = tapeNS.get(t);
+                if (prevTarget != ANY_CHAR_STR && !actualTape.inVocab([prevTarget])) {
+                    // don't attempt to match if the character isn't even in the vocabulary
+                    break;
+                }*/
                 for (const [cTarget, cNext] of prevExpr.deriv(t, prevTarget, tapeNS, stack, opt)) {
                     nextResults.push([cTarget as string, cNext]);
                 }

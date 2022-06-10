@@ -389,7 +389,7 @@ export class LiteralGrammar extends AtomicGrammar {
             return;
         }
         const tape = tapeNS.get(this.tapeName);
-        this.tokens = tape.tokenize(this.text).map(([s,t]) => s);
+        this.tokens = tape.tokenize(this.text);
     }
 
     public calculateTapes(stack: CounterStack): string[] {
