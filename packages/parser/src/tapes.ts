@@ -189,14 +189,13 @@ export interface Tape {
 
 /**
  * A tape containing strings; the basic kind of tape and (right now) the only one we really use.
- * (Besides a TapeCollection, which implements Tape but is really used for a different situation.)
  */
 class BitsetTape implements Tape {
 
     public mask: BitsetToken = NO_CHAR_BITSET.clone();
 
     constructor(
-        public globalName: string,
+        //public globalName: string,
         public _vocab: Vocab = new Vocab()
      ) { }
 
@@ -213,7 +212,7 @@ class BitsetTape implements Tape {
     }
 
     public get any(): BitsetToken {
-        return ANY_CHAR_BITSET;
+        return ANY_CHAR_BITSET.and(this.mask);
     }
     
     public get none(): BitsetToken {
@@ -240,7 +239,7 @@ class BitsetTape implements Tape {
         return cs;
     }
     
-    public toBits(char: string): BitSet {
+    protected toBits(char: string): BitSet {
         const result = new BitSet();
         const index = this._vocab.getIndex(char);
         if (index == undefined) {
@@ -304,17 +303,34 @@ export class TapeNamespace {
         }
 
         // make a new one if it doesn't exist
-        const newTape = new BitsetTape(tapeName);
+        const newTape = new BitsetTape();
         this.tapes.set(tapeName, newTape);
         return newTape;
     }
 
+    /*
     public get size(): number {
         return this.tapes.size;
-    }
+    } */
 
+    /*
     public rename(fromTape: string, toTape: string): TapeNamespace {
         return new RenamedTapeNamespace(this, fromTape, toTape);
+    } */
+
+    public rename(fromTape: string, toTape: string): TapeNamespace {
+        if (fromTape == toTape) {
+            return this;
+        }
+        const result = new TapeNamespace();
+        for (const [tapeName, tape] of this.tapes.entries()) {
+            if (tapeName == toTape) {
+                continue;
+            }
+            const newTapeName = renameTape(tapeName, fromTape, toTape);
+            result.tapes.set(newTapeName, tape);
+        }
+        return result;
     }
 
 }
@@ -337,6 +353,7 @@ export class TapeNamespace {
  * vocabulary of the tape it thinks is called "down", even if outside of that RenameExpr the tape is called
  * "text".  
  */
+/*
 class RenamedTapeNamespace extends TapeNamespace {
 
     constructor(
@@ -362,6 +379,7 @@ class RenamedTapeNamespace extends TapeNamespace {
         return this.child.get(tapeName);
     }
 }
+*/
 
 export function renameTape(
     tapeName: string, 
