@@ -107,6 +107,30 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Regex including escaped backslash', function() {
+        const project = sheetFromFile(`${DIR}/escapedBackslash.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "\\foo", gloss: "run" },
+        ]);
+    });
+    
+    describe('Non-regex including one backslash', function() {
+        const project = sheetFromFile(`${DIR}/nonRegexBackslash.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "\\foo", gloss: "run" },
+        ]);
+    });
+
+    describe('Non-regex including two backslashes', function() {
+        const project = sheetFromFile(`${DIR}/nonRegexTwoBackslash.csv`);
+        testErrors(project, []);
+        testGramble(project, [
+            { text: "\\\\foo", gloss: "run" },
+        ]);
+    });
+
     describe('Regex including sequence', function() {
         const project = sheetFromFile(`${DIR}/regexSequence.csv`);
         testErrors(project, []);

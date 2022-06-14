@@ -178,6 +178,18 @@ export abstract class Expr {
      */
     public abstract get id(): string;
 
+    /**
+     * delta can be seen as the Brz. derivative with respect to end-of-line: what grammars
+     * are consistent with NO remaining characters on the relevant tape?  If there are no languages
+     * consistent with this, the result will be a NullExpr, otherwise it's the grammar without material 
+     * on that tape.  Once we've called delta(T) for some tape T, we will never again call 
+     * delta(T) or deriv(T) on any successor grammar.
+     * 
+     * @param tapeName The local name of the tape we're querying about
+     * @param tapeNS The current namespace mapping names to tapes
+     * @param stack A stack of symbols already visited
+     * @param opt A GenOptions object with generation configurations
+     */
     public abstract delta(
         tapeName: string,
         tapeNS: TapeNamespace, 
@@ -197,6 +209,12 @@ export abstract class Expr {
      * For some parts of the algorithm, this would be inappropriate (i.e., inside of a negation).  So rather
      * than call deriv() directly, call disjointDeriv, which calls deriv() and then adjusts
      * the results so that the results are disjoint.
+     * 
+     * @param tapeName The local name of the tape we're querying about
+     * @param target: A token object representing our current hypothesis about the next character
+     * @param tapeNS The current namespace mapping names to tapes
+     * @param stack A stack of symbols already visited
+     * @param opt A GenOptions object with generation configurations
      */
 
      public *deriv(
