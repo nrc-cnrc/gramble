@@ -2,7 +2,7 @@ import {
     CounterStack, CountGrammar, EqualsGrammar, Grammar, 
     LiteralGrammar, Ns, NsGrammar, SequenceGrammar 
 } from "./grammars";
-import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell, stripHiddenTapes, GenOptions} from "./util";
+import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell, stripHiddenTapes, GenOptions, HIDDEN_TAPE_PREFIX} from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { TapeNamespace } from "./tapes";
@@ -75,7 +75,6 @@ export class Interpreter {
             this.grammar = nameQualifier.transform(this.grammar);
         }, verbose, "Qualified names");
 
-        
         timeIt(() => {
             const replaceAdjuster = new RuleReplaceTransform();
             this.grammar = replaceAdjuster.transform(this.grammar);
@@ -176,10 +175,16 @@ export class Interpreter {
             { return { sheet: sheet, row: row, col:col, msg:msg, level:level }});
     }
     
-    public getTapeNames(symbolName: string): string[] {
+    public getTapeNames(
+        symbolName: string,
+        stripHidden: boolean = true
+    ): string[] {
         const target = this.grammar.getSymbol(symbolName);
         if (target == undefined || target.tapes == undefined) {
             throw new Error(`Cannot find symbol ${symbolName}`);
+        }
+        if (stripHidden) {
+            return target.tapes.filter(t => !t.startsWith(HIDDEN_TAPE_PREFIX));
         }
         return target.tapes;
     }
