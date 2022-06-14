@@ -361,9 +361,9 @@ const sections = [
     header: "Commands",
     content: [
       { name: "generate", summary: "produces outputs from the grammar" },
+      { name: "sample", summary: "sample outputs from the grammar" },
       { name: "help", summary: "display this message and exit" },
-     // { name: "parse", summary: "attempt to parse input against the grammar" },
-     // { name: "sample", summary: "sample outputs from the grammar" },
+      { name: "help {underline command}", summary: "get help on a specific command" },
     ],
   },
 ];
