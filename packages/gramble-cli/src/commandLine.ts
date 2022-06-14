@@ -89,7 +89,7 @@ const commands: { [name: string]: Command } = {
   },
 
   generate: {
-    synopsis: `generate [--symbol|-s {underline name}] [--max={underline n}][--otier={underline tier}] [--output|-o {underline file}] {underline source}`,
+    synopsis: `generate [--symbol|-s {underline name}] [--format|-f {underline csv|json}] [--max|-m {underline n}] [--output|-o {underline file}] {underline source}`,
     options: [
         {
             name: "source",
@@ -162,7 +162,7 @@ const commands: { [name: string]: Command } = {
   },
 
   sample: {
-    synopsis: "sample [--output|-o {underline file}] {underline source}",
+    synopsis: "sample [--symbol|-s {underline name}] [--format|-f {underline csv|json}] [--num|-n {underline n}] [--output|-o {underline file}] {underline source}`",
     options: [
       {
         name: "source",
@@ -232,120 +232,6 @@ const commands: { [name: string]: Command } = {
         }, options.verbose, "Sampling commplete", "Started sampling");
     },
   },
-/*
-  parse: {
-    synopsis: [
-      "parse --itier={underline tier} [--otier={underline tier}] [--random] [--max={underline n}] {underline source}",
-      "parse --tokenize --itier={underline tier} --otier={underline tier} [--random] {underline source}",
-    ],
-    options: [
-      {
-        name: "source",
-        type: String,
-        defaultOption: true,
-      },
-      {
-        name: "input",
-        alias: "i",
-        type: String,
-        typeLabel: "{underline file}",
-        description: "read input from {underline file}",
-      },
-      {
-        name: "output",
-        alias: "o",
-        type: String,
-        typeLabel: "{underline file}",
-        description: "write output to {underline file}",
-      },
-      {
-        name: "itier",
-        type: String,
-        typeLabel: "{underline tier}",
-        description:
-          "what tier to match the input against (e.g., text, gloss, etc.)",
-      },
-      {
-        name: "otier",
-        type: String,
-        typeLabel: "{underline tier}",
-        description: "only output {underline tier}, instead of JSON",
-      },
-      {
-        name: "random",
-        alias: "r",
-        type: Boolean,
-        defaultValue: false,
-        description: "sample randomly from possible outputs",
-      },
-      {
-        name: "max",
-        alias: "m",
-        type: Number,
-        defaultValue: -1,
-        description: "restrict number of outputs for each word",
-      },
-      {
-        name: "tokenize",
-        alias: "t",
-        type: Boolean,
-        defaultValue: false,
-        description:
-          "parse lines as whitespace-separated tokens, rather than the whole line",
-      },
-    ],
-
-    run(options) {
-      fileExistsOrFail(options.source);
-
-      const inputStream = getInputStream(options.input);
-      const outputStream = getOutputStream(options.output);
-
-      if (options.itier == undefined) {
-        usageError(
-          "If you are parsing from a text file, you must specify what tier the text is on, e.g. --itier gloss"
-        );
-      }
-
-      if (options.tokenize) {
-        if (options.otier == undefined) {
-          usageError(
-            "If you are parsing tokenized, you must specify what tier the output text should be taken from, e.g. --otier gloss"
-          );
-        }
-        proj
-          .addFile(options.source)
-          .then(() => proj.compile())
-          .then(() => proj.devEnv.highlight())
-          .then(() =>
-            proj.parseStreamTokenized(
-              inputStream,
-              outputStream,
-              options.itier,
-              options.random,
-              options.otier
-            )
-          );
-      } else {
-        proj
-          .addFile(options.source)
-          .then(() => proj.compile())
-          .then(() => proj.devEnv.highlight())
-          .then(() =>
-            proj.parseStream(
-              inputStream,
-              outputStream,
-              options.itier,
-              options.random,
-              options.max,
-              options.otier
-            )
-          );
-      }
-    },
-  },
-
-  */
 };
 
 const sections = [
