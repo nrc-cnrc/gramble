@@ -32,6 +32,10 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
         return g.accept(this, g, null) as NsGrammar;
     }
 
+    public get desc(): string {
+        return "Identity transformation";
+    }
+
     public transformEpsilon(g: EpsilonGrammar, ns: NsGrammar, args: T): Grammar {
         return g;
     }

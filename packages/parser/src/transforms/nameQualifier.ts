@@ -26,6 +26,10 @@ export class NameQualifierTransform extends IdentityTransform<[string, NsGrammar
                                             // assigning it to anything
         return newNamespace;
     }
+    
+    public get desc(): string {
+        return "Qualifying names";
+    }
 
     public transformNamespace(
         g: NsGrammar,

@@ -16,16 +16,15 @@ export class SameTapeReplaceTransform extends IdentityTransform<void>{
 
     public replaceIndex: number = 0;
 
+    public get desc(): string {
+        return "Adjusted tape names in same-tape replace rules";
+    }
+
     public transformJoinReplace(
         g: JoinReplaceGrammar, 
         ns: NsGrammar, 
         args: void
     ): Grammar {
-
-        if (g.tapes == undefined || g.child.tapes == undefined) {
-            // really only for linting
-            throw new Error("Adjusting tapes before calculating them in the first place.");   
-        }
 
         let newChild = g.child.accept(this, ns, args);
         const newRules = g.rules.map(r => r.accept(this, ns, args));
@@ -68,10 +67,6 @@ export class SameTapeReplaceTransform extends IdentityTransform<void>{
         ns: NsGrammar, 
         args: void
     ): Grammar {
-
-        if (g.tapes == undefined) {
-            throw new Error(`Performing SameTapeReplaceTransform without having calculated tapes`);
-        }
 
         let replaceTapeName = g.fromTapeName;
         for (const toTapeName of g.toTapeNames) {

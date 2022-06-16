@@ -20,6 +20,10 @@ import { IdentityTransform } from "./transforms";
  */
 export class FlattenTransform extends IdentityTransform<void> {
 
+    public get desc(): string {
+        return "Flattening sequences/alternations";
+    }
+
     public transformSequence(g: SequenceGrammar, ns: NsGrammar, args: void): Grammar {
         
         const children = g.children.map(c => c.accept(this, ns, args));

@@ -16,16 +16,15 @@ export class RuleReplaceTransform extends IdentityTransform<void>{
 
     public replaceIndex: number = 0;
 
+    public get desc(): string {
+        return "Constructing new-style replacement rules";
+    }
+
     public transformJoinRule(
         g: JoinRuleGrammar, 
         ns: NsGrammar, 
         args: void
     ): Grammar {
-
-        if (g.tapes == undefined || g.child.tapes == undefined) {
-            // really only for linting
-            throw new Error("Adjusting tapes before calculating them in the first place.");   
-        }
 
         let relevantTape = g.inputTape;
         let result = g.child.accept(this, ns, args);

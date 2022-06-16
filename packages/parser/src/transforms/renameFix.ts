@@ -19,15 +19,14 @@ import { IdentityTransform } from "./transforms";
  */
 export class RenameFixTransform extends IdentityTransform<void>{
 
+    public get desc(): string {
+        return "Validating tape-rename structure";
+    }
+
     public transformRename(g: RenameGrammar, ns: NsGrammar, args: void): Grammar {
 
         const newChild = g.child.accept(this, ns, args);
         newChild.calculateTapes(new CounterStack(2));
-
-        if (newChild.tapes == undefined) {
-            // shouldn't happen
-            throw new Error("adjusting tapes without having calculated them first");
-        }
 
         if (g.fromTape != g.toTape && newChild.tapes.indexOf(g.toTape) != -1) {
             g.message({

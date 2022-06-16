@@ -1,6 +1,7 @@
 import { 
     CounterStack, CountGrammar, EqualsGrammar, Grammar, 
-    LiteralGrammar, NsGrammar, SequenceGrammar 
+    GrammarTransform, 
+    LiteralGrammar, NsGrammar, SequenceGrammar, Transform 
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
@@ -79,35 +80,21 @@ export class Interpreter {
         // to get the grammar into an executable state: symbol references fully-qualified,
         // semantically impossible tape structures are massaged into well-formed ones, some 
         // scope problems adjusted, etc.
-        timeIt(() => {
-            const nameQualifier = new NameQualifierTransform();
-            this.grammar = nameQualifier.transform(this.grammar);
-        }, timeVerbose, "Qualified names");
 
-        timeIt(() => {
-            const replaceAdjuster = new RuleReplaceTransform();
-            this.grammar = replaceAdjuster.transform(this.grammar);
-        }, timeVerbose, "Constructed replacement rules");
+        const transforms: Transform[] = [
+            new NameQualifierTransform(),
+            new RuleReplaceTransform(),
+            new SameTapeReplaceTransform(),
+            new RenameFixTransform(),
+            new FlattenTransform(),
+            new FilterTransform()
+        ]
 
-        timeIt(() => {
-            const replaceAdjuster = new SameTapeReplaceTransform();
-            this.grammar = replaceAdjuster.transform(this.grammar);
-        }, timeVerbose, "Adjusted tape names");
-
-        timeIt(() => {
-            const renameFixer = new RenameFixTransform();
-            this.grammar = renameFixer.transform(this.grammar);
-        }, timeVerbose, "Fixed any erroneous renames");
-
-        timeIt(() => {
-            const flattenTransform = new FlattenTransform();
-            this.grammar = flattenTransform.transform(this.grammar);
-        }, timeVerbose, "Flattened sequences/alternations");
-
-        timeIt(() => {
-            const filterCreator = new FilterTransform();
-            this.grammar = filterCreator.transform(this.grammar);
-        }, timeVerbose, "Created starts/ends/contains filters");
+        for (const t of transforms) {
+            timeIt(() => {
+                this.grammar = t.transform(this.grammar);
+            }, timeVerbose, t.desc);
+        }
 
         //console.log(this.grammar.id);
 
@@ -189,7 +176,7 @@ export class Interpreter {
         stripHidden: boolean = true
     ): string[] {
         const target = this.grammar.getSymbol(symbolName);
-        if (target == undefined || target.tapes == undefined) {
+        if (target == undefined) {
             throw new Error(`Cannot find symbol ${symbolName}`);
         }
         if (stripHidden) {

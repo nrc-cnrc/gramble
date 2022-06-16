@@ -29,12 +29,12 @@ import { IdentityTransform } from "./transforms";
  * be) and wrap that in an equals rather than using starts/ends/contains.
  */
 export class FilterTransform extends IdentityTransform<void> {
+    
+    public get desc(): string {
+        return "Constructing filters";
+    }
 
     public transformStarts(g: StartsGrammar, ns: NsGrammar, args: void): Grammar {
-        
-        if (g.tapes == undefined) {
-            throw new Error("missing tapes in StartsGrammar");
-        }
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
@@ -80,10 +80,6 @@ export class FilterTransform extends IdentityTransform<void> {
     }
     
     public transformEnds(g: StartsGrammar, ns: NsGrammar, args: void): Grammar {
-        
-        if (g.tapes == undefined) {
-            throw new Error("missing tapes in EndsGrammar");
-        }
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
@@ -128,10 +124,6 @@ export class FilterTransform extends IdentityTransform<void> {
     }
     
     public transformContains(g: ContainsGrammar, ns: NsGrammar, args: void): Grammar {
-        
-        if (g.tapes == undefined) {
-            throw new Error("missing tapes in ContainsGrammar");
-        }
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))

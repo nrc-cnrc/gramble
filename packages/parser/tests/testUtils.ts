@@ -222,7 +222,7 @@ export function testHasTapes(
     const testName: string = `${symbolName} should have tapes [${[...bSet]}]`;
     it(`${testName}`, function() {
         expect(target).to.not.be.undefined;
-        if (target == undefined || target.tapes == undefined) {
+        if (target == undefined) {
             return;
         }
         let tapes = target.tapes;
