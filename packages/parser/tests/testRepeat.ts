@@ -179,8 +179,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "oo"},
                               {t1: "ooo"},
                               {t1: "oooo"},
-                              {t1: "ooooo"}],
-                    "", undefined);
+                              {t1: "ooooo"}]);
     });
 
     describe('t1:o*', function() {
@@ -191,8 +190,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "oo"},
                               {t1: "ooo"},
                               {t1: "oooo"},
-                              {t1: "ooooo"}],
-                    "", undefined);
+                              {t1: "ooooo"}]);
     });
 
     describe('t1:h*+t1:i', function() {
@@ -203,8 +201,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "hhi"},
                               {t1: "hhhi"},
                               {t1: "hhhhi"},
-                              {t1: "hhhhhi"}],
-                    "", undefined);
+                              {t1: "hhhhhi"}]);
     });
     
     describe('t1:h+t1:i*', function() {
@@ -215,8 +212,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "hii"},
                               {t1: "hiii"},
                               {t1: "hiiii"},
-                              {t1: "hiiiii"}],
-                    "", undefined);
+                              {t1: "hiiiii"}]);
     });
     
     describe('(t1:h+t1:i)*', function() {
@@ -225,8 +221,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{},
                               {t1: "hi"},
                               {t1: "hihi"},
-                              {t1: "hihihi"}],
-                    "", undefined);
+                              {t1: "hihihi"}]);
     });
 
     
@@ -236,8 +231,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{},
                             {"t1":"h","t2":"i"},
                             {"t1":"hh","t2":"ii"},
-                            {"t1":"hhh","t2":"iii"}],
-                    "", undefined);
+                            {"t1":"hhh","t2":"iii"}]);
     });
 
     describe('(t1:h|t2:i)*', function() {
@@ -252,8 +246,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 {"t1":"hhh"},
                                 {"t1":"hh","t2":"i"},
                                 {"t1":"h","t2":"ii"},
-                                {"t2":"iii"}],
-                    "", undefined);
+                                {"t2":"iii"}]);
     });
 
     describe('(t1:a+t2:a|t1:b+t2:b)*', function() {
@@ -266,8 +259,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                 {"t1":"aa","t2":"aa"},
                                 {"t1":"ab","t2":"ab"},
                                 {"t1":"ba","t2":"ba"},
-                                {"t1":"bb","t2":"bb"}],
-                    "", undefined);
+                                {"t1":"bb","t2":"bb"}]);
     });
 
     describe('Filtering t1:h[ t2:h* ]', function() {

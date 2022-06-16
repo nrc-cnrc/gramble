@@ -1,8 +1,11 @@
 import { Interpreter } from "./interpreter";
-import { DevEnvironment, timeIt } from "./util";
+import { DevEnvironment, SILENT, timeIt, VERBOSE_DEBUG, VERBOSE_TIME } from "./util";
 
 export { 
     Interpreter, 
     DevEnvironment, 
-    timeIt 
+    timeIt,
+    SILENT,
+    VERBOSE_TIME,
+    VERBOSE_DEBUG
 };

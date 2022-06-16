@@ -22,7 +22,7 @@ import {
 } from './testUtils';
 
 import * as path from 'path';
-import { StringDict } from "../src/util";
+import { SILENT, StringDict } from "../src/util";
 
 const EMPTY_CONTEXT = Epsilon();
 
@@ -178,7 +178,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {'.R_HIDDEN': 'i', t1: 'a'},
         ];
 
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('2b-show-hidden. Negation of results of 2a-hidden', function() {
@@ -202,7 +202,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {},
         ];
 
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('2c-hidden. Negation of grammar of 2a-hidden', function() {
@@ -219,7 +219,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
 
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('3a. Replace i by a: i -> a', function() {
@@ -396,7 +396,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {},
         ];
 
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('5b-show-hidden. Negation of results of 5a-show-hidden', function() {
@@ -421,7 +421,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'ai'}, {t1: 'ia'}, {t1: 'ii'},
         ];
 
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('5c-show-hidden. Negation of grammar of 5a', function() {
@@ -439,7 +439,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
 
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
 });

@@ -1,8 +1,15 @@
 import { 
     CounterStack, CountGrammar, EqualsGrammar, Grammar, 
-    LiteralGrammar, Ns, NsGrammar, SequenceGrammar 
+    LiteralGrammar, NsGrammar, SequenceGrammar 
 } from "./grammars";
-import { DevEnvironment, Gen, iterTake, msToTime, StringDict, timeIt, setEquals, DummyCell, stripHiddenTapes, GenOptions, HIDDEN_TAPE_PREFIX} from "./util";
+import { 
+    DevEnvironment, Gen, iterTake, 
+    msToTime, StringDict, timeIt, 
+    DummyCell, stripHiddenTapes, GenOptions, 
+    HIDDEN_TAPE_PREFIX,
+    SILENT,
+    VERBOSE_TIME
+} from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { TapeNamespace } from "./tapes";
@@ -52,19 +59,21 @@ export class Interpreter {
     constructor(
         public devEnv: DevEnvironment,
         g: Grammar,
-        public verbose: boolean = false
+        public verbose: number = SILENT
     ) { 
 
-        // First, all grammars within Interpreters must be namespaces.  This simplifies
-        // the API and some of the transformations that follow; rather than every part having
-        // to check whether something is a namespace or not, we wrap non-namespaces in 
-        // a trivial namespace.
+        // First, all grammars within Interpreters must have a namespace as their root.  
+        // This simplifies the API and some of the transformations that follow; rather 
+        // than every part having to check whether something is a namespace or not,
+        // we wrap non-namespaces in a trivial namespace.
         if (g instanceof NsGrammar) {
             this.grammar = g;
         } else {
             this.grammar = new NsGrammar(g.cell);
             this.grammar.addSymbol("", g);
         }
+
+        const timeVerbose = (verbose & VERBOSE_TIME) != 0;
 
         // Next, we perform a variety of grammar-to-grammar transformations in order
         // to get the grammar into an executable state: symbol references fully-qualified,
@@ -73,32 +82,32 @@ export class Interpreter {
         timeIt(() => {
             const nameQualifier = new NameQualifierTransform();
             this.grammar = nameQualifier.transform(this.grammar);
-        }, verbose, "Qualified names");
+        }, timeVerbose, "Qualified names");
 
         timeIt(() => {
             const replaceAdjuster = new RuleReplaceTransform();
             this.grammar = replaceAdjuster.transform(this.grammar);
-        }, verbose, "Constructed replacement rules");
+        }, timeVerbose, "Constructed replacement rules");
 
         timeIt(() => {
             const replaceAdjuster = new SameTapeReplaceTransform();
             this.grammar = replaceAdjuster.transform(this.grammar);
-        }, verbose, "Adjusted tape names");
+        }, timeVerbose, "Adjusted tape names");
 
         timeIt(() => {
             const renameFixer = new RenameFixTransform();
             this.grammar = renameFixer.transform(this.grammar);
-        }, verbose, "Fixed any erroneous renames");
+        }, timeVerbose, "Fixed any erroneous renames");
 
         timeIt(() => {
             const flattenTransform = new FlattenTransform();
             this.grammar = flattenTransform.transform(this.grammar);
-        }, verbose, "Flattened sequences/alternations");
+        }, timeVerbose, "Flattened sequences/alternations");
 
         timeIt(() => {
             const filterCreator = new FilterTransform();
             this.grammar = filterCreator.transform(this.grammar);
-        }, verbose, "Created starts/ends/contains filters");
+        }, timeVerbose, "Created starts/ends/contains filters");
 
         //console.log(this.grammar.id);
 
@@ -110,18 +119,18 @@ export class Interpreter {
             this.tapeNS = new TapeNamespace();
             this.grammar.collectAllVocab(this.tapeNS);
 
-        }, verbose, "Collected vocab");
+        }, timeVerbose, "Collected vocab");
 
         timeIt(() => {
             // copy the vocab if necessary
             this.grammar.copyVocab(this.tapeNS, new Set());
-        }, verbose, "Copied vocab");
+        }, timeVerbose, "Copied vocab");
 
     }
 
     public static fromCSV(
         csv: string,
-        verbose: boolean = false
+        verbose: number = SILENT
     ): Interpreter {
         const devEnv = new SimpleDevEnvironment();
         devEnv.addSourceAsText("", csv);
@@ -131,7 +140,7 @@ export class Interpreter {
     public static fromSheet(
         devEnv: DevEnvironment, 
         mainSheetName: string,
-        verbose: boolean = false
+        verbose: number = SILENT
     ): Interpreter {
 
         // First, load all the sheets
@@ -160,7 +169,7 @@ export class Interpreter {
 
     public static fromGrammar(
         grammar: Grammar, 
-        verbose: boolean = false
+        verbose: number = SILENT
     ): Interpreter {
         const devEnv = new SimpleDevEnvironment();
         return new Interpreter(devEnv, grammar, verbose);
@@ -225,7 +234,8 @@ export class Interpreter {
         const opt: GenOptions = {
             random: false,
             maxRecursion: maxRecursion,
-            maxChars: maxChars
+            maxChars: maxChars,
+            verbose: this.verbose
         }
         const [expr, tapePriority] = this.prepareExpr(symbolName, restriction, opt);
 
@@ -259,7 +269,8 @@ export class Interpreter {
         const opt: GenOptions = {
             random: true,
             maxRecursion: maxRecursion,
-            maxChars: maxChars
+            maxChars: maxChars,
+            verbose: this.verbose
         }
 
         const [expr, tapePriority] = this.prepareExpr(symbolName, restriction, opt);

@@ -44,7 +44,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ['t1', 't2']);
         testGrammar(grammar, [
             { t1: "hihi", t2: "hihi" }
-        ], undefined, 4);
+        ]);
     }); 
 
     // 61b. t1/t2:hi+Match(t1:hi, t2:.*)
@@ -53,7 +53,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ['t1', 't2']);
         testGrammar(grammar, [
             { t1: "hihi", t2: "hihi" }
-        ], undefined, 4);
+        ]);
     }); 
 
     // 61b. t1/t2:hi+Match(t1:hi, t2:.*)
@@ -61,7 +61,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('1c: t1:ha+t2:hi+Match(t1:ha, t2:.*)', function() {
         const grammar =  Seq(t1("ha"), t2("hi"), Match(Seq(t1("ha"), Rep(Dot("t2"))), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, [], undefined, 4);
+        testGrammar(grammar, []);
     }); 
 
     // 61b. t1/t2:hi+Match(t1:hi, t2:.*)
@@ -69,7 +69,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('1d: t2:hi+t2:ha+Match(t1:ha, t2:.*)', function() {
         const grammar =  Seq(t2("hi"), t1("ha"), Match(Seq(t1("ha"), Rep(Dot("t2"))), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, [], undefined, 4);
+        testGrammar(grammar, []);
     }); 
 
     describe('2a. Joining a literal to matching .* on t1 and t2', function() {

@@ -1,6 +1,9 @@
 import { CounterStack, EpsilonExpr, Expr, NullExpr } from "./exprs";
-import { Token, OutputTrie, TapeNamespace, BitsetToken } from "./tapes";
-import { ANY_CHAR_STR, BITSETS_ENABLED, Gen, GenOptions, shuffleArray, StringDict, VERBOSE } from "./util";
+import { Token, OutputTrie, TapeNamespace } from "./tapes";
+import { 
+    ANY_CHAR_STR, BITSETS_ENABLED, Gen, 
+    GenOptions, shuffleArray, StringDict, VERBOSE_DEBUG 
+} from "./util";
 
 /**
  * Performs a breadth-first traversal of the graph.  This will be the function that most 
@@ -50,6 +53,9 @@ abstract class Generator {
         stack: CounterStack,
         opt: GenOptions
     ): Gen<StringDict> {
+
+        const verbose = (opt.verbose & VERBOSE_DEBUG) != 0;
+
         const initialOutput: OutputTrie = new OutputTrie();
         let states: [string[], OutputTrie, Expr][] = [[tapePriority, initialOutput, expr]];
         let prev: [string[], OutputTrie, Expr] | undefined = undefined;
@@ -69,7 +75,7 @@ abstract class Generator {
             let nexts: [string[], OutputTrie, Expr][] = [];
             let [tapes, prevOutput, prevExpr] = prev;
  
-            if (VERBOSE) {
+            if (verbose) {
                 console.log();
                 console.log(`prevOutput is ${JSON.stringify(prevOutput.toDict(tapeNS, opt))}`);
                 console.log(`prevExpr is ${prevExpr.id}`);
@@ -79,7 +85,7 @@ abstract class Generator {
             if (prevExpr instanceof EpsilonExpr) {
                 // we found a valid output
 
-                if (VERBOSE) {
+                if (verbose) {
                     console.log(`YIELD ${JSON.stringify(prevOutput.toDict(tapeNS, opt))} `)
                 }
                     
@@ -104,7 +110,7 @@ abstract class Generator {
             const tapeToTry = tapes[0];
             
             const delta = prevExpr.delta(tapeToTry, tapeNS, stack, opt);
-            if (VERBOSE) {
+            if (verbose) {
                 console.log(`d^${tapeToTry} is ${delta.id}`);
             }
             if (!(delta instanceof NullExpr)) {                    
@@ -119,7 +125,7 @@ abstract class Generator {
             for (const [cTarget, cNext] of 
                     this.deriv(prevExpr, tapeToTry, tapeNS, stack, opt)) {
                 
-                if (VERBOSE) {
+                if (verbose) {
                     console.log(`D^${tapeToTry}_${cTarget} is ${cNext.id}`);
                 }
 

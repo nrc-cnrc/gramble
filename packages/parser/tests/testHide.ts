@@ -1,6 +1,6 @@
 import { Seq, Join, Hide, Rename, Equals, Ns, Embed } from "../src/grammars";
 import { t1, t2, t3, testHasTapes, testHasVocab, testGrammar } from './testUtils';
-import { StringDict } from "../src/util";
+import { SILENT, StringDict } from "../src/util";
 import * as path from 'path';
 
 const DUMMY_SYMBOL: string = "";
@@ -25,7 +25,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testHasTapes(grammar, ["t1"], DUMMY_SYMBOL, false);
         //testHasVocab(grammar, {t1: 4});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('2a. hide(t2) of t1:hello+t2:foo', function() {
@@ -45,7 +45,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testHasTapes(grammar, ["t1", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {t1: 4, '.HIDDEN_t2': 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('3a. hide(t2, t1:hello+t2:foo)+t2:bar', function() {
@@ -63,7 +63,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hello", t2: "bar", '.HIDDEN_t2': "foo"}
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('4a. t2:bar + hide(t2, t1:hello+t2:foo)', function() {
@@ -81,7 +81,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hello", t2: "bar", '.HIDDEN_t2': "foo"}
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('5a. hide(t2, t1:hello+t2:foo) & t2:bar', function() {
@@ -99,7 +99,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hello", t2: "bar", '.HIDDEN_t2': "foo"}
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('6a. t2:bar ⨝ hide(t2, t1:hello+t2:foo) ', function() {
@@ -117,7 +117,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hello", t2: "bar", '.HIDDEN_t2': "foo"}
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('7a. hide(t2) of t1:hello+t2:foo ⨝ t1:hello+t2:foo', function() {
@@ -135,7 +135,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hello", '.HIDDEN_t2': "foo"}
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('8a. hide(t2) of t1:hello+t2:foo ⨝ t1:hello+t2:bar', function() {
@@ -147,7 +147,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('8b. hide(t2) of t1:hello+t2:foo ⨝ t1:hello+t2:bar', function() {
         const grammar = Hide(Join(Seq(t1("hello"), t2("foo")),
                                   Seq(t1("hello"), t2("bar"))), "t2", "HIDDEN");
-        testGrammar(grammar, [], DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, [], SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('9a. Nested hide', function() {
@@ -165,7 +165,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: "hello", '.HIDDEN_t1': "foo", '.HIDDEN_t3': "bar"}
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('10a. Rename t1>t2 of hide(t2) of t1:hello+t2:foo', function() {
@@ -186,7 +186,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: "hello", '.HIDDEN_t2': "foo"}
         ];
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('11a. Rename t1>t3 of hide(t2) of t1:hello+t2:foo', function() {
@@ -207,7 +207,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testHasTapes(grammar, ["t3", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
         //testHasVocab(grammar, {t3: 4, '.HIDDEN_t2': 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('12a. Rename t2>t3 of hide(t2) of t1:hello+t2:foo', function() {
@@ -228,7 +228,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testHasTapes(grammar, ["t1", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
         //testHasVocab(grammar, {t1: 4, '.HIDDEN_t2': 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('13a. Filter using a field and then hide it', function() {
@@ -246,7 +246,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: "hello", ".HIDDEN_t2": "foo"}
         ];
         testHasTapes(grammar, ["t1", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('14a. Hide-filter-hide', function() {
@@ -266,7 +266,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: "hello", '.HIDDEN_t2': "foo", '.HIDDEN_t3': "goo"}
         ];
         testHasTapes(grammar, ["t1", ".HIDDEN_t2", ".HIDDEN_t3"], DUMMY_SYMBOL, false);
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
     describe('15a. Hide t2 of symbol t1:hi+t2:world', function() {
@@ -280,7 +280,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ["t1"]);
         testHasTapes(grammar, ["t1"], "b");
         //testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, expectedResults, "b");
+        testGrammar(grammar, expectedResults, SILENT, "b");
     });
 
     describe('15b. Hide t2 of symbol t1:hi+t2:world', function() {
@@ -294,7 +294,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ["t1", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
         testHasTapes(grammar, ["t1", ".HIDDEN_t2"], "b", false);
         //testHasVocab(grammar, {t1: 2, '.HIDDEN_t2': 2});
-        testGrammar(grammar, expectedResults, "b", DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, "b", DEF_MAX_RECURSION, false);
     });
 
     describe('16a. Embed of hide(t2) of t1:hi+t2:foo', function() {
@@ -320,7 +320,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testHasTapes(grammar, ["t1", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
         //testHasVocab(grammar, {t1: 2, '.HIDDEN_t2': 2});
-        testGrammar(grammar, expectedResults, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
     });
 
 });

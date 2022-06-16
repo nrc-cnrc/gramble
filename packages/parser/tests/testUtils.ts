@@ -2,7 +2,7 @@
 import { assert, expect } from "chai";
 import { Grammar, Lit } from "../src/grammars";
 import { Interpreter } from "../src/interpreter";
-import { HIDDEN_TAPE_PREFIX, StringDict, tokenizeUnicode } from "../src/util";
+import { HIDDEN_TAPE_PREFIX, SILENT, StringDict, tokenizeUnicode } from "../src/util";
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
@@ -193,11 +193,12 @@ function testGrammarAux(
 export function testGrammar(
     grammar: Grammar,
     expectedResults: StringDict[],
+    verbose: number = SILENT,
     symbolName: string = "",
     maxRecursion: number = 4,
-    stripHidden: boolean = true
+    stripHidden: boolean = true,
 ): void {
-    const interpreter = Interpreter.fromGrammar(grammar);
+    const interpreter = Interpreter.fromGrammar(grammar, verbose);
     if (symbolName == "") {
         testGrammarAux(interpreter, expectedResults, symbolName, maxRecursion, stripHidden);
     } else {
@@ -348,6 +349,7 @@ export type InputResultsPair = [StringDict, StringDict[]];
 export function testParseMultiple(
     grammar: Grammar, 
     inputResultsPairs: InputResultsPair[],
+    verbose: number = SILENT,
     maxRecursion: number = 4
 ): void {
 
@@ -360,7 +362,7 @@ export function testParseMultiple(
             var outputs: StringDict[] = [];
             try {    
                 //grammar = grammar.compile(2, maxRecursion);
-                const interpreter = Interpreter.fromGrammar(grammar);
+                const interpreter = Interpreter.fromGrammar(grammar, verbose);
                 outputs = [...interpreter.generate("", inputs, Infinity, maxRecursion)];
             } catch (e) {
                 it("Unexpected Exception", function() {

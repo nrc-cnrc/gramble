@@ -2,8 +2,10 @@
 
 import { 
     Interpreter, 
+    SILENT, 
     TextDevEnvironment,
-    timeIt
+    timeIt,
+    VERBOSE_TIME
 } from "@gramble/parser";
 import { createWriteStream, existsSync } from "fs";
 import { basename, dirname } from "path";
@@ -17,7 +19,10 @@ const EXIT_USAGE = 64;
 
 type StringDict = {[key: string]: string};
 
-export function sheetFromFile(path: string, verbose: boolean): Interpreter {
+export function sheetFromFile(
+  path: string, 
+  verbose: number = SILENT
+): Interpreter {
 
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
@@ -142,7 +147,8 @@ const commands: { [name: string]: Command } = {
         fileExistsOrFail(options.source);
 
         const outputStream = getOutputStream(options.output);
-        const interpreter = sheetFromFile(options.source, options.verbose);
+        const timeVerbose = (options.verbose) ? VERBOSE_TIME : SILENT;
+        const interpreter = sheetFromFile(options.source, timeVerbose);
 
         if (options.verbose) {
             interpreter.runChecks();
@@ -214,7 +220,8 @@ const commands: { [name: string]: Command } = {
         fileExistsOrFail(options.source);
 
         const outputStream = getOutputStream(options.output);
-        const interpreter = sheetFromFile(options.source, options.verbose);
+        const timeVerbose = (options.verbose) ? VERBOSE_TIME : SILENT;
+        const interpreter = sheetFromFile(options.source, timeVerbose);
 
         if (options.verbose) {
             interpreter.runChecks();

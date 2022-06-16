@@ -12,20 +12,25 @@ export const REPLACE_OUTPUT_TAPE = HIDDEN_TAPE_PREFIX + "output";
 export const ANY_CHAR_STR = "__ANY_CHAR__";
 export const NO_CHAR_STR = "__ANY_CHAR__";
 
-export const VERBOSE: boolean = false;
 export const BITSETS_ENABLED: boolean = false; // whether to use bitsets or real strings
 export const DIRECTION_LTR: boolean = false; // whether we parse/generate from the beginning or end of words
+
+export const SILENT = 0;
+export const VERBOSE_TIME = 1;
+export const VERBOSE_DEBUG = 1 << 1;
 
 export class GenOptions {
     public random: boolean = false;
     public maxRecursion: number = 2; 
     public maxChars: number = 1000;
+    public verbose: number = SILENT
 }
 
 export type Gen<T> = Generator<T, void, undefined>;
 
 
 export type StringDict = {[key: string]: string};
+
 
 /**
  * A convenience class encapsulating information about where a cell

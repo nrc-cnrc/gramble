@@ -129,7 +129,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Double negation: ~(~t1:hello)', function() {
         const grammar = Not(Not(t1("hello")));
-        testGrammar(grammar, [{t1: "hello"}], "", 4);
+        testGrammar(grammar, [{t1: "hello"}]);
     });
 
     describe('~t1:hi', function() {
@@ -148,7 +148,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii' }, { t1: 'ihhh' }, { t1: 'ihhi' },
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }];
-        testGrammar(grammar, expectedResults, "", 4);
+        testGrammar(grammar, expectedResults);
     });
 
     
@@ -168,7 +168,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii' }, { t1: 'ihhh' }, { t1: 'ihhi' },
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }];
-        testGrammar(grammar, expectedResults, "", 4);
+        testGrammar(grammar, expectedResults);
     });
     
     
@@ -197,7 +197,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'ihih' }, { t1: 'ihii' }, { t1: 'iihh' },
             { t1: 'iihi' }, { t1: 'iiih' }, { t1: 'iiii' }, 
             { t2: "hi"}];
-        testGrammar(grammar, expectedResults, "", 4);
+        testGrammar(grammar, expectedResults);
     });
     
     describe('~t1:h', function() {
@@ -209,7 +209,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hh' },  
             { t1: 'hhh' },
             { t1: 'hhhh' }];
-        testGrammar(grammar, expectedResults, "", 4);
+        testGrammar(grammar, expectedResults);
     });
 
     
@@ -222,7 +222,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhh' },  
             { t1: 'hhhh' },
             { t1: 'hhhhh' }];
-        testGrammar(grammar, expectedResults, "", 4);
+        testGrammar(grammar, expectedResults);
     });
 
     describe('(~t1:h)+t1:h', function() {
@@ -234,7 +234,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhh' },  
             { t1: 'hhhh' },
             { t1: 'hhhhh' }];
-        testGrammar(grammar, expectedResults, "", 4);
+        testGrammar(grammar, expectedResults);
     });
     
     describe('~t1:h{0,1}', function() {
@@ -245,7 +245,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hh' },         
             { t1: 'hhh' },
             { t1: 'hhhh' }];
-        testGrammar(grammar, expectedResults, "", 4);
+        testGrammar(grammar, expectedResults);
     });
 
 
@@ -256,7 +256,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {},            
             { t1: 'hhhh' }];
-        testGrammar(grammar, expectedResults, "", 4);
+        testGrammar(grammar, expectedResults);
     });
 
     describe('Join(~t1:hi & t2:hi)', function() {
@@ -275,7 +275,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t1: 'hhii', t2: "hi" }, { t1: 'ihhh', t2: "hi" }, { t1: 'ihhi', t2: "hi" },
             { t1: 'ihih', t2: "hi" }, { t1: 'ihii', t2: "hi" }, { t1: 'iihh', t2: "hi" },
             { t1: 'iihi', t2: "hi" }, { t1: 'iiih', t2: "hi" }, { t1: 'iiii', t2: "hi" }];
-        testGrammar(grammar, expectedResults, "", 4);
+        testGrammar(grammar, expectedResults);
     });
     
     describe('Join(t2:hi & ~t1:hi)', function() {
@@ -299,7 +299,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { t2: 'hi', t1: 'ihih' }, { t2: 'hi', t1: 'ihii' },
             { t2: 'hi', t1: 'iihh' }, { t2: 'hi', t1: 'iihi' },
             { t2: 'hi', t1: 'iiih' }, { t2: 'hi', t1: 'iiii' }];
-        testGrammar(grammar, expectedResults, "", 4);
+        testGrammar(grammar, expectedResults);
     }); 
 
     describe('~(t1:h+t2:h)', function() {
@@ -315,7 +315,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"i","t1":"hh"},
             {"t2":"iii"},
             {"t1":"hhh"}];
-            testGrammar(grammar, expectedResults, "", 4);
+            testGrammar(grammar, expectedResults);
     }); 
 
     describe('~(t1:h|t2:h)', function() {
@@ -326,7 +326,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"t2":"ii"},            {"t1":"hh"},
             {"t2":"ii","t1":"h"},   {"t2":"i","t1":"hh"},
             {"t2":"iii"},           {"t1":"hhh"}];
-            testGrammar(grammar, expectedResults, "", 4);
+            testGrammar(grammar, expectedResults);
     }); 
     
     describe('~(t1:he,3)', function() {
@@ -349,7 +349,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'eeh'},
             {t1: 'eee'},
         ];
-        testGrammar(grammar, expectedResults, "", 4);
+        testGrammar(grammar, expectedResults);
     });
 
     // Testing negation with "dot".
@@ -366,7 +366,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // should not have:
             // {t1: "ii"},
         ];
-        testGrammar(grammar, expectedResults, '', 4);
+        testGrammar(grammar, expectedResults);
     });
     
     describe('Dot-2. ~(.,2) with vocab "hi"', function() {
@@ -384,7 +384,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: "h"},
             // {t1: "i"},
         ];
-        testGrammar(grammar, expectedResults, '', 4);
+        testGrammar(grammar, expectedResults);
     });
 
     describe('Dot-3. ~(.i,2) with vocab "hi"', function() {
@@ -402,7 +402,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: "hi"},
             // {t1: "ii"},
         ];
-        testGrammar(grammar, expectedResults, '', 4);
+        testGrammar(grammar, expectedResults);
     });
 
     describe('Dot-4. ~(.i,2) with vocab "hi"', function() {
@@ -420,7 +420,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: "hi"},
             // {t1: "ii"},
         ];
-        testGrammar(grammar, expectedResults, '', 4);
+        testGrammar(grammar, expectedResults);
     });
 
     describe('Dot-5. ~(.{0,1}i,3) with vocab "hi"', function() {
@@ -446,7 +446,7 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: "hi"},
             // {t1: "ii"},
         ];
-        testGrammar(grammar, expectedResults, '', 4);
+        testGrammar(grammar, expectedResults);
     });
 
     describe('Dot-6. ~(.{0,3}i,3) with vocab "hi"', function() {
@@ -472,6 +472,6 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: "ihi"},
             // {t1: "iii"},
         ];
-        testGrammar(grammar, expectedResults, '', 4);
+        testGrammar(grammar, expectedResults);
     });
 });

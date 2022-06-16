@@ -11,6 +11,7 @@ import {
 } from './testUtils';
 
 import * as path from 'path';
+import { SILENT } from "../src/util";
 
 
 describe(`${path.basename(module.filename)}`, function() {
@@ -23,29 +24,29 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ["t1"], "b");
         
         testGrammar(grammar, [{t1: "hi"}]);
-        testGrammar(grammar, [{t1: "hi"}], "a");
-        testGrammar(grammar, [{t1: "hi"}], "b");
+        testGrammar(grammar, [{t1: "hi"}], SILENT, "a");
+        testGrammar(grammar, [{t1: "hi"}], SILENT, "b");
     });
     
     describe('Symbol containing ε', function() {
         const grammar = Ns({ "a": Epsilon(),
                              "b": Embed("a") });
         //testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, [{}], "b");
+        testGrammar(grammar, [{}], SILENT, "b");
     });
 
     describe('Symbol containing ε+ε', function() {
         const grammar = Ns({ "a": Seq(Epsilon(), Epsilon()),
                           "b": Embed("a") });
         //testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, [{}], "b");
+        testGrammar(grammar, [{}], SILENT, "b");
     });
 
     describe('Symbol containing ∅', function() {
         const grammar = Ns({ "a": Null(),
                           "b": Embed("a") });
         //testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, [], "b");
+        testGrammar(grammar, [], SILENT, "b");
     });
 
     describe('Lowercase assignment, uppercase reference', function() {
@@ -53,7 +54,7 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Embed("A") });
         testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, [{t1: "hi"}], "b");
+        testGrammar(grammar, [{t1: "hi"}], SILENT, "b");
     });
 
     describe('Uppercase assignment, lowercase reference', function() {
@@ -61,20 +62,20 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Embed("a") });
         testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, [{t1: "hi"}], "b");
+        testGrammar(grammar, [{t1: "hi"}], SILENT, "b");
     });
 
     describe('Symbol containing t1:hi+t1:world', function() {
         const grammar = Ns({ "a": Seq(t1("hi"), t1("world")),
                           "b": Embed("a") });
-        testGrammar(grammar, [{t1: "hiworld"}], "b");
+        testGrammar(grammar, [{t1: "hiworld"}], SILENT, "b");
     });
     
     describe('Two sequences referencing sym t1:hi+t1:world', function() {
         const grammar = Ns({ "a": Seq(t1("h"), t1("i")),
                           "b": Uni(Seq(Embed("a"), t1("world")),
                                    Seq(Embed("a"), t1("kitty")))});
-        testGrammar(grammar, [{t1: "hiworld"}, {t1:"hikitty"}], "b");
+        testGrammar(grammar, [{t1: "hiworld"}, {t1:"hikitty"}], SILENT, "b");
     });
 
     describe('Symbol containing t1:hi+t2:world', function() {
@@ -82,40 +83,40 @@ describe(`${path.basename(module.filename)}`, function() {
                           "b": Embed("a") });
         testHasTapes(grammar, ["t1", "t2"]);
         //testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, [{t1: "hi", t2: "world"}], "b");
+        testGrammar(grammar, [{t1: "hi", t2: "world"}], SILENT, "b");
     });
 
     describe('Symbol containing t1:hi|t1:goodbye', function() {
         const grammar = Ns({ "a": Uni(t1("hi"), t1("goodbye")),
                           "b": Embed("a") });
         testGrammar(grammar, [{t1: "hi"},
-                              {t1: "goodbye"}], "b");
+                              {t1: "goodbye"}], SILENT, "b");
     });
 
     describe('Symbol of (t1:hi ⋈ t1:hi+t2:bye)', function() {
         const grammar = Ns({ "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))), 
                           "b": Embed("hi2bye") });
-        testGrammar(grammar, [{t1: "hi", t2: "bye"}], "b");
+        testGrammar(grammar, [{t1: "hi", t2: "bye"}], SILENT, "b");
     });
 
     describe('Joining sym(t1:hi ⋈ t1:hi+t2:bye) ⋈ t2:bye+t3:yo', function() {
         const grammar = Ns({ "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))),
                             "b": Join(Embed("hi2bye"), Seq(t2("bye"), t3("yo"))) });
-        testGrammar(grammar, [{t1: "hi", t2: "bye", t3: "yo"}], "b");
+        testGrammar(grammar, [{t1: "hi", t2: "bye", t3: "yo"}], SILENT, "b");
     });
 
     describe('Joining t1:hi ⋈ sym(t1:hi+t2:bye ⋈ t2:bye+t3:yo)', function() {
         const grammar = Ns({ "hi2yo": Join(Seq(t1("hi"), t2("bye")), 
                                 Seq(t2("bye"), t3("yo"))),
                             "b": Join(t1("hi"), Embed("hi2yo")) });
-        testGrammar(grammar, [{t1: "hi", t2: "bye", t3: "yo"}], "b");
+        testGrammar(grammar, [{t1: "hi", t2: "bye", t3: "yo"}], SILENT, "b");
     });
 
     describe('Joining of sym(t1:hi ⋈ t1:hi+t2:bye)+t2:world', function() {
         const grammar = Ns({ "hi2bye" : Join(t1("hi"), Seq(t1("hi"), t2("bye"))),
                           "b": Seq(Embed("hi2bye"), t2("world")) });
         
-        testGrammar(grammar, [{t1: "hi", t2: "byeworld"}], "b");
+        testGrammar(grammar, [{t1: "hi", t2: "byeworld"}], SILENT, "b");
     });
     
     describe('Simple namespace, generating from default symbol', function() {
@@ -155,8 +156,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(outer, [ "t2" ], "x");
 
         testGrammar(outer, [{t1: "hello"}]);
-        testGrammar(outer, [{t1: "hello"}], "inner.x");
-        testGrammar(outer, [{t2: "goodbye"}], "x");
+        testGrammar(outer, [{t1: "hello"}], SILENT, "inner.x");
+        testGrammar(outer, [{t2: "goodbye"}], SILENT, "x");
 
     });
 
@@ -177,8 +178,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(globalNs, [ "t2" ], "ns.x");
 
         testGrammar(globalNs, [{t1: "hello"}]);
-        testGrammar(globalNs, [{t1: "hello"}], "ns.ns.x");
-        testGrammar(globalNs, [{t2: "goodbye"}], "ns.x");
+        testGrammar(globalNs, [{t1: "hello"}], SILENT, "ns.ns.x");
+        testGrammar(globalNs, [{t2: "goodbye"}], SILENT, "ns.x");
 
     });
 
@@ -191,7 +192,7 @@ describe(`${path.basename(module.filename)}`, function() {
         outer.addSymbol("ns", inner);
         const global = Ns();
         global.addSymbol("ns", outer);
-        testGrammar(global, [{t1: "hello"}], "ns.ns.y");
+        testGrammar(global, [{t1: "hello"}], SILENT, "ns.ns.y");
     });
 
     describe('Nested namespaces with identical names, and a symbol in the outer referring to a symbol in the inner', function() {
@@ -203,7 +204,7 @@ describe(`${path.basename(module.filename)}`, function() {
         outer.addSymbol("ns", inner);
         const global = Ns();
         global.addSymbol("ns", outer);
-        testGrammar(global, [{t1: "hello"}], "ns.y");
+        testGrammar(global, [{t1: "hello"}], SILENT, "ns.y");
     });
     
     describe('Nested namespaces where an embed in outer refers to inner', function() {
@@ -217,8 +218,8 @@ describe(`${path.basename(module.filename)}`, function() {
                                     "x" ]);
 
         testGrammar(outer, [{t1: "hello"}]);
-        testGrammar(outer, [{t1: "hello"}], "inner.x");
-        testGrammar(outer, [{t1: "hello"}], "x");
+        testGrammar(outer, [{t1: "hello"}], SILENT, "inner.x");
+        testGrammar(outer, [{t1: "hello"}], SILENT, "x");
 
     });
 
@@ -236,8 +237,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testDoesNotHaveSymbols(outer, [ "x" ]);
 
         testGrammar(outer, [{t1: "hello"}]);
-        testGrammar(outer, [{t1: "hello"}], "inner1.x");
-        testGrammar(outer, [{t1: "hello"}], "inner2.x");
+        testGrammar(outer, [{t1: "hello"}], SILENT, "inner1.x");
+        testGrammar(outer, [{t1: "hello"}], SILENT, "inner2.x");
 
     }); 
 
@@ -254,8 +255,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testDoesNotHaveSymbols(outer, [ "x" ]);
 
         testGrammar(outer, [{t1: "hello"}]);
-        testGrammar(outer, [{t1: "hello"}], "inner1.x");
-        testGrammar(outer, [{t1: "hello"}], "inner2.x");
+        testGrammar(outer, [{t1: "hello"}], SILENT, "inner1.x");
+        testGrammar(outer, [{t1: "hello"}], SILENT, "inner2.x");
 
     }); 
 
@@ -272,8 +273,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testDoesNotHaveSymbols(outer, [ "x" ]);
 
         testGrammar(outer, [{t1: "hello"}]);
-        testGrammar(outer, [{t1: "hello"}], "inner1.x");
-        testGrammar(outer, [{t1: "hello"}], "inner2.x");
+        testGrammar(outer, [{t1: "hello"}], SILENT, "inner1.x");
+        testGrammar(outer, [{t1: "hello"}], SILENT, "inner2.x");
 
     }); 
 });

@@ -13,6 +13,7 @@ import {
 } from './testUtils';
 
 import * as path from 'path';
+import { SILENT } from "../src/util";
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -230,8 +231,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'ihhhi', 't2': 'ihhih'},
                                     {'t1': 'ihihi', 't2': 'ihiih'},
                                     {'t1': 'iihhi', 't2': 'iihih'},
-                                    {'t1': 'iiihi', 't2': 'iiiih'}],
-                            undefined, 4);
+                                    {'t1': 'iiihi', 't2': 'iiiih'}]);
     });
 
     
@@ -255,8 +255,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'ihhhi', 't2': 'ihhih'},
                                     {'t1': 'ihihi', 't2': 'ihiih'},
                                     {'t1': 'iihhi', 't2': 'iihih'},
-                                    {'t1': 'iiihi', 't2': 'iiiih'}],
-                            undefined, 4);
+                                    {'t1': 'iiihi', 't2': 'iiiih'}]);
     });
 
     // 16a. t1:hi+t2:ih + Match(.*,t1,t2)
@@ -279,8 +278,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'hiihh', 't2': 'ihihh'},
                                     {'t1': 'hiihi', 't2': 'ihihi'},
                                     {'t1': 'hiiih', 't2': 'ihiih'},
-                                    {'t1': 'hiiii', 't2': 'ihiii'}],
-                            undefined, 4);
+                                    {'t1': 'hiiii', 't2': 'ihiii'}]);
     });
 
     // 16b. t1:hi+t2:ih + Match(.*,t1,t2)
@@ -303,8 +301,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'hiihh', 't2': 'ihihh'},
                                     {'t1': 'hiihi', 't2': 'ihihi'},
                                     {'t1': 'hiiih', 't2': 'ihiih'},
-                                    {'t1': 'hiiii', 't2': 'ihiii'}],
-                            undefined, 4);
+                                    {'t1': 'hiiii', 't2': 'ihiii'}]);
     });
 
     // Uni with Match tests
@@ -356,8 +353,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'ihi', 't2': 'ihi'},
                                     {'t1': 'iih', 't2': 'iih'},
                                     {'t1': 'iii', 't2': 'iii'},
-                                    {'t1': 'hi', 't2': 'ih'}],
-                                undefined, 4);
+                                    {'t1': 'hi', 't2': 'ih'}]);
     });
 
     
@@ -382,8 +378,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'ihi', 't2': 'ihi'},
                                     {'t1': 'iih', 't2': 'iih'},
                                     {'t1': 'iii', 't2': 'iii'},
-                                    {'t1': 'hi', 't2': 'ih'}],
-                                undefined, 4);
+                                    {'t1': 'hi', 't2': 'ih'}]);
     });
 
     // 20a. t1:hi+t2:ih | Match(.*,t1,t2)
@@ -407,8 +402,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'ihh', 't2': 'ihh'},
                                     {'t1': 'ihi', 't2': 'ihi'},
                                     {'t1': 'iih', 't2': 'iih'},
-                                    {'t1': 'iii', 't2': 'iii'}],
-                                undefined, 4);
+                                    {'t1': 'iii', 't2': 'iii'}]);
     });
 
     // 20b. t1:hi+t2:ih | Match(.*,t1,t2)
@@ -432,8 +426,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                     {'t1': 'ihh', 't2': 'ihh'},
                                     {'t1': 'ihi', 't2': 'ihi'},
                                     {'t1': 'iih', 't2': 'iih'},
-                                    {'t1': 'iii', 't2': 'iii'}],
-                                undefined, 4);
+                                    {'t1': 'iii', 't2': 'iii'}]);
     });
 
     // Filter/Join with Match tests

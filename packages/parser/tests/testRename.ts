@@ -20,6 +20,7 @@ import {
 } from "./testUtils";
 
 import * as path from 'path';
+import { SILENT } from "../src/util";
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -170,7 +171,7 @@ describe(`${path.basename(module.filename)}`, function() {
         });
 
         testHasTapes(grammar, ["t1", "t3"]);
-        testGrammar(grammar, [{t1: "hi", t3: "world"}], "b");
+        testGrammar(grammar, [{t1: "hi", t3: "world"}], SILENT, "b");
     });
     
     /*
