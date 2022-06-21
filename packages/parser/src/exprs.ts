@@ -302,7 +302,7 @@ export abstract class Expr {
         }
 
         for (const c in results) {
-            const nextToken = tape.toToken(c);
+            const nextToken = tape.toToken([c]);
             const nextExprs = results[c];
             const nextExpr = constructAlternation(...nextExprs);
             yield [nextToken, nextExpr];
@@ -530,12 +530,7 @@ class CharSetExpr extends Expr {
     }
 
     protected getToken(tape: Tape): BitsetToken {
-        let result = tape.none;
-        for (const char of this.chars) {
-            const t = tape.toToken(char);
-            result = result.or(t);
-        }
-        return result;
+        return tape.toToken(this.chars);
     }
 
     public *bitsetDeriv(
@@ -685,7 +680,7 @@ class LiteralExpr extends Expr {
     }
 
     protected getToken(tape: Tape): BitsetToken {
-        return tape.toToken(this.text[this.index]);
+        return tape.toToken([this.text[this.index]]);
     }
 
     public *bitsetDeriv(
@@ -778,7 +773,7 @@ class RTLLiteralExpr extends LiteralExpr {
     }
 
     protected getToken(tape: Tape): BitsetToken {
-        return tape.toToken(this.text[this.index]);
+        return tape.toToken([this.text[this.index]]);
     }
 
     public *bitsetDeriv(
@@ -1480,11 +1475,11 @@ class NegationExpr extends UnaryExpr {
 
         const tape = tapeNS.get(tapeName);
 
-        let remainder = tape.toToken(target);
+        let remainder = tape.toToken([target]);
 
         for (const [childText, childNext] of 
                 this.child.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
-            const childToken = tape.toToken(childText as string);
+            const childToken = tape.toToken([childText as string]);
             remainder = remainder.andNot(childToken);
             const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
             yield [childText, successor];

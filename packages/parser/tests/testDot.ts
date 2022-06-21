@@ -1,5 +1,5 @@
 import { Seq, Join, Any, Equals, Uni, Epsilon } from "../src/grammars";
-import { testHasTapes, t1, t2, testGrammar } from './testUtils';
+import { testHasTapes, t1, t2, testGrammar, testHasVocab } from './testUtils';
 
 import * as path from 'path';
 
@@ -8,6 +8,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('t1:hi + t1:.', function() {
         const grammar = Seq(t1("hi"), Any("t1"));
         testHasTapes(grammar, ["t1"]);
+        testHasVocab(grammar, {t1: 2});
         testGrammar(grammar, [{t1: "hih"}, {t1: "hii"}]);
     });
 
@@ -60,11 +61,11 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, []);
     });
 
-
     // The same tests but with the dot on the left side
 
     describe('Joining t1:. & t1:h', function() {
         const grammar = Join(Any("t1"), t1("h"));
+        testHasVocab(grammar, {t1: 1});
         testGrammar(grammar, [{t1: "h"}]);
     });
 

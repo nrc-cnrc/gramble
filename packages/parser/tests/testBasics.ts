@@ -9,12 +9,14 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Literal t1:hello', function() {
         const grammar = t1("hello");
         testHasTapes(grammar, ["t1"]);
+        testHasVocab(grammar, {t1: 4});
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
     describe('Literal t1:""', function() {
         const grammar = t1("");
         testHasTapes(grammar, ["t1"]);
+        testHasVocab(grammar, {t1: 0});
         testGrammar(grammar, [{}]);
     });
 
@@ -27,6 +29,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Sequence t1:hello+t1:world', function() {
         const grammar = Seq(t1("hello"), t1("world"));
         testHasTapes(grammar, ["t1"]);
+        testHasVocab(grammar, {t1: 7});
         testGrammar(grammar, [{t1: "helloworld"}]);
     });
 
@@ -126,6 +129,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('t1:hi+t2:yo', function() {
         const grammar = Seq(t1("hi"), t2("yo"));
         testHasTapes(grammar, ["t1", "t2"]);
+        testHasVocab(grammar, {t1: 2, t2: 2});
         testGrammar(grammar, [{t1: "hi", t2: "yo"}]);
     });
 

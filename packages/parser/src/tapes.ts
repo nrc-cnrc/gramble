@@ -37,6 +37,10 @@ import {
         return new BitsetToken(this.bits.clone());
     }
 
+    public cardinality(): number {
+        return this.bits.cardinality();
+    }
+
     public isEmpty(): boolean {
         return this.bits.isEmpty();
     }
@@ -155,13 +159,14 @@ class Vocab {
         return [...this.strToIndex.keys()];
     }
 
-    public register(c: string): void {
+    public register(c: string): number {
         let index = this.strToIndex.get(c);
         if (index == undefined) {
             index = this.strToIndex.size;
             this.strToIndex.set(c, index);
             this.indexToStr.set(index, c);
         }
+        return index;
     }
 }
 
@@ -182,7 +187,7 @@ export interface Tape {
     inVocab(strs: string[]): boolean;
     match(str1: BitsetToken, str2: BitsetToken): BitsetToken;
     tokenize(str: string): string[];
-    toToken(char: string): BitsetToken;
+    toToken(chars: string[]): BitsetToken;
     fromToken(token: BitsetToken): string[];
 
 }
@@ -196,19 +201,29 @@ class BitsetTape implements Tape {
 
     constructor(
         //public globalName: string,
-        public _vocab: Vocab = new Vocab()
+        protected _vocab: Vocab = new Vocab()
      ) { }
 
     public get vocabSize(): number {
-        return this._vocab.size;
+        return this.mask.cardinality();
     }
 
-    public inVocab(strs: string[]): boolean {
-        return this._vocab.hasAll(strs);
+    public inVocab(chars: string[]): boolean {
+        for (const char of chars) {
+            const index = this._vocab.getIndex(char);
+            if (index == undefined) {
+                return false;
+            }
+            if (this.mask.bits.get(index) == 0) {
+                return false;
+            }
+        }
+        return true;
+
     }
 
     public get vocab(): string[] {
-        return this._vocab.asStrings();
+        return this.fromToken(this.mask);
     }
 
     public get any(): BitsetToken {
@@ -233,8 +248,8 @@ class BitsetTape implements Tape {
 
         const cs = tokenizeUnicode(str);
         for (const c of cs) {
-            this._vocab.register(c); // just in case
-            this.mask = this.mask.or(this.toToken(c));
+            const index = this._vocab.register(c); // in case it hasn't been registered before
+            this.mask.bits.set(index);  // add them to the mask
         }
         return cs;
     }
@@ -262,11 +277,17 @@ class BitsetTape implements Tape {
         return result;
     }
 
-    public toToken(char: string): BitsetToken {
-        if (char == ANY_CHAR_STR) {
-            return this.any;
+    public toToken(
+        chars: string[]
+    ): BitsetToken {
+        let result = this.none;
+        for (const char of chars) {
+            if (char == ANY_CHAR_STR) {
+                return this.any;
+            }
+            result = result.or(new BitsetToken(this.toBits(char)));
         }
-        return new BitsetToken(this.toBits(char));
+        return result.and(this.mask);
     }
 
     public fromToken(token: BitsetToken): string[] {
@@ -279,6 +300,10 @@ class BitsetTape implements Tape {
  * which may vary within different contexts because of tape renaming.
  */
 export class TapeNamespace {
+
+    constructor(
+        public vocab: Vocab = new Vocab()
+    ) { }
 
     public tapes: Map<string, Tape> = new Map();
 
@@ -303,7 +328,7 @@ export class TapeNamespace {
         }
 
         // make a new one if it doesn't exist
-        const newTape = new BitsetTape();
+        const newTape = new BitsetTape(this.vocab);
         this.tapes.set(tapeName, newTape);
         return newTape;
     }
@@ -322,7 +347,7 @@ export class TapeNamespace {
         if (fromTape == toTape) {
             return this;
         }
-        const result = new TapeNamespace();
+        const result = new TapeNamespace(this.vocab);
         for (const [tapeName, tape] of this.tapes.entries()) {
             if (tapeName == toTape) {
                 continue;
