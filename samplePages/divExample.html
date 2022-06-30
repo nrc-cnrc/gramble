@@ -29,7 +29,7 @@
                 try {
                     let grammar = await gramble.fromHTMLAsync("obj");
 
-                    var results = grammar.sample();  // results in a list of lists of { tier, text, sheet, row, col } objects.
+                    let results = grammar.sample();  // results in a list of lists of { tier, text, sheet, row, col } objects.
                                                      // it'll be a little too much detail for simple applications
                                                      // but the row numbers can be used to align elements between tiers.
                                                      // (since alternation is only expressed by row, any elements that share

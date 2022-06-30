@@ -76,7 +76,7 @@ export class SimpleDevEnvironment implements DevEnvironment {
     }
 
     public getErrorMessages(): [string, number, number, string, "error"|"warning"|"info"][] {
-        var results: SyntaxError[] = [];
+        let results: SyntaxError[] = [];
         for (const errors of Object.values(this.errors)) {
             results = results.concat(errors);
         }
@@ -93,7 +93,7 @@ export class SimpleDevEnvironment implements DevEnvironment {
     }
 
     public numErrors(level: "error" | "warning"|"any"): number {
-        var result = 0;
+        let result = 0;
         for (const error of Object.values(this.errors)) {
             for (const [sheet, row, col, msg, lev] of error) {
                 if (level == "any" && lev != "info" || lev == level) {

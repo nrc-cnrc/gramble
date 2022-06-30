@@ -205,7 +205,7 @@ const OP_BINARY = MPReserved<Op>(
     () => new BinaryOp()
 );
 
-var OP_EXPR: MPParser<Op> = MPAlternation(
+const OP_EXPR: MPParser<Op> = MPAlternation(
     OP_TABLE, OP_NAMESPACE,
     OP_TEST, OP_TESTNOT,
     OP_ATOMIC_REPLACE, OP_REPLACE,
@@ -213,7 +213,7 @@ var OP_EXPR: MPParser<Op> = MPAlternation(
     OP_UNRESERVED, OP_RESERVED
 );
 
-var OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
+const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
     [OP_EXPR, ":"],
     (op) => op
 )

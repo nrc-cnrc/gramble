@@ -123,8 +123,8 @@ function isDiacritic(c: string) {
 export function tokenizeUnicode(str: string): string[] {
 
     const results: string[] = [];
-    var anticipate = false;
-    var buffer: string[] = [];
+    let anticipate = false;
+    let buffer: string[] = [];
     for (const c of str) {
 
         // there are three cases where we push to the buffer
@@ -199,15 +199,15 @@ export function msToTime(s: number): string {
 
 
 export function parseCSV(str: string): string[][] {
-    var arr: string[][] = [];
-    var quote = false;  // 'true' means we're inside a quoted field
-    var row = 0;
-    var col = 0;
+    let arr: string[][] = [];
+    let quote = false;  // 'true' means we're inside a quoted field
+    let row = 0;
+    let col = 0;
 
     // Iterate over each character, keep track of current row and column (of the returned array)
-    for (var c = 0; c < str.length; c++) {
-        var cc = str[c];                       // Current character
-        var nc = str[c+1];                     // Next character
+    for (let c = 0; c < str.length; c++) {
+        let cc = str[c];                       // Current character
+        let nc = str[c+1];                     // Next character
         arr[row] = arr[row] || [];             // Create a new row if necessary
         arr[row][col] = arr[row][col] || '';   // Create a new column (start with empty string) if necessary
 
@@ -263,8 +263,8 @@ export function parseCSV(str: string): string[][] {
 }
 
 function sum(a: number[]): number {
-    var s = 0;
-    for (var i = 0; i < a.length; i++) s += a[i];
+    let s = 0;
+    for (let i = 0; i < a.length; i++) s += a[i];
     return s;
 } 
  
@@ -281,16 +281,16 @@ export function meanAngleDeg(a: number[]): number {
 
 /* Randomize array in-place using Durstenfeld shuffle algorithm */
 export function shuffleArray<T>(array: T[]): void {
-    for (var i = array.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var temp = array[i];
+    for (let i = array.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        let temp = array[i];
         array[i] = array[j];
         array[j] = temp;
     }
 }
 
 export function iterTake<T>(gen: Gen<T>, n: number) {
-    var i = 1;
+    let i = 1;
     const results = [];
 
     if (n <= 0) {
@@ -321,7 +321,7 @@ export function* stripHiddenTapes(gen: Gen<StringDict>): Gen<StringDict> {
 }
 
 export function HSVtoRGB(h: number, s: number, v: number): [number, number, number] {
-    var r: number, g: number, b: number, i: number, 
+    let r: number, g: number, b: number, i: number, 
         f: number, p: number, q: number, t: number;
     i = Math.floor(h * 6);
     f = h * 6 - i;
@@ -354,7 +354,7 @@ export function setUnion<T>(s1: Iterable<T>, s2: Iterable<T>): Set<T> {
 }
 
 export function flatten<T>(ss: Iterable<Iterable<T>>): T[] {
-    var results: T[] = [];
+    let results: T[] = [];
     for (const s of ss) {
         results = results.concat(...s);
     }
@@ -363,7 +363,7 @@ export function flatten<T>(ss: Iterable<Iterable<T>>): T[] {
 
 export function setEquals<T>(as: Set<T>, bs: Set<T>) {
     if (as.size !== bs.size) return false;
-    for (var a of as) if (!bs.has(a)) return false;
+    for (const a of as) if (!bs.has(a)) return false;
     return true;
 }
 

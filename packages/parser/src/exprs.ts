@@ -489,7 +489,7 @@ class DotExpr extends Expr {
         const tape = tapeNS.get(tapeName);
 
         if (target == ANY_CHAR_STR) {
-            for (let c of tape.vocab) {
+            for (const c of tape.vocab) {
                 yield [c, EPSILON];
             }
             return;
@@ -629,7 +629,7 @@ class DotStarExpr extends Expr {
         const tape = tapeNS.get(tapeName);
 
         if (target == ANY_CHAR_STR) {
-            for (let c of tape.vocab) {
+            for (const c of tape.vocab) {
                 yield [c, this];
             }
             return;
@@ -888,13 +888,13 @@ class ConcatExpr extends BinaryExpr {
 
         for (const [c1target, c1next] of
                 c1.deriv(tapeName, target, tapeNS, stack, opt)) {
-            yield [c1target, constructOrderedConcat(c1next, c2)];
+            yield [c1target, constructPrecede(c1next, c2)];
         }
 
         const c1next = c1.delta(tapeName, tapeNS, stack, opt);
         for (const [c2target, c2next] of
                 c2.deriv(tapeName, target, tapeNS, stack, opt)) {
-            yield [c2target, constructOrderedConcat(c1next, c2next)];
+            yield [c2target, constructPrecede(c1next, c2next)];
         }
     }
 }
@@ -965,7 +965,7 @@ class IntersectExpr extends BinaryExpr {
             this.child1.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
 
             for (const [c2target, c2next] of 
-                    this.child2.disjointDeriv(tapeName, c1target as BitsetToken, tapeNS, stack, opt)) {
+                    this.child2.disjointDeriv(tapeName, c1target, tapeNS, stack, opt)) {
                 const successor = constructIntersection(c1next, c2next);
                 yield [c2target, successor];
             }
@@ -1020,7 +1020,7 @@ class FilterExpr extends BinaryExpr {
             this.child2.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
 
             for (const [c1target, c1next] of 
-                    this.child1.disjointDeriv(tapeName, c2target as BitsetToken, tapeNS, stack, opt)) {
+                    this.child1.disjointDeriv(tapeName, c2target, tapeNS, stack, opt)) {
                 const successor = constructFilter(c1next, c2next, this.tapes);
                 yield [c1target, successor];
             }
@@ -1085,7 +1085,7 @@ class JoinExpr extends BinaryExpr {
             this.child2.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
 
             for (const [c1target, c1next] of 
-                    this.child1.disjointDeriv(tapeName, c2target as BitsetToken, tapeNS, stack, opt)) {
+                    this.child1.disjointDeriv(tapeName, c2target, tapeNS, stack, opt)) {
                 const successor = constructJoin(c1next, c2next, this.tapes1, this.tapes2);
                 yield [c1target, successor];
             }
@@ -1285,7 +1285,6 @@ export class CountTapeExpr extends UnaryExpr {
     }
 }
 
-
 class RepeatExpr extends UnaryExpr {
 
     constructor(
@@ -1322,7 +1321,7 @@ class RepeatExpr extends UnaryExpr {
     ): Gen<[Token, Expr]> {
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
             const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
-            yield [cTarget, constructOrderedConcat(cNext, oneLess)];
+            yield [cTarget, constructPrecede(cNext, oneLess)];
         }
     }
 }
@@ -1375,7 +1374,7 @@ class RenameExpr extends UnaryExpr {
         const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
         const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
     
-        for (let [childTarget, childNext] of 
+        for (const [childTarget, childNext] of 
                 this.child.deriv(newTapeName, target, newTapeNS, stack, opt)) {
             yield [childTarget, constructRename(childNext, this.fromTape, this.toTape)];
         }
@@ -1589,7 +1588,7 @@ export class MatchExpr extends UnaryExpr {
                         continue;
                     }
                     const lit = constructLiteral(matchTape, [c]);
-                    bufferedNext = constructOrderedConcat(lit, bufferedNext);
+                    bufferedNext = constructPrecede(lit, bufferedNext);
                 }
                 yield [c, bufferedNext];
             }
@@ -1623,7 +1622,17 @@ export function constructDot(tape: string): Expr {
     return new DotExpr(tape);
 }
 
-export function constructOrderedConcat(firstChild: Expr, secondChild: Expr) {
+/**
+ * constructPrecede is a lot like constructing a concat, except that
+ * firstChild is going to be "first" according to whatever the parse order
+ * (LTR or RTL) is.  That is, in a normal concat, A+B, you parse/generate A
+ * before B when going LTR, and B before A when going RTL.  That's fine for
+ * a normal concat, but there are some results of derivs where you have to be
+ * sure that one child is parse/generated from before the others, whichever
+ * order you happen to be generating from.  (In other words, concats say
+ * "A is to the left of B", but 'precedes' say "A comes before B".)
+ */
+export function constructPrecede(firstChild: Expr, secondChild: Expr) {
 
     if (DIRECTION_LTR) {
         return constructConcat(firstChild, secondChild);

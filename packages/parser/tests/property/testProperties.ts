@@ -32,7 +32,7 @@ function poisson(mean: number): number {
 }
 
 function randomChoice<T>(choices: T[]) {
-    var index = Math.floor(Math.random() * choices.length);
+    const index = Math.floor(Math.random() * choices.length);
     return choices[index];
 }
 
@@ -76,7 +76,7 @@ function randomState(possibleTapes: string[], allowedDepth: number = 5): State {
         return randomLit(possibleTapes, 1);
     } 
     const rand = Math.random();
-    var totalP = 0.0;
+    let totalP = 0.0;
     for (const [constr, p] of RANDOM_CONSTRUCTORS) {
         totalP += p;
         if (rand <= totalP) {
@@ -140,7 +140,7 @@ export function testEquals(grammar1: State, grammar2: State): void {
         return;
     }
 
-    for (var o1 of outputs1) {
+    for (const o1 of outputs1) {
         try {
             expect(outputs2).to.deep.include(o1);
         } catch (e) {
@@ -148,7 +148,7 @@ export function testEquals(grammar1: State, grammar2: State): void {
             throw e;
         }
     }
-    for (var o2 of outputs2) {
+    for (const o2 of outputs2) {
         try {
             expect(outputs1).to.deep.include(o2);
         } catch (e) {
@@ -174,7 +174,7 @@ export function testSubset(grammar1: State, grammar2: State): void {
         return;
     }
 
-    for (var o2 of outputs2) {
+    for (const o2 of outputs2) {
         try {
             expect(outputs1).to.deep.include(o2);
         } catch (e) {

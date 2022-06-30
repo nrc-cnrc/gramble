@@ -19,7 +19,7 @@ import { Cell, CellPos, DevEnvironment } from "./util";
         return true;
     }
 
-    for (let cellText of row) {
+    for (const cellText of row) {
         if (cellText.trim().length != 0) {
             return false;
         }
@@ -200,20 +200,20 @@ export class Sheet extends SheetComponent {
     public toTST(): TstNamespace {
     
         // sheets are treated as having an invisible cell containing their names at 0, -1
-        var startCell: SheetCell = new SheetCell(this, this.name, 0, -1);
+        let startCell: SheetCell = new SheetCell(this, this.name, 0, -1);
 
-        var result = new TstNamespace(startCell);
+        let result = new TstNamespace(startCell);
 
-        var stack: {tst: TstEnclosure, row: number, col: number}[] = 
+        let stack: {tst: TstEnclosure, row: number, col: number}[] = 
                 [{ tst: result, row: 0, col: -1 }];
 
-        var maxCol: number = 0; // keep track of the rightmost column we've
+        let maxCol: number = 0; // keep track of the rightmost column we've
                                 // encountered, because we need to pad rows until
                                 // then.  otherwise we can miss empty string content 
                                 // at the end of a line
     
         // Now iterate through the cells, left-to-right top-to-bottom
-        for (var rowIndex = 0; rowIndex < this.cells.length; rowIndex++) {
+        for (let rowIndex = 0; rowIndex < this.cells.length; rowIndex++) {
     
             if (isLineEmpty(this.cells[rowIndex])) {
                 continue;
@@ -224,9 +224,9 @@ export class Sheet extends SheetComponent {
             const colWidth = this.cells[rowIndex].length;
             maxCol = Math.max(maxCol, colWidth);
 
-            for (var colIndex = 0; colIndex < maxCol; colIndex++) {
+            for (let colIndex = 0; colIndex < maxCol; colIndex++) {
     
-                var cellText = "";
+                let cellText = "";
 
                 if (colIndex < colWidth) {
                     cellText = this.cells[rowIndex][colIndex].trim().normalize("NFD");

@@ -123,7 +123,7 @@ abstract class AtomicHeader extends Header {
 
     public get hue(): number {
         const str = this.text + "abcde" // otherwise short strings are boring colors
-        var hash = 0; 
+        let hash = 0; 
 
         for (let i = 0; i < str.length; i++) { 
             hash = ((hash << 5) - hash) + str.charCodeAt(i); 
@@ -174,7 +174,7 @@ export class HideHeader extends AtomicHeader {
         text: string,
         content: Cell
     ): Grammar {
-        var result = left;
+        let result = left;
         for (const tape of text.split("/")) {
             result = new HideGrammar(content, result, tape.trim());
         }
@@ -682,7 +682,7 @@ function tokenize(text: string): string[] {
     );
 }
 
-var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
+const HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlternation(
         HP_MAYBE, HP_FROM, HP_SLASH,
         HP_TO, HP_PRE, HP_POST,
@@ -695,7 +695,7 @@ var HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
         HP_ENDS, HP_CONTAINS, HP_SUBEXPR)
 );
 
-var HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
+const HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
     MPAlternation(
         HP_UNRESERVED, HP_EMBED, HP_HIDE, 
         HP_PARENS, HP_RESERVED_OP)
@@ -853,7 +853,7 @@ const HP_CONTAINS = MPSequence<Header>(
     (child) => new ContainsHeader(child)
 );
 
-var HP_EXPR: MPParser<Header> = MPAlternation(HP_COMMENT, HP_NON_COMMENT_EXPR);
+const HP_EXPR: MPParser<Header> = MPAlternation(HP_COMMENT, HP_NON_COMMENT_EXPR);
 
 export function parseHeaderCell(text: string): Header {
 

@@ -117,7 +117,7 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
         const testName = `should match items ${start}-${end_expected-1}: ${expected_outputs_str}`;
         it(`${testName}`, function() {
             this.timeout(10000);
-            for (let expected_output of expected_outputs.slice(start, end_expected)) {
+            for (const expected_output of expected_outputs.slice(start, end_expected)) {
                 try {
                     expect(outputs).to.deep.include(expected_output);
                 } catch (e) {
@@ -126,7 +126,7 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
                     throw e;
                 }
             }
-            for (let output of outputs.slice(start, end_outputs)) {
+            for (const output of outputs.slice(start, end_outputs)) {
                 try {
                     expect(expected_outputs).to.deep.include(output);
                 } catch (e) {
@@ -172,7 +172,7 @@ function testGrammarAux(
     //maxChars: number = 1000,
     stripHidden: boolean = true
 ): void {
-    var outputs: StringDict[] = [];
+    let outputs: StringDict[] = [];
 
     maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
     //maxChars = Math.min(maxChars, DEBUG_MAX_CHARS);
@@ -303,7 +303,7 @@ export function testErrors(interpreter: Interpreter, expectedErrors: [string, nu
         }
     });
 
-    for (var [sheet, row, col, level] of expectedErrors) {
+    for (const [sheet, row, col, level] of expectedErrors) {
         const levelMsg = (level == "warning") ? `a ${level}` : `an ${level}`;
         it(`should have ${levelMsg} at ${sheet}:${row}:${col}`, function() {
             try {
@@ -359,7 +359,7 @@ export function testParseMultiple(
     for (const [inputs, expectedResults] of inputResultsPairs) {
         describe(`testing parse ${JSON.stringify(inputs)} ` + 
                  `against ${JSON.stringify(expectedResults)}.`, function() {
-            var outputs: StringDict[] = [];
+            let outputs: StringDict[] = [];
             try {    
                 //grammar = grammar.compile(2, maxRecursion);
                 const interpreter = Interpreter.fromGrammar(grammar, verbose);

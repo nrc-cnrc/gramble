@@ -115,15 +115,15 @@ export class SequenceRegex implements Regex {
     }
 }
 
-var EXPR: MPParser<Regex> = MPDelay(() =>
+const EXPR: MPParser<Regex> = MPDelay(() =>
     MPAlternation(ALTERNATION, SUBEXPR)
 );
 
-var SUBEXPR: MPParser<Regex> = MPDelay(() =>
+const SUBEXPR: MPParser<Regex> = MPDelay(() =>
     MPAlternation(NEGATION, STAR, QUES, PLUS, SUBSUBEXPR)
 );
 
-var SUBSUBEXPR: MPParser<Regex> = MPDelay(() =>
+const SUBSUBEXPR: MPParser<Regex> = MPDelay(() =>
     MPAlternation(UNRESERVED, PARENS)
 );
 
@@ -167,7 +167,7 @@ const ALTERNATION = MPSequence(
 
 function tokenize(text: string): string[] {
     let results: string[] = [ "" ];
-    for (var i = 0; i < text.length; i++) {
+    for (let i = 0; i < text.length; i++) {
         const c1 = text[i];
         const c2 = text[i+1];
         if (c1 == '\\') {

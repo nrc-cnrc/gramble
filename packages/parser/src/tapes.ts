@@ -71,9 +71,9 @@ export class OutputTrie {
         opt: GenOptions
     ): StringDict[] {
 
-        var results: StringDict[] = [{}];
+        let results: StringDict[] = [{}];
 
-        var current: OutputTrie = this;
+        let current: OutputTrie = this;
 
         // step backward through the current object and its prevs, building 
         // the output strings from end to beginning.  (you might think this 
@@ -147,7 +147,7 @@ class Vocab {
 
     public hasAll(strs: string[]): boolean {
         for (const c of strs) {
-            var index = this.strToIndex.get(c);
+            let index = this.strToIndex.get(c);
             if (index == undefined) {
                 return false;
             }
