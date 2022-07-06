@@ -1246,7 +1246,7 @@ export class CountTapeExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `CountTape(${this.child.id})`;
+        return `CountTape(${JSON.stringify(this.maxChars)},${this.child.id})`;
     }
 
     public delta(

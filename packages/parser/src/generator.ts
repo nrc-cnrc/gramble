@@ -79,7 +79,7 @@ abstract class Generator {
                 console.log();
                 console.log(`prevOutput is ${JSON.stringify(prevOutput.toDict(tapeNS, opt))}`);
                 console.log(`prevExpr is ${prevExpr.id}`);
-                console.log(`remaining tapes are [${tapes})]`);
+                console.log(`remaining tapes are [${tapes}]`);
             }
 
             if (prevExpr instanceof EpsilonExpr) {

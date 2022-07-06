@@ -31,14 +31,14 @@ import {
 } from "./tapes";
 
 import { 
-    Cell, 
-    DummyCell, 
-    flatten, 
-    HIDDEN_TAPE_PREFIX, 
-    listDifference, 
-    listIntersection, 
-    listUnique, 
-    StringDict 
+    Cell,
+    DummyCell,
+    flatten,
+    HIDDEN_TAPE_PREFIX,
+    listDifference,
+    listIntersection,
+    listUnique,
+    StringDict
 } from "./util";
 
 export { CounterStack, Expr };
@@ -721,13 +721,13 @@ export class CountTapeGrammar extends UnaryGrammar {
     constructor(
         cell: Cell,
         child: Grammar,
-        public maxChars: number
+        public maxChars: number | {[tape: string]: number}
     ) {
         super(cell, child);
     }
 
     public get id(): string {
-        return `CountTape(${this.child.id})`;
+        return `CountTape(${JSON.stringify(this.maxChars)},${this.child.id})`;
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -736,11 +736,14 @@ export class CountTapeGrammar extends UnaryGrammar {
 
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {
-            const maxCharsDict: {[tape: string]: number} = {};
-            for (const tape of this.tapes) {
-                maxCharsDict[tape] = this.maxChars;
+            let maxCharsDict: {[tape: string]: number} = {};
+            if (typeof this.maxChars == 'number') {
+                for (const tape of this.tapes) {
+                    maxCharsDict[tape] = this.maxChars;
+                }
+            } else {
+                maxCharsDict = this.maxChars;
             }
-
             const childExpr = this.child.constructExpr(symbols);
             this.expr = constructCountTape(childExpr, maxCharsDict);
         }
@@ -1588,7 +1591,7 @@ export function Count(maxChars: number, child: Grammar): Grammar {
     return new CountGrammar(new DummyCell(), child, maxChars);
 }
 
-export function CountTape(maxChars: number, child: Grammar): Grammar {
+export function CountTape(maxChars: number | {[tape: string]: number}, child: Grammar): Grammar {
     return new CountTapeGrammar(new DummyCell(), child, maxChars);
 }
 
