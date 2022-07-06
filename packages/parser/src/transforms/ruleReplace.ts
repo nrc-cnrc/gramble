@@ -1,4 +1,5 @@
 import { 
+    CounterStack,
     Grammar, HideGrammar,
     JoinGrammar, JoinRuleGrammar, 
     NsGrammar, RenameGrammar
@@ -59,6 +60,7 @@ export class RuleReplaceTransform extends IdentityTransform<void>{
         }
 
         result = new RenameGrammar(new DummyCell(), result, REPLACE_OUTPUT_TAPE, g.inputTape);
+        result.calculateTapes(new CounterStack(2));
         return result;
     }
 

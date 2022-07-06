@@ -260,4 +260,51 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
+
+    
+    describe('5a. Replace i by o in i: i -> o, only using Join, other join direction', function() {
+        const grammar = Join(ReplaceBypass(t1("i"), t2("o")), 
+                    Uni(t1("i"), t1("o"), t1("a")));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: 'i', t2: 'o'},
+            {t1: 'o', t2: 'o'},
+            {t1: 'a', t2: 'a'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('5b. Replace i by o in hi: i -> o, only using Join, other join direction', function() {
+        const grammar = Join(ReplaceBypass(t1("i"), t2("o")), 
+                            t1("hi"));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: 'hi', t2: 'ho'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('5c. Replace e by a, then l by w, in hello, only using Join', function() {
+        const innerReplace = Join(t1("hello"), ReplaceBypass(t1("e"), t2("a")));
+        const grammar = Join(innerReplace, ReplaceBypass(t2("l"), t3("w")));
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1: 4, t2:5, t3:6});
+        const expectedResults: StringDict[] = [
+            {t1: 'hello', t2: 'hallo', t3: "hawwo"},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+    
+    describe('5d. Replace e by a, then l by w, in hello, only using Join', function() {
+        const innerReplace = Join(ReplaceBypass(t1("e"), t2("a")), t1("hello"));
+        const grammar = Join(ReplaceBypass(t2("l"), t3("w")), innerReplace);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1: 4, t2:5, t3:6});
+        const expectedResults: StringDict[] = [
+            {t1: 'hello', t2: 'hallo', t3: "hawwo"},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
 });

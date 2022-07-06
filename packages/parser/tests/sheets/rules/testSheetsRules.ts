@@ -1,4 +1,4 @@
-import { testGramble, testErrors, sheetFromFile, testHasTapes } from "../../testUtils";
+import { testGramble, testErrors, sheetFromFile, testHasTapes, testHasVocab } from "../../testUtils";
 import * as path from 'path';
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
@@ -7,6 +7,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Replace with same tape name in "to" and "from"', function() {
         const project = sheetFromFile(`${DIR}/sameTapeReplace.csv`);
+        testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGramble(project, [
             {"text":"ava"}
@@ -15,14 +16,25 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Nested replace', function() {
         const project = sheetFromFile(`${DIR}/nestedSame.csv`);
+        testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGramble(project, [
             {text: "w"}
         ], undefined, 4);
     });
     
+    describe('Nested replace with some unchanged letters', function() {
+        const project = sheetFromFile(`${DIR}/nestedSameWithUnchanged.csv`);
+        testHasVocab(project, {text: 5})
+        testErrors(project, []);
+        testGramble(project, [
+            {text: "awc"}
+        ], undefined, 4);
+    });
+
     describe('Nested replace 2', function() {
         const project = sheetFromFile(`${DIR}/nestedSame2.csv`);
+        testHasVocab(project, {text: 4})
         testErrors(project, []);
         testGramble(project, [
             {text: "ev"}

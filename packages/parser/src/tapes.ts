@@ -184,6 +184,8 @@ export interface Tape {
     readonly none: BitsetToken;
     readonly vocabSize: number;
     readonly vocab: string[];
+    readonly globalName: string;
+    vocabIsSubsetOf(other: Tape): boolean;
     inVocab(strs: string[]): boolean;
     match(str1: BitsetToken, str2: BitsetToken): BitsetToken;
     tokenize(str: string): string[];
@@ -200,7 +202,7 @@ class BitsetTape implements Tape {
     public mask: BitsetToken = NO_CHAR_BITSET.clone();
 
     constructor(
-        //public globalName: string,
+        public globalName: string,
         protected _vocab: Vocab = new Vocab()
      ) { }
 
@@ -220,6 +222,10 @@ class BitsetTape implements Tape {
         }
         return true;
 
+    }
+
+    vocabIsSubsetOf(other: Tape): boolean {
+        return other.inVocab(this.vocab);
     }
 
     public get vocab(): string[] {
@@ -328,7 +334,7 @@ export class TapeNamespace {
         }
 
         // make a new one if it doesn't exist
-        const newTape = new BitsetTape(this.vocab);
+        const newTape = new BitsetTape(tapeName, this.vocab);
         this.tapes.set(tapeName, newTape);
         return newTape;
     }

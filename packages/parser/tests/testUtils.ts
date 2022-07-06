@@ -209,12 +209,16 @@ export function testGrammar(
 }
 
 export function testHasTapes(
-    grammar: Grammar,
+    grammar: Grammar | Interpreter,
     expectedTapes: string[],
     symbolName: string = "",
     stripHidden: boolean = true
 ): void {
-    const interpreter = Interpreter.fromGrammar(grammar);
+    
+    const interpreter = (grammar instanceof Interpreter) ?
+                        grammar :
+                        Interpreter.fromGrammar(grammar);
+                        
     let target = interpreter.grammar.getSymbol(symbolName);
     
     const bSet = new Set(expectedTapes);
@@ -245,11 +249,13 @@ export function testHasTapes(
 }
 
 export function testHasVocab(
-    grammar: Grammar,
+    grammar: Grammar | Interpreter,
     expectedVocab: {[tape: string]: number}
 ): void {
 
-    const interpreter = Interpreter.fromGrammar(grammar);
+    const interpreter = (grammar instanceof Interpreter) ?
+                        grammar :
+                        Interpreter.fromGrammar(grammar);
 
     for (const tapeName in expectedVocab) {
         const tape = interpreter.tapeNS.get(tapeName);

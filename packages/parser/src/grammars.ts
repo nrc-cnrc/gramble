@@ -181,18 +181,34 @@ export abstract class Grammar {
     /**
      * Collects all explicitly mentioned characters in the grammar for all tapes.
      * 
-     * @param tapes A TapeCollection for holding found characters
+     * @param tapeNS A TapeCollection for holding found characters
      * @param stack What symbols we've already collected from, to prevent inappropriate recursion
      * @returns vocab 
      */
-    public collectAllVocab(tapes: TapeNamespace) {
+    public collectAllVocab(tapeNS: TapeNamespace): void {
 
         // In all current invocations of this, calculateTapes has already been called.
         // But it memoizes, so there's no harm in calling it again for safety.
         const tapeNames = this.calculateTapes(new CounterStack(2));
         for (const tapeName of tapeNames) {
-            tapes.createTape(tapeName); // just in case it doesn't exist
-            this.collectVocab(tapeName, tapes, new Set());
+            tapeNS.createTape(tapeName); // just in case it doesn't exist
+            this.collectVocab(tapeName, tapeNS, new Set());
+        }
+        const vocabCopyEdges = this.getVocabCopyEdges(tapeNS, new Set());
+
+        let dirty: boolean = true;
+        while (dirty) {
+            dirty = false;
+            for (const [fromTapeName, toTapeName] of vocabCopyEdges) {
+                const fromTape = tapeNS.get(fromTapeName);
+                const toTape = tapeNS.get(toTapeName);
+                if (!fromTape.vocabIsSubsetOf(toTape)) {
+                    dirty = true;
+                    for (const token of fromTape.vocab) {
+                        toTape.tokenize(token);
+                    }
+                }
+            }
         }
     }
     
@@ -206,14 +222,27 @@ export abstract class Grammar {
         }
     }
 
-    /**
-     * When necessary, copies existing characters from other tapes into tapes that 
-     * will need them.
-     */
-     public copyVocab(tapeNS: TapeNamespace, symbolsVisited: Set<string>): void { 
+    public getVocabCopyEdges(
+        tapeNS: TapeNamespace,
+        symbolsVisited: Set<string>
+    ): [string, string][] {
+        const results: [string, string][] = [];
         for (const child of this.getChildren()) {
-            child.copyVocab(tapeNS, symbolsVisited);
+            results.push(...child.getVocabCopyEdges(tapeNS, symbolsVisited));
         }
+        return results;
+    }
+    
+    public copyVocab(
+        tapeNS: TapeNamespace, 
+        vocabCopyEdges: [string, string][],
+        stack: string[]
+    ): void { 
+        if (vocabCopyEdges.length == 0) {
+            return;
+        }
+        const [toTap] = vocabCopyEdges[0];
+
     }
 
     public runChecksAux(): void {
@@ -803,9 +832,12 @@ export class RenameGrammar extends UnaryGrammar {
         this.child.collectVocab(newTapeName, newTapeNS, symbolsVisited);
     }
 
-    public copyVocab(tapeNS: TapeNamespace, symbolsVisited: Set<string>): void {
+    public getVocabCopyEdges(
+        tapeNS: TapeNamespace,
+        symbolsVisited: Set<string>
+    ): [string, string][] {
         const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
-        this.child.copyVocab(newTapeNS, symbolsVisited);
+        return this.child.getVocabCopyEdges(newTapeNS, symbolsVisited);
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -953,9 +985,12 @@ export class HideGrammar extends UnaryGrammar {
         this.child.collectVocab(newTapeName, newTapeNS, symbolsVisited);
     }
     
-    public copyVocab(tapeNS: TapeNamespace, symbolsVisited: Set<string>): void {
+    public getVocabCopyEdges(
+        tapeNS: TapeNamespace,
+        symbolsVisited: Set<string>
+    ): [string, string][] {
         const newTapeNS = tapeNS.rename(this.toTape, this.tapeName);
-        this.child.copyVocab(newTapeNS, symbolsVisited);
+        return this.child.getVocabCopyEdges(newTapeNS, symbolsVisited);
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -1176,12 +1211,6 @@ export class NsGrammar extends Grammar {
         }
     }
 
-    public copyVocab(tapeNS: TapeNamespace, symbolsVisited: Set<string>): void {
-        for (const child of this.symbols.values()) {
-            child.copyVocab(tapeNS, symbolsVisited);
-        }
-    }
-
     public constructExpr(symbols: SymbolTable): Expr {
 
         if (this.expr == undefined) {
@@ -1253,12 +1282,16 @@ export class EmbedGrammar extends AtomicGrammar {
         this.getReferent().collectVocab(tapeName, tapeNS, symbolsVisited);
     }
     
-    public copyVocab(tapeNS: TapeNamespace, symbolsVisited: Set<string>): void {
+    
+    public getVocabCopyEdges(
+        tapeNS: TapeNamespace,
+        symbolsVisited: Set<string>
+    ): [string, string][] {
         if (symbolsVisited.has(this.name)) {
-            return;
+            return [];
         }
         symbolsVisited.add(this.name);
-        this.getReferent().copyVocab(tapeNS, symbolsVisited);
+        return this.getReferent().getVocabCopyEdges(tapeNS, symbolsVisited);
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
@@ -1303,11 +1336,6 @@ export class UnresolvedEmbedGrammar extends AtomicGrammar {
         tapeNS: TapeNamespace, 
         symbolsVisited: Set<string>
     ): void { 
-        return;
-    }
-    
-    
-    public copyVocab(tapeNS: TapeNamespace, symbolsVisited: Set<string>): void {
         return;
     }
 
@@ -1804,6 +1832,24 @@ export class ReplaceGrammar extends Grammar {
         }
         return this._tapes;
     }
+    
+    public getVocabCopyEdges(
+        tapeNS: TapeNamespace,
+        symbolsVisited: Set<string>
+    ): [string, string][] {
+        const results = super.getVocabCopyEdges(tapeNS, symbolsVisited);
+        
+        if (!this.vocabBypass) {
+            return results;
+        }
+        
+        const fromTapeGlobalName = tapeNS.get(this.fromTapeName).globalName;
+        for (const toTapeName of this.toTapeNames) {
+            const toTapeGlobalName = tapeNS.get(toTapeName).globalName;
+            results.push([fromTapeGlobalName, toTapeGlobalName]);
+        }
+        return results;
+    }
 
     public collectVocab(
         tapeName: string,
@@ -1828,20 +1874,6 @@ export class ReplaceGrammar extends Grammar {
             this.preContext.collectVocab(newTapeName, newTapeNS, symbolsVisited);
             this.postContext.collectVocab(newTapeName, newTapeNS, symbolsVisited);
             this.otherContext.collectVocab(newTapeName, newTapeNS, symbolsVisited);
-        }
-    }
-
-    public copyVocab(tapeNS: TapeNamespace, symbolsVisited: Set<string>): void { 
-        super.copyVocab(tapeNS, symbolsVisited);
-        if (this.vocabBypass) {
-            const fromTape = tapeNS.get(this.fromTapeName);
-            const fromVocab: string[] = fromTape.vocab;
-            for (const toTapeName of this.toTapeNames) {
-                const toTape = tapeNS.get(toTapeName);
-                for (const token of fromVocab) {
-                    toTape.tokenize(token);
-                }
-            }
         }
     }
 

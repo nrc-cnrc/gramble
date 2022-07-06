@@ -108,11 +108,12 @@ export class Interpreter {
 
         }, timeVerbose, "Collected vocab");
 
+        /*
         timeIt(() => {
             // copy the vocab if necessary
             this.grammar.copyVocab(this.tapeNS, new Set());
         }, timeVerbose, "Copied vocab");
-
+        */
     }
 
     public static fromCSV(
@@ -310,10 +311,10 @@ export class Interpreter {
             tapePriority = targetGrammar.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
-            querySeq.collectAllVocab(this.tapeNS);
+            targetGrammar.collectAllVocab(this.tapeNS);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
-            targetGrammar.copyVocab(this.tapeNS, new Set());
+            //targetGrammar.copyVocab(this.tapeNS, new Set());
         
         }
         
@@ -343,10 +344,10 @@ export class Interpreter {
             const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
-            test.test.collectAllVocab(this.tapeNS);
+            targetComponent.collectAllVocab(this.tapeNS);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
-            targetComponent.copyVocab(this.tapeNS, new Set());
+            //targetComponent.copyVocab(this.tapeNS, new Set());
 
             expr = targetComponent.constructExpr(this.symbolTable);
 
