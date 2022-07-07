@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
       "types": ["google-apps-script"],
-      "lib": ["es2017"],
+      "lib": ["es2017", "dom"],
       "target": "es6",
       "module": "commonjs",
       "outDir": "dist",
