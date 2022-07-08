@@ -3647,5 +3647,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
+
 });
 

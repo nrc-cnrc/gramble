@@ -1,26 +1,27 @@
 import { 
-    Grammar, 
-    Epsilon, 
+    Grammar,
     Seq, 
-    Uni, 
     Join, 
     Any, 
     Rep, 
     MatchFrom,
     Vocab,
-    Count
+    Count,
+    Uni,
+    Epsilon,
+    Null
 } from "../src/grammars";
 
 import { 
     t1, t2, t3, t4,
-    testHasTapes, 
-    //testHasVocab, 
-    //testHasNoVocab,  
+    testHasTapes,
     testGrammar,
+    testHasVocab,
 } from './testUtils';
 
 import * as path from 'path';
-import { StringDict } from "../src/util";
+import { StringDict, VERBOSE_DEBUG } from "../src/util";
+import { NULL } from "../src/exprs";
 
 const DUMMY_SYMBOL_NAME: string = "";
 const DEFAULT_MAX_RECURSION: number = 4;
@@ -37,7 +38,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hello', t2: 'hello'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 4, t2: 4});
+        testHasVocab(grammar, {t1: 4, t2: 4});
         testGrammar(grammar, expectedResults);
     });
 
@@ -48,11 +49,20 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {},
         ];
-        // Even though we are matching on t1, t2, grammar has no tapes.
-        // testHasTapes(grammar, ['t1', 't2']);
-        testHasTapes(grammar, []);
-        // testHasNoVocab(grammar, 't1');
-        // testHasNoVocab(grammar, 't2');
+        
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 0, t2: 0})
+        testGrammar(grammar, expectedResults);
+    });
+
+    // 2. MatchFrom t1, t2, 0
+    describe('2. MatchFrom t1, t2, 0', function() {
+        const grammar1: Grammar = Null();
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
+        const expectedResults: StringDict[] = [];
+        
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 0, t2: 0})
         testGrammar(grammar, expectedResults);
     });
 
@@ -64,7 +74,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'helloworld', t2: 'helloworld'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 7, t2: 7});
+        testHasVocab(grammar, {t1: 7, t2: 7});
         testGrammar(grammar, expectedResults);
     });
 
@@ -73,11 +83,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar1: Grammar = Seq(t1("hello"), t4("goodbye"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello', t4: 'goodbyegoodbye'},
+            {t1: 'hello', t2: 'hello', t4: 'goodbye'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
+        testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -86,11 +96,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar1: Grammar = Seq(t4("goodbye"), t1("hello"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello', t4: 'goodbyegoodbye'},
+            {t1: 'hello', t2: 'hello', t4: 'goodbye'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
+        testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -102,7 +112,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hello, world', t2: 'hello, world'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 9, t2: 9});
+        testHasVocab(grammar, {t1: 9, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -115,7 +125,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'goodbye', t2: 'goodbye'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 8, t2: 8});
+        testHasVocab(grammar, {t1: 8, t2: 8});
         testGrammar(grammar, expectedResults);
     });
 
@@ -125,11 +135,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
-            {t4: 'goodbyegoodbye'},
+            {t4: 'goodbye'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
+        testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -139,11 +149,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
-            {t4: 'goodbyegoodbye'},
+            {t4: 'goodbye'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
+        testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -159,7 +169,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'goodbyekitty', t2: 'goodbyekitty'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 13, t2: 13});
+        testHasVocab(grammar, {t1: 13, t2: 13});
         testGrammar(grammar, expectedResults);
     });
 
@@ -173,7 +183,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'goodbyeworld', t2: 'goodbyeworld'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 13, t2: 13});
+        testHasVocab(grammar, {t1: 13, t2: 13});
         testGrammar(grammar, expectedResults);
     });
 
@@ -186,7 +196,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hii', t2: 'hii'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 2, t2: 2});
+        testHasVocab(grammar, {t1: 2, t2: 2});
         testGrammar(grammar, expectedResults);
     });
 
@@ -198,7 +208,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hello', t2: 'hello'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 4, t2: 4});
+        testHasVocab(grammar, {t1: 4, t2: 4});
         testGrammar(grammar, expectedResults);
     });
 
@@ -207,11 +217,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar1: Grammar = Join(t1("hello"), t4('world'));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello', t4: 'worldworld'},
+            {t1: 'hello', t2: 'hello', t4: 'world'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4});
+        testHasVocab(grammar, {t1: 4, t2: 4});
         testGrammar(grammar, expectedResults);
     });
 
@@ -220,11 +230,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar1: Grammar = Join(t4('world'), t1("hello"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello', t4: 'worldworld'},
+            {t1: 'hello', t2: 'hello', t4: 'world'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4});
+        testHasVocab(grammar, {t1: 4, t2: 4});
         testGrammar(grammar, expectedResults);
     });
 
@@ -235,11 +245,11 @@ describe(`${path.basename(module.filename)}`, function() {
                                                     t2("world")));
         const grammar: Grammar = MatchFrom(grammar1, "t2", "t3");
         const expectedResults: StringDict[] = [
-            {t1: 'hellokittyhellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld'},
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 8, t2: 9, t3: 9});
+        testHasVocab(grammar, {t1: 8, t2: 9, t3: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -250,11 +260,11 @@ describe(`${path.basename(module.filename)}`, function() {
                                                 Seq(t1("hello"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t2", "t3");
         const expectedResults: StringDict[] = [
-            {t1: 'hellokittyhellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld'},
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 8, t2: 9, t3: 9});
+        testHasVocab(grammar, {t1: 8, t2: 9, t3: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -265,11 +275,11 @@ describe(`${path.basename(module.filename)}`, function() {
                                                     t2("world")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3");
         const expectedResults: StringDict[] = [
-            {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworldgoodbyeworld'},
+            {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
+        testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -280,11 +290,11 @@ describe(`${path.basename(module.filename)}`, function() {
                                                 Seq(t1("hello"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3");
         const expectedResults: StringDict[] = [
-            {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworldgoodbyeworld'},
+            {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
+        testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -295,11 +305,11 @@ describe(`${path.basename(module.filename)}`, function() {
                                                     t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3");
         const expectedResults: StringDict[] = [
-            {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworldgoodbyeworld'},
+            {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
+        testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -310,11 +320,11 @@ describe(`${path.basename(module.filename)}`, function() {
                                                 Seq(t1("hello"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3");
         const expectedResults: StringDict[] = [
-            {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworldgoodbyeworld'},
+            {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
+        testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -327,7 +337,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'o', t2: 'o'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 1, t2: 1});
+        testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, expectedResults);
     });
 
@@ -337,14 +347,14 @@ describe(`${path.basename(module.filename)}`, function() {
                                      Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello', t4: 'worldworld'},
-            {t1: 'hhello', t2: 'hhello', t4: 'worldworld'},
-            {t1: 'hhhello', t2: 'hhhello', t4: 'worldworld'},
-            {t1: 'hhhhello', t2: 'hhhhello', t4: 'worldworld'},
+            {t1: 'hello', t2: 'hello', t4: 'world'},
+            {t1: 'hhello', t2: 'hhello', t4: 'world'},
+            {t1: 'hhhello', t2: 'hhhello', t4: 'world'},
+            {t1: 'hhhhello', t2: 'hhhhello', t4: 'world'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t4: 5});
+        testHasVocab(grammar, {t1: 4, t2: 4, t4: 5});
         testGrammar(grammar, expectedResults);
     });
 
@@ -354,14 +364,14 @@ describe(`${path.basename(module.filename)}`, function() {
                                      Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello', t4: 'worldworld'},
-            {t1: 'hhello', t2: 'hhello', t4: 'worldworld'},
-            {t1: 'hhhello', t2: 'hhhello', t4: 'worldworld'},
-            {t1: 'hhhhello', t2: 'hhhhello', t4: 'worldworld'},
+            {t1: 'hello', t2: 'hello', t4: 'world'},
+            {t1: 'hhello', t2: 'hhello', t4: 'world'},
+            {t1: 'hhhello', t2: 'hhhello', t4: 'world'},
+            {t1: 'hhhhello', t2: 'hhhhello', t4: 'world'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t4: 5});
+        testHasVocab(grammar, {t1: 4, t2: 4, t4: 5});
         testGrammar(grammar, expectedResults);
     });
 
@@ -376,7 +386,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'nananana', t2: 'nananana'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 2, t2: 2});
+        testHasVocab(grammar, {t1: 2, t2: 2});
         testGrammar(grammar, expectedResults);
     });
 
@@ -394,7 +404,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'ihhi', t2: 'ihhi'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 2, t2: 2});
+        testHasVocab(grammar, {t1: 2, t2: 2});
         testGrammar(grammar, expectedResults);
     });
 
@@ -414,7 +424,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'ihii', t2: 'ihii'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 2, t2: 2});
+        testHasVocab(grammar, {t1: 2, t2: 2});
         testGrammar(grammar, expectedResults);
     });
 
@@ -442,7 +452,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'iii', t2: 'iii'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
-        // testHasVocab(grammar, {t1: 2, t2: 4});
+        testHasVocab(grammar, {t1: 2, t2: 4});
         testGrammar(grammar, expectedResults);
     });
 
@@ -456,7 +466,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hello', t2: 'hello', t3: 'hello'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t3: 4});
+        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4});
         testGrammar(grammar, expectedResults);
     });
 
@@ -469,13 +479,11 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         // Even though we are matching on t1, t2, grammar has no tapes.
         // testHasTapes(grammar, ['t1', 't2', 't3']);
-        testHasTapes(grammar, []);
-        // testHasNoVocab(grammar, 't1');
-        // testHasNoVocab(grammar, 't2');
-        // testHasNoVocab(grammar, 't3');
+        testHasTapes(grammar, ["t1", "t2", "t3"]);
+        testHasVocab(grammar, {t1: 0, t2: 0, t3: 0});
         testGrammar(grammar, expectedResults);
     });
-
+    
     // 3. MatchFrom t1, t2, t3, t1:hello+t1:world
     describe('3. MatchFrom t1, t2, t3, t1:hello+t1:world', function() {
         const grammar1: Grammar = Seq(t1("hello"), t1("world"));
@@ -484,7 +492,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'helloworld', t2: 'helloworld', t3: 'helloworld'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 7, t2: 7, t3: 7});
+        testHasVocab(grammar, {t1: 7, t2: 7, t3: 7});
         testGrammar(grammar, expectedResults);
     });
 
@@ -493,11 +501,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar1: Grammar = Seq(t1("hello"), t4("goodbye"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'goodbyegoodbyegoodbye'},
+            {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'goodbye'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
+        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -506,11 +514,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar1: Grammar = Seq(t4("goodbye"), t1("hello"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'goodbyegoodbyegoodbye'},
+            {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'goodbye'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
+        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -522,7 +530,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hello, world', t2: 'hello, world', t3: 'hello, world'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 9, t2: 9, t3: 9});
+        testHasVocab(grammar, {t1: 9, t2: 9, t3: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -535,7 +543,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'goodbye', t2: 'goodbye', t3: 'goodbye'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 8, t2: 8, t3: 8});
+        testHasVocab(grammar, {t1: 8, t2: 8, t3: 8});
         testGrammar(grammar, expectedResults);
     });
 
@@ -545,11 +553,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
-            {t4: 'goodbyegoodbyegoodbye'},
+            {t4: 'goodbye'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
+        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -559,11 +567,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
-            {t4: 'goodbyegoodbyegoodbye'},
+            {t4: 'goodbye'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
+        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -579,7 +587,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'goodbyekitty', t2: 'goodbyekitty', t3: 'goodbyekitty'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 13, t2: 13, t3: 13});
+        testHasVocab(grammar, {t1: 13, t2: 13, t3: 13});
         testGrammar(grammar, expectedResults);
     });
 
@@ -593,7 +601,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'goodbyeworld', t2: 'goodbyeworld', t3: 'goodbyeworld'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 13, t2: 13, t3: 13});
+        testHasVocab(grammar, {t1: 13, t2: 13, t3: 13});
         testGrammar(grammar, expectedResults);
     });
 
@@ -606,7 +614,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hii', t2: 'hii', t3: 'hii'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
+        testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
         testGrammar(grammar, expectedResults);
     });
 
@@ -618,7 +626,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hello', t2: 'hello', t3: 'hello'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t3: 4});
+        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4});
         testGrammar(grammar, expectedResults);
     });
 
@@ -627,11 +635,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar1: Grammar = Join(t1("hello"), t4('world'));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'worldworldworld'},
+            {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'world'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4});
+        testHasVocab(grammar, {t1: 4, t2: 4});
         testGrammar(grammar, expectedResults);
     });
 
@@ -640,11 +648,11 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar1: Grammar = Join(t4('world'), t1("hello"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'worldworldworld'},
+            {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'world'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4});
+        testHasVocab(grammar, {t1: 4, t2: 4});
         testGrammar(grammar, expectedResults);
     });
 
@@ -655,11 +663,11 @@ describe(`${path.basename(module.filename)}`, function() {
                                                     t2("world")));
         const grammar: Grammar = MatchFrom(grammar1, "t2", "t3", "t4");
         const expectedResults: StringDict[] = [
-            {t1: 'hellokittyhellokittyhellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld', t4: 'goodbyeworld'},
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld', t4: 'goodbyeworld'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 8, t2: 9, t3: 9, t4: 9});
+        testHasVocab(grammar, {t1: 8, t2: 9, t3: 9, t4: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -670,11 +678,11 @@ describe(`${path.basename(module.filename)}`, function() {
                                                 Seq(t1("hello"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t2", "t3", "t4");
         const expectedResults: StringDict[] = [
-            {t1: 'hellokittyhellokittyhellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld', t4: 'goodbyeworld'},
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld', t4: 'goodbyeworld'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 8, t2: 9, t3: 9, t4: 9});
+        testHasVocab(grammar, {t1: 8, t2: 9, t3: 9, t4: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -685,11 +693,11 @@ describe(`${path.basename(module.filename)}`, function() {
                                                     t2("world")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3", "t4");
         const expectedResults: StringDict[] = [
-            {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworldgoodbyeworldgoodbyeworld'},
+            {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
+        testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -700,11 +708,11 @@ describe(`${path.basename(module.filename)}`, function() {
                                                 Seq(t1("hello"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3", "t4");
         const expectedResults: StringDict[] = [
-            {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworldgoodbyeworldgoodbyeworld'},
+            {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
+        testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -715,11 +723,11 @@ describe(`${path.basename(module.filename)}`, function() {
                                                     t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3", "t4");
         const expectedResults: StringDict[] = [
-            {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworldgoodbyeworldgoodbyeworld'},
+            {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
+        testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -730,11 +738,11 @@ describe(`${path.basename(module.filename)}`, function() {
                                                 Seq(t1("hello"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3", "t4");
         const expectedResults: StringDict[] = [
-            {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworldgoodbyeworldgoodbyeworld'},
+            {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
+        testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -747,7 +755,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'o', t2: 'o', t3: 'o'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 1, t2: 1, t3: 1});
+        testHasVocab(grammar, {t1: 1, t2: 1, t3: 1});
         testGrammar(grammar, expectedResults);
     });
 
@@ -757,14 +765,14 @@ describe(`${path.basename(module.filename)}`, function() {
                                      Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'worldworldworld'},
-            {t1: 'hhello', t2: 'hhello', t3: 'hhello', t4: 'worldworldworld'},
-            {t1: 'hhhello', t2: 'hhhello', t3: 'hhhello', t4: 'worldworldworld'},
-            {t1: 'hhhhello', t2: 'hhhhello', t3: 'hhhhello', t4: 'worldworldworld'},
+            {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'world'},
+            {t1: 'hhello', t2: 'hhello', t3: 'hhello', t4: 'world'},
+            {t1: 'hhhello', t2: 'hhhello', t3: 'hhhello', t4: 'world'},
+            {t1: 'hhhhello', t2: 'hhhhello', t3: 'hhhhello', t4: 'world'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 5});
+        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 5});
         testGrammar(grammar, expectedResults);
     });
 
@@ -774,14 +782,14 @@ describe(`${path.basename(module.filename)}`, function() {
                                      Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'worldworldworld'},
-            {t1: 'hhello', t2: 'hhello', t3: 'hhello', t4: 'worldworldworld'},
-            {t1: 'hhhello', t2: 'hhhello', t3: 'hhhello', t4: 'worldworldworld'},
-            {t1: 'hhhhello', t2: 'hhhhello', t3: 'hhhhello', t4: 'worldworldworld'},
+            {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'world'},
+            {t1: 'hhello', t2: 'hhello', t3: 'hhello', t4: 'world'},
+            {t1: 'hhhello', t2: 'hhhello', t3: 'hhhello', t4: 'world'},
+            {t1: 'hhhhello', t2: 'hhhhello', t3: 'hhhhello', t4: 'world'},
         ];
-        // We care about all tapes, even those not participating in the match.
+        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        // testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 5});
+        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 5});
         testGrammar(grammar, expectedResults);
     });
 
@@ -796,7 +804,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'nananana', t2: 'nananana', t3: 'nananana'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
+        testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
         testGrammar(grammar, expectedResults);
     });
 
@@ -814,7 +822,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'ihhi', t2: 'ihhi', t3: 'ihhi'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
+        testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
         testGrammar(grammar, expectedResults);
     });
 
@@ -834,7 +842,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'ihii', t2: 'ihii', t3: 'ihii'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
+        testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
         testGrammar(grammar, expectedResults);
     });
 
@@ -862,7 +870,54 @@ describe(`${path.basename(module.filename)}`, function() {
             // {t1: 'iii', t2: 'iii', t3: 'iii'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        // testHasVocab(grammar, {t1: 2, t2: 4, t3: 4});
+        testHasVocab(grammar, {t1: 2, t2: 4, t3: 4});
         testGrammar(grammar, expectedResults);
     });
+
+    describe('t1:h & Match(t1:.*, t1->t2)', function() {
+        const grammar2: Grammar = MatchFrom(Any("t1"), "t1", "t2");
+        const grammar3: Grammar = Join(t1("h"), grammar2)
+        const expectedResults: StringDict[] = [
+            {t1: 'h', t2: 'h'},
+        ];
+        testHasTapes(grammar3, ['t1', 't2']);
+        testHasVocab(grammar3, {t1: 1, t2: 1});
+        testGrammar(grammar3, expectedResults);
+    });
+
+    describe('t1:hello & Match(t1:.*, t1->t2)', function() {
+        const grammar2: Grammar = MatchFrom(Rep(Any("t1")), "t1", "t2");
+        const grammar3: Grammar = Join(t1("hello"), grammar2)
+        const expectedResults: StringDict[] = [
+            {t1: 'hello', t2: 'hello'},
+        ];
+        testHasTapes(grammar3, ['t1', 't2']);
+        testHasVocab(grammar3, {t1: 4, t2: 4});
+        testGrammar(grammar3, expectedResults);
+    });
+    
+    describe('t2:hello & Match(t1:.*, t1->t2)', function() {
+        const grammar2: Grammar = MatchFrom(Rep(Any("t1")), "t1", "t2");
+        const grammar3: Grammar = Seq(Join(t2("hello"), grammar2), Vocab("t1", "hello"))
+        const expectedResults: StringDict[] = [
+            {t1: 'hello', t2: 'hello'},
+        ];
+        testHasTapes(grammar3, ['t1', 't2']);
+        testHasVocab(grammar3, {t1: 4, t2: 4});
+        testGrammar(grammar3, expectedResults);
+    });
+
+    
+    
+    describe('t1:hello+t2:hello & Match(t1:.*, t1->t2)', function() {
+        const grammar2: Grammar = MatchFrom(Rep(Any("t1")), "t1", "t2");
+        const grammar3: Grammar = Join(Seq(t1("hello"), t2("hello")), grammar2)
+        const expectedResults: StringDict[] = [
+            {t1: 'hello', t2: 'hello'},
+        ];
+        testHasTapes(grammar3, ['t1', 't2']);
+        testHasVocab(grammar3, {t1: 4, t2: 4});
+        testGrammar(grammar3, expectedResults);
+    });
+
 });

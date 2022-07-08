@@ -1498,6 +1498,105 @@ class NegationExpr extends UnaryExpr {
     }
 }
 
+export class MatchFromExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public fromTape: string,
+        public toTape: string
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `M(${this.child.id})`;
+    }
+
+    public delta(
+        tapeName: string,
+        tapeNS: TapeNamespace, 
+        stack: CounterStack,
+        opt: GenOptions
+    ): Expr {
+        if (tapeName == this.toTape) {
+            const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
+            const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
+            const nextExpr = this.child.delta(newTapeName, newTapeNS, stack, opt);
+            return constructMatchFrom(nextExpr, this.fromTape, this.toTape);  
+        }
+        const nextExpr = this.child.delta(tapeName, tapeNS, stack, opt);
+        return constructMatchFrom(nextExpr, this.fromTape, this.toTape);
+    }
+
+    public *bitsetDeriv(
+        tapeName: string, 
+        target: BitsetToken,
+        tapeNS: TapeNamespace,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
+        throw new Error("Method not implemented.");
+    }
+    
+    public *stringDeriv(
+        tapeName: string,
+        target: string, 
+        tapeNS: TapeNamespace,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
+        
+        if (tapeName == this.fromTape) {
+            const tape = tapeNS.get(tapeName);
+
+            for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+                const target = cTarget as string;
+                const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
+
+                const cs = (target == ANY_CHAR_STR) 
+                            ? tape.vocab
+                            : [target];
+
+                for (const c of cs) {
+                    const lit = constructLiteral(this.toTape, [c]);
+                    const bufferedSuccessor = constructPrecede(lit, successor);
+                    yield [c, bufferedSuccessor];
+                }
+            }
+            return;
+        }
+
+        if (tapeName == this.toTape) {
+            
+            const tape = tapeNS.get(tapeName);
+            const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
+            const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
+            for (const [childTarget, childNext] of 
+                    this.child.deriv(newTapeName, target, newTapeNS, stack, opt)) {
+                const target = childTarget as string;
+                const successor = constructMatchFrom(childNext, this.fromTape, this.toTape);
+                const cs = (target == ANY_CHAR_STR) 
+                            ? tape.vocab
+                            : [target];
+
+                for (const c of cs) {
+                    const lit = constructLiteral(this.fromTape, [c]);
+                    const bufferedSuccessor = constructPrecede(lit, successor);
+                    yield [c, bufferedSuccessor];
+                }
+            }
+            return;
+        } 
+
+        // tape name is neither fromTape nor toTape
+        for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+            const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
+            yield [cTarget, successor];
+        }
+        
+    }
+}
+
 export class MatchExpr extends UnaryExpr {
 
     constructor(
@@ -1819,10 +1918,9 @@ export function constructUniverse(
 
 export function constructMatch(
     child: Expr,
-    tapes: Set<string>,
-    buffers: {[key: string]: Expr} = {}
+    tapes: Set<string>
 ): Expr {
-    if (child instanceof EpsilonExpr && Object.values(buffers).every(b=>b instanceof EpsilonExpr)) {
+    if (child instanceof EpsilonExpr) {
         return child;
     }
     if (child instanceof NullExpr) {
@@ -1831,12 +1929,32 @@ export function constructMatch(
     return new MatchExpr(child, tapes);
 }
 
+export function constructMatchFrom(
+    child: Expr,
+    fromTape: string,
+    ...toTapes: string[]
+): Expr {
+    if (child instanceof EpsilonExpr) {
+        return child;
+    }
+    if (child instanceof NullExpr) {
+        return child;
+    }
+    let result = child;
+    for (const tape of toTapes) {
+        result = new MatchFromExpr(result, fromTape, tape);
+    }
+    return result;
+}
+
+/*
 export function constructMatchFrom(state: Expr, firstTape: string, ...otherTapes: string[]): Expr {
     // Construct a Match for multiple tapes given a expression for the first tape. 
     return constructMatch(constructSequence(state,
                             ...otherTapes.map((t: string) => constructRename(state, firstTape, t))),
                           new Set([firstTape, ...otherTapes]));
-}
+} */
+
 
 export function constructRename(
     child: Expr, 

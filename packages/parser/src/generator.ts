@@ -124,13 +124,14 @@ abstract class Generator {
 
             for (const [cTarget, cNext] of 
                     this.deriv(prevExpr, tapeToTry, tapeNS, stack, opt)) {
-                
-                if (verbose) {
-                    console.log(`D^${tapeToTry}_${cTarget} is ${cNext.id}`);
-                }
 
-                const nextOutput = prevOutput.add(tapeToTry, cTarget);
-                nexts.push([tapes, nextOutput, cNext]);
+                if (!(cNext instanceof NullExpr)) {        
+                    if (verbose) {
+                        console.log(`D^${tapeToTry}_${cTarget} is ${cNext.id}`);
+                    }
+                    const nextOutput = prevOutput.add(tapeToTry, cTarget);
+                    nexts.push([tapes, nextOutput, cNext]);
+                }
             }
 
             // if random, shuffle the possibilities to search through next
