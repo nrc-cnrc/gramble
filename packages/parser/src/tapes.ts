@@ -185,6 +185,7 @@ export interface Tape {
     readonly vocabSize: number;
     readonly vocab: string[];
     readonly globalName: string;
+    expandStrings(token: string, other?: Tape | undefined): string[];
     vocabIsSubsetOf(other: Tape): boolean;
     inVocab(strs: string[]): boolean;
     match(str1: BitsetToken, str2: BitsetToken): BitsetToken;
@@ -208,6 +209,26 @@ class BitsetTape implements Tape {
 
     public get vocabSize(): number {
         return this.mask.cardinality();
+    }
+
+    expandStrings(
+        token: string, 
+        other: Tape | undefined = undefined
+    ): string[] {
+        const commonVocab = (other != undefined) ?
+                            this.mask.and((other as BitsetTape).mask) :
+                            this.mask;
+        if (token == ANY_CHAR_STR) {
+            return this.fromToken(commonVocab);
+        }
+
+        // it's a specific string, not any char, make sure it's in the vocab
+        
+        const index = this._vocab.getIndex(token);
+        if (index == undefined || commonVocab.bits.get(index) == 0) {
+            return [];
+        }
+        return [token];
     }
 
     public inVocab(chars: string[]): boolean {
@@ -279,6 +300,19 @@ class BitsetTape implements Tape {
                         // one was created by inversion, it could iterate forever here.
             }
             result.push(char);
+        }
+        return result;
+    }
+
+    protected setFromBits(bits: BitSet): Set<string> {
+        const result: Set<string> = new Set();
+        for (const index of bits.toArray()) {
+            const char = this._vocab.getString(index);
+            if (char == undefined) {
+                break;  // this is crucial, because BitSets are infinite and if
+                        // one was created by inversion, it could iterate forever here.
+            }
+            result.add(char);
         }
         return result;
     }

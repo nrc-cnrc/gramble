@@ -877,23 +877,25 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('t1:h & Match(t1:.*, t1->t2)', function() {
         const grammar2: Grammar = MatchFrom(Any("t1"), "t1", "t2");
         const grammar3: Grammar = Join(t1("h"), grammar2)
+        const grammarWithVocab: Grammar = Seq(grammar3, Vocab("t2", "h"));
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'h'},
         ];
-        testHasTapes(grammar3, ['t1', 't2']);
-        testHasVocab(grammar3, {t1: 1, t2: 1});
-        testGrammar(grammar3, expectedResults);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 1});
+        testGrammar(grammarWithVocab, expectedResults);
     });
 
     describe('t1:hello & Match(t1:.*, t1->t2)', function() {
         const grammar2: Grammar = MatchFrom(Rep(Any("t1")), "t1", "t2");
         const grammar3: Grammar = Join(t1("hello"), grammar2)
+        const grammarWithVocab: Grammar = Seq(grammar3, Vocab("t2", "hello"));
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
         ];
-        testHasTapes(grammar3, ['t1', 't2']);
-        testHasVocab(grammar3, {t1: 4, t2: 4});
-        testGrammar(grammar3, expectedResults);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 4, t2: 4});
+        testGrammar(grammarWithVocab, expectedResults);
     });
     
     describe('t2:hello & Match(t1:.*, t1->t2)', function() {

@@ -1042,7 +1042,7 @@ export class MatchFromGrammar extends UnaryGrammar {
         child: Grammar,
         public fromTape: string,
         public toTape: string,
-        public vocabBypass: boolean = true
+        public vocabBypass: boolean = false
     ) {
         super(cell, child);
     }

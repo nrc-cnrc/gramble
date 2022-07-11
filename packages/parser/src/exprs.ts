@@ -488,19 +488,9 @@ class DotExpr extends Expr {
 
         const tape = tapeNS.get(tapeName);
 
-        if (target == ANY_CHAR_STR) {
-            for (const c of tape.vocab) {
-                yield [c, EPSILON];
-            }
-            return;
+        for (const c of tape.expandStrings(target)) {
+            yield [c, EPSILON];
         }
-
-        if (!tape.inVocab([target])) {
-            return;
-        }
-        
-        yield [target, EPSILON];
-
     }
 }
 
@@ -565,15 +555,12 @@ class CharSetExpr extends Expr {
             return;
         }
 
-        if (target == ANY_CHAR_STR) {
-            for (const c of this.chars) {
-                yield [c, EPSILON];
+        const tape = tapeNS.get(tapeName);
+        for (const c of tape.expandStrings(target)) {
+            if (this.chars.indexOf(c) == -1) {
+                continue;
             }
-            return;
-        }
-
-        if (this.chars.indexOf(target) != -1) {
-            yield [target, EPSILON];
+            yield [c, EPSILON];
         }
     }
 }
@@ -627,19 +614,9 @@ class DotStarExpr extends Expr {
         }
         
         const tape = tapeNS.get(tapeName);
-
-        if (target == ANY_CHAR_STR) {
-            for (const c of tape.vocab) {
-                yield [c, this];
-            }
-            return;
+        for (const c of tape.expandStrings(target)) {
+            yield [c, this];
         }
-
-        if (!tape.inVocab([target])) {
-            return;
-        }
-        
-        yield [target, this];
     }
    
 }
@@ -1546,53 +1523,37 @@ export class MatchFromExpr extends UnaryExpr {
         opt: GenOptions
     ): Gen<[Token, Expr]> {
         
-        if (tapeName == this.fromTape) {
-            const tape = tapeNS.get(tapeName);
-
+        // if it's a tape that isn't our to/from, just forward and wrap 
+        if (tapeName != this.fromTape && tapeName != this.toTape) {
             for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
-                const target = cTarget as string;
                 const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
-
-                const cs = (target == ANY_CHAR_STR) 
-                            ? tape.vocab
-                            : [target];
-
-                for (const c of cs) {
-                    const lit = constructLiteral(this.toTape, [c]);
-                    const bufferedSuccessor = constructPrecede(lit, successor);
-                    yield [c, bufferedSuccessor];
-                }
+                yield [cTarget, successor];
             }
             return;
         }
 
-        if (tapeName == this.toTape) {
-            
-            const tape = tapeNS.get(tapeName);
-            const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
-            const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
-            for (const [childTarget, childNext] of 
-                    this.child.deriv(newTapeName, target, newTapeNS, stack, opt)) {
-                const target = childTarget as string;
-                const successor = constructMatchFrom(childNext, this.fromTape, this.toTape);
-                const cs = (target == ANY_CHAR_STR) 
-                            ? tape.vocab
-                            : [target];
+        // tapeName is either our toTape or fromTape.  The only differences
+        // between these two cases is (a) we buffer the literal on the opposite
+        // tape, that's what oppositeTape is below and (b) when tapeName is our
+        // toTape, we have to act like a toTape->fromTape rename.  
 
-                for (const c of cs) {
-                    const lit = constructLiteral(this.fromTape, [c]);
-                    const bufferedSuccessor = constructPrecede(lit, successor);
-                    yield [c, bufferedSuccessor];
-                }
-            }
-            return;
-        } 
+        const oppositeTape = (tapeName == this.fromTape) ? this.toTape : this.fromTape;
+        const fromTape = tapeNS.get(this.fromTape);
+        const toTape = tapeNS.get(this.toTape);
 
-        // tape name is neither fromTape nor toTape
-        for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+        // We ask for a namespace rename either way; when tapeName == fromTape,
+        // this is just a no-op
+        const newTapeNS = tapeNS.rename(tapeName, this.fromTape); 
+
+        for (const [cTarget, cNext] of 
+                this.child.deriv(this.fromTape, target, newTapeNS, stack, opt)) {
             const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
-            yield [cTarget, successor];
+            for (const c of toTape.expandStrings(cTarget as string, fromTape)) {
+                const lit = constructLiteral(oppositeTape, [c]);
+                yield [c, constructPrecede(lit, successor)];
+            }
         }
+
         
     }
 }
@@ -1676,9 +1637,7 @@ export class MatchExpr extends UnaryExpr {
 
         for (const [nextTarget, nextExpr] of results) {
             
-            const cs = (nextTarget == ANY_CHAR_STR) 
-                        ? tape.vocab
-                        : [nextTarget];
+            const cs = tape.expandStrings(nextTarget);
 
             for (const c of cs) {
                 let bufferedNext: Expr = constructMatch(nextExpr, this.tapes);
