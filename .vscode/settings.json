@@ -1,7 +1,7 @@
 {
     "python.testing.autoTestDiscoverOnSaveEnabled": false,
     "python.testing.promptToConfigure": false,
-    "mochaExplorer.files": "packages/parser/tests/{,sheets/**/}*.ts",
+    "mochaExplorer.files": "tests/{,sheets/**/}*.ts",
     "mochaExplorer.require": "ts-node/register",
     "mochaExplorer.logpanel": true,
     "mochaExplorer.cwd": "./packages/parser"
