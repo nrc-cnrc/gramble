@@ -56,6 +56,11 @@ abstract class Generator {
 
         const verbose = (opt.verbose & VERBOSE_DEBUG) != 0;
 
+        if (verbose) {
+            console.log();
+            console.log(`*** Generating for expr ${expr.id}.`);
+        }
+
         const initialOutput: OutputTrie = new OutputTrie();
         let states: [string[], OutputTrie, Expr][] = [[tapePriority, initialOutput, expr]];
         let prev: [string[], OutputTrie, Expr] | undefined = undefined;
@@ -145,14 +150,16 @@ abstract class Generator {
         // if we get here, we've exhausted the search.  usually we'd be done,
         // but with randomness, it's possible to have cached all outputs but not
         // actually yielded any.  The following does so.
-
-        if (candidates.length == 0) {
-            return;
+        if (candidates.length > 0) {
+            const candidateIndex = Math.floor(Math.random()*candidates.length);
+            const candidateOutput = candidates[candidateIndex];
+            yield* candidateOutput.toDict(tapeNS, opt);
         }
 
-        const candidateIndex = Math.floor(Math.random()*candidates.length);
-        const candidateOutput = candidates[candidateIndex];
-        yield* candidateOutput.toDict(tapeNS, opt);
+        if (verbose) {
+            console.log(``);
+            console.log(`*** Finished generating for expr  ${expr.id}.`);
+        }
     } 
 
 }
