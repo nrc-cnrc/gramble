@@ -41,14 +41,9 @@ import {
     StringDict
 } from "./util";
 
-export { CounterStack, Expr };
+import { GenOptions } from "./util";
 
-export class GenOptions {
-    public random: boolean = false;
-    public maxRecursion: number = 2; 
-    public maxChars: number = 1000;
-    public direction: "LTR" | "RTL" = "RTL"
-}
+export { CounterStack, Expr };
 
 export interface Transform {
 
