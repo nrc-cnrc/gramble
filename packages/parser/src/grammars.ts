@@ -22,6 +22,7 @@ import {
     constructDotRep,
     constructCount,
     constructCountTape,
+    EpsilonExpr,
 } from "./exprs";
 
 import { 
@@ -1922,6 +1923,19 @@ export class ReplaceGrammar extends Grammar {
             }
         }
 
+        // Determine whether the fromExpr in context is empty (on the fromTape).
+        let emptyFromExpr: boolean = false;
+        if (supersetVocab) {
+            const tapeNS: TapeNamespace = this.getAllTapes();
+            const fromExprWithContext: Expr = constructSequence(preContextExpr, fromExpr, postContextExpr);
+            const opt: GenOptions = new GenOptions();
+            const stack = new CounterStack(opt.maxRecursion);
+            const delta = fromExprWithContext.delta(this.fromTapeName, tapeNS, stack, opt);
+            if (delta instanceof EpsilonExpr) {
+                emptyFromExpr = true;
+            }
+        }
+
         const that = this;
 
         function matchAnythingElse(replaceNone: boolean = false,
@@ -1935,7 +1949,10 @@ export class ReplaceGrammar extends Grammar {
             // 2. If we are matching an instance at the start of text (beginsWith),
             //    or end of text (endsWith) then matchAnythingElse needs to match any
             //    other instances of the replacement pattern, so we need to match .*
-            if( !supersetVocab || (that.beginsWith && !replaceNone) || (that.endsWith && !replaceNone)) {
+            if( !supersetVocab ||
+                    emptyFromExpr ||
+                    (that.beginsWith && !replaceNone) ||
+                    (that.endsWith && !replaceNone)) {
                 return constructMatchFrom(dotStar, that.fromTapeName, ...that.toTapeNames)
             }
             const fromInstance: Expr[] = [preContextExpr, fromExpr, postContextExpr];

@@ -56,9 +56,13 @@ abstract class Generator {
 
         const verbose = (opt.verbose & VERBOSE_DEBUG) != 0;
 
+        // Reverse the tapePriority for debugging purposes.
+        // tapePriority = tapePriority.reverse();
+
         if (verbose) {
             console.log();
             console.log(`*** Generating for expr ${expr.id}.`);
+            console.log(`tapePriority is [${tapePriority}]`)
         }
 
         const initialOutput: OutputTrie = new OutputTrie();
