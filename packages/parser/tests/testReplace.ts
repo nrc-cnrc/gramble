@@ -1,11 +1,12 @@
 import {
     Any,
     Count,
+    CountTape,
     Epsilon,
     Grammar,
     Intersect,
     Not,
-    Replace, 
+    Replace,
     Seq,
     Uni,
     Vocab
@@ -21,7 +22,7 @@ import {
 } from './testUtils';
 
 import * as path from 'path';
-import { StringDict } from "../src/util";
+import { SILENT, VERBOSE_DEBUG, StringDict } from "../src/util";
 
 const EMPTY: string = '';
 
@@ -46,8 +47,11 @@ function inputResultsPairs(expectedOutputs: StringDict[]): InputResultsPair[] {
 
 const EMPTY_CONTEXT = Epsilon();
 
-const DUMMY_SYMBOL_NAME: string = "";
-const DEFAULT_MAX_RECURSION: number = 4;
+const DUMMY_SYMBOL: string = "";
+const DEF_MAX_RECURSION: number = 4;
+const DEF_STRIP_HIDDEN: boolean = true;
+
+const DEF_MAX_CHARS: number = 100;
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -1830,6 +1834,670 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
+
+    describe('36a. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_ (vocab ∅/hel)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', ""), t1("")),
+                                       Seq(Vocab('t2', "hle"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       true, false, 1, 1);
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 0, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('36b. Replace ∅ by e: t1:∅ -> t2:e {1} || _$ (vocab ∅/hel)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', ""), t1("")),
+                                       Seq(Vocab('t2', "hle"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, true, 1, 1);
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 0, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('36c. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_$ (vocab ∅/hel)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', ""), t1("")),
+                                       Seq(Vocab('t2', "hle"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       true, true, 1, 1);
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 0, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('36d. Replace ∅ by e: t1:∅ -> t2:e {1} (vocab ∅/hel)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', ""), t1("")),
+                                       Seq(Vocab('t2', "hle"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 1, 1);
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 0, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('36e. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_ (vocab hl/hel)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', "hl"), t1("")),
+                                       Seq(Vocab('t2', "hle"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       true, false, 1, 1);
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: "h", t2: "eh"},     {t1: "l", t2: "el"},
+            {t1: "hh", t2: "ehh"},   {t1: "hl", t2: "ehl"},
+            {t1: "lh", t2: "elh"},   {t1: "ll", t2: "ell"},
+            {t1: "hhh", t2: "ehhh"}, {t1: "hhl", t2: "ehhl"},
+            {t1: "hlh", t2: "ehlh"}, {t1: "hll", t2: "ehll"},
+            {t1: "lhh", t2: "elhh"}, {t1: "lhl", t2: "elhl"},
+            {t1: "llh", t2: "ellh"}, {t1: "lll", t2: "elll"},
+            {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('36f. Replace ∅ by e: t1:∅ -> t2:e {1} || _$ (vocab hl/hel)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', "hl"), t1("")),
+                                       Seq(Vocab('t2', "hle"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, true, 1, 1);
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: 'h', t2: 'he'},     {t1: 'l', t2: 'le'},
+            {t1: 'hh', t2: 'hhe'},   {t1: 'hl', t2: 'hle'},
+            {t1: 'lh', t2: 'lhe'},   {t1: 'll', t2: 'lle'},
+            {t1: "hhh", t2: "hhhe"}, {t1: "hhl", t2: "hhle"},
+            {t1: "hlh", t2: "hlhe"}, {t1: "hll", t2: "hlle"},
+            {t1: "lhh", t2: "lhhe"}, {t1: "lhl", t2: "lhle"},
+            {t1: "llh", t2: "llhe"}, {t1: "lll", t2: "llle"},
+            {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('36g. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_$ (vocab hl/hel)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', "hl"), t1("")),
+                                       Seq(Vocab('t2', "hle"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       true, true, 1, 1);
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('36h. Replace ∅ by e: t1:∅ -> t2:e {1} (vocab hl/hel)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', "hl"), t1("")),
+                                       Seq(Vocab('t2', "hle"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 1, 1);
+        grammar = CountTape(4, grammar);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: "h", t2: "eh"},     {t1: "h", t2: "he"},
+            {t1: "l", t2: "el"},     {t1: "l", t2: "le"},
+            {t1: "hh", t2: "ehh"},   {t1: "hh", t2: "heh"},
+            {t1: "hh", t2: "hhe"},   {t1: "hl", t2: "ehl"},
+            {t1: "hl", t2: "hel"},   {t1: "hl", t2: "hle"},
+            {t1: "lh", t2: "elh"},   {t1: "lh", t2: "leh"},
+            {t1: "lh", t2: "lhe"},   {t1: "ll", t2: "ell"},
+            {t1: "ll", t2: "lel"},   {t1: "ll", t2: "lle"},
+            {t1: "hhh", t2: "ehhh"}, {t1: "hhh", t2: "hehh"},
+            {t1: "hhh", t2: "hheh"}, {t1: "hhh", t2: "hhhe"},
+            {t1: "hhl", t2: "ehhl"}, {t1: "hhl", t2: "hehl"},
+            {t1: "hhl", t2: "hhel"}, {t1: "hhl", t2: "hhle"},
+            {t1: "hlh", t2: "ehlh"}, {t1: "hlh", t2: "helh"},
+            {t1: "hlh", t2: "hleh"}, {t1: "hlh", t2: "hlhe"},
+            {t1: "hll", t2: "ehll"}, {t1: "hll", t2: "hell"},
+            {t1: "hll", t2: "hlel"}, {t1: "hll", t2: "hlle"},
+            {t1: "lhh", t2: "elhh"}, {t1: "lhh", t2: "lehh"},
+            {t1: "lhh", t2: "lheh"}, {t1: "lhh", t2: "lhhe"},
+            {t1: "lhl", t2: "elhl"}, {t1: "lhl", t2: "lehl"},
+            {t1: "lhl", t2: "lhel"}, {t1: "lhl", t2: "lhle"},
+            {t1: "llh", t2: "ellh"}, {t1: "llh", t2: "lelh"},
+            {t1: "llh", t2: "lleh"}, {t1: "llh", t2: "llhe"},
+            {t1: "lll", t2: "elll"}, {t1: "lll", t2: "lell"},
+            {t1: "lll", t2: "llel"}, {t1: "lll", t2: "llle"},
+            {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('36i. Replace ∅ by e: t1:∅ -> t2:e {0,2} (vocab ∅/hel)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', ""), t1("")),
+                                       Seq(Vocab('t2', "hle"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 0, 2);
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 0, t2: 3});
+        const expectedResults: StringDict[] = [
+            {},         // equivalent to {t1: '', t2: ''}
+            {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
+            {t2: 'ee'}, // equivalent to {t1: '', t2: 'ee'}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('36j. Replace ∅ by e: t1:∅ -> t2:e {0,2} (vocab hl/hel)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', "hl"), t1("")),
+                                       Seq(Vocab('t2', "hle"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 0, 2);
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            // 1 Insertion
+            {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
+            {t1: 'h', t2: 'eh'},     {t1: 'l', t2: 'el'},
+            {t1: 'h', t2: 'he'},     {t1: 'l', t2: 'le'},
+            {t1: 'hh', t2: 'ehh'},   {t1: 'hl', t2: 'ehl'},
+            {t1: 'lh', t2: 'elh'},   {t1: 'll', t2: 'ell'},
+            {t1: 'hh', t2: 'heh'},   {t1: 'hl', t2: 'hel'},
+            {t1: 'hh', t2: 'hhe'},   {t1: 'hl', t2: 'hle'},
+            {t1: 'lh', t2: 'leh'},   {t1: 'll', t2: 'lel'},
+            {t1: 'lh', t2: 'lhe'},   {t1: 'll', t2: 'lle'},
+            {t1: 'hhh', t2: 'ehhh'}, {t1: 'hhl', t2: 'ehhl'},
+            {t1: 'hlh', t2: 'ehlh'}, {t1: 'hll', t2: 'ehll'},
+            {t1: 'lhh', t2: 'elhh'}, {t1: 'lhl', t2: 'elhl'},
+            {t1: 'llh', t2: 'ellh'}, {t1: 'lll', t2: 'elll'},
+            {t1: 'hhh', t2: 'hehh'}, {t1: 'hhl', t2: 'hehl'},
+            {t1: 'hlh', t2: 'helh'}, {t1: 'hll', t2: 'hell'},
+            {t1: 'hhh', t2: 'hheh'}, {t1: 'hhl', t2: 'hhel'},
+            {t1: 'hhh', t2: 'hhhe'}, {t1: 'hhl', t2: 'hhle'},
+            {t1: 'hlh', t2: 'hleh'}, {t1: 'hll', t2: 'hlel'},
+            {t1: 'hlh', t2: 'hlhe'}, {t1: 'hll', t2: 'hlle'},
+            {t1: 'lhh', t2: 'lehh'}, {t1: 'lhl', t2: 'lehl'},
+            {t1: 'llh', t2: 'lelh'}, {t1: 'lll', t2: 'lell'},
+            {t1: 'lhh', t2: 'lheh'}, {t1: 'lhl', t2: 'lhel'},
+            {t1: 'lhh', t2: 'lhhe'}, {t1: 'lhl', t2: 'lhle'},
+            {t1: 'llh', t2: 'lleh'}, {t1: 'lll', t2: 'llel'},
+            {t1: 'llh', t2: 'llhe'}, {t1: 'lll', t2: 'llle'},
+
+            // 2 Insertions
+            {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
+            {t1: 'h', t2: 'ehe'},   {t1: 'l', t2: 'ele'},     // both missing for DIRECTION_LTR = false
+            {t1: 'h', t2: 'eeh'},   {t1: 'l', t2: 'eel'},     // both missing for DIRECTION_LTR = true
+            {t1: 'h', t2: 'hee'},   {t1: 'l', t2: 'lee'},
+            {t1: 'hh', t2: 'eehh'}, {t1: 'hl', t2: 'eehl'},   // both missing for DIRECTION_LTR = true
+            {t1: 'lh', t2: 'eelh'}, {t1: 'll', t2: 'eell'},   // both missing for DIRECTION_LTR = true
+            {t1: 'hh', t2: 'eheh'}, {t1: 'hl', t2: 'ehel'},
+            {t1: 'hh', t2: 'ehhe'}, {t1: 'hl', t2: 'ehle'},   // both missing for DIRECTION_LTR = false
+            {t1: 'lh', t2: 'eleh'}, {t1: 'll', t2: 'elel'},
+            {t1: 'lh', t2: 'elhe'}, {t1: 'll', t2: 'elle'},   // both missing for DIRECTION_LTR = false
+            {t1: 'hh', t2: 'heeh'}, {t1: 'hl', t2: 'heel'},   // both missing for DIRECTION_LTR = true
+            {t1: 'hh', t2: 'hehe'}, {t1: 'hl', t2: 'hele'},   // both missing for DIRECTION_LTR = false
+            {t1: 'hh', t2: 'hhee'}, {t1: 'hl', t2: 'hlee'},
+            {t1: 'lh', t2: 'leeh'}, {t1: 'll', t2: 'leel'},   // both missing for DIRECTION_LTR = true
+            {t1: 'lh', t2: 'lehe'}, {t1: 'll', t2: 'lele'},   // both missing for DIRECTION_LTR = false
+            {t1: 'lh', t2: 'lhee'}, {t1: 'll', t2: 'llee'},
+
+            // Copy-through: 0 Insertions
+            {},  // equivalent to {t1: '', t2: ''}
+            {t1: 'h', t2: 'h'},       {t1: 'l', t2: 'l'},
+            {t1: 'hh', t2: 'hh'},     {t1: 'hl', t2: 'hl'},
+            {t1: 'lh', t2: 'lh'},     {t1: 'll', t2: 'll'},
+            {t1: 'hhh', t2: 'hhh'},   {t1: 'hhl', t2: 'hhl'},
+            {t1: 'hlh', t2: 'hlh'},   {t1: 'hll', t2: 'hll'},
+            {t1: 'lhh', t2: 'lhh'},   {t1: 'lhl', t2: 'lhl'},
+            {t1: 'llh', t2: 'llh'},   {t1: 'lll', t2: 'lll'},
+            {t1: 'hhhh', t2: 'hhhh'}, {t1: 'hhhl', t2: 'hhhl'},
+            {t1: 'hhlh', t2: 'hhlh'}, {t1: 'hhll', t2: 'hhll'},
+            {t1: 'hlhh', t2: 'hlhh'}, {t1: 'hlhl', t2: 'hlhl'},
+            {t1: 'hllh', t2: 'hllh'}, {t1: 'hlll', t2: 'hlll'},
+            {t1: 'lhhh', t2: 'lhhh'}, {t1: 'lhhl', t2: 'lhhl'},
+            {t1: 'lhlh', t2: 'lhlh'}, {t1: 'lhll', t2: 'lhll'},
+            {t1: 'llhh', t2: 'llhh'}, {t1: 'llhl', t2: 'llhl'},
+            {t1: 'lllh', t2: 'lllh'}, {t1: 'llll', t2: 'llll'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('36k. Replace ∅ by e: t1:∅ -> t2:e {2} (vocab h/he)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', "h"), t1("")),
+                                       Seq(Vocab('t2', "he"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 2, 2);
+        grammar = CountTape({t1: 1, t2: 3}, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
+            {t1: 'h', t2: 'ehe'},     // missing for DIRECTION_LTR = false
+            {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
+            {t1: 'h', t2: 'hee'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+    });
+
+    describe('36k-2. Replace ∅ by e: t1:∅ -> t2:e {2} (vocab h/he)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', "h"), t1("")),
+                                       Seq(Vocab('t2', "he"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 2, 2);
+        grammar = CountTape({t1: 2, t2: 4}, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
+            {t1: 'h', t2: 'ehe'},     // missing for DIRECTION_LTR = false
+            {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
+            {t1: 'h', t2: 'hee'},
+            {t1: 'hh', t2: 'eehh'},   // missing for DIRECTION_LTR = true
+            {t1: 'hh', t2: 'eheh'},
+            {t1: 'hh', t2: 'ehhe'},   // missing for DIRECTION_LTR = false
+            {t1: 'hh', t2: 'heeh'},   // missing for DIRECTION_LTR = true
+            {t1: 'hh', t2: 'hehe'},   // missing for DIRECTION_LTR = false
+            {t1: 'hh', t2: 'hhee'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+    });
+
+    describe('36l. Replace ∅|h by e: t1:∅|t1:h -> t2:e {1} (vocab hl/hel)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', "hl"), Uni(t1(""), t1("h"))),
+                                       Seq(Vocab('t2', "hle"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 1, 1);
+        grammar = CountTape(4, grammar);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            // Insertions
+            {t1: "h", t2: "eh"},      {t1: "h", t2: "he"},
+            {t1: "l", t2: "el"},      {t1: "l", t2: "le"},
+            {t1: "hh", t2: "ehh"},    {t1: "hh", t2: "heh"},
+            {t1: "hh", t2: "hhe"},    {t1: "hl", t2: "ehl"},
+            {t1: "hl", t2: "hel"},    {t1: "hl", t2: "hle"},
+            {t1: "lh", t2: "elh"},    {t1: "lh", t2: "leh"},
+            {t1: "lh", t2: "lhe"},    {t1: "ll", t2: "ell"},
+            {t1: "ll", t2: "lel"},    {t1: "ll", t2: "lle"},
+            {t1: "hhh", t2: "ehhh"},  {t1: "hhh", t2: "hehh"},
+            {t1: "hhh", t2: "hheh"},  {t1: "hhh", t2: "hhhe"},
+            {t1: "hhl", t2: "ehhl"},  {t1: "hhl", t2: "hehl"},
+            {t1: "hhl", t2: "hhel"},  {t1: "hhl", t2: "hhle"},
+            {t1: "hlh", t2: "ehlh"},  {t1: "hlh", t2: "helh"},
+            {t1: "hlh", t2: "hleh"},  {t1: "hlh", t2: "hlhe"},
+            {t1: "hll", t2: "ehll"},  {t1: "hll", t2: "hell"},
+            {t1: "hll", t2: "hlel"},  {t1: "hll", t2: "hlle"},
+            {t1: "lhh", t2: "elhh"},  {t1: "lhh", t2: "lehh"},
+            {t1: "lhh", t2: "lheh"},  {t1: "lhh", t2: "lhhe"},
+            {t1: "lhl", t2: "elhl"},  {t1: "lhl", t2: "lehl"},
+            {t1: "lhl", t2: "lhel"},  {t1: "lhl", t2: "lhle"},
+            {t1: "llh", t2: "ellh"},  {t1: "llh", t2: "lelh"},
+            {t1: "llh", t2: "lleh"},  {t1: "llh", t2: "llhe"},
+            {t1: "lll", t2: "elll"},  {t1: "lll", t2: "lell"},
+            {t1: "lll", t2: "llel"},  {t1: "lll", t2: "llle"},
+            {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
+            // Replacements
+            {t1: "h", t2: "e"},
+            {t1: "hh", t2: "eh"},     {t1: "hh", t2: "he"},
+            {t1: "hl", t2: "el"},     {t1: "lh", t2: "le"},
+            {t1: "hhh", t2: "ehh"},   {t1: "hhh", t2: "heh"},
+            {t1: "hhh", t2: "hhe"},   {t1: "hhl", t2: "ehl"},
+            {t1: "hhl", t2: "hel"},   {t1: "hlh", t2: "elh"},
+            {t1: "hlh", t2: "hle"},   {t1: "hll", t2: "ell"},
+            {t1: "lhh", t2: "leh"},   {t1: "lhh", t2: "lhe"},
+            {t1: "lhl", t2: "lel"},   {t1: "llh", t2: "lle"},
+            {t1: "hhhh", t2: "ehhh"}, {t1: "hhhh", t2: "hehh"},
+            {t1: "hhhh", t2: "hheh"}, {t1: "hhhh", t2: "hhhe"},
+            {t1: "hhhl", t2: "ehhl"}, {t1: "hhhl", t2: "hehl"},
+            {t1: "hhhl", t2: "hhel"}, {t1: "hhlh", t2: "ehlh"},
+            {t1: "hhlh", t2: "helh"}, {t1: "hhlh", t2: "hhle"},
+            {t1: "hhll", t2: "ehll"}, {t1: "hhll", t2: "hell"},
+            {t1: "hlhh", t2: "elhh"}, {t1: "hlhh", t2: "hleh"},
+            {t1: "hlhh", t2: "hlhe"}, {t1: "hlhl", t2: "elhl"},
+            {t1: "hlhl", t2: "hlel"}, {t1: "hllh", t2: "ellh"},
+            {t1: "hllh", t2: "hlle"}, {t1: "hlll", t2: "elll"},
+            {t1: "lhhh", t2: "lehh"}, {t1: "lhhh", t2: "lheh"},
+            {t1: "lhhh", t2: "lhhe"}, {t1: "lhhl", t2: "lehl"},
+            {t1: "lhhl", t2: "lhel"}, {t1: "lhlh", t2: "lelh"},
+            {t1: "lhlh", t2: "lhle"}, {t1: "lhll", t2: "lell"},
+            {t1: "llhh", t2: "lleh"}, {t1: "llhh", t2: "llhe"},
+            {t1: "llhl", t2: "llel"}, {t1: "lllh", t2: "llle"},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('36m. Replace ∅|h by e: t1:∅|t1:h -> t2:e {1} (vocab he/he)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', "he"), Uni(t1(""), t1("h"))),
+                                       Seq(Vocab('t2', "he"), t2("e")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 1, 1);
+        grammar = CountTape(4, grammar);
+        testHasVocab(grammar, {t1: 2, t2: 2});
+        const expectedResults: StringDict[] = [
+            // Insertions
+            {t1: "h", t2: "eh"},      {t1: "h", t2: "he"},
+            {t1: "e", t2: "ee"},
+            {t1: "hh", t2: "ehh"},    {t1: "hh", t2: "heh"},
+            {t1: "hh", t2: "hhe"},    {t1: "he", t2: "ehe"},
+            {t1: "he", t2: "hee"},
+            {t1: "eh", t2: "eeh"},
+            {t1: "eh", t2: "ehe"},    {t1: "ee", t2: "eee"},
+            {t1: "hhh", t2: "ehhh"},  {t1: "hhh", t2: "hehh"},
+            {t1: "hhh", t2: "hheh"},  {t1: "hhh", t2: "hhhe"},
+            {t1: "hhe", t2: "ehhe"},  {t1: "hhe", t2: "hehe"},
+            {t1: "hhe", t2: "hhee"},
+            {t1: "heh", t2: "eheh"},
+            {t1: "heh", t2: "heeh"},  {t1: "heh", t2: "hehe"},
+            {t1: "hee", t2: "ehee"},  {t1: "hee", t2: "heee"},
+            {t1: "ehh", t2: "eehh"},
+            {t1: "ehh", t2: "eheh"},  {t1: "ehh", t2: "ehhe"},
+            {t1: "ehe", t2: "eehe"},
+            {t1: "ehe", t2: "ehee"},
+            {t1: "eeh", t2: "eeeh"},  {t1: "eeh", t2: "eehe"},
+            {t1: "eee", t2: "eeee"},
+            {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
+            // Replacements
+            {t1: "h", t2: "e"},
+            {t1: "hh", t2: "eh"},     {t1: "hh", t2: "he"},
+            {t1: "he", t2: "ee"},     {t1: "eh", t2: "ee"},
+            {t1: "hhh", t2: "ehh"},   {t1: "hhh", t2: "heh"},
+            {t1: "hhh", t2: "hhe"},   {t1: "hhe", t2: "ehe"},
+            {t1: "hhe", t2: "hee"},   {t1: "heh", t2: "eeh"},
+            {t1: "heh", t2: "hee"},   {t1: "hee", t2: "eee"},
+            {t1: "ehh", t2: "eeh"},   {t1: "ehh", t2: "ehe"},
+            {t1: "ehe", t2: "eee"},   {t1: "eeh", t2: "eee"},
+            {t1: "hhhh", t2: "ehhh"}, {t1: "hhhh", t2: "hehh"},
+            {t1: "hhhh", t2: "hheh"}, {t1: "hhhh", t2: "hhhe"},
+            {t1: "hhhe", t2: "ehhe"}, {t1: "hhhe", t2: "hehe"},
+            {t1: "hhhe", t2: "hhee"}, {t1: "hheh", t2: "eheh"},
+            {t1: "hheh", t2: "heeh"}, {t1: "hheh", t2: "hhee"},
+            {t1: "hhee", t2: "ehee"}, {t1: "hhee", t2: "heee"},
+            {t1: "hehh", t2: "eehh"}, {t1: "hehh", t2: "heeh"},
+            {t1: "hehh", t2: "hehe"}, {t1: "hehe", t2: "eehe"},
+            {t1: "hehe", t2: "heee"}, {t1: "heeh", t2: "eeeh"},
+            {t1: "heeh", t2: "heee"}, {t1: "heee", t2: "eeee"},
+            {t1: "ehhh", t2: "eehh"}, {t1: "ehhh", t2: "eheh"},
+            {t1: "ehhh", t2: "ehhe"}, {t1: "ehhe", t2: "eehe"},
+            {t1: "ehhe", t2: "ehee"}, {t1: "eheh", t2: "eeeh"},
+            {t1: "eheh", t2: "ehee"}, {t1: "ehee", t2: "eeee"},
+            {t1: "eehh", t2: "eeeh"}, {t1: "eehh", t2: "eehe"},
+            {t1: "eehe", t2: "eeee"}, {t1: "eeeh", t2: "eeee"},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37a. Replace e by ∅: t1:e -> t2:∅ {1} || ^_ (vocab hel/∅)', function() {
+        let grammar: Grammar = Seq(Vocab('t1', "hle"), Vocab('t2', ""),
+                                   Replace(t1("e"), t2(""),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           true, false, 1, 1));
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 0});
+        const expectedResults: StringDict[] = [
+            {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37b. Replace e by ∅: t1:e -> t2:∅ {1} || _$ (vocab hel/∅)', function() {
+        let grammar: Grammar = Seq(Vocab('t1', "hle"), Vocab('t2', ""),
+                                   Replace(t1("e"), t2(""),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, true, 1, 1));
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 0});
+        const expectedResults: StringDict[] = [
+            {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37c. Replace e by ∅: t1:e -> t2:∅ {1} || ^_$ (vocab hel/∅)', function() {
+        let grammar: Grammar = Seq(Vocab('t1', "hle"), Vocab('t2', ""),
+                                   Replace(t1("e"), t2(""),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           true, true, 1, 1));
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 0});
+        const expectedResults: StringDict[] = [
+            {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37d. Replace e by ∅: t1:e -> t2:∅ {1} (vocab hel/∅)', function() {
+        let grammar: Grammar = Seq(Vocab('t1', "hle"), Vocab('t2', ""),
+                                   Replace(t1("e"), t2(""),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, false, 1, 1));
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 0});
+        const expectedResults: StringDict[] = [
+            {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37e. Replace e by ∅: t1:e -> t2:∅ {1} || ^_ (vocab hel/hl)', function() {
+        let grammar: Grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hl"),
+                                   Replace(t1("e"), t2(""),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           true, false, 1, 1));
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
+            {t1: 'eh', t2: 'h'},     {t1: 'el', t2: 'l'},
+            {t1: 'ehh', t2: 'hh'},   {t1: 'ehl', t2: 'hl'},
+            {t1: 'elh', t2: 'lh'},   {t1: 'ell', t2: 'll'},
+            {t1: 'ehhh', t2: 'hhh'}, {t1: 'ehhl', t2: 'hhl'},
+            {t1: 'ehlh', t2: 'hlh'}, {t1: 'ehll', t2: 'hll'},
+            {t1: 'elhh', t2: 'lhh'}, {t1: 'elhl', t2: 'lhl'},
+            {t1: 'ellh', t2: 'llh'}, {t1: 'elll', t2: 'lll'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37f. Replace e by ∅: t1:e -> t2:∅ {1} || _$ (vocab hel/hl)', function() {
+        let grammar: Grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hl"),
+                                   Replace(t1("e"), t2(""),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, true, 1, 1));
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
+            {t1: 'he', t2: 'h'},     {t1: 'le', t2: 'l'},
+            {t1: 'hhe', t2: 'hh'},   {t1: 'hle', t2: 'hl'},
+            {t1: 'lhe', t2: 'lh'},   {t1: 'lle', t2: 'll'},
+            {t1: 'hhhe', t2: 'hhh'}, {t1: 'hhle', t2: 'hhl'},
+            {t1: 'hlhe', t2: 'hlh'}, {t1: 'hlle', t2: 'hll'},
+            {t1: 'lhhe', t2: 'lhh'}, {t1: 'lhle', t2: 'lhl'},
+            {t1: 'llhe', t2: 'llh'}, {t1: 'llle', t2: 'lll'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37g. Replace e by ∅: t1:e -> t2:∅ {1} || ^_$ (vocab hel/hl)', function() {
+        let grammar: Grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hl"),
+                                   Replace(t1("e"), t2(""),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           true, true, 1, 1));
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37h. Replace e by ∅: t1:e -> t2:∅ {1} (vocab hel/hl)', function() {
+        let grammar: Grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hl"),
+                                   Replace(t1("e"), t2(""),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, false, 1, 1));
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
+            {t1: 'eh', t2: 'h'},     {t1: 'el', t2: 'l'},
+            {t1: 'he', t2: 'h'},     {t1: 'le', t2: 'l'},
+            {t1: 'ehh', t2: 'hh'},   {t1: 'ehl', t2: 'hl'},
+            {t1: 'elh', t2: 'lh'},   {t1: 'ell', t2: 'll'},
+            {t1: 'heh', t2: 'hh'},   {t1: 'hel', t2: 'hl'},
+            {t1: 'leh', t2: 'lh'},   {t1: 'lel', t2: 'll'},
+            {t1: 'hhe', t2: 'hh'},   {t1: 'hle', t2: 'hl'},
+            {t1: 'lhe', t2: 'lh'},   {t1: 'lle', t2: 'll'},
+            {t1: 'ehhh', t2: 'hhh'}, {t1: 'ehhl', t2: 'hhl'},
+            {t1: 'ehlh', t2: 'hlh'}, {t1: 'ehll', t2: 'hll'},
+            {t1: 'elhh', t2: 'lhh'}, {t1: 'elhl', t2: 'lhl'},
+            {t1: 'ellh', t2: 'llh'}, {t1: 'elll', t2: 'lll'},
+            {t1: 'hehh', t2: 'hhh'}, {t1: 'hehl', t2: 'hhl'},
+            {t1: 'helh', t2: 'hlh'}, {t1: 'hell', t2: 'hll'},
+            {t1: 'lehh', t2: 'lhh'}, {t1: 'lehl', t2: 'lhl'},
+            {t1: 'lelh', t2: 'llh'}, {t1: 'lell', t2: 'lll'},
+            {t1: 'hheh', t2: 'hhh'}, {t1: 'hhel', t2: 'hhl'},
+            {t1: 'hleh', t2: 'hlh'}, {t1: 'hlel', t2: 'hll'},
+            {t1: 'lheh', t2: 'lhh'}, {t1: 'lhel', t2: 'lhl'},
+            {t1: 'lleh', t2: 'llh'}, {t1: 'llel', t2: 'lll'},
+            {t1: 'hhhe', t2: 'hhh'}, {t1: 'hhle', t2: 'hhl'},
+            {t1: 'hlhe', t2: 'hlh'}, {t1: 'hlle', t2: 'hll'},
+            {t1: 'lhhe', t2: 'lhh'}, {t1: 'lhle', t2: 'lhl'},
+            {t1: 'llhe', t2: 'llh'}, {t1: 'llle', t2: 'lll'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37i. Replace e by ∅: t1:e -> t2:∅ {0,2} (vocab hel/∅)', function() {
+        let grammar: Grammar = Seq(Vocab('t1', "hle"), Vocab('t2', ""),
+                                   Replace(t1("e"), t2(""),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, false, 0, 2));
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 0});
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
+            {t1: 'ee'}, // equivalent to {t1: 'ee', t2: ''}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37i-alt. Replace e by ∅: t1:e -> t2:∅ {0,2} (vocab hel/∅)', function() {
+        let grammar: Grammar = Replace(Seq(Vocab('t1', "hle"), t1("e")),
+                                       Seq(Vocab('t2', ""), t2("")),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 0, 2);
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 0});
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
+            {t1: 'ee'}, // equivalent to {t1: 'ee', t2: ''}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37j. Replace e by ∅: t1:e -> t2:∅ {0,2} (vocab hel/hl)', function() {
+        let grammar: Grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hl"),
+                                   Replace(t1("e"), t2(""),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, false, 0, 2));
+        grammar = CountTape(4, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 3, t2: 2});
+        const expectedResults: StringDict[] = [
+            // 1 Deletion
+            {t1: 'e'},    // equivalent to {t1: 'e', t2: ''}
+            {t1: 'eh', t2: 'h'},      {t1: 'el', t2: 'l'},      {t1: 'he', t2: 'h'},
+            {t1: 'le', t2: 'l'},
+            {t1: 'ehh', t2: 'hh'},    {t1: 'ehl', t2: 'hl'},   {t1: 'elh', t2: 'lh'},
+            {t1: 'ell', t2: 'll'},    {t1: 'heh', t2: 'hh'},   {t1: 'hel', t2: 'hl'},
+            {t1: 'hhe', t2: 'hh'},    {t1: 'hle', t2: 'hl'},   {t1: 'leh', t2: 'lh'},
+            {t1: 'lel', t2: 'll'},    {t1: 'lhe', t2: 'lh'},   {t1: 'lle', t2: 'll'},
+            {t1: 'ehhh', t2: 'hhh'},  {t1: 'ehhl', t2: 'hhl'}, {t1: 'ehlh', t2: 'hlh'},
+            {t1: 'ehll', t2: 'hll'},  {t1: 'elhh', t2: 'lhh'}, {t1: 'elhl', t2: 'lhl'},
+            {t1: 'ellh', t2: 'llh'},  {t1: 'elll', t2: 'lll'}, {t1: 'hehh', t2: 'hhh'},
+            {t1: 'hehl', t2: 'hhl'},  {t1: 'helh', t2: 'hlh'}, {t1: 'hell', t2: 'hll'},
+            {t1: 'hheh', t2: 'hhh'},  {t1: 'hhel', t2: 'hhl'}, {t1: 'hhhe', t2: 'hhh'},
+            {t1: 'hhle', t2: 'hhl'},  {t1: 'hleh', t2: 'hlh'}, {t1: 'hlel', t2: 'hll'},
+            {t1: 'hlhe', t2: 'hlh'},  {t1: 'hlle', t2: 'hll'}, {t1: 'lehh', t2: 'lhh'},
+            {t1: 'lehl', t2: 'lhl'},  {t1: 'lelh', t2: 'llh'}, {t1: 'lell', t2: 'lll'},
+            {t1: 'lheh', t2: 'lhh'},  {t1: 'lhel', t2: 'lhl'}, {t1: 'lhhe', t2: 'lhh'},
+            {t1: 'lhle', t2: 'lhl'},  {t1: 'lleh', t2: 'llh'}, {t1: 'llel', t2: 'lll'},
+            {t1: 'llhe', t2: 'llh'},  {t1: 'llle', t2: 'lll'},
+
+            // 2 Deletions
+            {t1: 'ee'},    // equivalent to {t1: 'ee', t2: ''}
+            {t1: 'ehe', t2: 'h'},     {t1: 'ele', t2: 'l'},    {t1: 'eeh', t2: 'h'},
+            {t1: 'eel', t2: 'l'},     {t1: 'hee', t2: 'h'},    {t1: 'lee', t2: 'l'},
+            {t1: 'eehh', t2: 'hh'},   {t1: 'eehl', t2: 'hl'},  {t1: 'eelh', t2: 'lh'},
+            {t1: 'eell', t2: 'll'},   {t1: 'eheh', t2: 'hh'},  {t1: 'ehel', t2: 'hl'},
+            {t1: 'ehhe', t2: 'hh'},   {t1: 'ehle', t2: 'hl'},  {t1: 'eleh', t2: 'lh'},
+            {t1: 'elel', t2: 'll'},   {t1: 'elhe', t2: 'lh'},  {t1: 'elle', t2: 'll'},
+            {t1: 'heeh', t2: 'hh'},   {t1: 'heel', t2: 'hl'},  {t1: 'hehe', t2: 'hh'},
+            {t1: 'hele', t2: 'hl'},   {t1: 'hhee', t2: 'hh'},  {t1: 'hlee', t2: 'hl'},
+            {t1: 'leeh', t2: 'lh'},   {t1: 'leel', t2: 'll'},  {t1: 'lehe', t2: 'lh'},
+            {t1: 'lele', t2: 'll'},   {t1: 'lhee', t2: 'lh'},  {t1: 'llee', t2: 'll'},
+
+            // Copy-through: 0 Deletions
+            {},
+            {t1: 'h', t2: 'h'},       {t1: 'l', t2: 'l'},
+            {t1: 'hh', t2: 'hh'},     {t1: 'hl', t2: 'hl'},     {t1: 'lh', t2: 'lh'},
+            {t1: 'll', t2: 'll'},
+            {t1: 'hhh', t2: 'hhh'},   {t1: 'hhl', t2: 'hhl'},   {t1: 'hlh', t2: 'hlh'},
+            {t1: 'hll', t2: 'hll'},   {t1: 'lhh', t2: 'lhh'},   {t1: 'lhl', t2: 'lhl'},
+            {t1: 'llh', t2: 'llh'},   {t1: 'lll', t2: 'lll'},
+            {t1: 'hhhh', t2: 'hhhh'}, {t1: 'hhhl', t2: 'hhhl'}, {t1: 'hhlh', t2: 'hhlh'},
+            {t1: 'hhll', t2: 'hhll'}, {t1: 'hlhh', t2: 'hlhh'}, {t1: 'hlhl', t2: 'hlhl'},
+            {t1: 'hllh', t2: 'hllh'}, {t1: 'hlll', t2: 'hlll'}, {t1: 'lhhh', t2: 'lhhh'},
+            {t1: 'lhhl', t2: 'lhhl'}, {t1: 'lhlh', t2: 'lhlh'}, {t1: 'lhll', t2: 'lhll'},
+            {t1: 'llhh', t2: 'llhh'}, {t1: 'llhl', t2: 'llhl'}, {t1: 'lllh', t2: 'lllh'},
+            {t1: 'llll', t2: 'llll'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37k. Replace e by ∅: t1:e -> t2:∅ {2} (vocab he/e)', function() {
+        let grammar: Grammar = Seq(Vocab('t1', "he"), Vocab('t2', "h"),
+                                   Replace(t1("e"), t2(""),
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           false, false, 2, 2));
+        grammar = CountTape({t1: 3, t2: 1}, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 1});
+        const expectedResults: StringDict[] = [
+            {t1: 'ee'},  // equivalent to {t1: 'ee', t2: ''}
+            {t1: 'ehe', t2: 'h'},     // missing
+            {t1: 'eeh', t2: 'h'},
+            {t1: 'hee', t2: 'h'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+    });
+
 
     // Same tests with 2 'to'-tapes.
 
@@ -3647,6 +4315,4 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
-
 });
-
