@@ -370,6 +370,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
+    /*
     describe('2. ~(MatchFrom(t1>t2,ε)) (vocab hi)', function() {
         const grammar1: Grammar = Epsilon();
         let grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
@@ -380,7 +381,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         testGrammar(grammar, expectedResults);
-    });
+    }); */
 
     describe('3. ~(MatchFrom(t1>t2,t1:h+t1:i))', function() {
         const grammar1: Grammar = Seq(t1("h"), t1("i"));
@@ -402,7 +403,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
         grammar = CountTape(2, grammar);
 
-        let resultsGrammar: Grammar = Not(Seq(t1("hi"), t2("hi"), t4("gg")));
+        let resultsGrammar: Grammar = Not(Seq(t1("hi"), t2("hi"), t4("g")));
         resultsGrammar = CountTape(2, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
@@ -418,7 +419,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
         grammar = CountTape(2, grammar);
         
-        let resultsGrammar: Grammar = Not(Seq(t1("hi"), t2("hi"), t4("gg")));
+        let resultsGrammar: Grammar = Not(Seq(t1("hi"), t2("hi"), t4("g")));
         resultsGrammar = CountTape(2, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
@@ -576,7 +577,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
         grammar = CountTape(2, grammar);
 
-        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("gg")));
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("g")));
         resultsGrammar = CountTape(2, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
@@ -592,7 +593,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
         grammar = CountTape(2, grammar);
 
-        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("gg")));
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("g")));
         resultsGrammar = CountTape(2, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
@@ -675,8 +676,8 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
         grammar = CountTape(3, grammar);
 
-        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi"), t4("gg")),
-                                              Seq(t1("hhi"), t2("hhi"), t4("gg"))));
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi"), t4("g")),
+                                              Seq(t1("hhi"), t2("hhi"), t4("g"))));
         resultsGrammar = CountTape(3, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
@@ -693,8 +694,8 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
         grammar = CountTape(3, grammar);
 
-        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi"), t4("gg")),
-                                              Seq(t1("hhi"), t2("hhi"), t4("gg"))));
+        let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi"), t4("g")),
+                                              Seq(t1("hhi"), t2("hhi"), t4("g"))));
         resultsGrammar = CountTape(3, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);

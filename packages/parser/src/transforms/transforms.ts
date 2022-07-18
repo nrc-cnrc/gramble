@@ -9,7 +9,7 @@ import {
     SequenceGrammar, UnitTestGrammar,
     UnresolvedEmbedGrammar, StartsGrammar, 
     EndsGrammar, ContainsGrammar, CountGrammar, 
-    CountTapeGrammar, CounterStack, JoinRuleGrammar
+    CountTapeGrammar, CounterStack, JoinRuleGrammar, MatchFromGrammar
 } from "../grammars";
 
 /**
@@ -102,6 +102,11 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
     public transformMatch(g: MatchGrammar, ns: NsGrammar, args: T): Grammar {
         const newChild = g.child.accept(this, ns, args);
         return new MatchGrammar(g.cell, newChild, g.relevantTapes);
+    }
+  
+    public transformMatchFrom(g: MatchFromGrammar, ns: NsGrammar, args: T): Grammar {
+        const newChild = g.child.accept(this, ns, args);
+        return new MatchFromGrammar(g.cell, newChild, g.fromTape, g.toTape);
     }
 
     public transformReplace(g: ReplaceGrammar, ns: NsGrammar, args: T): Grammar {

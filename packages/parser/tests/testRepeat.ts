@@ -21,6 +21,11 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "oooo"}]);
     });
 
+    describe('Between 1 and 4 empty strings: t1:o{1,4}', function() {
+        const grammar = Rep(t1(""), 1, 4);
+        testGrammar(grammar, [{}]);
+    });
+
     describe('Between 1 and 4 Os: t1:o{1,4}, plus a t2:foo', function() {
         const grammar = Seq(Rep(t1("o"), 1, 4), t2("foo"));
         testGrammar(grammar, [{t1: "o", t2: "foo"},
@@ -280,6 +285,26 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(t1("h"), Rep(Epsilon()));
         testHasTapes(grammar, ['t1']);
         testGrammar(grammar, [{'t1': 'h'}]);
+    });
+
+    describe('(t1:"h"+t2:"")*', function() {
+        const grammar = Rep(Seq(t1("h"), t2("")), 0, 4);
+        testHasTapes(grammar, ['t1', 't2']);
+        testGrammar(grammar, [{},
+                              {t1: "h"},
+                              {t1: "hh"},
+                              {t1: "hhh"},
+                              {t1: "hhhh"}]);
+    });
+
+    describe('(t2:""+t1:"h")*', function() {
+        const grammar = Rep(Seq(t2(""), t1("h")), 0, 4);
+        testHasTapes(grammar, ['t1', 't2']);
+        testGrammar(grammar, [{},
+                              {t1: "h"},
+                              {t1: "hh"},
+                              {t1: "hhh"},
+                              {t1: "hhhh"}]);
     });
 
     describe('Nested repetition: (t1(ba){1,2}){2,3}', function() {

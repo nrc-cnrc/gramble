@@ -488,19 +488,9 @@ class DotExpr extends Expr {
 
         const tape = tapeNS.get(tapeName);
 
-        if (target == ANY_CHAR_STR) {
-            for (const c of tape.vocab) {
-                yield [c, EPSILON];
-            }
-            return;
+        for (const c of tape.expandStrings(target)) {
+            yield [c, EPSILON];
         }
-
-        if (!tape.inVocab([target])) {
-            return;
-        }
-        
-        yield [target, EPSILON];
-
     }
 }
 
@@ -565,15 +555,12 @@ class CharSetExpr extends Expr {
             return;
         }
 
-        if (target == ANY_CHAR_STR) {
-            for (const c of this.chars) {
-                yield [c, EPSILON];
+        const tape = tapeNS.get(tapeName);
+        for (const c of tape.expandStrings(target)) {
+            if (this.chars.indexOf(c) == -1) {
+                continue;
             }
-            return;
-        }
-
-        if (this.chars.indexOf(target) != -1) {
-            yield [target, EPSILON];
+            yield [c, EPSILON];
         }
     }
 }
@@ -627,19 +614,9 @@ class DotStarExpr extends Expr {
         }
         
         const tape = tapeNS.get(tapeName);
-
-        if (target == ANY_CHAR_STR) {
-            for (const c of tape.vocab) {
-                yield [c, this];
-            }
-            return;
+        for (const c of tape.expandStrings(target)) {
+            yield [c, this];
         }
-
-        if (!tape.inVocab([target])) {
-            return;
-        }
-        
-        yield [target, this];
     }
    
 }
@@ -1498,6 +1475,89 @@ class NegationExpr extends UnaryExpr {
     }
 }
 
+export class MatchFromExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public fromTape: string,
+        public toTape: string
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `M(${this.child.id})`;
+    }
+
+    public delta(
+        tapeName: string,
+        tapeNS: TapeNamespace, 
+        stack: CounterStack,
+        opt: GenOptions
+    ): Expr {
+        if (tapeName == this.toTape) {
+            const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
+            const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
+            const nextExpr = this.child.delta(newTapeName, newTapeNS, stack, opt);
+            return constructMatchFrom(nextExpr, this.fromTape, this.toTape);  
+        }
+        const nextExpr = this.child.delta(tapeName, tapeNS, stack, opt);
+        return constructMatchFrom(nextExpr, this.fromTape, this.toTape);
+    }
+
+    public *bitsetDeriv(
+        tapeName: string, 
+        target: BitsetToken,
+        tapeNS: TapeNamespace,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
+        throw new Error("Method not implemented.");
+    }
+    
+    public *stringDeriv(
+        tapeName: string,
+        target: string, 
+        tapeNS: TapeNamespace,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[Token, Expr]> {
+        
+        // if it's a tape that isn't our to/from, just forward and wrap 
+        if (tapeName != this.fromTape && tapeName != this.toTape) {
+            for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+                const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
+                yield [cTarget, successor];
+            }
+            return;
+        }
+
+        // tapeName is either our toTape or fromTape.  The only differences
+        // between these two cases is (a) we buffer the literal on the opposite
+        // tape, that's what oppositeTape is below and (b) when tapeName is our
+        // toTape, we have to act like a toTape->fromTape rename.  
+
+        const oppositeTape = (tapeName == this.fromTape) ? this.toTape : this.fromTape;
+        const fromTape = tapeNS.get(this.fromTape);
+        const toTape = tapeNS.get(this.toTape);
+
+        // We ask for a namespace rename either way; when tapeName == fromTape,
+        // this is just a no-op
+        const newTapeNS = tapeNS.rename(tapeName, this.fromTape); 
+
+        for (const [cTarget, cNext] of 
+                this.child.deriv(this.fromTape, target, newTapeNS, stack, opt)) {
+            const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
+            for (const c of toTape.expandStrings(cTarget as string, fromTape)) {
+                const lit = constructLiteral(oppositeTape, [c]);
+                yield [c, constructPrecede(lit, successor)];
+            }
+        }
+
+        
+    }
+}
+
 export class MatchExpr extends UnaryExpr {
 
     constructor(
@@ -1577,9 +1637,7 @@ export class MatchExpr extends UnaryExpr {
 
         for (const [nextTarget, nextExpr] of results) {
             
-            const cs = (nextTarget == ANY_CHAR_STR) 
-                        ? tape.vocab
-                        : [nextTarget];
+            const cs = tape.expandStrings(nextTarget);
 
             for (const c of cs) {
                 let bufferedNext: Expr = constructMatch(nextExpr, this.tapes);
@@ -1819,10 +1877,9 @@ export function constructUniverse(
 
 export function constructMatch(
     child: Expr,
-    tapes: Set<string>,
-    buffers: {[key: string]: Expr} = {}
+    tapes: Set<string>
 ): Expr {
-    if (child instanceof EpsilonExpr && Object.values(buffers).every(b=>b instanceof EpsilonExpr)) {
+    if (child instanceof EpsilonExpr) {
         return child;
     }
     if (child instanceof NullExpr) {
@@ -1831,12 +1888,32 @@ export function constructMatch(
     return new MatchExpr(child, tapes);
 }
 
+export function constructMatchFrom(
+    child: Expr,
+    fromTape: string,
+    ...toTapes: string[]
+): Expr {
+    if (child instanceof EpsilonExpr) {
+        return child;
+    }
+    if (child instanceof NullExpr) {
+        return child;
+    }
+    let result = child;
+    for (const tape of toTapes) {
+        result = new MatchFromExpr(result, fromTape, tape);
+    }
+    return result;
+}
+
+/*
 export function constructMatchFrom(state: Expr, firstTape: string, ...otherTapes: string[]): Expr {
     // Construct a Match for multiple tapes given a expression for the first tape. 
     return constructMatch(constructSequence(state,
                             ...otherTapes.map((t: string) => constructRename(state, firstTape, t))),
                           new Set([firstTape, ...otherTapes]));
-}
+} */
+
 
 export function constructRename(
     child: Expr, 

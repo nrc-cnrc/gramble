@@ -54,7 +54,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{'t1': 'h', 't2': 'h'},
                           {'t1': 'i', 't2': 'i'}])
     });
-    
+
     describe('2c: matching t1:h|i and t2:[hi]', function() {
         const grammar = Match(Seq(Uni(t1("h"), t1("i")), 
                         CharSet("t2", ["h", "i"])), "t1", "t2");

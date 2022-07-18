@@ -72,6 +72,7 @@ export interface GrammarTransform<T> extends Transform {
     transformEnds(g: EndsGrammar, ns: NsGrammar, args: T): Grammar;
     transformContains(g: ContainsGrammar, ns: NsGrammar, args: T): Grammar;
     transformMatch(g: MatchGrammar, ns: NsGrammar, args: T): Grammar;
+    transformMatchFrom(g: MatchFromGrammar, ns: NsGrammar, args: T): Grammar;
     transformReplace(g: ReplaceGrammar, ns: NsGrammar, args: T): Grammar;
     transformEmbed(g: EmbedGrammar, ns: NsGrammar, args: T): Grammar;
     transformUnresolvedEmbed(g: UnresolvedEmbedGrammar, ns: NsGrammar, args: T): Grammar;
@@ -1030,6 +1031,77 @@ export class HideGrammar extends UnaryGrammar {
     }
 }
 
+export class MatchFromGrammar extends UnaryGrammar {
+
+    constructor(
+        cell: Cell,
+        child: Grammar,
+        public fromTape: string,
+        public toTape: string,
+        public vocabBypass: boolean = false
+    ) {
+        super(cell, child);
+    }
+
+    public get id(): string {
+        return `Match(${this.fromTape}->${this.toTape}:${this.child.id})`;
+    }
+
+    /**
+     * For the purposes of calculating what tapes exist, we consider
+     * both MatchGrammar.fromTape and .toTape to exist even if they 
+     * appear nowhere else in the grammar.
+     */
+    public calculateTapes(stack: CounterStack): string[] {
+        if (this._tapes == undefined) {
+            this._tapes = listUnique([
+                ...this.child.calculateTapes(stack),
+                this.fromTape,
+                this.toTape
+            ]);
+        }
+        return this._tapes;
+    }
+
+    public collectVocab(
+        tapeName: string,
+        tapeNS: TapeNamespace, 
+        symbolsVisited: Set<string>
+    ): void { 
+        this.child.collectVocab(tapeName, tapeNS, symbolsVisited);
+
+        if (tapeName == this.toTape) {
+            let newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
+            let newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
+            this.child.collectVocab(newTapeName, newTapeNS, symbolsVisited);
+        }
+    }
+
+    public getVocabCopyEdges(
+        tapeNS: TapeNamespace,
+        symbolsVisited: Set<string>
+    ): [string, string][] {
+        const results = super.getVocabCopyEdges(tapeNS, symbolsVisited);
+        if (this.vocabBypass) {    
+            results.push([this.fromTape, this.toTape]);
+            //results.push([this.toTape, this.fromTape]);
+        }
+        return results;
+    }
+    
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformMatchFrom(this, ns, args);
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const childExpr = this.child.constructExpr(symbols);
+            this.expr = constructMatchFrom(childExpr, this.fromTape, this.toTape);
+        }
+        return this.expr;
+    }
+}
+
 export class MatchGrammar extends UnaryGrammar {
 
     constructor(
@@ -1551,10 +1623,16 @@ export function MatchDotStar2(...tapes: string[]): MatchGrammar {
     return MatchDotRep2(0, Infinity, ...tapes)
 }
 
-export function MatchFrom(state:Grammar, firstTape: string, ...otherTapes: string[]): MatchGrammar {
+export function MatchFrom(state:Grammar, fromTape: string, ...toTapes: string[]): Grammar {
+    let result = state;
+    for (const tape of toTapes) {
+        result = new MatchFromGrammar(new DummyCell(), result, fromTape, tape);
+    }
+    return result;
+
     // Construct a Match for multiple tapes given a grammar for the first tape. 
-    return Match(Seq(state, ...otherTapes.map((t: string) => Rename(state, firstTape, t))),
-                 firstTape, ...otherTapes);
+    //return Match(Seq(state, ...otherTapes.map((t: string) => Rename(state, firstTape, t))),
+    //             firstTape, ...otherTapes);
 }
 
 export function Rename(child: Grammar, fromTape: string, toTape: string): RenameGrammar {
