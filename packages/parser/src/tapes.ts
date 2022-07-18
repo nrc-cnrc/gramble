@@ -44,6 +44,40 @@ import {
     public isEmpty(): boolean {
         return this.bits.isEmpty();
     }
+
+    public entangle(entanglement: number): EntangledToken {
+        return new EntangledToken(this.bits, entanglement)
+    }
+}
+
+export class EntangledToken extends BitsetToken {
+
+    constructor(
+        bits: BitSet,
+        public entanglement: number
+    ) { 
+        super(bits)
+    }
+
+    public and(other: BitsetToken): BitsetToken {
+        const bits = this.bits.and(other.bits);
+        return new EntangledToken(bits, this.entanglement);
+    }
+
+    public andNot(other: BitsetToken): BitsetToken {
+        const bits = this.bits.andNot(other.bits);
+        return new EntangledToken(bits, this.entanglement);
+    }
+
+    public or(other: BitsetToken): BitsetToken {
+        const bits = this.bits.or(other.bits);
+        return new EntangledToken(bits, this.entanglement);
+    }
+
+    public clone(): BitsetToken {
+        return new EntangledToken(this.bits.clone(), this.entanglement);
+    }
+
 }
 
 const ANY_CHAR_BITSET: BitsetToken = new BitsetToken(new BitSet().flip());
@@ -72,7 +106,7 @@ export class OutputTrie {
     ): StringDict[] {
 
         let results: StringDict[] = [{}];
-
+        let entanglementRegistry: {[key: number]: BitSet} = {};
         let current: OutputTrie = this;
 
         // step backward through the current object and its prevs, building 
@@ -84,7 +118,20 @@ export class OutputTrie {
             const tape = tapeNS.get(current.tapeName);
             for (const result of results) {
                 const oldStr = (current.tapeName in result) ? result[current.tapeName] : "";
-                const strings = this.getStringsFromToken(tape, current.token);
+                
+                if (current.token instanceof EntangledToken) {
+                    const e: number = current.token.entanglement;
+                    if (e in entanglementRegistry) {
+                        entanglementRegistry[e] = entanglementRegistry[e].and(current.token.bits);
+                    } else {
+                        entanglementRegistry[e] = current.token.bits;
+                    }
+                }
+                
+                const strings = this.getStringsFromToken(tape, current.token, entanglementRegistry);
+                if (current.token instanceof EntangledToken) {
+                    console.log(`entangledToken value=${strings}, entanglement=${current.token.entanglement}`)
+                }
                 if (opt.random) {
                     shuffleArray(strings);
                 }
@@ -107,11 +154,16 @@ export class OutputTrie {
 
     public getStringsFromToken(
         tape: Tape, 
-        t: Token
+        t: Token,
+        entanglementRegistry: {[key: number]: BitSet}
     ): string[] {
+        if (t instanceof EntangledToken) {
+            const bits = entanglementRegistry[t.entanglement];
+            return tape.fromBits(bits);
+        }
         if (t instanceof BitsetToken) {
             return tape.fromToken(t);
-        }
+        } 
         return [t]; // if it's not a Token it's already a string
     }
 }
@@ -186,11 +238,13 @@ export interface Tape {
     readonly vocab: string[];
     readonly globalName: string;
     expandStrings(token: string, other?: Tape | undefined): string[];
+    restrictToVocab(token: BitsetToken): BitsetToken;
     vocabIsSubsetOf(other: Tape): boolean;
     inVocab(strs: string[]): boolean;
     match(str1: BitsetToken, str2: BitsetToken): BitsetToken;
     tokenize(str: string): string[];
     toToken(chars: string[]): BitsetToken;
+    fromBits(bits: BitSet): string[];
     fromToken(token: BitsetToken): string[];
 
 }
@@ -211,7 +265,7 @@ class BitsetTape implements Tape {
         return this.mask.cardinality();
     }
 
-    expandStrings(
+    public expandStrings(
         token: string, 
         other: Tape | undefined = undefined
     ): string[] {
@@ -229,6 +283,10 @@ class BitsetTape implements Tape {
             return [];
         }
         return [token];
+    }
+
+    public restrictToVocab(token: BitsetToken): BitsetToken {
+        return token.and(this.mask);
     }
 
     public inVocab(chars: string[]): boolean {
@@ -262,7 +320,7 @@ class BitsetTape implements Tape {
     }
 
     public match(str1: BitsetToken, str2: BitsetToken): BitsetToken {
-        return new BitsetToken(str1.bits.and(str2.bits));
+        return str1.and(str2);
     }
 
     public tokenize(
@@ -291,7 +349,7 @@ class BitsetTape implements Tape {
         return result;
     }
 
-    protected fromBits(bits: BitSet): string[] {
+    public fromBits(bits: BitSet): string[] {
         const result: string[] = [];
         for (const index of bits.toArray()) {
             const char = this._vocab.getString(index);

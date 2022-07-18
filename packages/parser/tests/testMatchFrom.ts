@@ -28,6 +28,7 @@ const DEFAULT_MAX_RECURSION: number = 4;
 
 describe(`${path.basename(module.filename)}`, function() {
 
+    /*
     // MatchFrom tests with two tapes.
 
     // 1. MatchFrom t1, t2, t1:hello
@@ -173,6 +174,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
+   
     // 11. MatchFrom t1, t2, (t1:hello+t1:kitty)|(t1:goodbye+t1:world)
     describe('11. MatchFrom t1, t2, (t1:hello+t1:kitty)|(t1:goodbye+t1:world)', function() {
         const grammar1: Grammar = Uni(Seq(t1("hello"), t1("kitty")),
@@ -186,6 +188,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasVocab(grammar, {t1: 13, t2: 13});
         testGrammar(grammar, expectedResults);
     });
+    */
 
     // 12. MatchFrom t1, t2, t1:hi+t1:.
     describe('12. MatchFrom t1, t2, t1:hi+t1:.', function() {
@@ -200,6 +203,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
+    /*
     // 13. MatchFrom t1, t2, Join t1:hello & t1:.ello
     describe('13. MatchFrom t1, t2, Join t1:hello & t1:.ello', function() {
         const grammar1: Grammar = Join(t1("hello"), Seq(Any("t1"), t1('ello')));
@@ -922,4 +926,5 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar3, expectedResults);
     });
 
+    */
 });

@@ -1,5 +1,7 @@
 import { ANY_CHAR_STR, DIRECTION_LTR, Gen, GenOptions, setDifference } from "./util";
-import { Tape, BitsetToken, TapeNamespace, renameTape, Token } from "./tapes";
+import { Tape, BitsetToken, TapeNamespace, renameTape, Token, EntangledToken } from "./tapes";
+
+type DerivResult = Gen<[Token, Expr]>;
 
 /**
  * This is the parsing/generation engine that underlies Gramble.
@@ -223,7 +225,7 @@ export abstract class Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         if (target instanceof BitsetToken) {
             yield* this.bitsetDeriv(tapeName, target, tapeNS, stack, opt);
             return;
@@ -237,7 +239,7 @@ export abstract class Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         throw new Error("not implemented");
     }
 
@@ -247,7 +249,7 @@ export abstract class Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         throw new Error("not implemented");
     }
         
@@ -271,7 +273,7 @@ export abstract class Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         if (target instanceof BitsetToken) {
             yield* this.disjointBitsetDeriv(tapeName, target, tapeNS, stack, opt);
             return;
@@ -285,13 +287,20 @@ export abstract class Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         const results: {[c: string]: Expr[]} = {};
 
         const tape = tapeNS.get(tapeName);
 
         for (const [childToken, childExpr] of
                 this.deriv(tapeName, target, tapeNS, stack, opt)) {
+
+            // don't perform this operation on entangled tokens
+            if (childToken instanceof EntangledToken) {
+                yield [childToken, childExpr];
+                continue;
+            }
+
             let c:string;
             for (c of tape.fromToken(childToken as BitsetToken)) {
                 if (!(c in results)) {
@@ -315,7 +324,7 @@ export abstract class Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         const results: {[c: string]: Expr[]} = {};
         for (const [childToken, childExpr] of
             this.deriv(tapeName, target, tapeNS, stack, opt)) {
@@ -401,7 +410,7 @@ export class EpsilonExpr extends Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> { }
+    ): DerivResult { }
 
 }
 
@@ -429,7 +438,7 @@ export class NullExpr extends Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> { }
+    ): DerivResult { }
 
 }
 
@@ -468,7 +477,7 @@ class DotExpr extends Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         if (tapeName != this.tapeName) {
             return;
         }
@@ -481,7 +490,7 @@ class DotExpr extends Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> { 
+    ): DerivResult { 
         if (tapeName != this.tapeName) {
             return;
         }
@@ -491,6 +500,64 @@ class DotExpr extends Expr {
         for (const c of tape.expandStrings(target)) {
             yield [c, EPSILON];
         }
+    }
+}
+
+let ENTANGLE_INDEX: number = 0;
+
+class EntangleExpr extends Expr {
+
+    constructor(
+        public tapeName: string,
+        public token: EntangledToken
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        return `(bits)`;
+    }
+
+    public delta(
+        tapeName: string,
+        tapeNS: TapeNamespace, 
+        stack: CounterStack,
+        opt: GenOptions
+    ): Expr {
+        if (tapeName != this.tapeName) {
+            return this;
+        }
+        return NULL;
+    }
+    
+    public *bitsetDeriv(
+        tapeName: string, 
+        target: BitsetToken,
+        tapeNS: TapeNamespace,
+        stack: CounterStack,
+        opt: GenOptions
+    ): DerivResult {
+        if (tapeName != this.tapeName) {
+            return;
+        }
+
+        const tape = tapeNS.get(tapeName);
+        const result = tape.match(this.token, target);
+        if (result.isEmpty()) {
+            return;
+        }
+        const entangledResult = result.entangle(this.token.entanglement);
+        yield [entangledResult, EPSILON];
+    }
+
+    public *stringDeriv(
+        tapeName: string,
+        target: string, 
+        tapeNS: TapeNamespace,
+        stack: CounterStack,
+        opt: GenOptions
+    ): DerivResult {
+        throw new Error("not implemented")
     }
 }
 
@@ -529,7 +596,7 @@ class CharSetExpr extends Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         if (tapeName != this.tapeName) {
             return;
         }
@@ -550,7 +617,7 @@ class CharSetExpr extends Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         if (tapeName != this.tapeName) {
             return;
         }
@@ -595,7 +662,7 @@ class DotStarExpr extends Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         if (tapeName != this.tapeName) {
             return;
         }
@@ -608,7 +675,7 @@ class DotStarExpr extends Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         if (tapeName != this.tapeName) {
             return;
         }
@@ -666,7 +733,7 @@ class LiteralExpr extends Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
 
         if (this.index >= this.text.length) {
             return;
@@ -694,7 +761,7 @@ class LiteralExpr extends Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
 
         if (this.index >= this.text.length) {
             return;
@@ -759,7 +826,7 @@ class RTLLiteralExpr extends LiteralExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
 
         if (this.index < 0) {
             return;
@@ -787,7 +854,7 @@ class RTLLiteralExpr extends LiteralExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
 
         if (this.index < 0) {
             return;
@@ -857,7 +924,7 @@ class ConcatExpr extends BinaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
 
         const [c1, c2] = (DIRECTION_LTR) ?
                         [this.child1, this.child2] :
@@ -906,7 +973,7 @@ export class UnionExpr extends Expr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         for (const child of this.children) {
             yield* child.deriv(tapeName, target, tapeNS, stack, opt);
         }
@@ -937,7 +1004,7 @@ class IntersectExpr extends BinaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         for (const [c1target, c1next] of 
             this.child1.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
 
@@ -982,7 +1049,7 @@ class FilterExpr extends BinaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
 
         if (!this.tapes.has(tapeName)) {
             for (const [c1target, c1next] of 
@@ -1038,7 +1105,7 @@ class JoinExpr extends BinaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
 
         if (!this.tapes2.has(tapeName)) {
             for (const [c1target, c1next] of 
@@ -1130,7 +1197,7 @@ class JoinExpr extends BinaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
 
         if (stack.exceedsMax(this.symbolName)) {
             return;
@@ -1201,7 +1268,7 @@ export class CountExpr extends UnaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         if (this.maxChars <= 0) {
             return;
         }
@@ -1242,7 +1309,7 @@ export class CountTapeExpr extends UnaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
 
         if (!(tapeName in this.maxChars)) {
             return;
@@ -1295,7 +1362,7 @@ class RepeatExpr extends UnaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
             const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
             yield [cTarget, constructPrecede(cNext, oneLess)];
@@ -1342,7 +1409,7 @@ class RenameExpr extends UnaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
 
         if (tapeName != this.toTape && tapeName == this.fromTape) {
             return;
@@ -1403,7 +1470,7 @@ class NegationExpr extends UnaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
 
         if (!this.tapes.has(tapeName)) {
             return;
@@ -1417,6 +1484,12 @@ class NegationExpr extends UnaryExpr {
 
         for (const [childText, childNext] of 
                 this.child.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
+            
+            // we can't yet handle negations of entanglements
+            if (childText instanceof EntangledToken) {
+                console.log(`warning, losing entanglement`)
+            }
+
             remainder = remainder.andNot(childText as BitsetToken);
             const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
             yield [childText, successor];
@@ -1439,7 +1512,7 @@ class NegationExpr extends UnaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
 
         if (!this.tapes.has(tapeName)) {
             return;
@@ -1511,8 +1584,43 @@ export class MatchFromExpr extends UnaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
-        throw new Error("Method not implemented.");
+    ): DerivResult {
+        
+        // if it's a tape that isn't our to/from, just forward and wrap 
+        if (tapeName != this.fromTape && tapeName != this.toTape) {
+            for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+                const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
+                yield [cTarget, successor];
+            }
+            return;
+        }
+
+        // tapeName is either our toTape or fromTape.  The only differences
+        // between these two cases is (a) we buffer the literal on the opposite
+        // tape, that's what oppositeTape is below and (b) when tapeName is our
+        // toTape, we have to act like a toTape->fromTape rename.  
+
+        const oppositeTapeName = (tapeName == this.fromTape) ? this.toTape : this.fromTape;
+        const oppositeTape = tapeNS.get(oppositeTapeName);
+        const fromTape = tapeNS.get(this.fromTape);
+        const toTape = tapeNS.get(this.toTape);
+
+        // We ask for a namespace rename either way; when tapeName == fromTape,
+        // this is just a no-op
+        const newTapeNS = tapeNS.rename(tapeName, this.fromTape); 
+
+        for (const [cTarget, cNext] of 
+                this.child.deriv(this.fromTape, target, newTapeNS, stack, opt)) {
+            const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
+            const maskedTarget = oppositeTape.restrictToVocab(cTarget as BitsetToken);
+            if (maskedTarget.isEmpty()) {
+                continue;
+            }
+            const entangleIndex = ENTANGLE_INDEX++;
+            const entangledTarget = maskedTarget.entangle(entangleIndex);
+            const lit = constructEntangle(oppositeTapeName, entangledTarget);
+            yield [entangledTarget, constructPrecede(lit, successor)];
+        }
     }
     
     public *stringDeriv(
@@ -1521,7 +1629,7 @@ export class MatchFromExpr extends UnaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         
         // if it's a tape that isn't our to/from, just forward and wrap 
         if (tapeName != this.fromTape && tapeName != this.toTape) {
@@ -1597,7 +1705,7 @@ export class MatchExpr extends UnaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         throw new Error("Method not implemented.");
     }
     
@@ -1607,7 +1715,7 @@ export class MatchExpr extends UnaryExpr {
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
+    ): DerivResult {
         
         if (!this.tapes.has(tapeName)) {
             // it's not a tape we're matching
@@ -1959,4 +2067,11 @@ export function constructJoin(c1: Expr, c2: Expr, tapes1: Set<string>, tapes2: S
         return c1;
     }
     return new JoinExpr(c1, c2, tapes1, tapes2);
+}
+
+export function constructEntangle(
+    tapeName: string, 
+    token: EntangledToken
+): Expr {
+    return new EntangleExpr(tapeName, token);
 }
