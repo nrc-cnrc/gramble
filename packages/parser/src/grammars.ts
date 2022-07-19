@@ -25,9 +25,11 @@ import {
 } from "./exprs";
 
 import { 
+    BitsetTape,
     renameTape,
     Tape, 
     TapeNamespace, 
+    VocabMap
 } from "./tapes";
 
 import { 
@@ -186,13 +188,19 @@ export abstract class Grammar {
      * @param stack What symbols we've already collected from, to prevent inappropriate recursion
      * @returns vocab 
      */
-    public collectAllVocab(tapeNS: TapeNamespace): void {
+    public collectAllVocab(vocab: VocabMap, tapeNS: TapeNamespace): void {
 
         // In all current invocations of this, calculateTapes has already been called.
         // But it memoizes, so there's no harm in calling it again for safety.
         const tapeNames = this.calculateTapes(new CounterStack(2));
         for (const tapeName of tapeNames) {
-            tapeNS.createTape(tapeName); // just in case it doesn't exist
+            const oldTape = tapeNS.attemptGet(tapeName);
+            if (oldTape == undefined) {
+                // make a new one if it doesn't exist
+                const newTape = new BitsetTape(tapeName, vocab);
+                tapeNS.set(tapeName, newTape);
+            }
+    
             this.collectVocab(tapeName, tapeNS, new Set());
         }
         const vocabCopyEdges = this.getVocabCopyEdges(tapeNS, new Set());
@@ -273,7 +281,8 @@ export abstract class Grammar {
 
     public getAllTapes(): TapeNamespace {
         const tapes = new TapeNamespace();
-        this.collectAllVocab(tapes);
+        const vocab = new VocabMap();
+        this.collectAllVocab(vocab, tapes);
         return tapes;
     }
 

@@ -100,6 +100,13 @@ export class OutputTrie {
         return new OutputTrieLeaf(tapeName, token, this);
     }
 
+    public toDictRecursive(
+        tapeNS: TapeNamespace,
+        opt: GenOptions
+    ): StringDict[] {
+        throw new Error("not implemented");
+    }
+
     public toDict(
         tapeNS: TapeNamespace,
         opt: GenOptions
@@ -180,7 +187,7 @@ export class OutputTrieLeaf extends OutputTrie {
 
 }
 
-class Vocab {
+export class VocabMap {
 
     public strToIndex: Map<string, number> = new Map();
     public indexToStr: Map<number, string> = new Map();
@@ -252,13 +259,13 @@ export interface Tape {
 /**
  * A tape containing strings; the basic kind of tape and (right now) the only one we really use.
  */
-class BitsetTape implements Tape {
+export class BitsetTape implements Tape {
 
     public mask: BitsetToken = NO_CHAR_BITSET.clone();
 
     constructor(
         public globalName: string,
-        protected _vocab: Vocab = new Vocab()
+        protected _vocab: VocabMap = new VocabMap()
      ) { }
 
     public get vocabSize(): number {
@@ -394,69 +401,53 @@ class BitsetTape implements Tape {
 }
 
 /**
- * TapeNamespace maintains the mappings between the tapeNames and actual Tapes,
- * which may vary within different contexts because of tape renaming.
+ * Namespace<T> is a convenience wrapper around Map<string, T> that
+ * allows us to rename a given item statelessly.  This is used for Tapes
+ * in particular.
  */
-export class TapeNamespace {
+export class Namespace<T> {
 
-    constructor(
-        public vocab: Vocab = new Vocab()
-    ) { }
+    protected entries: Map<string, T> = new Map();
 
-    public tapes: Map<string, Tape> = new Map();
-
-    public getTapeNames(): Set<string> {
-        return new Set(this.tapes.keys());
+    public getKeys(): Set<string> {
+        return new Set(this.entries.keys());
     }
 
-    public get(tapeName: string): Tape {
-        const result = this.tapes.get(tapeName);
+    public get(key: string): T {
+        const result = this.entries.get(key);
         if (result == undefined) {
-            throw new Error(`Cannot find tape ${tapeName} in tape namespace, ` +
-                `available tapes are [${[...this.tapes.keys()]}]`);
+            throw new Error(`Cannot find ${key} in namespace, ` +
+                `available: [${[...this.entries.keys()]}]`);
         }
         return result;
     }
 
-    public createTape(tapeName: string): Tape {
-        // don't remake it if it doesn't exist
-        const oldTape = this.tapes.get(tapeName);
-        if (oldTape != undefined) {
-            return oldTape;
-        }
-
-        // make a new one if it doesn't exist
-        const newTape = new BitsetTape(tapeName, this.vocab);
-        this.tapes.set(tapeName, newTape);
-        return newTape;
+    public attemptGet(key: string): T | undefined {
+        return this.entries.get(key);
     }
 
-    /*
-    public get size(): number {
-        return this.tapes.size;
-    } */
+    public set(key: string, value: T): void {
+        this.entries.set(key, value);
+    }
 
-    /*
-    public rename(fromTape: string, toTape: string): TapeNamespace {
-        return new RenamedTapeNamespace(this, fromTape, toTape);
-    } */
-
-    public rename(fromTape: string, toTape: string): TapeNamespace {
-        if (fromTape == toTape) {
+    public rename(fromKey: string, toKey: string): Namespace<T> {
+        if (fromKey == toKey) {
             return this;
         }
-        const result = new TapeNamespace(this.vocab);
-        for (const [tapeName, tape] of this.tapes.entries()) {
-            if (tapeName == toTape) {
+        const result = new Namespace<T>();
+        for (const [key, value] of this.entries.entries()) {
+            if (key == toKey) {
                 continue;
             }
-            const newTapeName = renameTape(tapeName, fromTape, toTape);
-            result.tapes.set(newTapeName, tape);
+            const newKey = (key == fromKey) ? toKey : key;
+            result.entries.set(newKey, value);
         }
         return result;
     }
 
 }
+
+export class TapeNamespace extends Namespace<Tape> { }
 
 /**
  * RenamedTapeNamespaces are necessary for RenameExpr to work properly.

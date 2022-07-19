@@ -13,7 +13,7 @@ import {
 } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
-import { TapeNamespace } from "./tapes";
+import { TapeNamespace, VocabMap } from "./tapes";
 import { Expr, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
@@ -45,6 +45,7 @@ export class Interpreter {
     // or compilation is going to require remembering what indices had previously
     // been assigned to which characters.  (we're not, at the moment, using that 
     // functionality, but even if we're not, it doesn't hurt to keep these around.)
+    public vocab: VocabMap = new VocabMap();
     public tapeNS: TapeNamespace = new TapeNamespace();
 
     // the symbol table doesn't change in between invocations because queries
@@ -104,7 +105,7 @@ export class Interpreter {
             this.grammar.calculateTapes(new CounterStack(2));
             // collect vocabulary
             this.tapeNS = new TapeNamespace();
-            this.grammar.collectAllVocab(this.tapeNS);
+            this.grammar.collectAllVocab(this.vocab, this.tapeNS);
 
         }, timeVerbose, "Collected vocab");
 
@@ -311,7 +312,7 @@ export class Interpreter {
             tapePriority = targetGrammar.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
-            targetGrammar.collectAllVocab(this.tapeNS);
+            targetGrammar.collectAllVocab(this.vocab, this.tapeNS);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
             //targetGrammar.copyVocab(this.tapeNS, new Set());
@@ -344,7 +345,7 @@ export class Interpreter {
             const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
-            targetComponent.collectAllVocab(this.tapeNS);
+            targetComponent.collectAllVocab(this.vocab, this.tapeNS);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
             //targetComponent.copyVocab(this.tapeNS, new Set());
