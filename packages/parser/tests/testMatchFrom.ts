@@ -188,7 +188,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasVocab(grammar, {t1: 13, t2: 13});
         testGrammar(grammar, expectedResults);
     });
-    */
 
     // 12. MatchFrom t1, t2, t1:hi+t1:.
     describe('12. MatchFrom t1, t2, t1:hi+t1:.', function() {
@@ -203,7 +202,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    /*
     // 13. MatchFrom t1, t2, Join t1:hello & t1:.ello
     describe('13. MatchFrom t1, t2, Join t1:hello & t1:.ello', function() {
         const grammar1: Grammar = Join(t1("hello"), Seq(Any("t1"), t1('ello')));
@@ -608,7 +606,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasVocab(grammar, {t1: 13, t2: 13, t3: 13});
         testGrammar(grammar, expectedResults);
     });
-
+    */
     // 12. MatchFrom t1, t2, t3, t1:hi+t1:.
     describe('12. MatchFrom t1, t2, t3, t1:hi+t1:.', function() {
         const grammar1: Grammar = Seq(t1("hi"), Any("t1"));
@@ -622,6 +620,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
+    /*
     // 13. MatchFrom t1, t2, t3, Join t1:hello & t1:.ello
     describe('13. MatchFrom t1, t2, t3, t1:hello & t1:.ello', function() {
         const grammar1: Grammar = Join(t1("hello"), Seq(Any("t1"), t1('ello')));
@@ -925,6 +924,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasVocab(grammar3, {t1: 4, t2: 4});
         testGrammar(grammar3, expectedResults);
     });
-
     */
+
 });

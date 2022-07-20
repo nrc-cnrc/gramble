@@ -100,13 +100,15 @@ export class OutputTrie {
         return new OutputTrieLeaf(tapeName, token, this);
     }
 
-    public toDictRecursive(
+    public toDict(
         tapeNS: TapeNamespace,
-        opt: GenOptions
+        opt: GenOptions,
+        bitNS: EntanglementRegistry = {}
     ): StringDict[] {
-        throw new Error("not implemented");
+        return [{}];
     }
 
+    /*
     public toDict(
         tapeNS: TapeNamespace,
         opt: GenOptions
@@ -157,16 +159,15 @@ export class OutputTrie {
         }
 
         return results;
-    } 
+    }  */
 
     public getStringsFromToken(
         tape: Tape, 
         t: Token,
-        entanglementRegistry: {[key: number]: BitSet}
+        entangleValues: EntanglementRegistry
     ): string[] {
-        if (t instanceof EntangledToken) {
-            const bits = entanglementRegistry[t.entanglement];
-            return tape.fromBits(bits);
+        if (t instanceof EntangledToken && t.entanglement in entangleValues) {
+            return [entangleValues[t.entanglement]];
         }
         if (t instanceof BitsetToken) {
             return tape.fromToken(t);
@@ -185,7 +186,52 @@ export class OutputTrieLeaf extends OutputTrie {
         super();
     }
 
+    public toDict(
+        tapeNS: TapeNamespace,
+        opt: GenOptions,
+        entangleValues: EntanglementRegistry = {}
+    ): StringDict[] {
+        console.log(`tape ${this.tapeName}`)
+        console.log(`entanglements = ${JSON.stringify(entangleValues)}`)
+
+        const results: StringDict[] = [];
+        const tape = tapeNS.get(this.tapeName);
+        const newStrs = this.getStringsFromToken(tape, this.token, entangleValues);
+        if (opt.random) {
+            shuffleArray(newStrs);
+        }
+        console.log(`possibilities: ${newStrs}`)
+
+        for (const newStr of newStrs) {
+            let prevResults: StringDict[] = [];
+            if (this.token instanceof EntangledToken && 
+                !(this.token.entanglement in entangleValues)) {
+                const newEntanglements: EntanglementRegistry = {};
+                Object.assign(newEntanglements, entangleValues);
+                newEntanglements[this.token.entanglement] = newStr;
+                prevResults = this.prev.toDict(tapeNS, opt, newEntanglements);
+            } else {
+                prevResults = this.prev.toDict(tapeNS, opt, entangleValues);
+            }
+
+            for (const prevResult of prevResults) {
+                const oldStr = (this.tapeName in prevResult) ?
+                                    prevResult[this.tapeName] : "";
+                const newResult: StringDict = {};
+                Object.assign(newResult, prevResult);
+                newResult[this.tapeName] = DIRECTION_LTR ?
+                                            oldStr + newStr :
+                                            newStr + oldStr;
+                results.push(newResult);
+            }
+        }
+        console.log(`results = ${JSON.stringify(results)}`)
+        return results;
+    }
+
 }
+
+type EntanglementRegistry = {[key: number]: string};
 
 export class VocabMap {
 
