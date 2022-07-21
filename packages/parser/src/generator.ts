@@ -1,5 +1,5 @@
 import { CounterStack, EpsilonExpr, Expr, NullExpr } from "./exprs";
-import { Token, OutputTrie, TapeNamespace } from "./tapes";
+import { Token, OutputTrie, TapeNamespace, BitsetToken, EntangledToken } from "./tapes";
 import { 
     ANY_CHAR_STR, BITSETS_ENABLED, Gen, 
     GenOptions, shuffleArray, StringDict, VERBOSE_DEBUG 

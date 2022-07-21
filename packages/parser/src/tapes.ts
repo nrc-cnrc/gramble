@@ -15,73 +15,133 @@ import {
  */
  export type Token = BitsetToken | string;
 
- export class BitsetToken {
+ 
+export abstract class BitsetToken {
+
+    public abstract and(other: BitsetToken): BitsetToken;
+    public abstract rightAnd(other: UnentangledToken): BitsetToken;
+    public abstract or(other: BitsetToken): BitsetToken;
+    public abstract rightOr(other: UnentangledToken): BitsetToken;
+    public abstract not(): BitsetToken;
+    public abstract get bits(): BitSet;
+    public abstract clone(): BitsetToken;
+    public abstract cardinality(): number;
+
+    public isEmpty(): boolean {
+        return this.cardinality() == 0;
+    }
+
+    public abstract get entanglements(): number[];
+
+    //andNot(other: IToken): IToken;
+}
+
+export class UnentangledToken extends BitsetToken {
  
     constructor(
         public bits: BitSet
-    ) { }
+    ) { 
+        super();
+    }
 
     public and(other: BitsetToken): BitsetToken {
-        return new BitsetToken(this.bits.and(other.bits));
+        return other.rightAnd(this);
     }
-
-    public andNot(other: BitsetToken): BitsetToken {
-        return new BitsetToken(this.bits.andNot(other.bits));
+    
+    public rightAnd(other: UnentangledToken): BitsetToken {
+        return new UnentangledToken(this.bits.and(other.bits));
     }
-
+    
     public or(other: BitsetToken): BitsetToken {
-        return new BitsetToken(this.bits.or(other.bits));
+        return other.rightOr(this);
+    }
+    
+    public rightOr(other: UnentangledToken): BitsetToken {
+        return new UnentangledToken(this.bits.or(other.bits));
+    }
+
+    public not(): BitsetToken {
+        return new UnentangledToken(this.bits.not());
     }
 
     public clone(): BitsetToken {
-        return new BitsetToken(this.bits.clone());
+        return new UnentangledToken(this.bits.clone());
     }
 
     public cardinality(): number {
         return this.bits.cardinality();
     }
 
-    public isEmpty(): boolean {
-        return this.bits.isEmpty();
+    public get entanglements(): number[] {
+        return [];
     }
 
-    public entangle(entanglement: number): EntangledToken {
-        return new EntangledToken(this.bits, entanglement)
-    }
 }
 
 export class EntangledToken extends BitsetToken {
 
+    protected entanglement: number;
+
     constructor(
-        bits: BitSet,
-        public entanglement: number
+        public child: BitsetToken,
+        entanglement: number | undefined = undefined
     ) { 
-        super(bits)
+        super();
+        this.entanglement = (entanglement != undefined) ? 
+                            entanglement : ENTANGLE_INDEX++
     }
 
-    public and(other: BitsetToken): BitsetToken {
-        const bits = this.bits.and(other.bits);
-        return new EntangledToken(bits, this.entanglement);
+    public and(other: BitsetToken): EntangledToken {
+        const newChild = this.child.and(other);
+        return new EntangledToken(newChild, this.entanglement);
     }
 
-    public andNot(other: BitsetToken): BitsetToken {
-        const bits = this.bits.andNot(other.bits);
-        return new EntangledToken(bits, this.entanglement);
+    public rightAnd(other: UnentangledToken): EntangledToken {
+        const newChild = this.child.rightAnd(other);
+        return new EntangledToken(newChild, this.entanglement);
+    }
+    
+    public or(other: BitsetToken): EntangledToken {
+        const newChild = this.child.or(other);
+        return new EntangledToken(newChild, this.entanglement);
     }
 
-    public or(other: BitsetToken): BitsetToken {
-        const bits = this.bits.or(other.bits);
-        return new EntangledToken(bits, this.entanglement);
+    public rightOr(other: UnentangledToken): EntangledToken {
+        const newChild = this.child.rightOr(other);
+        return new EntangledToken(newChild, this.entanglement);
+    }
+    
+    public not(): BitsetToken {
+        return new EntangledToken(this.child.not(), this.entanglement);
     }
 
-    public clone(): BitsetToken {
-        return new EntangledToken(this.bits.clone(), this.entanglement);
+    public get bits(): BitSet {
+        return this.child.bits;
+    }
+
+    public cardinality(): number {
+        return this.child.cardinality();
+    }
+
+    public clone(): EntangledToken {
+        return new EntangledToken(this.child.clone(), this.entanglement);
+    }
+
+    public entangle(other: BitsetToken): EntangledToken {
+        return new EntangledToken(other, this.entanglement);
+    }
+    
+    public get entanglements(): number[] {
+        return [this.entanglement, ...this.child.entanglements];
     }
 
 }
 
-const ANY_CHAR_BITSET: BitsetToken = new BitsetToken(new BitSet().flip());
-const NO_CHAR_BITSET: BitsetToken = new BitsetToken(new BitSet());
+let ENTANGLE_INDEX: number = 0;
+
+
+const ANY_CHAR_BITSET: BitsetToken = new UnentangledToken(new BitSet().flip());
+const NO_CHAR_BITSET: BitsetToken = new UnentangledToken(new BitSet());
 
 /**
  * OutputTrie
@@ -166,8 +226,16 @@ export class OutputTrie {
         t: Token,
         entangleValues: EntanglementRegistry
     ): string[] {
-        if (t instanceof EntangledToken && t.entanglement in entangleValues) {
-            return [entangleValues[t.entanglement]];
+        if (t instanceof EntangledToken) { 
+            let result = t.clone();
+            for (const entanglement of t.entanglements) {
+                if (entanglement in entangleValues) {
+                    const c = entangleValues[entanglement];
+                    const resolution = tape.toToken([c]);
+                    result = result.and(resolution);
+                }
+            }
+            return tape.fromToken(result);
         }
         if (t instanceof BitsetToken) {
             return tape.fromToken(t);
@@ -191,24 +259,21 @@ export class OutputTrieLeaf extends OutputTrie {
         opt: GenOptions,
         entangleValues: EntanglementRegistry = {}
     ): StringDict[] {
-        console.log(`tape ${this.tapeName}`)
-        console.log(`entanglements = ${JSON.stringify(entangleValues)}`)
-
         const results: StringDict[] = [];
         const tape = tapeNS.get(this.tapeName);
         const newStrs = this.getStringsFromToken(tape, this.token, entangleValues);
         if (opt.random) {
             shuffleArray(newStrs);
         }
-        console.log(`possibilities: ${newStrs}`)
 
         for (const newStr of newStrs) {
             let prevResults: StringDict[] = [];
-            if (this.token instanceof EntangledToken && 
-                !(this.token.entanglement in entangleValues)) {
+            if (this.token instanceof EntangledToken) { 
                 const newEntanglements: EntanglementRegistry = {};
                 Object.assign(newEntanglements, entangleValues);
-                newEntanglements[this.token.entanglement] = newStr;
+                for (const entanglement of this.token.entanglements) {
+                    newEntanglements[entanglement] = newStr;
+                }
                 prevResults = this.prev.toDict(tapeNS, opt, newEntanglements);
             } else {
                 prevResults = this.prev.toDict(tapeNS, opt, entangleValues);
@@ -225,7 +290,6 @@ export class OutputTrieLeaf extends OutputTrie {
                 results.push(newResult);
             }
         }
-        console.log(`results = ${JSON.stringify(results)}`)
         return results;
     }
 
@@ -436,7 +500,7 @@ export class BitsetTape implements Tape {
             if (char == ANY_CHAR_STR) {
                 return this.any;
             }
-            result = result.or(new BitsetToken(this.toBits(char)));
+            result = result.or(new UnentangledToken(this.toBits(char)));
         }
         return result.and(this.mask);
     }

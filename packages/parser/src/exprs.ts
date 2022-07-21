@@ -503,8 +503,6 @@ class DotExpr extends Expr {
     }
 }
 
-let ENTANGLE_INDEX: number = 0;
-
 class EntangleExpr extends Expr {
 
     constructor(
@@ -546,8 +544,7 @@ class EntangleExpr extends Expr {
         if (result.isEmpty()) {
             return;
         }
-        const entangledResult = result.entangle(this.token.entanglement);
-        yield [entangledResult, EPSILON];
+        yield [result, EPSILON];
     }
 
     public *stringDeriv(
@@ -1490,7 +1487,8 @@ class NegationExpr extends UnaryExpr {
                 console.log(`warning, losing entanglement`)
             }
 
-            remainder = remainder.andNot(childText as BitsetToken);
+            const complement = (childText as BitsetToken).not();
+            remainder = remainder.and(complement);
             const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
             yield [childText, successor];
         }
@@ -1529,7 +1527,8 @@ class NegationExpr extends UnaryExpr {
         for (const [childText, childNext] of 
                 this.child.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
             const childToken = tape.toToken([childText as string]);
-            remainder = remainder.andNot(childToken);
+            const complement = childToken.not();
+            remainder = remainder.and(complement);
             const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
             yield [childText, successor];
         }
@@ -1616,8 +1615,7 @@ export class MatchFromExpr extends UnaryExpr {
             if (maskedTarget.isEmpty()) {
                 continue;
             }
-            const entangleIndex = ENTANGLE_INDEX++;
-            const entangledTarget = maskedTarget.entangle(entangleIndex);
+            const entangledTarget = new EntangledToken(maskedTarget);
             const lit = constructEntangle(oppositeTapeName, entangledTarget);
             yield [entangledTarget, constructPrecede(lit, successor)];
         }
