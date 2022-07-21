@@ -31,6 +31,15 @@ export abstract class BitsetToken {
         return this.cardinality() == 0;
     }
 
+    public reEntangle(entanglements: number[]): BitsetToken {
+        if (entanglements.length == 0) {
+            return this;
+        }
+        const child = this.reEntangle(entanglements.slice(1));
+        return new EntangledToken(child, entanglements[0]);
+    }
+
+    public abstract disentangle(): [UnentangledToken, number[]];
     public abstract get entanglements(): number[];
 
     //andNot(other: IToken): IToken;
@@ -70,6 +79,10 @@ export class UnentangledToken extends BitsetToken {
 
     public cardinality(): number {
         return this.bits.cardinality();
+    }
+
+    public disentangle(): [UnentangledToken, number[]] {
+        return [this, []];
     }
 
     public get entanglements(): number[] {
@@ -129,6 +142,11 @@ export class EntangledToken extends BitsetToken {
 
     public entangle(other: BitsetToken): EntangledToken {
         return new EntangledToken(other, this.entanglement);
+    }
+
+    public disentangle(): [UnentangledToken, number[]] {
+        const [c, e] = this.child.disentangle();
+        return [c, [this.entanglement, ...e]];
     }
     
     public get entanglements(): number[] {

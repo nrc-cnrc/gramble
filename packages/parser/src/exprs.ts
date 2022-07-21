@@ -439,7 +439,6 @@ export class NullExpr extends Expr {
         stack: CounterStack,
         opt: GenOptions
     ): DerivResult { }
-
 }
 
 
@@ -938,6 +937,7 @@ class ConcatExpr extends BinaryExpr {
             yield [c2target, constructPrecede(c1next, c2next)];
         }
     }
+
 }
 
 export class UnionExpr extends Expr {
@@ -1012,6 +1012,7 @@ class IntersectExpr extends BinaryExpr {
             }
         }
     } 
+
 }
 
 
@@ -1477,20 +1478,17 @@ class NegationExpr extends UnaryExpr {
             return;
         }
 
-        let remainder = target.clone();
+        const [disentangledTarget, entanglements] = target.disentangle(); 
+        let remainder = disentangledTarget.clone();
 
         for (const [childText, childNext] of 
-                this.child.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
-            
-            // we can't yet handle negations of entanglements
-            if (childText instanceof EntangledToken) {
-                console.log(`warning, losing entanglement`)
-            }
+                this.child.disjointDeriv(tapeName, disentangledTarget, tapeNS, stack, opt)) {
 
             const complement = (childText as BitsetToken).not();
             remainder = remainder.and(complement);
             const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
-            yield [childText, successor];
+            const reEntangledText = (childText as BitsetToken).reEntangle(entanglements);
+            yield [reEntangledText, successor];
         }
 
         if (remainder.isEmpty()) {
@@ -1501,7 +1499,9 @@ class NegationExpr extends UnaryExpr {
         // cases where we've (in FSA terms) "fallen off" the graph,
         // and are now at a special consume-anything expression that always
         // succeeds.
-        yield [remainder, constructUniverse(this.tapes, this.maxChars-1)];
+        
+        const reEntangledRemainder = remainder.reEntangle(entanglements);
+        yield [reEntangledRemainder, constructUniverse(this.tapes, this.maxChars-1)];
     }
     
     public *stringDeriv(

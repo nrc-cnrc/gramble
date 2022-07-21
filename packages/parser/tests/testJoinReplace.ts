@@ -119,7 +119,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    /*
     describe('2b. Replace e by a, then a by u, in hello: e -> a, a -> u, same tape', function() {
         const innerReplace = JoinReplace(t1("hello"),
                                     [ReplaceBypass(t1("e"), t1("a"))]);
@@ -158,7 +157,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
-
     
     describe('3a. Replace e by a, then l by w, in hello', function() {
         const innerReplace = JoinReplace(t1("hello"),
@@ -308,5 +306,5 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
-    */
+    
 });

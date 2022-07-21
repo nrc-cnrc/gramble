@@ -324,8 +324,6 @@ export class Interpreter {
         }
 
         expr = targetGrammar.constructExpr(this.symbolTable);
-
-
         //console.log(expr.id);
 
         return [expr, tapePriority];    
