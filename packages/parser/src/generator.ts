@@ -2,7 +2,8 @@ import { CounterStack, EpsilonExpr, Expr, NullExpr } from "./exprs";
 import { Token, OutputTrie, TapeNamespace, BitsetToken, EntangledToken } from "./tapes";
 import { 
     ANY_CHAR_STR, BITSETS_ENABLED, Gen, 
-    GenOptions, shuffleArray, StringDict, VERBOSE_DEBUG 
+    GenOptions, logDebug, logStates, shuffleArray, StringDict, 
+    VERBOSE_DEBUG, VERBOSE_STATES, VERBOSE_TIME 
 } from "./util";
 
 /**
@@ -54,8 +55,6 @@ abstract class Generator {
         opt: GenOptions
     ): Gen<StringDict> {
 
-        const verbose = (opt.verbose & VERBOSE_DEBUG) != 0;
-
         const initialOutput: OutputTrie = new OutputTrie();
         let states: [string[], OutputTrie, Expr][] = [[tapePriority, initialOutput, expr]];
         let prev: [string[], OutputTrie, Expr] | undefined = undefined;
@@ -63,7 +62,11 @@ abstract class Generator {
         // if we're generating randomly, we store candidates rather than output them immediately
         const candidates: OutputTrie[] = [];
 
+        let stateCounter = 0;
+
         while (prev = states.pop()) {
+
+            stateCounter++;
 
             // first, if we're random, see if it's time to stop and 
             // randomly emit a result.  candidates will only be length > 0
@@ -75,19 +78,15 @@ abstract class Generator {
             let nexts: [string[], OutputTrie, Expr][] = [];
             let [tapes, prevOutput, prevExpr] = prev;
  
-            if (verbose) {
-                console.log();
-                console.log(`prevOutput is ${JSON.stringify(prevOutput.toDict(tapeNS, opt))}`);
-                console.log(`prevExpr is ${prevExpr.id}`);
-                console.log(`remaining tapes are [${tapes}]`);
-            }
+            logDebug(opt.verbose, "");
+            logDebug(opt.verbose, `prevOutput is ${JSON.stringify(prevOutput.toDict(tapeNS, opt))}`);
+            logDebug(opt.verbose, `prevExpr is ${prevExpr.id}`);
+            logDebug(opt.verbose, `remaining tapes are [${tapes}]`);
 
             if (prevExpr instanceof EpsilonExpr) {
                 // we found a valid output
 
-                if (verbose) {
-                    console.log(`YIELD ${JSON.stringify(prevOutput.toDict(tapeNS, opt))} `)
-                }
+                logDebug(opt.verbose, `YIELD ${JSON.stringify(prevOutput.toDict(tapeNS, opt))} `)
                     
                 // if we're random, don't yield immediately, wait
                 if (opt.random) {
@@ -110,9 +109,8 @@ abstract class Generator {
             const tapeToTry = tapes[0];
             
             const delta = prevExpr.delta(tapeToTry, tapeNS, stack, opt);
-            if (verbose) {
-                console.log(`d^${tapeToTry} is ${delta.id}`);
-            }
+            logDebug(opt.verbose, `d^${tapeToTry} is ${delta.id}`);
+
             if (!(delta instanceof NullExpr)) {                    
                 const newTapes = tapes.slice(1);
                 nexts.push([newTapes, prevOutput, delta]);
@@ -125,10 +123,8 @@ abstract class Generator {
             for (const [cTarget, cNext] of 
                     this.deriv(prevExpr, tapeToTry, tapeNS, stack, opt)) {
 
-                if (!(cNext instanceof NullExpr)) {        
-                    if (verbose) {
-                        console.log(`D^${tapeToTry}_${cTarget} is ${cNext.id}`);
-                    }
+                if (!(cNext instanceof NullExpr)) {      
+                    logDebug(opt.verbose, `D^${tapeToTry}_${cTarget} is ${cNext.id}`);
                     const nextOutput = prevOutput.add(tapeToTry, cTarget);
                     nexts.push([tapes, nextOutput, cNext]);
                 }
@@ -142,6 +138,8 @@ abstract class Generator {
             // add the new ones to the stack
             states.push(...nexts);
         }
+        
+        logStates(opt.verbose, `States visited: ${stateCounter}`)
 
         // if we get here, we've exhausted the search.  usually we'd be done,
         // but with randomness, it's possible to have cached all outputs but not

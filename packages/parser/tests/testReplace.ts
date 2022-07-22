@@ -1243,7 +1243,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe.only('27. Replace ee by e: t1:ee -> t2:e {0,2} (vocab hel/hel)', function() {
+    describe('27. Replace ee by e: t1:ee -> t2:e {0,2} (vocab hel/hel)', function() {
         const grammar = Seq(Vocab('t1', "hle"), Vocab('t2', "hle"),
                             Replace(t1("ee"), t2("e"),
                                     EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,

@@ -18,6 +18,25 @@ export const DIRECTION_LTR: boolean = true; // whether we parse/generate from th
 export const SILENT = 0;
 export const VERBOSE_TIME = 1;
 export const VERBOSE_DEBUG = 1 << 1;
+export const VERBOSE_STATES = 1 << 2;
+
+export function logDebug(verbose: number, msg: string): void {
+    if ((verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+        console.log(msg);
+    }
+}
+
+export function logTime(verbose: number, msg: string): void {
+    if ((verbose & VERBOSE_TIME) == VERBOSE_TIME) {
+        console.log(msg);
+    }
+}
+
+export function logStates(verbose: number, msg: string): void {
+    if ((verbose & VERBOSE_STATES) == VERBOSE_STATES) {
+        console.log(msg);
+    }
+}
 
 export class GenOptions {
     public random: boolean = false;

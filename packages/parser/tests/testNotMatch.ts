@@ -23,10 +23,12 @@ import {
 } from './testUtils';
 
 import * as path from 'path';
-import { StringDict } from "../src/util";
+import { BITSETS_ENABLED, StringDict } from "../src/util";
 
 const DUMMY_SYMBOL: string = "";
 const DEF_MAX_RECURSION: number = 4;
+
+if (!BITSETS_ENABLED) {
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -792,3 +794,5 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
 });
+
+}

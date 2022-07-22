@@ -19,7 +19,7 @@ import {
 } from './testUtils';
 
 import * as path from 'path';
-import { StringDict } from "../src/util";
+import { BITSETS_ENABLED, StringDict } from "../src/util";
 
 function ReplaceBypass(
     fromGrammar: Grammar, toGrammar: Grammar,
@@ -35,6 +35,7 @@ function ReplaceBypass(
         minReps, maxReps, maxExtraChars, Infinity, vocabBypass);
 }
 
+if (!BITSETS_ENABLED) {
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -112,3 +113,5 @@ describe(`${path.basename(module.filename)}`, function() {
     }); 
 
 });
+
+}

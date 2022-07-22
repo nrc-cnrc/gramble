@@ -9,7 +9,8 @@ import {
     DummyCell, stripHiddenTapes, GenOptions, 
     HIDDEN_TAPE_PREFIX,
     SILENT,
-    VERBOSE_TIME
+    VERBOSE_TIME,
+    logTime
 } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
@@ -97,8 +98,6 @@ export class Interpreter {
             }, timeVerbose, t.desc);
         }
 
-        //console.log(this.grammar.id);
-
         // Next we collect the vocabulary on all tapes
         timeIt(() => {
             // recalculate tapes
@@ -135,21 +134,14 @@ export class Interpreter {
         // First, load all the sheets
         let startTime = Date.now();
         const sheetProject = new SheetProject(devEnv, mainSheetName);
-        
-        if (verbose) {
-            const elapsedTime = msToTime(Date.now() - startTime);
-            console.log(`Sheets loaded; ${elapsedTime}`);
-        }
+        let elapsedTime = msToTime(Date.now() - startTime);
+        logTime(verbose, `Sheets loaded; ${elapsedTime}`);
         
         startTime = Date.now();
-
         const tst = sheetProject.toTST();
         const grammar = tst.toGrammar();
-
-        if (verbose) {
-            const elapsedTime = msToTime(Date.now() - startTime);
-            console.log(`Converted to grammar; ${elapsedTime}`);
-        }
+        elapsedTime = msToTime(Date.now() - startTime);
+        logTime(verbose, `Converted to grammar; ${elapsedTime}`);
 
         const result = new Interpreter(devEnv, grammar, verbose);
         result.sheetProject = sheetProject;
@@ -324,7 +316,6 @@ export class Interpreter {
         }
 
         expr = targetGrammar.constructExpr(this.symbolTable);
-        //console.log(expr.id);
 
         return [expr, tapePriority];    
     }

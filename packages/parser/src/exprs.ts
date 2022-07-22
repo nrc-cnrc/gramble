@@ -280,8 +280,8 @@ export abstract class Expr {
         }
         yield* this.disjointStringDeriv(tapeName, target, tapeNS, stack, opt);
     }
-
-    public *disjointBitsetDeriv(
+    
+    public *disjointBitsetDerivOld(
         tapeName: string, 
         target: BitsetToken,
         tapeNS: TapeNamespace,
@@ -317,6 +317,7 @@ export abstract class Expr {
             yield [nextToken, nextExpr];
         }
     }
+    
 
     public *disjointStringDeriv(
         tapeName: string,
@@ -342,48 +343,52 @@ export abstract class Expr {
         }
     }
 
-    /*
     public *disjointBitsetDeriv(
-        tape: Tape, 
-        target: Token,
-        stack: CounterStack
-    ): Gen<[Tape, Token, Expr]> {
+        tapeName: string,
+        target: BitsetToken, 
+        tapeNS: TapeNamespace,
+        stack: CounterStack,
+        opt: GenOptions,
+    ): DerivResult {
 
-        let results: [Tape, Token, Expr][] = [];
-        let nextExprs: [Tape, Token, Expr][] = [... this.deriv(tape, target, stack, opt)];
+        let results: [Token, Expr][] = [];
+        let nextExprs: [Token, Expr][] = [... this.deriv(tapeName, target, tapeNS, stack, opt)];
         
-        for (let [nextTape, nextBits, next] of nextExprs) {
+        for (let [nextToken, next] of nextExprs) {
 
-            let newResults: [Tape, Token, Expr][] = [];
-            for (let [otherTape, otherBits, otherNext] of results) {
-                if (nextTape.tapeName != otherTape.tapeName) {
-                    newResults.push([otherTape, otherBits, otherNext]);
-                    continue;
-                }
+            if (nextToken instanceof EntangledToken) {
+                yield [nextToken, next];
+                continue;
+            } 
 
+            let nextBits = nextToken as BitsetToken;
+            let newResults: [BitsetToken, Expr][] = [];
+            for (let [otherToken, otherNext] of results) {
+                let otherBits = otherToken as BitsetToken;
                 // they both matched
                 const intersection = nextBits.and(otherBits);
                 if (!intersection.isEmpty()) {
                     // there's something in the intersection
-                    const union = constructBinaryUnion(next, otherNext);
-                    newResults.push([nextTape, intersection, union]); 
+                    const union = constructAlternation(next, otherNext);
+                    newResults.push([intersection, union]); 
                 }
-                nextBits = nextBits.andNot(intersection)
-                otherBits = otherBits.andNot(intersection);
+                const notIntersection = intersection.not();
+                nextBits = nextBits.and(notIntersection)
+                otherBits = otherBits.and(notIntersection);
 
                 // there's something left over
                 if (!otherBits.isEmpty()) {
-                    newResults.push([otherTape, otherBits, otherNext]);
+                    newResults.push([otherBits, otherNext]);
                 }
             }
             results = newResults;
             if (!nextBits.isEmpty()) {
-                results.push([nextTape, nextBits, next]);
+                results.push([nextBits, next]);
             }
         }
         yield *results;
     }
-    */
+
 }
 
 /**
