@@ -3,6 +3,7 @@ import { CharSet, Epsilon, Seq, Uni } from "../src/grammars";
 import { t1, t2, testHasTapes, testGrammar, testHasVocab } from './testUtils';
 
 import * as path from 'path';
+import { VERBOSE_DEBUG } from "../src/util";
 
 describe(`${path.basename(module.filename)}`, function() {
 

@@ -1,8 +1,8 @@
-import { CounterStack, EpsilonExpr, Expr, NullExpr } from "./exprs";
+import { CounterStack, DerivResult, EpsilonExpr, Expr, NullExpr } from "./exprs";
 import { Token, OutputTrie, TapeNamespace, BitsetToken, EntangledToken } from "./tapes";
 import { 
     ANY_CHAR_STR, BITSETS_ENABLED, Gen, 
-    GenOptions, logDebug, logStates, shuffleArray, StringDict, 
+    GenOptions, logDebug, logStates, logTime, msToTime, shuffleArray, StringDict, 
     VERBOSE_DEBUG, VERBOSE_STATES, VERBOSE_TIME 
 } from "./util";
 
@@ -27,25 +27,14 @@ export function* generate(
     tapeNS: TapeNamespace,
     opt: GenOptions
 ): Gen<StringDict> {
-
-    const generator = BITSETS_ENABLED ? 
-                        new BitsetGenerator() : 
-                        new StringGenerator();
+    const generator = new Generator();
 
     const stack = new CounterStack(opt.maxRecursion);
     yield* generator.generate(expr, tapePriority, tapeNS, stack, opt);
 
 }
 
-abstract class Generator {
-
-    public abstract deriv(
-        expr: Expr,
-        tapeName: string,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
-    ): Gen<[Token, Expr]>;
+class Generator {
 
     public *generate(
         expr: Expr,
@@ -55,9 +44,13 @@ abstract class Generator {
         opt: GenOptions
     ): Gen<StringDict> {
 
+        const startingTime = Date.now();
+
         const initialOutput: OutputTrie = new OutputTrie();
-        let states: [string[], OutputTrie, Expr][] = [[tapePriority, initialOutput, expr]];
-        let prev: [string[], OutputTrie, Expr] | undefined = undefined;
+        const tapePrioritizer: PrioritizerOutput = constructPrioritizer(tapePriority, expr);
+
+        let states: [OutputTrie, PrioritizerOutput][] = [[initialOutput, tapePrioritizer]];
+        let prev: [OutputTrie, PrioritizerOutput] | undefined = undefined;
         
         // if we're generating randomly, we store candidates rather than output them immediately
         const candidates: OutputTrie[] = [];
@@ -75,13 +68,12 @@ abstract class Generator {
                 break;
             }
 
-            let nexts: [string[], OutputTrie, Expr][] = [];
-            let [tapes, prevOutput, prevExpr] = prev;
+            let nexts: [OutputTrie, PrioritizerOutput][] = [];
+            let [prevOutput, prevExpr] = prev;
  
             logDebug(opt.verbose, "");
             logDebug(opt.verbose, `prevOutput is ${JSON.stringify(prevOutput.toDict(tapeNS, opt))}`);
             logDebug(opt.verbose, `prevExpr is ${prevExpr.id}`);
-            logDebug(opt.verbose, `remaining tapes are [${tapes}]`);
 
             if (prevExpr instanceof EpsilonExpr) {
                 // we found a valid output
@@ -98,35 +90,20 @@ abstract class Generator {
                 yield* prevOutput.toDict(tapeNS, opt);
                 continue;
             }
-            
-            if (tapes.length == 0) {
-                if (!(prevExpr instanceof NullExpr || prevExpr instanceof EpsilonExpr)) {
-                    throw new Error(`warning, nontrivial expr at end: ${prevExpr.id}`);
-                }
-                continue; 
-            }
-                
-            const tapeToTry = tapes[0];
-            
-            const delta = prevExpr.delta(tapeToTry, tapeNS, stack, opt);
-            logDebug(opt.verbose, `d^${tapeToTry} is ${delta.id}`);
 
-            if (!(delta instanceof NullExpr)) {                    
-                const newTapes = tapes.slice(1);
-                nexts.push([newTapes, prevOutput, delta]);
+            if (prevExpr instanceof NullExpr) {
+                continue;
             }
 
-            // rotate the tapes so that we don't just 
-            // keep trying the same one every time
-            tapes = [... tapes.slice(1), tapes[0]];
+            const delta = prevExpr.delta(tapeNS, stack, opt);
+            if (!(delta instanceof NullExpr)) {    
+                nexts.push([prevOutput, delta]);
+            }
 
-            for (const [cTarget, cNext] of 
-                    this.deriv(prevExpr, tapeToTry, tapeNS, stack, opt)) {
-
-                if (!(cNext instanceof NullExpr)) {      
-                    logDebug(opt.verbose, `D^${tapeToTry}_${cTarget} is ${cNext.id}`);
-                    const nextOutput = prevOutput.add(tapeToTry, cTarget);
-                    nexts.push([tapes, nextOutput, cNext]);
+            for (const [cTape, cTarget, cNext] of prevExpr.deriv(tapeNS, stack, opt)) {
+                if (!(cNext instanceof NullExpr)) {
+                    const nextOutput = prevOutput.add(cTape, cTarget);
+                    nexts.push([nextOutput, cNext]);
                 }
             }
 
@@ -140,6 +117,9 @@ abstract class Generator {
         }
         
         logStates(opt.verbose, `States visited: ${stateCounter}`)
+
+        const elapsedTime = msToTime(Date.now() - startingTime);
+        logTime(opt.verbose, `Generation time: ${elapsedTime}`);
 
         // if we get here, we've exhausted the search.  usually we'd be done,
         // but with randomness, it's possible to have cached all outputs but not
@@ -156,31 +136,68 @@ abstract class Generator {
 
 }
 
-class StringGenerator extends Generator {
+class TapePrioritizer {
 
-    public *deriv(
-        expr: Expr,
-        tapeName: string,
+    constructor(
+        public tapes: string[],
+        public child: Expr
+    ) { }
+
+    public get id(): string {
+        return `${this.tapes}:${this.child.id}`;
+    }
+
+    public delta(
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
-        yield* expr.disjointDeriv(tapeName, ANY_CHAR_STR, tapeNS, stack, opt);
+    ): PrioritizerOutput {
+        const tapeToTry = this.tapes[0];
+        const childDelta = this.child.delta(tapeToTry, tapeNS, stack, opt);
+        logDebug(opt.verbose, `d^${tapeToTry} is ${childDelta.id}`);
+        const newTapes = this.tapes.slice(1);
+        return constructPrioritizer(newTapes, childDelta);
     }
 
-}
-
-class BitsetGenerator extends Generator {
-        
     public *deriv(
-        expr: Expr,
-        tapeName: string,
         tapeNS: TapeNamespace,
         stack: CounterStack,
         opt: GenOptions
-    ): Gen<[Token, Expr]> {
-        const tape = tapeNS.get(tapeName);
-        yield* expr.disjointDeriv(tapeName, tape.any, tapeNS, stack, opt);
+    ): Gen<[string, Token, PrioritizerOutput]> {
+
+        const tapeToTry = this.tapes[0];
+        // rotate the tapes so that we don't just 
+        // keep trying the same one every time
+        const newTapes = [... this.tapes.slice(1), tapeToTry];
+        const tape = tapeNS.get(tapeToTry);
+        const startingToken = BITSETS_ENABLED ? tape.any : ANY_CHAR_STR;
+
+        for (const [cTarget, cNext] of 
+                this.child.disjointDeriv(tapeToTry, startingToken, tapeNS, stack, opt)) {
+
+            if (!(cNext instanceof NullExpr)) {      
+                logDebug(opt.verbose, `D^${tapeToTry}_${cTarget} is ${cNext.id}`);
+                const successor = constructPrioritizer(newTapes, cNext);
+                yield [tapeToTry, cTarget, successor];
+            }
+        }
+    }
+}
+
+function constructPrioritizer(tapes: string[], child: Expr): PrioritizerOutput {
+
+    if (tapes.length == 0) {
+        if (!(child instanceof NullExpr || child instanceof EpsilonExpr)) {
+            throw new Error(`warning, nontrivial expr at end: ${child.id}`);
+        }
+        return child;
     }
 
+    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
+        return child;
+    }
+
+    return new TapePrioritizer(tapes, child);
 }
+
+type PrioritizerOutput = EpsilonExpr | NullExpr | TapePrioritizer;

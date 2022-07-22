@@ -1,7 +1,7 @@
 import { ANY_CHAR_STR, DIRECTION_LTR, Gen, GenOptions, setDifference } from "./util";
 import { Tape, BitsetToken, TapeNamespace, renameTape, Token, EntangledToken } from "./tapes";
 
-type DerivResult = Gen<[Token, Expr]>;
+export type DerivResult = Gen<[Token, Expr]>;
 
 /**
  * This is the parsing/generation engine that underlies Gramble.

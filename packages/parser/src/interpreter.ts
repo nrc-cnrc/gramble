@@ -279,10 +279,14 @@ export class Interpreter {
     public prepareExpr(
         symbolName: string = "",
         query: StringDict = {},
-        opt: GenOptions
+        opt: GenOptions,
+        tapePriority: string[] = []
     ): [Expr, string[]] {
 
-        let tapePriority = this.grammar.calculateTapes(new CounterStack(2));
+        if (tapePriority.length == 0) {
+            tapePriority = this.grammar.calculateTapes(new CounterStack(2));
+        }
+        
         let expr = this.grammar.constructExpr(this.symbolTable);
 
         let targetGrammar = this.grammar.getSymbol(symbolName);

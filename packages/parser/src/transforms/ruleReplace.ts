@@ -65,3 +65,19 @@ export class RuleReplaceTransform extends IdentityTransform<void>{
     }
 
 }
+
+function foldLeft<T>(
+    arr: T[], 
+    f: (t1: T, t2: T) => T
+): T {
+    if (arr.length == 0) {
+        throw new Error(`foldLeft must have >0 arguments`);
+    }
+    if (arr.length == 1) {
+        return arr[0];
+    }
+    const x = arr[arr.length-1];
+    const xs = arr.slice(0, arr.length-1);
+    const foldedXs = foldLeft(xs, f);
+    return f(foldedXs, x);
+} 
