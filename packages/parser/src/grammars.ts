@@ -179,6 +179,25 @@ export abstract class Grammar {
     public getLiterals(): LiteralGrammar[] {
         throw new Error(`Cannot get literals from this grammar`);
     }
+
+    /**
+     * This method is used to detect grammars that might be infinite --
+     * not *certain* to be infinite, but potentially so, that that we
+     * add a CountGrammar to the root just in case.  
+     * 
+     * I don't think it's possible to be certain that an arbitrary grammar
+     * is infinite; for example, we might join two grammars, both of which
+     * are infinite, but they actually only have a single entry that both 
+     * share.  We wouldn't know that, however, until generation; out of safety
+     * we have to treat the joins of two infinite grammars as themselves 
+     * infinite.  
+     * 
+     * It costs us little if we're wrong here; CountExprs have 
+     * negligible runtime cost.  We still want to try to get this correct, 
+     * though, because it truncates the outputs of the grammar-as-written,
+     * we want the addition of CountGrammar to be a last resort.
+     */
+    public abstract potentiallyInfinite(stack: CounterStack): boolean;
     
     public abstract getChildren(): Grammar[];
 
@@ -309,6 +328,9 @@ abstract class AtomicGrammar extends Grammar {
 
     public getChildren(): Grammar[] { return []; }
 
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return false;
+    }
 }
 
 export class EpsilonGrammar extends AtomicGrammar {
@@ -508,6 +530,11 @@ abstract class NAryGrammar extends Grammar {
     public getChildren(): Grammar[] { 
         return this.children; 
     }
+    
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.children.some(c => c.potentiallyInfinite(stack));
+    }
+
 }
 
 export class SequenceGrammar extends NAryGrammar {
@@ -577,6 +604,10 @@ export abstract class UnaryGrammar extends Grammar {
         super(cell);
     }
 
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child.potentiallyInfinite(stack);
+    }
+
     public getChildren(): Grammar[] { 
         return [this.child]; 
     }
@@ -608,6 +639,11 @@ export class IntersectionGrammar extends BinaryGrammar {
     
     public get id(): string {
         return `Intersect(${this.child1.id},${this.child2.id})`;
+    }
+
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child1.potentiallyInfinite(stack) && 
+                this.child2.potentiallyInfinite(stack);
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -642,6 +678,11 @@ export class JoinGrammar extends BinaryGrammar {
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformJoin(this, ns, args);
     }
+    
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child1.potentiallyInfinite(stack) && 
+                this.child2.potentiallyInfinite(stack);
+    }
 
     public calculateTapes(stack: CounterStack): string[] {
         if (this._tapes == undefined) {
@@ -669,6 +710,11 @@ export class EqualsGrammar extends BinaryGrammar {
 
     public get id(): string {
         return `Filter(${this.child1.id},${this.child2.id})`;
+    }
+    
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child1.potentiallyInfinite(stack) && 
+                this.child2.potentiallyInfinite(stack);
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -714,6 +760,10 @@ export class CountGrammar extends UnaryGrammar {
         return `Count(${this.maxChars},${this.child.id})`;
     }
 
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.maxChars == Infinity
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformCount(this, ns, args);
     }
@@ -739,6 +789,13 @@ export class CountTapeGrammar extends UnaryGrammar {
 
     public get id(): string {
         return `CountTape(${JSON.stringify(this.maxChars)},${this.child.id})`;
+    }
+    
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        if (typeof(this.maxChars) == "number") {
+            return this.maxChars == Infinity;
+        }
+        return Object.values(this.maxChars).some(n => n == Infinity);
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -943,6 +1000,10 @@ export class RepeatGrammar extends UnaryGrammar {
             return `(${this.child.id})*`;
         }
         return `Repeat(${this.child.id},${this.minReps},${this.maxReps})`;
+    }
+
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child.potentiallyInfinite(stack) || this.maxReps == Infinity;
     }
     
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -1187,6 +1248,10 @@ export class NsGrammar extends Grammar {
         return `Ns(\n  ${results.join("\n  ")}\n)`;
     }
 
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return [...this.symbols.values()].some(c => c.potentiallyInfinite(stack));
+    }
+
     //public qualifiedNames: Map<string, string> = new Map();
     public symbols: Map<string, Grammar> = new Map();
     //public default: GrammarComponent = new EpsilonGrammar(DUMMY_CELL);
@@ -1358,6 +1423,16 @@ export class EmbedGrammar extends AtomicGrammar {
     
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformEmbed(this, ns, args);
+    }
+
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        const referent = this.getReferent();
+        if (stack.get(this.name) >= 1) {
+            // we're recursive, so potentially infinite
+            return true;
+        }
+        const newStack = stack.add(this.name);
+        return referent.potentiallyInfinite(newStack);
     }
 
     public getReferent(): Grammar {
@@ -1764,6 +1839,11 @@ export function JoinReplace(
  */
 export class JoinReplaceGrammar extends Grammar {
 
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child.potentiallyInfinite(stack) &&
+                this.rules.every(r => r.potentiallyInfinite(stack));
+    }
+
     public get id(): string {
         const cs = this.rules.map(r => r.id).join(",");
         return `JoinReplace(${this.child.id},${cs})`;
@@ -1863,6 +1943,11 @@ export class JoinRuleGrammar extends Grammar {
         super(cell);
     }
 
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child.potentiallyInfinite(stack) &&
+                this.rules.every(r => r.potentiallyInfinite(stack));
+    }
+
     public get id(): string {
         const cs = this.rules.map(r => r.id).join(",");
         return `JoinRule(${this.child.id},${cs})`;
@@ -1893,6 +1978,10 @@ export class ReplaceGrammar extends Grammar {
 
     public get id(): string {
         return `Replace(${this.fromGrammar.id}->${this.toGrammar.id}|${this.preContext.id}_${this.postContext.id})`;
+    }
+
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return true;
     }
     
     public fromTapeName: string = "__UNKNOWN_TAPE__";

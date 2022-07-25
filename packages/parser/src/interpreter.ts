@@ -315,7 +315,8 @@ export class Interpreter {
         
         }
 
-        if (opt.maxChars != Infinity) {
+        const potentiallyInfinite = targetGrammar.potentiallyInfinite(new CounterStack(2));
+        if (potentiallyInfinite && opt.maxChars != Infinity) {
             if (targetGrammar instanceof PriorityGrammar) {
                 targetGrammar.child = new CountGrammar(targetGrammar.child.cell, targetGrammar.child, opt.maxChars-1);
             } else {
@@ -324,7 +325,6 @@ export class Interpreter {
         }
 
         if (!(targetGrammar instanceof PriorityGrammar)) {
-            console.log(`not a priority grammar, using priority ${tapePriority}`)
             targetGrammar = new PriorityGrammar(targetGrammar.cell, targetGrammar, tapePriority);
         }
 

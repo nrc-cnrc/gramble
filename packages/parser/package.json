@@ -33,6 +33,7 @@
     "testGrammars": "mocha -r ts-node/register tests/*.ts",
     "testSheets": "mocha -r ts-node/register tests/sheets/*/*.ts",
     "testHeaders": "mocha -r ts-node/register tests/testHeaders.ts",
+    "testInfinite": "mocha -r ts-node/register tests/testInfinite.ts",
     "testRegexParser": "mocha -r ts-node/register tests/testRegexParser.ts",
     "testProperties": "mocha -r ts-node/register tests/property/testProperties.ts",
     "testHide": "mocha -r ts-node/register tests/testHide.ts",
