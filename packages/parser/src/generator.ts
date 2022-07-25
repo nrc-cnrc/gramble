@@ -1,9 +1,11 @@
-import { CounterStack, DerivResult, EpsilonExpr, Expr, NullExpr } from "./exprs";
-import { Token, OutputTrie, TapeNamespace, BitsetToken, EntangledToken } from "./tapes";
 import { 
-    ANY_CHAR_STR, BITSETS_ENABLED, Gen, 
-    GenOptions, logDebug, logStates, logTime, msToTime, shuffleArray, StringDict, 
-    VERBOSE_DEBUG, VERBOSE_STATES, VERBOSE_TIME 
+    constructPriority, CounterStack, 
+    EpsilonExpr, Expr, NullExpr, PriorityExpr 
+} from "./exprs";
+import { OutputTrie, TapeNamespace } from "./tapes";
+import { 
+    Gen, GenOptions, logDebug, logStates, 
+    logTime, msToTime, shuffleArray, StringDict
 } from "./util";
 
 /**
@@ -18,186 +20,113 @@ import {
  * choosing an appropriate "query grammar" to join X with.
  * 
  * @param [expr] An expression to be evaluated
- * @param [tapes] A list of tapes, in the order they should be tried
+ * @param [tapePriority] A list of tapes, in the order they should be tried
+ * @param [tapeNS] A namespace associating tape names to tape information
  * @returns a generator of { tape: string } dictionaries, one for each successful traversal. 
  */
 export function* generate(
     expr: Expr,
-    tapePriority: string[],
     tapeNS: TapeNamespace,
     opt: GenOptions
 ): Gen<StringDict> {
-    const generator = new Generator();
-
     const stack = new CounterStack(opt.maxRecursion);
-    yield* generator.generate(expr, tapePriority, tapeNS, stack, opt);
 
-}
+    const startingTime = Date.now();
 
-class Generator {
+    const initialOutput: OutputTrie = new OutputTrie();
 
-    public *generate(
-        expr: Expr,
-        tapePriority: string[],
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
-    ): Gen<StringDict> {
+    let states: [OutputTrie, Expr][] = [[initialOutput, expr]];
+    let prev: [OutputTrie, Expr] | undefined = undefined;
+    
+    // if we're generating randomly, we store candidates rather than output them immediately
+    const candidates: OutputTrie[] = [];
 
-        const startingTime = Date.now();
+    let stateCounter = 0;
 
-        const initialOutput: OutputTrie = new OutputTrie();
-        const tapePrioritizer: PrioritizerOutput = constructPrioritizer(tapePriority, expr);
+    while (prev = states.pop()) {
 
-        let states: [OutputTrie, PrioritizerOutput][] = [[initialOutput, tapePrioritizer]];
-        let prev: [OutputTrie, PrioritizerOutput] | undefined = undefined;
-        
-        // if we're generating randomly, we store candidates rather than output them immediately
-        const candidates: OutputTrie[] = [];
+        stateCounter++;
 
-        let stateCounter = 0;
+        // first, if we're random, see if it's time to stop and 
+        // randomly emit a result.  candidates will only be length > 0
+        // if we're random.
+        if (candidates.length > 0 && Math.random()) {
+            break;
+        }
 
-        while (prev = states.pop()) {
+        let nexts: [OutputTrie, Expr][] = [];
+        let [prevOutput, prevExpr] = prev;
 
-            stateCounter++;
+        logDebug(opt.verbose, "");
+        logDebug(opt.verbose, `prevOutput is ${JSON.stringify(prevOutput.toDict(tapeNS, opt))}`);
+        logDebug(opt.verbose, `prevExpr is ${prevExpr.id}`);
 
-            // first, if we're random, see if it's time to stop and 
-            // randomly emit a result.  candidates will only be length > 0
-            // if we're random.
-            if (candidates.length > 0 && Math.random()) {
-                break;
-            }
+        if (prevExpr instanceof EpsilonExpr) {
+            // we found a valid output and there's nothing left
+            // we can do on this branch
 
-            let nexts: [OutputTrie, PrioritizerOutput][] = [];
-            let [prevOutput, prevExpr] = prev;
- 
-            logDebug(opt.verbose, "");
-            logDebug(opt.verbose, `prevOutput is ${JSON.stringify(prevOutput.toDict(tapeNS, opt))}`);
-            logDebug(opt.verbose, `prevExpr is ${prevExpr.id}`);
-
-            if (prevExpr instanceof EpsilonExpr) {
-                // we found a valid output
-
-                logDebug(opt.verbose, `YIELD ${JSON.stringify(prevOutput.toDict(tapeNS, opt))} `)
-                    
-                // if we're random, don't yield immediately, wait
-                if (opt.random) {
-                    candidates.push(prevOutput);
-                    continue;
-                }
-
-                // if we're not random, yield the result immediately.
-                yield* prevOutput.toDict(tapeNS, opt);
+            logDebug(opt.verbose, `YIELD ${JSON.stringify(prevOutput.toDict(tapeNS, opt))} `)
+                
+            // if we're random, don't yield immediately, wait
+            if (opt.random) {
+                candidates.push(prevOutput);
                 continue;
             }
 
-            if (prevExpr instanceof NullExpr) {
-                continue;
-            }
+            // if we're not random, yield the result immediately.
+            yield* prevOutput.toDict(tapeNS, opt);
+            continue;
+        } else if (prevExpr instanceof NullExpr) {
+            // the search has failed here (there are no valid results
+            // that have prevOutput as a prefix), so abandon this node 
+            // and move on
+            continue;
+        } else if (prevExpr instanceof PriorityExpr) {
+            // we've neither found a valid output nor failed; there is 
+            // still a possibility of 
 
-            const delta = prevExpr.delta(tapeNS, stack, opt);
+            // first check whether epsilon is a valid result on the 
+            // prioritizer's current tape
+            const delta = prevExpr.openDelta(tapeNS, stack, opt);
             if (!(delta instanceof NullExpr)) {    
                 nexts.push([prevOutput, delta]);
             }
 
-            for (const [cTape, cTarget, cNext] of prevExpr.deriv(tapeNS, stack, opt)) {
+            // next see where we can go on that tape, along any char
+            // transition.
+            for (const [cTape, cTarget, cNext] of prevExpr.openDeriv(tapeNS, stack, opt)) {
                 if (!(cNext instanceof NullExpr)) {
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nexts.push([nextOutput, cNext]);
                 }
             }
-
-            // if random, shuffle the possibilities to search through next
-            if (opt.random) {
-                shuffleArray(nexts);
-            }
-
-            // add the new ones to the stack
-            states.push(...nexts);
-        }
-        
-        logStates(opt.verbose, `States visited: ${stateCounter}`)
-
-        const elapsedTime = msToTime(Date.now() - startingTime);
-        logTime(opt.verbose, `Generation time: ${elapsedTime}`);
-
-        // if we get here, we've exhausted the search.  usually we'd be done,
-        // but with randomness, it's possible to have cached all outputs but not
-        // actually yielded any.  The following does so.
-
-        if (candidates.length == 0) {
-            return;
+        } else {
+            throw new Error("Encountered a non-eps, non-null, non-prioritizer as root");
         }
 
-        const candidateIndex = Math.floor(Math.random()*candidates.length);
-        const candidateOutput = candidates[candidateIndex];
-        yield* candidateOutput.toDict(tapeNS, opt);
-    } 
-
-}
-
-class TapePrioritizer {
-
-    constructor(
-        public tapes: string[],
-        public child: Expr
-    ) { }
-
-    public get id(): string {
-        return `${this.tapes}:${this.child.id}`;
-    }
-
-    public delta(
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
-    ): PrioritizerOutput {
-        const tapeToTry = this.tapes[0];
-        const childDelta = this.child.delta(tapeToTry, tapeNS, stack, opt);
-        logDebug(opt.verbose, `d^${tapeToTry} is ${childDelta.id}`);
-        const newTapes = this.tapes.slice(1);
-        return constructPrioritizer(newTapes, childDelta);
-    }
-
-    public *deriv(
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
-    ): Gen<[string, Token, PrioritizerOutput]> {
-
-        const tapeToTry = this.tapes[0];
-        // rotate the tapes so that we don't just 
-        // keep trying the same one every time
-        const newTapes = [... this.tapes.slice(1), tapeToTry];
-        const tape = tapeNS.get(tapeToTry);
-        const startingToken = BITSETS_ENABLED ? tape.any : ANY_CHAR_STR;
-
-        for (const [cTarget, cNext] of 
-                this.child.disjointDeriv(tapeToTry, startingToken, tapeNS, stack, opt)) {
-
-            if (!(cNext instanceof NullExpr)) {      
-                logDebug(opt.verbose, `D^${tapeToTry}_${cTarget} is ${cNext.id}`);
-                const successor = constructPrioritizer(newTapes, cNext);
-                yield [tapeToTry, cTarget, successor];
-            }
+        // if random, shuffle the possibilities to search through next
+        if (opt.random) {
+            shuffleArray(nexts);
         }
+
+        // add the new ones to the stack
+        states.push(...nexts);
     }
-}
+    
+    logStates(opt.verbose, `States visited: ${stateCounter}`)
 
-function constructPrioritizer(tapes: string[], child: Expr): PrioritizerOutput {
+    const elapsedTime = msToTime(Date.now() - startingTime);
+    logTime(opt.verbose, `Generation time: ${elapsedTime}`);
 
-    if (tapes.length == 0) {
-        if (!(child instanceof NullExpr || child instanceof EpsilonExpr)) {
-            throw new Error(`warning, nontrivial expr at end: ${child.id}`);
-        }
-        return child;
+    // if we get here, we've exhausted the search.  usually we'd be done,
+    // but with randomness, it's possible to have cached all outputs but not
+    // actually yielded any.  The following does so.
+
+    if (candidates.length == 0) {
+        return;
     }
 
-    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
-        return child;
-    }
-
-    return new TapePrioritizer(tapes, child);
-}
-
-type PrioritizerOutput = EpsilonExpr | NullExpr | TapePrioritizer;
+    const candidateIndex = Math.floor(Math.random()*candidates.length);
+    const candidateOutput = candidates[candidateIndex];
+    yield* candidateOutput.toDict(tapeNS, opt);
+} 

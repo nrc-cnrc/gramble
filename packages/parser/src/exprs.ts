@@ -1,4 +1,4 @@
-import { ANY_CHAR_STR, DIRECTION_LTR, Gen, GenOptions, setDifference } from "./util";
+import { ANY_CHAR_STR, BITSETS_ENABLED, DIRECTION_LTR, Gen, GenOptions, logDebug, setDifference } from "./util";
 import { Tape, BitsetToken, TapeNamespace, renameTape, Token, EntangledToken } from "./tapes";
 
 export type DerivResult = Gen<[Token, Expr]>;
@@ -1332,6 +1332,80 @@ export class CountTapeExpr extends UnaryExpr {
     }
 }
 
+export class PriorityExpr extends UnaryExpr {
+
+    constructor(
+        public tapes: string[],
+        public child: Expr
+    ) { 
+        super(child)
+    }
+
+    public get id(): string {
+        return `${this.tapes}:${this.child.id}`;
+    }
+
+    public delta(
+        tapeName: string, 
+        tapeNS: TapeNamespace, 
+        stack: CounterStack, 
+        opt: GenOptions
+    ): Expr {
+        const delta = this.child.delta(tapeName, tapeNS, stack, opt);
+        return constructPriority(this.tapes, delta);
+    }
+
+    public *deriv(
+        tapeName: string, 
+        target: Token,
+        tapeNS: TapeNamespace,
+        stack: CounterStack,
+        opt: GenOptions
+    ): DerivResult {
+        for (const [cTarget, cNext] of 
+                this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+            const successor = constructPriority(this.tapes, cNext);
+            yield [cTarget, successor];
+        }
+    }
+
+    public openDelta(
+        tapeNS: TapeNamespace,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Expr {
+        const tapeToTry = this.tapes[0];
+        const childDelta = this.child.delta(tapeToTry, tapeNS, stack, opt);
+        logDebug(opt.verbose, `d^${tapeToTry} is ${childDelta.id}`);
+        const newTapes = this.tapes.slice(1);
+        return constructPriority(newTapes, childDelta);
+    }
+
+    public *openDeriv(
+        tapeNS: TapeNamespace,
+        stack: CounterStack,
+        opt: GenOptions
+    ): Gen<[string, Token, Expr]> {
+
+        const tapeToTry = this.tapes[0];
+        // rotate the tapes so that we don't just 
+        // keep trying the same one every time
+        const newTapes = [... this.tapes.slice(1), tapeToTry];
+        const tape = tapeNS.get(tapeToTry);
+        const startingToken = BITSETS_ENABLED ? tape.any : ANY_CHAR_STR;
+
+        for (const [cTarget, cNext] of 
+                this.child.disjointDeriv(tapeToTry, startingToken, tapeNS, stack, opt)) {
+
+            if (!(cNext instanceof NullExpr)) {      
+                logDebug(opt.verbose, `D^${tapeToTry}_${cTarget} is ${cNext.id}`);
+                const successor = constructPriority(newTapes, cNext);
+                yield [tapeToTry, cTarget, successor];
+            }
+        }
+    }
+}
+
 class RepeatExpr extends UnaryExpr {
 
     constructor(
@@ -2077,4 +2151,20 @@ export function constructEntangle(
     token: EntangledToken
 ): Expr {
     return new EntangleExpr(tapeName, token);
+}
+
+export function constructPriority(tapes: string[], child: Expr): Expr {
+
+    if (tapes.length == 0) {
+        if (!(child instanceof NullExpr || child instanceof EpsilonExpr)) {
+            throw new Error(`warning, nontrivial expr at end: ${child.id}`);
+        }
+        return child;
+    }
+
+    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
+        return child;
+    }
+
+    return new PriorityExpr(tapes, child);
 }

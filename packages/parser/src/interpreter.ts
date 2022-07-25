@@ -1,7 +1,7 @@
 import { 
     CounterStack, CountGrammar, EqualsGrammar, Grammar, 
     GrammarTransform, 
-    LiteralGrammar, NsGrammar, SequenceGrammar, Transform 
+    LiteralGrammar, NsGrammar, PriorityGrammar, SequenceGrammar, Transform 
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
@@ -15,7 +15,7 @@ import {
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { TapeNamespace, VocabMap } from "./tapes";
-import { Expr, SymbolTable } from "./exprs";
+import { Expr, PriorityExpr, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 import { SameTapeReplaceTransform } from "./transforms/sameTapeReplace";
@@ -218,14 +218,14 @@ export class Interpreter {
             maxChars: maxChars,
             verbose: this.verbose
         }
-        const [expr, tapePriority] = this.prepareExpr(symbolName, restriction, opt);
+        const expr = this.prepareExpr(symbolName, restriction, opt);
 
         if (stripHidden) {
-            yield* stripHiddenTapes(generate(expr, tapePriority, this.tapeNS, opt));
+            yield* stripHiddenTapes(generate(expr, this.tapeNS, opt));
             return;
         }
 
-        yield* generate(expr, tapePriority, this.tapeNS, opt);
+        yield* generate(expr, this.tapeNS, opt);
     }
     
     public sample(symbolName: string = "",
@@ -254,11 +254,11 @@ export class Interpreter {
             verbose: this.verbose
         }
 
-        const [expr, tapePriority] = this.prepareExpr(symbolName, restriction, opt);
+        const expr = this.prepareExpr(symbolName, restriction, opt);
         for (let i = 0; i < numSamples; i++) {
-            let gen = generate(expr, tapePriority, this.tapeNS, opt);
+            let gen = generate(expr, this.tapeNS, opt);
             if (stripHidden) {
-                gen = stripHiddenTapes(generate(expr, tapePriority, this.tapeNS, opt));
+                gen = stripHiddenTapes(gen);
             }
             yield* iterTake(gen, 1);
         }
@@ -281,7 +281,7 @@ export class Interpreter {
         query: StringDict = {},
         opt: GenOptions,
         tapePriority: string[] = []
-    ): [Expr, string[]] {
+    ): Expr {
 
         if (tapePriority.length == 0) {
             tapePriority = this.grammar.calculateTapes(new CounterStack(2));
@@ -314,14 +314,23 @@ export class Interpreter {
             //targetGrammar.copyVocab(this.tapeNS, new Set());
         
         }
-        
+
         if (opt.maxChars != Infinity) {
-            targetGrammar = new CountGrammar(targetGrammar.cell, targetGrammar, opt.maxChars-1);
+            if (targetGrammar instanceof PriorityGrammar) {
+                targetGrammar.child = new CountGrammar(targetGrammar.child.cell, targetGrammar.child, opt.maxChars-1);
+            } else {
+                targetGrammar = new CountGrammar(targetGrammar.cell, targetGrammar, opt.maxChars-1);
+            }
+        }
+
+        if (!(targetGrammar instanceof PriorityGrammar)) {
+            console.log(`not a priority grammar, using priority ${tapePriority}`)
+            targetGrammar = new PriorityGrammar(targetGrammar.cell, targetGrammar, tapePriority);
         }
 
         expr = targetGrammar.constructExpr(this.symbolTable);
 
-        return [expr, tapePriority];    
+        return expr;    
     }
 
     public runUnitTests(): void {
@@ -333,7 +342,7 @@ export class Interpreter {
         for (const test of tests) {
 
             // create a filter for each test
-            const targetComponent = new EqualsGrammar(test.cell, test.child, test.test);
+            let targetComponent: Grammar = new EqualsGrammar(test.cell, test.child, test.test);
 
             const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
@@ -342,10 +351,14 @@ export class Interpreter {
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
             //targetComponent.copyVocab(this.tapeNS, new Set());
+                
+            if (!(targetComponent instanceof PriorityGrammar)) {
+                targetComponent = new PriorityGrammar(targetComponent.cell, targetComponent, tapePriority);
+            }
 
             expr = targetComponent.constructExpr(this.symbolTable);
 
-            const results = [...generate(expr, tapePriority, this.tapeNS, opt)];
+            const results = [...generate(expr, this.tapeNS, opt)];
             test.evalResults(results);
         }
     }

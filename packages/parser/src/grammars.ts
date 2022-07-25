@@ -22,6 +22,7 @@ import {
     constructDotRep,
     constructCount,
     constructCountTape,
+    constructPriority,
 } from "./exprs";
 
 import { 
@@ -93,8 +94,8 @@ export interface GrammarTransform<T> extends Transform {
     transformHide(g: HideGrammar, ns: NsGrammar, args: T): Grammar;
     transformCount(g: CountGrammar, ns: NsGrammar, args: T): Grammar;
     transformCountTape(g: CountTapeGrammar, ns: NsGrammar, args: T): Grammar;
+    transformPriority(g: PriorityGrammar, ns: NsGrammar, args: T): Grammar
 }
-
 
 /**
  * Grammar components represent the linguistic grammar that the
@@ -756,6 +757,33 @@ export class CountTapeGrammar extends UnaryGrammar {
             }
             const childExpr = this.child.constructExpr(symbols);
             this.expr = constructCountTape(childExpr, maxCharsDict);
+        }
+        return this.expr;
+    }
+}
+
+export class PriorityGrammar extends UnaryGrammar {
+
+    constructor(
+        cell: Cell,
+        child: Grammar,
+        public tapePriority: string[]
+    ) {
+        super(cell, child);
+    }
+
+    public get id(): string {
+        return `Priority(${this.tapePriority},${this.child.id})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformPriority(this, ns, args);
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const childExpr = this.child.constructExpr(symbols);
+            this.expr = constructPriority(this.tapePriority, childExpr);
         }
         return this.expr;
     }
@@ -1680,6 +1708,10 @@ export function Count(maxChars: number, child: Grammar): Grammar {
 
 export function CountTape(maxChars: number | {[tape: string]: number}, child: Grammar): Grammar {
     return new CountTapeGrammar(new DummyCell(), child, maxChars);
+}
+
+export function Priority(tapes: string[], child: Grammar): Grammar {
+    return new PriorityGrammar(new DummyCell(), child, tapes);
 }
 
 /**
