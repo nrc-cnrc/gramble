@@ -1111,30 +1111,30 @@ class JoinExpr extends BinaryExpr {
     ): DerivResult {
 
         if (!this.tapes2.has(tapeName)) {
-            for (const [c1target, c1next] of 
+            for (const [leftTarget, leftNext] of 
                     this.child1.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
-                const successor = constructJoin(c1next, this.child2, this.tapes1, this.tapes2);
-                yield [c1target, successor];
+                const successor = constructJoin(leftNext, this.child2, this.tapes1, this.tapes2);
+                yield [leftTarget, successor];
             }
             return;
         }
         
         if (!this.tapes1.has(tapeName)) {
-            for (const [c2target, c2next] of 
+            for (const [rightTarget, rightNext] of 
                     this.child2.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
-                const successor = constructJoin(this.child1, c2next, this.tapes1, this.tapes2);
-                yield [c2target, successor];
+                const successor = constructJoin(this.child1, rightNext, this.tapes1, this.tapes2);
+                yield [rightTarget, successor];
             }
             return;
         }
         
-        for (const [c2target, c2next] of 
-            this.child2.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
+        for (const [leftTarget, leftNext] of 
+            this.child1.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
 
-            for (const [c1target, c1next] of 
-                    this.child1.disjointDeriv(tapeName, c2target, tapeNS, stack, opt)) {
-                const successor = constructJoin(c1next, c2next, this.tapes1, this.tapes2);
-                yield [c1target, successor];
+            for (const [rightTarget, rightNext] of 
+                    this.child2.disjointDeriv(tapeName, leftTarget, tapeNS, stack, opt)) {
+                const successor = constructJoin(leftNext, rightNext, this.tapes1, this.tapes2);
+                yield [rightTarget, successor];
             }
         }
     } 

@@ -1,4 +1,4 @@
-import { Epsilon, Grammar, Join, JoinReplace, Lit, Priority, Replace, ReplaceGrammar } from "./grammars";
+import { Epsilon, Grammar, Join, JoinReplace, Lit, Priority, Replace, ReplaceGrammar, Uni } from "./grammars";
 import { Interpreter } from "./interpreter";
 import { shuffleArray, StringDict, VERBOSE_STATES, VERBOSE_TIME } from "./util";
 
@@ -27,17 +27,30 @@ function ReplaceBypass(
 function generateAndLog(inputs: {name: string, g: Grammar}): void {
     console.log(inputs.name);
     let interpreter = Interpreter.fromGrammar(inputs.g, VERBOSE_STATES);
-    let results = interpreter.generate();
-    console.log(results);
+    let results = interpreter.sample();
+    //console.log(results);
 }
 
-const g = t1("abcdef");
+function randomGrammar(): Grammar {
+
+    const literals: Grammar[] = [];
+    for (let i = 0; i < 100; i++) {
+        let s = "";
+        for (let i = 0; i < 10; i++) {
+            s += "abcdefghij"[Math.floor(Math.random()*10)];
+        }
+        const grammar = t1(s);
+        literals.push(grammar);
+    }
+    return Uni(...literals);
+}
+
+const g = randomGrammar();
 const r1 = ReplaceBypass(t1("a"), t2("A"));
 const r2 = ReplaceBypass(t2("b"), t3("B"));
 const r3 = ReplaceBypass(t3("c"), t4("C"));
 const r4 = ReplaceBypass(t4("d"), t5("D"));
 const r5 = ReplaceBypass(t5("e"), t6("E"));
-
 
 const items: [string, Grammar][] = [
     ["G", g],
@@ -67,7 +80,7 @@ function randomTree(items: [string, Grammar][]) {
 
     return results[0]
 }
-
+/*
 for (let i = 0; i < 1; i++) {
     const [name, g] = randomTree(items);
 
@@ -90,34 +103,57 @@ for (let i = 0; i < 1; i++) {
     console.log(`random priority: ${tapes}`);
     const randomPriority = Priority(tapes, g);
     generateAndLog({name:name, g:randomPriority});
-} 
+}  */
 
-/*
+
 console.log();
 let t: Grammar = Join(Join(Join(Join(r4,r3),r2),r1),g);
-generateAndLog({name:"((((R4,R3),R2),R1),G)}, default priority", g:t});
+generateAndLog({
+    name:`((((R4,R3),R2),R1),G), default priority, ${[...t.getAllTapes().getKeys()]}`, 
+    g:t
+});
 
 console.log();
 t = Join(Join(Join(Join(r4,r3),r2),r1),g);
 t = Priority(["t1","t2","t3","t4","t5"], t)
-generateAndLog({name:"((((R4,R3),R2),R1),G)}, numerical priority", g:t});
+generateAndLog({name:"((((R4,R3),R2),R1),G), numerical priority", g:t});
 
 console.log();
 t = Join(Join(Join(Join(r4,r3),r2),r1),g);
 t = Priority(["t5","t4","t3","t2","t1"], t)
-generateAndLog({name:"((((R4,R3),R2),R1),G)}, opposite priority", g:t});
+generateAndLog({name:"((((R4,R3),R2),R1),G), opposite priority", g:t});
 
 console.log();
 t = Join(Join(Join(Join(g,r1),r2),r3),r4);
-generateAndLog({name:"((((G,R1),R2),R3),R4)}, default priority", g:t});
+generateAndLog({
+    name:`((((G,R1),R2),R3),R4), default priority, ${[...t.getAllTapes().getKeys()]}`, 
+    g:t
+});
 
 console.log();
 t = Join(Join(Join(Join(g,r1),r2),r3),r4);
 t = Priority(["t1","t2","t3","t4","t5"], t)
-generateAndLog({name:"((((G,R1),R2),R3),R4)}, numerical priority", g:t});
+generateAndLog({name:"((((G,R1),R2),R3),R4), numerical priority", g:t});
 
 console.log();
 t = Join(Join(Join(Join(g,r1),r2),r3),r4);
 t = Priority(["t5","t4","t3","t2","t1"], t)
-generateAndLog({name:"((((G,R1),R2),R3),R4)}, opposite priority", g:t});
-*/
+generateAndLog({name:"((((G,R1),R2),R3),R4), opposite priority", g:t});
+
+
+console.log();
+t = Join(g, Join(r1, Join(r2, Join(r3, r4))));
+generateAndLog({
+    name:`(G,(R1,(R2,(R3,R4)))), default priority, ${[...t.getAllTapes().getKeys()]}`, 
+    g:t
+});
+
+console.log();
+t = Join(g, Join(r1, Join(r2, Join(r3, r4))));
+t = Priority(["t1","t2","t3","t4","t5"], t)
+generateAndLog({name:"(G,(R1,(R2,(R3,R4)))), numerical priority", g:t});
+
+console.log();
+t = Join(g, Join(r1, Join(r2, Join(r3, r4))));
+t = Priority(["t5","t4","t3","t2","t1"], t)
+generateAndLog({name:"(G,(R1,(R2,(R3,R4)))), opposite priority", g:t});

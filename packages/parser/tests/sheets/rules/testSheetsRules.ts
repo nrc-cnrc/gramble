@@ -5,7 +5,7 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe('Replace with same tape name in "to" and "from"', function() {
+    describe('Simple replace', function() {
         const project = sheetFromFile(`${DIR}/sameTapeReplace.csv`);
         testHasVocab(project, {text: 3})
         testErrors(project, []);

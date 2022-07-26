@@ -24,6 +24,7 @@ import { FilterTransform } from "./transforms/filter";
 import { FlattenTransform } from "./transforms/flatten";
 import { RuleReplaceTransform } from "./transforms/ruleReplace";
 import { generate } from "./generator";
+import { RuleReplaceTransform2 } from "./transforms/ruleReplace2";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
@@ -85,7 +86,7 @@ export class Interpreter {
 
         const transforms: Transform[] = [
             new NameQualifierTransform(),
-            new RuleReplaceTransform(),
+            new RuleReplaceTransform2(),
             new SameTapeReplaceTransform(),
             new RenameFixTransform(),
             new FlattenTransform(),
@@ -326,6 +327,7 @@ export class Interpreter {
 
         if (!(targetGrammar instanceof PriorityGrammar)) {
             targetGrammar = new PriorityGrammar(targetGrammar.cell, targetGrammar, tapePriority);
+            //logTime(this.verbose, `priority = ${(targetGrammar as PriorityGrammar).tapePriority}`)
         }
 
         expr = targetGrammar.constructExpr(this.symbolTable);
@@ -354,6 +356,7 @@ export class Interpreter {
                 
             if (!(targetComponent instanceof PriorityGrammar)) {
                 targetComponent = new PriorityGrammar(targetComponent.cell, targetComponent, tapePriority);
+                //logTime(this.verbose, `priority = ${(targetComponent as PriorityGrammar).tapePriority}`)
             }
 
             expr = targetComponent.constructExpr(this.symbolTable);
