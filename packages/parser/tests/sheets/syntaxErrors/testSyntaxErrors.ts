@@ -1,4 +1,4 @@
-import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
+import { testGrammar, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
 
 const DIR = "./tests/sheets/syntaxErrors/csvs";
@@ -11,7 +11,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["headerUsingReservedWord", 4, 4, "error"],
             ["headerUsingReservedWord", 5, 4, "warning"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"foobar","gloss":"run-1SG"}
         ]);
     });
@@ -22,7 +22,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["assignmentToReservedWord", 1, 0, "error"],
             ["assignmentToReservedWord", 1, 0, "warning"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {"gloss":"-1SG","text":"bar"},
             {"gloss":"-2SG","text":"baz"}
         ]);
@@ -33,7 +33,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["maybe", 0, -1, "error"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"moobaz","gloss":"jump-2SG"},
             {"text":"moobar","gloss":"jump-1SG"},
             {"text":"foobaz","gloss":"run-2SG"},
@@ -46,7 +46,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["reassigningSymbol", 4, 0, "error"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"moo","gloss":"jump"},
             {"text":"foo","gloss":"run"}
         ]);
@@ -57,7 +57,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["missingSymbol", 6, 3, "error"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
@@ -68,7 +68,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["opMissingSibling", 9, 1, "warning"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {},
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
@@ -80,7 +80,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["opMissingChild", 12, 1, "warning"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {},
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -94,7 +94,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["assignmentSiblingOp", 12, 2, "error"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"moo","gloss":"jump"},
             {"text":"moobaz","gloss":"jump-2SG"},
             {"text":"moobar","gloss":"jump-1SG"},
@@ -109,7 +109,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["assignmentChildOp", 9, 1, "error"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"moo","gloss":"jump"},
             {"text":"moobaz","gloss":"jump-2SG"},
             {"text":"moobar","gloss":"jump-1SG"},
@@ -124,7 +124,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["inappropriateAssignment", 9, 1, "error"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"moobaz","gloss":"jump-2SG"},
             {"text":"moobar","gloss":"jump-1SG"},
             {"text":"foobaz","gloss":"run-2SG"},
@@ -138,7 +138,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["obliterationByTable",0,0,"error"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"baz"},
             {"text":"bar"}
         ]);
@@ -149,7 +149,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["obliterationByAssignment",0,0,"error"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"baz"},
             {"text":"bar"}
         ]);
@@ -160,7 +160,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["childOnSameLine", 4, 4, "error"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"foobarbaz","gloss":"run-1SG-2SG"}
         ]);
     });
@@ -171,7 +171,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["unparseableHeader", 8, 3, "error"],
             ["unparseableHeader", 9, 3, "warning"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
@@ -182,7 +182,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["weirdIndentation", 10, 1, "warning"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"foobar","gloss":"run-1SG","finite":"true"}
         ]);
     });
@@ -195,7 +195,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["waywardParam", 5, 3, "warning"],
             ["waywardParam", 6, 3, "warning"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             {"gloss":"run","text":"baz"},
             {"gloss":"run","text":"bar"},
             {"gloss":"jump","text":"bar"},

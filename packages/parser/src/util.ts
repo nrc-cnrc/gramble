@@ -19,6 +19,7 @@ export const SILENT = 0;
 export const VERBOSE_TIME = 1;
 export const VERBOSE_DEBUG = 1 << 1;
 export const VERBOSE_STATES = 1 << 2;
+export const VERBOSE_GRAMMAR = 1 << 3;
 
 export function logDebug(verbose: number, msg: string): void {
     if ((verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
@@ -37,6 +38,13 @@ export function logStates(verbose: number, msg: string): void {
         console.log(msg);
     }
 }
+
+export function logGrammar(verbose: number, msg: string): void {
+    if ((verbose & VERBOSE_GRAMMAR) == VERBOSE_GRAMMAR) {
+        console.log(msg);
+    }
+}
+
 
 export class GenOptions {
     public random: boolean = false;

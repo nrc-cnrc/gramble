@@ -1,4 +1,4 @@
-import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
+import { testGrammar, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
@@ -8,7 +8,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Multi-sheet project', function() {
         const project = sheetFromFile(`${DIR}/externalRef.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -19,7 +19,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Multi-sheet project with lowercase sheet reference', function() {
         const project = sheetFromFile(`${DIR}/lowercaseExternalRef.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -30,7 +30,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Multi-sheet project with a "bare" sheet reference', function() {
         const project = sheetFromFile(`${DIR}/externalBareRef.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -41,7 +41,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Multi-sheet project with a "bare" reference to "bare" grammar', function() {
         const project = sheetFromFile(`${DIR}/externalBareRefToBareGrammar.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -54,7 +54,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["missingExternalRef", 1, 1, "warning"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "able" }
         ]);
     });
@@ -64,7 +64,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["missingSheet", 1, 1, "warning"]
         ]);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "able" }
         ]);
     });
@@ -72,7 +72,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Multi-sheet project where the imported sheet references the original', function() {
         const project = sheetFromFile(`${DIR}/externalRefCycle.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -83,7 +83,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Multi-sheet project with a reference to a namespace in an external document', function() {
         const project = sheetFromFile(`${DIR}/externalRefToNs.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },
@@ -94,7 +94,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Multi-sheet project with the external reference in a namespace', function() {
         const project = sheetFromFile(`${DIR}/externalRefInNs.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foobarable", gloss: "run-1SG" },
             { text: "moobarable", gloss: "jump-1SG" },
             { text: "foobazable", gloss: "run-2SG" },

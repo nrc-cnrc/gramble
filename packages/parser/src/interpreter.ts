@@ -10,7 +10,8 @@ import {
     HIDDEN_TAPE_PREFIX,
     SILENT,
     VERBOSE_TIME,
-    logTime
+    logTime,
+    logGrammar
 } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
@@ -115,6 +116,8 @@ export class Interpreter {
             this.grammar.copyVocab(this.tapeNS, new Set());
         }, timeVerbose, "Copied vocab");
         */
+
+        logGrammar(this.verbose, this.grammar.id)
     }
 
     public static fromCSV(

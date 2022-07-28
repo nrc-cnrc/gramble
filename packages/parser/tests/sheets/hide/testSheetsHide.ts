@@ -1,4 +1,4 @@
-import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
+import { testGrammar, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
@@ -8,7 +8,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Hide header', function() {
         const project = sheetFromFile(`${DIR}/hideGrammar.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foo" }
         ]);
     });
@@ -18,7 +18,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, 
             [["hideIrrelevant", 1, 4, "error"]]
         );
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foo", gloss: "run" }
         ]);
     });
@@ -26,7 +26,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Hide header with embeds', function() {
         const project = sheetFromFile(`${DIR}/hideEmbed.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foobar", gloss: "run[1SG]", subj: "[1SG]" },
             { text: "moobar", gloss: "jump[1SG]", subj: "[1SG]" },
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
@@ -39,7 +39,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Two hide headers', function() {
         const project = sheetFromFile(`${DIR}/doubleHide.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foobar", gloss: "run[1SG]" },
             { text: "moobar", gloss: "jump[1SG]" },
             { text: "foobaz", gloss: "run[2SG]" },
@@ -52,7 +52,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Hide header with a slash value', function() {
         const project = sheetFromFile(`${DIR}/doubleHideSlash.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foobar", gloss: "run[1SG]" },
             { text: "moobar", gloss: "jump[1SG]" },
             { text: "foobaz", gloss: "run[2SG]" },

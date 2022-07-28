@@ -191,14 +191,18 @@ function testGrammarAux(
 }
 
 export function testGrammar(
-    grammar: Grammar,
+    grammar: Grammar | Interpreter,
     expectedResults: StringDict[],
     verbose: number = SILENT,
     symbolName: string = "",
     maxRecursion: number = 4,
     stripHidden: boolean = true,
 ): void {
-    const interpreter = Interpreter.fromGrammar(grammar, verbose);
+    
+    const interpreter = (grammar instanceof Interpreter) ?
+                        grammar :
+                        Interpreter.fromGrammar(grammar, verbose);
+                        
     if (symbolName == "") {
         testGrammarAux(interpreter, expectedResults, symbolName, maxRecursion, stripHidden);
     } else {
@@ -322,31 +326,17 @@ export function testErrors(interpreter: Interpreter, expectedErrors: [string, nu
     }
 }
 
-export function testGramble(
-    interpreter: Interpreter,
-    expectedResults: StringDict[], 
-    symbolName: string = "",
-    maxRecursion: number = 4
-): void {
-    if (symbolName == "") {
-        testGrammarAux(interpreter, expectedResults, symbolName,
-            maxRecursion);
-    } else {
-        describe(`Generating from ${symbolName}`, function() {
-            testGrammarAux(interpreter, expectedResults, symbolName, 
-                maxRecursion);
-        });
-    }
-}
-
-export function sheetFromFile(path: string): Interpreter {
+export function sheetFromFile(
+    path: string,
+    verbose: number = SILENT
+): Interpreter {
     if (!existsSync(path)) {
         throw new Error(`Cannot find file ${path}`);
     }
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
     const devEnv = new TextDevEnvironment(dir);
-    return Interpreter.fromSheet(devEnv, sheetName);
+    return Interpreter.fromSheet(devEnv, sheetName, verbose);
 }
 
 
