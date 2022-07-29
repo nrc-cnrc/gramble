@@ -7,17 +7,18 @@ import {
     ReplaceGrammar,
     Seq,
     Uni,
+    Vocab,
 } from "../src/grammars";
 
 import { 
-    t1, t2, t3,
+    t1, t2, t3, t4,
     testHasTapes,
     testHasVocab,
     testGrammar,
 } from './testUtils';
 
 import * as path from 'path';
-import { StringDict } from "../src/util";
+import { StringDict, VERBOSE_DEBUG, VERBOSE_STATES, VERBOSE_TIME } from "../src/util";
 
 function ReplaceBypass(
     fromGrammar: Grammar, toGrammar: Grammar,
@@ -25,7 +26,7 @@ function ReplaceBypass(
     otherContext: Grammar = Epsilon(),
     beginsWith: boolean = false, endsWith: boolean = false,
     minReps: number = 0, maxReps: number = Infinity,
-    maxExtraChars: number = 100,
+    maxExtraChars: number = Infinity,
     maxCopyChars: number = Infinity,
     vocabBypass: boolean = true
 ): ReplaceGrammar {
@@ -35,8 +36,30 @@ function ReplaceBypass(
 }
 
 describe(`${path.basename(module.filename)}`, function() {
+    
+    describe('0a1. Replace i by o in i: i -> o, only using Join', function() {
+        const grammar = Seq(Join(Uni(t1("i")),
+                             ReplaceBypass(t1("i"), t2("o"))), Vocab("t1", "io"));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t1: 'i', t2: 'o'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
 
-    describe('0a. Replace i by o in i: i -> o, only using Join', function() {
+    describe('0a2. Replace i by o in i: i -> o, only using Join', function() {
+        const grammar = Seq(Join(Uni(t1("i")),
+                             ReplaceBypass(t1("i"), t2("o"))), Vocab("t1", "io"));
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t1: 'i', t2: 'o'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('0a2. Replace i by o in i: i -> o, only using Join', function() {
         const grammar = Join(Uni(t1("i"), t1("o"), t1("a")),
                              ReplaceBypass(t1("i"), t2("o")));
         testHasTapes(grammar, ['t1', 't2']);
@@ -119,6 +142,21 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
+    describe('2a2. Replace e by a, then a by u, in hello: e -> a, a -> u', function() {
+        const innerReplace = JoinReplace(t1("hello"),
+                                    [ReplaceBypass(t1("e"), t2("a"))]);
+        const grammar = JoinReplace(innerReplace, 
+                                [ ReplaceBypass(t2("a"), t3("u"))]);              
+        const grammar2 = JoinReplace(grammar, 
+            [ ReplaceBypass(t3("u"), t4("i"))]);
+        testHasTapes(grammar2, ['t1', 't2', 't3', 't4']);
+        testHasVocab(grammar2, {t1: 4, t2:5, t3:6, t4: 7});
+        const expectedResults: StringDict[] = [
+            {t1: 'hello', t2: 'hallo', t3: "hullo", t4: "hillo"},
+        ];
+        testGrammar(grammar2, expectedResults);
+    });
+
     describe('2b. Replace e by a, then a by u, in hello: e -> a, a -> u, same tape', function() {
         const innerReplace = JoinReplace(t1("hello"),
                                     [ReplaceBypass(t1("e"), t1("a"))]);
@@ -157,7 +195,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
-
     
     describe('3a. Replace e by a, then l by w, in hello', function() {
         const innerReplace = JoinReplace(t1("hello"),
@@ -307,4 +344,5 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
+
 });

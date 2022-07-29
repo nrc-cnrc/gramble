@@ -1,4 +1,4 @@
-import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
+import { testGrammar, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
@@ -8,7 +8,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Trivial regex', function() {
         const project = sheetFromFile(`${DIR}/regexTrivial.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foo", gloss: "1SG" },
         ]);
     });
@@ -18,13 +18,13 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["regexSlash", 1, 3, "error"]
         ]);
-        testGramble(project, []);
+        testGrammar(project, []);
     });
 
     describe('Regex including alternation', function() {
         const project = sheetFromFile(`${DIR}/regexAlternation.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "run" },
         ]);
@@ -33,7 +33,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including escaped |', function() {
         const project = sheetFromFile(`${DIR}/escapedAlternation.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "moo|foo", gloss: "run" },
         ]);
     });
@@ -41,7 +41,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including negation', function() {
         const project = sheetFromFile(`${DIR}/regexNegation.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "eat" },
         ]);
@@ -50,7 +50,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including escaped ~', function() {
         const project = sheetFromFile(`${DIR}/escapedNegation.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "~foo", gloss: "run" },
         ]);
     });
@@ -58,7 +58,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including repetition', function() {
         const project = sheetFromFile(`${DIR}/regexRepetition.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { gloss:"be"},
             { text:"goo", gloss:"jump"},
             { text:"googoo", gloss:"jump.impf"}
@@ -68,7 +68,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including plus', function() {
         const project = sheetFromFile(`${DIR}/regexPlus.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text:"goo", gloss:"jump"},
             { text:"googoo", gloss:"jump.impf"}
         ]);
@@ -77,7 +77,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including question mark', function() {
         const project = sheetFromFile(`${DIR}/regexQuestion.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { gloss: "run" },
             { text: "foo", gloss: "run" }
         ]);
@@ -86,7 +86,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including negated alternation', function() {
         const project = sheetFromFile(`${DIR}/regexNegatedAlternation.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "goo", gloss: "jump" },
         ]);
     });
@@ -94,7 +94,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including parens', function() {
         const project = sheetFromFile(`${DIR}/regexParens.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foo", gloss: "run" },
         ]);
     });
@@ -102,7 +102,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including escaped parens', function() {
         const project = sheetFromFile(`${DIR}/escapedParens.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "(foo)", gloss: "run" },
         ]);
     });
@@ -110,7 +110,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including escaped backslash', function() {
         const project = sheetFromFile(`${DIR}/escapedBackslash.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "\\foo", gloss: "run" },
         ]);
     });
@@ -118,7 +118,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Non-regex including one backslash', function() {
         const project = sheetFromFile(`${DIR}/nonRegexBackslash.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "\\foo", gloss: "run" },
         ]);
     });
@@ -126,7 +126,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Non-regex including two backslashes', function() {
         const project = sheetFromFile(`${DIR}/nonRegexTwoBackslash.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "\\\\foo", gloss: "run" },
         ]);
     });
@@ -134,7 +134,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including sequence', function() {
         const project = sheetFromFile(`${DIR}/regexSequence.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foo", gloss: "1SG" },
         ]);
     });
@@ -142,7 +142,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including sequence and alternation', function() {
         const project = sheetFromFile(`${DIR}/regexSequenceOr.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foo", gloss: "1SG" },
             { text: "foo", gloss: "2SG" },
         ]);
@@ -151,7 +151,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including sequence and negation', function() {
         const project = sheetFromFile(`${DIR}/regexSequenceNot.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             {gloss:"2SG", text:"goo"},
             {gloss:"1SG", text:"foo"}
         ]);
@@ -160,7 +160,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Regex including sequence and repetition', function() {
         const project = sheetFromFile(`${DIR}/regexSequenceRep.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text:"bar", gloss:"be"},
             { text:"goobar", gloss:"jump"},
             { text:"googoobar", gloss:"jump.impf"}
@@ -171,7 +171,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Re embed', function() {
         const project = sheetFromFile(`${DIR}/reEmbed.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"foobar"},
             {"text":"moobar"}
         ]);
@@ -180,7 +180,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Re embed with alternation', function() {
         const project = sheetFromFile(`${DIR}/reEmbedAlt.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"boobar"},
             {"text":"goobar"},
             {"text":"foobar"},
@@ -191,7 +191,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Re embed with sequence', function() {
         const project = sheetFromFile(`${DIR}/reEmbedSeq.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             {"text":"fooboobar"},
             {"text":"foogoobar"},
             {"text":"mooboobar"},

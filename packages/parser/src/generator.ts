@@ -1,8 +1,11 @@
-import { CounterStack, EpsilonExpr, Expr, NullExpr } from "./exprs";
-import { Token, OutputTrie, TapeNamespace } from "./tapes";
 import { 
-    ANY_CHAR_STR, BITSETS_ENABLED, Gen, 
-    GenOptions, shuffleArray, StringDict, VERBOSE_DEBUG 
+    constructPriority, CounterStack, 
+    EpsilonExpr, Expr, NullExpr, PriorityExpr 
+} from "./exprs";
+import { OutputTrie, TapeNamespace } from "./tapes";
+import { 
+    Gen, GenOptions, logDebug, logStates, 
+    logTime, msToTime, shuffleArray, StringDict
 } from "./util";
 
 /**
@@ -17,183 +20,111 @@ import {
  * choosing an appropriate "query grammar" to join X with.
  * 
  * @param [expr] An expression to be evaluated
- * @param [tapes] A list of tapes, in the order they should be tried
+ * @param [tapePriority] A list of tapes, in the order they should be tried
+ * @param [tapeNS] A namespace associating tape names to tape information
  * @returns a generator of { tape: string } dictionaries, one for each successful traversal. 
  */
 export function* generate(
     expr: Expr,
-    tapePriority: string[],
     tapeNS: TapeNamespace,
     opt: GenOptions
 ): Gen<StringDict> {
-
-    const generator = BITSETS_ENABLED ? 
-                        new BitsetGenerator() : 
-                        new StringGenerator();
-
     const stack = new CounterStack(opt.maxRecursion);
-    yield* generator.generate(expr, tapePriority, tapeNS, stack, opt);
 
-}
+    const startingTime = Date.now();
 
-abstract class Generator {
+    const initialOutput: OutputTrie = new OutputTrie();
 
-    public abstract deriv(
-        expr: Expr,
-        tapeName: string,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
-    ): Gen<[Token, Expr]>;
+    let states: [OutputTrie, Expr][] = [[initialOutput, expr]];
+    let prev: [OutputTrie, Expr] | undefined = undefined;
+    
+    // if we're generating randomly, we store candidates rather than output them immediately
+    const candidates: OutputTrie[] = [];
 
-    public *generate(
-        expr: Expr,
-        tapePriority: string[],
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
-    ): Gen<StringDict> {
+    let stateCounter = 0;
 
-        const verbose = (opt.verbose & VERBOSE_DEBUG) != 0;
+    while (prev = states.pop()) {
 
-        // Reverse the tapePriority for debugging purposes.
-        // tapePriority = tapePriority.reverse();
+        stateCounter++;
 
-        if (verbose) {
-            console.log();
-            console.log(`*** Generating for expr ${expr.id}.`);
-            console.log(`tapePriority is [${tapePriority}]`)
+        // first, if we're random, see if it's time to stop and 
+        // randomly emit a result.  candidates will only be length > 0
+        // if we're random.
+        if (candidates.length > 0 && Math.random()) {
+            break;
         }
 
-        const initialOutput: OutputTrie = new OutputTrie();
-        let states: [string[], OutputTrie, Expr][] = [[tapePriority, initialOutput, expr]];
-        let prev: [string[], OutputTrie, Expr] | undefined = undefined;
-        
-        // if we're generating randomly, we store candidates rather than output them immediately
-        const candidates: OutputTrie[] = [];
+        let nexts: [OutputTrie, Expr][] = [];
+        let [prevOutput, prevExpr] = prev;
 
-        while (prev = states.pop()) {
+        logDebug(opt.verbose, "");
+        logDebug(opt.verbose, `prevOutput is ${JSON.stringify(prevOutput.toDict(tapeNS, opt))}`);
+        logDebug(opt.verbose, `*** Generating for expr is ${prevExpr.id}`);
 
-            // first, if we're random, see if it's time to stop and 
-            // randomly emit a result.  candidates will only be length > 0
-            // if we're random.
-            if (candidates.length > 0 && Math.random()) {
-                break;
-            }
+        if (prevExpr instanceof EpsilonExpr) {
+            // we found a valid output and there's nothing left
+            // we can do on this branch
 
-            let nexts: [string[], OutputTrie, Expr][] = [];
-            let [tapes, prevOutput, prevExpr] = prev;
- 
-            if (verbose) {
-                console.log();
-                console.log(`prevOutput is ${JSON.stringify(prevOutput.toDict(tapeNS, opt))}`);
-                console.log(`prevExpr is ${prevExpr.id}`);
-                console.log(`remaining tapes are [${tapes}]`);
-            }
-
-            if (prevExpr instanceof EpsilonExpr) {
-                // we found a valid output
-
-                if (verbose) {
-                    console.log(`YIELD ${JSON.stringify(prevOutput.toDict(tapeNS, opt))} `)
-                }
-                    
-                // if we're random, don't yield immediately, wait
-                if (opt.random) {
-                    candidates.push(prevOutput);
-                    continue;
-                }
-
-                // if we're not random, yield the result immediately.
-                yield* prevOutput.toDict(tapeNS, opt);
+            logDebug(opt.verbose, `YIELD ${JSON.stringify(prevOutput.toDict(tapeNS, opt))} `)
+                
+            // if we're random, don't yield immediately, wait
+            if (opt.random) {
+                candidates.push(prevOutput);
                 continue;
             }
-            
-            if (tapes.length == 0) {
-                if (!(prevExpr instanceof NullExpr || prevExpr instanceof EpsilonExpr)) {
-                    throw new Error(`warning, nontrivial expr at end: ${prevExpr.id}`);
-                }
-                continue; 
-            }
-                
-            const tapeToTry = tapes[0];
-            
-            const delta = prevExpr.delta(tapeToTry, tapeNS, stack, opt);
-            if (verbose) {
-                console.log(`d^${tapeToTry} is ${delta.id}`);
-            }
-            if (!(delta instanceof NullExpr)) {                    
-                const newTapes = tapes.slice(1);
-                nexts.push([newTapes, prevOutput, delta]);
+
+            // if we're not random, yield the result immediately.
+            yield* prevOutput.toDict(tapeNS, opt);
+            continue;
+        } else if (prevExpr instanceof NullExpr) {
+            // the search has failed here (there are no valid results
+            // that have prevOutput as a prefix), so abandon this node 
+            // and move on
+            continue;
+        } else if (prevExpr instanceof PriorityExpr) {
+            // we've neither found a valid output nor failed; there is 
+            // still a possibility of finding an output with prevOutput
+            // as its prefix
+            const delta = prevExpr.openDelta(tapeNS, stack, opt);
+            if (!(delta instanceof NullExpr)) {    
+                nexts.push([prevOutput, delta]);
             }
 
-            // rotate the tapes so that we don't just 
-            // keep trying the same one every time
-            tapes = [... tapes.slice(1), tapes[0]];
-
-            for (const [cTarget, cNext] of 
-                    this.deriv(prevExpr, tapeToTry, tapeNS, stack, opt)) {
-
-                if (!(cNext instanceof NullExpr)) {        
-                    if (verbose) {
-                        console.log(`D^${tapeToTry}_${cTarget} is ${cNext.id}`);
-                    }
-                    const nextOutput = prevOutput.add(tapeToTry, cTarget);
-                    nexts.push([tapes, nextOutput, cNext]);
+            // next see where we can go on that tape, along any char
+            // transition.
+            for (const [cTape, cTarget, cNext] of prevExpr.openDeriv(tapeNS, stack, opt)) {
+                if (!(cNext instanceof NullExpr)) {
+                    const nextOutput = prevOutput.add(cTape, cTarget);
+                    nexts.push([nextOutput, cNext]);
                 }
             }
-
-            // if random, shuffle the possibilities to search through next
-            if (opt.random) {
-                shuffleArray(nexts);
-            }
-
-            // add the new ones to the stack
-            states.push(...nexts);
+        } else {
+            throw new Error("Encountered a non-eps, non-null, non-prioritizer as root");
         }
 
-        // if we get here, we've exhausted the search.  usually we'd be done,
-        // but with randomness, it's possible to have cached all outputs but not
-        // actually yielded any.  The following does so.
-        if (candidates.length > 0) {
-            const candidateIndex = Math.floor(Math.random()*candidates.length);
-            const candidateOutput = candidates[candidateIndex];
-            yield* candidateOutput.toDict(tapeNS, opt);
+        // if random, shuffle the possibilities to search through next
+        if (opt.random) {
+            shuffleArray(nexts);
         }
 
-        if (verbose) {
-            console.log(``);
-            console.log(`*** Finished generating for expr  ${expr.id}.`);
-        }
-    } 
-
-}
-
-class StringGenerator extends Generator {
-
-    public *deriv(
-        expr: Expr,
-        tapeName: string,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
-    ): Gen<[Token, Expr]> {
-        yield* expr.disjointDeriv(tapeName, ANY_CHAR_STR, tapeNS, stack, opt);
+        // add the new ones to the stack
+        states.push(...nexts);
     }
 
-}
+    logDebug(opt.verbose, `*** Finished generating for expr  ${expr.id}.`);
+    logStates(opt.verbose, `States visited: ${stateCounter}`)
+    const elapsedTime = msToTime(Date.now() - startingTime);
+    logTime(opt.verbose, `Generation time: ${elapsedTime}`);
 
-class BitsetGenerator extends Generator {
-        
-    public *deriv(
-        expr: Expr,
-        tapeName: string,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
-    ): Gen<[Token, Expr]> {
-        const tape = tapeNS.get(tapeName);
-        yield* expr.disjointDeriv(tapeName, tape.any, tapeNS, stack, opt);
+    // if we get here, we've exhausted the search.  usually we'd be done,
+    // but with randomness, it's possible to have cached all outputs but not
+    // actually yielded any.  The following does so.
+
+    if (candidates.length == 0) {
+        return;
     }
 
-}
+    const candidateIndex = Math.floor(Math.random()*candidates.length);
+    const candidateOutput = candidates[candidateIndex];
+    yield* candidateOutput.toDict(tapeNS, opt);
+} 

@@ -1,7 +1,7 @@
 import { 
     CounterStack, CountGrammar, EqualsGrammar, Grammar, 
     GrammarTransform, 
-    LiteralGrammar, NsGrammar, SequenceGrammar, Transform 
+    LiteralGrammar, NsGrammar, PriorityGrammar, SequenceGrammar, Transform 
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
@@ -9,12 +9,14 @@ import {
     DummyCell, stripHiddenTapes, GenOptions, 
     HIDDEN_TAPE_PREFIX,
     SILENT,
-    VERBOSE_TIME
+    VERBOSE_TIME,
+    logTime,
+    logGrammar
 } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
-import { TapeNamespace } from "./tapes";
-import { Expr, SymbolTable } from "./exprs";
+import { TapeNamespace, VocabMap } from "./tapes";
+import { Expr, PriorityExpr, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 import { SameTapeReplaceTransform } from "./transforms/sameTapeReplace";
@@ -23,6 +25,7 @@ import { FilterTransform } from "./transforms/filter";
 import { FlattenTransform } from "./transforms/flatten";
 import { RuleReplaceTransform } from "./transforms/ruleReplace";
 import { generate } from "./generator";
+import { RuleReplaceTransform2 } from "./transforms/ruleReplace2";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
@@ -45,6 +48,7 @@ export class Interpreter {
     // or compilation is going to require remembering what indices had previously
     // been assigned to which characters.  (we're not, at the moment, using that 
     // functionality, but even if we're not, it doesn't hurt to keep these around.)
+    public vocab: VocabMap = new VocabMap();
     public tapeNS: TapeNamespace = new TapeNamespace();
 
     // the symbol table doesn't change in between invocations because queries
@@ -83,7 +87,7 @@ export class Interpreter {
 
         const transforms: Transform[] = [
             new NameQualifierTransform(),
-            new RuleReplaceTransform(),
+            new RuleReplaceTransform2(),
             new SameTapeReplaceTransform(),
             new RenameFixTransform(),
             new FlattenTransform(),
@@ -96,15 +100,13 @@ export class Interpreter {
             }, timeVerbose, t.desc);
         }
 
-        //console.log(this.grammar.id);
-
         // Next we collect the vocabulary on all tapes
         timeIt(() => {
             // recalculate tapes
             this.grammar.calculateTapes(new CounterStack(2));
             // collect vocabulary
             this.tapeNS = new TapeNamespace();
-            this.grammar.collectAllVocab(this.tapeNS);
+            this.grammar.collectAllVocab(this.vocab, this.tapeNS);
 
         }, timeVerbose, "Collected vocab");
 
@@ -114,6 +116,8 @@ export class Interpreter {
             this.grammar.copyVocab(this.tapeNS, new Set());
         }, timeVerbose, "Copied vocab");
         */
+
+        logGrammar(this.verbose, this.grammar.id)
     }
 
     public static fromCSV(
@@ -134,21 +138,14 @@ export class Interpreter {
         // First, load all the sheets
         let startTime = Date.now();
         const sheetProject = new SheetProject(devEnv, mainSheetName);
-        
-        if (verbose) {
-            const elapsedTime = msToTime(Date.now() - startTime);
-            console.log(`Sheets loaded; ${elapsedTime}`);
-        }
+        let elapsedTime = msToTime(Date.now() - startTime);
+        logTime(verbose, `Sheets loaded; ${elapsedTime}`);
         
         startTime = Date.now();
-
         const tst = sheetProject.toTST();
         const grammar = tst.toGrammar();
-
-        if (verbose) {
-            const elapsedTime = msToTime(Date.now() - startTime);
-            console.log(`Converted to grammar; ${elapsedTime}`);
-        }
+        elapsedTime = msToTime(Date.now() - startTime);
+        logTime(verbose, `Converted to grammar; ${elapsedTime}`);
 
         const result = new Interpreter(devEnv, grammar, verbose);
         result.sheetProject = sheetProject;
@@ -225,14 +222,14 @@ export class Interpreter {
             maxChars: maxChars,
             verbose: this.verbose
         }
-        const [expr, tapePriority] = this.prepareExpr(symbolName, restriction, opt);
+        const expr = this.prepareExpr(symbolName, restriction, opt);
 
         if (stripHidden) {
-            yield* stripHiddenTapes(generate(expr, tapePriority, this.tapeNS, opt));
+            yield* stripHiddenTapes(generate(expr, this.tapeNS, opt));
             return;
         }
 
-        yield* generate(expr, tapePriority, this.tapeNS, opt);
+        yield* generate(expr, this.tapeNS, opt);
     }
     
     public sample(symbolName: string = "",
@@ -261,11 +258,11 @@ export class Interpreter {
             verbose: this.verbose
         }
 
-        const [expr, tapePriority] = this.prepareExpr(symbolName, restriction, opt);
+        const expr = this.prepareExpr(symbolName, restriction, opt);
         for (let i = 0; i < numSamples; i++) {
-            let gen = generate(expr, tapePriority, this.tapeNS, opt);
+            let gen = generate(expr, this.tapeNS, opt);
             if (stripHidden) {
-                gen = stripHiddenTapes(generate(expr, tapePriority, this.tapeNS, opt));
+                gen = stripHiddenTapes(gen);
             }
             yield* iterTake(gen, 1);
         }
@@ -286,10 +283,14 @@ export class Interpreter {
     public prepareExpr(
         symbolName: string = "",
         query: StringDict = {},
-        opt: GenOptions
-    ): [Expr, string[]] {
+        opt: GenOptions,
+        tapePriority: string[] = []
+    ): Expr {
 
-        let tapePriority = this.grammar.calculateTapes(new CounterStack(2));
+        if (tapePriority.length == 0) {
+            tapePriority = this.grammar.calculateTapes(new CounterStack(2));
+        }
+        
         let expr = this.grammar.constructExpr(this.symbolTable);
 
         let targetGrammar = this.grammar.getSymbol(symbolName);
@@ -311,23 +312,30 @@ export class Interpreter {
             tapePriority = targetGrammar.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
-            targetGrammar.collectAllVocab(this.tapeNS);
+            targetGrammar.collectAllVocab(this.vocab, this.tapeNS);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
             //targetGrammar.copyVocab(this.tapeNS, new Set());
         
         }
-        
-        if (opt.maxChars != Infinity) {
-            targetGrammar = new CountGrammar(targetGrammar.cell, targetGrammar, opt.maxChars-1);
+
+        const potentiallyInfinite = targetGrammar.potentiallyInfinite(new CounterStack(2));
+        if (potentiallyInfinite && opt.maxChars != Infinity) {
+            if (targetGrammar instanceof PriorityGrammar) {
+                targetGrammar.child = new CountGrammar(targetGrammar.child.cell, targetGrammar.child, opt.maxChars-1);
+            } else {
+                targetGrammar = new CountGrammar(targetGrammar.cell, targetGrammar, opt.maxChars-1);
+            }
+        }
+
+        if (!(targetGrammar instanceof PriorityGrammar)) {
+            targetGrammar = new PriorityGrammar(targetGrammar.cell, targetGrammar, tapePriority);
+            //logTime(this.verbose, `priority = ${(targetGrammar as PriorityGrammar).tapePriority}`)
         }
 
         expr = targetGrammar.constructExpr(this.symbolTable);
 
-
-        //console.log(expr.id);
-
-        return [expr, tapePriority];    
+        return expr;    
     }
 
     public runUnitTests(): void {
@@ -339,19 +347,24 @@ export class Interpreter {
         for (const test of tests) {
 
             // create a filter for each test
-            const targetComponent = new EqualsGrammar(test.cell, test.child, test.test);
+            let targetComponent: Grammar = new EqualsGrammar(test.cell, test.child, test.test);
 
             const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
-            targetComponent.collectAllVocab(this.tapeNS);
+            targetComponent.collectAllVocab(this.vocab, this.tapeNS);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
             //targetComponent.copyVocab(this.tapeNS, new Set());
+                
+            if (!(targetComponent instanceof PriorityGrammar)) {
+                targetComponent = new PriorityGrammar(targetComponent.cell, targetComponent, tapePriority);
+                //logTime(this.verbose, `priority = ${(targetComponent as PriorityGrammar).tapePriority}`)
+            }
 
             expr = targetComponent.constructExpr(this.symbolTable);
 
-            const results = [...generate(expr, tapePriority, this.tapeNS, opt)];
+            const results = [...generate(expr, this.tapeNS, opt)];
             test.evalResults(results);
         }
     }

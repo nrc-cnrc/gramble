@@ -1,4 +1,4 @@
-import { testGramble, testErrors, sheetFromFile } from "../../testUtils";
+import { testGrammar, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
@@ -8,7 +8,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Rename header', function() {
         const project = sheetFromFile(`${DIR}/renameGrammar.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foo", gloss: "run" }
         ]);
     });
@@ -18,7 +18,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, 
             [["renameIrrelevant", 1, 4, "error"]]
         );
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foo", gloss: "run" }
         ]);
     });
@@ -28,13 +28,13 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, 
             [["renameConflict", 1, 5, "error"]]
         );
-        testGramble(project, [{gloss:"run", text:"v"}]);
+        testGrammar(project, [{gloss:"run", text:"v"}]);
     });
 
     describe('Rename header with embeds', function() {
         const project = sheetFromFile(`${DIR}/renameEmbed.csv`);
         testErrors(project, []);
-        testGramble(project, [
+        testGrammar(project, [
             { text: "foobar", gloss: "run[1SG]", subj: "[1SG]", class: "v" },
             { text: "moobar", gloss: "jump[1SG]", subj: "[1SG]", class: "v" },
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]", class: "v" },

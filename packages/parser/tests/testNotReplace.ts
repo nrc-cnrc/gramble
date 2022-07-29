@@ -22,7 +22,7 @@ import {
 } from './testUtils';
 
 import * as path from 'path';
-import { SILENT, StringDict } from "../src/util";
+import { BITSETS_ENABLED, SILENT, StringDict } from "../src/util";
 
 const EMPTY_CONTEXT = Epsilon();
 
@@ -60,6 +60,8 @@ function HiddenTapeNameReplaceBypass(
         preContext, postContext, otherContext, beginsWith, endsWith, 
         minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass, hiddenTapeName);
 }
+
+if (!BITSETS_ENABLED) {
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -443,3 +445,5 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
 });
+
+}

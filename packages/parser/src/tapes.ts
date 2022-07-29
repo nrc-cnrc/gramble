@@ -15,39 +15,151 @@ import {
  */
  export type Token = BitsetToken | string;
 
- export class BitsetToken {
+ 
+export abstract class BitsetToken {
+
+    public abstract and(other: BitsetToken): BitsetToken;
+    public abstract rightAnd(other: UnentangledToken): BitsetToken;
+    public abstract or(other: BitsetToken): BitsetToken;
+    public abstract rightOr(other: UnentangledToken): BitsetToken;
+    public abstract not(): BitsetToken;
+    public abstract get bits(): BitSet;
+    public abstract clone(): BitsetToken;
+    public abstract cardinality(): number;
+
+    public isEmpty(): boolean {
+        return this.cardinality() == 0;
+    }
+
+    public reEntangle(entanglements: number[]): BitsetToken {
+        if (entanglements.length == 0) {
+            return this;
+        }
+        const child = this.reEntangle(entanglements.slice(1));
+        return new EntangledToken(child, entanglements[0]);
+    }
+
+    public abstract disentangle(): [UnentangledToken, number[]];
+    public abstract get entanglements(): number[];
+
+    //andNot(other: IToken): IToken;
+}
+
+export class UnentangledToken extends BitsetToken {
  
     constructor(
         public bits: BitSet
-    ) { }
+    ) { 
+        super();
+    }
 
     public and(other: BitsetToken): BitsetToken {
-        return new BitsetToken(this.bits.and(other.bits));
+        return other.rightAnd(this);
     }
-
-    public andNot(other: BitsetToken): BitsetToken {
-        return new BitsetToken(this.bits.andNot(other.bits));
+    
+    public rightAnd(other: UnentangledToken): BitsetToken {
+        return new UnentangledToken(this.bits.and(other.bits));
     }
-
+    
     public or(other: BitsetToken): BitsetToken {
-        return new BitsetToken(this.bits.or(other.bits));
+        return other.rightOr(this);
+    }
+    
+    public rightOr(other: UnentangledToken): BitsetToken {
+        return new UnentangledToken(this.bits.or(other.bits));
+    }
+
+    public not(): BitsetToken {
+        return new UnentangledToken(this.bits.not());
     }
 
     public clone(): BitsetToken {
-        return new BitsetToken(this.bits.clone());
+        return new UnentangledToken(this.bits.clone());
     }
 
     public cardinality(): number {
         return this.bits.cardinality();
     }
 
-    public isEmpty(): boolean {
-        return this.bits.isEmpty();
+    public disentangle(): [UnentangledToken, number[]] {
+        return [this, []];
     }
+
+    public get entanglements(): number[] {
+        return [];
+    }
+
 }
 
-const ANY_CHAR_BITSET: BitsetToken = new BitsetToken(new BitSet().flip());
-const NO_CHAR_BITSET: BitsetToken = new BitsetToken(new BitSet());
+export class EntangledToken extends BitsetToken {
+
+    protected entanglement: number;
+
+    constructor(
+        public child: BitsetToken,
+        entanglement: number | undefined = undefined
+    ) { 
+        super();
+        this.entanglement = (entanglement != undefined) ? 
+                            entanglement : ENTANGLE_INDEX++
+    }
+
+    public and(other: BitsetToken): EntangledToken {
+        const newChild = this.child.and(other);
+        return new EntangledToken(newChild, this.entanglement);
+    }
+
+    public rightAnd(other: UnentangledToken): EntangledToken {
+        const newChild = this.child.rightAnd(other);
+        return new EntangledToken(newChild, this.entanglement);
+    }
+    
+    public or(other: BitsetToken): EntangledToken {
+        const newChild = this.child.or(other);
+        return new EntangledToken(newChild, this.entanglement);
+    }
+
+    public rightOr(other: UnentangledToken): EntangledToken {
+        const newChild = this.child.rightOr(other);
+        return new EntangledToken(newChild, this.entanglement);
+    }
+    
+    public not(): BitsetToken {
+        return new EntangledToken(this.child.not(), this.entanglement);
+    }
+
+    public get bits(): BitSet {
+        return this.child.bits;
+    }
+
+    public cardinality(): number {
+        return this.child.cardinality();
+    }
+
+    public clone(): EntangledToken {
+        return new EntangledToken(this.child.clone(), this.entanglement);
+    }
+
+    public entangle(other: BitsetToken): EntangledToken {
+        return new EntangledToken(other, this.entanglement);
+    }
+
+    public disentangle(): [UnentangledToken, number[]] {
+        const [c, e] = this.child.disentangle();
+        return [c, [this.entanglement, ...e]];
+    }
+    
+    public get entanglements(): number[] {
+        return [this.entanglement, ...this.child.entanglements];
+    }
+
+}
+
+let ENTANGLE_INDEX: number = 0;
+
+
+const ANY_CHAR_BITSET: BitsetToken = new UnentangledToken(new BitSet().flip());
+const NO_CHAR_BITSET: BitsetToken = new UnentangledToken(new BitSet());
 
 /**
  * OutputTrie
@@ -68,11 +180,20 @@ export class OutputTrie {
 
     public toDict(
         tapeNS: TapeNamespace,
+        opt: GenOptions,
+        bitNS: EntanglementRegistry = {}
+    ): StringDict[] {
+        return [{}];
+    }
+
+    /*
+    public toDict(
+        tapeNS: TapeNamespace,
         opt: GenOptions
     ): StringDict[] {
 
         let results: StringDict[] = [{}];
-
+        let entanglementRegistry: {[key: number]: BitSet} = {};
         let current: OutputTrie = this;
 
         // step backward through the current object and its prevs, building 
@@ -84,7 +205,20 @@ export class OutputTrie {
             const tape = tapeNS.get(current.tapeName);
             for (const result of results) {
                 const oldStr = (current.tapeName in result) ? result[current.tapeName] : "";
-                const strings = this.getStringsFromToken(tape, current.token);
+                
+                if (current.token instanceof EntangledToken) {
+                    const e: number = current.token.entanglement;
+                    if (e in entanglementRegistry) {
+                        entanglementRegistry[e] = entanglementRegistry[e].and(current.token.bits);
+                    } else {
+                        entanglementRegistry[e] = current.token.bits;
+                    }
+                }
+                
+                const strings = this.getStringsFromToken(tape, current.token, entanglementRegistry);
+                if (current.token instanceof EntangledToken) {
+                    console.log(`entangledToken value=${strings}, entanglement=${current.token.entanglement}`)
+                }
                 if (opt.random) {
                     shuffleArray(strings);
                 }
@@ -103,15 +237,27 @@ export class OutputTrie {
         }
 
         return results;
-    } 
+    }  */
 
     public getStringsFromToken(
         tape: Tape, 
-        t: Token
+        t: Token,
+        entangleValues: EntanglementRegistry
     ): string[] {
+        if (t instanceof EntangledToken) { 
+            let result = t.clone();
+            for (const entanglement of t.entanglements) {
+                if (entanglement in entangleValues) {
+                    const c = entangleValues[entanglement];
+                    const resolution = tape.toToken([c]);
+                    result = result.and(resolution);
+                }
+            }
+            return tape.fromToken(result);
+        }
         if (t instanceof BitsetToken) {
             return tape.fromToken(t);
-        }
+        } 
         return [t]; // if it's not a Token it's already a string
     }
 }
@@ -126,9 +272,50 @@ export class OutputTrieLeaf extends OutputTrie {
         super();
     }
 
+    public toDict(
+        tapeNS: TapeNamespace,
+        opt: GenOptions,
+        entangleValues: EntanglementRegistry = {}
+    ): StringDict[] {
+        const results: StringDict[] = [];
+        const tape = tapeNS.get(this.tapeName);
+        const newStrs = this.getStringsFromToken(tape, this.token, entangleValues);
+        if (opt.random) {
+            shuffleArray(newStrs);
+        }
+
+        for (const newStr of newStrs) {
+            let prevResults: StringDict[] = [];
+            if (this.token instanceof EntangledToken) { 
+                const newEntanglements: EntanglementRegistry = {};
+                Object.assign(newEntanglements, entangleValues);
+                for (const entanglement of this.token.entanglements) {
+                    newEntanglements[entanglement] = newStr;
+                }
+                prevResults = this.prev.toDict(tapeNS, opt, newEntanglements);
+            } else {
+                prevResults = this.prev.toDict(tapeNS, opt, entangleValues);
+            }
+
+            for (const prevResult of prevResults) {
+                const oldStr = (this.tapeName in prevResult) ?
+                                    prevResult[this.tapeName] : "";
+                const newResult: StringDict = {};
+                Object.assign(newResult, prevResult);
+                newResult[this.tapeName] = DIRECTION_LTR ?
+                                            oldStr + newStr :
+                                            newStr + oldStr;
+                results.push(newResult);
+            }
+        }
+        return results;
+    }
+
 }
 
-class Vocab {
+type EntanglementRegistry = {[key: number]: string};
+
+export class VocabMap {
 
     public strToIndex: Map<string, number> = new Map();
     public indexToStr: Map<number, string> = new Map();
@@ -186,11 +373,13 @@ export interface Tape {
     readonly vocab: string[];
     readonly globalName: string;
     expandStrings(token: string, other?: Tape | undefined): string[];
+    restrictToVocab(token: BitsetToken): BitsetToken;
     vocabIsSubsetOf(other: Tape): boolean;
     inVocab(strs: string[]): boolean;
     match(str1: BitsetToken, str2: BitsetToken): BitsetToken;
     tokenize(str: string): string[];
     toToken(chars: string[]): BitsetToken;
+    fromBits(bits: BitSet): string[];
     fromToken(token: BitsetToken): string[];
 
 }
@@ -198,20 +387,20 @@ export interface Tape {
 /**
  * A tape containing strings; the basic kind of tape and (right now) the only one we really use.
  */
-class BitsetTape implements Tape {
+export class BitsetTape implements Tape {
 
     public mask: BitsetToken = NO_CHAR_BITSET.clone();
 
     constructor(
         public globalName: string,
-        protected _vocab: Vocab = new Vocab()
+        protected _vocab: VocabMap = new VocabMap()
      ) { }
 
     public get vocabSize(): number {
         return this.mask.cardinality();
     }
 
-    expandStrings(
+    public expandStrings(
         token: string, 
         other: Tape | undefined = undefined
     ): string[] {
@@ -229,6 +418,10 @@ class BitsetTape implements Tape {
             return [];
         }
         return [token];
+    }
+
+    public restrictToVocab(token: BitsetToken): BitsetToken {
+        return token.and(this.mask);
     }
 
     public inVocab(chars: string[]): boolean {
@@ -262,7 +455,7 @@ class BitsetTape implements Tape {
     }
 
     public match(str1: BitsetToken, str2: BitsetToken): BitsetToken {
-        return new BitsetToken(str1.bits.and(str2.bits));
+        return str1.and(str2);
     }
 
     public tokenize(
@@ -291,7 +484,7 @@ class BitsetTape implements Tape {
         return result;
     }
 
-    protected fromBits(bits: BitSet): string[] {
+    public fromBits(bits: BitSet): string[] {
         const result: string[] = [];
         for (const index of bits.toArray()) {
             const char = this._vocab.getString(index);
@@ -325,7 +518,7 @@ class BitsetTape implements Tape {
             if (char == ANY_CHAR_STR) {
                 return this.any;
             }
-            result = result.or(new BitsetToken(this.toBits(char)));
+            result = result.or(new UnentangledToken(this.toBits(char)));
         }
         return result.and(this.mask);
     }
@@ -336,69 +529,53 @@ class BitsetTape implements Tape {
 }
 
 /**
- * TapeNamespace maintains the mappings between the tapeNames and actual Tapes,
- * which may vary within different contexts because of tape renaming.
+ * Namespace<T> is a convenience wrapper around Map<string, T> that
+ * allows us to rename a given item statelessly.  This is used for Tapes
+ * in particular.
  */
-export class TapeNamespace {
+export class Namespace<T> {
 
-    constructor(
-        public vocab: Vocab = new Vocab()
-    ) { }
+    protected entries: Map<string, T> = new Map();
 
-    public tapes: Map<string, Tape> = new Map();
-
-    public getTapeNames(): Set<string> {
-        return new Set(this.tapes.keys());
+    public getKeys(): Set<string> {
+        return new Set(this.entries.keys());
     }
 
-    public get(tapeName: string): Tape {
-        const result = this.tapes.get(tapeName);
+    public get(key: string): T {
+        const result = this.entries.get(key);
         if (result == undefined) {
-            throw new Error(`Cannot find tape ${tapeName} in tape namespace, ` +
-                `available tapes are [${[...this.tapes.keys()]}]`);
+            throw new Error(`Cannot find ${key} in namespace, ` +
+                `available: [${[...this.entries.keys()]}]`);
         }
         return result;
     }
 
-    public createTape(tapeName: string): Tape {
-        // don't remake it if it doesn't exist
-        const oldTape = this.tapes.get(tapeName);
-        if (oldTape != undefined) {
-            return oldTape;
-        }
-
-        // make a new one if it doesn't exist
-        const newTape = new BitsetTape(tapeName, this.vocab);
-        this.tapes.set(tapeName, newTape);
-        return newTape;
+    public attemptGet(key: string): T | undefined {
+        return this.entries.get(key);
     }
 
-    /*
-    public get size(): number {
-        return this.tapes.size;
-    } */
+    public set(key: string, value: T): void {
+        this.entries.set(key, value);
+    }
 
-    /*
-    public rename(fromTape: string, toTape: string): TapeNamespace {
-        return new RenamedTapeNamespace(this, fromTape, toTape);
-    } */
-
-    public rename(fromTape: string, toTape: string): TapeNamespace {
-        if (fromTape == toTape) {
+    public rename(fromKey: string, toKey: string): Namespace<T> {
+        if (fromKey == toKey) {
             return this;
         }
-        const result = new TapeNamespace(this.vocab);
-        for (const [tapeName, tape] of this.tapes.entries()) {
-            if (tapeName == toTape) {
+        const result = new Namespace<T>();
+        for (const [key, value] of this.entries.entries()) {
+            if (key == toKey) {
                 continue;
             }
-            const newTapeName = renameTape(tapeName, fromTape, toTape);
-            result.tapes.set(newTapeName, tape);
+            const newKey = (key == fromKey) ? toKey : key;
+            result.entries.set(newKey, value);
         }
         return result;
     }
 
 }
+
+export class TapeNamespace extends Namespace<Tape> { }
 
 /**
  * RenamedTapeNamespaces are necessary for RenameExpr to work properly.

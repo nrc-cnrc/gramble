@@ -22,13 +22,16 @@ import {
     constructDotRep,
     constructCount,
     constructCountTape,
-    EpsilonExpr,
+    constructPriority,
+    EpsilonExpr
 } from "./exprs";
 
 import { 
+    BitsetTape,
     renameTape,
     Tape, 
     TapeNamespace, 
+    VocabMap
 } from "./tapes";
 
 import { 
@@ -87,8 +90,8 @@ export interface GrammarTransform<T> extends Transform {
     transformHide(g: HideGrammar, ns: NsGrammar, args: T): Grammar;
     transformCount(g: CountGrammar, ns: NsGrammar, args: T): Grammar;
     transformCountTape(g: CountTapeGrammar, ns: NsGrammar, args: T): Grammar;
+    transformPriority(g: PriorityGrammar, ns: NsGrammar, args: T): Grammar
 }
-
 
 /**
  * Grammar components represent the linguistic grammar that the
@@ -172,6 +175,25 @@ export abstract class Grammar {
     public getLiterals(): LiteralGrammar[] {
         throw new Error(`Cannot get literals from this grammar`);
     }
+
+    /**
+     * This method is used to detect grammars that might be infinite --
+     * not *certain* to be infinite, but potentially so, that that we
+     * add a CountGrammar to the root just in case.  
+     * 
+     * I don't think it's possible to be certain that an arbitrary grammar
+     * is infinite; for example, we might join two grammars, both of which
+     * are infinite, but they actually only have a single entry that both 
+     * share.  We wouldn't know that, however, until generation; out of safety
+     * we have to treat the joins of two infinite grammars as themselves 
+     * infinite.  
+     * 
+     * It costs us little if we're wrong here; CountExprs have 
+     * negligible runtime cost.  We still want to try to get this correct, 
+     * though, because it truncates the outputs of the grammar-as-written,
+     * we want the addition of CountGrammar to be a last resort.
+     */
+    public abstract potentiallyInfinite(stack: CounterStack): boolean;
     
     public abstract getChildren(): Grammar[];
 
@@ -182,13 +204,19 @@ export abstract class Grammar {
      * @param stack What symbols we've already collected from, to prevent inappropriate recursion
      * @returns vocab 
      */
-    public collectAllVocab(tapeNS: TapeNamespace): void {
+    public collectAllVocab(vocab: VocabMap, tapeNS: TapeNamespace): void {
 
         // In all current invocations of this, calculateTapes has already been called.
         // But it memoizes, so there's no harm in calling it again for safety.
         const tapeNames = this.calculateTapes(new CounterStack(2));
         for (const tapeName of tapeNames) {
-            tapeNS.createTape(tapeName); // just in case it doesn't exist
+            const oldTape = tapeNS.attemptGet(tapeName);
+            if (oldTape == undefined) {
+                // make a new one if it doesn't exist
+                const newTape = new BitsetTape(tapeName, vocab);
+                tapeNS.set(tapeName, newTape);
+            }
+    
             this.collectVocab(tapeName, tapeNS, new Set());
         }
         const vocabCopyEdges = this.getVocabCopyEdges(tapeNS, new Set());
@@ -212,7 +240,7 @@ export abstract class Grammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<string>
+        symbolsVisited: Set<[string,string]>
     ): void { 
         for (const child of this.getChildren()) {
             child.collectVocab(tapeName, tapeNS, symbolsVisited);
@@ -269,7 +297,8 @@ export abstract class Grammar {
 
     public getAllTapes(): TapeNamespace {
         const tapes = new TapeNamespace();
-        this.collectAllVocab(tapes);
+        const vocab = new VocabMap();
+        this.collectAllVocab(vocab, tapes);
         return tapes;
     }
 
@@ -295,6 +324,9 @@ abstract class AtomicGrammar extends Grammar {
 
     public getChildren(): Grammar[] { return []; }
 
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return false;
+    }
 }
 
 export class EpsilonGrammar extends AtomicGrammar {
@@ -379,7 +411,7 @@ export class CharSetGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<string>
+        symbolsVisited: Set<[string,string]>
     ): void { 
         if (tapeName != this.tapeName) {
             return;
@@ -426,7 +458,7 @@ export class LiteralGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<string>
+        symbolsVisited: Set<[string,string]>
     ): void {
         if (tapeName != this.tapeName) {
             return;
@@ -494,6 +526,11 @@ abstract class NAryGrammar extends Grammar {
     public getChildren(): Grammar[] { 
         return this.children; 
     }
+    
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.children.some(c => c.potentiallyInfinite(stack));
+    }
+
 }
 
 export class SequenceGrammar extends NAryGrammar {
@@ -563,6 +600,10 @@ export abstract class UnaryGrammar extends Grammar {
         super(cell);
     }
 
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child.potentiallyInfinite(stack);
+    }
+
     public getChildren(): Grammar[] { 
         return [this.child]; 
     }
@@ -594,6 +635,11 @@ export class IntersectionGrammar extends BinaryGrammar {
     
     public get id(): string {
         return `Intersect(${this.child1.id},${this.child2.id})`;
+    }
+
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child1.potentiallyInfinite(stack) && 
+                this.child2.potentiallyInfinite(stack);
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -628,6 +674,11 @@ export class JoinGrammar extends BinaryGrammar {
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformJoin(this, ns, args);
     }
+    
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child1.potentiallyInfinite(stack) && 
+                this.child2.potentiallyInfinite(stack);
+    }
 
     public calculateTapes(stack: CounterStack): string[] {
         if (this._tapes == undefined) {
@@ -655,6 +706,11 @@ export class EqualsGrammar extends BinaryGrammar {
 
     public get id(): string {
         return `Filter(${this.child1.id},${this.child2.id})`;
+    }
+    
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child1.potentiallyInfinite(stack) && 
+                this.child2.potentiallyInfinite(stack);
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -700,6 +756,10 @@ export class CountGrammar extends UnaryGrammar {
         return `Count(${this.maxChars},${this.child.id})`;
     }
 
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.maxChars == Infinity
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformCount(this, ns, args);
     }
@@ -726,6 +786,13 @@ export class CountTapeGrammar extends UnaryGrammar {
     public get id(): string {
         return `CountTape(${JSON.stringify(this.maxChars)},${this.child.id})`;
     }
+    
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        if (typeof(this.maxChars) == "number") {
+            return this.maxChars == Infinity;
+        }
+        return Object.values(this.maxChars).some(n => n == Infinity);
+    }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformCountTape(this, ns, args);
@@ -743,6 +810,33 @@ export class CountTapeGrammar extends UnaryGrammar {
             }
             const childExpr = this.child.constructExpr(symbols);
             this.expr = constructCountTape(childExpr, maxCharsDict);
+        }
+        return this.expr;
+    }
+}
+
+export class PriorityGrammar extends UnaryGrammar {
+
+    constructor(
+        cell: Cell,
+        child: Grammar,
+        public tapePriority: string[]
+    ) {
+        super(cell, child);
+    }
+
+    public get id(): string {
+        return `Priority(${this.tapePriority},${this.child.id})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformPriority(this, ns, args);
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const childExpr = this.child.constructExpr(symbols);
+            this.expr = constructPriority(this.tapePriority, childExpr);
         }
         return this.expr;
     }
@@ -821,7 +915,7 @@ export class RenameGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<string>
+        symbolsVisited: Set<[string,string]>
     ): void { 
         if (tapeName != this.toTape && tapeName == this.fromTape) {
             return;
@@ -903,6 +997,10 @@ export class RepeatGrammar extends UnaryGrammar {
         }
         return `Repeat(${this.child.id},${this.minReps},${this.maxReps})`;
     }
+
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child.potentiallyInfinite(stack) || this.maxReps == Infinity;
+    }
     
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformRepeat(this, ns, args);
@@ -974,7 +1072,7 @@ export class HideGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<string>
+        symbolsVisited: Set<[string,string]>
     ): void { 
         if (tapeName != this.toTape && tapeName == this.tapeName) {
             return;
@@ -1066,7 +1164,7 @@ export class MatchFromGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<string>
+        symbolsVisited: Set<[string,string]>
     ): void { 
         this.child.collectVocab(tapeName, tapeNS, symbolsVisited);
 
@@ -1144,6 +1242,10 @@ export class NsGrammar extends Grammar {
             results.push(`${k}:${v.id}`);
         }
         return `Ns(\n  ${results.join("\n  ")}\n)`;
+    }
+
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return [...this.symbols.values()].some(c => c.potentiallyInfinite(stack));
     }
 
     //public qualifiedNames: Map<string, string> = new Map();
@@ -1275,7 +1377,7 @@ export class NsGrammar extends Grammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<string>
+        symbolsVisited: Set<[string,string]>
     ): void { 
         for (const child of this.symbols.values()) {
             child.collectVocab(tapeName, tapeNS, symbolsVisited);
@@ -1319,6 +1421,16 @@ export class EmbedGrammar extends AtomicGrammar {
         return t.transformEmbed(this, ns, args);
     }
 
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        const referent = this.getReferent();
+        if (stack.get(this.name) >= 1) {
+            // we're recursive, so potentially infinite
+            return true;
+        }
+        const newStack = stack.add(this.name);
+        return referent.potentiallyInfinite(newStack);
+    }
+
     public getReferent(): Grammar {
         const referent = this.namespace.getSymbol(this.name);
         if (referent == undefined) {
@@ -1344,15 +1456,14 @@ export class EmbedGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<string>
+        symbolsVisited: Set<[string,string]>
     ): void { 
-        if (symbolsVisited.has(this.name)) {
+        if (symbolsVisited.has([tapeName, this.name])) {
             return;
         }
-        symbolsVisited.add(this.name);
+        symbolsVisited.add([tapeName, this.name]);
         this.getReferent().collectVocab(tapeName, tapeNS, symbolsVisited);
     }
-    
     
     public getVocabCopyEdges(
         tapeNS: TapeNamespace,
@@ -1405,7 +1516,7 @@ export class UnresolvedEmbedGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<string>
+        symbolsVisited: Set<[string,string]>
     ): void { 
         return;
     }
@@ -1669,6 +1780,10 @@ export function CountTape(maxChars: number | {[tape: string]: number}, child: Gr
     return new CountTapeGrammar(new DummyCell(), child, maxChars);
 }
 
+export function Priority(tapes: string[], child: Grammar): Grammar {
+    return new PriorityGrammar(new DummyCell(), child, tapes);
+}
+
 /**
   * Replace implements general phonological replacement rules.
   * 
@@ -1718,6 +1833,11 @@ export function JoinReplace(
  * tape renaming has to work in the case of replace rules
  */
 export class JoinReplaceGrammar extends Grammar {
+
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child.potentiallyInfinite(stack) &&
+                this.rules.every(r => r.potentiallyInfinite(stack));
+    }
 
     public get id(): string {
         const cs = this.rules.map(r => r.id).join(",");
@@ -1818,6 +1938,11 @@ export class JoinRuleGrammar extends Grammar {
         super(cell);
     }
 
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return this.child.potentiallyInfinite(stack) &&
+                this.rules.every(r => r.potentiallyInfinite(stack));
+    }
+
     public get id(): string {
         const cs = this.rules.map(r => r.id).join(",");
         return `JoinRule(${this.child.id},${cs})`;
@@ -1848,6 +1973,10 @@ export class ReplaceGrammar extends Grammar {
 
     public get id(): string {
         return `Replace(${this.fromGrammar.id}->${this.toGrammar.id}|${this.preContext.id}_${this.postContext.id})`;
+    }
+
+    public potentiallyInfinite(stack: CounterStack): boolean {
+        return true;
     }
     
     public fromTapeName: string = "__UNKNOWN_TAPE__";
@@ -1931,7 +2060,7 @@ export class ReplaceGrammar extends Grammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<string>
+        symbolsVisited: Set<[string,string]>
     ): void { 
         // first, collect vocabulary as normal
         super.collectVocab(tapeName, tapeNS, symbolsVisited);

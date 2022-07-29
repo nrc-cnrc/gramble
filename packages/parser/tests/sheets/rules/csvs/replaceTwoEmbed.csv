@@ -1,0 +1,11 @@
+VERB:, table:, text
+    ,        , aba
+
+TENSE:, table:, embed
+      ,       , VERB
+      
+WORD:, table:, embed,
+    ,       , VERB,
+    ,       ,     ,
+    , replace text:, from, to
+    ,         , b,  v
