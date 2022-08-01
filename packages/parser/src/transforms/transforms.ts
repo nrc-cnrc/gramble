@@ -9,7 +9,8 @@ import {
     SequenceGrammar, UnitTestGrammar,
     UnresolvedEmbedGrammar, StartsGrammar, 
     EndsGrammar, ContainsGrammar, CountGrammar, 
-    CountTapeGrammar, CounterStack, JoinRuleGrammar, MatchFromGrammar, PriorityGrammar
+    CountTapeGrammar, CounterStack, JoinRuleGrammar, 
+    MatchFromGrammar, PriorityGrammar, ShortGrammar
 } from "../grammars";
 
 /**
@@ -198,4 +199,10 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
         const newChild = g.child.accept(this, ns, args);
         return new PriorityGrammar(g.cell, newChild, g.tapePriority);
     }
+    
+    public transformShort(g: PriorityGrammar, ns: NsGrammar, args: T): Grammar {
+        const newChild = g.child.accept(this, ns, args);
+        return new ShortGrammar(g.cell, newChild);
+    }
+
 }

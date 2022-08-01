@@ -59,7 +59,7 @@ export function* generate(
 
         logDebug(opt.verbose, "");
         logDebug(opt.verbose, `prevOutput is ${JSON.stringify(prevOutput.toDict(tapeNS, opt))}`);
-        logDebug(opt.verbose, `*** Generating for expr is ${prevExpr.id}`);
+        logDebug(opt.verbose, `*** Generating for expr ${prevExpr.id}`);
 
         if (prevExpr instanceof EpsilonExpr) {
             // we found a valid output and there's nothing left

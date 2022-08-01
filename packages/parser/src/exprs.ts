@@ -1406,6 +1406,62 @@ export class PriorityExpr extends UnaryExpr {
     }
 }
 
+/**
+ * ShortExprs "short-circuit" as soon as any of their children
+ * are nullable -- that is, it has no derivatives if it has any
+ * delta.
+ * 
+ * The denotation of Short(X) is the denotation of X but where
+ * no entries are prefixes of each other; if for any two entries
+ * <X,Y> X is a prefix of Y, Y is thrown out.  So something like 
+ * (h|hi|hello|goo|goodbye|golf) would be (h|goo|golf).
+ */
+class ShortExpr extends UnaryExpr {
+
+    public get id(): string {
+        return `Short(${this.child.id})`
+    }
+
+    public delta(
+        tapeName: string, 
+        tapeNS: TapeNamespace, 
+        stack: CounterStack, 
+        opt: GenOptions
+    ): Expr {
+        const childNext = this.child.delta(tapeName, tapeNS, stack, opt);
+        return constructShort(childNext);
+    }
+
+    public *deriv(
+        tapeName: string, 
+        target: Token,
+        tapeNS: TapeNamespace,
+        stack: CounterStack,
+        opt: GenOptions
+    ): DerivResult {
+        const delta = this.delta(tapeName, tapeNS, stack, opt);
+        if (!(delta instanceof NullExpr)) {
+            // if our current tape is nullable, then we have 
+            // no derivatives on that tape.
+            return;
+        }
+
+        // Important: the deriv here MUST be disjoint, just like 
+        // under negation.
+        for (const [cTarget, cNext] of this.child.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
+            const successor = constructShort(cNext);
+            yield [cTarget, successor];
+        }
+    }
+}
+
+export function constructShort(child: Expr): Expr {
+    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
+        return child;
+    }
+    return new ShortExpr(child);
+}
+
 class RepeatExpr extends UnaryExpr {
 
     constructor(
@@ -1851,9 +1907,15 @@ export function constructLiteral(
 ): Expr {
     if (DIRECTION_LTR) {
         if (index == undefined) { index = 0; }
+        if (index >= text.length) {
+            return EPSILON;
+        }
         return new LiteralExpr(tape, text, index);
     }
     if (index == undefined) { index = text.length -1; }
+    if (index <= 0) {
+        return EPSILON;
+    }
     return new RTLLiteralExpr(tape, text, index);
 }
 
@@ -1980,36 +2042,6 @@ export function constructCountTape(child: Expr, maxChars: {[t: string]: number})
     return new CountTapeExpr(child, maxChars);
 }
 
-/**
- * Creates A{min,max} from A.
- */
-export function constructRepeat(
-    child: Expr, 
-    minReps: number = 0, 
-    maxReps: number = Infinity
-): Expr {
-    if (maxReps < 0 || minReps > maxReps) {
-        return NULL;
-    }
-
-    if (maxReps == 0) {
-        return EPSILON;
-    }
-
-    if (child instanceof EpsilonExpr) {
-        return child;
-    }
-
-    if (child instanceof NullExpr) {
-        if (minReps <= 0) {
-            return EPSILON;
-        }
-        return child;
-    }
-
-    return new RepeatExpr(child, minReps, maxReps);
-}
-
 export function constructEmbed(
     symbolName: string, 
     symbols: SymbolTable,
@@ -2038,6 +2070,9 @@ export function constructNegation(
     if (child instanceof NegationExpr) {
         return child.child;
     }
+    if (child instanceof DotStarExpr) {
+        return NULL;
+    }
     return new NegationExpr(child, tapes, maxChars);
 }
 
@@ -2050,6 +2085,41 @@ export function constructDotRep(tape: string, maxReps:number=Infinity): Expr {
         return constructDotStar(tape);
     }
     return constructRepeat(constructDot(tape), 0, maxReps);
+}
+
+
+/**
+ * Creates A{min,max} from A.
+ */
+ export function constructRepeat(
+    child: Expr, 
+    minReps: number = 0, 
+    maxReps: number = Infinity
+): Expr {
+    if (maxReps < 0 || minReps > maxReps) {
+        return NULL;
+    }
+
+    if (maxReps == 0) {
+        return EPSILON;
+    }
+
+    if (child instanceof EpsilonExpr) {
+        return child;
+    }
+
+    if (child instanceof NullExpr) {
+        if (minReps <= 0) {
+            return EPSILON;
+        }
+        return child;
+    }
+
+    if (child instanceof DotExpr && minReps <= 0 && maxReps == Infinity) {
+        return new DotStarExpr(child.tapeName);
+    }
+
+    return new RepeatExpr(child, minReps, maxReps);
 }
 
 export function constructUniverse(
@@ -2115,7 +2185,7 @@ export function constructRename(
         return constructLiteral(toTape, child.text, child.index);
     }
     if (child instanceof DotExpr && child.tapeName == fromTape) {
-        return constructDot(fromTape);
+        return constructDot(toTape);
     }
     return new RenameExpr(child, fromTape, toTape);
 }

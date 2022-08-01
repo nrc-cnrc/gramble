@@ -23,7 +23,8 @@ import {
     constructCount,
     constructCountTape,
     constructPriority,
-    EpsilonExpr
+    EpsilonExpr,
+    constructShort
 } from "./exprs";
 
 import { 
@@ -90,7 +91,8 @@ export interface GrammarTransform<T> extends Transform {
     transformHide(g: HideGrammar, ns: NsGrammar, args: T): Grammar;
     transformCount(g: CountGrammar, ns: NsGrammar, args: T): Grammar;
     transformCountTape(g: CountTapeGrammar, ns: NsGrammar, args: T): Grammar;
-    transformPriority(g: PriorityGrammar, ns: NsGrammar, args: T): Grammar
+    transformPriority(g: PriorityGrammar, ns: NsGrammar, args: T): Grammar;
+    transformShort(g: ShortGrammar, ns: NsGrammar, args:T): Grammar;
 }
 
 /**
@@ -628,6 +630,25 @@ abstract class BinaryGrammar extends Grammar {
     
     public getChildren(): Grammar[] { 
         return [this.child1, this.child2];
+    }
+}
+
+export class ShortGrammar extends UnaryGrammar {
+
+    public get id(): string {
+        return `Pref(${this.child.id})`;
+    }
+    
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformShort(this, ns, args);
+    }
+    
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const child = this.child.constructExpr(symbols);
+            this.expr = constructShort(child);
+        }
+        return this.expr;
     }
 }
 
@@ -1671,6 +1692,10 @@ export function Join(child1: Grammar, child2: Grammar): JoinGrammar {
     return new JoinGrammar(new DummyCell(), child1, child2);
 }
 
+export function Short(child: Grammar): ShortGrammar {
+    return new ShortGrammar(new DummyCell(), child);
+}
+
 export function Starts(child1: Grammar, child2: Grammar): EqualsGrammar {
     const filter = new StartsGrammar(new DummyCell(), child2);
     return new EqualsGrammar(new DummyCell(), child1, filter);
@@ -2176,10 +2201,10 @@ export class ReplaceGrammar extends Grammar {
                                                new Set(negatedTapes), maxExtraChars);
             }
             else if (that.endsWith && replaceNone)
-                notGrammar = constructNegation(constructSequence(dotStar, ...fromInstance),
+                notGrammar = constructNegation(constructShort(constructSequence(dotStar, ...fromInstance)),
                                                new Set(negatedTapes), maxExtraChars);
             else
-                notGrammar = constructNegation(constructSequence(dotStar, ...fromInstance, dotStar),
+                notGrammar = constructNegation(constructSequence(constructShort(constructSequence(dotStar, ...fromInstance)), dotStar),
                                                new Set(negatedTapes), maxExtraChars);
             return constructMatchFrom(notGrammar, that.fromTapeName, ...that.toTapeNames)
         }

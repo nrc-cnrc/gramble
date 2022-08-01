@@ -50,7 +50,7 @@
     "testMatchFrom": "mocha -r ts-node/register tests/testMatchFrom.ts",
     "testMatchDanger": "mocha -r ts-node/register tests/testMatchDanger.ts",
     "testNotMatch": "mocha -r ts-node/register tests/testNotMatch.ts",
-    "testNotContains": "mocha -r ts-node/register tests/testNotContains.ts",
+    "testShort": "mocha -r ts-node/register tests/testShort.ts",
     "testEmbed": "mocha -r ts-node/register tests/testEmbed.ts",
     "testRecursion": "mocha -r ts-node/register tests/testRecursion.ts",
     "testRegex": "mocha -r ts-node/register tests/testRegex.ts",

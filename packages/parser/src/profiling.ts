@@ -27,14 +27,14 @@ function ReplaceBypass(
 function generateAndLog(inputs: {name: string, g: Grammar}): void {
     console.log(inputs.name);
     let interpreter = Interpreter.fromGrammar(inputs.g, VERBOSE_STATES);
-    let results = interpreter.sample();
+    let results = interpreter.generate();
     //console.log(results);
 }
 
 function randomGrammar(): Grammar {
 
     const literals: Grammar[] = [];
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 10; i++) {
         let s = "";
         for (let i = 0; i < 10; i++) {
             s += "abcdefghij"[Math.floor(Math.random()*10)];
@@ -103,7 +103,7 @@ for (let i = 0; i < 1; i++) {
     console.log(`random priority: ${tapes}`);
     const randomPriority = Priority(tapes, g);
     generateAndLog({name:name, g:randomPriority});
-}  */
+}   */
 
 
 console.log();
@@ -115,7 +115,7 @@ generateAndLog({
 
 console.log();
 t = Join(Join(Join(Join(r4,r3),r2),r1),g);
-t = Priority(["t1","t2","t3","t4","t5"], t)
+t = Priority(["t1","t2","t3","t4","t5"], t);
 generateAndLog({name:"((((R4,R3),R2),R1),G), numerical priority", g:t});
 
 console.log();

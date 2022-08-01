@@ -5,7 +5,8 @@ import {
     SILENT, 
     TextDevEnvironment,
     timeIt,
-    VERBOSE_TIME
+    VERBOSE_TIME,
+    VERBOSE_STATES
 } from "@gramble/parser";
 import { createWriteStream, existsSync } from "fs";
 import { basename, dirname } from "path";
@@ -147,7 +148,7 @@ const commands: { [name: string]: Command } = {
         fileExistsOrFail(options.source);
 
         const outputStream = getOutputStream(options.output);
-        const timeVerbose = (options.verbose) ? VERBOSE_TIME : SILENT;
+        const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
         const interpreter = sheetFromFile(options.source, timeVerbose);
 
         if (options.verbose) {
@@ -220,7 +221,7 @@ const commands: { [name: string]: Command } = {
         fileExistsOrFail(options.source);
 
         const outputStream = getOutputStream(options.output);
-        const timeVerbose = (options.verbose) ? VERBOSE_TIME : SILENT;
+        const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
         const interpreter = sheetFromFile(options.source, timeVerbose);
 
         if (options.verbose) {
