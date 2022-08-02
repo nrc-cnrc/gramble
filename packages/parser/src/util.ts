@@ -492,7 +492,6 @@ function *iterMap<T,T2>(i: Iterable<T>, f: (i: T) => T2): Gen<T2> {
     }
 }
 
-
 export function foldLeft<T>(
     arr: T[], 
     f: (t1: T, t2: T) => T

@@ -11,7 +11,6 @@ import {
     constructRename,
     constructNegation,
     NULL,
-    //constructMemo,
     constructMatch,
     SymbolTable,
     constructFilter,
@@ -243,7 +242,7 @@ export abstract class Grammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         for (const child of this.getChildren()) {
             child.collectVocab(tapeName, tapeNS, symbolsVisited);
@@ -414,7 +413,7 @@ export class CharSetGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         if (tapeName != this.tapeName) {
             return;
@@ -461,7 +460,7 @@ export class LiteralGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void {
         if (tapeName != this.tapeName) {
             return;
@@ -937,7 +936,7 @@ export class RenameGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         if (tapeName != this.toTape && tapeName == this.fromTape) {
             return;
@@ -1094,7 +1093,7 @@ export class HideGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         if (tapeName != this.toTape && tapeName == this.tapeName) {
             return;
@@ -1186,7 +1185,7 @@ export class MatchFromGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         this.child.collectVocab(tapeName, tapeNS, symbolsVisited);
 
@@ -1399,7 +1398,7 @@ export class NsGrammar extends Grammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         for (const child of this.symbols.values()) {
             child.collectVocab(tapeName, tapeNS, symbolsVisited);
@@ -1474,16 +1473,16 @@ export class EmbedGrammar extends AtomicGrammar {
         return this._tapes;
     }
     
-
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
-        if (symbolsVisited.has([tapeName, this.name])) {
+        const key = `${this.name}__${tapeName}`
+        if (symbolsVisited.has(key)) {
             return;
         }
-        symbolsVisited.add([tapeName, this.name]);
+        symbolsVisited.add(key);
         this.getReferent().collectVocab(tapeName, tapeNS, symbolsVisited);
     }
     
@@ -1538,7 +1537,7 @@ export class UnresolvedEmbedGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         return;
     }
@@ -2086,7 +2085,7 @@ export class ReplaceGrammar extends Grammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         // first, collect vocabulary as normal
         super.collectVocab(tapeName, tapeNS, symbolsVisited);

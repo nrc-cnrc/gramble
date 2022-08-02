@@ -1,4 +1,4 @@
-import { ANY_CHAR_STR, BITSETS_ENABLED, DIRECTION_LTR, Gen, GenOptions, logDebug, setDifference } from "./util";
+import { ANY_CHAR_STR, BITSETS_ENABLED, DIRECTION_LTR, foldLeft, foldRight, Gen, GenOptions, logDebug, setDifference } from "./util";
 import { Tape, BitsetToken, TapeNamespace, renameTape, Token, EntangledToken } from "./tapes";
 
 export type DerivResult = Gen<[Token, Expr]>;
@@ -1904,6 +1904,7 @@ export function constructLiteral(
     text: string[],
     index: number | undefined = undefined
 ): Expr {
+
     if (DIRECTION_LTR) {
         if (index == undefined) { index = 0; }
         if (index >= text.length) {
@@ -1916,6 +1917,7 @@ export function constructLiteral(
         return EPSILON;
     }
     return new RTLLiteralExpr(tape, text, index);
+
 }
 
 export function constructCharSet(tape: string, chars: string[]): CharSetExpr {
@@ -1966,17 +1968,11 @@ export function constructSequence(...children: Expr[]): Expr {
     if (children.length == 0) {
         return EPSILON;
     }
-
-    if (children.length == 1) {
-        return children[0];
-    }
     
     if (DIRECTION_LTR) {
-        const c2 = constructSequence(...children.slice(1));
-        return constructConcat(children[0], c2);
+        return foldRight(children, constructConcat);
     } else {
-        const c1 = constructSequence(...children.slice(0, children.length-1));
-        return constructConcat(c1, children[children.length-1]);
+        return foldLeft(children, constructConcat);
     }
 }
 
