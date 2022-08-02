@@ -1,3 +1,4 @@
+import { foldLeft } from "../util";
 import { 
     AlternationGrammar, CounterStack, EpsilonGrammar, Grammar,
     NsGrammar, NullGrammar, SequenceGrammar

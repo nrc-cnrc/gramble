@@ -26,6 +26,7 @@ import { FlattenTransform } from "./transforms/flatten";
 import { RuleReplaceTransform } from "./transforms/ruleReplace";
 import { generate } from "./generator";
 import { RuleReplaceTransform2 } from "./transforms/ruleReplace2";
+import { ParallelizeTransform } from "./transforms/parallelize";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
@@ -91,7 +92,8 @@ export class Interpreter {
             new SameTapeReplaceTransform(),
             new RenameFixTransform(),
             new FlattenTransform(),
-            new FilterTransform()
+            new FilterTransform(),
+            new ParallelizeTransform()
         ]
 
         for (const t of transforms) {

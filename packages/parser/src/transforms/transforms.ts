@@ -10,7 +10,7 @@ import {
     UnresolvedEmbedGrammar, StartsGrammar, 
     EndsGrammar, ContainsGrammar, CountGrammar, 
     CountTapeGrammar, CounterStack, JoinRuleGrammar, 
-    MatchFromGrammar, PriorityGrammar, ShortGrammar
+    MatchFromGrammar, PriorityGrammar, ShortGrammar, ParallelGrammar
 } from "../grammars";
 
 /**
@@ -60,6 +60,11 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
     public transformSequence(g: SequenceGrammar, ns: NsGrammar, args: T): Grammar {
         const newChildren = g.children.map(c => c.accept(this, ns, args));
         return new SequenceGrammar(g.cell, newChildren);
+    }
+
+    public transformParallel(g: SequenceGrammar, ns: NsGrammar, args: T): Grammar {
+        const newChildren = g.children.map(c => c.accept(this, ns, args));
+        return new ParallelGrammar(g.cell, newChildren);
     }
 
     public transformAlternation(g: AlternationGrammar, ns: NsGrammar, args: T): Grammar {

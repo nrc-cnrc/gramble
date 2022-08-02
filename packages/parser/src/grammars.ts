@@ -24,7 +24,8 @@ import {
     constructPriority,
     EpsilonExpr,
     constructShort,
-    constructNotContains
+    constructNotContains,
+    constructParallel
 } from "./exprs";
 
 import { 
@@ -93,6 +94,7 @@ export interface GrammarTransform<T> extends Transform {
     transformCountTape(g: CountTapeGrammar, ns: NsGrammar, args: T): Grammar;
     transformPriority(g: PriorityGrammar, ns: NsGrammar, args: T): Grammar;
     transformShort(g: ShortGrammar, ns: NsGrammar, args:T): Grammar;
+    transformParallel(g: ParallelGrammar, ns: NsGrammar, arts:T): Grammar;
 }
 
 /**
@@ -258,18 +260,6 @@ export abstract class Grammar {
             results.push(...child.getVocabCopyEdges(tapeNS, symbolsVisited));
         }
         return results;
-    }
-    
-    public copyVocab(
-        tapeNS: TapeNamespace, 
-        vocabCopyEdges: [string, string][],
-        stack: string[]
-    ): void { 
-        if (vocabCopyEdges.length == 0) {
-            return;
-        }
-        const [toTap] = vocabCopyEdges[0];
-
     }
 
     public runChecksAux(): void {
@@ -535,6 +525,39 @@ abstract class NAryGrammar extends Grammar {
 
 }
 
+export class ParallelGrammar extends NAryGrammar {
+
+    public get id(): string {
+        const cs = this.children.map(c => c.id).join(",");
+        return `Par(${cs})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformParallel(this, ns, args);
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {        
+
+            const childExprs: {[tapeName: string]: Expr} = {};
+            for (const child of this.children) {
+                if (child.tapes.length != 1) {
+                    throw new Error(`Each child of par must have 1 tape`);
+                }
+                const tapeName = child.tapes[0];
+                if (tapeName in childExprs) {
+                    throw new Error(`Each child of par must have a unique tape`)
+                }
+                const newChild = child.constructExpr(symbols);
+                childExprs[tapeName] = newChild;
+            }
+            this.expr = constructParallel(childExprs);
+        }
+        return this.expr;
+    }
+
+}
+
 export class SequenceGrammar extends NAryGrammar {
 
     public get id(): string {
@@ -553,7 +576,8 @@ export class SequenceGrammar extends NAryGrammar {
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {        
             const childExprs = this.children.map(s => s.constructExpr(symbols));
-            this.expr = constructSequence(...childExprs);
+            const seq = constructSequence(...childExprs);
+            this.expr = seq;
         }
         return this.expr;
     }
@@ -1658,6 +1682,10 @@ export class NegativeUnitTestGrammar extends UnitTestGrammar {
 
 export function Seq(...children: Grammar[]): SequenceGrammar {
     return new SequenceGrammar(new DummyCell(), children);
+}
+
+export function Par(...children: Grammar[]): ParallelGrammar {
+    return new ParallelGrammar(new DummyCell(), children);
 }
 
 export function Uni(...children: Grammar[]): AlternationGrammar {

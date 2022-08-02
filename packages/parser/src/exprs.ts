@@ -872,6 +872,99 @@ class RTLLiteralExpr extends LiteralExpr {
 
 }
 
+export class ParallelExpr extends Expr {
+
+    constructor(
+        public children: {[tapeName: string]: Expr}
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        const childIDs = Object.values(this.children).map(c => c.id);
+        return `${childIDs.join("∙")}`;
+    }
+
+    public delta(
+        tapeName: string,
+        tapeNS: TapeNamespace, 
+        stack: CounterStack,
+        opt: GenOptions
+    ): Expr {
+        if (!(tapeName in this.children)) {
+            return this;
+        }
+        
+        const delta = this.children[tapeName].delta(tapeName, tapeNS, stack, opt);
+        return updateParallel(this.children, tapeName, delta);
+    }
+
+    public *deriv(
+        tapeName: string, 
+        target: Token,
+        tapeNS: TapeNamespace,
+        stack: CounterStack,
+        opt: GenOptions
+    ): DerivResult {
+
+        if (!(tapeName in this.children)) {
+            return;
+        }
+
+        const childResults = this.children[tapeName].disjointDeriv(tapeName, target, tapeNS, stack, opt);
+        for (const [cTarget, cNext] of childResults) {
+            const successor = updateParallel(this.children, tapeName, cNext);
+            yield [cTarget, successor];
+        }
+    }
+}
+
+export function constructParallel(
+    children: {[tapeName: string]: Expr},
+): Expr {
+    const newChildren: {[tapeName: string]: Expr} = {};
+    let childFound = false;
+    for (const [tapeName, child] of Object.entries(children)) {
+        if (child instanceof NullExpr) {
+            return child;
+        }
+        if (child instanceof EpsilonExpr) {
+            continue;
+        }
+        newChildren[tapeName] = child;
+        childFound = true;
+    }
+    if (!childFound) {
+        return EPSILON;
+    }
+
+    return new ParallelExpr(newChildren);
+}
+
+export function updateParallel(
+    children: {[tapeName: string]: Expr},
+    newTape: string,
+    newChild: Expr
+): Expr {
+    if (newChild instanceof NullExpr) {
+        return newChild;
+    }
+
+    const newChildren: {[tapeName: string]: Expr} = {};
+    Object.assign(newChildren, children);
+        
+    if (newChild instanceof EpsilonExpr) {
+        delete newChildren[newTape];
+        if (Object.keys(newChildren).length == 0) {
+            return EPSILON;
+        }
+    } else {
+        newChildren[newTape] = newChild;
+    }
+
+    return new ParallelExpr(newChildren);
+}
+
 /**
  * The abstract base class of all Exprs with two state children 
  * (e.g. [JoinExpr]).
