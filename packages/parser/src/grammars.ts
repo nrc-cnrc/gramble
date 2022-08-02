@@ -24,7 +24,8 @@ import {
     constructCountTape,
     constructPriority,
     EpsilonExpr,
-    constructShort
+    constructShort,
+    constructNotContains
 } from "./exprs";
 
 import { 
@@ -2195,17 +2196,8 @@ export class ReplaceGrammar extends Grammar {
             negatedTapes.push(...that.preContext.tapes);
             negatedTapes.push(...that.postContext.tapes);
 
-            let notGrammar: Expr;
-            if (that.beginsWith && replaceNone) {
-                notGrammar = constructNegation(constructSequence(...fromInstance, dotStar),
-                                               new Set(negatedTapes), maxExtraChars);
-            }
-            else if (that.endsWith && replaceNone)
-                notGrammar = constructNegation(constructShort(constructSequence(dotStar, ...fromInstance)),
-                                               new Set(negatedTapes), maxExtraChars);
-            else
-                notGrammar = constructNegation(constructSequence(constructShort(constructSequence(dotStar, ...fromInstance)), dotStar),
-                                               new Set(negatedTapes), maxExtraChars);
+            let notGrammar = constructNotContains(that.fromTapeName, 
+                fromInstance, negatedTapes, that.beginsWith && replaceNone, that.endsWith && replaceNone, maxExtraChars);
             return constructMatchFrom(notGrammar, that.fromTapeName, ...that.toTapeNames)
         }
         

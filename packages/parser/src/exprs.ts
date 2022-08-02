@@ -318,7 +318,6 @@ export abstract class Expr {
         }
     }
     
-
     public *disjointStringDeriv(
         tapeName: string,
         target: string, 
@@ -1913,7 +1912,7 @@ export function constructLiteral(
         return new LiteralExpr(tape, text, index);
     }
     if (index == undefined) { index = text.length -1; }
-    if (index <= 0) {
+    if (index < 0) {
         return EPSILON;
     }
     return new RTLLiteralExpr(tape, text, index);
@@ -2237,4 +2236,30 @@ export function constructPriority(tapes: string[], child: Expr): Expr {
     }
 
     return new PriorityExpr(tapes, child);
+}
+
+export function constructNotContains(
+    fromTapeName: string,
+    children: Expr[], 
+    tapes: string[], 
+    begin: boolean,
+    end: boolean,
+    maxExtraChars: number
+): Expr {
+    const dotStar: Expr = constructDotRep(fromTapeName, maxExtraChars);
+    let seq: Expr;
+    if (begin) {
+        seq = DIRECTION_LTR ?
+              constructSequence(...children, dotStar) :
+              constructShort(constructSequence(...children, dotStar));
+    } else if (end)
+        seq = DIRECTION_LTR ?
+              constructShort(constructSequence(dotStar, ...children)) :
+              constructSequence(dotStar, ...children);
+    else {
+        seq = DIRECTION_LTR ?
+              constructSequence(constructShort(constructSequence(dotStar, ...children)), dotStar) :
+              constructSequence(dotStar, constructShort(constructSequence(...children, dotStar)));
+    }
+    return constructNegation(seq, new Set(tapes), maxExtraChars);
 }
