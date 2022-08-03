@@ -2089,7 +2089,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
             {t1: 'h', t2: 'hee'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+        testGrammar(grammar, expectedResults, SILENT);
     });
 
     describe('36k-2. Replace ∅ by e: t1:∅ -> t2:e {2} (vocab h/he)', function() {
@@ -2112,7 +2112,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hh', t2: 'hehe'},   // missing for DIRECTION_LTR = false
             {t1: 'hh', t2: 'hhee'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+        testGrammar(grammar, expectedResults, SILENT);
     });
 
     describe('36l. Replace ∅|h by e: t1:∅|t1:h -> t2:e {1} (vocab hl/hel)', function() {
@@ -2495,7 +2495,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'eeh', t2: 'h'},
             {t1: 'hee', t2: 'h'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+        testGrammar(grammar, expectedResults, SILENT);
     });
 
 

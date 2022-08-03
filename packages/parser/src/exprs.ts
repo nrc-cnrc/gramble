@@ -1583,8 +1583,22 @@ class RepeatExpr extends UnaryExpr {
         target: Token,
         env: Env
     ): DerivResult {
+        const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
+        const deltad = this.child.delta(tapeName, env);
+        // env.logDebug(`deltad d^${tapeName} is ${deltad.id}`);
+        // env.logDebug(`oneLess is ${oneLess.id}`);
+
+        if (!(deltad instanceof NullExpr) && oneLess instanceof RepeatExpr && 
+                (oneLess.minReps > 0 || oneLess.maxReps != Infinity)) {
+            const deltad_oneLess = constructPrecede(deltad, oneLess);
+            env.logDebug(`calling deltad_oneLess.deriv for ${deltad_oneLess.id}`);
+            for (const [cTarget, cNext] of deltad_oneLess.deriv(tapeName, target, env)) {
+                env.logDebug(`deltad_oneLess D^${tapeName}_${cTarget} is ${cNext.id}`);
+                yield [cTarget, cNext];
+            }
+        }
+
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
-            const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
             yield [cTarget, constructPrecede(cNext, oneLess)];
         }
     }
