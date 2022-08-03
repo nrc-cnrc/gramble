@@ -1,7 +1,8 @@
 import { BitSet } from "bitset";
 import { 
-    ANY_CHAR_STR, DIRECTION_LTR, GenOptions, 
+    ANY_CHAR_STR, DIRECTION_LTR, GenOptions,
     logDebug, 
+    BITSETS_ENABLED,
     shuffleArray, StringDict, 
     tokenizeUnicode 
 } from "./util";
@@ -161,6 +162,8 @@ let ENTANGLE_INDEX: number = 0;
 
 const ANY_CHAR_BITSET: BitsetToken = new UnentangledToken(new BitSet().flip());
 const NO_CHAR_BITSET: BitsetToken = new UnentangledToken(new BitSet());
+
+export const EMPTY_TOKEN: Token = BITSETS_ENABLED ? NO_CHAR_BITSET : "";
 
 /**
  * OutputTrie

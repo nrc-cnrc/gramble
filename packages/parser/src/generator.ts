@@ -2,7 +2,7 @@ import {
     constructPriority, CounterStack, Env, 
     EpsilonExpr, Expr, NullExpr, PriorityExpr 
 } from "./exprs";
-import { OutputTrie, TapeNamespace } from "./tapes";
+import { OutputTrie, TapeNamespace, EMPTY_TOKEN } from "./tapes";
 import { 
     Gen, GenOptions,
     msToTime, shuffleArray, StringDict
@@ -99,7 +99,10 @@ export function* generate(
             // transition.
             for (const [cTape, cTarget, cNext] of prevExpr.openDeriv(env)) {
                 if (!(cNext instanceof NullExpr)) {
-                    const nextOutput = prevOutput.add(cTape, cTarget);
+                    let nextOutput = prevOutput;
+                    if (cTarget != EMPTY_TOKEN) {
+                        nextOutput = prevOutput.add(cTape, cTarget);
+                    }
                     nexts.push([nextOutput, cNext]);
                 }
             }

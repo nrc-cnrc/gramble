@@ -8,7 +8,7 @@ import {
 import { 
     Tape, BitsetToken, TapeNamespace, 
     renameTape, Token, EntangledToken,
-    OutputTrie
+    OutputTrie, EMPTY_TOKEN
 } from "./tapes";
 
 
@@ -1384,7 +1384,8 @@ export class CountExpr extends UnaryExpr {
         }
 
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
-            const successor = constructCount(cNext, this.maxChars-1);
+            const newMax = (cTarget != EMPTY_TOKEN) ? this.maxChars-1: this.maxChars;
+            const successor = constructCount(cNext, newMax);
             yield [cTarget, successor];
         }
     }
@@ -1428,7 +1429,9 @@ export class CountTapeExpr extends UnaryExpr {
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
             let newMax: {[tape: string]: number} = {};
             Object.assign(newMax, this.maxChars);
-            newMax[tapeName] -= 1;
+            if (cTarget != EMPTY_TOKEN) {
+                newMax[tapeName] -= 1;
+            }
             const successor = constructCountTape(cNext, newMax);
             yield [cTarget, successor];
         }
@@ -1588,14 +1591,10 @@ class RepeatExpr extends UnaryExpr {
         // env.logDebug(`deltad d^${tapeName} is ${deltad.id}`);
         // env.logDebug(`oneLess is ${oneLess.id}`);
 
-        if (!(deltad instanceof NullExpr) && oneLess instanceof RepeatExpr && 
-                (oneLess.minReps > 0 || oneLess.maxReps != Infinity)) {
-            const deltad_oneLess = constructPrecede(deltad, oneLess);
-            env.logDebug(`calling deltad_oneLess.deriv for ${deltad_oneLess.id}`);
-            for (const [cTarget, cNext] of deltad_oneLess.deriv(tapeName, target, env)) {
-                env.logDebug(`deltad_oneLess D^${tapeName}_${cTarget} is ${cNext.id}`);
-                yield [cTarget, cNext];
-            }
+        if (!(deltad instanceof NullExpr) && oneLess instanceof RepeatExpr) {
+            // const deltad_oneLess = constructPrecede(deltad, oneLess);
+            // env.logDebug(`calling deltad_oneLess.deriv for ${deltad_oneLess.id}`);
+            yield [EMPTY_TOKEN, constructPrecede(deltad, oneLess)];
         }
 
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
