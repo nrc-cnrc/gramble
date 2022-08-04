@@ -1,5 +1,61 @@
-import { ANY_CHAR_STR, BITSETS_ENABLED, DIRECTION_LTR, Gen, GenOptions, logDebug, setDifference } from "./util";
-import { Tape, BitsetToken, TapeNamespace, renameTape, Token, EntangledToken } from "./tapes";
+import { 
+    ANY_CHAR_STR, BITSETS_ENABLED, 
+    DIRECTION_LTR, Gen, GenOptions, 
+    logDebug, logTime, logStates, 
+    logGrammar, setDifference 
+} from "./util";
+import { 
+    Tape, BitsetToken, TapeNamespace, 
+    renameTape, Token, EntangledToken 
+} from "./tapes";
+
+
+/** 
+ * An Env[ironment] encapsulates the execution environment for 
+ * the core algorithm: the current state of the symbol stack, 
+ * the tape namespace mapping local tape names to global tapes, 
+ * and configuration options.
+ */
+export class Env {
+
+    constructor(
+        public tapeNS: TapeNamespace,
+        public stack: CounterStack,
+        public opt: GenOptions
+    ) { }
+
+    public renameTape(fromKey: string, toKey: string): Env {
+        const newTapeNS = this.tapeNS.rename(fromKey, toKey);
+        return new Env(newTapeNS, this.stack, this.opt);
+    }
+
+    public getTape(tapeName: string): Tape {
+        return this.tapeNS.get(tapeName);
+    }
+
+    public addSymbol(symbolName: string): Env {
+        const newStack = this.stack.add(symbolName);
+        return new Env(this.tapeNS, newStack, this.opt);
+    }
+
+    public logDebug(msg: string): void {
+        logDebug(this.opt.verbose, msg);
+    }
+
+    public logTime(msg: string): void {
+        logTime(this.opt.verbose, msg);
+    }
+
+    public logStates(msg: string): void {
+        logStates(this.opt.verbose, msg);
+    }
+
+    public logGrammar(msg: string): void {
+        logGrammar(this.opt.verbose, msg);
+    }
+
+}
+
 
 export type DerivResult = Gen<[Token, Expr]>;
 
@@ -194,9 +250,7 @@ export abstract class Expr {
      */
     public abstract delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr;
 
     /**
@@ -222,23 +276,19 @@ export abstract class Expr {
      public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         if (target instanceof BitsetToken) {
-            yield* this.bitsetDeriv(tapeName, target, tapeNS, stack, opt);
+            yield* this.bitsetDeriv(tapeName, target, env);
             return;
         }
-        yield* this.stringDeriv(tapeName, target, tapeNS, stack, opt);
+        yield* this.stringDeriv(tapeName, target, env);
     }
 
     public bitsetDeriv(
         tapeName: string, 
         target: BitsetToken,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         throw new Error("not implemented");
     }
@@ -246,9 +296,7 @@ export abstract class Expr {
     public stringDeriv(
         tapeName: string,
         target: string, 
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         throw new Error("not implemented");
     }
@@ -270,30 +318,26 @@ export abstract class Expr {
     public *disjointDeriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         if (target instanceof BitsetToken) {
-            yield* this.disjointBitsetDeriv(tapeName, target, tapeNS, stack, opt);
+            yield* this.disjointBitsetDeriv(tapeName, target, env);
             return;
         }
-        yield* this.disjointStringDeriv(tapeName, target, tapeNS, stack, opt);
+        yield* this.disjointStringDeriv(tapeName, target, env);
     }
     
     public *disjointBitsetDerivOld(
         tapeName: string, 
         target: BitsetToken,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         const results: {[c: string]: Expr[]} = {};
 
-        const tape = tapeNS.get(tapeName);
+        const tape = env.getTape(tapeName);
 
         for (const [childToken, childExpr] of
-                this.deriv(tapeName, target, tapeNS, stack, opt)) {
+                this.deriv(tapeName, target, env)) {
 
             // don't perform this operation on entangled tokens
             if (childToken instanceof EntangledToken) {
@@ -322,13 +366,11 @@ export abstract class Expr {
     public *disjointStringDeriv(
         tapeName: string,
         target: string, 
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         const results: {[c: string]: Expr[]} = {};
         for (const [childToken, childExpr] of
-            this.deriv(tapeName, target, tapeNS, stack, opt)) {
+            this.deriv(tapeName, target, env)) {
             const childString = childToken as string;
             if (!(childString in results)) {
                 results[childString] = [];
@@ -346,13 +388,11 @@ export abstract class Expr {
     public *disjointBitsetDeriv(
         tapeName: string,
         target: BitsetToken, 
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions,
+        env: Env
     ): DerivResult {
 
         let results: [Token, Expr][] = [];
-        let nextExprs: [Token, Expr][] = [... this.deriv(tapeName, target, tapeNS, stack, opt)];
+        let nextExprs: [Token, Expr][] = [... this.deriv(tapeName, target, env)];
         
         for (let [nextToken, next] of nextExprs) {
 
@@ -402,9 +442,7 @@ export class EpsilonExpr extends Expr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
         return this;
     }
@@ -412,9 +450,7 @@ export class EpsilonExpr extends Expr {
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult { }
 
 }
@@ -430,9 +466,7 @@ export class NullExpr extends Expr {
     
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
         return this;
     }
@@ -440,9 +474,7 @@ export class NullExpr extends Expr {
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult { }
 }
 
@@ -465,9 +497,7 @@ class DotExpr extends Expr {
     
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
         if (tapeName != this.tapeName) {
             return this;
@@ -478,9 +508,7 @@ class DotExpr extends Expr {
     public *bitsetDeriv(
         tapeName: string, 
         target: BitsetToken,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         if (tapeName != this.tapeName) {
             return;
@@ -491,15 +519,13 @@ class DotExpr extends Expr {
     public *stringDeriv(
         tapeName: string,
         target: string, 
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult { 
         if (tapeName != this.tapeName) {
             return;
         }
 
-        const tape = tapeNS.get(tapeName);
+        const tape = env.getTape(tapeName);
 
         for (const c of tape.expandStrings(target)) {
             yield [c, EPSILON];
@@ -522,9 +548,7 @@ class EntangleExpr extends Expr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
         if (tapeName != this.tapeName) {
             return this;
@@ -535,15 +559,13 @@ class EntangleExpr extends Expr {
     public *bitsetDeriv(
         tapeName: string, 
         target: BitsetToken,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         if (tapeName != this.tapeName) {
             return;
         }
 
-        const tape = tapeNS.get(tapeName);
+        const tape = env.getTape(tapeName);
         const result = tape.match(this.token, target);
         if (result.isEmpty()) {
             return;
@@ -554,9 +576,7 @@ class EntangleExpr extends Expr {
     public *stringDeriv(
         tapeName: string,
         target: string, 
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         throw new Error("not implemented")
     }
@@ -577,9 +597,7 @@ class CharSetExpr extends Expr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
         if (tapeName != this.tapeName) {
             return this;
@@ -594,15 +612,13 @@ class CharSetExpr extends Expr {
     public *bitsetDeriv(
         tapeName: string, 
         target: BitsetToken,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         if (tapeName != this.tapeName) {
             return;
         }
 
-        const tape = tapeNS.get(tapeName);
+        const tape = env.getTape(tapeName);
 
         const bits = this.getToken(tape);
         const result = tape.match(bits, target);
@@ -615,15 +631,13 @@ class CharSetExpr extends Expr {
     public *stringDeriv(
         tapeName: string,
         target: string, 
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         if (tapeName != this.tapeName) {
             return;
         }
 
-        const tape = tapeNS.get(tapeName);
+        const tape = env.getTape(tapeName);
         for (const c of tape.expandStrings(target)) {
             if (this.chars.indexOf(c) == -1) {
                 continue;
@@ -647,9 +661,7 @@ class DotStarExpr extends Expr {
     
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
         if (tapeName != this.tapeName) {
             return this;
@@ -660,9 +672,7 @@ class DotStarExpr extends Expr {
     public *bitsetDeriv(
         tapeName: string, 
         target: BitsetToken,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         if (tapeName != this.tapeName) {
             return;
@@ -673,15 +683,13 @@ class DotStarExpr extends Expr {
     public *stringDeriv(
         tapeName: string,
         target: string, 
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         if (tapeName != this.tapeName) {
             return;
         }
         
-        const tape = tapeNS.get(tapeName);
+        const tape = env.getTape(tapeName);
         for (const c of tape.expandStrings(target)) {
             yield [c, this];
         }
@@ -711,9 +719,7 @@ class LiteralExpr extends Expr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
         if (tapeName != this.tapeName) {
             return this;
@@ -731,9 +737,7 @@ class LiteralExpr extends Expr {
     public *bitsetDeriv(
         tapeName: string, 
         target: BitsetToken,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
 
         if (this.index >= this.text.length) {
@@ -744,7 +748,7 @@ class LiteralExpr extends Expr {
             return;
         }
 
-        const tape = tapeNS.get(tapeName);
+        const tape = env.getTape(tapeName);
 
         const currentToken = this.getToken(tape);
         const result = tape.match(currentToken, target);
@@ -759,9 +763,7 @@ class LiteralExpr extends Expr {
     public *stringDeriv(
         tapeName: string,
         target: string, 
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
 
         if (this.index >= this.text.length) {
@@ -802,9 +804,7 @@ class RTLLiteralExpr extends LiteralExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
         if (tapeName != this.tapeName) {
             return this;
@@ -824,9 +824,7 @@ class RTLLiteralExpr extends LiteralExpr {
     public *bitsetDeriv(
         tapeName: string, 
         target: BitsetToken,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
 
         if (this.index < 0) {
@@ -837,7 +835,7 @@ class RTLLiteralExpr extends LiteralExpr {
             return;
         }
 
-        const tape = tapeNS.get(tapeName);
+        const tape = env.getTape(tapeName);
 
         const currentToken = this.getToken(tape);
         const result = tape.match(currentToken, target);
@@ -852,9 +850,7 @@ class RTLLiteralExpr extends LiteralExpr {
     public *stringDeriv(
         tapeName: string,
         target: string, 
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
 
         if (this.index < 0) {
@@ -910,21 +906,17 @@ class ConcatExpr extends BinaryExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
-        const newChild1 = this.child1.delta(tapeName, tapeNS, stack, opt);
-        const newChild2 = this.child2.delta(tapeName, tapeNS, stack, opt);
+        const newChild1 = this.child1.delta(tapeName, env);
+        const newChild2 = this.child2.delta(tapeName, env);
         return constructConcat(newChild1, newChild2);
     }
 
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
 
         const [c1, c2] = (DIRECTION_LTR) ?
@@ -932,13 +924,13 @@ class ConcatExpr extends BinaryExpr {
                         [this.child2, this.child1];
 
         for (const [c1target, c1next] of
-                c1.deriv(tapeName, target, tapeNS, stack, opt)) {
+                c1.deriv(tapeName, target, env)) {
             yield [c1target, constructPrecede(c1next, c2)];
         }
 
-        const c1next = c1.delta(tapeName, tapeNS, stack, opt);
+        const c1next = c1.delta(tapeName, env);
         for (const [c2target, c2next] of
-                c2.deriv(tapeName, target, tapeNS, stack, opt)) {
+                c2.deriv(tapeName, target, env)) {
             yield [c2target, constructPrecede(c1next, c2next)];
         }
     }
@@ -959,12 +951,9 @@ export class UnionExpr extends Expr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
-        const newChildren = this.children.map(c => 
-                            c.delta(tapeName, tapeNS, stack, opt));
+        const newChildren = this.children.map(c => c.delta(tapeName, env));
         const result = constructAlternation(...newChildren);
         return result;
     }
@@ -972,12 +961,10 @@ export class UnionExpr extends Expr {
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         for (const child of this.children) {
-            yield* child.deriv(tapeName, target, tapeNS, stack, opt);
+            yield* child.deriv(tapeName, target, env);
         }
     }
 
@@ -991,27 +978,23 @@ class IntersectExpr extends BinaryExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
-        const newChild1 = this.child1.delta(tapeName, tapeNS, stack, opt);
-        const newChild2 = this.child2.delta(tapeName, tapeNS, stack, opt);
+        const newChild1 = this.child1.delta(tapeName, env);
+        const newChild2 = this.child2.delta(tapeName, env);
         return constructIntersection(newChild1, newChild2);
     }
 
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         for (const [c1target, c1next] of 
-            this.child1.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
+            this.child1.disjointDeriv(tapeName, target, env)) {
 
             for (const [c2target, c2next] of 
-                    this.child2.disjointDeriv(tapeName, c1target, tapeNS, stack, opt)) {
+                    this.child2.disjointDeriv(tapeName, c1target, env)) {
                 const successor = constructIntersection(c1next, c2next);
                 yield [c2target, successor];
             }
@@ -1037,26 +1020,22 @@ class FilterExpr extends BinaryExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
-        const newChild1 = this.child1.delta(tapeName, tapeNS, stack, opt);
-        const newChild2 = this.child2.delta(tapeName, tapeNS, stack, opt);
+        const newChild1 = this.child1.delta(tapeName, env);
+        const newChild2 = this.child2.delta(tapeName, env);
         return constructFilter(newChild1, newChild2, this.tapes);
     }
 
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
 
         if (!this.tapes.has(tapeName)) {
             for (const [c1target, c1next] of 
-                    this.child1.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
+                    this.child1.disjointDeriv(tapeName, target, env)) {
                 const successor = constructFilter(c1next, this.child2, this.tapes);
                 yield [c1target, successor];
             }
@@ -1064,10 +1043,10 @@ class FilterExpr extends BinaryExpr {
         }
         
         for (const [c2target, c2next] of 
-            this.child2.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
+            this.child2.disjointDeriv(tapeName, target, env)) {
 
             for (const [c1target, c1next] of 
-                    this.child1.disjointDeriv(tapeName, c2target, tapeNS, stack, opt)) {
+                    this.child1.disjointDeriv(tapeName, c2target, env)) {
                 const successor = constructFilter(c1next, c2next, this.tapes);
                 yield [c1target, successor];
             }
@@ -1093,26 +1072,22 @@ class JoinExpr extends BinaryExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
-        const newChild1 = this.child1.delta(tapeName, tapeNS, stack, opt);
-        const newChild2 = this.child2.delta(tapeName, tapeNS, stack, opt);
+        const newChild1 = this.child1.delta(tapeName, env);
+        const newChild2 = this.child2.delta(tapeName, env);
         return constructJoin(newChild1, newChild2, this.tapes1, this.tapes2);
     }
 
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
 
         if (!this.tapes2.has(tapeName)) {
             for (const [leftTarget, leftNext] of 
-                    this.child1.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
+                    this.child1.disjointDeriv(tapeName, target, env)) {
                 const successor = constructJoin(leftNext, this.child2, this.tapes1, this.tapes2);
                 yield [leftTarget, successor];
             }
@@ -1121,7 +1096,7 @@ class JoinExpr extends BinaryExpr {
         
         if (!this.tapes1.has(tapeName)) {
             for (const [rightTarget, rightNext] of 
-                    this.child2.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
+                    this.child2.disjointDeriv(tapeName, target, env)) {
                 const successor = constructJoin(this.child1, rightNext, this.tapes1, this.tapes2);
                 yield [rightTarget, successor];
             }
@@ -1129,10 +1104,10 @@ class JoinExpr extends BinaryExpr {
         }
         
         for (const [leftTarget, leftNext] of 
-            this.child1.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
+            this.child1.disjointDeriv(tapeName, target, env)) {
 
             for (const [rightTarget, rightNext] of 
-                    this.child2.disjointDeriv(tapeName, leftTarget, tapeNS, stack, opt)) {
+                    this.child2.disjointDeriv(tapeName, leftTarget, env)) {
                 const successor = constructJoin(leftNext, rightNext, this.tapes1, this.tapes2);
                 yield [rightTarget, successor];
             }
@@ -1183,34 +1158,31 @@ class JoinExpr extends BinaryExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
-        if (stack.exceedsMax(this.symbolName)) {
+        if (env.stack.exceedsMax(this.symbolName)) {
             return NULL;
         }
-        const newStack = stack.add(this.symbolName);
-        return this.getChild().delta(tapeName, tapeNS, newStack, opt);
+        const newEnv = env.addSymbol(this.symbolName);
+        const childNext = this.getChild().delta(tapeName, newEnv);
+        return constructEmbed(this.symbolName, this.symbols, childNext);
     }
 
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
 
-        if (stack.exceedsMax(this.symbolName)) {
+        if (env.stack.exceedsMax(this.symbolName)) {
             return;
         }
 
-        const newStack = stack.add(this.symbolName);
+        const newEnv = env.addSymbol(this.symbolName);
         let child = this.getChild();
 
         for (const [childTarget, childNext] of 
-                        child.deriv(tapeName, target, tapeNS, newStack, opt)) {
+                        child.deriv(tapeName, target, newEnv)) {
             const successor = constructEmbed(this.symbolName, this.symbols, childNext);
             yield [childTarget, successor];
         }
@@ -1257,26 +1229,22 @@ export class CountExpr extends UnaryExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
-        const newChild = this.child.delta(tapeName, tapeNS, stack, opt);
+        const newChild = this.child.delta(tapeName, env);
         return constructCount(newChild, this.maxChars);
     }
 
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         if (this.maxChars <= 0) {
             return;
         }
 
-        for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+        for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
             const successor = constructCount(cNext, this.maxChars-1);
             yield [cTarget, successor];
         }
@@ -1298,20 +1266,16 @@ export class CountTapeExpr extends UnaryExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
-        const newChild = this.child.delta(tapeName, tapeNS, stack, opt);
+        const newChild = this.child.delta(tapeName, env);
         return constructCountTape(newChild, this.maxChars);
     }
 
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
 
         if (!(tapeName in this.maxChars)) {
@@ -1322,7 +1286,7 @@ export class CountTapeExpr extends UnaryExpr {
             return;
         }
 
-        for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+        for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
             let newMax: {[tape: string]: number} = {};
             Object.assign(newMax, this.maxChars);
             newMax[tapeName] -= 1;
@@ -1347,58 +1311,50 @@ export class PriorityExpr extends UnaryExpr {
 
     public delta(
         tapeName: string, 
-        tapeNS: TapeNamespace, 
-        stack: CounterStack, 
-        opt: GenOptions
+        env: Env
     ): Expr {
-        const delta = this.child.delta(tapeName, tapeNS, stack, opt);
+        const delta = this.child.delta(tapeName, env);
         return constructPriority(this.tapes, delta);
     }
 
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         for (const [cTarget, cNext] of 
-                this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+                this.child.deriv(tapeName, target, env)) {
             const successor = constructPriority(this.tapes, cNext);
             yield [cTarget, successor];
         }
     }
 
     public openDelta(
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
         const tapeToTry = this.tapes[0];
-        const childDelta = this.child.delta(tapeToTry, tapeNS, stack, opt);
-        logDebug(opt.verbose, `d^${tapeToTry} is ${childDelta.id}`);
+        const childDelta = this.child.delta(tapeToTry, env);
+        env.logDebug(`d^${tapeToTry} is ${childDelta.id}`);
         const newTapes = this.tapes.slice(1);
         return constructPriority(newTapes, childDelta);
     }
 
     public *openDeriv(
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Gen<[string, Token, Expr]> {
 
         const tapeToTry = this.tapes[0];
         // rotate the tapes so that we don't just 
         // keep trying the same one every time
         const newTapes = [... this.tapes.slice(1), tapeToTry];
-        const tape = tapeNS.get(tapeToTry);
+        const tape = env.getTape(tapeToTry);
         const startingToken = BITSETS_ENABLED ? tape.any : ANY_CHAR_STR;
 
         for (const [cTarget, cNext] of 
-                this.child.disjointDeriv(tapeToTry, startingToken, tapeNS, stack, opt)) {
+                this.child.disjointDeriv(tapeToTry, startingToken, env)) {
 
             if (!(cNext instanceof NullExpr)) {      
-                logDebug(opt.verbose, `D^${tapeToTry}_${cTarget} is ${cNext.id}`);
+                env.logDebug(`D^${tapeToTry}_${cTarget} is ${cNext.id}`);
                 const successor = constructPriority(newTapes, cNext);
                 yield [tapeToTry, cTarget, successor];
             }
@@ -1425,22 +1381,18 @@ class RepeatExpr extends UnaryExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
-        const newChild = this.child.delta(tapeName, tapeNS, stack, opt);
+        const newChild = this.child.delta(tapeName, env);
         return constructRepeat(newChild, this.minReps, this.maxReps);
     }
 
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
-        for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+        for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
             const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
             yield [cTarget, constructPrecede(cNext, oneLess)];
         }
@@ -1462,17 +1414,15 @@ class RenameExpr extends UnaryExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
         if (tapeName != this.toTape && tapeName == this.fromTape) {
             return this;
         }
 
         const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
-        const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
-        const newChild = this.child.delta(newTapeName, newTapeNS, stack, opt);
+        const newEnv = env.renameTape(this.toTape, this.fromTape);
+        const newChild = this.child.delta(newTapeName, newEnv);
         return constructRename(newChild, this.fromTape, this.toTape);
     }
     
@@ -1483,9 +1433,7 @@ class RenameExpr extends UnaryExpr {
     public *deriv(
         tapeName: string, 
         target: Token,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
 
         if (tapeName != this.toTape && tapeName == this.fromTape) {
@@ -1493,10 +1441,10 @@ class RenameExpr extends UnaryExpr {
         }
 
         const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
-        const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
+        const newEnv = env.renameTape(this.toTape, this.fromTape);
     
         for (const [childTarget, childNext] of 
-                this.child.deriv(newTapeName, target, newTapeNS, stack, opt)) {
+                this.child.deriv(newTapeName, target, newEnv)) {
             yield [childTarget, constructRename(childNext, this.fromTape, this.toTape)];
         }
     }
@@ -1519,11 +1467,9 @@ class NegationExpr extends UnaryExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
-        const childDelta = this.child.delta(tapeName, tapeNS, stack, opt);
+        const childDelta = this.child.delta(tapeName, env);
         const remainingTapes = setDifference(this.tapes, new Set([tapeName]));
         
         let result: Expr;
@@ -1544,9 +1490,7 @@ class NegationExpr extends UnaryExpr {
     public *bitsetDeriv(
         tapeName: string, 
         target: BitsetToken,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
 
         if (!this.tapes.has(tapeName)) {
@@ -1561,7 +1505,7 @@ class NegationExpr extends UnaryExpr {
         let remainder = disentangledTarget.clone();
 
         for (const [childText, childNext] of 
-                this.child.disjointDeriv(tapeName, disentangledTarget, tapeNS, stack, opt)) {
+                this.child.disjointDeriv(tapeName, disentangledTarget, env)) {
 
             const complement = (childText as BitsetToken).not();
             remainder = remainder.and(complement);
@@ -1586,9 +1530,7 @@ class NegationExpr extends UnaryExpr {
     public *stringDeriv(
         tapeName: string,
         target: string, 
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
 
         if (!this.tapes.has(tapeName)) {
@@ -1599,12 +1541,12 @@ class NegationExpr extends UnaryExpr {
             return;
         }
 
-        const tape = tapeNS.get(tapeName);
+        const tape = env.getTape(tapeName);
 
         let remainder = tape.toToken([target]);
 
         for (const [childText, childNext] of 
-                this.child.disjointDeriv(tapeName, target, tapeNS, stack, opt)) {
+                this.child.disjointDeriv(tapeName, target, env)) {
             const childToken = tape.toToken([childText as string]);
             const complement = childToken.not();
             remainder = remainder.and(complement);
@@ -1642,31 +1584,27 @@ export class MatchFromExpr extends UnaryExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
         if (tapeName == this.toTape) {
             const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
-            const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
-            const nextExpr = this.child.delta(newTapeName, newTapeNS, stack, opt);
+            const newEnv = env.renameTape(this.toTape, this.fromTape);
+            const nextExpr = this.child.delta(newTapeName, newEnv);
             return constructMatchFrom(nextExpr, this.fromTape, this.toTape);  
         }
-        const nextExpr = this.child.delta(tapeName, tapeNS, stack, opt);
+        const nextExpr = this.child.delta(tapeName, env);
         return constructMatchFrom(nextExpr, this.fromTape, this.toTape);
     }
 
     public *bitsetDeriv(
         tapeName: string, 
         target: BitsetToken,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         
         // if it's a tape that isn't our to/from, just forward and wrap 
         if (tapeName != this.fromTape && tapeName != this.toTape) {
-            for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+            for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
                 const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
                 yield [cTarget, successor];
             }
@@ -1679,16 +1617,16 @@ export class MatchFromExpr extends UnaryExpr {
         // toTape, we have to act like a toTape->fromTape rename.  
 
         const oppositeTapeName = (tapeName == this.fromTape) ? this.toTape : this.fromTape;
-        const oppositeTape = tapeNS.get(oppositeTapeName);
-        const fromTape = tapeNS.get(this.fromTape);
-        const toTape = tapeNS.get(this.toTape);
+        const oppositeTape = env.getTape(oppositeTapeName);
+        //const fromTape = env.getTape(this.fromTape);
+        //const toTape = env.getTape(this.toTape);
 
         // We ask for a namespace rename either way; when tapeName == fromTape,
         // this is just a no-op
-        const newTapeNS = tapeNS.rename(tapeName, this.fromTape); 
+        const newEnv = env.renameTape(tapeName, this.fromTape); 
 
         for (const [cTarget, cNext] of 
-                this.child.deriv(this.fromTape, target, newTapeNS, stack, opt)) {
+                this.child.deriv(this.fromTape, target, newEnv)) {
             const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
             const maskedTarget = oppositeTape.restrictToVocab(cTarget as BitsetToken);
             if (maskedTarget.isEmpty()) {
@@ -1703,14 +1641,12 @@ export class MatchFromExpr extends UnaryExpr {
     public *stringDeriv(
         tapeName: string,
         target: string, 
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         
         // if it's a tape that isn't our to/from, just forward and wrap 
         if (tapeName != this.fromTape && tapeName != this.toTape) {
-            for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+            for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
                 const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
                 yield [cTarget, successor];
             }
@@ -1723,15 +1659,15 @@ export class MatchFromExpr extends UnaryExpr {
         // toTape, we have to act like a toTape->fromTape rename.  
 
         const oppositeTape = (tapeName == this.fromTape) ? this.toTape : this.fromTape;
-        const fromTape = tapeNS.get(this.fromTape);
-        const toTape = tapeNS.get(this.toTape);
+        const fromTape = env.getTape(this.fromTape);
+        const toTape = env.getTape(this.toTape);
 
         // We ask for a namespace rename either way; when tapeName == fromTape,
         // this is just a no-op
-        const newTapeNS = tapeNS.rename(tapeName, this.fromTape); 
+        const newEnv = env.renameTape(tapeName, this.fromTape); 
 
         for (const [cTarget, cNext] of 
-                this.child.deriv(this.fromTape, target, newTapeNS, stack, opt)) {
+                this.child.deriv(this.fromTape, target, newEnv)) {
             const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
             for (const c of toTape.expandStrings(cTarget as string, fromTape)) {
                 const lit = constructLiteral(oppositeTape, [c]);
@@ -1758,20 +1694,18 @@ export class MatchExpr extends UnaryExpr {
 
     public delta(
         tapeName: string,
-        tapeNS: TapeNamespace, 
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): Expr {
 
         if (!this.tapes.has(tapeName)) {
             // it's not a tape we're matching
-            const nextExpr = this.child.delta(tapeName, tapeNS, stack, opt);
+            const nextExpr = this.child.delta(tapeName, env);
             return constructMatch(nextExpr, this.tapes);
         }
 
         let result: Expr = this.child;
         for (const t of this.tapes) {
-            result = result.delta(t, tapeNS, stack, opt);
+            result = result.delta(t, env);
         }
         return result;
     }
@@ -1779,9 +1713,7 @@ export class MatchExpr extends UnaryExpr {
     public *bitsetDeriv(
         tapeName: string, 
         target: BitsetToken,
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         throw new Error("Method not implemented.");
     }
@@ -1789,14 +1721,12 @@ export class MatchExpr extends UnaryExpr {
     public *stringDeriv(
         tapeName: string,
         target: string, 
-        tapeNS: TapeNamespace,
-        stack: CounterStack,
-        opt: GenOptions
+        env: Env
     ): DerivResult {
         
         if (!this.tapes.has(tapeName)) {
             // it's not a tape we're matching
-            for (const [cTarget, cNext] of this.child.deriv(tapeName, target, tapeNS, stack, opt)) {
+            for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
                 yield [cTarget, constructMatch(cNext, this.tapes)];
             }
             return;
@@ -1811,14 +1741,14 @@ export class MatchExpr extends UnaryExpr {
                     // don't attempt to match if the character isn't even in the vocabulary
                     break;
                 }*/
-                for (const [cTarget, cNext] of prevExpr.deriv(t, prevTarget, tapeNS, stack, opt)) {
+                for (const [cTarget, cNext] of prevExpr.deriv(t, prevTarget, env)) {
                     nextResults.push([cTarget as string, cNext]);
                 }
             }
             results = nextResults;    
         }
 
-        const tape = tapeNS.get(tapeName);
+        const tape = env.getTape(tapeName);
 
         for (const [nextTarget, nextExpr] of results) {
             

@@ -1,5 +1,6 @@
 import { 
     constructPriority, CounterStack, 
+    Env, 
     EpsilonExpr, Expr, NullExpr, PriorityExpr 
 } from "./exprs";
 import { OutputTrie, TapeNamespace } from "./tapes";
@@ -30,6 +31,7 @@ export function* generate(
     opt: GenOptions
 ): Gen<StringDict> {
     const stack = new CounterStack(opt.maxRecursion);
+    const env = new Env(tapeNS, stack, opt);
 
     const startingTime = Date.now();
 
@@ -85,14 +87,14 @@ export function* generate(
             // we've neither found a valid output nor failed; there is 
             // still a possibility of finding an output with prevOutput
             // as its prefix
-            const delta = prevExpr.openDelta(tapeNS, stack, opt);
+            const delta = prevExpr.openDelta(env);
             if (!(delta instanceof NullExpr)) {    
                 nexts.push([prevOutput, delta]);
             }
 
             // next see where we can go on that tape, along any char
             // transition.
-            for (const [cTape, cTarget, cNext] of prevExpr.openDeriv(tapeNS, stack, opt)) {
+            for (const [cTape, cTarget, cNext] of prevExpr.openDeriv(env)) {
                 if (!(cNext instanceof NullExpr)) {
                     const nextOutput = prevOutput.add(cTape, cTarget);
                     nexts.push([nextOutput, cNext]);

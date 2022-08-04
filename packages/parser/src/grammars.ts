@@ -23,7 +23,8 @@ import {
     constructCount,
     constructCountTape,
     constructPriority,
-    EpsilonExpr
+    EpsilonExpr,
+    Env
 } from "./exprs";
 
 import { 
@@ -2137,7 +2138,8 @@ export class ReplaceGrammar extends Grammar {
             const fromExprWithContext: Expr = constructSequence(preContextExpr, fromExpr, postContextExpr);
             const opt: GenOptions = new GenOptions();
             const stack = new CounterStack(opt.maxRecursion);
-            const delta = fromExprWithContext.delta(this.fromTapeName, tapeNS, stack, opt);
+            const env = new Env(tapeNS, stack, opt);
+            const delta = fromExprWithContext.delta(this.fromTapeName, env);
             if (delta instanceof EpsilonExpr) {
                 emptyFromExpr = true;
             }
