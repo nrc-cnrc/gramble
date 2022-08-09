@@ -9,7 +9,8 @@ import {
     SequenceGrammar, UnitTestGrammar,
     UnresolvedEmbedGrammar, StartsGrammar, 
     EndsGrammar, ContainsGrammar, CountGrammar, 
-    CountTapeGrammar, CounterStack, JoinRuleGrammar, MatchFromGrammar, PriorityGrammar
+    CountTapeGrammar, CounterStack, JoinRuleGrammar, 
+    MatchFromGrammar, PriorityGrammar, ShortGrammar, ParallelGrammar
 } from "../grammars";
 
 /**
@@ -59,6 +60,11 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
     public transformSequence(g: SequenceGrammar, ns: NsGrammar, args: T): Grammar {
         const newChildren = g.children.map(c => c.accept(this, ns, args));
         return new SequenceGrammar(g.cell, newChildren);
+    }
+
+    public transformParallel(g: SequenceGrammar, ns: NsGrammar, args: T): Grammar {
+        const newChildren = g.children.map(c => c.accept(this, ns, args));
+        return new ParallelGrammar(g.cell, newChildren);
     }
 
     public transformAlternation(g: AlternationGrammar, ns: NsGrammar, args: T): Grammar {
@@ -198,4 +204,10 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
         const newChild = g.child.accept(this, ns, args);
         return new PriorityGrammar(g.cell, newChild, g.tapePriority);
     }
+    
+    public transformShort(g: PriorityGrammar, ns: NsGrammar, args: T): Grammar {
+        const newChild = g.child.accept(this, ns, args);
+        return new ShortGrammar(g.cell, newChild);
+    }
+
 }

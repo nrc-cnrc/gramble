@@ -13,7 +13,7 @@ export const ANY_CHAR_STR = "__ANY_CHAR__";
 export const NO_CHAR_STR = "__ANY_CHAR__";
 
 export const BITSETS_ENABLED: boolean = false; // whether to use bitsets or real strings
-export const DIRECTION_LTR: boolean = true; // whether we parse/generate from the beginning or end of words
+export const DIRECTION_LTR: boolean = false; // whether we parse/generate from the beginning or end of words
 
 export const SILENT = 0;
 export const VERBOSE_TIME = 1;
@@ -491,7 +491,6 @@ function *iterMap<T,T2>(i: Iterable<T>, f: (i: T) => T2): Gen<T2> {
         yield f(item);
     }
 }
-
 
 export function foldLeft<T>(
     arr: T[], 

@@ -20,7 +20,7 @@ import {
 } from './testUtils';
 
 import * as path from 'path';
-import { BITSETS_ENABLED } from "../src/util";
+import { BITSETS_ENABLED, VERBOSE_DEBUG } from "../src/util";
 
 if (!BITSETS_ENABLED) {
 
@@ -323,7 +323,7 @@ describe(`${path.basename(module.filename)}`, function() {
             testHasTapes(grammar2, ['t2']);
             //testHasVocab(grammar2, {t2: 2});
             testGrammar(grammar2, [{t2: 'hih'},
-                                             {t2: 'hii'}]);
+                                 {t2: 'hii'}]);
         });
 
         describe("grammar", function() {

@@ -1,6 +1,6 @@
 
 import { CharSet, Epsilon, Seq, Uni } from "../src/grammars";
-import { t1, t2, testHasTapes, testGrammar, testHasVocab } from './testUtils';
+import { t1, t2, testHasTapes, testGrammar, testHasVocab, t3 } from './testUtils';
 
 import * as path from 'path';
 import { VERBOSE_DEBUG } from "../src/util";
@@ -57,7 +57,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ["t1"]);
         testGrammar(grammar, [{t1: "hello"}]);
     });
-    
     
     describe('Seq()+t1:hello', function() {
         const grammar = Seq(Seq(), t1("hello"));
@@ -133,6 +132,27 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasVocab(grammar, {t1: 2, t2: 2});
         testGrammar(grammar, [{t1: "hi", t2: "yo"}]);
     });
+    
+    describe('t1:hi+t2:yo+t3:hey', function() {
+        const grammar = Seq(t1("hi"), t2("yo"), t3("hey"));
+        testHasTapes(grammar, ["t1", "t2", "t3"]);
+        testHasVocab(grammar, {t1: 2, t2: 2, t3: 3});
+        testGrammar(grammar, [{t1: "hi", t2: "yo", t3: "hey"}]);
+    });
+
+    describe('t1:hi+(t2:yo+t3:hey)', function() {
+        const grammar = Seq(t1("hi"), Seq(t2("yo"), t3("hey")));
+        testHasTapes(grammar, ["t1", "t2", "t3"]);
+        testHasVocab(grammar, {t1: 2, t2: 2, t3: 3});
+        testGrammar(grammar, [{t1: "hi", t2: "yo", t3: "hey"}], VERBOSE_DEBUG);
+    });
+
+    describe('(t1:hi+t2:yo)+t3:hey', function() {
+        const grammar = Seq(Seq(t1("hi"), t2("yo")), t3("hey"));
+        testHasTapes(grammar, ["t1", "t2", "t3"]);
+        testHasVocab(grammar, {t1: 2, t2: 2, t3: 3});
+        testGrammar(grammar, [{t1: "hi", t2: "yo", t3: "hey"}], VERBOSE_DEBUG);
+    });
 
     describe('Alt t1:hello|t1:goodbye', function() {
         const grammar = Uni(t1("hello"), t1("goodbye"));
@@ -165,7 +185,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "hello"},
                               {t2: "goodbye"}]);
     });
-
 
     describe('Alt of sequences', function() {
 

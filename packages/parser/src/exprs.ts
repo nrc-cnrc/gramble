@@ -2,7 +2,7 @@ import {
     ANY_CHAR_STR, BITSETS_ENABLED, 
     DIRECTION_LTR, Gen, GenOptions, 
     logDebug, logTime, logStates, 
-    logGrammar, setDifference 
+    logGrammar, setDifference, foldRight, foldLeft 
 } from "./util";
 import { 
     Tape, BitsetToken, TapeNamespace, 
@@ -362,7 +362,6 @@ export abstract class Expr {
         }
     }
     
-
     public *disjointStringDeriv(
         tapeName: string,
         target: string, 
@@ -869,6 +868,95 @@ class RTLLiteralExpr extends LiteralExpr {
 
 }
 
+export class ParallelExpr extends Expr {
+
+    constructor(
+        public children: {[tapeName: string]: Expr}
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        const childIDs = Object.values(this.children).map(c => c.id);
+        return `${childIDs.join("∙")}`;
+    }
+
+    public delta(
+        tapeName: string,
+        env: Env
+    ): Expr {
+        if (!(tapeName in this.children)) {
+            return this;
+        }
+        
+        const delta = this.children[tapeName].delta(tapeName, env);
+        return updateParallel(this.children, tapeName, delta);
+    }
+
+    public *deriv(
+        tapeName: string, 
+        target: Token,
+        env: Env
+    ): DerivResult {
+
+        if (!(tapeName in this.children)) {
+            return;
+        }
+
+        const childResults = this.children[tapeName].disjointDeriv(tapeName, target, env);
+        for (const [cTarget, cNext] of childResults) {
+            const successor = updateParallel(this.children, tapeName, cNext);
+            yield [cTarget, successor];
+        }
+    }
+}
+
+export function constructParallel(
+    children: {[tapeName: string]: Expr},
+): Expr {
+    const newChildren: {[tapeName: string]: Expr} = {};
+    let childFound = false;
+    for (const [tapeName, child] of Object.entries(children)) {
+        if (child instanceof NullExpr) {
+            return child;
+        }
+        if (child instanceof EpsilonExpr) {
+            continue;
+        }
+        newChildren[tapeName] = child;
+        childFound = true;
+    }
+    if (!childFound) {
+        return EPSILON;
+    }
+
+    return new ParallelExpr(newChildren);
+}
+
+export function updateParallel(
+    children: {[tapeName: string]: Expr},
+    newTape: string,
+    newChild: Expr
+): Expr {
+    if (newChild instanceof NullExpr) {
+        return newChild;
+    }
+
+    const newChildren: {[tapeName: string]: Expr} = {};
+    Object.assign(newChildren, children);
+        
+    if (newChild instanceof EpsilonExpr) {
+        delete newChildren[newTape];
+        if (Object.keys(newChildren).length == 0) {
+            return EPSILON;
+        }
+    } else {
+        newChildren[newTape] = newChild;
+    }
+
+    return new ParallelExpr(newChildren);
+}
+
 /**
  * The abstract base class of all Exprs with two state children 
  * (e.g. [JoinExpr]).
@@ -1362,6 +1450,58 @@ export class PriorityExpr extends UnaryExpr {
     }
 }
 
+/**
+ * ShortExprs "short-circuit" as soon as any of their children
+ * are nullable -- that is, it has no derivatives if it has any
+ * delta.
+ * 
+ * The denotation of Short(X) is the denotation of X but where
+ * no entries are prefixes of each other; if for any two entries
+ * <X,Y> X is a prefix of Y, Y is thrown out.  So something like 
+ * (h|hi|hello|goo|goodbye|golf) would be (h|goo|golf).
+ */
+class ShortExpr extends UnaryExpr {
+
+    public get id(): string {
+        return `Short(${this.child.id})`
+    }
+
+    public delta(
+        tapeName: string, 
+        env: Env
+    ): Expr {
+        const childNext = this.child.delta(tapeName, env);
+        return constructShort(childNext);
+    }
+
+    public *deriv(
+        tapeName: string, 
+        target: Token,
+        env: Env
+    ): DerivResult {
+        const delta = this.delta(tapeName, env);
+        if (!(delta instanceof NullExpr)) {
+            // if our current tape is nullable, then we have 
+            // no derivatives on that tape.
+            return;
+        }
+
+        // Important: the deriv here MUST be disjoint, just like 
+        // under negation.
+        for (const [cTarget, cNext] of this.child.disjointDeriv(tapeName, target, env)) {
+            const successor = constructShort(cNext);
+            yield [cTarget, successor];
+        }
+    }
+}
+
+export function constructShort(child: Expr): Expr {
+    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
+        return child;
+    }
+    return new ShortExpr(child);
+}
+
 class RepeatExpr extends UnaryExpr {
 
     constructor(
@@ -1779,12 +1919,20 @@ export function constructLiteral(
     text: string[],
     index: number | undefined = undefined
 ): Expr {
+
     if (DIRECTION_LTR) {
         if (index == undefined) { index = 0; }
+        if (index >= text.length) {
+            return EPSILON;
+        }
         return new LiteralExpr(tape, text, index);
     }
     if (index == undefined) { index = text.length -1; }
+    if (index < 0) {
+        return EPSILON;
+    }
     return new RTLLiteralExpr(tape, text, index);
+
 }
 
 export function constructCharSet(tape: string, chars: string[]): CharSetExpr {
@@ -1835,17 +1983,11 @@ export function constructSequence(...children: Expr[]): Expr {
     if (children.length == 0) {
         return EPSILON;
     }
-
-    if (children.length == 1) {
-        return children[0];
-    }
     
     if (DIRECTION_LTR) {
-        const c2 = constructSequence(...children.slice(1));
-        return constructConcat(children[0], c2);
+        return foldRight(children, constructConcat);
     } else {
-        const c1 = constructSequence(...children.slice(0, children.length-1));
-        return constructConcat(c1, children[children.length-1]);
+        return foldLeft(children, constructConcat);
     }
 }
 
@@ -1910,36 +2052,6 @@ export function constructCountTape(child: Expr, maxChars: {[t: string]: number})
     return new CountTapeExpr(child, maxChars);
 }
 
-/**
- * Creates A{min,max} from A.
- */
-export function constructRepeat(
-    child: Expr, 
-    minReps: number = 0, 
-    maxReps: number = Infinity
-): Expr {
-    if (maxReps < 0 || minReps > maxReps) {
-        return NULL;
-    }
-
-    if (maxReps == 0) {
-        return EPSILON;
-    }
-
-    if (child instanceof EpsilonExpr) {
-        return child;
-    }
-
-    if (child instanceof NullExpr) {
-        if (minReps <= 0) {
-            return EPSILON;
-        }
-        return child;
-    }
-
-    return new RepeatExpr(child, minReps, maxReps);
-}
-
 export function constructEmbed(
     symbolName: string, 
     symbols: SymbolTable,
@@ -1968,6 +2080,9 @@ export function constructNegation(
     if (child instanceof NegationExpr) {
         return child.child;
     }
+    if (child instanceof DotStarExpr) {
+        return NULL;
+    }
     return new NegationExpr(child, tapes, maxChars);
 }
 
@@ -1980,6 +2095,41 @@ export function constructDotRep(tape: string, maxReps:number=Infinity): Expr {
         return constructDotStar(tape);
     }
     return constructRepeat(constructDot(tape), 0, maxReps);
+}
+
+
+/**
+ * Creates A{min,max} from A.
+ */
+ export function constructRepeat(
+    child: Expr, 
+    minReps: number = 0, 
+    maxReps: number = Infinity
+): Expr {
+    if (maxReps < 0 || minReps > maxReps) {
+        return NULL;
+    }
+
+    if (maxReps == 0) {
+        return EPSILON;
+    }
+
+    if (child instanceof EpsilonExpr) {
+        return child;
+    }
+
+    if (child instanceof NullExpr) {
+        if (minReps <= 0) {
+            return EPSILON;
+        }
+        return child;
+    }
+
+    if (child instanceof DotExpr && minReps <= 0 && maxReps == Infinity) {
+        return new DotStarExpr(child.tapeName);
+    }
+
+    return new RepeatExpr(child, minReps, maxReps);
 }
 
 export function constructUniverse(
@@ -2045,7 +2195,7 @@ export function constructRename(
         return constructLiteral(toTape, child.text, child.index);
     }
     if (child instanceof DotExpr && child.tapeName == fromTape) {
-        return constructDot(fromTape);
+        return constructDot(toTape);
     }
     return new RenameExpr(child, fromTape, toTape);
 }
@@ -2097,4 +2247,30 @@ export function constructPriority(tapes: string[], child: Expr): Expr {
     }
 
     return new PriorityExpr(tapes, child);
+}
+
+export function constructNotContains(
+    fromTapeName: string,
+    children: Expr[], 
+    tapes: string[], 
+    begin: boolean,
+    end: boolean,
+    maxExtraChars: number
+): Expr {
+    const dotStar: Expr = constructDotRep(fromTapeName, maxExtraChars);
+    let seq: Expr;
+    if (begin) {
+        seq = DIRECTION_LTR ?
+              constructSequence(...children, dotStar) :
+              constructShort(constructSequence(...children, dotStar));
+    } else if (end)
+        seq = DIRECTION_LTR ?
+              constructShort(constructSequence(dotStar, ...children)) :
+              constructSequence(dotStar, ...children);
+    else {
+        seq = DIRECTION_LTR ?
+              constructSequence(constructShort(constructSequence(dotStar, ...children)), dotStar) :
+              constructSequence(dotStar, constructShort(constructSequence(...children, dotStar)));
+    }
+    return constructNegation(seq, new Set(tapes), maxExtraChars);
 }

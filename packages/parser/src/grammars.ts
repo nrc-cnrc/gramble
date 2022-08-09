@@ -11,7 +11,6 @@ import {
     constructRename,
     constructNegation,
     NULL,
-    //constructMemo,
     constructMatch,
     SymbolTable,
     constructFilter,
@@ -24,6 +23,9 @@ import {
     constructCountTape,
     constructPriority,
     EpsilonExpr,
+    constructShort,
+    constructNotContains,
+    constructParallel,
     Env
 } from "./exprs";
 
@@ -91,7 +93,9 @@ export interface GrammarTransform<T> extends Transform {
     transformHide(g: HideGrammar, ns: NsGrammar, args: T): Grammar;
     transformCount(g: CountGrammar, ns: NsGrammar, args: T): Grammar;
     transformCountTape(g: CountTapeGrammar, ns: NsGrammar, args: T): Grammar;
-    transformPriority(g: PriorityGrammar, ns: NsGrammar, args: T): Grammar
+    transformPriority(g: PriorityGrammar, ns: NsGrammar, args: T): Grammar;
+    transformShort(g: ShortGrammar, ns: NsGrammar, args:T): Grammar;
+    transformParallel(g: ParallelGrammar, ns: NsGrammar, arts:T): Grammar;
 }
 
 /**
@@ -241,7 +245,7 @@ export abstract class Grammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         for (const child of this.getChildren()) {
             child.collectVocab(tapeName, tapeNS, symbolsVisited);
@@ -257,18 +261,6 @@ export abstract class Grammar {
             results.push(...child.getVocabCopyEdges(tapeNS, symbolsVisited));
         }
         return results;
-    }
-    
-    public copyVocab(
-        tapeNS: TapeNamespace, 
-        vocabCopyEdges: [string, string][],
-        stack: string[]
-    ): void { 
-        if (vocabCopyEdges.length == 0) {
-            return;
-        }
-        const [toTap] = vocabCopyEdges[0];
-
     }
 
     public runChecksAux(): void {
@@ -412,7 +404,7 @@ export class CharSetGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         if (tapeName != this.tapeName) {
             return;
@@ -459,7 +451,7 @@ export class LiteralGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void {
         if (tapeName != this.tapeName) {
             return;
@@ -534,6 +526,39 @@ abstract class NAryGrammar extends Grammar {
 
 }
 
+export class ParallelGrammar extends NAryGrammar {
+
+    public get id(): string {
+        const cs = this.children.map(c => c.id).join(",");
+        return `Par(${cs})`;
+    }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformParallel(this, ns, args);
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {        
+
+            const childExprs: {[tapeName: string]: Expr} = {};
+            for (const child of this.children) {
+                if (child.tapes.length != 1) {
+                    throw new Error(`Each child of par must have 1 tape`);
+                }
+                const tapeName = child.tapes[0];
+                if (tapeName in childExprs) {
+                    throw new Error(`Each child of par must have a unique tape`)
+                }
+                const newChild = child.constructExpr(symbols);
+                childExprs[tapeName] = newChild;
+            }
+            this.expr = constructParallel(childExprs);
+        }
+        return this.expr;
+    }
+
+}
+
 export class SequenceGrammar extends NAryGrammar {
 
     public get id(): string {
@@ -552,7 +577,8 @@ export class SequenceGrammar extends NAryGrammar {
     public constructExpr(symbols: SymbolTable): Expr {
         if (this.expr == undefined) {        
             const childExprs = this.children.map(s => s.constructExpr(symbols));
-            this.expr = constructSequence(...childExprs);
+            const seq = constructSequence(...childExprs);
+            this.expr = seq;
         }
         return this.expr;
     }
@@ -629,6 +655,25 @@ abstract class BinaryGrammar extends Grammar {
     
     public getChildren(): Grammar[] { 
         return [this.child1, this.child2];
+    }
+}
+
+export class ShortGrammar extends UnaryGrammar {
+
+    public get id(): string {
+        return `Pref(${this.child.id})`;
+    }
+    
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformShort(this, ns, args);
+    }
+    
+    public constructExpr(symbols: SymbolTable): Expr {
+        if (this.expr == undefined) {
+            const child = this.child.constructExpr(symbols);
+            this.expr = constructShort(child);
+        }
+        return this.expr;
     }
 }
 
@@ -916,7 +961,7 @@ export class RenameGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         if (tapeName != this.toTape && tapeName == this.fromTape) {
             return;
@@ -1073,7 +1118,7 @@ export class HideGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         if (tapeName != this.toTape && tapeName == this.tapeName) {
             return;
@@ -1165,7 +1210,7 @@ export class MatchFromGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         this.child.collectVocab(tapeName, tapeNS, symbolsVisited);
 
@@ -1378,7 +1423,7 @@ export class NsGrammar extends Grammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         for (const child of this.symbols.values()) {
             child.collectVocab(tapeName, tapeNS, symbolsVisited);
@@ -1453,16 +1498,16 @@ export class EmbedGrammar extends AtomicGrammar {
         return this._tapes;
     }
     
-
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
-        if (symbolsVisited.has([tapeName, this.name])) {
+        const key = `${this.name}__${tapeName}`
+        if (symbolsVisited.has(key)) {
             return;
         }
-        symbolsVisited.add([tapeName, this.name]);
+        symbolsVisited.add(key);
         this.getReferent().collectVocab(tapeName, tapeNS, symbolsVisited);
     }
     
@@ -1517,7 +1562,7 @@ export class UnresolvedEmbedGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         return;
     }
@@ -1640,6 +1685,10 @@ export function Seq(...children: Grammar[]): SequenceGrammar {
     return new SequenceGrammar(new DummyCell(), children);
 }
 
+export function Par(...children: Grammar[]): ParallelGrammar {
+    return new ParallelGrammar(new DummyCell(), children);
+}
+
 export function Uni(...children: Grammar[]): AlternationGrammar {
     return new AlternationGrammar(new DummyCell(), children);
 }
@@ -1670,6 +1719,10 @@ export function Equals(child1: Grammar, child2: Grammar): EqualsGrammar {
 
 export function Join(child1: Grammar, child2: Grammar): JoinGrammar {
     return new JoinGrammar(new DummyCell(), child1, child2);
+}
+
+export function Short(child: Grammar): ShortGrammar {
+    return new ShortGrammar(new DummyCell(), child);
 }
 
 export function Starts(child1: Grammar, child2: Grammar): EqualsGrammar {
@@ -2061,7 +2114,7 @@ export class ReplaceGrammar extends Grammar {
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: Set<[string,string]>
+        symbolsVisited: Set<string>
     ): void { 
         // first, collect vocabulary as normal
         super.collectVocab(tapeName, tapeNS, symbolsVisited);
@@ -2172,17 +2225,8 @@ export class ReplaceGrammar extends Grammar {
             negatedTapes.push(...that.preContext.tapes);
             negatedTapes.push(...that.postContext.tapes);
 
-            let notGrammar: Expr;
-            if (that.beginsWith && replaceNone) {
-                notGrammar = constructNegation(constructSequence(...fromInstance, dotStar),
-                                               new Set(negatedTapes), maxExtraChars);
-            }
-            else if (that.endsWith && replaceNone)
-                notGrammar = constructNegation(constructSequence(dotStar, ...fromInstance),
-                                               new Set(negatedTapes), maxExtraChars);
-            else
-                notGrammar = constructNegation(constructSequence(dotStar, ...fromInstance, dotStar),
-                                               new Set(negatedTapes), maxExtraChars);
+            let notGrammar = constructNotContains(that.fromTapeName, 
+                fromInstance, negatedTapes, that.beginsWith && replaceNone, that.endsWith && replaceNone, maxExtraChars);
             return constructMatchFrom(notGrammar, that.fromTapeName, ...that.toTapeNames)
         }
         

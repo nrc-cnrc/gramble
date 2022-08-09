@@ -3,6 +3,7 @@ import {
     testHasVocab, testGrammar 
 } from "../../testUtils";
 import * as path from 'path';
+import { VERBOSE_DEBUG, VERBOSE_STATES } from "../../../src/util";
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
 
