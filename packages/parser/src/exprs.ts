@@ -2,11 +2,13 @@ import {
     ANY_CHAR_STR, BITSETS_ENABLED, 
     DIRECTION_LTR, Gen, GenOptions, 
     logDebug, logTime, logStates, 
-    logGrammar, setDifference, foldRight, foldLeft 
+    logGrammar, setDifference, foldRight, foldLeft,
+    VERBOSE_DEBUG
 } from "./util";
 import { 
     Tape, BitsetToken, TapeNamespace, 
-    renameTape, Token, EntangledToken 
+    renameTape, Token, EntangledToken,
+    OutputTrie
 } from "./tapes";
 
 
@@ -40,6 +42,18 @@ export class Env {
 
     public logDebug(msg: string): void {
         logDebug(this.opt.verbose, msg);
+    }
+
+    public logDebugId(msg: string, expr: Expr): void {
+        if ((this.opt.verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+            console.log(`${msg} ${expr.id}`);
+        }
+    }
+
+    public logDebugOutput(msg: string, output: OutputTrie): void {
+        if ((this.opt.verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+            console.log(`${msg} ${JSON.stringify(output.toDict(this.tapeNS, this.opt))}`);
+        }
     }
 
     public logTime(msg: string): void {

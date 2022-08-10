@@ -1,12 +1,11 @@
 import { 
-    constructPriority, CounterStack, 
-    Env, 
+    constructPriority, CounterStack, Env, 
     EpsilonExpr, Expr, NullExpr, PriorityExpr 
 } from "./exprs";
 import { OutputTrie, TapeNamespace } from "./tapes";
 import { 
-    Gen, GenOptions, logDebug, logStates, 
-    logTime, msToTime, shuffleArray, StringDict
+    Gen, GenOptions,
+    msToTime, shuffleArray, StringDict
 } from "./util";
 
 /**
@@ -45,6 +44,9 @@ export function* generate(
 
     let stateCounter = 0;
 
+    env.logDebug("");
+    env.logDebugId("*** Generating for expr", expr);
+
     while (prev = states.pop()) {
 
         stateCounter++;
@@ -59,15 +61,16 @@ export function* generate(
         let nexts: [OutputTrie, Expr][] = [];
         let [prevOutput, prevExpr] = prev;
 
-        logDebug(opt.verbose, "");
-        logDebug(opt.verbose, `prevOutput is ${JSON.stringify(prevOutput.toDict(tapeNS, opt))}`);
-        logDebug(opt.verbose, `*** Generating for expr ${prevExpr.id}`);
+        env.logDebug("");
+        env.logDebugOutput("prevOutput is", prevOutput);
+        env.logDebugId("prevExpr is", prevExpr);
+
 
         if (prevExpr instanceof EpsilonExpr) {
             // we found a valid output and there's nothing left
             // we can do on this branch
 
-            logDebug(opt.verbose, `YIELD ${JSON.stringify(prevOutput.toDict(tapeNS, opt))} `)
+            env.logDebugOutput("YIELD", prevOutput);
                 
             // if we're random, don't yield immediately, wait
             if (opt.random) {
@@ -113,10 +116,11 @@ export function* generate(
         states.push(...nexts);
     }
 
-    logDebug(opt.verbose, `*** Finished generating for expr  ${expr.id}.`);
-    logStates(opt.verbose, `States visited: ${stateCounter}`)
+    env.logDebug("");
+    env.logDebugId("*** Finished generating for expr", expr);
+    env.logStates(`States visited: ${stateCounter}`);
     const elapsedTime = msToTime(Date.now() - startingTime);
-    logTime(opt.verbose, `Generation time: ${elapsedTime}`);
+    env.logTime(`Generation time: ${elapsedTime}`);
 
     // if we get here, we've exhausted the search.  usually we'd be done,
     // but with randomness, it's possible to have cached all outputs but not
