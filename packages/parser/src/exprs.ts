@@ -700,7 +700,8 @@ class LiteralExpr extends Expr {
 
     constructor(
         public tapeName: string,
-        public text: string[],
+        public text: string,
+        public tokens: string[],
         public index: number = 0
     ) {
         super();
@@ -708,12 +709,7 @@ class LiteralExpr extends Expr {
 
     public get id(): string {
         const index = this.index > 0 ? `[${this.index}]` : ""; 
-        return `${this.tapeName}:${this.text.join("")}${index}`;
-    }
-
-    public getText(): string[] {
-        // Return the remaining text for this LiteralState.
-        return this.text.slice(this.index);
+        return `${this.tapeName}:${this.tokens.join("")}${index}`;
     }
 
     public delta(
@@ -723,14 +719,18 @@ class LiteralExpr extends Expr {
         if (tapeName != this.tapeName) {
             return this;
         }
-        if (this.index >= this.text.length) {
+        if (this.index >= this.tokens.length) {
             return EPSILON;
         }
         return NULL;
     }
 
+    protected getAtomicToken(tape: Tape): BitsetToken {
+        return tape.toToken([this.text]);
+    }
+
     protected getToken(tape: Tape): BitsetToken {
-        return tape.toToken([this.text[this.index]]);
+        return tape.toToken([this.tokens[this.index]]);
     }
 
     public *bitsetDeriv(
@@ -739,7 +739,7 @@ class LiteralExpr extends Expr {
         env: Env
     ): DerivResult {
 
-        if (this.index >= this.text.length) {
+        if (this.index >= this.tokens.length) {
             return;
         }
 
@@ -749,12 +749,22 @@ class LiteralExpr extends Expr {
 
         const tape = env.getTape(tapeName);
 
+        if (tape.atomic) {
+            const currentToken = this.getToken(tape);
+            const result = tape.match(currentToken, target);
+            if (result.isEmpty()) {
+                return;
+            }
+            yield [result, EPSILON];
+            return;
+        }
+
         const currentToken = this.getToken(tape);
         const result = tape.match(currentToken, target);
         if (result.isEmpty()) {
             return;
         }
-        const nextExpr = constructLiteral(this.tapeName, this.text, this.index+1);
+        const nextExpr = constructLiteral(this.tapeName, this.text, this.tokens, this.index+1);
         yield [result, nextExpr];
 
     }
@@ -765,7 +775,7 @@ class LiteralExpr extends Expr {
         env: Env
     ): DerivResult {
 
-        if (this.index >= this.text.length) {
+        if (this.index >= this.tokens.length) {
             return;
         }
 
@@ -773,9 +783,17 @@ class LiteralExpr extends Expr {
             return;
         }
 
-        if (target == ANY_CHAR_STR || target == this.text[this.index]) {
-            const nextExpr = constructLiteral(this.tapeName, this.text, this.index+1);
-            yield [this.text[this.index], nextExpr];
+        const tape = env.getTape(tapeName);
+        if (tape.atomic) {
+            if (target == ANY_CHAR_STR || target == this.text) {
+                yield [this.text, EPSILON];
+            }
+            return;
+        }
+
+        if (target == ANY_CHAR_STR || target == this.tokens[this.index]) {
+            const nextExpr = constructLiteral(this.tapeName, this.text, this.tokens, this.index+1);
+            yield [this.tokens[this.index], nextExpr];
         }
     }
 
@@ -785,20 +803,16 @@ class RTLLiteralExpr extends LiteralExpr {
 
     constructor(
         public tapeName: string,
-        public text: string[],
-        public index: number = text.length-1
+        public text: string,
+        public tokens: string[],
+        public index: number = tokens.length-1
     ) {
-        super(tapeName, text, index);
+        super(tapeName, text, tokens, index);
     }
 
     public get id(): string {
-        const index = this.index < this.text.length-1 ? `[${this.index}]` : ""; 
-        return `${this.tapeName}:${this.text.join("")}${index}`;
-    }
-
-    public getText(): string[] {
-        // Return the remaining text for this LiteralState.
-        return this.text.slice(0, this.index+1);
+        const index = this.index < this.tokens.length-1 ? `[${this.index}]` : ""; 
+        return `${this.tapeName}:${this.tokens.join("")}${index}`;
     }
 
     public delta(
@@ -817,7 +831,7 @@ class RTLLiteralExpr extends LiteralExpr {
     }
 
     protected getToken(tape: Tape): BitsetToken {
-        return tape.toToken([this.text[this.index]]);
+        return tape.toToken([this.tokens[this.index]]);
     }
 
     public *bitsetDeriv(
@@ -836,12 +850,25 @@ class RTLLiteralExpr extends LiteralExpr {
 
         const tape = env.getTape(tapeName);
 
+        if (tape.atomic) {
+            env.logDebug(`${tapeName} is atomic`)
+            const currentToken = this.getToken(tape);
+            const result = tape.match(currentToken, target);
+            if (result.isEmpty()) {
+                return;
+            }
+            yield [result, EPSILON];
+            return;
+        }
+
+        
+        env.logDebug(`${tapeName} is not atomic`)
         const currentToken = this.getToken(tape);
         const result = tape.match(currentToken, target);
         if (result.isEmpty()) {
             return;
         }
-        const nextExpr = constructLiteral(this.tapeName, this.text, this.index-1);
+        const nextExpr = constructLiteral(this.tapeName, this.text, this.tokens, this.index-1);
         yield [result, nextExpr];
 
     }
@@ -860,9 +887,19 @@ class RTLLiteralExpr extends LiteralExpr {
             return;
         }
 
-        if (target == ANY_CHAR_STR || target == this.text[this.index]) {
-            const nextExpr = constructLiteral(this.tapeName, this.text, this.index-1);
-            yield [this.text[this.index], nextExpr];
+        const tape = env.getTape(tapeName);
+        if (tape.atomic) {
+            env.logDebug(`${tapeName} is atomic`)
+            if (target == ANY_CHAR_STR || target == this.text) {
+                yield [this.text, EPSILON];
+            }
+            return;
+        }
+
+        env.logDebug(`${tapeName} is not atomic, tokens are ${this.tokens}`)
+        if (target == ANY_CHAR_STR || target == this.tokens[this.index]) {
+            const nextExpr = constructLiteral(this.tapeName, this.text, this.tokens, this.index-1);
+            yield [this.tokens[this.index], nextExpr];
         }
     }
 
@@ -1810,7 +1847,7 @@ export class MatchFromExpr extends UnaryExpr {
                 this.child.deriv(this.fromTape, target, newEnv)) {
             const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
             for (const c of toTape.expandStrings(cTarget as string, fromTape)) {
-                const lit = constructLiteral(oppositeTape, [c]);
+                const lit = constructLiteral(oppositeTape, c, [c]);
                 yield [c, constructPrecede(lit, successor)];
             }
         }
@@ -1863,7 +1900,7 @@ export class MatchExpr extends UnaryExpr {
         target: string, 
         env: Env
     ): DerivResult {
-        
+        env.logDebug(`matching ${tapeName}:${target}`)
         if (!this.tapes.has(tapeName)) {
             // it's not a tape we're matching
             for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
@@ -1882,6 +1919,9 @@ export class MatchExpr extends UnaryExpr {
                     break;
                 }*/
                 for (const [cTarget, cNext] of prevExpr.deriv(t, prevTarget, env)) {
+                    const tObj = env.getTape(t);
+                    env.logDebug(`${t} atomic? ${tObj.atomic}`)
+                    env.logDebug(`found ${t}:${cTarget}`)
                     nextResults.push([cTarget as string, cNext]);
                 }
             }
@@ -1900,7 +1940,7 @@ export class MatchExpr extends UnaryExpr {
                     if (matchTape == tapeName) {
                         continue;
                     }
-                    const lit = constructLiteral(matchTape, [c]);
+                    const lit = constructLiteral(matchTape, c, [c]);
                     bufferedNext = constructPrecede(lit, bufferedNext);
                 }
                 yield [c, bufferedNext];
@@ -1916,22 +1956,23 @@ export const NULL = new NullExpr();
 
 export function constructLiteral(
     tape: string, 
-    text: string[],
+    text: string,
+    tokens: string[],
     index: number | undefined = undefined
 ): Expr {
 
     if (DIRECTION_LTR) {
         if (index == undefined) { index = 0; }
-        if (index >= text.length) {
+        if (index >= tokens.length) {
             return EPSILON;
         }
-        return new LiteralExpr(tape, text, index);
+        return new LiteralExpr(tape, text, tokens, index);
     }
-    if (index == undefined) { index = text.length -1; }
+    if (index == undefined) { index = tokens.length -1; }
     if (index < 0) {
         return EPSILON;
     }
-    return new RTLLiteralExpr(tape, text, index);
+    return new RTLLiteralExpr(tape, text, tokens, index);
 
 }
 
@@ -2192,7 +2233,7 @@ export function constructRename(
         return child;
     }
     if (child instanceof LiteralExpr && child.tapeName == fromTape) {
-        return constructLiteral(toTape, child.text, child.index);
+        return constructLiteral(toTape, child.text, child.tokens, child.index);
     }
     if (child instanceof DotExpr && child.tapeName == fromTape) {
         return constructDot(toTape);

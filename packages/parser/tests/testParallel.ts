@@ -10,7 +10,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Par(t1:hello)', function() {
         const grammar = Par(t1("hello"));
         testHasTapes(grammar, ["t1"]);
-        testHasVocab(grammar, {t1: 4});
+        //testHasVocab(grammar, {t1: 4});
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
@@ -30,14 +30,14 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Par t1:hi, t2:yo', function() {
         const grammar = Par(t1("hi"), t2("yo"));
         testHasTapes(grammar, ["t1", "t2"]);
-        testHasVocab(grammar, {t1: 2, t2: 2});
+        //testHasVocab(grammar, {t1: 2, t2: 2});
         testGrammar(grammar, [{t1: "hi", t2: "yo"}]);
     });
     
     describe('Par t1:hi, t2:yo, t3:hey', function() {
         const grammar = Par(t1("hi"), t2("yo"), t3("hey"));
         testHasTapes(grammar, ["t1", "t2", "t3"]);
-        testHasVocab(grammar, {t1: 2, t2: 2, t3:3});
+        //testHasVocab(grammar, {t1: 2, t2: 2, t3:3});
         testGrammar(grammar, [{t1: "hi", t2: "yo", t3: "hey"}]);
     });
 

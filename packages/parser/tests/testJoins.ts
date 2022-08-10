@@ -14,7 +14,17 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(t1("hello"), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
+
+    describe('Joining t1:hello+t1:world ⨝ t1:helloworld', function() {
+        const grammar = Join(Seq(t1("hello"), t1("world")), t1("helloworld"));
+        testGrammar(grammar, [{t1: "helloworld"}]);
+    });
     
+    describe('Joining t1:helloworld ⨝ t1:hello+t1:world ', function() {
+        const grammar = Join(t1("helloworld"), Seq(t1("hello"), t1("world")));
+        testGrammar(grammar, [{t1: "helloworld"}]);
+    });
+
     describe('Joining t1:hello ⨝ t2:foo', function() {
         const grammar = Join(t1("hello"), t2("foo"));
         testHasTapes(grammar, ["t1", "t2"]);

@@ -27,6 +27,14 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{'t1': 'h', 't2': 'h'}]);
     });
 
+    // 1. Match(t1:h,t2:h)
+    describe('1: matching t1:hi and t2:h+i', function() {
+        const grammar = Match(Seq(t1("hi"), t2("h"), t2("i")), "t1", "t2");
+        testHasTapes(grammar, ['t1', 't2']);
+        //testHasVocab(grammar, {'t1': 1, 't2': 1});
+        testGrammar(grammar, [{'t1': 'hi', 't2': 'hi'}]);
+    });
+
     // 2. Match(t1:h|i,t2:h|i)
     describe('2: matching t1/t2 of h|i', function() {
         const grammar = Match(Seq(Uni(t1("h"), t1("i")), 

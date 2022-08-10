@@ -88,7 +88,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
+        //testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -101,7 +101,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
+        //testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -140,7 +140,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
+        //testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -154,7 +154,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
+        //testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -281,7 +281,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
+        //testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -296,7 +296,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
+        //testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -311,7 +311,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
+        //testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -326,7 +326,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3']);
-        testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
+        //testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -356,7 +356,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        testHasVocab(grammar, {t1: 4, t2: 4, t4: 5});
+        //testHasVocab(grammar, {t1: 4, t2: 4, t4: 5});
         testGrammar(grammar, expectedResults);
     });
 
@@ -373,7 +373,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't4']);
-        testHasVocab(grammar, {t1: 4, t2: 4, t4: 5});
+        //testHasVocab(grammar, {t1: 4, t2: 4, t4: 5});
         testGrammar(grammar, expectedResults);
     });
 
@@ -507,7 +507,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
+        //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -520,7 +520,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
+        //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -559,7 +559,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
+        //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -573,7 +573,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
+        //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
@@ -711,7 +711,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
+        //testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -726,7 +726,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
+        //testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -741,7 +741,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
+        //testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -756,7 +756,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
+        //testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
@@ -786,7 +786,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 5});
+        //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 5});
         testGrammar(grammar, expectedResults);
     });
 
@@ -803,7 +803,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 5});
+        //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 5});
         testGrammar(grammar, expectedResults);
     });
 

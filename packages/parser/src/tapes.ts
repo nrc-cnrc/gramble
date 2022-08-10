@@ -1,6 +1,7 @@
 import { BitSet } from "bitset";
 import { 
     ANY_CHAR_STR, DIRECTION_LTR, GenOptions, 
+    logDebug, 
     shuffleArray, StringDict, 
     tokenizeUnicode 
 } from "./util";
@@ -372,12 +373,13 @@ export interface Tape {
     readonly vocabSize: number;
     readonly vocab: string[];
     readonly globalName: string;
+    readonly atomic: boolean;
+    registerTokens(tokens: string[]): void;
     expandStrings(token: string, other?: Tape | undefined): string[];
     restrictToVocab(token: BitsetToken): BitsetToken;
     vocabIsSubsetOf(other: Tape): boolean;
     inVocab(strs: string[]): boolean;
     match(str1: BitsetToken, str2: BitsetToken): BitsetToken;
-    tokenize(str: string): string[];
     toToken(chars: string[]): BitsetToken;
     fromBits(bits: BitSet): string[];
     fromToken(token: BitsetToken): string[];
@@ -393,7 +395,8 @@ export class BitsetTape implements Tape {
 
     constructor(
         public globalName: string,
-        protected _vocab: VocabMap = new VocabMap()
+        protected _vocab: VocabMap = new VocabMap(),
+        public atomic: boolean
      ) { }
 
     public get vocabSize(): number {
@@ -458,20 +461,14 @@ export class BitsetTape implements Tape {
         return str1.and(str2);
     }
 
-    public tokenize(
-        str: string
-    ): string[] {
-
-        if (str.length == 0) {
-            return [];
-        }
-
-        const cs = tokenizeUnicode(str);
-        for (const c of cs) {
-            const index = this._vocab.register(c); // in case it hasn't been registered before
+    public registerTokens(chars: string[]): void {
+        for (const char of chars) {
+            if (char.length == 0) {
+                continue;
+            }
+            const index = this._vocab.register(char); // in case it hasn't been registered before
             this.mask.bits.set(index);  // add them to the mask
         }
-        return cs;
     }
     
     protected toBits(char: string): BitSet {

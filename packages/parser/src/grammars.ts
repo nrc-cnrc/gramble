@@ -45,12 +45,18 @@ import {
     listDifference,
     listIntersection,
     listUnique,
-    StringDict
+    StringDict,
+    tokenizeUnicode
 } from "./util";
 
 import { GenOptions } from "./util";
 
 export { CounterStack, Expr };
+
+type TapeClass = {
+    joinable: boolean,
+    concatenable: boolean
+};
 
 export interface Transform {
 
@@ -147,7 +153,6 @@ export interface GrammarTransform<T> extends Transform {
 
 export abstract class Grammar {
 
-    public expr: Expr | undefined = undefined;
     protected _tapes: string[] | undefined = undefined;
     public concatenableTapes: Set<string> = new Set(); 
 
@@ -210,15 +215,16 @@ export abstract class Grammar {
      * @returns vocab 
      */
     public collectAllVocab(vocab: VocabMap, tapeNS: TapeNamespace): void {
-
         // In all current invocations of this, calculateTapes has already been called.
         // But it memoizes, so there's no harm in calling it again for safety.
         const tapeNames = this.calculateTapes(new CounterStack(2));
         for (const tapeName of tapeNames) {
+            const tapeInfo = this.getTapeClass(tapeName, new CounterStack());
+            const atomic = !tapeInfo.joinable || !tapeInfo.concatenable;
             const oldTape = tapeNS.attemptGet(tapeName);
             if (oldTape == undefined) {
                 // make a new one if it doesn't exist
-                const newTape = new BitsetTape(tapeName, vocab);
+                const newTape = new BitsetTape(tapeName, vocab, atomic);
                 tapeNS.set(tapeName, newTape);
             }
     
@@ -234,14 +240,22 @@ export abstract class Grammar {
                 const toTape = tapeNS.get(toTapeName);
                 if (!fromTape.vocabIsSubsetOf(toTape)) {
                     dirty = true;
-                    for (const token of fromTape.vocab) {
-                        toTape.tokenize(token);
-                    }
+                    toTape.registerTokens(fromTape.vocab);
                 }
             }
         }
     }
     
+    public getTapeClass(tapeName: string, stack: CounterStack): TapeClass {
+        let result: TapeClass = { joinable: false, concatenable: false };
+        for (const child of this.getChildren()) {
+            const childTapeClass = child.getTapeClass(tapeName, stack);
+            result.joinable ||= childTapeClass.joinable;
+            result.concatenable ||= childTapeClass.concatenable;
+        }
+        return result;
+    }
+
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
@@ -320,6 +334,7 @@ abstract class AtomicGrammar extends Grammar {
     public potentiallyInfinite(stack: CounterStack): boolean {
         return false;
     }
+
 }
 
 export class EpsilonGrammar extends AtomicGrammar {
@@ -344,10 +359,7 @@ export class EpsilonGrammar extends AtomicGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            this.expr = EPSILON;
-        }
-        return this.expr;
+        return EPSILON;
     }
 }
 
@@ -369,10 +381,7 @@ export class NullGrammar extends AtomicGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            return this.expr = NULL;
-        }
-        return this.expr;
+        return NULL;
     }
 }
 
@@ -411,16 +420,11 @@ export class CharSetGrammar extends AtomicGrammar {
         }
 
         const tape = tapeNS.get(this.tapeName);
-        for (const char of this.chars) {
-            tape.tokenize(char);
-        }
+        tape.registerTokens(this.chars);
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            this.expr = constructCharSet(this.tapeName, this.chars);
-        }
-        return this.expr;
+        return constructCharSet(this.tapeName, this.chars);
     }
 }
 
@@ -434,6 +438,7 @@ export class LiteralGrammar extends AtomicGrammar {
         public text: string
     ) {
         super(cell);
+        this.tokens = tokenizeUnicode(text);
     }
 
     public get id(): string {
@@ -457,7 +462,11 @@ export class LiteralGrammar extends AtomicGrammar {
             return;
         }
         const tape = tapeNS.get(this.tapeName);
-        this.tokens = tape.tokenize(this.text);
+        if (tape.atomic) {
+            tape.registerTokens([this.text]);
+        } else {
+            tape.registerTokens(this.tokens);
+        }
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -468,10 +477,7 @@ export class LiteralGrammar extends AtomicGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            this.expr = constructLiteral(this.tapeName, this.tokens);
-        }
-        return this.expr;
+        return constructLiteral(this.tapeName, this.text, this.tokens);
     }
 }
 
@@ -488,6 +494,13 @@ export class DotGrammar extends AtomicGrammar {
         return `Dot(${this.tapeName})`;
     }
     
+    public getTapeClass(tapeName: string, stack: CounterStack): TapeClass {
+        if (tapeName == this.tapeName) {
+            return { joinable: true, concatenable: true };
+        }
+        return super.getTapeClass(tapeName, stack);
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformDot(this, ns, args);
     }
@@ -500,10 +513,7 @@ export class DotGrammar extends AtomicGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            this.expr = constructDot(this.tapeName);
-        }
-        return this.expr;
+        return constructDot(this.tapeName);
     }
 }
 
@@ -538,23 +548,19 @@ export class ParallelGrammar extends NAryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {        
-
-            const childExprs: {[tapeName: string]: Expr} = {};
-            for (const child of this.children) {
-                if (child.tapes.length != 1) {
-                    throw new Error(`Each child of par must have 1 tape`);
-                }
-                const tapeName = child.tapes[0];
-                if (tapeName in childExprs) {
-                    throw new Error(`Each child of par must have a unique tape`)
-                }
-                const newChild = child.constructExpr(symbols);
-                childExprs[tapeName] = newChild;
+        const childExprs: {[tapeName: string]: Expr} = {};
+        for (const child of this.children) {
+            if (child.tapes.length != 1) {
+                throw new Error(`Each child of par must have 1 tape`);
             }
-            this.expr = constructParallel(childExprs);
+            const tapeName = child.tapes[0];
+            if (tapeName in childExprs) {
+                throw new Error(`Each child of par must have a unique tape`)
+            }
+            const newChild = child.constructExpr(symbols);
+            childExprs[tapeName] = newChild;
         }
-        return this.expr;
+        return constructParallel(childExprs);
     }
 
 }
@@ -574,13 +580,26 @@ export class SequenceGrammar extends NAryGrammar {
         return flatten(this.children.map(c => c.getLiterals()));
     }
 
-    public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {        
-            const childExprs = this.children.map(s => s.constructExpr(symbols));
-            const seq = constructSequence(...childExprs);
-            this.expr = seq;
+    public getTapeClass(tapeName: string, stack: CounterStack): TapeClass {
+        const result = super.getTapeClass(tapeName, stack);
+        let alreadyFound = false;
+        for (const child of this.children) {
+            const ts = new Set(child.tapes);
+            if (!(ts.has(tapeName))) {
+                continue;
+            }
+            if (alreadyFound) {
+                result.concatenable = true;
+                return result;
+            }
+            alreadyFound = true;
         }
-        return this.expr;
+        return result;
+    }
+
+    public constructExpr(symbols: SymbolTable): Expr {
+        const childExprs = this.children.map(s => s.constructExpr(symbols));
+        return constructSequence(...childExprs);
     }
 
     public finalChild(): Grammar {
@@ -610,11 +629,8 @@ export class AlternationGrammar extends NAryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            const childExprs = this.children.map(s => s.constructExpr(symbols));
-            this.expr = constructAlternation(...childExprs);
-        } 
-        return this.expr;
+        const childExprs = this.children.map(s => s.constructExpr(symbols));
+        return constructAlternation(...childExprs);
     }
 }
 
@@ -636,10 +652,7 @@ export abstract class UnaryGrammar extends Grammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            this.expr = this.child.constructExpr(symbols);
-        }
-        return this.expr;
+        return this.child.constructExpr(symbols);
     }
 }
 
@@ -664,16 +677,21 @@ export class ShortGrammar extends UnaryGrammar {
         return `Pref(${this.child.id})`;
     }
     
+    public getTapeClass(tapeName: string, stack: CounterStack): TapeClass {
+        const ts = new Set(this.tapes);
+        if (ts.has(tapeName)) {
+            return { joinable: true, concatenable: true };
+        }
+        return super.getTapeClass(tapeName, stack);
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformShort(this, ns, args);
     }
     
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            const child = this.child.constructExpr(symbols);
-            this.expr = constructShort(child);
-        }
-        return this.expr;
+        const child = this.child.constructExpr(symbols);
+        return constructShort(child);
     }
 }
 
@@ -681,6 +699,15 @@ export class IntersectionGrammar extends BinaryGrammar {
     
     public get id(): string {
         return `Intersect(${this.child1.id},${this.child2.id})`;
+    }
+    
+    public getTapeClass(tapeName: string, stack: CounterStack): TapeClass {
+        const result = super.getTapeClass(tapeName, stack);
+        const child1Tapes = this.child1.tapes;
+        const child2Tapes = this.child2.tapes;
+        const intersection = new Set(listIntersection(child1Tapes, child2Tapes));
+        result.joinable ||= intersection.has(tapeName);
+        return result;
     }
 
     public potentiallyInfinite(stack: CounterStack): boolean {
@@ -693,12 +720,9 @@ export class IntersectionGrammar extends BinaryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            const left = this.child1.constructExpr(symbols);
-            const right = this.child2.constructExpr(symbols);
-            this.expr = constructIntersection(left, right);
-        }
-        return this.expr;
+        const left = this.child1.constructExpr(symbols);
+        const right = this.child2.constructExpr(symbols);
+        return constructIntersection(left, right);
     }
 }
 
@@ -726,6 +750,15 @@ export class JoinGrammar extends BinaryGrammar {
                 this.child2.potentiallyInfinite(stack);
     }
 
+    public getTapeClass(tapeName: string, stack: CounterStack): TapeClass {
+        const result = super.getTapeClass(tapeName, stack);
+        const child1Tapes = this.child1.tapes;
+        const child2Tapes = this.child2.tapes;
+        const intersection = new Set(listIntersection(child1Tapes, child2Tapes));
+        result.joinable ||= intersection.has(tapeName);
+        return result;
+    }
+
     public calculateTapes(stack: CounterStack): string[] {
         if (this._tapes == undefined) {
             const child1Tapes = this.child1.calculateTapes(stack);
@@ -737,13 +770,10 @@ export class JoinGrammar extends BinaryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            this.expr = constructJoin(this.child1.constructExpr(symbols), 
+        return constructJoin(this.child1.constructExpr(symbols), 
                                 this.child2.constructExpr(symbols), 
                                     new Set(this.child1.tapes),
                                     new Set(this.child2.tapes));
-        }
-        return this.expr;
     }
 
 }
@@ -757,6 +787,15 @@ export class EqualsGrammar extends BinaryGrammar {
     public potentiallyInfinite(stack: CounterStack): boolean {
         return this.child1.potentiallyInfinite(stack) && 
                 this.child2.potentiallyInfinite(stack);
+    }
+
+    public getTapeClass(tapeName: string, stack: CounterStack): TapeClass {
+        const result = super.getTapeClass(tapeName, stack);
+        const child1Tapes = this.child1.tapes;
+        const child2Tapes = this.child2.tapes;
+        const intersection = new Set(listIntersection(child1Tapes, child2Tapes));
+        result.joinable ||= intersection.has(tapeName);
+        return result;
     }
 
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
@@ -773,14 +812,10 @@ export class EqualsGrammar extends BinaryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            const expr1 = this.child1.constructExpr(symbols)
-            const expr2 = this.constructFilter(symbols);
-            const tapes = new Set(listIntersection(this.child1.tapes, this.child2.tapes));
-            this.expr = constructFilter(expr1, expr2, tapes);   
-            
-        }
-        return this.expr;
+        const expr1 = this.child1.constructExpr(symbols)
+        const expr2 = this.constructFilter(symbols);
+        const tapes = new Set(listIntersection(this.child1.tapes, this.child2.tapes));
+        return constructFilter(expr1, expr2, tapes);   
     }
 
     protected constructFilter(symbols: SymbolTable) {
@@ -811,11 +846,8 @@ export class CountGrammar extends UnaryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            const childExpr = this.child.constructExpr(symbols);
-            this.expr = constructCount(childExpr, this.maxChars);
-        }
-        return this.expr;
+        const childExpr = this.child.constructExpr(symbols);
+        return constructCount(childExpr, this.maxChars);
     }
 }
 
@@ -845,19 +877,16 @@ export class CountTapeGrammar extends UnaryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            let maxCharsDict: {[tape: string]: number} = {};
-            if (typeof this.maxChars == 'number') {
-                for (const tape of this.tapes) {
-                    maxCharsDict[tape] = this.maxChars;
-                }
-            } else {
-                maxCharsDict = this.maxChars;
+        let maxCharsDict: {[tape: string]: number} = {};
+        if (typeof this.maxChars == 'number') {
+            for (const tape of this.tapes) {
+                maxCharsDict[tape] = this.maxChars;
             }
-            const childExpr = this.child.constructExpr(symbols);
-            this.expr = constructCountTape(childExpr, maxCharsDict);
+        } else {
+            maxCharsDict = this.maxChars;
         }
-        return this.expr;
+        const childExpr = this.child.constructExpr(symbols);
+        return constructCountTape(childExpr, maxCharsDict);
     }
 }
 
@@ -880,11 +909,8 @@ export class PriorityGrammar extends UnaryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            const childExpr = this.child.constructExpr(symbols);
-            this.expr = constructPriority(this.tapePriority, childExpr);
-        }
-        return this.expr;
+        const childExpr = this.child.constructExpr(symbols);
+        return constructPriority(this.tapePriority, childExpr);
     }
 }
 
@@ -958,6 +984,14 @@ export class RenameGrammar extends UnaryGrammar {
         return t.transformRename(this, ns, args);
     }
     
+    public getTapeClass(
+        tapeName: string, 
+        stack: CounterStack
+    ): TapeClass {
+        const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
+        return this.child.getTapeClass(newTapeName, stack);
+    }
+
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
@@ -1018,11 +1052,8 @@ export class RenameGrammar extends UnaryGrammar {
     }
     
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            const childExpr = this.child.constructExpr(symbols);
-            this.expr = constructRename(childExpr, this.fromTape, this.toTape);
-        }
-        return this.expr;
+        const childExpr = this.child.constructExpr(symbols);
+        return constructRename(childExpr, this.fromTape, this.toTape);
     }
 }
 
@@ -1044,6 +1075,15 @@ export class RepeatGrammar extends UnaryGrammar {
         return `Repeat(${this.child.id},${this.minReps},${this.maxReps})`;
     }
 
+    public getTapeClass(tapeName: string, stack: CounterStack): TapeClass {
+        const result = this.child.getTapeClass(tapeName, stack);
+        const ts = new Set(this.tapes);
+        if (ts.has(tapeName)) {
+            result.concatenable = true;
+        }
+        return result;
+    }
+
     public potentiallyInfinite(stack: CounterStack): boolean {
         return this.child.potentiallyInfinite(stack) || this.maxReps == Infinity;
     }
@@ -1053,11 +1093,8 @@ export class RepeatGrammar extends UnaryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            const childExpr = this.child.constructExpr(symbols);
-            this.expr = constructRepeat(childExpr, this.minReps, this.maxReps);
-        }
-        return this.expr;
+        const childExpr = this.child.constructExpr(symbols);
+        return constructRepeat(childExpr, this.minReps, this.maxReps);
     }
 }
 
@@ -1080,11 +1117,8 @@ export class NegationGrammar extends UnaryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            const childExpr = this.child.constructExpr(symbols);
-            this.expr = constructNegation(childExpr, new Set(this.child.tapes), this.maxReps);
-        }
-        return this.expr;
+        const childExpr = this.child.constructExpr(symbols);
+        return constructNegation(childExpr, new Set(this.child.tapes), this.maxReps);
     }
 }
 
@@ -1166,12 +1200,8 @@ export class HideGrammar extends UnaryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-
-        if (this.expr == undefined) {
-            const childExpr = this.child.constructExpr(symbols);
-            this.expr = constructRename(childExpr, this.tapeName, this.toTape);
-        }
-        return this.expr;
+        const childExpr = this.child.constructExpr(symbols);
+        return constructRename(childExpr, this.tapeName, this.toTape);
     }
 }
 
@@ -1189,6 +1219,13 @@ export class MatchFromGrammar extends UnaryGrammar {
 
     public get id(): string {
         return `Match(${this.fromTape}->${this.toTape}:${this.child.id})`;
+    }
+
+    public getTapeClass(tapeName: string, stack: CounterStack): TapeClass {
+        if (tapeName == this.fromTape || tapeName == this.toTape) {
+            return { joinable: true, concatenable: true };
+        }
+        return super.getTapeClass(tapeName, stack);
     }
 
     /**
@@ -1238,11 +1275,8 @@ export class MatchFromGrammar extends UnaryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            const childExpr = this.child.constructExpr(symbols);
-            this.expr = constructMatchFrom(childExpr, this.fromTape, this.toTape);
-        }
-        return this.expr;
+        const childExpr = this.child.constructExpr(symbols);
+        return constructMatchFrom(childExpr, this.fromTape, this.toTape);
     }
 }
 
@@ -1256,6 +1290,13 @@ export class MatchGrammar extends UnaryGrammar {
         super(cell, child);
     }
 
+    public getTapeClass(tapeName: string, stack: CounterStack): TapeClass {
+        if (this.relevantTapes.has(tapeName)) {
+            return { joinable: true, concatenable: true };
+        }
+        return super.getTapeClass(tapeName, stack);
+    }
+
     public get id(): string {
         return `Match(${this.child.id},${[...this.relevantTapes]})`;
     }
@@ -1265,11 +1306,8 @@ export class MatchGrammar extends UnaryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            const childExpr = this.child.constructExpr(symbols);
-            this.expr = constructMatch(childExpr, this.relevantTapes);
-        }
-        return this.expr;
+        const childExpr = this.child.constructExpr(symbols);
+        return constructMatch(childExpr, this.relevantTapes);
     }
 }
 
@@ -1431,21 +1469,16 @@ export class NsGrammar extends Grammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-
-        if (this.expr == undefined) {
-
-            this.expr = EPSILON;
-            for (const [name, referent] of this.symbols) {
-                if (name in symbols) {
-                    continue;  // don't bother, it won't have changed.
-                }
-                let expr = referent.constructExpr(symbols);
-                //expr = constructMemo(expr, 3);
-                symbols[name] = expr;
+        let result: Expr = EPSILON;
+        for (const [name, referent] of this.symbols) {
+            if (name in symbols) {
+                continue;  // don't bother, it won't have changed.
             }
+            let expr = referent.constructExpr(symbols);
+            //expr = constructMemo(expr, 3);
+            symbols[name] = expr;
         }
-
-        return this.expr;
+        return result;
     }
 }
 
@@ -1498,6 +1531,18 @@ export class EmbedGrammar extends AtomicGrammar {
         return this._tapes;
     }
     
+    public getTapeClass(
+        tapeName: string, 
+        stack: CounterStack
+    ): TapeClass {
+        if (stack.exceedsMax(this.name)) {
+            return { joinable: false, concatenable: false };
+        }
+        const newStack = stack.add(this.name);
+        return this.getReferent().getTapeClass(tapeName, newStack);
+    
+    }
+
     public collectVocab(
         tapeName: string,
         tapeNS: TapeNamespace, 
@@ -1523,10 +1568,7 @@ export class EmbedGrammar extends AtomicGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            this.expr = constructEmbed(this.name, symbols);
-        }
-        return this.expr;
+        return constructEmbed(this.name, symbols);
     }
 
 }
@@ -1576,10 +1618,7 @@ export class UnresolvedEmbedGrammar extends AtomicGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            this.expr = EPSILON;
-        }
-        return this.expr;
+        return EPSILON;
     }
 }
 
@@ -1645,10 +1684,7 @@ export class UnitTestGrammar extends UnaryGrammar {
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            this.expr = this.child.constructExpr(symbols);
-        }
-        return this.expr;
+        return this.child.constructExpr(symbols);
     }
 }
 
@@ -2060,6 +2096,14 @@ export class ReplaceGrammar extends Grammar {
         }
     }
 
+    public getTapeClass(tapeName: string, stack: CounterStack): TapeClass {
+        const ts = new Set(this.tapes);
+        if (ts.has(tapeName)) {
+            return { joinable: true, concatenable: true };
+        }
+        return super.getTapeClass(tapeName, stack);
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformReplace(this, ns, args);
     }
@@ -2138,13 +2182,6 @@ export class ReplaceGrammar extends Grammar {
     }
 
     public constructExpr(symbolTable: SymbolTable): Expr {
-        if (this.expr == undefined) {
-            this.expr = this.constructExprAux(symbolTable);
-        }
-        return this.expr;
-    }
-
-    public constructExprAux(symbolTable: SymbolTable): Expr {   
         if (this.beginsWith || this.endsWith) {
             this.maxReps = Math.max(1, this.maxReps);
             this.minReps = Math.min(this.minReps, this.maxReps);
