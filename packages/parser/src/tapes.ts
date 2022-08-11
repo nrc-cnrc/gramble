@@ -373,7 +373,7 @@ export interface Tape {
     readonly vocabSize: number;
     readonly vocab: string[];
     readonly globalName: string;
-    readonly atomic: boolean;
+    atomic: boolean;
     registerTokens(tokens: string[]): void;
     expandStrings(token: string, other?: Tape | undefined): string[];
     restrictToVocab(token: BitsetToken): BitsetToken;

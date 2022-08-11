@@ -1,4 +1,4 @@
-import { Uni, Join, Not, Rep, Seq, Null, Epsilon, Dot, Any, Vocab, Grammar, Count } from "../src/grammars";
+import { Uni, Join, Not, Rep, Seq, Null, Epsilon, Dot, Any, Vocab, Grammar, Count, CountTape } from "../src/grammars";
 import { t1, t2, 
     testHasTapes, testHasVocab, testGrammar } from './testUtils';
 
@@ -261,7 +261,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Join(~t1:hi & t2:hi)', function() {
         let grammar: Grammar = Join(Not(t1("hi")), t2("hi"));
-        grammar = Count(6, grammar);
+        grammar = CountTape( { "t1": 4, "t2": 2}, grammar)
         //testHasVocab(grammar, {t1: 2});
         //testHasVocab(grammar, {t2: 2});
         const expectedResults: StringDict[] = [
@@ -280,7 +280,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Join(t2:hi & ~t1:hi)', function() {
         let grammar: Grammar = Join(t2("hi"), Not(t1("hi")));
-        grammar = Count(6, grammar);
+        grammar = CountTape( { "t1": 4, "t2": 2}, grammar)
         //testHasVocab(grammar, {t1: 2});
         //testHasVocab(grammar, {t2: 2});
         const expectedResults: StringDict[] = [

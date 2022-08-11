@@ -209,7 +209,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-
     describe('3b. Replace e by a (diff tape), then l by w (same tape), in hello', function() {
         const innerReplace = JoinReplace(t1("hello"),
                                     [ReplaceBypass(t1("e"), t2("a"))]);
@@ -298,7 +297,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    
     describe('5a. Replace i by o in i: i -> o, only using Join, other join direction', function() {
         const grammar = Join(ReplaceBypass(t1("i"), t2("o")), 
                     Uni(t1("i"), t1("o"), t1("a")));

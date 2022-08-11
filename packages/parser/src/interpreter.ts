@@ -359,14 +359,26 @@ export class Interpreter {
             // to something that's eventually a "from" tape of a replace
             //targetComponent.copyVocab(this.tapeNS, new Set());
                 
+            const potentiallyInfinite = targetComponent.potentiallyInfinite(new CounterStack(2));
+            if (potentiallyInfinite && opt.maxChars != Infinity) {
+                if (targetComponent instanceof PriorityGrammar) {
+                    targetComponent.child = new CountGrammar(targetComponent.child.cell, targetComponent.child, opt.maxChars-1);
+                } else {
+                    targetComponent = new CountGrammar(targetComponent.cell, targetComponent, opt.maxChars-1);
+                }
+            }
+
             if (!(targetComponent instanceof PriorityGrammar)) {
                 targetComponent = new PriorityGrammar(targetComponent.cell, targetComponent, tapePriority);
-                //logTime(this.verbose, `priority = ${(targetComponent as PriorityGrammar).tapePriority}`)
+                //logTime(this.verbose, `priority = ${(targetGrammar as PriorityGrammar).tapePriority}`)
             }
+
+            console.log(`grammar = ${targetComponent.id}`)
 
             expr = targetComponent.constructExpr(this.symbolTable);
 
             const results = [...generate(expr, this.tapeNS, opt)];
+            console.log(`results = ${results}`)
             test.evalResults(results);
         }
     }

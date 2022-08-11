@@ -27,7 +27,7 @@ if (!BITSETS_ENABLED) {
 describe(`${path.basename(module.filename)}`, function() {
 
     // 1. Sequence t1:hello + t1 to t2 of t1:hello
-    describe.only('1. Sequence t1:hello + t1 to t2 of t1:hello', function() {
+    describe('1. Sequence t1:hello + t1 to t2 of t1:hello', function() {
         const grammar1: Grammar = t1("hello");
         const grammar2: Grammar = Rename(grammar1, "t1", "t2");
         const grammar: Grammar = Match(Seq(grammar1, grammar2), "t1", "t2");
@@ -44,7 +44,7 @@ describe(`${path.basename(module.filename)}`, function() {
             testGrammar(grammar2, [{t2: 'hello'}]);
         });
 
-        describe.only("grammar", function() {
+        describe("grammar", function() {
             testHasTapes(grammar, ['t1', 't2']);
             //testHasVocab(grammar, {t1: 1, t2: 1});
             testGrammar(grammar, [{t1: 'hello', t2: 'hello'}], VERBOSE_DEBUG);
