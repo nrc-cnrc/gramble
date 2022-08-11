@@ -93,7 +93,7 @@ export class Interpreter {
             new RenameFixTransform(),
             new FlattenTransform(),
             new FilterTransform(),
-            new ParallelizeTransform()
+            //new ParallelizeTransform()
         ]
 
         for (const t of transforms) {
