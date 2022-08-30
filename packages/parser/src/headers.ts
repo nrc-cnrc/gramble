@@ -40,8 +40,13 @@ import { Tape } from "./tapes";
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
 
-
 export type ParamDict = {[key: string]: Grammar};
+
+export type HeaderErrorMsg = {
+    type: string
+    shortMsg: string
+    longMsg: string
+};
 
 /**
  * A Header is a cell in the top row of a table, consisting of one of
@@ -99,6 +104,10 @@ export type ParamDict = {[key: string]: Grammar};
         }
         return result;
     }
+
+    public getErrors(): HeaderErrorMsg[] {
+        return [];
+    } 
 }
 
 /**
@@ -249,6 +258,10 @@ abstract class UnaryHeader extends Header {
     ) { 
         super();
     }
+
+    public getErrors(): HeaderErrorMsg[] {
+        return this.child.getErrors();
+    } 
 
     public getFontColor() {
         return this.child.getFontColor();
@@ -553,6 +566,10 @@ abstract class BinaryHeader extends Header {
         super();
     }
 
+    public getErrors(): HeaderErrorMsg[] {
+        return [...this.child1.getErrors(), ...this.child2.getErrors()];
+    } 
+
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
         return this.child1.getBackgroundColor(saturation, value);
     }
@@ -591,32 +608,53 @@ export class ErrorHeader extends TapeNameHeader {
         return "ERR";
     }
 
+    public getErrors(): HeaderErrorMsg[] {
+        return [{
+            type: "error",
+            shortMsg: "Invalid header",
+            longMsg: `This header cannot be parsed.`
+        }];
+    }
+
     public toGrammar(
         left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
-        content.message({
-            type: "warning",
-            shortMsg: `Invalid header: ${this.text}`,
-            longMsg: `This content is associated with an invalid header above, ignoring`
-        });
+        if (content.text.length != 0) {
+            content.message({
+                type: "warning",
+                shortMsg: `Invalid header: ${this.text}`,
+                longMsg: `This content is associated with an invalid header above, ignoring`
+            });
+        }
         return left;
     }
 }
 
 export class ReservedErrorHeader extends ErrorHeader {
 
+    public getErrors(): HeaderErrorMsg[] {
+        return [{
+            type: "error", 
+            shortMsg: `Reserved word in header`, 
+            longMsg: `This looks like a header, but contains the reserved word "${this.text}". ` + 
+                    "If you didn't mean this to be a header, put a colon after it."
+        }];
+    }
+
     public toGrammar(
         left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
-        content.message({
-            type: "warning",
-            shortMsg: `Invalid header: ${this.text}`,
-            longMsg: `This content is associated with an invalid header above, ignoring`
-        });
+        if (content.text.length != 0) {
+            content.message({
+                type: "warning",
+                shortMsg: `Invalid header: ${this.text}`,
+                longMsg: `This content is associated with an invalid header above, ignoring`
+            });
+        }
         return left;
     }
 

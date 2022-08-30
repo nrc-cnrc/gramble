@@ -32,6 +32,8 @@
 
             class SidebarDevEnvironment {
 
+                serializedErrors = new Set();
+
                 constructor(cellsBySheet) {
                     this.cellsBySheet = {};
                     for (const sheetName in cellsBySheet) {
@@ -67,6 +69,14 @@
                 }
                 
                 markError(sheet, row, col, shortMsg, msg, level = "error") {
+                                
+                    // so as not to keep recording identical errors
+                    const serializedError = `${sheet}___${row}___${col}___${msg}`;
+                    if (this.serializedErrors.has(serializedError)) {
+                        return;
+                    } 
+                    this.serializedErrors.add(serializedError);
+                    
                     this.errorMsgs.push([sheet, row, col, shortMsg, msg, level]);
                 }
 

@@ -258,9 +258,7 @@ export abstract class Expr {
      * delta(T) or deriv(T) on any successor grammar.
      * 
      * @param tapeName The local name of the tape we're querying about
-     * @param tapeNS The current namespace mapping names to tapes
-     * @param stack A stack of symbols already visited
-     * @param opt A GenOptions object with generation configurations
+     * @param env The generation environment containing the tape namespace, stack, etc.
      */
     public abstract delta(
         tapeName: string,
@@ -281,10 +279,8 @@ export abstract class Expr {
      * the results so that the results are disjoint.
      * 
      * @param tapeName The local name of the tape we're querying about
-     * @param target: A token object representing our current hypothesis about the next character
-     * @param tapeNS The current namespace mapping names to tapes
-     * @param stack A stack of symbols already visited
-     * @param opt A GenOptions object with generation configurations
+     * @param target A token object representing our current hypothesis about the next character
+     * @param env The generation environment containing the tape namespace, stack, etc.
      */
 
      public *deriv(

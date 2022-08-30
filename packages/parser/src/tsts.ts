@@ -147,18 +147,8 @@ export class TstHeader extends TstCellComponent {
         super(cell);
         this.header = parseHeaderCell(cell.text);
 
-        if (this.header instanceof ReservedErrorHeader) { 
-            this.cell.message({
-                type: "error", 
-                shortMsg: `Reserved word in header`, 
-                longMsg: `This header contains a reserved word in an invalid position`
-            });
-        } else if (this.header instanceof ErrorHeader) {
-            this.cell.message({
-                type: "error",
-                shortMsg: "Invalid header",
-                longMsg: `This header cannot be parsed.`
-            });
+        for (const err of this.header.getErrors()) {
+            this.cell.message(err);
         }
     }
 
