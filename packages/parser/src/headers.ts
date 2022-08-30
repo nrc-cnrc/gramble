@@ -53,7 +53,7 @@ export type HeaderErrorMsg = {
  * 
  * * the name of a tape, like "text" or "gloss"
  * * an atomic operator like "embed" or "hide"
- * * a unary operator like "maybe" followed by a valid Header (e.g. "maybe text") 
+ * * a unary operator like "optional" followed by a valid Header (e.g. "optional text") 
  * * two valid Headers joined by a slash (e.g. "text/gloss")
  * * a valid Header in parentheses (e.g. "(text)")
  * * a comment (e.g. "% text")
@@ -247,9 +247,8 @@ export class CommentHeader extends Header {
 }
 
 /**
- * The ancestor class of unary header operators like "maybe", "not", "@"
- * (the joining operator that we use to implement flags), and ">" (the rename
- * operator)
+ * The ancestor class of unary header operators like "optional", 
+ * "not", and ">" (the rename operator)
  */
 abstract class UnaryHeader extends Header {
 
@@ -299,12 +298,12 @@ export class TagHeader extends UnaryHeader {
 }
 
 /**
- * Header that constructs optional parsers, e.g. "maybe text"
+ * Header that constructs optional parsers, e.g. "optional text"
  */
-export class MaybeHeader extends UnaryHeader {
+export class OptionalHeader extends UnaryHeader {
 
     public get id(): string {
-        return `MAYBE[${this.child.id}]`;
+        return `OPT[${this.child.id}]`;
     }
 
     public toGrammar(
@@ -684,7 +683,7 @@ export const TEST_PARAMS = [
 
 export const RESERVED_HEADERS = [
     "embed", 
-    "maybe", 
+    "optional", 
     //"not", 
     "hide", 
     //"reveal", 
@@ -722,7 +721,7 @@ function tokenize(text: string): string[] {
 
 const HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlternation(
-        HP_MAYBE, HP_FROM, HP_SLASH,
+        HP_OPTIONAL, HP_FROM, HP_SLASH,
         HP_TO, HP_PRE, HP_POST,
         HP_FROM_ATOMIC, HP_TO_ATOMIC, 
         HP_PRE_ATOMIC, HP_POST_ATOMIC,  
@@ -764,9 +763,9 @@ const HP_HIDE = MPSequence<Header>(
     () => new HideHeader()
 );
 
-const HP_MAYBE = MPSequence<Header>(
-    ["maybe", HP_NON_COMMENT_EXPR],
-    (child) => new MaybeHeader(child)
+const HP_OPTIONAL = MPSequence<Header>(
+    ["optional", HP_NON_COMMENT_EXPR],
+    (child) => new OptionalHeader(child)
 );
 
 const HP_FROM = MPSequence<Header>(

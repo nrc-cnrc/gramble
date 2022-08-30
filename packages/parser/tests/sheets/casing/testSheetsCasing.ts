@@ -49,8 +49,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('"MAYBE X" header to test header case insensitivity', function() {
-        const project = sheetFromFile(`${DIR}/uppercaseMaybe.csv`);
+    describe('"OPTIONAL X" header to test header case insensitivity', function() {
+        const project = sheetFromFile(`${DIR}/uppercaseOptional.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobar", gloss: "run-1SG" },

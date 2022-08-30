@@ -27,7 +27,7 @@ const TEST_PARAMS = [
 
 const RESERVED_HEADERS = new Set([
     "embed", 
-    "maybe", 
+    "optional", 
     //"not", 
     "hide", 
     //"reveal", 

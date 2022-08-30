@@ -29,9 +29,9 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Sheet name using a reserved word', function() {
-        const project = sheetFromFile(`${DIR}/maybe.csv`);
+        const project = sheetFromFile(`${DIR}/optional.csv`);
         testErrors(project, [
-            ["maybe", 0, -1, "error"]
+            ["optional", 0, -1, "error"]
         ]);
         testGrammar(project, [
             {"text":"moobaz","gloss":"jump-2SG"},

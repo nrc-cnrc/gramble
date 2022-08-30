@@ -18,7 +18,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "hhi"}, {t1: "ihi"}]);
     });
 
-    describe('Maybe t1:.', function() {
+    describe('Optional t1:.', function() {
         const grammar = Uni(Epsilon(), Any("t1"));
         testHasTapes(grammar, ["t1"]);
         testGrammar(grammar, [{}]);

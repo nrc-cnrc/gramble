@@ -1771,7 +1771,7 @@ export function Uni(...children: Grammar[]): AlternationGrammar {
     return new AlternationGrammar(new DummyCell(), children);
 }
 
-export function Maybe(child: Grammar): AlternationGrammar {
+export function Optional(child: Grammar): AlternationGrammar {
     return Uni(child, Epsilon());
 }
 

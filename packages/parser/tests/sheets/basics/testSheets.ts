@@ -58,8 +58,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('"maybe text" header', function() {
-        const project = sheetFromFile(`${DIR}/maybeHeader.csv`);
+    describe('"optional text" header', function() {
+        const project = sheetFromFile(`${DIR}/optionalHeader.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foo" },
@@ -69,8 +69,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('"maybe embed" header', function() {
-        const project = sheetFromFile(`${DIR}/maybeEmbed.csv`);
+    describe('"optional embed" header', function() {
+        const project = sheetFromFile(`${DIR}/optionalEmbed.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobar", gloss: "run-1SG" },

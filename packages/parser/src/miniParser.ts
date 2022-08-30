@@ -2,9 +2,9 @@ import { Gen } from "./util";
 
 /**
  * This is a simple parser-combinator engine that underlies various small parsing tasks, 
- * like parsing headers "maybe subj/gloss" and "~(1SG|2SG)".
+ * like parsing headers "optional subj/gloss" and "~(1SG|2SG)".
  * 
- * A parser is a function from a tokenized string (e.g. ["maybe", "subj", "/", "gloss"])
+ * A parser is a function from a tokenized string (e.g. ["optional", "subj", "/", "gloss"])
  * to a generator of result tuples, where that tuple represents an output of type <T> and
  * the unparsed remnant left over after parsing that.  For example, if we had a parser that
  * looked for the token "subj" specficially, and gave it ["subj", "/", "gloss"], it would
