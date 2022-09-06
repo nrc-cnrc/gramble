@@ -8,7 +8,7 @@ import {
 import { 
     Tape, BitsetToken, TapeNamespace, 
     renameTape, Token, EntangledToken,
-    OutputTrie, EMPTY_TOKEN
+    OutputTrie, EpsilonToken, EPSILON_TOKEN
 } from "./tapes";
 
 
@@ -71,7 +71,8 @@ export class Env {
 }
 
 
-export type DerivResult = Gen<[Token, Expr]>;
+export type DerivResult = [Token | EpsilonToken, Expr];
+export type DerivResults = Gen<DerivResult>;
 
 /**
  * This is the parsing/generation engine that underlies Gramble.
@@ -291,7 +292,7 @@ export abstract class Expr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         if (target instanceof BitsetToken) {
             yield* this.bitsetDeriv(tapeName, target, env);
             return;
@@ -303,7 +304,7 @@ export abstract class Expr {
         tapeName: string, 
         target: BitsetToken,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         throw new Error("not implemented");
     }
 
@@ -311,7 +312,7 @@ export abstract class Expr {
         tapeName: string,
         target: string, 
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         throw new Error("not implemented");
     }
         
@@ -333,7 +334,7 @@ export abstract class Expr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         if (target instanceof BitsetToken) {
             yield* this.disjointBitsetDeriv(tapeName, target, env);
             return;
@@ -345,7 +346,7 @@ export abstract class Expr {
         tapeName: string, 
         target: BitsetToken,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         const results: {[c: string]: Expr[]} = {};
 
         const tape = env.getTape(tapeName);
@@ -380,11 +381,11 @@ export abstract class Expr {
         tapeName: string,
         target: string, 
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         const results: {[c: string]: Expr[]} = {};
-        for (const [childToken, childExpr] of
-            this.deriv(tapeName, target, env)) {
-            const childString = childToken as string;
+        for (const [childToken, childExpr] of this.deriv(tapeName, target, env)) {
+            const childString: string = (childToken instanceof EpsilonToken) ?
+                                        "" : childToken as string;
             if (!(childString in results)) {
                 results[childString] = [];
             }
@@ -394,7 +395,8 @@ export abstract class Expr {
         for (const c in results) {
             const nextExprs = results[c];
             const nextExpr = constructAlternation(...nextExprs);
-            yield [c, nextExpr];
+            const cToken: Token | EpsilonToken = (c == "") ? EPSILON_TOKEN : c;
+            yield [cToken, nextExpr];
         }
     }
 
@@ -402,10 +404,10 @@ export abstract class Expr {
         tapeName: string,
         target: BitsetToken, 
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
-        let results: [Token, Expr][] = [];
-        let nextExprs: [Token, Expr][] = [... this.deriv(tapeName, target, env)];
+        let results: DerivResult[] = [];
+        let nextExprs: DerivResult[] = [... this.deriv(tapeName, target, env)];
         
         for (let [nextToken, next] of nextExprs) {
 
@@ -464,7 +466,7 @@ export class EpsilonExpr extends Expr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult { }
+    ): DerivResults { }
 
 }
 
@@ -488,7 +490,7 @@ export class NullExpr extends Expr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult { }
+    ): DerivResults { }
 }
 
 
@@ -522,7 +524,7 @@ class DotExpr extends Expr {
         tapeName: string, 
         target: BitsetToken,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         if (tapeName != this.tapeName) {
             return;
         }
@@ -533,7 +535,7 @@ class DotExpr extends Expr {
         tapeName: string,
         target: string, 
         env: Env
-    ): DerivResult { 
+    ): DerivResults { 
         if (tapeName != this.tapeName) {
             return;
         }
@@ -573,7 +575,7 @@ class EntangleExpr extends Expr {
         tapeName: string, 
         target: BitsetToken,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         if (tapeName != this.tapeName) {
             return;
         }
@@ -590,7 +592,7 @@ class EntangleExpr extends Expr {
         tapeName: string,
         target: string, 
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         throw new Error("not implemented")
     }
 }
@@ -626,7 +628,7 @@ class CharSetExpr extends Expr {
         tapeName: string, 
         target: BitsetToken,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         if (tapeName != this.tapeName) {
             return;
         }
@@ -645,7 +647,7 @@ class CharSetExpr extends Expr {
         tapeName: string,
         target: string, 
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         if (tapeName != this.tapeName) {
             return;
         }
@@ -686,7 +688,7 @@ class DotStarExpr extends Expr {
         tapeName: string, 
         target: BitsetToken,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         if (tapeName != this.tapeName) {
             return;
         }
@@ -697,7 +699,7 @@ class DotStarExpr extends Expr {
         tapeName: string,
         target: string, 
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         if (tapeName != this.tapeName) {
             return;
         }
@@ -751,7 +753,7 @@ class LiteralExpr extends Expr {
         tapeName: string, 
         target: BitsetToken,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         if (this.index >= this.tokens.length) {
             return;
@@ -787,7 +789,7 @@ class LiteralExpr extends Expr {
         tapeName: string,
         target: string, 
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         if (this.index >= this.tokens.length) {
             return;
@@ -852,7 +854,7 @@ class RTLLiteralExpr extends LiteralExpr {
         tapeName: string, 
         target: BitsetToken,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         if (this.index < 0) {
             return;
@@ -891,7 +893,7 @@ class RTLLiteralExpr extends LiteralExpr {
         tapeName: string,
         target: string, 
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         if (this.index < 0) {
             return;
@@ -948,7 +950,7 @@ export class ParallelExpr extends Expr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         if (!(tapeName in this.children)) {
             return;
@@ -1056,7 +1058,7 @@ class ConcatExpr extends BinaryExpr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         const [c1, c2] = (DIRECTION_LTR) ?
                         [this.child1, this.child2] :
@@ -1101,7 +1103,7 @@ export class UnionExpr extends Expr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         for (const child of this.children) {
             yield* child.deriv(tapeName, target, env);
         }
@@ -1128,12 +1130,12 @@ class IntersectExpr extends BinaryExpr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         for (const [c1target, c1next] of 
             this.child1.disjointDeriv(tapeName, target, env)) {
 
             for (const [c2target, c2next] of 
-                    this.child2.disjointDeriv(tapeName, c1target, env)) {
+                    this.child2.disjointDeriv(tapeName, c1target as Token, env)) {
                 const successor = constructIntersection(c1next, c2next);
                 yield [c2target, successor];
             }
@@ -1170,7 +1172,7 @@ class FilterExpr extends BinaryExpr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         if (!this.tapes.has(tapeName)) {
             for (const [c1target, c1next] of 
@@ -1185,7 +1187,7 @@ class FilterExpr extends BinaryExpr {
             this.child2.disjointDeriv(tapeName, target, env)) {
 
             for (const [c1target, c1next] of 
-                    this.child1.disjointDeriv(tapeName, c2target, env)) {
+                    this.child1.disjointDeriv(tapeName, c2target as Token, env)) {
                 const successor = constructFilter(c1next, c2next, this.tapes);
                 yield [c1target, successor];
             }
@@ -1222,7 +1224,7 @@ class JoinExpr extends BinaryExpr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         if (!this.tapes2.has(tapeName)) {
             for (const [leftTarget, leftNext] of 
@@ -1246,7 +1248,7 @@ class JoinExpr extends BinaryExpr {
             this.child1.disjointDeriv(tapeName, target, env)) {
 
             for (const [rightTarget, rightNext] of 
-                    this.child2.disjointDeriv(tapeName, leftTarget, env)) {
+                    this.child2.disjointDeriv(tapeName, leftTarget as Token, env)) {
                 const successor = constructJoin(leftNext, rightNext, this.tapes1, this.tapes2);
                 yield [rightTarget, successor];
             }
@@ -1311,7 +1313,7 @@ class JoinExpr extends BinaryExpr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         if (env.stack.exceedsMax(this.symbolName)) {
             return;
@@ -1378,13 +1380,13 @@ export class CountExpr extends UnaryExpr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         if (this.maxChars <= 0) {
             return;
         }
 
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
-            const newMax = (cTarget != EMPTY_TOKEN) ? this.maxChars-1: this.maxChars;
+            const newMax = (cTarget instanceof EpsilonToken) ? this.maxChars: this.maxChars-1;
             const successor = constructCount(cNext, newMax);
             yield [cTarget, successor];
         }
@@ -1416,7 +1418,7 @@ export class CountTapeExpr extends UnaryExpr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         if (!(tapeName in this.maxChars)) {
             return;
@@ -1429,7 +1431,7 @@ export class CountTapeExpr extends UnaryExpr {
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
             let newMax: {[tape: string]: number} = {};
             Object.assign(newMax, this.maxChars);
-            if (cTarget != EMPTY_TOKEN) {
+            if (!(cTarget instanceof EpsilonToken)) {
                 newMax[tapeName] -= 1;
             }
             const successor = constructCountTape(cNext, newMax);
@@ -1463,7 +1465,7 @@ export class PriorityExpr extends UnaryExpr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         for (const [cTarget, cNext] of 
                 this.child.deriv(tapeName, target, env)) {
             const successor = constructPriority(this.tapes, cNext);
@@ -1483,7 +1485,7 @@ export class PriorityExpr extends UnaryExpr {
 
     public *openDeriv(
         env: Env
-    ): Gen<[string, Token, Expr]> {
+    ): Gen<[string, Token | EpsilonToken, Expr]> {
 
         const tapeToTry = this.tapes[0];
         // rotate the tapes so that we don't just 
@@ -1495,8 +1497,9 @@ export class PriorityExpr extends UnaryExpr {
         for (const [cTarget, cNext] of 
                 this.child.disjointDeriv(tapeToTry, startingToken, env)) {
 
-            if (!(cNext instanceof NullExpr)) {      
-                env.logDebug(`D^${tapeToTry}_${cTarget} is ${cNext.id}`);
+            if (!(cNext instanceof NullExpr)) {
+                const cTarget_str = (cTarget instanceof EpsilonToken) ? 'ε' : cTarget;
+                env.logDebug(`D^${tapeToTry}_${cTarget_str} is ${cNext.id}`);
                 const successor = constructPriority(newTapes, cNext);
                 yield [tapeToTry, cTarget, successor];
             }
@@ -1532,7 +1535,7 @@ class ShortExpr extends UnaryExpr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         const delta = this.delta(tapeName, env);
         if (!(delta instanceof NullExpr)) {
             // if our current tape is nullable, then we have 
@@ -1585,7 +1588,7 @@ class RepeatExpr extends UnaryExpr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
         const deltad = this.child.delta(tapeName, env);
         // env.logDebug(`deltad d^${tapeName} is ${deltad.id}`);
@@ -1594,7 +1597,7 @@ class RepeatExpr extends UnaryExpr {
         if (!(deltad instanceof NullExpr) && oneLess instanceof RepeatExpr) {
             // const deltad_oneLess = constructPrecede(deltad, oneLess);
             // env.logDebug(`calling deltad_oneLess.deriv for ${deltad_oneLess.id}`);
-            yield [EMPTY_TOKEN, constructPrecede(deltad, oneLess)];
+            yield [EPSILON_TOKEN, constructPrecede(deltad, oneLess)];
         }
 
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
@@ -1638,7 +1641,7 @@ class RenameExpr extends UnaryExpr {
         tapeName: string, 
         target: Token,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         if (tapeName != this.toTape && tapeName == this.fromTape) {
             return;
@@ -1695,7 +1698,7 @@ class NegationExpr extends UnaryExpr {
         tapeName: string, 
         target: BitsetToken,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         if (!this.tapes.has(tapeName)) {
             return;
@@ -1735,7 +1738,7 @@ class NegationExpr extends UnaryExpr {
         tapeName: string,
         target: string, 
         env: Env
-    ): DerivResult {
+    ): DerivResults {
 
         if (!this.tapes.has(tapeName)) {
             return;
@@ -1751,9 +1754,11 @@ class NegationExpr extends UnaryExpr {
 
         for (const [childText, childNext] of 
                 this.child.disjointDeriv(tapeName, target, env)) {
-            const childToken = tape.toToken([childText as string]);
-            const complement = childToken.not();
-            remainder = remainder.and(complement);
+            if (!(childText instanceof EpsilonToken)) {
+                const childToken = tape.toToken([childText as string]);
+                const complement = childToken.not();
+                remainder = remainder.and(complement);    
+            }
             const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
             yield [childText, successor];
         }
@@ -1804,7 +1809,7 @@ export class MatchFromExpr extends UnaryExpr {
         tapeName: string, 
         target: BitsetToken,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         
         // if it's a tape that isn't our to/from, just forward and wrap 
         if (tapeName != this.fromTape && tapeName != this.toTape) {
@@ -1846,7 +1851,7 @@ export class MatchFromExpr extends UnaryExpr {
         tapeName: string,
         target: string, 
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         
         // if it's a tape that isn't our to/from, just forward and wrap 
         if (tapeName != this.fromTape && tapeName != this.toTape) {
@@ -1918,7 +1923,7 @@ export class MatchExpr extends UnaryExpr {
         tapeName: string, 
         target: BitsetToken,
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         throw new Error("Method not implemented.");
     }
     
@@ -1926,7 +1931,7 @@ export class MatchExpr extends UnaryExpr {
         tapeName: string,
         target: string, 
         env: Env
-    ): DerivResult {
+    ): DerivResults {
         env.logDebug(`matching ${tapeName}:${target}`)
         if (!this.tapes.has(tapeName)) {
             // it's not a tape we're matching

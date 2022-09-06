@@ -1,6 +1,7 @@
 
 import { Seq, Join, Rep, Epsilon, Equals, Uni, Any, Count, Grammar } from "../src/grammars";
 import { t1, t2, testHasTapes, testGrammar, testHasVocab } from './testUtils';
+import { VERBOSE_DEBUG } from "../src/util";
 
 import * as path from 'path';
 

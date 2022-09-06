@@ -3,7 +3,7 @@ import {
     CounterStack, Env, 
     EpsilonExpr, Expr, NullExpr, PriorityExpr 
 } from "./exprs";
-import { OutputTrie, TapeNamespace, EMPTY_TOKEN } from "./tapes";
+import { OutputTrie, TapeNamespace, Token, EpsilonToken } from "./tapes";
 import { 
     Gen, GenOptions,
     msToTime, shuffleArray, StringDict
@@ -102,8 +102,8 @@ export function* generate(
                 if (!(cNext instanceof NullExpr)) {
                     let nextExpr: Expr = cNext;
                     let nextOutput: OutputTrie;
-                    if (cTarget != EMPTY_TOKEN) {
-                        nextOutput = prevOutput.add(cTape, cTarget);
+                    if (! (cTarget instanceof EpsilonToken)) {
+                        nextOutput = prevOutput.add(cTape, cTarget as Token);
                     } else {
                         nextOutput = prevOutput;
                         const tapes = (cNext as PriorityExpr).tapes;

@@ -681,7 +681,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'h', t2: 'eeeehe'},
             {t1: 'h', t2: 'eeeeeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults, VERBOSE_DEBUG);
+        testGrammar(grammarWithVocab, expectedResults);
     });
 
     describe('30f-alt-2. Effectively insert e 2 or more times: (t2:e+M(t1>t2,ε|t1:h)){2,Inf} (vocab h/he)', function() {

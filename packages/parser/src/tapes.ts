@@ -159,11 +159,13 @@ export class EntangledToken extends BitsetToken {
 
 let ENTANGLE_INDEX: number = 0;
 
-
 const ANY_CHAR_BITSET: BitsetToken = new UnentangledToken(new BitSet().flip());
 const NO_CHAR_BITSET: BitsetToken = new UnentangledToken(new BitSet());
 
-export const EMPTY_TOKEN: Token = BITSETS_ENABLED ? NO_CHAR_BITSET : "";
+
+export class EpsilonToken { }
+
+export const EPSILON_TOKEN: EpsilonToken = new EpsilonToken();
 
 /**
  * OutputTrie
@@ -302,15 +304,21 @@ export class OutputTrieLeaf extends OutputTrie {
             }
 
             for (const prevResult of prevResults) {
-                const oldStr = (this.tapeName in prevResult) ?
-                                    prevResult[this.tapeName] : "";
                 const newResult: StringDict = {};
                 Object.assign(newResult, prevResult);
-                newResult[this.tapeName] = DIRECTION_LTR ?
-                                            oldStr + newStr :
-                                            newStr + oldStr;
+                if (this.tapeName in prevResult || newStr != '') {
+                    const oldStr = (this.tapeName in prevResult) ?
+                                        prevResult[this.tapeName] : "";
+                    newResult[this.tapeName] = DIRECTION_LTR ?
+                                                oldStr + newStr :
+                                                newStr + oldStr;
+                }
                 results.push(newResult);
             }
+        }
+
+        if (results.length == 0) {
+            results.push({});
         }
         return results;
     }
