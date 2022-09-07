@@ -1,104 +1,106 @@
 
-import { Seq, Uni, Equals, Epsilon, Starts, Not, Ends, Contains, Intersect, Null } from "../src/grammars";
+import { Seq, Uni, Equals, Epsilon, Starts, Not, Ends, Contains, Intersect, Null, Grammar } from "../src/grammars";
+import { Any, CountTape, MatchFrom, Priority, Rep, Short, Vocab } from "../src/grammars";
 import { t1, t2, t3, testGrammar } from './testUtils';
 
 import * as path from 'path';
+import { VERBOSE_DEBUG, VERBOSE_GRAMMAR } from "../src/util";
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe('Filter t1:hello[t1:hello]', function() {
+    describe('F.1 Filter t1:hello[t1:hello]', function() {
         const grammar = Equals(t1("hello"), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Filter t1:hello[ε]', function() {
+    describe('F.2 Filter t1:hello[ε]', function() {
         const grammar = Equals(t1("hello"), Epsilon());
         testGrammar(grammar, [{t1:"hello"}]);
     });
 
-    describe('Filter ε[ε]', function() {
+    describe('F.3 Filter ε[ε]', function() {
         const grammar = Equals(Epsilon(), Epsilon());
         testGrammar(grammar, [{}]);
     });
 
-    describe('Filter ε[t1:hello]', function() {
+    describe('F.4 Filter ε[t1:hello]', function() {
         const grammar = Equals(Epsilon(), t1("hello"));
         testGrammar(grammar, []);
     });
 
-    describe('Filter t1:hello[0]', function() {
+    describe('F.5 Filter t1:hello[0]', function() {
         const grammar = Equals(t1("hello"), Null());
         testGrammar(grammar, []);
     });
 
-    describe('Filter 0[ε]', function() {
+    describe('F.6 Filter 0[ε]', function() {
         const grammar = Equals(Null(), Epsilon());
         testGrammar(grammar, []);
     });
     
-    describe('Filter ε[0]', function() {
+    describe('F.7 Filter ε[0]', function() {
         const grammar = Equals(Epsilon(), Null());
         testGrammar(grammar, []);
     });
 
-    describe('Filter 0[t1:hello]', function() {
+    describe('F.8 Filter 0[t1:hello]', function() {
         const grammar = Equals(Null(), t1("hello"));
         testGrammar(grammar, []);
     });
     
-    describe('Filter t1:hello[t1:""]', function() {
+    describe('F.9 Filter t1:hello[t1:""]', function() {
         const grammar = Equals(t1("hello"), t1(""));
         testGrammar(grammar, []);
     });
 
-    describe('Filter t1:""[t1:""]', function() {
+    describe('F.10 Filter t1:""[t1:""]', function() {
         const grammar = Equals(t1(""), t1(""));
         testGrammar(grammar, [{}]);
     });
 
-    describe('Filter (t1:hello|t1:"")[t1:""]', function() {
+    describe('F.11 Filter (t1:hello|t1:"")[t1:""]', function() {
         const grammar = Equals(Uni(t1("hello"), t1("")), t1(""));
         testGrammar(grammar, [{}]);
     });
 
-    describe('Filter t1:h[t1:hello]', function() {
+    describe('F.12 Filter t1:h[t1:hello]', function() {
         const grammar = Equals(t1("h"), t1("hello"));
         testGrammar(grammar, []);
     });
 
-    describe('Filter t1:hello[t1:h]', function() {
+    describe('F.13 Filter t1:hello[t1:h]', function() {
         const grammar = Equals(t1("hello"), t1("h"));
         testGrammar(grammar, []);
     });
     
-    describe('Filter t1:hello[t1:hello+t2:foo]', function() {
+    describe('F.14 Filter t1:hello[t1:hello+t2:foo]', function() {
         const grammar = Equals(t1("hello"), Seq(t1("hello"), t2("foo")));
         testGrammar(grammar, []);
     }); 
 
-    describe('Filter (t1:hi+t2:foo)[t1:hi]', function() {
+    describe('F.15 Filter (t1:hi+t2:foo)[t1:hi]', function() {
         const grammar = Equals(Seq(t1("hi"), t2("foo")), t1("hi"));
         testGrammar(grammar, [{t1: "hi", t2: "foo"}]);
     });
     
-    describe('Filter t1:hello[t1:hello+t2:foo]', function() {
+    describe('F.16 Filter t1:hello[t1:hello+t2:foo]', function() {
         const grammar = Equals(t1("hello"), Seq(t1("hello"), t2("foo")));
         testGrammar(grammar, []);
     }); 
     
-    describe('Filter (t1:hi+t2:world)[t1:hi+t2:world]', function() {
+    describe('F.17 Filter (t1:hi+t2:world)[t1:hi+t2:world]', function() {
         const grammar = Equals(Seq(t1("hi"), t2("world")),
                              Seq(t1("hi"), t2("world")));
         testGrammar(grammar, [{t1: "hi", t2: "world"}]);
     });
 
-    describe('Filter (t2:wo+t1:hi)[t1:hi+t2:wo]', function() {
+    describe('F.18 Filter (t2:wo+t1:hi)[t1:hi+t2:wo]', function() {
         const grammar = Equals(Seq(t2("b"), t1("a")),
                              Seq(t1("a"), t2("b")));
         testGrammar(grammar, [{t1: "a", t2: "b"}]);
     });
 
-    describe('Filter (t1:hello+t2:world|t1:hello+t2:kitty)[t1:hello]', function() {
+    describe('F.19 Filter (t1:hello+t2:world|t1:hello+t2:kitty)[t1:hello]', function() {
         const grammar = Equals(Uni(Seq(t1("hello"), t2("world")),
                                     Seq(t1("hello"), t2("kitty"))),
                                     t1("hello"));
@@ -106,7 +108,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                         {t1: "hello", t2: "kitty"}]);
     }); 
 
-    describe('Filter (t1:hello+t2:world+t3:!|t1:hello+t2:kitty+t3:!)[t1:hello][t3:!]', function() {
+    describe('F.20 Filter (t1:hello+t2:world+t3:!|t1:hello+t2:kitty+t3:!)[t1:hello][t3:!]', function() {
         const grammar = Equals(Equals(Uni(Seq(t1("hello"), t2("world"), t3("!")),
                                     Seq(t1("hello"), t2("kitty"), t3("!"))),
                                     t1("hello")), t3("!"));
@@ -114,487 +116,549 @@ describe(`${path.basename(module.filename)}`, function() {
                                         {t1: "hello", t2: "kitty", t3:"!"}]);
     });
 
-    describe('Filter different-tape alts in same direction', function() {
+    describe('F.21 Filter different-tape alts in same direction', function() {
         const grammar = Equals(Uni(t1("hi"), t2("foo")),
                              Uni(t1("hi"), t2("foo")));
         testGrammar(grammar, [{t1: "hi"},
                               {t2: "foo"}]);
     });
 
-    describe('Filter different-tape alts in different directions', function() {
+    describe('F.22 Filter different-tape alts in different directions', function() {
         const grammar = Equals(Uni(t2("foo"), t1("hi")),
                              Uni(t1("hi"), t2("foo")));
         testGrammar(grammar, [{t2: "foo"},
                               {t1: "hi"}]);
     });
 
-    describe('Filter t1:hi+t2:hi[(t1:h+t2:i)+(t1:h+t2:i)]', function() {
+    describe('F.23 Filter t1:hi+t2:hi[(t1:h+t2:i)+(t1:h+t2:i)]', function() {
         const grammar = Equals(Seq(t1("hi"), t2("hi")), Seq(Seq(t1("h"), t2("h")), Seq(t1("i"), t2("i"))));
         testGrammar(grammar, [{t1: "hi", t2: "hi"}]);
     });
     
-    describe('Nested filter t1:hi[t1:hi][t1:hi]', function() {
+    describe('F.24 Nested filter t1:hi[t1:hi][t1:hi]', function() {
         const grammar = Equals(Equals(t1("hi"), t1("hi")), t1("hi"));
         testGrammar(grammar, [{t1: "hi"}]);
     });
 
-    describe('Nested filter (t1:hi+t2:wo)[t1:hi][t2:wo]', function() {
+    describe('F.25 Nested filter (t1:hi+t2:wo)[t1:hi][t2:wo]', function() {
         const grammar = Equals(Equals(Seq(t1("hi"), t2("wo")), t1("hi")), t2("wo"));
         testGrammar(grammar, [{t1: "hi", t2: "wo"}]);
     });
 
-    describe('Nested filter (t1:hi+t2:wo)[t2:wo][t1:hi]', function() {
+    describe('F.26 Nested filter (t1:hi+t2:wo)[t2:wo][t1:hi]', function() {
         const grammar = Equals(Equals(Seq(t1("hi"), t2("wo")), t2("wo")), t1("hi"));
         testGrammar(grammar, [{t1: "hi", t2: "wo"}]);
     }); 
-    
-    // STARTSWITH
 
-    describe('t1:hello startswith ε', function() {
+    describe('RB.1 Filter (M(t1>t2,~((t1:.){0,17}+Short(t1:hel+(t1:.){0,17})))+t3:[1SG])[t1:hel+t3:G] vocab hel/hela/[1SG]', function() {
+        const dotStar: Grammar = Rep(Any("t1"), 0, 17);
+        const fromGrammar: Grammar = Not(Seq(dotStar, Short(Seq(t1("hel"), dotStar))));
+        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
+        const candidateGrammar: Grammar = Seq(matchGrammar, t3("[1SG]"));
+        const filterGrammar = Equals(candidateGrammar, Seq(t1("hel"), t3("G")));
+        let grammarWithVocab: Grammar = Seq(filterGrammar,
+                                            Vocab({t1:"hel", t2:"hela", t3:"[1SG]"}));
+        grammarWithVocab = CountTape(3, grammarWithVocab);
+        testGrammar(grammarWithVocab, []);
+    }); 
+
+    describe('RB.2 Filter (M(t1>t2,(t1:.){0,17})+~(t3:[1SG])))[t1:hel+t3:G] vocab hel/hela/[1SG]', function() {
+        const dotStar: Grammar = Rep(Any("t1"), 0, 17);
+        const fromGrammar: Grammar = dotStar;
+        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
+        const candidateGrammar: Grammar = Seq(matchGrammar, Not(t3("[1SG]")));
+        const filterGrammar = Equals(candidateGrammar, Seq(t1("hel"), t3("G")));
+        let grammarWithVocab: Grammar = Seq(filterGrammar,
+                                            Vocab({t1:"hel", t2:"hela", t3:"[1SG]"}));
+        grammarWithVocab = CountTape(3, grammarWithVocab);
+        testGrammar(grammarWithVocab, [{t1: 'hel', t2: 'hel', t3: 'G'}]);
+    }); 
+
+    describe('RB.2a Filter (M(t1>t2,t1:a{0,3})+~(t3:[1SG])))[t1:hel+t3:G] vocab a/a/[1SG]', function() {
+        const fromGrammar: Grammar = Rep(t1("a"), 0, 3);
+        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
+        const candidateGrammar: Grammar = Seq(matchGrammar, Not(t3("[1SG]")));
+        const filterGrammar = Equals(candidateGrammar, Seq(t1("aa"), t3("G")));
+        let grammarWithVocab: Grammar = Seq(filterGrammar,
+                                            Vocab({t1:"a", t2:"a", t3:"[1SG]"}));
+        grammarWithVocab = CountTape(3, grammarWithVocab);
+        testGrammar(grammarWithVocab, [{t1: 'aa', t2: 'aa', t3: 'G'}]);
+    }); 
+
+    describe('RB.2b Filter (t1:aa+t2:aa+~(t3:[1SG]))[t1:aa+t3:G] vocab a/a/[1SG]', function() {
+        const candidateGrammar: Grammar = Seq(t1("aa"), t2("aa"), Not(t3("[1SG]")));
+        const filterGrammar = Equals(candidateGrammar, Seq(t1("aa"), t3("G")));
+        let grammarWithVocab: Grammar = Seq(filterGrammar,
+                                            Vocab({t1:"a", t2:"a", t3:"[1SG]"}));
+        grammarWithVocab = CountTape(3, grammarWithVocab);
+        testGrammar(grammarWithVocab, [{t1:'aa', t2:'aa', t3: 'G'}]);
+    }); 
+
+    describe('RB.2c Filter (t1:a{0,3}+~(t3:[1SG]))[t1:aa+t3:G] vocab a/[1SG]', function() {
+        const candidateGrammar: Grammar = Seq(Rep(t1("a"), 0, 3), Not(t3("[1SG]")));
+        const filterGrammar = Equals(candidateGrammar, Seq(t1("aa"), t3("G")));
+        let grammarWithVocab: Grammar = Seq(filterGrammar,
+                                            Vocab({t1:"a", t3:"[1SG]"}));
+        grammarWithVocab = CountTape(3, grammarWithVocab);
+        testGrammar(grammarWithVocab, [{t1:'aa', t3: 'G'}]);
+    }); 
+
+    describe('RB.2d Filter (t1:a{0,2}+~(t3:[1SG]))[t1:aa+t3:G] vocab a/[1SG]', function() {
+        const candidateGrammar: Grammar = Seq(Rep(t1("a"), 0, 2), Not(t3("[1SG]")));
+        const filterGrammar = Equals(candidateGrammar, Seq(t1("aa"), t3("G")));
+        let grammarWithVocab: Grammar = Seq(filterGrammar,
+                                            Vocab({t1:"a", t3:"[1SG]"}));
+        grammarWithVocab = CountTape(3, grammarWithVocab);
+        testGrammar(grammarWithVocab, [{t1:'aa', t3: 'G'}]);
+    }); 
+
+    // STARTS WITH
+
+    describe('S.1 t1:hello starts with ε', function() {
         const grammar = Starts(t1("hello"), Epsilon());
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello startswith t1:ε', function() {
+    describe('S.2 t1:hello starts with t1:ε', function() {
         const grammar = Starts(t1("hello"), t1(""));
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
-    describe('t1:hello startswith 0', function() {
+    describe('S.3 t1:hello starts with 0', function() {
         const grammar = Starts(t1("hello"), Null());
         testGrammar(grammar, []);
     });
 
-    describe('t1:hello startswith t1:h', function() {
+    describe('S.4 t1:hello starts with t1:h', function() {
         const grammar = Starts(t1("hello"), t1("h"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
-    describe('t1:hello startswith ε+t1:h', function() {
+    describe('S.5 t1:hello starts with ε+t1:h', function() {
         const grammar = Starts(t1("hello"), Seq(Epsilon(), t1("h")));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello startswith t1:h+ε', function() {
+    describe('S.6 t1:hello starts with t1:h+ε', function() {
         const grammar = Starts(t1("hello"), Seq(t1("h"), Epsilon()));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello+t2:world startswith (t1:h+t2:w)', function() {
+    describe('S.7 t1:hello+t2:world starts with (t1:h+t2:w)', function() {
         const grammar = Starts(Seq(t1("hello"), t2("world")), Seq(t1("h"), t2("w")));
         testGrammar(grammar, [{t1: "hello", t2: "world"}]);
     });
 
-    describe('t1:hello startswith t1:he', function() {
+    describe('S.8 t1:hello starts with t1:he', function() {
         const grammar = Starts(t1("hello"), t1("he"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello startswith t1:hello', function() {
+    describe('S.9 t1:hello starts with t1:hello', function() {
         const grammar = Starts(t1("hello"), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello startswith ~(ε+t1:h)', function() {
+    describe('S.10 t1:hello starts with ~(ε+t1:h)', function() {
         const grammar = Starts(t1("hello"), Not(Seq(Epsilon(), t1("h"))));
         testGrammar(grammar, []);
     });
 
-    describe('t1:hello startswith ~(t1:h+ε)', function() {
+    describe('S.11 t1:hello starts with ~(t1:h+ε)', function() {
         const grammar = Starts(t1("hello"), Not(Seq(t1("h"), Epsilon())));
         testGrammar(grammar, []);
     });
     
-    describe('t1:hello startswith ~(t1:h)', function() {
+    describe('S.12 t1:hello starts with ~(t1:h)', function() {
         const grammar = Starts(t1("hello"), Not(t1("h")));
         testGrammar(grammar, []);
     });
     
     
-    describe('t1:hello startswith ~t1:he', function() {
+    describe('S.13 t1:hello starts with ~t1:he', function() {
         const grammar = Starts(t1("hello"), Not(t1("he")));
         testGrammar(grammar, []);
     });
 
-    describe('t1:world startswith ~t1:h', function() {
+    describe('S.14 t1:world starts with ~t1:h', function() {
         const grammar = Starts(t1("world"), Not(t1("h")));
         testGrammar(grammar, [{t1: "world"}]);
     });
     
-    describe('(t1:hello|t1:world) startswith t1:h', function() {
+    describe('S.15 (t1:hello|t1:world) starts with t1:h', function() {
         const grammar = Starts(Uni(t1("hello"), t1("world")), t1("h"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('(t1:hello|t1:world) startswith ~t1:h', function() {
+    describe('S.16 (t1:hello|t1:world) starts with ~t1:h', function() {
         const grammar = Starts(Uni(t1("hello"), t1("world")), Not(t1("h")));
         testGrammar(grammar, [{t1: "world"}]);
     });
     
-    describe('(t1:hello|t1:world|t1:kitty) startswith (t1:h|t1:k)', function() {
+    describe('S.17 (t1:hello|t1:world|t1:kitty) starts with (t1:h|t1:k)', function() {
         const grammar = Starts(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Uni(t1("h"), t1("k")));
         testGrammar(grammar, [{t1: "hello"}, {t1: "kitty"}]);
     });
 
-    describe('(t1:hello|t1:world|t1:kitty) startswith ~t1:w', function() {
+    describe('S.18 (t1:hello|t1:world|t1:kitty) starts with ~t1:w', function() {
         const grammar = Starts(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Not(t1("w")));
         testGrammar(grammar, [{t1: "hello"}, {t1: "kitty"}]);
     });
 
-    describe('(t1:hello|t1:world|t1:kitty) startswith ~(t1:h|t1:k)', function() {
+    describe('S.19 (t1:hello|t1:world|t1:kitty) starts with ~(t1:h|t1:k)', function() {
         const grammar = Starts(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Not(Uni(t1("h"), t1("k"))));
         testGrammar(grammar, [{t1: "world"}]);
     });
     
-    describe('(t1:hello|t1:world|t1:kitty) startswith ~t1:h & ~t1:k', function() {
+    describe('S.20 (t1:hello|t1:world|t1:kitty) starts with ~t1:h & ~t1:k', function() {
         const grammar = Starts(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Intersect(Not(t1("h")), Not(t1("k"))));
         testGrammar(grammar, [{t1: "world"}]);
     });
 
-    describe('t1:hello startswith t1:h+t1:e', function() {
+    describe('S.21 t1:hello starts with t1:h+t1:e', function() {
         const grammar = Starts(t1("hello"), Seq(t1("h"), t1("e")));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello startswith ~(t1:w)+t1:e', function() {
+    describe('S.22 t1:hello starts with ~(t1:w)+t1:e', function() {
         const grammar = Starts(t1("hello"), Seq(Not(t1("w")), t1("e")));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello startswith t1:h+~(t1:o)', function() {
+    describe('S.23 t1:hello starts with t1:h+~(t1:o)', function() {
         const grammar = Starts(t1("hello"), Seq(t1("h"), Not(t1("o"))));
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
-    describe('t1:hello startswith ~(t1:h)+t1:e', function() {
+    describe('S.24 t1:hello starts with ~(t1:h)+t1:e', function() {
         const grammar = Starts(t1("hello"), Seq(Not(t1("h")), t1("e")));
         testGrammar(grammar, []);
     });
 
-    describe('t1:hello startswith t1:h+~(t1:e)', function() {
+    describe('S.25 t1:hello starts with t1:h+~(t1:e)', function() {
         const grammar = Starts(t1("hello"), Seq(t1("h"), Not(t1("e"))));
         testGrammar(grammar, []);
     });
 
-    describe('t1:hello startswith t1:wo|~(t1:k)', function() {
+    describe('S.26 t1:hello starts with t1:wo|~(t1:k)', function() {
         const grammar = Starts(t1("hello"), Uni(t1("wo"), Not(t1("k"))));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello startswith t1:wo|~(t1:h)', function() {
+    describe('S.27 t1:hello starts with t1:wo|~(t1:h)', function() {
         const grammar = Starts(t1("hello"), Uni(t1("wo"), Not(t1("h"))));
         testGrammar(grammar, []);
     });
 
-    // ENDSWITH
+    // ENDS WITH
 
-    describe('t1:hello endswith ε', function() {
+    describe('E.1 t1:hello ends with ε', function() {
         const grammar = Ends(t1("hello"), Epsilon());
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello endswith t1:ε', function() {
+    describe('E.2 t1:hello ends with t1:ε', function() {
         const grammar = Ends(t1("hello"), t1(""));
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
-    describe('t1:hello endswith 0', function() {
+    describe('E.3 t1:hello ends with 0', function() {
         const grammar = Ends(t1("hello"), Null());
         testGrammar(grammar, []);
     });
 
-    describe('t1:hello endswith t1:o', function() {
+    describe('E.4 t1:hello ends with t1:o', function() {
         const grammar = Ends(t1("hello"), t1("o"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello endswith ε+t1:o', function() {
+    describe('E.5 t1:hello ends with ε+t1:o', function() {
         const grammar = Ends(t1("hello"), Seq(Epsilon(), t1("o")));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello endswith t1:o+ε', function() {
+    describe('E.6 t1:hello ends with t1:o+ε', function() {
         const grammar = Ends(t1("hello"), Seq(t1("o"), Epsilon()));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello+t2:world endswith (t1:o+t2:d)', function() {
+    describe('E.7 t1:hello+t2:world ends with (t1:o+t2:d)', function() {
         const grammar = Ends(Seq(t1("hello"), t2("world")), Seq(t1("o"), t2("d")));
         testGrammar(grammar, [{t1: "hello", t2: "world"}]);
     });
 
-    describe('t1:hello endswith t1:lo', function() {
+    describe('E.8 t1:hello ends with t1:lo', function() {
         const grammar = Ends(t1("hello"), t1("lo"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello endswith t1:hello', function() {
+    describe('E.9 t1:hello ends with t1:hello', function() {
         const grammar = Ends(t1("hello"), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
-    describe('t1:hello endswith ~t1:o', function() {
+    describe('E.10 t1:hello ends with ~t1:o', function() {
         const grammar = Ends(t1("hello"), Not(t1("o")));
         testGrammar(grammar, []);
     });
     
-    describe('t1:hello endswith ~t1:lo', function() {
+    describe('E.11 t1:hello ends with ~t1:lo', function() {
         const grammar = Ends(t1("hello"), Not(t1("lo")));
         testGrammar(grammar, []);
     });
 
-    describe('t1:world endswith ~t1:o', function() {
+    describe('E.12 t1:world ends with ~t1:o', function() {
         const grammar = Ends(t1("world"), Not(t1("o")));
         testGrammar(grammar, [{t1: "world"}]);
     });
     
-    describe('(t1:hello|t1:world) endswith t1:o', function() {
+    describe('E.13 (t1:hello|t1:world) ends with t1:o', function() {
         const grammar = Ends(Uni(t1("hello"), t1("world")), t1("o"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('(t1:hello|t1:world) endswith ~t1:o', function() {
+    describe('E.14 (t1:hello|t1:world) ends with ~t1:o', function() {
         const grammar = Ends(Uni(t1("hello"), t1("world")), Not(t1("o")));
         testGrammar(grammar, [{t1: "world"}]);
     });
     
-    describe('(t1:hello|t1:world|t1:kitty) endswith (t1:o|t1:y)', function() {
+    describe('E.15 (t1:hello|t1:world|t1:kitty) ends with (t1:o|t1:y)', function() {
         const grammar = Ends(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Uni(t1("o"), t1("y")));
         testGrammar(grammar, [{t1: "hello"}, {t1: "kitty"}]);
     });
 
-    describe('(t1:hello|t1:world|t1:kitty) endswith ~t1:d', function() {
+    describe('E.16 (t1:hello|t1:world|t1:kitty) ends with ~t1:d', function() {
         const grammar = Ends(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Not(t1("d")));
         testGrammar(grammar, [{t1: "hello"}, {t1: "kitty"}]);
     });
 
-    describe('(t1:hello|t1:world|t1:kitty) endswith ~(t1:o|t1:y)', function() {
+    describe('E.17 (t1:hello|t1:world|t1:kitty) ends with ~(t1:o|t1:y)', function() {
         const grammar = Ends(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Not(Uni(t1("o"), t1("y"))));
         testGrammar(grammar, [{t1: "world"}]);
     });
     
-    describe('(t1:hello|t1:world|t1:kitty) endswith ~t1:o & ~t1:y', function() {
+    describe('E.18 (t1:hello|t1:world|t1:kitty) ends with ~t1:o & ~t1:y', function() {
         const grammar = Ends(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Intersect(Not(t1("o")), Not(t1("y"))));
         testGrammar(grammar, [{t1: "world"}]);
     });
 
-    describe('t1:hello endswith t1:l+t1:o', function() {
+    describe('E.19 t1:hello ends with t1:l+t1:o', function() {
         const grammar = Ends(t1("hello"), Seq(t1("l"), t1("o")));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello endswith ~(t1:t)+t1:o', function() {
+    describe('E.20 t1:hello ends with ~(t1:t)+t1:o', function() {
         const grammar = Ends(t1("hello"), Seq(Not(t1("t")), t1("o")));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello endswith t1:h+~(t1:o)', function() {
+    describe('E.21 t1:hello ends with t1:h+~(t1:o)', function() {
         const grammar = Ends(t1("hello"), Seq(t1("h"), Not(t1("o"))));
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
-    describe('t1:hello endswith ~(t1:l)+t1:o', function() {
+    describe('E.22 t1:hello ends with ~(t1:l)+t1:o', function() {
         const grammar = Ends(t1("hello"), Seq(Not(t1("l")), t1("o")));
         testGrammar(grammar, []);
     });
     
-    describe('t1:world endswith t1:l+~(t1:d)', function() {
+    describe('E.23 t1:world ends with t1:l+~(t1:d)', function() {
         // "hello" isn't a good example for it because hello really does 
         // end with l~(o), because "lo" is a member of ~(o).
         const grammar = Ends(t1("world"), Seq(t1("l"), Not(t1("d"))));
         testGrammar(grammar, []);
     });
 
-    describe('t1:hello endswith t1:ld|~(t1:y)', function() {
+    describe('E.24 t1:hello ends with t1:ld|~(t1:y)', function() {
         const grammar = Ends(t1("hello"), Uni(t1("ld"), Not(t1("y"))));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello endswith t1:ld|~(t1:o)', function() {
+    describe('E.25 t1:hello ends with t1:ld|~(t1:o)', function() {
         const grammar = Ends(t1("hello"), Uni(t1("ld"), Not(t1("o"))));
         testGrammar(grammar, []);
     });
 
     // CONTAINS
 
-    describe('t1:hello contains ε', function() {
+    describe('C.1 t1:hello contains ε', function() {
         const grammar = Contains(t1("hello"), Epsilon());
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello contains t1:ε', function() {
+    describe('C.2 t1:hello contains t1:ε', function() {
         const grammar = Contains(t1("hello"), t1(""));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello contains 0', function() {
+    describe('C.3 t1:hello contains 0', function() {
         const grammar = Contains(t1("hello"), Null());
         testGrammar(grammar, []);
     });
 
-    describe('t1:hello contains t1:e', function() {
+    describe('C.4 t1:hello contains t1:e', function() {
         const grammar = Contains(t1("hello"), t1("e"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello contains ε+t1:e', function() {
+    describe('C.5 t1:hello contains ε+t1:e', function() {
         const grammar = Contains(t1("hello"), Seq(Epsilon(), t1("e")));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello contains t1:e+ε', function() {
+    describe('C.6 t1:hello contains t1:e+ε', function() {
         const grammar = Contains(t1("hello"), Seq(t1("e"), Epsilon()));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello+t2:world contains (t1:e+t2:r)', function() {
+    describe('C.7 t1:hello+t2:world contains (t1:e+t2:r)', function() {
         const grammar = Contains(Seq(t1("hello"), t2("world")), Seq(t1("e"), t2("r")));
         testGrammar(grammar, [{t1: "hello", t2: "world"}]);
     });
     
-    describe('t1:hello contains t1:el', function() {
+    describe('C.8 t1:hello contains t1:el', function() {
         const grammar = Contains(t1("hello"), t1("el"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello contains t1:hello', function() {
+    describe('C.9 t1:hello contains t1:hello', function() {
         const grammar = Contains(t1("hello"), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('t1:hello contains t1:h', function() {
+    describe('C.10 t1:hello contains t1:h', function() {
         const grammar = Contains(t1("hello"), t1("h"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
-    describe('t1:hello contains t1:o', function() {
+    describe('C.11 t1:hello contains t1:o', function() {
         const grammar = Contains(t1("hello"), t1("o"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
-    describe('t1:hello contains ~t1:e', function() {
+    describe('C.12 t1:hello contains ~t1:e', function() {
         const grammar = Contains(t1("hello"), Not(t1("e")));
         testGrammar(grammar, []);
     });
     
-    describe('t1:hello contains ~t1:el', function() {
+    describe('C.13 t1:hello contains ~t1:el', function() {
         const grammar = Contains(t1("hello"), Not(t1("el")));
         testGrammar(grammar, []);
     });
 
-    describe('t1:hello contains ~t1:h', function() {
+    describe('C.14 t1:hello contains ~t1:h', function() {
         const grammar = Contains(t1("hello"), Not(t1("h")));
         testGrammar(grammar, []);
     });
     
-    describe('t1:hello contains ~t1:o', function() {
+    describe('C.15 t1:hello contains ~t1:o', function() {
         const grammar = Contains(t1("hello"), Not(t1("o")));
         testGrammar(grammar, []);
     });
 
-    describe('t1:world contains ~t1:e', function() {
+    describe('C.16 t1:world contains ~t1:e', function() {
         const grammar = Contains(t1("world"), Not(t1("e")));
         testGrammar(grammar, [{t1: "world"}]);
     });
     
-    describe('(t1:hello|t1:kitty) contains t1:e', function() {
+    describe('C.17 (t1:hello|t1:kitty) contains t1:e', function() {
         const grammar = Contains(Uni(t1("hello"), t1("kitty")), t1("e"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
-    describe('(t1:hello|t1:kitty) contains t1:h', function() {
+    describe('C.18 (t1:hello|t1:kitty) contains t1:h', function() {
         const grammar = Contains(Uni(t1("hello"), t1("kitty")), t1("h"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
-    describe('(t1:hello|t1:kitty) contains t1:o', function() {
+    describe('C.19 (t1:hello|t1:kitty) contains t1:o', function() {
         const grammar = Contains(Uni(t1("hello"), t1("kitty")), t1("o"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
     
-    describe('(t1:hello|t1:kitty) contains ~t1:e', function() {
+    describe('C.20 (t1:hello|t1:kitty) contains ~t1:e', function() {
         const grammar = Contains(Uni(t1("hello"), t1("kitty")), Not(t1("e")));
         testGrammar(grammar, [{t1: "kitty"}]);
     });
     
-    describe('(t1:hello|t1:kitty) contains ~t1:h', function() {
+    describe('C.22 (t1:hello|t1:kitty) contains ~t1:h', function() {
         const grammar = Contains(Uni(t1("hello"), t1("kitty")), Not(t1("h")));
         testGrammar(grammar, [{t1: "kitty"}]);
     });
     
-    describe('(t1:hello|t1:kitty) contains ~t1:o', function() {
+    describe('C.23 (t1:hello|t1:kitty) contains ~t1:o', function() {
         const grammar = Contains(Uni(t1("hello"), t1("kitty")), Not(t1("o")));
         testGrammar(grammar, [{t1: "kitty"}]);
     });
 
-    describe('(t1:hello|t1:world|t1:kitty) contains (t1:e|t1:i)', function() {
+    describe('C.24 (t1:hello|t1:world|t1:kitty) contains (t1:e|t1:i)', function() {
         const grammar = Contains(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Uni(t1("e"), t1("i")));
         testGrammar(grammar, [{t1: "hello"}, {t1: "kitty"}]);
     });
     
-    describe('(t1:hello|t1:world|t1:kitty) contains ~t1:t', function() {
+    describe('C.25 (t1:hello|t1:world|t1:kitty) contains ~t1:t', function() {
         const grammar = Contains(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Not(t1("t")));
         testGrammar(grammar, [{t1: "hello"}, {t1: "world"}]);
     });
 
-    describe('(t1:hello|t1:world|t1:kitty) contains ~(t1:e|t1:i)', function() {
+    describe('C.26 (t1:hello|t1:world|t1:kitty) contains ~(t1:e|t1:i)', function() {
         const grammar = Contains(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Not(Uni(t1("e"), t1("i"))));
         testGrammar(grammar, [{t1: "world"}]);
     });
     
-    describe('(t1:hello|t1:world|t1:kitty) contains ~t1:e & ~t1:i', function() {
+    describe('C.27 (t1:hello|t1:world|t1:kitty) contains ~t1:e & ~t1:i', function() {
         const grammar = Contains(Uni(t1("hello"), t1("world"), t1("kitty")), 
                                     Intersect(Not(t1("e")), Not(t1("i"))));
         testGrammar(grammar, [{t1: "world"}]);
     });
 
-    describe('t1:world contains t1:r+t1:l', function() {
+    describe('C.28 t1:world contains t1:r+t1:l', function() {
         const grammar = Contains(t1("world"), Seq(t1("r"), t1("l")));
         testGrammar(grammar, [{t1: "world"}]);
     });
 
-    describe('t1:world contains t1:o+t1:r+t1:l', function() {
+    describe('C.29 t1:world contains t1:o+t1:r+t1:l', function() {
         const grammar = Contains(t1("world"), Seq(t1("o"), t1("r"), t1("l")));
         testGrammar(grammar, [{t1: "world"}]);
     });
 
-    describe('t1:world contains ~(t1:t)+t1:l', function() {
+    describe('C.30 t1:world contains ~(t1:t)+t1:l', function() {
         const grammar = Contains(t1("world"), Seq(Not(t1("t")), t1("l")));
         testGrammar(grammar, [{t1: "world"}]);
     });
 
-    describe('t1:world contains t1:r+~(t1:t)', function() {
+    describe('C.31 t1:world contains t1:r+~(t1:t)', function() {
         const grammar = Contains(t1("world"), Seq(t1("r"), Not(t1("t"))));
         testGrammar(grammar, [{t1: "world"}]);
     });
     
-    describe('t1:world contains ~(t1:r)+t1:l', function() {
+    describe('C.32 t1:world contains ~(t1:r)+t1:l', function() {
         const grammar = Contains(t1("world"), Seq(Not(t1("r")), t1("l")));
         testGrammar(grammar, []);
     });
 
-    describe('t1:world contains t1:r+~(t1:l)', function() {
+    describe('C.33 t1:world contains t1:r+~(t1:l)', function() {
         const grammar = Contains(t1("world"), Seq(t1("r"), Not(t1("l"))));
         testGrammar(grammar, []);
     });
 
-    describe('t1:world contains t1:he|~(t1:k)', function() {
+    describe('C.34 t1:world contains t1:he|~(t1:k)', function() {
         const grammar = Contains(t1("world"), Uni(t1("he"), Not(t1("k"))));
         testGrammar(grammar, [{t1: "world"}]);
     });
 
-    describe('t1:world contains t1:he|~(t1:r)', function() {
+    describe('C.35 t1:world contains t1:he|~(t1:r)', function() {
         const grammar = Contains(t1("world"), Uni(t1("he"), Not(t1("r"))));
         testGrammar(grammar, []);
     });

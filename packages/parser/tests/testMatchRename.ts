@@ -47,7 +47,7 @@ describe(`${path.basename(module.filename)}`, function() {
         describe("grammar", function() {
             testHasTapes(grammar, ['t1', 't2']);
             //testHasVocab(grammar, {t1: 1, t2: 1});
-            testGrammar(grammar, [{t1: 'hello', t2: 'hello'}], VERBOSE_DEBUG);
+            testGrammar(grammar, [{t1: 'hello', t2: 'hello'}]);
         });
     });
 

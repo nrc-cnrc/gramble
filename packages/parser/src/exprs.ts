@@ -1591,17 +1591,19 @@ class RepeatExpr extends UnaryExpr {
     ): DerivResults {
         const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
         const deltad = this.child.delta(tapeName, env);
-        // env.logDebug(`deltad d^${tapeName} is ${deltad.id}`);
-        // env.logDebug(`oneLess is ${oneLess.id}`);
 
-        if (!(deltad instanceof NullExpr) && oneLess instanceof RepeatExpr) {
-            // const deltad_oneLess = constructPrecede(deltad, oneLess);
-            // env.logDebug(`calling deltad_oneLess.deriv for ${deltad_oneLess.id}`);
-            yield [EPSILON_TOKEN, constructPrecede(deltad, oneLess)];
-        }
+        const anyChar = BITSETS_ENABLED ? env.getTape(tapeName).any : ANY_CHAR_STR;
+
+        let yielded: boolean = false;
 
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
             yield [cTarget, constructPrecede(cNext, oneLess)];
+            yielded = true;
+        }
+
+        if (yielded && target == anyChar &&
+                !(deltad instanceof NullExpr) && oneLess instanceof RepeatExpr) {
+            yield [EPSILON_TOKEN, constructPrecede(deltad, oneLess)];
         }
     }
 }
@@ -1788,7 +1790,7 @@ export class MatchFromExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `M(${this.child.id})`;
+        return `M(${this.fromTape}>${this.toTape},${this.child.id})`;
     }
 
     public delta(

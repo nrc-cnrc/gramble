@@ -373,12 +373,12 @@ export class Interpreter {
                 //logTime(this.verbose, `priority = ${(targetGrammar as PriorityGrammar).tapePriority}`)
             }
 
-            console.log(`grammar = ${targetComponent.id}`)
+            // console.log(`grammar = ${targetComponent.id}`)
 
             expr = targetComponent.constructExpr(this.symbolTable);
 
             const results = [...generate(expr, this.tapeNS, opt)];
-            console.log(`results = ${results}`)
+            // console.log(`results = ${results}`)
             test.evalResults(results);
         }
     }
