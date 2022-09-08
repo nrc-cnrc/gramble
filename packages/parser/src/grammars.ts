@@ -101,7 +101,8 @@ export interface GrammarTransform<T> extends Transform {
     transformCountTape(g: CountTapeGrammar, ns: NsGrammar, args: T): Grammar;
     transformPriority(g: PriorityGrammar, ns: NsGrammar, args: T): Grammar;
     transformShort(g: ShortGrammar, ns: NsGrammar, args:T): Grammar;
-    transformParallel(g: ParallelGrammar, ns: NsGrammar, arts:T): Grammar;
+    transformParallel(g: ParallelGrammar, ns: NsGrammar, args:T): Grammar;
+    transformLocator(g: LocatorGrammar, ns: NsGrammar, args:T): Grammar;
 }
 
 /**
@@ -284,10 +285,6 @@ export abstract class Grammar {
         for (const child of this.getChildren()) {
             child.runChecksAux();
         }
-    }
-
-    public gatherUnitTests(): UnitTestGrammar[] {
-        return flatten(this.getChildren().map(c => c.gatherUnitTests()));
     }
 
     public calculateTapes(stack: CounterStack): string[] {
@@ -1050,28 +1047,6 @@ export class RenameGrammar extends UnaryGrammar {
         return this._tapes;
     }
 
-    public runChecksAux(): void {
-        
-        super.runChecksAux();
-
-        if (this.child.tapes.indexOf(this.fromTape) == -1) {   
-            this.message({
-                type: "error", 
-                shortMsg: "Renaming missing tape",
-                longMsg: `The grammar to the left does not contain the tape ${this.fromTape}. ` +
-                    ` Available tapes: [${[...this.child.tapes]}]`
-            });
-        }
-
-        if (this.fromTape != this.toTape && this.child.tapes.indexOf(this.toTape) != -1) {   
-            this.message({
-                type: "error", 
-                shortMsg: "Destination tape already exists",
-                longMsg: `The grammar to the left already contains the tape ${this.toTape}. `
-            });
-        }
-    }
-    
     public constructExpr(symbols: SymbolTable): Expr {
         const childExpr = this.child.constructExpr(symbols);
         return constructRename(childExpr, this.fromTape, this.toTape);
@@ -1218,20 +1193,6 @@ export class HideGrammar extends UnaryGrammar {
             }
         }
         return this._tapes;
-    }
-    
-    public runChecksAux(): void {
-        
-        super.runChecksAux();
-
-        if (this.child.tapes.indexOf(this.tapeName) == -1) {   
-            this.message({
-                type: "error", 
-                shortMsg: "Hiding missing tape",
-                longMsg: `The grammar to the left does not contain the tape ${this.tapeName}. ` +
-                    ` Available tapes: [${[...this.child.tapes]}]`
-            });
-        }
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
@@ -1643,32 +1604,38 @@ export class UnresolvedEmbedGrammar extends AtomicGrammar {
         return this._tapes;
     }
     
-    public collectVocab(
-        tapeName: string,
-        tapeNS: TapeNamespace, 
-        symbolsVisited: Set<string>
-    ): void { 
-        return;
-    }
-
-    public runChecksAux(): void {
-        this.message({
-            type: "error",  
-            shortMsg: "Unknown symbol", 
-            longMsg: `Undefined symbol: ${this.name}`
-        });
-    }
-
     public constructExpr(symbols: SymbolTable): Expr {
-        return EPSILON;
+        throw new Error("not implemented");
     }
 }
 
-export class UnitTestGrammar extends UnaryGrammar {
+/**
+ * A LocatorGrammar is a semantically trivial grammar that 
+ * associates a grammar with some location in a sheet
+ */
+export class LocatorGrammar extends UnaryGrammar {
 
     public get id(): string {
         return this.child.id;
     }
+
+    public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
+        return t.transformLocator(this, ns, args);
+    }
+
+    constructor(
+        cell: Cell,
+        child: Grammar
+    ) {
+        super(cell, child);
+    }
+
+    
+
+
+}
+
+export class UnitTestGrammar extends UnaryGrammar {
 
     constructor(
         cell: Cell,
@@ -1679,50 +1646,12 @@ export class UnitTestGrammar extends UnaryGrammar {
         super(cell, child);
     }
 
+    public get id(): string {
+        return this.child.id;
+    }
+
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformUnitTest(this, ns, args);
-    }
-
-    public gatherUnitTests(): UnitTestGrammar[] {
-        return [...super.gatherUnitTests(), this];
-    }
-
-    public evalResults(results: StringDict[]): void {
-
-        if (results.length == 0) {
-            this.message({
-                type: "error", 
-                shortMsg: "Failed unit test",
-                longMsg: "The grammar above has no outputs compatible with these inputs."
-            });
-        } else {
-            this.message({
-                type: "info",
-                shortMsg: "Unit test successful",
-                longMsg: "The grammar above has outputs compatible with these inputs."
-            });
-        }
-
-        uniqueLoop: for (const unique of this.uniques) {
-            resultLoop: for (const result of results) {
-                if (result[unique.tapeName] != unique.text) {
-                    unique.message({
-                        type: "error",
-                        shortMsg: "Failed unit test",
-                        longMsg: `An output on this line has a conflicting result for this field: ${result[unique.tapeName]}`
-                    });
-                    break resultLoop;
-                }
-                if (!(unique.tapeName in result)) {
-                    unique.message({
-                        type: "error",
-                        shortMsg: "Failed unit test",
-                        longMsg: `An output on this line does not contain a ${unique.tapeName} field: ${Object.entries(result)}`
-                    });
-                    break uniqueLoop;
-                }
-            }
-        }
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
@@ -1736,26 +1665,6 @@ export class NegativeUnitTestGrammar extends UnitTestGrammar {
     public accept<T>(t: GrammarTransform<T>, ns: NsGrammar, args: T): Grammar {
         return t.transformNegativeUnitTest(this, ns, args);
     }
-
-    public gatherUnitTests(): UnitTestGrammar[] {
-        return [...super.gatherUnitTests(), this];
-    }
-
-    public evalResults(results: StringDict[]): void {
-        if (results.length > 0) {
-            this.message({
-                type: "error", 
-                shortMsg: "Failed unit test",
-                longMsg: "The grammar above incorrectly has outputs compatible with these inputs."
-            });
-        } else {
-            this.message({
-                type: "info",
-                shortMsg: "Unit test successful",
-                longMsg: "The grammar above correctly has no outputs compatible with these inputs."
-            });
-        }
-    } 
 
 }
 
@@ -2007,12 +1916,12 @@ export class JoinReplaceGrammar extends Grammar {
                 let fromTapeName: string | undefined = undefined;
                 if (rule.fromTapeName != undefined) {
                     if (fromTapeName != undefined && fromTapeName != rule.fromTapeName) {
-                        rule.message({
-                            type: "error",
-                            shortMsg: "Inconsistent from fields",
-                            longMsg: "Each rule in a block of rules needs to " +
-                              "agree on what the 'from' fields are. "
-                        });
+                        //rule.message({
+                        //    type: "error",
+                        //    shortMsg: "Inconsistent from fields",
+                        //    longMsg: "Each rule in a block of rules needs to " +
+                        //     "agree on what the 'from' fields are. "
+                        //});
                         continue;
                     }
                     fromTapeName = rule.fromTapeName;
@@ -2021,12 +1930,12 @@ export class JoinReplaceGrammar extends Grammar {
                 let toTapeNames: string[] = [];
                 if (rule.toTapeNames.length) {
                     if (toTapeNames.length && listDifference(toTapeNames, rule.toTapeNames).length) {
-                        rule.message({
-                            type: "error",
-                            shortMsg: "Inconsistent to fields",
-                            longMsg: "All rules in a block of rules need to " +
-                              "agree on what the 'to' fields are. "
-                        });
+                        //rule.message({
+                        //    type: "error",
+                        //    shortMsg: "Inconsistent to fields",
+                        //    longMsg: "All rules in a block of rules need to " +
+                        //      "agree on what the 'to' fields are. "
+                        //});
                         continue;
                     }
                     toTapeNames = rule.toTapeNames;
@@ -2161,20 +2070,20 @@ export class ReplaceGrammar extends Grammar {
         if (this._tapes == undefined) {
             this._tapes = super.calculateTapes(stack);
             if (this.toGrammar.tapes.length == 0) {
-                this.message({
-                    type: "error", 
-                    shortMsg: "At least 1 tape-'to' required", 
-                    longMsg: `The 'to' argument of a replacement must reference at least 1 tape; this references ${this.toGrammar.tapes?.length}.`
-                });
+                //this.message({
+                //    type: "error", 
+                //    shortMsg: "At least 1 tape-'to' required", 
+                //    longMsg: `The 'to' argument of a replacement must reference at least 1 tape; this references zero.`
+                //});
             } else {
                 this.toTapeNames.push(...this.toGrammar.tapes);
             }
             if (this.fromGrammar.tapes.length != 1) {
-                this.message({
-                    type: "error", 
-                    shortMsg: "Only 1-tape 'from' allowed", 
-                    longMsg: `The 'from' argument of a replacement can only reference 1 tape; this references ${this.fromGrammar.tapes?.length}.`
-                });
+                //this.message({
+                //    type: "error", 
+                //    shortMsg: "Only 1-tape 'from' allowed", 
+                //    longMsg: `The 'from' argument of a replacement can only reference 1 tape; this references ${this.fromGrammar.tapes?.length}.`
+                //});
             } else {
                 this.fromTapeName = this.fromGrammar.tapes[0];
             }

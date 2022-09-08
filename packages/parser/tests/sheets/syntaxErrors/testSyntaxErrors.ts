@@ -33,12 +33,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["optional", 0, -1, "error"]
         ]);
-        testGrammar(project, [
-            {"text":"moobaz","gloss":"jump-2SG"},
-            {"text":"moobar","gloss":"jump-1SG"},
-            {"text":"foobaz","gloss":"run-2SG"},
-            {"text":"foobar","gloss":"run-1SG"}
-        ]);
+        testGrammar(project, [{}]);
     });
 
     describe('Reassigning a symbol', function() {

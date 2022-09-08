@@ -1,13 +1,17 @@
 import { HIDDEN_TAPE_PREFIX } from "../util";
 import { 
     CounterStack, Grammar,
+    HideGrammar,
     NsGrammar, RenameGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
 
 /**
- * If the programmar messes up the tape structure of the program (by renaming
+ * This transformation finds erroneous renames/hides and fixes them.
+ * 
+ * This is important for the ultimate correctness of the program:
+ * If the programmar messes up the tape structure (by renaming
  * a tape to a tape name that already exists), the resulting grammar will not be
  * able to execute to completion.  There will be material in the grammar 
  * that is inaccessible to delta/deriv and thus never gets delta'd away, leading
@@ -23,10 +27,38 @@ export class RenameFixTransform extends IdentityTransform<void>{
         return "Validating tape-rename structure";
     }
 
+    public transformHide(g: HideGrammar, ns: NsGrammar, args: void): Grammar {
+
+        const newChild = g.child.accept(this, ns, args);
+        newChild.calculateTapes(new CounterStack(2));
+
+        if (newChild.tapes.indexOf(g.tapeName) == -1) {   
+            g.message({
+                type: "error", 
+                shortMsg: "Hiding missing tape",
+                longMsg: `The grammar to the left does not contain the tape ${g.tapeName}. ` +
+                    ` Available tapes: [${[...newChild.tapes]}]`
+            });
+            return newChild;
+        }
+
+        return new HideGrammar(g.cell, newChild, g.tapeName, g.name);
+    }
+
     public transformRename(g: RenameGrammar, ns: NsGrammar, args: void): Grammar {
 
         const newChild = g.child.accept(this, ns, args);
         newChild.calculateTapes(new CounterStack(2));
+
+        if (newChild.tapes.indexOf(g.fromTape) == -1) {   
+            g.message({
+                type: "error", 
+                shortMsg: "Renaming missing tape",
+                longMsg: `The grammar to the left does not contain the tape ${g.fromTape}. ` +
+                    ` Available tapes: [${[...newChild.tapes]}]`
+            });
+            return newChild;
+        }
 
         if (g.fromTape != g.toTape && newChild.tapes.indexOf(g.toTape) != -1) {
             g.message({

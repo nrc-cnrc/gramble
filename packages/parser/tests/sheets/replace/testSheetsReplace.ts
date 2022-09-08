@@ -111,7 +111,10 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Replace with a test: op nested underneath', function() {
         const project = sheetFromFile(`${DIR}/replaceWithTestOp.csv`);
-        testErrors(project, [["replaceWithTestOp", 12, 2, "error"]]);
+        testErrors(project, [
+            ["replaceWithTestOp", 12, 2, "error"],
+            ["replaceWithTestOp",12,1,"warning"]
+        ]);
         testGrammar(project, [
             {"text":"foo", "gloss":"run.3SG"},
             {"text":"foobaz", "gloss":"run-2SG"},
@@ -155,7 +158,8 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Replace with no sibling', function() {
         const project = sheetFromFile(`${DIR}/replaceWithNoSibling.csv`);
         testErrors(project, [
-            ["replaceWithNoSibling",0,1,"error"]
+            ["replaceWithNoSibling",0,1,"error"],
+            ["replaceWithNoSibling",0,0,"warning"]
         ]);        
         testGrammar(project, [{}]);
     });

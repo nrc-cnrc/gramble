@@ -14,7 +14,7 @@ import { IdentityTransform } from "./transforms";
  * starts with the empty string.
  * 
  * What the programmer really means to say here isn't "it starts with not X" but "it doesn't
- * start with X".  (Note the scope difference.)  This isn't the scope that the actually program 
+ * start with X".  (Note the scope difference.)  This isn't the scope that the actual program 
  * has, though; the grammar structure we get from the tabular syntax tree has the structure
  * starts(not(X)).  So we have to switch their scope, and this transform does that.
  * 

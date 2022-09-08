@@ -4,9 +4,9 @@ import { NameQualifierTransform } from "./transforms/nameQualifier";
 
 import { 
     TstEnclosure, TstHeader, TstProject, 
-    TstNamespace, TstTable, TstComponent, TstComment 
+    TstNamespace, TstTable, TstComponent, TstComment, MissingParamsTransform, InvalidAssignmentTransform, TstTransform 
 } from "./tsts";
-import { Cell, CellPos, DevEnvironment } from "./util";
+import { Cell, CellPos, DevEnvironment, DummyCell } from "./util";
 
 /**
  * Determines whether a line is empty
@@ -69,7 +69,14 @@ export class SheetProject extends SheetComponent {
         const sheet = new Sheet(this, sheetName, cells);
         this.sheets[sheetName] = sheet;
 
-        const tst = this.toTST();
+        let tst = this.toTST();
+        const transforms: TstTransform[] = [
+            new MissingParamsTransform(),
+            new InvalidAssignmentTransform()
+        ]
+        for (const t of transforms) {
+            tst = t.transform(tst) as TstProject;
+        }
         let grammar = tst.toGrammar() as NsGrammar;
 
         // check to see if any names didn't get resolved
@@ -103,7 +110,7 @@ export class SheetProject extends SheetComponent {
     }
 
     public toTST(): TstProject {
-        const project = new TstProject();
+        const project = new TstProject(new DummyCell());
         for (const [sheetName, sheet] of Object.entries(this.sheets)) {
             if (sheetName == this.mainSheetName) {
                 continue; // save this for last

@@ -1,7 +1,7 @@
 import { 
     CounterStack, CountGrammar, EqualsGrammar, Grammar, 
     GrammarTransform, 
-    LiteralGrammar, NsGrammar, PriorityGrammar, SequenceGrammar, Transform 
+    LiteralGrammar, NsGrammar, PriorityGrammar, SequenceGrammar, Transform, UnitTestGrammar 
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
@@ -15,7 +15,7 @@ import {
 } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
-import { TapeNamespace, VocabMap } from "./tapes";
+import { Tape, TapeNamespace, VocabMap } from "./tapes";
 import { Expr, PriorityExpr, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
@@ -27,6 +27,9 @@ import { RuleReplaceTransform } from "./transforms/ruleReplace";
 import { generate } from "./generator";
 import { RuleReplaceTransform2 } from "./transforms/ruleReplace2";
 import { ParallelizeTransform } from "./transforms/parallelize";
+import { InvalidAssignmentTransform, MissingParamsTransform, TstIdentityTransform, TstProject, TstTransform } from "./tsts";
+import { MissingSymbolsTransform } from "./transforms/missingSymbols";
+import { UnitTestTransform } from "./transforms/unitTests";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
 
@@ -88,6 +91,7 @@ export class Interpreter {
 
         const transforms: Transform[] = [
             new NameQualifierTransform(),
+            new MissingSymbolsTransform(),
             new RuleReplaceTransform2(),
             new SameTapeReplaceTransform(),
             new RenameFixTransform(),
@@ -144,7 +148,15 @@ export class Interpreter {
         logTime(verbose, `Sheets loaded; ${elapsedTime}`);
         
         startTime = Date.now();
-        const tst = sheetProject.toTST();
+
+        let tst = sheetProject.toTST();
+        const transforms: TstTransform[] = [
+            new MissingParamsTransform(),
+            new InvalidAssignmentTransform()
+        ]
+        for (const t of transforms) {
+            tst = t.transform(tst) as TstProject;
+        }
         const grammar = tst.toGrammar();
         elapsedTime = msToTime(Date.now() - startTime);
         logTime(verbose, `Converted to grammar; ${elapsedTime}`);
@@ -341,45 +353,8 @@ export class Interpreter {
     }
 
     public runUnitTests(): void {
-        const opt = new GenOptions();
-        let expr = this.grammar.constructExpr(this.symbolTable);
-
-        const tests = this.grammar.gatherUnitTests();
-
-        for (const test of tests) {
-
-            // create a filter for each test
-            let targetComponent: Grammar = new EqualsGrammar(test.cell, test.child, test.test);
-
-            const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
-            
-            // we have to collect any new vocab, but only from the new material
-            targetComponent.collectAllVocab(this.vocab, this.tapeNS);
-            // we still have to copy though, in case the query added new vocab
-            // to something that's eventually a "from" tape of a replace
-            //targetComponent.copyVocab(this.tapeNS, new Set());
-                
-            const potentiallyInfinite = targetComponent.potentiallyInfinite(new CounterStack(2));
-            if (potentiallyInfinite && opt.maxChars != Infinity) {
-                if (targetComponent instanceof PriorityGrammar) {
-                    targetComponent.child = new CountGrammar(targetComponent.child.cell, targetComponent.child, opt.maxChars-1);
-                } else {
-                    targetComponent = new CountGrammar(targetComponent.cell, targetComponent, opt.maxChars-1);
-                }
-            }
-
-            if (!(targetComponent instanceof PriorityGrammar)) {
-                targetComponent = new PriorityGrammar(targetComponent.cell, targetComponent, tapePriority);
-                //logTime(this.verbose, `priority = ${(targetGrammar as PriorityGrammar).tapePriority}`)
-            }
-
-            console.log(`grammar = ${targetComponent.id}`)
-
-            expr = targetComponent.constructExpr(this.symbolTable);
-
-            const results = [...generate(expr, this.tapeNS, opt)];
-            console.log(`results = ${results}`)
-            test.evalResults(results);
-        }
+        this.grammar.constructExpr(this.symbolTable);  // fill the symbol table if it isn't already
+        const t = new UnitTestTransform(this.vocab, this.tapeNS, this.symbolTable);
+        t.transform(this.grammar);
     }
 }

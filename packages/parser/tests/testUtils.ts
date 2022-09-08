@@ -302,7 +302,7 @@ export function testDoesNotHaveSymbols(
 
 export function testErrors(interpreter: Interpreter, expectedErrors: [string, number, number, string][]) {
 
-    interpreter.runChecks();
+    //interpreter.runChecks();
     const devEnv = interpreter.devEnv;
     it(`should have ${expectedErrors.length} errors/warnings`, function() {
         try {

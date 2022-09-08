@@ -140,7 +140,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/testingNothing.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["testingNothing", 9, 1, "error"]
+            ["testingNothing", 9, 1, "error"],
+            ["testingNothing", 9, 0, "warning"]
         ]);
         testGrammar(interpreter, [{}]);
     });
@@ -149,7 +150,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/negativeTestingNothing.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["negativeTestingNothing", 9, 1, "error"]
+            ["negativeTestingNothing", 9, 1, "error"],
+            ["negativeTestingNothing", 9, 0, "error"]
         ]);
         testGrammar(interpreter, [{}]);
     });

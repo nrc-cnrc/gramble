@@ -10,7 +10,7 @@ import {
     UnresolvedEmbedGrammar, StartsGrammar, 
     EndsGrammar, ContainsGrammar, CountGrammar, 
     CountTapeGrammar, CounterStack, JoinRuleGrammar, 
-    MatchFromGrammar, PriorityGrammar, ShortGrammar, ParallelGrammar
+    MatchFromGrammar, PriorityGrammar, ShortGrammar, ParallelGrammar, LocatorGrammar
 } from "../grammars";
 
 /**
@@ -128,6 +128,11 @@ export class IdentityTransform<T> implements GrammarTransform<T> {
 
     public transformEmbed(g: EmbedGrammar, ns: NsGrammar, args: T): Grammar {
         return new EmbedGrammar(g.cell, g.name, ns);
+    }
+
+    public transformLocator(g: LocatorGrammar, ns: NsGrammar, args: T): Grammar {
+        const newChild = g.child.accept(this, ns, args);
+        return new LocatorGrammar(g.cell, newChild);
     }
 
     public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar, ns: NsGrammar, args: T): Grammar {
