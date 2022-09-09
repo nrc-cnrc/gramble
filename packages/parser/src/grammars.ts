@@ -1621,6 +1621,10 @@ export class LocatorGrammar extends UnaryGrammar {
         return t.transformLocator(this);
     }
 
+    public getLiterals(): LiteralGrammar[] {
+        return this.child.getLiterals();
+    }
+
     constructor(
         cell: Cell,
         child: Grammar

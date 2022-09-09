@@ -49,9 +49,7 @@ export class SameTapeReplaceTransform extends IdentityTransform {
                 return [newChild, errs];
             }
             
-            // DUMMY_CELL because this rename may be invalid, but we don't want
-            // it to be reported to the user because the compiler did it
-            newChild = new RenameGrammar(new DummyCell(), newChild, fromTape, replaceTape);
+            newChild = renameGrammar(newChild, fromTape, replaceTape);
         }
 
         const child2 = new AlternationGrammar(g.cell, newRules);
@@ -76,9 +74,9 @@ export class SameTapeReplaceTransform extends IdentityTransform {
 
         // We use a dummy cell because this rename may be invalid, but we don't want
         // it reported to the user because the compiler did it
-        const renamedFrom = new RenameGrammar(new DummyCell(), newFrom, g.fromTapeName, replaceTapeName);
-        const renamedPre = new RenameGrammar(new DummyCell(), newPre, g.fromTapeName, replaceTapeName);
-        const renamedPost = new RenameGrammar(new DummyCell(), newPost, g.fromTapeName, replaceTapeName);
+        const renamedFrom = renameGrammar(newFrom, g.fromTapeName, replaceTapeName);
+        const renamedPre = renameGrammar(newPre, g.fromTapeName, replaceTapeName);
+        const renamedPost = renameGrammar(newPost, g.fromTapeName, replaceTapeName);
 
         const result = new ReplaceGrammar(g.cell, renamedFrom, newTo, renamedPre, renamedPost, newOther,
             g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,
@@ -86,4 +84,11 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         return [result, errs];
     }
 
+}
+
+function renameGrammar(g: Grammar, fromTape: string, toTape: string): Grammar {
+    if (fromTape == toTape) {
+        return g;
+    }
+    return new RenameGrammar(new DummyCell(), g, fromTape, toTape);
 }

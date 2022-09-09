@@ -8,6 +8,8 @@ import {
 import { IdentityTransform } from "./transforms";
 import { DummyCell, Errs, foldRight, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
 
+let RULE_HIDE_INDEX = 0;
+
 /**
  * This Transform handles the construction of implicit-tape replacement rules
  * (where you just say "from"/"to" rather than "from text"/"to text") and
@@ -44,19 +46,27 @@ export class RuleReplaceTransform2 extends IdentityTransform {
         const [newRules, ruleErrs] = this.mapTo(g.rules);
         const errs = [...childErrs, ...ruleErrs];
 
+        const renamedGrammar = renameGrammar(newChild, g.inputTape, REPLACE_INPUT_TAPE);
         const composedRule = foldRight(newRules, composeRules);
-        const renamedGrammar = new RenameGrammar(new DummyCell(), newChild, g.inputTape, REPLACE_INPUT_TAPE);
         const grammarComposedWithRules = new JoinGrammar(new DummyCell(), renamedGrammar, composedRule);
-        const renamedComposition = new RenameGrammar(new DummyCell(), grammarComposedWithRules, REPLACE_OUTPUT_TAPE, g.inputTape);
+        const newTapeName = `.RULE${RULE_HIDE_INDEX++}`
+        const hiddenComposition = renameGrammar(grammarComposedWithRules, REPLACE_INPUT_TAPE, newTapeName);
+        const renamedComposition = renameGrammar(hiddenComposition, REPLACE_OUTPUT_TAPE, g.inputTape);
         renamedComposition.calculateTapes(new CounterStack(2));
         return [renamedComposition, errs];
     }
 }
 
-let RULE_HIDE_INDEX = 0;
 function composeRules(r1: Grammar, r2: Grammar): Grammar {
     const newTapeName = `.RULE${RULE_HIDE_INDEX++}`
-    const renamedR1 = new RenameGrammar(new DummyCell(), r1, REPLACE_OUTPUT_TAPE, newTapeName);
-    const renamedR2 = new RenameGrammar(new DummyCell(), r2, REPLACE_INPUT_TAPE, newTapeName);
+    const renamedR1 = renameGrammar(r1, REPLACE_OUTPUT_TAPE, newTapeName);
+    const renamedR2 = renameGrammar(r2, REPLACE_INPUT_TAPE, newTapeName);
     return new JoinGrammar(new DummyCell(), renamedR1, renamedR2);
+}
+
+function renameGrammar(g: Grammar, fromTape: string, toTape: string): Grammar {
+    if (fromTape == toTape) {
+        return g;
+    }
+    return new RenameGrammar(new DummyCell(), g, fromTape, toTape);
 }

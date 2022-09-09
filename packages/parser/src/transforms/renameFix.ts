@@ -33,13 +33,13 @@ export class RenameFixTransform extends IdentityTransform {
         newChild.calculateTapes(new CounterStack(2));
 
         if (newChild.tapes.indexOf(g.tapeName) == -1) {   
-            g.message({
+            const newErrs: Errs = [...errs, {
                 type: "error", 
                 shortMsg: "Hiding missing tape",
                 longMsg: `The grammar to the left does not contain the tape ${g.tapeName}. ` +
                     ` Available tapes: [${[...newChild.tapes]}]`
-            });
-            return [newChild, errs];
+            }];
+            return [newChild, newErrs];
         }
 
         const result = new HideGrammar(g.cell, newChild, g.tapeName, g.name);
@@ -52,26 +52,26 @@ export class RenameFixTransform extends IdentityTransform {
         newChild.calculateTapes(new CounterStack(2));
 
         if (newChild.tapes.indexOf(g.fromTape) == -1) {   
-            g.message({
+            const newErrs: Errs = [...errs, {
                 type: "error", 
                 shortMsg: "Renaming missing tape",
                 longMsg: `The grammar to the left does not contain the tape ${g.fromTape}. ` +
-                    ` Available tapes: [${[...newChild.tapes]}]`
-            });
-            return [newChild, errs];
+                    `Available tapes: [${[...newChild.tapes]}]`
+            }];
+            return [newChild, newErrs];
         }
 
         if (g.fromTape != g.toTape && newChild.tapes.indexOf(g.toTape) != -1) {
-            g.message({
+            const newErrs: Errs = [...errs, {
                 type: "error", 
                 shortMsg: "Destination tape already exists",
-                longMsg: `The grammar to the left already contains the tape ${g.toTape}. `
-            });
+                longMsg: `Trying to rename ${g.fromTape}->${g.toTape} but the grammar to the left ${g.child.id} already contains the tape ${g.toTape}. `
+            }];
             
             const errTapeName = `${HIDDEN_TAPE_PREFIX}ERR${g.toTape}`;
             const errChild = new RenameGrammar(newChild.cell, newChild, g.toTape, errTapeName);
             const result = new RenameGrammar(g.cell, errChild, g.fromTape, g.toTape);
-            return [result, errs];
+            return [result, newErrs];
         }
 
         const result = new RenameGrammar(g.cell, newChild, g.fromTape, g.toTape);

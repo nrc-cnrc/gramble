@@ -159,7 +159,10 @@ export class IdentityTransform implements GrammarTransform {
     public transformLocator(g: LocatorGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
         const result = new LocatorGrammar(g.cell, newChild);
-        return [result, errs];
+        for (const err of errs) {
+            g.message(err);
+        }
+        return [result, []];
     }
 
     public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): [Grammar, Errs] {

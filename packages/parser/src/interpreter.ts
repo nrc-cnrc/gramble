@@ -88,14 +88,14 @@ export class Interpreter {
         // to get the grammar into an executable state: symbol references fully-qualified,
         // semantically impossible tape structures are massaged into well-formed ones, some 
         // scope problems adjusted, etc.
-
+        
         const transforms = [
             NameQualifierTransform,
             MissingSymbolsTransform,
+            FlattenTransform,
+            RenameFixTransform,
             RuleReplaceTransform2,
             SameTapeReplaceTransform,
-            RenameFixTransform,
-            FlattenTransform,
             FilterTransform,
             //new ParallelizeTransform()
         ]

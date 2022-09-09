@@ -2,7 +2,7 @@ import { Errs } from "../util";
 import { 
     AlternationGrammar, ContainsGrammar, CounterStack, 
     DotGrammar, EndsGrammar, Grammar,
-    IntersectionGrammar, NegationGrammar, 
+    IntersectionGrammar, LocatorGrammar, NegationGrammar, 
     NsGrammar, RepeatGrammar, SequenceGrammar, StartsGrammar
 } from "../grammars";
 
@@ -69,6 +69,12 @@ export class FilterTransform extends IdentityTransform {
             return newIntersection.accept(this);
         }
 
+        if (g.child instanceof LocatorGrammar) {
+            const newFilter = new StartsGrammar(g.cell, g.child.child, g.tapes);
+            const newLocation = new LocatorGrammar(g.child.cell, newFilter);
+            return newLocation.accept(this);
+        }
+
         // construct the filter
         const [newChild, errs] = g.child.accept(this);
         const dotStars: Grammar[] = [];
@@ -112,6 +118,12 @@ export class FilterTransform extends IdentityTransform {
             const newFilter2 = new EndsGrammar(g.cell, g.child.child2, g.tapes);
             const newIntersection = new IntersectionGrammar(g.child.cell, newFilter1, newFilter2);
             return newIntersection.accept(this);
+        }
+        
+        if (g.child instanceof LocatorGrammar) {
+            const newFilter = new EndsGrammar(g.cell, g.child.child, g.tapes);
+            const newLocation = new LocatorGrammar(g.child.cell, newFilter);
+            return newLocation.accept(this);
         }
 
         // create the filter
@@ -161,6 +173,12 @@ export class FilterTransform extends IdentityTransform {
             return newIntersection.accept(this);
         }
 
+        if (g.child instanceof LocatorGrammar) {
+            const newFilter = new ContainsGrammar(g.cell, g.child.child, g.tapes);
+            const newLocation = new LocatorGrammar(g.child.cell, newFilter);
+            return newLocation.accept(this);
+        }
+
         // create the filter
         const [newChild, errs] = g.child.accept(this);
         const dotStars: Grammar[] = [];
@@ -173,4 +191,3 @@ export class FilterTransform extends IdentityTransform {
         return [result, errs];
     }
 }
-

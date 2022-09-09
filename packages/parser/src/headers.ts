@@ -12,7 +12,8 @@ import {
     RepeatGrammar,
     StartsGrammar,
     EndsGrammar,
-    ContainsGrammar
+    ContainsGrammar,
+    LocatorGrammar
 } from "./grammars";
 
 import { 
@@ -152,7 +153,8 @@ export class EmbedHeader extends AtomicHeader {
         content: Cell
     ): Grammar {
         const cellGrammar = new UnresolvedEmbedGrammar(content, text);
-        return new SequenceGrammar(content, [left, cellGrammar]);
+        const locatedGrammar = new LocatorGrammar(content, cellGrammar);
+        return new SequenceGrammar(content, [left, locatedGrammar]);
     }
 
 }
@@ -181,6 +183,7 @@ export class HideHeader extends AtomicHeader {
         for (const tape of text.split("/")) {
             result = new HideGrammar(content, result, tape.trim());
         }
+        result = new LocatorGrammar(content, result);
         return result;
     }
 }
@@ -206,7 +209,8 @@ export class TapeNameHeader extends AtomicHeader {
         content: Cell
     ): Grammar {
         const grammar = new LiteralGrammar(content, this.text, text);
-        return new SequenceGrammar(content, [left, grammar]);
+        const locatedGrammar = new LocatorGrammar(content, grammar);
+        return new SequenceGrammar(content, [left, locatedGrammar]);
     }
 }
 
@@ -333,7 +337,9 @@ class RenameHeader extends UnaryHeader {
             })
             return new EpsilonGrammar(content);
         }
-        return new RenameGrammar(content, left, text, this.child.text);
+        const result = new RenameGrammar(content, left, text, this.child.text);
+        const locatedResult = new LocatorGrammar(content, result);
+        return locatedResult;
     }
 }
 
@@ -432,7 +438,8 @@ export class RegexHeader extends UnaryHeader {
 
         const parsedText = parseRegex(text);
         const c = this.toGrammarPiece(parsedText, content);
-        return new SequenceGrammar(content, [left, c]);
+        const locatedResult = new LocatorGrammar(content, c);
+        return new SequenceGrammar(content, [left, locatedResult]);
     }
 }
 

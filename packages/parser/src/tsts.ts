@@ -866,7 +866,8 @@ export class TstUnitTest extends TstEnclosure {
             if (unique != undefined) {
                 try {
                     uniques = unique.getLiterals();
-                } catch {
+                } catch (e) {
+                    console.log(e);
                     cell.message({
                         type: "error",
                         shortMsg: "Ill-formed unique",
