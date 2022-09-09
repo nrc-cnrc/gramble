@@ -89,21 +89,22 @@ export class Interpreter {
         // semantically impossible tape structures are massaged into well-formed ones, some 
         // scope problems adjusted, etc.
 
-        const transforms: Transform[] = [
-            new NameQualifierTransform(),
-            new MissingSymbolsTransform(),
-            new RuleReplaceTransform2(),
-            new SameTapeReplaceTransform(),
-            new RenameFixTransform(),
-            new FlattenTransform(),
-            new FilterTransform(),
+        const transforms = [
+            NameQualifierTransform,
+            MissingSymbolsTransform,
+            RuleReplaceTransform2,
+            SameTapeReplaceTransform,
+            RenameFixTransform,
+            FlattenTransform,
+            FilterTransform,
             //new ParallelizeTransform()
         ]
 
         for (const t of transforms) {
+            const transform: GrammarTransform = new t(this.grammar);
             timeIt(() => {
-                this.grammar = t.transform(this.grammar);
-            }, timeVerbose, t.desc);
+                this.grammar = transform.transform();
+            }, timeVerbose, transform.desc);
         }
 
         // Next we collect the vocabulary on all tapes
@@ -354,7 +355,7 @@ export class Interpreter {
 
     public runUnitTests(): void {
         this.grammar.constructExpr(this.symbolTable);  // fill the symbol table if it isn't already
-        const t = new UnitTestTransform(this.vocab, this.tapeNS, this.symbolTable);
-        t.transform(this.grammar);
+        const t = new UnitTestTransform(this.grammar, this.vocab, this.tapeNS, this.symbolTable);
+        t.transform();
     }
 }

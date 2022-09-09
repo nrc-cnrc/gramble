@@ -26,192 +26,197 @@ import {
  * instead.  (Since every transform has to do this, I made it its own argument, rather
  * than pass it in through args.)
  */
-export class IdentityTransform<T> implements GrammarTransform<T> {
-    
-    public transform(g: NsGrammar): NsGrammar {
-        g.calculateTapes(new CounterStack(2));
-        return g.accept(this, g, null) as NsGrammar;
+export class IdentityTransform implements GrammarTransform {
+
+    constructor(
+        protected ns: NsGrammar
+    ) {
+        ns.calculateTapes(new CounterStack(2)); // just in case it hasn't been done
+    }
+
+    public transform(): NsGrammar {
+        return this.ns.accept(this) as NsGrammar;
     }
 
     public get desc(): string {
         return "Identity transformation";
     }
 
-    public transformEpsilon(g: EpsilonGrammar, ns: NsGrammar, args: T): Grammar {
+    public transformEpsilon(g: EpsilonGrammar): Grammar {
         return g;
     }
 
-    public transformNull(g: NullGrammar, ns: NsGrammar, args: T): Grammar {
+    public transformNull(g: NullGrammar): Grammar {
         return g;
     }
 
-    public transformCharSet(g: CharSetGrammar, ns: NsGrammar, args: T): Grammar {
+    public transformCharSet(g: CharSetGrammar): Grammar {
         return g;
     }
 
-    public transformLiteral(g: LiteralGrammar, ns: NsGrammar, args: T): Grammar {
+    public transformLiteral(g: LiteralGrammar): Grammar {
         return g;
     }
 
-    public transformDot(g: DotGrammar, ns: NsGrammar, args: T): Grammar {
+    public transformDot(g: DotGrammar): Grammar {
         return g;
     }
 
-    public transformSequence(g: SequenceGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChildren = g.children.map(c => c.accept(this, ns, args));
+    public transformSequence(g: SequenceGrammar): Grammar {
+        const newChildren = g.children.map(c => c.accept(this));
         return new SequenceGrammar(g.cell, newChildren);
     }
 
-    public transformParallel(g: SequenceGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChildren = g.children.map(c => c.accept(this, ns, args));
+    public transformParallel(g: SequenceGrammar): Grammar {
+        const newChildren = g.children.map(c => c.accept(this));
         return new ParallelGrammar(g.cell, newChildren);
     }
 
-    public transformAlternation(g: AlternationGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChildren = g.children.map(c => c.accept(this, ns, args));
+    public transformAlternation(g: AlternationGrammar): Grammar {
+        const newChildren = g.children.map(c => c.accept(this));
         return new AlternationGrammar(g.cell, newChildren);
     }
 
-    public transformIntersection(g: IntersectionGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild1 = g.child1.accept(this, ns, args);
-        const newChild2 = g.child2.accept(this, ns, args);
+    public transformIntersection(g: IntersectionGrammar): Grammar {
+        const newChild1 = g.child1.accept(this);
+        const newChild2 = g.child2.accept(this);
         return new IntersectionGrammar(g.cell, newChild1, newChild2);
     }
 
-    public transformJoin(g: JoinGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild1 = g.child1.accept(this, ns, args);
-        const newChild2 = g.child2.accept(this, ns, args);
+    public transformJoin(g: JoinGrammar): Grammar {
+        const newChild1 = g.child1.accept(this);
+        const newChild2 = g.child2.accept(this);
         return new JoinGrammar(g.cell, newChild1, newChild2);     
     }
 
-    public transformEquals(g: EqualsGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild1 = g.child1.accept(this, ns, args);
-        const newChild2 = g.child2.accept(this, ns, args);
+    public transformEquals(g: EqualsGrammar): Grammar {
+        const newChild1 = g.child1.accept(this);
+        const newChild2 = g.child2.accept(this);
         return new EqualsGrammar(g.cell, newChild1, newChild2);
     }
 
-    public transformStarts(g: StartsGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformStarts(g: StartsGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new StartsGrammar(g.cell, newChild);
     }
 
-    public transformEnds(g: EndsGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformEnds(g: EndsGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new EndsGrammar(g.cell, newChild);
     }
 
-    public transformContains(g: ContainsGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformContains(g: ContainsGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new ContainsGrammar(g.cell, newChild);
     }
 
-    public transformMatch(g: MatchGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformMatch(g: MatchGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new MatchGrammar(g.cell, newChild, g.relevantTapes);
     }
   
-    public transformMatchFrom(g: MatchFromGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformMatchFrom(g: MatchFromGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new MatchFromGrammar(g.cell, newChild, g.fromTape, g.toTape);
     }
 
-    public transformReplace(g: ReplaceGrammar, ns: NsGrammar, args: T): Grammar {
-        const newFrom = g.fromGrammar.accept(this, ns, args);
-        const newTo = g.toGrammar.accept(this, ns, args);
-        const newPre = g.preContext?.accept(this, ns, args);
-        const newPost = g.postContext?.accept(this, ns, args);
-        const newOther = g.otherContext?.accept(this, ns, args);
+    public transformReplace(g: ReplaceGrammar): Grammar {
+        const newFrom = g.fromGrammar.accept(this);
+        const newTo = g.toGrammar.accept(this);
+        const newPre = g.preContext?.accept(this);
+        const newPost = g.postContext?.accept(this);
+        const newOther = g.otherContext?.accept(this);
         return new ReplaceGrammar(g.cell, newFrom, newTo, newPre, newPost, newOther,
             g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,
             g.vocabBypass, g.hiddenTapeName);
     }
 
-    public transformEmbed(g: EmbedGrammar, ns: NsGrammar, args: T): Grammar {
-        return new EmbedGrammar(g.cell, g.name, ns);
+    public transformEmbed(g: EmbedGrammar): Grammar {
+        return new EmbedGrammar(g.cell, g.name, this.ns);
     }
 
-    public transformLocator(g: LocatorGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformLocator(g: LocatorGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new LocatorGrammar(g.cell, newChild);
     }
 
-    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar, ns: NsGrammar, args: T): Grammar {
+    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): Grammar {
         return g;
     }
 
-    public transformNamespace(g: NsGrammar, ns: NsGrammar, args: T): Grammar {
+    public transformNamespace(g: NsGrammar): Grammar {
         const result = new NsGrammar(g.cell);
         for (const [name, child] of g.symbols) {
-            const newChild = child.accept(this, ns, args);
+            const newChild = child.accept(this);
             result.addSymbol(name, newChild);
         }
         return result;
     }
 
-    public transformRepeat(g: RepeatGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformRepeat(g: RepeatGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new RepeatGrammar(g.cell, newChild, g.minReps, g.maxReps);
     }
 
-    public transformUnitTest(g: UnitTestGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
-        const newTest = g.test.accept(this, ns, args);
-        const newUniques = g.uniques.map(u => u.accept(this, ns, args)) as LiteralGrammar[];
+    public transformUnitTest(g: UnitTestGrammar): Grammar {
+        const newChild = g.child.accept(this);
+        const newTest = g.test.accept(this);
+        const newUniques = g.uniques.map(u => u.accept(this)) as LiteralGrammar[];
         return new UnitTestGrammar(g.cell, newChild, newTest, newUniques);
     }
 
-    public transformNegativeUnitTest(g: NegativeUnitTestGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
-        const newTest = g.test.accept(this, ns, args);
+    public transformNegativeUnitTest(g: NegativeUnitTestGrammar): Grammar {
+        const newChild = g.child.accept(this);
+        const newTest = g.test.accept(this);
         return new NegativeUnitTestGrammar(g.cell, newChild, newTest);
     }
 
-    public transformJoinReplace(g: JoinReplaceGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
-        const newRules = g.rules.map(r => r.accept(this, ns, args));
+    public transformJoinReplace(g: JoinReplaceGrammar): Grammar {
+        const newChild = g.child.accept(this);
+        const newRules = g.rules.map(r => r.accept(this));
         return new JoinReplaceGrammar(g.cell, newChild, 
             newRules as ReplaceGrammar[]);
     }
 
-    public transformJoinRule(g: JoinRuleGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
-        const newRules = g.rules.map(r => r.accept(this, ns, args));
+    public transformJoinRule(g: JoinRuleGrammar): Grammar {
+        const newChild = g.child.accept(this);
+        const newRules = g.rules.map(r => r.accept(this));
         return new JoinRuleGrammar(g.cell, g.inputTape, newChild, 
             newRules as ReplaceGrammar[]);
     }
 
-    public transformNegation(g: NegationGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformNegation(g: NegationGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new NegationGrammar(g.cell, newChild, g.maxReps);
     }
 
-    public transformRename(g: RenameGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformRename(g: RenameGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new RenameGrammar(g.cell, newChild, g.fromTape, g.toTape);
     }
 
-    public transformHide(g: HideGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformHide(g: HideGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new HideGrammar(g.cell, newChild, g.tapeName, g.name);
     }
 
-    public transformCount(g: CountGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformCount(g: CountGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new CountGrammar(g.cell, newChild, g.maxChars);
     }
 
-    public transformCountTape(g: CountTapeGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformCountTape(g: CountTapeGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new CountTapeGrammar(g.cell, newChild, g.maxChars);
     }
 
-    public transformPriority(g: PriorityGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformPriority(g: PriorityGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new PriorityGrammar(g.cell, newChild, g.tapePriority);
     }
     
-    public transformShort(g: PriorityGrammar, ns: NsGrammar, args: T): Grammar {
-        const newChild = g.child.accept(this, ns, args);
+    public transformShort(g: PriorityGrammar): Grammar {
+        const newChild = g.child.accept(this);
         return new ShortGrammar(g.cell, newChild);
     }
 

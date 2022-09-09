@@ -12,7 +12,7 @@ import { DummyCell } from "../util";
  * expresses a "from T1 to T1" replacement rule.  This can't literally be true (no output
  * has two different strings on the same tape), so one of those two tapes has to be renamed.
  */
-export class SameTapeReplaceTransform extends IdentityTransform<void>{
+export class SameTapeReplaceTransform extends IdentityTransform {
 
     public replaceIndex: number = 0;
 
@@ -20,14 +20,10 @@ export class SameTapeReplaceTransform extends IdentityTransform<void>{
         return "Adjusted tape names in same-tape replace rules";
     }
 
-    public transformJoinReplace(
-        g: JoinReplaceGrammar, 
-        ns: NsGrammar, 
-        args: void
-    ): Grammar {
+    public transformJoinReplace(g: JoinReplaceGrammar): Grammar {
 
-        let newChild = g.child.accept(this, ns, args);
-        const newRules = g.rules.map(r => r.accept(this, ns, args));
+        let newChild = g.child.accept(this);
+        const newRules = g.rules.map(r => r.accept(this));
 
         let fromTape: string | undefined = undefined;
         let replaceTape: string | undefined = undefined;
@@ -62,11 +58,7 @@ export class SameTapeReplaceTransform extends IdentityTransform<void>{
         return result;
     }
 
-    public transformReplace(
-        g: ReplaceGrammar, 
-        ns: NsGrammar, 
-        args: void
-    ): Grammar {
+    public transformReplace(g: ReplaceGrammar): Grammar {
 
         let replaceTapeName = g.fromTapeName;
         for (const toTapeName of g.toTapeNames) {
@@ -74,11 +66,11 @@ export class SameTapeReplaceTransform extends IdentityTransform<void>{
                 replaceTapeName = g.hiddenTapeName;
         }
 
-        const newFrom = g.fromGrammar.accept(this, ns, args);
-        const newTo = g.toGrammar.accept(this, ns, args);
-        const newPre = g.preContext.accept(this, ns, args);
-        const newPost = g.postContext.accept(this, ns, args);
-        const newOther = g.otherContext.accept(this, ns, args);
+        const newFrom = g.fromGrammar.accept(this);
+        const newTo = g.toGrammar.accept(this);
+        const newPre = g.preContext.accept(this);
+        const newPost = g.postContext.accept(this);
+        const newOther = g.otherContext.accept(this);
 
         // We use a dummy cell because this rename may be invalid, but we don't want
         // it reported to the user because the compiler did it

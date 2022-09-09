@@ -21,15 +21,15 @@ import { IdentityTransform } from "./transforms";
  * is well-formed again and does not lead to exceptions to otherwise invariant 
  * properties of the algorithm.
  */
-export class RenameFixTransform extends IdentityTransform<void>{
+export class RenameFixTransform extends IdentityTransform {
 
     public get desc(): string {
         return "Validating tape-rename structure";
     }
 
-    public transformHide(g: HideGrammar, ns: NsGrammar, args: void): Grammar {
+    public transformHide(g: HideGrammar): Grammar {
 
-        const newChild = g.child.accept(this, ns, args);
+        const newChild = g.child.accept(this);
         newChild.calculateTapes(new CounterStack(2));
 
         if (newChild.tapes.indexOf(g.tapeName) == -1) {   
@@ -45,9 +45,9 @@ export class RenameFixTransform extends IdentityTransform<void>{
         return new HideGrammar(g.cell, newChild, g.tapeName, g.name);
     }
 
-    public transformRename(g: RenameGrammar, ns: NsGrammar, args: void): Grammar {
+    public transformRename(g: RenameGrammar): Grammar {
 
-        const newChild = g.child.accept(this, ns, args);
+        const newChild = g.child.accept(this);
         newChild.calculateTapes(new CounterStack(2));
 
         if (newChild.tapes.indexOf(g.fromTape) == -1) {   

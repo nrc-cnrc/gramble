@@ -19,15 +19,15 @@ import { IdentityTransform } from "./transforms";
  *      few things this messes up (it results in counterintuitive results when adjusting
  *      scope in ends/contains), so this tranform removes them.
  */
-export class FlattenTransform extends IdentityTransform<void> {
+export class FlattenTransform extends IdentityTransform {
 
     public get desc(): string {
         return "Flattening sequences/alternations";
     }
 
-    public transformSequence(g: SequenceGrammar, ns: NsGrammar, args: void): Grammar {
+    public transformSequence(g: SequenceGrammar): Grammar {
         
-        const children = g.children.map(c => c.accept(this, ns, args));
+        const children = g.children.map(c => c.accept(this));
         const newChildren: Grammar[] = [];
         for (const child of children) {
             if (child instanceof SequenceGrammar) {
@@ -43,9 +43,9 @@ export class FlattenTransform extends IdentityTransform<void> {
     }
 
     
-    public transformAlternation(g: AlternationGrammar, ns: NsGrammar, args: void): Grammar {
+    public transformAlternation(g: AlternationGrammar): Grammar {
         
-        const children = g.children.map(c => c.accept(this, ns, args));
+        const children = g.children.map(c => c.accept(this));
         const newChildren: Grammar[] = [];
         for (const child of children) {
             if (child instanceof AlternationGrammar) {

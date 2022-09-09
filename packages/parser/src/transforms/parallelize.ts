@@ -5,17 +5,17 @@ import {
 } from "../grammars";
 import { IdentityTransform } from "./transforms";
 
-export class ParallelizeTransform extends IdentityTransform<void> {
+export class ParallelizeTransform extends IdentityTransform {
 
     public get desc(): string {
         return "Parallelizing sequences";
     }
 
-    public transformSequence(g: SequenceGrammar, ns: NsGrammar, args: void): Grammar {
+    public transformSequence(g: SequenceGrammar): Grammar {
         
         const newChildren: Grammar[] = [];
         for (const child of g.children) {
-            const newChild = child.accept(this, ns, args);
+            const newChild = child.accept(this);
             newChild.calculateTapes(new CounterStack(2));
             const prevChild = newChildren.pop();
             if (prevChild == undefined) {

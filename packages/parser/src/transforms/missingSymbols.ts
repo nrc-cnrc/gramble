@@ -8,13 +8,13 @@ import {
 import { IdentityTransform } from "./transforms";
 
 
-export class MissingSymbolsTransform extends IdentityTransform<void>{
+export class MissingSymbolsTransform extends IdentityTransform {
 
     public get desc(): string {
         return "Validating tape-rename structure";
     }
 
-    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar, ns: NsGrammar, args: void): Grammar {
+    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): Grammar {
 
         g.message({
             type: "error",  

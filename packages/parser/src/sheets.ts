@@ -81,8 +81,8 @@ export class SheetProject extends SheetComponent {
 
         // check to see if any names didn't get resolved
 
-        const nameQualifier = new NameQualifierTransform();
-        grammar = nameQualifier.transform(grammar) as NsGrammar;
+        const nameQualifier = new NameQualifierTransform(grammar);
+        grammar = nameQualifier.transform() as NsGrammar;
 
         const unresolvedNames: Set<string> = new Set(); 
         for (const name of grammar.getUnresolvedNames()) {

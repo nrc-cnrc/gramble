@@ -17,13 +17,22 @@ import { IdentityTransform } from "./transforms";
  * with EmbedGrammars, which contain fully-qualified names (like "MainSheet.VERB") and a 
  * reference to the namespace.
  */
-export class NameQualifierTransform extends IdentityTransform<[string, NsGrammar][] > {
+export class NameQualifierTransform extends IdentityTransform {
 
-    public transform(g: NsGrammar): NsGrammar {
-        const newNamespace = new NsGrammar(g.cell);
-        g.accept(this, newNamespace, [["", g]]); // the return value is meaningless here, all of the
-                                            // embeds get attached to newNamespace, so we don't bother
-                                            // assigning it to anything
+    constructor(
+        ns: NsGrammar,
+        public nsStack: [string, NsGrammar][] = []
+    ) {
+        super(ns);
+    }
+
+    public transform(): NsGrammar {
+        const newNamespace = new NsGrammar(this.ns.cell);
+        const newStack: [string, NsGrammar][] = [["", this.ns]];
+        const newTransform = new NameQualifierTransform(newNamespace, newStack);
+        this.ns.accept(newTransform); // the return value is meaningless here, all of the
+                                    // embeds get attached to newNamespace, so we don't bother
+                                    // assigning it to anything
         return newNamespace;
     }
     
@@ -32,45 +41,40 @@ export class NameQualifierTransform extends IdentityTransform<[string, NsGrammar
     }
 
     public transformNamespace(
-        g: NsGrammar,
-        ns: NsGrammar,
-        args: [string, NsGrammar][]
+        g: NsGrammar
     ): Grammar {
-        const stackNames = args.map(([n,g]) => n);
+        const stackNames = this.nsStack.map(([n,g]) => n);
         for (const [name, child] of g.symbols) {
             if (child instanceof NsGrammar) {
-                const newStack: [string, NsGrammar][] = [ ...args, [name, child] ];
-                child.accept(this, ns, newStack) as NsGrammar;
+                const newStack: [string, NsGrammar][] = [ ...this.nsStack, [name, child] ];
+                const newTransform = new NameQualifierTransform(this.ns, newStack);
+                child.accept(newTransform) as NsGrammar;
             } else {
                 const newName = g.calculateQualifiedName(name, stackNames);
-                const result = child.accept(this, ns, args);
-                ns.addSymbol(newName, result);
+                const result = child.accept(this);
+                this.ns.addSymbol(newName, result);
             }
         }
         const defaultName = g.calculateQualifiedName("", stackNames);
-        const defaultSymbol = ns.symbols.get(defaultName);
+        const defaultSymbol = this.ns.symbols.get(defaultName);
         if (defaultSymbol == undefined) {
-            const defaultRef = ns.getDefaultSymbol();
-            ns.addSymbol(defaultName, defaultRef);
+            const defaultRef = this.ns.getDefaultSymbol();
+            this.ns.addSymbol(defaultName, defaultRef);
         }
         return g;
     }
 
-    public transformUnresolvedEmbed(
-        g: UnresolvedEmbedGrammar, 
-        ns: NsGrammar,
-        args: [string, NsGrammar][]
-    ): Grammar {
+    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): Grammar {
         let resolution: [string, Grammar] | undefined = undefined;
-        for (let i = args.length-1; i >=0; i--) {
+        for (let i = this.nsStack.length-1; i >=0; i--) {
             // we go down the stack asking each to resolve it
-            const subStack = args.slice(0, i+1);
+            const subStack = this.nsStack.slice(0, i+1);
             const topOfStack = subStack[i][1];
             const stackNames = subStack.map(([n,g]) => n);
             resolution = topOfStack.resolveName(g.name, stackNames);
             if (resolution != undefined) {              
                 const [qualifiedName, referent] = resolution;
-                return new EmbedGrammar(g.cell, qualifiedName, ns);
+                return new EmbedGrammar(g.cell, qualifiedName, this.ns);
             }
         }
         return g;

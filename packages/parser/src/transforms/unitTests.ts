@@ -13,18 +13,19 @@ type TestEnv = {
 }
 
 
-export class UnitTestTransform extends IdentityTransform<void> {
+export class UnitTestTransform extends IdentityTransform {
 
     constructor(
+        ns: NsGrammar,
         public vocab: VocabMap,
         public tapeNS: TapeNamespace,
         public symbolTable: SymbolTable
     ) {
-        super();
+        super(ns);
     }
 
-    public transformUnitTest(g: UnitTestGrammar, ns: NsGrammar, args: void): Grammar {
-        const newThis = super.transformUnitTest(g, ns, args) as UnitTestGrammar;
+    public transformUnitTest(g: UnitTestGrammar): Grammar {
+        const newThis = super.transformUnitTest(g) as UnitTestGrammar;
         const results = this.getResultsFromUnitTest(newThis);
         if (results.length == 0) {
             newThis.message({
@@ -63,8 +64,8 @@ export class UnitTestTransform extends IdentityTransform<void> {
         return newThis;
     }
 
-    public transformNegativeUnitTest(g: NegativeUnitTestGrammar, ns: NsGrammar, args: void): Grammar {
-        const newThis = super.transformNegativeUnitTest(g, ns, args) as NegativeUnitTestGrammar;
+    public transformNegativeUnitTest(g: NegativeUnitTestGrammar): Grammar {
+        const newThis = super.transformNegativeUnitTest(g) as NegativeUnitTestGrammar;
         const results = this.getResultsFromUnitTest(newThis);
         if (results.length > 0) {
             newThis.message({

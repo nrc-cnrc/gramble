@@ -162,7 +162,7 @@
                 
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
                 project = gramble.Interpreter.fromSheet(devEnv, currentSheetName, gramble.VERBOSE_TIME);
-                project.runChecks();
+                //project.runChecks();
                 //project.runUnitTests();
 
                 createErrorButtons(devEnv.errorMsgs, currentSheetName);

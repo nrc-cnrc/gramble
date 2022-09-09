@@ -13,7 +13,7 @@ import { DummyCell, foldRight, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from ".
  * (where you just say "from"/"to" rather than "from text"/"to text") and
  * cascades of them.
  */
-export class RuleReplaceTransform2 extends IdentityTransform<void>{
+export class RuleReplaceTransform2 extends IdentityTransform {
 
     public replaceIndex: number = 0;
 
@@ -21,14 +21,9 @@ export class RuleReplaceTransform2 extends IdentityTransform<void>{
         return "Constructing new-style replacement rules (2nd version)";
     }
 
-    public transformJoinRule(
-        g: JoinRuleGrammar, 
-        ns: NsGrammar, 
-        args: void
-    ): Grammar {
+    public transformJoinRule(g: JoinRuleGrammar): Grammar {
 
-        let relevantTape = g.inputTape;
-        let result = g.child.accept(this, ns, args);
+        let result = g.child.accept(this);
 
         if (g.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar
@@ -46,7 +41,7 @@ export class RuleReplaceTransform2 extends IdentityTransform<void>{
             return result;
         }
 
-        const newRules: Grammar[] = g.rules.map(r => r.accept(this, ns, args));
+        const newRules: Grammar[] = g.rules.map(r => r.accept(this));
 
         const composedRule = foldRight(newRules, composeRules);
         const renamedGrammar = new RenameGrammar(new DummyCell(), result, g.inputTape, REPLACE_INPUT_TAPE);

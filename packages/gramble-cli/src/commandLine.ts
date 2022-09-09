@@ -152,7 +152,7 @@ const commands: { [name: string]: Command } = {
         const interpreter = sheetFromFile(options.source, timeVerbose);
 
         if (options.verbose) {
-            interpreter.runChecks();
+            //interpreter.runChecks();
             interpreter.devEnv.logErrors();
         }
 
@@ -225,7 +225,7 @@ const commands: { [name: string]: Command } = {
         const interpreter = sheetFromFile(options.source, timeVerbose);
 
         if (options.verbose) {
-            interpreter.runChecks();
+            //interpreter.runChecks();
             interpreter.devEnv.logErrors();
         }
 
