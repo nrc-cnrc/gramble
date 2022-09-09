@@ -101,7 +101,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
         ns.addSymbol("hiWorld", hiWorld);
-        ns = new NameQualifierTransform(ns).transform();
+        const [newNs, errs] = new NameQualifierTransform(ns).transform();
+        ns = newNs;
         const grammar = ns.getSymbol("hiWorld");
         if (grammar == undefined) {
             return;
@@ -117,7 +118,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
         ns.addSymbol("hiWorld", hiWorld);
-        ns = new NameQualifierTransform(ns).transform();
+        const [newNs, errs] = new NameQualifierTransform(ns).transform();
+        ns = newNs;
         let grammar = ns.getSymbol("hiWorld");
         if (grammar == undefined) {
             return;

@@ -6,7 +6,7 @@ import {
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
-import { DummyCell, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { DummyCell, Errs, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
 
 /**
  * This Transform handles the construction of implicit-tape replacement rules
@@ -21,10 +21,10 @@ export class RuleReplaceTransform extends IdentityTransform {
         return "Constructing new-style replacement rules";
     }
 
-    public transformJoinRule(g: JoinRuleGrammar): Grammar {
+    public transformJoinRule(g: JoinRuleGrammar): [Grammar, Errs] {
 
         let relevantTape = g.inputTape;
-        let result = g.child.accept(this);
+        let [result, childErrs] = g.child.accept(this);
 
         if (g.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar
@@ -35,14 +35,15 @@ export class RuleReplaceTransform extends IdentityTransform {
                 shortMsg: `Replacing on non-existent tape'`,
                 longMsg: `The grammar above does not have a tape ${g.inputTape} to replace on`
             });
-            return result;
+            return [result, childErrs];
         }
 
         if (g.rules.length == 0) {
-            return result;
+            return [result, childErrs];
         }
 
-        const newRules = g.rules.map(r => r.accept(this));
+        const [newRules, ruleErrs] = this.mapTo(g.rules);
+        const errs = [...childErrs, ...ruleErrs];
 
         for (const rule of newRules) {
             // first, rename the relevant tape of the child to ".input"
@@ -57,7 +58,7 @@ export class RuleReplaceTransform extends IdentityTransform {
 
         result = new RenameGrammar(new DummyCell(), result, REPLACE_OUTPUT_TAPE, g.inputTape);
         result.calculateTapes(new CounterStack(2));
-        return result;
+        return [result, errs];
     }
 
 }

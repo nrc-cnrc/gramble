@@ -2,6 +2,13 @@
 import { getCategory } from 'unicode-properties';
 //import { Token } from './tapes';
 
+export type Err = {
+    type: string
+    shortMsg: string
+    longMsg: string
+};
+
+export type Errs = Err[];
 
 // CONSTANTS
 
@@ -287,6 +294,16 @@ export function parseCSV(str: string): string[][] {
     }
 
     return arr;
+}
+
+export function unzip<T1,T2>(arr: [T1,T2][]): [T1[], T2[]] {
+    const results1: T1[] = [];
+    const results2: T2[] = [];
+    for (const [t1, t2] of arr) {
+        results1.push(t1);
+        results2.push(t2);
+    }
+    return [results1, results2];
 }
 
 function sum(a: number[]): number {

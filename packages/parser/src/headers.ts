@@ -34,19 +34,13 @@ import {
     MPSequence, MPUnreserved 
 } from "./miniParser";
 
-import { Cell, HSVtoRGB, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RGBtoString } from "./util";
+import { Cell, Err, HSVtoRGB, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RGBtoString } from "./util";
 import { Tape } from "./tapes";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
 
 export type ParamDict = {[key: string]: Grammar};
-
-export type HeaderErrorMsg = {
-    type: string
-    shortMsg: string
-    longMsg: string
-};
 
 /**
  * A Header is a cell in the top row of a table, consisting of one of
@@ -105,7 +99,7 @@ export type HeaderErrorMsg = {
         return result;
     }
 
-    public getErrors(): HeaderErrorMsg[] {
+    public getErrors(): Err[] {
         return [];
     } 
 }
@@ -258,7 +252,7 @@ abstract class UnaryHeader extends Header {
         super();
     }
 
-    public getErrors(): HeaderErrorMsg[] {
+    public getErrors(): Err[] {
         return this.child.getErrors();
     } 
 
@@ -565,7 +559,7 @@ abstract class BinaryHeader extends Header {
         super();
     }
 
-    public getErrors(): HeaderErrorMsg[] {
+    public getErrors(): Err[] {
         return [...this.child1.getErrors(), ...this.child2.getErrors()];
     } 
 
@@ -607,7 +601,7 @@ export class ErrorHeader extends TapeNameHeader {
         return "ERR";
     }
 
-    public getErrors(): HeaderErrorMsg[] {
+    public getErrors(): Err[] {
         return [{
             type: "error",
             shortMsg: "Invalid header",
@@ -633,7 +627,7 @@ export class ErrorHeader extends TapeNameHeader {
 
 export class ReservedErrorHeader extends ErrorHeader {
 
-    public getErrors(): HeaderErrorMsg[] {
+    public getErrors(): Err[] {
         return [{
             type: "error", 
             shortMsg: `Reserved word in header`, 

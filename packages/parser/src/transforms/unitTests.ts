@@ -1,4 +1,4 @@
-import { GenOptions, StringDict } from "../util";
+import { Err, GenOptions, StringDict } from "../util";
 import { CounterStack, SymbolTable } from "../exprs";
 import { CountGrammar, EqualsGrammar, Grammar, LiteralGrammar, NegativeUnitTestGrammar, NsGrammar, PriorityGrammar, UnitTestGrammar } from "../grammars";
 import { VocabMap, TapeNamespace} from "../tapes";
@@ -24,8 +24,8 @@ export class UnitTestTransform extends IdentityTransform {
         super(ns);
     }
 
-    public transformUnitTest(g: UnitTestGrammar): Grammar {
-        const newThis = super.transformUnitTest(g) as UnitTestGrammar;
+    public transformUnitTest(g: UnitTestGrammar): [Grammar, Err[]] {
+        const [newThis, errs] = super.transformUnitTest(g) as [UnitTestGrammar, Err[]];
         const results = this.getResultsFromUnitTest(newThis);
         if (results.length == 0) {
             newThis.message({
@@ -61,11 +61,11 @@ export class UnitTestTransform extends IdentityTransform {
                 }
             }
         }
-        return newThis;
+        return [newThis, errs];
     }
 
-    public transformNegativeUnitTest(g: NegativeUnitTestGrammar): Grammar {
-        const newThis = super.transformNegativeUnitTest(g) as NegativeUnitTestGrammar;
+    public transformNegativeUnitTest(g: NegativeUnitTestGrammar): [Grammar, Err[]] {
+        const [newThis, errs] = super.transformNegativeUnitTest(g) as [NegativeUnitTestGrammar, Err[]];
         const results = this.getResultsFromUnitTest(newThis);
         if (results.length > 0) {
             newThis.message({
@@ -80,7 +80,7 @@ export class UnitTestTransform extends IdentityTransform {
                 longMsg: "The grammar above correctly has no outputs compatible with these inputs."
             });
         }
-        return newThis;
+        return [newThis, errs];
     }
     
     public getResultsFromUnitTest(test: UnitTestGrammar): StringDict[] {

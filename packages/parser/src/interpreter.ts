@@ -103,7 +103,8 @@ export class Interpreter {
         for (const t of transforms) {
             const transform: GrammarTransform = new t(this.grammar);
             timeIt(() => {
-                this.grammar = transform.transform();
+                const [newGrammar, errs] = transform.transform();
+                this.grammar = newGrammar;
             }, timeVerbose, transform.desc);
         }
 

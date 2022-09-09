@@ -1,3 +1,4 @@
+import { Errs } from "../util";
 import { 
     AlternationGrammar, ContainsGrammar, CounterStack, 
     DotGrammar, EndsGrammar, Grammar,
@@ -34,7 +35,7 @@ export class FilterTransform extends IdentityTransform {
         return "Constructing filters";
     }
 
-    public transformStarts(g: StartsGrammar): Grammar {
+    public transformStarts(g: StartsGrammar): [Grammar, Errs] {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
@@ -69,17 +70,18 @@ export class FilterTransform extends IdentityTransform {
         }
 
         // construct the filter
-        const newChild = g.child.accept(this);
+        const [newChild, errs] = g.child.accept(this);
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
             const dot = new DotGrammar(g.cell, tape);
             const dotStar = new RepeatGrammar(g.cell, dot);
             dotStars.push(dotStar);
         }
-        return new SequenceGrammar(g.cell, [ newChild, ...dotStars ]);
+        const result = new SequenceGrammar(g.cell, [ newChild, ...dotStars ]);
+        return [result, errs];
     }
     
-    public transformEnds(g: StartsGrammar): Grammar {
+    public transformEnds(g: StartsGrammar): [Grammar, Errs] {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
@@ -113,17 +115,18 @@ export class FilterTransform extends IdentityTransform {
         }
 
         // create the filter
-        const newChild = g.child.accept(this);
+        const [newChild, errs] = g.child.accept(this);
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
             const dot = new DotGrammar(g.cell, tape);
             const dotStar = new RepeatGrammar(g.cell, dot);
             dotStars.push(dotStar);
         }
-        return new SequenceGrammar(g.cell, [ ...dotStars, newChild ]);
+        const result = new SequenceGrammar(g.cell, [ ...dotStars, newChild ]);
+        return [result, errs];
     }
     
-    public transformContains(g: ContainsGrammar): Grammar {
+    public transformContains(g: ContainsGrammar): [Grammar, Errs] {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
@@ -159,14 +162,15 @@ export class FilterTransform extends IdentityTransform {
         }
 
         // create the filter
-        const newChild = g.child.accept(this);
+        const [newChild, errs] = g.child.accept(this);
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
             const dot = new DotGrammar(g.cell, tape);
             const dotStar = new RepeatGrammar(g.cell, dot);
             dotStars.push(dotStar);
         }
-        return new SequenceGrammar(g.cell, [ ...dotStars, newChild, ...dotStars ]);
+        const result = new SequenceGrammar(g.cell, [ ...dotStars, newChild, ...dotStars ]);
+        return [result, errs];
     }
 }
 

@@ -5,7 +5,7 @@ import {
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
-import { DummyCell } from "../util";
+import { DummyCell, Err, Errs } from "../util";
 
 /**
  * This Transform handles the behind-the-scenes renaming necessary when the programmer
@@ -20,10 +20,11 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         return "Adjusted tape names in same-tape replace rules";
     }
 
-    public transformJoinReplace(g: JoinReplaceGrammar): Grammar {
+    public transformJoinReplace(g: JoinReplaceGrammar): [Grammar, Errs] {
 
-        let newChild = g.child.accept(this);
-        const newRules = g.rules.map(r => r.accept(this));
+        let [newChild, childErrs] = g.child.accept(this);
+        const [newRules, ruleErrs] = this.mapTo(g.rules) as [ReplaceGrammar[], Errs];
+        const errs = [...childErrs, ...ruleErrs];
 
         let fromTape: string | undefined = undefined;
         let replaceTape: string | undefined = undefined;
@@ -45,7 +46,7 @@ export class SameTapeReplaceTransform extends IdentityTransform {
                 // if replace is replacing a tape not relevant to the child,
                 // then we generate infinitely -- which is correct but not what
                 // anyone wants.  so ignore the replacement entirely.
-                return newChild;
+                return [newChild, errs];
             }
             
             // DUMMY_CELL because this rename may be invalid, but we don't want
@@ -55,10 +56,10 @@ export class SameTapeReplaceTransform extends IdentityTransform {
 
         const child2 = new AlternationGrammar(g.cell, newRules);
         const result = new JoinGrammar(g.cell, newChild, child2);
-        return result;
+        return [result, errs];
     }
 
-    public transformReplace(g: ReplaceGrammar): Grammar {
+    public transformReplace(g: ReplaceGrammar): [Grammar, Errs] {
 
         let replaceTapeName = g.fromTapeName;
         for (const toTapeName of g.toTapeNames) {
@@ -66,11 +67,12 @@ export class SameTapeReplaceTransform extends IdentityTransform {
                 replaceTapeName = g.hiddenTapeName;
         }
 
-        const newFrom = g.fromGrammar.accept(this);
-        const newTo = g.toGrammar.accept(this);
-        const newPre = g.preContext.accept(this);
-        const newPost = g.postContext.accept(this);
-        const newOther = g.otherContext.accept(this);
+        const [newFrom, fromErrs] = g.fromGrammar.accept(this);
+        const [newTo, toErrs] = g.toGrammar.accept(this);
+        const [newPre, preErrs] = g.preContext.accept(this);
+        const [newPost, postErrs] = g.postContext.accept(this);
+        const [newOther, otherErrs] = g.otherContext.accept(this);
+        const errs = [...fromErrs, ...toErrs, ...preErrs, ...postErrs, ...otherErrs];
 
         // We use a dummy cell because this rename may be invalid, but we don't want
         // it reported to the user because the compiler did it
@@ -81,7 +83,7 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         const result = new ReplaceGrammar(g.cell, renamedFrom, newTo, renamedPre, renamedPost, newOther,
             g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,
             g.vocabBypass);
-        return result;
+        return [result, errs];
     }
 
 }

@@ -6,7 +6,7 @@ import {
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
-import { DummyCell, foldRight, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { DummyCell, Errs, foldRight, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
 
 /**
  * This Transform handles the construction of implicit-tape replacement rules
@@ -21,9 +21,9 @@ export class RuleReplaceTransform2 extends IdentityTransform {
         return "Constructing new-style replacement rules (2nd version)";
     }
 
-    public transformJoinRule(g: JoinRuleGrammar): Grammar {
+    public transformJoinRule(g: JoinRuleGrammar): [Grammar, Errs] {
 
-        let result = g.child.accept(this);
+        let [newChild, childErrs] = g.child.accept(this);
 
         if (g.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar
@@ -34,21 +34,22 @@ export class RuleReplaceTransform2 extends IdentityTransform {
                 shortMsg: `Replacing on non-existent tape'`,
                 longMsg: `The grammar above does not have a tape ${g.inputTape} to replace on`
             });
-            return result;
+            return [newChild, childErrs];
         }
 
         if (g.rules.length == 0) {
-            return result;
+            return [newChild, childErrs];
         }
 
-        const newRules: Grammar[] = g.rules.map(r => r.accept(this));
+        const [newRules, ruleErrs] = this.mapTo(g.rules);
+        const errs = [...childErrs, ...ruleErrs];
 
         const composedRule = foldRight(newRules, composeRules);
-        const renamedGrammar = new RenameGrammar(new DummyCell(), result, g.inputTape, REPLACE_INPUT_TAPE);
+        const renamedGrammar = new RenameGrammar(new DummyCell(), newChild, g.inputTape, REPLACE_INPUT_TAPE);
         const grammarComposedWithRules = new JoinGrammar(new DummyCell(), renamedGrammar, composedRule);
         const renamedComposition = new RenameGrammar(new DummyCell(), grammarComposedWithRules, REPLACE_OUTPUT_TAPE, g.inputTape);
         renamedComposition.calculateTapes(new CounterStack(2));
-        return renamedComposition;
+        return [renamedComposition, errs];
     }
 }
 

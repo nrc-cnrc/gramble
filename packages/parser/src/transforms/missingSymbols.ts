@@ -1,4 +1,4 @@
-import { HIDDEN_TAPE_PREFIX } from "../util";
+import { Errs, HIDDEN_TAPE_PREFIX } from "../util";
 import { 
     CounterStack, EpsilonGrammar, Grammar,
     HideGrammar,
@@ -14,7 +14,7 @@ export class MissingSymbolsTransform extends IdentityTransform {
         return "Validating tape-rename structure";
     }
 
-    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): Grammar {
+    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): [Grammar, Errs] {
 
         g.message({
             type: "error",  
@@ -22,6 +22,7 @@ export class MissingSymbolsTransform extends IdentityTransform {
             longMsg: `Undefined symbol: ${g.name}`
         });
 
-        return new EpsilonGrammar(g.cell);
+        const result = new EpsilonGrammar(g.cell);
+        return [result, []];
     }
 }
