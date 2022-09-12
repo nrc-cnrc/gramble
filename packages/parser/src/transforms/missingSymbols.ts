@@ -16,13 +16,13 @@ export class MissingSymbolsTransform extends IdentityTransform {
 
     public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): [Grammar, Errs] {
 
-        g.message({
+        const err = {
             type: "error",  
             shortMsg: "Unknown symbol", 
             longMsg: `Undefined symbol: ${g.name}`
-        });
+        };
 
         const result = new EpsilonGrammar(g.cell);
-        return [result, []];
+        return [result, [err]];
     }
 }

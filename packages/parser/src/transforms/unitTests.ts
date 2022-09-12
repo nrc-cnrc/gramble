@@ -28,13 +28,13 @@ export class UnitTestTransform extends IdentityTransform {
         const [newThis, errs] = super.transformUnitTest(g) as [UnitTestGrammar, Err[]];
         const results = this.executeTest(newThis);
         if (results.length == 0) {
-            newThis.message({
+            errs.push({
                 type: "error", 
                 shortMsg: "Failed unit test",
                 longMsg: "The grammar above has no outputs compatible with these inputs."
             });
         } else {
-            newThis.message({
+            errs.push({
                 type: "info",
                 shortMsg: "Unit test successful",
                 longMsg: "The grammar above has outputs compatible with these inputs."
@@ -43,21 +43,23 @@ export class UnitTestTransform extends IdentityTransform {
 
         uniqueLoop: for (const unique of newThis.uniques) {
             resultLoop: for (const result of results) {
-                if (result[unique.tapeName] != unique.text) {
-                    unique.message({
-                        type: "error",
-                        shortMsg: "Failed unit test",
-                        longMsg: `An output on this line has a conflicting result for this field: ${result[unique.tapeName]}`
-                    });
-                    break resultLoop;
-                }
                 if (!(unique.tapeName in result)) {
-                    unique.message({
+                    errs.push({
                         type: "error",
                         shortMsg: "Failed unit test",
-                        longMsg: `An output on this line does not contain a ${unique.tapeName} field: ${Object.entries(result)}`
+                        longMsg: `An output on this line does not contain a ${unique.tapeName} field: ` +
+                                    `${Object.entries(result).map(([k,v]) => `${k}:${v}`)}`
                     });
                     break uniqueLoop;
+                }
+                if (result[unique.tapeName] != unique.text) {
+                    errs.push({
+                        type: "error",
+                        shortMsg: "Failed unit test",
+                        longMsg: `An output on this line has a conflicting result for this field: ` +
+                                `${result[unique.tapeName]}`
+                    });
+                    break resultLoop;
                 }
             }
         }
@@ -68,13 +70,13 @@ export class UnitTestTransform extends IdentityTransform {
         const [newThis, errs] = super.transformNegativeUnitTest(g) as [NegativeUnitTestGrammar, Err[]];
         const results = this.executeTest(newThis);
         if (results.length > 0) {
-            newThis.message({
+            errs.push({
                 type: "error", 
                 shortMsg: "Failed unit test",
                 longMsg: "The grammar above incorrectly has outputs compatible with these inputs."
             });
         } else {
-            newThis.message({
+            errs.push({
                 type: "info",
                 shortMsg: "Unit test successful",
                 longMsg: "The grammar above correctly has no outputs compatible with these inputs."

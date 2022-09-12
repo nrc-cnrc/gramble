@@ -878,6 +878,7 @@ export class TstUnitTest extends TstEnclosure {
                 }
             }
             result = new UnitTestGrammar(cell, result, testInputs, uniques);
+            result = new LocatorGrammar(cell, result);
         }
 
         result = new LocatorGrammar(this.cell, result);
@@ -914,6 +915,7 @@ export class TstNegativeUnitTest extends TstUnitTest {
                     continue;
                 }
                 result = new NegativeUnitTestGrammar(cell, result, grammar);
+                result = new LocatorGrammar(cell, result);
             }   
         }
         

@@ -295,8 +295,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/uniquenessTestsFailing.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["uniquenessTestsFailing",14,3,"error"],
-            ["uniquenessTestsFailing",16,3,"error"],
+            ["uniquenessTestsFailing",14,2,"error"],
+            ["uniquenessTestsFailing",16,2,"error"],
             ["uniquenessTestsFailing",17,2,"error"]
         ]);
         testGrammar(interpreter, [
@@ -314,7 +314,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/uniquenessTestsMissingField.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["uniquenessTestsMissingField",14,3,"error"]
+            ["uniquenessTestsMissingField",14,2,"error"]
         ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
@@ -326,12 +326,11 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
     describe('Uniqueness tests with multiple uniqueness fields, failing', function() {
         const interpreter = sheetFromFile(`${DIR}/uniquenessTestsFailingMulti.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["uniquenessTestsFailingMulti",14,4,"error"]
+            ["uniquenessTestsFailingMulti",14,2,"error"]
         ]);
         testGrammar(interpreter, [
             { root: "run", subj: "[1SG]", text: "foobar", gloss: "run[1SG]" },
