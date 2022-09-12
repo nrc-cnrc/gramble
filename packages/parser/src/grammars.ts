@@ -1655,6 +1655,15 @@ export class UnitTestGrammar extends UnaryGrammar {
     public accept(t: GrammarTransform): [Grammar, Errs] {
         return t.transformUnitTest(this);
     }
+    
+    public collectVocab(
+        tapeName: string,
+        tapeNS: TapeNamespace, 
+        symbolsVisited: Set<string>
+    ): void { 
+        this.child.collectVocab(tapeName, tapeNS, symbolsVisited);
+        this.test.collectVocab(tapeName, tapeNS, symbolsVisited);
+    }
 
     public constructExpr(symbols: SymbolTable): Expr {
         return this.child.constructExpr(symbols);

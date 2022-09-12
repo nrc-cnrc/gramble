@@ -26,7 +26,7 @@ export class UnitTestTransform extends IdentityTransform {
 
     public transformUnitTest(g: UnitTestGrammar): [Grammar, Err[]] {
         const [newThis, errs] = super.transformUnitTest(g) as [UnitTestGrammar, Err[]];
-        const results = this.getResultsFromUnitTest(newThis);
+        const results = this.executeTest(newThis);
         if (results.length == 0) {
             newThis.message({
                 type: "error", 
@@ -66,7 +66,7 @@ export class UnitTestTransform extends IdentityTransform {
 
     public transformNegativeUnitTest(g: NegativeUnitTestGrammar): [Grammar, Err[]] {
         const [newThis, errs] = super.transformNegativeUnitTest(g) as [NegativeUnitTestGrammar, Err[]];
-        const results = this.getResultsFromUnitTest(newThis);
+        const results = this.executeTest(newThis);
         if (results.length > 0) {
             newThis.message({
                 type: "error", 
@@ -83,7 +83,7 @@ export class UnitTestTransform extends IdentityTransform {
         return [newThis, errs];
     }
     
-    public getResultsFromUnitTest(test: UnitTestGrammar): StringDict[] {
+    public executeTest(test: UnitTestGrammar): StringDict[] {
 
         const opt = new GenOptions();
 

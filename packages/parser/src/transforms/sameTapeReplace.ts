@@ -43,10 +43,16 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         if (fromTape != undefined && replaceTape != undefined) {
             
             if (g.child.tapes.indexOf(fromTape) == -1) {
+                const newErrs = [...errs, {
+                    type: "error",
+                    shortMsg: `Replacing on non-existent tape'`,
+                    longMsg: `The grammar above does not have a tape ${fromTape} to replace on`
+
+                }]
                 // if replace is replacing a tape not relevant to the child,
                 // then we generate infinitely -- which is correct but not what
                 // anyone wants.  so ignore the replacement entirely.
-                return [newChild, errs];
+                return [newChild, newErrs];
             }
             
             newChild = renameGrammar(newChild, fromTape, replaceTape);

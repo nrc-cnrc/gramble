@@ -109,6 +109,14 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    describe('Replacing wrong tape', function() {
+        const project = sheetFromFile(`${DIR}/replaceWrongTape.csv`);
+        testErrors(project, [["replaceWrongTape",3,1,"error"]]);
+        testGrammar(project, [
+            {"text":"aba"}
+        ]);
+    });
+
     describe('Replace with a test: op nested underneath', function() {
         const project = sheetFromFile(`${DIR}/replaceWithTestOp.csv`);
         testErrors(project, [

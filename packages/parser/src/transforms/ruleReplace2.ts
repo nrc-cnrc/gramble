@@ -31,12 +31,12 @@ export class RuleReplaceTransform2 extends IdentityTransform {
             // trying to replace on a tape that doesn't exist in the grammar
             // leads to infinite generation.  This is correct but not what anyone
             // actually wants, so mark an error
-            g.cell.message({
+            const newErrs = [...childErrs, {
                 type: "error",
                 shortMsg: `Replacing on non-existent tape'`,
                 longMsg: `The grammar above does not have a tape ${g.inputTape} to replace on`
-            });
-            return [newChild, childErrs];
+            }];
+            return [newChild, newErrs];
         }
 
         if (g.rules.length == 0) {
