@@ -90,7 +90,7 @@ export class UnitTestTransform extends IdentityTransform {
         const opt = new GenOptions();
 
         // create a filter for each test
-        let targetComponent: Grammar = new EqualsGrammar(test.cell, test.child, test.test);
+        let targetComponent: Grammar = new EqualsGrammar(test.child, test.test);
 
         const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
         
@@ -103,14 +103,14 @@ export class UnitTestTransform extends IdentityTransform {
         const potentiallyInfinite = targetComponent.potentiallyInfinite(new CounterStack(2));
         if (potentiallyInfinite && opt.maxChars != Infinity) {
             if (targetComponent instanceof PriorityGrammar) {
-                targetComponent.child = new CountGrammar(targetComponent.child.cell, targetComponent.child, opt.maxChars-1);
+                targetComponent.child = new CountGrammar(targetComponent.child, opt.maxChars-1);
             } else {
-                targetComponent = new CountGrammar(targetComponent.cell, targetComponent, opt.maxChars-1);
+                targetComponent = new CountGrammar(targetComponent, opt.maxChars-1);
             }
         }
 
         if (!(targetComponent instanceof PriorityGrammar)) {
-            targetComponent = new PriorityGrammar(targetComponent.cell, targetComponent, tapePriority);
+            targetComponent = new PriorityGrammar(targetComponent, tapePriority);
         }
 
         const expr = targetComponent.constructExpr(this.symbolTable);

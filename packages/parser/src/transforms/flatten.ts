@@ -39,7 +39,7 @@ export class FlattenTransform extends IdentityTransform {
             }
             newChildren.push(child);
         }
-        const result = new SequenceGrammar(g.cell, newChildren);
+        const result = new SequenceGrammar(newChildren);
         return [result, errs];
     }
 
@@ -58,7 +58,7 @@ export class FlattenTransform extends IdentityTransform {
             }
             newChildren.push(child);
         }
-        const result = new AlternationGrammar(g.cell, newChildren);
+        const result = new AlternationGrammar(newChildren);
         return [result, errs];
     }
 

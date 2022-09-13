@@ -30,7 +30,7 @@ export class RuleReplaceTransform extends IdentityTransform {
             // trying to replace on a tape that doesn't exist in the grammar
             // leads to infinite generation.  This is correct but not what anyone
             // actually wants, so mark an error
-            g.cell.message({
+            childErrs.push({
                 type: "error",
                 shortMsg: `Replacing on non-existent tape'`,
                 longMsg: `The grammar above does not have a tape ${g.inputTape} to replace on`
@@ -47,16 +47,16 @@ export class RuleReplaceTransform extends IdentityTransform {
 
         for (const rule of newRules) {
             // first, rename the relevant tape of the child to ".input"
-            result = new RenameGrammar(new DummyCell(), result, relevantTape, REPLACE_INPUT_TAPE);
+            result = new RenameGrammar(result, relevantTape, REPLACE_INPUT_TAPE);
             // now the relevant tape is "output"
             relevantTape = REPLACE_OUTPUT_TAPE;
             // join it with the rule
-            result = new JoinGrammar(g.cell, result, rule);
+            result = new JoinGrammar(result, rule);
             // hide the input tape
-            result = new HideGrammar(new DummyCell(), result, REPLACE_INPUT_TAPE);
+            result = new HideGrammar(result, REPLACE_INPUT_TAPE);
         }
 
-        result = new RenameGrammar(new DummyCell(), result, REPLACE_OUTPUT_TAPE, g.inputTape);
+        result = new RenameGrammar(result, REPLACE_OUTPUT_TAPE, g.inputTape);
         result.calculateTapes(new CounterStack(2));
         return [result, errs];
     }

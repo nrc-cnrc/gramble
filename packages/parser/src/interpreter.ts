@@ -78,7 +78,7 @@ export class Interpreter {
         if (g instanceof NsGrammar) {
             this.grammar = g;
         } else {
-            this.grammar = new NsGrammar(g.cell);
+            this.grammar = new NsGrammar();
             this.grammar.addSymbol("", g);
         }
 
@@ -321,10 +321,10 @@ export class Interpreter {
             const queryLiterals = Object.entries(query).map(([key, value]) => {
                 key = key.normalize("NFD"); 
                 value = value.normalize("NFD");
-                return new LiteralGrammar(new DummyCell(), key, value);
+                return new LiteralGrammar(key, value);
             });
-            const querySeq = new SequenceGrammar(new DummyCell(), queryLiterals);
-            targetGrammar = new EqualsGrammar(new DummyCell(), targetGrammar, querySeq);
+            const querySeq = new SequenceGrammar(queryLiterals);
+            targetGrammar = new EqualsGrammar(targetGrammar, querySeq);
             tapePriority = targetGrammar.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
@@ -338,14 +338,14 @@ export class Interpreter {
         const potentiallyInfinite = targetGrammar.potentiallyInfinite(new CounterStack(2));
         if (potentiallyInfinite && opt.maxChars != Infinity) {
             if (targetGrammar instanceof PriorityGrammar) {
-                targetGrammar.child = new CountGrammar(targetGrammar.child.cell, targetGrammar.child, opt.maxChars-1);
+                targetGrammar.child = new CountGrammar(targetGrammar.child, opt.maxChars-1);
             } else {
-                targetGrammar = new CountGrammar(targetGrammar.cell, targetGrammar, opt.maxChars-1);
+                targetGrammar = new CountGrammar(targetGrammar, opt.maxChars-1);
             }
         }
 
         if (!(targetGrammar instanceof PriorityGrammar)) {
-            targetGrammar = new PriorityGrammar(targetGrammar.cell, targetGrammar, tapePriority);
+            targetGrammar = new PriorityGrammar(targetGrammar, tapePriority);
             //logTime(this.verbose, `priority = ${(targetGrammar as PriorityGrammar).tapePriority}`)
         }
 

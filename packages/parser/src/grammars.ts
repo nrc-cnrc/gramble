@@ -159,10 +159,6 @@ export abstract class Grammar {
     protected _tapes: string[] | undefined = undefined;
     public concatenableTapes: Set<string> = new Set(); 
 
-    constructor(
-        public cell: Cell
-    ) { }
-
     public get tapes(): string[] {
         if (this._tapes == undefined) {
             throw new Error("Trying to get tapes before calculating them");
@@ -170,14 +166,14 @@ export abstract class Grammar {
         return this._tapes;
     }
 
+    public get locations(): Cell[] {
+        return flatten(this.getChildren().map(c => c.locations));
+    }
+
     /**
      * A string ID for the grammar, for debugging purposes.
      */
     public abstract get id(): string;
-
-    public message(msg: any): void {
-        this.cell.message(msg);
-    }
 
     public abstract accept(t: GrammarTransform): [Grammar, Errs];
 
@@ -386,11 +382,10 @@ export class NullGrammar extends AtomicGrammar {
 export class CharSetGrammar extends AtomicGrammar {
 
     constructor(
-        cell: Cell,
         public tapeName: string,
         public chars: string[]
     ) {
-        super(cell);
+        super();
     }
 
     public get id(): string {
@@ -431,11 +426,10 @@ export class LiteralGrammar extends AtomicGrammar {
     protected tokens: string[] = [];
 
     constructor(
-        cell: Cell,
         public tapeName: string,
         public text: string
     ) {
-        super(cell);
+        super();
         this.tokens = tokenizeUnicode(text);
     }
 
@@ -482,10 +476,9 @@ export class LiteralGrammar extends AtomicGrammar {
 export class DotGrammar extends AtomicGrammar {
 
     constructor(
-        cell: Cell,
         public tapeName: string
     ) {
-        super(cell);
+        super();
     }
 
     public get id(): string {
@@ -521,10 +514,9 @@ export class DotGrammar extends AtomicGrammar {
 abstract class NAryGrammar extends Grammar {
 
     constructor(
-        cell: Cell,
         public children: Grammar[]
     ) {
-        super(cell);
+        super();
     }
     
     public getChildren(): Grammar[] { 
@@ -608,7 +600,7 @@ export class SequenceGrammar extends NAryGrammar {
 
     public finalChild(): Grammar {
         if (this.children.length == 0) {
-            return new EpsilonGrammar(new DummyCell());
+            return new EpsilonGrammar();
         }
         return this.children[this.children.length-1];
     }
@@ -641,10 +633,9 @@ export class AlternationGrammar extends NAryGrammar {
 export abstract class UnaryGrammar extends Grammar {
 
     constructor(
-        cell: Cell,
         public child: Grammar
     ) {
-        super(cell);
+        super();
     }
 
     public potentiallyInfinite(stack: CounterStack): boolean {
@@ -663,11 +654,10 @@ export abstract class UnaryGrammar extends Grammar {
 abstract class BinaryGrammar extends Grammar {
 
     constructor(
-        cell: Cell,
         public child1: Grammar,
         public child2: Grammar
     ) {
-        super(cell);
+        super();
     }
     
     public getChildren(): Grammar[] { 
@@ -842,11 +832,10 @@ export class EqualsGrammar extends BinaryGrammar {
 export class CountGrammar extends UnaryGrammar {
 
     constructor(
-        cell: Cell,
         child: Grammar,
         public maxChars: number
     ) {
-        super(cell, child);
+        super(child);
     }
 
     public get id(): string {
@@ -870,11 +859,10 @@ export class CountGrammar extends UnaryGrammar {
 export class CountTapeGrammar extends UnaryGrammar {
 
     constructor(
-        cell: Cell,
         child: Grammar,
         public maxChars: number | {[tape: string]: number}
     ) {
-        super(cell, child);
+        super(child);
     }
 
     public get id(): string {
@@ -909,11 +897,10 @@ export class CountTapeGrammar extends UnaryGrammar {
 export class PriorityGrammar extends UnaryGrammar {
 
     constructor(
-        cell: Cell,
         child: Grammar,
         public tapePriority: string[]
     ) {
-        super(cell, child);
+        super(child);
     }
 
     public get id(): string {
@@ -933,11 +920,10 @@ export class PriorityGrammar extends UnaryGrammar {
 abstract class FilterGrammar extends UnaryGrammar {
 
     constructor(
-        cell: Cell,
         child: Grammar,
         tapes: string[] | undefined = undefined
     ) {
-        super(cell, child);
+        super(child);
         this._tapes = tapes;
     }
 
@@ -984,12 +970,11 @@ export class ContainsGrammar extends FilterGrammar {
 export class RenameGrammar extends UnaryGrammar {
 
     constructor(
-        cell: Cell,
         child: Grammar,
         public fromTape: string,
         public toTape: string
     ) {
-        super(cell, child);
+        super(child);
     }
     
     public get id(): string {
@@ -1054,12 +1039,11 @@ export class RenameGrammar extends UnaryGrammar {
 export class RepeatGrammar extends UnaryGrammar {
 
     constructor(
-        cell: Cell,
         child: Grammar,
         public minReps: number = 0,
         public maxReps: number = Infinity
     ) {
-        super(cell, child);
+        super(child);
     }
 
     public get id(): string {
@@ -1098,11 +1082,10 @@ export class RepeatGrammar extends UnaryGrammar {
 export class NegationGrammar extends UnaryGrammar {
 
     constructor(
-        cell: Cell,
         child: Grammar,
         public maxReps: number = Infinity
     ) {
-        super(cell, child);
+        super(child);
     }
     
     public get id(): string {
@@ -1136,12 +1119,11 @@ export class HideGrammar extends UnaryGrammar {
     public toTape: string;
 
     constructor(
-        cell: Cell,
         child: Grammar,
         public tapeName: string,
         public name: string = ""
     ) {
-        super(cell, child);
+        super(child);
         if (name == "") {
             this.name = `HIDDEN${HIDE_INDEX}`;
             HIDE_INDEX++;
@@ -1202,13 +1184,12 @@ export class HideGrammar extends UnaryGrammar {
 export class MatchFromGrammar extends UnaryGrammar {
 
     constructor(
-        cell: Cell,
         child: Grammar,
         public fromTape: string,
         public toTape: string,
         public vocabBypass: boolean = false
     ) {
-        super(cell, child);
+        super(child);
     }
 
     public get id(): string {
@@ -1280,11 +1261,10 @@ export class MatchFromGrammar extends UnaryGrammar {
 export class MatchGrammar extends UnaryGrammar {
 
     constructor(
-        cell: Cell,
         child: Grammar,
         public relevantTapes: Set<string>
     ) {
-        super(cell, child);
+        super(child);
     }
 
     public getTapeClass(
@@ -1313,13 +1293,6 @@ export class MatchGrammar extends UnaryGrammar {
 
 export class NsGrammar extends Grammar {
 
-    constructor(
-        cell: Cell,
-        //public name: string
-    ) {
-        super(cell);
-    }
-
     public get id(): string {
         let results: string[] = [];
         for (const [k, v] of this.symbols.entries()) {
@@ -1346,7 +1319,7 @@ export class NsGrammar extends Grammar {
 
     public getDefaultSymbol(): Grammar {
         if (this.symbols.size == 0) {
-            return new EpsilonGrammar(this.cell);
+            return new EpsilonGrammar();
         }
 
         return [...this.symbols.values()][this.symbols.size-1].getDefaultSymbol();
@@ -1485,11 +1458,10 @@ export class NsGrammar extends Grammar {
 export class EmbedGrammar extends AtomicGrammar {
 
     constructor(
-        cell: Cell,
         public name: string,
         public namespace: NsGrammar
     ) {
-        super(cell);
+        super();
     }
 
     public get id(): string {
@@ -1577,10 +1549,9 @@ export class EmbedGrammar extends AtomicGrammar {
 export class UnresolvedEmbedGrammar extends AtomicGrammar {
 
     constructor(
-        cell: Cell,
         public name: string
     ) {
-        super(cell);
+        super();
     }
     
     public get id(): string {
@@ -1613,6 +1584,18 @@ export class UnresolvedEmbedGrammar extends AtomicGrammar {
  */
 export class LocatorGrammar extends UnaryGrammar {
 
+    constructor(
+        public cell: Cell,
+        child: Grammar
+    ) {
+        super(child);
+    }
+
+    public get locations(): Cell[] {
+        return [this.cell];
+    }
+
+
     public get id(): string {
         return this.child.id;
     }
@@ -1625,27 +1608,16 @@ export class LocatorGrammar extends UnaryGrammar {
         return this.child.getLiterals();
     }
 
-    constructor(
-        cell: Cell,
-        child: Grammar
-    ) {
-        super(cell, child);
-    }
-
-    
-
-
 }
 
 export class UnitTestGrammar extends UnaryGrammar {
 
     constructor(
-        cell: Cell,
         child: Grammar,
         public test: Grammar,
         public uniques: LiteralGrammar[] = []
     ) {
-        super(cell, child);
+        super(child);
     }
 
     public get id(): string {
@@ -1680,15 +1652,15 @@ export class NegativeUnitTestGrammar extends UnitTestGrammar {
 }
 
 export function Seq(...children: Grammar[]): SequenceGrammar {
-    return new SequenceGrammar(new DummyCell(), children);
+    return new SequenceGrammar(children);
 }
 
 export function Par(...children: Grammar[]): ParallelGrammar {
-    return new ParallelGrammar(new DummyCell(), children);
+    return new ParallelGrammar(children);
 }
 
 export function Uni(...children: Grammar[]): AlternationGrammar {
-    return new AlternationGrammar(new DummyCell(), children);
+    return new AlternationGrammar(children);
 }
 
 export function Optional(child: Grammar): AlternationGrammar {
@@ -1696,46 +1668,46 @@ export function Optional(child: Grammar): AlternationGrammar {
 }
 
 export function CharSet(tape: string, chars: string[]): CharSetGrammar {
-    return new CharSetGrammar(new DummyCell(), tape, chars);
+    return new CharSetGrammar(tape, chars);
 }
 
 export function Lit(tape: string, text: string): LiteralGrammar {
-    return new LiteralGrammar(new DummyCell(), tape, text);
+    return new LiteralGrammar(tape, text);
 }
 
 export function Any(tape: string): DotGrammar {
-    return new DotGrammar(new DummyCell(), tape);
+    return new DotGrammar(tape);
 }
 
 export function Intersect(child1: Grammar, child2: Grammar): IntersectionGrammar {
-    return new IntersectionGrammar(new DummyCell(), child1, child2);
+    return new IntersectionGrammar(child1, child2);
 }
 
 export function Equals(child1: Grammar, child2: Grammar): EqualsGrammar {
-    return new EqualsGrammar(new DummyCell(), child1, child2);
+    return new EqualsGrammar(child1, child2);
 }
 
 export function Join(child1: Grammar, child2: Grammar): JoinGrammar {
-    return new JoinGrammar(new DummyCell(), child1, child2);
+    return new JoinGrammar(child1, child2);
 }
 
 export function Short(child: Grammar): ShortGrammar {
-    return new ShortGrammar(new DummyCell(), child);
+    return new ShortGrammar(child);
 }
 
 export function Starts(child1: Grammar, child2: Grammar): EqualsGrammar {
-    const filter = new StartsGrammar(new DummyCell(), child2);
-    return new EqualsGrammar(new DummyCell(), child1, filter);
+    const filter = new StartsGrammar(child2);
+    return new EqualsGrammar(child1, filter);
 }
 
 export function Ends(child1: Grammar, child2: Grammar): EqualsGrammar {
-    const filter = new EndsGrammar(new DummyCell(), child2);
-    return new EqualsGrammar(new DummyCell(), child1, filter);
+    const filter = new EndsGrammar(child2);
+    return new EqualsGrammar(child1, filter);
 }
 
 export function Contains(child1: Grammar, child2: Grammar): EqualsGrammar {
-    const filter = new ContainsGrammar(new DummyCell(), child2);
-    return new EqualsGrammar(new DummyCell(), child1, filter);
+    const filter = new ContainsGrammar(child2);
+    return new EqualsGrammar(child1, filter);
 }
 
 export function Rep(
@@ -1743,23 +1715,23 @@ export function Rep(
     minReps: number = 0, 
     maxReps: number = Infinity
 ) {
-    return new RepeatGrammar(new DummyCell(), child, minReps, maxReps);
+    return new RepeatGrammar(child, minReps, maxReps);
 }
 
 export function Epsilon(): EpsilonGrammar {
-    return new EpsilonGrammar(new DummyCell());
+    return new EpsilonGrammar();
 }
 
 export function Null(): NullGrammar {
-    return new NullGrammar(new DummyCell());
+    return new NullGrammar();
 }
 
 export function Embed(name: string): UnresolvedEmbedGrammar {
-    return new UnresolvedEmbedGrammar(new DummyCell(), name);
+    return new UnresolvedEmbedGrammar(name);
 }
 
 export function Match(child: Grammar, ...tapes: string[]): MatchGrammar {
-    return new MatchGrammar(new DummyCell(), child, new Set(tapes));
+    return new MatchGrammar(child, new Set(tapes));
 }
 
 export function Dot(...tapes: string[]): SequenceGrammar {
@@ -1789,7 +1761,7 @@ export function MatchDotStar2(...tapes: string[]): MatchGrammar {
 export function MatchFrom(state:Grammar, fromTape: string, ...toTapes: string[]): Grammar {
     let result = state;
     for (const tape of toTapes) {
-        result = new MatchFromGrammar(new DummyCell(), result, fromTape, tape);
+        result = new MatchFromGrammar(result, fromTape, tape);
     }
     return result;
 
@@ -1799,17 +1771,17 @@ export function MatchFrom(state:Grammar, fromTape: string, ...toTapes: string[])
 }
 
 export function Rename(child: Grammar, fromTape: string, toTape: string): RenameGrammar {
-    return new RenameGrammar(new DummyCell(), child, fromTape, toTape);
+    return new RenameGrammar(child, fromTape, toTape);
 }
 
 export function Not(child: Grammar, maxChars:number=Infinity): NegationGrammar {
-    return new NegationGrammar(new DummyCell(), child, maxChars);
+    return new NegationGrammar(child, maxChars);
 }
 
 export function Ns(
     symbols: {[name: string]: Grammar} = {}
 ): NsGrammar {
-    const result = new NsGrammar(new DummyCell());
+    const result = new NsGrammar();
     for (const [symbolName, component] of Object.entries(symbols)) {
         result.addSymbol(symbolName, component);
     }
@@ -1817,7 +1789,7 @@ export function Ns(
 }
 
 export function Hide(child: Grammar, tape: string, name: string = ""): HideGrammar {
-    return new HideGrammar(new DummyCell(), child, tape, name);
+    return new HideGrammar(child, tape, name);
 }
 
 export function Vocab(tape: string, text: string): Grammar {
@@ -1825,15 +1797,15 @@ export function Vocab(tape: string, text: string): Grammar {
 }
 
 export function Count(maxChars: number, child: Grammar): Grammar {
-    return new CountGrammar(new DummyCell(), child, maxChars);
+    return new CountGrammar(child, maxChars);
 }
 
 export function CountTape(maxChars: number | {[tape: string]: number}, child: Grammar): Grammar {
-    return new CountTapeGrammar(new DummyCell(), child, maxChars);
+    return new CountTapeGrammar(child, maxChars);
 }
 
 export function Priority(tapes: string[], child: Grammar): Grammar {
-    return new PriorityGrammar(new DummyCell(), child, tapes);
+    return new PriorityGrammar(child, tapes);
 }
 
 /**
@@ -1877,7 +1849,7 @@ export function JoinReplace(
     child: Grammar,
     rules: ReplaceGrammar[],
 ): JoinReplaceGrammar {
-    return new JoinReplaceGrammar(new DummyCell(), child, rules);
+    return new JoinReplaceGrammar(child, rules);
 }
 
 /**
@@ -1902,11 +1874,10 @@ export class JoinReplaceGrammar extends Grammar {
     protected ruleTapes: string[] = [];
 
     constructor(
-        cell: Cell,
         public child: Grammar,
         public rules: ReplaceGrammar[]
     ) {
-        super(cell);
+        super();
     }
 
     public accept(t: GrammarTransform): [Grammar, Errs] {
@@ -1969,7 +1940,7 @@ export function JoinRule(
     child: Grammar,
     rules: ReplaceGrammar[]
 ): JoinRuleGrammar {
-    return new JoinRuleGrammar(new DummyCell(), inputTape, child, rules);
+    return new JoinRuleGrammar(inputTape, child, rules);
 }
 
 /**
@@ -1982,12 +1953,11 @@ export function JoinRule(
 export class JoinRuleGrammar extends Grammar {
 
     constructor(
-        cell: Cell,
         public inputTape: string,
         public child: Grammar,
         public rules: ReplaceGrammar[]
     ) {
-        super(cell);
+        super();
     }
 
     public potentiallyInfinite(stack: CounterStack): boolean {
@@ -2035,7 +2005,7 @@ export class ReplaceGrammar extends Grammar {
     public toTapeNames: string[] = [];
 
     constructor(
-        cell: Cell,
+        public cell: Cell,
         public fromGrammar: Grammar,
         public toGrammar: Grammar,
         public preContext: Grammar = Epsilon(),
@@ -2050,7 +2020,7 @@ export class ReplaceGrammar extends Grammar {
         public vocabBypass: boolean = true,
         public hiddenTapeName: string = "",
     ) {
-        super(cell);
+        super();
         if (this.hiddenTapeName.length == 0) {
             this.hiddenTapeName = `${HIDDEN_TAPE_PREFIX}R${this.cell.pos.sheet}:${this.cell.pos.row}`;
         } else if (!this.hiddenTapeName.startsWith(HIDDEN_TAPE_PREFIX)) {

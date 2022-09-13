@@ -58,8 +58,8 @@ export class SameTapeReplaceTransform extends IdentityTransform {
             newChild = renameGrammar(newChild, fromTape, replaceTape);
         }
 
-        const child2 = new AlternationGrammar(g.cell, newRules);
-        const result = new JoinGrammar(g.cell, newChild, child2);
+        const child2 = new AlternationGrammar(newRules);
+        const result = new JoinGrammar(newChild, child2);
         return [result, errs];
     }
 
@@ -96,5 +96,5 @@ function renameGrammar(g: Grammar, fromTape: string, toTape: string): Grammar {
     if (fromTape == toTape) {
         return g;
     }
-    return new RenameGrammar(new DummyCell(), g, fromTape, toTape);
+    return new RenameGrammar(g, fromTape, toTape);
 }

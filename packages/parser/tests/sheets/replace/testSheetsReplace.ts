@@ -314,6 +314,4 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"abi","surface":"avi"}
         ]);
     });
-
-
 });

@@ -43,8 +43,6 @@ export class InvalidAssignmentTransform {
 
     public transform(t: TstComponent): TstComponent {
 
-        t.transform(this);
-
         switch(t.constructor.name) {
             case 'TstAssignment':
                 return this.transformAssignment(t as TstAssignment);
@@ -275,9 +273,9 @@ export class MissingParamsTransform {
 
 type BinaryOp = (cell: Cell, c1: Grammar, c2: Grammar) => Grammar;
 export const BINARY_OPS: {[opName: string]: BinaryOp} = {
-    "or": (cell, c1, c2) => new AlternationGrammar(cell, [c1, c2]),
-    "concat": (cell, c1, c2) => new SequenceGrammar(cell, [c1, c2]),
-    "join": (cell, c1, c2) => new JoinGrammar(cell, c1, c2),
+    "or": (cell, c1, c2) => new AlternationGrammar([c1, c2]),
+    "concat": (cell, c1, c2) => new SequenceGrammar([c1, c2]),
+    "join": (cell, c1, c2) => new JoinGrammar(c1, c2),
 }
 
 export abstract class TstComponent {
@@ -369,7 +367,7 @@ export abstract class TstCellComponent extends TstComponent {
     }
     
     public toGrammar(): Grammar {
-        return new EpsilonGrammar(this.cell);
+        return new EpsilonGrammar();
     }
 
     public toParamsTable(): [Cell, ParamDict][] {
@@ -454,7 +452,7 @@ export class TstEmpty extends TstComponent {
     }
 
     public toGrammar(): Grammar {
-        return new EpsilonGrammar(new DummyCell());
+        return new EpsilonGrammar();
     }
     
     public toParamsTable(): [Cell, ParamDict][] {
@@ -469,7 +467,7 @@ export class TstComment extends TstCellComponent {
     }
 
     public toGrammar(): Grammar {
-        return new EpsilonGrammar(this.cell);
+        return new EpsilonGrammar();
     }
 
 }
@@ -681,7 +679,11 @@ export class TstReplaceTape extends TstBinaryOp {
 
             for (const [key, grammar] of Object.entries(paramDict)) {
                 if (key == "__") {
-                    grammar.message({
+                    if (grammar instanceof EpsilonGrammar) {
+                        continue; // it's okay to have {__:epsilon}
+                    }
+                    const errLoc = [...grammar.locations, cell][0];
+                    errLoc.message({
                         type: "warning",
                         shortMsg: "Missing parameter name",
                         longMsg: `The operator to the left doesn't allow unnamed parameters.`
@@ -689,10 +691,12 @@ export class TstReplaceTape extends TstBinaryOp {
                     continue;
                 }
                 if (TstReplace.VALID_PARAMS.indexOf(key) == -1) {
-                    grammar.message({
+
+                    const errLoc = [...grammar.locations, cell][0];
+                    errLoc.message({
                         type: "warning",
                         shortMsg: "Wayward parameter name",
-                        longMsg: `The operator to the left doesn't allow parameters '${key}', so this cell will be ignored.`
+                        longMsg: `The operator to the left doesn't allow parameter '${key}', so this cell will be ignored.`
                     });
                     continue;
                 }
@@ -718,10 +722,10 @@ export class TstReplaceTape extends TstBinaryOp {
             const toArg = paramDict["to"];
             const preArg = "pre" in paramDict
                                     ? paramDict["pre"]
-                                    : new EpsilonGrammar(this.cell);
+                                    : new EpsilonGrammar();
             const postArg = "post" in paramDict 
                                     ? paramDict["post"] 
-                                    : new EpsilonGrammar(this.cell); 
+                                    : new EpsilonGrammar(); 
             const replaceRule = new ReplaceGrammar(this.cell, fromArg, toArg, preArg, postArg);
             replaceRules.push(replaceRule);
         }
@@ -730,7 +734,7 @@ export class TstReplaceTape extends TstBinaryOp {
             return siblingGrammar;  // in case every rule fails, at least generate something
         }
 
-        let result: Grammar = new JoinRuleGrammar(this.cell, this.tape, siblingGrammar, replaceRules);
+        let result: Grammar = new JoinRuleGrammar(this.tape, siblingGrammar, replaceRules);
         result = new LocatorGrammar(this.cell, result);
         return result;
     }
@@ -753,10 +757,13 @@ export class TstReplace extends TstBinaryOp {
         const replaceRules: ReplaceGrammar[] = [];
 
         for (const [cell, paramDict] of params) {
-
             for (const [key, grammar] of Object.entries(paramDict)) {
                 if (key == "__") {
-                    grammar.message({
+                    if (grammar instanceof EpsilonGrammar) {
+                        continue; // it's okay to have {__:epsilon}
+                    }
+                    const errLoc = [...grammar.locations, cell][0];
+                    errLoc.message({
                         type: "warning",
                         shortMsg: "Missing parameter name",
                         longMsg: `The operator to the left doesn't allow unnamed parameters.`
@@ -764,7 +771,8 @@ export class TstReplace extends TstBinaryOp {
                     continue;
                 }
                 if (TstReplace.VALID_PARAMS.indexOf(key) == -1) {
-                    grammar.message({
+                    const errLoc = [...grammar.locations, cell][0];
+                    errLoc.message({
                         type: "warning",
                         shortMsg: "Wayward parameter name",
                         longMsg: `The operator to the left doesn't allow parameters '${key}', so this cell will be ignored.`
@@ -793,10 +801,10 @@ export class TstReplace extends TstBinaryOp {
             const toArg = paramDict["to"];
             const preArg = "pre" in paramDict
                                     ? paramDict["pre"]
-                                    : new EpsilonGrammar(this.cell);
+                                    : new EpsilonGrammar();
             const postArg = "post" in paramDict 
                                     ? paramDict["post"] 
-                                    : new EpsilonGrammar(this.cell); 
+                                    : new EpsilonGrammar(); 
             const replaceRule = new ReplaceGrammar(this.cell, fromArg, toArg, preArg, postArg);
             replaceRules.push(replaceRule);
         }
@@ -805,7 +813,7 @@ export class TstReplace extends TstBinaryOp {
             return siblingGrammar;  // in case every rule fails, at least generate something
         }
 
-        let result: Grammar = new JoinReplaceGrammar(this.cell, siblingGrammar, replaceRules);
+        let result: Grammar = new JoinReplaceGrammar(siblingGrammar, replaceRules);
         result = new LocatorGrammar(this.cell, result);
         return result;
     }
@@ -842,7 +850,8 @@ export class TstUnitTest extends TstEnclosure {
         for (const [cell, paramDict] of this.child.toParamsTable()) {
             for (const [key, grammar] of Object.entries(paramDict)) {
                 if (TstUnitTest.VALID_PARAMS.indexOf(key) == -1) {
-                    grammar.message({
+                    const errLoc = [...grammar.locations, cell][0];
+                    errLoc.message({
                         type: "warning",
                         shortMsg: "Wayward parameter name",
                         longMsg: `The operator to the left doesn't allow paramaters '${key}', so this cell will be ignored.`
@@ -868,7 +877,8 @@ export class TstUnitTest extends TstEnclosure {
                     uniques = unique.getLiterals();
                 } catch (e) {
                     console.log(e);
-                    cell.message({
+                    const errLoc = [...unique.locations, cell][0];
+                    errLoc.message({
                         type: "error",
                         shortMsg: "Ill-formed unique",
                         longMsg: `Somewhere in this row there is an ill-formed uniqueness constraint.  ` +
@@ -877,7 +887,7 @@ export class TstUnitTest extends TstEnclosure {
                     continue;
                 }
             }
-            result = new UnitTestGrammar(cell, result, testInputs, uniques);
+            result = new UnitTestGrammar(result, testInputs, uniques);
             result = new LocatorGrammar(cell, result);
         }
 
@@ -907,14 +917,15 @@ export class TstNegativeUnitTest extends TstUnitTest {
         for (const [cell, paramDict] of this.child.toParamsTable()) {
             for (const [key, grammar] of Object.entries(paramDict)) {
                 if (key != "__") {
-                    grammar.message({
+                    const errLoc = [...grammar.locations, cell][0];
+                    errLoc.message({
                         type: "warning",
                         shortMsg: "Wayward parameter name",
                         longMsg: `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`
                     });
                     continue;
                 }
-                result = new NegativeUnitTestGrammar(cell, result, grammar);
+                result = new NegativeUnitTestGrammar(result, grammar);
                 result = new LocatorGrammar(cell, result);
             }   
         }
@@ -1014,7 +1025,8 @@ export class TstTable extends TstEnclosure {
             for (const [key, grammar] of Object.entries(paramDict)) {
                 if (key != "__") {
                     // there's a wayward parameter name in the headers
-                    grammar.message({
+                    const errLoc = [...grammar.locations, cell][0];
+                    errLoc.message({
                         type: "warning",
                         shortMsg: "Wayward parameter name",
                         longMsg: `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`
@@ -1032,7 +1044,7 @@ export class TstTable extends TstEnclosure {
             }
         }
 
-        return new AlternationGrammar(this.cell, alternatives);
+        return new AlternationGrammar(alternatives);
     }
 
     public toParamsTable(): [Cell, ParamDict][] {
@@ -1113,7 +1125,7 @@ export class TstAssignment extends TstEnclosure {
             this.message({
                 type: "error",
                 shortMsg: 'Reassigning existing symbol', 
-                longMsg: `The symbol ${trimmedText} already refers to the grammar at ${referent.cell.id}`
+                longMsg: `The symbol ${trimmedText} already refers to another grammar above.}`
             });
             return;
         }
@@ -1135,7 +1147,7 @@ export class TstNamespace extends TstEnclosure {
     }
 
     public toGrammar(): Grammar {
-        const ns = new NsGrammar(this.cell);
+        const ns = new NsGrammar();
         this.child.assignToNamespace(ns, true);
         //const locatedNs = new LocatorGrammar(this.cell, ns);
         return ns;

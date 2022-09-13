@@ -28,7 +28,7 @@ export class NameQualifierTransform extends IdentityTransform {
     }
 
     public transform(): [NsGrammar, Errs] {
-        const newNamespace = new NsGrammar(this.ns.cell);
+        const newNamespace = new NsGrammar();
         const newStack: [string, NsGrammar][] = [["", this.ns]];
         const newTransform = new NameQualifierTransform(newNamespace, newStack);
         const [_, errs] = this.ns.accept(newTransform);
@@ -74,7 +74,7 @@ export class NameQualifierTransform extends IdentityTransform {
             resolution = topOfStack.resolveName(g.name, stackNames);
             if (resolution != undefined) {              
                 const [qualifiedName, referent] = resolution;
-                const result = new EmbedGrammar(g.cell, qualifiedName, this.ns);
+                const result = new EmbedGrammar(qualifiedName, this.ns);
                 return [result, []];
             }
         }

@@ -48,7 +48,7 @@ export class RuleReplaceTransform2 extends IdentityTransform {
 
         const renamedGrammar = renameGrammar(newChild, g.inputTape, REPLACE_INPUT_TAPE);
         const composedRule = foldRight(newRules, composeRules);
-        const grammarComposedWithRules = new JoinGrammar(new DummyCell(), renamedGrammar, composedRule);
+        const grammarComposedWithRules = new JoinGrammar(renamedGrammar, composedRule);
         const newTapeName = `.RULE${RULE_HIDE_INDEX++}`
         const hiddenComposition = renameGrammar(grammarComposedWithRules, REPLACE_INPUT_TAPE, newTapeName);
         const renamedComposition = renameGrammar(hiddenComposition, REPLACE_OUTPUT_TAPE, g.inputTape);
@@ -61,12 +61,12 @@ function composeRules(r1: Grammar, r2: Grammar): Grammar {
     const newTapeName = `.RULE${RULE_HIDE_INDEX++}`
     const renamedR1 = renameGrammar(r1, REPLACE_OUTPUT_TAPE, newTapeName);
     const renamedR2 = renameGrammar(r2, REPLACE_INPUT_TAPE, newTapeName);
-    return new JoinGrammar(new DummyCell(), renamedR1, renamedR2);
+    return new JoinGrammar(renamedR1, renamedR2);
 }
 
 function renameGrammar(g: Grammar, fromTape: string, toTape: string): Grammar {
     if (fromTape == toTape) {
         return g;
     }
-    return new RenameGrammar(new DummyCell(), g, fromTape, toTape);
+    return new RenameGrammar(g, fromTape, toTape);
 }

@@ -71,70 +71,70 @@ export class IdentityTransform implements GrammarTransform {
 
     public transformSequence(g: SequenceGrammar): [Grammar, Errs] {
         const [newChildren, errs] = this.mapTo(g.children);
-        const result = new SequenceGrammar(g.cell, newChildren);
+        const result = new SequenceGrammar(newChildren);
         return [result, errs];
     }
 
     public transformParallel(g: SequenceGrammar): [Grammar, Errs] {
         const [newChildren, errs] = this.mapTo(g.children);
-        const result = new ParallelGrammar(g.cell, newChildren);
+        const result = new ParallelGrammar(newChildren);
         return [result, errs];
     }
 
     public transformAlternation(g: AlternationGrammar): [Grammar, Errs] {
         const [newChildren, errs] = this.mapTo(g.children);
-        const result = new AlternationGrammar(g.cell, newChildren);
+        const result = new AlternationGrammar(newChildren);
         return [result, errs];
     }
 
     public transformIntersection(g: IntersectionGrammar): [Grammar, Errs] {
         const [newChild1, errs1] = g.child1.accept(this);
         const [newChild2, errs2] = g.child2.accept(this);
-        const result = new IntersectionGrammar(g.cell, newChild1, newChild2);
+        const result = new IntersectionGrammar(newChild1, newChild2);
         return [result, [...errs1, ...errs2]]
     }
 
     public transformJoin(g: JoinGrammar): [Grammar, Errs] {
         const [newChild1, errs1] = g.child1.accept(this);
         const [newChild2, errs2] = g.child2.accept(this);
-        const result = new JoinGrammar(g.cell, newChild1, newChild2);
+        const result = new JoinGrammar(newChild1, newChild2);
         return [result, [...errs1, ...errs2]];
     }
 
     public transformEquals(g: EqualsGrammar): [Grammar, Errs] {
         const [newChild1, errs1] = g.child1.accept(this);
         const [newChild2, errs2] = g.child2.accept(this);
-        const result = new EqualsGrammar(g.cell, newChild1, newChild2);
+        const result = new EqualsGrammar(newChild1, newChild2);
         return [result, [...errs1, ...errs2]]
     }
 
     public transformStarts(g: StartsGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new StartsGrammar(g.cell, newChild);
+        const result = new StartsGrammar(newChild);
         return [result, errs];
     }
 
     public transformEnds(g: EndsGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new EndsGrammar(g.cell, newChild);
+        const result = new EndsGrammar(newChild);
         return [result, errs];
     }
 
     public transformContains(g: ContainsGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new ContainsGrammar(g.cell, newChild);
+        const result = new ContainsGrammar(newChild);
         return [result, errs];
     }
 
     public transformMatch(g: MatchGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new MatchGrammar(g.cell, newChild, g.relevantTapes);
+        const result = new MatchGrammar(newChild, g.relevantTapes);
         return [result, errs];
     }
   
     public transformMatchFrom(g: MatchFromGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new MatchFromGrammar(g.cell, newChild, g.fromTape, g.toTape);
+        const result = new MatchFromGrammar(newChild, g.fromTape, g.toTape);
         return [result, errs];
     }
 
@@ -152,7 +152,7 @@ export class IdentityTransform implements GrammarTransform {
     }
 
     public transformEmbed(g: EmbedGrammar): [Grammar, Errs] {
-        const result = new EmbedGrammar(g.cell, g.name, this.ns);
+        const result = new EmbedGrammar(g.name, this.ns);
         return [result, []];
     }
 
@@ -160,7 +160,7 @@ export class IdentityTransform implements GrammarTransform {
         const [newChild, errs] = g.child.accept(this);
         const result = new LocatorGrammar(g.cell, newChild);
         for (const err of errs) {
-            g.message(err);
+            g.cell.message(err);
         }
         return [result, []];
     }
@@ -170,7 +170,7 @@ export class IdentityTransform implements GrammarTransform {
     }
 
     public transformNamespace(g: NsGrammar): [Grammar, Errs] {
-        const result = new NsGrammar(g.cell);
+        const result = new NsGrammar();
         const errs: Errs = [];
         for (const [name, child] of g.symbols) {
             const [newChild, es] = child.accept(this);
@@ -182,7 +182,7 @@ export class IdentityTransform implements GrammarTransform {
 
     public transformRepeat(g: RepeatGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new RepeatGrammar(g.cell, newChild, g.minReps, g.maxReps);
+        const result = new RepeatGrammar(newChild, g.minReps, g.maxReps);
         return [result, errs];
     }
 
@@ -190,7 +190,7 @@ export class IdentityTransform implements GrammarTransform {
         const [newChild, childErrs] = g.child.accept(this);
         const [newTest, testErrs] = g.test.accept(this);
         const [newUniques, uniqueErrs] = this.mapTo(g.uniques);
-        const result = new UnitTestGrammar(g.cell, newChild, newTest, newUniques as LiteralGrammar[]);
+        const result = new UnitTestGrammar(newChild, newTest, newUniques as LiteralGrammar[]);
         const errs = [...childErrs, ...testErrs, ...uniqueErrs];
         return [result, errs];
     }
@@ -198,7 +198,7 @@ export class IdentityTransform implements GrammarTransform {
     public transformNegativeUnitTest(g: NegativeUnitTestGrammar): [Grammar, Errs] {
         const [newChild, childErrs] = g.child.accept(this);
         const [newTest, testErrs] = g.test.accept(this);
-        const result = new NegativeUnitTestGrammar(g.cell, newChild, newTest);
+        const result = new NegativeUnitTestGrammar(newChild, newTest);
         const errs = [...childErrs, ...testErrs];
         return [result, errs];
     }
@@ -206,7 +206,7 @@ export class IdentityTransform implements GrammarTransform {
     public transformJoinReplace(g: JoinReplaceGrammar): [Grammar, Errs] {
         const [newChild, childErrs] = g.child.accept(this);
         const [newRules, ruleErrs] = this.mapTo(g.rules);
-        const result = new JoinReplaceGrammar(g.cell, newChild, 
+        const result = new JoinReplaceGrammar(newChild, 
             newRules as ReplaceGrammar[]);
         const errs = [...childErrs, ...ruleErrs];
         return [result, errs];
@@ -215,7 +215,7 @@ export class IdentityTransform implements GrammarTransform {
     public transformJoinRule(g: JoinRuleGrammar): [Grammar, Errs] {
         const [newChild, childErrs] = g.child.accept(this);
         const [newRules, ruleErrs] = this.mapTo(g.rules);
-        const result = new JoinRuleGrammar(g.cell, g.inputTape, newChild, 
+        const result = new JoinRuleGrammar(g.inputTape, newChild, 
             newRules as ReplaceGrammar[]);
         const errs = [...childErrs, ...ruleErrs];
         return [result, errs];
@@ -223,43 +223,43 @@ export class IdentityTransform implements GrammarTransform {
 
     public transformNegation(g: NegationGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new NegationGrammar(g.cell, newChild, g.maxReps);
+        const result = new NegationGrammar(newChild, g.maxReps);
         return [result, errs];
     }
 
     public transformRename(g: RenameGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new RenameGrammar(g.cell, newChild, g.fromTape, g.toTape);
+        const result = new RenameGrammar(newChild, g.fromTape, g.toTape);
         return [result, errs];
     }
 
     public transformHide(g: HideGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new HideGrammar(g.cell, newChild, g.tapeName, g.name);
+        const result = new HideGrammar(newChild, g.tapeName, g.name);
         return [result, errs];
     }
 
     public transformCount(g: CountGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new CountGrammar(g.cell, newChild, g.maxChars);
+        const result = new CountGrammar(newChild, g.maxChars);
         return [result, errs];
     }
 
     public transformCountTape(g: CountTapeGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new CountTapeGrammar(g.cell, newChild, g.maxChars);
+        const result = new CountTapeGrammar(newChild, g.maxChars);
         return [result, errs];
     }
 
     public transformPriority(g: PriorityGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new PriorityGrammar(g.cell, newChild, g.tapePriority);
+        const result = new PriorityGrammar(newChild, g.tapePriority);
         return [result, errs];
     }
     
     public transformShort(g: PriorityGrammar): [Grammar, Errs] {
         const [newChild, errs] = g.child.accept(this);
-        const result = new ShortGrammar(g.cell, newChild);
+        const result = new ShortGrammar(newChild);
         return [result, errs];
     }
 

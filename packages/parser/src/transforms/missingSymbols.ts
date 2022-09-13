@@ -22,7 +22,7 @@ export class MissingSymbolsTransform extends IdentityTransform {
             longMsg: `Undefined symbol: ${g.name}`
         };
 
-        const result = new EpsilonGrammar(g.cell);
+        const result = new EpsilonGrammar();
         return [result, [err]];
     }
 }

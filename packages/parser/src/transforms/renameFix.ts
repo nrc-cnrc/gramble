@@ -42,7 +42,7 @@ export class RenameFixTransform extends IdentityTransform {
             return [newChild, newErrs];
         }
 
-        const result = new HideGrammar(g.cell, newChild, g.tapeName, g.name);
+        const result = new HideGrammar(newChild, g.tapeName, g.name);
         return [result, errs];
     }
 
@@ -69,12 +69,12 @@ export class RenameFixTransform extends IdentityTransform {
             }];
             
             const errTapeName = `${HIDDEN_TAPE_PREFIX}ERR${g.toTape}`;
-            const errChild = new RenameGrammar(newChild.cell, newChild, g.toTape, errTapeName);
-            const result = new RenameGrammar(g.cell, errChild, g.fromTape, g.toTape);
+            const errChild = new RenameGrammar(newChild, g.toTape, errTapeName);
+            const result = new RenameGrammar(errChild, g.fromTape, g.toTape);
             return [result, newErrs];
         }
 
-        const result = new RenameGrammar(g.cell, newChild, g.fromTape, g.toTape);
+        const result = new RenameGrammar(newChild, g.fromTape, g.toTape);
         return [result, errs];
     }
 

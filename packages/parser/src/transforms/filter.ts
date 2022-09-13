@@ -39,8 +39,8 @@ export class FilterTransform extends IdentityTransform {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
-            const newFilter = new StartsGrammar(g.cell, g.child.child, g.tapes);
-            const newNegation = new NegationGrammar(g.child.cell, newFilter, g.child.maxReps);
+            const newFilter = new StartsGrammar(g.child.child, g.tapes);
+            const newNegation = new NegationGrammar(newFilter, g.child.maxReps);
             return newNegation.accept(this);
         }
 
@@ -48,29 +48,29 @@ export class FilterTransform extends IdentityTransform {
             // this(x+y) -> x+this(y)
             const newChildren = [...g.child.children]; // clone the children
             const newLastChild = new StartsGrammar(
-                g.cell, newChildren[newChildren.length-1], g.tapes);
+                newChildren[newChildren.length-1], g.tapes);
             newChildren[newChildren.length-1] = newLastChild;
-            const newSequence = new SequenceGrammar(g.cell, newChildren);
+            const newSequence = new SequenceGrammar(newChildren);
             return newSequence.accept(this);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
-            const newChildren = g.child.children.map(c => new StartsGrammar(g.cell, c, g.tapes));
-            const newAlternation = new AlternationGrammar(g.cell, newChildren);
+            const newChildren = g.child.children.map(c => new StartsGrammar(c, g.tapes));
+            const newAlternation = new AlternationGrammar(newChildren);
             return newAlternation.accept(this);
         }
 
         if (g.child instanceof IntersectionGrammar) {
             // this(x&y) -> this(x)&this(y)
-            const newFilter1 = new StartsGrammar(g.cell, g.child.child1, g.tapes);
-            const newFilter2 = new StartsGrammar(g.cell, g.child.child2, g.tapes);
-            const newIntersection = new IntersectionGrammar(g.child.cell, newFilter1, newFilter2);
+            const newFilter1 = new StartsGrammar(g.child.child1, g.tapes);
+            const newFilter2 = new StartsGrammar(g.child.child2, g.tapes);
+            const newIntersection = new IntersectionGrammar(newFilter1, newFilter2);
             return newIntersection.accept(this);
         }
 
         if (g.child instanceof LocatorGrammar) {
-            const newFilter = new StartsGrammar(g.cell, g.child.child, g.tapes);
+            const newFilter = new StartsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child.cell, newFilter);
             return newLocation.accept(this);
         }
@@ -79,11 +79,11 @@ export class FilterTransform extends IdentityTransform {
         const [newChild, errs] = g.child.accept(this);
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
-            const dot = new DotGrammar(g.cell, tape);
-            const dotStar = new RepeatGrammar(g.cell, dot);
+            const dot = new DotGrammar(tape);
+            const dotStar = new RepeatGrammar(dot);
             dotStars.push(dotStar);
         }
-        const result = new SequenceGrammar(g.cell, [ newChild, ...dotStars ]);
+        const result = new SequenceGrammar([newChild, ...dotStars ]);
         return [result, errs];
     }
     
@@ -91,37 +91,37 @@ export class FilterTransform extends IdentityTransform {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
-            const newFilter = new EndsGrammar(g.cell, g.child.child, g.tapes);
-            const newNegation = new NegationGrammar(g.child.cell, newFilter, g.child.maxReps);
+            const newFilter = new EndsGrammar(g.child.child, g.tapes);
+            const newNegation = new NegationGrammar(newFilter, g.child.maxReps);
             return newNegation.accept(this);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
             // this(x+y) -> this(x)+y
             const newChildren = [...g.child.children]; // clone the children
-            const newFirstChild = new EndsGrammar(g.cell, newChildren[0], g.tapes);
+            const newFirstChild = new EndsGrammar(newChildren[0], g.tapes);
             newChildren[0] = newFirstChild;
-            const newSequence = new SequenceGrammar(g.cell, newChildren);
+            const newSequence = new SequenceGrammar(newChildren);
             return newSequence.accept(this);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
-            const newChildren = g.child.children.map(c => new EndsGrammar(g.cell, c, g.tapes));
-            const newAlternation = new AlternationGrammar(g.cell, newChildren);
+            const newChildren = g.child.children.map(c => new EndsGrammar(c, g.tapes));
+            const newAlternation = new AlternationGrammar(newChildren);
             return newAlternation.accept(this);
         }
 
         if (g.child instanceof IntersectionGrammar) {
             // this(x&y) -> this(x)&this(y)
-            const newFilter1 = new EndsGrammar(g.cell, g.child.child1, g.tapes);
-            const newFilter2 = new EndsGrammar(g.cell, g.child.child2, g.tapes);
-            const newIntersection = new IntersectionGrammar(g.child.cell, newFilter1, newFilter2);
+            const newFilter1 = new EndsGrammar(g.child.child1, g.tapes);
+            const newFilter2 = new EndsGrammar(g.child.child2, g.tapes);
+            const newIntersection = new IntersectionGrammar(newFilter1, newFilter2);
             return newIntersection.accept(this);
         }
         
         if (g.child instanceof LocatorGrammar) {
-            const newFilter = new EndsGrammar(g.cell, g.child.child, g.tapes);
+            const newFilter = new EndsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child.cell, newFilter);
             return newLocation.accept(this);
         }
@@ -130,11 +130,11 @@ export class FilterTransform extends IdentityTransform {
         const [newChild, errs] = g.child.accept(this);
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
-            const dot = new DotGrammar(g.cell, tape);
-            const dotStar = new RepeatGrammar(g.cell, dot);
+            const dot = new DotGrammar(tape);
+            const dotStar = new RepeatGrammar(dot);
             dotStars.push(dotStar);
         }
-        const result = new SequenceGrammar(g.cell, [ ...dotStars, newChild ]);
+        const result = new SequenceGrammar([ ...dotStars, newChild ]);
         return [result, errs];
     }
     
@@ -142,39 +142,39 @@ export class FilterTransform extends IdentityTransform {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
-            const newFilter = new ContainsGrammar(g.cell, g.child.child, g.tapes);
-            const newNegation = new NegationGrammar(g.child.cell, newFilter, g.child.maxReps);
+            const newFilter = new ContainsGrammar(g.child.child, g.tapes);
+            const newNegation = new NegationGrammar(newFilter, g.child.maxReps);
             return newNegation.accept(this);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
             // this(x+y) -> x+this(y)
             const newChildren = [...g.child.children]; // clone the children
-            const newFirstChild = new EndsGrammar(g.cell, newChildren[0], g.tapes);
+            const newFirstChild = new EndsGrammar(newChildren[0], g.tapes);
             newChildren[0] = newFirstChild;
-            const newLastChild = new StartsGrammar(g.cell, newChildren[newChildren.length-1], g.tapes);
+            const newLastChild = new StartsGrammar(newChildren[newChildren.length-1], g.tapes);
             newChildren[newChildren.length-1] = newLastChild;
-            const newSequence = new SequenceGrammar(g.cell, newChildren);
+            const newSequence = new SequenceGrammar(newChildren);
             return newSequence.accept(this);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
-            const newChildren = g.child.children.map(c => new ContainsGrammar(g.cell, c, g.tapes));
-            const newAlternation = new AlternationGrammar(g.cell, newChildren);
+            const newChildren = g.child.children.map(c => new ContainsGrammar(c, g.tapes));
+            const newAlternation = new AlternationGrammar(newChildren);
             return newAlternation.accept(this);
         }
 
         if (g.child instanceof IntersectionGrammar) {
             // this(x&y) -> this(x)&this(y)
-            const newFilter1 = new ContainsGrammar(g.cell, g.child.child1, g.tapes);
-            const newFilter2 = new ContainsGrammar(g.cell, g.child.child2, g.tapes);
-            const newIntersection = new IntersectionGrammar(g.child.cell, newFilter1, newFilter2);
+            const newFilter1 = new ContainsGrammar(g.child.child1, g.tapes);
+            const newFilter2 = new ContainsGrammar(g.child.child2, g.tapes);
+            const newIntersection = new IntersectionGrammar(newFilter1, newFilter2);
             return newIntersection.accept(this);
         }
 
         if (g.child instanceof LocatorGrammar) {
-            const newFilter = new ContainsGrammar(g.cell, g.child.child, g.tapes);
+            const newFilter = new ContainsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child.cell, newFilter);
             return newLocation.accept(this);
         }
@@ -183,11 +183,11 @@ export class FilterTransform extends IdentityTransform {
         const [newChild, errs] = g.child.accept(this);
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
-            const dot = new DotGrammar(g.cell, tape);
-            const dotStar = new RepeatGrammar(g.cell, dot);
+            const dot = new DotGrammar(tape);
+            const dotStar = new RepeatGrammar(dot);
             dotStars.push(dotStar);
         }
-        const result = new SequenceGrammar(g.cell, [ ...dotStars, newChild, ...dotStars ]);
+        const result = new SequenceGrammar([ ...dotStars, newChild, ...dotStars ]);
         return [result, errs];
     }
 }
