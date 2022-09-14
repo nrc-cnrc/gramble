@@ -1,9 +1,9 @@
-import { Msgs } from "../util";
+import { MissingSymbolError, Msgs } from "../util";
 import { 
     EmbedGrammar,
+    EpsilonGrammar,
     Grammar,
-    NsGrammar,
-    UnresolvedEmbedGrammar
+    NsGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
@@ -47,7 +47,8 @@ export class NameQualifierTransform extends IdentityTransform {
             if (child instanceof NsGrammar) {
                 const newStack: [string, NsGrammar][] = [ ...this.nsStack, [name, child] ];
                 const newTransform = new NameQualifierTransform(this.ns, newStack);
-                child.accept(newTransform);
+                const [_, es] = child.accept(newTransform);
+                errs.push(...es);
             } else {
                 const newName = g.calculateQualifiedName(name, stackNames);
                 const [result, es] = child.accept(this);
@@ -64,7 +65,7 @@ export class NameQualifierTransform extends IdentityTransform {
         return [g, errs];
     }
 
-    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): [Grammar, Msgs] {
+    public transformEmbed(g: EmbedGrammar): [Grammar, Msgs] {
         let resolution: [string, Grammar] | undefined = undefined;
         for (let i = this.nsStack.length-1; i >=0; i--) {
             // we go down the stack asking each to resolve it
@@ -78,7 +79,11 @@ export class NameQualifierTransform extends IdentityTransform {
                 return [result, []];
             }
         }
-        return [g, []];
+
+        // didn't find it
+        const result = new EpsilonGrammar();
+        const err = new MissingSymbolError(g.name);
+        return [result, [err]];
     }
 
 }

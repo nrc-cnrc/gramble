@@ -8,7 +8,7 @@ import {
     NsGrammar, NegationGrammar, NegativeUnitTestGrammar,
     NullGrammar, RenameGrammar, RepeatGrammar, ReplaceGrammar,
     SequenceGrammar, UnitTestGrammar,
-    UnresolvedEmbedGrammar, StartsGrammar, 
+    StartsGrammar, 
     EndsGrammar, ContainsGrammar, CountGrammar, 
     CountTapeGrammar, CounterStack, JoinRuleGrammar, 
     MatchFromGrammar, PriorityGrammar, ShortGrammar, ParallelGrammar, LocatorGrammar
@@ -31,13 +31,11 @@ export class IdentityTransform implements GrammarTransform {
 
     constructor(
         protected ns: NsGrammar
-    ) {
-        ns.calculateTapes(new CounterStack(2)); // just in case it hasn't been done
-    }
+    ) { }
 
     public transform(): [NsGrammar, Msgs] {
-        const [ns, err] = this.ns.accept(this);
-        return [ns as NsGrammar, err];
+        this.ns.calculateTapes(new CounterStack(2)); // just in case it hasn't been done
+        return this.ns.accept(this) as [NsGrammar, Msgs];
     }
         
     public mapTo(gs: Grammar[]): [Grammar[], Msgs] {
@@ -161,10 +159,6 @@ export class IdentityTransform implements GrammarTransform {
         const newErrs = errs.map(e => localizeMsg(e, g.cell.pos));
         const result = new LocatorGrammar(g.cell, newChild);
         return [result, newErrs];
-    }
-
-    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): [Grammar, Msgs] {
-        return [g, []];
     }
 
     public transformNamespace(g: NsGrammar): [Grammar, Msgs] {

@@ -62,7 +62,7 @@ type TapeClass = {
 
 export interface Transform {
 
-    transform(g: NsGrammar): [NsGrammar, Msgs];
+    transform(): [NsGrammar, Msgs];
     readonly desc: string;
 
 }
@@ -89,7 +89,6 @@ export interface GrammarTransform extends Transform {
     transformMatchFrom(g: MatchFromGrammar): [Grammar, Msgs];
     transformReplace(g: ReplaceGrammar): [Grammar, Msgs];
     transformEmbed(g: EmbedGrammar): [Grammar, Msgs];
-    transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): [Grammar, Msgs];
     transformNamespace(g: NsGrammar): [Grammar, Msgs];
     transformRepeat(g: RepeatGrammar): [Grammar, Msgs];
     transformUnitTest(g: UnitTestGrammar): [Grammar, Msgs];
@@ -290,10 +289,6 @@ export abstract class Grammar {
             this._tapes = listUnique(flatten(childTapes));
         }
         return this._tapes;
-    }
-
-    public getUnresolvedNames(): string[] {
-        return flatten(this.getChildren().map(c => c.getUnresolvedNames()));
     }
 
     public getAllTapes(): TapeNamespace {
@@ -1459,7 +1454,7 @@ export class EmbedGrammar extends AtomicGrammar {
 
     constructor(
         public name: string,
-        public namespace: NsGrammar
+        public namespace: NsGrammar | undefined = undefined
     ) {
         super();
     }
@@ -1483,10 +1478,10 @@ export class EmbedGrammar extends AtomicGrammar {
     }
 
     public getReferent(): Grammar {
-        const referent = this.namespace.getSymbol(this.name);
+        const referent = this.namespace?.getSymbol(this.name);
         if (referent == undefined) {
             //shouldn't happen!
-            throw new Error(`Can't find ${this.name} in namespace, available: [${this.namespace.allSymbols()}]`);
+            throw new Error(`Can't find ${this.name} in namespace, available: [${this.namespace?.allSymbols()}]`);
         }
         return referent;
     }
@@ -1544,38 +1539,6 @@ export class EmbedGrammar extends AtomicGrammar {
         return constructEmbed(this.name, symbols);
     }
 
-}
-
-export class UnresolvedEmbedGrammar extends AtomicGrammar {
-
-    constructor(
-        public name: string
-    ) {
-        super();
-    }
-    
-    public get id(): string {
-        return `Embed(${this.name})`;
-    }
-
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
-        return t.transformUnresolvedEmbed(this);
-    }
-
-    public getUnresolvedNames(): string[] {
-        return [ this.name ];
-    }
-
-    public calculateTapes(stack: CounterStack): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = [];
-        }
-        return this._tapes;
-    }
-    
-    public constructExpr(symbols: SymbolTable): Expr {
-        throw new Error("not implemented");
-    }
 }
 
 /**
@@ -1726,8 +1689,8 @@ export function Null(): NullGrammar {
     return new NullGrammar();
 }
 
-export function Embed(name: string): UnresolvedEmbedGrammar {
-    return new UnresolvedEmbedGrammar(name);
+export function Embed(name: string): EmbedGrammar {
+    return new EmbedGrammar(name);
 }
 
 export function Match(child: Grammar, ...tapes: string[]): MatchGrammar {

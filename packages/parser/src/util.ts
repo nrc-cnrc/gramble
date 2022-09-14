@@ -2,66 +2,63 @@
 import { getCategory } from 'unicode-properties';
 //import { Token } from './tapes';
 
-export type Msg = {
-    localized: boolean,
-    sheet: string,
-    row: number,
-    col: number,
-    type: "error" | "warning" | "info",
-    shortMsg: string,
-    longMsg: string,
+type MsgType = "error" | "warning" | "info";
+
+export class Msg {
+
+    constructor(
+        public type: MsgType,
+        public shortMsg: string,
+        public longMsg: string,
+        public pos: CellPos | undefined = undefined
+    ) {}
+
+    public get sheet(): string | undefined {
+        return this.pos?.sheet;
+    }
+
+    public get row(): number | undefined {
+        return this.pos?.row;
+    }
+
+    public get col(): number | undefined {
+        return this.pos?.col;
+    }
+
 };
 
-export function unlocalizedError(shortMsg: string, longMsg: string): Msg {
-    return {
-        localized: false,
-        sheet: "",
-        row: -1,
-        col: -1,
-        type: "error",
-        shortMsg: shortMsg,
-        longMsg: longMsg
+export class MissingSymbolError extends Msg {
+
+    constructor(
+        public symbol: string
+    ) {
+        super(
+            "error",
+            "Undefined symbol", 
+            `Undefined symbol: ${symbol}`
+        )
     }
+    
+}
+
+export function unlocalizedError(shortMsg: string, longMsg: string): Msg {
+    return new Msg("error", shortMsg, longMsg);
 }
 
 export function unlocalizedWarning(longMsg: string): Msg {
-    return {
-        localized: false,
-        sheet: "",
-        row: -1,
-        col: -1,
-        type: "warning",
-        shortMsg: "warning",
-        longMsg: longMsg
-    }
+    return new Msg("warning", "warning", longMsg);
 }
 
-
 export function unlocalizedSuccess(longMsg: string): Msg {
-    return {
-        localized: false,
-        sheet: "",
-        row: -1,
-        col: -1,
-        type: "info",
-        shortMsg: "success",
-        longMsg: longMsg
-    }
+    return new Msg("info", "success", longMsg);
 }
 
 export function localizeMsg(msg: Msg, pos: CellPos): Msg {
-    if (msg.localized) {
+    if (msg.pos != undefined) {
         return msg;
     }
-    return {
-        localized: true,
-        sheet: pos.sheet,
-        row: pos.row,
-        col: pos.col,
-        type: msg.type,
-        shortMsg: msg.shortMsg,
-        longMsg: msg.longMsg
-    }
+    msg.pos = pos;
+    return msg;
 }
 
 export type Msgs = Msg[];

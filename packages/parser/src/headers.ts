@@ -1,6 +1,5 @@
 import { 
     AlternationGrammar, 
-    UnresolvedEmbedGrammar, 
     EpsilonGrammar, 
     EqualsGrammar, 
     HideGrammar, 
@@ -13,7 +12,8 @@ import {
     StartsGrammar,
     EndsGrammar,
     ContainsGrammar,
-    LocatorGrammar
+    LocatorGrammar,
+    EmbedGrammar
 } from "./grammars";
 
 import { 
@@ -152,7 +152,7 @@ export class EmbedHeader extends AtomicHeader {
         text: string,
         content: Cell
     ): Grammar {
-        const cellGrammar = new UnresolvedEmbedGrammar(text);
+        const cellGrammar = new EmbedGrammar(text);
         const locatedGrammar = new LocatorGrammar(content, cellGrammar);
         return new SequenceGrammar([left, locatedGrammar]);
     }

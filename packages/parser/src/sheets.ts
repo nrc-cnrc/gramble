@@ -6,7 +6,7 @@ import {
     TstEnclosure, TstHeader, TstProject, 
     TstNamespace, TstTable, TstComponent, TstComment, MissingParamsTransform, InvalidAssignmentTransform, TstTransform 
 } from "./tsts";
-import { Cell, CellPos, DevEnvironment, DummyCell } from "./util";
+import { Cell, CellPos, DevEnvironment, DummyCell, MissingSymbolError } from "./util";
 
 /**
  * Determines whether a line is empty
@@ -82,12 +82,14 @@ export class SheetProject extends SheetComponent {
         // check to see if any names didn't get resolved
 
         const nameQualifier = new NameQualifierTransform(grammar);
-        const [newGrammar, errs] = nameQualifier.transform();
-        grammar = newGrammar;
+        const [_, errs] = nameQualifier.transform();
 
         const unresolvedNames: Set<string> = new Set(); 
-        for (const name of grammar.getUnresolvedNames()) {
-            const firstPart = name.split(".")[0];
+        for (const err of errs) {
+            if (!(err instanceof MissingSymbolError)) { 
+                continue;
+            }
+            const firstPart = err.symbol.split(".")[0];
             unresolvedNames.add(firstPart);
         }
 

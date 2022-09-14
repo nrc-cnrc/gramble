@@ -6,29 +6,27 @@ import {
 import { 
     DevEnvironment, Gen, iterTake, 
     msToTime, StringDict, timeIt, 
-    DummyCell, stripHiddenTapes, GenOptions, 
+    stripHiddenTapes, GenOptions, 
     HIDDEN_TAPE_PREFIX,
     SILENT,
     VERBOSE_TIME,
     logTime,
-    logGrammar
+    logGrammar,
+    Msgs
 } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
-import { Tape, TapeNamespace, VocabMap } from "./tapes";
-import { Expr, PriorityExpr, SymbolTable } from "./exprs";
+import { TapeNamespace, VocabMap } from "./tapes";
+import { Expr, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 import { SameTapeReplaceTransform } from "./transforms/sameTapeReplace";
 import { RenameFixTransform } from "./transforms/renameFix";
 import { FilterTransform } from "./transforms/filter";
 import { FlattenTransform } from "./transforms/flatten";
-import { RuleReplaceTransform } from "./transforms/ruleReplace";
 import { generate } from "./generator";
 import { RuleReplaceTransform2 } from "./transforms/ruleReplace2";
-import { ParallelizeTransform } from "./transforms/parallelize";
-import { InvalidAssignmentTransform, MissingParamsTransform, TstIdentityTransform, TstProject, TstTransform } from "./tsts";
-import { MissingSymbolsTransform } from "./transforms/missingSymbols";
+import { InvalidAssignmentTransform, MissingParamsTransform, TstProject, TstTransform } from "./tsts";
 import { UnitTestTransform } from "./transforms/unitTests";
 
 type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
@@ -91,7 +89,6 @@ export class Interpreter {
         
         const transforms = [
             NameQualifierTransform,
-            MissingSymbolsTransform,
             FlattenTransform,
             RenameFixTransform,
             RuleReplaceTransform2,
@@ -104,9 +101,7 @@ export class Interpreter {
             const transform: GrammarTransform = new t(this.grammar);
             timeIt(() => {
                 const [newGrammar, errs] = transform.transform();
-                for (const err of errs) {
-                    devEnv.message(err);
-                }
+                this.sendMessages(errs);
                 this.grammar = newGrammar;
             }, timeVerbose, transform.desc);
         }
@@ -177,6 +172,17 @@ export class Interpreter {
     ): Interpreter {
         const devEnv = new SimpleDevEnvironment();
         return new Interpreter(devEnv, grammar, verbose);
+    }
+
+    public sendMessages(msgs: Msgs): void {
+        for (const msg of msgs) {
+            if (msg.pos == undefined) {
+                // if it's got no location we have nowhere to
+                // display it
+                continue;
+            }
+            this.devEnv.message(msg);
+        }
     }
 
     public allSymbols(): string[] {
@@ -361,8 +367,6 @@ export class Interpreter {
         this.grammar.constructExpr(this.symbolTable);  // fill the symbol table if it isn't already
         const t = new UnitTestTransform(this.grammar, this.vocab, this.tapeNS, this.symbolTable);
         const [_, errs] = t.transform();
-        for (const err of errs) {
-            this.devEnv.message(err);
-        }
+        this.sendMessages(errs);
     }
 }
