@@ -1,12 +1,13 @@
 import { 
     CounterStack,
-    Grammar, HideGrammar,
-    JoinGrammar, JoinRuleGrammar, 
-    NsGrammar, RenameGrammar, ReplaceGrammar
+    Grammar, 
+    JoinGrammar, 
+    JoinRuleGrammar, 
+    RenameGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
-import { DummyCell, Errs, foldRight, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { DummyCell, Msgs, foldRight, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, unlocalizedError } from "../util";
 
 let RULE_HIDE_INDEX = 0;
 
@@ -23,7 +24,7 @@ export class RuleReplaceTransform2 extends IdentityTransform {
         return "Constructing new-style replacement rules (2nd version)";
     }
 
-    public transformJoinRule(g: JoinRuleGrammar): [Grammar, Errs] {
+    public transformJoinRule(g: JoinRuleGrammar): [Grammar, Msgs] {
 
         let [newChild, childErrs] = g.child.accept(this);
 
@@ -31,11 +32,10 @@ export class RuleReplaceTransform2 extends IdentityTransform {
             // trying to replace on a tape that doesn't exist in the grammar
             // leads to infinite generation.  This is correct but not what anyone
             // actually wants, so mark an error
-            const newErrs = [...childErrs, {
-                type: "error",
-                shortMsg: `Replacing on non-existent tape'`,
-                longMsg: `The grammar above does not have a tape ${g.inputTape} to replace on`
-            }];
+            const newErrs: Msgs = [...childErrs, unlocalizedError(
+                `Replacing on non-existent tape'`,
+                `The grammar above does not have a tape ${g.inputTape} to replace on`
+            )];
             return [newChild, newErrs];
         }
 

@@ -2,13 +2,69 @@
 import { getCategory } from 'unicode-properties';
 //import { Token } from './tapes';
 
-export type Err = {
-    type: string
-    shortMsg: string
-    longMsg: string
+export type Msg = {
+    localized: boolean,
+    sheet: string,
+    row: number,
+    col: number,
+    type: "error" | "warning" | "info",
+    shortMsg: string,
+    longMsg: string,
 };
 
-export type Errs = Err[];
+export function unlocalizedError(shortMsg: string, longMsg: string): Msg {
+    return {
+        localized: false,
+        sheet: "",
+        row: -1,
+        col: -1,
+        type: "error",
+        shortMsg: shortMsg,
+        longMsg: longMsg
+    }
+}
+
+export function unlocalizedWarning(longMsg: string): Msg {
+    return {
+        localized: false,
+        sheet: "",
+        row: -1,
+        col: -1,
+        type: "warning",
+        shortMsg: "warning",
+        longMsg: longMsg
+    }
+}
+
+
+export function unlocalizedSuccess(longMsg: string): Msg {
+    return {
+        localized: false,
+        sheet: "",
+        row: -1,
+        col: -1,
+        type: "info",
+        shortMsg: "success",
+        longMsg: longMsg
+    }
+}
+
+export function localizeMsg(msg: Msg, pos: CellPos): Msg {
+    if (msg.localized) {
+        return msg;
+    }
+    return {
+        localized: true,
+        sheet: pos.sheet,
+        row: pos.row,
+        col: pos.col,
+        type: msg.type,
+        shortMsg: msg.shortMsg,
+        longMsg: msg.longMsg
+    }
+}
+
+export type Msgs = Msg[];
 
 // CONSTANTS
 

@@ -1,4 +1,4 @@
-import { Errs } from "../util";
+import { Msgs } from "../util";
 import { 
     EmbedGrammar,
     Grammar,
@@ -27,7 +27,7 @@ export class NameQualifierTransform extends IdentityTransform {
         super(ns);
     }
 
-    public transform(): [NsGrammar, Errs] {
+    public transform(): [NsGrammar, Msgs] {
         const newNamespace = new NsGrammar();
         const newStack: [string, NsGrammar][] = [["", this.ns]];
         const newTransform = new NameQualifierTransform(newNamespace, newStack);
@@ -39,9 +39,9 @@ export class NameQualifierTransform extends IdentityTransform {
         return "Qualifying names";
     }
 
-    public transformNamespace(g: NsGrammar): [Grammar, Errs] {
+    public transformNamespace(g: NsGrammar): [Grammar, Msgs] {
         const stackNames = this.nsStack.map(([n,g]) => n);
-        const errs: Errs = [];
+        const errs: Msgs = [];
 
         for (const [name, child] of g.symbols) {
             if (child instanceof NsGrammar) {
@@ -64,7 +64,7 @@ export class NameQualifierTransform extends IdentityTransform {
         return [g, errs];
     }
 
-    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): [Grammar, Errs] {
+    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): [Grammar, Msgs] {
         let resolution: [string, Grammar] | undefined = undefined;
         for (let i = this.nsStack.length-1; i >=0; i--) {
             // we go down the stack asking each to resolve it

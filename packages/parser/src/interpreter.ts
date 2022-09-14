@@ -104,6 +104,9 @@ export class Interpreter {
             const transform: GrammarTransform = new t(this.grammar);
             timeIt(() => {
                 const [newGrammar, errs] = transform.transform();
+                for (const err of errs) {
+                    devEnv.message(err);
+                }
                 this.grammar = newGrammar;
             }, timeVerbose, transform.desc);
         }
@@ -357,6 +360,9 @@ export class Interpreter {
     public runUnitTests(): void {
         this.grammar.constructExpr(this.symbolTable);  // fill the symbol table if it isn't already
         const t = new UnitTestTransform(this.grammar, this.vocab, this.tapeNS, this.symbolTable);
-        t.transform();
+        const [_, errs] = t.transform();
+        for (const err of errs) {
+            this.devEnv.message(err);
+        }
     }
 }

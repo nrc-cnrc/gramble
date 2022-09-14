@@ -1,8 +1,6 @@
-import { Errs, HIDDEN_TAPE_PREFIX } from "../util";
+import { Msg, Msgs, unlocalizedError } from "../util";
 import { 
-    CounterStack, EpsilonGrammar, Grammar,
-    HideGrammar,
-    NsGrammar, RenameGrammar, UnresolvedEmbedGrammar
+    EpsilonGrammar, Grammar, UnresolvedEmbedGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
@@ -14,13 +12,12 @@ export class MissingSymbolsTransform extends IdentityTransform {
         return "Validating tape-rename structure";
     }
 
-    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): [Grammar, Errs] {
+    public transformUnresolvedEmbed(g: UnresolvedEmbedGrammar): [Grammar, Msgs] {
 
-        const err = {
-            type: "error",  
-            shortMsg: "Unknown symbol", 
-            longMsg: `Undefined symbol: ${g.name}`
-        };
+        const err: Msg = unlocalizedError(
+            "Undefined symbol", 
+            `Undefined symbol: ${g.name}`
+        );
 
         const result = new EpsilonGrammar();
         return [result, [err]];

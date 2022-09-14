@@ -35,7 +35,7 @@ import {
     MPSequence, MPUnreserved 
 } from "./miniParser";
 
-import { Cell, Err, HSVtoRGB, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RGBtoString } from "./util";
+import { Cell, Msg, HSVtoRGB, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RGBtoString, unlocalizedError } from "./util";
 import { Tape } from "./tapes";
 
 export const DEFAULT_SATURATION = 0.05;
@@ -100,7 +100,7 @@ export type ParamDict = {[key: string]: Grammar};
         return result;
     }
 
-    public getErrors(): Err[] {
+    public getErrors(): Msg[] {
         return [];
     } 
 }
@@ -256,7 +256,7 @@ abstract class UnaryHeader extends Header {
         super();
     }
 
-    public getErrors(): Err[] {
+    public getErrors(): Msg[] {
         return this.child.getErrors();
     } 
 
@@ -566,7 +566,7 @@ abstract class BinaryHeader extends Header {
         super();
     }
 
-    public getErrors(): Err[] {
+    public getErrors(): Msg[] {
         return [...this.child1.getErrors(), ...this.child2.getErrors()];
     } 
 
@@ -608,12 +608,11 @@ export class ErrorHeader extends TapeNameHeader {
         return "ERR";
     }
 
-    public getErrors(): Err[] {
-        return [{
-            type: "error",
-            shortMsg: "Invalid header",
-            longMsg: `This header cannot be parsed.`
-        }];
+    public getErrors(): Msg[] {
+        return [unlocalizedError(
+            "Invalid header",
+            "This header cannot be parsed."
+        )];
     }
 
     public toGrammar(
@@ -634,13 +633,12 @@ export class ErrorHeader extends TapeNameHeader {
 
 export class ReservedErrorHeader extends ErrorHeader {
 
-    public getErrors(): Err[] {
-        return [{
-            type: "error", 
-            shortMsg: `Reserved word in header`, 
-            longMsg: `This looks like a header, but contains the reserved word "${this.text}". ` + 
+    public getErrors(): Msg[] {
+        return [unlocalizedError(
+            `Reserved word in header`, 
+            `This looks like a header, but contains the reserved word "${this.text}". ` + 
                     "If you didn't mean this to be a header, put a colon after it."
-        }];
+        )];
     }
 
     public toGrammar(

@@ -1,9 +1,9 @@
-import { Errs } from "../util";
+import { Msgs } from "../util";
 import { 
-    AlternationGrammar, ContainsGrammar, CounterStack, 
+    AlternationGrammar, ContainsGrammar, 
     DotGrammar, EndsGrammar, Grammar,
     IntersectionGrammar, LocatorGrammar, NegationGrammar, 
-    NsGrammar, RepeatGrammar, SequenceGrammar, StartsGrammar
+    RepeatGrammar, SequenceGrammar, StartsGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
@@ -35,7 +35,7 @@ export class FilterTransform extends IdentityTransform {
         return "Constructing filters";
     }
 
-    public transformStarts(g: StartsGrammar): [Grammar, Errs] {
+    public transformStarts(g: StartsGrammar): [Grammar, Msgs] {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
@@ -87,7 +87,7 @@ export class FilterTransform extends IdentityTransform {
         return [result, errs];
     }
     
-    public transformEnds(g: StartsGrammar): [Grammar, Errs] {
+    public transformEnds(g: StartsGrammar): [Grammar, Msgs] {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
@@ -138,7 +138,7 @@ export class FilterTransform extends IdentityTransform {
         return [result, errs];
     }
     
-    public transformContains(g: ContainsGrammar): [Grammar, Errs] {
+    public transformContains(g: ContainsGrammar): [Grammar, Msgs] {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))

@@ -1,7 +1,7 @@
-import { Errs, foldLeft } from "../util";
+import { Msgs, foldLeft } from "../util";
 import { 
-    AlternationGrammar, CounterStack, EpsilonGrammar, Grammar,
-    NsGrammar, NullGrammar, ParallelGrammar, SequenceGrammar
+    CounterStack, Grammar,
+    ParallelGrammar, SequenceGrammar
 } from "../grammars";
 import { IdentityTransform } from "./transforms";
 
@@ -11,10 +11,10 @@ export class ParallelizeTransform extends IdentityTransform {
         return "Parallelizing sequences";
     }
 
-    public transformSequence(g: SequenceGrammar): [Grammar, Errs] {
+    public transformSequence(g: SequenceGrammar): [Grammar, Msgs] {
         
         const newChildren: Grammar[] = [];
-        const errs: Errs = [];
+        const errs: Msgs = [];
         for (const child of g.children) {
             const [newChild, childErrs] = child.accept(this);
             errs.push(...childErrs);

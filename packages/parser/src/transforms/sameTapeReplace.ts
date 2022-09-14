@@ -1,11 +1,11 @@
 import { 
     AlternationGrammar, Grammar,
     JoinGrammar, JoinReplaceGrammar, 
-    NsGrammar, RenameGrammar, ReplaceGrammar
+    RenameGrammar, ReplaceGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
-import { DummyCell, Err, Errs } from "../util";
+import { DummyCell, Msg, Msgs, unlocalizedError } from "../util";
 
 /**
  * This Transform handles the behind-the-scenes renaming necessary when the programmer
@@ -20,10 +20,10 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         return "Adjusted tape names in same-tape replace rules";
     }
 
-    public transformJoinReplace(g: JoinReplaceGrammar): [Grammar, Errs] {
+    public transformJoinReplace(g: JoinReplaceGrammar): [Grammar, Msgs] {
 
         let [newChild, childErrs] = g.child.accept(this);
-        const [newRules, ruleErrs] = this.mapTo(g.rules) as [ReplaceGrammar[], Errs];
+        const [newRules, ruleErrs] = this.mapTo(g.rules) as [ReplaceGrammar[], Msgs];
         const errs = [...childErrs, ...ruleErrs];
 
         let fromTape: string | undefined = undefined;
@@ -43,12 +43,10 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         if (fromTape != undefined && replaceTape != undefined) {
             
             if (g.child.tapes.indexOf(fromTape) == -1) {
-                const newErrs = [...errs, {
-                    type: "error",
-                    shortMsg: `Replacing on non-existent tape'`,
-                    longMsg: `The grammar above does not have a tape ${fromTape} to replace on`
-
-                }]
+                const newErrs: Msgs = [...errs, unlocalizedError(
+                    `Replacing on non-existent tape'`,
+                    `The grammar above does not have a tape ${fromTape} to replace on`
+                )]
                 // if replace is replacing a tape not relevant to the child,
                 // then we generate infinitely -- which is correct but not what
                 // anyone wants.  so ignore the replacement entirely.
@@ -63,7 +61,7 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         return [result, errs];
     }
 
-    public transformReplace(g: ReplaceGrammar): [Grammar, Errs] {
+    public transformReplace(g: ReplaceGrammar): [Grammar, Msgs] {
 
         let replaceTapeName = g.fromTapeName;
         for (const toTapeName of g.toTapeNames) {

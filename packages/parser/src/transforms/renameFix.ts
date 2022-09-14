@@ -1,8 +1,7 @@
-import { Errs, HIDDEN_TAPE_PREFIX } from "../util";
+import { Msgs, HIDDEN_TAPE_PREFIX, unlocalizedError } from "../util";
 import { 
     CounterStack, Grammar,
-    HideGrammar,
-    NsGrammar, RenameGrammar
+    HideGrammar, RenameGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
@@ -27,18 +26,17 @@ export class RenameFixTransform extends IdentityTransform {
         return "Validating tape-rename structure";
     }
 
-    public transformHide(g: HideGrammar): [Grammar, Errs] {
+    public transformHide(g: HideGrammar): [Grammar, Msgs] {
 
         const [newChild, errs] = g.child.accept(this);
         newChild.calculateTapes(new CounterStack(2));
 
         if (newChild.tapes.indexOf(g.tapeName) == -1) {   
-            const newErrs: Errs = [...errs, {
-                type: "error", 
-                shortMsg: "Hiding missing tape",
-                longMsg: `The grammar to the left does not contain the tape ${g.tapeName}. ` +
+            const newErrs: Msgs = [...errs, unlocalizedError(
+                "Hiding missing tape",
+                `The grammar to the left does not contain the tape ${g.tapeName}. ` +
                     ` Available tapes: [${[...newChild.tapes]}]`
-            }];
+            )];
             return [newChild, newErrs];
         }
 
@@ -46,27 +44,25 @@ export class RenameFixTransform extends IdentityTransform {
         return [result, errs];
     }
 
-    public transformRename(g: RenameGrammar): [Grammar, Errs] {
+    public transformRename(g: RenameGrammar): [Grammar, Msgs] {
 
         const [newChild, errs] = g.child.accept(this);
         newChild.calculateTapes(new CounterStack(2));
 
         if (newChild.tapes.indexOf(g.fromTape) == -1) {   
-            const newErrs: Errs = [...errs, {
-                type: "error", 
-                shortMsg: "Renaming missing tape",
-                longMsg: `The grammar to the left does not contain the tape ${g.fromTape}. ` +
+            const newErrs: Msgs = [...errs, unlocalizedError(
+                "Renaming missing tape",
+                `The grammar to the left does not contain the tape ${g.fromTape}. ` +
                     `Available tapes: [${[...newChild.tapes]}]`
-            }];
+            )];
             return [newChild, newErrs];
         }
 
         if (g.fromTape != g.toTape && newChild.tapes.indexOf(g.toTape) != -1) {
-            const newErrs: Errs = [...errs, {
-                type: "error", 
-                shortMsg: "Destination tape already exists",
-                longMsg: `Trying to rename ${g.fromTape}->${g.toTape} but the grammar to the left ${g.child.id} already contains the tape ${g.toTape}. `
-            }];
+            const newErrs: Msgs = [...errs, unlocalizedError(
+                "Destination tape already exists",
+                `Trying to rename ${g.fromTape}->${g.toTape} but the grammar to the left ${g.child.id} already contains the tape ${g.toTape}. `
+            )];
             
             const errTapeName = `${HIDDEN_TAPE_PREFIX}ERR${g.toTape}`;
             const errChild = new RenameGrammar(newChild, g.toTape, errTapeName);
