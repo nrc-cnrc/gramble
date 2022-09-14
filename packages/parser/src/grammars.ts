@@ -1840,7 +1840,7 @@ export function Replace(
     vocabBypass: boolean = false,
     hiddenTapeName: string = ""
 ): ReplaceGrammar {
-    return new ReplaceGrammar(new DummyCell(), fromGrammar, toGrammar, 
+    return new ReplaceGrammar(fromGrammar, toGrammar, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
         minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass, hiddenTapeName);
 }
@@ -1991,6 +1991,7 @@ export class JoinRuleGrammar extends Grammar {
 
 } 
 
+let REPLACE_INDEX = 0;
 export class ReplaceGrammar extends Grammar {
 
     public get id(): string {
@@ -2005,7 +2006,6 @@ export class ReplaceGrammar extends Grammar {
     public toTapeNames: string[] = [];
 
     constructor(
-        public cell: Cell,
         public fromGrammar: Grammar,
         public toGrammar: Grammar,
         public preContext: Grammar = Epsilon(),
@@ -2022,7 +2022,7 @@ export class ReplaceGrammar extends Grammar {
     ) {
         super();
         if (this.hiddenTapeName.length == 0) {
-            this.hiddenTapeName = `${HIDDEN_TAPE_PREFIX}R${this.cell.pos.sheet}:${this.cell.pos.row}`;
+            this.hiddenTapeName = `${HIDDEN_TAPE_PREFIX}R${REPLACE_INDEX++}`;
         } else if (!this.hiddenTapeName.startsWith(HIDDEN_TAPE_PREFIX)) {
             this.hiddenTapeName = HIDDEN_TAPE_PREFIX + this.hiddenTapeName;
         }

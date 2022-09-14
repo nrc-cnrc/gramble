@@ -84,7 +84,7 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         const renamedPre = renameGrammar(newPre, g.fromTapeName, replaceTapeName);
         const renamedPost = renameGrammar(newPost, g.fromTapeName, replaceTapeName);
 
-        const result = new ReplaceGrammar(g.cell, renamedFrom, newTo, renamedPre, renamedPost, newOther,
+        const result = new ReplaceGrammar(renamedFrom, newTo, renamedPre, renamedPost, newOther,
             g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,
             g.vocabBypass);
         return [result, errs];

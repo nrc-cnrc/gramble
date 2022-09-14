@@ -784,7 +784,6 @@ const HP_PRE = MPSequence<Header>(
     (child) => new TagHeader("pre", child)
 );
 
-
 const HP_POST = MPSequence<Header>(
     ["post", HP_NON_COMMENT_EXPR],
     (child) => new TagHeader("post", child)

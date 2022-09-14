@@ -144,7 +144,7 @@ export class IdentityTransform implements GrammarTransform {
         const [newPre, preErrs] = g.preContext?.accept(this);
         const [newPost, postErrs] = g.postContext?.accept(this);
         const [newOther, otherErrs] = g.otherContext?.accept(this);
-        const result = new ReplaceGrammar(g.cell, newFrom, newTo, newPre, newPost, newOther,
+        const result = new ReplaceGrammar(newFrom, newTo, newPre, newPost, newOther,
             g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,
             g.vocabBypass, g.hiddenTapeName);
         const errs = [...fromErrs, ...toErrs, ...preErrs, ...postErrs, ...otherErrs];

@@ -726,7 +726,7 @@ export class TstReplaceTape extends TstBinaryOp {
             const postArg = "post" in paramDict 
                                     ? paramDict["post"] 
                                     : new EpsilonGrammar(); 
-            const replaceRule = new ReplaceGrammar(this.cell, fromArg, toArg, preArg, postArg);
+            const replaceRule = new ReplaceGrammar(fromArg, toArg, preArg, postArg);
             replaceRules.push(replaceRule);
         }
 
@@ -805,7 +805,7 @@ export class TstReplace extends TstBinaryOp {
             const postArg = "post" in paramDict 
                                     ? paramDict["post"] 
                                     : new EpsilonGrammar(); 
-            const replaceRule = new ReplaceGrammar(this.cell, fromArg, toArg, preArg, postArg);
+            const replaceRule = new ReplaceGrammar(fromArg, toArg, preArg, postArg);
             replaceRules.push(replaceRule);
         }
 
