@@ -1,4 +1,4 @@
-import { Msgs } from "../util";
+import { Msgs } from "../msgs";
 import { 
     AlternationGrammar, ContainsGrammar, 
     DotGrammar, EndsGrammar, Grammar,
@@ -76,7 +76,7 @@ export class FilterTransform extends IdentityTransform {
         }
 
         // construct the filter
-        const [newChild, errs] = g.child.accept(this);
+        const [newChild, msgs] = g.child.accept(this);
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
             const dot = new DotGrammar(tape);
@@ -84,7 +84,7 @@ export class FilterTransform extends IdentityTransform {
             dotStars.push(dotStar);
         }
         const result = new SequenceGrammar([newChild, ...dotStars ]);
-        return [result, errs];
+        return [result, msgs];
     }
     
     public transformEnds(g: StartsGrammar): [Grammar, Msgs] {
@@ -127,7 +127,7 @@ export class FilterTransform extends IdentityTransform {
         }
 
         // create the filter
-        const [newChild, errs] = g.child.accept(this);
+        const [newChild, msgs] = g.child.accept(this);
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
             const dot = new DotGrammar(tape);
@@ -135,7 +135,7 @@ export class FilterTransform extends IdentityTransform {
             dotStars.push(dotStar);
         }
         const result = new SequenceGrammar([ ...dotStars, newChild ]);
-        return [result, errs];
+        return [result, msgs];
     }
     
     public transformContains(g: ContainsGrammar): [Grammar, Msgs] {
@@ -180,7 +180,7 @@ export class FilterTransform extends IdentityTransform {
         }
 
         // create the filter
-        const [newChild, errs] = g.child.accept(this);
+        const [newChild, msgs] = g.child.accept(this);
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
             const dot = new DotGrammar(tape);
@@ -188,6 +188,6 @@ export class FilterTransform extends IdentityTransform {
             dotStars.push(dotStar);
         }
         const result = new SequenceGrammar([ ...dotStars, newChild, ...dotStars ]);
-        return [result, errs];
+        return [result, msgs];
     }
 }

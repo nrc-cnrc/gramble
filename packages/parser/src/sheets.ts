@@ -1,4 +1,5 @@
 import { NsGrammar } from "./grammars";
+import { CommandMsg, CommentMsg, Err, HeaderMsg, MissingSymbolError, Msg } from "./msgs";
 import { parseOpCell } from "./ops";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 
@@ -6,7 +7,7 @@ import {
     TstEnclosure, TstHeader, TstProject, 
     TstNamespace, TstTable, TstComponent, TstComment, MissingParamsTransform, InvalidAssignmentTransform, TstTransform 
 } from "./tsts";
-import { Cell, CellPos, DevEnvironment, DummyCell, MissingSymbolError } from "./util";
+import { Cell, CellPos, DevEnvironment, DummyCell } from "./util";
 
 /**
  * Determines whether a line is empty
@@ -82,14 +83,14 @@ export class SheetProject extends SheetComponent {
         // check to see if any names didn't get resolved
 
         const nameQualifier = new NameQualifierTransform(grammar);
-        const [_, errs] = nameQualifier.transform();
+        const [_, msgs] = nameQualifier.transform();
 
         const unresolvedNames: Set<string> = new Set(); 
-        for (const err of errs) {
-            if (!(err instanceof MissingSymbolError)) { 
+        for (const msg of msgs) {
+            if (!(msg instanceof MissingSymbolError)) { 
                 continue;
             }
-            const firstPart = err.symbol.split(".")[0];
+            const firstPart = msg.symbol.split(".")[0];
             unresolvedNames.add(firstPart);
         }
 
@@ -147,7 +148,6 @@ export class Sheet extends SheetComponent {
     }
 
     public message(msg: any): void {
-        msg["sheet"] = this.name;
         this.project.message(msg);
     }
 
@@ -246,7 +246,7 @@ export class Sheet extends SheetComponent {
                 
                 if (rowIsComment) {
                     const comment = new TstComment(cell);
-                    comment.message({ type: "comment" });
+                    comment.message(new CommentMsg());
                     continue;
                 }
 
@@ -280,17 +280,16 @@ export class Sheet extends SheetComponent {
                     // it's an operation, which starts a new enclosures
                     const op = parseOpCell(cell.text);
                     const newEnclosure = op.toTST(cell);
-                    cell.message({ type: "command" });
+                    cell.message(new CommandMsg());
                     try {                    
                         top.tst.addChild(newEnclosure);
                         const newTop = { tst: newEnclosure, row: rowIndex, col: colIndex };
                         stack.push(newTop);
                     } catch (e) {
-                        cell.message({
-                            type: "error",
-                            shortMsg: `Unexpected operator: ${cell.text}`,
-                            longMsg: "This looks like an operator, but only a header can follow a header."
-                        });
+                        cell.message(Err(
+                            `Unexpected operator: ${cell.text}`,
+                            "This looks like an operator, but only a header can follow a header."
+                        ));
                     }
                     continue;
                 } 
@@ -298,10 +297,9 @@ export class Sheet extends SheetComponent {
                 // it's a header
                 try {
                     const headerCell = new TstHeader(cell);
-                    cell.message({ 
-                        type: "header", 
-                        color: headerCell.getBackgroundColor(0.14) 
-                    });
+                    cell.message(new HeaderMsg( 
+                        headerCell.getBackgroundColor(0.14) 
+                    ));
                     
                     if (!(top.tst instanceof TstTable)) {
                         const newTable = new TstTable(cell);
@@ -311,11 +309,10 @@ export class Sheet extends SheetComponent {
                     }
                     (top.tst as TstTable).addHeader(headerCell);
                 } catch(e) {
-                    cell.message({
-                        type: "error",
-                        shortMsg:`Invalid header: ${cell.text}`,
-                        longMsg: (e as Error).message
-                    });
+                    cell.message(Err(
+                        `Invalid header: ${cell.text}`,
+                        (e as Error).message
+                    ));
                 }
             }
         }
@@ -333,10 +330,10 @@ export class SheetCell implements Cell {
         public col: number
     ) {  }
 
-    public message(msg: any): void {
-        msg["row"] = this.row;
-        msg["col"] = this.col;
-        this.sheet.message(msg);
+    public message(msg: Msg): void {
+        const pos = new CellPos(this.sheet.name, this.row, this.col);
+        const locatedMsg = msg.localize(pos);
+        this.sheet.message(locatedMsg);
     }
 
     public get pos(): CellPos {

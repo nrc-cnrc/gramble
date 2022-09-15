@@ -5,7 +5,7 @@ import {
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
-import { DummyCell, Msg, Msgs, unlocalizedError } from "../util";
+import { Msgs, Err } from "../msgs";
 
 /**
  * This Transform handles the behind-the-scenes renaming necessary when the programmer
@@ -22,9 +22,9 @@ export class SameTapeReplaceTransform extends IdentityTransform {
 
     public transformJoinReplace(g: JoinReplaceGrammar): [Grammar, Msgs] {
 
-        let [newChild, childErrs] = g.child.accept(this);
-        const [newRules, ruleErrs] = this.mapTo(g.rules) as [ReplaceGrammar[], Msgs];
-        const errs = [...childErrs, ...ruleErrs];
+        let [newChild, childMsgs] = g.child.accept(this);
+        const [newRules, ruleMsgs] = this.mapTo(g.rules) as [ReplaceGrammar[], Msgs];
+        const msgs = [...childMsgs, ...ruleMsgs];
 
         let fromTape: string | undefined = undefined;
         let replaceTape: string | undefined = undefined;
@@ -43,14 +43,12 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         if (fromTape != undefined && replaceTape != undefined) {
             
             if (g.child.tapes.indexOf(fromTape) == -1) {
-                const newErrs: Msgs = [...errs, unlocalizedError(
-                    `Replacing on non-existent tape'`,
-                    `The grammar above does not have a tape ${fromTape} to replace on`
-                )]
+                msgs.push(Err(`Replacing on non-existent tape'`,
+                    `The grammar above does not have a tape ${fromTape} to replace on`));
                 // if replace is replacing a tape not relevant to the child,
                 // then we generate infinitely -- which is correct but not what
                 // anyone wants.  so ignore the replacement entirely.
-                return [newChild, newErrs];
+                return [newChild, msgs];
             }
             
             newChild = renameGrammar(newChild, fromTape, replaceTape);
@@ -58,7 +56,7 @@ export class SameTapeReplaceTransform extends IdentityTransform {
 
         const child2 = new AlternationGrammar(newRules);
         const result = new JoinGrammar(newChild, child2);
-        return [result, errs];
+        return [result, msgs];
     }
 
     public transformReplace(g: ReplaceGrammar): [Grammar, Msgs] {
@@ -69,15 +67,13 @@ export class SameTapeReplaceTransform extends IdentityTransform {
                 replaceTapeName = g.hiddenTapeName;
         }
 
-        const [newFrom, fromErrs] = g.fromGrammar.accept(this);
-        const [newTo, toErrs] = g.toGrammar.accept(this);
-        const [newPre, preErrs] = g.preContext.accept(this);
-        const [newPost, postErrs] = g.postContext.accept(this);
-        const [newOther, otherErrs] = g.otherContext.accept(this);
-        const errs = [...fromErrs, ...toErrs, ...preErrs, ...postErrs, ...otherErrs];
+        const [newFrom, fromMsgs] = g.fromGrammar.accept(this);
+        const [newTo, toMsgs] = g.toGrammar.accept(this);
+        const [newPre, preMsgs] = g.preContext.accept(this);
+        const [newPost, postMsgs] = g.postContext.accept(this);
+        const [newOther, otherMsgs] = g.otherContext.accept(this);
+        const msgs = [...fromMsgs, ...toMsgs, ...preMsgs, ...postMsgs, ...otherMsgs];
 
-        // We use a dummy cell because this rename may be invalid, but we don't want
-        // it reported to the user because the compiler did it
         const renamedFrom = renameGrammar(newFrom, g.fromTapeName, replaceTapeName);
         const renamedPre = renameGrammar(newPre, g.fromTapeName, replaceTapeName);
         const renamedPost = renameGrammar(newPost, g.fromTapeName, replaceTapeName);
@@ -85,7 +81,7 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         const result = new ReplaceGrammar(renamedFrom, newTo, renamedPre, renamedPost, newOther,
             g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,
             g.vocabBypass);
-        return [result, errs];
+        return [result, msgs];
     }
 
 }

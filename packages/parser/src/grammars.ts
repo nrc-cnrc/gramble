@@ -28,6 +28,7 @@ import {
     constructParallel,
     Env
 } from "./exprs";
+import { Msgs } from "./msgs";
 
 import { 
     BitsetTape,
@@ -39,15 +40,11 @@ import {
 
 import { 
     Cell,
-    DummyCell,
-    Msg,
-    Msgs,
     flatten,
     HIDDEN_TAPE_PREFIX,
     listDifference,
     listIntersection,
     listUnique,
-    StringDict,
     tokenizeUnicode
 } from "./util";
 
@@ -272,12 +269,6 @@ export abstract class Grammar {
             results.push(...child.getVocabCopyEdges(tapeNS, symbolsVisited));
         }
         return results;
-    }
-
-    public runChecksAux(): void {
-        for (const child of this.getChildren()) {
-            child.runChecksAux();
-        }
     }
 
     public calculateTapes(stack: CounterStack): string[] {

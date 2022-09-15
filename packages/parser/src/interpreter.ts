@@ -11,8 +11,7 @@ import {
     SILENT,
     VERBOSE_TIME,
     logTime,
-    logGrammar,
-    Msgs
+    logGrammar
 } from "./util";
 import { SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
@@ -26,10 +25,14 @@ import { FilterTransform } from "./transforms/filter";
 import { FlattenTransform } from "./transforms/flatten";
 import { generate } from "./generator";
 import { RuleReplaceTransform2 } from "./transforms/ruleReplace2";
-import { InvalidAssignmentTransform, MissingParamsTransform, TstProject, TstTransform } from "./tsts";
+import { 
+    InvalidAssignmentTransform, 
+    MissingParamsTransform, 
+    TstProject, 
+    TstTransform 
+} from "./tsts";
 import { UnitTestTransform } from "./transforms/unitTests";
-
-type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
+import { Msgs } from "./msgs";
 
 /**
  * An interpreter object is responsible for applying the transformations in between sheets
@@ -100,9 +103,9 @@ export class Interpreter {
         for (const t of transforms) {
             const transform: GrammarTransform = new t(this.grammar);
             timeIt(() => {
-                const [newGrammar, errs] = transform.transform();
-                this.sendMessages(errs);
+                const [newGrammar, msgs] = transform.transform();
                 this.grammar = newGrammar;
+                this.sendMessages(msgs);
             }, timeVerbose, transform.desc);
         }
 
@@ -115,13 +118,6 @@ export class Interpreter {
             this.grammar.collectAllVocab(this.vocab, this.tapeNS);
 
         }, timeVerbose, "Collected vocab");
-
-        /*
-        timeIt(() => {
-            // copy the vocab if necessary
-            this.grammar.copyVocab(this.tapeNS, new Set());
-        }, timeVerbose, "Copied vocab");
-        */
 
         logGrammar(this.verbose, this.grammar.id)
     }
@@ -187,11 +183,6 @@ export class Interpreter {
 
     public allSymbols(): string[] {
         return this.grammar.allSymbols();
-    }
-
-    public getErrors(): GrambleError[] {
-        return this.devEnv.getErrorMessages().map(([sheet, row, col, msg, level]) =>
-            { return { sheet: sheet, row: row, col:col, msg:msg, level:level }});
     }
     
     public getTapeNames(
@@ -300,10 +291,6 @@ export class Interpreter {
         }
         return this.sheetProject.convertToSingleSheet();
     }
-
-    public runChecks(): void {
-        this.grammar.runChecksAux();
-    }
     
     public prepareExpr(
         symbolName: string = "",
@@ -366,7 +353,7 @@ export class Interpreter {
     public runUnitTests(): void {
         this.grammar.constructExpr(this.symbolTable);  // fill the symbol table if it isn't already
         const t = new UnitTestTransform(this.grammar, this.vocab, this.tapeNS, this.symbolTable);
-        const [_, errs] = t.transform();
-        this.sendMessages(errs);
+        const [_, msgs] = t.transform();
+        this.sendMessages(msgs);
     }
 }

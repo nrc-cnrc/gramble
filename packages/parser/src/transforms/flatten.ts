@@ -1,4 +1,4 @@
-import { Msgs } from "../util";
+import { Msgs } from "../msgs";
 import { 
     AlternationGrammar, EpsilonGrammar, Grammar,
     NsGrammar, NullGrammar, SequenceGrammar
@@ -27,7 +27,7 @@ export class FlattenTransform extends IdentityTransform {
 
     public transformSequence(g: SequenceGrammar): [Grammar, Msgs] {
         
-        const [children, errs] = this.mapTo(g.children);
+        const [children, msgs] = this.mapTo(g.children);
         const newChildren: Grammar[] = [];
         for (const child of children) {
             if (child instanceof SequenceGrammar) {
@@ -40,13 +40,13 @@ export class FlattenTransform extends IdentityTransform {
             newChildren.push(child);
         }
         const result = new SequenceGrammar(newChildren);
-        return [result, errs];
+        return [result, msgs];
     }
 
     
     public transformAlternation(g: AlternationGrammar): [Grammar, Msgs] {
         
-        const [children, errs] = this.mapTo(g.children);
+        const [children, msgs] = this.mapTo(g.children);
         const newChildren: Grammar[] = [];
         for (const child of children) {
             if (child instanceof AlternationGrammar) {
@@ -59,7 +59,7 @@ export class FlattenTransform extends IdentityTransform {
             newChildren.push(child);
         }
         const result = new AlternationGrammar(newChildren);
-        return [result, errs];
+        return [result, msgs];
     }
 
 }

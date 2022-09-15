@@ -6,7 +6,8 @@ import {
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
-import { DummyCell, Msgs, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, unlocalizedError } from "../util";
+import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { Msgs, Err } from "../msgs";
 
 /**
  * This Transform handles the construction of implicit-tape replacement rules
@@ -24,25 +25,23 @@ export class RuleReplaceTransform extends IdentityTransform {
     public transformJoinRule(g: JoinRuleGrammar): [Grammar, Msgs] {
 
         let relevantTape = g.inputTape;
-        let [result, childErrs] = g.child.accept(this);
+        let [result, childMsgs] = g.child.accept(this);
 
         if (g.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar
             // leads to infinite generation.  This is correct but not what anyone
             // actually wants, so mark an error
-            childErrs.push(unlocalizedError(
-                `Replacing on non-existent tape'`,
-                `The grammar above does not have a tape ${g.inputTape} to replace on`
-            ));
-            return [result, childErrs];
+            childMsgs.push(Err(`Replacing on non-existent tape'`,
+                `The grammar above does not have a tape ${g.inputTape} to replace on`));
+            return [result, childMsgs];
         }
 
         if (g.rules.length == 0) {
-            return [result, childErrs];
+            return [result, childMsgs];
         }
 
-        const [newRules, ruleErrs] = this.mapTo(g.rules);
-        const errs = [...childErrs, ...ruleErrs];
+        const [newRules, ruleMsgs] = this.mapTo(g.rules);
+        const msgs = [...childMsgs, ...ruleMsgs];
 
         for (const rule of newRules) {
             // first, rename the relevant tape of the child to ".input"
@@ -57,7 +56,7 @@ export class RuleReplaceTransform extends IdentityTransform {
 
         result = new RenameGrammar(result, REPLACE_OUTPUT_TAPE, g.inputTape);
         result.calculateTapes(new CounterStack(2));
-        return [result, errs];
+        return [result, msgs];
     }
 
 }

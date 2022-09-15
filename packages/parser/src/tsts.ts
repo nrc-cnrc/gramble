@@ -16,17 +16,16 @@ import {
     SequenceGrammar, JoinGrammar, ReplaceGrammar, 
     JoinReplaceGrammar, LiteralGrammar, JoinRuleGrammar, LocatorGrammar 
 } from "./grammars";
-import { Cell, CellPos, DummyCell } from "./util";
+import { Cell, CellPos } from "./util";
 import {
     DEFAULT_SATURATION,
     DEFAULT_VALUE,
-    ErrorHeader,
     Header,
     ParamDict,
     parseHeaderCell,
-    ReservedErrorHeader,
     RESERVED_WORDS
 } from "./headers";
+import { ContentMsg, Err, Msg, Warn } from "./msgs";
 
 
 export abstract class TstTransform {
@@ -60,21 +59,14 @@ export class InvalidAssignmentTransform {
 
         if (RESERVED_WORDS.has(trimmedTextLower)) {
             // oops, assigning to a reserved word
-            result.message({
-                type: "error",
-                shortMsg: "Assignment to reserved word", 
-                longMsg: "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
-                `reserved word ${trimmedText}.  Choose a different symbol name.`
-            });     
+            result.message(Err("Assignment to reserved word", 
+                "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
+                `reserved word ${trimmedText}.  Choose a different symbol name.`));     
             return new TstEmpty();       
         }
 
         if (trimmedText.indexOf(".") != -1) {
-            result.message({
-                type: "warning",
-                shortMsg: "Symbol name contains .", 
-                longMsg: "You can't assign to a name that contains a period."
-            });
+            result.message(Warn("You can't assign to a name that contains a period."));
             return new TstEmpty();
         }
 
@@ -110,31 +102,27 @@ export class MissingParamsTransform {
         const result = t.transform(this) as TstUnitTest;
 
         if (result.child instanceof TstEmpty) {
-            result.message({
-                type: "warning",
-                shortMsg: "Empty test",
-                longMsg: "'test' seems to be missing something to test; " +
+            result.message(Warn(
+                "'test' seems to be missing something to test; " +
                 "something should be in the cell to the right."
-            });
+            ));
             return result.sibling; 
         }
 
         if (!(result.child instanceof TstTable) && !(result.child instanceof TstTableOp)) {
-            result.message({
-                type: "error",
-                shortMsg: "Cannot execute tests",
-                longMsg: "You can't nest another operator to the right of a test block, " + 
+            result.message(Err(
+                "Cannot execute tests",
+                "You can't nest another operator to the right of a test block, " + 
                 "it has to be a content table."
-            });
+            ));
             return result.sibling;
         }
 
         if (result.sibling instanceof TstEmpty) {
-            result.message({
-                type: "error",
-                shortMsg: "Wayward test",
-                longMsg: "There should be something above this 'test' command to test"
-            });
+            result.message(Err(
+                "Wayward test",
+                "There should be something above this 'test' command to test"
+            ));
             return new TstEmpty();
         }
 
@@ -146,21 +134,15 @@ export class MissingParamsTransform {
         const result = t.transform(this) as TstNegativeUnitTest;
 
         if (result.child instanceof TstEmpty) {
-            result.message({
-                type: "error",
-                shortMsg: `Missing argument to '${result.text}'`, 
-                longMsg: `'${result.text}' is missing a second argument; ` +
-                "something should be in the cell to the right."
-            });
+            result.message(Err(`Missing argument to '${result.text}'`, 
+                `'${result.text}' is missing a second argument; ` +
+                "something should be in the cell to the right."));
         }
 
         if (result.sibling instanceof TstEmpty) {
-            result.message({
-                type: "error",
-                shortMsg: `Missing argument to '${result.text}'`,
-                longMsg:`'${result.text}' is missing a first argument; ` +
-                "something should be in a cell above this."
-            });
+            result.message(Err(`Missing argument to '${result.text}'`,
+                `'${result.text}' is missing a first argument; ` +
+                "something should be in a cell above this."));
         } 
 
         return result;
@@ -171,31 +153,21 @@ export class MissingParamsTransform {
         const result = t.transform(this) as TstNegativeUnitTest;
 
         if (result.child instanceof TstEmpty) {
-            result.message({
-                type: "warning",
-                shortMsg: "Empty testnot",
-                longMsg: "'testnot' seems to be missing something to test; " +
-                "something should be in the cell to the right."
-            });
+            result.message(Warn("'testnot' seems to be missing something to test; " +
+                "something should be in the cell to the right."));
             return result.sibling; 
         }
 
         if (!(result.child instanceof TstTable) && !(result.child instanceof TstTableOp)) {
-            result.message({
-                type: "error",
-                shortMsg: "Cannot execute testnot",
-                longMsg: "You can't nest another operator to the right of a testnot block, " + 
-                "it has to be a content table."
-            });
+            result.message(Err("Cannot execute testnot",
+                "You can't nest another operator to the right of a testnot block, " + 
+                "it has to be a content table."));
             return result.sibling;
         }
 
         if (result.sibling instanceof TstEmpty) {
-            result.message({
-                type: "error",
-                shortMsg: "Wayward testnot",
-                longMsg: "There should be something above this 'testnot' command to test"
-            });
+            result.message(Err("Wayward testnot",
+                "There should be something above this 'testnot' command to test"));
             return new TstEmpty();
         }
 
@@ -207,11 +179,9 @@ export class MissingParamsTransform {
 
         if (result.child instanceof TstEmpty) {
             // oops, empty "right side" of the assignment!
-            result.message({
-                type: "warning",
-                shortMsg: "Empty assignment", 
-                longMsg: `Just a heads up that this symbol will not contain any content.`
-            });
+            result.message(Warn(
+                `Just a heads up that this symbol will not contain any content.`
+            ));
         }
 
         return result;
@@ -222,21 +192,15 @@ export class MissingParamsTransform {
         const result = t.transform(this) as TstReplace;
 
         if (result.child instanceof TstEmpty) {
-            result.message({
-                type: "warning",
-                shortMsg: `Replace missing parameters`, 
-                longMsg: "The cells to the right do not contain valid material, so this replacement will be ignored."
-            });
+            result.message(Warn(
+                "The cells to the right do not contain valid material, so this replacement will be ignored."));
             return result.sibling;
         } 
 
         if (result.sibling instanceof TstEmpty) {
-            result.message({
-                type: "error",
-                shortMsg: `Missing argument to replace'`,
-                longMsg:`'replace:' needs a grammar to operate on; ` +
-                "something should be in a cell above this."
-            });
+            result.message(Err(`Missing argument to replace'`,
+                `'replace:' needs a grammar to operate on; ` +
+                "something should be in a cell above this."));
             return new TstEmpty();
         }
 
@@ -249,21 +213,15 @@ export class MissingParamsTransform {
         const result = t.transform(this) as TstReplace;
 
         if (result.child instanceof TstEmpty) {
-            result.message({
-                type: "warning",
-                shortMsg: `Replace missing parameters`, 
-                longMsg: "The cells to the right do not contain valid material, so this replacement will be ignored."
-            });
+            result.message(Err(`Replace missing parameters`, 
+                "The cells to the right do not contain valid material, so this replacement will be ignored."));
             return result.sibling;
         } 
 
         if (result.sibling instanceof TstEmpty) {
-            result.message({
-                type: "error",
-                shortMsg: `Missing argument to replace'`,
-                longMsg:`'${result.text}' needs a grammar to operate on; ` +
-                "something should be in a cell above this."
-            });
+            result.message(Err(`Missing argument to replace'`,
+                `'${result.text}' needs a grammar to operate on; ` +
+                "something should be in a cell above this."));
             return new TstEmpty();
         }
 
@@ -342,7 +300,7 @@ export abstract class TstCellComponent extends TstComponent {
         return this.cell.pos;
     }
 
-    public message(msg: any): void {
+    public message(msg: Msg): void {
         this.cell.message(msg);
     }
     
@@ -358,11 +316,9 @@ export abstract class TstCellComponent extends TstComponent {
             // We're also not the last child, so we won't be assigned to 
             // the default symbol.  Any content is going to be lost, so 
             // issue an error
-            this.message({
-                type: "warning",
-                shortMsg: `Content unassigned`,
-                longMsg: 'This content is not assigned to any symbol, and will be disregarded'
-            });
+            this.message(Warn(
+                'This content is not assigned to any symbol, and will be disregarded'
+            ));
         }
     }
     
@@ -371,11 +327,8 @@ export abstract class TstCellComponent extends TstComponent {
     }
 
     public toParamsTable(): [Cell, ParamDict][] {
-        this.message({
-            type: "error", 
-            shortMsg: `Unexpected operator`, 
-            longMsg: `The operator to the left expects a table of parameters, but found a ${this.constructor.name}.`
-        });
+        this.message(Err(`Unexpected operator`, 
+            `The operator to the left expects a table of parameters, but found a ${this.constructor.name}.`));
         return [];
     }
 
@@ -547,13 +500,11 @@ export class TstEnclosure extends TstCellComponent {
 
         if (this.child instanceof TstEnclosure && 
             this.child.pos.col != child.pos.col) {
-            child.message({
-                type: "warning",
-                shortMsg: "Unexpected operator",
-                longMsg: "This operator is in an unexpected column.  Did you mean for it " +
+            child.message(Warn(
+                "This operator is in an unexpected column.  Did you mean for it " +
                 `to be in column ${this.child.pos.col}, ` + 
                 `so that it's under the operator in cell ${this.child.pos}?`
-            });
+            ));
         }
 
         child.sibling = this.child;
@@ -583,12 +534,10 @@ export class TstTableOp extends TstEnclosure {
     public toGrammar(): Grammar {
         
         if (this.child instanceof TstEmpty) {
-            this.message({
-                type: "warning",
-                shortMsg: "Empty table",
-                longMsg: "'table' seems to be missing a table; " + 
+            this.message(Warn(
+                "'table' seems to be missing a table; " + 
                 "something should be in the cell to the right."
-            });
+            ));
         }
 
 
@@ -603,12 +552,10 @@ export class TstTableOp extends TstEnclosure {
     public toParamsTable(): [Cell, ParamDict][] {
         
         if (this.child instanceof TstEmpty) {
-            this.message({
-                type: "warning",
-                shortMsg: "Empty table",
-                longMsg: "'table' seems to be missing a table; " + 
+            this.message(Warn(
+                "'table' seems to be missing a table; " + 
                 "something should be in the cell to the right."
-            });
+            ));
         }
 
         this.sibling.toGrammar(); // it's erroneous, but this will at
@@ -683,40 +630,30 @@ export class TstReplaceTape extends TstBinaryOp {
                         continue; // it's okay to have {__:epsilon}
                     }
                     const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message({
-                        type: "warning",
-                        shortMsg: "Missing parameter name",
-                        longMsg: `The operator to the left doesn't allow unnamed parameters.`
-                    });
+                    errLoc.message(Warn(
+                        `The operator to the left doesn't allow unnamed parameters.`
+                    ));
                     continue;
                 }
                 if (TstReplace.VALID_PARAMS.indexOf(key) == -1) {
 
                     const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message({
-                        type: "warning",
-                        shortMsg: "Wayward parameter name",
-                        longMsg: `The operator to the left doesn't allow parameter '${key}', so this cell will be ignored.`
-                    });
+                    errLoc.message(Warn(
+                        `The operator to the left doesn't allow parameter '${key}', so this cell will be ignored.`
+                    ));
                     continue;
                 }
             }
 
             if (!("from" in paramDict)) {
-                this.message({
-                    type: "error",
-                    shortMsg: `Missing 'from' argument to replace'`,
-                    longMsg:"'replace:' requires a 'from' argument (e.g. 'from text')"
-                });
+                this.message(Err(`Missing 'from' argument to replace'`,
+                    "'replace:' requires a 'from' argument (e.g. 'from text')"));
                 continue;
             }
             const fromArg = paramDict["from"];
             if (!("to" in paramDict)) {
-                this.message({
-                    type: "error",
-                    shortMsg: `Missing 'to' argument to replace'`,
-                    longMsg:"'replace:' requires a 'to' argument (e.g. 'to text')"
-                });
+                this.message(Err(`Missing 'to' argument to replace'`,
+                    "'replace:' requires a 'to' argument (e.g. 'to text')"));
                 continue;
             }
             const toArg = paramDict["to"];
@@ -763,39 +700,27 @@ export class TstReplace extends TstBinaryOp {
                         continue; // it's okay to have {__:epsilon}
                     }
                     const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message({
-                        type: "warning",
-                        shortMsg: "Missing parameter name",
-                        longMsg: `The operator to the left doesn't allow unnamed parameters.`
-                    });
+                    errLoc.message(Warn(
+                        `The operator to the left doesn't allow unnamed parameters.`));
                     continue;
                 }
                 if (TstReplace.VALID_PARAMS.indexOf(key) == -1) {
                     const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message({
-                        type: "warning",
-                        shortMsg: "Wayward parameter name",
-                        longMsg: `The operator to the left doesn't allow parameters '${key}', so this cell will be ignored.`
-                    });
+                    errLoc.message(Warn(
+                        `The operator to the left doesn't allow parameters '${key}', so this cell will be ignored.`));
                     continue;
                 }
             }
 
             if (!("from" in paramDict)) {
-                this.message({
-                    type: "error",
-                    shortMsg: `Missing 'from' argument to replace'`,
-                    longMsg:"'replace:' requires a 'from' argument (e.g. 'from text')"
-                });
+                this.message(Err(`Missing 'from' argument to replace'`,
+                    "'replace:' requires a 'from' argument (e.g. 'from text')"));
                 continue;
             }
             const fromArg = paramDict["from"];
             if (!("to" in paramDict)) {
-                this.message({
-                    type: "error",
-                    shortMsg: `Missing 'to' argument to replace'`,
-                    longMsg:"'replace:' requires a 'to' argument (e.g. 'to text')"
-                });
+                this.message(Err(`Missing 'to' argument to replace'`,
+                    "'replace:' requires a 'to' argument (e.g. 'to text')"));
                 continue;
             }
             const toArg = paramDict["to"];
@@ -851,21 +776,15 @@ export class TstUnitTest extends TstEnclosure {
             for (const [key, grammar] of Object.entries(paramDict)) {
                 if (TstUnitTest.VALID_PARAMS.indexOf(key) == -1) {
                     const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message({
-                        type: "warning",
-                        shortMsg: "Wayward parameter name",
-                        longMsg: `The operator to the left doesn't allow paramaters '${key}', so this cell will be ignored.`
-                    });
+                    errLoc.message(Warn(
+                        `The operator to the left doesn't allow paramaters '${key}', so this cell will be ignored.`));
                     continue;
                 }
             }
             const testInputs = paramDict["__"];
             if (testInputs == undefined) {
-                cell.message({
-                    type: "error",
-                    shortMsg: "Missing test inputs",
-                    longMsg: `This test line does not have any inputs.`
-                });
+                cell.message(Err("Missing test inputs",
+                    `This test line does not have any inputs.`));
                 continue;
             }
 
@@ -878,12 +797,9 @@ export class TstUnitTest extends TstEnclosure {
                 } catch (e) {
                     console.log(e);
                     const errLoc = [...unique.locations, cell][0];
-                    errLoc.message({
-                        type: "error",
-                        shortMsg: "Ill-formed unique",
-                        longMsg: `Somewhere in this row there is an ill-formed uniqueness constraint.  ` +
-                                `Uniqueness constrains can only be literals.`
-                    });
+                    errLoc.message(Err("Ill-formed unique",
+                        `Somewhere in this row there is an ill-formed uniqueness constraint.  ` +
+                        `Uniqueness constrains can only be literals.`));
                     continue;
                 }
             }
@@ -918,11 +834,8 @@ export class TstNegativeUnitTest extends TstUnitTest {
             for (const [key, grammar] of Object.entries(paramDict)) {
                 if (key != "__") {
                     const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message({
-                        type: "warning",
-                        shortMsg: "Wayward parameter name",
-                        longMsg: `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`
-                    });
+                    errLoc.message(Warn(
+                        `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`));
                     continue;
                 }
                 result = new NegativeUnitTestGrammar(result, grammar);
@@ -993,11 +906,9 @@ export class TstTable extends TstEnclosure {
         const headerCell = this.headersByCol[cell.pos.col];
         if (headerCell == undefined) {
             if (cell.text.length != 0) {
-                cell.message({
-                    type: "warning",
-                    shortMsg: `Ignoring cell: ${cell.text}`,
-                    longMsg: "Cannot associate this cell with any valid header above; ignoring."
-                });
+                cell.message(Warn(
+                    "Cannot associate this cell with any valid header above; ignoring."
+                ));
             }
             return;
         }
@@ -1026,11 +937,9 @@ export class TstTable extends TstEnclosure {
                 if (key != "__") {
                     // there's a wayward parameter name in the headers
                     const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message({
-                        type: "warning",
-                        shortMsg: "Wayward parameter name",
-                        longMsg: `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`
-                    });
+                    errLoc.message(Warn(
+                        `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`
+                    ));
                     continue;
                 }
 
@@ -1070,11 +979,10 @@ export class TstRow extends TstCellComponent {
 
     public addContent(header: TstHeader, cell: Cell): void {
         const newCell = new TstHeadedCell(this.lastCell, header, cell);
-        cell.message({ 
-            type: "content", 
-            color: header.getBackgroundColor(),
-            fontColor: header.getFontColor()
-        });
+        cell.message(new ContentMsg(
+            header.getBackgroundColor(),
+            header.getFontColor()
+        ));
         this.lastCell = newCell;
     }
 
@@ -1110,23 +1018,17 @@ export class TstAssignment extends TstEnclosure {
                             : this.text;
 
         if (ns == undefined) {
-            this.message({
-                type: "error",
-                shortMsg: "Wayward assignment",
-                longMsg: `This looks like an assignment to a symbol ${trimmedText}, ` +
-                    "but an assignment can't be here."
-            });
+            this.message(Err("Wayward assignment",
+                `This looks like an assignment to a symbol ${trimmedText}, ` +
+                "but an assignment can't be here."));
             return;
         }
 
         const referent = ns.getSymbol(trimmedText);
         if (referent != undefined) {
             // we're reassigning an existing symbol!
-            this.message({
-                type: "error",
-                shortMsg: 'Reassigning existing symbol', 
-                longMsg: `The symbol ${trimmedText} already refers to another grammar above.}`
-            });
+            this.message(Err('Reassigning existing symbol', 
+                `The symbol ${trimmedText} already refers to another grammar above.`));
             return;
         }
 

@@ -35,8 +35,8 @@ import {
     MPSequence, MPUnreserved 
 } from "./miniParser";
 
-import { Cell, Msg, HSVtoRGB, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RGBtoString, unlocalizedError } from "./util";
-import { Tape } from "./tapes";
+import { Cell, HSVtoRGB, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RGBtoString } from "./util";
+import { Msgs, Err, Warn } from "./msgs";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
@@ -100,7 +100,7 @@ export type ParamDict = {[key: string]: Grammar};
         return result;
     }
 
-    public getErrors(): Msg[] {
+    public getErrors(): Msgs {
         return [];
     } 
 }
@@ -256,7 +256,7 @@ abstract class UnaryHeader extends Header {
         super();
     }
 
-    public getErrors(): Msg[] {
+    public getErrors(): Msgs {
         return this.child.getErrors();
     } 
 
@@ -330,11 +330,8 @@ class RenameHeader extends UnaryHeader {
         content: Cell
     ): Grammar {
         if (!(this.child instanceof TapeNameHeader)) {
-            content.message({
-                type: "error",
-                shortMsg: "Renaming error",
-                longMsg: "Rename (>) needs to have a tape name after it"
-            })
+            content.message(Err("Renaming error",
+                "Rename (>) needs to have a tape name after it"));
             return new EpsilonGrammar();
         }
         const result = new RenameGrammar(left, text, this.child.text);
@@ -369,11 +366,8 @@ export class RegexHeader extends UnaryHeader {
     ): Grammar {
 
         if (parsedText instanceof ErrorRegex) {
-            content.message({
-                type: "error",
-                shortMsg: "Cannot parse regex",
-                longMsg: "Cannot parse the regex in this cell"
-            })
+            content.message(Err("Cannot parse regex",
+                "Cannot parse the regex in this cell"));
             return new EpsilonGrammar();
         }
 
@@ -428,11 +422,8 @@ export class RegexHeader extends UnaryHeader {
 
         if (!(this.child instanceof TapeNameHeader 
                     || this.child instanceof EmbedHeader)) {
-            content.message({
-                type: "error",
-                shortMsg: "Renaming error",
-                longMsg: `"re" can only be followed by a tape name or "embed"`
-            })
+            content.message(Err("Re header error",
+                `"re" can only be followed by a tape name or "embed"`));
             return new EpsilonGrammar();
         }
 
@@ -566,7 +557,7 @@ abstract class BinaryHeader extends Header {
         super();
     }
 
-    public getErrors(): Msg[] {
+    public getErrors(): Msgs {
         return [...this.child1.getErrors(), ...this.child2.getErrors()];
     } 
 
@@ -608,8 +599,8 @@ export class ErrorHeader extends TapeNameHeader {
         return "ERR";
     }
 
-    public getErrors(): Msg[] {
-        return [unlocalizedError(
+    public getErrors(): Msgs {
+        return [Err(
             "Invalid header",
             "This header cannot be parsed."
         )];
@@ -621,11 +612,8 @@ export class ErrorHeader extends TapeNameHeader {
         content: Cell
     ): Grammar {
         if (content.text.length != 0) {
-            content.message({
-                type: "warning",
-                shortMsg: `Invalid header: ${this.text}`,
-                longMsg: `This content is associated with an invalid header above, ignoring`
-            });
+            content.message(Warn(
+                `This content is associated with an invalid header above, ignoring`));
         }
         return left;
     }
@@ -633,8 +621,8 @@ export class ErrorHeader extends TapeNameHeader {
 
 export class ReservedErrorHeader extends ErrorHeader {
 
-    public getErrors(): Msg[] {
-        return [unlocalizedError(
+    public getErrors(): Msgs {
+        return [Err(
             `Reserved word in header`, 
             `This looks like a header, but contains the reserved word "${this.text}". ` + 
                     "If you didn't mean this to be a header, put a colon after it."
@@ -647,11 +635,8 @@ export class ReservedErrorHeader extends ErrorHeader {
         content: Cell
     ): Grammar {
         if (content.text.length != 0) {
-            content.message({
-                type: "warning",
-                shortMsg: `Invalid header: ${this.text}`,
-                longMsg: `This content is associated with an invalid header above, ignoring`
-            });
+            content.message(Warn(
+                `This content is associated with an invalid header above, ignoring`));
         }
         return left;
     }

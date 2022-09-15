@@ -5,6 +5,7 @@ import {
     MPDelay, MPParser, MPReserved, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
+import { Err } from "./msgs";
 import { 
     TstAssignment, TstBinaryOp, TstEnclosure, TstNamespace, 
     TstNegativeUnitTest, TstReplace, TstReplaceTape, TstTableOp, TstUnitTest 
@@ -147,11 +148,8 @@ export class ReservedErrorOp {
     public toTST(cell: Cell): TstEnclosure {
         
         // oops, assigning to a reserved word
-        cell.message({
-            type: "error",
-            shortMsg: "Reserved word as operator", 
-            longMsg: "This cell has to be a symbol name or an operator, but it's a reserved word."
-        });            
+        cell.message(Err("Reserved word as operator", 
+            "This cell has to be a symbol name or an operator, but it's a reserved word."));            
 
         // treating it as a TstEnclosure will at least
         // get its siblings/children error checked too

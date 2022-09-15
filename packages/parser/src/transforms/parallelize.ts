@@ -1,4 +1,4 @@
-import { Msgs, foldLeft } from "../util";
+import { Msgs } from "../msgs";
 import { 
     CounterStack, Grammar,
     ParallelGrammar, SequenceGrammar
@@ -14,10 +14,10 @@ export class ParallelizeTransform extends IdentityTransform {
     public transformSequence(g: SequenceGrammar): [Grammar, Msgs] {
         
         const newChildren: Grammar[] = [];
-        const errs: Msgs = [];
+        const msgs: Msgs = [];
         for (const child of g.children) {
-            const [newChild, childErrs] = child.accept(this);
-            errs.push(...childErrs);
+            const [newChild, childMsgs] = child.accept(this);
+            msgs.push(...childMsgs);
             newChild.calculateTapes(new CounterStack(2));
             const prevChild = newChildren.pop();
             if (prevChild == undefined) {
@@ -28,7 +28,7 @@ export class ParallelizeTransform extends IdentityTransform {
         }
 
         const result = new SequenceGrammar(newChildren);
-        return [result, errs];
+        return [result, msgs];
     }
 
 }

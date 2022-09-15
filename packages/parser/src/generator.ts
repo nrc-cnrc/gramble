@@ -1,5 +1,5 @@
 import { 
-    constructPriority, CounterStack, Env, 
+    CounterStack, Env, 
     EpsilonExpr, Expr, NullExpr, PriorityExpr 
 } from "./exprs";
 import { OutputTrie, TapeNamespace } from "./tapes";
