@@ -1,12 +1,19 @@
 import { NsGrammar } from "./grammars";
-import { CommandMsg, CommentMsg, Err, HeaderMsg, MissingSymbolError, Msg } from "./msgs";
+import { 
+    CommandMsg, CommentMsg, 
+    Err, HeaderMsg, 
+    MissingSymbolError, Msg 
+} from "./msgs";
 import { parseOpCell } from "./ops";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 
 import { 
-    TstBinary, TstHeader, TstProject, 
-    TstNamespace, TstTable, TstComponent, TstComment, MissingParamsTransform, InvalidAssignmentTransform, TstTransform, TstEnclosure, AdjustAssignmentScope 
+    TstHeader, TstProject, 
+    TstNamespace, TstTable, 
+    TstComponent, TstComment, 
+    TstEnclosure 
 } from "./tsts";
+import { TstTransformAll } from "./tstTransforms/allTransforms";
 import { Cell, CellPos, DevEnvironment, DummyCell } from "./util";
 
 /**
@@ -70,16 +77,9 @@ export class SheetProject extends SheetComponent {
         const sheet = new Sheet(this, sheetName, cells);
         this.sheets[sheetName] = sheet;
 
-        let tst = this.toTST();
-        const transforms: TstTransform[] = [
-            new AdjustAssignmentScope(),
-            new InvalidAssignmentTransform(),
-            new MissingParamsTransform(),
-        ]
-        for (const t of transforms) {
-            tst = t.transform(tst) as TstProject;
-        }
-        let grammar = tst.toGrammar() as NsGrammar;
+        let tst: TstComponent = this.toTST();
+        const [newTst, tstMsgs] = new TstTransformAll().transform(tst);
+        let grammar = newTst.toGrammar() as NsGrammar;
 
         // check to see if any names didn't get resolved
 

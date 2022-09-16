@@ -19,287 +19,15 @@ import {
     DEFAULT_VALUE,
     Header,
     ParamDict,
-    parseHeaderCell,
-    RESERVED_WORDS
+    parseHeaderCell
 } from "./headers";
-import { ContentMsg, Err, Msg, Warn } from "./msgs";
+import { ContentMsg, Err, Msg, Msgs, Warn } from "./msgs";
 
 
 export abstract class TstTransform {
-    public abstract transform(t: TstComponent): TstComponent;
+    public abstract transform(t: TstComponent): [TstComponent, Msgs];
 }
 
-export class TstIdentityTransform {
-    public transform(t: TstComponent): TstComponent {
-        return t.transform(this);
-    }
-}
-
-export class InvalidAssignmentTransform {
-
-    constructor(
-        public underNamespace: boolean = false
-    ) { }
-
-    public transform(
-        t: TstComponent, 
-    ): TstComponent {
-
-        switch(t.constructor.name) {
-            case 'TstAssignment':
-                return this.transformAssignment(t as TstAssignment);
-            case 'TstNamespace':
-                return t.transform(new InvalidAssignmentTransform(true));
-            case 'TstProject': 
-                return t.transform(new InvalidAssignmentTransform(true));
-            default: 
-                return t.transform(new InvalidAssignmentTransform(false));
-        }
-    }
-    
-    public transformAssignment(t: TstAssignment): TstComponent {
-        const newThis = new InvalidAssignmentTransform(false);
-        const result = t.transform(newThis) as TstAssignment;
-        const trimmedText = result.text.endsWith(":")
-                            ? result.text.slice(0, result.text.length-1).trim()
-                            : result.text
-        const trimmedTextLower = trimmedText.toLowerCase();
-
-        if (!this.underNamespace) {
-            result.message(Err(
-                "Wayward assignment",
-                "This looks like an assignment, but isn't in an appropriate position "
-               + "for one and will be ignored."
-            ));
-            return result.child;
-        }
-
-        if (RESERVED_WORDS.has(trimmedTextLower)) {
-            // oops, assigning to a reserved word
-            result.message(Err("Assignment to reserved word", 
-                "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
-                `reserved word ${trimmedText}.  Choose a different symbol name.`));     
-            return result.child;       
-        }
-
-        if (trimmedText.indexOf(".") != -1) {
-            result.message(Warn("You can't assign to a name that contains a period."));
-            return result.child;
-        }
-
-        return result;
-    }
-}
-
-/**
- * When we're directly under a namespace, you can use a binary
- * operation like join, replace, test, etc. to modify the previous
- * assignment, and the results will be assigned to that same name.
- */
-export class AdjustAssignmentScope {
-
-    public transform(t: TstComponent): TstComponent {
-
-        switch(t.constructor) {
-            case TstNamespace:
-                return this.transformNamespace(t as TstNamespace);
-            default: 
-                return t.transform(this);
-        }
-    }
-
-    public transformNamespace(t: TstNamespace): TstNamespace {
-        const newThis = t.transform(this) as TstNamespace;
-        const newChildren: TstEnclosure[] = [];
-        for (const child of t.children) {
-
-            if (child instanceof TstBinaryOp ||
-                    child instanceof TstReplace ||
-                    child instanceof TstReplaceTape ||
-                    child instanceof TstUnitTest ||
-                    child instanceof TstNegativeUnitTest) {
-                
-                const prev = newChildren.pop();
-                if (prev == undefined) {
-                    // this is the first child, it's erroneous
-                    // to be here, but it will be detected later.
-                    newChildren.push(child);
-                    continue;
-                }
-
-                if (prev instanceof TstAssignment) {
-                    // it's an assignment, so adjust the scope 
-                    // of the assignment so it includes the operator
-                    // too
-                    child.sibling = prev.child;
-                    prev.child = child;
-                    newChildren.push(prev);
-                    continue;
-                }
-
-                // the previous child is not an assignment, so
-                // it's just the first arg to this, but don't assign 
-                // it to anything.  it'll be assigned to __DEFAULT__ if 
-                // it's last, otherwise the unassigned-content pass will
-                // deal with it
-                child.sibling = prev;
-                newChildren.push(child);
-
-            } else {
-                newChildren.push(child);
-            }
-        }
-
-        newThis.children = newChildren;
-        return newThis;
-    }
-
-}
-
-export class MissingParamsTransform {
-
-    public transform(t: TstComponent): TstComponent {
-
-        switch(t.constructor.name) {
-            case 'TstUnitTest': 
-                return this.transformTest(t as TstUnitTest);
-            case 'TstNegativeUnitTest': 
-                return this.transformNegativeTest(t as TstNegativeUnitTest);
-            case 'TstReplace':
-                return this.transformReplace(t as TstReplace);
-            case 'TstReplaceTape':
-                return this.transformReplaceTape(t as TstReplaceTape);
-            case 'TstAssignment':
-                return this.transformAssignment(t as TstAssignment);
-            case 'TstBinaryOp':
-                return this.transformBinaryOp(t as TstBinaryOp);
-            default: 
-                return t.transform(this);
-        }
-    }
-
-    public transformTest(t: TstUnitTest): TstComponent {
-        
-        const result = t.transform(this) as TstUnitTest;
-
-        if (result.child instanceof TstEmpty) {
-            result.message(Warn("'test' seems to be missing something to test; " +
-                "something should be in the cell to the right."));
-            return result.sibling; 
-        }
-
-        if (!(result.child instanceof TstTable) && !(result.child instanceof TstTableOp)) {
-            result.message(Err("Cannot execute tests",
-                "You can't nest another operator to the right of a test block, " + 
-                "it has to be a content table."));
-            return result.sibling;
-        }
-
-        if (result.sibling instanceof TstEmpty) {
-            result.message(Err("Wayward test",
-                "There should be something above this 'test' command to test"));
-            return new TstEmpty();
-        }
-
-        return result;
-    }
-
-    public transformBinaryOp(t: TstBinaryOp): TstComponent {
-        
-        const result = t.transform(this) as TstNegativeUnitTest;
-
-        if (result.child instanceof TstEmpty) {
-            result.message(Err(`Missing argument to '${result.text}'`, 
-                `'${result.text}' is missing a second argument; ` +
-                "something should be in the cell to the right."));
-        }
-
-        if (result.sibling instanceof TstEmpty) {
-            result.message(Err(`Missing argument to '${result.text}'`,
-                `'${result.text}' is missing a first argument; ` +
-                "something should be in a cell above this."));
-        } 
-
-        return result;
-    }
-
-    public transformNegativeTest(t: TstNegativeUnitTest): TstComponent {
-        
-        const result = t.transform(this) as TstNegativeUnitTest;
-
-        if (result.child instanceof TstEmpty) {
-            result.message(Warn("'testnot' seems to be missing something to test; " +
-                "something should be in the cell to the right."));
-            return result.sibling; 
-        }
-
-        if (!(result.child instanceof TstTable) && !(result.child instanceof TstTableOp)) {
-            result.message(Err("Cannot execute testnot",
-                "You can't nest another operator to the right of a testnot block, " + 
-                "it has to be a content table."));
-            return result.sibling;
-        }
-
-        if (result.sibling instanceof TstEmpty) {
-            result.message(Err("Wayward testnot",
-                "There should be something above this 'testnot' command to test"));
-            return new TstEmpty();
-        }
-
-        return result;
-    }
-
-    public transformAssignment(t: TstAssignment): TstComponent {
-        const result = t.transform(this) as TstAssignment;
-
-        if (result.child instanceof TstEmpty) {
-            result.message(Warn(`This symbol will not contain any content.`));
-        }
-
-        return result;
-    }
-
-    public transformReplace(t: TstReplace): TstComponent {
-        
-        const result = t.transform(this) as TstReplace;
-
-        if (result.child instanceof TstEmpty) {
-            result.message(Warn("The cells to the right do not contain " + 
-                "valid material, so this replacement will be ignored."));
-            return result.sibling;
-        } 
-
-        if (result.sibling instanceof TstEmpty) {
-            result.message(Err(`Missing argument to replace'`,
-                `'replace:' needs a grammar to operate on; ` +
-                "something should be in a cell above this."));
-            return new TstEmpty();
-        }
-
-        return result;
-    }
-
-    
-    public transformReplaceTape(t: TstReplaceTape): TstComponent {
-        
-        const result = t.transform(this) as TstReplace;
-
-        if (result.child instanceof TstEmpty) {
-            result.message(Warn("The cells to the right do not contain " +
-               "valid material, so this replacement will be ignored."));
-            return result.sibling;
-        } 
-
-        if (result.sibling instanceof TstEmpty) {
-            result.message(Err(`Missing argument to replace'`,
-                `'${result.text}' needs a grammar to operate on; ` +
-                "something should be in a cell above this."));
-            return new TstEmpty();
-        }
-
-        return result;
-    }
-}
 
 type BinaryOp = (c1: Grammar, c2: Grammar) => Grammar;
 export const BINARY_OPS: {[opName: string]: BinaryOp} = {
@@ -340,7 +68,7 @@ export abstract class TstComponent {
         }
     }
 
-    public abstract transform(f: TstTransform): TstComponent;
+    public abstract transform(f: TstTransform): [TstComponent, Msgs];
 
     public abstract toParamsTable(): [Cell, ParamDict][];
 }
@@ -397,8 +125,9 @@ export class TstHeader extends TstCellComponent {
         }
     }
 
-    public transform(f: TstTransform): TstComponent {
-        return new TstHeader(this.cell, this.header);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const result = new TstHeader(this.cell, this.header);
+        return [result, []];
     }
 
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string {
@@ -429,9 +158,10 @@ export class TstHeadedCell extends TstCellComponent {
         super(content);
     }
     
-    public transform(f: TstTransform): TstComponent {
-        const newPrev = f.transform(this.prev);
-        return new TstHeadedCell(newPrev, this.header, this.cell);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const [newPrev, msgs] = f.transform(this.prev);
+        const result = new TstHeadedCell(newPrev, this.header, this.cell);
+        return [result, msgs];
     }
 
     public toGrammar(): Grammar {
@@ -447,8 +177,8 @@ export class TstHeadedCell extends TstCellComponent {
 
 export class TstEmpty extends TstComponent {
 
-    public transform(f: TstTransform): TstComponent {
-        return this;
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        return [this, []];
     }
 
     public toGrammar(): Grammar {
@@ -462,8 +192,8 @@ export class TstEmpty extends TstComponent {
 
 export class TstComment extends TstCellComponent {
 
-    public transform(f: TstTransform): TstComponent {
-        return this;
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        return [this, []];
     }
 
     public toGrammar(): Grammar {
@@ -525,10 +255,12 @@ export class TstBinary extends TstEnclosure {
         super(cell);
     }
 
-    public transform(f: TstTransform): TstComponent {
-        const newSibling = f.transform(this.sibling);
-        const newChild = f.transform(this.child);
-        return new TstBinary(this.cell, newSibling, newChild);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const [newSibling, sibMsgs] = f.transform(this.sibling);
+        const [newChild, childMsgs] = f.transform(this.child);
+        const msgs = [...sibMsgs, ...childMsgs];
+        const result = new TstBinary(this.cell, newSibling, newChild);
+        return [result, msgs];
     }
 
     public toGrammar(): Grammar {
@@ -569,10 +301,13 @@ export class TstBinary extends TstEnclosure {
 
 export class TstTableOp extends TstBinary {
 
-    public transform(f: TstTransform): TstComponent {
-        const newSibling = f.transform(this.sibling);
-        const newChild = f.transform(this.child);
-        return new TstTableOp(this.cell, newSibling, newChild);
+
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const [newSibling, sibMsgs] = f.transform(this.sibling);
+        const [newChild, childMsgs] = f.transform(this.child);
+        const msgs = [...sibMsgs, ...childMsgs];
+        const result = new TstTableOp(this.cell, newSibling, newChild);
+        return [result, msgs];
     }
     
     public toGrammar(): Grammar {
@@ -611,10 +346,12 @@ export class TstTableOp extends TstBinary {
 
 export class TstBinaryOp extends TstBinary {
 
-    public transform(f: TstTransform): TstComponent {
-        const newSibling = f.transform(this.sibling);
-        const newChild = f.transform(this.child);
-        return new TstBinaryOp(this.cell, newSibling, newChild);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const [newSibling, sibMsgs] = f.transform(this.sibling);
+        const [newChild, childMsgs] = f.transform(this.child);
+        const msgs = [...sibMsgs, ...childMsgs];
+        const result = new TstBinaryOp(this.cell, newSibling, newChild);
+        return [result, msgs];
     }
     
     public toGrammar(): Grammar {
@@ -645,10 +382,12 @@ export class TstReplaceTape extends TstBinaryOp {
         super(cell, sibling, child);
     }
 
-    public transform(f: TstTransform): TstComponent {
-        const newSibling = f.transform(this.sibling);
-        const newChild = f.transform(this.child);
-        return new TstReplaceTape(this.cell, this.tape, newSibling, newChild);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const [newSibling, sibMsgs] = f.transform(this.sibling);
+        const [newChild, childMsgs] = f.transform(this.child);
+        const msgs = [...sibMsgs, ...childMsgs];
+        const result = new TstReplaceTape(this.cell, this.tape, newSibling, newChild);
+        return [result, msgs];
     }
 
     public toGrammar(): Grammar {
@@ -716,10 +455,12 @@ export class TstReplace extends TstBinaryOp {
 
     public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
 
-    public transform(f: TstTransform): TstComponent {
-        const newSibling = f.transform(this.sibling);
-        const newChild = f.transform(this.child);
-        return new TstReplace(this.cell, newSibling, newChild);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const [newSibling, sibMsgs] = f.transform(this.sibling);
+        const [newChild, childMsgs] = f.transform(this.child);
+        const msgs = [...sibMsgs, ...childMsgs];
+        const result = new TstReplace(this.cell, newSibling, newChild);
+        return [result, msgs];
     }
 
     public toGrammar(): Grammar {
@@ -788,10 +529,12 @@ export class TstUnitTest extends TstBinary {
 
     public static VALID_PARAMS = [ "__", "unique" ];
 
-    public transform(f: TstTransform): TstComponent {
-        const newSibling = f.transform(this.sibling);
-        const newChild = f.transform(this.child);
-        return new TstUnitTest(this.cell, newSibling, newChild);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const [newSibling, sibMsgs] = f.transform(this.sibling);
+        const [newChild, childMsgs] = f.transform(this.child);
+        const msgs = [...sibMsgs, ...childMsgs];
+        const result = new TstUnitTest(this.cell, newSibling, newChild);
+        return [result, msgs];
     }
 
     public toGrammar(): Grammar {
@@ -846,10 +589,12 @@ export class TstUnitTest extends TstBinary {
  */
 export class TstNegativeUnitTest extends TstUnitTest {
 
-    public transform(f: TstTransform): TstComponent {
-        const newSibling = f.transform(this.sibling);
-        const newChild = f.transform(this.child);
-        return new TstNegativeUnitTest(this.cell, newSibling, newChild);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const [newSibling, sibMsgs] = f.transform(this.sibling);
+        const [newChild, childMsgs] = f.transform(this.child);
+        const msgs = [...sibMsgs, ...childMsgs];
+        const result = new TstNegativeUnitTest(this.cell, newSibling, newChild);
+        return [result, msgs];
     }
 
     public toGrammar(): Grammar {
@@ -874,7 +619,6 @@ export class TstNegativeUnitTest extends TstUnitTest {
     }
 }
 
-
 /**
  * A TstTable is a rectangular region of the grid consisting of a header row
  * and cells beneath each header.  For example,
@@ -891,16 +635,25 @@ export class TstNegativeUnitTest extends TstUnitTest {
  */
 export class TstTable extends TstBinary {
 
-    public transform(f: TstTransform): TstComponent {
-        const newSibling = f.transform(this.sibling);
-        const newChild = f.transform(this.child);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const [newSibling, sibMsgs] = f.transform(this.sibling);
+        const [newChild, childMsgs] = f.transform(this.child);
+        const msgs = [...sibMsgs, ...childMsgs];
+
         const newHeaders: {[col: number]: TstHeader} = {};
         for (const header of Object.values(this.headersByCol)) {
-            const newHeader = f.transform(header) as TstHeader;
+            const [newHeader, headerMsgs] = f.transform(header) as [TstHeader, Msgs];
             newHeaders[header.pos.col] = newHeader;
+            msgs.push(...headerMsgs);
         }
-        const newRows = this.rows.map(r => f.transform(r) as TstRow);
-        return new TstTable(this.cell, newSibling, newChild, newHeaders, newRows);
+        const newRows: TstRow[] = [];
+        for (const row of this.rows) {
+            const [newRow, rowMsgs] = f.transform(row) as [TstRow, Msgs];
+            newRows.push(newRow);
+            msgs.push(...rowMsgs);
+        }
+        const result = new TstTable(this.cell, newSibling, newChild, newHeaders, newRows);
+        return [result, msgs];
     }
 
     constructor(
@@ -982,9 +735,10 @@ export class TstTable extends TstBinary {
 
 export class TstRow extends TstCellComponent {
 
-    public transform(f: TstTransform): TstComponent {
-        const newLast = f.transform(this.lastCell);
-        return new TstRow(this.cell, newLast);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const [newLast, msgs] = f.transform(this.lastCell);
+        const result = new TstRow(this.cell, newLast);
+        return [result, msgs];
     }
 
     constructor(
@@ -1026,10 +780,12 @@ export class TstAssignment extends TstBinary {
                             : cell.text;    
     }
 
-    public transform(f: TstTransform): TstComponent {
-        const newSibling = f.transform(this.sibling);
-        const newChild = f.transform(this.child);
-        return new TstAssignment(this.cell, newSibling, newChild);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const [newSibling, sibMsgs] = f.transform(this.sibling);
+        const [newChild, childMsgs] = f.transform(this.child);
+        const result = new TstAssignment(this.cell, newSibling, newChild);
+        const msgs = [...sibMsgs, ...childMsgs];
+        return [result, msgs];
     }
 
     public toGrammar(): Grammar {
@@ -1052,9 +808,16 @@ export class TstNamespace extends TstEnclosure {
         return child;
     }
 
-    public transform(f: TstTransform): TstComponent {
-        const newChildren = this.children.map(c => f.transform(c)) as TstEnclosure[];
-        return new TstNamespace(this.cell, newChildren);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const newChildren: TstEnclosure[] = [];
+        const msgs: Msgs = [];
+        for (const child of this.children) {
+            const [newChild, childMsgs] = f.transform(child) as [TstEnclosure, Msgs];
+            newChildren.push(newChild);
+            msgs.push(...childMsgs);
+        }
+        const result = new TstNamespace(this.cell, newChildren);
+        return [result, msgs];
     }
 
     public toGrammar(): Grammar {
@@ -1095,9 +858,16 @@ export class TstNamespace extends TstEnclosure {
 
 export class TstProject extends TstNamespace {
     
-    public transform(f: TstTransform): TstComponent {
-        const newChildren = this.children.map(c => f.transform(c)) as TstEnclosure[];
-        return new TstProject(this.cell, newChildren);
+    public transform(f: TstTransform): [TstComponent, Msgs] {
+        const newChildren: TstEnclosure[] = [];
+        const msgs: Msgs = [];
+        for (const child of this.children) {
+            const [newChild, childMsgs] = f.transform(child) as [TstEnclosure, Msgs];
+            newChildren.push(newChild);
+            msgs.push(...childMsgs);
+        }
+        const result = new TstNamespace(this.cell, newChildren);
+        return [result, msgs];
     }
 
     /**

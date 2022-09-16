@@ -25,15 +25,10 @@ import { FilterTransform } from "./transforms/filter";
 import { FlattenTransform } from "./transforms/flatten";
 import { generate } from "./generator";
 import { RuleReplaceTransform2 } from "./transforms/ruleReplace2";
-import { 
-    AdjustAssignmentScope,
-    InvalidAssignmentTransform, 
-    MissingParamsTransform, 
-    TstProject, 
-    TstTransform 
-} from "./tsts";
+import { TstComponent } from "./tsts";
 import { UnitTestTransform } from "./transforms/unitTests";
 import { Msgs } from "./msgs";
+import { TstTransformAll } from "./tstTransforms/allTransforms";
 
 /**
  * An interpreter object is responsible for applying the transformations in between sheets
@@ -106,7 +101,7 @@ export class Interpreter {
             timeIt(() => {
                 const [newGrammar, msgs] = transform.transform();
                 this.grammar = newGrammar;
-                this.sendMessages(msgs);
+                sendMessages(devEnv, msgs);
             }, timeVerbose, transform.desc);
         }
 
@@ -146,16 +141,10 @@ export class Interpreter {
         
         startTime = Date.now();
 
-        let tst = sheetProject.toTST();
-        const transforms: TstTransform[] = [
-            new AdjustAssignmentScope(),
-            new InvalidAssignmentTransform(),
-            new MissingParamsTransform(),
-        ]
-        for (const t of transforms) {
-            tst = t.transform(tst) as TstProject;
-        }
-        const grammar = tst.toGrammar();
+        let tst: TstComponent = sheetProject.toTST();
+        let [newTst, msgs] = new TstTransformAll().transform(tst);
+        sendMessages(devEnv, msgs);
+        const grammar = newTst.toGrammar();
         elapsedTime = msToTime(Date.now() - startTime);
         logTime(verbose, `Converted to grammar; ${elapsedTime}`);
 
@@ -172,16 +161,6 @@ export class Interpreter {
         return new Interpreter(devEnv, grammar, verbose);
     }
 
-    public sendMessages(msgs: Msgs): void {
-        for (const msg of msgs) {
-            if (msg.pos == undefined) {
-                // if it's got no location we have nowhere to
-                // display it
-                continue;
-            }
-            this.devEnv.message(msg);
-        }
-    }
 
     public allSymbols(): string[] {
         return this.grammar.allSymbols();
@@ -356,6 +335,17 @@ export class Interpreter {
         this.grammar.constructExpr(this.symbolTable);  // fill the symbol table if it isn't already
         const t = new UnitTestTransform(this.grammar, this.vocab, this.tapeNS, this.symbolTable);
         const [_, msgs] = t.transform();
-        this.sendMessages(msgs);
+        sendMessages(this.devEnv, msgs);
+    }
+}
+
+function sendMessages(devEnv: DevEnvironment, msgs: Msgs): void {
+    for (const msg of msgs) {
+        if (msg.pos == undefined) {
+            // if it's got no location we have nowhere to
+            // display it
+            continue;
+        }
+        devEnv.message(msg);
     }
 }
