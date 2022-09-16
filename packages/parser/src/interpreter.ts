@@ -26,6 +26,7 @@ import { FlattenTransform } from "./transforms/flatten";
 import { generate } from "./generator";
 import { RuleReplaceTransform2 } from "./transforms/ruleReplace2";
 import { 
+    AdjustAssignmentScope,
     InvalidAssignmentTransform, 
     MissingParamsTransform, 
     TstProject, 
@@ -147,8 +148,9 @@ export class Interpreter {
 
         let tst = sheetProject.toTST();
         const transforms: TstTransform[] = [
+            new AdjustAssignmentScope(),
+            new InvalidAssignmentTransform(),
             new MissingParamsTransform(),
-            new InvalidAssignmentTransform()
         ]
         for (const t of transforms) {
             tst = t.transform(tst) as TstProject;

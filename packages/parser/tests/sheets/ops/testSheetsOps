@@ -16,6 +16,33 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Grammar with embeds and a relevant join', function() {
+        const project = sheetFromFile(`${DIR}/relevantJoin.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobar", gloss: "run[1SG]", subj: "1SG" },
+            { text: "moobar", gloss: "jump[1SG]", subj: "1SG" },
+        ]);
+    });
+    
+    describe('Grammar with embeds and a relevant join, under assignment', function() {
+        const project = sheetFromFile(`${DIR}/relevantJoinUnderAssignment.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobar", gloss: "run[1SG]", subj: "1SG" },
+            { text: "moobar", gloss: "jump[1SG]", subj: "1SG" },
+        ]);
+    });
+
+    describe('Grammar with embeds and a relevant join, under assignment', function() {
+        const project = sheetFromFile(`${DIR}/joinUnderAssignmentEmbedded.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobar", gloss: "run[1SG]", subj: "1SG" },
+            { text: "moobar", gloss: "jump[1SG]", subj: "1SG" },
+        ]);
+    });
+
     describe('Grammar with embeds and an irrelevant join', function() {
         const project = sheetFromFile(`${DIR}/irrelevantJoin.csv`);
         testErrors(project, []);
@@ -27,13 +54,5 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Grammar with embeds and a relevant join', function() {
-        const project = sheetFromFile(`${DIR}/relevantJoin.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "foobar", gloss: "run[1SG]", subj: "1SG" },
-            { text: "moobar", gloss: "jump[1SG]", subj: "1SG" },
-        ]);
-    });
 
 });

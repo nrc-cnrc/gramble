@@ -12,6 +12,14 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"aba","surface":"ava"}
         ]);
     });
+
+    describe('Simple replace under assignment', function() {
+        const project = sheetFromFile(`${DIR}/replaceUnderAssignment.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aba","surface":"ava"}
+        ]);
+    });
     
     describe('Simple replace multiple', function() {
         const project = sheetFromFile(`${DIR}/replaceMulti.csv`);
@@ -168,6 +176,14 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["replaceWithNoSibling",0,1,"error"],
             ["replaceWithNoSibling",0,0,"warning"]
+        ]); 
+        testGrammar(project, [{}]);
+    });
+    
+    describe('Replace with no sibling bare', function() {
+        const project = sheetFromFile(`${DIR}/replaceWithNoSiblingBare.csv`);
+        testErrors(project, [
+            ["replaceWithNoSiblingBare",0,0,"error"]
         ]);        
         testGrammar(project, [{}]);
     });
@@ -227,6 +243,14 @@ describe(`${path.basename(module.filename)}`, function() {
             {text: "b", text2: "v", text3: "w"}
         ]);
     });
+
+    describe('Nested replace, different tapes, under assignment', function() {
+        const project = sheetFromFile(`${DIR}/nestedDifferentUnderAssignment.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {text: "b", text2: "v", text3: "w"}
+        ]);
+    });
     
     describe('Nested replace, different tapes 2', function() {
         const project = sheetFromFile(`${DIR}/nestedDifferent2.csv`);
@@ -253,6 +277,14 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    describe('Nested replace same tape, under assignment', function() {
+        const project = sheetFromFile(`${DIR}/nestedSameUnderAssignment.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {text: "w"}
+        ]);
+    });
+
     describe('Nested replace same tape 2', function() {
         const project = sheetFromFile(`${DIR}/nestedSame2.csv`);
         testErrors(project, []);

@@ -19,6 +19,16 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     }); 
     
+    describe('Simple replace under assignment', function() {
+        const project = sheetFromFile(
+            `${DIR}/replaceUnderAssignment.csv`);
+        testHasVocab(project, {text: 3})
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ava"}
+        ]);
+    }); 
+    
     describe('Replacing wrong tape', function() {
         const project = sheetFromFile(
             `${DIR}/replaceWrongTape.csv`);
@@ -66,6 +76,16 @@ describe(`${path.basename(module.filename)}`, function() {
             {text: "w"}
         ]);
     });
+    
+    describe('Nested replace under assignment', function() {
+        const project = sheetFromFile(`${DIR}/nestedSameUnderAssignment.csv`);
+        testHasVocab(project, {text: 3})
+        testErrors(project, []);
+        testGrammar(project, [
+            {text: "w"}
+        ]);
+    });
+    
     
     describe('Nested replace with some unchanged letters', function() {
         const project = sheetFromFile(`${DIR}/nestedSameWithUnchanged.csv`);
@@ -166,6 +186,93 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"ava"},
             {"text":"abra"},
             {"text":"avi"}
+        ]);
+    });
+    
+    describe('Replace with unnamed param', function() {
+        const project = sheetFromFile(`${DIR}/replaceWithUnnamedParam.csv`);
+        testErrors(project, [
+            ["replaceWithUnnamedParam",13,4,"error"]
+        ]);        
+        testGrammar(project, [
+            {"text": "foo", "gloss":"run.3SG"},
+            {"text": "foovaz", "gloss":"run-2SG"},
+            {"text": "foovar", "gloss":"run-1SG"},
+            {"text": "moo", "gloss":"jump.3SG"},
+            {"text": "moovaz", "gloss":"jump-2SG"},
+            {"text": "moovar", "gloss":"jump-1SG"}
+        ]);
+    });
+
+    describe('Replace with invalid param', function() {
+        const project = sheetFromFile(`${DIR}/replaceWithInvalidParam.csv`);
+        testErrors(project, [
+            ["replaceWithInvalidParam",13,4,"error"]
+        ]);        
+        testGrammar(project, [
+            {"text": "foo", "gloss":"run.3SG"},
+            {"text": "foovaz", "gloss":"run-2SG"},
+            {"text": "foovar", "gloss":"run-1SG"},
+            {"text": "moo", "gloss":"jump.3SG"},
+            {"text": "moovaz", "gloss":"jump-2SG"},
+            {"text": "moovar", "gloss":"jump-1SG"}
+        ]);
+    });
+
+    describe('Replace with no sibling', function() {
+        const project = sheetFromFile(`${DIR}/replaceWithNoSibling.csv`);
+        testErrors(project, [
+            ["replaceWithNoSibling",0,1,"error"],
+            ["replaceWithNoSibling",0,0,"warning"]
+        ]);        
+        testGrammar(project, [{}]);
+    });
+    
+    describe('Replace with no sibling bare', function() {
+        const project = sheetFromFile(`${DIR}/replaceWithNoSiblingBare.csv`);
+        testErrors(project, [
+            ["replaceWithNoSiblingBare",0,0,"error"]
+        ]);        
+        testGrammar(project, [{}]);
+    });
+
+    describe('Replace with no child', function() {
+        const project = sheetFromFile(`${DIR}/replaceWithNoChild.csv`);
+        testErrors(project, [
+            ["replaceWithNoChild",3,1,"error"]
+        ]);        
+        testGrammar(project, [
+            {"text":"aba"}
+        ]);
+    });
+
+    describe('Replace with missing "from" param', function() {
+        const project = sheetFromFile(`${DIR}/replaceWithMissingFrom.csv`);
+        testErrors(project, [
+            ["replaceWithMissingFrom",12,1,"error"]
+        ]);        
+        testGrammar(project, [
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
+        ]);
+    });
+
+    describe('Replace with missing "to" param', function() {
+        const project = sheetFromFile(`${DIR}/replaceWithMissingTo.csv`);
+        testErrors(project, [
+            ["replaceWithMissingTo",12,1,"error"]
+        ]);        
+        testGrammar(project, [
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
         ]);
     });
 });

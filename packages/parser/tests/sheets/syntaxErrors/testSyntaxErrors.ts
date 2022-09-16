@@ -33,7 +33,12 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["optional", 0, -1, "error"]
         ]);
-        testGrammar(project, [{}]);
+        testGrammar(project,[
+            {"text":"moobaz","gloss":"jump-2SG"},
+            {"text":"moobar","gloss":"jump-1SG"},
+            {"text":"foobaz","gloss":"run-2SG"},
+            {"text":"foobar","gloss":"run-1SG"}
+        ]);
     });
 
     describe('Reassigning a symbol', function() {
@@ -67,6 +72,16 @@ describe(`${path.basename(module.filename)}`, function() {
             {},
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
+        ]);
+    });
+
+    describe('Bare join op, missing sibling argument', function() {
+        const project = sheetFromFile(`${DIR}/bareOp.csv`);
+        testErrors(project, [
+            ["bareOp", 0, 0, "warning"]
+        ]);
+        testGrammar(project, [
+            { text: 'foo' }
         ]);
     });
 

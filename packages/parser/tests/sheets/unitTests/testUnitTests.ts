@@ -51,7 +51,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobaz", gloss: "jump-2SG" }
         ]);
     });
-
+    
     describe('Testing a grammar directly underneath (without "table:" op)', function() {
         const interpreter = sheetFromFile(`${DIR}/testingWithoutTableOp.csv`);
         interpreter.runUnitTests();

@@ -4,8 +4,8 @@ import { parseOpCell } from "./ops";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 
 import { 
-    TstEnclosure, TstHeader, TstProject, 
-    TstNamespace, TstTable, TstComponent, TstComment, MissingParamsTransform, InvalidAssignmentTransform, TstTransform 
+    TstBinary, TstHeader, TstProject, 
+    TstNamespace, TstTable, TstComponent, TstComment, MissingParamsTransform, InvalidAssignmentTransform, TstTransform, TstEnclosure, AdjustAssignmentScope 
 } from "./tsts";
 import { Cell, CellPos, DevEnvironment, DummyCell } from "./util";
 
@@ -72,8 +72,9 @@ export class SheetProject extends SheetComponent {
 
         let tst = this.toTST();
         const transforms: TstTransform[] = [
+            new AdjustAssignmentScope(),
+            new InvalidAssignmentTransform(),
             new MissingParamsTransform(),
-            new InvalidAssignmentTransform()
         ]
         for (const t of transforms) {
             tst = t.transform(tst) as TstProject;
@@ -115,6 +116,7 @@ export class SheetProject extends SheetComponent {
 
     public toTST(): TstProject {
         const project = new TstProject(new DummyCell());
+
         for (const [sheetName, sheet] of Object.entries(this.sheets)) {
             if (sheetName == this.mainSheetName) {
                 continue; // save this for last
