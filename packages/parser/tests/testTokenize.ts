@@ -1,6 +1,4 @@
-import { expect } from 'chai';
 import * as path from 'path';
-import { tokenizeUnicode } from "../src/util";
 import { testTokenize } from './testUtils';
 
 describe(`${path.basename(module.filename)}`, function() {
@@ -17,6 +15,54 @@ describe(`${path.basename(module.filename)}`, function() {
         testTokenize("fóo", [ 'f', 'ó', 'o']);
     });
 
+    describe('String with a length marker', function() {
+        testTokenize("foːo", [ 'f', 'oː', 'o']);
+    });
+    
+    describe('String with a colon', function() {
+        testTokenize("fo:o", [ 'f', 'o', ':', 'o']);
+    });
+    
+    describe('String with superscript h', function() {
+        testTokenize("pʰoo", [ 'pʰ', 'o', 'o']);
+    });
+
+    describe('String with superscript oe', function() {
+        testTokenize("pꟹoo", [ 'pꟹ', 'o', 'o']);
+    });
+
+    describe('String with superscript l', function() {
+        testTokenize("pˡoo", [ 'pˡ', 'o', 'o']);
+    });
+
+    describe('String with superscript ꚝ', function() {
+        testTokenize("pꚝoo", [ 'pꚝ', 'o', 'o']);
+    });
+
+    describe('String with subscript s', function() {
+        testTokenize("pₛoo", [ 'pₛ', 'o', 'o']);
+    });
+    
+    describe('String with superscript a', function() {
+        testTokenize("pᵃoo", [ 'pᵃ', 'o', 'o']);
+    });
+    
+    describe('String with superscript n', function() {
+        testTokenize("pⁿoo", [ 'pⁿ', 'o', 'o']);
+    });
+
+    describe('String with Medieval German superscript e', function() {
+        testTokenize("puͤo", [ 'p', 'uͤ', 'o']);
+    });
+    
+    describe('String with ligature fi', function() {
+        testTokenize("ﬁoo", [ 'ﬁ', 'o', 'o' ]);
+    });
+
+    describe('String with ligature ts', function() {
+        testTokenize("ʦoo", [ 'ʦ', 'o', 'o' ]);
+    });
+    
     describe('String beginning in a diacritic', function() {
         testTokenize("óo", [ 'ó', 'o' ]);
     });
@@ -24,6 +70,9 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('String ending in a diacritic', function() {
         testTokenize("foó", [ 'f', 'o', 'ó' ]);
     });
+
+
+    
     
     describe('String with two diacritics', function() {
         testTokenize("fö́o", [ 'f', 'ö́', 'o' ]);
