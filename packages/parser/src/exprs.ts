@@ -1117,11 +1117,18 @@ class IntersectExpr extends BinaryExpr {
         env: Env
     ): DerivResults {
         for (const [c1target, c1next] of 
-            this.child1.disjointDeriv(tapeName, target, env)) {
+                this.child1.disjointDeriv(tapeName, target, env)) {
 
+            if (c1target instanceof EpsilonToken) {
+                const successor = constructIntersection(c1next, this.child2);
+                yield [c1target, successor];
+                continue;
+            }
+    
             for (const [c2target, c2next] of 
                     this.child2.disjointDeriv(tapeName, c1target as Token, env)) {
-                const successor = constructIntersection(c1next, c2next);
+                const c1nxt = (c2target instanceof EpsilonToken) ? this.child1 : c1next;
+                const successor = constructIntersection(c1nxt, c2next);
                 yield [c2target, successor];
             }
         }
@@ -1169,11 +1176,18 @@ class FilterExpr extends BinaryExpr {
         }
         
         for (const [c2target, c2next] of 
-            this.child2.disjointDeriv(tapeName, target, env)) {
+                this.child2.disjointDeriv(tapeName, target, env)) {
 
+            if (c2target instanceof EpsilonToken) {
+                const successor = constructFilter(this.child1, c2next, this.tapes);
+                yield [c2target, successor];
+                continue;
+            }
+    
             for (const [c1target, c1next] of 
                     this.child1.disjointDeriv(tapeName, c2target as Token, env)) {
-                const successor = constructFilter(c1next, c2next, this.tapes);
+                const c2nxt = (c1target instanceof EpsilonToken) ? this.child2 : c2next;
+                const successor = constructFilter(c1next, c2nxt, this.tapes);
                 yield [c1target, successor];
             }
         }
@@ -1230,11 +1244,18 @@ class JoinExpr extends BinaryExpr {
         }
         
         for (const [leftTarget, leftNext] of 
-            this.child1.disjointDeriv(tapeName, target, env)) {
+                this.child1.disjointDeriv(tapeName, target, env)) {
+
+            if (leftTarget instanceof EpsilonToken) {
+                const successor = constructJoin(leftNext, this.child2, this.tapes1, this.tapes2);
+                yield [leftTarget, successor];
+                continue;
+            }
 
             for (const [rightTarget, rightNext] of 
                     this.child2.disjointDeriv(tapeName, leftTarget as Token, env)) {
-                const successor = constructJoin(leftNext, rightNext, this.tapes1, this.tapes2);
+                const lnext = (rightTarget instanceof EpsilonToken) ? this.child1 : leftNext;
+                const successor = constructJoin(lnext, rightNext, this.tapes1, this.tapes2);
                 yield [rightTarget, successor];
             }
         }
@@ -1586,7 +1607,7 @@ class RepeatExpr extends UnaryExpr {
             yielded = true;
         }
 
-        if (yielded && target == anyChar &&
+        if (yielded &&
                 !(deltad instanceof NullExpr) && oneLess instanceof RepeatExpr) {
             yield [EPSILON_TOKEN, constructPrecede(deltad, oneLess)];
         }

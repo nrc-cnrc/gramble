@@ -5,134 +5,135 @@ import {
     testHasTapes,
     testGrammar 
 } from './testUtils';
+import { VERBOSE_DEBUG } from "../src/util";
 
 import * as path from 'path';
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe('Joining t1:hello ⨝ t1:hello', function() {
+    describe('1. Joining t1:hello ⨝ t1:hello', function() {
         const grammar = Join(t1("hello"), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Joining t1:hello+t1:world ⨝ t1:helloworld', function() {
+    describe('2. Joining t1:hello+t1:world ⨝ t1:helloworld', function() {
         const grammar = Join(Seq(t1("hello"), t1("world")), t1("helloworld"));
         testGrammar(grammar, [{t1: "helloworld"}]);
     });
     
-    describe('Joining t1:helloworld ⨝ t1:hello+t1:world ', function() {
+    describe('3. Joining t1:helloworld ⨝ t1:hello+t1:world ', function() {
         const grammar = Join(t1("helloworld"), Seq(t1("hello"), t1("world")));
         testGrammar(grammar, [{t1: "helloworld"}]);
     });
 
-    describe('Joining t1:hello ⨝ t2:foo', function() {
+    describe('4. Joining t1:hello ⨝ t2:foo', function() {
         const grammar = Join(t1("hello"), t2("foo"));
         testHasTapes(grammar, ["t1", "t2"]);
         testGrammar(grammar, [{t1: "hello", t2: "foo"}]);
     });
 
-    describe('Joining ε ⨝ ε', function() {
+    describe('5. Joining ε ⨝ ε', function() {
         const grammar = Join(Epsilon(), Epsilon());
         testGrammar(grammar, [{}]);
     });
 
-    describe('Joining t1:hello ⨝ ε', function() {
+    describe('6. Joining t1:hello ⨝ ε', function() {
         const grammar = Join(t1("hello"), Epsilon());
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Joining ε ⨝ t1:hello', function() {
+    describe('7. Joining ε ⨝ t1:hello', function() {
         const grammar = Join(t1("hello"), Epsilon());
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Joining t1:hello ⨝ t1:hello+t1:""', function() {
+    describe('8. Joining t1:hello ⨝ t1:hello+t1:""', function() {
         const grammar = Join(t1("hello"), Seq(t1("hello"), t1("")));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Joining t1:hello ⨝ t1:""+t1:hello', function() {
+    describe('9. Joining t1:hello ⨝ t1:""+t1:hello', function() {
         const grammar = Join(t1("hello"), Seq(t1(""), t1("hello")));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Joining t1:""+t1:hello ⨝ t1:hello', function() {
+    describe('10. Joining t1:""+t1:hello ⨝ t1:hello', function() {
         const grammar = Join(Seq(t1(""), t1("hello")), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Joining t1:hello+t1:"" ⨝ t1:hello', function() {
+    describe('11. Joining t1:hello+t1:"" ⨝ t1:hello', function() {
         const grammar = Join(Seq(t1("hello"), t1("")), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Joining Seq(t1:hello) ⨝ t1:hello', function() {
+    describe('12. Joining Seq(t1:hello) ⨝ t1:hello', function() {
         const grammar = Join(Seq(t1("hello")), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Joining t1:hello ⨝ Seq(t1:hello)', function() {
+    describe('13. Joining t1:hello ⨝ Seq(t1:hello)', function() {
         const grammar = Join(t1("hello"), Seq(t1("hello")));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Joining Uni(t1:hello) ⨝ t1:hello', function() {
+    describe('14. Joining Uni(t1:hello) ⨝ t1:hello', function() {
         const grammar = Join(Uni(t1("hello")), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Joining t1:hello ⨝ Uni(t1:hello)', function() {
+    describe('15. Joining t1:hello ⨝ Uni(t1:hello)', function() {
         const grammar = Join(t1("hello"), Uni(t1("hello")));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
 
-    describe('Joining t1:hi ⨝ t1:hi+t2:bye', function() {
+    describe('16. Joining t1:hi ⨝ t1:hi+t2:bye', function() {
         const grammar = Join(t1("hi"), Seq(t1("hi"), t2("bye")));
         testGrammar(grammar, [{t1: "hi", t2: "bye"}]);
     });
 
-    describe('Joining (t1:hi ⨝ t1:hi+t2:bye) ⨝ t2:bye+t3:yo', function() {
+    describe('17. Joining (t1:hi ⨝ t1:hi+t2:bye) ⨝ t2:bye+t3:yo', function() {
         const grammar = Join(Join(t1("hi"), Seq(t1("hi"), t2("bye"))),
                              Seq(t2("bye"), t3("yo")));
         testGrammar(grammar, [{t1: "hi", t2: "bye", t3: "yo"}]);
     });
 
 
-    describe('Joining t1:hello+t1:world ⨝ t1:hello+t1:world', function() {
+    describe('18. Joining t1:hello+t1:world ⨝ t1:hello+t1:world', function() {
         const grammar = Join(Seq(t1("hello"), t1("world")),
                              Seq(t1("hello"), t1("world")));
         testGrammar(grammar, [{t1: "helloworld"}]);
     });
 
-    describe('Joining t1:hi+t1:ki ⨝ t1:hi+t2:bi+t1:ki+t2:wo', function() {
+    describe('19. Joining t1:hi+t1:ki ⨝ t1:hi+t2:bi+t1:ki+t2:wo', function() {
         const grammar = Join(Seq(t1("hi"), t1("ki")),
                              Seq(t1("hi"), t2("bi"), t1("ki"), t2("wo")));
         testGrammar(grammar, [{t1: "hiki", t2: "biwo"}]);
     });
 
-    describe('Joining t1:hello+t1:kitty ⨝ (t1:hello+t1:kitty)+(t2:goodbye+t2:world)', function() {
+    describe('20. Joining t1:hello+t1:kitty ⨝ (t1:hello+t1:kitty)+(t2:goodbye+t2:world)', function() {
         const grammar = Join(Seq(t1("hello"), t1("kitty")),
                              Seq(Seq(t1("hello"), t1("kitty")),
                                  Seq(t2("goodbye"), t2("world"))));
         testGrammar(grammar, [{t1: "hellokitty", t2: "goodbyeworld"}]);
     });
 
-    describe('Joining t1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye)+(t1:kitty+t2:world)', function() {
+    describe('21. Joining t1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye)+(t1:kitty+t2:world)', function() {
         const grammar = Join(Seq(t1("hello"), t1("kitty")),
                              Seq(Seq(t1("hello"), t2("goodbye")),
                                  Seq(t1("kitty"), t2("world"))));
         testGrammar(grammar, [{t1: "hellokitty", t2: "goodbyeworld"}]);
     });
 
-    describe('Joining t1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye)+(t2:world+t1:kitty)', function() {
+    describe('22. Joining t1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye)+(t2:world+t1:kitty)', function() {
         const grammar = Join(Seq(t1("hello"), t1("kitty")),
                              Seq(Seq(t1("hello"), t2("goodbye")),
                                  Seq(t2("world"), t1("kitty"))));
         testGrammar(grammar, [{t1: "hellokitty", t2: "goodbyeworld"}]);
     });
 
-    describe('Joining t1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye+t1:kitty)+t2:world)', function() {
+    describe('23. Joining t1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye+t1:kitty)+t2:world)', function() {
         const grammar = Join(Seq(t1("hello"), t1("kitty")),
                              Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                                  t2("world")));
@@ -140,25 +141,25 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
 
-    describe('Joining an alternation ⨝ literal', function() {
+    describe('24. Joining an alternation ⨝ literal', function() {
         const grammar = Join(Uni(t1("hi"), t1("yo")), Seq(t1("hi"), t2("bye")));
         testGrammar(grammar, [{t1: "hi", t2: "bye"}]);
     });
 
-    describe('Joining t1:hi+t2:bye ⨝ t2:bye+t3:yo', function() {
+    describe('25. Joining t1:hi+t2:bye ⨝ t2:bye+t3:yo', function() {
         const grammar = Join(Seq(t1("hi"), t2("bye")),
                              Seq(t2("bye"), t3("yo")));
         testGrammar(grammar, [{t1: "hi", t2: "bye", t3: "yo"}]);
     });
 
-    describe('Joining t1:hi ⨝ (t1:hi+t2:bye ⨝ t2:bye+t3:yo)', function() {
+    describe('26. Joining t1:hi ⨝ (t1:hi+t2:bye ⨝ t2:bye+t3:yo)', function() {
         const grammar = Join(t1("hi"),
                              Join(Seq(t1("hi"), t2("bye")),
                                   Seq(t2("bye"), t3("yo"))));
         testGrammar(grammar, [{t1: "hi", t2: "bye", t3: "yo"}]);
     });
 
-    describe('Joining of (t1:hi ⨝ t1:hi+t2:bye)+t2:world', function() {
+    describe('27. Joining of (t1:hi ⨝ t1:hi+t2:bye)+t2:world', function() {
         const grammar = Seq(Join(t1("hi"),
                                  Seq(t1("hi"), t2("bye"))),
                             t2("world"));
@@ -166,85 +167,85 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
 
-    describe('Joining t1:hello ⨝ t1:hello+t1:world', function() {
+    describe('28. Joining t1:hello ⨝ t1:hello+t1:world', function() {
         const grammar = Join(t1("hello"), Seq(t1("hello"), t1("world")));
         testGrammar(grammar, []);
     });
 
-    describe('Joining t1:hello ⨝ t1:helloworld', function() {
+    describe('29. Joining t1:hello ⨝ t1:helloworld', function() {
         const grammar = Join(t1("hello"), t1("helloworld"));
         testGrammar(grammar, []);
     });
 
-    describe('Joining t1:helloworld ⨝ t1:hello', function() {
+    describe('30. Joining t1:helloworld ⨝ t1:hello', function() {
         const grammar = Join(t1("helloworld"), t1("hello"));
         testGrammar(grammar, []);
     });
 
-    describe('Joining t1:hello+t1:world ⨝ t1:hello', function() {
+    describe('31. Joining t1:hello+t1:world ⨝ t1:hello', function() {
         const grammar = Join(Seq(t1("hello"), t1("world")), t1("hello"));
         testGrammar(grammar, []);
     });
 
 
-    describe('Joining t1:hi+t2:world ⨝ t1:hi+t2:world', function() {
+    describe('32. Joining t1:hi+t2:world ⨝ t1:hi+t2:world', function() {
         const grammar = Join(Seq(t1("hi"), t2("world")),
                              Seq(t1("hi"), t2("world")));
         testGrammar(grammar, [{t1: "hi", t2: "world"}]);
     });
 
-    describe('Joining t2:fo+t1:hi ⨝ t1:hi+t2:fo', function() {
+    describe('33. Joining t2:fo+t1:hi ⨝ t1:hi+t2:fo', function() {
         const grammar = Join(Seq(t2("fo"), t1("hi")),
                              Seq(t1("hi"), t2("fo")));
         testGrammar(grammar, [{t1: "hi", t2: "fo"}]);
     });
 
-    describe('Joining t1:hello ⨝ t1:hello+t2:foo', function() {
+    describe('34. Joining t1:hello ⨝ t1:hello+t2:foo', function() {
         const grammar = Join(t1("hello"), Seq(t1("hello"), t2("foo")));
         testGrammar(grammar, [{t1: "hello", t2: "foo"}]);
     });
 
-    describe('Joining t1:hello ⨝ t2:foo+t1:hello', function() {
+    describe('35. Joining t1:hello ⨝ t2:foo+t1:hello', function() {
         const grammar = Join(t1("hello"), Seq(t2("foo"),t1("hello")));
         testGrammar(grammar, [{t1: "hello", t2: "foo"}]);
     });
 
-    describe('Joining t1:hello+t2:foo ⨝ t1:hello', function() {
+    describe('36. Joining t1:hello+t2:foo ⨝ t1:hello', function() {
         const grammar = Join(Seq(t1("hello"), t2("foo")), t1("hello"));
         testGrammar(grammar, [{t1: "hello", t2: "foo"}]);
     });
 
-    describe('Joining t2:foo+t1:hello ⨝ t1:hello', function() {
+    describe('37. Joining t2:foo+t1:hello ⨝ t1:hello', function() {
         const grammar = Join(Seq(t2("foo"), t1("hello")), t1("hello"));
         testGrammar(grammar, [{t1: "hello", t2: "foo"}]);
     });
 
-    describe('Joining t1:hello+t2:foo ⨝ t1:hello+t2:bar', function() {
+    describe('38. Joining t1:hello+t2:foo ⨝ t1:hello+t2:bar', function() {
         const grammar = Join(Seq(t1("hello"), t2("foo")),
                              Seq(t1("hello"), t2("bar")));
         testGrammar(grammar, []);
     });
 
-    describe('Joining (t1:hello|t1:goodbye) ⨝ (t1:goodbye|t1:welcome)', function() {
+    describe('39. Joining (t1:hello|t1:goodbye) ⨝ (t1:goodbye|t1:welcome)', function() {
         const grammar = Join(Uni(t1("hello"), t1("goodbye")),
                              Uni(t1("goodbye"), t1("welcome")));
         testGrammar(grammar, [{t1: "goodbye"}]);
     });
 
-    describe('Joining (t1:goodbye|t1:welcome) ⨝ (t1:hello|t1:goodbye)', function() {
+    describe('40. Joining (t1:goodbye|t1:welcome) ⨝ (t1:hello|t1:goodbye)', function() {
         const grammar = Join(Uni(t1("goodbye"), t1("welcome")),
                              Uni(t1("hello"), t1("goodbye")));
         testGrammar(grammar, [{t1: "goodbye"}]);
     });
 
-    describe('Nested joining, leftward', function() {
+    describe('41. Nested joining, leftward', function() {
         const grammar = Join(Join(Uni(t1("hello"), t1("goodbye")),
                                   Uni(t1("goodbye"),  t1("welcome"))),
                              Uni(t1("yo"), t1("goodbye")));
         testGrammar(grammar, [{t1: "goodbye"}]);
     });
 
-    describe('Nested joining, rightward', function() {
+    describe('42. Nested joining, rightward', function() {
         const grammar = Join(Uni(t1("yo"), t1("goodbye")),
                              Join(Uni(t1("hello"), t1("goodbye")),
                                   Uni(t1("goodbye"),  t1("welcome"))));
@@ -252,27 +253,27 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
 
-    describe('Joining to joining t1:hello ⨝ t1:hello', function() {
+    describe('43. Joining to joining t1:hello ⨝ t1:hello', function() {
         const grammar = Join(t1("hello"),
                              Join(t1("hello"), t1("hello")));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
-    describe('Joining to joining of (t1:hello|t1:goodbye) ⨝ (t1:goodbye|t1:welcome)', function() {
+    describe('44. Joining to joining of (t1:hello|t1:goodbye) ⨝ (t1:goodbye|t1:welcome)', function() {
         const grammar = Join(t1("goodbye"),
                              Join(Uni(t1("hello"), t1("goodbye")),
                                   Uni(t1("goodbye"), t1("welcome"))));
         testGrammar(grammar, [{t1: "goodbye"}]);
     });
 
-    describe('Joining to joining of (t1:goodbye|t1:welcome) ⨝ (t1:hello|t1:goodbye)', function() {
+    describe('45. Joining to joining of (t1:goodbye|t1:welcome) ⨝ (t1:hello|t1:goodbye)', function() {
         const grammar = Join(t1("goodbye"),
                              Join(Uni(t1("goodbye"), t1("welcome")),
                                   Uni(t1("hello"), t1("goodbye"))));
         testGrammar(grammar, [{t1: "goodbye"}]);
     });
 
-    describe('Joining to nested joining, leftward', function() {
+    describe('46. Joining to nested joining, leftward', function() {
         const grammar = Join(t1("goodbye"),
                              Join(Join(Uni(t1("hello"), t1("goodbye")),
                                        Uni(t1("goodbye"), t1("welcome"))),
@@ -280,7 +281,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{t1: "goodbye"}]);
     });
 
-    describe('Joining to nested joining, rightward', function() {
+    describe('47. Joining to nested joining, rightward', function() {
         const grammar = Join(t1("goodbye"),
                              Join(Uni(t1("yo"), t1("goodbye")),
                                   Join(Uni(t1("hello"), t1("goodbye")),
@@ -289,14 +290,14 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
 
-    describe('Joining to a sequence of alternating sequences ', function() {
+    describe('48. Joining to a sequence of alternating sequences ', function() {
         const grammar = Join(t1("hello"),
                              Seq(Uni(Seq(t1("hello"), t2("hola")),
                                      Seq(t1("goodbye"), t2("adios")))));
         testGrammar(grammar, [{t1: "hello", t2: "hola"}]);
     });
 
-    describe('Joining to a sequence of alternating sequences ', function() {
+    describe('49. Joining to a sequence of alternating sequences ', function() {
         const grammar = Join(Seq(t1("hello"), t2("adios")),
                              Seq(Uni(Seq(t1("hello"),t2("hola")),
                                      Seq(t1("goodbye"), t2("adios")))));
@@ -326,33 +327,33 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "hello"}]);
     }); */
 
-    describe('Unfinished join', function() {
+    describe('50. Unfinished join', function() {
         const grammar = Join(t1("h"), t1("hello"));
         testGrammar(grammar, []);
     });
 
-    describe('Unfinished join, opposite direction', function() {
+    describe('51. Unfinished join, opposite direction', function() {
         const grammar = Join(t1("hello"), t1("h"));
         testGrammar(grammar, []);
     });
 
-    describe('Unfinished join with t2', function() {
+    describe('52. Unfinished join with t2', function() {
         const grammar = Join(Seq(t1("h"), t2("foo")), t1("hello"));
         testGrammar(grammar, []);
     });
 
-    describe('Unfinished join with t2, other direction', function() {
+    describe('53. Unfinished join with t2, other direction', function() {
         const grammar = Join(t1("hello"), Seq(t1("h"), t2("foo")));
         testGrammar(grammar, []);
     });
 
-    describe('Identical join of t1:hello interrupted by t2 content', function() {
+    describe('54. Identical join of t1:hello interrupted by t2 content', function() {
         const grammar = Join(Seq(t1("h"), t2("foo"), t1("ello")),
                              t1("hello"));
         testGrammar(grammar, [{t1: "hello", t2: "foo"}]);
     });
 
-    describe('t1:[hi] ⨝ t1:[hi]', function() {
+    describe('55. t1:[hi] ⨝ t1:[hi]', function() {
         const grammar = Join(CharSet("t1", ["h", "i"]), 
                         CharSet("t1", ["h", "i"]));
         testHasTapes(grammar, ["t1"]);
@@ -362,7 +363,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     }); 
 
-    describe('t1:[hi] ⨝ t1:[ij]', function() {
+    describe('56. t1:[hi] ⨝ t1:[ij]', function() {
         const grammar = Join(CharSet("t1", ["h", "i"]), 
                         CharSet("t1", ["i", "j"]));
         testHasTapes(grammar, ["t1"]);
@@ -371,7 +372,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     }); 
 
-    describe('t1:[chi] ⨝ t1:[hij]', function() {
+    describe('57. t1:[chi] ⨝ t1:[hij]', function() {
         const grammar = Join(CharSet("t1", ["c", "h", "i"]), 
                         CharSet("t1", ["h", "i", "j"]));
         testHasTapes(grammar, ["t1"]);
@@ -380,5 +381,5 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: "i"}, 
         ]);
     }); 
-    
+
 });
