@@ -1,4 +1,4 @@
-import { Msgs } from "../msgs";
+import { Msgs, Result } from "../msgs";
 import { 
     TstAssignment, TstBinaryOp, 
     TstComponent, 
@@ -6,6 +6,7 @@ import {
     TstNamespace, 
     TstNegativeUnitTest, TstReplace, 
     TstReplaceTape,
+    TstResult,
     TstUnitTest 
 } from "../tsts";
 
@@ -16,7 +17,7 @@ import {
  */
  export class AdjustAssignmentScope {
 
-    public transform(t: TstComponent): [TstComponent, Msgs] {
+    public transform(t: TstComponent): TstResult {
 
         switch(t.constructor) {
             case TstNamespace:
@@ -26,10 +27,10 @@ import {
         }
     }
 
-    public transformNamespace(t: TstNamespace): [TstNamespace, Msgs] {
-        const [newThis, msgs] = t.transform(this) as [TstNamespace, Msgs];
+    public transformNamespace(t: TstNamespace): TstResult {
+        const [result, msgs] = t.transform(this).destructure() as [TstNamespace, Msgs];
         const newChildren: TstEnclosure[] = [];
-        for (const child of t.children) {
+        for (const child of result.children) {
 
             if (child instanceof TstBinaryOp ||
                     child instanceof TstReplace ||
@@ -68,8 +69,7 @@ import {
             }
         }
 
-        newThis.children = newChildren;
-        return [newThis, msgs];
+        return new TstNamespace(t.cell, newChildren).msg(msgs);
     }
 
 }

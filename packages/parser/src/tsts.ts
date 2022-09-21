@@ -13,7 +13,7 @@ import {
     JoinReplaceGrammar, LiteralGrammar, JoinRuleGrammar, 
     LocatorGrammar 
 } from "./grammars";
-import { Cell, CellPos } from "./util";
+import { Cell, CellPos, Positioned } from "./util";
 import {
     DEFAULT_SATURATION,
     DEFAULT_VALUE,
@@ -21,11 +21,12 @@ import {
     ParamDict,
     parseHeaderCell
 } from "./headers";
-import { ContentMsg, Err, Msg, Msgs, Warn } from "./msgs";
+import { ContentMsg, Err, Msg, Msgs, Result, Warn } from "./msgs";
 
+export class TstResult extends Result<TstComponent> { }
 
 export abstract class TstTransform {
-    public abstract transform(t: TstComponent): [TstComponent, Msgs];
+    public abstract transform(t: TstComponent): TstResult;
 }
 
 
@@ -36,7 +37,11 @@ export const BINARY_OPS: {[opName: string]: BinaryOp} = {
     "join": (c1, c2) => new JoinGrammar(c1, c2),
 }
 
-export abstract class TstComponent {
+export abstract class TstComponent implements Positioned {
+
+    public get pos(): CellPos | undefined {
+        return undefined;
+    }   
 
     public abstract toGrammar(): Grammar;
 
@@ -59,18 +64,23 @@ export abstract class TstComponent {
         return { "__": this.toGrammar()};
     }
 
-    public assignToNamespace(
-        ns: NsGrammar
-    ): void {
-        if (ns == undefined) {
-            // there's nothing to do
-            return;
-        }
-    }
-
-    public abstract transform(f: TstTransform): [TstComponent, Msgs];
+    public abstract transform(f: TstTransform): TstResult;
 
     public abstract toParamsTable(): [Cell, ParamDict][];
+
+    public msg(msgs: Msgs = []): TstResult {
+        return new TstResult(this, msgs);
+    }
+
+    /*
+    public err(shortMsg: string, longMsg: string): TstResult {
+        return new TstResult(this).err(shortMsg, longMsg, this.pos);
+    }
+    
+    public warn(longMsg: string): TstResult {
+        return new TstResult(this).warn(longMsg, this.pos);
+    } */
+
 }
 
 /**
@@ -125,9 +135,8 @@ export class TstHeader extends TstCellComponent {
         }
     }
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        const result = new TstHeader(this.cell, this.header);
-        return [result, []];
+    public transform(f: TstTransform): TstResult {
+        return new TstHeader(this.cell, this.header).msg();
     }
 
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string {
@@ -158,10 +167,9 @@ export class TstHeadedCell extends TstCellComponent {
         super(content);
     }
     
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        const [newPrev, msgs] = f.transform(this.prev);
-        const result = new TstHeadedCell(newPrev, this.header, this.cell);
-        return [result, msgs];
+    public transform(f: TstTransform): TstResult {
+        return f.transform(this.prev)
+                .bind(c => new TstHeadedCell(c, this.header, this.cell));
     }
 
     public toGrammar(): Grammar {
@@ -177,8 +185,8 @@ export class TstHeadedCell extends TstCellComponent {
 
 export class TstEmpty extends TstComponent {
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        return [this, []];
+    public transform(f: TstTransform): TstResult {
+        return this.msg();
     }
 
     public toGrammar(): Grammar {
@@ -190,10 +198,11 @@ export class TstEmpty extends TstComponent {
     }
 }
 
+
 export class TstComment extends TstCellComponent {
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        return [this, []];
+    public transform(f: TstTransform): TstResult {
+        return this.msg();
     }
 
     public toGrammar(): Grammar {
@@ -255,12 +264,10 @@ export class TstBinary extends TstEnclosure {
         super(cell);
     }
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        const [newSibling, sibMsgs] = f.transform(this.sibling);
-        const [newChild, childMsgs] = f.transform(this.child);
-        const msgs = [...sibMsgs, ...childMsgs];
-        const result = new TstBinary(this.cell, newSibling, newChild);
-        return [result, msgs];
+    public transform(f: TstTransform): TstResult {
+        const [sib, sMsgs] = f.transform(this.sibling).destructure();
+        const [child, cMsgs] = f.transform(this.child).destructure();
+        return new TstBinary(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
     }
 
     public toGrammar(): Grammar {
@@ -302,24 +309,14 @@ export class TstBinary extends TstEnclosure {
 export class TstTableOp extends TstBinary {
 
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        const [newSibling, sibMsgs] = f.transform(this.sibling);
-        const [newChild, childMsgs] = f.transform(this.child);
-        const msgs = [...sibMsgs, ...childMsgs];
-        const result = new TstTableOp(this.cell, newSibling, newChild);
-        return [result, msgs];
+    public transform(f: TstTransform): TstResult {
+        const [sib, sMsgs] = f.transform(this.sibling).destructure();
+        const [child, cMsgs] = f.transform(this.child).destructure();
+        return new TstTableOp(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
     }
     
     public toGrammar(): Grammar {
         
-        if (this.child instanceof TstEmpty) {
-            this.message(Warn(
-                "'table' seems to be missing a table; " + 
-                "something should be in the cell to the right."
-            ));
-        }
-
-
         this.sibling.toGrammar();  // it's erroneous, but this will at
                                 // least run checks within it
         
@@ -346,12 +343,10 @@ export class TstTableOp extends TstBinary {
 
 export class TstBinaryOp extends TstBinary {
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        const [newSibling, sibMsgs] = f.transform(this.sibling);
-        const [newChild, childMsgs] = f.transform(this.child);
-        const msgs = [...sibMsgs, ...childMsgs];
-        const result = new TstBinaryOp(this.cell, newSibling, newChild);
-        return [result, msgs];
+    public transform(f: TstTransform): TstResult {
+        const [sib, sMsgs] = f.transform(this.sibling).destructure();
+        const [child, cMsgs] = f.transform(this.child).destructure();
+        return new TstBinaryOp(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
     }
     
     public toGrammar(): Grammar {
@@ -382,12 +377,10 @@ export class TstReplaceTape extends TstBinaryOp {
         super(cell, sibling, child);
     }
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        const [newSibling, sibMsgs] = f.transform(this.sibling);
-        const [newChild, childMsgs] = f.transform(this.child);
-        const msgs = [...sibMsgs, ...childMsgs];
-        const result = new TstReplaceTape(this.cell, this.tape, newSibling, newChild);
-        return [result, msgs];
+    public transform(f: TstTransform): TstResult {
+        const [sib, sMsgs] = f.transform(this.sibling).destructure();
+        const [child, cMsgs] = f.transform(this.child).destructure();
+        return new TstReplaceTape(this.cell, this.tape, sib, child).msg(sMsgs).msg(cMsgs);
     }
 
     public toGrammar(): Grammar {
@@ -455,12 +448,10 @@ export class TstReplace extends TstBinaryOp {
 
     public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        const [newSibling, sibMsgs] = f.transform(this.sibling);
-        const [newChild, childMsgs] = f.transform(this.child);
-        const msgs = [...sibMsgs, ...childMsgs];
-        const result = new TstReplace(this.cell, newSibling, newChild);
-        return [result, msgs];
+    public transform(f: TstTransform): TstResult {
+        const [sib, sMsgs] = f.transform(this.sibling).destructure();
+        const [child, cMsgs] = f.transform(this.child).destructure();
+        return new TstReplace(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
     }
 
     public toGrammar(): Grammar {
@@ -529,13 +520,12 @@ export class TstUnitTest extends TstBinary {
 
     public static VALID_PARAMS = [ "__", "unique" ];
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        const [newSibling, sibMsgs] = f.transform(this.sibling);
-        const [newChild, childMsgs] = f.transform(this.child);
-        const msgs = [...sibMsgs, ...childMsgs];
-        const result = new TstUnitTest(this.cell, newSibling, newChild);
-        return [result, msgs];
+    public transform(f: TstTransform): TstResult {
+        const [sib, sMsgs] = f.transform(this.sibling).destructure();
+        const [child, cMsgs] = f.transform(this.child).destructure();
+        return new TstUnitTest(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
     }
+
 
     public toGrammar(): Grammar {
         
@@ -564,7 +554,6 @@ export class TstUnitTest extends TstBinary {
                 try {
                     uniques = unique.getLiterals();
                 } catch (e) {
-                    console.log(e);
                     const errLoc = [...unique.locations, cell][0];
                     errLoc.message(Err("Ill-formed unique",
                         `Somewhere in this row there is an ill-formed uniqueness constraint.  ` +
@@ -589,12 +578,10 @@ export class TstUnitTest extends TstBinary {
  */
 export class TstNegativeUnitTest extends TstUnitTest {
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        const [newSibling, sibMsgs] = f.transform(this.sibling);
-        const [newChild, childMsgs] = f.transform(this.child);
-        const msgs = [...sibMsgs, ...childMsgs];
-        const result = new TstNegativeUnitTest(this.cell, newSibling, newChild);
-        return [result, msgs];
+    public transform(f: TstTransform): TstResult {
+        const [sib, sMsgs] = f.transform(this.sibling).destructure();
+        const [child, cMsgs] = f.transform(this.child).destructure();
+        return new TstNegativeUnitTest(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
     }
 
     public toGrammar(): Grammar {
@@ -635,25 +622,27 @@ export class TstNegativeUnitTest extends TstUnitTest {
  */
 export class TstTable extends TstBinary {
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        const [newSibling, sibMsgs] = f.transform(this.sibling);
-        const [newChild, childMsgs] = f.transform(this.child);
-        const msgs = [...sibMsgs, ...childMsgs];
+    public transform(f: TstTransform): TstResult {
+        const [sib, sMsgs] = f.transform(this.sibling).destructure();
+        const [child, cMsgs] = f.transform(this.child).destructure();
 
         const newHeaders: {[col: number]: TstHeader} = {};
+        const headerMsgs: Msgs = [];
         for (const header of Object.values(this.headersByCol)) {
-            const [newHeader, headerMsgs] = f.transform(header) as [TstHeader, Msgs];
-            newHeaders[header.pos.col] = newHeader;
-            msgs.push(...headerMsgs);
+            const [newH, hMsgs] = f.transform(header).destructure() as [TstHeader, Msgs];
+            newHeaders[header.pos.col] = newH;
+            headerMsgs.push(...hMsgs);
         }
         const newRows: TstRow[] = [];
+        const rowMsgs: Msgs = [];
         for (const row of this.rows) {
-            const [newRow, rowMsgs] = f.transform(row) as [TstRow, Msgs];
-            newRows.push(newRow);
-            msgs.push(...rowMsgs);
+            const [newR, rMsgs] = f.transform(row).destructure() as [TstRow, Msgs];
+            newRows.push(newR);
+            rowMsgs.push(...rMsgs);
         }
-        const result = new TstTable(this.cell, newSibling, newChild, newHeaders, newRows);
-        return [result, msgs];
+        return new TstTable(this.cell, sib, child, newHeaders, newRows)
+                     .msg(sMsgs).msg(cMsgs)
+                     .msg(headerMsgs).msg(rowMsgs);
     }
 
     constructor(
@@ -735,10 +724,9 @@ export class TstTable extends TstBinary {
 
 export class TstRow extends TstCellComponent {
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        const [newLast, msgs] = f.transform(this.lastCell);
-        const result = new TstRow(this.cell, newLast);
-        return [result, msgs];
+    public transform(f: TstTransform): TstResult {
+        return f.transform(this.lastCell)
+                .bind(c => new TstRow(this.cell, c));
     }
 
     constructor(
@@ -780,12 +768,10 @@ export class TstAssignment extends TstBinary {
                             : cell.text;    
     }
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
-        const [newSibling, sibMsgs] = f.transform(this.sibling);
-        const [newChild, childMsgs] = f.transform(this.child);
-        const result = new TstAssignment(this.cell, newSibling, newChild);
-        const msgs = [...sibMsgs, ...childMsgs];
-        return [result, msgs];
+    public transform(f: TstTransform): TstResult {
+        const [sib, sMsgs] = f.transform(this.sibling).destructure();
+        const [child, cMsgs] = f.transform(this.child).destructure();
+        return new TstAssignment(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
     }
 
     public toGrammar(): Grammar {
@@ -808,16 +794,16 @@ export class TstNamespace extends TstEnclosure {
         return child;
     }
 
-    public transform(f: TstTransform): [TstComponent, Msgs] {
+    public transform(f: TstTransform): TstResult {
         const newChildren: TstEnclosure[] = [];
         const msgs: Msgs = [];
         for (const child of this.children) {
-            const [newChild, childMsgs] = f.transform(child) as [TstEnclosure, Msgs];
-            newChildren.push(newChild);
-            msgs.push(...childMsgs);
+            const [newC, cMsgs] = f.transform(child).destructure() as [TstEnclosure, Msgs];
+            newChildren.push(newC);
+            msgs.push(...cMsgs);
         }
-        const result = new TstNamespace(this.cell, newChildren);
-        return [result, msgs];
+        return new TstNamespace(this.cell, newChildren)
+                    .msg(msgs);
     }
 
     public toGrammar(): Grammar {
@@ -858,21 +844,21 @@ export class TstNamespace extends TstEnclosure {
 
 export class TstProject extends TstNamespace {
     
-    public transform(f: TstTransform): [TstComponent, Msgs] {
+    public transform(f: TstTransform): TstResult {
         const newChildren: TstEnclosure[] = [];
         const msgs: Msgs = [];
         for (const child of this.children) {
-            const [newChild, childMsgs] = f.transform(child) as [TstEnclosure, Msgs];
-            newChildren.push(newChild);
-            msgs.push(...childMsgs);
+            const [newC, cMsgs] = f.transform(child).destructure() as [TstEnclosure, Msgs];
+            newChildren.push(newC);
+            msgs.push(...cMsgs);
         }
-        const result = new TstNamespace(this.cell, newChildren);
-        return [result, msgs];
+        return new TstProject(this.cell, newChildren)
+                    .msg(msgs);
     }
 
     /**
      * TstProject overrides addChild() because it needs to treat
-     * is added children specially.  Its children are all sheets (and thus
+     * its added children specially.  Its children are all sheets (and thus
      * namespaces) but unlike ordinary things that we assign, there's no 
      * actual "name:" cell to the left of these, their name is the name of the
      * source file or worksheet they come from.  This is represented as a 

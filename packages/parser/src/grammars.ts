@@ -28,7 +28,7 @@ import {
     constructParallel,
     Env
 } from "./exprs";
-import { Msgs } from "./msgs";
+import { Msgs, Result } from "./msgs";
 
 import { 
     BitsetTape,
@@ -40,11 +40,13 @@ import {
 
 import { 
     Cell,
+    CellPos,
     flatten,
     HIDDEN_TAPE_PREFIX,
     listDifference,
     listIntersection,
     listUnique,
+    Positioned,
     tokenizeUnicode
 } from "./util";
 
@@ -57,50 +59,52 @@ type TapeClass = {
     concatenable: boolean
 };
 
+export class GrammarResult extends Result<Grammar> { }
+
 export interface Transform {
 
-    transform(): [NsGrammar, Msgs];
+    transform(): Result<NsGrammar>;
     readonly desc: string;
 
 }
 
 export interface GrammarTransform extends Transform {   
 
-    transform(): [NsGrammar, Msgs];
+    transform(): Result<NsGrammar>;
     readonly desc: string;
 
-    transformEpsilon(g: EpsilonGrammar): [Grammar, Msgs];
-    transformNull(g: NullGrammar): [Grammar, Msgs];
-    transformCharSet(g: CharSetGrammar): [Grammar, Msgs];
-    transformLiteral(g: LiteralGrammar): [Grammar, Msgs];
-    transformDot(g: DotGrammar): [Grammar, Msgs];
-    transformSequence(g: SequenceGrammar): [Grammar, Msgs];
-    transformAlternation(g: AlternationGrammar): [Grammar, Msgs];
-    transformIntersection(g: IntersectionGrammar): [Grammar, Msgs];
-    transformJoin(g: JoinGrammar): [Grammar, Msgs];
-    transformEquals(g: EqualsGrammar): [Grammar, Msgs];
-    transformStarts(g: StartsGrammar): [Grammar, Msgs];
-    transformEnds(g: EndsGrammar): [Grammar, Msgs];
-    transformContains(g: ContainsGrammar): [Grammar, Msgs];
-    transformMatch(g: MatchGrammar): [Grammar, Msgs];
-    transformMatchFrom(g: MatchFromGrammar): [Grammar, Msgs];
-    transformReplace(g: ReplaceGrammar): [Grammar, Msgs];
-    transformEmbed(g: EmbedGrammar): [Grammar, Msgs];
-    transformNamespace(g: NsGrammar): [Grammar, Msgs];
-    transformRepeat(g: RepeatGrammar): [Grammar, Msgs];
-    transformUnitTest(g: UnitTestGrammar): [Grammar, Msgs];
-    transformNegativeUnitTest(g: NegativeUnitTestGrammar): [Grammar, Msgs];
-    transformJoinReplace(g: JoinReplaceGrammar): [Grammar, Msgs];
-    transformJoinRule(g: JoinRuleGrammar): [Grammar, Msgs];
-    transformNegation(g: NegationGrammar): [Grammar, Msgs];
-    transformRename(g: RenameGrammar): [Grammar, Msgs];
-    transformHide(g: HideGrammar): [Grammar, Msgs];
-    transformCount(g: CountGrammar): [Grammar, Msgs];
-    transformCountTape(g: CountTapeGrammar): [Grammar, Msgs];
-    transformPriority(g: PriorityGrammar): [Grammar, Msgs];
-    transformShort(g: ShortGrammar): [Grammar, Msgs];
-    transformParallel(g: ParallelGrammar): [Grammar, Msgs];
-    transformLocator(g: LocatorGrammar): [Grammar, Msgs];
+    transformEpsilon(g: EpsilonGrammar): GrammarResult;
+    transformNull(g: NullGrammar): GrammarResult;
+    transformCharSet(g: CharSetGrammar): GrammarResult;
+    transformLiteral(g: LiteralGrammar): GrammarResult;
+    transformDot(g: DotGrammar): GrammarResult;
+    transformSequence(g: SequenceGrammar): GrammarResult;
+    transformAlternation(g: AlternationGrammar): GrammarResult;
+    transformIntersection(g: IntersectionGrammar): GrammarResult;
+    transformJoin(g: JoinGrammar): GrammarResult;
+    transformEquals(g: EqualsGrammar): GrammarResult;
+    transformStarts(g: StartsGrammar): GrammarResult;
+    transformEnds(g: EndsGrammar): GrammarResult;
+    transformContains(g: ContainsGrammar): GrammarResult;
+    transformMatch(g: MatchGrammar): GrammarResult;
+    transformMatchFrom(g: MatchFromGrammar): GrammarResult;
+    transformReplace(g: ReplaceGrammar): GrammarResult;
+    transformEmbed(g: EmbedGrammar): GrammarResult;
+    transformNamespace(g: NsGrammar): GrammarResult;
+    transformRepeat(g: RepeatGrammar): GrammarResult;
+    transformUnitTest(g: UnitTestGrammar): GrammarResult;
+    transformNegativeUnitTest(g: NegativeUnitTestGrammar): GrammarResult;
+    transformJoinReplace(g: JoinReplaceGrammar): GrammarResult;
+    transformJoinRule(g: JoinRuleGrammar): GrammarResult;
+    transformNegation(g: NegationGrammar): GrammarResult;
+    transformRename(g: RenameGrammar): GrammarResult;
+    transformHide(g: HideGrammar): GrammarResult;
+    transformCount(g: CountGrammar): GrammarResult;
+    transformCountTape(g: CountTapeGrammar): GrammarResult;
+    transformPriority(g: PriorityGrammar): GrammarResult;
+    transformShort(g: ShortGrammar): GrammarResult;
+    transformParallel(g: ParallelGrammar): GrammarResult;
+    transformLocator(g: LocatorGrammar): GrammarResult;
 }
 
 /**
@@ -150,8 +154,16 @@ export interface GrammarTransform extends Transform {
  *     component.
  */
 
-export abstract class Grammar {
+export abstract class Grammar implements Positioned {
 
+    public get pos(): CellPos | undefined {
+        return undefined;
+    }
+    
+    public msg(msgs: Msgs = []): GrammarResult {
+        return new GrammarResult(this, msgs);
+    }
+    
     protected _tapes: string[] | undefined = undefined;
     public concatenableTapes: Set<string> = new Set(); 
 
@@ -171,7 +183,7 @@ export abstract class Grammar {
      */
     public abstract get id(): string;
 
-    public abstract accept(t: GrammarTransform): [Grammar, Msgs];
+    public abstract accept(t: GrammarTransform): GrammarResult;
 
     public getLiterals(): LiteralGrammar[] {
         throw new Error(`Cannot get literals from this grammar`);
@@ -323,7 +335,7 @@ export class EpsilonGrammar extends AtomicGrammar {
         return 'ε';
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformEpsilon(this);
     }
 
@@ -349,7 +361,7 @@ export class NullGrammar extends AtomicGrammar {
         return "∅";
     }
     
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformNull(this);
     }
 
@@ -378,7 +390,7 @@ export class CharSetGrammar extends AtomicGrammar {
         return `CharSet(${this.chars.join(",")})`
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformCharSet(this);
     }
 
@@ -423,7 +435,7 @@ export class LiteralGrammar extends AtomicGrammar {
         return `Literal(${this.tapeName}:${this.text})`;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformLiteral(this);
     }
 
@@ -481,7 +493,7 @@ export class DotGrammar extends AtomicGrammar {
         return super.getTapeClass(tapeName, cache);
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformDot(this);
     }
     
@@ -522,7 +534,7 @@ export class ParallelGrammar extends NAryGrammar {
         return `Par(${cs})`;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformParallel(this);
     }
 
@@ -551,7 +563,7 @@ export class SequenceGrammar extends NAryGrammar {
         return `Seq(${cs})`;
     }
     
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformSequence(this);
     }
 
@@ -601,7 +613,7 @@ export class SequenceGrammar extends NAryGrammar {
 
 export class AlternationGrammar extends NAryGrammar {
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformAlternation(this);
     }
     
@@ -668,7 +680,7 @@ export class ShortGrammar extends UnaryGrammar {
         return super.getTapeClass(tapeName, cache);
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformShort(this);
     }
     
@@ -701,7 +713,7 @@ export class IntersectionGrammar extends BinaryGrammar {
                 this.child2.potentiallyInfinite(stack);
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformIntersection(this);
     }
 
@@ -727,7 +739,7 @@ export class JoinGrammar extends BinaryGrammar {
         return `Join(${this.child1.id},${this.child2.id})`;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformJoin(this);
     }
     
@@ -790,7 +802,7 @@ export class EqualsGrammar extends BinaryGrammar {
         return result;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformEquals(this);
     }
 
@@ -832,7 +844,7 @@ export class CountGrammar extends UnaryGrammar {
         return this.maxChars == Infinity
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformCount(this);
     }
 
@@ -862,7 +874,7 @@ export class CountTapeGrammar extends UnaryGrammar {
         return Object.values(this.maxChars).some(n => n == Infinity);
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformCountTape(this);
     }
 
@@ -893,7 +905,7 @@ export class PriorityGrammar extends UnaryGrammar {
         return `Priority(${this.tapePriority},${this.child.id})`;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformPriority(this);
     }
 
@@ -926,7 +938,7 @@ export class StartsGrammar extends FilterGrammar {
         return `StartsWithFilter(${this.child.id})`;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformStarts(this);
     }
 }
@@ -937,7 +949,7 @@ export class EndsGrammar extends FilterGrammar {
         return `EndsWithFilter(${this.child.id})`;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformEnds(this);
     }
 }
@@ -948,7 +960,7 @@ export class ContainsGrammar extends FilterGrammar {
         return `ContainsFilter(${this.child.id})`;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformContains(this);
     }
 }
@@ -967,7 +979,7 @@ export class RenameGrammar extends UnaryGrammar {
         return `Rename(${this.fromTape}>${this.toTape},${this.child.id})`;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformRename(this);
     }
     
@@ -1055,7 +1067,7 @@ export class RepeatGrammar extends UnaryGrammar {
         return this.child.potentiallyInfinite(stack) || this.maxReps == Infinity;
     }
     
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformRepeat(this);
     }
 
@@ -1089,7 +1101,7 @@ export class NegationGrammar extends UnaryGrammar {
         return super.getTapeClass(tapeName, cache);
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformNegation(this);
     }
 
@@ -1121,7 +1133,7 @@ export class HideGrammar extends UnaryGrammar {
         return `Hide(${this.child.id},${this.tapeName})`;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformHide(this);
     }
     
@@ -1234,7 +1246,7 @@ export class MatchFromGrammar extends UnaryGrammar {
         return results;
     }
     
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformMatchFrom(this);
     }
 
@@ -1267,7 +1279,7 @@ export class MatchGrammar extends UnaryGrammar {
         return `Match(${this.child.id},${[...this.relevantTapes]})`;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformMatch(this);
     }
 
@@ -1295,7 +1307,7 @@ export class NsGrammar extends Grammar {
     public symbols: Map<string, Grammar> = new Map();
     //public default: GrammarComponent = new EpsilonGrammar(DUMMY_CELL);
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformNamespace(this);
     }
 
@@ -1454,7 +1466,7 @@ export class EmbedGrammar extends AtomicGrammar {
         return `Embed(${this.name})`;
     }
     
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformEmbed(this);
     }
 
@@ -1545,6 +1557,10 @@ export class LocatorGrammar extends UnaryGrammar {
         super(child);
     }
 
+    public get pos(): CellPos {
+        return this.cell.pos;
+    }
+
     public get locations(): Cell[] {
         return [this.cell];
     }
@@ -1554,7 +1570,7 @@ export class LocatorGrammar extends UnaryGrammar {
         return `${this.cell.pos}@${this.child.id}`;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformLocator(this);
     }
 
@@ -1578,7 +1594,7 @@ export class UnitTestGrammar extends UnaryGrammar {
         return this.child.id;
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformUnitTest(this);
     }
     
@@ -1599,7 +1615,7 @@ export class UnitTestGrammar extends UnaryGrammar {
 
 export class NegativeUnitTestGrammar extends UnitTestGrammar {
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformNegativeUnitTest(this);
     }
 
@@ -1834,7 +1850,7 @@ export class JoinReplaceGrammar extends Grammar {
         super();
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformJoinReplace(this);
     }
 
@@ -1924,7 +1940,7 @@ export class JoinRuleGrammar extends Grammar {
         return `JoinRule(${this.child.id},${cs})`;
     }
     
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformJoinRule(this);
     }
 
@@ -1993,7 +2009,7 @@ export class ReplaceGrammar extends Grammar {
         return super.getTapeClass(tapeName, cache);
     }
 
-    public accept(t: GrammarTransform): [Grammar, Msgs] {
+    public accept(t: GrammarTransform): GrammarResult {
         return t.transformReplace(this);
     }
 

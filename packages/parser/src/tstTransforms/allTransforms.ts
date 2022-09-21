@@ -1,28 +1,27 @@
 import { 
     TstComponent, 
+    TstResult, 
     TstTransform,
 } from "../tsts";
 import { AdjustAssignmentScope } from "./rescopeAssignment";
 import { MissingParamsTransform } from "./missingParams";
 import { InvalidAssignmentTransform } from "./invalidAssignment";
-import { Msgs } from "../msgs";
 
 export class TstTransformAll {
 
-    public transform(t: TstComponent): [TstComponent, Msgs] {
+    public transform(t: TstComponent): TstResult {
 
-        let tst = t;
-        const msgs: Msgs = [];
+        let result = t.msg();
         const transforms: TstTransform[] = [
             new AdjustAssignmentScope(),
             new InvalidAssignmentTransform(),
             new MissingParamsTransform(),
         ]
         for (const transform of transforms) {
-            const [newTst, ms] = transform.transform(tst);
-            tst = newTst;
-            msgs.push(...ms);
+            const [item, msgs] = result.destructure();
+            result = transform.transform(item).msg(msgs);
         }
-        return [tst, msgs];
+
+        return result;
     }
 }

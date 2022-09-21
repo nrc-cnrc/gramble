@@ -3,7 +3,7 @@ import { CounterStack, SymbolTable } from "../exprs";
 import { Msgs, Err, Success } from "../msgs";
 import { 
     CountGrammar, EqualsGrammar, 
-    Grammar, NegativeUnitTestGrammar, 
+    Grammar, GrammarResult, NegativeUnitTestGrammar, 
     NsGrammar, PriorityGrammar, 
     UnitTestGrammar 
 } from "../grammars";
@@ -23,9 +23,10 @@ export class UnitTestTransform extends IdentityTransform {
         super(ns);
     }
 
-    public transformUnitTest(g: UnitTestGrammar): [Grammar, Msgs] {
-        const [newThis, msgs] = super.transformUnitTest(g) as [UnitTestGrammar, Msgs];
-        const results = this.executeTest(newThis);
+    public transformUnitTest(g: UnitTestGrammar): GrammarResult {
+        const [test, msgs] = super.transformUnitTest(g).destructure() as [UnitTestGrammar, Msgs];
+        const results = this.executeTest(test);
+
         if (results.length == 0) {
             msgs.push(Err("Failed unit test",
                 "The grammar above has no outputs compatible with these inputs."));
@@ -34,7 +35,7 @@ export class UnitTestTransform extends IdentityTransform {
                 "The grammar above has outputs compatible with these inputs."));
         }
 
-        uniqueLoop: for (const unique of newThis.uniques) {
+        uniqueLoop: for (const unique of test.uniques) {
             resultLoop: for (const result of results) {
                 if (!(unique.tapeName in result)) {
                     msgs.push(Err("Failed unit test",
@@ -50,12 +51,14 @@ export class UnitTestTransform extends IdentityTransform {
                 }
             }
         }
-        return [newThis, msgs];
+
+        return test.msg(msgs);
     }
 
-    public transformNegativeUnitTest(g: NegativeUnitTestGrammar): [Grammar, Msgs] {
-        const [newThis, msgs] = super.transformNegativeUnitTest(g) as [NegativeUnitTestGrammar, Msgs];
-        const results = this.executeTest(newThis);
+    public transformNegativeUnitTest(g: NegativeUnitTestGrammar): GrammarResult {
+        const [test, msgs] = super.transformNegativeUnitTest(g).destructure() as [NegativeUnitTestGrammar, Msgs];
+        const results = this.executeTest(test);
+        
         if (results.length > 0) {
             msgs.push(Err("Failed unit test",
                 "The grammar above incorrectly has outputs compatible with these inputs."));
@@ -63,7 +66,7 @@ export class UnitTestTransform extends IdentityTransform {
             msgs.push(Success(
                 "The grammar above correctly has no outputs compatible with these inputs."));
         }
-        return [newThis, msgs];
+        return test.msg(msgs);
     }
     
     public executeTest(test: UnitTestGrammar): StringDict[] {

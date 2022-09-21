@@ -52,6 +52,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    
     describe('Reference to a missing symbol', function() {
         const project = sheetFromFile(`${DIR}/missingSymbol.csv`);
         testErrors(project, [

@@ -1,5 +1,5 @@
-import { TstAssignment, TstComponent } from "../tsts";
-import { Err, Msgs, Warn } from "../msgs";
+import { TstAssignment, TstComponent, TstResult } from "../tsts";
+import { Msgs, Result } from "../msgs";
 import { RESERVED_WORDS } from "../headers";
 
 export class InvalidAssignmentTransform {
@@ -8,9 +8,7 @@ export class InvalidAssignmentTransform {
         public underNamespace: boolean = false
     ) { }
 
-    public transform(
-        t: TstComponent, 
-    ): [TstComponent, Msgs] {
+    public transform(t: TstComponent): TstResult {
 
         switch(t.constructor.name) {
             case 'TstAssignment':
@@ -24,39 +22,35 @@ export class InvalidAssignmentTransform {
         }
     }
     
-    public transformAssignment(t: TstAssignment): [TstComponent, Msgs] {
+    public transformAssignment(t: TstAssignment): TstResult {
         const newThis = new InvalidAssignmentTransform(false);
-        const [result, msgs] = t.transform(newThis) as [TstAssignment, Msgs];
-        const trimmedText = result.text.endsWith(":")
-                            ? result.text.slice(0, result.text.length-1).trim()
-                            : result.text
+        const result = t.transform(newThis) as Result<TstAssignment>;
+        const [assignment, _] = result.destructure();
+        const trimmedText = assignment.text.endsWith(":")
+                            ? assignment.text.slice(0, assignment.text.length-1).trim()
+                            : assignment.text;
         const trimmedTextLower = trimmedText.toLowerCase();
 
         if (!this.underNamespace) {
-            msgs.push(Err(
-                "Wayward assignment",
-                "This looks like an assignment, but isn't in an appropriate position "
-               + "for one and will be ignored."
-            ).localize(result.pos));
-            return [result.child, msgs];
+            return result.err("Wayward assignment",
+                            "This looks like an assignment, but isn't in an " +
+                            " appropriate position for one and will be ignored.")
+                        .bind(r => r.child);
         }
 
         if (RESERVED_WORDS.has(trimmedTextLower)) {
-            // oops, assigning to a reserved word
-            msgs.push(Err("Assignment to reserved word", 
-                "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
-                `reserved word ${trimmedText}.  Choose a different symbol name.`
-            ).localize(result.pos));     
-            return [result.child, msgs];       
+            return result.err("Assignment to reserved word", 
+                            "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
+                            `reserved word ${trimmedText}.  Choose a different symbol name.`)
+                         .bind(r => r.child);
+                    
         }
 
         if (trimmedText.indexOf(".") != -1) {
-            msgs.push(Warn(
-                "You can't assign to a name that contains a period."
-            ).localize(result.pos));
-            return [result.child, msgs];
+            return result.warn("You can't assign to a name that contains a period.")
+                         .bind(r => r.child)
         }
 
-        return [result, msgs];
+        return result;
     }
 }

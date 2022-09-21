@@ -1,13 +1,12 @@
 import { 
     CounterStack,
-    Grammar, HideGrammar,
+    Grammar, GrammarResult, HideGrammar,
     JoinGrammar, JoinRuleGrammar, 
     RenameGrammar, ReplaceGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
-import { Msgs, Err } from "../msgs";
 
 /**
  * This Transform handles the construction of implicit-tape replacement rules
@@ -22,28 +21,29 @@ export class RuleReplaceTransform extends IdentityTransform {
         return "Constructing new-style replacement rules";
     }
 
-    public transformJoinRule(g: JoinRuleGrammar): [Grammar, Msgs] {
+    public transformJoinRule(g: JoinRuleGrammar): GrammarResult {
 
         let relevantTape = g.inputTape;
-        let [result, childMsgs] = g.child.accept(this);
+        let [child, childMsgs] = g.child.accept(this).destructure();
 
         if (g.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar
             // leads to infinite generation.  This is correct but not what anyone
             // actually wants, so mark an error
-            childMsgs.push(Err(`Replacing on non-existent tape'`,
-                `The grammar above does not have a tape ${g.inputTape} to replace on`));
-            return [result, childMsgs];
+            return child.msg(childMsgs)
+                        .err(`Replacing on non-existent tape'`,
+                            `The grammar above does not have a tape ` +
+                            `${g.inputTape} to replace on`);
         }
 
         if (g.rules.length == 0) {
-            return [result, childMsgs];
+            return child.msg(childMsgs);
         }
 
-        const [newRules, ruleMsgs] = this.mapTo(g.rules);
-        const msgs = [...childMsgs, ...ruleMsgs];
+        const [rules, ruleMsgs] = this.mapTo(g.rules).destructure();
 
-        for (const rule of newRules) {
+        let result = child;
+        for (const rule of rules) {
             // first, rename the relevant tape of the child to ".input"
             result = new RenameGrammar(result, relevantTape, REPLACE_INPUT_TAPE);
             // now the relevant tape is "output"
@@ -56,7 +56,7 @@ export class RuleReplaceTransform extends IdentityTransform {
 
         result = new RenameGrammar(result, REPLACE_OUTPUT_TAPE, g.inputTape);
         result.calculateTapes(new CounterStack(2));
-        return [result, msgs];
+        return result.msg(childMsgs).msg(ruleMsgs);
     }
 
 }

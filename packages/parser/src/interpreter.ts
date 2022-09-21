@@ -99,7 +99,7 @@ export class Interpreter {
         for (const t of transforms) {
             const transform: GrammarTransform = new t(this.grammar);
             timeIt(() => {
-                const [newGrammar, msgs] = transform.transform();
+                const [newGrammar, msgs] = transform.transform().destructure();
                 this.grammar = newGrammar;
                 sendMessages(devEnv, msgs);
             }, timeVerbose, transform.desc);
@@ -142,9 +142,9 @@ export class Interpreter {
         startTime = Date.now();
 
         let tst: TstComponent = sheetProject.toTST();
-        let [newTst, msgs] = new TstTransformAll().transform(tst);
+        let [tstResult, msgs] = new TstTransformAll().transform(tst).destructure();
         sendMessages(devEnv, msgs);
-        const grammar = newTst.toGrammar();
+        const grammar = tstResult.toGrammar();
         elapsedTime = msToTime(Date.now() - startTime);
         logTime(verbose, `Converted to grammar; ${elapsedTime}`);
 
@@ -334,7 +334,7 @@ export class Interpreter {
     public runUnitTests(): void {
         this.grammar.constructExpr(this.symbolTable);  // fill the symbol table if it isn't already
         const t = new UnitTestTransform(this.grammar, this.vocab, this.tapeNS, this.symbolTable);
-        const [_, msgs] = t.transform();
+        const [_, msgs] = t.transform().destructure(); // results.item isn't important
         sendMessages(this.devEnv, msgs);
     }
 }

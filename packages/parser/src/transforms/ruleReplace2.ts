@@ -1,6 +1,7 @@
 import { 
     CounterStack,
     Grammar, 
+    GrammarResult, 
     JoinGrammar, 
     JoinRuleGrammar, 
     RenameGrammar
@@ -8,7 +9,6 @@ import {
 
 import { IdentityTransform } from "./transforms";
 import { foldRight, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
-import { Msgs, Err } from "../msgs";
 
 let RULE_HIDE_INDEX = 0;
 
@@ -25,34 +25,34 @@ export class RuleReplaceTransform2 extends IdentityTransform {
         return "Constructing new-style replacement rules (2nd version)";
     }
 
-    public transformJoinRule(g: JoinRuleGrammar): [Grammar, Msgs] {
+    public transformJoinRule(g: JoinRuleGrammar): GrammarResult {
 
-        let [newChild, childMsgs] = g.child.accept(this);
+        let [child, childMsgs] = g.child.accept(this).destructure();
+        const [rules, ruleMsgs] = this.mapTo(g.rules).destructure();
 
         if (g.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar
             // leads to infinite generation.  This is correct but not what anyone
             // actually wants, so mark an error
-            childMsgs.push(Err(`Replacing on non-existent tape'`,
-                `The grammar above does not have a tape ${g.inputTape} to replace on`));
-            return [newChild, childMsgs];
+            return g.msg(childMsgs)
+                    .msg(ruleMsgs)
+                    .err(`Replacing on non-existent tape'`,
+                        `The grammar above does not have a tape ${g.inputTape} to replace on`)
+                    .bind(r => child);
         }
 
         if (g.rules.length == 0) {
-            return [newChild, childMsgs];
+            return child.msg(childMsgs).msg(ruleMsgs);
         }
 
-        const [newRules, ruleMsgs] = this.mapTo(g.rules);
-        const msgs = [...childMsgs, ...ruleMsgs];
-
-        const renamedGrammar = renameGrammar(newChild, g.inputTape, REPLACE_INPUT_TAPE);
-        const composedRule = foldRight(newRules, composeRules);
+        const renamedGrammar = renameGrammar(child, g.inputTape, REPLACE_INPUT_TAPE);
+        const composedRule = foldRight(rules, composeRules);
         const grammarComposedWithRules = new JoinGrammar(renamedGrammar, composedRule);
         const newTapeName = `.RULE${RULE_HIDE_INDEX++}`
         const hiddenComposition = renameGrammar(grammarComposedWithRules, REPLACE_INPUT_TAPE, newTapeName);
         const renamedComposition = renameGrammar(hiddenComposition, REPLACE_OUTPUT_TAPE, g.inputTape);
         renamedComposition.calculateTapes(new CounterStack(2));
-        return [renamedComposition, msgs];
+        return renamedComposition.msg(childMsgs).msg(ruleMsgs);
     }
 }
 

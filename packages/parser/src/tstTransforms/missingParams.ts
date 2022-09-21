@@ -1,15 +1,15 @@
 import { 
     TstAssignment, TstBinaryOp, 
-    TstComponent, TstEmpty, 
+    TstComponent, TstEmpty,
     TstNegativeUnitTest, TstReplace, 
-    TstReplaceTape, TstTable, 
+    TstReplaceTape, TstResult, TstTable, 
     TstTableOp, TstUnitTest 
 } from "../tsts";
-import { Err, Msgs, Warn } from "../msgs";
+import { Err, Msgs, Result, Warn } from "../msgs";
 
 export class MissingParamsTransform {
 
-    public transform(t: TstComponent): [TstComponent, Msgs] {
+    public transform(t: TstComponent): TstResult {
 
         switch(t.constructor.name) {
             case 'TstUnitTest': 
@@ -24,147 +24,154 @@ export class MissingParamsTransform {
                 return this.transformAssignment(t as TstAssignment);
             case 'TstBinaryOp':
                 return this.transformBinaryOp(t as TstBinaryOp);
+            case 'TstTableOp':
+                return this.transformTableOp(t as TstTableOp);
             default: 
                 return t.transform(this);
         }
     }
 
-    public transformTest(t: TstUnitTest): [TstComponent, Msgs] {
+    public transformTest(t: TstUnitTest): TstResult {
         
-        const [result, msgs] = t.transform(this) as [TstUnitTest, Msgs];
+        const result = t.transform(this) as Result<TstUnitTest>;
+        const [test, _] = result.destructure();
 
-        if (result.child instanceof TstEmpty) {
-            msgs.push(Warn(
-                "'test' seems to be missing something to test; " +
-                "something should be in the cell to the right."
-            ).localize(result.pos));
-            return [result.sibling, msgs]; 
+        if (test.child instanceof TstEmpty) {
+            return result.warn("'test' seems to be missing something to test; " +
+                        "something should be in the cell to the right.")
+                        .bind(r => r.sibling);
         }
 
-        if (!(result.child instanceof TstTable) && !(result.child instanceof TstTableOp)) {
-            msgs.push(Err("Cannot execute tests",
-                "You can't nest another operator to the right of a test block, " + 
-                "it has to be a content table."
-            ).localize(result.pos));
-            return [result.sibling, msgs];
+        if (!(test.child instanceof TstTable) && !(test.child instanceof TstTableOp)) {
+            return result.err("Cannot execute tests",
+                        "You can't nest another operator to the right of " + 
+                        " a test block, it has to be a content table.")
+                        .bind(r => r.sibling);
         }
 
-        if (result.sibling instanceof TstEmpty) {
-            msgs.push(Err("Wayward test",
-                "There should be something above this 'test' command to test"
-            ).localize(result.pos));
-            return [new TstEmpty(), msgs];
+        if (test.sibling instanceof TstEmpty) {
+            return result.err("Wayward test",
+                            "Grammar above this (if any) is empty")
+                        .bind(r => new TstEmpty());
         }
 
-        return [result, msgs];
+        return result;
     }
 
-    public transformBinaryOp(t: TstBinaryOp): [TstComponent, Msgs] {
-        
-        const [result, msgs] = t.transform(this) as [TstNegativeUnitTest, Msgs];
+    public transformTableOp(t: TstTableOp): TstResult {
 
-        if (result.child instanceof TstEmpty) {
-            msgs.push(Err(`Missing argument to '${result.text}'`, 
-                `'${result.text}' is missing a second argument; ` +
-                "something should be in the cell to the right."
-            ).localize(result.pos));
+        const result = t.transform(this) as Result<TstTableOp>;
+        const [table, _] = result.destructure();
+
+        if (table.child instanceof TstEmpty) {
+            return result.warn("This table will not contain any content.")
+                         .bind(r => new TstEmpty());
         }
 
-        if (result.sibling instanceof TstEmpty) {
-            msgs.push(Err(`Missing argument to '${result.text}'`,
-                `'${result.text}' is missing a first argument; ` +
-                "something should be in a cell above this."
-            ).localize(result.pos));
+        return result;
+
+    }
+
+    public transformBinaryOp(t: TstBinaryOp): TstResult {
+        
+        let result = t.transform(this) as Result<TstBinaryOp>;
+        const [op, _] = result.destructure();
+
+        if (op.child instanceof TstEmpty) {
+            result = result.err('Missing argument', 
+                `'${op.text}' is missing a second argument; ` +
+                "something should be in the cell to the right.");
+        }
+
+        if (op.sibling instanceof TstEmpty) {
+            result = result.err('Missing argument',
+                `'${op.text}' is missing a first argument; ` +
+                "something should be in a cell above this.");
         } 
 
-        return [result, msgs];
+        return result;
     }
 
-    public transformNegativeTest(t: TstNegativeUnitTest): [TstComponent, Msgs] {
+    public transformNegativeTest(t: TstNegativeUnitTest): TstResult {
         
-        const [result, msgs] = t.transform(this) as [TstNegativeUnitTest, Msgs];
+        const result = t.transform(this) as Result<TstNegativeUnitTest>;
+        const [test, _] = result.destructure();
 
-        if (result.child instanceof TstEmpty) {
-            msgs.push(Warn(
-                "'testnot' seems to be missing something to test; " +
-                "something should be in the cell to the right."
-            ).localize(result.pos));
-            return [result.sibling, msgs]; 
+        if (test.child instanceof TstEmpty) {
+            return result.warn("'testnot' seems to be missing something to test; " +
+                            "something should be in the cell to the right.")
+                         .bind(r => r.sibling);
         }
 
-        if (!(result.child instanceof TstTable) && !(result.child instanceof TstTableOp)) {
-            msgs.push(Err("Cannot execute testnot",
-                "You can't nest another operator to the right of a testnot block, " + 
-                "it has to be a content table."
-            ).localize(result.pos));
-            return [result.sibling, msgs];
+        if (!(test.child instanceof TstTable) && !(test.child instanceof TstTableOp)) {
+            return result.err("Cannot execute testnot",
+                              "You can't nest another operator to the right of a testnot block, " + 
+                              "it has to be a content table.")
+                         .bind(r => r.sibling);
         }
 
-        if (result.sibling instanceof TstEmpty) {
-            msgs.push(Err("Wayward testnot",
-                "There should be something above this 'testnot' command to test"
-            ).localize(result.pos));
-            return [new TstEmpty(), msgs];
+        if (test.sibling instanceof TstEmpty) {
+            return result.err("Wayward testnot",
+                            "There should be something above this 'testnot' command to test")
+                         .bind(r => new TstEmpty())
         }
 
-        return [result, msgs];
+        return result;
     }
 
-    public transformAssignment(t: TstAssignment): [TstComponent, Msgs] {
-        const [result, msgs] = t.transform(this) as [TstAssignment, Msgs];
-
-        if (result.child instanceof TstEmpty) {
-            msgs.push(Warn(
+    public transformAssignment(t: TstAssignment): TstResult {
+        const result = t.transform(this) as Result<TstAssignment>;
+        const [assignment, _] = result.destructure();
+        if (assignment.child instanceof TstEmpty) {
+            return result.warn(
                 `This symbol will not contain any content.`
-            ).localize(result.pos));
+            );
         }
 
-        return [result, msgs];
+        return result;
     }
 
-    public transformReplace(t: TstReplace): [TstComponent, Msgs] {
+    public transformReplace(t: TstReplace): TstResult {
         
-        const [result, msgs] = t.transform(this) as [TstReplace, Msgs];
+        const result = t.transform(this) as Result<TstReplace>;
+        const [replace, _] = result.destructure();
 
-        if (result.child instanceof TstEmpty) {
-            msgs.push(Warn(
-                "The cells to the right do not contain " + 
-                "valid material, so this replacement will be ignored."
-            ).localize(result.pos));
-            return [result.sibling, msgs];
+        if (replace.child instanceof TstEmpty) {
+            return result.err("Missing argument to replace",
+                         "The cells to the right do not contain " + 
+                         "valid material, so this replacement will be ignored.")
+                        .bind(r => r.sibling);
         } 
 
-        if (result.sibling instanceof TstEmpty) {
-            msgs.push(Err(`Missing argument to replace'`,
-                `'replace:' needs a grammar to operate on; ` +
-                "something should be in a cell above this."
-            ).localize(result.pos));
-            return [new TstEmpty(), msgs];
+        if (replace.sibling instanceof TstEmpty) {
+            return result.err(`Missing argument to replace'`,
+                            `'replace:' needs a grammar to operate on; ` +
+                            "something should be in a cell above this.")
+                         .bind(r => new TstEmpty());
         }
 
-        return [result, msgs];
+        return result;
     }
 
     
-    public transformReplaceTape(t: TstReplaceTape): [TstComponent, Msgs] {
+    public transformReplaceTape(t: TstReplaceTape): TstResult {
         
-        const [result, msgs] = t.transform(this) as [TstReplace, Msgs];
+        const result = t.transform(this) as Result<TstReplaceTape>;
+        const [replace, _] = result.destructure();
 
-        if (result.child instanceof TstEmpty) {
-            msgs.push(Warn("The cells to the right do not contain " +
-               "valid material, so this replacement will be ignored."
-            ).localize(result.pos));
-            return [result.sibling, msgs];
+        if (replace.child instanceof TstEmpty) {
+            return result.warn("The cells to the right do not contain " +
+                            "valid material, so this replacement will be ignored.")
+                         .bind(r => r.sibling);
         } 
 
-        if (result.sibling instanceof TstEmpty) {
-            msgs.push(Err(`Missing argument to replace'`,
-                `'${result.text}' needs a grammar to operate on; ` +
-                "something should be in a cell above this."
-            ).localize(result.pos));
-            return [new TstEmpty(), msgs];
+        if (replace.sibling instanceof TstEmpty) {
+            return result.err(`Missing argument to replace'`,
+                            `Replace needs a grammar to operate on; ` +
+                            "something should be in a cell above this.")
+                          .bind(r => new TstEmpty());
         }
 
-        return [result, msgs];
+        return result;
     }
 }

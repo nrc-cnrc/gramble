@@ -81,6 +81,11 @@ export class CellPos {
     }
 }
 
+export interface Positioned {
+    readonly pos?: CellPos;
+}
+
+
 export interface Cell {
 
     message(msg: any): void;

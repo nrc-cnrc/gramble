@@ -1,8 +1,9 @@
-import { MissingSymbolError, Msgs } from "../msgs";
+import { MissingSymbolError, Msgs, Result } from "../msgs";
 import { 
     EmbedGrammar,
     EpsilonGrammar,
     Grammar,
+    GrammarResult,
     NsGrammar
 } from "../grammars";
 
@@ -30,32 +31,33 @@ export class NameQualifierTransform extends IdentityTransform {
         super(ns);
     }
 
-    public transform(): [NsGrammar, Msgs] {
+    public transform(): Result<NsGrammar> {
         const newNamespace = new NsGrammar();
         const newStack: [string, NsGrammar][] = [["", this.ns]];
         const newTransform = new NameQualifierTransform(newNamespace, newStack);
-        const [_, msgs] = this.ns.accept(newTransform);
-        return [newNamespace, msgs];
+        const result = this.ns.accept(newTransform);
+        return result.bind(r => newNamespace); // throw out the resulting namespace, 
+                                               // we only care about this new one
     }
     
     public get desc(): string {
         return "Qualifying names";
     }
 
-    public transformNamespace(g: NsGrammar): [Grammar, Msgs] {
+    public transformNamespace(g: NsGrammar): GrammarResult {
         const stackNames = this.nsStack.map(([n,g]) => n);
         const msgs: Msgs = [];
 
-        for (const [name, child] of g.symbols) {
-            if (child instanceof NsGrammar) {
-                const newStack: [string, NsGrammar][] = [ ...this.nsStack, [name, child] ];
+        for (const [k, v] of g.symbols) {
+            if (v instanceof NsGrammar) {
+                const newStack: [string, NsGrammar][] = [ ...this.nsStack, [k, v] ];
                 const newTransform = new NameQualifierTransform(this.ns, newStack);
-                const [_, ms] = child.accept(newTransform);
+                const [_, ms] = v.accept(newTransform).destructure();
                 msgs.push(...ms);
             } else {
-                const newName = g.calculateQualifiedName(name, stackNames);
-                const [result, ms] = child.accept(this);
-                this.ns.addSymbol(newName, result);
+                const newName = g.calculateQualifiedName(k, stackNames);
+                const [newV, ms] = v.accept(this).destructure();
+                this.ns.addSymbol(newName, newV);
                 msgs.push(...ms);
             }
         }
@@ -65,10 +67,11 @@ export class NameQualifierTransform extends IdentityTransform {
             const defaultRef = this.ns.getDefaultSymbol();
             this.ns.addSymbol(defaultName, defaultRef);
         }
-        return [g, msgs];
+        return g.msg(msgs); // doesn't really matter what the
+                            // result.item is, it'll be discarded anyway
     }
 
-    public transformEmbed(g: EmbedGrammar): [Grammar, Msgs] {
+    public transformEmbed(g: EmbedGrammar): GrammarResult {
         let resolution: [string, Grammar] | undefined = undefined;
         for (let i = this.nsStack.length-1; i >=0; i--) {
             // we go down the stack asking each to resolve it
@@ -79,14 +82,13 @@ export class NameQualifierTransform extends IdentityTransform {
             if (resolution != undefined) {              
                 const [qualifiedName, _] = resolution;
                 const result = new EmbedGrammar(qualifiedName, this.ns);
-                return [result, []];
+                return result.msg();
             }
         }
 
         // didn't find it
-        const result = new EpsilonGrammar();
         const msg = new MissingSymbolError(g.name);
-        return [result, [msg]];
+        return new EpsilonGrammar().msg([msg]);
     }
 
 }

@@ -1,6 +1,7 @@
 import { Msgs } from "../msgs";
 import { 
     CounterStack, Grammar,
+    GrammarResult,
     ParallelGrammar, SequenceGrammar
 } from "../grammars";
 import { IdentityTransform } from "./transforms";
@@ -11,13 +12,13 @@ export class ParallelizeTransform extends IdentityTransform {
         return "Parallelizing sequences";
     }
 
-    public transformSequence(g: SequenceGrammar): [Grammar, Msgs] {
+    public transformSequence(g: SequenceGrammar): GrammarResult {
         
         const newChildren: Grammar[] = [];
         const msgs: Msgs = [];
         for (const child of g.children) {
-            const [newChild, childMsgs] = child.accept(this);
-            msgs.push(...childMsgs);
+            const [newChild, msgs] = child.accept(this).destructure();
+            msgs.push(...msgs);
             newChild.calculateTapes(new CounterStack(2));
             const prevChild = newChildren.pop();
             if (prevChild == undefined) {
@@ -27,8 +28,7 @@ export class ParallelizeTransform extends IdentityTransform {
             newChildren.push(...combineIfPossible(prevChild, newChild));
         }
 
-        const result = new SequenceGrammar(newChildren);
-        return [result, msgs];
+        return new SequenceGrammar(newChildren).msg(msgs);
     }
 
 }

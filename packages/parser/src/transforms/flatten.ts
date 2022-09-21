@@ -1,7 +1,7 @@
-import { Msgs } from "../msgs";
 import { 
     AlternationGrammar, EpsilonGrammar, Grammar,
-    NsGrammar, NullGrammar, SequenceGrammar
+    GrammarResult,
+    NullGrammar, SequenceGrammar
 } from "../grammars";
 import { IdentityTransform } from "./transforms";
 
@@ -25,9 +25,9 @@ export class FlattenTransform extends IdentityTransform {
         return "Flattening sequences/alternations";
     }
 
-    public transformSequence(g: SequenceGrammar): [Grammar, Msgs] {
+    public transformSequence(g: SequenceGrammar): GrammarResult {
         
-        const [children, msgs] = this.mapTo(g.children);
+        const [children, msgs] = this.mapTo(g.children).destructure();
         const newChildren: Grammar[] = [];
         for (const child of children) {
             if (child instanceof SequenceGrammar) {
@@ -39,14 +39,13 @@ export class FlattenTransform extends IdentityTransform {
             }
             newChildren.push(child);
         }
-        const result = new SequenceGrammar(newChildren);
-        return [result, msgs];
+        return new SequenceGrammar(newChildren).msg(msgs);
     }
 
     
-    public transformAlternation(g: AlternationGrammar): [Grammar, Msgs] {
+    public transformAlternation(g: AlternationGrammar): GrammarResult {
         
-        const [children, msgs] = this.mapTo(g.children);
+        const [children, msgs] = this.mapTo(g.children).destructure();
         const newChildren: Grammar[] = [];
         for (const child of children) {
             if (child instanceof AlternationGrammar) {
@@ -58,8 +57,7 @@ export class FlattenTransform extends IdentityTransform {
             }
             newChildren.push(child);
         }
-        const result = new AlternationGrammar(newChildren);
-        return [result, msgs];
+        return new AlternationGrammar(newChildren).msg(msgs);
     }
 
 }

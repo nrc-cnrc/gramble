@@ -78,16 +78,16 @@ export class SheetProject extends SheetComponent {
         this.sheets[sheetName] = sheet;
 
         let tst: TstComponent = this.toTST();
-        const [newTst, tstMsgs] = new TstTransformAll().transform(tst);
-        let grammar = newTst.toGrammar() as NsGrammar;
+        const [tstResult, _] = new TstTransformAll().transform(tst).destructure();
+        let grammar = tstResult.toGrammar() as NsGrammar;
 
         // check to see if any names didn't get resolved
 
         const nameQualifier = new NameQualifierTransform(grammar);
-        const [_, msgs] = nameQualifier.transform();
+        const [nameResults, nameMsgs] = nameQualifier.transform().destructure();
 
         const unresolvedNames: Set<string> = new Set(); 
-        for (const msg of msgs) {
+        for (const msg of nameMsgs) {
             if (!(msg instanceof MissingSymbolError)) { 
                 continue;
             }

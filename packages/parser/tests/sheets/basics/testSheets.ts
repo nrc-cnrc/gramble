@@ -50,6 +50,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Empty "table:" op', function() {
         const project = sheetFromFile(`${DIR}/emptyTable.csv`);
         testErrors(project, [
+            ["emptyTable", 1, 0, "warning"],
             ["emptyTable", 1, 1, "warning"]
         ]);
         testGrammar(project, [

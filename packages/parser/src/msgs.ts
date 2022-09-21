@@ -1,4 +1,5 @@
-import { CellPos } from "./util";
+import { t2 } from "./profiling";
+import { CellPos, Positioned } from "./util";
 
 type MsgType = "error" | "warning" | "info" | 
                 "command" | "header" | "comment" | "content"
@@ -35,7 +36,7 @@ export class Msg {
         return this.pos?.col;
     }
 
-    public localize(pos: CellPos): Msg {
+    public localize(pos?: CellPos): Msg {
         if (this.pos != undefined) {
             return this;
         }
@@ -95,4 +96,51 @@ export function Warn(longMsg: string): Msg {
 
 export function Success(longMsg: string): Msg {
     return new Msg("info", "success", longMsg);
+}
+
+function isPositioned(p: any): p is Positioned {
+    return p.pos !== undefined;
+}
+
+type Func<T1,T2> = (input: T1) => T2;
+type RFunc<T1,T2> = (input: T1) => Result<T2>;
+
+export class Result<T> {
+
+    constructor(
+        protected item: T,
+        protected msgs: Msgs = []
+    ) { }
+
+    public destructure(): [T, Msgs] {
+        return [this.item, this.msgs];
+    }
+
+    public bind<T2>(f: Func<T,T2> | RFunc<T,T2>): Result<T2> {
+        let result = f(this.item);
+        if (!(result instanceof Result)) {
+            result = new Result(result);
+        }
+        return result.msg(this.msgs);
+    }
+
+    public msg(ms: Msgs): Result<T> {
+        return new Result(this.item, this.msgs.concat(ms));
+    }
+
+    public err(shortMsg: string, longMsg: string): Result<T> {
+        const e = Err(shortMsg, longMsg);
+        if (isPositioned(this.item)) {
+            return this.msg([e.localize(this.item.pos)]);
+        }
+        return this.msg([e]);
+    }
+    
+    public warn(longMsg: string): Result<T> {
+        const e = Warn(longMsg);
+        if (isPositioned(this.item)) {
+            return this.msg([e.localize(this.item.pos)]);
+        }
+        return this.msg([e]);
+    }
 }
