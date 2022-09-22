@@ -70,9 +70,6 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('String ending in a diacritic', function() {
         testTokenize("foó", [ 'f', 'o', 'ó' ]);
     });
-
-
-    
     
     describe('String with two diacritics', function() {
         testTokenize("fö́o", [ 'f', 'ö́', 'o' ]);

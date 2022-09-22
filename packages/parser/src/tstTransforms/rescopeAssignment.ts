@@ -1,13 +1,10 @@
-import { Msgs, Result } from "../msgs";
+import { Msgs } from "../msgs";
 import { 
     TstAssignment, TstBinaryOp, 
-    TstComponent, 
-    TstEnclosure, 
-    TstNamespace, 
-    TstNegativeUnitTest, TstReplace, 
-    TstReplaceTape,
-    TstResult,
-    TstUnitTest 
+    TstComponent, TstEnclosure, 
+    TstNamespace, TstNegativeUnitTest, 
+    TstReplace, TstReplaceTape,
+    TstResult, TstUnitTest 
 } from "../tsts";
 
 /**
@@ -16,6 +13,10 @@ import {
  * assignment, and the results will be assigned to that same name.
  */
  export class AdjustAssignmentScope {
+
+    public get desc(): string {
+        return "Re-scoping assignments";
+    }
 
     public transform(t: TstComponent): TstResult {
 

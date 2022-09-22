@@ -9,17 +9,21 @@ import { InvalidAssignmentTransform } from "./invalidAssignment";
 
 export class TstTransformAll {
 
+    public get desc() {
+        return "All TST transformations"
+    }
+
     public transform(t: TstComponent): TstResult {
 
-        let result = t.msg();
         const transforms: TstTransform[] = [
             new AdjustAssignmentScope(),
             new InvalidAssignmentTransform(),
             new MissingParamsTransform(),
         ]
+
+        let result = t.msg();
         for (const transform of transforms) {
-            const [item, msgs] = result.destructure();
-            result = transform.transform(item).msg(msgs);
+            result = result.bind(x => transform.transform(x));
         }
 
         return result;

@@ -1,12 +1,13 @@
 import { 
     CounterStack,
-    Grammar, GrammarResult, HideGrammar,
+    GrammarResult, HideGrammar,
     JoinGrammar, JoinRuleGrammar, 
-    RenameGrammar, ReplaceGrammar
+    RenameGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { resultList } from "../msgs";
 
 /**
  * This Transform handles the construction of implicit-tape replacement rules
@@ -40,7 +41,9 @@ export class RuleReplaceTransform extends IdentityTransform {
             return child.msg(childMsgs);
         }
 
-        const [rules, ruleMsgs] = this.mapTo(g.rules).destructure();
+        const [rules, ruleMsgs] = resultList(g.rules)
+                                .map(c => c.accept(this))
+                                .destructure();
 
         let result = child;
         for (const rule of rules) {

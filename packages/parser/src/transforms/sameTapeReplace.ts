@@ -1,12 +1,12 @@
 import { 
-    AlternationGrammar, Grammar,
+    AlternationGrammar, CounterStack, Grammar,
     GrammarResult,
     JoinGrammar, JoinReplaceGrammar, 
     RenameGrammar, ReplaceGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
-import { Msgs } from "../msgs";
+import { Msgs, Result } from "../msgs";
 
 /**
  * This Transform handles the behind-the-scenes renaming necessary when the programmer
@@ -23,12 +23,13 @@ export class SameTapeReplaceTransform extends IdentityTransform {
 
     public transformJoinReplace(g: JoinReplaceGrammar): GrammarResult {
 
-        let [child, childMsgs] = g.child.accept(this).destructure();
-        const [rules, ruleMsgs] = this.mapTo(g.rules).destructure() as [ReplaceGrammar[], Msgs];
-
+        const superResult = super.transformJoinReplace(g) as Result<JoinReplaceGrammar>;
+        const [newG, msgs] = superResult.destructure();
+        newG.calculateTapes(new CounterStack(2));
+        
         let fromTape: string | undefined = undefined;
         let replaceTape: string | undefined = undefined;
-        for (const rule of rules) {
+        for (const rule of newG.rules) {
             const ruleFromTape = (rule.fromGrammar as RenameGrammar).fromTape;
             const ruleReplaceTape = (rule.fromGrammar as RenameGrammar).toTape;
             if ((replaceTape != undefined && ruleReplaceTape != replaceTape) ||
@@ -40,15 +41,14 @@ export class SameTapeReplaceTransform extends IdentityTransform {
             replaceTape = ruleReplaceTape;
         }
 
-        let result = child;
+        let result = newG.child;
+
         if (fromTape != undefined && replaceTape != undefined) {
             
-            if (g.child.tapes.indexOf(fromTape) == -1) {
-                return g.msg(childMsgs)
-                        .msg(ruleMsgs)
-                        .err(`Replacing on non-existent tape'`,
-                            `The grammar above does not have a tape ${fromTape} to replace on`)
-                        .bind(r => child);
+            if (newG.child.tapes.indexOf(fromTape) == -1) {
+                return superResult.err(`Replacing on non-existent tape'`,
+                                     `The grammar above does not have a tape ${fromTape} to replace on`)
+                                  .bind(r => r.child);
                 // if replace is replacing a tape not relevant to the child,
                 // then we generate infinitely -- which is correct but not what
                 // anyone wants.  so ignore the replacement entirely.
@@ -57,36 +57,31 @@ export class SameTapeReplaceTransform extends IdentityTransform {
             result = renameGrammar(result, fromTape, replaceTape);
         }
 
-        const child2 = new AlternationGrammar(rules);
-        return new JoinGrammar(result, child2)
-                      .msg(childMsgs)
-                      .msg(ruleMsgs);
+        const child2 = new AlternationGrammar(newG.rules);
+        return new JoinGrammar(result, child2).msg(msgs);
     }
 
     public transformReplace(g: ReplaceGrammar): GrammarResult {
 
-        let replaceTapeName = g.fromTapeName;
-        for (const toTapeName of g.toTapeNames) {
-            if (g.fromTapeName == toTapeName)
-                replaceTapeName = g.hiddenTapeName;
+        const [newG, msgs] = super.transformReplace(g)
+                .destructure() as [ReplaceGrammar, Msgs];
+        newG.calculateTapes(new CounterStack(2));
+        let replaceTapeName = newG.fromTapeName;
+        for (const toTapeName of newG.toTapeNames) {
+            if (newG.fromTapeName == toTapeName)
+                replaceTapeName = newG.hiddenTapeName;
         }
 
-        const [cFrom, fromMsgs] = g.fromGrammar.accept(this).destructure();
-        const [cTo, toMsgs] = g.toGrammar.accept(this).destructure();
-        const [cPre, preMsgs] = g.preContext.accept(this).destructure();
-        const [cPost, postMsgs] = g.postContext.accept(this).destructure();
-        const [cOther, otherMsgs] = g.otherContext.accept(this).destructure();
+        const renamedFrom = renameGrammar(newG.fromGrammar, g.fromTapeName, replaceTapeName);
+        const renamedPre = renameGrammar(newG.preContext, g.fromTapeName, replaceTapeName);
+        const renamedPost = renameGrammar(newG.postContext, g.fromTapeName, replaceTapeName);
 
-        const renamedFrom = renameGrammar(cFrom, g.fromTapeName, replaceTapeName);
-        const renamedPre = renameGrammar(cPre, g.fromTapeName, replaceTapeName);
-        const renamedPost = renameGrammar(cPost, g.fromTapeName, replaceTapeName);
-
-        return new ReplaceGrammar(renamedFrom, cTo, 
-            renamedPre, renamedPost, cOther,
-            g.beginsWith, g.endsWith, g.minReps, g.maxReps, g.maxExtraChars, g.maxCopyChars,
-            g.vocabBypass)
-            .msg(fromMsgs).msg(toMsgs)
-            .msg(preMsgs).msg(postMsgs).msg(otherMsgs);
+        return new ReplaceGrammar(renamedFrom, newG.toGrammar, 
+                    renamedPre, renamedPost, newG.otherContext,
+                    g.beginsWith, g.endsWith, g.minReps, 
+                    g.maxReps, g.maxExtraChars, g.maxCopyChars,
+                    g.vocabBypass)
+                .msg(msgs);
     }
 
 }

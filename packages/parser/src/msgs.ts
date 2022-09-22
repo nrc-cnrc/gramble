@@ -1,4 +1,3 @@
-import { t2 } from "./profiling";
 import { CellPos, Positioned } from "./util";
 
 type MsgType = "error" | "warning" | "info" | 
@@ -102,8 +101,7 @@ function isPositioned(p: any): p is Positioned {
     return p.pos !== undefined;
 }
 
-type Func<T1,T2> = (input: T1) => T2;
-type RFunc<T1,T2> = (input: T1) => Result<T2>;
+export type Func<T1,T2> = (input: T1) => (T2|Result<T2>);
 
 export class Result<T> {
 
@@ -116,7 +114,7 @@ export class Result<T> {
         return [this.item, this.msgs];
     }
 
-    public bind<T2>(f: Func<T,T2> | RFunc<T,T2>): Result<T2> {
+    public bind<T2>(f: Func<T,T2>): Result<T2> {
         let result = f(this.item);
         if (!(result instanceof Result)) {
             result = new Result(result);
@@ -143,4 +141,33 @@ export class Result<T> {
         }
         return this.msg([e]);
     }
+}
+
+export class ResultList<T> extends Result<T[]> {
+
+    constructor(
+        items: T[],
+        msgs: Msgs = []
+    ) { 
+        super(items, msgs);
+    }
+
+    public map<T2>(f: Func<T,T2>): ResultList<T2> {
+        const items: T2[] = [];
+        const msgs: Msgs = [];
+        for (const item of this.item) {
+            let result = f(item);
+            if (!(result instanceof Result)) {
+                result = new Result(result);
+            }
+            const [newItem,newMsgs] = result.destructure();
+            items.push(newItem);
+            msgs.push(...newMsgs);
+        }
+        return new ResultList(items, msgs);
+    }
+}
+
+export function resultList<T>(items: T[]): ResultList<T> {
+    return new ResultList(items);
 }

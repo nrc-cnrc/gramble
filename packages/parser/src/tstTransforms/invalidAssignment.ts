@@ -1,4 +1,4 @@
-import { TstAssignment, TstComponent, TstResult } from "../tsts";
+import { TstAssignment, TstComponent, TstNamespace, TstProject, TstResult } from "../tsts";
 import { Msgs, Result } from "../msgs";
 import { RESERVED_WORDS } from "../headers";
 
@@ -8,14 +8,18 @@ export class InvalidAssignmentTransform {
         public underNamespace: boolean = false
     ) { }
 
+    public get desc(): string {
+        return "Handling invalid assignments";
+    }
+
     public transform(t: TstComponent): TstResult {
 
-        switch(t.constructor.name) {
-            case 'TstAssignment':
+        switch(t.constructor) {
+            case TstAssignment:
                 return this.transformAssignment(t as TstAssignment);
-            case 'TstNamespace':
+            case TstNamespace:
                 return t.transform(new InvalidAssignmentTransform(true));
-            case 'TstProject': 
+            case TstProject: 
                 return t.transform(new InvalidAssignmentTransform(true));
             default: 
                 return t.transform(new InvalidAssignmentTransform(false));

@@ -1,4 +1,4 @@
-import { Msgs, Result } from "../msgs";
+import { Msgs, Result, ResultList, resultList } from "../msgs";
 import { 
     AlternationGrammar, CharSetGrammar,
     DotGrammar, EmbedGrammar,
@@ -62,44 +62,36 @@ export class IdentityTransform implements GrammarTransform {
         return g.msg();
     }
 
-    public mapTo(gs: Grammar[]): Result<Grammar[]> {
-        const results: Grammar[] = [];
-        const msgs: Msgs = [];
-        for (const g of gs) {
-            const [result, ms] = g.accept(this).destructure();
-            results.push(result);
-            msgs.push(...ms);
-        }
-        return new Result(results, msgs);
-    }
-
     public transformSequence(g: SequenceGrammar): GrammarResult {
-        return this.mapTo(g.children)
-                   .bind(cs => new SequenceGrammar(cs));
+        return resultList(g.children).map(c => c.accept(this))
+                    .bind(cs => new SequenceGrammar(cs));
     }
 
     public transformParallel(g: SequenceGrammar): GrammarResult {
-        return this.mapTo(g.children)
+        return resultList(g.children).map(c => c.accept(this))
                    .bind(cs => new ParallelGrammar(cs));
     }
 
     public transformAlternation(g: AlternationGrammar): GrammarResult {
-        return this.mapTo(g.children)
+        return resultList(g.children).map(c => c.accept(this))
                    .bind(cs => new AlternationGrammar(cs));
     }
 
     public transformIntersection(g: IntersectionGrammar): GrammarResult {
-        return this.mapTo([g.child1, g.child2])
+        return resultList([g.child1, g.child2])
+                   .map(c => c.accept(this))
                    .bind(([c1, c2]) => new IntersectionGrammar(c1, c2));
     }
 
     public transformJoin(g: JoinGrammar): GrammarResult {
-        return this.mapTo([g.child1, g.child2])
+        return resultList([g.child1, g.child2])
+                   .map(c => c.accept(this))
                    .bind(([c1, c2]) => new JoinGrammar(c1, c2));
     }
 
     public transformEquals(g: EqualsGrammar): GrammarResult {
-        return this.mapTo([g.child1, g.child2])
+        return resultList([g.child1, g.child2])
+                   .map(c => c.accept(this))
                    .bind(([c1, c2]) => new EqualsGrammar(c1, c2));
     }
 
@@ -130,7 +122,8 @@ export class IdentityTransform implements GrammarTransform {
 
     public transformReplace(g: ReplaceGrammar): GrammarResult {
         const children = [g.fromGrammar, g.toGrammar, g.preContext, g.postContext, g.otherContext];
-        return this.mapTo(children)
+        return resultList(children)
+                   .map(c => c.accept(this))
                    .bind(([f, t, pre, post, o]) => new ReplaceGrammar(
                         f, t, pre, post, o,
                         g.beginsWith, g.endsWith, g.minReps, 
@@ -167,7 +160,9 @@ export class IdentityTransform implements GrammarTransform {
     public transformUnitTest(g: UnitTestGrammar): GrammarResult {
         const [child, childMsgs] = g.child.accept(this).destructure();
         const [test, testMsgs] = g.test.accept(this).destructure();
-        const [uniques, uniqueMsgs] = this.mapTo(g.uniques).destructure();
+        const [uniques, uniqueMsgs] = resultList(g.uniques)
+                                        .map(c => c.accept(this))
+                                        .destructure();
         return new UnitTestGrammar(child, test, uniques as LiteralGrammar[])
             .msg(childMsgs)
             .msg(testMsgs)
@@ -175,13 +170,16 @@ export class IdentityTransform implements GrammarTransform {
     }
 
     public transformNegativeUnitTest(g: NegativeUnitTestGrammar): GrammarResult {
-        return this.mapTo([g.child, g.test])
+        return resultList([g.child, g.test])
+                   .map(c => c.accept(this))
                    .bind(([c, t]) => new NegativeUnitTestGrammar(c, t));
     }
 
     public transformJoinReplace(g: JoinReplaceGrammar): GrammarResult {
         const [child, childMsgs] = g.child.accept(this).destructure();
-        const [rules, ruleMsgs] = this.mapTo(g.rules).destructure();
+        const [rules, ruleMsgs] = resultList(g.rules)
+                                    .map(c => c.accept(this))
+                                    .destructure();
         return new JoinReplaceGrammar(child, rules as ReplaceGrammar[])
                             .msg(childMsgs)
                             .msg(ruleMsgs);
@@ -189,7 +187,9 @@ export class IdentityTransform implements GrammarTransform {
 
     public transformJoinRule(g: JoinRuleGrammar): GrammarResult {
         const [child, childMsgs] = g.child.accept(this).destructure();
-        const [rules, ruleMsgs] = this.mapTo(g.rules).destructure();
+        const [rules, ruleMsgs] = resultList(g.rules)
+                                    .map(c => c.accept(this))
+                                    .destructure();
         return new JoinRuleGrammar(g.inputTape, child, rules as ReplaceGrammar[])
                             .msg(childMsgs)
                             .msg(ruleMsgs);

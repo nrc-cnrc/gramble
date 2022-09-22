@@ -5,26 +5,30 @@ import {
     TstReplaceTape, TstResult, TstTable, 
     TstTableOp, TstUnitTest 
 } from "../tsts";
-import { Err, Msgs, Result, Warn } from "../msgs";
+import { Result } from "../msgs";
 
 export class MissingParamsTransform {
 
+    public get desc(): string {
+        return "Handling missing structural parameters";
+    }
+
     public transform(t: TstComponent): TstResult {
 
-        switch(t.constructor.name) {
-            case 'TstUnitTest': 
+        switch(t.constructor) {
+            case TstUnitTest: 
                 return this.transformTest(t as TstUnitTest);
-            case 'TstNegativeUnitTest': 
+            case TstNegativeUnitTest: 
                 return this.transformNegativeTest(t as TstNegativeUnitTest);
-            case 'TstReplace':
+            case TstReplace:
                 return this.transformReplace(t as TstReplace);
-            case 'TstReplaceTape':
+            case TstReplaceTape:
                 return this.transformReplaceTape(t as TstReplaceTape);
-            case 'TstAssignment':
+            case TstAssignment:
                 return this.transformAssignment(t as TstAssignment);
-            case 'TstBinaryOp':
+            case TstBinaryOp:
                 return this.transformBinaryOp(t as TstBinaryOp);
-            case 'TstTableOp':
+            case TstTableOp:
                 return this.transformTableOp(t as TstTableOp);
             default: 
                 return t.transform(this);
@@ -69,7 +73,6 @@ export class MissingParamsTransform {
         }
 
         return result;
-
     }
 
     public transformBinaryOp(t: TstBinaryOp): TstResult {
@@ -138,8 +141,8 @@ export class MissingParamsTransform {
 
         if (replace.child instanceof TstEmpty) {
             return result.err("Missing argument to replace",
-                         "The cells to the right do not contain " + 
-                         "valid material, so this replacement will be ignored.")
+                            "The cells to the right do not contain " + 
+                            "valid material, so this replacement will be ignored.")
                         .bind(r => r.sibling);
         } 
 

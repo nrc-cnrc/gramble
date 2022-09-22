@@ -21,14 +21,16 @@ import {
     ParamDict,
     parseHeaderCell
 } from "./headers";
-import { ContentMsg, Err, Msg, Msgs, Result, Warn } from "./msgs";
+import { ContentMsg, Err, Msg, Msgs, Result, resultList, Warn } from "./msgs";
+
+import * as M from 'pattern-matching-ts/lib/match';
 
 export class TstResult extends Result<TstComponent> { }
 
 export abstract class TstTransform {
+    public abstract get desc(): string;
     public abstract transform(t: TstComponent): TstResult;
 }
-
 
 type BinaryOp = (c1: Grammar, c2: Grammar) => Grammar;
 export const BINARY_OPS: {[opName: string]: BinaryOp} = {
@@ -38,6 +40,8 @@ export const BINARY_OPS: {[opName: string]: BinaryOp} = {
 }
 
 export abstract class TstComponent implements Positioned {
+
+    public _tag: string = 'TstComponent';
 
     public get pos(): CellPos | undefined {
         return undefined;
@@ -265,9 +269,9 @@ export class TstBinary extends TstEnclosure {
     }
 
     public transform(f: TstTransform): TstResult {
-        const [sib, sMsgs] = f.transform(this.sibling).destructure();
-        const [child, cMsgs] = f.transform(this.child).destructure();
-        return new TstBinary(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
+        return resultList([this.sibling, this.child])
+                .map(c => f.transform(c))
+                .bind(([s,c]) => new TstBinary(this.cell, s, c));
     }
 
     public toGrammar(): Grammar {
@@ -310,9 +314,9 @@ export class TstTableOp extends TstBinary {
 
 
     public transform(f: TstTransform): TstResult {
-        const [sib, sMsgs] = f.transform(this.sibling).destructure();
-        const [child, cMsgs] = f.transform(this.child).destructure();
-        return new TstTableOp(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
+        return resultList([this.sibling, this.child])
+                .map(c => f.transform(c))
+                .bind(([s,c]) => new TstTableOp(this.cell, s, c));
     }
     
     public toGrammar(): Grammar {
@@ -344,9 +348,9 @@ export class TstTableOp extends TstBinary {
 export class TstBinaryOp extends TstBinary {
 
     public transform(f: TstTransform): TstResult {
-        const [sib, sMsgs] = f.transform(this.sibling).destructure();
-        const [child, cMsgs] = f.transform(this.child).destructure();
-        return new TstBinaryOp(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
+        return resultList([this.sibling, this.child])
+                .map(c => f.transform(c))
+                .bind(([s,c]) => new TstBinaryOp(this.cell, s, c));
     }
     
     public toGrammar(): Grammar {
@@ -378,9 +382,9 @@ export class TstReplaceTape extends TstBinaryOp {
     }
 
     public transform(f: TstTransform): TstResult {
-        const [sib, sMsgs] = f.transform(this.sibling).destructure();
-        const [child, cMsgs] = f.transform(this.child).destructure();
-        return new TstReplaceTape(this.cell, this.tape, sib, child).msg(sMsgs).msg(cMsgs);
+        return resultList([this.sibling, this.child])
+            .map(c => f.transform(c))
+            .bind(([s,c]) => new TstReplaceTape(this.cell, this.tape, s, c));
     }
 
     public toGrammar(): Grammar {
@@ -449,9 +453,9 @@ export class TstReplace extends TstBinaryOp {
     public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
 
     public transform(f: TstTransform): TstResult {
-        const [sib, sMsgs] = f.transform(this.sibling).destructure();
-        const [child, cMsgs] = f.transform(this.child).destructure();
-        return new TstReplace(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
+        return resultList([this.sibling, this.child])
+                .map(c => f.transform(c))
+                .bind(([s,c]) => new TstReplace(this.cell, s, c));
     }
 
     public toGrammar(): Grammar {
@@ -521,11 +525,10 @@ export class TstUnitTest extends TstBinary {
     public static VALID_PARAMS = [ "__", "unique" ];
 
     public transform(f: TstTransform): TstResult {
-        const [sib, sMsgs] = f.transform(this.sibling).destructure();
-        const [child, cMsgs] = f.transform(this.child).destructure();
-        return new TstUnitTest(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
+        return resultList([this.sibling, this.child])
+                .map(c => f.transform(c))
+                .bind(([s,c]) => new TstUnitTest(this.cell, s, c));
     }
-
 
     public toGrammar(): Grammar {
         
@@ -579,9 +582,9 @@ export class TstUnitTest extends TstBinary {
 export class TstNegativeUnitTest extends TstUnitTest {
 
     public transform(f: TstTransform): TstResult {
-        const [sib, sMsgs] = f.transform(this.sibling).destructure();
-        const [child, cMsgs] = f.transform(this.child).destructure();
-        return new TstNegativeUnitTest(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
+        return resultList([this.sibling, this.child])
+            .map(c => f.transform(c))
+            .bind(([s,c]) => new TstNegativeUnitTest(this.cell, s, c));
     }
 
     public toGrammar(): Grammar {
@@ -769,9 +772,9 @@ export class TstAssignment extends TstBinary {
     }
 
     public transform(f: TstTransform): TstResult {
-        const [sib, sMsgs] = f.transform(this.sibling).destructure();
-        const [child, cMsgs] = f.transform(this.child).destructure();
-        return new TstAssignment(this.cell, sib, child).msg(sMsgs).msg(cMsgs);
+        return resultList([this.sibling, this.child])
+            .map(c => f.transform(c))
+            .bind(([s,c]) => new TstAssignment(this.cell, s, c));
     }
 
     public toGrammar(): Grammar {

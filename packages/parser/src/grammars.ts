@@ -28,7 +28,7 @@ import {
     constructParallel,
     Env
 } from "./exprs";
-import { Msgs, Result } from "./msgs";
+import { Func, Msgs, Result, ResultList } from "./msgs";
 
 import { 
     BitsetTape,
