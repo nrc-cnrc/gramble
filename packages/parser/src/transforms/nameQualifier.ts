@@ -8,6 +8,7 @@ import {
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
+import { TransEnv } from "../transforms";
 
 /**
  * The NameQualifierTransform goes through the tree and 
@@ -31,11 +32,11 @@ export class NameQualifierTransform extends IdentityTransform {
         super(ns);
     }
 
-    public transform(): Result<NsGrammar> {
+    public transform(env: TransEnv): Result<NsGrammar> {
         const newNamespace = new NsGrammar();
         const newStack: [string, NsGrammar][] = [["", this.ns]];
         const newTransform = new NameQualifierTransform(newNamespace, newStack);
-        const result = this.ns.accept(newTransform);
+        const result = this.ns.accept(newTransform, env);
         return result.bind(r => newNamespace); // throw out the resulting namespace, 
                                                // we only care about this new one
     }
@@ -44,7 +45,7 @@ export class NameQualifierTransform extends IdentityTransform {
         return "Qualifying names";
     }
 
-    public transformNamespace(g: NsGrammar): GrammarResult {
+    public transformNamespace(g: NsGrammar, env: TransEnv): GrammarResult {
         const stackNames = this.nsStack.map(([n,g]) => n);
         const msgs: Msgs = [];
 
@@ -52,11 +53,11 @@ export class NameQualifierTransform extends IdentityTransform {
             if (v instanceof NsGrammar) {
                 const newStack: [string, NsGrammar][] = [ ...this.nsStack, [k, v] ];
                 const newTransform = new NameQualifierTransform(this.ns, newStack);
-                const [_, ms] = v.accept(newTransform).destructure();
+                const [_, ms] = v.accept(newTransform, env).destructure();
                 msgs.push(...ms);
             } else {
                 const newName = g.calculateQualifiedName(k, stackNames);
-                const [newV, ms] = v.accept(this).destructure();
+                const [newV, ms] = v.accept(this, env).destructure();
                 this.ns.addSymbol(newName, newV);
                 msgs.push(...ms);
             }
@@ -71,7 +72,7 @@ export class NameQualifierTransform extends IdentityTransform {
                             // result.item is, it'll be discarded anyway
     }
 
-    public transformEmbed(g: EmbedGrammar): GrammarResult {
+    public transformEmbed(g: EmbedGrammar, env: TransEnv): GrammarResult {
         let resolution: [string, Grammar] | undefined = undefined;
         for (let i = this.nsStack.length-1; i >=0; i--) {
             // we go down the stack asking each to resolve it

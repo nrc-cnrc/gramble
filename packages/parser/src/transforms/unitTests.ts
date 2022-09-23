@@ -10,6 +10,7 @@ import {
 import { VocabMap, TapeNamespace} from "../tapes";
 import { generate } from "../generator";
 import { IdentityTransform } from "./transforms";
+import { TransEnv } from "../transforms";
 
 
 export class UnitTestTransform extends IdentityTransform {
@@ -23,8 +24,12 @@ export class UnitTestTransform extends IdentityTransform {
         super(ns);
     }
 
-    public transformUnitTest(g: UnitTestGrammar): GrammarResult {
-        const [test, msgs] = super.transformUnitTest(g).destructure() as [UnitTestGrammar, Msgs];
+    public get desc(): string {
+        return "Running unit tests"
+    }
+
+    public transformUnitTest(g: UnitTestGrammar, env: TransEnv): GrammarResult {
+        const [test, msgs] = super.transformUnitTest(g, env).destructure() as [UnitTestGrammar, Msgs];
         const results = this.executeTest(test);
 
         if (results.length == 0) {
@@ -55,8 +60,8 @@ export class UnitTestTransform extends IdentityTransform {
         return test.msg(msgs);
     }
 
-    public transformNegativeUnitTest(g: NegativeUnitTestGrammar): GrammarResult {
-        const [test, msgs] = super.transformNegativeUnitTest(g).destructure() as [NegativeUnitTestGrammar, Msgs];
+    public transformNegativeUnitTest(g: NegativeUnitTestGrammar, env: TransEnv): GrammarResult {
+        const [test, msgs] = super.transformNegativeUnitTest(g, env).destructure() as [NegativeUnitTestGrammar, Msgs];
         const results = this.executeTest(test);
         
         if (results.length > 0) {

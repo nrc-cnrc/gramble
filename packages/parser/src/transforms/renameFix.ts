@@ -7,6 +7,7 @@ import {
 
 import { IdentityTransform } from "./transforms";
 import { Result } from "../msgs";
+import { TransEnv } from "../transforms";
 
 /**
  * This transformation finds erroneous renames/hides and fixes them.
@@ -28,9 +29,9 @@ export class RenameFixTransform extends IdentityTransform {
         return "Validating tape-rename structure";
     }
 
-    public transformHide(g: HideGrammar): GrammarResult {
+    public transformHide(g: HideGrammar, env: TransEnv): GrammarResult {
 
-        const result = super.transformHide(g) as Result<HideGrammar>;
+        const result = super.transformHide(g, env) as Result<HideGrammar>;
         
         const [newG, _] = result.destructure();
         newG.calculateTapes(new CounterStack(2));
@@ -44,9 +45,9 @@ export class RenameFixTransform extends IdentityTransform {
         return result;
     }
 
-    public transformRename(g: RenameGrammar): GrammarResult {
+    public transformRename(g: RenameGrammar, env: TransEnv): GrammarResult {
 
-        const result = super.transformRename(g) as Result<RenameGrammar>;
+        const result = super.transformRename(g, env) as Result<RenameGrammar>;
         
         const [newG, _] = result.destructure();
         newG.calculateTapes(new CounterStack(2));

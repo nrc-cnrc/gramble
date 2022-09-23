@@ -5,6 +5,7 @@ import {
     MissingSymbolError, Msg 
 } from "./msgs";
 import { parseOpCell } from "./ops";
+import { TransEnv } from "./transforms";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 
 import { 
@@ -13,7 +14,7 @@ import {
     TstComponent, TstComment, 
     TstEnclosure 
 } from "./tsts";
-import { TstTransformAll } from "./tstTransforms/allTransforms";
+import { ALL_TST_TRANSFORMS } from "./transforms/allTransforms";
 import { Cell, CellPos, DevEnvironment, DummyCell } from "./util";
 
 /**
@@ -76,15 +77,15 @@ export class SheetProject extends SheetComponent {
 
         const sheet = new Sheet(this, sheetName, cells);
         this.sheets[sheetName] = sheet;
-
         let tst: TstComponent = this.toTST();
-        const [tstResult, _] = new TstTransformAll().transform(tst).destructure();
+        const transEnv = new TransEnv();
+        const [tstResult, _] = ALL_TST_TRANSFORMS.transform(tst, transEnv).destructure();
         let grammar = tstResult.toGrammar() as NsGrammar;
 
         // check to see if any names didn't get resolved
 
         const nameQualifier = new NameQualifierTransform(grammar);
-        const [nameResults, nameMsgs] = nameQualifier.transform().destructure();
+        const [nameResults, nameMsgs] = nameQualifier.transform(transEnv).destructure();
 
         const unresolvedNames: Set<string> = new Set(); 
         for (const msg of nameMsgs) {

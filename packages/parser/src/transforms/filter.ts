@@ -1,3 +1,4 @@
+import { TransEnv } from "../transforms";
 import { 
     AlternationGrammar, ContainsGrammar, 
     DotGrammar, EndsGrammar, Grammar,
@@ -35,13 +36,13 @@ export class FilterTransform extends IdentityTransform {
         return "Constructing filters";
     }
 
-    public transformStarts(g: StartsGrammar): GrammarResult {
+    public transformStarts(g: StartsGrammar, env: TransEnv): GrammarResult {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
             const newFilter = new StartsGrammar(g.child.child, g.tapes);
             const newNegation = new NegationGrammar(newFilter, g.child.maxReps);
-            return newNegation.accept(this);
+            return newNegation.accept(this, env);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -51,14 +52,14 @@ export class FilterTransform extends IdentityTransform {
                 newChildren[newChildren.length-1], g.tapes);
             newChildren[newChildren.length-1] = newLastChild;
             const newSequence = new SequenceGrammar(newChildren);
-            return newSequence.accept(this);
+            return newSequence.accept(this, env);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new StartsGrammar(c, g.tapes));
             const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation.accept(this);
+            return newAlternation.accept(this, env);
         }
 
         if (g.child instanceof IntersectionGrammar) {
@@ -66,17 +67,17 @@ export class FilterTransform extends IdentityTransform {
             const newFilter1 = new StartsGrammar(g.child.child1, g.tapes);
             const newFilter2 = new StartsGrammar(g.child.child2, g.tapes);
             const newIntersection = new IntersectionGrammar(newFilter1, newFilter2);
-            return newIntersection.accept(this);
+            return newIntersection.accept(this, env);
         }
 
         if (g.child instanceof LocatorGrammar) {
             const newFilter = new StartsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child.cell, newFilter);
-            return newLocation.accept(this);
+            return newLocation.accept(this, env);
         }
 
         // construct the filter
-        const [child, msgs] = g.child.accept(this).destructure();
+        const [child, msgs] = g.child.accept(this, env).destructure();
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
             const dot = new DotGrammar(tape);
@@ -86,13 +87,13 @@ export class FilterTransform extends IdentityTransform {
         return new SequenceGrammar([child, ...dotStars ]).msg(msgs);
     }
     
-    public transformEnds(g: StartsGrammar): GrammarResult {
+    public transformEnds(g: StartsGrammar, env: TransEnv): GrammarResult {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
             const newFilter = new EndsGrammar(g.child.child, g.tapes);
             const newNegation = new NegationGrammar(newFilter, g.child.maxReps);
-            return newNegation.accept(this);
+            return newNegation.accept(this, env);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -101,14 +102,14 @@ export class FilterTransform extends IdentityTransform {
             const newFirstChild = new EndsGrammar(newChildren[0], g.tapes);
             newChildren[0] = newFirstChild;
             const newSequence = new SequenceGrammar(newChildren);
-            return newSequence.accept(this);
+            return newSequence.accept(this, env);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new EndsGrammar(c, g.tapes));
             const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation.accept(this);
+            return newAlternation.accept(this, env);
         }
 
         if (g.child instanceof IntersectionGrammar) {
@@ -116,17 +117,17 @@ export class FilterTransform extends IdentityTransform {
             const newFilter1 = new EndsGrammar(g.child.child1, g.tapes);
             const newFilter2 = new EndsGrammar(g.child.child2, g.tapes);
             const newIntersection = new IntersectionGrammar(newFilter1, newFilter2);
-            return newIntersection.accept(this);
+            return newIntersection.accept(this, env);
         }
         
         if (g.child instanceof LocatorGrammar) {
             const newFilter = new EndsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child.cell, newFilter);
-            return newLocation.accept(this);
+            return newLocation.accept(this, env);
         }
 
         // create the filter
-        const [child, msgs] = g.child.accept(this).destructure();
+        const [child, msgs] = g.child.accept(this, env).destructure();
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
             const dot = new DotGrammar(tape);
@@ -136,13 +137,13 @@ export class FilterTransform extends IdentityTransform {
         return new SequenceGrammar([ ...dotStars, child ]).msg(msgs);
     }
     
-    public transformContains(g: ContainsGrammar): GrammarResult {
+    public transformContains(g: ContainsGrammar, env: TransEnv): GrammarResult {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
             const newFilter = new ContainsGrammar(g.child.child, g.tapes);
             const newNegation = new NegationGrammar(newFilter, g.child.maxReps);
-            return newNegation.accept(this);
+            return newNegation.accept(this, env);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -153,14 +154,14 @@ export class FilterTransform extends IdentityTransform {
             const newLastChild = new StartsGrammar(newChildren[newChildren.length-1], g.tapes);
             newChildren[newChildren.length-1] = newLastChild;
             const newSequence = new SequenceGrammar(newChildren);
-            return newSequence.accept(this);
+            return newSequence.accept(this, env);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new ContainsGrammar(c, g.tapes));
             const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation.accept(this);
+            return newAlternation.accept(this, env);
         }
 
         if (g.child instanceof IntersectionGrammar) {
@@ -168,17 +169,17 @@ export class FilterTransform extends IdentityTransform {
             const newFilter1 = new ContainsGrammar(g.child.child1, g.tapes);
             const newFilter2 = new ContainsGrammar(g.child.child2, g.tapes);
             const newIntersection = new IntersectionGrammar(newFilter1, newFilter2);
-            return newIntersection.accept(this);
+            return newIntersection.accept(this, env);
         }
 
         if (g.child instanceof LocatorGrammar) {
             const newFilter = new ContainsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child.cell, newFilter);
-            return newLocation.accept(this);
+            return newLocation.accept(this, env);
         }
 
         // create the filter
-        const [child, msgs] = g.child.accept(this).destructure();
+        const [child, msgs] = g.child.accept(this, env).destructure();
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
             const dot = new DotGrammar(tape);

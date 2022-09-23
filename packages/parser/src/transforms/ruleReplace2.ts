@@ -10,6 +10,7 @@ import {
 import { IdentityTransform } from "./transforms";
 import { foldRight, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
 import { Result } from "../msgs";
+import { TransEnv } from "../transforms";
 
 let RULE_HIDE_INDEX = 0;
 
@@ -26,9 +27,9 @@ export class RuleReplaceTransform2 extends IdentityTransform {
         return "Constructing new-style replacement rules (2nd version)";
     }
 
-    public transformJoinRule(g: JoinRuleGrammar): GrammarResult {
+    public transformJoinRule(g: JoinRuleGrammar, env: TransEnv): GrammarResult {
 
-        const result = super.transformJoinRule(g) as Result<JoinRuleGrammar>;
+        const result = super.transformJoinRule(g, env) as Result<JoinRuleGrammar>;
         const [newG, msgs] = result.destructure();
 
         newG.calculateTapes(new CounterStack(2));

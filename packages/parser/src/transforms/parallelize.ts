@@ -5,6 +5,7 @@ import {
     ParallelGrammar, SequenceGrammar
 } from "../grammars";
 import { IdentityTransform } from "./transforms";
+import { TransEnv } from "../transforms";
 
 export class ParallelizeTransform extends IdentityTransform {
 
@@ -12,12 +13,12 @@ export class ParallelizeTransform extends IdentityTransform {
         return "Parallelizing sequences";
     }
 
-    public transformSequence(g: SequenceGrammar): GrammarResult {
+    public transformSequence(g: SequenceGrammar, env: TransEnv): GrammarResult {
         
         const newChildren: Grammar[] = [];
         const msgs: Msgs = [];
         for (const child of g.children) {
-            const [newChild, ms] = child.accept(this).destructure();
+            const [newChild, ms] = child.accept(this, env).destructure();
             msgs.push(...ms);
             newChild.calculateTapes(new CounterStack(2));
             const prevChild = newChildren.pop();

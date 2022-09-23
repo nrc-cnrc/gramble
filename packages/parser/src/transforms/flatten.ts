@@ -4,6 +4,7 @@ import {
     GrammarResult, NullGrammar, SequenceGrammar
 } from "../grammars";
 import { IdentityTransform } from "./transforms";
+import { TransEnv } from "../transforms";
 
 /**
  * The FlattenTransform takes the grammar made by the tabular syntax tree and
@@ -25,9 +26,9 @@ export class FlattenTransform extends IdentityTransform {
         return "Flattening sequences/alternations";
     }
 
-    public transformSequence(g: SequenceGrammar): GrammarResult {
+    public transformSequence(g: SequenceGrammar, env: TransEnv): GrammarResult {
         
-        const [result, msgs] = super.transformSequence(g)
+        const [result, msgs] = super.transformSequence(g, env)
                                     .destructure() as [SequenceGrammar, Msgs];
         const newChildren: Grammar[] = [];
         for (const child of result.children) {
@@ -43,9 +44,9 @@ export class FlattenTransform extends IdentityTransform {
         return new SequenceGrammar(newChildren).msg(msgs);
     }
 
-    public transformAlternation(g: AlternationGrammar): GrammarResult {
+    public transformAlternation(g: AlternationGrammar, env: TransEnv): GrammarResult {
         
-        const [result, msgs] = super.transformAlternation(g)
+        const [result, msgs] = super.transformAlternation(g, env)
                         .destructure() as [AlternationGrammar, Msgs];
         const newChildren: Grammar[] = [];
         for (const child of result.children) {

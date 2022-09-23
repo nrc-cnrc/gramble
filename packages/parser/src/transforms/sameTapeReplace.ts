@@ -7,6 +7,7 @@ import {
 
 import { IdentityTransform } from "./transforms";
 import { Msgs, Result } from "../msgs";
+import { TransEnv } from "../transforms";
 
 /**
  * This Transform handles the behind-the-scenes renaming necessary when the programmer
@@ -21,9 +22,9 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         return "Adjusted tape names in same-tape replace rules";
     }
 
-    public transformJoinReplace(g: JoinReplaceGrammar): GrammarResult {
+    public transformJoinReplace(g: JoinReplaceGrammar, env: TransEnv): GrammarResult {
 
-        const superResult = super.transformJoinReplace(g) as Result<JoinReplaceGrammar>;
+        const superResult = super.transformJoinReplace(g, env) as Result<JoinReplaceGrammar>;
         const [newG, msgs] = superResult.destructure();
         newG.calculateTapes(new CounterStack(2));
         
@@ -61,9 +62,9 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         return new JoinGrammar(result, child2).msg(msgs);
     }
 
-    public transformReplace(g: ReplaceGrammar): GrammarResult {
+    public transformReplace(g: ReplaceGrammar, env: TransEnv): GrammarResult {
 
-        const [newG, msgs] = super.transformReplace(g)
+        const [newG, msgs] = super.transformReplace(g, env)
                 .destructure() as [ReplaceGrammar, Msgs];
         newG.calculateTapes(new CounterStack(2));
         let replaceTapeName = newG.fromTapeName;

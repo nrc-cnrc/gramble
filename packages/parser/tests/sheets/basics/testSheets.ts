@@ -1,12 +1,13 @@
 import { testGrammar, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
+import { VERBOSE_TIME } from "../../../src/util";
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Minimal grammar', function() {
-        const project = sheetFromFile(`${DIR}/minimalGrammar.csv`);
+        const project = sheetFromFile(`${DIR}/minimalGrammar.csv`, VERBOSE_TIME);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foo", gloss: "run" },

@@ -1,7 +1,7 @@
 import { 
     CounterStack, CountGrammar, EqualsGrammar, Grammar, 
     GrammarTransform, 
-    LiteralGrammar, NsGrammar, PriorityGrammar, SequenceGrammar, Transform, UnitTestGrammar 
+    LiteralGrammar, NsGrammar, PriorityGrammar, SequenceGrammar, UnitTestGrammar 
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
@@ -28,7 +28,8 @@ import { RuleReplaceTransform2 } from "./transforms/ruleReplace2";
 import { TstComponent } from "./tsts";
 import { UnitTestTransform } from "./transforms/unitTests";
 import { Msgs } from "./msgs";
-import { TstTransformAll } from "./tstTransforms/allTransforms";
+import { ALL_GRAMMAR_TRANSFORMS, ALL_TST_TRANSFORMS } from "./transforms/allTransforms";
+import { TransEnv } from "./transforms";
 
 /**
  * An interpreter object is responsible for applying the transformations in between sheets
@@ -86,24 +87,13 @@ export class Interpreter {
         // semantically impossible tape structures are massaged into well-formed ones, some 
         // scope problems adjusted, etc.
         
-        const transforms = [
-            NameQualifierTransform,
-            FlattenTransform,
-            RenameFixTransform,
-            RuleReplaceTransform2,
-            SameTapeReplaceTransform,
-            FilterTransform,
-            //new ParallelizeTransform()
-        ]
-
-        for (const t of transforms) {
-            const transform: GrammarTransform = new t(this.grammar);
-            timeIt(() => {
-                const [newGrammar, msgs] = transform.transform().destructure();
-                this.grammar = newGrammar;
-                sendMessages(devEnv, msgs);
-            }, timeVerbose, transform.desc);
-        }
+        const env = new TransEnv();
+        env.verbose = verbose;
+        const [newGrammar, msgs] = this.grammar.msg() // lift to result
+                     .bind(g => ALL_GRAMMAR_TRANSFORMS.transformAndLog(g, env))
+                     .destructure();
+        this.grammar = newGrammar as NsGrammar;
+        sendMessages(devEnv, msgs);
 
         // Next we collect the vocabulary on all tapes
         timeIt(() => {
@@ -142,7 +132,9 @@ export class Interpreter {
         startTime = Date.now();
 
         let tst: TstComponent = sheetProject.toTST();
-        let [tstResult, msgs] = new TstTransformAll().transform(tst).destructure();
+        const transEnv = new TransEnv();
+        transEnv.verbose = verbose;
+        let [tstResult, msgs] = ALL_TST_TRANSFORMS.transformAndLog(tst, transEnv).destructure();
         sendMessages(devEnv, msgs);
         const grammar = tstResult.toGrammar();
         elapsedTime = msToTime(Date.now() - startTime);
@@ -333,8 +325,9 @@ export class Interpreter {
 
     public runUnitTests(): void {
         this.grammar.constructExpr(this.symbolTable);  // fill the symbol table if it isn't already
+        const env = new TransEnv();
         const t = new UnitTestTransform(this.grammar, this.vocab, this.tapeNS, this.symbolTable);
-        const [_, msgs] = t.transform().destructure(); // results.item isn't important
+        const [_, msgs] = t.transform(env).destructure(); // results.item isn't important
         sendMessages(this.devEnv, msgs);
     }
 }

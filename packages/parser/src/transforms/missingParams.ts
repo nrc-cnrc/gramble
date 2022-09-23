@@ -3,41 +3,42 @@ import {
     TstComponent, TstEmpty,
     TstNegativeUnitTest, TstReplace, 
     TstReplaceTape, TstResult, TstTable, 
-    TstTableOp, TstUnitTest 
+    TstTableOp, TstTransform, TstUnitTest 
 } from "../tsts";
 import { Result } from "../msgs";
+import { TransEnv } from "../transforms";
 
-export class MissingParamsTransform {
+export class MissingParamsTransform extends TstTransform {
 
     public get desc(): string {
         return "Handling missing structural parameters";
     }
 
-    public transform(t: TstComponent): TstResult {
+    public transform(t: TstComponent, env: TransEnv): TstResult {
 
         switch(t.constructor) {
             case TstUnitTest: 
-                return this.transformTest(t as TstUnitTest);
+                return this.transformTest(t as TstUnitTest, env);
             case TstNegativeUnitTest: 
-                return this.transformNegativeTest(t as TstNegativeUnitTest);
+                return this.transformNegativeTest(t as TstNegativeUnitTest, env);
             case TstReplace:
-                return this.transformReplace(t as TstReplace);
+                return this.transformReplace(t as TstReplace, env);
             case TstReplaceTape:
-                return this.transformReplaceTape(t as TstReplaceTape);
+                return this.transformReplaceTape(t as TstReplaceTape, env);
             case TstAssignment:
-                return this.transformAssignment(t as TstAssignment);
+                return this.transformAssignment(t as TstAssignment, env);
             case TstBinaryOp:
-                return this.transformBinaryOp(t as TstBinaryOp);
+                return this.transformBinaryOp(t as TstBinaryOp, env);
             case TstTableOp:
-                return this.transformTableOp(t as TstTableOp);
+                return this.transformTableOp(t as TstTableOp, env);
             default: 
-                return t.transform(this);
+                return t.transform(this, env);
         }
     }
 
-    public transformTest(t: TstUnitTest): TstResult {
+    public transformTest(t: TstUnitTest, env: TransEnv): TstResult {
         
-        const result = t.transform(this) as Result<TstUnitTest>;
+        const result = t.transform(this, env) as Result<TstUnitTest>;
         const [test, _] = result.destructure();
 
         if (test.child instanceof TstEmpty) {
@@ -62,9 +63,9 @@ export class MissingParamsTransform {
         return result;
     }
 
-    public transformTableOp(t: TstTableOp): TstResult {
+    public transformTableOp(t: TstTableOp, env: TransEnv): TstResult {
 
-        const result = t.transform(this) as Result<TstTableOp>;
+        const result = t.transform(this, env) as Result<TstTableOp>;
         const [table, _] = result.destructure();
 
         if (table.child instanceof TstEmpty) {
@@ -75,9 +76,9 @@ export class MissingParamsTransform {
         return result;
     }
 
-    public transformBinaryOp(t: TstBinaryOp): TstResult {
+    public transformBinaryOp(t: TstBinaryOp, env: TransEnv): TstResult {
         
-        let result = t.transform(this) as Result<TstBinaryOp>;
+        let result = t.transform(this, env) as Result<TstBinaryOp>;
         const [op, _] = result.destructure();
 
         if (op.child instanceof TstEmpty) {
@@ -95,9 +96,12 @@ export class MissingParamsTransform {
         return result;
     }
 
-    public transformNegativeTest(t: TstNegativeUnitTest): TstResult {
+    public transformNegativeTest(
+        t: TstNegativeUnitTest,
+        env: TransEnv
+    ): TstResult {
         
-        const result = t.transform(this) as Result<TstNegativeUnitTest>;
+        const result = t.transform(this, env) as Result<TstNegativeUnitTest>;
         const [test, _] = result.destructure();
 
         if (test.child instanceof TstEmpty) {
@@ -122,8 +126,8 @@ export class MissingParamsTransform {
         return result;
     }
 
-    public transformAssignment(t: TstAssignment): TstResult {
-        const result = t.transform(this) as Result<TstAssignment>;
+    public transformAssignment(t: TstAssignment, env: TransEnv): TstResult {
+        const result = t.transform(this, env) as Result<TstAssignment>;
         const [assignment, _] = result.destructure();
         if (assignment.child instanceof TstEmpty) {
             return result.warn(
@@ -134,9 +138,9 @@ export class MissingParamsTransform {
         return result;
     }
 
-    public transformReplace(t: TstReplace): TstResult {
+    public transformReplace(t: TstReplace, env: TransEnv): TstResult {
         
-        const result = t.transform(this) as Result<TstReplace>;
+        const result = t.transform(this, env) as Result<TstReplace>;
         const [replace, _] = result.destructure();
 
         if (replace.child instanceof TstEmpty) {
@@ -157,9 +161,9 @@ export class MissingParamsTransform {
     }
 
     
-    public transformReplaceTape(t: TstReplaceTape): TstResult {
+    public transformReplaceTape(t: TstReplaceTape, env: TransEnv): TstResult {
         
-        const result = t.transform(this) as Result<TstReplaceTape>;
+        const result = t.transform(this, env) as Result<TstReplaceTape>;
         const [replace, _] = result.destructure();
 
         if (replace.child instanceof TstEmpty) {

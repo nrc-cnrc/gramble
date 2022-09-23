@@ -1,10 +1,11 @@
+import { TransEnv } from "../transforms";
 import { Msgs } from "../msgs";
 import { 
     TstAssignment, TstBinaryOp, 
     TstComponent, TstEnclosure, 
     TstNamespace, TstNegativeUnitTest, 
     TstReplace, TstReplaceTape,
-    TstResult, TstUnitTest 
+    TstResult, TstUnitTest, TstTransform
 } from "../tsts";
 
 /**
@@ -12,24 +13,24 @@ import {
  * operation like join, replace, test, etc. to modify the previous
  * assignment, and the results will be assigned to that same name.
  */
- export class AdjustAssignmentScope {
+ export class AdjustAssignmentScope extends TstTransform {
 
     public get desc(): string {
         return "Re-scoping assignments";
     }
 
-    public transform(t: TstComponent): TstResult {
+    public transform(t: TstComponent, env: TransEnv): TstResult {
 
         switch(t.constructor) {
             case TstNamespace:
-                return this.transformNamespace(t as TstNamespace);
+                return this.transformNamespace(t as TstNamespace, env);
             default: 
-                return t.transform(this);
+                return t.transform(this, env);
         }
     }
 
-    public transformNamespace(t: TstNamespace): TstResult {
-        const [result, msgs] = t.transform(this).destructure() as [TstNamespace, Msgs];
+    public transformNamespace(t: TstNamespace, env: TransEnv): TstResult {
+        const [result, msgs] = t.transform(this, env).destructure() as [TstNamespace, Msgs];
         const newChildren: TstEnclosure[] = [];
         for (const child of result.children) {
 

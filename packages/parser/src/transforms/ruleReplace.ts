@@ -8,6 +8,7 @@ import {
 import { IdentityTransform } from "./transforms";
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
 import { resultList } from "../msgs";
+import { TransEnv } from "../transforms";
 
 /**
  * This Transform handles the construction of implicit-tape replacement rules
@@ -22,10 +23,10 @@ export class RuleReplaceTransform extends IdentityTransform {
         return "Constructing new-style replacement rules";
     }
 
-    public transformJoinRule(g: JoinRuleGrammar): GrammarResult {
+    public transformJoinRule(g: JoinRuleGrammar, env: TransEnv): GrammarResult {
 
         let relevantTape = g.inputTape;
-        let [child, childMsgs] = g.child.accept(this).destructure();
+        let [child, childMsgs] = g.child.accept(this, env).destructure();
 
         if (g.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar
@@ -42,7 +43,7 @@ export class RuleReplaceTransform extends IdentityTransform {
         }
 
         const [rules, ruleMsgs] = resultList(g.rules)
-                                .map(c => c.accept(this))
+                                .map(c => c.accept(this, env))
                                 .destructure();
 
         let result = child;

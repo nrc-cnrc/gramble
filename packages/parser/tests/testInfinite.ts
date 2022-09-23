@@ -3,6 +3,7 @@ import * as path from 'path';
 import { CounterStack } from '../src/exprs';
 import { Count, CountTape, Epsilon, 
     Join, Null, Rep, Seq, Uni, Ns, Embed } from '../src/grammars';
+import { TransEnv } from '../src/transforms';
 import { NameQualifierTransform } from '../src/transforms/nameQualifier';
 import { t1 } from "./testUtils";
 
@@ -101,7 +102,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
         ns.addSymbol("hiWorld", hiWorld);
-        const [result, _] = new NameQualifierTransform(ns).transform().destructure();
+        const env = new TransEnv();
+        const [result, _] = new NameQualifierTransform(ns).transform(env).destructure();
         const grammar = result.getSymbol("hiWorld");
         if (grammar == undefined) {
             return;
@@ -117,7 +119,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
         ns.addSymbol("hiWorld", hiWorld);
-        const [result, _] = new NameQualifierTransform(ns).transform().destructure();
+        const env = new TransEnv();
+        const [result, _] = new NameQualifierTransform(ns).transform(env).destructure();
         let grammar = result.getSymbol("hiWorld");
         if (grammar == undefined) {
             return;
