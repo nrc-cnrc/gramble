@@ -1,4 +1,4 @@
-import { ParamRow, TstAssignment, TstBinary, TstComponent, TstEmpty, TstHeadedCell, TstHeader, TstNamespace, TstNegativeUnitTest, TstProject, TstReplace, TstReplaceTape, TstResult, TstTable, TstTransform, TstUnitTest } from "../tsts";
+import { TstRow, TstAssignment, TstBinary, TstComponent, TstEmpty, TstHeadedCell, TstHeader, TstNamespace, TstNegativeUnitTest, TstProject, TstReplace, TstReplaceTape, TstResult, TstTable, TstTransform, TstUnitTest } from "../tsts";
 import { TransEnv } from "../transforms";
 import { Msgs } from "../msgs";
 

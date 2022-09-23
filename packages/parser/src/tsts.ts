@@ -563,10 +563,10 @@ export class TstTable extends TstBinary {
             }
             newHeaders[header.pos.col] = newH;     
         }
-        const newRows: ParamRow[] = [];
+        const newRows: TstRow[] = [];
         const rowMsgs: Msgs = [];
         for (const row of this.rows) {
-            const [newR, rMsgs] = f.transform(row, env).destructure() as [ParamRow, Msgs];
+            const [newR, rMsgs] = f.transform(row, env).destructure() as [TstRow, Msgs];
             newRows.push(newR);
             rowMsgs.push(...rMsgs);
         }
@@ -580,7 +580,7 @@ export class TstTable extends TstBinary {
         public sibling: TstComponent = new TstEmpty(),
         public child: TstComponent = new TstEmpty(),    
         public headersByCol: {[col: number]: TstHeader} = {},
-        public rows: ParamRow[] = []
+        public rows: TstRow[] = []
     ) {
         super(cell, sibling, child);
     }
@@ -604,7 +604,7 @@ export class TstTable extends TstBinary {
 
         if (this.rows.length == 0 || cell.pos.row != this.rows[this.rows.length-1].pos.row) {
             // we need to start an new row
-            this.rows.push(new ParamRow(cell));
+            this.rows.push(new TstRow(cell));
         }
 
         const lastRow = this.rows[this.rows.length-1];
@@ -647,7 +647,7 @@ export class TstTable extends TstBinary {
 /**
  * Expresses a row as a map of named parameters
  */
-export class ParamRow extends TstCellComponent {
+export class TstRow extends TstCellComponent {
 
     constructor(
         cell: Cell,
@@ -664,7 +664,7 @@ export class ParamRow extends TstCellComponent {
             newParams[k] = p;
             newMsgs.push(...m);
         }
-        return new ParamRow(this.cell, newParams).msg(newMsgs);
+        return new TstRow(this.cell, newParams).msg(newMsgs);
     }
 
     public addContent(header: TstHeader, cell: Cell): void {
