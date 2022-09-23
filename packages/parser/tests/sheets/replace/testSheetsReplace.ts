@@ -72,7 +72,10 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Replace with a table: op nested underneath', function() {
         const project = sheetFromFile(`${DIR}/replaceWithTableOp.csv`);
-        testErrors(project, []);
+        testErrors(project, [
+            ["replaceWithTableOp",12,3,"error"],
+            ["replaceWithTableOp",12,4,"error"]
+        ]);
         testGrammar(project, [
             {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
             {"text":"foobaz", "surface": "foovaz", "gloss":"run-2SG"},
@@ -144,7 +147,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Replace with invalid param', function() {
         const project = sheetFromFile(`${DIR}/replaceWithInvalidParam.csv`);
         testErrors(project, [
-            ["replaceWithInvalidParam",13,4,"error"]
+            ["replaceWithInvalidParam",12,4,"error"]
         ]);        
         testGrammar(project, [
             {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
@@ -159,7 +162,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Replace with an unnamed param', function() {
         const project = sheetFromFile(`${DIR}/replaceWithUnnamedParam.csv`);
         testErrors(project, [
-            ["replaceWithUnnamedParam",13,4,"error"]
+            ["replaceWithUnnamedParam",12,4,"error"]
         ]);        
         testGrammar(project, [
             {"text":"foo", "surface": "foo", "gloss":"run.3SG"},

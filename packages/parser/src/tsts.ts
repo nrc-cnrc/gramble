@@ -18,13 +18,13 @@ import {
     DEFAULT_SATURATION,
     DEFAULT_VALUE,
     Header,
-    ParamDict,
     parseHeaderCell
 } from "./headers";
 import { ContentMsg, Err, Msg, Msgs, Result, resultList, Warn } from "./msgs";
 import { Transform, TransEnv } from "./transforms";
 
 
+export type ParamDict = {[key: string]: Grammar};
 export class TstResult extends Result<TstComponent> { }
 export abstract class TstTransform extends Transform<TstComponent,TstComponent> {}
 
@@ -36,8 +36,6 @@ export const BINARY_OPS: {[opName: string]: BinaryOp} = {
 }
 
 export abstract class TstComponent implements Positioned {
-
-    public _tag: string = 'TstComponent';
 
     public get pos(): CellPos | undefined {
         return undefined;
@@ -60,9 +58,6 @@ export abstract class TstComponent implements Positioned {
      * objects add an actual parameter name; everything else contributes an empty param name
      * "__".
      */
-    public toParams(): ParamDict {
-        return { "__": this.toGrammar()};
-    }
 
     public abstract transform(f: TstTransform, env: TransEnv): TstResult;
 
@@ -141,17 +136,13 @@ export class TstHeader extends TstCellComponent {
     public headerToGrammar(left: Grammar, content: Cell): Grammar {
         return this.header.toGrammar(left, content.text, content);
     }
-    
-    public headerToParams(left: ParamDict, content: Cell): ParamDict {
-        return this.header.toParams(left, content.text, content);
-    }
 
 }
 
 export class TstHeadedCell extends TstCellComponent {
 
     constructor(
-        public prev: TstComponent,
+        public prev: TstHeadedCell | TstEmpty,
         public header: TstHeader,
         content: Cell
     ) { 
@@ -166,11 +157,6 @@ export class TstHeadedCell extends TstCellComponent {
     public toGrammar(): Grammar {
         const prevGrammar = this.prev.toGrammar();
         return this.header.headerToGrammar(prevGrammar, this.cell);
-    }
-    
-    public toParams(): ParamDict {
-        const prevParams = this.prev.toParams();
-        return this.header.headerToParams(prevParams, this.cell);
     }
 }
 
@@ -382,27 +368,6 @@ export class TstReplaceTape extends TstBinaryOp {
 
         for (const [cell, paramDict] of params) {
 
-            for (const [key, grammar] of Object.entries(paramDict)) {
-                if (key == "__") {
-                    if (grammar instanceof EpsilonGrammar) {
-                        continue; // it's okay to have {__:epsilon}
-                    }
-                    const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message(Warn(
-                        `The operator to the left doesn't allow unnamed parameters.`
-                    ));
-                    continue;
-                }
-                if (TstReplace.VALID_PARAMS.indexOf(key) == -1) {
-
-                    const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message(Warn(
-                        `The operator to the left doesn't allow parameter '${key}', so this cell will be ignored.`
-                    ));
-                    continue;
-                }
-            }
-
             if (!("from" in paramDict)) {
                 this.message(Err(`Missing 'from' argument to replace'`,
                     "'replace:' requires a 'from' argument (e.g. 'from text')"));
@@ -452,23 +417,6 @@ export class TstReplace extends TstBinaryOp {
         const replaceRules: ReplaceGrammar[] = [];
 
         for (const [cell, paramDict] of params) {
-            for (const [key, grammar] of Object.entries(paramDict)) {
-                if (key == "__") {
-                    if (grammar instanceof EpsilonGrammar) {
-                        continue; // it's okay to have {__:epsilon}
-                    }
-                    const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message(Warn(
-                        `The operator to the left doesn't allow unnamed parameters.`));
-                    continue;
-                }
-                if (TstReplace.VALID_PARAMS.indexOf(key) == -1) {
-                    const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message(Warn(
-                        `The operator to the left doesn't allow parameters '${key}', so this cell will be ignored.`));
-                    continue;
-                }
-            }
 
             if (!("from" in paramDict)) {
                 this.message(Err(`Missing 'from' argument to replace'`,
@@ -522,14 +470,7 @@ export class TstUnitTest extends TstBinary {
         let result = this.sibling.toGrammar();
 
         for (const [cell, paramDict] of this.child.toParamsTable()) {
-            for (const [key, grammar] of Object.entries(paramDict)) {
-                if (TstUnitTest.VALID_PARAMS.indexOf(key) == -1) {
-                    const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message(Warn(
-                        `The operator to the left doesn't allow paramaters '${key}', so this cell will be ignored.`));
-                    continue;
-                }
-            }
+            
             const testInputs = paramDict["__"];
             if (testInputs == undefined) {
                 cell.message(Err("Missing test inputs",
@@ -568,6 +509,8 @@ export class TstUnitTest extends TstBinary {
  */
 export class TstNegativeUnitTest extends TstUnitTest {
 
+    public static VALID_PARAMS = [ "__" ];
+
     public transform(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
@@ -580,12 +523,6 @@ export class TstNegativeUnitTest extends TstUnitTest {
 
         for (const [cell, paramDict] of this.child.toParamsTable()) {
             for (const [key, grammar] of Object.entries(paramDict)) {
-                if (key != "__") {
-                    const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message(Warn(
-                        `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`));
-                    continue;
-                }
                 result = new NegativeUnitTestGrammar(result, grammar);
                 result = new LocatorGrammar(cell, result);
             }   
@@ -619,14 +556,17 @@ export class TstTable extends TstBinary {
         const newHeaders: {[col: number]: TstHeader} = {};
         const headerMsgs: Msgs = [];
         for (const header of Object.values(this.headersByCol)) {
-            const [newH, hMsgs] = f.transform(header, env).destructure() as [TstHeader, Msgs];
-            newHeaders[header.pos.col] = newH;
+            const [newH, hMsgs] = f.transform(header, env).destructure();
             headerMsgs.push(...hMsgs);
+            if (!(newH instanceof TstHeader)) {
+                continue; // remove invalid headers
+            }
+            newHeaders[header.pos.col] = newH;     
         }
-        const newRows: TstRow[] = [];
+        const newRows: ParamRow[] = [];
         const rowMsgs: Msgs = [];
         for (const row of this.rows) {
-            const [newR, rMsgs] = f.transform(row, env).destructure() as [TstRow, Msgs];
+            const [newR, rMsgs] = f.transform(row, env).destructure() as [ParamRow, Msgs];
             newRows.push(newR);
             rowMsgs.push(...rMsgs);
         }
@@ -640,7 +580,7 @@ export class TstTable extends TstBinary {
         public sibling: TstComponent = new TstEmpty(),
         public child: TstComponent = new TstEmpty(),    
         public headersByCol: {[col: number]: TstHeader} = {},
-        public rows: TstRow[] = []
+        public rows: ParamRow[] = []
     ) {
         super(cell, sibling, child);
     }
@@ -664,7 +604,7 @@ export class TstTable extends TstBinary {
 
         if (this.rows.length == 0 || cell.pos.row != this.rows[this.rows.length-1].pos.row) {
             // we need to start an new row
-            this.rows.push(new TstRow(cell));
+            this.rows.push(new ParamRow(cell));
         }
 
         const lastRow = this.rows[this.rows.length-1];
@@ -683,14 +623,6 @@ export class TstTable extends TstBinary {
 
         for (const [cell, paramDict] of this.toParamsTable()) {
             for (const [key, grammar] of Object.entries(paramDict)) {
-                if (key != "__") {
-                    // there's a wayward parameter name in the headers
-                    const errLoc = [...grammar.locations, cell][0];
-                    errLoc.message(Warn(
-                        `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`
-                    ));
-                    continue;
-                }
 
                 if (grammar instanceof EpsilonGrammar) {
                     // if a row evaluates as empty, don't consider it an
@@ -712,35 +644,57 @@ export class TstTable extends TstBinary {
     }
 }
 
-export class TstRow extends TstCellComponent {
-
-    public transform(f: TstTransform, env: TransEnv): TstResult {
-        return f.transform(this.lastCell, env)
-                .bind(c => new TstRow(this.cell, c));
-    }
+/**
+ * Expresses a row as a map of named parameters
+ */
+export class ParamRow extends TstCellComponent {
 
     constructor(
         cell: Cell,
-        public lastCell: TstComponent = new TstEmpty()
+        public params: {[s: string]: TstHeadedCell|TstEmpty} = {}
     ) {
         super(cell);
     }
+    
+    public transform(f: TstTransform, env: TransEnv): TstResult {
+        const newParams: {[s: string]: TstHeadedCell|TstEmpty} = {}
+        const newMsgs: Msgs = []
+        for (const [k, v] of Object.entries(this.params)) {
+            const [p, m] = f.transform(v, env).destructure();
+            newParams[k] = p;
+            newMsgs.push(...m);
+        }
+        return new ParamRow(this.cell, newParams).msg(newMsgs);
+    }
 
     public addContent(header: TstHeader, cell: Cell): void {
-        const newCell = new TstHeadedCell(this.lastCell, header, cell);
+
+        // get the param name and make sure it's in .params
+        const tag = header.header.getParamName();
+        if (!(tag in this.params)) {
+            this.params[tag] = new TstEmpty();
+        }
+
+        const newCell = new TstHeadedCell(this.params[tag], header, cell);
         cell.message(new ContentMsg(
             header.getBackgroundColor(),
             header.getFontColor()
         ));
-        this.lastCell = newCell;
+        this.params[tag] = newCell;
     }
 
     public toGrammar(): Grammar {
-        return this.lastCell.toGrammar();
-    }
-    
+        this.cell.message(Err("Unexpected parameters",
+                "The operator to the left does not expect named parameters."));
+        return new EpsilonGrammar();
+    } 
+
     public toParams(): ParamDict {
-        return this.lastCell.toParams();
+        const results: ParamDict = {}
+        for (const [k, v] of Object.entries(this.params)) {
+            results[k] = v.toGrammar();
+        }
+        return results;
     }
 }
 

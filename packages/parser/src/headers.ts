@@ -35,13 +35,14 @@ import {
     MPSequence, MPUnreserved 
 } from "./miniParser";
 
-import { Cell, HSVtoRGB, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RGBtoString } from "./util";
-import { Msgs, Err, Warn } from "./msgs";
+import { Cell, CellPos, HSVtoRGB, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RGBtoString } from "./util";
+import { Msgs, Err, Warn, resultList } from "./msgs";
+import { TstResult, TstTransform } from "./tsts";
+import { TransEnv } from "./transforms";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
 
-export type ParamDict = {[key: string]: Grammar};
 
 /**
  * A Header is a cell in the top row of a table, consisting of one of
@@ -67,6 +68,10 @@ export type ParamDict = {[key: string]: Grammar};
  */
  export abstract class Header {
 
+    public get pos(): CellPos | undefined {
+        return undefined;
+    }   
+    
     /**
      * One of the primary responsibilities of the header tree is to construct the appropriate grammar object
      * for a cell, from the grammar to its left and a string.  This string is usually the text of the 
@@ -85,19 +90,6 @@ export type ParamDict = {[key: string]: Grammar};
 
     public getParamName(): string {
         return "__";
-    }
-
-    public toParams(left: ParamDict, text: string, content: Cell): ParamDict {
-        const paramName = this.getParamName();
-        const result: ParamDict = {};
-        Object.assign(result, left);
-        if (paramName in left) {
-            result[paramName] = this.toGrammar(left[paramName], text, content);
-        } else {
-            const eps = new EpsilonGrammar();
-            result[paramName] = this.toGrammar(eps, text, content);
-        }
-        return result;
     }
 
     public getErrors(): Msgs {

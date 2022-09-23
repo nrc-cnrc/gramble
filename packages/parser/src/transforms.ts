@@ -11,10 +11,10 @@ export abstract class Transform<T1,T2> {
     public transformAndLog(t: T1, env: TransEnv): Result<T2> {
         const verbose = (env.verbose & VERBOSE_TIME) != 0;
         return timeIt(() => this.transform(t, env), 
-               verbose, (this.constructor as any).desc);
+               verbose, this.desc);
     }
 
-    public static get desc(): string { 
+    public get desc(): string { 
         return "Transform base class";
     }
 

@@ -192,7 +192,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Replace with unnamed param', function() {
         const project = sheetFromFile(`${DIR}/replaceWithUnnamedParam.csv`);
         testErrors(project, [
-            ["replaceWithUnnamedParam",13,4,"error"]
+            ["replaceWithUnnamedParam",12,4,"error"]
         ]);        
         testGrammar(project, [
             {"text": "foo", "gloss":"run.3SG"},
@@ -207,8 +207,8 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Replace with invalid param', function() {
         const project = sheetFromFile(`${DIR}/replaceWithInvalidParam.csv`);
         testErrors(project, [
-            ["replaceWithInvalidParam",13,4,"error"]
-        ]);        
+            ["replaceWithInvalidParam",12,4,"error"]
+        ]);
         testGrammar(project, [
             {"text": "foo", "gloss":"run.3SG"},
             {"text": "foovaz", "gloss":"run-2SG"},
