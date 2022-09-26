@@ -35,7 +35,7 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
 }
 
 export function testHeaderID(header: string, expectedID: string) {
-    const result = parseHeaderCell(header);
+    const [result, _] = parseHeaderCell(header).destructure();
     it(`"${header}" should have an id of ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });

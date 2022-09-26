@@ -16,7 +16,8 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Re header with slash value', function() {
         const project = sheetFromFile(`${DIR}/regexSlash.csv`);
         testErrors(project, [
-            ["regexSlash", 1, 3, "error"]
+           ["regexSlash", 0, 3, "error"],
+           ["regexSlash", 1, 3, "warning"]
         ]);
         testGrammar(project, [
             {text: "foo"}

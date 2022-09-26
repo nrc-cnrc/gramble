@@ -178,7 +178,7 @@ export class Interpreter {
         value: number = 1.0
     ): string {
         if (!(tapeName in this.tapeColors)) {
-            const header = parseHeaderCell(tapeName);
+            const [header, msgs] = parseHeaderCell(tapeName).destructure();
             this.tapeColors[tapeName] = header.getBackgroundColor(saturation, value);
         }
         return this.tapeColors[tapeName];

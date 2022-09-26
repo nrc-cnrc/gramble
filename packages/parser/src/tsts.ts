@@ -14,7 +14,8 @@ import {
     LocatorGrammar, 
     RenameGrammar,
     EqualsGrammar,
-    HideGrammar
+    HideGrammar,
+    GrammarResult
 } from "./grammars";
 import { Cell, CellPos, Positioned } from "./util";
 import {
@@ -121,10 +122,10 @@ export class TstHeader extends TstCellComponent {
             return;
         }
         
-        this.header = parseHeaderCell(cell.text);
-
-        for (const err of this.header.getErrors()) {
-            this.cell.message(err);
+        const [parsedHeader, msgs] = parseHeaderCell(cell.text).destructure();
+        this.header = parsedHeader;
+        for (const msg of msgs) {
+            this.cell.message(msg);
         }
     }
 
@@ -140,8 +141,9 @@ export class TstHeader extends TstCellComponent {
         return this.header.getFontColor();
     }
 
-    public headerToGrammar(content: Cell): Grammar {
-        return this.header.toGrammar(content.text, content);
+    public headerToGrammar(content: Cell): GrammarResult {
+        return this.header.toGrammar(content.text);
+        
     }
 
 }
@@ -160,7 +162,12 @@ export class TstHeadedCell extends TstCellComponent {
     }
 
     public toGrammar(): Grammar {
-        return this.header.headerToGrammar(this.cell);
+        const [result, msgs] = this.header.headerToGrammar(this.cell)
+                                          .destructure();
+        for (const msg of msgs) {
+            this.cell.message(msg);
+        }
+        return new LocatorGrammar(this.cell, result);
     }
 }
 
@@ -229,7 +236,11 @@ export class TstFilter extends TstCellComponent {
     
     public toGrammar(): Grammar {
         const prevGrammar = this.prev.toGrammar();
-        const grammar = this.header.headerToGrammar(this.cell);
+        const [grammar, msgs] = this.header.headerToGrammar(this.cell)
+                                           .destructure();
+        for (const msg of msgs) {
+            this.cell.message(msg);
+        }
         const result = new EqualsGrammar(prevGrammar, grammar);
         const locatedResult = new LocatorGrammar(this.cell, result);
         return locatedResult;

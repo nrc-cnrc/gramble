@@ -34,7 +34,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHeaderID("(pre text)", "pre:text");
         testHeaderID("blarg text", "ERR");
         testHeaderID("re text", "RE[text]");
-        testHeaderID("re text/gloss", "RE[SLASH[text,gloss]]"); // erroneous but parseable
+        testHeaderID("re text/gloss", "ERR");
         testHeaderID("equals text", "EQUALS[text]");
         testHeaderID("equals re text", "EQUALS[RE[text]]");
         testHeaderID("starts text", "STARTS[text]");
