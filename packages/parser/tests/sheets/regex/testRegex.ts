@@ -18,7 +18,9 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, [
             ["regexSlash", 1, 3, "error"]
         ]);
-        testGrammar(project, []);
+        testGrammar(project, [
+            {text: "foo"}
+        ]);
     });
 
     describe('Regex including alternation', function() {

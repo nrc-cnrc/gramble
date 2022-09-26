@@ -83,7 +83,7 @@ export const DEFAULT_VALUE = 1.0;
      * @param content The cell that ultimately provided the text string
      * @returns The grammar corresponding to this header/content pair
      */
-    public abstract toGrammar(left: Grammar, text: string, content: Cell): Grammar;
+    public abstract toGrammar(text: string, content: Cell): Grammar;
     public abstract getFontColor(): string;
     public abstract getBackgroundColor(saturation: number, value: number): string;
     public abstract get id(): string;
@@ -91,6 +91,8 @@ export const DEFAULT_VALUE = 1.0;
     public getParamName(): string {
         return "__";
     }
+
+    public abstract get isRegex(): boolean;
 
     public getErrors(): Msgs {
         return [];
@@ -105,6 +107,10 @@ abstract class AtomicHeader extends Header {
 
     public abstract get text(): string;
     
+    public get isRegex(): boolean {
+        return false;
+    }
+
     public get id(): string {
         return this.text;
     }
@@ -140,13 +146,11 @@ export class EmbedHeader extends AtomicHeader {
     }
 
     public toGrammar(
-        left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
         const cellGrammar = new EmbedGrammar(text);
-        const locatedGrammar = new LocatorGrammar(content, cellGrammar);
-        return new SequenceGrammar([left, locatedGrammar]);
+        return new LocatorGrammar(content, cellGrammar);
     }
 
 }
@@ -167,16 +171,10 @@ export class HideHeader extends AtomicHeader {
     }
     
     public toGrammar(
-        left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
-        let result = left;
-        for (const tape of text.split("/")) {
-            result = new HideGrammar(result, tape.trim());
-        }
-        result = new LocatorGrammar(content, result);
-        return result;
+        throw new Error("not implemented");
     }
 }
 
@@ -196,13 +194,11 @@ export class TapeNameHeader extends AtomicHeader {
     }
 
     public toGrammar(
-        left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
         const grammar = new LiteralGrammar(this.text, text);
-        const locatedGrammar = new LocatorGrammar(content, grammar);
-        return new SequenceGrammar([left, locatedGrammar]);
+        return new LocatorGrammar(content, grammar);
     }
 }
 
@@ -214,6 +210,10 @@ export class CommentHeader extends Header {
 
     public get id(): string {
         return "%";
+    }
+    
+    public get isRegex(): boolean {
+        return false;
     }
     
     public getFontColor() {
@@ -229,10 +229,10 @@ export class CommentHeader extends Header {
     }
 
     public toGrammar(
-        left: Grammar, 
-        text: string
+        text: string,
+        content: Cell
     ): Grammar {
-        return left;
+        return new EpsilonGrammar();
     }    
 }
 
@@ -246,6 +246,10 @@ abstract class UnaryHeader extends Header {
         public child: Header
     ) { 
         super();
+    }
+    
+    public get isRegex(): boolean {
+        return this.child.isRegex;
     }
 
     public getErrors(): Msgs {
@@ -261,11 +265,10 @@ abstract class UnaryHeader extends Header {
     }
 
     public toGrammar(
-        left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
-        return this.child.toGrammar(left, text, content);
+        return this.child.toGrammar(text, content);
     }
 }
 
@@ -297,38 +300,28 @@ export class OptionalHeader extends UnaryHeader {
     }
 
     public toGrammar(
-        left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
-        const childGrammar = this.child.toGrammar(new EpsilonGrammar(), text, content);
-        const grammar = new AlternationGrammar([childGrammar, new EpsilonGrammar()]);
-        return new SequenceGrammar([left, grammar]);
+        const childGrammar = this.child.toGrammar(text, content);
+        return new AlternationGrammar([childGrammar, new EpsilonGrammar()]);
     }
 }
 
 /**
  * Header that constructs renames
  */
-class RenameHeader extends UnaryHeader {
+export class RenameHeader extends UnaryHeader {
 
     public get id(): string {
         return `RENAME[${this.child.id}]`;
     }
 
     public toGrammar(
-        left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
-        if (!(this.child instanceof TapeNameHeader)) {
-            content.message(Err("Renaming error",
-                "Rename (>) needs to have a tape name after it"));
-            return new EpsilonGrammar();
-        }
-        const result = new RenameGrammar(left, text, this.child.text);
-        const locatedResult = new LocatorGrammar(content, result);
-        return locatedResult;
+        throw new Error("not implemented");
     }
 }
 
@@ -352,6 +345,10 @@ export class RegexHeader extends UnaryHeader {
         return "#bd1128";
     }
 
+    public get isRegex(): boolean {
+        return true;
+    }
+
     public toGrammarPiece(
         parsedText: Regex,
         content: Cell
@@ -365,7 +362,7 @@ export class RegexHeader extends UnaryHeader {
 
         if (parsedText instanceof SequenceRegex) {
             if (parsedText.children.length == 0) {
-                return this.child.toGrammar(new EpsilonGrammar(), "", content);
+                return this.child.toGrammar("", content);
             }
 
             const childGrammars = parsedText.children.map(c => 
@@ -389,7 +386,7 @@ export class RegexHeader extends UnaryHeader {
         }
 
         if (parsedText instanceof LiteralRegex) {
-            return this.child.toGrammar(new EpsilonGrammar(), parsedText.text, content);
+            return this.child.toGrammar(parsedText.text, content);
         }
 
         if (parsedText instanceof NegationRegex) {
@@ -407,7 +404,6 @@ export class RegexHeader extends UnaryHeader {
     }
 
     public toGrammar(
-        left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
@@ -421,8 +417,7 @@ export class RegexHeader extends UnaryHeader {
 
         const parsedText = parseRegex(text);
         const c = this.toGrammarPiece(parsedText, content);
-        const locatedResult = new LocatorGrammar(content, c);
-        return new SequenceGrammar([left, locatedResult]);
+        return new LocatorGrammar(content, c);
     }
 }
 
@@ -442,41 +437,11 @@ export class EqualsHeader extends UnaryHeader {
         return `EQUALS[${this.child.id}]`;
     }
 
-    public merge(
-        leftNeighbor: Grammar, 
-        state: Grammar,
-        content: Cell
-    ): Grammar {
-
-        if (leftNeighbor instanceof SequenceGrammar) {
-            // if your left neighbor is a concat state we have to do something a little special,
-            // because starts/ends/contains only scope over the cell immediately to the left.  (if you let
-            // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
-            // specifying in the same row, rather than the embedded thing you're trying to catch.)
-            const lastChild = leftNeighbor.finalChild();
-            const filter = this.constructFilter(lastChild, state, content);
-            const remainingChildren = leftNeighbor.nonFinalChildren();
-            return new SequenceGrammar([...remainingChildren, filter]);
-        }
-
-        return this.constructFilter(leftNeighbor, state, content);
-    }
-
-    public constructFilter(
-        leftNeighbor: Grammar, 
-        condition: Grammar,
-        content: Cell
-    ): Grammar {
-        return new EqualsGrammar(leftNeighbor, condition);
-    }
-    
     public toGrammar(
-        left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
-        const childGrammar = this.child.toGrammar(new EpsilonGrammar(), text, content)
-        return this.merge(left, childGrammar, content);
+        return this.child.toGrammar(text, content);
     }
 }
 
@@ -490,13 +455,12 @@ export class StartsHeader extends EqualsHeader {
         return `STARTS[${this.child.id}]`;
     }
 
-    public constructFilter(
-        leftNeighbor: Grammar, 
-        condition: Grammar,
+    public toGrammar(
+        text: string,
         content: Cell
     ): Grammar {
-        const filter = new StartsGrammar(condition);
-        return new EqualsGrammar(leftNeighbor, filter);
+        const childGrammar = this.child.toGrammar(text, content);
+        return new StartsGrammar(childGrammar);
     }
 }
 
@@ -510,13 +474,12 @@ export class EndsHeader extends EqualsHeader {
         return `ENDS[${this.child.id}]`;
     }
 
-    public constructFilter(
-        leftNeighbor: Grammar, 
-        condition: Grammar,
+    public toGrammar(
+        text: string,
         content: Cell
     ): Grammar {
-        const filter = new EndsGrammar(condition);
-        return new EqualsGrammar(leftNeighbor, filter);
+        const childGrammar = this.child.toGrammar(text, content);
+        return new EndsGrammar(childGrammar);
     }
 }
 
@@ -530,13 +493,12 @@ export class ContainsHeader extends EqualsHeader {
         return `CONTAINS[${this.child.id}]`;
     }
 
-    public constructFilter(
-        leftNeighbor: Grammar, 
-        condition: Grammar,
+    public toGrammar(
+        text: string,
         content: Cell
     ): Grammar {
-        const filter = new ContainsGrammar(condition);
-        return new EqualsGrammar(leftNeighbor, filter);
+        const childGrammar = this.child.toGrammar(text, content);
+        return new ContainsGrammar(childGrammar);
     }
 }
 
@@ -548,6 +510,11 @@ abstract class BinaryHeader extends Header {
     ) { 
         super();
     }
+    
+    public get isRegex(): boolean {
+        return this.child1.isRegex || this.child2.isRegex;
+    }
+
 
     public getErrors(): Msgs {
         return [...this.child1.getErrors(), ...this.child2.getErrors()];
@@ -576,12 +543,12 @@ export class SlashHeader extends BinaryHeader {
     }
     
     public toGrammar(
-        left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
-        const child1Grammar = this.child1.toGrammar(left, text, content);
-        return this.child2.toGrammar(child1Grammar, text, content);
+        const child1Grammar = this.child1.toGrammar(text, content);
+        const child2Grammar = this.child2.toGrammar(text, content)
+        return new SequenceGrammar([child1Grammar, child2Grammar]);
     }
 }
 
@@ -599,7 +566,6 @@ export class ErrorHeader extends TapeNameHeader {
     }
 
     public toGrammar(
-        left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
@@ -607,7 +573,7 @@ export class ErrorHeader extends TapeNameHeader {
             content.message(Warn(
                 `This content is associated with an invalid header above, ignoring`));
         }
-        return left;
+        return new EpsilonGrammar();
     }
 }
 
@@ -622,7 +588,6 @@ export class ReservedErrorHeader extends ErrorHeader {
     }
 
     public toGrammar(
-        left: Grammar, 
         text: string,
         content: Cell
     ): Grammar {
@@ -630,7 +595,7 @@ export class ReservedErrorHeader extends ErrorHeader {
             content.message(Warn(
                 `This content is associated with an invalid header above, ignoring`));
         }
-        return left;
+        return new EpsilonGrammar();
     }
 
 }

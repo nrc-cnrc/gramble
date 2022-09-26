@@ -17,6 +17,7 @@ import { RuleReplaceTransform2 } from "./ruleReplace2";
 import { SameTapeReplaceTransform } from "./sameTapeReplace";
 import { FilterTransform } from "./filter";
 import { CheckNamedParams } from "./namedParamCheck";
+import { RescopeLeftBinders } from "./rescopeLeftBinders";
 
 type GrammarTransformConstructor = new (g: NsGrammar) => GrammarTransform;
 export class TransformWrapper extends Transform<Grammar, Grammar> {
@@ -63,8 +64,8 @@ export const ALL_TST_TRANSFORMS =
     new AdjustAssignmentScope().compose(
     new InvalidAssignmentTransform().compose(
     new MissingParamsTransform().compose(
-    new CheckNamedParams()
-    )))
+    new CheckNamedParams().compose(
+    new RescopeLeftBinders()))))
 
 export const ALL_GRAMMAR_TRANSFORMS =
     wrap(NameQualifierTransform).compose(

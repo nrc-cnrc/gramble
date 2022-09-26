@@ -11,14 +11,18 @@ import {
     EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, 
     SequenceGrammar, JoinGrammar, ReplaceGrammar, 
     JoinReplaceGrammar, LiteralGrammar, JoinRuleGrammar, 
-    LocatorGrammar 
+    LocatorGrammar, 
+    RenameGrammar,
+    EqualsGrammar,
+    HideGrammar
 } from "./grammars";
 import { Cell, CellPos, Positioned } from "./util";
 import {
     DEFAULT_SATURATION,
     DEFAULT_VALUE,
     Header,
-    parseHeaderCell
+    parseHeaderCell,
+    TapeNameHeader
 } from "./headers";
 import { ContentMsg, Err, Msg, Msgs, Result, resultList, Warn } from "./msgs";
 import { Transform, TransEnv } from "./transforms";
@@ -42,6 +46,7 @@ export abstract class TstComponent implements Positioned {
     }   
 
     public abstract toGrammar(): Grammar;
+    public abstract transform(f: TstTransform, env: TransEnv): TstResult;
 
     /**
      * Most kinds of components only represent a grammar, that will be
@@ -58,9 +63,6 @@ export abstract class TstComponent implements Positioned {
      * objects add an actual parameter name; everything else contributes an empty param name
      * "__".
      */
-
-    public abstract transform(f: TstTransform, env: TransEnv): TstResult;
-
     public abstract toParamsTable(): [Cell, ParamDict][];
 
     public msg(msgs: Msgs = []): TstResult {
@@ -114,6 +116,11 @@ export class TstHeader extends TstCellComponent {
         header: Header | undefined = undefined
     ) {
         super(cell);
+        if (header != undefined) {
+            this.header = header;
+            return;
+        }
+        
         this.header = parseHeaderCell(cell.text);
 
         for (const err of this.header.getErrors()) {
@@ -133,8 +140,8 @@ export class TstHeader extends TstCellComponent {
         return this.header.getFontColor();
     }
 
-    public headerToGrammar(left: Grammar, content: Cell): Grammar {
-        return this.header.toGrammar(left, content.text, content);
+    public headerToGrammar(content: Cell): Grammar {
+        return this.header.toGrammar(content.text, content);
     }
 
 }
@@ -142,7 +149,6 @@ export class TstHeader extends TstCellComponent {
 export class TstHeadedCell extends TstCellComponent {
 
     constructor(
-        public prev: TstHeadedCell | TstEmpty,
         public header: TstHeader,
         content: Cell
     ) { 
@@ -150,13 +156,83 @@ export class TstHeadedCell extends TstCellComponent {
     }
     
     public transform(f: TstTransform, env: TransEnv): TstResult {
-        return f.transform(this.prev, env)
-                .bind(c => new TstHeadedCell(c, this.header, this.cell));
+        return this.msg();
     }
 
     public toGrammar(): Grammar {
+        return this.header.headerToGrammar(this.cell);
+    }
+}
+
+export class TstRename extends TstCellComponent {
+
+    constructor(
+        public prev: TstComponent,
+        public header: TstHeader,
+        content: Cell
+    ) { 
+        super(content);
+    }
+    
+    public transform(f: TstTransform, env: TransEnv): TstResult {
+        return this.msg();
+    }
+    
+    public toGrammar(): Grammar {
+        if (!(this.header.header instanceof TapeNameHeader)) {
+            this.message(Err("Renaming error",
+                "Rename (>) needs to have a tape name after it"));
+            return new EpsilonGrammar();
+        }
         const prevGrammar = this.prev.toGrammar();
-        return this.header.headerToGrammar(prevGrammar, this.cell);
+        const result = new RenameGrammar(prevGrammar, this.cell.text, this.header.header.text);
+        const locatedResult = new LocatorGrammar(this.cell, result);
+        return locatedResult;
+    }
+}
+
+export class TstHide extends TstCellComponent {
+
+    constructor(
+        public prev: TstComponent,
+        content: Cell
+    ) { 
+        super(content);
+    }
+    
+    public transform(f: TstTransform, env: TransEnv): TstResult {
+        return this.msg();
+    }
+    
+    public toGrammar(): Grammar {
+        let result = this.prev.toGrammar();
+        for (const tape of this.cell.text.split("/")) {
+            result = new HideGrammar(result, tape.trim());
+        }
+        return new LocatorGrammar(this.cell, result);
+    }
+}
+
+export class TstFilter extends TstCellComponent {
+
+    constructor(
+        public prev: TstComponent,
+        public header: TstHeader,
+        content: Cell
+    ) { 
+        super(content);
+    }
+
+    public transform(f: TstTransform, env: TransEnv): TstResult {
+        return this.msg();
+    }
+    
+    public toGrammar(): Grammar {
+        const prevGrammar = this.prev.toGrammar();
+        const grammar = this.header.headerToGrammar(this.cell);
+        const result = new EqualsGrammar(prevGrammar, grammar);
+        const locatedResult = new LocatorGrammar(this.cell, result);
+        return locatedResult;
     }
 }
 
@@ -644,6 +720,38 @@ export class TstTable extends TstBinary {
     }
 }
 
+export class TstSequence extends TstCellComponent {
+
+    constructor(
+        cell: Cell,
+        public children: TstComponent[] = []
+    ) { 
+        super(cell);
+    }
+
+    public transform(f: TstTransform, env: TransEnv): TstResult {
+        return resultList(this.children)
+                   .map(c => f.transform(c, env))
+                   .bind((cs) => new TstSequence(this.cell, cs));
+    }
+
+    public addContent(header: TstHeader, cell: Cell): void {
+        const newCell = new TstHeadedCell(header, cell);
+        cell.message(new ContentMsg(
+            header.getBackgroundColor(),
+            header.getFontColor()
+        ));
+        this.children.push(newCell);
+    }
+    
+    public toGrammar(): Grammar {
+        const childGrammars = this.children.map(
+                                c => c.toGrammar());
+        return new SequenceGrammar(childGrammars);
+    }
+
+}
+
 /**
  * Expresses a row as a map of named parameters
  */
@@ -651,17 +759,17 @@ export class TstRow extends TstCellComponent {
 
     constructor(
         cell: Cell,
-        public params: {[s: string]: TstHeadedCell|TstEmpty} = {}
+        public params: {[s: string]: TstSequence} = {}
     ) {
         super(cell);
     }
     
     public transform(f: TstTransform, env: TransEnv): TstResult {
-        const newParams: {[s: string]: TstHeadedCell|TstEmpty} = {}
+        const newParams: {[s: string]: TstSequence} = {}
         const newMsgs: Msgs = []
         for (const [k, v] of Object.entries(this.params)) {
             const [p, m] = f.transform(v, env).destructure();
-            newParams[k] = p;
+            newParams[k] = p as TstSequence;
             newMsgs.push(...m);
         }
         return new TstRow(this.cell, newParams).msg(newMsgs);
@@ -672,15 +780,9 @@ export class TstRow extends TstCellComponent {
         // get the param name and make sure it's in .params
         const tag = header.header.getParamName();
         if (!(tag in this.params)) {
-            this.params[tag] = new TstEmpty();
+            this.params[tag] = new TstSequence(cell);
         }
-
-        const newCell = new TstHeadedCell(this.params[tag], header, cell);
-        cell.message(new ContentMsg(
-            header.getBackgroundColor(),
-            header.getFontColor()
-        ));
-        this.params[tag] = newCell;
+        this.params[tag].addContent(header, cell);
     }
 
     public toGrammar(): Grammar {

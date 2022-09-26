@@ -1,5 +1,6 @@
 import { testGrammar, testErrors, sheetFromFile } from "../../testUtils";
 import * as path from 'path';
+import { VERBOSE_GRAMMAR } from "../../../src/util";
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
 
@@ -23,13 +24,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Renaming to a name that already exists', function() {
-        const project = sheetFromFile(`${DIR}/renameConflict.csv`);
-        testErrors(project, 
-            [["renameConflict", 1, 5, "error"]]
-        );
-        testGrammar(project, [{gloss:"run", text:"v"}]);
-    });
 
     describe('Rename header with embeds', function() {
         const project = sheetFromFile(`${DIR}/renameEmbed.csv`);
@@ -41,6 +35,21 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]", class: "v" },
             { text: "foo", gloss: "run[3SG]", subj: "[3SG]", class: "v" },
             { text: "moo", gloss: "jump[3SG]", subj: "[3SG]", class: "v" }
+        ]);
+    });
+
+    describe('Renaming to a name that already exists', function() {
+        const project = sheetFromFile(`${DIR}/renameConflict.csv`);
+        testErrors(project, 
+            [["renameConflict", 10, 3, "error"]]
+        );
+        testGrammar(project, [
+            {"text":"moo","gloss":"v[3SG]","subj":"[3SG]"},
+            {"text":"foo","gloss":"v[3SG]","subj":"[3SG]"},
+            {"text":"moobaz","gloss":"v[2SG]","subj":"[2SG]"},
+            {"text":"foobaz","gloss":"v[2SG]","subj":"[2SG]"},
+            {"text":"moobar","gloss":"v[1SG]","subj":"[1SG]"},
+            {"text":"foobar","gloss":"v[1SG]","subj":"[1SG]"}
         ]);
     });
 

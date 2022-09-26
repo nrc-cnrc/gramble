@@ -49,8 +49,21 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    describe('Nested hide headers', function() {
+        const project = sheetFromFile(`${DIR}/nestedHide.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobar", gloss: "run[1SG]" },
+            { text: "moobar", gloss: "jump[1SG]" },
+            { text: "foobaz", gloss: "run[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]" },
+            { text: "foo", gloss: "run[3SG]" },
+            { text: "moo", gloss: "jump[3SG]" }
+        ]);
+    });
+
     describe('Hide header with a slash value', function() {
-        const project = sheetFromFile(`${DIR}/doubleHideSlash.csv`);
+        const project = sheetFromFile(`${DIR}/hideSlash.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobar", gloss: "run[1SG]" },

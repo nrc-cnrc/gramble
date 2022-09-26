@@ -62,7 +62,7 @@ export class RenameFixTransform extends IdentityTransform {
             const errTapeName = `${HIDDEN_TAPE_PREFIX}ERR${newG.toTape}`;
             return result.err("Destination tape already exists",
                             `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
-                            `to the left ${g.child.id} already contains the tape ${g.toTape}. `)
+                            `to the left already contains the tape ${g.toTape}. `)
                         .bind(c => new RenameGrammar(c.child, g.toTape, errTapeName))
                         .bind(c => new RenameGrammar(c, g.fromTape, g.toTape));
         }

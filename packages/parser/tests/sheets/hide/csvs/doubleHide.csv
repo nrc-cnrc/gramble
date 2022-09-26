@@ -8,5 +8,5 @@ suffix:, table:, text, gloss/subj
     ,       , baz, [2SG]
     ,       ,    , [3SG]
 
-word:, table:, embed, embed, hide, hide
-    ,       , verb, suffix, pos, subj
+word:, table:, embed, hide, embed, hide
+    ,       , verb, pos, suffix, subj

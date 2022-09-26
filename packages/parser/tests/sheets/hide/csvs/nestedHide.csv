@@ -1,3 +1,4 @@
+
 verb:, table:, text, gloss, pos
     ,       , foo, run, v
     ,       , moo, jump, v
@@ -7,5 +8,8 @@ suffix:, table:, text, gloss/subj
     ,       , baz, [2SG]
     ,       ,    , [3SG]
 
-word:, table:, embed, >gloss, embed,
-    ,       , verb, pos, suffix, 
+word:, table:, embed, embed
+    ,       , verb, suffix
+
+main:, table:, embed, hide, hide
+     ,       , word, pos, subj
