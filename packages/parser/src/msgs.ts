@@ -85,16 +85,16 @@ export class HeaderMsg extends Msg  {
     }
 }
 
-export function Err(shortMsg: string, longMsg: string): Msg {
-    return new Msg("error", shortMsg, longMsg);
+export function Err(shortMsg: string, longMsg: string, pos?: CellPos): Msg {
+    return new Msg("error", shortMsg, longMsg, pos);
 }
 
-export function Warn(longMsg: string): Msg {
-    return new Msg("warning", "warning", longMsg);
+export function Warn(longMsg: string, pos?: CellPos): Msg {
+    return new Msg("warning", "warning", longMsg, pos);
 }
 
-export function Success(longMsg: string): Msg {
-    return new Msg("info", "success", longMsg);
+export function Success(longMsg: string, pos?: CellPos): Msg {
+    return new Msg("info", "success", longMsg, pos);
 }
 
 function isPositioned(p: any): p is Positioned {
@@ -140,6 +140,19 @@ export class Result<T> {
             return this.msg([e.localize(this.item.pos)]);
         }
         return this.msg([e]);
+    }
+
+    public log(): Result<T> {
+        for (const msg of this.msgs) {
+            console.log(msg);
+        }
+        return this;
+    }
+
+    public localize(pos: CellPos): Result<T> {
+        const [item, msgs] = this.destructure();
+        const newMsgs = msgs.map(m => m.localize(pos));
+        return new Result(item, newMsgs);
     }
 }
 

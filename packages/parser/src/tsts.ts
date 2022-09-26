@@ -15,7 +15,9 @@ import {
     RenameGrammar,
     EqualsGrammar,
     HideGrammar,
-    GrammarResult
+    GrammarResult,
+    Rename,
+    Seq
 } from "./grammars";
 import { Cell, CellPos, Positioned } from "./util";
 import {
@@ -25,7 +27,7 @@ import {
     parseHeaderCell,
     TapeNameHeader
 } from "./headers";
-import { ContentMsg, Err, Msg, Msgs, Result, resultList, Warn } from "./msgs";
+import { ContentMsg, Err, Msg, Msgs, Result, ResultList, resultList, Warn } from "./msgs";
 import { Transform, TransEnv } from "./transforms";
 
 
@@ -46,7 +48,7 @@ export abstract class TstComponent implements Positioned {
         return undefined;
     }   
 
-    public abstract toGrammar(): Grammar;
+    public abstract toGrammar(): GrammarResult;
     public abstract transform(f: TstTransform, env: TransEnv): TstResult;
 
     /**
@@ -64,7 +66,7 @@ export abstract class TstComponent implements Positioned {
      * objects add an actual parameter name; everything else contributes an empty param name
      * "__".
      */
-    public abstract toParamsTable(): [Cell, ParamDict][];
+    public abstract toParamsTable(): Result<[Cell,ParamDict][]>;
 
     public msg(msgs: Msgs = []): TstResult {
         return new TstResult(this, msgs);
@@ -96,14 +98,15 @@ export abstract class TstCellComponent extends TstComponent {
         this.cell.message(msg);
     }
     
-    public toGrammar(): Grammar {
-        return new EpsilonGrammar();
+    public toGrammar(): GrammarResult {
+        return new EpsilonGrammar().msg();
     }
 
-    public toParamsTable(): [Cell, ParamDict][] {
-        this.message(Err(`Unexpected operator`, 
-            `The operator to the left expects a table of parameters, but found a ${this.constructor.name}.`));
-        return [];
+    public toParamsTable(): Result<[Cell, ParamDict][]> {
+        return resultList([]).err(
+            `Unexpected operator`, 
+            "The operator to the left expects a table " +
+            `of parameters, but found a ${this.constructor.name}.`);
     }
 
 }
@@ -142,8 +145,8 @@ export class TstHeader extends TstCellComponent {
     }
 
     public headerToGrammar(content: Cell): GrammarResult {
-        return this.header.toGrammar(content.text);
-        
+        return this.header.toGrammar(content.text)
+                          .localize(content.pos);
     }
 
 }
@@ -161,13 +164,9 @@ export class TstHeadedCell extends TstCellComponent {
         return this.msg();
     }
 
-    public toGrammar(): Grammar {
-        const [result, msgs] = this.header.headerToGrammar(this.cell)
-                                          .destructure();
-        for (const msg of msgs) {
-            this.cell.message(msg);
-        }
-        return new LocatorGrammar(this.cell, result);
+    public toGrammar(): GrammarResult {
+        return this.header.headerToGrammar(this.cell)
+                    .bind(c => new LocatorGrammar(this.cell, c));
     }
 }
 
@@ -185,16 +184,17 @@ export class TstRename extends TstCellComponent {
         return this.msg();
     }
     
-    public toGrammar(): Grammar {
+    public toGrammar(): GrammarResult {
         if (!(this.header.header instanceof TapeNameHeader)) {
-            this.message(Err("Renaming error",
-                "Rename (>) needs to have a tape name after it"));
-            return new EpsilonGrammar();
+            return new EpsilonGrammar().msg()
+                .err("Renaming error",
+                    "Rename (>) needs to have a tape name after it");
         }
-        const prevGrammar = this.prev.toGrammar();
-        const result = new RenameGrammar(prevGrammar, this.cell.text, this.header.header.text);
-        const locatedResult = new LocatorGrammar(this.cell, result);
-        return locatedResult;
+        const fromTape = this.cell.text;
+        const toTape = this.header.header.text;
+        return this.prev.toGrammar()
+                    .bind(c => new RenameGrammar(c, fromTape, toTape))
+                    .bind(c => new LocatorGrammar(this.cell, c));
     }
 }
 
@@ -211,12 +211,12 @@ export class TstHide extends TstCellComponent {
         return this.msg();
     }
     
-    public toGrammar(): Grammar {
+    public toGrammar(): GrammarResult {
         let result = this.prev.toGrammar();
         for (const tape of this.cell.text.split("/")) {
-            result = new HideGrammar(result, tape.trim());
+            result = result.bind(c => new HideGrammar(c, tape.trim()));
         }
-        return new LocatorGrammar(this.cell, result);
+        return result.bind(c => new LocatorGrammar(this.cell, c));
     }
 }
 
@@ -234,16 +234,13 @@ export class TstFilter extends TstCellComponent {
         return this.msg();
     }
     
-    public toGrammar(): Grammar {
-        const prevGrammar = this.prev.toGrammar();
+    public toGrammar(): GrammarResult {
+        const [prevGrammar, prevMsgs] = this.prev.toGrammar().destructure();
         const [grammar, msgs] = this.header.headerToGrammar(this.cell)
                                            .destructure();
-        for (const msg of msgs) {
-            this.cell.message(msg);
-        }
         const result = new EqualsGrammar(prevGrammar, grammar);
         const locatedResult = new LocatorGrammar(this.cell, result);
-        return locatedResult;
+        return locatedResult.msg(prevMsgs).msg(msgs);
     }
 }
 
@@ -253,12 +250,12 @@ export class TstEmpty extends TstComponent {
         return this.msg();
     }
 
-    public toGrammar(): Grammar {
-        return new EpsilonGrammar();
+    public toGrammar(): GrammarResult {
+        return new EpsilonGrammar().msg();
     }
     
-    public toParamsTable(): [Cell, ParamDict][] {
-        return [];
+    public toParamsTable(): Result<[Cell, ParamDict][]> {
+        return resultList([]);
     }
 }
 
@@ -269,15 +266,14 @@ export class TstComment extends TstCellComponent {
         return this.msg();
     }
 
-    public toGrammar(): Grammar {
-        return new EpsilonGrammar();
+    public toGrammar(): GrammarResult {
+        return new EpsilonGrammar().msg();
     }
 
 }
 
 export abstract class TstEnclosure extends TstCellComponent {
 
-    public abstract toGrammar(): Grammar;
     public abstract addChild(child: TstEnclosure): TstEnclosure;
 
 }
@@ -334,20 +330,15 @@ export class TstBinary extends TstEnclosure {
                 .bind(([s,c]) => new TstBinary(this.cell, s, c));
     }
 
-    public toGrammar(): Grammar {
+    public toGrammar(): GrammarResult {
 
         // we only ever end up in this base EncloseComponent compile if it wasn't
         // a known operator.  this is an error, but we flag it for the programmer
         // elsewhere.
 
-        // in order to fail gracefully, we define the State of this component as 
-        // its sibling's state (if a sibling is present), and if not, as its child's 
-        // state (if present), and if not, the empty grammar.
-
-        let result = this.child.toGrammar();
-        result = this.sibling.toGrammar();
-        result = new LocatorGrammar(this.cell, result);
-        return result;
+        return resultList([this.sibling, this.child])
+                    .map(c => c.toGrammar())
+                    .bind(([s,c]) => new LocatorGrammar(this.cell, s));
     }
 
     public addChild(child: TstEnclosure): TstEnclosure {
@@ -372,35 +363,31 @@ export class TstBinary extends TstEnclosure {
 
 export class TstTableOp extends TstBinary {
 
-
     public transform(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
                 .bind(([s,c]) => new TstTableOp(this.cell, s, c));
     }
     
-    public toGrammar(): Grammar {
-        
-        this.sibling.toGrammar();  // it's erroneous, but this will at
-                                // least run checks within it
-        
-        let result = this.child.toGrammar();
-        result = new LocatorGrammar(this.cell, result);
-        return result;
+    public toGrammar(): GrammarResult {
+        return resultList([this.sibling, this.child])
+                .map(c => c.toGrammar())
+                .bind(([s,c]) => new LocatorGrammar(this.cell, c));
     }
 
-    public toParamsTable(): [Cell, ParamDict][] {
+    public toParamsTable(): Result<[Cell, ParamDict][]> {
+        
+
+        const [_, sibMsgs] = this.sibling.toGrammar().destructure();  // erroneous but we want to collect errors on it
         
         if (this.child instanceof TstEmpty) {
-            this.message(Warn(
+            return this.child.toParamsTable().msg(sibMsgs).warn(
                 "'table' seems to be missing a table; " + 
-                "something should be in the cell to the right."
-            ));
+                "something should be in the cell to the right.")
         }
 
-        this.sibling.toGrammar(); // it's erroneous, but this will at
-                                // least run checks within it
-        return this.child.toParamsTable();
+        return this.child.toParamsTable().msg(sibMsgs);
+        
 
     }
 }
@@ -413,17 +400,16 @@ export class TstBinaryOp extends TstBinary {
                 .bind(([s,c]) => new TstBinaryOp(this.cell, s, c));
     }
     
-    public toGrammar(): Grammar {
+    public toGrammar(): GrammarResult {
 
         const trimmedText = this.text.slice(0, 
                         this.text.length-1).trim().toLowerCase();
 
         const op = BINARY_OPS[trimmedText];
-        const childGrammar = this.child.toGrammar();
-        const siblingGrammar = this.sibling.toGrammar();
-        let result = op(siblingGrammar, childGrammar);
-        result = new LocatorGrammar(this.cell, result);
-        return result;
+
+        return resultList([this.sibling, this.child])
+                    .map(c => c.toGrammar())
+                    .bind(([s,c]) => op(s,c));
     }
 }
 
@@ -447,23 +433,26 @@ export class TstReplaceTape extends TstBinaryOp {
             .bind(([s,c]) => new TstReplaceTape(this.cell, this.tape, s, c));
     }
 
-    public toGrammar(): Grammar {
+    public toGrammar(): GrammarResult {
 
-        let params = this.child.toParamsTable();
-        let siblingGrammar = this.sibling.toGrammar();
+        let [params, paramMsgs] = this.child.toParamsTable().destructure();
+        let [sibling, sibMsgs] = this.sibling.toGrammar().destructure();
         const replaceRules: ReplaceGrammar[] = [];
+        const newMsgs: Msgs = [];
 
         for (const [cell, paramDict] of params) {
 
             if (!("from" in paramDict)) {
-                this.message(Err(`Missing 'from' argument to replace'`,
-                    "'replace:' requires a 'from' argument (e.g. 'from text')"));
+                newMsgs.push(Err(`Missing 'from' argument to replace'`,
+                    "'replace:' requires a 'from' argument (e.g. 'from text')", 
+                    this.cell.pos));
                 continue;
             }
             const fromArg = paramDict["from"];
             if (!("to" in paramDict)) {
-                this.message(Err(`Missing 'to' argument to replace'`,
-                    "'replace:' requires a 'to' argument (e.g. 'to text')"));
+                newMsgs.push(Err(`Missing 'to' argument to replace'`,
+                    "'replace:' requires a 'to' argument (e.g. 'to text')", 
+                    this.cell.pos));
                 continue;
             }
             const toArg = paramDict["to"];
@@ -478,12 +467,12 @@ export class TstReplaceTape extends TstBinaryOp {
         }
 
         if (replaceRules.length == 0) {
-            return siblingGrammar;  // in case every rule fails, at least generate something
+            return sibling.msg(paramMsgs).msg(sibMsgs).msg(newMsgs);  // in case every rule fails, at least generate something
         }
 
-        let result: Grammar = new JoinRuleGrammar(this.tape, siblingGrammar, replaceRules);
+        let result: Grammar = new JoinRuleGrammar(this.tape, sibling, replaceRules);
         result = new LocatorGrammar(this.cell, result);
-        return result;
+        return result.msg(paramMsgs).msg(sibMsgs).msg(newMsgs);
     }
 }
 
@@ -497,25 +486,30 @@ export class TstReplace extends TstBinaryOp {
                 .bind(([s,c]) => new TstReplace(this.cell, s, c));
     }
 
-    public toGrammar(): Grammar {
+    public toGrammar(): GrammarResult {
 
-        let params = this.child.toParamsTable();
-        let siblingGrammar = this.sibling.toGrammar();
+        let [params, paramMsgs] = this.child.toParamsTable().destructure();
+        let [sibling, sibMsgs] = this.sibling.toGrammar().destructure();
         const replaceRules: ReplaceGrammar[] = [];
+        const newMsgs: Msgs = [];
 
         for (const [cell, paramDict] of params) {
 
             if (!("from" in paramDict)) {
-                this.message(Err(`Missing 'from' argument to replace'`,
-                    "'replace:' requires a 'from' argument (e.g. 'from text')"));
+                newMsgs.push(Err(`Missing 'from' argument to replace'`,
+                    "'replace:' requires a 'from' argument (e.g. 'from text')",
+                    this.cell.pos));
                 continue;
             }
+
             const fromArg = paramDict["from"];
             if (!("to" in paramDict)) {
-                this.message(Err(`Missing 'to' argument to replace'`,
-                    "'replace:' requires a 'to' argument (e.g. 'to text')"));
+                newMsgs.push(Err(`Missing 'to' argument to replace'`,
+                    "'replace:' requires a 'to' argument (e.g. 'to text')",
+                    this.cell.pos));
                 continue;
             }
+
             const toArg = paramDict["to"];
             const preArg = "pre" in paramDict
                                     ? paramDict["pre"]
@@ -528,12 +522,12 @@ export class TstReplace extends TstBinaryOp {
         }
 
         if (replaceRules.length == 0) {
-            return siblingGrammar;  // in case every rule fails, at least generate something
+            return sibling.msg(paramMsgs).msg(sibMsgs).msg(newMsgs);  // in case every rule fails, at least generate something
         }
 
-        let result: Grammar = new JoinReplaceGrammar(siblingGrammar, replaceRules);
+        let result: Grammar = new JoinReplaceGrammar(sibling, replaceRules);
         result = new LocatorGrammar(this.cell, result);
-        return result;
+        return result.msg(paramMsgs).msg(sibMsgs).msg(newMsgs);
     }
 }
 
@@ -552,15 +546,15 @@ export class TstUnitTest extends TstBinary {
                 .bind(([s,c]) => new TstUnitTest(this.cell, s, c));
     }
 
-    public toGrammar(): Grammar {
+    public toGrammar(): GrammarResult {
         
         let result = this.sibling.toGrammar();
 
-        for (const [cell, paramDict] of this.child.toParamsTable()) {
-            
+        const [params, msgs] = this.child.toParamsTable().destructure();
+        for (const [cell, paramDict] of params) {
             const testInputs = paramDict["__"];
             if (testInputs == undefined) {
-                cell.message(Err("Missing test inputs",
+                msgs.push(Err("Missing test inputs",
                     `This test line does not have any inputs.`));
                 continue;
             }
@@ -573,18 +567,18 @@ export class TstUnitTest extends TstBinary {
                     uniques = unique.getLiterals();
                 } catch (e) {
                     const errLoc = [...unique.locations, cell][0];
-                    errLoc.message(Err("Ill-formed unique",
+                    msgs.push(Err("Ill-formed unique",
                         `Somewhere in this row there is an ill-formed uniqueness constraint.  ` +
-                        `Uniqueness constrains can only be literals.`));
+                        `Uniqueness constrains can only be literals.`, errLoc.pos));
                     continue;
                 }
             }
-            result = new UnitTestGrammar(result, testInputs, uniques);
-            result = new LocatorGrammar(cell, result);
+            result = result.bind(c => new UnitTestGrammar(c, testInputs, uniques))
+                           .bind(c => new LocatorGrammar(cell, c));
         }
 
-        result = new LocatorGrammar(this.cell, result);
-        return result;
+        return result.msg(msgs)
+                     .bind(c => new LocatorGrammar(this.cell, c));
     }
 
 }
@@ -604,19 +598,20 @@ export class TstNegativeUnitTest extends TstUnitTest {
             .bind(([s,c]) => new TstNegativeUnitTest(this.cell, s, c));
     }
 
-    public toGrammar(): Grammar {
+    public toGrammar(): GrammarResult {
 
         let result = this.sibling.toGrammar();
 
-        for (const [cell, paramDict] of this.child.toParamsTable()) {
+        const [params, msgs] = this.child.toParamsTable().destructure();
+        for (const [cell, paramDict] of params) {
             for (const [key, grammar] of Object.entries(paramDict)) {
-                result = new NegativeUnitTestGrammar(result, grammar);
-                result = new LocatorGrammar(cell, result);
+                result = result.bind(c => new NegativeUnitTestGrammar(c, grammar))
+                               .bind(c => new LocatorGrammar(cell, c));
             }   
         }
         
-        result = new LocatorGrammar(this.cell, result);
-        return result;
+        return result.msg(msgs)
+                     .bind(c => new LocatorGrammar(this.cell, c));
     }
 }
 
@@ -635,6 +630,16 @@ export class TstNegativeUnitTest extends TstUnitTest {
  * header appears multiple times.
  */
 export class TstTable extends TstBinary {
+
+    constructor(
+        cell: Cell,    
+        public sibling: TstComponent = new TstEmpty(),
+        public child: TstComponent = new TstEmpty(),    
+        public headersByCol: {[col: number]: TstHeader} = {},
+        public rows: TstRow[] = []
+    ) {
+        super(cell, sibling, child);
+    }
 
     public transform(f: TstTransform, env: TransEnv): TstResult {
         const [sib, sMsgs] = f.transform(this.sibling, env).destructure();
@@ -660,16 +665,6 @@ export class TstTable extends TstBinary {
         return new TstTable(this.cell, sib, child, newHeaders, newRows)
                      .msg(sMsgs).msg(cMsgs)
                      .msg(headerMsgs).msg(rowMsgs);
-    }
-
-    constructor(
-        cell: Cell,    
-        public sibling: TstComponent = new TstEmpty(),
-        public child: TstComponent = new TstEmpty(),    
-        public headersByCol: {[col: number]: TstHeader} = {},
-        public rows: TstRow[] = []
-    ) {
-        super(cell, sibling, child);
     }
 
     public addHeader(headerCell: TstHeader): void {        
@@ -703,12 +698,13 @@ export class TstTable extends TstBinary {
         throw new Error("TstTables cannot have children");
     }
 
-    public toGrammar(): Grammar {
+    public toGrammar(): GrammarResult {
         // unless it's being interpreted as a paramTable, tables
         // have the semantics of alternation
         const alternatives: Grammar[] = [];
 
-        for (const [cell, paramDict] of this.toParamsTable()) {
+        const [params, msgs] = this.toParamsTable().destructure();
+        for (const [cell, paramDict] of params) {
             for (const [key, grammar] of Object.entries(paramDict)) {
 
                 if (grammar instanceof EpsilonGrammar) {
@@ -721,13 +717,18 @@ export class TstTable extends TstBinary {
             }
         }
 
-        return new AlternationGrammar(alternatives);
+        return new AlternationGrammar(alternatives).msg(msgs);
     }
 
-    public toParamsTable(): [Cell, ParamDict][] {
-        this.sibling.toGrammar(); // in case there's an erroneous sibling,
-                                    // this will at least run some checks on it
-        return this.rows.map(row => [row.cell, row.toParams()]);
+    public toParamsTable(): Result<[Cell, ParamDict][]> {
+        const results: [Cell, ParamDict][] = [];
+        const msgs: Msgs = [];
+        for (const row of this.rows) {
+            const [rowParams, rowMsgs] = row.toParams().destructure();
+            results.push([row.cell, rowParams]);
+            msgs.push(...rowMsgs);
+        }
+        return resultList(results).msg(msgs);
     }
 }
 
@@ -755,10 +756,10 @@ export class TstSequence extends TstCellComponent {
         this.children.push(newCell);
     }
     
-    public toGrammar(): Grammar {
-        const childGrammars = this.children.map(
-                                c => c.toGrammar());
-        return new SequenceGrammar(childGrammars);
+    public toGrammar(): GrammarResult {
+        return resultList(this.children)
+                  .map(c => c.toGrammar())
+                  .bind(cs => new SequenceGrammar(cs));
     }
 
 }
@@ -796,18 +797,21 @@ export class TstRow extends TstCellComponent {
         this.params[tag].addContent(header, cell);
     }
 
-    public toGrammar(): Grammar {
-        this.cell.message(Err("Unexpected parameters",
-                "The operator to the left does not expect named parameters."));
-        return new EpsilonGrammar();
+    public toGrammar(): GrammarResult {
+        return new EpsilonGrammar().msg()
+            .err("Unexpected parameters",
+                "The operator to the left does not expect named parameters.");
     } 
 
-    public toParams(): ParamDict {
+    public toParams(): Result<ParamDict> {
         const results: ParamDict = {}
+        const msgs: Msgs = []
         for (const [k, v] of Object.entries(this.params)) {
-            results[k] = v.toGrammar();
+            const [newV, newMsgs] = v.toGrammar().destructure();
+            results[k] = newV;
+            msgs.push(...newMsgs);
         }
-        return results;
+        return new Result(results).msg(msgs);
     }
 }
 
@@ -831,7 +835,7 @@ export class TstAssignment extends TstBinary {
             .bind(([s,c]) => new TstAssignment(this.cell, s, c));
     }
 
-    public toGrammar(): Grammar {
+    public toGrammar(): GrammarResult {
         return this.child.toGrammar();
     }
 
@@ -863,18 +867,19 @@ export class TstNamespace extends TstEnclosure {
                     .msg(msgs);
     }
 
-    public toGrammar(): Grammar {
+    public toGrammar(): GrammarResult {
         const ns = new NsGrammar();
+        const msgs: Msgs = [];
         for (let i = 0; i < this.children.length; i++) {
             const child = this.children[i];
             const isLastChild = i == this.children.length - 1;
-            const grammar = this.children[i].toGrammar();
-
+            const [grammar, childMsgs] = this.children[i].toGrammar().destructure();
+            msgs.push(...childMsgs);
             if (!(child instanceof TstAssignment) && !isLastChild) {
                 // warn that the child isn't going to be assigned to anything
-                child.message(Warn(
-                    "This content doesn't end up being assigned to anything and will be ignored."
-                ));
+                msgs.push(Warn(
+                    "This content doesn't end up being assigned to anything and will be ignored.", 
+                    child.pos));
                 continue;
             }
 
@@ -886,15 +891,16 @@ export class TstNamespace extends TstEnclosure {
                 const referent = ns.getSymbol(child.trimmedText);
                 if (referent != undefined) {
                     // we're reassigning an existing symbol!
-                    child.message(Err('Reassigning existing symbol', 
-                        `The symbol ${child.trimmedText} already refers to another grammar above.`));
+                    msgs.push(Err('Reassigning existing symbol', 
+                        `The symbol ${child.trimmedText} already refers to another grammar above.`,
+                        child.pos));
                     continue;
                 }     
                 ns.addSymbol(child.trimmedText, grammar);
             }
             
         }
-        return ns;
+        return ns.msg(msgs);
     }
 
 }

@@ -138,9 +138,9 @@ export class IdentityTransform implements GrammarTransform {
     }
 
     public transformLocator(g: LocatorGrammar, env: TransEnv): GrammarResult {
-        const [child, msgs] = g.child.accept(this, env).destructure();
-        const newMsgs = msgs.map(e => e.localize(g.cell.pos));
-        return new LocatorGrammar(g.cell, child).msg(newMsgs);
+        return g.child.accept(this, env)
+                      .localize(g.cell.pos)
+                      .bind(c => new LocatorGrammar(g.cell, c));
     }
 
     public transformNamespace(g: NsGrammar, env: TransEnv): GrammarResult {

@@ -23,7 +23,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text:"fooba", gloss:"run"},
         ]);
     });
-
+    
     describe('Equals with an ill-formed filter', function() {
         const project = sheetFromFile(`${DIR}/illFormedFilter.csv`);
         testErrors(project, [

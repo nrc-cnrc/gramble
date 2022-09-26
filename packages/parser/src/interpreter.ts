@@ -136,7 +136,8 @@ export class Interpreter {
         transEnv.verbose = verbose;
         let [tstResult, msgs] = ALL_TST_TRANSFORMS.transformAndLog(tst, transEnv).destructure();
         sendMessages(devEnv, msgs);
-        const grammar = tstResult.toGrammar();
+        const [grammar, grammarMsgs] = tstResult.toGrammar().destructure();
+        sendMessages(devEnv, grammarMsgs);
         elapsedTime = msToTime(Date.now() - startTime);
         logTime(verbose, `Converted to grammar; ${elapsedTime}`);
 

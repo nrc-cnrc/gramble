@@ -79,12 +79,12 @@ export class SheetProject extends SheetComponent {
         this.sheets[sheetName] = sheet;
         let tst: TstComponent = this.toTST();
         const transEnv = new TransEnv();
-        const [tstResult, _] = ALL_TST_TRANSFORMS.transform(tst, transEnv).destructure();
-        let grammar = tstResult.toGrammar() as NsGrammar;
+        const [tstResult, _tstMsgs] = ALL_TST_TRANSFORMS.transform(tst, transEnv).destructure();
+        const [grammar, _grammarMsgs] = tstResult.toGrammar().destructure();
 
         // check to see if any names didn't get resolved
 
-        const nameQualifier = new NameQualifierTransform(grammar);
+        const nameQualifier = new NameQualifierTransform(grammar as NsGrammar);
         const [nameResults, nameMsgs] = nameQualifier.transform(transEnv).destructure();
 
         const unresolvedNames: Set<string> = new Set(); 
