@@ -4,7 +4,6 @@ import {
     Err, HeaderMsg, 
     MissingSymbolError, Msg 
 } from "./msgs";
-import { parseOpCell } from "./ops";
 import { TransEnv } from "./transforms";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 
@@ -12,7 +11,8 @@ import {
     TstHeader, TstProject, 
     TstNamespace, TstTable, 
     TstComponent, TstComment, 
-    TstEnclosure 
+    TstEnclosure, 
+    TstAnonymousOp
 } from "./tsts";
 import { ALL_TST_TRANSFORMS } from "./transforms/allTransforms";
 import { Cell, CellPos, DevEnvironment, DummyCell } from "./util";
@@ -235,6 +235,9 @@ export class Sheet extends SheetComponent {
     
             const rowIsComment = this.cells[rowIndex][0].trim().startsWith('%%');
             
+            // this loop shouldn't just go to the end of the line-as-written, because there
+            // may be semantically meaningful blank cells beyond it. but there will never be
+            // a meaningful blank cell beyond the max column number found so far.
             const colWidth = this.cells[rowIndex].length;
             maxCol = Math.max(maxCol, colWidth);
 
@@ -282,42 +285,37 @@ export class Sheet extends SheetComponent {
                 // either we're still in the spec row, or there's no spec row yet
                 if (cellText.endsWith(":")) {
                     // it's an operation, which starts a new enclosures
-                    const op = parseOpCell(cell.text);
-                    const newEnclosure = op.toTST(cell);
+                    const newEnclosure = new TstAnonymousOp(cell);
                     cell.message(new CommandMsg());
-                    try {                    
-                        top.tst.addChild(newEnclosure);
-                        const newTop = { tst: newEnclosure, row: rowIndex, col: colIndex };
-                        stack.push(newTop);
-                    } catch (e) {
+
+                    if (top.tst instanceof TstTable) {
                         cell.message(Err(
                             `Unexpected operator: ${cell.text}`,
                             "This looks like an operator, but only a header can follow a header."
                         ));
+                        continue;
                     }
+              
+                    top.tst.addChild(newEnclosure);
+                    const newTop = { tst: newEnclosure, row: rowIndex, col: colIndex };
+                    stack.push(newTop);
                     continue;
                 } 
     
                 // it's a header
-                try {
-                    const headerCell = new TstHeader(cell);
-                    cell.message(new HeaderMsg( 
-                        headerCell.getBackgroundColor(0.14) 
-                    ));
-                    
-                    if (!(top.tst instanceof TstTable)) {
-                        const newTable = new TstTable(cell);
-                        top.tst.addChild(newTable);
-                        top = { tst: newTable, row: rowIndex, col: colIndex-1 };
-                        stack.push(top);
-                    }
-                    (top.tst as TstTable).addHeader(headerCell);
-                } catch(e) {
-                    cell.message(Err(
-                        `Invalid header: ${cell.text}`,
-                        (e as Error).message
-                    ));
+                const headerCell = new TstHeader(cell);
+                cell.message(new HeaderMsg( 
+                    headerCell.getBackgroundColor(0.14) 
+                ));
+                
+                if (!(top.tst instanceof TstTable)) {
+                    const newTable = new TstTable(cell);
+                    top.tst.addChild(newTable);
+                    top = { tst: newTable, row: rowIndex, col: colIndex-1 };
+                    stack.push(top);
                 }
+                (top.tst as TstTable).addHeader(headerCell);
+                
             }
         }
     

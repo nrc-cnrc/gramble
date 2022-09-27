@@ -34,11 +34,6 @@ export class TstResult extends Result<TstComponent> { }
 export abstract class TstTransform extends Transform<TstComponent,TstComponent> {}
 
 type BinaryOp = (c1: Grammar, c2: Grammar) => Grammar;
-export const BINARY_OPS: {[opName: string]: BinaryOp} = {
-    "or": (c1, c2) => new AlternationGrammar([c1, c2]),
-    "concat": (c1, c2) => new SequenceGrammar([c1, c2]),
-    "join": (c1, c2) => new JoinGrammar(c1, c2),
-}
 
 export abstract class TstComponent implements Positioned {
 
@@ -269,7 +264,7 @@ export class TstComment extends TstCellComponent {
 
 export abstract class TstEnclosure extends TstCellComponent {
 
-    public abstract addChild(child: TstEnclosure): TstEnclosure;
+    public abstract addChild(child: TstComponent): TstComponent;
 
 }
 
@@ -336,9 +331,10 @@ export class TstBinary extends TstEnclosure {
                     .bind(([s,c]) => new LocatorGrammar(this.cell, s));
     }
 
-    public addChild(child: TstEnclosure): TstEnclosure {
+    public addChild(child: TstComponent): TstComponent {
 
         if (this.child instanceof TstBinary && 
+            child instanceof TstCellComponent &&
             this.child.pos.col != child.pos.col) {
             child.message(Warn(
                 "This operator is in an unexpected column.  Did you mean for it " +
@@ -372,7 +368,6 @@ export class TstTableOp extends TstBinary {
 
     public toParamsTable(env: TransEnv): Result<[Cell, ParamDict][]> {
         
-
         const [_, sibMsgs] = this.sibling.toGrammar(env).destructure();  // erroneous but we want to collect errors on it
         
         if (this.child instanceof TstEmpty) {
@@ -382,17 +377,34 @@ export class TstTableOp extends TstBinary {
         }
 
         return this.child.toParamsTable(env).msg(sibMsgs);
-        
-
     }
 }
 
-export class TstBinaryOp extends TstBinary {
+export class TstAnonymousOp extends TstBinary {
 
     public transform(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
-                .bind(([s,c]) => new TstBinaryOp(this.cell, s, c));
+                .bind(([s,c]) => new TstAnonymousOp(this.cell, s, c));
+    }
+
+}
+
+export class TstBinaryOp extends TstBinary {
+
+    constructor(
+        cell: Cell,    
+        public op: BinaryOp,
+        sibling: TstComponent = new TstEmpty(),
+        child: TstComponent = new TstEmpty()
+    ) {
+        super(cell, sibling, child);
+    }
+
+    public transform(f: TstTransform, env: TransEnv): TstResult {
+        return resultList([this.sibling, this.child])
+            .map(c => f.transform(c, env))
+            .bind(([s,c]) => new TstBinaryOp(this.cell, this.op, s, c));
     }
     
     public toGrammar(env: TransEnv): GrammarResult {
@@ -400,15 +412,13 @@ export class TstBinaryOp extends TstBinary {
         const trimmedText = this.text.slice(0, 
                         this.text.length-1).trim().toLowerCase();
 
-        const op = BINARY_OPS[trimmedText];
-
         return resultList([this.sibling, this.child])
                     .map(c => c.toGrammar(env))
-                    .bind(([s,c]) => op(s,c));
+                    .bind(([s,c]) => this.op(s,c));
     }
 }
 
-export class TstReplaceTape extends TstBinaryOp {
+export class TstReplaceTape extends TstBinary {
 
 
     public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
@@ -471,7 +481,7 @@ export class TstReplaceTape extends TstBinaryOp {
     }
 }
 
-export class TstReplace extends TstBinaryOp {
+export class TstReplace extends TstBinary {
 
     public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
 
@@ -686,7 +696,7 @@ export class TstTable extends TstBinary {
 
     }
 
-    public addChild(newChild: TstEnclosure): TstEnclosure {
+    public addChild(newChild: TstComponent): TstComponent {
         throw new Error("TstTables cannot have children");
     }
 
@@ -820,16 +830,16 @@ export class TstAssignment extends TstBinary {
 
 }
 
-export class TstNamespace extends TstEnclosure {
+export class TstNamespace extends TstCellComponent {
 
     constructor(
         cell: Cell,
-        public children: TstEnclosure[] = []
+        public children: TstComponent[] = []
     ) {
         super(cell);
     }
     
-    public addChild(child: TstEnclosure): TstEnclosure {
+    public addChild(child: TstComponent): TstComponent {
         this.children.push(child);
         return child;
     }
@@ -895,7 +905,7 @@ export class TstProject extends TstNamespace {
      * "virtual" cell that we constructed earlier, but at some point we have 
      * to turn that cell into an assignment; that's what we do here.
      */
-    public addChild(child: TstEnclosure): TstEnclosure {
+    public addChild(child: TstComponent): TstComponent {
         if (!(child instanceof TstNamespace)) {
             throw new Error("Attempting to add a non-namespace to a project");
         }
@@ -905,5 +915,6 @@ export class TstProject extends TstNamespace {
         newChild.addChild(child);
         // then add the assign as our own child
         return super.addChild(newChild);
+        return child;
     }
 }

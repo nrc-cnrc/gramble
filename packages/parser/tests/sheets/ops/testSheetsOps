@@ -24,6 +24,16 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobar", gloss: "jump[1SG]", subj: "1SG" },
         ]);
     });
+
+    describe('Table op within a join', function() {
+        const project = sheetFromFile(`${DIR}/tableWithinJoin.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobar", gloss: "run[1SG]", subj: "1SG" },
+            { text: "moobar", gloss: "jump[1SG]", subj: "1SG" },
+        ]);
+    });
+    
     
     describe('Grammar with embeds and a relevant join, under assignment', function() {
         const project = sheetFromFile(`${DIR}/relevantJoinUnderAssignment.csv`);

@@ -31,7 +31,7 @@ import {
 
     public transformNamespace(t: TstNamespace, env: TransEnv): TstResult {
         const [result, msgs] = t.transform(this, env).destructure() as [TstNamespace, Msgs];
-        const newChildren: TstEnclosure[] = [];
+        const newChildren: TstComponent[] = [];
         for (const child of result.children) {
 
             if (child instanceof TstBinaryOp ||
