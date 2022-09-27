@@ -49,7 +49,7 @@ export class NameQualifierTransform extends IdentityTransform {
         const stackNames = this.nsStack.map(([n,g]) => n);
         const msgs: Msgs = [];
 
-        for (const [k, v] of g.symbols) {
+        for (const [k, v] of Object.entries(g.symbols)) {
             if (v instanceof NsGrammar) {
                 const newStack: [string, NsGrammar][] = [ ...this.nsStack, [k, v] ];
                 const newTransform = new NameQualifierTransform(this.ns, newStack);
@@ -63,7 +63,7 @@ export class NameQualifierTransform extends IdentityTransform {
             }
         }
         const defaultName = g.calculateQualifiedName("", stackNames);
-        const defaultSymbol = this.ns.symbols.get(defaultName);
+        const defaultSymbol = this.ns.symbols[defaultName];
         if (defaultSymbol == undefined) {
             const defaultRef = this.ns.getDefaultSymbol();
             this.ns.addSymbol(defaultName, defaultRef);

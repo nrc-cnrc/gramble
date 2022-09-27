@@ -1,4 +1,4 @@
-import { CellPos, Positioned } from "./util";
+import { CellPos, Dict, Positioned } from "./util";
 
 type MsgType = "error" | "warning" | "info" | 
                 "command" | "header" | "comment" | "content"
@@ -70,8 +70,8 @@ export class CommentMsg extends Msg  {
 
 export class ContentMsg extends Msg  {
     constructor(
-        color: string,
-        fontColor: string
+        public color: string,
+        public fontColor: string
     ) {
         super("content", "", "");
     }
@@ -154,6 +154,18 @@ export class Result<T> {
         const newMsgs = msgs.map(m => m.localize(pos));
         return new Result(item, newMsgs);
     }
+
+    /** 
+     * This function provides a way to get rid of the messages
+     * and only consider the item, by providing a callback that
+     * handles them as a side effect.
+     */
+    public handleMsgs(f: (m: Msg) => void): T {
+        for (const m of this.msgs) {
+            f(m);
+        }
+        return this.item;
+    }
 }
 
 export class ResultList<T> extends Result<T[]> {
@@ -183,4 +195,33 @@ export class ResultList<T> extends Result<T[]> {
 
 export function resultList<T>(items: T[]): ResultList<T> {
     return new ResultList(items);
+}
+
+export class ResultDict<T> extends Result<Dict<T>> {
+
+    constructor(
+        items: Dict<T>,
+        msgs: Msgs = []
+    ) { 
+        super(items, msgs);
+    }
+
+    public map<T2>(f: Func<T,T2>): ResultDict<T2> {
+        const items: Dict<T2> = {};
+        const msgs: Msgs = [];
+        for (const [k,v] of Object.entries(this.item)) {
+            let newV = f(v);
+            if (!(newV instanceof Result)) {
+                newV = new Result(newV);
+            }
+            const [newItem,newMsgs] = newV.destructure();
+            items[k] = newItem;
+            msgs.push(...newMsgs);
+        }
+        return new ResultDict(items, msgs);
+    }
+}
+
+export function resultDict<T>(items: Dict<T>): ResultDict<T> {
+    return new ResultDict(items);
 }

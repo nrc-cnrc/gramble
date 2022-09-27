@@ -55,8 +55,8 @@ export class GenOptions {
 
 export type Gen<T> = Generator<T, void, undefined>;
 
-
-export type StringDict = {[key: string]: string};
+export type Dict<T> = {[k:string]:T};
+export type StringDict = Dict<string>;
 
 
 /**
@@ -143,8 +143,6 @@ export interface DevEnvironment {
     alert(msg: string): void;
 }
 
-export const DUMMY_POSITION = new CellPos("?", -1, -1);
-
 const MARK_CATEGORIES = [ 'Lm', 'Sk', 'Mc', 'Me', 'Mn' ];
 function isDiacritic(c: string) {
     const codePoint = c.charCodeAt(0);
@@ -212,11 +210,6 @@ export function timeIt<T>(
         console.log(`${message}: ${elapsedTime}`);
     }
     return results;
-}
-
-const NUM_COMPS = 1000000000;
-function randomAlphaIndex(): number {
-    return Math.floor(Math.random()*26);
 }
 
 export function msToTime(s: number): string {
@@ -292,16 +285,6 @@ export function parseCSV(str: string): string[][] {
     }
 
     return arr;
-}
-
-export function unzip<T1,T2>(arr: [T1,T2][]): [T1[], T2[]] {
-    const results1: T1[] = [];
-    const results2: T2[] = [];
-    for (const [t1, t2] of arr) {
-        results1.push(t1);
-        results2.push(t2);
-    }
-    return [results1, results2];
 }
 
 function sum(a: number[]): number {
@@ -391,10 +374,6 @@ export function RGBtoString(r: number, g: number, b: number): string {
     return "#" + r.toString(16) + g.toString(16) + b.toString(16);
 }
 
-export function setUnion<T>(s1: Iterable<T>, s2: Iterable<T>): Set<T> {
-    return new Set([...s1, ...s2]);
-}
-
 export function flatten<T>(ss: Iterable<Iterable<T>>): T[] {
     let results: T[] = [];
     for (const s of ss) {
@@ -403,18 +382,8 @@ export function flatten<T>(ss: Iterable<Iterable<T>>): T[] {
     return results;
 }
 
-export function setEquals<T>(as: Set<T>, bs: Set<T>) {
-    if (as.size !== bs.size) return false;
-    for (const a of as) if (!bs.has(a)) return false;
-    return true;
-}
-
 export function listUnique<T>(lst: T[]): T[] {
     return [... new Set(lst)];
-}
-
-export function setIntersection<T>(s1: Set<T>, s2: Set<T>): Set<T> {
-    return new Set([...s1].filter(i => s2.has(i)));
 }
 
 export function listIntersection<T>(s1: T[], s2: T[]): T[] {
@@ -429,82 +398,6 @@ export function setDifference<T>(s1: Set<T>, s2: Set<T>): Set<T> {
 export function listDifference<T>(l1: T[], l2: T[]): T[] {
     const set2 = new Set(l2);
     return l1.filter(x => !set2.has(x));
-}
-
-export function setChain<T>(sets: Iterable<Set<T>>): Set<T> {
-    const results: Set<T> = new Set();
-    for (const set of sets) {
-        for (const item of set) {
-            results.add(item);
-        }
-    }
-    return results;
-}
-
-class Iter<T> implements Gen<T> {
-    
-    constructor(
-        private gen: Gen<T>
-    ) { }
-
-    public next(...args: []): IteratorResult<T> {
-        return this.gen.next(...args);
-    }
-
-    public return(value: void): IteratorResult<T, void> {
-        return this.gen.return(value);
-    }
-
-    public throw(e: any): IteratorResult<T, void> {
-        return this.throw(e);
-    }
-
-    public [Symbol.iterator](): Gen<T> {
-        return this.gen[Symbol.iterator]();
-    }
-
-    public map<ReturnType>(f: (a: T) => ReturnType): Iter<ReturnType> {
-        return iter(iterMap(this.gen, f));
-    }
-
-    public map2nd<T1, T2, ReturnType>(f: (a: T2) => ReturnType): Iter<[T1, ReturnType]> {
-        const gen = this.gen as unknown as Gen<[T1,T2]>;
-        return iter(gen).map(([a,b]) => [a, f(b)]);
-    }
-
-    public product<T2>(other: Gen<T2>): Iter<[T,T2]> {
-        return iter(iterProduct(this.gen, other));
-    }
-}
-
-function iter<T>(x: Generator<T, void>): Iter<T> {
-    return new Iter(x);
-}
-
-function iterChain<T>(iters: Iterable<Iterable<T>>): Iter<T> {
-    return iter(function *() {
-        for (const iter of iters) {
-            yield* iter;
-        }
-    }());
-}
-
-function iterFail<T>(): Iter<T> {
-    return iter(function *(){}())
-}
-
-function *iterProduct<T1,T2>(i1: Iterable<T1>, i2: Iterable<T2>): Gen<[T1,T2]> {
-    for (const item1 of i1) {
-        for (const item2 of i2) {
-            yield [item1, item2];
-        }
-    }
-}
-
-function *iterMap<T,T2>(i: Iterable<T>, f: (i: T) => T2): Gen<T2> {
-    for (const item of i) {
-        yield f(item);
-    }
 }
 
 export function foldLeft<T>(

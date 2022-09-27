@@ -1,4 +1,4 @@
-import { Msgs, Result, resultList } from "../msgs";
+import { Msgs, Result, resultDict, resultList } from "../msgs";
 import { 
     AlternationGrammar, CharSetGrammar,
     DotGrammar, EmbedGrammar,
@@ -144,14 +144,9 @@ export class IdentityTransform implements GrammarTransform {
     }
 
     public transformNamespace(g: NsGrammar, env: TransEnv): GrammarResult {
-        const result = new NsGrammar();
-        const msgs: Msgs = [];
-        for (const [k, v] of g.symbols) {
-            const [newV, ms] = v.accept(this, env).destructure();
-            result.addSymbol(k, newV);
-            msgs.push(...ms);
-        }
-        return result.msg(msgs);
+        return resultDict(g.symbols)
+                .map(c => c.accept(this, env))
+                .bind(cs => new NsGrammar(cs));
     }
 
     public transformRepeat(g: RepeatGrammar, env: TransEnv): GrammarResult {

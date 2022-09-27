@@ -131,13 +131,13 @@ export class Interpreter {
         
         startTime = Date.now();
 
-        let tst: TstComponent = sheetProject.toTST();
+        const tst: TstComponent = sheetProject.toTST();
         const transEnv = new TransEnv();
         transEnv.verbose = verbose;
-        let [tstResult, msgs] = ALL_TST_TRANSFORMS.transformAndLog(tst, transEnv).destructure();
-        sendMessages(devEnv, msgs);
-        const [grammar, grammarMsgs] = tstResult.toGrammar().destructure();
-        sendMessages(devEnv, grammarMsgs);
+        const tstResult = ALL_TST_TRANSFORMS.transformAndLog(tst, transEnv)
+                                            .handleMsgs(m => devEnv.message(m));
+        const grammar = tstResult.toGrammar(transEnv)
+                                 .handleMsgs(m => devEnv.message(m));
         elapsedTime = msToTime(Date.now() - startTime);
         logTime(verbose, `Converted to grammar; ${elapsedTime}`);
 

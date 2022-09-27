@@ -42,6 +42,7 @@ import { TransEnv } from "./transforms";
 import { 
     Cell,
     CellPos,
+    Dict,
     flatten,
     HIDDEN_TAPE_PREFIX,
     listDifference,
@@ -1285,36 +1286,39 @@ export class MatchGrammar extends UnaryGrammar {
 
 export class NsGrammar extends Grammar {
 
+    constructor(
+        public symbols: Dict<Grammar> = {}
+    ) {
+        super();
+    }
+
     public get id(): string {
         let results: string[] = [];
-        for (const [k, v] of this.symbols.entries()) {
+        for (const [k, v] of Object.entries(this.symbols)) {
             results.push(`${k}:${v.id}`);
         }
         return `Ns(\n  ${results.join("\n  ")}\n)`;
     }
 
     public potentiallyInfinite(stack: CounterStack): boolean {
-        return [...this.symbols.values()].some(c => c.potentiallyInfinite(stack));
+        return Object.values(this.symbols).some(
+            c => c.potentiallyInfinite(stack));
     }
-
-    //public qualifiedNames: Map<string, string> = new Map();
-    public symbols: Map<string, Grammar> = new Map();
-    //public default: GrammarComponent = new EpsilonGrammar(DUMMY_CELL);
 
     public accept(t: GrammarTransform, env: TransEnv): GrammarResult {
         return t.transformNamespace(this, env);
     }
 
-    public addSymbol(symbolName: string, component: Grammar): void {
-        this.symbols.set(symbolName, component);
+    public addSymbol(symbolName: string, g: Grammar): void {
+        this.symbols[symbolName] = g;
     }
 
     public getDefaultSymbol(): Grammar {
-        if (this.symbols.size == 0) {
+        const size = Object.values(this.symbols).length;
+        if (size == 0) {
             return new EpsilonGrammar();
         }
-
-        return [...this.symbols.values()][this.symbols.size-1].getDefaultSymbol();
+        return Object.values(this.symbols)[size-1].getDefaultSymbol();
     }
 
     public getSymbol(symbolName: string): Grammar | undefined {
@@ -1334,12 +1338,12 @@ export class NsGrammar extends Grammar {
     }
 
     public allSymbols(): string[] {
-        return [...this.symbols.keys()];
+        return Object.keys(this.symbols);
     }
 
     public getChildren(): Grammar[] { 
         const results: Grammar[] = [];
-        for (const [name, referent] of this.symbols.entries()) {
+        for (const [name, referent] of Object.entries(this.symbols)) {
             if (results.indexOf(referent) == -1) {
                 results.push(referent);
             }
@@ -1357,9 +1361,9 @@ export class NsGrammar extends Grammar {
      * case-insensitive.
      */
     public resolveNameLocal(name: string): [string, Grammar] | undefined {
-        for (const symbolName of this.symbols.keys()) {
+        for (const symbolName of Object.keys(this.symbols)) {
             if (name.toLowerCase() == symbolName.toLowerCase()) {
-                const referent = this.symbols.get(symbolName);
+                const referent = this.symbols[symbolName];
                 if (referent == undefined) { return undefined; } // can't happen, just for linting
                 return [symbolName, referent];
             }
@@ -1414,7 +1418,7 @@ export class NsGrammar extends Grammar {
     public calculateTapes(stack: CounterStack): string[] {
         if (this._tapes == undefined) {
             this._tapes = [];
-            for (const [name, referent] of this.symbols) {
+            for (const referent of Object.values(this.symbols)) {
                 const tapes = referent.calculateTapes(stack);
                 this._tapes.push(...tapes);
             }
@@ -1428,14 +1432,14 @@ export class NsGrammar extends Grammar {
         tapeNS: TapeNamespace, 
         symbolsVisited: Set<string>
     ): void { 
-        for (const child of this.symbols.values()) {
+        for (const child of Object.values(this.symbols)) {
             child.collectVocab(tapeName, tapeNS, symbolsVisited);
         }
     }
 
     public constructExpr(symbols: SymbolTable): Expr {
         let result: Expr = EPSILON;
-        for (const [name, referent] of this.symbols) {
+        for (const [name, referent] of Object.entries(this.symbols)) {
             if (name in symbols) {
                 continue;  // don't bother, it won't have changed.
             }
