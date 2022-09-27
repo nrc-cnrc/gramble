@@ -18,11 +18,12 @@ import {
     testHasTapes, 
     testHasVocab,
     testGrammar, 
-    testParseMultiple
+    testParseMultiple,
+    WARN_ONLY_FOR_TOO_MANY_OUTPUTS,
 } from './testUtils';
 
 import * as path from 'path';
-import { SILENT, VERBOSE_DEBUG, StringDict } from "../src/util";
+import { VERBOSE_DEBUG, StringDict } from "../src/util";
 
 const EMPTY: string = '';
 
@@ -45,13 +46,9 @@ function inputResultsPairs(expectedOutputs: StringDict[]): InputResultsPair[] {
     return pairs;
 }
 
+const DEFAULT = undefined;
+
 const EMPTY_CONTEXT = Epsilon();
-
-const DUMMY_SYMBOL: string = "";
-const DEF_MAX_RECURSION: number = 4;
-const DEF_STRIP_HIDDEN: boolean = true;
-
-const DEF_MAX_CHARS: number = 100;
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -2072,7 +2069,8 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'llhh', t2: 'llhh'}, {t1: 'llhl', t2: 'llhl'},
             {t1: 'lllh', t2: 'lllh'}, {t1: 'llll', t2: 'llll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGrammar(grammar, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('36k. Replace ∅ by e: t1:∅ -> t2:e {2} (vocab h/he)', function() {
@@ -2089,7 +2087,8 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
             {t1: 'h', t2: 'hee'},
         ];
-        testGrammar(grammar, expectedResults, SILENT);
+        testGrammar(grammar, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('36k-2. Replace ∅ by e: t1:∅ -> t2:e {2} (vocab h/he)', function() {
@@ -2112,7 +2111,8 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hh', t2: 'hehe'},   // missing for DIRECTION_LTR = false
             {t1: 'hh', t2: 'hhee'},
         ];
-        testGrammar(grammar, expectedResults, SILENT);
+        testGrammar(grammar, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('36l. Replace ∅|h by e: t1:∅|t1:h -> t2:e {1} (vocab hl/hel)', function() {
@@ -2495,7 +2495,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'eeh', t2: 'h'},
             {t1: 'hee', t2: 'h'},
         ];
-        testGrammar(grammar, expectedResults, SILENT);
+        testGrammar(grammar, expectedResults);
     });
 
 

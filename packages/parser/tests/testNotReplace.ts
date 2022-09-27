@@ -19,6 +19,7 @@ import {
     testHasTapes, 
     testHasVocab,
     testGrammar,
+    DEFAULT_MAX_RECURSION,
 } from './testUtils';
 
 import * as path from 'path';
@@ -27,7 +28,6 @@ import { BITSETS_ENABLED, SILENT, StringDict } from "../src/util";
 const EMPTY_CONTEXT = Epsilon();
 
 const DUMMY_SYMBOL: string = "";
-const DEF_MAX_RECURSION: number = 4;
 
 function ReplaceBypass(
     fromGrammar: Grammar, toGrammar: Grammar,
@@ -180,7 +180,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {'.R_HIDDEN': 'i', t1: 'a'},
         ];
 
-        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
     describe('2b-show-hidden. Negation of results of 2a-hidden', function() {
@@ -204,7 +204,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {},
         ];
 
-        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
     describe('2c-hidden. Negation of grammar of 2a-hidden', function() {
@@ -219,9 +219,9 @@ describe(`${path.basename(module.filename)}`, function() {
                                           Not(Seq(Lit(".R_HIDDEN", "i"), t1("a"))));
         resultsGrammar = CountTape(2, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
 
-        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
     describe('3a. Replace i by a: i -> a', function() {
@@ -398,7 +398,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {},
         ];
 
-        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
     describe('5b-show-hidden. Negation of results of 5a-show-hidden', function() {
@@ -423,7 +423,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'ai'}, {t1: 'ia'}, {t1: 'ii'},
         ];
 
-        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
     describe('5c-show-hidden. Negation of grammar of 5a', function() {
@@ -439,9 +439,9 @@ describe(`${path.basename(module.filename)}`, function() {
                                               Seq(Lit(".R_HIDDEN", "ii"), t1("aa")))));
         resultsGrammar = CountTape(2, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+            generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
 
-        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEF_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
 });

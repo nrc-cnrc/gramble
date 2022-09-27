@@ -20,14 +20,13 @@ import {
     testHasTapes,
     testGrammar,
     testHasVocab,
+    DEFAULT_MAX_RECURSION,
 } from './testUtils';
 
 import * as path from 'path';
 import { StringDict, VERBOSE_DEBUG } from "../src/util";
 import { NULL } from "../src/exprs";
 
-const DUMMY_SYMBOL_NAME: string = "";
-const DEFAULT_MAX_RECURSION: number = 4;
 
 describe(`${path.basename(module.filename)}`, function() {
 

@@ -4,10 +4,16 @@ import {
     Seq, Join, Rep, Epsilon, Equals, Uni, Any, Intersect,
     MatchFrom, Priority, Vocab,
 } from "../src/grammars";
-import { t1, t2, testHasTapes, testGrammar, testHasVocab } from './testUtils';
+import {
+    t1, t2,
+    testHasTapes, testGrammar, testHasVocab,
+    WARN_ONLY_FOR_TOO_MANY_OUTPUTS
+} from './testUtils';
 import { VERBOSE_DEBUG, StringDict } from "../src/util";
 
 import * as path from 'path';
+
+const DEFAULT = undefined
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -256,7 +262,8 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: 'hh', t2:'i'},
                               {t2: 'i'},
                               {t2: 'ii'},
-                              {t2: 'iii'}]);
+                              {t2: 'iii'}],
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('31a. (t1:h|t2:i)*', function() {
@@ -266,7 +273,8 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: 'h'},
                               {t1: 'h', t2:'i'},
                               {t2: 'i'},
-                            ], VERBOSE_DEBUG);
+                            ],
+                    VERBOSE_DEBUG, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('32. (t1:a+t2:a|t1:b+t2:b)*', function() {
@@ -719,7 +727,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'ehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults, VERBOSE_DEBUG);
+        testGrammar(grammarWithVocab, expectedResults);
     });
 
     describe('59e-1. Intersect t2:ee & (t2:e+M(t1>t2,ε|t1:h)){2} (vocab hx/hex)', function() {
@@ -767,7 +775,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'ehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults, VERBOSE_DEBUG);
+        testGrammar(grammarWithVocab, expectedResults);
     });
 
     describe('60. (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x (vocab hx/hex)', function() {
@@ -2418,7 +2426,8 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hh', t2: 'eehehe'}, {t1: 'hh', t2: 'eheeeh'}, {t1: 'hh', t2: 'eheehe'},
             {t1: 'hh', t2: 'ehehee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65a-1. Join ((t2:e+M(t1>t2,ε|t1:h)){2})* ⨝ (t2:ee){2} (vocab hx/hex)', function() {
@@ -2435,7 +2444,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65a-2. Join ((t2:e+M(t1>t2,ε|t1:h)){2})* ⨝ (t1:h+t2:eeh){2} (vocab hx/hex)', function() {
@@ -2452,7 +2462,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65a-3. Join ((t2:e+M(t1>t2,ε|t1:h)){2})* ⨝ (t1:h+t2:ehe){2} (vocab hx/hex)', function() {
@@ -2469,7 +2480,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65b-1. Join (t2:ee){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
@@ -2486,7 +2498,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65b-2. Join (t1:h+t2:eeh){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
@@ -2503,7 +2516,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65b-3. Join (t1:h+t2:ehe){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
@@ -2520,7 +2534,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65c-1. Filter ((t2:e+M(t1>t2,ε|t1:h)){2})* [(t2:ee){2}] (vocab hx/hex)', function() {
@@ -2537,7 +2552,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65c-2. Filter ((t2:e+M(t1>t2,ε|t1:h)){2})* [(t1:h+t2:eeh){2}] (vocab hx/hex)', function() {
@@ -2554,7 +2570,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65c-3. Filter ((t2:e+M(t1>t2,ε|t1:h)){2})* [(t1:h+t2:ehe){2}] (vocab hx/hex)', function() {
@@ -2571,7 +2588,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65d-1. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2})* & (t2:ee){2} (vocab hx/hex)', function() {
@@ -2588,7 +2606,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65d-2. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2})* & (t1:h+t2:eeh){2} (vocab hx/hex)', function() {
@@ -2605,7 +2624,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65d-3. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2})* & (t1:h+t2:ehe){2} (vocab hx/hex)', function() {
@@ -2622,7 +2642,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65e-1. Intersect (t2:ee){2} & ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
@@ -2639,7 +2660,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65e-2. Intersect (t1:h+t2:eeh){2} & ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
@@ -2656,7 +2678,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('65e-3. Intersect (t1:h+t2:ehe){2} & ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
@@ -2673,7 +2696,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
     
 });

@@ -25,8 +25,6 @@ import {
 import * as path from 'path';
 import { BITSETS_ENABLED, StringDict } from "../src/util";
 
-const DUMMY_SYMBOL: string = "";
-const DEF_MAX_RECURSION: number = 4;
 
 if (!BITSETS_ENABLED) {
 

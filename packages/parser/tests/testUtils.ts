@@ -9,8 +9,18 @@ import { TextDevEnvironment } from "../src/textInterface";
 import { parseRegex } from "../src/regex";
 import { parseHeaderCell } from "../src/headers";
 
+export const DEFAULT_MAX_RECURSION = 4;
+
+// DEBUG_MAX_RECURSION is a forced upper bound for maxRecursion.
 const DEBUG_MAX_RECURSION: number = 4;      // 4
 //const DEBUG_MAX_CHARS: number = 100;        // 100
+
+// Some tests ultimately call testNumOutputs with warnOnly set to 
+// WARN_ONLY_FOR_TOO_MANY_OUTPUTS.
+// Change the value here to 'false' to make those tests generate errors
+// for more than the expected number of outputs.
+export const WARN_ONLY_FOR_TOO_MANY_OUTPUTS: boolean = true;
+
 
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
@@ -48,7 +58,7 @@ export function testCellID(cell: string, expectedID: string) {
     });
 }
 
-export function testNumOutputs(outputs: StringDict[], expectedNum: number) {
+export function testNumOutputs(outputs: StringDict[], expectedNum: number, warningOnly: boolean = false) {
     const date_str: string = (new Date()).toUTCString();
     const testName: string = `should have ${expectedNum} result(s)`;
     it(`${testName}`, function() {
@@ -57,7 +67,11 @@ export function testNumOutputs(outputs: StringDict[], expectedNum: number) {
         } catch (e) {
             console.log("");
             console.log(`[${date_str}] [${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
-            throw e;
+            if (warningOnly && outputs.length > expectedNum) {
+                console.log(`Warning: should have ${expectedNum} result(s), but found ${outputs.length}.`)
+            } else {
+                throw e;
+            }
         }
     });
 }
@@ -142,7 +156,7 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
 export function generateOutputsFromGrammar(
     grammar: Grammar,
     symbolName: string = "",
-    maxRecursion: number = 4,
+    maxRecursion: number = DEFAULT_MAX_RECURSION,
     stripHidden: boolean = true
 ): StringDict[] {
     let outputs: StringDict[] = [];
@@ -167,10 +181,10 @@ export function generateOutputsFromGrammar(
 function testGrammarAux(
     interpreter: Interpreter,
     expectedResults: StringDict[], 
-    symbolName: string = "",
-    maxRecursion: number = 4, 
-    //maxChars: number = 1000,
-    stripHidden: boolean = true
+    symbolName: string,
+    maxRecursion: number, 
+    stripHidden: boolean,
+    warnOnlyForTooManyOutputs: boolean
 ): void {
     let outputs: StringDict[] = [];
 
@@ -186,7 +200,7 @@ function testGrammarAux(
             assert.fail(e);
         });
     }
-    testNumOutputs(outputs, expectedResults.length);
+    testNumOutputs(outputs, expectedResults.length, warnOnlyForTooManyOutputs);
     testMatchOutputs(outputs, expectedResults);
 }
 
@@ -195,8 +209,9 @@ export function testGrammar(
     expectedResults: StringDict[],
     verbose: number = SILENT,
     symbolName: string = "",
-    maxRecursion: number = 4,
+    maxRecursion: number = DEFAULT_MAX_RECURSION,
     stripHidden: boolean = true,
+    warnOnlyForTooManyOutputs: boolean = false
 ): void {
     
     const interpreter = (grammar instanceof Interpreter) ?
@@ -204,10 +219,12 @@ export function testGrammar(
                         Interpreter.fromGrammar(grammar, verbose);
                         
     if (symbolName == "") {
-        testGrammarAux(interpreter, expectedResults, symbolName, maxRecursion, stripHidden);
+        testGrammarAux(interpreter, expectedResults, symbolName, maxRecursion,
+                       stripHidden, warnOnlyForTooManyOutputs);
     } else {
         describe(`Generating from \${${symbolName}}`, function() {
-            testGrammarAux(interpreter, expectedResults, symbolName, maxRecursion, stripHidden);
+            testGrammarAux(interpreter, expectedResults, symbolName, maxRecursion,
+                           stripHidden, warnOnlyForTooManyOutputs);
         });
     }   
 }

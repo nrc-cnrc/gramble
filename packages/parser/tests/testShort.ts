@@ -23,8 +23,6 @@ import {
 import * as path from 'path';
 import { BITSETS_ENABLED, DIRECTION_LTR, StringDict, VERBOSE_DEBUG } from "../src/util";
 
-const DUMMY_SYMBOL: string = "";
-const DEF_MAX_RECURSION: number = 4;
 
 describe(`${path.basename(module.filename)}`, function() {
 
