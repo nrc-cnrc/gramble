@@ -86,33 +86,15 @@ export interface Positioned {
 }
 
 
-export interface Cell {
+export class Cell {
 
-    message(msg: any): void;
-    readonly id: string;
-    readonly pos: CellPos;
-    readonly text: string;
+    constructor(
+        public text: string,
+        public pos: CellPos
+    ) { }
 
-}
-
-let DUMMY_ROW: number = 0;
-
-export class DummyCell implements Cell {
-
-    public pos: CellPos;
-
-    constructor() {
-        this.pos = new CellPos("", DUMMY_ROW++, 0);
-    }
-
-    public message(msg: any): void { }
-
-    public get id(): string {
-        return `D${this.pos.row}`;
-    }
-
-    public get text(): string {
-        return "";
+    public get id(): string { 
+        return this.pos.toString();
     }
 
 }

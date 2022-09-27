@@ -18,8 +18,7 @@ export class ParallelizeTransform extends IdentityTransform {
         const newChildren: Grammar[] = [];
         const msgs: Msgs = [];
         for (const child of g.children) {
-            const [newChild, ms] = child.accept(this, env).destructure();
-            msgs.push(...ms);
+            const newChild = child.accept(this, env).msgTo(msgs);
             newChild.calculateTapes(new CounterStack(2));
             const prevChild = newChildren.pop();
             if (prevChild == undefined) {

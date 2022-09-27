@@ -24,7 +24,7 @@ import {
     parseHeaderCell,
     TapeNameHeader
 } from "./headers";
-import { ContentMsg, Err, Msg, Msgs, Result, resultList, Warn, resultDict } from "./msgs";
+import { ContentMsg, Err, Msg, Msgs, Result, resultList, Warn, resultDict, ResultVoid, resultVoid } from "./msgs";
 import { Transform, TransEnv } from "./transforms";
 import { Op } from "./ops";
 
@@ -60,10 +60,11 @@ export abstract class TstComponent implements Positioned {
      * "__".
      */
      public toParamsTable(env: TransEnv): Result<[Cell, ParamDict][]> {
-        return resultList([]).err(
+        return this.msg().err(
             `Unexpected operator`, 
             "The operator to the left expects a table " +
-            `of parameters, but found a ${this.constructor.name}.`);
+            `of parameters, but found a ${this.constructor.name}.`)
+            .bind(c => []);
     }
 
     public msg(msgs: Msgs = []): TstResult {
@@ -91,10 +92,6 @@ export abstract class TstCellComponent extends TstComponent {
         return this.cell.pos;
     }
 
-    public message(msg: Msg): void {
-        this.cell.message(msg);
-    }
-    
     public toGrammar(env: TransEnv): GrammarResult {
         return new EpsilonGrammar().msg();
     }
@@ -103,23 +100,11 @@ export abstract class TstCellComponent extends TstComponent {
 
 export class TstHeader extends TstCellComponent {
 
-    public header: Header;
-
     constructor(
         cell: Cell,
-        header: Header | undefined = undefined
+        public header: Header
     ) {
         super(cell);
-        if (header != undefined) {
-            this.header = header;
-            return;
-        }
-        
-        const [parsedHeader, msgs] = parseHeaderCell(cell.text).destructure();
-        this.header = parsedHeader;
-        for (const msg of msgs) {
-            this.cell.message(msg);
-        }
     }
 
     public transform(f: TstTransform, env: TransEnv): TstResult {
@@ -263,7 +248,7 @@ export class TstComment extends TstCellComponent {
 
 export abstract class TstEnclosure extends TstCellComponent {
 
-    public abstract addChild(child: TstComponent): Msgs;
+    public abstract addChild(child: TstComponent): ResultVoid;
 
 }
 
@@ -330,13 +315,14 @@ export class TstBinary extends TstEnclosure {
                     .bind(([s,c]) => new LocatorGrammar(this.cell, s));
     }
 
-    public addChild(child: TstComponent): Msgs {
+    public addChild(child: TstComponent): ResultVoid {
 
         const msgs: Msgs = [];
 
         if (this.child instanceof TstBinary && 
                 child instanceof TstCellComponent &&
                 this.child.pos.col != child.pos.col) {
+            console.log("weird");
             msgs.push(Warn(
                 "This operator is in an unexpected column.  Did you mean for it " +
                 `to be in column ${this.child.pos.col}, ` + 
@@ -348,7 +334,7 @@ export class TstBinary extends TstEnclosure {
             child.sibling = this.child;
         }
         this.child = child;
-        return msgs;
+        return resultVoid(msgs);
     }
 
 }
@@ -680,16 +666,16 @@ export class TstGrid extends TstBinary {
         return undefined;
     }
 
-    public addContent(cell: Cell): Msgs {
-        const msgs: Msgs = [];
+    public addContent(cell: Cell): ResultVoid {
+        const msgs = resultVoid();
 
         // make sure we have a header
         const headerCell = this.findHeader(cell.pos.col);
         if (headerCell == undefined) {
             if (cell.text.length != 0) {
-                msgs.push(Warn(
+                return msgs.warn(
                     "Cannot associate this cell with any valid header above; ignoring."
-                ));
+                );
             }
             return msgs;
         }
@@ -705,7 +691,7 @@ export class TstGrid extends TstBinary {
         return msgs;
     }
 
-    public addChild(newChild: TstComponent): Msgs {
+    public addChild(newChild: TstComponent): ResultVoid {
         throw new Error("TstTables cannot have children");
     }
 
@@ -735,9 +721,8 @@ export class TstGrid extends TstBinary {
         const results: [Cell, ParamDict][] = [];
         const msgs: Msgs = [];
         for (const row of this.rows) {
-            const [rowParams, rowMsgs] = row.toParams(env).destructure();
+            const rowParams = row.toParams(env).msgTo(msgs);
             results.push([row.cell, rowParams]);
-            msgs.push(...rowMsgs);
         }
         return resultList(results).msg(msgs);
     }
@@ -758,13 +743,13 @@ export class TstSequence extends TstCellComponent {
                    .bind((cs) => new TstSequence(this.cell, cs));
     }
 
-    public addContent(header: TstHeader, cell: Cell): Msgs {
+    public addContent(header: TstHeader, cell: Cell): ResultVoid {
         const newCell = new TstHeadedCell(header, cell);
         this.children.push(newCell);
-        return [new ContentMsg(
+        return resultVoid([new ContentMsg(
             header.getBackgroundColor(),
             header.getFontColor()
-        )];
+        )]);
     }
     
     public toGrammar(env: TransEnv): GrammarResult {
@@ -848,9 +833,9 @@ export class TstNamespace extends TstCellComponent {
         super(cell);
     }
     
-    public addChild(child: TstComponent): Msgs {
+    public addChild(child: TstComponent): ResultVoid {
         this.children.push(child);
-        return [];
+        return resultVoid();
     }
 
     public transform(f: TstTransform, env: TransEnv): TstResult {
@@ -865,8 +850,8 @@ export class TstNamespace extends TstCellComponent {
         for (let i = 0; i < this.children.length; i++) {
             const child = this.children[i];
             const isLastChild = i == this.children.length - 1;
-            const [grammar, childMsgs] = this.children[i].toGrammar(env).destructure();
-            msgs.push(...childMsgs);
+            const grammar = this.children[i].toGrammar(env)
+                                            .msgTo(msgs);
             if (!(child instanceof TstAssignment) && !isLastChild) {
                 // warn that the child isn't going to be assigned to anything
                 msgs.push(Warn(

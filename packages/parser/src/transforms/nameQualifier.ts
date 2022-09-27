@@ -53,13 +53,13 @@ export class NameQualifierTransform extends IdentityTransform {
             if (v instanceof NsGrammar) {
                 const newStack: [string, NsGrammar][] = [ ...this.nsStack, [k, v] ];
                 const newTransform = new NameQualifierTransform(this.ns, newStack);
-                const [_, ms] = v.accept(newTransform, env).destructure();
-                msgs.push(...ms);
+                const _ = v.accept(newTransform, env)
+                           .msgTo(msgs);
             } else {
                 const newName = g.calculateQualifiedName(k, stackNames);
-                const [newV, ms] = v.accept(this, env).destructure();
+                const newV = v.accept(this, env)
+                              .msgTo(msgs);
                 this.ns.addSymbol(newName, newV);
-                msgs.push(...ms);
             }
         }
         const defaultName = g.calculateQualifiedName("", stackNames);

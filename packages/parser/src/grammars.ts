@@ -106,7 +106,7 @@ export interface GrammarTransform {
  * Grammar components represent the linguistic grammar that the
  * programmer is expressing (in terms of sequences, alternations, joins and filters,
  * etc.), as opposed to its specific layout on the spreadsheet grids (the "tabular
- * syntax tree or TST), but also as opposed to the specific algebraic expressions
+ * syntax tree" or TST), but also as opposed to the specific algebraic expressions
  * that our Brzozowski-style algorithm is juggling (which are even lower-level; a 
  * single "operation" in our grammar might even correspond to a dozen or so lower-level
  * ops.)

@@ -160,13 +160,20 @@ export class Result<T> {
      * and only consider the item, by providing a callback that
      * handles them as a side effect.
      */
-    public handleMsgs(f: (m: Msg) => void): T {
+    public msgTo(f: Msgs | MsgCallback): T {
+        if (Array.isArray(f)) {
+            f.push(...this.msgs);
+            return this.item;
+        }
+
         for (const m of this.msgs) {
             f(m);
         }
         return this.item;
     }
 }
+
+type MsgCallback = (m: Msg) => void;
 
 export class ResultList<T> extends Result<T[]> {
 
@@ -224,4 +231,18 @@ export class ResultDict<T> extends Result<Dict<T>> {
 
 export function resultDict<T>(items: Dict<T>): ResultDict<T> {
     return new ResultDict(items);
+}
+
+export class ResultVoid extends Result<void> {
+
+    constructor(
+        msgs: Msgs = []
+    ) { 
+        super(void(0), msgs);
+    }
+
+}
+
+export function resultVoid(msgs: Msgs = []): ResultVoid {
+    return new ResultVoid(msgs);
 }

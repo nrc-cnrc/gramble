@@ -9,7 +9,7 @@ import { NameQualifierTransform } from "./transforms/nameQualifier";
 
 import { 
     TstHeader, TstGrid, 
-    TstComponent, TstComment, 
+    TstComponent,
     TstEnclosure, 
     TstOp,
     TstAssignment,
@@ -18,8 +18,9 @@ import {
     TstResult
 } from "./tsts";
 import { ALL_TST_TRANSFORMS } from "./transforms/allTransforms";
-import { Cell, CellPos, DevEnvironment, DummyCell } from "./util";
+import { Cell, CellPos, DevEnvironment } from "./util";
 import { NamespaceOp, parseOp } from "./ops";
+import { parseHeaderCell } from "./headers";
 
 /**
  * Determines whether a line is empty
@@ -82,12 +83,12 @@ export class SheetProject extends SheetComponent {
         const sheet = new Sheet(this, sheetName, cells);
         this.sheets[sheetName] = sheet;
         let tst: TstComponent = this.toTST()
-                                    .handleMsgs((m) => {});
+                                    .msgTo((m) => {});
         const transEnv = new TransEnv();
         const tstResult = ALL_TST_TRANSFORMS.transform(tst, transEnv)
-                                            .handleMsgs((m) => {});
+                                            .msgTo((m) => {});
         const grammar = tstResult.toGrammar(transEnv)
-                                 .handleMsgs((m) => {})
+                                 .msgTo((m) => {})
         
         // check to see if any names didn't get resolved
         const nameQualifier = new NameQualifierTransform(grammar as NsGrammar);
@@ -122,30 +123,26 @@ export class SheetProject extends SheetComponent {
     }
 
     public toTST(): TstResult {
-        const project = new TstNamespace(new DummyCell());
+        const projectCell = new Cell("", new CellPos("", -1, -1));
+        const project = new TstNamespace(projectCell);
         const msgs: Msgs = [];
         for (const [sheetName, sheet] of Object.entries(this.sheets)) {
             if (sheetName == this.mainSheetName) {
                 continue; // save this for last
             }
-            const [tstSheet, sheetMsgs] = sheet.toTST().destructure();
-            msgs.push(...sheetMsgs);
-            msgs.push(...project.addChild(tstSheet));
+            const tstSheet = sheet.toTST().msgTo(msgs);
+            project.addChild(tstSheet).msgTo(msgs);
         }
 
         if (!(this.mainSheetName in this.sheets)) { 
             return project.msg(msgs); // unset or incorrect main sheet name
         }
 
-        const [mainSheet, mainMsgs] = this.sheets[this.mainSheetName]
-                                    .toTST().destructure();
-        msgs.push(...mainMsgs);
-        msgs.push(...project.addChild(mainSheet));
+        const mainSheet = this.sheets[this.mainSheetName]
+                                    .toTST()
+                                    .msgTo(msgs);
+        project.addChild(mainSheet).msgTo(msgs);
         return project.msg(msgs);
-    }
-
-    public message(msg: any): void {
-        this.devEnv.message(msg);
     }
 }
 
@@ -157,10 +154,6 @@ export class Sheet extends SheetComponent {
         public cells: string[][]
     ) { 
         super();
-    }
-
-    public message(msg: any): void {
-        this.project.message(msg);
     }
 
     public convertToSingleSheet(): string[][] {
@@ -224,7 +217,7 @@ export class Sheet extends SheetComponent {
         const msgs: Msgs = [];
         
         // sheets are treated as having an invisible cell containing their names at 0, -1
-        let startCell: SheetCell = new SheetCell(this, this.name, 0, -1);
+        let startCell = new Cell(this.name, new CellPos(this.name, 0, -1));
 
         let result = new TstOp(startCell, new NamespaceOp());
 
@@ -258,13 +251,14 @@ export class Sheet extends SheetComponent {
                                ? this.cells[rowIndex][colIndex].trim().normalize("NFD")
                                : "";
                 
-                const cell = new SheetCell(this, cellText, rowIndex, colIndex);
+                const cellPos = new CellPos(this.name, rowIndex, colIndex);
+                const cell = new Cell(cellText, cellPos);
                 let top = stack[stack.length-1];
 
                 // first check if it's a comment row
                 if (rowIsComment) {
                     cellMsgs.push(new CommentMsg());
-                    msgs.push(...cellMsgs.map(m => m.localize(cell.pos)));
+                    msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
                     continue;
                 }
 
@@ -284,14 +278,14 @@ export class Sheet extends SheetComponent {
                 // of the topmost op.  NB: This is the only kind of operation we'll do on 
                 // empty cells, so that, if appropriate, we can mark them for syntax highlighting.
                 if (top.tst instanceof TstGrid && colIndex >= top.col && rowIndex > top.row) {
-                    msgs.push(...top.tst.addContent(cell));
-                    msgs.push(...cellMsgs.map(m => m.localize(cell.pos)));
+                    top.tst.addContent(cell).msgTo(cellMsgs);
+                    msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
                     continue;
                 }
     
                 // all of the following steps require there to be some explicit content
                 if (cellText.length == 0) {
-                    msgs.push(...cellMsgs.map(m => m.localize(cell.pos)));
+                    msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
                     continue;
                 }
     
@@ -300,68 +294,44 @@ export class Sheet extends SheetComponent {
                     // it's an operation, which starts a new enclosures
                     const op = parseOp(cellText);
                     const newEnclosure = new TstOp(cell, op);
-                    cellMsgs.push(new CommandMsg().localize(cell.pos))
+                    cellMsgs.push(new CommandMsg().localize(cellPos))
 
                     if (top.tst instanceof TstGrid) {
                         cellMsgs.push(Err(`Unexpected operator`,
                             "This looks like an operator, but only a header can follow a header."));
-                        msgs.push(...cellMsgs.map(m => m.localize(cell.pos)));
+                        msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
                         continue;
                     }
               
-                    const newMsgs = top.tst.addChild(newEnclosure);
-                    cellMsgs.push(...newMsgs);
+                    top.tst.addChild(newEnclosure).msgTo(cellMsgs);
 
                     const newTop = { tst: newEnclosure, row: rowIndex, col: colIndex };
                     stack.push(newTop);
-                    msgs.push(...cellMsgs.map(m => m.localize(cell.pos)));
+                    msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
                     continue;
                 } 
     
                 // it's a header
-                const headerCell = new TstHeader(cell);
+                const parsedHeader = parseHeaderCell(cell.text).msgTo(cellMsgs);
+                const tstHeader = new TstHeader(cell, parsedHeader);
                 cellMsgs.push(new HeaderMsg( 
-                    headerCell.getBackgroundColor(0.14) 
+                    tstHeader.getBackgroundColor(0.14) 
                 ));
                 
                 // if the top isn't a TstGrid, make it so
                 if (!(top.tst instanceof TstGrid)) {
                     const newTable = new TstGrid(cell);
-                    const ms = top.tst.addChild(newTable);
-                    cellMsgs.push(...ms);
+                    top.tst.addChild(newTable).msgTo(cellMsgs);
                     top = { tst: newTable, row: rowIndex, col: colIndex-1 };
                     stack.push(top);
                 }
-                (top.tst as TstGrid).addHeader(headerCell);
+                
+                (top.tst as TstGrid).addHeader(tstHeader);
 
-                msgs.push(...cellMsgs.map(m => m.localize(cell.pos)));
+                msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
             }
         }
     
         return new TstAssignment(startCell, new TstEmpty(), result).msg(msgs);
-    }
-}
-
-export class SheetCell implements Cell {
-
-    constructor(
-        public sheet: Sheet,
-        public text: string,
-        public row: number,
-        public col: number
-    ) {  }
-
-    public message(msg: Msg): void {
-        const pos = new CellPos(this.sheet.name, this.row, this.col);
-        const locatedMsg = msg.localize(pos);
-        this.sheet.message(locatedMsg);
-    }
-
-    public get pos(): CellPos {
-        return new CellPos(this.sheet.name, this.row, this.col);
-    } 
-
-    public get id(): string {
-        return `${this.sheet.name}:${this.row}:${this.col}`;
     }
 }
