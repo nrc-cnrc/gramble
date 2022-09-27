@@ -130,10 +130,11 @@ export class Interpreter {
         logTime(verbose, `Sheets loaded; ${elapsedTime}`);
         
         startTime = Date.now();
-
-        const tst: TstComponent = sheetProject.toTST();
         const transEnv = new TransEnv();
         transEnv.verbose = verbose;
+        const tst: TstComponent = sheetProject.toTST()
+                                              .handleMsgs(m => devEnv.message(m));
+        
         const tstResult = ALL_TST_TRANSFORMS.transformAndLog(tst, transEnv)
                                             .handleMsgs(m => devEnv.message(m));
         const grammar = tstResult.toGrammar(transEnv)

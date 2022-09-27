@@ -2,7 +2,7 @@ import { NsGrammar } from "./grammars";
 import { 
     CommandMsg, CommentMsg, 
     Err, HeaderMsg, 
-    MissingSymbolError, Msg 
+    MissingSymbolError, Msg, Msgs 
 } from "./msgs";
 import { TransEnv } from "./transforms";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
@@ -14,7 +14,8 @@ import {
     TstOp,
     TstAssignment,
     TstEmpty,
-    TstNamespace
+    TstNamespace,
+    TstResult
 } from "./tsts";
 import { ALL_TST_TRANSFORMS } from "./transforms/allTransforms";
 import { Cell, CellPos, DevEnvironment, DummyCell } from "./util";
@@ -41,7 +42,7 @@ import { NamespaceOp, parseOp } from "./ops";
 }
 
 export abstract class SheetComponent {
-    public abstract toTST(): TstComponent;
+    public abstract toTST(): TstResult;
 }
 
 export class SheetProject extends SheetComponent {
@@ -80,7 +81,8 @@ export class SheetProject extends SheetComponent {
 
         const sheet = new Sheet(this, sheetName, cells);
         this.sheets[sheetName] = sheet;
-        let tst: TstComponent = this.toTST();
+        let tst: TstComponent = this.toTST()
+                                    .handleMsgs((m) => {});
         const transEnv = new TransEnv();
         const tstResult = ALL_TST_TRANSFORMS.transform(tst, transEnv)
                                             .handleMsgs((m) => {});
@@ -119,24 +121,27 @@ export class SheetProject extends SheetComponent {
         return results;
     }
 
-    public toTST(): TstComponent {
+    public toTST(): TstResult {
         const project = new TstNamespace(new DummyCell());
-
+        const msgs: Msgs = [];
         for (const [sheetName, sheet] of Object.entries(this.sheets)) {
             if (sheetName == this.mainSheetName) {
                 continue; // save this for last
             }
-            const tstSheet = sheet.toTST();
-            project.addChild(tstSheet);
+            const [tstSheet, sheetMsgs] = sheet.toTST().destructure();
+            msgs.push(...sheetMsgs);
+            msgs.push(...project.addChild(tstSheet));
         }
 
         if (!(this.mainSheetName in this.sheets)) { 
-            return project; // unset or incorrect main sheet name
+            return project.msg(msgs); // unset or incorrect main sheet name
         }
 
-        const mainTstSheet = this.sheets[this.mainSheetName].toTST();
-        project.addChild(mainTstSheet);
-        return project;
+        const [mainSheet, mainMsgs] = this.sheets[this.mainSheetName]
+                                    .toTST().destructure();
+        msgs.push(...mainMsgs);
+        msgs.push(...project.addChild(mainSheet));
+        return project.msg(msgs);
     }
 
     public message(msg: any): void {
@@ -214,8 +219,10 @@ export class Sheet extends SheetComponent {
      * felt that was information not relevant to the object itself.  It's only relevant to this algorithm,
      * so it should just stay here.
      */
-    public toTST(): TstComponent {
+    public toTST(): TstResult {
     
+        const msgs: Msgs = [];
+        
         // sheets are treated as having an invisible cell containing their names at 0, -1
         let startCell: SheetCell = new SheetCell(this, this.name, 0, -1);
 
@@ -246,24 +253,25 @@ export class Sheet extends SheetComponent {
 
             for (let colIndex = 0; colIndex < maxCol; colIndex++) {
     
-                let cellText = "";
-
-                if (colIndex < colWidth) {
-                    cellText = this.cells[rowIndex][colIndex].trim().normalize("NFD");
-                }
+                const cellMsgs: Msgs = [];
+                const cellText = (colIndex < colWidth)
+                               ? this.cells[rowIndex][colIndex].trim().normalize("NFD")
+                               : "";
                 
                 const cell = new SheetCell(this, cellText, rowIndex, colIndex);
-                
+                let top = stack[stack.length-1];
+
+                // first check if it's a comment row
                 if (rowIsComment) {
-                    const comment = new TstComment(cell);
-                    comment.message(new CommentMsg());
+                    cellMsgs.push(new CommentMsg());
+                    msgs.push(...cellMsgs.map(m => m.localize(cell.pos)));
                     continue;
                 }
 
-                let top = stack[stack.length-1];
 
-                // next check if the current cell pops anything off the stack.  keep popping
-                // until the top of the stack is allowed to add this cell as a child op, header,
+                // next check if the current cell pops anything off 
+                // the stack.  keep popping until the top of the stack 
+                // is allowed to add this cell as a child op, header,
                 // or content
                 if (cell.text != "" && rowIndex > top.row) {
                     while (colIndex <= top.col) {
@@ -276,12 +284,14 @@ export class Sheet extends SheetComponent {
                 // of the topmost op.  NB: This is the only kind of operation we'll do on 
                 // empty cells, so that, if appropriate, we can mark them for syntax highlighting.
                 if (top.tst instanceof TstGrid && colIndex >= top.col && rowIndex > top.row) {
-                    top.tst.addContent(cell);
+                    msgs.push(...top.tst.addContent(cell));
+                    msgs.push(...cellMsgs.map(m => m.localize(cell.pos)));
                     continue;
                 }
     
                 // all of the following steps require there to be some explicit content
                 if (cellText.length == 0) {
+                    msgs.push(...cellMsgs.map(m => m.localize(cell.pos)));
                     continue;
                 }
     
@@ -290,40 +300,45 @@ export class Sheet extends SheetComponent {
                     // it's an operation, which starts a new enclosures
                     const op = parseOp(cellText);
                     const newEnclosure = new TstOp(cell, op);
-                    cell.message(new CommandMsg());
+                    cellMsgs.push(new CommandMsg().localize(cell.pos))
 
                     if (top.tst instanceof TstGrid) {
-                        cell.message(Err(
-                            `Unexpected operator: ${cell.text}`,
-                            "This looks like an operator, but only a header can follow a header."
-                        ));
+                        cellMsgs.push(Err(`Unexpected operator`,
+                            "This looks like an operator, but only a header can follow a header."));
+                        msgs.push(...cellMsgs.map(m => m.localize(cell.pos)));
                         continue;
                     }
               
-                    top.tst.addChild(newEnclosure);
+                    const newMsgs = top.tst.addChild(newEnclosure);
+                    cellMsgs.push(...newMsgs);
+
                     const newTop = { tst: newEnclosure, row: rowIndex, col: colIndex };
                     stack.push(newTop);
+                    msgs.push(...cellMsgs.map(m => m.localize(cell.pos)));
                     continue;
                 } 
     
                 // it's a header
                 const headerCell = new TstHeader(cell);
-                cell.message(new HeaderMsg( 
+                cellMsgs.push(new HeaderMsg( 
                     headerCell.getBackgroundColor(0.14) 
                 ));
                 
+                // if the top isn't a TstGrid, make it so
                 if (!(top.tst instanceof TstGrid)) {
                     const newTable = new TstGrid(cell);
-                    top.tst.addChild(newTable);
+                    const ms = top.tst.addChild(newTable);
+                    cellMsgs.push(...ms);
                     top = { tst: newTable, row: rowIndex, col: colIndex-1 };
                     stack.push(top);
                 }
                 (top.tst as TstGrid).addHeader(headerCell);
-                
+
+                msgs.push(...cellMsgs.map(m => m.localize(cell.pos)));
             }
         }
     
-        return new TstAssignment(startCell, new TstEmpty(), result);
+        return new TstAssignment(startCell, new TstEmpty(), result).msg(msgs);
     }
 }
 

@@ -263,7 +263,7 @@ export class TstComment extends TstCellComponent {
 
 export abstract class TstEnclosure extends TstCellComponent {
 
-    public abstract addChild(child: TstComponent): TstComponent;
+    public abstract addChild(child: TstComponent): Msgs;
 
 }
 
@@ -330,23 +330,25 @@ export class TstBinary extends TstEnclosure {
                     .bind(([s,c]) => new LocatorGrammar(this.cell, s));
     }
 
-    public addChild(child: TstComponent): TstComponent {
+    public addChild(child: TstComponent): Msgs {
+
+        const msgs: Msgs = [];
 
         if (this.child instanceof TstBinary && 
-            child instanceof TstCellComponent &&
-            this.child.pos.col != child.pos.col) {
-            child.message(Warn(
+                child instanceof TstCellComponent &&
+                this.child.pos.col != child.pos.col) {
+            msgs.push(Warn(
                 "This operator is in an unexpected column.  Did you mean for it " +
                 `to be in column ${this.child.pos.col}, ` + 
-                `so that it's under the operator in cell ${this.child.pos}?`
-            ));
+                `so that it's under the operator in cell ${this.child.pos}?`,
+                child.pos));
         }
 
         if (child instanceof TstBinary) {
             child.sibling = this.child;
         }
         this.child = child;
-        return child;
+        return msgs;
     }
 
 }
@@ -678,16 +680,18 @@ export class TstGrid extends TstBinary {
         return undefined;
     }
 
-    public addContent(cell: Cell): void {
+    public addContent(cell: Cell): Msgs {
+        const msgs: Msgs = [];
+
         // make sure we have a header
         const headerCell = this.findHeader(cell.pos.col);
         if (headerCell == undefined) {
             if (cell.text.length != 0) {
-                cell.message(Warn(
+                msgs.push(Warn(
                     "Cannot associate this cell with any valid header above; ignoring."
                 ));
             }
-            return;
+            return msgs;
         }
 
         if (this.rows.length == 0 || cell.pos.row != this.rows[this.rows.length-1].pos.row) {
@@ -698,9 +702,10 @@ export class TstGrid extends TstBinary {
         const lastRow = this.rows[this.rows.length-1];
         lastRow.addContent(headerCell, cell);
 
+        return msgs;
     }
 
-    public addChild(newChild: TstComponent): TstComponent {
+    public addChild(newChild: TstComponent): Msgs {
         throw new Error("TstTables cannot have children");
     }
 
@@ -753,13 +758,13 @@ export class TstSequence extends TstCellComponent {
                    .bind((cs) => new TstSequence(this.cell, cs));
     }
 
-    public addContent(header: TstHeader, cell: Cell): void {
+    public addContent(header: TstHeader, cell: Cell): Msgs {
         const newCell = new TstHeadedCell(header, cell);
-        cell.message(new ContentMsg(
+        this.children.push(newCell);
+        return [new ContentMsg(
             header.getBackgroundColor(),
             header.getFontColor()
-        ));
-        this.children.push(newCell);
+        )];
     }
     
     public toGrammar(env: TransEnv): GrammarResult {
@@ -843,9 +848,9 @@ export class TstNamespace extends TstCellComponent {
         super(cell);
     }
     
-    public addChild(child: TstComponent): TstComponent {
+    public addChild(child: TstComponent): Msgs {
         this.children.push(child);
-        return child;
+        return [];
     }
 
     public transform(f: TstTransform, env: TransEnv): TstResult {
