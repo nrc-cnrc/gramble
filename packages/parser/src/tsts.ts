@@ -8,13 +8,12 @@
 
 import { 
     Grammar, NsGrammar, AlternationGrammar, 
-    EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, 
-    SequenceGrammar, JoinGrammar, ReplaceGrammar, 
-    JoinReplaceGrammar, LiteralGrammar, JoinRuleGrammar, 
-    LocatorGrammar, 
-    RenameGrammar,
-    EqualsGrammar,
-    HideGrammar,
+    EpsilonGrammar, UnitTestGrammar, 
+    NegativeUnitTestGrammar, SequenceGrammar, 
+    ReplaceGrammar, JoinReplaceGrammar, 
+    LiteralGrammar, JoinRuleGrammar, 
+    LocatorGrammar, RenameGrammar,
+    EqualsGrammar, HideGrammar,
     GrammarResult,
 } from "./grammars";
 import { Cell, CellPos, Positioned } from "./util";
@@ -27,6 +26,7 @@ import {
 } from "./headers";
 import { ContentMsg, Err, Msg, Msgs, Result, resultList, Warn, resultDict } from "./msgs";
 import { Transform, TransEnv } from "./transforms";
+import { Op } from "./ops";
 
 
 export type ParamDict = {[key: string]: Grammar};
@@ -249,7 +249,6 @@ export class TstEmpty extends TstComponent {
     }
 }
 
-
 export class TstComment extends TstCellComponent {
 
     public transform(f: TstTransform, env: TransEnv): TstResult {
@@ -380,12 +379,21 @@ export class TstTableOp extends TstBinary {
     }
 }
 
-export class TstAnonymousOp extends TstBinary {
+export class TstOp extends TstBinary {
 
+    constructor(
+        cell: Cell,
+        public op: Op,
+        sibling: TstComponent = new TstEmpty(),
+        child: TstComponent = new TstEmpty()
+    ) { 
+        super(cell, sibling, child);
+    }
+        
     public transform(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
-                .bind(([s,c]) => new TstAnonymousOp(this.cell, s, c));
+                .bind(([s,c]) => new TstOp(this.cell, this.op, s, c));
     }
 
 }
@@ -408,10 +416,6 @@ export class TstBinaryOp extends TstBinary {
     }
     
     public toGrammar(env: TransEnv): GrammarResult {
-
-        const trimmedText = this.text.slice(0, 
-                        this.text.length-1).trim().toLowerCase();
-
         return resultList([this.sibling, this.child])
                     .map(c => c.toGrammar(env))
                     .bind(([s,c]) => this.op(s,c));
@@ -621,7 +625,7 @@ export class TstNegativeUnitTest extends TstUnitTest {
 }
 
 /**
- * A TstTable is a rectangular region of the grid consisting of a header row
+ * A TstGrid is a rectangular region of the grid consisting of a header row
  * and cells beneath each header.  For example,
  * 
  *      text, gloss
@@ -634,7 +638,7 @@ export class TstNegativeUnitTest extends TstUnitTest {
  * well-formed database tables; it's not uncommon to get tables where the same
  * header appears multiple times.
  */
-export class TstTable extends TstBinary {
+export class TstGrid extends TstBinary {
 
     constructor(
         cell: Cell,    
@@ -655,7 +659,7 @@ export class TstTable extends TstBinary {
         const [rows, rMsgs] = resultList(this.rows)
                         .map(c => f.transform(c, env))
                         .destructure() as [TstRow[], Msgs];
-        return new TstTable(this.cell, sib, child, headers, rows)
+        return new TstGrid(this.cell, sib, child, headers, rows)
                      .msg(sMsgs).msg(cMsgs).msg(hMsgs).msg(rMsgs);
     }
 
@@ -886,35 +890,4 @@ export class TstNamespace extends TstCellComponent {
         return ns.msg(msgs);
     }
 
-}
-
-export class TstProject extends TstNamespace {
-    
-    public transform(f: TstTransform, env: TransEnv): TstResult {
-        return resultList(this.children)
-                .map(c => f.transform(c, env) as Result<TstEnclosure>)
-                .bind(cs => new TstNamespace(this.cell, cs));
-    }
-
-    /**
-     * TstProject overrides addChild() because it needs to treat
-     * its added children specially.  Its children are all sheets (and thus
-     * namespaces) but unlike ordinary things that we assign, there's no 
-     * actual "name:" cell to the left of these, their name is the name of the
-     * source file or worksheet they come from.  This is represented as a 
-     * "virtual" cell that we constructed earlier, but at some point we have 
-     * to turn that cell into an assignment; that's what we do here.
-     */
-    public addChild(child: TstComponent): TstComponent {
-        if (!(child instanceof TstNamespace)) {
-            throw new Error("Attempting to add a non-namespace to a project");
-        }
-
-        // first wrap it in an assignment
-        const newChild = new TstAssignment(child.cell);
-        newChild.addChild(child);
-        // then add the assign as our own child
-        return super.addChild(newChild);
-        return child;
-    }
 }

@@ -2,43 +2,62 @@ import { TransEnv } from "../transforms";
 import { Msgs } from "../msgs";
 import { 
     TstAssignment, TstBinaryOp, 
-    TstComponent, TstEnclosure, 
+    TstComponent,  
     TstNamespace, TstNegativeUnitTest, 
     TstReplace, TstReplaceTape,
-    TstResult, TstUnitTest, TstTransform
+    TstResult, TstUnitTest, TstTransform, TstOp, TstEmpty, TstGrid, TstTableOp, TstEnclosure, TstBinary
 } from "../tsts";
+import { NamespaceOp, UnreservedOp } from "../ops";
+import { TableOp } from "../ops";
 
 /**
- * When we're directly under a namespace, you can use a binary
- * operation like join, replace, test, etc. to modify the previous
- * assignment, and the results will be assigned to that same name.
+ * Namespace works somewhat differently from other operators,
+ * so in this transformation we take "namespace:" TstOps and
+ * instantiate them as actual namespaces.
  */
- export class AdjustAssignmentScope extends TstTransform {
+export class CreateNamespaces extends TstTransform {
 
     public get desc(): string {
-        return "Re-scoping assignments";
+        return "Creating namespaces";
     }
 
     public transform(t: TstComponent, env: TransEnv): TstResult {
 
         switch(t.constructor) {
-            case TstNamespace:
-                return this.transformNamespace(t as TstNamespace, env);
+            case TstOp:
+                return this.transformOp(t as TstOp, env);
             default: 
                 return t.transform(this, env);
         }
     }
 
-    public transformNamespace(t: TstNamespace, env: TransEnv): TstResult {
-        const [result, msgs] = t.transform(this, env).destructure() as [TstNamespace, Msgs];
-        const newChildren: TstComponent[] = [];
-        for (const child of result.children) {
+    public transformOp(t: TstOp, env: TransEnv): TstResult {
+        const [result, msgs] = t.transform(this, env)
+                                .destructure() as [TstOp, Msgs];
 
-            if (child instanceof TstBinaryOp ||
-                    child instanceof TstReplace ||
-                    child instanceof TstReplaceTape ||
-                    child instanceof TstUnitTest ||
-                    child instanceof TstNegativeUnitTest) {
+        if (!(result.op instanceof NamespaceOp)) {
+            return result.msg(msgs);
+        }
+
+        const children: TstComponent[] = [];
+
+        // flatten and reverse the results
+        let child = result.child;
+        while (child instanceof TstBinary) {
+            children.push(child);
+            const next = child.sibling;
+            child.sibling = new TstEmpty();
+            child = next;
+        }
+        children.reverse();
+
+        // now rescope bare binary ops that immediately 
+        // follow assignments
+        const newChildren: TstComponent[] = [];
+        for (const child of children) {
+
+            if (child instanceof TstOp &&
+                child.op.isBinary) {
                 
                 const prev = newChildren.pop();
                 if (prev == undefined) {
@@ -48,7 +67,8 @@ import {
                     continue;
                 }
 
-                if (prev instanceof TstAssignment) {
+                if (prev instanceof TstOp &&
+                    prev.op instanceof UnreservedOp) {
                     // it's an assignment, so adjust the scope 
                     // of the assignment so it includes the operator
                     // too

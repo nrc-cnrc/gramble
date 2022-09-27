@@ -1,9 +1,4 @@
-import { 
-    TstComponent, 
-    TstResult, 
-    TstTransform,
-} from "../tsts";
-import { AdjustAssignmentScope } from "./rescopeAssignment";
+import { CreateNamespaces } from "./createNamespaces";
 import { MissingParamsTransform } from "./missingParams";
 import { InvalidAssignmentTransform } from "./invalidAssignment";
 import { TransEnv, Transform } from "../transforms";
@@ -18,7 +13,7 @@ import { SameTapeReplaceTransform } from "./sameTapeReplace";
 import { FilterTransform } from "./filter";
 import { CheckNamedParams } from "./namedParamCheck";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
-import { ParseOps } from "./parseOps";
+import { CreateOps } from "./createOps";
 
 type GrammarTransformConstructor = new (g: NsGrammar) => GrammarTransform;
 export class TransformWrapper extends Transform<Grammar, Grammar> {
@@ -62,8 +57,8 @@ function wrap(t: GrammarTransformConstructor): Transform<Grammar,Grammar> {
 }
 
 export const ALL_TST_TRANSFORMS = 
-    new ParseOps().compose(
-    new AdjustAssignmentScope().compose(
+    new CreateNamespaces().compose(
+    new CreateOps().compose(
     new InvalidAssignmentTransform().compose(
     new MissingParamsTransform().compose(
     new CheckNamedParams().compose(

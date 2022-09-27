@@ -1,5 +1,5 @@
 import { 
-    TstAnonymousOp,
+    TstOp,
     TstAssignment, TstBinary, 
     TstBinaryOp, 
     TstComponent, TstEmpty,
@@ -8,41 +8,17 @@ import {
     TstTableOp, TstTransform,
     TstNegativeUnitTest, TstReplace, 
     TstReplaceTape, TstUnitTest 
-} from "../tsts";
-import { Err, Msgs, Result } from "../msgs";
-import { TransEnv } from "../transforms";
+} from "./tsts";
+import { Err, Result } from "./msgs";
 import { 
     miniParse, MPAlternation, 
     MPParser, MPReserved, 
     MPSequence, MPUnreserved 
-} from "../miniParser";
-import { AlternationGrammar, Grammar, JoinGrammar, SequenceGrammar } from "../grammars";
-
-export class ParseOps extends TstTransform {
-
-    public get desc(): string {
-        return "Parsing operators";
-    }
-
-    public transform(t: TstComponent, env: TransEnv): TstResult {
-
-        switch(t.constructor) {
-            case TstAnonymousOp:
-                return this.transformAnonymous(t as TstAnonymousOp, env);
-            default:
-                return t.transform(this, env);
-        }
-    }
-
-    public transformAnonymous(t: TstAnonymousOp, env: TransEnv): TstResult {
-
-        const [result, msgs] = t.transform(this, env)
-                                .destructure() as [TstAnonymousOp, Msgs];
-        
-        return parseAndTransform(result).msg(msgs);
-    }
-}
-
+} from "./miniParser";
+import { 
+    AlternationGrammar, Grammar, 
+    JoinGrammar, SequenceGrammar 
+} from "./grammars";
 
 
 const SYMBOL = [ ":" ];
@@ -108,20 +84,25 @@ function tokenize(text: string): string[] {
     );
 }
 
-interface Op {
-    transform(t: TstAnonymousOp): TstResult;
+export abstract class Op {
+
+    public get isBinary(): boolean {
+        return false;
+    }
+
+    public abstract transform(t: TstOp): TstResult;
 }
 
-export class TableOp implements Op {
+export class TableOp extends Op {
 
-    public transform(t: TstAnonymousOp): TstResult {
+    public transform(t: TstOp): TstResult {
         return new TstTableOp(t.cell, t.sibling, t.child).msg();
     }
 }
 
-export class NamespaceOp implements Op {
+export class NamespaceOp extends Op {
 
-    public transform(t: TstAnonymousOp): TstResult {
+    public transform(t: TstOp): TstResult {
         const children: TstComponent[] = [];
         let currentChild: TstComponent = t.child;
         while (currentChild instanceof TstBinary) {
@@ -136,57 +117,70 @@ export class NamespaceOp implements Op {
 
 }
 
-export class TestOp implements Op {
-    public transform(t: TstAnonymousOp): TstResult {
+export abstract class BinaryOp extends Op {
+
+    public get isBinary(): boolean {
+        return true;
+    }
+}
+
+export class TestOp extends BinaryOp {
+    public transform(t: TstOp): TstResult {
         return new TstUnitTest(t.cell, t.sibling, t.child).msg();
     }
 
 }
 
-export class TestNotOp implements Op {
-    public transform(t: TstAnonymousOp): TstResult {
+export class TestNotOp extends BinaryOp {
+    public transform(t: TstOp): TstResult {
         return new TstNegativeUnitTest(t.cell, t.sibling, t.child).msg();
     }
 }
 
-export class AtomicReplaceOp implements Op {
-    public transform(t: TstAnonymousOp): TstResult {
+export class AtomicReplaceOp extends BinaryOp {
+    public transform(t: TstOp): TstResult {
         return new TstReplace(t.cell, t.sibling, t.child).msg();
     }
 }
 
-export class ReplaceOp implements Op {
+export class ReplaceOp extends BinaryOp {
 
     constructor(
         public child: UnreservedOp
-    ) { }
+    ) { 
+        super();
+    }
 
-    public transform(t: TstAnonymousOp): TstResult {
+    public transform(t: TstOp): TstResult {
         const tapeName = this.child.text;
         return new TstReplaceTape(t.cell, tapeName, 
                                   t.sibling, t.child).msg();
     }
 }
 
-export class BinaryOp implements Op {
+export class BuiltInBinaryOp extends BinaryOp {
     
     constructor(
         public text: string
-    ) { }
+    ) { 
+        super();
+    }
 
-    public transform(t: TstAnonymousOp): TstResult {
+    public transform(t: TstOp): TstResult {
         const op = BINARY_OPS_MAP[this.text];
         return new TstBinaryOp(t.cell, op, t.sibling, t.child).msg();
     }
 }
 
-export class UnreservedOp implements Op {
+export class UnreservedOp extends Op {
 
     constructor(
         public text: string
-    ) { }
+    ) { 
+        super();
+    }
 
-    public transform(t: TstAnonymousOp): TstResult {
+    public transform(t: TstOp): TstResult {
         // This only gets called if the UnreservedOp is at the top
         // level.  Otherwise, the UnreservedOp is only being used
         // to store a string (like a tape name)
@@ -194,16 +188,17 @@ export class UnreservedOp implements Op {
     }
 }
 
-export class ReservedErrorOp implements Op {
+export class ErrorOp extends Op {
 
     constructor(
-        public text: string
-    ) { }
+        public shortMsg: string,
+        public longMsg: string
+    ) { 
+        super();
+    }
 
-    public transform(t: TstAnonymousOp): TstResult {
-        return t.msg().err("Reserved word in operator", 
-                    "This cell has to be a symbol name or " +
-                    " an operator, but it's a reserved word.");            
+    public transform(t: TstOp): TstResult {
+        return t.msg().err(this.shortMsg, this.longMsg);            
     }
     
 }
@@ -245,12 +240,14 @@ const OP_REPLACE = MPSequence<Op>(
 
 const OP_RESERVED = MPReserved<Op>(
     RESERVED_HEADERS, 
-    (s) => new ReservedErrorOp(s)
+    (s) => new ErrorOp("Reserved word in operator", 
+            "This cell has to be a symbol name or " +
+            `an operator, but it's a reserved word ${s}.`)
 );
 
 const OP_BINARY = MPReserved<Op>(
     BINARY_OPS, 
-    (s) => new BinaryOp(s)
+    (s) => new BuiltInBinaryOp(s)
 );
 
 const OP_EXPR: MPParser<Op> = MPAlternation(
@@ -266,21 +263,18 @@ const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
     (op) => op
 )
 
-export function parseAndTransform(t: TstAnonymousOp): Result<TstComponent> {
-    const trimmedText = t.text.trim().toLowerCase();
+export function parseOp(text: string): Op {
+    const trimmedText = text.trim().toLowerCase();
     const results = miniParse(tokenize, OP_EXPR_WITH_COLON, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new TstEmpty().msg([Err(
-            "Invalid operator",
-            "This cell ends in a colon so it appears to " +
-            " be an operator, but it cannot be parsed as one.",
-            t.cell.pos)]);
+        return new ErrorOp("Invalid operator",
+                "This ends in a colon so it looks like an operator, but it cannot be parsed.")
     }
     
     if (results.length > 1) {
         // if this happens, it's an error on our part
-        throw new Error(`Ambiguous, cannot uniquely parse ${t.text}`);
+        throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
     }
-    return results[0].transform(t);
+    return results[0];
 }

@@ -1,5 +1,9 @@
-import { TstAssignment, TstComponent, TstNamespace, TstProject, TstResult, TstTransform } from "../tsts";
-import { Msgs, Result } from "../msgs";
+import { 
+    TstAssignment, TstComponent, 
+    TstNamespace, TstResult, 
+    TstTransform 
+} from "../tsts";
+import { Result } from "../msgs";
 import { RESERVED_WORDS } from "../headers";
 import { TransEnv } from "../transforms";
 
@@ -21,8 +25,6 @@ export class InvalidAssignmentTransform extends TstTransform {
             case TstAssignment:
                 return this.transformAssignment(t as TstAssignment, env);
             case TstNamespace:
-                return t.transform(new InvalidAssignmentTransform(true), env);
-            case TstProject: 
                 return t.transform(new InvalidAssignmentTransform(true), env);
             default: 
                 return t.transform(new InvalidAssignmentTransform(false), env);

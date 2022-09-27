@@ -1,4 +1,10 @@
-import { TstRow, TstAssignment, TstBinary, TstComponent, TstEmpty, TstHeadedCell, TstHeader, TstNamespace, TstNegativeUnitTest, TstProject, TstReplace, TstReplaceTape, TstResult, TstTable, TstTransform, TstUnitTest } from "../tsts";
+import { 
+    TstComponent, TstEmpty, 
+    TstHeader, TstNegativeUnitTest, 
+    TstReplace, TstReplaceTape,
+    TstResult, TstGrid, 
+    TstTransform, TstUnitTest 
+} from "../tsts";
 import { TransEnv } from "../transforms";
 import { Msgs } from "../msgs";
 
@@ -27,7 +33,7 @@ export class CheckNamedParams extends TstTransform {
                 return this.transformNegativeUnitTest(t as TstNegativeUnitTest, env);
             case TstHeader:
                 return this.transformHeader(t as TstHeader, env);
-            case TstTable: // tables as transparent
+            case TstGrid: // tables as transparent
                 return t.transform(this, env);
             default:  // everything else is default
                 const defaultThis = new CheckNamedParams();

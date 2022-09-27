@@ -2,7 +2,7 @@ import {
     TstAssignment, TstBinaryOp, 
     TstComponent, TstEmpty,
     TstNegativeUnitTest, TstReplace, 
-    TstReplaceTape, TstResult, TstTable, 
+    TstReplaceTape, TstResult, TstGrid, 
     TstTableOp, TstTransform, TstUnitTest 
 } from "../tsts";
 import { Result } from "../msgs";
@@ -47,7 +47,7 @@ export class MissingParamsTransform extends TstTransform {
                         .bind(r => r.sibling);
         }
 
-        if (!(test.child instanceof TstTable) && !(test.child instanceof TstTableOp)) {
+        if (!(test.child instanceof TstGrid) && !(test.child instanceof TstTableOp)) {
             return result.err("Cannot execute tests",
                         "You can't nest another operator to the right of " + 
                         " a test block, it has to be a content table.")
@@ -110,7 +110,7 @@ export class MissingParamsTransform extends TstTransform {
                          .bind(r => r.sibling);
         }
 
-        if (!(test.child instanceof TstTable) && !(test.child instanceof TstTableOp)) {
+        if (!(test.child instanceof TstGrid) && !(test.child instanceof TstTableOp)) {
             return result.err("Cannot execute testnot",
                               "You can't nest another operator to the right of a testnot block, " + 
                               "it has to be a content table.")

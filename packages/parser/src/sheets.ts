@@ -8,14 +8,17 @@ import { TransEnv } from "./transforms";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 
 import { 
-    TstHeader, TstProject, 
-    TstNamespace, TstTable, 
+    TstHeader, TstGrid, 
     TstComponent, TstComment, 
     TstEnclosure, 
-    TstAnonymousOp
+    TstOp,
+    TstAssignment,
+    TstEmpty,
+    TstNamespace
 } from "./tsts";
 import { ALL_TST_TRANSFORMS } from "./transforms/allTransforms";
 import { Cell, CellPos, DevEnvironment, DummyCell } from "./util";
+import { NamespaceOp, parseOp } from "./ops";
 
 /**
  * Determines whether a line is empty
@@ -80,9 +83,9 @@ export class SheetProject extends SheetComponent {
         let tst: TstComponent = this.toTST();
         const transEnv = new TransEnv();
         const tstResult = ALL_TST_TRANSFORMS.transform(tst, transEnv)
-                                            .handleMsgs((_) => {});
+                                            .handleMsgs((m) => {});
         const grammar = tstResult.toGrammar(transEnv)
-                                 .handleMsgs((_) => {})
+                                 .handleMsgs((m) => {})
         
         // check to see if any names didn't get resolved
         const nameQualifier = new NameQualifierTransform(grammar as NsGrammar);
@@ -116,8 +119,8 @@ export class SheetProject extends SheetComponent {
         return results;
     }
 
-    public toTST(): TstProject {
-        const project = new TstProject(new DummyCell());
+    public toTST(): TstComponent {
+        const project = new TstNamespace(new DummyCell());
 
         for (const [sheetName, sheet] of Object.entries(this.sheets)) {
             if (sheetName == this.mainSheetName) {
@@ -211,12 +214,12 @@ export class Sheet extends SheetComponent {
      * felt that was information not relevant to the object itself.  It's only relevant to this algorithm,
      * so it should just stay here.
      */
-    public toTST(): TstNamespace {
+    public toTST(): TstComponent {
     
         // sheets are treated as having an invisible cell containing their names at 0, -1
         let startCell: SheetCell = new SheetCell(this, this.name, 0, -1);
 
-        let result = new TstNamespace(startCell);
+        let result = new TstOp(startCell, new NamespaceOp());
 
         let stack: {tst: TstEnclosure, row: number, col: number}[] = 
                 [{ tst: result, row: 0, col: -1 }];
@@ -272,7 +275,7 @@ export class Sheet extends SheetComponent {
                 // next check if this is "content" -- that is, something to the lower left
                 // of the topmost op.  NB: This is the only kind of operation we'll do on 
                 // empty cells, so that, if appropriate, we can mark them for syntax highlighting.
-                if (top.tst instanceof TstTable && colIndex >= top.col && rowIndex > top.row) {
+                if (top.tst instanceof TstGrid && colIndex >= top.col && rowIndex > top.row) {
                     top.tst.addContent(cell);
                     continue;
                 }
@@ -285,10 +288,11 @@ export class Sheet extends SheetComponent {
                 // either we're still in the spec row, or there's no spec row yet
                 if (cellText.endsWith(":")) {
                     // it's an operation, which starts a new enclosures
-                    const newEnclosure = new TstAnonymousOp(cell);
+                    const op = parseOp(cellText);
+                    const newEnclosure = new TstOp(cell, op);
                     cell.message(new CommandMsg());
 
-                    if (top.tst instanceof TstTable) {
+                    if (top.tst instanceof TstGrid) {
                         cell.message(Err(
                             `Unexpected operator: ${cell.text}`,
                             "This looks like an operator, but only a header can follow a header."
@@ -308,18 +312,18 @@ export class Sheet extends SheetComponent {
                     headerCell.getBackgroundColor(0.14) 
                 ));
                 
-                if (!(top.tst instanceof TstTable)) {
-                    const newTable = new TstTable(cell);
+                if (!(top.tst instanceof TstGrid)) {
+                    const newTable = new TstGrid(cell);
                     top.tst.addChild(newTable);
                     top = { tst: newTable, row: rowIndex, col: colIndex-1 };
                     stack.push(top);
                 }
-                (top.tst as TstTable).addHeader(headerCell);
+                (top.tst as TstGrid).addHeader(headerCell);
                 
             }
         }
     
-        return result;
+        return new TstAssignment(startCell, new TstEmpty(), result);
     }
 }
 
