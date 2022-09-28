@@ -3,7 +3,7 @@ import {
     BuiltInBinaryOp, ErrorOp, 
     ReplaceOp, TableOp, 
     TestNotOp, TestOp, 
-    UnreservedOp 
+    SymbolOp 
 } from "../ops";
 import { result, Result } from "../msgs";
 import { TransEnv } from "../transforms";
@@ -39,7 +39,7 @@ import {
                     return this.transformReplaceTape(t);
                 case BuiltInBinaryOp:
                     return this.transformBinary(t);
-                case UnreservedOp:
+                case SymbolOp:
                     return this.transformAssignment(t);
                 case ErrorOp:
                     return this.transformError(t);
@@ -197,8 +197,11 @@ import {
 
     public transformError(t: TstOp): TstResult {
         const op = t.op as ErrorOp;
+        const replacement = !(t.sibling instanceof TstEmpty) ?
+                            t.sibling :
+                            t.child
         return result(t).err(op.shortMsg, op.longMsg)
-                        .bind(t => t.child);         
+                        .bind(_ => replacement);      
     }
     
 }

@@ -56,9 +56,13 @@ const RESERVED_OPS: Set<string> = new Set([
 ]);
 
 export const RESERVED_WORDS = new Set([
-    ...SYMBOL, 
     ...RESERVED_HEADERS, 
     ...RESERVED_OPS
+]);
+
+export const RESERVED = new Set([
+    ...SYMBOL,
+    ...RESERVED_WORDS
 ]);
 
 
@@ -72,11 +76,14 @@ function tokenize(text: string): string[] {
     );
 }
 
+export type Requirement = "required" | "forbidden";
+
 export abstract class Op {
 
-    public get isBinary(): boolean {
-        return false;
+    public get siblingRequirement(): Requirement {
+        return "forbidden";
     }
+
 }
 
 export class TableOp extends Op { }
@@ -85,8 +92,8 @@ export class NamespaceOp extends Op { }
 
 export abstract class BinaryOp extends Op {
 
-    public get isBinary(): boolean {
-        return true;
+    public get siblingRequirement(): Requirement {
+        return "required";
     }
 }
 
@@ -99,7 +106,7 @@ export class AtomicReplaceOp extends BinaryOp { }
 export class ReplaceOp extends BinaryOp {
 
     constructor(
-        public child: UnreservedOp
+        public child: SymbolOp
     ) { 
         super();
     }
@@ -114,7 +121,14 @@ export class BuiltInBinaryOp extends BinaryOp {
     }
 }
 
-export class UnreservedOp extends Op {
+/**
+ * This is an op that holds any string that's not a reserved
+ * word. If it's going to become a TST, it becomes a TstAssignment,
+ * but that's not the only place we use these; it's also how
+ * arbitrary symbols are handled for operators that allow these like 
+ * "replace <tapename>:"
+ */
+export class SymbolOp extends Op {
 
     constructor(
         public text: string
@@ -127,8 +141,9 @@ export class UnreservedOp extends Op {
 export class ErrorOp extends Op {
 
     constructor(
+        public text: string,
         public shortMsg: string,
-        public longMsg: string
+        public longMsg: string,
     ) { 
         super();
     }
@@ -157,7 +172,7 @@ const OP_TESTNOT = MPSequence<Op>(
 
 const OP_UNRESERVED = MPUnreserved<Op>(
     RESERVED_WORDS, 
-    (s) => new UnreservedOp(s)
+    (s) => new SymbolOp(s)
 );
 
 const OP_ATOMIC_REPLACE = MPSequence<Op>(
@@ -165,16 +180,33 @@ const OP_ATOMIC_REPLACE = MPSequence<Op>(
     () => new AtomicReplaceOp()
 );
 
-const OP_REPLACE = MPSequence<Op>(
-    ["replace", OP_UNRESERVED], 
-    (c) => new ReplaceOp(c as UnreservedOp)
-);
-
-const OP_RESERVED = MPReserved<Op>(
+const OP_RESERVED_HEADER = MPReserved<Op>(
     RESERVED_HEADERS, 
-    (s) => new ErrorOp("Reserved word in operator", 
+    (s) => new ErrorOp(s, "Reserved word in operator", 
             "This cell has to be a symbol name or " +
             `an operator, but it's a reserved word ${s}.`)
+);
+
+const OP_RESERVED_WORD = MPReserved<Op>(
+    RESERVED_WORDS, 
+    (s) => new ErrorOp(s, "Reserved word in operator", 
+            "This cell has to be a symbol name or " +
+            `an operator, but it's a reserved word '${s}'.`)
+);
+
+const OP_REPLACE = MPSequence<Op>(
+    ["replace", OP_UNRESERVED], 
+    (c) => new ReplaceOp(c as SymbolOp)
+);
+
+const OP_REPLACE_ERROR = MPSequence<Op>(
+    ["replace", OP_RESERVED_WORD], 
+    (c) => { 
+        const s = (c as ErrorOp).text;
+        return new ErrorOp(s, "Reserved word in operator",
+            "This replace has to be followed by a tape name, " +
+            `but is instead followed by the reserved word '${s}'`);
+    }
 );
 
 const OP_BINARY = MPReserved<Op>(
@@ -185,9 +217,10 @@ const OP_BINARY = MPReserved<Op>(
 const OP_EXPR: MPParser<Op> = MPAlternation(
     OP_TABLE, OP_NAMESPACE,
     OP_TEST, OP_TESTNOT,
-    OP_ATOMIC_REPLACE, OP_REPLACE,
+    OP_ATOMIC_REPLACE, 
+    OP_REPLACE, OP_REPLACE_ERROR,
     OP_BINARY,
-    OP_UNRESERVED, OP_RESERVED
+    OP_UNRESERVED, OP_RESERVED_HEADER
 );
 
 const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
@@ -200,7 +233,7 @@ export function parseOp(text: string): Op {
     const results = miniParse(tokenize, OP_EXPR_WITH_COLON, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorOp("Invalid operator",
+        return new ErrorOp(text, "Invalid operator",
                 "This ends in a colon so it looks like an operator, but it cannot be parsed.")
     }
     

@@ -6,7 +6,7 @@ import {
     TstOp, TstEmpty, 
     TstBinary
 } from "../tsts";
-import { NamespaceOp, UnreservedOp } from "../ops";
+import { NamespaceOp, SymbolOp } from "../ops";
 
 /**
  * Namespace works somewhat differently from other operators,
@@ -57,7 +57,7 @@ export class CreateNamespaces extends TstTransform {
         for (const child of children) {
 
             if (child instanceof TstOp &&
-                child.op.isBinary) {
+                child.op.siblingRequirement == "required") {
                 
                 const prev = newChildren.pop();
                 if (prev == undefined) {
@@ -68,7 +68,7 @@ export class CreateNamespaces extends TstTransform {
                 }
 
                 if (prev instanceof TstOp &&
-                    prev.op instanceof UnreservedOp) {
+                    prev.op instanceof SymbolOp) {
                     // it's an assignment, so adjust the scope 
                     // of the assignment so it includes the operator
                     // too

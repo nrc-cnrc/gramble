@@ -242,15 +242,10 @@ export class ResultDict<T> extends Result<Dict<T>> {
     }
 }
 
-
 export class ResultVoid extends Result<void> {
-
-    constructor(
-        msgs: Msgs = []
-    ) { 
+    constructor(msgs: Msgs = []) { 
         super(void(0), msgs);
     }
-
 }
 
 export function result<T>(item: T): Result<T> {

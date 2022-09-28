@@ -126,6 +126,20 @@ export class TstHeader extends TstCellComponent {
 
 }
 
+export class TstContent extends TstCellComponent {
+
+    constructor(
+        cell: Cell,
+    ) {
+        super(cell);
+    }
+    
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return new TstContent(this.cell).msg();
+    }
+
+}
+
 export class TstHeadedCell extends TstCellComponent {
 
     constructor(

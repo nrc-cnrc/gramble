@@ -9,6 +9,16 @@ import { TransEnv } from "../transforms";
 import { Result, result } from "../msgs";
 import { TagHeader } from "../headers";
 
+/**
+ * This transformation checks whether named parameters in headers
+ * (e.g. `from text`) are appropriately licensed by the operator that
+ * encloses them.
+ * 
+ * If the named parameter is invalid, it creates an error message, and
+ * tries to fix the header.  If the header is a TagHeader and the operator
+ * allows unnamed params, then the fix is to remove that TagHeader in favor 
+ * of its child.  Otherwise, the fix is to remove the header entirely.
+ */
 export class CheckNamedParams extends TstTransform {
 
     constructor(
@@ -92,7 +102,7 @@ export class CheckNamedParams extends TstTransform {
                               "an unnamed parameter" :
                               `a parameter named ${tag}`;
 
-            if (h.header instanceof TagHeader) {
+            if (h.header instanceof TagHeader && this.permissibleParams.has("__")) {
                 // if we can easily remove the tag, try that
                 const newHeader = new TstHeader(h.cell, h.header.child);
                 return result(h).err("Invalid parameter",

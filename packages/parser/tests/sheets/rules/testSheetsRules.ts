@@ -3,7 +3,6 @@ import {
     testHasVocab, testGrammar 
 } from "../../testUtils";
 import * as path from 'path';
-import { VERBOSE_DEBUG, VERBOSE_STATES } from "../../../src/util";
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
 
@@ -32,12 +31,25 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Replacing wrong tape', function() {
         const project = sheetFromFile(
             `${DIR}/replaceWrongTape.csv`);
-        testErrors(project, [["replaceWrongTape",3,1,"error"]]);
+        testErrors(project, [
+            ["replaceWrongTape",3,1,"error"]
+        ]);
         testGrammar(project, [
             {"text":"aba"}
         ]);
     }); 
     
+    describe('Replace but the tape is a reserved word', function() {
+        const project = sheetFromFile(
+            `${DIR}/replaceReservedWord.csv`);
+        testErrors(project, [
+            ["replaceReservedWord",3,1,"error"]
+        ]);
+        testGrammar(project, [
+            {"text":"aba"}
+        ]);
+    }); 
+
     describe('Simple replace with embed', function() {
         const project = sheetFromFile(
             `${DIR}/replaceEmbed.csv`);
