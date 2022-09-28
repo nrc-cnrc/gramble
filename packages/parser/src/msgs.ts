@@ -101,7 +101,8 @@ function isPositioned(p: any): p is Positioned {
     return p.pos !== undefined;
 }
 
-export type Func<T1,T2> = (input: T1) => (T2|Result<T2>);
+type MsgCallback = (m: Msg) => void; 
+type Func<T1,T2> = (input: T1) => (T2|Result<T2>);
 
 export class Result<T> {
 
@@ -122,24 +123,24 @@ export class Result<T> {
         return result.msg(this.msgs);
     }
 
-    public msg(ms: Msgs): Result<T> {
-        return new Result(this.item, this.msgs.concat(ms));
+    public msg(m: Msg | Msgs): Result<T> {
+        return new Result(this.item, this.msgs.concat(m));
     }
 
     public err(shortMsg: string, longMsg: string): Result<T> {
         const e = Err(shortMsg, longMsg);
         if (isPositioned(this.item)) {
-            return this.msg([e.localize(this.item.pos)]);
+            return this.msg(e.localize(this.item.pos));
         }
-        return this.msg([e]);
+        return this.msg(e);
     }
     
     public warn(longMsg: string): Result<T> {
         const e = Warn(longMsg);
         if (isPositioned(this.item)) {
-            return this.msg([e.localize(this.item.pos)]);
+            return this.msg(e.localize(this.item.pos));
         }
-        return this.msg([e]);
+        return this.msg(e);
     }
 
     public log(): Result<T> {
@@ -173,7 +174,6 @@ export class Result<T> {
     }
 }
 
-type MsgCallback = (m: Msg) => void;
 
 export class ResultList<T> extends Result<T[]> {
 
@@ -200,9 +200,6 @@ export class ResultList<T> extends Result<T[]> {
     }
 }
 
-export function resultList<T>(items: T[]): ResultList<T> {
-    return new ResultList(items);
-}
 
 export class ResultDict<T> extends Result<Dict<T>> {
 
@@ -229,9 +226,6 @@ export class ResultDict<T> extends Result<Dict<T>> {
     }
 }
 
-export function resultDict<T>(items: Dict<T>): ResultDict<T> {
-    return new ResultDict(items);
-}
 
 export class ResultVoid extends Result<void> {
 
@@ -243,6 +237,16 @@ export class ResultVoid extends Result<void> {
 
 }
 
-export function resultVoid(msgs: Msgs = []): ResultVoid {
-    return new ResultVoid(msgs);
+export function result<T>(item: T): Result<T> {
+    return new Result(item);
 }
+
+export function resultList<T>(items: T[]): ResultList<T> {
+    return new ResultList(items);
+}
+
+export function resultDict<T>(items: Dict<T>): ResultDict<T> {
+    return new ResultDict(items);
+}
+
+export const unit = new ResultVoid();

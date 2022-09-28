@@ -89,7 +89,7 @@ export class NameQualifierTransform extends IdentityTransform {
 
         // didn't find it
         const msg = new MissingSymbolError(g.name);
-        return new EpsilonGrammar().msg([msg]);
+        return new EpsilonGrammar().msg(msg);
     }
 
 }

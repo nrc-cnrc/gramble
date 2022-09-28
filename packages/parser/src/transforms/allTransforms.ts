@@ -1,5 +1,4 @@
 import { CreateNamespaces } from "./createNamespaces";
-import { MissingParamsTransform } from "./missingParams";
 import { InvalidAssignmentTransform } from "./invalidAssignment";
 import { TransEnv, Transform } from "../transforms";
 import { Grammar, GrammarTransform, NsGrammar } from "../grammars";
@@ -60,9 +59,8 @@ export const ALL_TST_TRANSFORMS =
     new CreateNamespaces().compose(
     new CreateOps().compose(
     new InvalidAssignmentTransform().compose(
-    new MissingParamsTransform().compose(
     new CheckNamedParams().compose(
-    new RescopeLeftBinders())))))
+    new RescopeLeftBinders()))))
 
 export const ALL_GRAMMAR_TRANSFORMS =
     wrap(NameQualifierTransform).compose(

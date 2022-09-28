@@ -33,13 +33,13 @@ export class RescopeLeftBinders extends TstTransform {
             case TstSequence:
                 return this.transformCellSequence(t as TstSequence, env);
             default: 
-                return t.transform(this, env);
+                return t.mapChildren(this, env);
         }
     }
     
     transformCellSequence(t: TstSequence, env: TransEnv): TstResult {
         
-        const [result, msgs] = t.transform(this, env)
+        const [result, msgs] = t.mapChildren(this, env)
                                 .destructure() as [TstSequence, Msgs];
 
         const newChildren: TstComponent[] = [];

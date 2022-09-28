@@ -27,12 +27,12 @@ export class CreateNamespaces extends TstTransform {
             case TstOp:
                 return this.transformOp(t as TstOp, env);
             default: 
-                return t.transform(this, env);
+                return t.mapChildren(this, env);
         }
     }
 
     public transformOp(t: TstOp, env: TransEnv): TstResult {
-        const [result, msgs] = t.transform(this, env)
+        const [result, msgs] = t.mapChildren(this, env)
                                 .destructure() as [TstOp, Msgs];
 
         if (!(result.op instanceof NamespaceOp)) {

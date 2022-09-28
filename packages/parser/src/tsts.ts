@@ -24,7 +24,7 @@ import {
     parseHeaderCell,
     TapeNameHeader
 } from "./headers";
-import { ContentMsg, Err, Msg, Msgs, Result, resultList, Warn, resultDict, ResultVoid, resultVoid } from "./msgs";
+import { ContentMsg, Err, Msg, Msgs, Result, resultList, Warn, resultDict, ResultVoid, unit } from "./msgs";
 import { Transform, TransEnv } from "./transforms";
 import { Op } from "./ops";
 
@@ -42,7 +42,7 @@ export abstract class TstComponent implements Positioned {
     }   
 
     public abstract toGrammar(env: TransEnv): GrammarResult;
-    public abstract transform(f: TstTransform, env: TransEnv): TstResult;
+    public abstract mapChildren(f: TstTransform, env: TransEnv): TstResult;
 
     /**
      * Most kinds of components only represent a grammar, that will be
@@ -67,8 +67,8 @@ export abstract class TstComponent implements Positioned {
             .bind(c => []);
     }
 
-    public msg(msgs: Msgs = []): TstResult {
-        return new TstResult(this, msgs);
+    public msg(m: Msg | Msgs = []): TstResult {
+        return new TstResult(this).msg(m);
     }
 }
 
@@ -107,7 +107,7 @@ export class TstHeader extends TstCellComponent {
         super(cell);
     }
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return new TstHeader(this.cell, this.header).msg();
     }
 
@@ -135,7 +135,7 @@ export class TstHeadedCell extends TstCellComponent {
         super(content);
     }
     
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return this.msg();
     }
 
@@ -155,7 +155,7 @@ export class TstRename extends TstCellComponent {
         super(content);
     }
     
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return this.msg();
     }
     
@@ -182,7 +182,7 @@ export class TstHide extends TstCellComponent {
         super(content);
     }
     
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return this.msg();
     }
     
@@ -205,7 +205,7 @@ export class TstFilter extends TstCellComponent {
         super(content);
     }
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return this.msg();
     }
     
@@ -221,7 +221,7 @@ export class TstFilter extends TstCellComponent {
 
 export class TstEmpty extends TstComponent {
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return this.msg();
     }
 
@@ -236,7 +236,7 @@ export class TstEmpty extends TstComponent {
 
 export class TstComment extends TstCellComponent {
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return this.msg();
     }
 
@@ -298,7 +298,7 @@ export class TstBinary extends TstEnclosure {
         super(cell);
     }
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
                 .bind(([s,c]) => new TstBinary(this.cell, s, c));
@@ -322,7 +322,6 @@ export class TstBinary extends TstEnclosure {
         if (this.child instanceof TstBinary && 
                 child instanceof TstCellComponent &&
                 this.child.pos.col != child.pos.col) {
-            console.log("weird");
             msgs.push(Warn(
                 "This operator is in an unexpected column.  Did you mean for it " +
                 `to be in column ${this.child.pos.col}, ` + 
@@ -334,14 +333,14 @@ export class TstBinary extends TstEnclosure {
             child.sibling = this.child;
         }
         this.child = child;
-        return resultVoid(msgs);
+        return unit.msg(msgs);
     }
 
 }
 
 export class TstTableOp extends TstBinary {
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
                 .bind(([s,c]) => new TstTableOp(this.cell, s, c));
@@ -378,7 +377,7 @@ export class TstOp extends TstBinary {
         super(cell, sibling, child);
     }
         
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
                 .bind(([s,c]) => new TstOp(this.cell, this.op, s, c));
@@ -397,7 +396,7 @@ export class TstBinaryOp extends TstBinary {
         super(cell, sibling, child);
     }
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
             .bind(([s,c]) => new TstBinaryOp(this.cell, this.op, s, c));
@@ -424,7 +423,7 @@ export class TstReplaceTape extends TstBinary {
         super(cell, sibling, child);
     }
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
             .bind(([s,c]) => new TstReplaceTape(this.cell, this.tape, s, c));
@@ -477,7 +476,7 @@ export class TstReplace extends TstBinary {
 
     public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
                 .bind(([s,c]) => new TstReplace(this.cell, s, c));
@@ -537,7 +536,7 @@ export class TstUnitTest extends TstBinary {
 
     public static VALID_PARAMS = [ "__", "unique" ];
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
                 .bind(([s,c]) => new TstUnitTest(this.cell, s, c));
@@ -589,7 +588,7 @@ export class TstNegativeUnitTest extends TstUnitTest {
 
     public static VALID_PARAMS = [ "__" ];
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
             .bind(([s,c]) => new TstNegativeUnitTest(this.cell, s, c));
@@ -638,7 +637,7 @@ export class TstGrid extends TstBinary {
         super(cell, sibling, child);
     }
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         const [sib, sMsgs] = f.transform(this.sibling, env).destructure();
         const [child, cMsgs] = f.transform(this.child, env).destructure();
         const [headers, hMsgs] = resultList(this.headers)
@@ -667,7 +666,7 @@ export class TstGrid extends TstBinary {
     }
 
     public addContent(cell: Cell): ResultVoid {
-        const msgs = resultVoid();
+        const msgs = unit;
 
         // make sure we have a header
         const headerCell = this.findHeader(cell.pos.col);
@@ -737,7 +736,7 @@ export class TstSequence extends TstCellComponent {
         super(cell);
     }
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList(this.children)
                    .map(c => f.transform(c, env))
                    .bind((cs) => new TstSequence(this.cell, cs));
@@ -746,10 +745,10 @@ export class TstSequence extends TstCellComponent {
     public addContent(header: TstHeader, cell: Cell): ResultVoid {
         const newCell = new TstHeadedCell(header, cell);
         this.children.push(newCell);
-        return resultVoid([new ContentMsg(
+        return unit.msg(new ContentMsg(
             header.getBackgroundColor(),
             header.getFontColor()
-        )]);
+        ));
     }
     
     public toGrammar(env: TransEnv): GrammarResult {
@@ -772,7 +771,7 @@ export class TstRow extends TstCellComponent {
         super(cell);
     }
     
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultDict(this.params)
                 .map(c => f.transform(c, env) as Result<TstSequence>)
                 .bind(cs => new TstRow(this.cell, cs));
@@ -800,22 +799,19 @@ export class TstRow extends TstCellComponent {
 
 export class TstAssignment extends TstBinary {
 
-    public trimmedText: string;
     constructor(
         cell: Cell,
+        public name: string,
         sibling: TstComponent = new TstEmpty(),
         child: TstComponent = new TstEmpty()
     ) {
         super(cell, sibling, child);
-        this.trimmedText = cell.text.endsWith(":")
-                            ? cell.text.slice(0, cell.text.length-1).trim()
-                            : cell.text;    
     }
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
-            .bind(([s,c]) => new TstAssignment(this.cell, s, c));
+            .bind(([s,c]) => new TstAssignment(this.cell, this.name, s, c));
     }
 
     public toGrammar(env: TransEnv): GrammarResult {
@@ -835,10 +831,10 @@ export class TstNamespace extends TstCellComponent {
     
     public addChild(child: TstComponent): ResultVoid {
         this.children.push(child);
-        return resultVoid();
+        return unit;
     }
 
-    public transform(f: TstTransform, env: TransEnv): TstResult {
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList(this.children)
                 .map(c => f.transform(c, env) as Result<TstEnclosure>)
                 .bind(cs => new TstNamespace(this.cell, cs));
@@ -865,15 +861,15 @@ export class TstNamespace extends TstCellComponent {
             }
 
             if (child instanceof TstAssignment) {
-                const referent = ns.getSymbol(child.trimmedText);
+                const referent = ns.getSymbol(child.name);
                 if (referent != undefined) {
                     // we're reassigning an existing symbol!
                     msgs.push(Err('Reassigning existing symbol', 
-                        `The symbol ${child.trimmedText} already refers to another grammar above.`,
+                        `The symbol ${child.name} already refers to another grammar above.`,
                         child.pos));
                     continue;
                 }     
-                ns.addSymbol(child.trimmedText, grammar);
+                ns.addSymbol(child.name, grammar);
             }
             
         }

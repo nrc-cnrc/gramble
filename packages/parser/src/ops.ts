@@ -7,9 +7,9 @@ import {
     TstResult, 
     TstTableOp, TstTransform,
     TstNegativeUnitTest, TstReplace, 
-    TstReplaceTape, TstUnitTest 
+    TstReplaceTape, TstUnitTest, TstGrid 
 } from "./tsts";
-import { Err, Result } from "./msgs";
+import { Err, result, Result, resultDict } from "./msgs";
 import { 
     miniParse, MPAlternation, 
     MPParser, MPReserved, 
@@ -50,7 +50,7 @@ const RESERVED_HEADERS = new Set([
 ]);
 
 
-const BINARY_OPS_MAP: {[opName: string]: (c1: Grammar, c2: Grammar) => Grammar;} = {
+export const BINARY_OPS_MAP: {[opName: string]: (c1: Grammar, c2: Grammar) => Grammar;} = {
     "or": (c1, c2) => new AlternationGrammar([c1, c2]),
     "concat": (c1, c2) => new SequenceGrammar([c1, c2]),
     "join": (c1, c2) => new JoinGrammar(c1, c2),
@@ -67,7 +67,7 @@ const RESERVED_OPS: Set<string> = new Set([
     ...BINARY_OPS
 ]);
 
-const RESERVED_WORDS = new Set([
+export const RESERVED_WORDS = new Set([
     ...SYMBOL, 
     ...RESERVED_HEADERS, 
     ...RESERVED_OPS
@@ -89,33 +89,11 @@ export abstract class Op {
     public get isBinary(): boolean {
         return false;
     }
-
-    public abstract transform(t: TstOp): TstResult;
 }
 
-export class TableOp extends Op {
+export class TableOp extends Op { }
 
-    public transform(t: TstOp): TstResult {
-        return new TstTableOp(t.cell, t.sibling, t.child).msg();
-    }
-}
-
-export class NamespaceOp extends Op {
-
-    public transform(t: TstOp): TstResult {
-        const children: TstComponent[] = [];
-        let currentChild: TstComponent = t.child;
-        while (currentChild instanceof TstBinary) {
-            const sib = currentChild.sibling;
-            currentChild.sibling = new TstEmpty();
-            children.push(currentChild);
-            currentChild = sib;
-        }
-        children.reverse();
-        return new TstNamespace(t.cell, children).msg();
-    }
-
-}
+export class NamespaceOp extends Op { }
 
 export abstract class BinaryOp extends Op {
 
@@ -124,24 +102,11 @@ export abstract class BinaryOp extends Op {
     }
 }
 
-export class TestOp extends BinaryOp {
-    public transform(t: TstOp): TstResult {
-        return new TstUnitTest(t.cell, t.sibling, t.child).msg();
-    }
+export class TestOp extends BinaryOp { }
 
-}
+export class TestNotOp extends BinaryOp { }
 
-export class TestNotOp extends BinaryOp {
-    public transform(t: TstOp): TstResult {
-        return new TstNegativeUnitTest(t.cell, t.sibling, t.child).msg();
-    }
-}
-
-export class AtomicReplaceOp extends BinaryOp {
-    public transform(t: TstOp): TstResult {
-        return new TstReplace(t.cell, t.sibling, t.child).msg();
-    }
-}
+export class AtomicReplaceOp extends BinaryOp { }
 
 export class ReplaceOp extends BinaryOp {
 
@@ -149,12 +114,6 @@ export class ReplaceOp extends BinaryOp {
         public child: UnreservedOp
     ) { 
         super();
-    }
-
-    public transform(t: TstOp): TstResult {
-        const tapeName = this.child.text;
-        return new TstReplaceTape(t.cell, tapeName, 
-                                  t.sibling, t.child).msg();
     }
 }
 
@@ -164,11 +123,6 @@ export class BuiltInBinaryOp extends BinaryOp {
         public text: string
     ) { 
         super();
-    }
-
-    public transform(t: TstOp): TstResult {
-        const op = BINARY_OPS_MAP[this.text];
-        return new TstBinaryOp(t.cell, op, t.sibling, t.child).msg();
     }
 }
 
@@ -180,12 +134,6 @@ export class UnreservedOp extends Op {
         super();
     }
 
-    public transform(t: TstOp): TstResult {
-        // This only gets called if the UnreservedOp is at the top
-        // level.  Otherwise, the UnreservedOp is only being used
-        // to store a string (like a tape name)
-        return new TstAssignment(t.cell, t.sibling, t.child).msg();
-    }
 }
 
 export class ErrorOp extends Op {
@@ -195,10 +143,6 @@ export class ErrorOp extends Op {
         public longMsg: string
     ) { 
         super();
-    }
-
-    public transform(t: TstOp): TstResult {
-        return t.msg().err(this.shortMsg, this.longMsg);            
     }
     
 }

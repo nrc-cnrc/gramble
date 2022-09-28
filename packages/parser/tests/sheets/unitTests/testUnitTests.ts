@@ -187,7 +187,9 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('table: op under unit test', function() {
         const interpreter = sheetFromFile(`${DIR}/tableUnderUnitTest.csv`);
         interpreter.runUnitTests();
-        testErrors(interpreter, []);
+        testErrors(interpreter, [
+            ["tableUnderUnitTest",12,1,"error"]
+        ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -199,7 +201,9 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('table: op under negative unit test', function() {
         const interpreter = sheetFromFile(`${DIR}/tableUnderNegativeUnitTest.csv`);
         interpreter.runUnitTests();
-        testErrors(interpreter, []);
+        testErrors(interpreter, [
+            ["tableUnderNegativeUnitTest",12,1,"error"]
+        ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },

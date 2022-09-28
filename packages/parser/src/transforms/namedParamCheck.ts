@@ -34,10 +34,10 @@ export class CheckNamedParams extends TstTransform {
             case TstHeader:
                 return this.transformHeader(t as TstHeader, env);
             case TstGrid: // tables as transparent
-                return t.transform(this, env);
+                return t.mapChildren(this, env);
             default:  // everything else is default
                 const defaultThis = new CheckNamedParams();
-                return t.transform(defaultThis, env);
+                return t.mapChildren(defaultThis, env);
         }
     }
     
@@ -80,7 +80,7 @@ export class CheckNamedParams extends TstTransform {
     }
 
     public transformHeader(t: TstHeader, env: TransEnv): TstResult {
-        const result = t.transform(this, env);
+        const result = t.mapChildren(this, env);
         const [header, _] = result.destructure() as [TstHeader, Msgs];
         const tag = header.header.getParamName();
         if (!this.permissibleParams.has(tag)) {

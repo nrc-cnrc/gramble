@@ -28,7 +28,7 @@ import {
     constructParallel,
     Env
 } from "./exprs";
-import { Func, Msgs, Result, ResultList } from "./msgs";
+import { Msg, Msgs, Result } from "./msgs";
 
 import { 
     BitsetTape,
@@ -155,8 +155,8 @@ export abstract class Grammar implements Positioned {
         return undefined;
     }
     
-    public msg(msgs: Msgs = []): GrammarResult {
-        return new GrammarResult(this, msgs);
+    public msg(m: Msg | Msgs = []): GrammarResult {
+        return new GrammarResult(this).msg(m);
     }
     
     protected _tapes: string[] | undefined = undefined;

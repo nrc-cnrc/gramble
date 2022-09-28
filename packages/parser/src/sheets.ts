@@ -2,7 +2,7 @@ import { NsGrammar } from "./grammars";
 import { 
     CommandMsg, CommentMsg, 
     Err, HeaderMsg, 
-    MissingSymbolError, Msg, Msgs 
+    MissingSymbolError, Msgs 
 } from "./msgs";
 import { TransEnv } from "./transforms";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
@@ -19,7 +19,7 @@ import {
 } from "./tsts";
 import { ALL_TST_TRANSFORMS } from "./transforms/allTransforms";
 import { Cell, CellPos, DevEnvironment } from "./util";
-import { NamespaceOp, parseOp } from "./ops";
+import { NamespaceOp, parseOp, RESERVED_WORDS } from "./ops";
 import { parseHeaderCell } from "./headers";
 
 /**
@@ -83,10 +83,10 @@ export class SheetProject extends SheetComponent {
         const sheet = new Sheet(this, sheetName, cells);
         this.sheets[sheetName] = sheet;
         let tst: TstComponent = this.toTST()
-                                    .msgTo((m) => {});
+                                    .msgTo((_) => {});
         const transEnv = new TransEnv();
         const tstResult = ALL_TST_TRANSFORMS.transform(tst, transEnv)
-                                            .msgTo((m) => {});
+                                            .msgTo((_) => {});
         const grammar = tstResult.toGrammar(transEnv)
                                  .msgTo((m) => {})
         
@@ -216,8 +216,17 @@ export class Sheet extends SheetComponent {
     
         const msgs: Msgs = [];
         
+        let name = this.name;
+        if (RESERVED_WORDS.has(name)) {
+            // we'll never be able to refer to this sheet elsewhere
+            msgs.push(Err("Sheet name reserved",
+                `You can't call a worksheet ${name}`,
+                new CellPos(this.name, 0, 0)));
+            name = this.name + "_ERR";
+        }
+
         // sheets are treated as having an invisible cell containing their names at 0, -1
-        let startCell = new Cell(this.name, new CellPos(this.name, 0, -1));
+        let startCell = new Cell(name, new CellPos(name, 0, -1));
 
         let result = new TstOp(startCell, new NamespaceOp());
 
@@ -251,7 +260,7 @@ export class Sheet extends SheetComponent {
                                ? this.cells[rowIndex][colIndex].trim().normalize("NFD")
                                : "";
                 
-                const cellPos = new CellPos(this.name, rowIndex, colIndex);
+                const cellPos = new CellPos(name, rowIndex, colIndex);
                 const cell = new Cell(cellText, cellPos);
                 let top = stack[stack.length-1];
 
@@ -332,6 +341,6 @@ export class Sheet extends SheetComponent {
             }
         }
     
-        return new TstAssignment(startCell, new TstEmpty(), result).msg(msgs);
+        return new TstAssignment(startCell, name, new TstEmpty(), result).msg(msgs);
     }
 }

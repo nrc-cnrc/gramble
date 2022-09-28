@@ -31,7 +31,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Sheet name using a reserved word', function() {
         const project = sheetFromFile(`${DIR}/optional.csv`);
         testErrors(project, [
-            ["optional", 0, -1, "error"]
+            ["optional", 0, 0, "error"]
         ]);
         testGrammar(project,[
             {"text":"moobaz","gloss":"jump-2SG"},
@@ -52,7 +52,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    
     describe('Reference to a missing symbol', function() {
         const project = sheetFromFile(`${DIR}/missingSymbol.csv`);
         testErrors(project, [
@@ -70,7 +69,6 @@ describe(`${path.basename(module.filename)}`, function() {
             ["opMissingSibling", 9, 1, "warning"]
         ]);
         testGrammar(project, [
-            {},
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
@@ -92,7 +90,6 @@ describe(`${path.basename(module.filename)}`, function() {
             ["opMissingChild", 12, 1, "warning"]
         ]);
         testGrammar(project, [
-            {},
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
