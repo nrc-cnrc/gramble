@@ -351,7 +351,6 @@ function makeInterpreter() {
 
     const devEnv = new GoogleSheetsDevEnvironment(sheetName);
     const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName);
-    interpreter.runChecks();
     return [interpreter, devEnv];
 }
 

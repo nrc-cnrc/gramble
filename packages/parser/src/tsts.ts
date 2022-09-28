@@ -16,7 +16,7 @@ import {
     EqualsGrammar, HideGrammar,
     GrammarResult,
 } from "./grammars";
-import { Cell, CellPos, Positioned } from "./util";
+import { Cell, CellPos } from "./util";
 import {
     DEFAULT_SATURATION,
     DEFAULT_VALUE,
@@ -35,7 +35,7 @@ export abstract class TstTransform extends Transform<TstComponent,TstComponent> 
 
 type BinaryOp = (c1: Grammar, c2: Grammar) => Grammar;
 
-export abstract class TstComponent implements Positioned {
+export abstract class TstComponent {
 
     public get pos(): CellPos | undefined {
         return undefined;
@@ -685,9 +685,7 @@ export class TstGrid extends TstBinary {
         }
 
         const lastRow = this.rows[this.rows.length-1];
-        lastRow.addContent(headerCell, cell);
-
-        return msgs;
+        return lastRow.addContent(headerCell, cell).msg(msgs);
     }
 
     public addChild(newChild: TstComponent): ResultVoid {
@@ -777,13 +775,13 @@ export class TstRow extends TstCellComponent {
                 .bind(cs => new TstRow(this.cell, cs));
     }
 
-    public addContent(header: TstHeader, cell: Cell): void {
+    public addContent(header: TstHeader, cell: Cell): ResultVoid {
         // get the param name and make sure it's in .params
         const tag = header.header.getParamName();
         if (!(tag in this.params)) {
             this.params[tag] = new TstSequence(cell);
         }
-        this.params[tag].addContent(header, cell);
+        return this.params[tag].addContent(header, cell);
     }
 
     public toGrammar(env: TransEnv): GrammarResult {

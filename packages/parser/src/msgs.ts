@@ -1,4 +1,4 @@
-import { CellPos, Dict, Positioned } from "./util";
+import { CellPos, Dict } from "./util";
 
 type MsgType = "error" | "warning" | "info" | 
                 "command" | "header" | "comment" | "content"
@@ -110,7 +110,7 @@ export function Success(longMsg: string, pos?: CellPos): Msg {
     return new Msg("info", "success", longMsg, pos);
 }
 
-function isPositioned(p: any): p is Positioned {
+function isPositioned(p: any): p is { pos: CellPos } {
     return p.pos !== undefined;
 }
 

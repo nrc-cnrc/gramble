@@ -1,9 +1,11 @@
+import { Grammar } from "./grammars";
 import { Result } from "./msgs";
 import { SILENT, timeIt, VERBOSE_TIME } from "./util";
 
 export class TransEnv {
     verbose: number = SILENT;
     parallelize: boolean = false;
+    //ns: {[name: string]: Grammar} = {}
 }
 
 export abstract class Transform<T1,T2> {

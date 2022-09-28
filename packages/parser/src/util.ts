@@ -81,11 +81,6 @@ export class CellPos {
     }
 }
 
-export interface Positioned {
-    readonly pos?: CellPos;
-}
-
-
 export class Cell {
 
     constructor(

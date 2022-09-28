@@ -48,7 +48,6 @@ import {
     listDifference,
     listIntersection,
     listUnique,
-    Positioned,
     tokenizeUnicode
 } from "./util";
 
@@ -149,7 +148,7 @@ export interface GrammarTransform {
  *     component.
  */
 
-export abstract class Grammar implements Positioned {
+export abstract class Grammar {
 
     public get pos(): CellPos | undefined {
         return undefined;
