@@ -19,7 +19,7 @@ import { parseHeaderCell } from "../headers";
 export class CreateTST extends Transform<SheetComponent,TstComponent> {
 
     public get desc(): string {
-        return "Creating namespaces";
+        return "Creating TST";
     }
 
     public transform(t: SheetComponent, env: TransEnv): TstResult {
@@ -58,6 +58,41 @@ export class CreateTST extends Transform<SheetComponent,TstComponent> {
 
     }
     
+    /**
+     * Parses a grid of cells into a syntax tree -- specifically, a "Tabular Syntax Tree (TST)" that
+     * represents structures in the tabular syntax.
+     * 
+     * We conceptualize the grid as a nested set of "enclosures", objects representing a cell (like 
+     * the cell labeled "2" below) that "encloses" a rectangular region of cells to its right and 
+     * below.  "2" below encloses all the cells labeled A.  Enclosures can contain enclosures; 2 and
+     * 3 below are both enclosed by 1.  
+     * 
+        
+        * 1: 2: A  A  A  A  A
+        *       A  A  A  A  A
+        *       A  A  A  A  A
+        *    3: B  B  B  B  B
+        *       B  B  B  B  B
+        * 4: C  C  C  C  C  C
+        *    C  C  C  C  C  C
+    
+     * Since they can contain each other, the parse algorithm below maintains a stack of them.  When 
+     * parsing that first A, for example, the state of the stack would be [1,2].  
+     * 
+     * Enclosures are defined as enclosing until there's something in the cell below them, or 
+     * below and to the left, at which point the enclosure is popped off the stack and we start 
+     * a new enclosure.  For example, 3 finishes 2, and 4 finishes both 3 and 1.  
+     * 
+     * Along with the enclosure object, the stack also stores the top row of that enclosure, and the column
+     * index that will pop the enclosure off the stack (if we encounter a filled cell less-than-or-
+     * equal-to it).  This isn't always the same as the column it originally started in.  There's a 
+     * component called [TstTable] that represents just that rectangle alone -- just the A's, for 
+     * example -- and its critical column is the one just to the left of its first cell.  (If this weren't
+     * the case, the first A in the second row would pop off the table it was supposed to be added to.) 
+     * The critical column info used to be stored by each enclosure object itself, but in the end I
+     * felt that was information not relevant to the object itself.  It's only relevant to this algorithm,
+     * so it should just stay here.
+     */
     public transformSheet(t: Sheet, env: TransEnv): TstResult {
 
         const msgs: Msgs = [];
@@ -107,7 +142,6 @@ export class CreateTST extends Transform<SheetComponent,TstComponent> {
                     msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
                     continue;
                 }
-
 
                 // next check if the current cell pops anything off 
                 // the stack.  keep popping until the top of the stack 
@@ -189,7 +223,6 @@ export class CreateTST extends Transform<SheetComponent,TstComponent> {
  * @param row A list of strings, representing the cell text along that row
  * @returns True if the line is empty
  */
-
  function isLineEmpty(row: string[]): boolean {
     if (row.length == 0) {
         return true;

@@ -21,26 +21,28 @@ export class CreateNamespaces extends TstTransform {
 
     public transform(t: TstComponent, env: TransEnv): TstResult {
 
-        switch(t.constructor) {
-            case TstOp:
-                return this.transformOp(t as TstOp, env);
-            default: 
-                return t.mapChildren(this, env);
-        }
+        return t.mapChildren(this, env).bind(t => {
+            switch(t.constructor) {
+                case TstOp:
+                    return this.transformOp(t as TstOp, env);
+                default: 
+                    return t;
+            }
+        });
     }
 
     public transformOp(t: TstOp, env: TransEnv): TstResult {
-        const [result, msgs] = t.mapChildren(this, env)
-                                .destructure() as [TstOp, Msgs];
 
-        if (!(result.op instanceof NamespaceOp)) {
-            return result.msg(msgs);
+        const msgs: Msgs = [];
+
+        if (!(t.op instanceof NamespaceOp)) {
+            return t.msg(msgs);
         }
 
         const children: TstComponent[] = [];
 
         // flatten and reverse the results
-        let child = result.child;
+        let child = t.child;
         while (child instanceof TstBinary) {
             children.push(child);
             const next = child.sibling;

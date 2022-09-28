@@ -1,4 +1,10 @@
-import { AtomicReplaceOp, BINARY_OPS_MAP, BuiltInBinaryOp, ErrorOp, ReplaceOp, RESERVED_WORDS, TableOp, TestNotOp, TestOp, UnreservedOp } from "../ops";
+import { 
+    AtomicReplaceOp, BINARY_OPS_MAP, 
+    BuiltInBinaryOp, ErrorOp, 
+    ReplaceOp, TableOp, 
+    TestNotOp, TestOp, 
+    UnreservedOp 
+} from "../ops";
 import { result, Result } from "../msgs";
 import { TransEnv } from "../transforms";
 import { 
@@ -19,26 +25,26 @@ import {
         }
         
         const result = t.mapChildren(this, env) as Result<TstOp>;
-        return result.bind(c => {
-            switch(c.op.constructor) {
+        return result.bind(t => {
+            switch(t.op.constructor) {
                 case TestOp:
-                    return this.transformTest(c);
+                    return this.transformTest(t);
                 case TestNotOp:
-                    return this.transformTestNot(c);
+                    return this.transformTestNot(t);
                 case TableOp:
-                    return this.transformTable(c);
+                    return this.transformTable(t);
                 case AtomicReplaceOp:
-                    return this.transformReplace(c);
+                    return this.transformReplace(t);
                 case ReplaceOp:
-                    return this.transformReplaceTape(c);
+                    return this.transformReplaceTape(t);
                 case BuiltInBinaryOp:
-                    return this.transformBinary(c);
+                    return this.transformBinary(t);
                 case UnreservedOp:
-                    return this.transformAssignment(c);
+                    return this.transformAssignment(t);
                 case ErrorOp:
-                    return this.transformError(c);
+                    return this.transformError(t);
                 default: 
-                    throw new Error(`didn't handle ${c.op.constructor.name} op`);
+                    throw new Error(`didn't handle ${t.op.constructor.name} op`);
             }
         });
     }

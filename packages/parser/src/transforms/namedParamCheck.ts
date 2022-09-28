@@ -6,7 +6,8 @@ import {
     TstTransform, TstUnitTest 
 } from "../tsts";
 import { TransEnv } from "../transforms";
-import { Msgs } from "../msgs";
+import { Result, result } from "../msgs";
+import { TagHeader } from "../headers";
 
 export class CheckNamedParams extends TstTransform {
 
@@ -80,18 +81,29 @@ export class CheckNamedParams extends TstTransform {
     }
 
     public transformHeader(t: TstHeader, env: TransEnv): TstResult {
-        const result = t.mapChildren(this, env);
-        const [header, _] = result.destructure() as [TstHeader, Msgs];
-        const tag = header.header.getParamName();
-        if (!this.permissibleParams.has(tag)) {
-            const errMsg = (tag == "__") ?
-                            "an unnamed parameter" :
-                            `a parameter named ${tag}`;
-            return result.err("Invalid parameter name",
-                                "The operator to the left does not " +
-                                `expect ${errMsg}`)
-                         .bind(r => new TstEmpty());
-        }
-        return result;
+        const mapped = t.mapChildren(this, env) as Result<TstHeader>;
+        return mapped.bind(h => {
+            const tag = h.header.getParamName();
+            if (this.permissibleParams.has(tag)) {
+                return h; // we're good
+            }
+            // it's an unexpected header
+            const paramName = (tag == "__") ?
+                              "an unnamed parameter" :
+                              `a parameter named ${tag}`;
+
+            if (h.header instanceof TagHeader) {
+                // if we can easily remove the tag, try that
+                const newHeader = new TstHeader(h.cell, h.header.child);
+                return result(h).err("Invalid parameter",
+                        `The operator to the left does not expect ${paramName}`)
+                        .bind(_ => newHeader);
+            }
+
+            // otherwise return empty
+            return result(h).err("Invalid parameter",
+                `The operator to the left does not expect ${paramName}`)
+                .bind(_ => new TstEmpty());
+        });
     }
 }

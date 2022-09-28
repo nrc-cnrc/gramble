@@ -1,7 +1,6 @@
 import { 
     TstAssignment, TstBinary, TstComponent, 
-    TstNamespace, TstResult, 
-    TstTransform 
+    TstResult, TstTransform 
 } from "../tsts";
 import { Err, Msgs } from "../msgs";
 import { TransEnv } from "../transforms";

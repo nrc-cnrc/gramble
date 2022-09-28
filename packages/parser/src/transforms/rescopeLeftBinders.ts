@@ -29,21 +29,24 @@ export class RescopeLeftBinders extends TstTransform {
 
     public transform(t: TstComponent, env: TransEnv): TstResult {
 
-        switch(t.constructor) {
-            case TstSequence:
-                return this.transformCellSequence(t as TstSequence, env);
-            default: 
-                return t.mapChildren(this, env);
-        }
+        return t.mapChildren(this, env).bind(t => {
+
+            switch(t.constructor) {
+                case TstSequence:
+                    return this.transformCellSequence(t as TstSequence, env);
+                default: 
+                    return t;
+            }
+
+        });
     }
     
     transformCellSequence(t: TstSequence, env: TransEnv): TstResult {
         
-        const [result, msgs] = t.mapChildren(this, env)
-                                .destructure() as [TstSequence, Msgs];
+        const msgs: Msgs = [];
 
         const newChildren: TstComponent[] = [];
-        for (const child of result.children) {
+        for (const child of t.children) {
 
             if (!(child instanceof TstHeadedCell)) {
                 newChildren.push(child);
@@ -93,6 +96,6 @@ export class RescopeLeftBinders extends TstTransform {
             newChildren.push(child);
         }
 
-        return new TstSequence(result.cell, newChildren).msg(msgs);
+        return new TstSequence(t.cell, newChildren).msg(msgs);
     }
 }
