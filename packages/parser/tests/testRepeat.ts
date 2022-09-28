@@ -809,7 +809,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'x', t2: 'ee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('60a-2. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ⨝ t1:hx + t2:eeh (vocab hx/hex)', function() {
@@ -953,7 +954,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'x', t2: 'ee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('60d-2. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x & t1:hx + t2:eeh (vocab hx/hex)', function() {
