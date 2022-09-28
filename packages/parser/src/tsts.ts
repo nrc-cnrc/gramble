@@ -322,11 +322,10 @@ export class TstBinary extends TstEnclosure {
         if (this.child instanceof TstBinary && 
                 child instanceof TstCellComponent &&
                 this.child.pos.col != child.pos.col) {
-            msgs.push(Warn(
-                "This operator is in an unexpected column.  Did you mean for it " +
-                `to be in column ${this.child.pos.col}, ` + 
+            Warn("This operator is in an unexpected column.  Did you " +
+                `mean for it to be in column ${this.child.pos.col}, ` + 
                 `so that it's under the operator in cell ${this.child.pos}?`,
-                child.pos));
+                child.pos).msgTo(msgs);
         }
 
         if (child instanceof TstBinary) {
@@ -439,16 +438,16 @@ export class TstReplaceTape extends TstBinary {
         for (const [cell, paramDict] of params) {
 
             if (!("from" in paramDict)) {
-                newMsgs.push(Err(`Missing 'from' argument to replace'`,
+                Err(`Missing 'from' argument to replace'`,
                     "'replace:' requires a 'from' argument (e.g. 'from text')", 
-                    this.cell.pos));
+                    this.cell.pos).msgTo(newMsgs);
                 continue;
             }
             const fromArg = paramDict["from"];
             if (!("to" in paramDict)) {
-                newMsgs.push(Err(`Missing 'to' argument to replace'`,
+                Err(`Missing 'to' argument to replace'`,
                     "'replace:' requires a 'to' argument (e.g. 'to text')", 
-                    this.cell.pos));
+                    this.cell.pos).msgTo(newMsgs);
                 continue;
             }
             const toArg = paramDict["to"];
@@ -492,17 +491,17 @@ export class TstReplace extends TstBinary {
         for (const [cell, paramDict] of params) {
 
             if (!("from" in paramDict)) {
-                newMsgs.push(Err(`Missing 'from' argument to replace'`,
+                Err(`Missing 'from' argument to replace'`,
                     "'replace:' requires a 'from' argument (e.g. 'from text')",
-                    this.cell.pos));
+                    this.cell.pos).msgTo(newMsgs);
                 continue;
             }
 
             const fromArg = paramDict["from"];
             if (!("to" in paramDict)) {
-                newMsgs.push(Err(`Missing 'to' argument to replace'`,
+                Err(`Missing 'to' argument to replace'`,
                     "'replace:' requires a 'to' argument (e.g. 'to text')",
-                    this.cell.pos));
+                    this.cell.pos).msgTo(newMsgs);
                 continue;
             }
 
@@ -550,8 +549,8 @@ export class TstUnitTest extends TstBinary {
         for (const [cell, paramDict] of params) {
             const testInputs = paramDict["__"];
             if (testInputs == undefined) {
-                msgs.push(Err("Missing test inputs",
-                    `This test line does not have any inputs.`));
+                Err("Missing test inputs",
+                    `This test line does not have any inputs.`).msgTo(msgs);
                 continue;
             }
 
@@ -563,9 +562,10 @@ export class TstUnitTest extends TstBinary {
                     uniques = unique.getLiterals();
                 } catch (e) {
                     const errLoc = [...unique.locations, cell][0];
-                    msgs.push(Err("Ill-formed unique",
+                    Err("Ill-formed unique",
                         `Somewhere in this row there is an ill-formed uniqueness constraint.  ` +
-                        `Uniqueness constrains can only be literals.`, errLoc.pos));
+                        `Uniqueness constrains can only be literals.`, 
+                        errLoc.pos).msgTo(msgs);
                     continue;
                 }
             }
@@ -850,9 +850,9 @@ export class TstNamespace extends TstCellComponent {
                                             .msgTo(msgs);
             if (!(child instanceof TstAssignment) && !isLastChild) {
                 // warn that the child isn't going to be assigned to anything
-                msgs.push(Warn(
+                Warn(
                     "This content doesn't end up being assigned to anything and will be ignored.", 
-                    child.pos));
+                    child.pos).msgTo(msgs);
                 continue;
             }
 
@@ -864,9 +864,9 @@ export class TstNamespace extends TstCellComponent {
                 const referent = ns.getSymbol(child.name);
                 if (referent != undefined) {
                     // we're reassigning an existing symbol!
-                    msgs.push(Err('Reassigning existing symbol', 
+                    Err('Reassigning existing symbol', 
                         `The symbol ${child.name} already refers to another grammar above.`,
-                        child.pos));
+                        child.pos).msgTo(msgs);
                     continue;
                 }     
                 ns.addSymbol(child.name, grammar);

@@ -4,7 +4,7 @@ import {
     Err, HeaderMsg, 
     MissingSymbolError, Msgs 
 } from "./msgs";
-import { TransEnv } from "./transforms";
+import { TransEnv, Transform } from "./transforms";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 
 import { 
@@ -48,66 +48,16 @@ export abstract class SheetComponent {
 
 export class SheetProject extends SheetComponent {
 
-    protected sheets: {[name: string]: Sheet} = {};
+    public sheets: {[name: string]: Sheet} = {};
 
     constructor(
-        public devEnv: DevEnvironment,
         public mainSheetName: string
     ) { 
         super();
-        this.addSheet(mainSheetName);
     }
-    
+
     public hasSheet(name: string): boolean {
         return name in this.sheets;
-    }
-
-    public addSheet(sheetName: string): void {
-
-        if (this.hasSheet(sheetName)) {
-            // already loaded it, don't have to do anything
-            return;
-        }
-
-        if (!this.devEnv.hasSource(sheetName)) {
-            // this is probably a programmer error, in which they've attempted
-            // to reference a non-existent symbol, and we're trying to load it as
-            // a possible source file.  we don't freak out about it here, though;
-            // that symbol will generate an error message at the appropriate place.
-            return;
-        }
-
-        //console.log(`loading source file ${sheetName}`);
-        const cells = this.devEnv.loadSource(sheetName);
-
-        const sheet = new Sheet(this, sheetName, cells);
-        this.sheets[sheetName] = sheet;
-        let tst: TstComponent = this.toTST()
-                                    .msgTo((_) => {});
-        const transEnv = new TransEnv();
-        const tstResult = ALL_TST_TRANSFORMS.transform(tst, transEnv)
-                                            .msgTo((_) => {});
-        const grammar = tstResult.toGrammar(transEnv)
-                                 .msgTo((m) => {})
-        
-        // check to see if any names didn't get resolved
-        const nameQualifier = new NameQualifierTransform(grammar as NsGrammar);
-        const [_, nameMsgs] = nameQualifier.transform(transEnv).destructure();
-
-        const unresolvedNames: Set<string> = new Set(); 
-        for (const msg of nameMsgs) {
-            if (!(msg instanceof MissingSymbolError)) { 
-                continue;
-            }
-            const firstPart = msg.symbol.split(".")[0];
-            unresolvedNames.add(firstPart);
-        }
-
-        for (const possibleSheetName of unresolvedNames) {
-            this.addSheet(possibleSheetName);
-        } 
-
-        return;
     }
 
     public convertToSingleSheet(): string[][] {
@@ -215,23 +165,14 @@ export class Sheet extends SheetComponent {
     public toTST(): TstResult {
     
         const msgs: Msgs = [];
-        
-        let name = this.name;
-        if (RESERVED_WORDS.has(name)) {
-            // we'll never be able to refer to this sheet elsewhere
-            msgs.push(Err("Sheet name reserved",
-                `You can't call a worksheet ${name}`,
-                new CellPos(this.name, 0, 0)));
-            name = this.name + "_ERR";
-        }
 
         // sheets are treated as having an invisible cell containing their names at 0, -1
-        let startCell = new Cell(name, new CellPos(name, 0, -1));
+        const startCell = new Cell(this.name, new CellPos(this.name, 0, 0));
 
-        let result = new TstOp(startCell, new NamespaceOp());
+        const root = new TstOp(startCell, new NamespaceOp());
 
-        let stack: {tst: TstEnclosure, row: number, col: number}[] = 
-                [{ tst: result, row: 0, col: -1 }];
+        const stack: {tst: TstEnclosure, row: number, col: number}[] = 
+                [{ tst: root, row: 0, col: -1 }];
 
         let maxCol: number = 0; // keep track of the rightmost column we've
                                 // encountered, because we need to pad rows until
@@ -260,7 +201,7 @@ export class Sheet extends SheetComponent {
                                ? this.cells[rowIndex][colIndex].trim().normalize("NFD")
                                : "";
                 
-                const cellPos = new CellPos(name, rowIndex, colIndex);
+                const cellPos = new CellPos(this.name, rowIndex, colIndex);
                 const cell = new Cell(cellText, cellPos);
                 let top = stack[stack.length-1];
 
@@ -306,8 +247,9 @@ export class Sheet extends SheetComponent {
                     cellMsgs.push(new CommandMsg().localize(cellPos))
 
                     if (top.tst instanceof TstGrid) {
-                        cellMsgs.push(Err(`Unexpected operator`,
-                            "This looks like an operator, but only a header can follow a header."));
+                        Err(`Unexpected operator`,
+                            "This looks like an operator, " +
+                            " but only a header can follow a header.").msgTo(cellMsgs);
                         msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
                         continue;
                     }
@@ -341,6 +283,6 @@ export class Sheet extends SheetComponent {
             }
         }
     
-        return new TstAssignment(startCell, name, new TstEmpty(), result).msg(msgs);
+        return new TstAssignment(startCell, this.name, new TstEmpty(), root).msg(msgs);
     }
 }

@@ -1,5 +1,5 @@
 import { CreateNamespaces } from "./createNamespaces";
-import { InvalidAssignmentTransform } from "./invalidAssignment";
+import { WaywardAssigmentCheck } from "./waywardAssignment";
 import { TransEnv, Transform } from "../transforms";
 import { Grammar, GrammarTransform, NsGrammar } from "../grammars";
 import { Result } from "../msgs";
@@ -13,6 +13,7 @@ import { FilterTransform } from "./filter";
 import { CheckNamedParams } from "./namedParamCheck";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
 import { CreateOps } from "./createOps";
+import { CreateTST } from "./createTST";
 
 type GrammarTransformConstructor = new (g: NsGrammar) => GrammarTransform;
 export class TransformWrapper extends Transform<Grammar, Grammar> {
@@ -56,11 +57,12 @@ function wrap(t: GrammarTransformConstructor): Transform<Grammar,Grammar> {
 }
 
 export const ALL_TST_TRANSFORMS = 
+    new CreateTST().compose(
     new CreateNamespaces().compose(
     new CreateOps().compose(
-    new InvalidAssignmentTransform().compose(
+    new WaywardAssigmentCheck().compose(
     new CheckNamedParams().compose(
-    new RescopeLeftBinders()))))
+    new RescopeLeftBinders())))))
 
 export const ALL_GRAMMAR_TRANSFORMS =
     wrap(NameQualifierTransform).compose(

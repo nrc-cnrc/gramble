@@ -33,25 +33,25 @@ export class UnitTestTransform extends IdentityTransform {
         const results = this.executeTest(test);
 
         if (results.length == 0) {
-            msgs.push(Err("Failed unit test",
-                "The grammar above has no outputs compatible with these inputs."));
+            Err("Failed unit test",
+                "The grammar above has no outputs compatible with these inputs.").msgTo(msgs);
         } else {
-            msgs.push(Success(
-                "The grammar above has outputs compatible with these inputs."));
+            Success(
+                "The grammar above has outputs compatible with these inputs.").msgTo(msgs);
         }
 
         uniqueLoop: for (const unique of test.uniques) {
             resultLoop: for (const result of results) {
                 if (!(unique.tapeName in result)) {
-                    msgs.push(Err("Failed unit test",
+                    Err("Failed unit test",
                         `An output on this line does not contain a ${unique.tapeName} field: ` +
-                        `${Object.entries(result).map(([k,v]) => `${k}:${v}`)}`));
+                        `${Object.entries(result).map(([k,v]) => `${k}:${v}`)}`).msgTo(msgs);
                     break uniqueLoop;
                 }
                 if (result[unique.tapeName] != unique.text) {
-                    msgs.push(Err("Failed unit test",
+                    Err("Failed unit test",
                         `An output on this line has a conflicting result for this field: ` +
-                        `${result[unique.tapeName]}`));
+                        `${result[unique.tapeName]}`).msgTo(msgs);
                     break resultLoop;
                 }
             }
@@ -65,11 +65,11 @@ export class UnitTestTransform extends IdentityTransform {
         const results = this.executeTest(test);
         
         if (results.length > 0) {
-            msgs.push(Err("Failed unit test",
-                "The grammar above incorrectly has outputs compatible with these inputs."));
+            Err("Failed unit test",
+                "The grammar above incorrectly has outputs compatible with these inputs.").msgTo(msgs);
         } else {
-            msgs.push(Success(
-                "The grammar above correctly has no outputs compatible with these inputs."));
+            Success(
+                "The grammar above correctly has no outputs compatible with these inputs.").msgTo(msgs);
         }
         return test.msg(msgs);
     }

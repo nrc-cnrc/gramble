@@ -1,16 +1,4 @@
 import { 
-    TstOp,
-    TstAssignment, TstBinary, 
-    TstBinaryOp, 
-    TstComponent, TstEmpty,
-    TstNamespace,
-    TstResult, 
-    TstTableOp, TstTransform,
-    TstNegativeUnitTest, TstReplace, 
-    TstReplaceTape, TstUnitTest, TstGrid 
-} from "./tsts";
-import { Err, result, Result, resultDict } from "./msgs";
-import { 
     miniParse, MPAlternation, 
     MPParser, MPReserved, 
     MPSequence, MPUnreserved 

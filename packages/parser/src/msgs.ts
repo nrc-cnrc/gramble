@@ -42,6 +42,19 @@ export class Msg {
         this.pos = pos;
         return this;
     }
+    
+    /** 
+     * This function provides a way to get rid of the messages
+     * and only consider the item, by providing a callback that
+     * handles them as a side effect.
+     */
+     public msgTo(f: Msgs | MsgCallback): void {
+        if (Array.isArray(f)) {
+            f.push(this);
+            return;
+        }
+        f(this);
+    }
 
 };
 
@@ -123,7 +136,10 @@ export class Result<T> {
         return result.msg(this.msgs);
     }
 
-    public msg(m: Msg | Msgs): Result<T> {
+    public msg(m: Msg | Msgs | ResultVoid): Result<T> {
+        if (m instanceof Result) {
+            return new Result(this.item, this.msgs.concat(m.msgs));
+        }
         return new Result(this.item, this.msgs.concat(m));
     }
 
@@ -150,7 +166,7 @@ export class Result<T> {
         return this;
     }
 
-    public localize(pos: CellPos): Result<T> {
+    public localize(pos: CellPos | undefined): Result<T> {
         const [item, msgs] = this.destructure();
         const newMsgs = msgs.map(m => m.localize(pos));
         return new Result(item, newMsgs);

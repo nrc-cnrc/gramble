@@ -58,6 +58,17 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "able" }
         ]);
     });
+    
+    describe('Multi-sheet with reserved word reference', function() {
+        const project = sheetFromFile(`${DIR}/externalRefToReservedWord.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobarable", gloss: "run-1SG" },
+            { text: "moobarable", gloss: "jump-1SG" },
+            { text: "foobazable", gloss: "run-2SG" },
+            { text: "moobazable", gloss: "jump-2SG" }
+        ]);
+    });
 
     describe('Multi-sheet project referencing non-existent sheet', function() {
         const project = sheetFromFile(`${DIR}/missingSheet.csv`);

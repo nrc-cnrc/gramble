@@ -53,8 +53,8 @@ export class RescopeLeftBinders extends TstTransform {
             if (child.header.header instanceof RenameHeader) {
                 const prevChild = newChildren.pop();
                 if (prevChild == undefined) {
-                    msgs.push(Err("Wayward renaming",
-                        "There is nothing to the left to rename"));
+                    Err("Wayward renaming",
+                        "There is nothing to the left to rename").msgTo(msgs);
                     continue;
                 }
                 const newTstHeader = new TstHeader(child.header.cell, child.header.header.child);
@@ -66,8 +66,8 @@ export class RescopeLeftBinders extends TstTransform {
             if (child.header.header instanceof HideHeader) {
                 const prevChild = newChildren.pop();
                 if (prevChild == undefined) {
-                    msgs.push(Err("Wayward renaming",
-                        "There is nothing to the left to rename"));
+                    Err("Wayward renaming",
+                        "There is nothing to the left to rename").msgTo(msgs);
                     continue;
                 }
                 const newChild = new TstHide(prevChild, child.cell);
@@ -81,8 +81,8 @@ export class RescopeLeftBinders extends TstTransform {
                     child.header instanceof ContainsHeader) {
                 const prevChild = newChildren.pop();
                 if (prevChild == undefined) {
-                    msgs.push(Err("Wayward filtering",
-                        "There is nothing to the left to filter"));
+                    Err("Wayward filtering",
+                        "There is nothing to the left to filter").msgTo(msgs);
                     continue;
                 }
                 const newChild = new TstFilter(prevChild, child.header, child.cell);

@@ -13,7 +13,7 @@ import {
     logTime,
     logGrammar
 } from "./util";
-import { SheetProject } from "./sheets";
+import { Sheet, SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { TapeNamespace, VocabMap } from "./tapes";
 import { Expr, SymbolTable } from "./exprs";
@@ -27,7 +27,7 @@ import { generate } from "./generator";
 import { RuleReplaceTransform2 } from "./transforms/ruleReplace2";
 import { TstComponent } from "./tsts";
 import { UnitTestTransform } from "./transforms/unitTests";
-import { Msgs } from "./msgs";
+import { MissingSymbolError, Msgs } from "./msgs";
 import { ALL_GRAMMAR_TRANSFORMS, ALL_TST_TRANSFORMS } from "./transforms/allTransforms";
 import { TransEnv } from "./transforms";
 
@@ -125,17 +125,17 @@ export class Interpreter {
 
         // First, load all the sheets
         let startTime = Date.now();
-        const sheetProject = new SheetProject(devEnv, mainSheetName);
+        const sheetProject = new SheetProject(mainSheetName);
+        addSheet(sheetProject, mainSheetName, devEnv);
         let elapsedTime = msToTime(Date.now() - startTime);
         logTime(verbose, `Sheets loaded; ${elapsedTime}`);
         
         startTime = Date.now();
         const transEnv = new TransEnv();
         transEnv.verbose = verbose;
-        const tst: TstComponent = sheetProject.toTST()
-                                              .msgTo(m => devEnv.message(m));
-        const tstResult = ALL_TST_TRANSFORMS.transformAndLog(tst, transEnv)
-                                            .msgTo(m => devEnv.message(m));
+        const tstResult = ALL_TST_TRANSFORMS
+                            .transformAndLog(sheetProject, transEnv)
+                            .msgTo(m => devEnv.message(m));
         const grammar = tstResult.toGrammar(transEnv)
                                  .msgTo(m => devEnv.message(m));
         elapsedTime = msToTime(Date.now() - startTime);
@@ -342,4 +342,53 @@ function sendMessages(devEnv: DevEnvironment, msgs: Msgs): void {
         }
         devEnv.message(msg);
     }
+}
+
+function addSheet(
+    project: SheetProject, 
+    sheetName: string,
+    devEnv: DevEnvironment): void {
+
+    if (project.hasSheet(sheetName)) {
+        // already loaded it, don't have to do anything
+        return;
+    }
+
+    if (!devEnv.hasSource(sheetName)) {
+        // this is probably a programmer error, in which they've attempted
+        // to reference a non-existent symbol, and we're trying to load it as
+        // a possible source file.  we don't freak out about it here, though;
+        // that symbol will generate an error message at the appropriate place.
+        return;
+    }
+
+    //console.log(`loading source file ${sheetName}`);
+    const cells = devEnv.loadSource(sheetName);
+
+    const sheet = new Sheet(project, sheetName, cells);
+    project.sheets[sheetName] = sheet;
+    const transEnv = new TransEnv();
+    const tstResult = ALL_TST_TRANSFORMS.transform(project, transEnv)
+                                        .msgTo((_) => {});
+    const grammar = tstResult.toGrammar(transEnv)
+                             .msgTo((m) => {})
+    
+    // check to see if any names didn't get resolved
+    const nameQualifier = new NameQualifierTransform(grammar as NsGrammar);
+    const [_, nameMsgs] = nameQualifier.transform(transEnv).destructure();
+
+    const unresolvedNames: Set<string> = new Set(); 
+    for (const msg of nameMsgs) {
+        if (!(msg instanceof MissingSymbolError)) { 
+            continue;
+        }
+        const firstPart = msg.symbol.split(".")[0];
+        unresolvedNames.add(firstPart);
+    }
+
+    for (const possibleSheetName of unresolvedNames) {
+        addSheet(project, possibleSheetName, devEnv);
+    } 
+
+    return;
 }
