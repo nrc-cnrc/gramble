@@ -21,6 +21,7 @@ import {
 import { Err, Msgs, Result } from "../msgs";
 import { TransEnv } from "../transforms";
 
+
 export class RescopeLeftBinders extends TstTransform {
 
     public get desc(): string {
@@ -33,7 +34,7 @@ export class RescopeLeftBinders extends TstTransform {
 
             switch(t.constructor) {
                 case TstSequence:
-                    return this.transformCellSequence(t as TstSequence, env);
+                    return this.transformCellSequence(t as TstSequence);
                 default: 
                     return t;
             }
@@ -41,7 +42,7 @@ export class RescopeLeftBinders extends TstTransform {
         });
     }
     
-    transformCellSequence(t: TstSequence, env: TransEnv): TstResult {
+    transformCellSequence(t: TstSequence): TstResult {
         
         const msgs: Msgs = [];
 

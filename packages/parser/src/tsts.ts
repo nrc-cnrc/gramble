@@ -21,7 +21,6 @@ import {
     DEFAULT_SATURATION,
     DEFAULT_VALUE,
     Header,
-    parseHeaderCell,
     TapeNameHeader
 } from "./headers";
 import { ContentMsg, Err, Msg, Msgs, Result, resultList, Warn, resultDict, ResultVoid, unit } from "./msgs";
@@ -424,9 +423,6 @@ export class TstBinaryOp extends TstBinary {
 
 export class TstReplaceTape extends TstBinary {
 
-
-    public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
-
     constructor(
         cell: Cell,
         public tape: string,
@@ -450,27 +446,10 @@ export class TstReplaceTape extends TstBinary {
         const newMsgs: Msgs = [];
 
         for (const [cell, paramDict] of params) {
-
-            if (!("from" in paramDict)) {
-                Err(`Missing 'from' argument to replace'`,
-                    "'replace:' requires a 'from' argument (e.g. 'from text')", 
-                    this.cell.pos).msgTo(newMsgs);
-                continue;
-            }
-            const fromArg = paramDict["from"];
-            if (!("to" in paramDict)) {
-                Err(`Missing 'to' argument to replace'`,
-                    "'replace:' requires a 'to' argument (e.g. 'to text')", 
-                    this.cell.pos).msgTo(newMsgs);
-                continue;
-            }
-            const toArg = paramDict["to"];
-            const preArg = "pre" in paramDict
-                                    ? paramDict["pre"]
-                                    : new EpsilonGrammar();
-            const postArg = "post" in paramDict 
-                                    ? paramDict["post"] 
-                                    : new EpsilonGrammar(); 
+            const fromArg = paramDict["from"] || new EpsilonGrammar();
+            const toArg = paramDict["to"] || new EpsilonGrammar();
+            const preArg = paramDict["pre"] || new EpsilonGrammar();
+            const postArg = paramDict["post"] || new EpsilonGrammar(); 
             const replaceRule = new ReplaceGrammar(fromArg, toArg, preArg, postArg);
             replaceRules.push(replaceRule);
         }
@@ -487,8 +466,6 @@ export class TstReplaceTape extends TstBinary {
 
 export class TstReplace extends TstBinary {
 
-    public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
-
     public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
@@ -503,29 +480,10 @@ export class TstReplace extends TstBinary {
         const newMsgs: Msgs = [];
 
         for (const [cell, paramDict] of params) {
-
-            if (!("from" in paramDict)) {
-                Err(`Missing 'from' argument to replace'`,
-                    "'replace:' requires a 'from' argument (e.g. 'from text')",
-                    this.cell.pos).msgTo(newMsgs);
-                continue;
-            }
-
-            const fromArg = paramDict["from"];
-            if (!("to" in paramDict)) {
-                Err(`Missing 'to' argument to replace'`,
-                    "'replace:' requires a 'to' argument (e.g. 'to text')",
-                    this.cell.pos).msgTo(newMsgs);
-                continue;
-            }
-
-            const toArg = paramDict["to"];
-            const preArg = "pre" in paramDict
-                                    ? paramDict["pre"]
-                                    : new EpsilonGrammar();
-            const postArg = "post" in paramDict 
-                                    ? paramDict["post"] 
-                                    : new EpsilonGrammar(); 
+            const fromArg = paramDict["from"] || new EpsilonGrammar();
+            const toArg = paramDict["to"] || new EpsilonGrammar();
+            const preArg = paramDict["pre"] || new EpsilonGrammar();
+            const postArg = paramDict["post"] || new EpsilonGrammar(); 
             const replaceRule = new ReplaceGrammar(fromArg, toArg, preArg, postArg);
             replaceRules.push(replaceRule);
         }
@@ -547,8 +505,6 @@ export class TstReplace extends TstBinary {
  */
 export class TstUnitTest extends TstBinary {
 
-    public static VALID_PARAMS = [ "__", "unique" ];
-
     public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
@@ -561,7 +517,7 @@ export class TstUnitTest extends TstBinary {
 
         const [params, msgs] = this.child.toParamsTable(env).destructure();
         for (const [cell, paramDict] of params) {
-            const testInputs = paramDict["__"];
+            const testInputs = paramDict["__"]
             if (testInputs == undefined) {
                 Err("Missing test inputs",
                     `This test line does not have any inputs.`).msgTo(msgs);
@@ -572,16 +528,7 @@ export class TstUnitTest extends TstBinary {
             const unique = paramDict["unique"];
 
             if (unique != undefined) {
-                try {
-                    uniques = unique.getLiterals();
-                } catch (e) {
-                    const errLoc = [...unique.locations, cell][0];
-                    Err("Ill-formed unique",
-                        `Somewhere in this row there is an ill-formed uniqueness constraint.  ` +
-                        `Uniqueness constrains can only be literals.`, 
-                        errLoc.pos).msgTo(msgs);
-                    continue;
-                }
+                uniques = unique.getLiterals();
             }
             result = result.bind(c => new UnitTestGrammar(c, testInputs, uniques))
                            .bind(c => new LocatorGrammar(cell, c));
@@ -599,8 +546,6 @@ export class TstUnitTest extends TstBinary {
  * has no output when filtering the table above.
  */
 export class TstNegativeUnitTest extends TstUnitTest {
-
-    public static VALID_PARAMS = [ "__" ];
 
     public mapChildren(f: TstTransform, env: TransEnv): TstResult {
         return resultList([this.sibling, this.child])
@@ -662,6 +607,11 @@ export class TstGrid extends TstBinary {
                         .destructure() as [TstRow[], Msgs];
         return new TstGrid(this.cell, sib, child, headers, rows)
                      .msg(sMsgs).msg(cMsgs).msg(hMsgs).msg(rMsgs);
+    }
+
+    public providesParam(param: string): boolean {
+        return this.headers.some(h => 
+                    param == h.header.getParamName());
     }
 
     public addHeader(header: TstHeader): void {        

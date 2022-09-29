@@ -9,7 +9,7 @@ import {
 } from "./grammars";
 
 
-const BLANK_PARAM: string = "__";
+export const BLANK_PARAM: string = "__";
 
 const SYMBOL = [ ":" ];
 
@@ -110,6 +110,14 @@ export abstract class Op {
         return false;
     }
 
+    /**
+     * This is for Test and TestNot, which require every parameter
+     * in their child to be a literal
+     */
+    public get requireLiteralParams(): boolean {
+        return false;
+    }
+
 }
 
 export class TableOp extends Op { }
@@ -137,6 +145,10 @@ export class TestOp extends SpecialOp {
     public get allowedNamedParams(): Set<string> {
         return new Set([BLANK_PARAM, ...TEST_PARAMS]);
     }
+    
+    public get requireLiteralParams(): boolean {
+        return true;
+    }
 
 }
 
@@ -144,6 +156,10 @@ export class TestNotOp extends SpecialOp {
 
     public get allowedNamedParams(): Set<string> {
         return new Set([BLANK_PARAM, ...TEST_PARAMS]);
+    }
+    
+    public get requireLiteralParams(): boolean {
+        return true;
     }
 }
 

@@ -344,7 +344,50 @@ describe(`${path.basename(module.filename)}`, function() {
             { root: "jump", subj: "[2SG]", text: "moobaz", gloss: "jump[2SG]" }
         ]);
     });
+    
+    describe('Unit test with a regex header', function() {
+        const interpreter = sheetFromFile(`${DIR}/testWithRegexHeader.csv`);
+        interpreter.runUnitTests();
+        testErrors(interpreter, [
+            ["testWithRegexHeader",3,3,"error"]
+        ]);
+        testGrammar(interpreter, [
+            { text: "foobar", gloss: "run-1SG" }
+        ]);
+    });
+    
+    describe('Unit test with optional header', function() {
+        const interpreter = sheetFromFile(`${DIR}/testWithOptionalHeader.csv`);
+        interpreter.runUnitTests();
+        testErrors(interpreter, [
+            ["testWithOptionalHeader",3,3,"error"]
+        ]);
+        testGrammar(interpreter, [
+            { text: "foobar", gloss: "run" }
+        ]);
+    });
+    
+    describe('Unit test with a slash header', function() {
+        const interpreter = sheetFromFile(`${DIR}/testWithSlashHeader.csv`);
+        interpreter.runUnitTests();
+        testErrors(interpreter, [
+            ["testWithSlashHeader",3,3,"error"]
+        ]);
+        testGrammar(interpreter, [
+            { text: "foobar", gloss: "run", eng: "run" }
+        ]);
+    });
 
+    describe('Unit test with an embed header', function() {
+        const interpreter = sheetFromFile(`${DIR}/testWithEmbedHeader.csv`);
+        interpreter.runUnitTests();
+        testErrors(interpreter, [
+            ["testWithEmbedHeader",6,3,"error"]
+        ]);
+        testGrammar(interpreter, [
+            { text: "foobar", gloss: "run-1SG" }
+        ]);
+    });
 });
 
 

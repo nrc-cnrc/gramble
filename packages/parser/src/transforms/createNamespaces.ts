@@ -11,7 +11,31 @@ import { NamespaceOp, SymbolOp } from "../ops";
 /**
  * Namespace works somewhat differently from other operators,
  * so in this transformation we take "namespace:" TstOps and
- * instantiate them as actual namespaces.
+ * instantiate them as actual namespaces, before the pass where
+ * we instantiate other TstOps.
+ * 
+ * Two important things this transformation does is flatten out
+ * the namespace's children (they're in a binary tree after 
+ * parsing, and that gets flattened out into an array here), as 
+ * well as rescoping binary, non-assignment op children so that 
+ * they belong to the previous assignment.
+ * 
+ * E.g., something like the following:
+ * 
+ * VERB:, text
+ *      , foo
+ *      ,
+ * replace text:, from, to
+ *              , f   , m
+ * 
+ * is rescoped so that it has the same semantics as:
+ * 
+ * VERB:, table:, text
+ *      ,       , foo
+ *      ,
+ *      , replace text:, from, to
+ *      ,              , f   , m
+ * 
  */
 export class CreateNamespaces extends TstTransform {
 
@@ -24,14 +48,14 @@ export class CreateNamespaces extends TstTransform {
         return t.mapChildren(this, env).bind(t => {
             switch(t.constructor) {
                 case TstOp:
-                    return this.transformOp(t as TstOp, env);
+                    return this.transformOp(t as TstOp);
                 default: 
                     return t;
             }
         });
     }
 
-    public transformOp(t: TstOp, env: TransEnv): TstResult {
+    public transformOp(t: TstOp): TstResult {
 
         const msgs: Msgs = [];
 

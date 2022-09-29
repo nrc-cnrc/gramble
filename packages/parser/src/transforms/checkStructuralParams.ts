@@ -3,7 +3,7 @@ import {
     SymbolOp,
     TableOp, 
 } from "../ops";
-import { Msgs, result, Result, Warn } from "../msgs";
+import { Err, Msgs, result, Result, Warn } from "../msgs";
 import { TransEnv } from "../transforms";
 import { 
     TstComponent, TstResult, 
@@ -11,7 +11,16 @@ import {
     TstEmpty, TstGrid,
 } from "../tsts";
 
- export class CheckStructuralParams extends TstTransform {
+/**
+ * This transform goes through and make sure that TstOps have 
+ * the structural parameters (i.e. .sibling and .child) that they
+ * need to be interpreted, and also ensures that these are the
+ * right types (e.g., that they're grids when they need to be 
+ * grids, types when they need to be types, that they're not
+ * assignments, etc.)
+ */
+
+export class CheckStructuralParams extends TstTransform {
 
     public get desc(): string {
         return "Checking structural params";
@@ -27,6 +36,27 @@ import {
         return mapped.bind(t => {
     
             const msgs: Msgs = [];
+
+            // no ops allow assignments as siblings or child, so 
+            // if it's going to be an assignment, create an error 
+            // and replace it with its child
+            if (t.sibling instanceof TstOp 
+                 && t.sibling.op instanceof SymbolOp) {
+                Err("Wayward assignment",
+                    "This looks like an assignment, but isn't in an " +
+                    " appropriate position for one and will be ignored.",
+                    t.sibling.pos).msgTo(msgs);
+                t.sibling = t.sibling.child;
+            }
+        
+            if (t.child instanceof TstOp && 
+                t.child.op instanceof SymbolOp) {
+                Err("Wayward assignment",
+                    "This looks like an assignment, but isn't in an " +
+                    " appropriate position for one and will be ignored.",
+                    t.child.pos).msgTo(msgs);
+                t.child = t.child.child;
+            }
 
             // don't bother doing structural param checks on ErrorOps
             if (t.op instanceof ErrorOp) {
@@ -133,8 +163,6 @@ import {
                 t.sibling.pos));
         }
 
-
         return t.msg();
-
     }
 }
