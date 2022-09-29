@@ -3,11 +3,12 @@ import {
     TstHeader, TstNegativeUnitTest, 
     TstReplace, TstReplaceTape,
     TstResult, TstGrid, 
-    TstTransform, TstUnitTest 
+    TstTransform, TstUnitTest, TstOp 
 } from "../tsts";
 import { TransEnv } from "../transforms";
-import { Result, result } from "../msgs";
+import { Result, result, Warn } from "../msgs";
 import { TagHeader } from "../headers";
+import { ReplaceOp } from "../ops";
 
 /**
  * This transformation checks whether named parameters in headers
@@ -34,14 +35,8 @@ export class CheckNamedParams extends TstTransform {
     public transform(t: TstComponent, env: TransEnv): TstResult {
 
         switch(t.constructor) {
-            case TstReplace: 
-                return this.transformReplace(t as TstReplace, env);
-            case TstReplaceTape: 
-                return this.transformReplaceTape(t as TstReplaceTape, env);
-            case TstUnitTest: 
-                return this.transformUnitTest(t as TstUnitTest, env);
-            case TstNegativeUnitTest:
-                return this.transformNegativeUnitTest(t as TstNegativeUnitTest, env);
+            case TstOp:
+                return this.transformOp(t as TstOp, env);
             case TstHeader:
                 return this.transformHeader(t as TstHeader, env);
             case TstGrid: // tables as transparent
@@ -51,45 +46,20 @@ export class CheckNamedParams extends TstTransform {
                 return t.mapChildren(defaultThis, env);
         }
     }
-    
-    public transformReplace(t: TstReplace, env: TransEnv): TstResult {
-        const [sib, sibMsgs] = this.transform(t.sibling, env).destructure();
-        const newTransform = new CheckNamedParams(new Set(TstReplace.VALID_PARAMS));
-        const [child, childMsgs] = newTransform.transform(t.child, env).destructure();
-        return new TstReplace(t.cell, sib, child)
-                    .msg(sibMsgs).msg(childMsgs);
-    }
 
-    public transformReplaceTape(t: TstReplaceTape, env: TransEnv): TstResult {
+    public transformOp(t: TstOp, env: TransEnv): TstResult {
         const [sib, sibMsgs] = this.transform(t.sibling, env).destructure();
-        const newTransform = new CheckNamedParams(new Set(TstReplaceTape.VALID_PARAMS));
+        const newTransform = new CheckNamedParams(t.op.allowedNamedParams);
         const [child, childMsgs] = newTransform.transform(t.child, env).destructure();
-        return new TstReplaceTape(t.cell, t.tape, sib, child)
-                    .msg(sibMsgs).msg(childMsgs);
-    }
-
-    public transformUnitTest(t: TstUnitTest, env: TransEnv): TstResult {
-        const [sib, sibMsgs] = this.transform(t.sibling, env).destructure();
-        const newTransform = new CheckNamedParams(new Set(TstUnitTest.VALID_PARAMS));
-        const [child, childMsgs] = newTransform.transform(t.child, env).destructure();
-        if (childMsgs.length > 0) { // the tests are invalid already, don't execute them
+        if (t.op.requirePerfectParams && childMsgs.length > 0) {
+            Warn("This op has erroneous parameters and will not execute.",
+                t.cell.pos).msgTo(childMsgs);
             return sib.msg(sibMsgs).msg(childMsgs);
         }
-        return new TstUnitTest(t.cell, sib, child)
+        return new TstOp(t.cell, t.op, sib, child)
                     .msg(sibMsgs).msg(childMsgs);
     }
     
-    public transformNegativeUnitTest(t: TstNegativeUnitTest, env: TransEnv): TstResult {
-        const [sib, sibMsgs] = this.transform(t.sibling, env).destructure();
-        const newTransform = new CheckNamedParams(new Set(TstNegativeUnitTest.VALID_PARAMS));
-        const [child, childMsgs] = newTransform.transform(t.child, env).destructure();
-        if (childMsgs.length > 0) { // the tests are invalid already, don't execute them
-            return sib.msg(sibMsgs).msg(childMsgs);
-        }
-        return new TstNegativeUnitTest(t.cell, sib, child)
-                    .msg(sibMsgs).msg(childMsgs);
-    }
-
     public transformHeader(t: TstHeader, env: TransEnv): TstResult {
         const mapped = t.mapChildren(this, env) as Result<TstHeader>;
         return mapped.bind(h => {

@@ -73,16 +73,15 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Replace with a table: op nested underneath', function() {
         const project = sheetFromFile(`${DIR}/replaceWithTableOp.csv`);
         testErrors(project, [
-            ["replaceWithTableOp",12,3,"error"],
-            ["replaceWithTableOp",12,4,"error"]
+            ["replaceWithTableOp",12,1,"error"]
         ]);
         testGrammar(project, [
-            {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
-            {"text":"foobaz", "surface": "foovaz", "gloss":"run-2SG"},
-            {"text":"foobar", "surface": "foovar", "gloss":"run-1SG"},
-            {"text":"moo", "surface": "moo", "gloss":"jump.3SG"},
-            {"text":"moobaz", "surface": "moovaz", "gloss":"jump-2SG"},
-            {"text":"moobar", "surface": "moovar", "gloss":"jump-1SG"}
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
         ]);
     });
 
@@ -147,30 +146,32 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Replace with invalid param', function() {
         const project = sheetFromFile(`${DIR}/replaceWithInvalidParam.csv`);
         testErrors(project, [
-            ["replaceWithInvalidParam",12,4,"error"]
+            ["replaceWithInvalidParam",12,4,"error"],
+            ["replaceWithInvalidParam",12,1,"warning"]
         ]);        
         testGrammar(project, [
-            {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
-            {"text":"foobaz", "surface": "foovaz", "gloss":"run-2SG"},
-            {"text":"foobar", "surface": "foovar", "gloss":"run-1SG"},
-            {"text":"moo", "surface": "moo", "gloss":"jump.3SG"},
-            {"text":"moobaz", "surface": "moovaz", "gloss":"jump-2SG"},
-            {"text":"moobar", "surface": "moovar", "gloss":"jump-1SG"}
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
         ]);
     });
 
     describe('Replace with an unnamed param', function() {
         const project = sheetFromFile(`${DIR}/replaceWithUnnamedParam.csv`);
         testErrors(project, [
-            ["replaceWithUnnamedParam",12,4,"error"]
+            ["replaceWithUnnamedParam",12,4,"error"],
+            ["replaceWithUnnamedParam",12,1,"warning"]
         ]);        
         testGrammar(project, [
-            {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
-            {"text":"foobaz", "surface": "foovaz", "gloss":"run-2SG"},
-            {"text":"foobar", "surface": "foovar", "gloss":"run-1SG"},
-            {"text":"moo", "surface": "moo", "gloss":"jump.3SG"},
-            {"text":"moobaz", "surface": "moovaz", "gloss":"jump-2SG"},
-            {"text":"moobar", "surface": "moovar", "gloss":"jump-1SG"}
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
         ]);
     });
     

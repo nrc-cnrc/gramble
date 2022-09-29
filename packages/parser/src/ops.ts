@@ -9,18 +9,24 @@ import {
 } from "./grammars";
 
 
+const BLANK_PARAM: string = "__";
+
 const SYMBOL = [ ":" ];
 
-const REPLACE_PARAMS = [
+const REQUIRED_REPLACE_PARAMS = new Set([
     "from",
     "to",
-    "pre",
-    "post"
-]
+]);
 
-const TEST_PARAMS = [
-    "unique"
-]
+const REPLACE_PARAMS = new Set([
+    "pre",
+    "post",
+    ...REQUIRED_REPLACE_PARAMS
+]);
+
+const TEST_PARAMS = new Set([
+    "unique",
+]);
 
 const RESERVED_HEADERS = new Set([
     "embed", 
@@ -84,40 +90,103 @@ export abstract class Op {
         return "forbidden";
     }
 
+    public get childGridRequirement(): Requirement {
+        return "forbidden";
+    }
+
+    public get allowedNamedParams(): Set<string> {
+        return new Set([BLANK_PARAM]);
+    }
+    
+    public get requiredNamedParams(): Set<string> {
+        return new Set([BLANK_PARAM]);
+    }
+
+    /**
+     * This is for operators that require a perfect parameterization
+     * to execute at all, lest their be unanticipated effects.
+     */
+    public get requirePerfectParams(): boolean {
+        return false;
+    }
+
 }
 
 export class TableOp extends Op { }
 
 export class NamespaceOp extends Op { }
 
-export abstract class BinaryOp extends Op {
+export abstract class SpecialOp extends Op {
 
     public get siblingRequirement(): Requirement {
         return "required";
     }
+
+    public get childGridRequirement(): Requirement {
+        return "required";
+    }
+
+    public get requirePerfectParams(): boolean {
+        return true;
+    }
+
 }
 
-export class TestOp extends BinaryOp { }
+export class TestOp extends SpecialOp { 
 
-export class TestNotOp extends BinaryOp { }
+    public get allowedNamedParams(): Set<string> {
+        return new Set([BLANK_PARAM, ...TEST_PARAMS]);
+    }
 
-export class AtomicReplaceOp extends BinaryOp { }
+}
 
-export class ReplaceOp extends BinaryOp {
+export class TestNotOp extends SpecialOp { 
+
+    public get allowedNamedParams(): Set<string> {
+        return new Set([BLANK_PARAM, ...TEST_PARAMS]);
+    }
+}
+
+export class ReplaceOp extends SpecialOp { 
+
+    public get requiredNamedParams(): Set<string> {
+        return REQUIRED_REPLACE_PARAMS;
+    }
+
+    public get allowedNamedParams(): Set<string> {
+        return REPLACE_PARAMS;
+    }
+
+}
+
+export class ReplaceTapeOp extends SpecialOp {
 
     constructor(
         public child: SymbolOp
     ) { 
         super();
     }
+
+    public get requiredNamedParams(): Set<string> {
+        return REQUIRED_REPLACE_PARAMS;
+    }
+
+    public get allowedNamedParams(): Set<string> {
+        return REPLACE_PARAMS;
+    }
+
 }
 
-export class BuiltInBinaryOp extends BinaryOp {
+export class BinaryOp extends Op {
     
     constructor(
         public text: string
     ) { 
         super();
+    }
+
+    public get siblingRequirement(): Requirement {
+        return "required";
     }
 }
 
@@ -175,11 +244,6 @@ const OP_UNRESERVED = MPUnreserved<Op>(
     (s) => new SymbolOp(s)
 );
 
-const OP_ATOMIC_REPLACE = MPSequence<Op>(
-    ["replace"], 
-    () => new AtomicReplaceOp()
-);
-
 const OP_RESERVED_HEADER = MPReserved<Op>(
     RESERVED_HEADERS, 
     (s) => new ErrorOp(s, "Reserved word in operator", 
@@ -195,8 +259,13 @@ const OP_RESERVED_WORD = MPReserved<Op>(
 );
 
 const OP_REPLACE = MPSequence<Op>(
+    ["replace"], 
+    () => new ReplaceOp()
+);
+
+const OP_REPLACE_TAPE = MPSequence<Op>(
     ["replace", OP_UNRESERVED], 
-    (c) => new ReplaceOp(c as SymbolOp)
+    (c) => new ReplaceTapeOp(c as SymbolOp)
 );
 
 const OP_REPLACE_ERROR = MPSequence<Op>(
@@ -211,14 +280,14 @@ const OP_REPLACE_ERROR = MPSequence<Op>(
 
 const OP_BINARY = MPReserved<Op>(
     BINARY_OPS, 
-    (s) => new BuiltInBinaryOp(s)
+    (s) => new BinaryOp(s)
 );
 
 const OP_EXPR: MPParser<Op> = MPAlternation(
     OP_TABLE, OP_NAMESPACE,
     OP_TEST, OP_TESTNOT,
-    OP_ATOMIC_REPLACE, 
-    OP_REPLACE, OP_REPLACE_ERROR,
+    OP_REPLACE, 
+    OP_REPLACE_TAPE, OP_REPLACE_ERROR,
     OP_BINARY,
     OP_UNRESERVED, OP_RESERVED_HEADER
 );

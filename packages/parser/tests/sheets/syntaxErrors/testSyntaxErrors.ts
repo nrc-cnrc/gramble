@@ -65,11 +65,11 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Op missing sibling argument', function() {
         const project = sheetFromFile(`${DIR}/opMissingSibling.csv`);
         testErrors(project, [
-            ["opMissingSibling", 9, 1, "warning"]
+            ["opMissingSibling", 9, 0, "warning"],
+            ["opMissingSibling", 9, 1, "error"]
         ]);
         testGrammar(project, [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" }
+            {}
         ]);
     });
 
@@ -79,7 +79,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["bareOp", 0, 0, "warning"]
         ]);
         testGrammar(project, [
-            { text: 'foo' }
+            {}
         ]);
     });
 

@@ -244,7 +244,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/testWithBadParam.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["testWithBadParam",12,3,"error"]
+            ["testWithBadParam",12,3,"error"],
+            ["testWithBadParam",12,1,"warning"]
         ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
@@ -258,7 +259,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/testnotWithBadParam.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["testnotWithBadParam",12,3,"error"]
+            ["testnotWithBadParam",12,3,"error"],
+            ["testnotWithBadParam",12,1,"warning"]
         ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run-1SG" },

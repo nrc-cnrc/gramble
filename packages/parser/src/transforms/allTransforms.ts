@@ -10,10 +10,11 @@ import { RenameFixTransform } from "./renameFix";
 import { RuleReplaceTransform2 } from "./ruleReplace2";
 import { SameTapeReplaceTransform } from "./sameTapeReplace";
 import { FilterTransform } from "./filter";
-import { CheckNamedParams } from "./namedParamCheck";
+import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
 import { CreateOps } from "./createOps";
 import { CreateTST } from "./createTST";
+import { CheckStructuralParams } from "./checkStructuralParams";
 
 type GrammarTransformConstructor = new (g: NsGrammar) => GrammarTransform;
 export class TransformWrapper extends Transform<Grammar, Grammar> {
@@ -59,10 +60,11 @@ function wrap(t: GrammarTransformConstructor): Transform<Grammar,Grammar> {
 export const ALL_TST_TRANSFORMS = 
     new CreateTST().compose(
     new CreateNamespaces().compose(
+    new CheckStructuralParams().compose(
+    new CheckNamedParams().compose(
     new CreateOps().compose(
     new WaywardAssigmentCheck().compose(
-    new CheckNamedParams().compose(
-    new RescopeLeftBinders())))))
+    new RescopeLeftBinders()))))))
 
 export const ALL_GRAMMAR_TRANSFORMS =
     wrap(NameQualifierTransform).compose(
