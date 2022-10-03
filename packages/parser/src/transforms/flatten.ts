@@ -3,12 +3,13 @@ import {
     AlternationGrammar, EpsilonGrammar, Grammar,
     GrammarResult, NullGrammar, SequenceGrammar
 } from "../grammars";
-import { IdentityTransform } from "./transforms";
-import { TransEnv } from "../transforms";
+import { IdentityPass } from "./identityPass";
+import { PassEnv } from "../passes";
 
 /**
- * The FlattenTransform takes the grammar made by the tabular syntax tree and
- * cleans up some of the little quirks due to the implementation of that algorithm
+ * Takes the grammar made by the tabular syntax tree and
+ * cleans up some of the little quirks due to the implementation 
+ * of that algorithm
  * 
  *   (1) TST.toGrammar() results in left-branching binary trees for Sequences.  It does 
  *      seem to matter, a bit, what direction Sequences branch, depending on whether 
@@ -20,13 +21,13 @@ import { TransEnv } from "../transforms";
  *      few things this messes up (it results in counterintuitive results when adjusting
  *      scope in ends/contains), so this tranform removes them.
  */
-export class FlattenTransform extends IdentityTransform {
+export class FlattenPass extends IdentityPass {
 
     public get desc(): string {
         return "Flattening sequences/alternations";
     }
 
-    public transformSequence(g: SequenceGrammar, env: TransEnv): GrammarResult {
+    public transformSequence(g: SequenceGrammar, env: PassEnv): GrammarResult {
         
         const [result, msgs] = super.transformSequence(g, env)
                                     .destructure() as [SequenceGrammar, Msgs];
@@ -44,7 +45,7 @@ export class FlattenTransform extends IdentityTransform {
         return new SequenceGrammar(newChildren).msg(msgs);
     }
 
-    public transformAlternation(g: AlternationGrammar, env: TransEnv): GrammarResult {
+    public transformAlternation(g: AlternationGrammar, env: PassEnv): GrammarResult {
         
         const [result, msgs] = super.transformAlternation(g, env)
                         .destructure() as [AlternationGrammar, Msgs];

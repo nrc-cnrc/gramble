@@ -5,16 +5,16 @@ import {
     RenameGrammar, ReplaceGrammar
 } from "../grammars";
 
-import { IdentityTransform } from "./transforms";
+import { IdentityPass } from "./identityPass";
 import { Msgs, Result } from "../msgs";
-import { TransEnv } from "../transforms";
+import { PassEnv } from "../passes";
 
 /**
- * This Transform handles the behind-the-scenes renaming necessary when the programmer
+ * This pass handles the behind-the-scenes renaming necessary when the programmer
  * expresses a "from T1 to T1" replacement rule.  This can't literally be true (no output
  * has two different strings on the same tape), so one of those two tapes has to be renamed.
  */
-export class SameTapeReplaceTransform extends IdentityTransform {
+export class SameTapeReplacePass extends IdentityPass {
 
     public replaceIndex: number = 0;
 
@@ -22,7 +22,7 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         return "Adjusted tape names in same-tape replace rules";
     }
 
-    public transformJoinReplace(g: JoinReplaceGrammar, env: TransEnv): GrammarResult {
+    public transformJoinReplace(g: JoinReplaceGrammar, env: PassEnv): GrammarResult {
 
         const superResult = super.transformJoinReplace(g, env) as Result<JoinReplaceGrammar>;
         const [newG, msgs] = superResult.destructure();
@@ -62,7 +62,7 @@ export class SameTapeReplaceTransform extends IdentityTransform {
         return new JoinGrammar(result, child2).msg(msgs);
     }
 
-    public transformReplace(g: ReplaceGrammar, env: TransEnv): GrammarResult {
+    public transformReplace(g: ReplaceGrammar, env: PassEnv): GrammarResult {
 
         const [newG, msgs] = super.transformReplace(g, env)
                 .destructure() as [ReplaceGrammar, Msgs];

@@ -2,22 +2,22 @@ import {
     TstComponent, TstEmpty, 
     TstHeadedGrid, 
     TstHeader, TstPreGrid, TstResult,
-    TstTransform,
+    TstPass,
 } from "../tsts";
-import { TransEnv } from "../transforms";
+import { PassEnv } from "../passes";
 import { HeaderMsg, Msgs } from "../msgs";
 import { DEFAULT_VALUE, ErrorHeader, parseHeaderCell } from "../headers";
 
 /**
  * 
  */
-export class CreateHeaders extends TstTransform {
+export class CreateHeaders extends TstPass {
 
     public get desc(): string {
         return "Parsing headers";
     }
 
-    public transform(t: TstComponent, env: TransEnv): TstResult {
+    public transform(t: TstComponent, env: PassEnv): TstResult {
 
         return t.mapChildren(this, env).bind(t => {
             

@@ -4,16 +4,16 @@ import {
     GrammarResult,
     ParallelGrammar, SequenceGrammar
 } from "../grammars";
-import { IdentityTransform } from "./transforms";
-import { TransEnv } from "../transforms";
+import { IdentityPass } from "./identityPass";
+import { PassEnv } from "../passes";
 
-export class ParallelizeTransform extends IdentityTransform {
+export class ParallelizePass extends IdentityPass {
 
     public get desc(): string {
         return "Parallelizing sequences";
     }
 
-    public transformSequence(g: SequenceGrammar, env: TransEnv): GrammarResult {
+    public transformSequence(g: SequenceGrammar, env: PassEnv): GrammarResult {
         
         const newChildren: Grammar[] = [];
         const msgs: Msgs = [];

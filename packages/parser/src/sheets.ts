@@ -1,15 +1,10 @@
+export class Workbook {
 
-export abstract class SheetComponent { }
-
-export class SheetProject extends SheetComponent {
-
-    public sheets: {[name: string]: Sheet} = {};
+    public sheets: {[name: string]: Worksheet} = {};
 
     constructor(
         public mainSheetName: string
-    ) { 
-        super();
-    }
+    ) { }
 
     public hasSheet(name: string): boolean {
         return name in this.sheets;
@@ -29,15 +24,12 @@ export class SheetProject extends SheetComponent {
 
 }
 
-export class Sheet extends SheetComponent {
+export class Worksheet {
 
     constructor(
-        public project: SheetProject,
         public name: string,
         public cells: string[][]
-    ) { 
-        super();
-    }
+    ) { }
 
     public convertToSingleSheet(): string[][] {
 

@@ -1,4 +1,4 @@
-import { TransEnv } from "../transforms";
+import { PassEnv } from "../passes";
 import { 
     AlternationGrammar, ContainsGrammar, 
     DotGrammar, EndsGrammar, Grammar,
@@ -7,7 +7,7 @@ import {
     RepeatGrammar, SequenceGrammar, StartsGrammar
 } from "../grammars";
 
-import { IdentityTransform } from "./transforms";
+import { IdentityPass } from "./identityPass";
 
 /**
  * There's a semantic gotcha in starts/ends/contains that could throw programmers for a 
@@ -18,7 +18,7 @@ import { IdentityTransform } from "./transforms";
  * What the programmer really means to say here isn't "it starts with not X" but "it doesn't
  * start with X".  (Note the scope difference.)  This isn't the scope that the actual program 
  * has, though; the grammar structure we get from the tabular syntax tree has the structure
- * starts(not(X)).  So we have to switch their scope, and this transform does that.
+ * starts(not(X)).  So we have to switch their scope, and this pass does that.
  * 
  * Note, however, that not every arbitrary regex that the programmer might put under a 
  * starts filter is going to get a reasonable result when this operation is performed.  
@@ -30,13 +30,13 @@ import { IdentityTransform } from "./transforms";
  * they really want the string to match (i.e. putting the .* exactly where they intend it to
  * be) and wrap that in an equals rather than using starts/ends/contains.
  */
-export class FilterTransform extends IdentityTransform {
+export class FilterPass extends IdentityPass {
     
     public get desc(): string {
         return "Constructing filters";
     }
 
-    public transformStarts(g: StartsGrammar, env: TransEnv): GrammarResult {
+    public transformStarts(g: StartsGrammar, env: PassEnv): GrammarResult {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
@@ -87,7 +87,7 @@ export class FilterTransform extends IdentityTransform {
         return new SequenceGrammar([child, ...dotStars ]).msg(msgs);
     }
     
-    public transformEnds(g: StartsGrammar, env: TransEnv): GrammarResult {
+    public transformEnds(g: StartsGrammar, env: PassEnv): GrammarResult {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
@@ -137,7 +137,7 @@ export class FilterTransform extends IdentityTransform {
         return new SequenceGrammar([ ...dotStars, child ]).msg(msgs);
     }
     
-    public transformContains(g: ContainsGrammar, env: TransEnv): GrammarResult {
+    public transformContains(g: ContainsGrammar, env: PassEnv): GrammarResult {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))

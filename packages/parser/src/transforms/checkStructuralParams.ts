@@ -4,16 +4,16 @@ import {
     TableOp, 
 } from "../ops";
 import { Err, Msgs, result, Result, Warn } from "../msgs";
-import { TransEnv } from "../transforms";
+import { PassEnv } from "../passes";
 import { 
     TstComponent, TstResult, 
-    TstTransform, TstOp, 
+    TstPass, TstOp, 
     TstEmpty,
     TstPreGrid
 } from "../tsts";
 
 /**
- * This transform goes through and make sure that TstOps have 
+ * This pass goes through and make sure that TstOps have 
  * the structural parameters (i.e. .sibling and .child) that they
  * need to be interpreted, and also ensures that these are the
  * right types (e.g., that they're grids when they need to be 
@@ -21,13 +21,13 @@ import {
  * assignments, etc.)
  */
 
-export class CheckStructuralParams extends TstTransform {
+export class CheckStructuralParams extends TstPass {
 
     public get desc(): string {
         return "Checking structural params";
     }
 
-    public transform(t: TstComponent, env: TransEnv): TstResult {
+    public transform(t: TstComponent, env: PassEnv): TstResult {
         
         if (!(t instanceof TstOp)) {
             return t.mapChildren(this, env);
@@ -61,20 +61,20 @@ export class CheckStructuralParams extends TstTransform {
 
             // don't bother doing structural param checks on ErrorOps
             if (t.op instanceof ErrorOp) {
-                return this.transformError(t).msg(msgs);
+                return this.handleError(t).msg(msgs);
             }
 
             // assignments have some special behavior, like that they
             // don't disappear if they don't have a child
             if (t.op instanceof SymbolOp) {
-                return this.transformAssignment(t).msg(msgs);
+                return this.handleAssignment(t).msg(msgs);
             }
 
-            return this.transformOp(t).msg(msgs);
+            return this.handleOp(t).msg(msgs);
         });
     }
 
-    public transformAssignment(t: TstOp): TstResult {
+    public handleAssignment(t: TstOp): TstResult {
         
         const msgs: Msgs = [];
 
@@ -100,7 +100,7 @@ export class CheckStructuralParams extends TstTransform {
 
     }
 
-    public transformError(t: TstOp): TstResult {
+    public handleError(t: TstOp): TstResult {
         const op = t.op as ErrorOp;
         const replacement = !(t.sibling instanceof TstEmpty) ?
                             t.sibling :
@@ -109,7 +109,7 @@ export class CheckStructuralParams extends TstTransform {
                         .bind(_ => replacement);      
     }
 
-    public transformOp(t: TstOp): TstResult {
+    public handleOp(t: TstOp): TstResult {
 
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.

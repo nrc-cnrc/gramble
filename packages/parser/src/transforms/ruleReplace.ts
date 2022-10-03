@@ -5,17 +5,17 @@ import {
     RenameGrammar
 } from "../grammars";
 
-import { IdentityTransform } from "./transforms";
+import { IdentityPass } from "./identityPass";
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
 import { resultList } from "../msgs";
-import { TransEnv } from "../transforms";
+import { PassEnv } from "../passes";
 
 /**
- * This Transform handles the construction of implicit-tape replacement rules
+ * This pass handles the construction of implicit-tape replacement rules
  * (where you just say "from"/"to" rather than "from text"/"to text") and
  * cascades of them.
  */
-export class RuleReplaceTransform extends IdentityTransform {
+export class RuleReplacePass extends IdentityPass {
 
     public replaceIndex: number = 0;
 
@@ -23,7 +23,7 @@ export class RuleReplaceTransform extends IdentityTransform {
         return "Constructing new-style replacement rules";
     }
 
-    public transformJoinRule(g: JoinRuleGrammar, env: TransEnv): GrammarResult {
+    public transformJoinRule(g: JoinRuleGrammar, env: PassEnv): GrammarResult {
 
         let relevantTape = g.inputTape;
         let [child, childMsgs] = g.child.accept(this, env).destructure();

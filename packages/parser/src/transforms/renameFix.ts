@@ -5,12 +5,12 @@ import {
     HideGrammar, RenameGrammar
 } from "../grammars";
 
-import { IdentityTransform } from "./transforms";
+import { IdentityPass } from "./identityPass";
 import { Result } from "../msgs";
-import { TransEnv } from "../transforms";
+import { PassEnv } from "../passes";
 
 /**
- * This transformation finds erroneous renames/hides and fixes them.
+ * This pass finds erroneous renames/hides and fixes them.
  * 
  * This is important for the ultimate correctness of the program:
  * If the programmar messes up the tape structure (by renaming
@@ -19,17 +19,17 @@ import { TransEnv } from "../transforms";
  * that is inaccessible to delta/deriv and thus never gets delta'd away, leading
  * to a simplification violation.
  * 
- * This transform fixes that by hiding the existing tape(s), so that the grammar
+ * This pass fixes that by hiding the existing tape(s), so that the grammar
  * is well-formed again and does not lead to exceptions to otherwise invariant 
  * properties of the algorithm.
  */
-export class RenameFixTransform extends IdentityTransform {
+export class RenameFixPass extends IdentityPass {
 
     public get desc(): string {
         return "Validating tape-rename structure";
     }
 
-    public transformHide(g: HideGrammar, env: TransEnv): GrammarResult {
+    public transformHide(g: HideGrammar, env: PassEnv): GrammarResult {
 
         const result = super.transformHide(g, env) as Result<HideGrammar>;
         
@@ -45,7 +45,7 @@ export class RenameFixTransform extends IdentityTransform {
         return result;
     }
 
-    public transformRename(g: RenameGrammar, env: TransEnv): GrammarResult {
+    public transformRename(g: RenameGrammar, env: PassEnv): GrammarResult {
 
         const result = super.transformRename(g, env) as Result<RenameGrammar>;
         

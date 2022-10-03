@@ -1,7 +1,8 @@
 import { 
-    CounterStack, CountGrammar, EqualsGrammar, Grammar, 
-    GrammarTransform, 
-    LiteralGrammar, NsGrammar, PriorityGrammar, SequenceGrammar, UnitTestGrammar 
+    CounterStack, CountGrammar, 
+    EqualsGrammar, Grammar, 
+    LiteralGrammar, NsGrammar, 
+    PriorityGrammar, SequenceGrammar, 
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
@@ -13,26 +14,20 @@ import {
     logTime,
     logGrammar
 } from "./util";
-import { Sheet, SheetProject } from "./sheets";
+import { Worksheet, Workbook } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { TapeNamespace, VocabMap } from "./tapes";
 import { Expr, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
-import { NameQualifierTransform } from "./transforms/nameQualifier";
-import { SameTapeReplaceTransform } from "./transforms/sameTapeReplace";
-import { RenameFixTransform } from "./transforms/renameFix";
-import { FilterTransform } from "./transforms/filter";
-import { FlattenTransform } from "./transforms/flatten";
+import { NameQualifierPass } from "./transforms/nameQualifier";
 import { generate } from "./generator";
-import { RuleReplaceTransform2 } from "./transforms/ruleReplace2";
-import { TstComponent } from "./tsts";
-import { UnitTestTransform } from "./transforms/unitTests";
+import { UnitTestPass } from "./transforms/unitTests";
 import { MissingSymbolError, Msgs } from "./msgs";
-import { ALL_GRAMMAR_TRANSFORMS, ALL_TST_TRANSFORMS } from "./transforms/allTransforms";
-import { TransEnv } from "./transforms";
+import { ALL_GRAMMAR_PASSES, ALL_TST_PASSES } from "./transforms/allPasses";
+import { PassEnv } from "./passes";
 
 /**
- * An interpreter object is responsible for applying the transformations in between sheets
+ * An interpreter object is responsible for applying the passes in between sheets
  * and expressions.
  * 
  * It also acts as a Facade (in the GoF sense) for the client to interact with, so that they
@@ -44,7 +39,7 @@ export class Interpreter {
     // if the grammar came from an actual gramble source project (as opposed to, e.g.,
     // a test case constructed in code), the project object is stored here.  right now
     // we only need this for constructing single-source projects in the GSuite interface.
-    public sheetProject: SheetProject | undefined = undefined;
+    public workbook: Workbook | undefined = undefined;
 
     // we store previously-collected Tape objects because memoization
     // or compilation is going to require remembering what indices had previously
@@ -70,7 +65,7 @@ export class Interpreter {
     ) { 
 
         // First, all grammars within Interpreters must have a namespace as their root.  
-        // This simplifies the API and some of the transformations that follow; rather 
+        // This simplifies the API and some of the passes that follow; rather 
         // than every part having to check whether something is a namespace or not,
         // we wrap non-namespaces in a trivial namespace.
         if (g instanceof NsGrammar) {
@@ -82,15 +77,15 @@ export class Interpreter {
 
         const timeVerbose = (verbose & VERBOSE_TIME) != 0;
 
-        // Next, we perform a variety of grammar-to-grammar transformations in order
+        // Next, we perform a variety of grammar-to-grammar passes in order
         // to get the grammar into an executable state: symbol references fully-qualified,
         // semantically impossible tape structures are massaged into well-formed ones, some 
         // scope problems adjusted, etc.
         
-        const env = new TransEnv();
+        const env = new PassEnv();
         env.verbose = verbose;
         const [newGrammar, msgs] = this.grammar.msg() // lift to result
-                     .bind(g => ALL_GRAMMAR_TRANSFORMS.transformAndLog(g, env))
+                     .bind(g => ALL_GRAMMAR_PASSES.transformAndLog(g, env))
                      .destructure();
         this.grammar = newGrammar as NsGrammar;
         sendMessages(devEnv, msgs);
@@ -125,16 +120,16 @@ export class Interpreter {
 
         // First, load all the sheets
         let startTime = Date.now();
-        const sheetProject = new SheetProject(mainSheetName);
-        addSheet(sheetProject, mainSheetName, devEnv);
+        const workbook = new Workbook(mainSheetName);
+        addSheet(workbook, mainSheetName, devEnv);
         let elapsedTime = msToTime(Date.now() - startTime);
         logTime(verbose, `Sheets loaded; ${elapsedTime}`);
         
         startTime = Date.now();
-        const transEnv = new TransEnv();
+        const transEnv = new PassEnv();
         transEnv.verbose = verbose;
-        const tstResult = ALL_TST_TRANSFORMS
-                            .transformAndLog(sheetProject, transEnv)
+        const tstResult = ALL_TST_PASSES
+                            .transformAndLog(workbook, transEnv)
                             .msgTo(m => devEnv.message(m));
         const grammar = tstResult.toGrammar(transEnv)
                                  .msgTo(m => devEnv.message(m));
@@ -142,7 +137,7 @@ export class Interpreter {
         logTime(verbose, `Converted to grammar; ${elapsedTime}`);
 
         const result = new Interpreter(devEnv, grammar, verbose);
-        result.sheetProject = sheetProject;
+        result.workbook = workbook;
         return result;
     }
 
@@ -259,11 +254,11 @@ export class Interpreter {
     } 
 
     public convertToSingleSource(): string[][] {
-        if (this.sheetProject == undefined) {
+        if (this.workbook == undefined) {
             throw new Error('Cannot create tabular source for this project, ' + 
                 'because it did not come from source in the first place.');
         }
-        return this.sheetProject.convertToSingleSheet();
+        return this.workbook.convertToSingleSheet();
     }
     
     public prepareExpr(
@@ -326,8 +321,8 @@ export class Interpreter {
 
     public runUnitTests(): void {
         this.grammar.constructExpr(this.symbolTable);  // fill the symbol table if it isn't already
-        const env = new TransEnv();
-        const t = new UnitTestTransform(this.grammar, this.vocab, this.tapeNS, this.symbolTable);
+        const env = new PassEnv();
+        const t = new UnitTestPass(this.grammar, this.vocab, this.tapeNS, this.symbolTable);
         const [_, msgs] = t.transform(env).destructure(); // results.item isn't important
         sendMessages(this.devEnv, msgs);
     }
@@ -345,7 +340,7 @@ function sendMessages(devEnv: DevEnvironment, msgs: Msgs): void {
 }
 
 function addSheet(
-    project: SheetProject, 
+    project: Workbook, 
     sheetName: string,
     devEnv: DevEnvironment): void {
 
@@ -365,16 +360,16 @@ function addSheet(
     //console.log(`loading source file ${sheetName}`);
     const cells = devEnv.loadSource(sheetName);
 
-    const sheet = new Sheet(project, sheetName, cells);
+    const sheet = new Worksheet(sheetName, cells);
     project.sheets[sheetName] = sheet;
-    const transEnv = new TransEnv();
-    const tstResult = ALL_TST_TRANSFORMS.transform(project, transEnv)
+    const transEnv = new PassEnv();
+    const tstResult = ALL_TST_PASSES.transform(project, transEnv)
                                         .msgTo((_) => {});
     const grammar = tstResult.toGrammar(transEnv)
                              .msgTo((m) => {})
     
     // check to see if any names didn't get resolved
-    const nameQualifier = new NameQualifierTransform(grammar as NsGrammar);
+    const nameQualifier = new NameQualifierPass(grammar as NsGrammar);
     const [_, nameMsgs] = nameQualifier.transform(transEnv).destructure();
 
     const unresolvedNames: Set<string> = new Set(); 

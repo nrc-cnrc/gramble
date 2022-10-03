@@ -1,14 +1,14 @@
 import { CreateNamespaces } from "./createNamespaces";
-import { TransEnv, Transform } from "../transforms";
-import { Grammar, GrammarTransform, NsGrammar } from "../grammars";
+import { PassEnv, Pass } from "../passes";
+import { Grammar, GrammarPass, NsGrammar } from "../grammars";
 import { Result } from "../msgs";
 import { timeIt, VERBOSE_TIME } from "../util";
-import { NameQualifierTransform } from "./nameQualifier";
-import { FlattenTransform } from "./flatten";
-import { RenameFixTransform } from "./renameFix";
-import { RuleReplaceTransform2 } from "./ruleReplace2";
-import { SameTapeReplaceTransform } from "./sameTapeReplace";
-import { FilterTransform } from "./filter";
+import { NameQualifierPass } from "./nameQualifier";
+import { FlattenPass } from "./flatten";
+import { RenameFixPass } from "./renameFix";
+import { RuleReplacePass2 } from "./ruleReplace2";
+import { SameTapeReplacePass } from "./sameTapeReplace";
+import { FilterPass } from "./filter";
 import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
 import { CreateOps } from "./createOps";
@@ -18,8 +18,8 @@ import { CheckTestLiterals } from "./checkTestLiterals";
 import { CreateHeaders } from "./createHeaders";
 import { AssociateHeaders } from "./associateHeaders";
 
-type GrammarTransformConstructor = new (g: NsGrammar) => GrammarTransform;
-export class TransformWrapper extends Transform<Grammar, Grammar> {
+type GrammarTransformConstructor = new (g: NsGrammar) => GrammarPass;
+export class TransformWrapper extends Pass<Grammar, Grammar> {
     
     constructor(
         public childConstructor: GrammarTransformConstructor
@@ -31,7 +31,7 @@ export class TransformWrapper extends Transform<Grammar, Grammar> {
         return "Wrapped function";
     }
 
-    public transform(t: Grammar, env: TransEnv): Result<Grammar> {
+    public transform(t: Grammar, env: PassEnv): Result<Grammar> {
         if (!(t instanceof NsGrammar)) {
             // GrammarTransforms assume they start with a namespace
             throw new Error("Calling a grammar transform on a non-namespace");
@@ -40,7 +40,7 @@ export class TransformWrapper extends Transform<Grammar, Grammar> {
         return childTransform.transform(env);
     }
 
-    public transformAndLog(t: Grammar, env: TransEnv): Result<Grammar> {
+    public transformAndLog(t: Grammar, env: PassEnv): Result<Grammar> {
         if (!(t instanceof NsGrammar)) {
             // GrammarTransforms assume they start with a namespace
             throw new Error("Calling a grammar transform on a non-namespace");
@@ -55,11 +55,11 @@ export class TransformWrapper extends Transform<Grammar, Grammar> {
 
 }
 
-function wrap(t: GrammarTransformConstructor): Transform<Grammar,Grammar> {
+function wrap(t: GrammarTransformConstructor): Pass<Grammar,Grammar> {
     return new TransformWrapper(t);
 }
 
-export const ALL_TST_TRANSFORMS = 
+export const ALL_TST_PASSES = 
 
     // parse the sheet into an initial TST, mostly consisting of
     // placeholder TstOps and TstGrids without any particular 
@@ -97,34 +97,34 @@ export const ALL_TST_TRANSFORMS =
     // their left (e.g. equals, rename)
     new RescopeLeftBinders()))))))))
 
-export const ALL_GRAMMAR_TRANSFORMS =
+export const ALL_GRAMMAR_PASSES =
 
     // qualify symbol names (e.g. turn `VERB` in sheet Sheet1 
     // into `Sheet1.VERB`) and attempt to resolve references to them
     // (e.g. figure out whether VERB refers to Sheet1.VERB or 
     // something else)
-    wrap(NameQualifierTransform).compose(
+    wrap(NameQualifierPass).compose(
 
     // flatten nested sequences/alternations into flat ones
-    wrap(FlattenTransform).compose(
+    wrap(FlattenPass).compose(
 
     // if the programmer has specified an invalid renaming/hiding
     // structure that would cause problems during evaluation, fix
     // it so it doesn't
-    wrap(RenameFixTransform).compose(
+    wrap(RenameFixPass).compose(
 
     // turn new-style replacement cascades into the appropriate
     // structures
-    wrap(RuleReplaceTransform2).compose(
+    wrap(RuleReplacePass2).compose(
 
     // take old-style replacement rules and (when the from/to tapes
     // are the same) insert renaming so that there's no conflict
-    wrap(SameTapeReplaceTransform).compose(
+    wrap(SameTapeReplacePass).compose(
 
     // some filters (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    wrap(FilterTransform))))))
+    wrap(FilterPass))))))
 
 
 

@@ -7,19 +7,19 @@ import {
     RenameGrammar
 } from "../grammars";
 
-import { IdentityTransform } from "./transforms";
+import { IdentityPass } from "./identityPass";
 import { foldRight, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
 import { Result } from "../msgs";
-import { TransEnv } from "../transforms";
+import { PassEnv } from "../passes";
 
 let RULE_HIDE_INDEX = 0;
 
 /**
- * This Transform handles the construction of implicit-tape replacement rules
+ * This pass handles the construction of implicit-tape replacement rules
  * (where you just say "from"/"to" rather than "from text"/"to text") and
  * cascades of them.
  */
-export class RuleReplaceTransform2 extends IdentityTransform {
+export class RuleReplacePass2 extends IdentityPass {
 
     public replaceIndex: number = 0;
 
@@ -27,7 +27,7 @@ export class RuleReplaceTransform2 extends IdentityTransform {
         return "Constructing new-style replacement rules (2nd version)";
     }
 
-    public transformJoinRule(g: JoinRuleGrammar, env: TransEnv): GrammarResult {
+    public transformJoinRule(g: JoinRuleGrammar, env: PassEnv): GrammarResult {
 
         const result = super.transformJoinRule(g, env) as Result<JoinRuleGrammar>;
         const [newG, msgs] = result.destructure();

@@ -4,21 +4,21 @@ import {
     TstHeadedGrid, 
     TstHeader, TstResult, 
     TstRow, 
-    TstTransform, 
+    TstPass, 
 } from "../tsts";
-import { TransEnv } from "../transforms";
+import { PassEnv } from "../passes";
 import { Msgs, Warn } from "../msgs";
 
 /**
  * 
  */
-export class AssociateHeaders extends TstTransform {
+export class AssociateHeaders extends TstPass {
 
     public get desc(): string {
         return "Parsing headers";
     }
 
-    public transform(t: TstComponent, env: TransEnv): TstResult {
+    public transform(t: TstComponent, env: PassEnv): TstResult {
 
         return t.mapChildren(this, env).bind(t => {
             

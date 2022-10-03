@@ -9,11 +9,11 @@ import {
 } from "../grammars";
 import { VocabMap, TapeNamespace} from "../tapes";
 import { generate } from "../generator";
-import { IdentityTransform } from "./transforms";
-import { TransEnv } from "../transforms";
+import { IdentityPass } from "./identityPass";
+import { PassEnv } from "../passes";
 
 
-export class UnitTestTransform extends IdentityTransform {
+export class UnitTestPass extends IdentityPass {
 
     constructor(
         ns: NsGrammar,
@@ -28,7 +28,7 @@ export class UnitTestTransform extends IdentityTransform {
         return "Running unit tests"
     }
 
-    public transformUnitTest(g: UnitTestGrammar, env: TransEnv): GrammarResult {
+    public transformUnitTest(g: UnitTestGrammar, env: PassEnv): GrammarResult {
         const [test, msgs] = super.transformUnitTest(g, env).destructure() as [UnitTestGrammar, Msgs];
         const results = this.executeTest(test);
 
@@ -60,7 +60,7 @@ export class UnitTestTransform extends IdentityTransform {
         return test.msg(msgs);
     }
 
-    public transformNegativeUnitTest(g: NegativeUnitTestGrammar, env: TransEnv): GrammarResult {
+    public transformNegativeUnitTest(g: NegativeUnitTestGrammar, env: PassEnv): GrammarResult {
         const [test, msgs] = super.transformNegativeUnitTest(g, env).destructure() as [NegativeUnitTestGrammar, Msgs];
         const results = this.executeTest(test);
         

@@ -1,8 +1,8 @@
-import { TransEnv } from "../transforms";
+import { PassEnv } from "../passes";
 import { Msgs } from "../msgs";
 import { 
     TstComponent, TstNamespace, 
-    TstResult, TstTransform, 
+    TstResult, TstPass, 
     TstOp, TstEmpty, 
     TstEnclosure
 } from "../tsts";
@@ -10,11 +10,11 @@ import { NamespaceOp, SymbolOp } from "../ops";
 
 /**
  * Namespace works somewhat differently from other operators,
- * so in this transformation we take "namespace:" TstOps and
+ * so in this pass we take "namespace:" TstOps and
  * instantiate them as actual namespaces, before the pass where
  * we instantiate other TstOps.
  * 
- * Two important things this transformation does is flatten out
+ * Two important things this pass does is flatten out
  * the namespace's children (they're in a binary tree after 
  * parsing, and that gets flattened out into an array here), as 
  * well as rescoping binary, non-assignment op children so that 
@@ -37,25 +37,25 @@ import { NamespaceOp, SymbolOp } from "../ops";
  *      ,              , f   , m
  * 
  */
-export class CreateNamespaces extends TstTransform {
+export class CreateNamespaces extends TstPass {
 
     public get desc(): string {
         return "Creating namespaces";
     }
 
-    public transform(t: TstComponent, env: TransEnv): TstResult {
+    public transform(t: TstComponent, env: PassEnv): TstResult {
 
         return t.mapChildren(this, env).bind(t => {
             switch(t.constructor) {
                 case TstOp:
-                    return this.transformOp(t as TstOp);
+                    return this.handleOp(t as TstOp);
                 default: 
                     return t;
             }
         });
     }
 
-    public transformOp(t: TstOp): TstResult {
+    public handleOp(t: TstOp): TstResult {
 
         const msgs: Msgs = [];
 

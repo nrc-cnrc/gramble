@@ -7,7 +7,7 @@ import {
     TstHide,
     TstRename, 
     TstResult, 
-    TstTransform 
+    TstPass 
 } from "../tsts";
 import {
     ContainsHeader,
@@ -18,23 +18,23 @@ import {
     StartsHeader
 } from "../headers";
 
-import { Err, Msgs, Result } from "../msgs";
-import { TransEnv } from "../transforms";
+import { Err, Msgs } from "../msgs";
+import { PassEnv } from "../passes";
 
 
-export class RescopeLeftBinders extends TstTransform {
+export class RescopeLeftBinders extends TstPass {
 
     public get desc(): string {
         return "Rescoping left-binding headers";
     }
 
-    public transform(t: TstComponent, env: TransEnv): TstResult {
+    public transform(t: TstComponent, env: PassEnv): TstResult {
 
         return t.mapChildren(this, env).bind(t => {
 
             switch(t.constructor) {
                 case TstSequence:
-                    return this.transformCellSequence(t as TstSequence);
+                    return this.handleCellSequence(t as TstSequence);
                 default: 
                     return t;
             }
@@ -42,7 +42,7 @@ export class RescopeLeftBinders extends TstTransform {
         });
     }
     
-    transformCellSequence(t: TstSequence): TstResult {
+    handleCellSequence(t: TstSequence): TstResult {
         
         const msgs: Msgs = [];
 

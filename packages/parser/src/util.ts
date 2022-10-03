@@ -58,7 +58,6 @@ export type Gen<T> = Generator<T, void, undefined>;
 export type Dict<T> = {[k:string]:T};
 export type StringDict = Dict<string>;
 
-
 /**
  * A convenience class encapsulating information about where a cell
  * is.  Every component of the abstract syntax tree has one of these;
@@ -91,6 +90,23 @@ export class Cell {
     public get id(): string { 
         return this.pos.toString();
     }
+
+}
+
+export interface TreeNode {
+    //readonly id: string;
+
+    readonly subnodes: TreeNode[];
+    create(subnodes: TreeNode[]): TreeNode;
+
+}
+
+export class DictNode<T> {
+
+    constructor(
+        public items: {[k: string]: T}
+    ) { }
+
 
 }
 

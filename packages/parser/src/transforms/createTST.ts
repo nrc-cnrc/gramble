@@ -1,4 +1,4 @@
-import { TransEnv, Transform } from "../transforms";
+import { PassEnv, Pass } from "../passes";
 import { CommandMsg, CommentMsg, Err, Msgs } from "../msgs";
 import { 
     TstAssignment, TstComponent, 
@@ -6,34 +6,36 @@ import {
     TstNamespace, TstOp, 
     TstPreGrid, TstResult, 
 } from "../tsts";
-import { Sheet, SheetComponent, SheetProject } from "../sheets";
+import { Worksheet, Workbook } from "../sheets";
 import { Cell, CellPos } from "../util";
 import { NamespaceOp, parseOp } from "../ops";
 
+type PassInput = Workbook | Worksheet;
+
 /**
  * Namespace works somewhat differently from other operators,
- * so in this transformation we take "namespace:" TstOps and
+ * so in this pass we take "namespace:" TstOps and
  * instantiate them as actual namespaces.
  */
-export class CreateTST extends Transform<SheetComponent,TstComponent> {
+export class CreateTST extends Pass<PassInput,TstComponent> {
 
     public get desc(): string {
         return "Creating TST";
     }
 
-    public transform(t: SheetComponent, env: TransEnv): TstResult {
+    public transform(t: PassInput, env: PassEnv): TstResult {
 
         switch(t.constructor) {
-            case SheetProject:
-                return this.transformProject(t as SheetProject, env);
-            case Sheet:
-                return this.transformSheet(t as Sheet, env);
+            case Workbook:
+                return this.handleWorkbook(t as Workbook, env);
+            case Worksheet:
+                return this.handleWorksheet(t as Worksheet, env);
             default: 
                 throw new Error(`unhandled ${t.constructor.name}`);
         }
     }
 
-    public transformProject(t: SheetProject, env: TransEnv): TstResult {
+    public handleWorkbook(t: Workbook, env: PassEnv): TstResult {
 
         const projectCell = new Cell("", new CellPos("", -1, -1));
         const project = new TstNamespace(projectCell);
@@ -92,7 +94,7 @@ export class CreateTST extends Transform<SheetComponent,TstComponent> {
      * felt that was information not relevant to the object itself.  It's only relevant to this algorithm,
      * so it should just stay here.
      */
-    public transformSheet(t: Sheet, env: TransEnv): TstResult {
+    public handleWorksheet(t: Worksheet, env: PassEnv): TstResult {
 
         const msgs: Msgs = [];
 

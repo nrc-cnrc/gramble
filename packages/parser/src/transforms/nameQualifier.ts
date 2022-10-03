@@ -7,11 +7,11 @@ import {
     NsGrammar
 } from "../grammars";
 
-import { IdentityTransform } from "./transforms";
-import { TransEnv } from "../transforms";
+import { IdentityPass } from "./identityPass";
+import { PassEnv } from "../passes";
 
 /**
- * The NameQualifierTransform goes through the tree and 
+ * Goes through the tree and 
  * 
  * (1) flattens the Namespace structure, replacing the 
  * potentially complex tree of namespaces with a single 
@@ -23,7 +23,7 @@ import { TransEnv } from "../transforms";
  * (3) gives EmbedGrammars reference to the namespace they'll need
  * to reference that symbol later.
  */
-export class NameQualifierTransform extends IdentityTransform {
+export class NameQualifierPass extends IdentityPass {
 
     constructor(
         ns: NsGrammar,
@@ -32,10 +32,10 @@ export class NameQualifierTransform extends IdentityTransform {
         super(ns);
     }
 
-    public transform(env: TransEnv): Result<NsGrammar> {
+    public transform(env: PassEnv): Result<NsGrammar> {
         const newNamespace = new NsGrammar();
         const newStack: [string, NsGrammar][] = [["", this.ns]];
-        const newTransform = new NameQualifierTransform(newNamespace, newStack);
+        const newTransform = new NameQualifierPass(newNamespace, newStack);
         const result = this.ns.accept(newTransform, env);
         return result.bind(r => newNamespace); // throw out the resulting namespace, 
                                                // we only care about this new one
@@ -45,14 +45,14 @@ export class NameQualifierTransform extends IdentityTransform {
         return "Qualifying names";
     }
 
-    public transformNamespace(g: NsGrammar, env: TransEnv): GrammarResult {
+    public transformNamespace(g: NsGrammar, env: PassEnv): GrammarResult {
         const stackNames = this.nsStack.map(([n,g]) => n);
         const msgs: Msgs = [];
 
         for (const [k, v] of Object.entries(g.symbols)) {
             if (v instanceof NsGrammar) {
                 const newStack: [string, NsGrammar][] = [ ...this.nsStack, [k, v] ];
-                const newTransform = new NameQualifierTransform(this.ns, newStack);
+                const newTransform = new NameQualifierPass(this.ns, newStack);
                 const _ = v.accept(newTransform, env)
                            .msgTo(msgs);
             } else {
@@ -72,7 +72,7 @@ export class NameQualifierTransform extends IdentityTransform {
                             // result.item is, it'll be discarded anyway
     }
 
-    public transformEmbed(g: EmbedGrammar, env: TransEnv): GrammarResult {
+    public transformEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {
         let resolution: [string, Grammar] | undefined = undefined;
         for (let i = this.nsStack.length-1; i >=0; i--) {
             // we go down the stack asking each to resolve it
