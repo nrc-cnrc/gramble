@@ -1,79 +1,95 @@
+import { MissingSymbolError, Msgs, Result } from "../msgs";
 import { 
     EmbedGrammar,
+    EpsilonGrammar,
     Grammar,
-    NsGrammar,
-    UnresolvedEmbedGrammar
+    GrammarResult,
+    NsGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
+import { TransEnv } from "../transforms";
 
 /**
  * The NameQualifierTransform goes through the tree and 
  * 
- * (1) flattens the Namespace structure, replacing the potentially complex tree of 
- * namespaces with a single one at the root, and
+ * (1) flattens the Namespace structure, replacing the 
+ * potentially complex tree of namespaces with a single 
+ * one at the root
  * 
- * (2) replaces UnresolvedEmbedGrammars, which contain simple symbol names (like "VERB"),
- * with EmbedGrammars, which contain fully-qualified names (like "MainSheet.VERB") and a 
- * reference to the namespace.
+ * (2) replaces unqualified symbol references (like "VERB") to 
+ * fully-qualified names (like "MainSheet.VERB")
+ * 
+ * (3) gives EmbedGrammars reference to the namespace they'll need
+ * to reference that symbol later.
  */
-export class NameQualifierTransform extends IdentityTransform<[string, NsGrammar][] > {
+export class NameQualifierTransform extends IdentityTransform {
 
-    public transform(g: NsGrammar): NsGrammar {
-        const newNamespace = new NsGrammar(g.cell);
-        g.accept(this, newNamespace, [["", g]]); // the return value is meaningless here, all of the
-                                            // embeds get attached to newNamespace, so we don't bother
-                                            // assigning it to anything
-        return newNamespace;
+    constructor(
+        ns: NsGrammar,
+        public nsStack: [string, NsGrammar][] = []
+    ) {
+        super(ns);
+    }
+
+    public transform(env: TransEnv): Result<NsGrammar> {
+        const newNamespace = new NsGrammar();
+        const newStack: [string, NsGrammar][] = [["", this.ns]];
+        const newTransform = new NameQualifierTransform(newNamespace, newStack);
+        const result = this.ns.accept(newTransform, env);
+        return result.bind(r => newNamespace); // throw out the resulting namespace, 
+                                               // we only care about this new one
     }
     
     public get desc(): string {
         return "Qualifying names";
     }
 
-    public transformNamespace(
-        g: NsGrammar,
-        ns: NsGrammar,
-        args: [string, NsGrammar][]
-    ): Grammar {
-        const stackNames = args.map(([n,g]) => n);
-        for (const [name, child] of g.symbols) {
-            if (child instanceof NsGrammar) {
-                const newStack: [string, NsGrammar][] = [ ...args, [name, child] ];
-                child.accept(this, ns, newStack) as NsGrammar;
+    public transformNamespace(g: NsGrammar, env: TransEnv): GrammarResult {
+        const stackNames = this.nsStack.map(([n,g]) => n);
+        const msgs: Msgs = [];
+
+        for (const [k, v] of Object.entries(g.symbols)) {
+            if (v instanceof NsGrammar) {
+                const newStack: [string, NsGrammar][] = [ ...this.nsStack, [k, v] ];
+                const newTransform = new NameQualifierTransform(this.ns, newStack);
+                const _ = v.accept(newTransform, env)
+                           .msgTo(msgs);
             } else {
-                const newName = g.calculateQualifiedName(name, stackNames);
-                const result = child.accept(this, ns, args);
-                ns.addSymbol(newName, result);
+                const newName = g.calculateQualifiedName(k, stackNames);
+                const newV = v.accept(this, env)
+                              .msgTo(msgs);
+                this.ns.addSymbol(newName, newV);
             }
         }
         const defaultName = g.calculateQualifiedName("", stackNames);
-        const defaultSymbol = ns.symbols.get(defaultName);
+        const defaultSymbol = this.ns.symbols[defaultName];
         if (defaultSymbol == undefined) {
-            const defaultRef = ns.getDefaultSymbol();
-            ns.addSymbol(defaultName, defaultRef);
+            const defaultRef = this.ns.getDefaultSymbol();
+            this.ns.addSymbol(defaultName, defaultRef);
         }
-        return g;
+        return g.msg(msgs); // doesn't really matter what the
+                            // result.item is, it'll be discarded anyway
     }
 
-    public transformUnresolvedEmbed(
-        g: UnresolvedEmbedGrammar, 
-        ns: NsGrammar,
-        args: [string, NsGrammar][]
-    ): Grammar {
+    public transformEmbed(g: EmbedGrammar, env: TransEnv): GrammarResult {
         let resolution: [string, Grammar] | undefined = undefined;
-        for (let i = args.length-1; i >=0; i--) {
+        for (let i = this.nsStack.length-1; i >=0; i--) {
             // we go down the stack asking each to resolve it
-            const subStack = args.slice(0, i+1);
+            const subStack = this.nsStack.slice(0, i+1);
             const topOfStack = subStack[i][1];
             const stackNames = subStack.map(([n,g]) => n);
             resolution = topOfStack.resolveName(g.name, stackNames);
             if (resolution != undefined) {              
-                const [qualifiedName, referent] = resolution;
-                return new EmbedGrammar(g.cell, qualifiedName, ns);
+                const [qualifiedName, _] = resolution;
+                const result = new EmbedGrammar(qualifiedName, this.ns);
+                return result.msg();
             }
         }
-        return g;
+
+        // didn't find it
+        const msg = new MissingSymbolError(g.name);
+        return new EpsilonGrammar().msg(msg);
     }
 
 }

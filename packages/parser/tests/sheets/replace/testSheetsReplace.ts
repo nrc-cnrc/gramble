@@ -12,6 +12,14 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"aba","surface":"ava"}
         ]);
     });
+
+    describe('Simple replace under assignment', function() {
+        const project = sheetFromFile(`${DIR}/replaceUnderAssignment.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aba","surface":"ava"}
+        ]);
+    });
     
     describe('Simple replace multiple', function() {
         const project = sheetFromFile(`${DIR}/replaceMulti.csv`);
@@ -64,14 +72,16 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Replace with a table: op nested underneath', function() {
         const project = sheetFromFile(`${DIR}/replaceWithTableOp.csv`);
-        testErrors(project, []);
+        testErrors(project, [
+            ["replaceWithTableOp",12,1,"error"]
+        ]);
         testGrammar(project, [
-            {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
-            {"text":"foobaz", "surface": "foovaz", "gloss":"run-2SG"},
-            {"text":"foobar", "surface": "foovar", "gloss":"run-1SG"},
-            {"text":"moo", "surface": "moo", "gloss":"jump.3SG"},
-            {"text":"moobaz", "surface": "moovaz", "gloss":"jump-2SG"},
-            {"text":"moobar", "surface": "moovar", "gloss":"jump-1SG"}
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
         ]);
     });
 
@@ -109,9 +119,20 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    describe('Replacing wrong tape', function() {
+        const project = sheetFromFile(`${DIR}/replaceWrongTape.csv`);
+        testErrors(project, [["replaceWrongTape",3,1,"error"]]);
+        testGrammar(project, [
+            {"text":"aba"}
+        ]);
+    });
+
     describe('Replace with a test: op nested underneath', function() {
         const project = sheetFromFile(`${DIR}/replaceWithTestOp.csv`);
-        testErrors(project, [["replaceWithTestOp", 12, 2, "error"]]);
+        testErrors(project, [
+            ["replaceWithTestOp", 12, 2, "error"],
+            ["replaceWithTestOp",12,1,"warning"]
+        ]);
         testGrammar(project, [
             {"text":"foo", "gloss":"run.3SG"},
             {"text":"foobaz", "gloss":"run-2SG"},
@@ -125,37 +146,48 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Replace with invalid param', function() {
         const project = sheetFromFile(`${DIR}/replaceWithInvalidParam.csv`);
         testErrors(project, [
-            ["replaceWithInvalidParam",13,4,"error"]
+            ["replaceWithInvalidParam",12,4,"error"],
+            ["replaceWithInvalidParam",12,1,"warning"]
         ]);        
         testGrammar(project, [
-            {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
-            {"text":"foobaz", "surface": "foovaz", "gloss":"run-2SG"},
-            {"text":"foobar", "surface": "foovar", "gloss":"run-1SG"},
-            {"text":"moo", "surface": "moo", "gloss":"jump.3SG"},
-            {"text":"moobaz", "surface": "moovaz", "gloss":"jump-2SG"},
-            {"text":"moobar", "surface": "moovar", "gloss":"jump-1SG"}
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
         ]);
     });
 
     describe('Replace with an unnamed param', function() {
         const project = sheetFromFile(`${DIR}/replaceWithUnnamedParam.csv`);
         testErrors(project, [
-            ["replaceWithUnnamedParam",13,4,"error"]
+            ["replaceWithUnnamedParam",12,4,"error"],
+            ["replaceWithUnnamedParam",12,1,"warning"]
         ]);        
         testGrammar(project, [
-            {"text":"foo", "surface": "foo", "gloss":"run.3SG"},
-            {"text":"foobaz", "surface": "foovaz", "gloss":"run-2SG"},
-            {"text":"foobar", "surface": "foovar", "gloss":"run-1SG"},
-            {"text":"moo", "surface": "moo", "gloss":"jump.3SG"},
-            {"text":"moobaz", "surface": "moovaz", "gloss":"jump-2SG"},
-            {"text":"moobar", "surface": "moovar", "gloss":"jump-1SG"}
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
         ]);
     });
     
     describe('Replace with no sibling', function() {
         const project = sheetFromFile(`${DIR}/replaceWithNoSibling.csv`);
         testErrors(project, [
-            ["replaceWithNoSibling",0,1,"error"]
+            ["replaceWithNoSibling",0,1,"error"],
+            ["replaceWithNoSibling",0,0,"warning"]
+        ]); 
+        testGrammar(project, [{}]);
+    });
+    
+    describe('Replace with no sibling bare', function() {
+        const project = sheetFromFile(`${DIR}/replaceWithNoSiblingBare.csv`);
+        testErrors(project, [
+            ["replaceWithNoSiblingBare",0,0,"error"]
         ]);        
         testGrammar(project, [{}]);
     });
@@ -215,6 +247,14 @@ describe(`${path.basename(module.filename)}`, function() {
             {text: "b", text2: "v", text3: "w"}
         ]);
     });
+
+    describe('Nested replace, different tapes, under assignment', function() {
+        const project = sheetFromFile(`${DIR}/nestedDifferentUnderAssignment.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {text: "b", text2: "v", text3: "w"}
+        ]);
+    });
     
     describe('Nested replace, different tapes 2', function() {
         const project = sheetFromFile(`${DIR}/nestedDifferent2.csv`);
@@ -241,6 +281,14 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    describe('Nested replace same tape, under assignment', function() {
+        const project = sheetFromFile(`${DIR}/nestedSameUnderAssignment.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {text: "w"}
+        ]);
+    });
+
     describe('Nested replace same tape 2', function() {
         const project = sheetFromFile(`${DIR}/nestedSame2.csv`);
         testErrors(project, []);
@@ -302,6 +350,4 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"abi","surface":"avi"}
         ]);
     });
-
-
 });

@@ -1,34 +1,35 @@
 import { 
     CounterStack, CountGrammar, EqualsGrammar, Grammar, 
     GrammarTransform, 
-    LiteralGrammar, NsGrammar, PriorityGrammar, SequenceGrammar, Transform 
+    LiteralGrammar, NsGrammar, PriorityGrammar, SequenceGrammar, UnitTestGrammar 
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
     msToTime, StringDict, timeIt, 
-    DummyCell, stripHiddenTapes, GenOptions, 
+    stripHiddenTapes, GenOptions, 
     HIDDEN_TAPE_PREFIX,
     SILENT,
     VERBOSE_TIME,
     logTime,
     logGrammar
 } from "./util";
-import { SheetProject } from "./sheets";
+import { Sheet, SheetProject } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { TapeNamespace, VocabMap } from "./tapes";
-import { Expr, PriorityExpr, SymbolTable } from "./exprs";
+import { Expr, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { NameQualifierTransform } from "./transforms/nameQualifier";
 import { SameTapeReplaceTransform } from "./transforms/sameTapeReplace";
 import { RenameFixTransform } from "./transforms/renameFix";
 import { FilterTransform } from "./transforms/filter";
 import { FlattenTransform } from "./transforms/flatten";
-import { RuleReplaceTransform } from "./transforms/ruleReplace";
 import { generate } from "./generator";
 import { RuleReplaceTransform2 } from "./transforms/ruleReplace2";
-import { ParallelizeTransform } from "./transforms/parallelize";
-
-type GrambleError = { sheet: string, row: number, col: number, msg: string, level: string };
+import { TstComponent } from "./tsts";
+import { UnitTestTransform } from "./transforms/unitTests";
+import { MissingSymbolError, Msgs } from "./msgs";
+import { ALL_GRAMMAR_TRANSFORMS, ALL_TST_TRANSFORMS } from "./transforms/allTransforms";
+import { TransEnv } from "./transforms";
 
 /**
  * An interpreter object is responsible for applying the transformations in between sheets
@@ -75,7 +76,7 @@ export class Interpreter {
         if (g instanceof NsGrammar) {
             this.grammar = g;
         } else {
-            this.grammar = new NsGrammar(g.cell);
+            this.grammar = new NsGrammar();
             this.grammar.addSymbol("", g);
         }
 
@@ -85,22 +86,14 @@ export class Interpreter {
         // to get the grammar into an executable state: symbol references fully-qualified,
         // semantically impossible tape structures are massaged into well-formed ones, some 
         // scope problems adjusted, etc.
-
-        const transforms: Transform[] = [
-            new NameQualifierTransform(),
-            new RuleReplaceTransform2(),
-            new SameTapeReplaceTransform(),
-            new RenameFixTransform(),
-            new FlattenTransform(),
-            new FilterTransform(),
-            //new ParallelizeTransform()
-        ]
-
-        for (const t of transforms) {
-            timeIt(() => {
-                this.grammar = t.transform(this.grammar);
-            }, timeVerbose, t.desc);
-        }
+        
+        const env = new TransEnv();
+        env.verbose = verbose;
+        const [newGrammar, msgs] = this.grammar.msg() // lift to result
+                     .bind(g => ALL_GRAMMAR_TRANSFORMS.transformAndLog(g, env))
+                     .destructure();
+        this.grammar = newGrammar as NsGrammar;
+        sendMessages(devEnv, msgs);
 
         // Next we collect the vocabulary on all tapes
         timeIt(() => {
@@ -111,13 +104,6 @@ export class Interpreter {
             this.grammar.collectAllVocab(this.vocab, this.tapeNS);
 
         }, timeVerbose, "Collected vocab");
-
-        /*
-        timeIt(() => {
-            // copy the vocab if necessary
-            this.grammar.copyVocab(this.tapeNS, new Set());
-        }, timeVerbose, "Copied vocab");
-        */
 
         logGrammar(this.verbose, this.grammar.id)
     }
@@ -139,13 +125,19 @@ export class Interpreter {
 
         // First, load all the sheets
         let startTime = Date.now();
-        const sheetProject = new SheetProject(devEnv, mainSheetName);
+        const sheetProject = new SheetProject(mainSheetName);
+        addSheet(sheetProject, mainSheetName, devEnv);
         let elapsedTime = msToTime(Date.now() - startTime);
         logTime(verbose, `Sheets loaded; ${elapsedTime}`);
         
         startTime = Date.now();
-        const tst = sheetProject.toTST();
-        const grammar = tst.toGrammar();
+        const transEnv = new TransEnv();
+        transEnv.verbose = verbose;
+        const tstResult = ALL_TST_TRANSFORMS
+                            .transformAndLog(sheetProject, transEnv)
+                            .msgTo(m => devEnv.message(m));
+        const grammar = tstResult.toGrammar(transEnv)
+                                 .msgTo(m => devEnv.message(m));
         elapsedTime = msToTime(Date.now() - startTime);
         logTime(verbose, `Converted to grammar; ${elapsedTime}`);
 
@@ -162,13 +154,9 @@ export class Interpreter {
         return new Interpreter(devEnv, grammar, verbose);
     }
 
+
     public allSymbols(): string[] {
         return this.grammar.allSymbols();
-    }
-
-    public getErrors(): GrambleError[] {
-        return this.devEnv.getErrorMessages().map(([sheet, row, col, msg, level]) =>
-            { return { sheet: sheet, row: row, col:col, msg:msg, level:level }});
     }
     
     public getTapeNames(
@@ -191,7 +179,7 @@ export class Interpreter {
         value: number = 1.0
     ): string {
         if (!(tapeName in this.tapeColors)) {
-            const header = parseHeaderCell(tapeName);
+            const [header, msgs] = parseHeaderCell(tapeName).destructure();
             this.tapeColors[tapeName] = header.getBackgroundColor(saturation, value);
         }
         return this.tapeColors[tapeName];
@@ -277,10 +265,6 @@ export class Interpreter {
         }
         return this.sheetProject.convertToSingleSheet();
     }
-
-    public runChecks(): void {
-        this.grammar.runChecksAux();
-    }
     
     public prepareExpr(
         symbolName: string = "",
@@ -307,10 +291,10 @@ export class Interpreter {
             const queryLiterals = Object.entries(query).map(([key, value]) => {
                 key = key.normalize("NFD"); 
                 value = value.normalize("NFD");
-                return new LiteralGrammar(new DummyCell(), key, value);
+                return new LiteralGrammar(key, value);
             });
-            const querySeq = new SequenceGrammar(new DummyCell(), queryLiterals);
-            targetGrammar = new EqualsGrammar(new DummyCell(), targetGrammar, querySeq);
+            const querySeq = new SequenceGrammar(queryLiterals);
+            targetGrammar = new EqualsGrammar(targetGrammar, querySeq);
             tapePriority = targetGrammar.calculateTapes(new CounterStack(2));
             
             // we have to collect any new vocab, but only from the new material
@@ -324,14 +308,14 @@ export class Interpreter {
         const potentiallyInfinite = targetGrammar.potentiallyInfinite(new CounterStack(2));
         if (potentiallyInfinite && opt.maxChars != Infinity) {
             if (targetGrammar instanceof PriorityGrammar) {
-                targetGrammar.child = new CountGrammar(targetGrammar.child.cell, targetGrammar.child, opt.maxChars-1);
+                targetGrammar.child = new CountGrammar(targetGrammar.child, opt.maxChars-1);
             } else {
-                targetGrammar = new CountGrammar(targetGrammar.cell, targetGrammar, opt.maxChars-1);
+                targetGrammar = new CountGrammar(targetGrammar, opt.maxChars-1);
             }
         }
 
         if (!(targetGrammar instanceof PriorityGrammar)) {
-            targetGrammar = new PriorityGrammar(targetGrammar.cell, targetGrammar, tapePriority);
+            targetGrammar = new PriorityGrammar(targetGrammar, tapePriority);
             //logTime(this.verbose, `priority = ${(targetGrammar as PriorityGrammar).tapePriority}`)
         }
 
@@ -341,45 +325,70 @@ export class Interpreter {
     }
 
     public runUnitTests(): void {
-        const opt = new GenOptions();
-        let expr = this.grammar.constructExpr(this.symbolTable);
-
-        const tests = this.grammar.gatherUnitTests();
-
-        for (const test of tests) {
-
-            // create a filter for each test
-            let targetComponent: Grammar = new EqualsGrammar(test.cell, test.child, test.test);
-
-            const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
-            
-            // we have to collect any new vocab, but only from the new material
-            targetComponent.collectAllVocab(this.vocab, this.tapeNS);
-            // we still have to copy though, in case the query added new vocab
-            // to something that's eventually a "from" tape of a replace
-            //targetComponent.copyVocab(this.tapeNS, new Set());
-                
-            const potentiallyInfinite = targetComponent.potentiallyInfinite(new CounterStack(2));
-            if (potentiallyInfinite && opt.maxChars != Infinity) {
-                if (targetComponent instanceof PriorityGrammar) {
-                    targetComponent.child = new CountGrammar(targetComponent.child.cell, targetComponent.child, opt.maxChars-1);
-                } else {
-                    targetComponent = new CountGrammar(targetComponent.cell, targetComponent, opt.maxChars-1);
-                }
-            }
-
-            if (!(targetComponent instanceof PriorityGrammar)) {
-                targetComponent = new PriorityGrammar(targetComponent.cell, targetComponent, tapePriority);
-                //logTime(this.verbose, `priority = ${(targetGrammar as PriorityGrammar).tapePriority}`)
-            }
-
-            // console.log(`grammar = ${targetComponent.id}`)
-
-            expr = targetComponent.constructExpr(this.symbolTable);
-
-            const results = [...generate(expr, this.tapeNS, opt)];
-            // console.log(`results = ${results}`)
-            test.evalResults(results);
-        }
+        this.grammar.constructExpr(this.symbolTable);  // fill the symbol table if it isn't already
+        const env = new TransEnv();
+        const t = new UnitTestTransform(this.grammar, this.vocab, this.tapeNS, this.symbolTable);
+        const [_, msgs] = t.transform(env).destructure(); // results.item isn't important
+        sendMessages(this.devEnv, msgs);
     }
+}
+
+function sendMessages(devEnv: DevEnvironment, msgs: Msgs): void {
+    for (const msg of msgs) {
+        if (msg.pos == undefined) {
+            // if it's got no location we have nowhere to
+            // display it
+            continue;
+        }
+        devEnv.message(msg);
+    }
+}
+
+function addSheet(
+    project: SheetProject, 
+    sheetName: string,
+    devEnv: DevEnvironment): void {
+
+    if (project.hasSheet(sheetName)) {
+        // already loaded it, don't have to do anything
+        return;
+    }
+
+    if (!devEnv.hasSource(sheetName)) {
+        // this is probably a programmer error, in which they've attempted
+        // to reference a non-existent symbol, and we're trying to load it as
+        // a possible source file.  we don't freak out about it here, though;
+        // that symbol will generate an error message at the appropriate place.
+        return;
+    }
+
+    //console.log(`loading source file ${sheetName}`);
+    const cells = devEnv.loadSource(sheetName);
+
+    const sheet = new Sheet(project, sheetName, cells);
+    project.sheets[sheetName] = sheet;
+    const transEnv = new TransEnv();
+    const tstResult = ALL_TST_TRANSFORMS.transform(project, transEnv)
+                                        .msgTo((_) => {});
+    const grammar = tstResult.toGrammar(transEnv)
+                             .msgTo((m) => {})
+    
+    // check to see if any names didn't get resolved
+    const nameQualifier = new NameQualifierTransform(grammar as NsGrammar);
+    const [_, nameMsgs] = nameQualifier.transform(transEnv).destructure();
+
+    const unresolvedNames: Set<string> = new Set(); 
+    for (const msg of nameMsgs) {
+        if (!(msg instanceof MissingSymbolError)) { 
+            continue;
+        }
+        const firstPart = msg.symbol.split(".")[0];
+        unresolvedNames.add(firstPart);
+    }
+
+    for (const possibleSheetName of unresolvedNames) {
+        addSheet(project, possibleSheetName, devEnv);
+    } 
+
+    return;
 }

@@ -1,19 +1,21 @@
 import { 
     CounterStack,
-    Grammar, HideGrammar,
+    GrammarResult, HideGrammar,
     JoinGrammar, JoinRuleGrammar, 
-    NsGrammar, RenameGrammar, ReplaceGrammar
+    RenameGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
-import { DummyCell, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { resultList } from "../msgs";
+import { TransEnv } from "../transforms";
 
 /**
  * This Transform handles the construction of implicit-tape replacement rules
  * (where you just say "from"/"to" rather than "from text"/"to text") and
  * cascades of them.
  */
-export class RuleReplaceTransform extends IdentityTransform<void>{
+export class RuleReplaceTransform extends IdentityTransform {
 
     public replaceIndex: number = 0;
 
@@ -21,47 +23,44 @@ export class RuleReplaceTransform extends IdentityTransform<void>{
         return "Constructing new-style replacement rules";
     }
 
-    public transformJoinRule(
-        g: JoinRuleGrammar, 
-        ns: NsGrammar, 
-        args: void
-    ): Grammar {
+    public transformJoinRule(g: JoinRuleGrammar, env: TransEnv): GrammarResult {
 
         let relevantTape = g.inputTape;
-        let result = g.child.accept(this, ns, args);
+        let [child, childMsgs] = g.child.accept(this, env).destructure();
 
         if (g.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar
             // leads to infinite generation.  This is correct but not what anyone
             // actually wants, so mark an error
-            g.cell.message({
-                type: "error",
-                shortMsg: `Replacing on non-existent tape'`,
-                longMsg: `The grammar above does not have a tape ${g.inputTape} to replace on`
-            });
-            return result;
+            return child.msg(childMsgs)
+                        .err(`Replacing on non-existent tape'`,
+                            `The grammar above does not have a tape ` +
+                            `${g.inputTape} to replace on`);
         }
 
         if (g.rules.length == 0) {
-            return result;
+            return child.msg(childMsgs);
         }
 
-        const newRules = g.rules.map(r => r.accept(this, ns, args));
+        const [rules, ruleMsgs] = resultList(g.rules)
+                                .map(c => c.accept(this, env))
+                                .destructure();
 
-        for (const rule of newRules) {
+        let result = child;
+        for (const rule of rules) {
             // first, rename the relevant tape of the child to ".input"
-            result = new RenameGrammar(new DummyCell(), result, relevantTape, REPLACE_INPUT_TAPE);
+            result = new RenameGrammar(result, relevantTape, REPLACE_INPUT_TAPE);
             // now the relevant tape is "output"
             relevantTape = REPLACE_OUTPUT_TAPE;
             // join it with the rule
-            result = new JoinGrammar(g.cell, result, rule);
+            result = new JoinGrammar(result, rule);
             // hide the input tape
-            result = new HideGrammar(new DummyCell(), result, REPLACE_INPUT_TAPE);
+            result = new HideGrammar(result, REPLACE_INPUT_TAPE);
         }
 
-        result = new RenameGrammar(new DummyCell(), result, REPLACE_OUTPUT_TAPE, g.inputTape);
+        result = new RenameGrammar(result, REPLACE_OUTPUT_TAPE, g.inputTape);
         result.calculateTapes(new CounterStack(2));
-        return result;
+        return result.msg(childMsgs).msg(ruleMsgs);
     }
 
 }

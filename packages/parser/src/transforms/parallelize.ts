@@ -1,21 +1,24 @@
-import { foldLeft } from "../util";
+import { Msgs } from "../msgs";
 import { 
-    AlternationGrammar, CounterStack, EpsilonGrammar, Grammar,
-    NsGrammar, NullGrammar, ParallelGrammar, SequenceGrammar
+    CounterStack, Grammar,
+    GrammarResult,
+    ParallelGrammar, SequenceGrammar
 } from "../grammars";
 import { IdentityTransform } from "./transforms";
+import { TransEnv } from "../transforms";
 
-export class ParallelizeTransform extends IdentityTransform<void> {
+export class ParallelizeTransform extends IdentityTransform {
 
     public get desc(): string {
         return "Parallelizing sequences";
     }
 
-    public transformSequence(g: SequenceGrammar, ns: NsGrammar, args: void): Grammar {
+    public transformSequence(g: SequenceGrammar, env: TransEnv): GrammarResult {
         
         const newChildren: Grammar[] = [];
+        const msgs: Msgs = [];
         for (const child of g.children) {
-            const newChild = child.accept(this, ns, args);
+            const newChild = child.accept(this, env).msgTo(msgs);
             newChild.calculateTapes(new CounterStack(2));
             const prevChild = newChildren.pop();
             if (prevChild == undefined) {
@@ -25,7 +28,7 @@ export class ParallelizeTransform extends IdentityTransform<void> {
             newChildren.push(...combineIfPossible(prevChild, newChild));
         }
 
-        return new SequenceGrammar(g.cell, newChildren);
+        return new SequenceGrammar(newChildren).msg(msgs);
     }
 
 }
@@ -36,7 +39,7 @@ function combineIfPossible(g1: Grammar, g2: Grammar): Grammar[] {
     if (g1.tapes.length == 1 && 
                 g2.tapes.length == 1 &&
                 g1.tapes[0] != g2.tapes[0]) {
-        const result = new ParallelGrammar(g1.cell, [g1, g2]);
+        const result = new ParallelGrammar([g1, g2]);
         result.calculateTapes(new CounterStack(2));
         return [result];
     }
@@ -47,7 +50,7 @@ function combineIfPossible(g1: Grammar, g2: Grammar): Grammar[] {
             g2.tapes.length == 1 && 
             g1.tapes.indexOf(g2.tapes[0]) == -1) {
         const newChildren = [... g1.children, g2];
-        const result = new ParallelGrammar(g1.cell, newChildren);
+        const result = new ParallelGrammar(newChildren);
         result.calculateTapes(new CounterStack(2));
         return [result];
     }
@@ -61,13 +64,13 @@ function combineIfPossible(g1: Grammar, g2: Grammar): Grammar[] {
         for (const child of g1.children) {
             if (child.tapes.length == 1 && 
                     child.tapes[0] == g2.tapes[0]) {
-                const newChild = new SequenceGrammar(g1.cell, [child, g2]);
+                const newChild = new SequenceGrammar([child, g2]);
                 newChildren.push(newChild);
                 continue;
             }
             newChildren.push(child);
         }
-        const result = new ParallelGrammar(g1.cell, newChildren);
+        const result = new ParallelGrammar(newChildren);
         result.calculateTapes(new CounterStack(2));
         return [result];
     }

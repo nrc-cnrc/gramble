@@ -51,7 +51,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobaz", gloss: "jump-2SG" }
         ]);
     });
-
+    
     describe('Testing a grammar directly underneath (without "table:" op)', function() {
         const interpreter = sheetFromFile(`${DIR}/testingWithoutTableOp.csv`);
         interpreter.runUnitTests();
@@ -140,7 +140,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/testingNothing.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["testingNothing", 9, 1, "error"]
+            ["testingNothing", 9, 1, "error"],
+            ["testingNothing", 9, 0, "warning"]
         ]);
         testGrammar(interpreter, [{}]);
     });
@@ -149,7 +150,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/negativeTestingNothing.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["negativeTestingNothing", 9, 1, "error"]
+            ["negativeTestingNothing", 9, 1, "error"],
+            ["negativeTestingNothing", 9, 0, "error"]
         ]);
         testGrammar(interpreter, [{}]);
     });
@@ -185,7 +187,9 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('table: op under unit test', function() {
         const interpreter = sheetFromFile(`${DIR}/tableUnderUnitTest.csv`);
         interpreter.runUnitTests();
-        testErrors(interpreter, []);
+        testErrors(interpreter, [
+            ["tableUnderUnitTest",12,1,"error"]
+        ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -197,7 +201,9 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('table: op under negative unit test', function() {
         const interpreter = sheetFromFile(`${DIR}/tableUnderNegativeUnitTest.csv`);
         interpreter.runUnitTests();
-        testErrors(interpreter, []);
+        testErrors(interpreter, [
+            ["tableUnderNegativeUnitTest",12,1,"error"]
+        ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -238,9 +244,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/testWithBadParam.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["testWithBadParam",13,3,"warning"],
-            ["testWithBadParam",14,3,"warning"],
-            ["testWithBadParam",15,3,"warning"]
+            ["testWithBadParam",12,3,"error"],
+            ["testWithBadParam",12,1,"warning"]
         ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
@@ -254,8 +259,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/testnotWithBadParam.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["testnotWithBadParam",13,3,"warning"],
-            ["testnotWithBadParam",14,3,"warning"],
+            ["testnotWithBadParam",12,3,"error"],
+            ["testnotWithBadParam",12,1,"warning"]
         ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
@@ -293,8 +298,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/uniquenessTestsFailing.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["uniquenessTestsFailing",14,3,"error"],
-            ["uniquenessTestsFailing",16,3,"error"],
+            ["uniquenessTestsFailing",14,2,"error"],
+            ["uniquenessTestsFailing",16,2,"error"],
             ["uniquenessTestsFailing",17,2,"error"]
         ]);
         testGrammar(interpreter, [
@@ -312,7 +317,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/uniquenessTestsMissingField.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["uniquenessTestsMissingField",14,3,"error"]
+            ["uniquenessTestsMissingField",14,2,"error"]
         ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run-1SG" },
@@ -324,12 +329,11 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
     describe('Uniqueness tests with multiple uniqueness fields, failing', function() {
         const interpreter = sheetFromFile(`${DIR}/uniquenessTestsFailingMulti.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["uniquenessTestsFailingMulti",14,4,"error"]
+            ["uniquenessTestsFailingMulti",14,2,"error"]
         ]);
         testGrammar(interpreter, [
             { root: "run", subj: "[1SG]", text: "foobar", gloss: "run[1SG]" },
@@ -340,7 +344,50 @@ describe(`${path.basename(module.filename)}`, function() {
             { root: "jump", subj: "[2SG]", text: "moobaz", gloss: "jump[2SG]" }
         ]);
     });
+    
+    describe('Unit test with a regex header', function() {
+        const interpreter = sheetFromFile(`${DIR}/testWithRegexHeader.csv`);
+        interpreter.runUnitTests();
+        testErrors(interpreter, [
+            ["testWithRegexHeader",3,3,"error"]
+        ]);
+        testGrammar(interpreter, [
+            { text: "foobar", gloss: "run-1SG" }
+        ]);
+    });
+    
+    describe('Unit test with optional header', function() {
+        const interpreter = sheetFromFile(`${DIR}/testWithOptionalHeader.csv`);
+        interpreter.runUnitTests();
+        testErrors(interpreter, [
+            ["testWithOptionalHeader",3,3,"error"]
+        ]);
+        testGrammar(interpreter, [
+            { text: "foobar", gloss: "run" }
+        ]);
+    });
+    
+    describe('Unit test with a slash header', function() {
+        const interpreter = sheetFromFile(`${DIR}/testWithSlashHeader.csv`);
+        interpreter.runUnitTests();
+        testErrors(interpreter, [
+            ["testWithSlashHeader",3,3,"error"]
+        ]);
+        testGrammar(interpreter, [
+            { text: "foobar", gloss: "run", eng: "run" }
+        ]);
+    });
 
+    describe('Unit test with an embed header', function() {
+        const interpreter = sheetFromFile(`${DIR}/testWithEmbedHeader.csv`);
+        interpreter.runUnitTests();
+        testErrors(interpreter, [
+            ["testWithEmbedHeader",6,3,"error"]
+        ]);
+        testGrammar(interpreter, [
+            { text: "foobar", gloss: "run-1SG" }
+        ]);
+    });
 });
 
 

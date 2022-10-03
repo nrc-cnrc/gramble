@@ -29,11 +29,10 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Sheet name using a reserved word', function() {
+        // no longer erroneous
         const project = sheetFromFile(`${DIR}/optional.csv`);
-        testErrors(project, [
-            ["optional", 0, -1, "error"]
-        ]);
-        testGrammar(project, [
+        testErrors(project, []);
+        testGrammar(project,[
             {"text":"moobaz","gloss":"jump-2SG"},
             {"text":"moobar","gloss":"jump-1SG"},
             {"text":"foobaz","gloss":"run-2SG"},
@@ -66,12 +65,21 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Op missing sibling argument', function() {
         const project = sheetFromFile(`${DIR}/opMissingSibling.csv`);
         testErrors(project, [
-            ["opMissingSibling", 9, 1, "warning"]
+            ["opMissingSibling", 9, 0, "warning"],
+            ["opMissingSibling", 9, 1, "error"]
         ]);
         testGrammar(project, [
-            {},
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" }
+            {}
+        ]);
+    });
+
+    describe('Bare join op, missing sibling argument', function() {
+        const project = sheetFromFile(`${DIR}/bareOp.csv`);
+        testErrors(project, [
+            ["bareOp", 0, 0, "warning"]
+        ]);
+        testGrammar(project, [
+            {}
         ]);
     });
 
@@ -81,7 +89,6 @@ describe(`${path.basename(module.filename)}`, function() {
             ["opMissingChild", 12, 1, "warning"]
         ]);
         testGrammar(project, [
-            {},
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
@@ -190,17 +197,17 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Replace param headers in ordinary tables', function() {
         const project = sheetFromFile(`${DIR}/waywardParam.csv`);
         testErrors(project, [
-            ["waywardParam", 1, 2, "warning"],
-            ["waywardParam", 2, 2, "warning"],
-            ["waywardParam", 5, 3, "warning"],
-            ["waywardParam", 6, 3, "warning"]
+            ["waywardParam", 0, 2, "error"],
+            ["waywardParam", 4, 3, "error"],
         ]);
+        /*
         testGrammar(project, [
             {"gloss":"run","text":"baz"},
             {"gloss":"run","text":"bar"},
             {"gloss":"jump","text":"bar"},
             {"gloss":"jump","text":"baz"}
         ]);
+        */
     });
 
 });

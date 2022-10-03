@@ -1,29 +1,32 @@
-
-import { AlternationGrammar, Grammar, JoinGrammar, SequenceGrammar } from "./grammars";
 import { 
-    miniParse, MPAlternation, MPComment, 
-    MPDelay, MPParser, MPReserved, 
+    miniParse, MPAlternation, 
+    MPParser, MPReserved, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
 import { 
-    TstAssignment, TstBinaryOp, TstEnclosure, TstNamespace, 
-    TstNegativeUnitTest, TstReplace, TstReplaceTape, TstTableOp, TstUnitTest 
-} from "./tsts";
-import { Cell } from "./util";
+    AlternationGrammar, Grammar, 
+    JoinGrammar, SequenceGrammar 
+} from "./grammars";
 
+
+export const BLANK_PARAM: string = "__";
 
 const SYMBOL = [ ":" ];
 
-const REPLACE_PARAMS = [
+const REQUIRED_REPLACE_PARAMS = new Set([
     "from",
     "to",
-    "pre",
-    "post"
-]
+]);
 
-const TEST_PARAMS = [
-    "unique"
-]
+const REPLACE_PARAMS = new Set([
+    "pre",
+    "post",
+    ...REQUIRED_REPLACE_PARAMS
+]);
+
+const TEST_PARAMS = new Set([
+    "unique",
+]);
 
 const RESERVED_HEADERS = new Set([
     "embed", 
@@ -40,11 +43,14 @@ const RESERVED_HEADERS = new Set([
     ...TEST_PARAMS
 ]);
 
-const BINARY_OPS = new Set([
-    "or",
-    "concat",
-    "join"
-]);
+
+export const BINARY_OPS_MAP: {[opName: string]: (c1: Grammar, c2: Grammar) => Grammar;} = {
+    "or": (c1, c2) => new AlternationGrammar([c1, c2]),
+    "concat": (c1, c2) => new SequenceGrammar([c1, c2]),
+    "join": (c1, c2) => new JoinGrammar(c1, c2),
+}
+
+const BINARY_OPS = new Set(Object.keys(BINARY_OPS_MAP));
 
 const RESERVED_OPS: Set<string> = new Set([
     "table", 
@@ -55,10 +61,14 @@ const RESERVED_OPS: Set<string> = new Set([
     ...BINARY_OPS
 ]);
 
-const RESERVED_WORDS = new Set([
-    ...SYMBOL, 
+export const RESERVED_WORDS = new Set([
     ...RESERVED_HEADERS, 
     ...RESERVED_OPS
+]);
+
+export const RESERVED = new Set([
+    ...SYMBOL,
+    ...RESERVED_WORDS
 ]);
 
 
@@ -72,92 +82,157 @@ function tokenize(text: string): string[] {
     );
 }
 
+export type Requirement = "required" | "forbidden";
+
 export abstract class Op {
-    public abstract toTST(cell: Cell): TstEnclosure;
+
+    public get siblingRequirement(): Requirement {
+        return "forbidden";
+    }
+
+    public get childGridRequirement(): Requirement {
+        return "forbidden";
+    }
+
+    public get allowedNamedParams(): Set<string> {
+        return new Set([BLANK_PARAM]);
+    }
+    
+    public get requiredNamedParams(): Set<string> {
+        return new Set([BLANK_PARAM]);
+    }
+
+    /**
+     * This is for operators that require a perfect parameterization
+     * to execute at all, lest their be unanticipated effects.
+     */
+    public get requirePerfectParams(): boolean {
+        return false;
+    }
+
+    /**
+     * This is for Test and TestNot, which require every parameter
+     * in their child to be a literal
+     */
+    public get requireLiteralParams(): boolean {
+        return false;
+    }
+
 }
 
-export class TableOp {
-    public toTST(cell: Cell): TstEnclosure {
-        return new TstTableOp(cell);
+export class TableOp extends Op { }
+
+export class NamespaceOp extends Op { }
+
+export abstract class SpecialOp extends Op {
+
+    public get siblingRequirement(): Requirement {
+        return "required";
+    }
+
+    public get childGridRequirement(): Requirement {
+        return "required";
+    }
+
+    public get requirePerfectParams(): boolean {
+        return true;
+    }
+
+}
+
+export class TestOp extends SpecialOp { 
+
+    public get allowedNamedParams(): Set<string> {
+        return new Set([BLANK_PARAM, ...TEST_PARAMS]);
+    }
+    
+    public get requireLiteralParams(): boolean {
+        return true;
+    }
+
+}
+
+export class TestNotOp extends SpecialOp { 
+
+    public get allowedNamedParams(): Set<string> {
+        return new Set([BLANK_PARAM, ...TEST_PARAMS]);
+    }
+    
+    public get requireLiteralParams(): boolean {
+        return true;
     }
 }
 
-export class NamespaceOp {
-    public toTST(cell: Cell): TstEnclosure {
-        return new TstNamespace(cell);
+export class ReplaceOp extends SpecialOp { 
+
+    public get requiredNamedParams(): Set<string> {
+        return REQUIRED_REPLACE_PARAMS;
     }
+
+    public get allowedNamedParams(): Set<string> {
+        return REPLACE_PARAMS;
+    }
+
 }
 
-export class TestOp {
-    public toTST(cell: Cell): TstEnclosure {
-        return new TstUnitTest(cell);
-    }
-}
-
-export class TestNotOp {
-    public toTST(cell: Cell): TstEnclosure {
-        return new TstNegativeUnitTest(cell);
-    }
-}
-
-export class AtomicReplaceOp {
-    public toTST(cell: Cell): TstEnclosure {
-        return new TstReplace(cell);
-    }
-}
-
-export class ReplaceOp {
+export class ReplaceTapeOp extends SpecialOp {
 
     constructor(
-        public child: UnreservedOp
-    ) { }
+        public child: SymbolOp
+    ) { 
+        super();
+    }
 
-    public toTST(cell: Cell): TstEnclosure {
-        const tapeName = this.child.text;
-        return new TstReplaceTape(cell, tapeName);
+    public get requiredNamedParams(): Set<string> {
+        return REQUIRED_REPLACE_PARAMS;
+    }
+
+    public get allowedNamedParams(): Set<string> {
+        return REPLACE_PARAMS;
+    }
+
+}
+
+export class BinaryOp extends Op {
+    
+    constructor(
+        public text: string
+    ) { 
+        super();
+    }
+
+    public get siblingRequirement(): Requirement {
+        return "required";
     }
 }
 
-export class BinaryOp {
-    public toTST(cell: Cell): TstEnclosure {
-        return new TstBinaryOp(cell);
-    }
-}
-
-export class UnreservedOp {
+/**
+ * This is an op that holds any string that's not a reserved
+ * word. If it's going to become a TST, it becomes a TstAssignment,
+ * but that's not the only place we use these; it's also how
+ * arbitrary symbols are handled for operators that allow these like 
+ * "replace <tapename>:"
+ */
+export class SymbolOp extends Op {
 
     constructor(
         public text: string
-    ) { }
-
-    public toTST(cell: Cell): TstEnclosure {
-        // This only gets called if the UnreservedOp is at the top
-        // level.  Otherwise, the UnreservedOp is only being used
-        // to store a string (like a tape name)
-        return new TstAssignment(cell);
+    ) { 
+        super();
     }
+
 }
 
-export class ReservedErrorOp {
+export class ErrorOp extends Op {
 
     constructor(
-        public text: string
-    ) { }
-
-    public toTST(cell: Cell): TstEnclosure {
-        
-        // oops, assigning to a reserved word
-        cell.message({
-            type: "error",
-            shortMsg: "Reserved word as operator", 
-            longMsg: "This cell has to be a symbol name or an operator, but it's a reserved word."
-        });            
-
-        // treating it as a TstEnclosure will at least
-        // get its siblings/children error checked too
-        return new TstEnclosure(cell);
+        public text: string,
+        public shortMsg: string,
+        public longMsg: string,
+    ) { 
+        super();
     }
-
+    
 }
 
 const OP_TABLE = MPSequence<Op>(
@@ -182,35 +257,55 @@ const OP_TESTNOT = MPSequence<Op>(
 
 const OP_UNRESERVED = MPUnreserved<Op>(
     RESERVED_WORDS, 
-    (s) => new UnreservedOp(s)
+    (s) => new SymbolOp(s)
 );
 
-const OP_ATOMIC_REPLACE = MPSequence<Op>(
-    ["replace"], 
-    () => new AtomicReplaceOp()
+const OP_RESERVED_HEADER = MPReserved<Op>(
+    RESERVED_HEADERS, 
+    (s) => new ErrorOp(s, "Reserved word in operator", 
+            "This cell has to be a symbol name or " +
+            `an operator, but it's a reserved word ${s}.`)
+);
+
+const OP_RESERVED_WORD = MPReserved<Op>(
+    RESERVED_WORDS, 
+    (s) => new ErrorOp(s, "Reserved word in operator", 
+            "This cell has to be a symbol name or " +
+            `an operator, but it's a reserved word '${s}'.`)
 );
 
 const OP_REPLACE = MPSequence<Op>(
-    ["replace", OP_UNRESERVED], 
-    (c) => new ReplaceOp(c as UnreservedOp)
+    ["replace"], 
+    () => new ReplaceOp()
 );
 
-const OP_RESERVED = MPReserved<Op>(
-    RESERVED_HEADERS, 
-    (s) => new ReservedErrorOp(s)
+const OP_REPLACE_TAPE = MPSequence<Op>(
+    ["replace", OP_UNRESERVED], 
+    (c) => new ReplaceTapeOp(c as SymbolOp)
+);
+
+const OP_REPLACE_ERROR = MPSequence<Op>(
+    ["replace", OP_RESERVED_WORD], 
+    (c) => { 
+        const s = (c as ErrorOp).text;
+        return new ErrorOp(s, "Reserved word in operator",
+            "This replace has to be followed by a tape name, " +
+            `but is instead followed by the reserved word '${s}'`);
+    }
 );
 
 const OP_BINARY = MPReserved<Op>(
     BINARY_OPS, 
-    () => new BinaryOp()
+    (s) => new BinaryOp(s)
 );
 
 const OP_EXPR: MPParser<Op> = MPAlternation(
     OP_TABLE, OP_NAMESPACE,
     OP_TEST, OP_TESTNOT,
-    OP_ATOMIC_REPLACE, OP_REPLACE,
+    OP_REPLACE, 
+    OP_REPLACE_TAPE, OP_REPLACE_ERROR,
     OP_BINARY,
-    OP_UNRESERVED, OP_RESERVED
+    OP_UNRESERVED, OP_RESERVED_HEADER
 );
 
 const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
@@ -218,13 +313,15 @@ const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
     (op) => op
 )
 
-export function parseOpCell(text: string): Op {
+export function parseOp(text: string): Op {
     const trimmedText = text.trim().toLowerCase();
     const results = miniParse(tokenize, OP_EXPR_WITH_COLON, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        throw new Error(`Cannot parse operator ${text}`);
+        return new ErrorOp(text, "Invalid operator",
+                "This ends in a colon so it looks like an operator, but it cannot be parsed.")
     }
+    
     if (results.length > 1) {
         // if this happens, it's an error on our part
         throw new Error(`Ambiguous, cannot uniquely parse ${text}`);

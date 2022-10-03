@@ -3,42 +3,45 @@
  * TSTS -- "tabular syntax trees" -- represent the structure of the program
  * in terms of the high-level tabular syntax: the structures, operators, headers,
  * content, etc. that the programmer is laying out on the grid.  (As opposed to the
- * more abstract grammar that they're representing thereby.)  
- * 
- * 
- * - which are in turn transformed
- * into the expressions that the parse/generation engine actually operates on.
+ * more abstract grammar that they're representing thereby.)
  */
 
 import { 
     Grammar, NsGrammar, AlternationGrammar, 
-    EpsilonGrammar, UnitTestGrammar, NegativeUnitTestGrammar, 
-    SequenceGrammar, JoinGrammar, ReplaceGrammar, 
-    JoinReplaceGrammar, LiteralGrammar, JoinRuleGrammar 
+    EpsilonGrammar, UnitTestGrammar, 
+    NegativeUnitTestGrammar, SequenceGrammar, 
+    ReplaceGrammar, JoinReplaceGrammar, 
+    LiteralGrammar, JoinRuleGrammar, 
+    LocatorGrammar, RenameGrammar,
+    EqualsGrammar, HideGrammar,
+    GrammarResult,
 } from "./grammars";
-import { Cell, CellPos, DummyCell } from "./util";
+import { Cell, CellPos } from "./util";
 import {
     DEFAULT_SATURATION,
     DEFAULT_VALUE,
-    ErrorHeader,
     Header,
-    ParamDict,
-    parseHeaderCell,
-    ReservedErrorHeader,
-    RESERVED_WORDS
+    TapeNameHeader
 } from "./headers";
+import { ContentMsg, Err, Msg, Msgs, Result, resultList, Warn, resultDict, ResultVoid, unit } from "./msgs";
+import { Transform, TransEnv } from "./transforms";
+import { Op } from "./ops";
 
 
-type BinaryOp = (cell: Cell, c1: Grammar, c2: Grammar) => Grammar;
-export const BINARY_OPS: {[opName: string]: BinaryOp} = {
-    "or": (cell, c1, c2) => new AlternationGrammar(cell, [c1, c2]),
-    "concat": (cell, c1, c2) => new SequenceGrammar(cell, [c1, c2]),
-    "join": (cell, c1, c2) => new JoinGrammar(cell, c1, c2),
-}
+export type ParamDict = {[key: string]: Grammar};
+export class TstResult extends Result<TstComponent> { }
+export abstract class TstTransform extends Transform<TstComponent,TstComponent> {}
+
+type BinaryOp = (c1: Grammar, c2: Grammar) => Grammar;
 
 export abstract class TstComponent {
 
-    public abstract toGrammar(): Grammar;
+    public get pos(): CellPos | undefined {
+        return undefined;
+    }   
+
+    public abstract toGrammar(env: TransEnv): GrammarResult;
+    public abstract mapChildren(f: TstTransform, env: TransEnv): TstResult;
 
     /**
      * Most kinds of components only represent a grammar, that will be
@@ -55,27 +58,17 @@ export abstract class TstComponent {
      * objects add an actual parameter name; everything else contributes an empty param name
      * "__".
      */
-    public toParams(): ParamDict {
-        return { "__": this.toGrammar()};
+     public toParamsTable(env: TransEnv): Result<[Cell, ParamDict][]> {
+        return this.msg().err(
+            `Unexpected operator`, 
+            "The operator to the left expects a table " +
+            `of parameters, but found a ${this.constructor.name}.`)
+            .bind(c => []);
     }
 
-    public assignToNamespace(
-        ns: NsGrammar | undefined,
-        lastChild: boolean
-    ): void {
-        if (ns == undefined) {
-            // there's nothing to do
-            return;
-        }
-
-        if (lastChild) {
-            // whatever this is, it's the default
-            ns.addSymbol("__DEFAULT__", this.toGrammar());
-            return;
-        }
+    public msg(m: Msg | Msgs = []): TstResult {
+        return new TstResult(this).msg(m);
     }
-
-    public abstract toParamsTable(): [Cell, ParamDict][];
 }
 
 /**
@@ -98,58 +91,23 @@ export abstract class TstCellComponent extends TstComponent {
         return this.cell.pos;
     }
 
-    public message(msg: any): void {
-        this.cell.message(msg);
-    }
-    
-    public assignToNamespace(
-        ns: NsGrammar | undefined,
-        lastChild: boolean
-    ): void {
-        super.assignToNamespace(ns, lastChild);
-
-        if (ns != undefined && !lastChild) {
-            // We're directly under a namespace, but we're not an assignment.
-            // (TstAssignment overrides this, so we can't be an assignment.)
-            // We're also not the last child, so we won't be assigned to 
-            // the default symbol.  Any content is going to be lost, so 
-            // issue an error
-            this.message({
-                type: "warning",
-                shortMsg: `Content unassigned`,
-                longMsg: 'This content is not assigned to any symbol, and will be disregarded'
-            });
-        }
-    }
-    
-    public toGrammar(): Grammar {
-        return new EpsilonGrammar(this.cell);
-    }
-
-    public toParamsTable(): [Cell, ParamDict][] {
-        this.message({
-            type: "error", 
-            shortMsg: `Unexpected operator`, 
-            longMsg: `The operator to the left expects a table of parameters, not another operator.`
-        });
-        return [];
+    public toGrammar(env: TransEnv): GrammarResult {
+        return new EpsilonGrammar().msg();
     }
 
 }
 
 export class TstHeader extends TstCellComponent {
 
-    public header: Header;
-
     constructor(
-        cell: Cell
+        cell: Cell,
+        public header: Header
     ) {
         super(cell);
-        this.header = parseHeaderCell(cell.text);
+    }
 
-        for (const err of this.header.getErrors()) {
-            this.cell.message(err);
-        }
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return new TstHeader(this.cell, this.header).msg();
     }
 
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string {
@@ -160,17 +118,207 @@ export class TstHeader extends TstCellComponent {
         return this.header.getFontColor();
     }
 
-    public headerToGrammar(left: Grammar, content: Cell): Grammar {
-        return this.header.toGrammar(left, content.text, content);
-    }
-    
-    public headerToParams(left: ParamDict, content: Cell): ParamDict {
-        return this.header.toParams(left, content.text, content);
+    public headerToGrammar(content: Cell): GrammarResult {
+        return this.header.toGrammar(content.text)
+                          .localize(content.pos);
     }
 
 }
 
+export class TstContent extends TstCellComponent {
+
+    constructor(
+        cell: Cell,
+    ) {
+        super(cell);
+    }
+    
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return new TstContent(this.cell).msg();
+    }
+
+}
+
+export abstract class TstEnclosure extends TstCellComponent {
+
+    constructor(
+        cell: Cell, 
+        public sibling: TstComponent = new TstEmpty()
+    ) {
+        super(cell)
+    }
+
+    public setSibling(sibling: TstEnclosure): void {
+        this.sibling = sibling;
+    }
+
+    public abstract setChild(child: TstEnclosure): ResultVoid;
+
+}
+
+/**
+ * A pre-grid is a rectangular region of the grid with no semantics
+ * yet (cells in the first row aren't yet headers, cells in 
+ * subsequent rows aren't yet associated with headers, etc.)
+ */
+ export class TstPreGrid extends TstEnclosure {
+
+    constructor(
+        cell: Cell, 
+        public sibling: TstComponent = new TstEmpty(),
+        public rows: TstPreRow[] = []
+    ) {
+        super(cell, sibling)
+    }
+
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        const [sib, sibMsgs] = f.transform(this.sibling, env).destructure();
+        const [rows, rowMsgs] = resultList(this.rows)
+                                    .map(c => f.transform(c, env))
+                                    .destructure() as [TstPreRow[], Msgs];
+        return new TstPreGrid(this.cell, sib, rows).msg(sibMsgs).msg(rowMsgs);
+    }
+    
+    public setChild(newChild: TstEnclosure): ResultVoid {
+        throw new Error("TstTables cannot have children");
+    }
+
+    public addContent(cell: Cell): ResultVoid {
+        const msgs = unit;
+
+        if (this.rows.length == 0 || cell.pos.row != this.rows[this.rows.length-1].pos.row) {
+            // we need to start an new row
+            this.rows.push(new TstPreRow(cell));
+        }
+
+        const lastRow = this.rows[this.rows.length-1];
+        return lastRow.addContent(cell).msg(msgs);
+    }
+}
+
+export class TstPreRow extends TstCellComponent {
+
+    constructor(
+        cell: Cell, 
+        public content: TstContent[] = []
+    ) {
+        super(cell)
+    }
+    
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList(this.content)
+                .map(c => f.transform(c, env))
+                .bind(cs => new TstPreRow(this.cell, cs as TstContent[]));
+    }
+    
+    public addContent(cell: Cell): ResultVoid {
+        const content = new TstContent(cell);
+        this.content.push(content);
+        return unit;
+    }
+}
+
+export class TstHeadedGrid extends TstPreGrid {
+
+    constructor(
+        cell: Cell, 
+        sibling: TstComponent = new TstEmpty(),
+        rows: TstPreRow[] = [],
+        public headers: TstHeader[] = []
+        
+    ) {
+        super(cell, sibling, rows)
+    }
+    
+    public providesParam(param: string): boolean {
+        return this.headers.some(h => 
+                    param == h.header.getParamName());
+    }
+
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        const [sib, sibMsgs] = f.transform(this.sibling, env).destructure();
+        const [rows, rowMsgs] = resultList(this.rows)
+                            .map(c => f.transform(c, env))
+                            .destructure() as [TstPreRow[], Msgs];
+        const [headers, headerMsgs] = resultList(this.headers)
+                            .map(c => f.transform(c, env))
+                            .destructure() as [TstHeader[], Msgs];
+        return new TstHeadedGrid(this.cell, sib, rows, headers)
+                        .msg(sibMsgs).msg(rowMsgs).msg(headerMsgs);
+
+    }
+}
+
 export class TstHeadedCell extends TstCellComponent {
+
+    constructor(
+        public header: TstHeader,
+        content: Cell
+    ) { 
+        super(content);
+    }
+    
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return this.msg();
+    }
+
+    public toGrammar(env: TransEnv): GrammarResult {
+        return this.header.headerToGrammar(this.cell)
+                    .bind(c => new LocatorGrammar(this.cell, c));
+    }
+}
+
+export class TstRename extends TstCellComponent {
+
+    constructor(
+        public prev: TstComponent,
+        public header: TstHeader,
+        content: Cell
+    ) { 
+        super(content);
+    }
+    
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return this.msg();
+    }
+    
+    public toGrammar(env: TransEnv): GrammarResult {
+        if (!(this.header.header instanceof TapeNameHeader)) {
+            return new EpsilonGrammar().msg()
+                .err("Renaming error",
+                    "Rename (>) needs to have a tape name after it");
+        }
+        const fromTape = this.cell.text;
+        const toTape = this.header.header.text;
+        return this.prev.toGrammar(env)
+                    .bind(c => new RenameGrammar(c, fromTape, toTape))
+                    .bind(c => new LocatorGrammar(this.cell, c));
+    }
+}
+
+export class TstHide extends TstCellComponent {
+
+    constructor(
+        public prev: TstComponent,
+        content: Cell
+    ) { 
+        super(content);
+    }
+    
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return this.msg();
+    }
+    
+    public toGrammar(env: TransEnv): GrammarResult {
+        let result = this.prev.toGrammar(env);
+        for (const tape of this.cell.text.split("/")) {
+            result = result.bind(c => new HideGrammar(c, tape.trim()));
+        }
+        return result.bind(c => new LocatorGrammar(this.cell, c));
+    }
+}
+
+export class TstFilter extends TstCellComponent {
 
     constructor(
         public prev: TstComponent,
@@ -180,35 +328,47 @@ export class TstHeadedCell extends TstCellComponent {
         super(content);
     }
 
-    public toGrammar(): Grammar {
-        const prevGrammar = this.prev.toGrammar();
-        return this.header.headerToGrammar(prevGrammar, this.cell);
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return this.msg();
     }
     
-    public toParams(): ParamDict {
-        const prevParams = this.prev.toParams();
-        return this.header.headerToParams(prevParams, this.cell);
+    public toGrammar(env: TransEnv): GrammarResult {
+        const [prevGrammar, prevMsgs] = this.prev.toGrammar(env).destructure();
+        const [grammar, msgs] = this.header.headerToGrammar(this.cell)
+                                           .destructure();
+        const result = new EqualsGrammar(prevGrammar, grammar);
+        const locatedResult = new LocatorGrammar(this.cell, result);
+        return locatedResult.msg(prevMsgs).msg(msgs);
     }
 }
 
 export class TstEmpty extends TstComponent {
 
-    public toGrammar(): Grammar {
-        return new EpsilonGrammar(new DummyCell());
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return this.msg();
+    }
+
+    public toGrammar(env: TransEnv): GrammarResult {
+        return new EpsilonGrammar().msg();
     }
     
-    public toParamsTable(): [Cell, ParamDict][] {
-        return [];
+    public toParamsTable(env: TransEnv): Result<[Cell, ParamDict][]> {
+        return resultList([]);
     }
 }
 
 export class TstComment extends TstCellComponent {
 
-    public toGrammar(): Grammar {
-        return new EpsilonGrammar(this.cell);
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return this.msg();
+    }
+
+    public toGrammar(env: TransEnv): GrammarResult {
+        return new EpsilonGrammar().msg();
     }
 
 }
+
 
 /**
  * An enclosure represents a single-cell unit containing a command or identifier (call that the "startCell"),
@@ -246,408 +406,225 @@ export class TstComment extends TstCellComponent {
  * 2 and the B table are its params.  (For example, 3 might represent "or", and thus
  * the union of the grammar represented by 2 and the grammar represented by the B table.
  */
-export class TstEnclosure extends TstCellComponent {
-
-    public specRow: number = -1;
-    
-    /**
-     * The previous sibling of the component (i.e. the component that shares
-     * the same parent, but appeared before this component, usually directly
-     * above this one).
-     */
-    public sibling: TstComponent = new TstEmpty();
-
-    /**
-     * The last-defined child of the component (i.e. of all the components
-     * enclosed by this component, the last one.)  As [SheetParser] builds the
-     * tree, this value will change; when a new child is added, it's set to the
-     * parent's child and the previous child (if any) becomes the new child's
-     * sibling.
-     */
-    public child: TstComponent = new TstEmpty();
+export class TstBinary extends TstEnclosure {
 
     constructor(
-        cell: Cell,
+        cell: Cell,    
+        sibling: TstComponent = new TstEmpty(),
+        public child: TstComponent = new TstEmpty()
     ) {
-        super(cell);
-        this.specRow = cell.pos.row;
+        super(cell, sibling);
     }
-    
-    public toGrammar(): Grammar {
+
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList([this.sibling, this.child])
+                .map(c => f.transform(c, env))
+                .bind(([s,c]) => new TstBinary(this.cell, s, c));
+    }
+
+    public toGrammar(env: TransEnv): GrammarResult {
 
         // we only ever end up in this base EncloseComponent compile if it wasn't
         // a known operator.  this is an error, but we flag it for the programmer
         // elsewhere.
 
-        // in order to fail gracefully, we define the State of this component as 
-        // its sibling's state (if a sibling is present), and if not, as its child's 
-        // state (if present), and if not, the empty grammar.
-
-        let result = this.child.toGrammar();
-        result = this.sibling.toGrammar();
-        return result;
+        return resultList([this.sibling, this.child])
+                    .map(c => c.toGrammar(env))
+                    .bind(([s,c]) => new LocatorGrammar(this.cell, s));
     }
 
-    public addChild(child: TstEnclosure): TstEnclosure {
+    public setChild(child: TstEnclosure): ResultVoid {
 
-        if (this.child instanceof TstEnclosure && 
-            this.child.pos.col != child.pos.col) {
-            child.message({
-                type: "warning",
-                shortMsg: "Unexpected operator",
-                longMsg: "This operator is in an unexpected column.  Did you mean for it " +
-                `to be in column ${this.child.pos.col}, ` + 
-                `so that it's under the operator in cell ${this.child.pos}?`
-            });
+        const msgs: Msgs = [];
+
+        if (this.child instanceof TstEnclosure &&
+                this.child.pos.col != child.pos.col) {
+            Warn("This operator is in an unexpected column.  Did you " +
+                `mean for it to be in column ${this.child.pos.col}, ` + 
+                `so that it's under the operator in cell ${this.child.pos}?`,
+                child.pos).msgTo(msgs);
         }
 
-        child.sibling = this.child;
+        if (child instanceof TstBinary || child instanceof TstPreGrid) {
+            child.sibling = this.child;
+        }
         this.child = child;
-        return child;
+        return unit.msg(msgs);
     }
 
 }
 
-export class TstTableOp extends TstEnclosure {
+export class TstTableOp extends TstBinary {
 
-    public assignToNamespace(
-        ns: NsGrammar | undefined,
-        lastChild: boolean
-    ): void {
-        this.sibling.assignToNamespace(ns, false);
-        this.child.assignToNamespace(undefined, false);
-        super.assignToNamespace(ns, lastChild);
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList([this.sibling, this.child])
+                .map(c => f.transform(c, env))
+                .bind(([s,c]) => new TstTableOp(this.cell, s, c));
     }
     
-    public toGrammar(): Grammar {
-        
-        if (this.child instanceof TstEmpty) {
-            this.message({
-                type: "warning",
-                shortMsg: "Empty table",
-                longMsg: "'table' seems to be missing a table; " + 
-                "something should be in the cell to the right."
-            });
-        }
-
-
-        this.sibling.toGrammar();  // it's erroneous, but this will at
-                                // least run checks within it
-        
-        return this.child.toGrammar();
+    public toGrammar(env: TransEnv): GrammarResult {
+        return resultList([this.sibling, this.child])
+                .map(c => c.toGrammar(env))
+                .bind(([s,c]) => new LocatorGrammar(this.cell, c));
     }
 
-    public toParamsTable(): [Cell, ParamDict][] {
+    public toParamsTable(env: TransEnv): Result<[Cell, ParamDict][]> {
+        
+        const [_, sibMsgs] = this.sibling.toGrammar(env).destructure();  // erroneous but we want to collect errors on it
         
         if (this.child instanceof TstEmpty) {
-            this.message({
-                type: "warning",
-                shortMsg: "Empty table",
-                longMsg: "'table' seems to be missing a table; " + 
-                "something should be in the cell to the right."
-            });
+            return this.child.toParamsTable(env).msg(sibMsgs).warn(
+                "'table' seems to be missing a table; " + 
+                "something should be in the cell to the right.")
         }
 
-        this.sibling.toGrammar(); // it's erroneous, but this will at
-                                // least run checks within it
-        return this.child.toParamsTable();
-
+        return this.child.toParamsTable(env).msg(sibMsgs);
     }
 }
 
-export class TstBinaryOp extends TstEnclosure {
-
-    public assignToNamespace(
-        ns: NsGrammar | undefined,
-        lastChild: boolean
-    ): void {
-        this.sibling.assignToNamespace(undefined, false);
-        this.child.assignToNamespace(undefined, false);
-        super.assignToNamespace(ns, lastChild);
-    }
-    
-    public toGrammar(): Grammar {
-
-        const trimmedText = this.text.slice(0, 
-                        this.text.length-1).trim();
-   
-        if (this.child instanceof TstEmpty) {
-            this.message({
-                type: "error",
-                shortMsg: `Missing argument to '${trimmedText}'`, 
-                longMsg: `'${trimmedText}' is missing a second argument; ` +
-                "something should be in the cell to the right."
-            });
-        }
-
-        if (this.sibling instanceof TstEmpty) {
-            this.message({
-                type: "error",
-                shortMsg: `Missing argument to '${trimmedText}'`,
-                longMsg:`'${trimmedText}' is missing a first argument; ` +
-                "something should be in a cell above this."
-            });
-        } 
-
-        const op = BINARY_OPS[trimmedText];
-        let childGrammar = this.child.toGrammar();
-        let siblingGrammar = this.sibling.toGrammar();
-        return op(this.cell, siblingGrammar, childGrammar);
-    }
-}
-
-export class TstReplaceTape extends TstBinaryOp {
-
-
-    public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
+export class TstOp extends TstBinary {
 
     constructor(
         cell: Cell,
-        public tape: string
+        public op: Op,
+        sibling: TstComponent = new TstEmpty(),
+        child: TstComponent = new TstEmpty()
     ) { 
-        super(cell);
+        super(cell, sibling, child);
+    }
+        
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList([this.sibling, this.child])
+                .map(c => f.transform(c, env))
+                .bind(([s,c]) => new TstOp(this.cell, this.op, s, c));
     }
 
-    public toGrammar(): Grammar {
+}
 
-        if (this.child instanceof TstEmpty) {
-            this.message({
-                type: "error",
-                shortMsg: `Replace missing parameters`, 
-                longMsg: `'replace:' doesn't have any parameters; ` +
-                "something should be in the cells to the right."
-            });
-        } 
+export class TstBinaryOp extends TstBinary {
 
-        if (this.sibling instanceof TstEmpty) {
-            this.message({
-                type: "error",
-                shortMsg: `Missing argument to replace'`,
-                longMsg:`'replace:' needs a grammar to operate on; ` +
-                "something should be in a cell above this."
-            });
-        }
+    constructor(
+        cell: Cell,    
+        public op: BinaryOp,
+        sibling: TstComponent = new TstEmpty(),
+        child: TstComponent = new TstEmpty()
+    ) {
+        super(cell, sibling, child);
+    }
 
-        let params = this.child.toParamsTable();
-        let siblingGrammar = this.sibling.toGrammar();
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList([this.sibling, this.child])
+            .map(c => f.transform(c, env))
+            .bind(([s,c]) => new TstBinaryOp(this.cell, this.op, s, c));
+    }
+    
+    public toGrammar(env: TransEnv): GrammarResult {
+        return resultList([this.sibling, this.child])
+                    .map(c => c.toGrammar(env))
+                    .bind(([s,c]) => this.op(s,c));
+    }
+}
+
+export class TstReplaceTape extends TstBinary {
+
+    constructor(
+        cell: Cell,
+        public tape: string,
+        sibling: TstComponent = new TstEmpty(),
+        child: TstComponent = new TstEmpty()
+    ) { 
+        super(cell, sibling, child);
+    }
+
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList([this.sibling, this.child])
+            .map(c => f.transform(c, env))
+            .bind(([s,c]) => new TstReplaceTape(this.cell, this.tape, s, c));
+    }
+
+    public toGrammar(env: TransEnv): GrammarResult {
+
+        let [params, paramMsgs] = this.child.toParamsTable(env).destructure();
+        let [sibling, sibMsgs] = this.sibling.toGrammar(env).destructure();
         const replaceRules: ReplaceGrammar[] = [];
+        const newMsgs: Msgs = [];
 
         for (const [cell, paramDict] of params) {
-
-            for (const [key, grammar] of Object.entries(paramDict)) {
-                if (key == "__") {
-                    grammar.message({
-                        type: "warning",
-                        shortMsg: "Missing parameter name",
-                        longMsg: `The operator to the left doesn't allow unnamed parameters.`
-                    });
-                    continue;
-                }
-                if (TstReplace.VALID_PARAMS.indexOf(key) == -1) {
-                    grammar.message({
-                        type: "warning",
-                        shortMsg: "Wayward parameter name",
-                        longMsg: `The operator to the left doesn't allow parameters '${key}', so this cell will be ignored.`
-                    });
-                    continue;
-                }
-            }
-
-            if (!("from" in paramDict)) {
-                this.message({
-                    type: "error",
-                    shortMsg: `Missing 'from' argument to replace'`,
-                    longMsg:"'replace:' requires a 'from' argument (e.g. 'from text')"
-                });
-                continue;
-            }
-            const fromArg = paramDict["from"];
-            if (!("to" in paramDict)) {
-                this.message({
-                    type: "error",
-                    shortMsg: `Missing 'to' argument to replace'`,
-                    longMsg:"'replace:' requires a 'to' argument (e.g. 'to text')"
-                });
-                continue;
-            }
-            const toArg = paramDict["to"];
-            const preArg = "pre" in paramDict
-                                    ? paramDict["pre"]
-                                    : new EpsilonGrammar(this.cell);
-            const postArg = "post" in paramDict 
-                                    ? paramDict["post"] 
-                                    : new EpsilonGrammar(this.cell); 
-            const replaceRule = new ReplaceGrammar(this.cell, fromArg, toArg, preArg, postArg);
+            const fromArg = paramDict["from"] || new EpsilonGrammar();
+            const toArg = paramDict["to"] || new EpsilonGrammar();
+            const preArg = paramDict["pre"] || new EpsilonGrammar();
+            const postArg = paramDict["post"] || new EpsilonGrammar(); 
+            const replaceRule = new ReplaceGrammar(fromArg, toArg, preArg, postArg);
             replaceRules.push(replaceRule);
         }
 
         if (replaceRules.length == 0) {
-            return siblingGrammar;  // in case every rule fails, at least generate something
+            return sibling.msg(paramMsgs).msg(sibMsgs).msg(newMsgs);  // in case every rule fails, at least generate something
         }
 
-        return new JoinRuleGrammar(this.cell, this.tape, siblingGrammar, replaceRules);
+        let result: Grammar = new JoinRuleGrammar(this.tape, sibling, replaceRules);
+        result = new LocatorGrammar(this.cell, result);
+        return result.msg(paramMsgs).msg(sibMsgs).msg(newMsgs);
     }
 }
 
-export class TstReplace extends TstBinaryOp {
+export class TstReplace extends TstBinary {
 
-    public static VALID_PARAMS = [ "from", "to", "pre", "post" ];
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList([this.sibling, this.child])
+                .map(c => f.transform(c, env))
+                .bind(([s,c]) => new TstReplace(this.cell, s, c));
+    }
 
-    public toGrammar(): Grammar {
+    public toGrammar(env: TransEnv): GrammarResult {
 
-        if (this.child instanceof TstEmpty) {
-            this.message({
-                type: "error",
-                shortMsg: `Replace missing parameters`, 
-                longMsg: `'replace:' doesn't have any parameters; ` +
-                "something should be in the cells to the right."
-            });
-        } 
-
-        if (this.sibling instanceof TstEmpty) {
-            this.message({
-                type: "error",
-                shortMsg: `Missing argument to replace'`,
-                longMsg:`'replace:' needs a grammar to operate on; ` +
-                "something should be in a cell above this."
-            });
-        }
-
-        let params = this.child.toParamsTable();
-        let siblingGrammar = this.sibling.toGrammar();
+        let [params, paramMsgs] = this.child.toParamsTable(env).destructure();
+        let [sibling, sibMsgs] = this.sibling.toGrammar(env).destructure();
         const replaceRules: ReplaceGrammar[] = [];
+        const newMsgs: Msgs = [];
 
         for (const [cell, paramDict] of params) {
-
-            for (const [key, grammar] of Object.entries(paramDict)) {
-                if (key == "__") {
-                    grammar.message({
-                        type: "warning",
-                        shortMsg: "Missing parameter name",
-                        longMsg: `The operator to the left doesn't allow unnamed parameters.`
-                    });
-                    continue;
-                }
-                if (TstReplace.VALID_PARAMS.indexOf(key) == -1) {
-                    grammar.message({
-                        type: "warning",
-                        shortMsg: "Wayward parameter name",
-                        longMsg: `The operator to the left doesn't allow parameters '${key}', so this cell will be ignored.`
-                    });
-                    continue;
-                }
-            }
-
-            if (!("from" in paramDict)) {
-                this.message({
-                    type: "error",
-                    shortMsg: `Missing 'from' argument to replace'`,
-                    longMsg:"'replace:' requires a 'from' argument (e.g. 'from text')"
-                });
-                continue;
-            }
-            const fromArg = paramDict["from"];
-            if (!("to" in paramDict)) {
-                this.message({
-                    type: "error",
-                    shortMsg: `Missing 'to' argument to replace'`,
-                    longMsg:"'replace:' requires a 'to' argument (e.g. 'to text')"
-                });
-                continue;
-            }
-            const toArg = paramDict["to"];
-            const preArg = "pre" in paramDict
-                                    ? paramDict["pre"]
-                                    : new EpsilonGrammar(this.cell);
-            const postArg = "post" in paramDict 
-                                    ? paramDict["post"] 
-                                    : new EpsilonGrammar(this.cell); 
-            const replaceRule = new ReplaceGrammar(this.cell, fromArg, toArg, preArg, postArg);
+            const fromArg = paramDict["from"] || new EpsilonGrammar();
+            const toArg = paramDict["to"] || new EpsilonGrammar();
+            const preArg = paramDict["pre"] || new EpsilonGrammar();
+            const postArg = paramDict["post"] || new EpsilonGrammar(); 
+            const replaceRule = new ReplaceGrammar(fromArg, toArg, preArg, postArg);
             replaceRules.push(replaceRule);
         }
 
         if (replaceRules.length == 0) {
-            return siblingGrammar;  // in case every rule fails, at least generate something
+            return sibling.msg(paramMsgs).msg(sibMsgs).msg(newMsgs);  // in case every rule fails, at least generate something
         }
 
-        return new JoinReplaceGrammar(this.cell, siblingGrammar, replaceRules);
+        let result: Grammar = new JoinReplaceGrammar(sibling, replaceRules);
+        result = new LocatorGrammar(this.cell, result);
+        return result.msg(paramMsgs).msg(sibMsgs).msg(newMsgs);
     }
 }
 
-export class TstUnitTest extends TstEnclosure {
+/**
+ * "test" is an operator that takes two tables, one above (spatially speaking)
+ * and one to the right, and makes sure that each line of the one to the right
+ * has an output when filtering the table above.
+ */
+export class TstUnitTest extends TstBinary {
 
-    public static VALID_PARAMS = [ "__", "unique" ];
-
-    public assignToNamespace(
-        ns: NsGrammar | undefined,
-        lastChild: boolean
-    ): void {
-        this.sibling.assignToNamespace(ns, true);
-        this.child.assignToNamespace(undefined, false);
-        super.assignToNamespace(ns, lastChild);
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList([this.sibling, this.child])
+                .map(c => f.transform(c, env))
+                .bind(([s,c]) => new TstUnitTest(this.cell, s, c));
     }
 
-    /**
-     * "test" is an operator that takes two tables, one above (spatially speaking)
-     * and one to the right, and makes sure that each line of the one to the right
-     * has an output when filtering the table above.
-     */
-    public toGrammar(): Grammar {
+    public toGrammar(env: TransEnv): GrammarResult {
         
-        if (this.sibling instanceof TstEmpty) {
-            this.message({
-                type: "error",
-                shortMsg: "Wayward test",
-                longMsg: "There should be something above this 'test' command to test"
-            });
-            return new EpsilonGrammar(this.cell);
-        }
+        let result = this.sibling.toGrammar(env);
 
-        const siblingGrammar = this.sibling.toGrammar();
-
-        if (this.child instanceof TstEmpty) {
-            this.message({
-                type: "warning",
-                shortMsg: "Empty test",
-                longMsg: "'test' seems to be missing something to test; " +
-                "something should be in the cell to the right."
-            });
-            return siblingGrammar; // whereas usually we result in the 
-                            // empty grammar upon erroring, in this case
-                            // we don't want to let a flubbed "test" command 
-                            // obliterate the grammar it was meant to test!
-        }
-        
-        if (!(this.child instanceof TstTable) && !(this.child instanceof TstTableOp)) {
-            this.message({
-                type: "error",
-                shortMsg: "Cannot execute tests",
-                longMsg: "You can't nest another operator to the right of a test block, " + 
-                "it has to be a content table."
-            });
-            return siblingGrammar;
-        }
-
-        let result = siblingGrammar;
-
-        for (const [cell, paramDict] of this.child.toParamsTable()) {
-            for (const [key, grammar] of Object.entries(paramDict)) {
-                if (TstUnitTest.VALID_PARAMS.indexOf(key) == -1) {
-                    grammar.message({
-                        type: "warning",
-                        shortMsg: "Wayward parameter name",
-                        longMsg: `The operator to the left doesn't allow paramaters '${key}', so this cell will be ignored.`
-                    });
-                    continue;
-                }
-            }
-            const testInputs = paramDict["__"];
+        const [params, msgs] = this.child.toParamsTable(env).destructure();
+        for (const [cell, paramDict] of params) {
+            const testInputs = paramDict["__"]
             if (testInputs == undefined) {
-                cell.message({
-                    type: "error",
-                    shortMsg: "Missing test inputs",
-                    longMsg: `This test line does not have any inputs.`
-                });
+                Err("Missing test inputs",
+                    `This test line does not have any inputs.`).msgTo(msgs);
                 continue;
             }
 
@@ -655,90 +632,50 @@ export class TstUnitTest extends TstEnclosure {
             const unique = paramDict["unique"];
 
             if (unique != undefined) {
-                try {
-                    uniques = unique.getLiterals();
-                } catch {
-                    cell.message({
-                        type: "error",
-                        shortMsg: "Ill-formed unique",
-                        longMsg: `Somewhere in this row there is an ill-formed uniqueness constraint.  ` +
-                                `Uniqueness constrains can only be literals.`
-                    });
-                    continue;
-                }
+                uniques = unique.getLiterals();
             }
-            result = new UnitTestGrammar(cell, result, testInputs, uniques);
+            result = result.bind(c => new UnitTestGrammar(c, testInputs, uniques))
+                           .bind(c => new LocatorGrammar(cell, c));
         }
-        return result;
+
+        return result.msg(msgs)
+                     .bind(c => new LocatorGrammar(this.cell, c));
     }
 
 }
-
-export class TstNegativeUnitTest extends TstUnitTest {
-
-    /**
-     * "testnot" is an operator that takes two tables, one above (spatially speaking)
-     * and one to the right, and makes sure that each line of the one to the right
-     * has no output when filtering the table above.
-     */
-    public toGrammar(): Grammar {
-        
-        if (this.sibling instanceof TstEmpty) {
-            this.message({
-                type: "error",
-                shortMsg: "Wayward test",
-                longMsg: "There should be something above this 'testnot' command to test"
-            });
-            return new EpsilonGrammar(this.cell);
-        }
-
-        const siblingGrammar = this.sibling.toGrammar();
-
-        if (this.child instanceof TstEmpty) {
-            this.message({
-                type: "warning",
-                shortMsg: "Empty test",
-                longMsg: "'testnot' seems to be missing something to test; " +
-                "something should be in the cell to the right."
-            });
-            return siblingGrammar; // whereas usually we result in the 
-                            // empty grammar upon erroring, in this case
-                            // we don't want to let a flubbed "test" command 
-                            // obliterate the grammar it was meant to test!
-        }
-        
-        if (!(this.child instanceof TstTable) && !(this.child instanceof TstTableOp)) {
-            this.message({
-                type: "error",
-                shortMsg: "Cannot execute tests",
-                longMsg: "You can't nest another operator to the right of a testnot block, " + 
-                "it has to be a content table."
-            });
-            return siblingGrammar;
-        }
-
-        let result = siblingGrammar;
-
-        for (const [cell, paramDict] of this.child.toParamsTable()) {
-            for (const [key, grammar] of Object.entries(paramDict)) {
-                if (key != "__") {
-                    grammar.message({
-                        type: "warning",
-                        shortMsg: "Wayward parameter name",
-                        longMsg: `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`
-                    });
-                    continue;
-                }
-                result = new NegativeUnitTestGrammar(cell, result, grammar);
-            }   
-        }
-        return result;
-    }
-}
-
 
 /**
- * A TstTable is a rectangular region of the grid consisting of a header row
+ * "testnot" is an operator that takes two tables, one above (spatially speaking)
+ * and one to the right, and makes sure that each line of the one to the right
+ * has no output when filtering the table above.
+ */
+export class TstNegativeUnitTest extends TstUnitTest {
+
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList([this.sibling, this.child])
+            .map(c => f.transform(c, env))
+            .bind(([s,c]) => new TstNegativeUnitTest(this.cell, s, c));
+    }
+
+    public toGrammar(env: TransEnv): GrammarResult {
+
+        let result = this.sibling.toGrammar(env);
+
+        const [params, msgs] = this.child.toParamsTable(env).destructure();
+        for (const [cell, paramDict] of params) {
+            for (const [key, grammar] of Object.entries(paramDict)) {
+                result = result.bind(c => new NegativeUnitTestGrammar(c, grammar))
+                               .bind(c => new LocatorGrammar(cell, c));
+            }   
+        }
+        
+        return result.msg(msgs)
+                     .bind(c => new LocatorGrammar(this.cell, c));
+    }
+}
+
+/**
+ * A TstGrid is a rectangular region of the grid consisting of a header row
  * and cells beneath each header.  For example,
  * 
  *      text, gloss
@@ -751,79 +688,43 @@ export class TstNegativeUnitTest extends TstUnitTest {
  * well-formed database tables; it's not uncommon to get tables where the same
  * header appears multiple times.
  */
+export class TstGrid extends TstBinary {
 
-export class TstTable extends TstEnclosure {
-
-    /**
-     * We need to remember headers by column number,
-     * because that's how we know which cells are associated
-     * with which headers
-     */
-    public headersByCol: {[col: number]: TstHeader} = {};
-
-    /**
-     * Each row is represented by the last cell in that row
-     */
-    public rows: TstRow[] = [];
-    
-    public assignToNamespace(
-        ns: NsGrammar | undefined,
-        lastChild: boolean
-    ): void {
-        this.sibling.assignToNamespace(ns, false);
-        this.child.assignToNamespace(undefined, false);
-        super.assignToNamespace(ns, lastChild);
+    constructor(
+        cell: Cell,    
+        sibling: TstComponent = new TstEmpty(),
+        child: TstComponent = new TstEmpty(),    
+        public headers: TstHeader[] = [],
+        public rows: TstRow[] = []
+    ) {
+        super(cell, sibling, child);
     }
 
-    public addHeader(headerCell: TstHeader): void {        
-        this.headersByCol[headerCell.pos.col] = headerCell;
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        const [sib, sMsgs] = f.transform(this.sibling, env).destructure();
+        const [child, cMsgs] = f.transform(this.child, env).destructure();
+        const [headers, hMsgs] = resultList(this.headers)
+                        .map(c => f.transform(c, env))
+                        .destructure() as [TstHeader[], Msgs];
+        const [rows, rMsgs] = resultList(this.rows)
+                        .map(c => f.transform(c, env))
+                        .destructure() as [TstRow[], Msgs];
+        return new TstGrid(this.cell, sib, child, headers, rows)
+                     .msg(sMsgs).msg(cMsgs).msg(hMsgs).msg(rMsgs);
     }
 
-    public addContent(cell: Cell): void {
-        
-        // make sure we have a header
-        const headerCell = this.headersByCol[cell.pos.col];
-        if (headerCell == undefined) {
-            if (cell.text.length != 0) {
-                cell.message({
-                    type: "warning",
-                    shortMsg: `Ignoring cell: ${cell.text}`,
-                    longMsg: "Cannot associate this cell with any valid header above; ignoring."
-                });
-            }
-            return;
-        }
-
-        if (this.rows.length == 0 || cell.pos.row != this.rows[this.rows.length-1].pos.row) {
-            // we need to start an new row
-            this.rows.push(new TstRow(cell));
-        }
-
-        const lastRow = this.rows[this.rows.length-1];
-        lastRow.addContent(headerCell, cell);
-
+    public setChild(newChild: TstComponent): ResultVoid {
+        throw new Error("TstGrids cannot have children");
     }
 
-    public addChild(newChild: TstEnclosure): TstEnclosure {
-        throw new Error("TstTables cannot have children");
-    }
-
-    public toGrammar(): Grammar {
+    public toGrammar(env: TransEnv): GrammarResult {
         // unless it's being interpreted as a paramTable, tables
         // have the semantics of alternation
         const alternatives: Grammar[] = [];
 
-        for (const [cell, paramDict] of this.toParamsTable()) {
+        const [params, msgs] = this.toParamsTable(env).destructure();
+        for (const [cell, paramDict] of params) {
             for (const [key, grammar] of Object.entries(paramDict)) {
-                if (key != "__") {
-                    // there's a wayward parameter name in the headers
-                    grammar.message({
-                        type: "warning",
-                        shortMsg: "Wayward parameter name",
-                        longMsg: `The operator to the left doesn't take named paramaters like '${key}', so this cell will be ignored.`
-                    });
-                    continue;
-                }
 
                 if (grammar instanceof EpsilonGrammar) {
                     // if a row evaluates as empty, don't consider it an
@@ -835,156 +736,167 @@ export class TstTable extends TstEnclosure {
             }
         }
 
-        return new AlternationGrammar(this.cell, alternatives);
+        return new AlternationGrammar(alternatives).msg(msgs);
     }
 
-    public toParamsTable(): [Cell, ParamDict][] {
-        this.sibling.toGrammar(); // in case there's an erroneous sibling,
-                                    // this will at least run some checks on it
-        return this.rows.map(row => [row.cell, row.toParams()]);
+    public toParamsTable(env: TransEnv): Result<[Cell, ParamDict][]> {
+        const results: [Cell, ParamDict][] = [];
+        const msgs: Msgs = [];
+        for (const row of this.rows) {
+            const rowParams = row.toParams(env).msgTo(msgs);
+            results.push([row.cell, rowParams]);
+        }
+        return resultList(results).msg(msgs);
     }
 }
 
-export class TstRow extends TstCellComponent {
-
-    public lastCell: TstComponent = new TstEmpty();
-
-    public addContent(header: TstHeader, cell: Cell): void {
-        const newCell = new TstHeadedCell(this.lastCell, header, cell);
-        cell.message({ 
-            type: "content", 
-            color: header.getBackgroundColor(),
-            fontColor: header.getFontColor()
-        });
-        this.lastCell = newCell;
-    }
-
-    public toGrammar(): Grammar {
-        return this.lastCell.toGrammar();
-    }
-    
-    public toParams(): ParamDict {
-        return this.lastCell.toParams();
-    }
-}
-
-export class TstAssignment extends TstEnclosure {
-
-    public assignToNamespace(
-        ns: NsGrammar | undefined,
-        lastChild: boolean  // we don't need to use last child -- regardless of
-                            // whether this is the last child, it's getting added,
-                            // and if it's last, well, it's last!
-    ): void {
-
-        this.sibling.assignToNamespace(ns, false);
-        this.child.assignToNamespace(undefined, false);
-
-        const trimmedText = this.text.endsWith(":")
-                            ? this.text.slice(0, this.text.length-1).trim()
-                            : this.text
-        const trimmedTextLower = trimmedText.toLowerCase();
-
-        if (RESERVED_WORDS.has(trimmedTextLower)) {
-            // oops, assigning to a reserved word
-            this.message({
-                type: "error",
-                shortMsg: "Assignment to reserved word", 
-                longMsg: "This cell has to be a symbol name for an assignment statement, but you're assigning to the " +
-                `reserved word ${trimmedText}.  Choose a different symbol name.`
-            });            
-        }
-
-        if (this.child instanceof TstEmpty) {
-            // oops, empty "right side" of the assignment!
-            this.message({
-                type: "warning",
-                shortMsg: "Empty assignment", 
-                longMsg: `This looks like an assignment to a symbol ${trimmedText}, ` +
-                "but there's nothing to the right of it."
-            });
-            return;
-        }
-
-        if (trimmedText.indexOf(".") != -1) {
-            this.message({
-                type: "warning",
-                shortMsg: "Symbol name contains .", 
-                longMsg: "You can't assign to a name that contains a period."
-            });
-            return;
-        }
-
-        if (ns == undefined) {
-            this.message({
-                type: "error",
-                shortMsg: "Wayward assignment",
-                longMsg: `This looks like an assignment to a symbol ${trimmedText}, ` +
-                    "but an assignment can't be here."
-            });
-            return;
-        }
-
-        const referent = ns.getSymbol(trimmedText);
-        if (referent != undefined) {
-            // we're reassigning an existing symbol!
-            this.message({
-                type: "error",
-                shortMsg: 'Reassigning existing symbol', 
-                longMsg: `The symbol ${trimmedText} already refers to the grammar at ${referent.cell.id}`
-            });
-            return;
-        }
-
-        ns.addSymbol(trimmedText, this.toGrammar());
-    }
-    
-    public toGrammar(): Grammar {
-        return this.child.toGrammar();
-    }
-}
-
-export class TstNamespace extends TstEnclosure {
+export class TstSequence extends TstCellComponent {
 
     constructor(
-        cell: Cell
+        cell: Cell,
+        public children: TstComponent[] = []
     ) { 
         super(cell);
     }
 
-    public toGrammar(): Grammar {
-        const ns = new NsGrammar(this.cell);
-        this.child.assignToNamespace(ns, true);
-        return ns;
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList(this.children)
+                   .map(c => f.transform(c, env))
+                   .bind((cs) => new TstSequence(this.cell, cs));
+    }
+
+    public addContent(header: TstHeader, cell: Cell): ResultVoid {
+        const newCell = new TstHeadedCell(header, cell);
+        this.children.push(newCell);
+        return unit.msg(new ContentMsg(
+            header.getBackgroundColor(),
+            header.getFontColor()
+        ));
+    }
+    
+    public toGrammar(env: TransEnv): GrammarResult {
+        return resultList(this.children)
+                  .map(c => c.toGrammar(env))
+                  .bind(cs => new SequenceGrammar(cs));
     }
 
 }
 
-export class TstProject extends TstNamespace {
+/**
+ * Expresses a row as a map of named parameters
+ */
+export class TstRow extends TstCellComponent {
 
-    constructor() {
-        super(new DummyCell());
+    constructor(
+        cell: Cell,
+        public params: {[s: string]: TstSequence} = {}
+    ) {
+        super(cell);
+    }
+    
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultDict(this.params)
+                .map(c => f.transform(c, env) as Result<TstSequence>)
+                .bind(cs => new TstRow(this.cell, cs));
     }
 
-    /**
-     * TstProject overrides addChild() because it needs to treat
-     * is added children specially.  Its children are all sheets (and thus
-     * namespaces) but unlike ordinary things that we assign, there's no 
-     * actual "name:" cell to the left of these, their name is the name of the
-     * source file or worksheet they come from.  This is represented as a 
-     * "virtual" cell that we constructed earlier, but at some point we have 
-     * to turn that cell into an assignment; that's what we do here.
-     */
-    public addChild(child: TstEnclosure): TstEnclosure {
-
-        if (!(child instanceof TstNamespace)) {
-            throw new Error("Attempting to add a non-namespace to a project");
+    public addContent(header: TstHeader, cell: Cell): ResultVoid {
+        // get the param name and make sure it's in .params
+        const tag = header.header.getParamName();
+        if (!(tag in this.params)) {
+            this.params[tag] = new TstSequence(cell);
         }
-
-        // first wrap it in an assignment
-        const newChild = new TstAssignment(child.cell);
-        newChild.addChild(child);
-        // then add the assign as our own child
-        return super.addChild(newChild);
+        return this.params[tag].addContent(header, cell);
     }
+
+    public toGrammar(env: TransEnv): GrammarResult {
+        return new EpsilonGrammar().msg()
+            .err("Unexpected parameters",
+                "The operator to the left does not expect named parameters.");
+    } 
+
+    public toParams(env: TransEnv): Result<ParamDict> {
+        return resultDict(this.params).map(c => c.toGrammar(env));
+    }
+}
+
+export class TstAssignment extends TstBinary {
+
+    constructor(
+        cell: Cell,
+        public name: string,
+        sibling: TstComponent = new TstEmpty(),
+        child: TstComponent = new TstEmpty()
+    ) {
+        super(cell, sibling, child);
+    }
+
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList([this.sibling, this.child])
+            .map(c => f.transform(c, env))
+            .bind(([s,c]) => new TstAssignment(this.cell, this.name, s, c));
+    }
+
+    public toGrammar(env: TransEnv): GrammarResult {
+        return this.child.toGrammar(env);
+    }
+
+}
+
+export class TstNamespace extends TstCellComponent {
+
+    constructor(
+        cell: Cell,
+        public children: TstComponent[] = []
+    ) {
+        super(cell);
+    }
+    
+    public addChild(child: TstComponent): ResultVoid {
+        this.children.push(child);
+        return unit;
+    }
+
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList(this.children)
+                .map(c => f.transform(c, env) as Result<TstEnclosure>)
+                .bind(cs => new TstNamespace(this.cell, cs));
+    }
+
+    public toGrammar(env: TransEnv): GrammarResult {
+        const ns = new NsGrammar();
+        const msgs: Msgs = [];
+        for (let i = 0; i < this.children.length; i++) {
+            const child = this.children[i];
+            const isLastChild = i == this.children.length - 1;
+            const grammar = this.children[i].toGrammar(env)
+                                            .msgTo(msgs);
+            if (!(child instanceof TstAssignment) && !isLastChild) {
+                // warn that the child isn't going to be assigned to anything
+                Warn(
+                    "This content doesn't end up being assigned to anything and will be ignored.", 
+                    child.pos).msgTo(msgs);
+                continue;
+            }
+
+            if (isLastChild) {
+                ns.addSymbol("__DEFAULT__", grammar);
+            }
+
+            if (child instanceof TstAssignment) {
+                const referent = ns.getSymbol(child.name);
+                if (referent != undefined) {
+                    // we're reassigning an existing symbol!
+                    Err('Reassigning existing symbol', 
+                        `The symbol ${child.name} already refers to another grammar above.`,
+                        child.pos).msgTo(msgs);
+                    continue;
+                }     
+                ns.addSymbol(child.name, grammar);
+            }
+            
+        }
+        return ns.msg(msgs);
+    }
+
 }

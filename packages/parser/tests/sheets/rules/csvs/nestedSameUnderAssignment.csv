@@ -1,0 +1,9 @@
+word:, text
+    , b
+    ,       ,     ,
+replace text:, from, to
+           , b,  v
+
+replace text:, from, to
+            , v        , w
+    

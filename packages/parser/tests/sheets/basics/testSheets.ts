@@ -23,6 +23,24 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Minimal grammar with empty row', function() {
+        const project = sheetFromFile(`${DIR}/emptyRow.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
+        ]);
+    });
+
+    describe('Minimal grammar with empty column', function() {
+        const project = sheetFromFile(`${DIR}/emptyColumn.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
+        ]);
+    });
+
     describe('Embeds', function() {
         const project = sheetFromFile(`${DIR}/embedGrammar.csv`);
         testErrors(project, []);
@@ -50,6 +68,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Empty "table:" op', function() {
         const project = sheetFromFile(`${DIR}/emptyTable.csv`);
         testErrors(project, [
+            ["emptyTable", 1, 0, "warning"],
             ["emptyTable", 1, 1, "warning"]
         ]);
         testGrammar(project, [

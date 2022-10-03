@@ -1,18 +1,15 @@
 import { 
     AlternationGrammar, 
-    UnresolvedEmbedGrammar, 
     EpsilonGrammar, 
-    EqualsGrammar, 
-    HideGrammar, 
     LiteralGrammar, 
     NegationGrammar, 
-    RenameGrammar, 
-    SequenceGrammar, 
-    Grammar, 
+    SequenceGrammar,
     RepeatGrammar,
     StartsGrammar,
     EndsGrammar,
-    ContainsGrammar
+    ContainsGrammar,
+    EmbedGrammar,
+    GrammarResult
 } from "./grammars";
 
 import { 
@@ -32,21 +29,16 @@ import {
     miniParse, MPAlternation, MPComment, 
     MPDelay, MPParser, MPReserved, 
     MPSequence, MPUnreserved 
-} from "./miniParser";
+} from "./miniParserMonadic";
 
-import { Cell, HSVtoRGB, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RGBtoString } from "./util";
-import { Tape } from "./tapes";
+import { 
+    HSVtoRGB, RGBtoString,
+    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE 
+} from "./util";
+import { Msgs, Err, resultList, Result } from "./msgs";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
-
-export type ParamDict = {[key: string]: Grammar};
-
-export type HeaderErrorMsg = {
-    type: string
-    shortMsg: string
-    longMsg: string
-};
 
 /**
  * A Header is a cell in the top row of a table, consisting of one of
@@ -71,19 +63,20 @@ export type HeaderErrorMsg = {
  * Headers are parsed using the "miniParser" engine, a simple parser/combinator engine.
  */
  export abstract class Header {
-
+    
     /**
      * One of the primary responsibilities of the header tree is to construct the appropriate grammar object
      * for a cell, from the grammar to its left and a string.  This string is usually the text of the 
      * cell in question, but (in the case of cells that we parse like "~(A|B)" it could be a substring
      * of this.  (That's why we need a separate text param and don't just grab it from content.text.)
      * 
-     * @param left The already-constructed grammar corresponding to the cell to the left of the content cell
      * @param text A string expressing the content to be compiled, in light of this header
-     * @param content The cell that ultimately provided the text string
      * @returns The grammar corresponding to this header/content pair
      */
-    public abstract toGrammar(left: Grammar, text: string, content: Cell): Grammar;
+    public toGrammar(text: string): GrammarResult {
+        throw new Error("not implemented");
+    }
+
     public abstract getFontColor(): string;
     public abstract getBackgroundColor(saturation: number, value: number): string;
     public abstract get id(): string;
@@ -92,22 +85,11 @@ export type HeaderErrorMsg = {
         return "__";
     }
 
-    public toParams(left: ParamDict, text: string, content: Cell): ParamDict {
-        const paramName = this.getParamName();
-        const result: ParamDict = {};
-        Object.assign(result, left);
-        if (paramName in left) {
-            result[paramName] = this.toGrammar(left[paramName], text, content);
-        } else {
-            const eps = new EpsilonGrammar(content);
-            result[paramName] = this.toGrammar(eps, text, content);
-        }
-        return result;
-    }
+    public abstract get isRegex(): boolean;
 
-    public getErrors(): HeaderErrorMsg[] {
-        return [];
-    } 
+    public msg(msgs: Msgs = []): Result<Header> {
+        return new Result(this, msgs);
+    }
 }
 
 /**
@@ -118,6 +100,10 @@ abstract class AtomicHeader extends Header {
 
     public abstract get text(): string;
     
+    public get isRegex(): boolean {
+        return false;
+    }
+
     public get id(): string {
         return this.text;
     }
@@ -152,13 +138,8 @@ export class EmbedHeader extends AtomicHeader {
         return "embed";
     }
 
-    public toGrammar(
-        left: Grammar, 
-        text: string,
-        content: Cell
-    ): Grammar {
-        const cellGrammar = new UnresolvedEmbedGrammar(content, text);
-        return new SequenceGrammar(content, [left, cellGrammar]);
+    public toGrammar(text: string): GrammarResult {
+        return new EmbedGrammar(text).msg();
     }
 
 }
@@ -177,18 +158,6 @@ export class HideHeader extends AtomicHeader {
     public get text(): string {
         return "hide";
     }
-    
-    public toGrammar(
-        left: Grammar, 
-        text: string,
-        content: Cell
-    ): Grammar {
-        let result = left;
-        for (const tape of text.split("/")) {
-            result = new HideGrammar(content, result, tape.trim());
-        }
-        return result;
-    }
 }
 
 /**
@@ -206,13 +175,8 @@ export class TapeNameHeader extends AtomicHeader {
         return "#064a3f";
     }
 
-    public toGrammar(
-        left: Grammar, 
-        text: string,
-        content: Cell
-    ): Grammar {
-        const grammar = new LiteralGrammar(content, this.text, text);
-        return new SequenceGrammar(content, [left, grammar]);
+    public toGrammar(text: string): GrammarResult {
+        return new LiteralGrammar(this.text, text).msg();
     }
 }
 
@@ -224,6 +188,10 @@ export class CommentHeader extends Header {
 
     public get id(): string {
         return "%";
+    }
+    
+    public get isRegex(): boolean {
+        return false;
     }
     
     public getFontColor() {
@@ -238,11 +206,8 @@ export class CommentHeader extends Header {
         return "#FFFFFF";
     }
 
-    public toGrammar(
-        left: Grammar, 
-        text: string
-    ): Grammar {
-        return left;
+    public toGrammar(text: string): GrammarResult {
+        return new EpsilonGrammar().msg();
     }    
 }
 
@@ -257,10 +222,10 @@ abstract class UnaryHeader extends Header {
     ) { 
         super();
     }
-
-    public getErrors(): HeaderErrorMsg[] {
-        return this.child.getErrors();
-    } 
+    
+    public get isRegex(): boolean {
+        return this.child.isRegex;
+    }
 
     public getFontColor() {
         return this.child.getFontColor();
@@ -270,12 +235,8 @@ abstract class UnaryHeader extends Header {
         return this.child.getBackgroundColor(saturation, value);
     }
 
-    public toGrammar(
-        left: Grammar, 
-        text: string,
-        content: Cell
-    ): Grammar {
-        return this.child.toGrammar(left, text, content);
+    public toGrammar(text: string): GrammarResult {
+        return this.child.toGrammar(text);
     }
 }
 
@@ -307,39 +268,21 @@ export class OptionalHeader extends UnaryHeader {
     }
 
     public toGrammar(
-        left: Grammar, 
-        text: string,
-        content: Cell
-    ): Grammar {
-        const childGrammar = this.child.toGrammar(new EpsilonGrammar(content), text, content);
-        const grammar = new AlternationGrammar(content, [childGrammar, new EpsilonGrammar(content)]);
-        return new SequenceGrammar(content, [left, grammar]);
+        text: string
+    ): GrammarResult {
+        return this.child.toGrammar(text)
+                .bind(c => new AlternationGrammar(
+                    [c, new EpsilonGrammar()]));
     }
 }
 
 /**
  * Header that constructs renames
  */
-class RenameHeader extends UnaryHeader {
+export class RenameHeader extends UnaryHeader {
 
     public get id(): string {
         return `RENAME[${this.child.id}]`;
-    }
-
-    public toGrammar(
-        left: Grammar, 
-        text: string,
-        content: Cell
-    ): Grammar {
-        if (!(this.child instanceof TapeNameHeader)) {
-            content.message({
-                type: "error",
-                shortMsg: "Renaming error",
-                longMsg: "Rename (>) needs to have a tape name after it"
-            })
-            return new EpsilonGrammar(content);
-        }
-        return new RenameGrammar(content, left, text, this.child.text);
     }
 }
 
@@ -363,82 +306,62 @@ export class RegexHeader extends UnaryHeader {
         return "#bd1128";
     }
 
+    public get isRegex(): boolean {
+        return true;
+    }
+
     public toGrammarPiece(
-        parsedText: Regex,
-        content: Cell
-    ): Grammar {
+        parsedText: Regex
+    ): GrammarResult {
 
         if (parsedText instanceof ErrorRegex) {
-            content.message({
-                type: "error",
-                shortMsg: "Cannot parse regex",
-                longMsg: "Cannot parse the regex in this cell"
-            })
-            return new EpsilonGrammar(content);
+            return new EpsilonGrammar().msg()
+                .err("Cannot parse regex",
+                "Cannot parse the regex in this cell");
         }
 
         if (parsedText instanceof SequenceRegex) {
-            if (parsedText.children.length == 0) {
-                return this.child.toGrammar(new EpsilonGrammar(content), "", content);
-            }
-
-            const childGrammars = parsedText.children.map(c => 
-                                    this.toGrammarPiece(c, content));
-            return new SequenceGrammar(content, childGrammars);
+            return resultList(parsedText.children)
+                        .map(c => this.toGrammarPiece(c))
+                        .bind(cs => new SequenceGrammar(cs));
         }
 
         if (parsedText instanceof StarRegex) {
-            const childGrammar = this.toGrammarPiece(parsedText.child, content);
-            return new RepeatGrammar(content, childGrammar);
+            return this.toGrammarPiece(parsedText.child)
+                       .bind(c => new RepeatGrammar(c));
         }
         
         if (parsedText instanceof QuestionRegex) {
-            const childGrammar = this.toGrammarPiece(parsedText.child, content);
-            return new RepeatGrammar(content, childGrammar, 0, 1);
+            return this.toGrammarPiece(parsedText.child)
+                       .bind(c => new RepeatGrammar(c, 0, 1));
         }
         
         if (parsedText instanceof PlusRegex) {
-            const childGrammar = this.toGrammarPiece(parsedText.child, content);
-            return new RepeatGrammar(content, childGrammar, 1);
+            return this.toGrammarPiece(parsedText.child)
+                       .bind(c => new RepeatGrammar(c, 1));
         }
 
         if (parsedText instanceof LiteralRegex) {
-            return this.child.toGrammar(new EpsilonGrammar(content), parsedText.text, content);
+            return this.child.toGrammar(parsedText.text);
         }
 
         if (parsedText instanceof NegationRegex) {
-            const childGrammar = this.toGrammarPiece(parsedText.child, content);
-            return new NegationGrammar(content, childGrammar);
+            return this.toGrammarPiece(parsedText.child)
+                       .bind(c => new NegationGrammar(c));
         }
 
         if (parsedText instanceof AlternationRegex) {
-            const child1Grammar = this.toGrammarPiece(parsedText.child1, content);
-            const child2Grammar = this.toGrammarPiece(parsedText.child2, content);
-            return new AlternationGrammar(content, [child1Grammar, child2Grammar]);
+            return resultList([parsedText.child1, parsedText.child2])
+                    .map(c => this.toGrammarPiece(c))
+                    .bind(cs => new AlternationGrammar(cs));
         }
 
         throw new Error(`Error constructing boolean expression: ${parsedText}`);
     }
 
-    public toGrammar(
-        left: Grammar, 
-        text: string,
-        content: Cell
-    ): Grammar {
-
-        if (!(this.child instanceof TapeNameHeader 
-                    || this.child instanceof EmbedHeader)) {
-            content.message({
-                type: "error",
-                shortMsg: "Renaming error",
-                longMsg: `"re" can only be followed by a tape name or "embed"`
-            })
-            return new EpsilonGrammar(content);
-        }
-
+    public toGrammar(text: string): GrammarResult {
         const parsedText = parseRegex(text);
-        const c = this.toGrammarPiece(parsedText, content);
-        return new SequenceGrammar(content, [left, c]);
+        return this.toGrammarPiece(parsedText);
     }
 }
 
@@ -457,43 +380,6 @@ export class EqualsHeader extends UnaryHeader {
     public get id(): string {
         return `EQUALS[${this.child.id}]`;
     }
-
-    public merge(
-        leftNeighbor: Grammar, 
-        state: Grammar,
-        content: Cell
-    ): Grammar {
-
-        if (leftNeighbor instanceof SequenceGrammar) {
-            // if your left neighbor is a concat state we have to do something a little special,
-            // because starts/ends/contains only scope over the cell immediately to the left.  (if you let
-            // it be a join with EVERYTHING to the left, you end up catching prefixes that you're
-            // specifying in the same row, rather than the embedded thing you're trying to catch.)
-            const lastChild = leftNeighbor.finalChild();
-            const filter = this.constructFilter(lastChild, state, content);
-            const remainingChildren = leftNeighbor.nonFinalChildren();
-            return new SequenceGrammar(content, [...remainingChildren, filter]);
-        }
-
-        return this.constructFilter(leftNeighbor, state, content);
-    }
-
-    public constructFilter(
-        leftNeighbor: Grammar, 
-        condition: Grammar,
-        content: Cell
-    ): Grammar {
-        return new EqualsGrammar(content, leftNeighbor, condition);
-    }
-    
-    public toGrammar(
-        left: Grammar, 
-        text: string,
-        content: Cell
-    ): Grammar {
-        const childGrammar = this.child.toGrammar(new EpsilonGrammar(content), text, content)
-        return this.merge(left, childGrammar, content);
-    }
 }
 
 /**
@@ -506,13 +392,9 @@ export class StartsHeader extends EqualsHeader {
         return `STARTS[${this.child.id}]`;
     }
 
-    public constructFilter(
-        leftNeighbor: Grammar, 
-        condition: Grammar,
-        content: Cell
-    ): Grammar {
-        const filter = new StartsGrammar(content, condition);
-        return new EqualsGrammar(content, leftNeighbor, filter);
+    public toGrammar(text: string): GrammarResult {
+        return this.child.toGrammar(text)
+                   .bind(c => new StartsGrammar(c));
     }
 }
 
@@ -526,13 +408,9 @@ export class EndsHeader extends EqualsHeader {
         return `ENDS[${this.child.id}]`;
     }
 
-    public constructFilter(
-        leftNeighbor: Grammar, 
-        condition: Grammar,
-        content: Cell
-    ): Grammar {
-        const filter = new EndsGrammar(content, condition);
-        return new EqualsGrammar(content, leftNeighbor, filter);
+    public toGrammar(text: string): GrammarResult {
+        return this.child.toGrammar(text)
+                   .bind(c => new EndsGrammar(c));
     }
 }
 
@@ -546,17 +424,13 @@ export class ContainsHeader extends EqualsHeader {
         return `CONTAINS[${this.child.id}]`;
     }
 
-    public constructFilter(
-        leftNeighbor: Grammar, 
-        condition: Grammar,
-        content: Cell
-    ): Grammar {
-        const filter = new ContainsGrammar(content, condition);
-        return new EqualsGrammar(content, leftNeighbor, filter);
+    public toGrammar(text: string): GrammarResult {
+        return this.child.toGrammar(text)
+                   .bind(c => new ContainsGrammar(c));
     }
 }
 
-abstract class BinaryHeader extends Header {
+export class SlashHeader extends Header {
 
     public constructor(
         public child1: Header,
@@ -564,40 +438,27 @@ abstract class BinaryHeader extends Header {
     ) { 
         super();
     }
-
-    public getErrors(): HeaderErrorMsg[] {
-        return [...this.child1.getErrors(), ...this.child2.getErrors()];
-    } 
+    
+    public get id(): string {
+        return `SLASH[${this.child1.id},${this.child2.id}]`;
+    }
 
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
         return this.child1.getBackgroundColor(saturation, value);
     }
-}
-
-export class SlashHeader extends BinaryHeader {
-
-    public constructor(
-        public child1: Header,
-        public child2: Header
-    ) { 
-        super(child1, child2);
-    }
     
-    public get id(): string {
-        return `SLASH[${this.child1.id},${this.child2.id}]`;
+    public get isRegex(): boolean {
+        return this.child1.isRegex || this.child2.isRegex;
     }
 
     public getFontColor() {
         return this.child1.getFontColor();
     }
     
-    public toGrammar(
-        left: Grammar, 
-        text: string,
-        content: Cell
-    ): Grammar {
-        const child1Grammar = this.child1.toGrammar(left, text, content);
-        return this.child2.toGrammar(child1Grammar, text, content);
+    public toGrammar(text: string): GrammarResult {
+        return resultList([this.child1, this.child2])
+                 .map(c => c.toGrammar(text))
+                 .bind(cs => new SequenceGrammar(cs));
     }
 }
 
@@ -607,58 +468,14 @@ export class ErrorHeader extends TapeNameHeader {
         return "ERR";
     }
 
-    public getErrors(): HeaderErrorMsg[] {
-        return [{
-            type: "error",
-            shortMsg: "Invalid header",
-            longMsg: `This header cannot be parsed.`
-        }];
-    }
-
-    public toGrammar(
-        left: Grammar, 
-        text: string,
-        content: Cell
-    ): Grammar {
-        if (content.text.length != 0) {
-            content.message({
-                type: "warning",
-                shortMsg: `Invalid header: ${this.text}`,
-                longMsg: `This content is associated with an invalid header above, ignoring`
-            });
+    public toGrammar(text: string): GrammarResult {
+        if (text.length != 0) {
+            return new EpsilonGrammar().msg()
+                .warn("This content is associated with an invalid header above, ignoring");
         }
-        return left;
+        return new EpsilonGrammar().msg();
     }
 }
-
-export class ReservedErrorHeader extends ErrorHeader {
-
-    public getErrors(): HeaderErrorMsg[] {
-        return [{
-            type: "error", 
-            shortMsg: `Reserved word in header`, 
-            longMsg: `This looks like a header, but contains the reserved word "${this.text}". ` + 
-                    "If you didn't mean this to be a header, put a colon after it."
-        }];
-    }
-
-    public toGrammar(
-        left: Grammar, 
-        text: string,
-        content: Cell
-    ): Grammar {
-        if (content.text.length != 0) {
-            content.message({
-                type: "warning",
-                shortMsg: `Invalid header: ${this.text}`,
-                longMsg: `This content is associated with an invalid header above, ignoring`
-            });
-        }
-        return left;
-    }
-
-}
-
 
 /**
  * What follows is a grammar and parser for the mini-language inside headers, e.g.
@@ -740,129 +557,139 @@ const HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
 
 const HP_COMMENT = MPComment<Header>(
     '%',
-    (s) => new CommentHeader()
+    (s) => new CommentHeader().msg()
 );
 
 const HP_UNRESERVED = MPUnreserved<Header>(
     RESERVED_WORDS, 
-    (s) => new TapeNameHeader(s)
+    (s) => new TapeNameHeader(s).msg()
 );
 
 const HP_RESERVED_OP = MPReserved<Header>(
     RESERVED_OPS, 
-    (s) => new ReservedErrorHeader(s)
+    (s) => new ErrorHeader(s).msg().err(
+            `Reserved word in header`, 
+            `This looks like a header, but contains the reserved word "${s}". ` + 
+            "If you didn't mean this to be a header, put a colon after it.")
 );
 
 const HP_EMBED = MPSequence<Header>(
     ["embed"],
-    () => new EmbedHeader()
+    () => new EmbedHeader().msg()
 );
 
 const HP_HIDE = MPSequence<Header>(
     ["hide"],
-    () => new HideHeader()
+    () => new HideHeader().msg()
 );
 
 const HP_OPTIONAL = MPSequence<Header>(
     ["optional", HP_NON_COMMENT_EXPR],
-    (child) => new OptionalHeader(child)
+    (child) => child.bind(c => new OptionalHeader(c))
 );
 
 const HP_FROM = MPSequence<Header>(
     ["from", HP_NON_COMMENT_EXPR],
-    (child) => new TagHeader("from", child)
+    (child) => child.bind(c => new TagHeader("from", c))
 );
 
 const HP_TO = MPSequence<Header>(
     ["to", HP_NON_COMMENT_EXPR],
-    (child) => new TagHeader("to", child)
+    (child) => child.bind(c => new TagHeader("to", c))
 );
 
 const HP_PRE = MPSequence<Header>(
     ["pre", HP_NON_COMMENT_EXPR],
-    (child) => new TagHeader("pre", child)
+    (child) => child.bind(c => new TagHeader("pre", c))
 );
-
 
 const HP_POST = MPSequence<Header>(
     ["post", HP_NON_COMMENT_EXPR],
-    (child) => new TagHeader("post", child)
+    (child) => child.bind(c => new TagHeader("post", c))
 );
 
 const HP_FROM_ATOMIC = MPSequence<Header>(
     ["from"],
-    () => new TagHeader("from", new TapeNameHeader(REPLACE_INPUT_TAPE))
+    () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
+                .bind(c => new TagHeader("from", c))
 );
 
 const HP_TO_ATOMIC = MPSequence<Header>(
     ["to"],
-    () => new TagHeader("to", new TapeNameHeader(REPLACE_OUTPUT_TAPE))
+    () => new TapeNameHeader(REPLACE_OUTPUT_TAPE).msg()
+                    .bind(c => new TagHeader("to", c))
 );
 
 const HP_PRE_ATOMIC = MPSequence<Header>(
     ["pre"],
-    () => new TagHeader("pre", new TapeNameHeader(REPLACE_INPUT_TAPE))
+    () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
+                    .bind(c => new TagHeader("pre", c))
 );
 
 const HP_POST_ATOMIC = MPSequence<Header>(
     ["post"],
-    () => new TagHeader("post", new TapeNameHeader(REPLACE_INPUT_TAPE))
+    () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
+                 .bind(c => new TagHeader("post", c))
 );
 
 const HP_FROM_RE_ATOMIC = MPSequence<Header>(
     ["from", "re"],
-    () => {
-        const lit = new TapeNameHeader(REPLACE_INPUT_TAPE);
-        const reg = new RegexHeader(lit);
-        return new TagHeader("from", reg);
-    }
+    () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
+                .bind(c => new RegexHeader(c))
+                .bind(c => new TagHeader("from", c))
 );
 
 const HP_TO_RE_ATOMIC = MPSequence<Header>(
     ["to", "re"],
-    () => {
-        const lit = new TapeNameHeader(REPLACE_OUTPUT_TAPE);
-        const reg = new RegexHeader(lit);
-        return new TagHeader("to", reg);
-    }
+    () => new TapeNameHeader(REPLACE_OUTPUT_TAPE).msg()
+                .bind(c => new RegexHeader(c))
+                .bind(c => new TagHeader("to", c))
 );
 
 const HP_PRE_RE_ATOMIC = MPSequence<Header>(
     ["pre", "re"],
-    () => {
-        const lit = new TapeNameHeader(REPLACE_INPUT_TAPE);
-        const reg = new RegexHeader(lit);
-        return new TagHeader("pre", reg);
-    }
+    () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
+                .bind(c => new RegexHeader(c))
+                .bind(c => new TagHeader("pre", c))
 );
 
 const HP_POST_RE_ATOMIC = MPSequence<Header>(
     ["post", "re"],
-    () => {
-        const lit = new TapeNameHeader(REPLACE_INPUT_TAPE);
-        const reg = new RegexHeader(lit);
-        return new TagHeader("post", reg);
-    }
+    () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
+                .bind(c => new RegexHeader(c))
+                .bind(c => new TagHeader("post", c))
 );
 
 const HP_UNIQUE = MPSequence<Header>(
     ["unique", HP_NON_COMMENT_EXPR],
-    (child) => new TagHeader("unique", child)
+    (child) => child.bind(c => new TagHeader("unique", c))
 );
 
 const HP_REGEX = MPSequence<Header>(
     ["re", HP_NON_COMMENT_EXPR],
-    (child) => new RegexHeader(child)
+    (child) => {
+        const [c,msgs] = child.destructure();
+        if (c instanceof SlashHeader) {
+            return new ErrorHeader("").msg()
+                .err("Invalid header",
+                    "You can't have both 're' and a slash in the same header");
+        }
+        return c.msg(msgs).bind(c => new RegexHeader(c));
+    }
 );
 
 const HP_SLASH = MPSequence<Header>(
     [HP_SUBEXPR, "/", HP_NON_COMMENT_EXPR],
-    (child1, child2) => new SlashHeader(child1, child2)
+    (child1,child2) => {
+        const [c1,m1] = child1.destructure();
+        const [c2,m2] = child2.destructure();
+        return new SlashHeader(c1,c2).msg(m1).msg(m2)
+    }
 );
 
 const HP_RENAME = MPSequence<Header>(
     [">", HP_UNRESERVED],
-    (child) => new RenameHeader(child)
+    (child) => child.bind(c => new RenameHeader(c))
 );
 
 const HP_PARENS = MPSequence<Header>(
@@ -872,32 +699,35 @@ const HP_PARENS = MPSequence<Header>(
 
 const HP_EQUALS = MPSequence<Header>(
     ["equals", HP_NON_COMMENT_EXPR],
-    (child) => new EqualsHeader(child)
+    (child) => child.bind(c => new EqualsHeader(c))
 );
 
 const HP_STARTS = MPSequence<Header>(
     ["starts", HP_NON_COMMENT_EXPR],
-    (child) => new StartsHeader(child)
+    (child) => child.bind(c => new StartsHeader(c))
 );
 
 const HP_ENDS = MPSequence<Header>(
     ["ends", HP_NON_COMMENT_EXPR],
-    (child) => new EndsHeader(child)
+    (child) => child.bind(c => new EndsHeader(c))
 );
 
 const HP_CONTAINS = MPSequence<Header>(
     ["contains", HP_NON_COMMENT_EXPR],
-    (child) => new ContainsHeader(child)
+    (child) => child.bind(c => new ContainsHeader(c))
 );
 
 const HP_EXPR: MPParser<Header> = MPAlternation(HP_COMMENT, HP_NON_COMMENT_EXPR);
 
-export function parseHeaderCell(text: string): Header {
+export function parseHeaderCell(text: string): Result<Header> {
 
     const results = miniParse(tokenize, HP_EXPR, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorHeader(text);
+        return new ErrorHeader(text).msg().err(
+            "Invalid header",
+            "Cannot parse this header"
+        );
     }
     if (results.length > 1) {
         // if this happens, it's an error on our part

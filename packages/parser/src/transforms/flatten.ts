@@ -1,9 +1,10 @@
-import { foldLeft } from "../util";
+import { Msgs } from "../msgs";
 import { 
-    AlternationGrammar, CounterStack, EpsilonGrammar, Grammar,
-    NsGrammar, NullGrammar, SequenceGrammar
+    AlternationGrammar, EpsilonGrammar, Grammar,
+    GrammarResult, NullGrammar, SequenceGrammar
 } from "../grammars";
 import { IdentityTransform } from "./transforms";
+import { TransEnv } from "../transforms";
 
 /**
  * The FlattenTransform takes the grammar made by the tabular syntax tree and
@@ -19,17 +20,18 @@ import { IdentityTransform } from "./transforms";
  *      few things this messes up (it results in counterintuitive results when adjusting
  *      scope in ends/contains), so this tranform removes them.
  */
-export class FlattenTransform extends IdentityTransform<void> {
+export class FlattenTransform extends IdentityTransform {
 
     public get desc(): string {
         return "Flattening sequences/alternations";
     }
 
-    public transformSequence(g: SequenceGrammar, ns: NsGrammar, args: void): Grammar {
+    public transformSequence(g: SequenceGrammar, env: TransEnv): GrammarResult {
         
-        const children = g.children.map(c => c.accept(this, ns, args));
+        const [result, msgs] = super.transformSequence(g, env)
+                                    .destructure() as [SequenceGrammar, Msgs];
         const newChildren: Grammar[] = [];
-        for (const child of children) {
+        for (const child of result.children) {
             if (child instanceof SequenceGrammar) {
                 newChildren.push(...child.children);
                 continue;
@@ -39,15 +41,15 @@ export class FlattenTransform extends IdentityTransform<void> {
             }
             newChildren.push(child);
         }
-        return new SequenceGrammar(g.cell, newChildren);
+        return new SequenceGrammar(newChildren).msg(msgs);
     }
 
-    
-    public transformAlternation(g: AlternationGrammar, ns: NsGrammar, args: void): Grammar {
+    public transformAlternation(g: AlternationGrammar, env: TransEnv): GrammarResult {
         
-        const children = g.children.map(c => c.accept(this, ns, args));
+        const [result, msgs] = super.transformAlternation(g, env)
+                        .destructure() as [AlternationGrammar, Msgs];
         const newChildren: Grammar[] = [];
-        for (const child of children) {
+        for (const child of result.children) {
             if (child instanceof AlternationGrammar) {
                 newChildren.push(...child.children);
                 continue;
@@ -57,7 +59,7 @@ export class FlattenTransform extends IdentityTransform<void> {
             }
             newChildren.push(child);
         }
-        return new AlternationGrammar(g.cell, newChildren);
+        return new AlternationGrammar(newChildren).msg(msgs);
     }
 
 }

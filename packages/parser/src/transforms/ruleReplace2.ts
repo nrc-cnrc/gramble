@@ -1,19 +1,25 @@
 import { 
     CounterStack,
-    Grammar, HideGrammar,
-    JoinGrammar, JoinRuleGrammar, 
-    NsGrammar, RenameGrammar, ReplaceGrammar
+    Grammar, 
+    GrammarResult, 
+    JoinGrammar, 
+    JoinRuleGrammar, 
+    RenameGrammar
 } from "../grammars";
 
 import { IdentityTransform } from "./transforms";
-import { DummyCell, foldRight, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { foldRight, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { Result } from "../msgs";
+import { TransEnv } from "../transforms";
+
+let RULE_HIDE_INDEX = 0;
 
 /**
  * This Transform handles the construction of implicit-tape replacement rules
  * (where you just say "from"/"to" rather than "from text"/"to text") and
  * cascades of them.
  */
-export class RuleReplaceTransform2 extends IdentityTransform<void>{
+export class RuleReplaceTransform2 extends IdentityTransform {
 
     public replaceIndex: number = 0;
 
@@ -21,46 +27,46 @@ export class RuleReplaceTransform2 extends IdentityTransform<void>{
         return "Constructing new-style replacement rules (2nd version)";
     }
 
-    public transformJoinRule(
-        g: JoinRuleGrammar, 
-        ns: NsGrammar, 
-        args: void
-    ): Grammar {
+    public transformJoinRule(g: JoinRuleGrammar, env: TransEnv): GrammarResult {
 
-        let relevantTape = g.inputTape;
-        let result = g.child.accept(this, ns, args);
+        const result = super.transformJoinRule(g, env) as Result<JoinRuleGrammar>;
+        const [newG, msgs] = result.destructure();
 
-        if (g.child.tapes.indexOf(g.inputTape) == -1) {
+        newG.calculateTapes(new CounterStack(2));
+        if (newG.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar
             // leads to infinite generation.  This is correct but not what anyone
             // actually wants, so mark an error
-            g.cell.message({
-                type: "error",
-                shortMsg: `Replacing on non-existent tape'`,
-                longMsg: `The grammar above does not have a tape ${g.inputTape} to replace on`
-            });
-            return result;
+            return result.err(`Replacing on non-existent tape'`,
+                            `The grammar above does not have a tape ${newG.inputTape} to replace on`)
+                         .bind(r => r.child);
         }
 
-        if (g.rules.length == 0) {
-            return result;
+        if (newG.rules.length == 0) {
+            return result.bind(r => r.child);
         }
 
-        const newRules: Grammar[] = g.rules.map(r => r.accept(this, ns, args));
-
-        const composedRule = foldRight(newRules, composeRules);
-        const renamedGrammar = new RenameGrammar(new DummyCell(), result, g.inputTape, REPLACE_INPUT_TAPE);
-        const grammarComposedWithRules = new JoinGrammar(new DummyCell(), renamedGrammar, composedRule);
-        const renamedComposition = new RenameGrammar(new DummyCell(), grammarComposedWithRules, REPLACE_OUTPUT_TAPE, g.inputTape);
+        const renamedGrammar = renameGrammar(newG.child, g.inputTape, REPLACE_INPUT_TAPE);
+        const composedRule = foldRight(newG.rules, composeRules);
+        const grammarComposedWithRules = new JoinGrammar(renamedGrammar, composedRule);
+        const newTapeName = `.RULE${RULE_HIDE_INDEX++}`
+        const hiddenComposition = renameGrammar(grammarComposedWithRules, REPLACE_INPUT_TAPE, newTapeName);
+        const renamedComposition = renameGrammar(hiddenComposition, REPLACE_OUTPUT_TAPE, g.inputTape);
         renamedComposition.calculateTapes(new CounterStack(2));
-        return renamedComposition;
+        return renamedComposition.msg(msgs);
     }
 }
 
-let RULE_HIDE_INDEX = 0;
 function composeRules(r1: Grammar, r2: Grammar): Grammar {
     const newTapeName = `.RULE${RULE_HIDE_INDEX++}`
-    const renamedR1 = new RenameGrammar(new DummyCell(), r1, REPLACE_OUTPUT_TAPE, newTapeName);
-    const renamedR2 = new RenameGrammar(new DummyCell(), r2, REPLACE_INPUT_TAPE, newTapeName);
-    return new JoinGrammar(new DummyCell(), renamedR1, renamedR2);
+    const renamedR1 = renameGrammar(r1, REPLACE_OUTPUT_TAPE, newTapeName);
+    const renamedR2 = renameGrammar(r2, REPLACE_INPUT_TAPE, newTapeName);
+    return new JoinGrammar(renamedR1, renamedR2);
+}
+
+function renameGrammar(g: Grammar, fromTape: string, toTape: string): Grammar {
+    if (fromTape == toTape) {
+        return g;
+    }
+    return new RenameGrammar(g, fromTape, toTape);
 }

@@ -23,7 +23,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text:"fooba", gloss:"run"},
         ]);
     });
-
+    
     describe('Equals with an ill-formed filter', function() {
         const project = sheetFromFile(`${DIR}/illFormedFilter.csv`);
         testErrors(project, [
@@ -238,7 +238,8 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Equals re with a slash header', function() {
         const project = sheetFromFile(`${DIR}/equalsSlashOr.csv`);
         testErrors(project, [
-            ["equalsSlashOr", 8, 3, "error"]
+            ["equalsSlashOr", 7, 3, "error"],
+            ["equalsSlashOr", 8, 3, "warning"]
         ]);
         testGrammar(project, [
             {"text":"boo","pos":"a","class":"a"},

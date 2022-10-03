@@ -1,3 +1,4 @@
+import { AlternationGrammar, EpsilonGrammar, Grammar, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "./grammars";
 import { 
     MPDelay, 
     MPAlternation, 
@@ -7,6 +8,7 @@ import {
     miniParse,
     MPRepetition 
 } from "./miniParser";
+import { HIDDEN_TAPE_PREFIX } from "./util";
 
 /**
  * This module is concerned with cells that have operators in them (e.g. ~ and |),
@@ -22,6 +24,8 @@ export interface Regex {
      * when the regex has been parsed incorrectly.
      */
     readonly id: string;
+
+    toGrammar(): Grammar;
 }
 
 export class ErrorRegex {
@@ -32,6 +36,10 @@ export class ErrorRegex {
 
     public get id(): string {
         return `ERR`;
+    }
+
+    public toGrammar(): Grammar {
+        return new EpsilonGrammar();
     }
 }
 
@@ -46,6 +54,10 @@ export class LiteralRegex implements Regex {
     public get id(): string {
         return this.text;
     }
+
+    public toGrammar(): Grammar {
+        return new LiteralGrammar(`${HIDDEN_TAPE_PREFIX}`, this.text);
+    }
 }
 
 export class StarRegex implements Regex {
@@ -56,6 +68,11 @@ export class StarRegex implements Regex {
 
     public get id(): string {
         return `STAR[${this.child.id}]`;
+    }
+
+    public toGrammar(): Grammar {
+        const childGrammar = this.child.toGrammar();
+        return new RepeatGrammar(childGrammar);
     }
 }
 
@@ -68,6 +85,11 @@ export class QuestionRegex implements Regex {
     public get id(): string {
         return `QUES[${this.child.id}]`;
     }
+    
+    public toGrammar(): Grammar {
+        const childGrammar = this.child.toGrammar();
+        return new RepeatGrammar(childGrammar, 0, 1);
+    }
 }
 
 export class PlusRegex implements Regex {
@@ -79,6 +101,11 @@ export class PlusRegex implements Regex {
     public get id(): string {
         return `PLUS[${this.child.id}]`;
     }
+    
+    public toGrammar(): Grammar {
+        const childGrammar = this.child.toGrammar();
+        return new RepeatGrammar(childGrammar, 1);
+    }
 }
 
 export class NegationRegex implements Regex {
@@ -89,6 +116,11 @@ export class NegationRegex implements Regex {
 
     public get id(): string {
         return `NOT[${this.child.id}]`;
+    }
+
+    public toGrammar(): Grammar {
+        const childGrammar = this.child.toGrammar();
+        return new NegationGrammar(childGrammar);
     }
 }
 
@@ -102,6 +134,12 @@ export class AlternationRegex implements Regex {
     public get id(): string {
         return `OR[${this.child1.id},${this.child2.id}]`;
     }
+
+    public toGrammar(): Grammar {
+        const child1Grammar = this.child1.toGrammar();
+        const child2Grammar = this.child2.toGrammar();
+        return new AlternationGrammar([child1Grammar, child2Grammar]);
+    }
 }
 
 export class SequenceRegex implements Regex {
@@ -112,6 +150,16 @@ export class SequenceRegex implements Regex {
 
     public get id(): string {
         return `[${this.children.map(c=>c.id).join(",")}]`;
+    }
+
+    public toGrammar(): Grammar {
+        if (this.children.length == 0) {
+            return new EpsilonGrammar();
+        }
+
+        const childGrammars = this.children.map(c => 
+                                c.toGrammar());
+        return new SequenceGrammar(childGrammars);
     }
 }
 
@@ -199,10 +247,7 @@ export function parseRegex(text: string): Regex {
     }
     if (results.length > 1) {
         // if this happens, it's an error on our part
-        console.log([...results]);
         throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
     }
     return results[0];
 }
-
-
