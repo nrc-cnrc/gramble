@@ -1,15 +1,14 @@
 import { TransEnv, Transform } from "../transforms";
-import { CommandMsg, CommentMsg, Err, HeaderMsg, Msgs } from "../msgs";
+import { CommandMsg, CommentMsg, Err, Msgs } from "../msgs";
 import { 
-    TstAssignment,
-    TstComponent, TstEmpty, TstEnclosure, TstGrid, TstHeader, TstNamespace, 
-    TstOp, 
-    TstResult, 
+    TstAssignment, TstComponent, 
+    TstEmpty, TstEnclosure, 
+    TstNamespace, TstOp, 
+    TstPreGrid, TstResult, 
 } from "../tsts";
 import { Sheet, SheetComponent, SheetProject } from "../sheets";
 import { Cell, CellPos } from "../util";
 import { NamespaceOp, parseOp } from "../ops";
-import { parseHeaderCell } from "../headers";
 
 /**
  * Namespace works somewhat differently from other operators,
@@ -127,7 +126,6 @@ export class CreateTST extends Transform<SheetComponent,TstComponent> {
 
             for (let colIndex = 0; colIndex < maxCol; colIndex++) {
     
-                const cellMsgs: Msgs = [];
                 const cellText = (colIndex < colWidth)
                                ? t.cells[rowIndex][colIndex].trim().normalize("NFD")
                                : "";
@@ -138,8 +136,7 @@ export class CreateTST extends Transform<SheetComponent,TstComponent> {
 
                 // first check if it's a comment row
                 if (rowIsComment) {
-                    cellMsgs.push(new CommentMsg());
-                    msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
+                    new CommentMsg().msgTo(msgs, cellPos);
                     continue;
                 }
 
@@ -147,25 +144,21 @@ export class CreateTST extends Transform<SheetComponent,TstComponent> {
                 // the stack.  keep popping until the top of the stack 
                 // is allowed to add this cell as a child op, header,
                 // or content
-                if (cell.text != "" && rowIndex > top.row) {
-                    while (colIndex <= top.col) {
-                        stack.pop();
-                        top = stack[stack.length-1];
-                    }
+                while (cell.text != "" && colIndex <= top.col) {
+                    stack.pop();
+                    top = stack[stack.length-1];
                 }
             
                 // next check if this is "content" -- that is, something to the lower left
                 // of the topmost op.  NB: This is the only kind of operation we'll do on 
                 // empty cells, so that, if appropriate, we can mark them for syntax highlighting.
-                if (top.tst instanceof TstGrid && colIndex >= top.col && rowIndex > top.row) {
-                    top.tst.addContent(cell).msgTo(cellMsgs);
-                    msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
+                if (top.tst instanceof TstPreGrid && colIndex > top.col && rowIndex > top.row) {
+                    top.tst.addContent(cell).msgTo(msgs, cellPos);
                     continue;
                 }
     
                 // all of the following steps require there to be some explicit content
                 if (cellText.length == 0) {
-                    msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
                     continue;
                 }
     
@@ -174,42 +167,37 @@ export class CreateTST extends Transform<SheetComponent,TstComponent> {
                     // it's an operation, which starts a new enclosures
                     const op = parseOp(cellText);
                     const newEnclosure = new TstOp(cell, op);
-                    cellMsgs.push(new CommandMsg().localize(cellPos))
+                    new CommandMsg().msgTo(msgs, cellPos);
 
-                    if (top.tst instanceof TstGrid) {
+                    if (top.tst instanceof TstPreGrid) {
                         Err(`Unexpected operator`,
                             "This looks like an operator, " +
-                            " but only a header can follow a header.").msgTo(cellMsgs);
-                        msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
+                            " but only a header can follow a header.")
+                            .msgTo(msgs, cellPos);
                         continue;
                     }
               
-                    top.tst.addChild(newEnclosure).msgTo(cellMsgs);
+                    top.tst.setChild(newEnclosure).msgTo(msgs);
 
                     const newTop = { tst: newEnclosure, row: rowIndex, col: colIndex };
                     stack.push(newTop);
-                    msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
                     continue;
                 } 
     
-                // it's a header
-                const parsedHeader = parseHeaderCell(cell.text).msgTo(cellMsgs);
-                const tstHeader = new TstHeader(cell, parsedHeader);
-                cellMsgs.push(new HeaderMsg( 
-                    tstHeader.getBackgroundColor(0.14) 
-                ));
+                // it's a header, but we don't yet distinguish that
+                // from content
                 
                 // if the top isn't a TstGrid, make it so
-                if (!(top.tst instanceof TstGrid)) {
-                    const newTable = new TstGrid(cell);
-                    top.tst.addChild(newTable).msgTo(cellMsgs);
-                    top = { tst: newTable, row: rowIndex, col: colIndex-1 };
+                if (!(top.tst instanceof TstPreGrid)) {
+                    const newGrid = new TstPreGrid(cell);
+                    top.tst.setChild(newGrid).msgTo(msgs, cellPos);
+                    top = { tst: newGrid, row: rowIndex, col: colIndex-1 };
                     stack.push(top);
                 }
-                
-                (top.tst as TstGrid).addHeader(tstHeader);
 
-                msgs.push(...cellMsgs.map(m => m.localize(cellPos)));
+                (top.tst as TstPreGrid).addContent(cell)
+                                       .msgTo(msgs, cellPos);
+
             }
         }
     

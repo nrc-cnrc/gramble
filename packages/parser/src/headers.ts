@@ -430,7 +430,7 @@ export class ContainsHeader extends EqualsHeader {
     }
 }
 
-abstract class BinaryHeader extends Header {
+export class SlashHeader extends Header {
 
     public constructor(
         public child1: Header,
@@ -439,26 +439,16 @@ abstract class BinaryHeader extends Header {
         super();
     }
     
-    public get isRegex(): boolean {
-        return this.child1.isRegex || this.child2.isRegex;
+    public get id(): string {
+        return `SLASH[${this.child1.id},${this.child2.id}]`;
     }
 
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
         return this.child1.getBackgroundColor(saturation, value);
     }
-}
-
-export class SlashHeader extends BinaryHeader {
-
-    public constructor(
-        public child1: Header,
-        public child2: Header
-    ) { 
-        super(child1, child2);
-    }
     
-    public get id(): string {
-        return `SLASH[${this.child1.id},${this.child2.id}]`;
+    public get isRegex(): boolean {
+        return this.child1.isRegex || this.child2.isRegex;
     }
 
     public getFontColor() {

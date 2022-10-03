@@ -139,6 +139,116 @@ export class TstContent extends TstCellComponent {
 
 }
 
+export abstract class TstEnclosure extends TstCellComponent {
+
+    constructor(
+        cell: Cell, 
+        public sibling: TstComponent = new TstEmpty()
+    ) {
+        super(cell)
+    }
+
+    public setSibling(sibling: TstEnclosure): void {
+        this.sibling = sibling;
+    }
+
+    public abstract setChild(child: TstEnclosure): ResultVoid;
+
+}
+
+/**
+ * A pre-grid is a rectangular region of the grid with no semantics
+ * yet (cells in the first row aren't yet headers, cells in 
+ * subsequent rows aren't yet associated with headers, etc.)
+ */
+ export class TstPreGrid extends TstEnclosure {
+
+    constructor(
+        cell: Cell, 
+        public sibling: TstComponent = new TstEmpty(),
+        public rows: TstPreRow[] = []
+    ) {
+        super(cell, sibling)
+    }
+
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        const [sib, sibMsgs] = f.transform(this.sibling, env).destructure();
+        const [rows, rowMsgs] = resultList(this.rows)
+                                    .map(c => f.transform(c, env))
+                                    .destructure() as [TstPreRow[], Msgs];
+        return new TstPreGrid(this.cell, sib, rows).msg(sibMsgs).msg(rowMsgs);
+    }
+    
+    public setChild(newChild: TstEnclosure): ResultVoid {
+        throw new Error("TstTables cannot have children");
+    }
+
+    public addContent(cell: Cell): ResultVoid {
+        const msgs = unit;
+
+        if (this.rows.length == 0 || cell.pos.row != this.rows[this.rows.length-1].pos.row) {
+            // we need to start an new row
+            this.rows.push(new TstPreRow(cell));
+        }
+
+        const lastRow = this.rows[this.rows.length-1];
+        return lastRow.addContent(cell).msg(msgs);
+    }
+}
+
+export class TstPreRow extends TstCellComponent {
+
+    constructor(
+        cell: Cell, 
+        public content: TstContent[] = []
+    ) {
+        super(cell)
+    }
+    
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        return resultList(this.content)
+                .map(c => f.transform(c, env))
+                .bind(cs => new TstPreRow(this.cell, cs as TstContent[]));
+    }
+    
+    public addContent(cell: Cell): ResultVoid {
+        const content = new TstContent(cell);
+        this.content.push(content);
+        return unit;
+    }
+}
+
+export class TstHeadedGrid extends TstPreGrid {
+
+    constructor(
+        cell: Cell, 
+        sibling: TstComponent = new TstEmpty(),
+        rows: TstPreRow[] = [],
+        public headers: TstHeader[] = []
+        
+    ) {
+        super(cell, sibling, rows)
+    }
+    
+    public providesParam(param: string): boolean {
+        return this.headers.some(h => 
+                    param == h.header.getParamName());
+    }
+
+    public mapChildren(f: TstTransform, env: TransEnv): TstResult {
+        const [sib, sibMsgs] = f.transform(this.sibling, env).destructure();
+        const [rows, rowMsgs] = resultList(this.rows)
+                            .map(c => f.transform(c, env))
+                            .destructure() as [TstPreRow[], Msgs];
+        const [headers, headerMsgs] = resultList(this.headers)
+                            .map(c => f.transform(c, env))
+                            .destructure() as [TstHeader[], Msgs];
+        return new TstHeadedGrid(this.cell, sib, rows, headers)
+                        .msg(sibMsgs).msg(rowMsgs).msg(headerMsgs);
+
+    }
+}
+
 export class TstHeadedCell extends TstCellComponent {
 
     constructor(
@@ -259,11 +369,6 @@ export class TstComment extends TstCellComponent {
 
 }
 
-export abstract class TstEnclosure extends TstCellComponent {
-
-    public abstract addChild(child: TstComponent): ResultVoid;
-
-}
 
 /**
  * An enclosure represents a single-cell unit containing a command or identifier (call that the "startCell"),
@@ -305,10 +410,10 @@ export class TstBinary extends TstEnclosure {
 
     constructor(
         cell: Cell,    
-        public sibling: TstComponent = new TstEmpty(),
+        sibling: TstComponent = new TstEmpty(),
         public child: TstComponent = new TstEmpty()
     ) {
-        super(cell);
+        super(cell, sibling);
     }
 
     public mapChildren(f: TstTransform, env: TransEnv): TstResult {
@@ -328,12 +433,11 @@ export class TstBinary extends TstEnclosure {
                     .bind(([s,c]) => new LocatorGrammar(this.cell, s));
     }
 
-    public addChild(child: TstComponent): ResultVoid {
+    public setChild(child: TstEnclosure): ResultVoid {
 
         const msgs: Msgs = [];
 
-        if (this.child instanceof TstBinary && 
-                child instanceof TstCellComponent &&
+        if (this.child instanceof TstEnclosure &&
                 this.child.pos.col != child.pos.col) {
             Warn("This operator is in an unexpected column.  Did you " +
                 `mean for it to be in column ${this.child.pos.col}, ` + 
@@ -341,7 +445,7 @@ export class TstBinary extends TstEnclosure {
                 child.pos).msgTo(msgs);
         }
 
-        if (child instanceof TstBinary) {
+        if (child instanceof TstBinary || child instanceof TstPreGrid) {
             child.sibling = this.child;
         }
         this.child = child;
@@ -588,8 +692,8 @@ export class TstGrid extends TstBinary {
 
     constructor(
         cell: Cell,    
-        public sibling: TstComponent = new TstEmpty(),
-        public child: TstComponent = new TstEmpty(),    
+        sibling: TstComponent = new TstEmpty(),
+        child: TstComponent = new TstEmpty(),    
         public headers: TstHeader[] = [],
         public rows: TstRow[] = []
     ) {
@@ -609,51 +713,8 @@ export class TstGrid extends TstBinary {
                      .msg(sMsgs).msg(cMsgs).msg(hMsgs).msg(rMsgs);
     }
 
-    public providesParam(param: string): boolean {
-        return this.headers.some(h => 
-                    param == h.header.getParamName());
-    }
-
-    public addHeader(header: TstHeader): void {        
-        this.headers.push(header);
-    }
-
-    public findHeader(col: number): TstHeader | undefined {
-        /* yeah, it's more efficient to put 'em in map
-           but we do this rarely and there aren't that many */
-        for (const header of this.headers) {
-            if (header.pos.col == col) {
-                return header;
-            }
-        }
-        return undefined;
-    }
-
-    public addContent(cell: Cell): ResultVoid {
-        const msgs = unit;
-
-        // make sure we have a header
-        const headerCell = this.findHeader(cell.pos.col);
-        if (headerCell == undefined) {
-            if (cell.text.length != 0) {
-                return msgs.warn(
-                    "Cannot associate this cell with any valid header above; ignoring."
-                );
-            }
-            return msgs;
-        }
-
-        if (this.rows.length == 0 || cell.pos.row != this.rows[this.rows.length-1].pos.row) {
-            // we need to start an new row
-            this.rows.push(new TstRow(cell));
-        }
-
-        const lastRow = this.rows[this.rows.length-1];
-        return lastRow.addContent(headerCell, cell).msg(msgs);
-    }
-
-    public addChild(newChild: TstComponent): ResultVoid {
-        throw new Error("TstTables cannot have children");
+    public setChild(newChild: TstComponent): ResultVoid {
+        throw new Error("TstGrids cannot have children");
     }
 
     public toGrammar(env: TransEnv): GrammarResult {

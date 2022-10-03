@@ -1,8 +1,7 @@
 import { 
     TstComponent, TstEmpty, 
-    TstHeader, 
-    TstResult, TstGrid, 
-    TstTransform, TstOp 
+    TstHeader, TstResult, 
+    TstTransform, TstOp, TstHeadedGrid 
 } from "../tsts";
 import { TransEnv } from "../transforms";
 import { Err, Msgs, Result, result, Warn } from "../msgs";
@@ -38,12 +37,20 @@ export class CheckNamedParams extends TstTransform {
                 return this.transformOp(t as TstOp, env);
             case TstHeader:
                 return this.transformHeader(t as TstHeader, env);
-            case TstGrid: // tables as transparent
-                return t.mapChildren(this, env);
+            case TstHeadedGrid: // tables are transparent
+                return this.transformHeadedGrid(t as TstHeadedGrid, env);
             default:  // everything else is default
                 const defaultThis = new CheckNamedParams();
                 return t.mapChildren(defaultThis, env);
         }
+    }
+
+    public transformHeadedGrid(t: TstHeadedGrid, env: TransEnv): TstResult {
+        const result = t.mapChildren(this, env) as Result<TstHeadedGrid>;
+        return result.bind(t => {
+            t.headers = t.headers.filter(h => h instanceof TstHeader);
+            return t;
+        });
     }
 
     public transformOp(t: TstOp, env: TransEnv): TstResult {
@@ -72,7 +79,7 @@ export class CheckNamedParams extends TstTransform {
         // now check that the required params are present.  if the
         // child is a TstGrid, we have to check more closely.  if the
         // child isn't a TstGrid, then  
-        if (t.child instanceof TstGrid) {
+        if (t.child instanceof TstHeadedGrid) {
             for (const param of t.op.requiredNamedParams) {
                 if (!t.child.providesParam(param)) {
                     const paramDesc = param == BLANK_PARAM 

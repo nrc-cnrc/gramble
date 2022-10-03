@@ -4,7 +4,7 @@ import {
     TstComponent, TstNamespace, 
     TstResult, TstTransform, 
     TstOp, TstEmpty, 
-    TstBinary
+    TstEnclosure
 } from "../tsts";
 import { NamespaceOp, SymbolOp } from "../ops";
 
@@ -67,7 +67,7 @@ export class CreateNamespaces extends TstTransform {
 
         // flatten and reverse the results
         let child = t.child;
-        while (child instanceof TstBinary) {
+        while (child instanceof TstEnclosure) {
             children.push(child);
             const next = child.sibling;
             child.sibling = new TstEmpty();

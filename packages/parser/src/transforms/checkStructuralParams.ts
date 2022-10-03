@@ -8,7 +8,8 @@ import { TransEnv } from "../transforms";
 import { 
     TstComponent, TstResult, 
     TstTransform, TstOp, 
-    TstEmpty, TstGrid,
+    TstEmpty,
+    TstPreGrid
 } from "../tsts";
 
 /**
@@ -85,7 +86,7 @@ export class CheckStructuralParams extends TstTransform {
         }
 
         // if the child is a grid, silently insert a table op in between
-        if (t.child instanceof TstGrid) {
+        if (t.child instanceof TstPreGrid) {
             t.child = new TstOp(t.cell, new TableOp(), new TstEmpty(), t.child);
         }
 
@@ -113,7 +114,7 @@ export class CheckStructuralParams extends TstTransform {
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.
         if (t.op.childGridRequirement == "required" && 
-            !(t.child instanceof TstGrid)) {
+            !(t.child instanceof TstPreGrid)) {
             return result(t).err(`'${t.cell.text}' requires grid`,
                     "This operator requires a grid to the right, " +
                     "but has another operator instead.")
@@ -124,7 +125,7 @@ export class CheckStructuralParams extends TstTransform {
         // operator), but there's a grid, that's fine, just insert an implicit
         // table op between the op and its child.
         if (t.op.childGridRequirement == "forbidden" && 
-            t.child instanceof TstGrid) {
+            t.child instanceof TstPreGrid) {
             t.child = new TstOp(t.cell, new TableOp(), new TstEmpty(), t.child);
         }
 

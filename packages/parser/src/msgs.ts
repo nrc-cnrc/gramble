@@ -48,12 +48,13 @@ export class Msg {
      * and only consider the item, by providing a callback that
      * handles them as a side effect.
      */
-     public msgTo(f: Msgs | MsgCallback): void {
+     public msgTo(f: Msgs | MsgCallback, pos?: CellPos): void {
+        const msg = this.localize(pos);
         if (Array.isArray(f)) {
-            f.push(this);
+            f.push(msg);
             return;
         }
-        f(this);
+        f(msg);
     }
 
 };
@@ -111,7 +112,7 @@ export function Success(longMsg: string, pos?: CellPos): Msg {
 }
 
 function isPositioned(p: any): p is { pos: CellPos } {
-    return p.pos !== undefined;
+    return p !== undefined && p.pos !== undefined;
 }
 
 type MsgCallback = (m: Msg) => void; 
@@ -177,13 +178,16 @@ export class Result<T> {
      * and only consider the item, by providing a callback that
      * handles them as a side effect.
      */
-    public msgTo(f: Msgs | MsgCallback): T {
+    public msgTo(f: Msgs | MsgCallback, pos?: CellPos): T {
+        const msgs = (pos != undefined) 
+                   ? this.msgs.map(m => m.localize(pos))
+                   : this.msgs;
         if (Array.isArray(f)) {
-            f.push(...this.msgs);
+            f.push(...msgs);
             return this.item;
         }
 
-        for (const m of this.msgs) {
+        for (const m of msgs) {
             f(m);
         }
         return this.item;
@@ -215,7 +219,6 @@ export class ResultList<T> extends Result<T[]> {
         return new ResultList(items, msgs);
     }
 }
-
 
 export class ResultDict<T> extends Result<Dict<T>> {
 

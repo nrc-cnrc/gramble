@@ -15,6 +15,8 @@ import { CreateOps } from "./createOps";
 import { CreateTST } from "./createTST";
 import { CheckStructuralParams } from "./checkStructuralParams";
 import { CheckTestLiterals } from "./checkTestLiterals";
+import { CreateHeaders } from "./createHeaders";
+import { AssociateHeaders } from "./associateHeaders";
 
 type GrammarTransformConstructor = new (g: NsGrammar) => GrammarTransform;
 export class TransformWrapper extends Transform<Grammar, Grammar> {
@@ -67,15 +69,21 @@ export const ALL_TST_TRANSFORMS =
     // turn ops that represent namespaces into actual namespaces 
     // and rescope their children as necessary
     new CreateNamespaces().compose(
-
+        
     // make sure ops have the right structural parameters (.sibling,
     // .children) to be interpreted, and that these parameters are 
     // the right kinds of syntactic objects.
     new CheckStructuralParams().compose(
 
+    // parse the first row of TstPreGrids into TstHeaders
+    new CreateHeaders().compose(
+
     // make sure there aren't extraneous parameters that the ops
     // can't interpret
     new CheckNamedParams().compose(
+        
+    // associate content cells below headers into TstHeadedCells
+    new AssociateHeaders().compose(
 
     // make sure that all unit test content is literal (e.g. isn't
     // an embed, a regex, etc.)
@@ -87,7 +95,7 @@ export const ALL_TST_TRANSFORMS =
 
     // restructure content cells that scope only over the cell to
     // their left (e.g. equals, rename)
-    new RescopeLeftBinders()))))))
+    new RescopeLeftBinders()))))))))
 
 export const ALL_GRAMMAR_TRANSFORMS =
 
