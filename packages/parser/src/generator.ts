@@ -1,8 +1,9 @@
 import { 
-    constructPriority, CounterStack, Env, 
+    constructAlternation, constructPriority,
+    CounterStack, Env, 
     EpsilonExpr, Expr, NullExpr, PriorityExpr 
 } from "./exprs";
-import { OutputTrie, TapeNamespace } from "./tapes";
+import { OutputTrie, TapeNamespace, Token, EpsilonToken } from "./tapes";
 import { 
     Gen, GenOptions,
     msToTime, shuffleArray, StringDict
@@ -90,18 +91,32 @@ export function* generate(
             // we've neither found a valid output nor failed; there is 
             // still a possibility of finding an output with prevOutput
             // as its prefix
+            // Note: we delay pushing the delta until we know whether
+            // we need to merge it with a nulled tape output from deriv.
             const delta = prevExpr.openDelta(env);
-            if (!(delta instanceof NullExpr)) {    
-                nexts.push([prevOutput, delta]);
-            }
+            let deltaPushed: boolean = false;
 
             // next see where we can go on that tape, along any char
             // transition.
             for (const [cTape, cTarget, cNext] of prevExpr.openDeriv(env)) {
                 if (!(cNext instanceof NullExpr)) {
-                    const nextOutput = prevOutput.add(cTape, cTarget);
-                    nexts.push([nextOutput, cNext]);
+                    let nextExpr: Expr = cNext;
+                    let nextOutput: OutputTrie;
+                    if (! (cTarget instanceof EpsilonToken)) {
+                        nextOutput = prevOutput.add(cTape, cTarget as Token);
+                    } else {
+                        nextOutput = prevOutput;
+                        const tapes = (cNext as PriorityExpr).tapes;
+                        if (!(delta instanceof NullExpr)) {    
+                            nextExpr = constructPriority(tapes, constructAlternation(delta, cNext));
+                        }
+                        deltaPushed = true;
+                    }
+                    nexts.push([nextOutput, nextExpr]);
                 }
+            }
+            if (!deltaPushed && !(delta instanceof NullExpr)) {    
+                nexts.push([prevOutput, delta]);
             }
         } else {
             throw new Error("Encountered a non-eps, non-null, non-prioritizer as root");

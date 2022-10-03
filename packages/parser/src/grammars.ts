@@ -1900,8 +1900,16 @@ export function Hide(child: Grammar, tape: string, name: string = ""): HideGramm
     return new HideGrammar(new DummyCell(), child, tape, name);
 }
 
-export function Vocab(tape: string, text: string): Grammar {
-    return Rep(Lit(tape, text), 0, 0)
+export function Vocab(arg1: string | StringDict, arg2: string = ""): Grammar {
+    if (typeof arg1 == 'string') {
+        return Rep(Lit(arg1, arg2), 0, 0)
+    } else {
+        let vocabGrammars: LiteralGrammar[] = [];
+        for (const tape in arg1 as StringDict) {
+            vocabGrammars.push(Lit(tape, arg1[tape]));
+        }
+        return Rep(Seq(...vocabGrammars), 0, 0);
+    }
 }
 
 export function Count(maxChars: number, child: Grammar): Grammar {

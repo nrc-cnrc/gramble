@@ -1,6 +1,7 @@
 
-import { Seq, Join, Rep, Epsilon, Equals, Uni, Any, Count, Grammar } from "../src/grammars";
+import { Seq, Join, Rep, Epsilon, Equals, Uni, Any, Count, CountTape, Grammar } from "../src/grammars";
 import { t1, t2, testHasTapes, testGrammar, testHasVocab } from './testUtils';
+import { VERBOSE_DEBUG } from "../src/util";
 
 import * as path from 'path';
 
@@ -243,15 +244,25 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
         grammar = Count(3, grammar);
         testGrammar(grammar, [{},
-                                {"t1":"h"},
-                                {"t2":"i"},
-                                {"t1":"hh"},
-                                {"t1":"h","t2":"i"},
-                                {"t2":"ii"},
-                                {"t1":"hhh"},
-                                {"t1":"hh","t2":"i"},
-                                {"t1":"h","t2":"ii"},
-                                {"t2":"iii"}]);
+                              {t1: 'h'},
+                              {t1: 'hh'},
+                              {t1: 'hhh'},
+                              {t1: 'h', t2:'i'},
+                              {t1: 'h', t2:'ii'},
+                              {t1: 'hh', t2:'i'},
+                              {t2: 'i'},
+                              {t2: 'ii'},
+                              {t2: 'iii'}]);
+    });
+
+    describe('(t1:h|t2:i)*', function() {
+        let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
+        grammar = CountTape(1, grammar);
+        testGrammar(grammar, [{},
+                              {t1: 'h'},
+                              {t1: 'h', t2:'i'},
+                              {t2: 'i'},
+                            ], VERBOSE_DEBUG);
     });
 
     describe('(t1:a+t2:a|t1:b+t2:b)*', function() {
