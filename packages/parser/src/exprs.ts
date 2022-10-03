@@ -739,10 +739,6 @@ class LiteralExpr extends Expr {
         return tape.toToken([this.text]);
     }
 
-    protected getToken(tape: Tape): BitsetToken {
-        return tape.toToken([this.tokens[this.index]]);
-    }
-
     public *bitsetDeriv(
         tapeName: string, 
         target: BitsetToken,
@@ -760,7 +756,7 @@ class LiteralExpr extends Expr {
         const tape = env.getTape(tapeName);
 
         if (tape.atomic) {
-            const currentToken = this.getToken(tape);
+            const currentToken = tape.toToken([this.text]);
             const result = tape.match(currentToken, target);
             if (result.isEmpty()) {
                 return;
@@ -769,7 +765,7 @@ class LiteralExpr extends Expr {
             return;
         }
 
-        const currentToken = this.getToken(tape);
+        const currentToken = tape.toToken([this.tokens[this.index]]);
         const result = tape.match(currentToken, target);
         if (result.isEmpty()) {
             return;
@@ -840,10 +836,6 @@ class RTLLiteralExpr extends LiteralExpr {
         return NULL;
     }
 
-    protected getToken(tape: Tape): BitsetToken {
-        return tape.toToken([this.tokens[this.index]]);
-    }
-
     public *bitsetDeriv(
         tapeName: string, 
         target: BitsetToken,
@@ -861,8 +853,7 @@ class RTLLiteralExpr extends LiteralExpr {
         const tape = env.getTape(tapeName);
 
         if (tape.atomic) {
-            env.logDebug(`${tapeName} is atomic`)
-            const currentToken = this.getToken(tape);
+            const currentToken = tape.toToken([this.text]);
             const result = tape.match(currentToken, target);
             if (result.isEmpty()) {
                 return;
@@ -871,9 +862,7 @@ class RTLLiteralExpr extends LiteralExpr {
             return;
         }
 
-        
-        env.logDebug(`${tapeName} is not atomic`)
-        const currentToken = this.getToken(tape);
+        const currentToken = tape.toToken([this.tokens[this.index]]);
         const result = tape.match(currentToken, target);
         if (result.isEmpty()) {
             return;
