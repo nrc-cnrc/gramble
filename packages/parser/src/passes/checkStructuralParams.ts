@@ -1,7 +1,6 @@
 import { 
     ErrorOp,
     SymbolOp,
-    TableOp, 
 } from "../ops";
 import { Err, Msgs, result, Result, Warn } from "../msgs";
 import { PassEnv } from "../passes";
@@ -85,11 +84,6 @@ export class CheckStructuralParams extends TstPass {
                     t.sibling.pos).msgTo(msgs);
         }
 
-        // if the child is a grid, silently insert a table op in between
-        if (t.child instanceof TstGrid) {
-            t.child = new TstOp(t.cell, new TableOp(), new TstEmpty(), t.child);
-        }
-
         // all operators need something in their .child param.  if
         // it's empty, issue a warning, and return the sibling as the new value.
         if (t.child instanceof TstEmpty) {
@@ -113,7 +107,7 @@ export class CheckStructuralParams extends TstPass {
 
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.
-        if (t.op.childGridRequirement == "required" && 
+        if (t.op.childGridReq == "required" && 
             !(t.child instanceof TstGrid)) {
             return result(t).err(`'${t.cell.text}' requires grid`,
                     "This operator requires a grid to the right, " +
@@ -121,17 +115,9 @@ export class CheckStructuralParams extends TstPass {
                     .bind(r => r.sibling);
         }
 
-        // if the op forbids a grid to the right (e.g. it needs another
-        // operator), but there's a grid, that's fine, just insert an implicit
-        // table op between the op and its child.
-        if (t.op.childGridRequirement == "forbidden" && 
-            t.child instanceof TstGrid) {
-            t.child = new TstOp(t.cell, new TableOp(), new TstEmpty(), t.child);
-        }
-
         // if the op must have a sibling, but has neither a sibling
         // nor a child, issue an error, and return empty.
-        if (t.op.siblingRequirement == "required" 
+        if (t.op.siblingReq == "required" 
                 && t.sibling instanceof TstEmpty
                 && t.child instanceof TstEmpty) {
             return result(t).err(`Missing args to '${t.cell.text}'`,
@@ -142,7 +128,7 @@ export class CheckStructuralParams extends TstPass {
 
         // if the op must have a sibling and doesn't, issue an error,
         // and return empty
-        if (t.op.siblingRequirement == "required" && t.sibling instanceof TstEmpty) {
+        if (t.op.siblingReq == "required" && t.sibling instanceof TstEmpty) {
             return result(t).err(`Missing argument to ${t.cell.text}`,
                             "This operator requires content above it, but it's empty or erroneous.")
                         .bind(r => new TstEmpty());
@@ -157,7 +143,7 @@ export class CheckStructuralParams extends TstPass {
 
         // if there's something in the sibling, but it's forbidden,
         // warn about it.
-        if (t.op.siblingRequirement == "forbidden" &&
+        if (t.op.siblingReq == "forbidden" &&
                 !(t.sibling instanceof TstEmpty)) {
             return result(t).msg(Warn("This content does not get " +
                 "assigned to anything and will be ignored.",

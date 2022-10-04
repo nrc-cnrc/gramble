@@ -17,6 +17,7 @@ import { CheckStructuralParams } from "./checkStructuralParams";
 import { CheckTestLiterals } from "./checkTestLiterals";
 import { CreateHeaders } from "./createHeaders";
 import { AssociateHeaders } from "./associateHeaders";
+import { InsertTables } from "./insertTables";
 
 type GrammarTransformConstructor = new (g: NsGrammar) => GrammarPass;
 export class TransformWrapper extends Pass<Grammar, Grammar> {
@@ -70,6 +71,10 @@ export const ALL_TST_PASSES =
     // and rescope their children as necessary
     new CreateNamespaces().compose(
         
+    // in syntactic positions when there's an implicit table semantics,
+    // insert a TstTable as appropriate
+    new InsertTables().compose(
+        
     // make sure ops have the right structural parameters (.sibling,
     // .children) to be interpreted, and that these parameters are 
     // the right kinds of syntactic objects.
@@ -95,7 +100,7 @@ export const ALL_TST_PASSES =
 
     // restructure content cells that scope only over the cell to
     // their left (e.g. equals, rename)
-    new RescopeLeftBinders()))))))))
+    new RescopeLeftBinders())))))))))
 
 export const ALL_GRAMMAR_PASSES =
 

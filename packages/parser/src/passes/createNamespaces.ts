@@ -81,7 +81,7 @@ export class CreateNamespaces extends TstPass {
         for (const child of children) {
 
             if (child instanceof TstOp &&
-                child.op.siblingRequirement == "required") {
+                child.op.siblingReq == "required") {
                 
                 const prev = newChildren.pop();
                 if (prev == undefined) {

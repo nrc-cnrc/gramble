@@ -11,9 +11,9 @@ import {
     TstComponent, TstResult, 
     TstPass, TstOp, 
     TstEmpty, TstUnitTest, 
-    TstTableOp, TstNegativeUnitTest, 
+    TstTable, TstNegativeUnitTest, 
     TstReplace, TstReplaceTape, 
-    TstBinaryOp, TstAssignment
+    TstBinaryOp, TstAssignment, TstParamList
 } from "../tsts";
 
  export class CreateOps extends TstPass {
@@ -52,25 +52,28 @@ import {
     }
 
     public handleOp(t: TstOp): TstResult {
-        return new TstTableOp(t.cell, t.child).msg();
+        return new TstTable(t.cell, t.child as TstParamList).msg();
     }
 
     public handleTest(t: TstOp): TstResult {
-        return new TstUnitTest(t.cell, t.sibling, t.child).msg();  
+        return new TstUnitTest(t.cell, t.sibling, 
+                    t.child as TstParamList).msg();  
     }
 
     public handleTestNot(t: TstOp): TstResult {
-        return new TstNegativeUnitTest(t.cell, t.sibling, t.child).msg();
+        return new TstNegativeUnitTest(t.cell, t.sibling, 
+                    t.child as TstParamList).msg();
     }
     
     public handleReplace(t: TstOp): TstResult {
-        return new TstReplace(t.cell, t.sibling, t.child).msg();
+        return new TstReplace(t.cell, t.sibling, 
+                    t.child as TstParamList).msg();
     }
 
     public handleReplaceTape(t: TstOp): TstResult {
         const tapeName = (t.op as ReplaceTapeOp).child.text;
         return new TstReplaceTape(t.cell, tapeName, 
-                                  t.sibling, t.child).msg();
+                    t.sibling, t.child as TstParamList).msg();
     }
     
     public handleBinary(t: TstOp): TstResult {

@@ -1,21 +1,2 @@
-
-verb:, table:, text, gloss
-    ,       , foo, run
-    ,       , moo, jump
-
-suffix:, table:, text, gloss
-    ,       , bar, -1SG
-    ,       , baz, -2SG
-
-word:, table:, table:, embed, embed
-    ,       ,      , verb, suffix 
-    ,
-    ,       , join:, finite
-    ,      ,       , true
-
-    , or:, table:, embed
-    ,       ,      , verb 
-    ,
-    ,       , join:, finite
-    ,       ,       , false
-    , 
+word:, table:, table:, text, gloss
+    ,       ,      , foo, run 

@@ -140,15 +140,11 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Nested tables', function() {
         const project = sheetFromFile(`${DIR}/nestedTables.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            {"text":"moo","gloss":"jump","finite":"false"},
-            {"text":"moobaz","gloss":"jump-2SG","finite":"true"},
-            {"text":"moobar","gloss":"jump-1SG","finite":"true"},
-            {"text":"foo","gloss":"run","finite":"false"},
-            {"text":"foobaz","gloss":"run-2SG","finite":"true"},
-            {"text":"foobar","gloss":"run-1SG","finite":"true"}
+        testErrors(project, [
+            ["nestedTables",0,0,"warning"],
+            ["nestedTables",0,1,"error"]
         ]);
+        testGrammar(project, [{}]);
     });
 });
 

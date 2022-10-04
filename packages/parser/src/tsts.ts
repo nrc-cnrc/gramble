@@ -330,19 +330,6 @@ export class TstEmpty extends TstComponent {
     }
 }
 
-export class TstComment extends TstCellComponent {
-
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
-        return this.msg();
-    }
-
-    public toGrammar(env: PassEnv): GrammarResult {
-        return new EpsilonGrammar().msg();
-    }
-
-}
-
-
 /**
  * An enclosure represents a single-cell unit containing a command or identifier (call that the "startCell"),
  * and a rectangular region describing further details (like the parameters of the command,
@@ -427,27 +414,6 @@ export class TstBinary extends TstEnclosure {
 
 }
 
-export class TstTableOp extends TstCellComponent {
-
-    constructor(
-        cell: Cell,
-        public child: TstComponent = new TstEmpty()
-    ) {
-        super(cell);
-    }
-
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
-        return f.transform(this.child, env)
-                .bind(c => new TstTableOp(this.cell, c));
-    }
-    
-    public toGrammar(env: PassEnv): GrammarResult {
-        return this.child.toGrammar(env)
-                .bind((c) => new LocatorGrammar(this.cell.pos, c));
-    }
-
-}
-
 export class TstOp extends TstBinary {
 
     constructor(
@@ -463,6 +429,29 @@ export class TstOp extends TstBinary {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
                 .bind(([s,c]) => new TstOp(this.cell, this.op, s, c));
+    }
+
+}
+
+export class TstTable extends TstCellComponent {
+
+    constructor(
+        cell: Cell,
+        public child: TstParamList
+    ) {
+        super(cell);
+    }
+
+    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+        return f.transform(this.child, env)
+                .bind(c => new TstTable(this.cell, c as TstParamList));
+    }
+    
+    public toGrammar(env: PassEnv): GrammarResult {
+        return resultList(this.child.rows)
+                  .map(r => r.getParam(BLANK_PARAM).toGrammar(env))
+                  .bind(cs => new AlternationGrammar(cs))
+                  .bind(c => new LocatorGrammar(this.cell.pos, c))
     }
 
 }
@@ -496,8 +485,8 @@ export class TstReplaceTape extends TstCellComponent {
     constructor(
         cell: Cell,
         public tape: string,
-        public sibling: TstComponent = new TstEmpty(),
-        public child: TstComponent = new TstEmpty()
+        public sibling: TstComponent,
+        public child: TstParamList
     ) { 
         super(cell);
     }
@@ -505,14 +494,11 @@ export class TstReplaceTape extends TstCellComponent {
     public mapChildren(f: TstPass, env: PassEnv): TstResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
-            .bind(([s,c]) => new TstReplaceTape(this.cell, this.tape, s, c));
+            .bind(([s,c]) => new TstReplaceTape(this.cell, this.tape, 
+                s, c as TstParamList));
     }
 
     public toGrammar(env: PassEnv): GrammarResult {
-
-        if (!(this.child instanceof TstParamList)) {
-            throw new Error(`ReplaceTape's child isn't a param list, it's a ${this.child.constructor.name}`);
-        }
 
         let [sibling, sibMsgs] = this.sibling.toGrammar(env).destructure();
         const replaceRules: ReplaceGrammar[] = [];
@@ -541,8 +527,8 @@ export class TstReplace extends TstCellComponent {
 
     constructor(
         cell: Cell,
-        public sibling: TstComponent = new TstEmpty(),
-        public child: TstComponent = new TstEmpty()
+        public sibling: TstComponent,
+        public child: TstParamList
     ) { 
         super(cell);
     }
@@ -550,15 +536,11 @@ export class TstReplace extends TstCellComponent {
     public mapChildren(f: TstPass, env: PassEnv): TstResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
-                .bind(([s,c]) => new TstReplace(this.cell, s, c));
+                .bind(([s,c]) => new TstReplace(this.cell, 
+                        s, c as TstParamList));
     }
 
     public toGrammar(env: PassEnv): GrammarResult {
-
-        if (!(this.child instanceof TstParamList)) {
-            throw new Error(`Replace's child isn't a param list, it's a ${this.child.constructor.name}`);
-        }
-        
         let [sibling, sibMsgs] = this.sibling.toGrammar(env).destructure();
         const replaceRules: ReplaceGrammar[] = [];
         const newMsgs: Msgs = [];
@@ -591,8 +573,8 @@ export class TstUnitTest extends TstCellComponent {
 
     constructor(
         cell: Cell,
-        public sibling: TstComponent = new TstEmpty(),
-        public child: TstComponent = new TstEmpty()
+        public sibling: TstComponent,
+        public child: TstParamList
     ) { 
         super(cell);
     }
@@ -600,15 +582,10 @@ export class TstUnitTest extends TstCellComponent {
     public mapChildren(f: TstPass, env: PassEnv): TstResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
-                .bind(([s,c]) => new TstUnitTest(this.cell, s, c));
+                .bind(([s,c]) => new TstUnitTest(this.cell, s, c as TstParamList));
     }
 
     public toGrammar(env: PassEnv): GrammarResult {
-        
-        if (!(this.child instanceof TstParamList)) {
-            throw new Error(`Unit test's child isn't a param list, it's a ${this.child.constructor.name}`);
-        }
-
         let result = this.sibling.toGrammar(env);
 
         const msgs: Msgs = [];
@@ -636,15 +613,10 @@ export class TstNegativeUnitTest extends TstUnitTest {
     public mapChildren(f: TstPass, env: PassEnv): TstResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
-            .bind(([s,c]) => new TstNegativeUnitTest(this.cell, s, c));
+            .bind(([s,c]) => new TstNegativeUnitTest(this.cell, s, c as TstParamList));
     }
 
     public toGrammar(env: PassEnv): GrammarResult {
-
-        if (!(this.child instanceof TstParamList)) {
-            throw new Error(`Unit test's child isn't a param list, it's a ${this.child.constructor.name}`);
-        }
-
         let result = this.sibling.toGrammar(env);
 
         const msgs: Msgs = [];
@@ -678,9 +650,8 @@ export class TstParamList extends TstCellComponent {
     }
 
     public toGrammar(env: PassEnv): GrammarResult {
-        return resultList(this.rows)
-                .map(c => c.getParam(BLANK_PARAM).toGrammar(env))
-                .bind(cs => new AlternationGrammar(cs));
+        // param lists have no inherent semantics
+        throw new Error("not implemented");
     }
 }
 
@@ -728,9 +699,8 @@ export class TstParams extends TstCellComponent {
     }
 
     public toGrammar(env: PassEnv): GrammarResult {
-        return new EpsilonGrammar().msg()
-            .err("Unexpected parameters",
-                "The operator to the left does not expect named parameters.");
+        // params have no inherent semantics
+        throw new Error("not implemented");
     } 
 
     public getParam(name: string): TstComponent {
