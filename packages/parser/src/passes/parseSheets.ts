@@ -2,7 +2,7 @@ import { PassEnv, Pass } from "../passes";
 import { CommandMsg, CommentMsg, Err, Msgs } from "../msgs";
 import { 
     TstAssignment, TstComponent, 
-    TstEmpty, TstEnclosure, 
+    TstEnclosure, 
     TstNamespace, TstOp, 
     TstGrid, TstResult, 
 } from "../tsts";
@@ -13,11 +13,11 @@ import { NamespaceOp, parseOp } from "../ops";
 type PassInput = Workbook | Worksheet;
 
 /**
- * Namespace works somewhat differently from other operators,
- * so in this pass we take "namespace:" TstOps and
- * instantiate them as actual namespaces.
+ * This takes grids of cells (Worksheets) and collections of them
+ * (Workbooks) and turns them into the basic syntactic objects
+ * (TstNamespaces, TstOps, TstGrids, and TstContent).
  */
-export class CreateTST extends Pass<PassInput,TstComponent> {
+export class ParseSheets extends Pass<PassInput,TstComponent> {
 
     public get desc(): string {
         return "Creating TST";

@@ -12,12 +12,13 @@ import { FilterPass } from "./filter";
 import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
 import { CreateOps } from "./createOps";
-import { CreateTST } from "./createTST";
+import { ParseSheets } from "./parseSheets";
 import { CheckStructuralParams } from "./checkStructuralParams";
 import { CheckTestLiterals } from "./checkTestLiterals";
 import { CreateHeaders } from "./createHeaders";
 import { AssociateHeaders } from "./associateHeaders";
 import { InsertTables } from "./insertTables";
+import { CreateGrammars } from "./createGrammars";
 
 type GrammarTransformConstructor = new (g: NsGrammar) => GrammarPass;
 export class TransformWrapper extends Pass<Grammar, Grammar> {
@@ -60,12 +61,12 @@ function wrap(t: GrammarTransformConstructor): Pass<Grammar,Grammar> {
     return new TransformWrapper(t);
 }
 
-export const ALL_TST_PASSES = 
+export const PRE_GRAMMAR_PASSES = 
 
     // parse the sheet into an initial TST, mostly consisting of
     // placeholder TstOps and TstGrids without any particular 
     // semantics
-    new CreateTST().compose(
+    new ParseSheets().compose(
 
     // turn ops that represent namespaces into actual namespaces 
     // and rescope their children as necessary
@@ -100,15 +101,21 @@ export const ALL_TST_PASSES =
 
     // restructure content cells that scope only over the cell to
     // their left (e.g. equals, rename)
-    new RescopeLeftBinders())))))))))
+    new RescopeLeftBinders().compose(
 
-export const ALL_GRAMMAR_PASSES =
+    // create grammar objects
+    new CreateGrammars()))))))))))
 
-    // qualify symbol names (e.g. turn `VERB` in sheet Sheet1 
-    // into `Sheet1.VERB`) and attempt to resolve references to them
-    // (e.g. figure out whether VERB refers to Sheet1.VERB or 
-    // something else)
-    wrap(NameQualifierPass).compose(
+    
+// qualify symbol names (e.g. turn `VERB` in sheet Sheet1 
+// into `Sheet1.VERB`) and attempt to resolve references to them
+// (e.g. figure out whether VERB refers to Sheet1.VERB or 
+// something else)
+export const NAME_QUALIFICATION = wrap(NameQualifierPass);
+
+export const GRAMMAR_PASSES =
+
+    NAME_QUALIFICATION.compose(
 
     // flatten nested sequences/alternations into flat ones
     wrap(FlattenPass).compose(
@@ -130,6 +137,8 @@ export const ALL_GRAMMAR_PASSES =
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
     wrap(FilterPass))))))
+
+export const ALL_PASSES = PRE_GRAMMAR_PASSES.compose(GRAMMAR_PASSES);
 
 
 

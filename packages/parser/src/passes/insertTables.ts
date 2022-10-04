@@ -23,15 +23,12 @@ import {
 export class InsertTables extends TstPass {
 
     public get desc(): string {
-        return "Checking structural params";
+        return "Inserting tables";
     }
 
     public transform(t: TstComponent, env: PassEnv): TstResult {
-        
         return t.mapChildren(this, env).bind(t => {
-    
             switch (t.constructor) {
-
                 case TstOp: 
                     return this.handleOp(t as TstOp);
                 case TstNamespace: 

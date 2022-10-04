@@ -19,12 +19,14 @@ import { parseHeaderCell } from "./headers";
 import { TapeNamespace, VocabMap } from "./tapes";
 import { Expr, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
-import { NameQualifierPass } from "./passes/nameQualifier";
 import { generate } from "./generator";
-import { UnitTestPass } from "./passes/unitTests";
 import { MissingSymbolError, Msgs } from "./msgs";
-import { ALL_GRAMMAR_PASSES, ALL_TST_PASSES } from "./passes/allPasses";
 import { PassEnv } from "./passes";
+import { 
+    ALL_PASSES, GRAMMAR_PASSES, 
+    NAME_QUALIFICATION, PRE_GRAMMAR_PASSES 
+} from "./passes/allPasses";
+import { UnitTestPass } from "./passes/unitTests";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -85,7 +87,7 @@ export class Interpreter {
         const env = new PassEnv();
         env.verbose = verbose;
         const [newGrammar, msgs] = this.grammar.msg() // lift to result
-                     .bind(g => ALL_GRAMMAR_PASSES.transformAndLog(g, env))
+                     .bind(g => GRAMMAR_PASSES.transformAndLog(g, env))
                      .destructure();
         this.grammar = newGrammar as NsGrammar;
         sendMessages(devEnv, msgs);
@@ -128,11 +130,8 @@ export class Interpreter {
         startTime = Date.now();
         const transEnv = new PassEnv();
         transEnv.verbose = verbose;
-        const tstResult = ALL_TST_PASSES
-                            .transformAndLog(workbook, transEnv)
-                            .msgTo(m => devEnv.message(m));
-        const grammar = tstResult.toGrammar(transEnv)
-                                 .msgTo(m => devEnv.message(m));
+        const grammar = PRE_GRAMMAR_PASSES.transformAndLog(workbook, transEnv)
+                                  .msgTo(m => devEnv.message(m));
         elapsedTime = msToTime(Date.now() - startTime);
         logTime(verbose, `Converted to grammar; ${elapsedTime}`);
 
@@ -363,14 +362,11 @@ function addSheet(
     const sheet = new Worksheet(sheetName, cells);
     project.sheets[sheetName] = sheet;
     const transEnv = new PassEnv();
-    const tstResult = ALL_TST_PASSES.transform(project, transEnv)
-                                        .msgTo((_) => {});
-    const grammar = tstResult.toGrammar(transEnv)
-                             .msgTo((m) => {})
-    
+    const grammar = PRE_GRAMMAR_PASSES.transform(project, transEnv)
+                                     .msgTo((_) => {});
     // check to see if any names didn't get resolved
-    const nameQualifier = new NameQualifierPass(grammar as NsGrammar);
-    const [_, nameMsgs] = nameQualifier.transform(transEnv).destructure();
+    const [_, nameMsgs] = NAME_QUALIFICATION.transform(grammar, transEnv)
+                                            .destructure();
 
     const unresolvedNames: Set<string> = new Set(); 
     for (const msg of nameMsgs) {
