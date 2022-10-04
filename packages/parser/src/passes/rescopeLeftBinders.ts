@@ -2,7 +2,7 @@ import {
     TstSequence, 
     TstComponent,
     TstFilter,
-    TstHeadedCell,
+    TstHeaderContentPair,
     TstHeader,
     TstHide,
     TstRename, 
@@ -49,7 +49,7 @@ export class RescopeLeftBinders extends TstPass {
         const newChildren: TstComponent[] = [];
         for (const child of t.children) {
 
-            if (!(child instanceof TstHeadedCell)) {
+            if (!(child instanceof TstHeaderContentPair)) {
                 newChildren.push(child);
                 continue;
             }

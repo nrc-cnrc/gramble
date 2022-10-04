@@ -1,7 +1,7 @@
 import { 
     TstComponent, TstEmpty, 
     TstHeadedGrid, 
-    TstHeader, TstPreGrid, TstResult,
+    TstHeader, TstGrid, TstResult,
     TstPass,
 } from "../tsts";
 import { PassEnv } from "../passes";
@@ -21,7 +21,7 @@ export class CreateHeaders extends TstPass {
 
         return t.mapChildren(this, env).bind(t => {
             
-            if (!(t instanceof TstPreGrid)) {
+            if (!(t instanceof TstGrid)) {
                 return t;
             }
             

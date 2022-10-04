@@ -137,8 +137,8 @@ export class IdentityPass implements GrammarPass {
 
     public transformLocator(g: LocatorGrammar, env: PassEnv): GrammarResult {
         return g.child.accept(this, env)
-                      .localize(g.cell.pos)
-                      .bind(c => new LocatorGrammar(g.cell, c));
+                      .localize(g.pos)
+                      .bind(c => new LocatorGrammar(g._pos, c));
     }
 
     public transformNamespace(g: NsGrammar, env: PassEnv): GrammarResult {

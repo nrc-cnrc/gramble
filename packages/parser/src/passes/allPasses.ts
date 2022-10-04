@@ -82,12 +82,12 @@ export const ALL_TST_PASSES =
     // can't interpret
     new CheckNamedParams().compose(
         
-    // associate content cells below headers into TstHeadedCells
-    new AssociateHeaders().compose(
-
     // make sure that all unit test content is literal (e.g. isn't
     // an embed, a regex, etc.)
     new CheckTestLiterals().compose(
+
+    // associate content cells below headers into TstHeadedCells
+    new AssociateHeaders().compose(
 
     // transform the remaining placeholder ops into their 
     // appropriate syntactic structures

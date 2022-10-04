@@ -9,7 +9,11 @@ import { result, Result } from "../msgs";
 import { PassEnv } from "../passes";
 import { 
     TstComponent, TstResult, 
-    TstPass, TstOp, TstEmpty, TstGrid, TstUnitTest, TstTableOp, TstNegativeUnitTest, TstReplace, TstReplaceTape, TstBinaryOp, TstAssignment
+    TstPass, TstOp, 
+    TstEmpty, TstUnitTest, 
+    TstTableOp, TstNegativeUnitTest, 
+    TstReplace, TstReplaceTape, 
+    TstBinaryOp, TstAssignment
 } from "../tsts";
 
  export class CreateOps extends TstPass {
@@ -48,12 +52,11 @@ import {
     }
 
     public handleOp(t: TstOp): TstResult {
-        return new TstTableOp(t.cell, t.sibling, t.child).msg();
+        return new TstTableOp(t.cell, t.child).msg();
     }
 
     public handleTest(t: TstOp): TstResult {
-        return new TstUnitTest(t.cell, t.sibling, t.child).msg();
-    
+        return new TstUnitTest(t.cell, t.sibling, t.child).msg();  
     }
 
     public handleTestNot(t: TstOp): TstResult {
@@ -80,7 +83,7 @@ import {
                           ? t.text.slice(0, t.text.length-1).trim()
                           : t.text;
 
-        const assignment = new TstAssignment(t.cell, trimmedText, t.sibling, t.child);
+        const assignment = new TstAssignment(t.cell, trimmedText, t.child);
 
         if (trimmedText.indexOf(".") != -1) {
             return result(assignment).warn("You can't assign to a name that contains a period.")

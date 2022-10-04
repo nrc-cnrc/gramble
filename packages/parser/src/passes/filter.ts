@@ -72,7 +72,7 @@ export class FilterPass extends IdentityPass {
 
         if (g.child instanceof LocatorGrammar) {
             const newFilter = new StartsGrammar(g.child.child, g.tapes);
-            const newLocation = new LocatorGrammar(g.child.cell, newFilter);
+            const newLocation = new LocatorGrammar(g.child._pos, newFilter);
             return newLocation.accept(this, env);
         }
 
@@ -122,7 +122,7 @@ export class FilterPass extends IdentityPass {
         
         if (g.child instanceof LocatorGrammar) {
             const newFilter = new EndsGrammar(g.child.child, g.tapes);
-            const newLocation = new LocatorGrammar(g.child.cell, newFilter);
+            const newLocation = new LocatorGrammar(g.child._pos, newFilter);
             return newLocation.accept(this, env);
         }
 
@@ -174,7 +174,7 @@ export class FilterPass extends IdentityPass {
 
         if (g.child instanceof LocatorGrammar) {
             const newFilter = new ContainsGrammar(g.child.child, g.tapes);
-            const newLocation = new LocatorGrammar(g.child.cell, newFilter);
+            const newLocation = new LocatorGrammar(g.child._pos, newFilter);
             return newLocation.accept(this, env);
         }
 

@@ -4,7 +4,7 @@ import {
     TstAssignment, TstComponent, 
     TstEmpty, TstEnclosure, 
     TstNamespace, TstOp, 
-    TstPreGrid, TstResult, 
+    TstGrid, TstResult, 
 } from "../tsts";
 import { Worksheet, Workbook } from "../sheets";
 import { Cell, CellPos } from "../util";
@@ -154,7 +154,7 @@ export class CreateTST extends Pass<PassInput,TstComponent> {
                 // next check if this is "content" -- that is, something to the lower left
                 // of the topmost op.  NB: This is the only kind of operation we'll do on 
                 // empty cells, so that, if appropriate, we can mark them for syntax highlighting.
-                if (top.tst instanceof TstPreGrid && colIndex > top.col && rowIndex > top.row) {
+                if (top.tst instanceof TstGrid && colIndex > top.col && rowIndex > top.row) {
                     top.tst.addContent(cell).msgTo(msgs, cellPos);
                     continue;
                 }
@@ -171,7 +171,7 @@ export class CreateTST extends Pass<PassInput,TstComponent> {
                     const newEnclosure = new TstOp(cell, op);
                     new CommandMsg().msgTo(msgs, cellPos);
 
-                    if (top.tst instanceof TstPreGrid) {
+                    if (top.tst instanceof TstGrid) {
                         Err(`Unexpected operator`,
                             "This looks like an operator, " +
                             " but only a header can follow a header.")
@@ -190,20 +190,20 @@ export class CreateTST extends Pass<PassInput,TstComponent> {
                 // from content
                 
                 // if the top isn't a TstGrid, make it so
-                if (!(top.tst instanceof TstPreGrid)) {
-                    const newGrid = new TstPreGrid(cell);
+                if (!(top.tst instanceof TstGrid)) {
+                    const newGrid = new TstGrid(cell);
                     top.tst.setChild(newGrid).msgTo(msgs, cellPos);
                     top = { tst: newGrid, row: rowIndex, col: colIndex-1 };
                     stack.push(top);
                 }
 
-                (top.tst as TstPreGrid).addContent(cell)
+                (top.tst as TstGrid).addContent(cell)
                                        .msgTo(msgs, cellPos);
 
             }
         }
     
-        return new TstAssignment(startCell, t.name, new TstEmpty(), root).msg(msgs);
+        return new TstAssignment(startCell, t.name, root).msg(msgs);
     }
 }
 

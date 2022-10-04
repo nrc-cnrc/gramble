@@ -169,7 +169,7 @@ export abstract class Grammar {
         return this._tapes;
     }
 
-    public get locations(): Cell[] {
+    public get locations(): CellPos[] {
         return flatten(this.getChildren().map(c => c.locations));
     }
 
@@ -1549,23 +1549,22 @@ export class EmbedGrammar extends AtomicGrammar {
 export class LocatorGrammar extends UnaryGrammar {
 
     constructor(
-        public cell: Cell,
+        public _pos: CellPos,
         child: Grammar
     ) {
         super(child);
     }
 
     public get pos(): CellPos {
-        return this.cell.pos;
+        return this._pos;
     }
 
-    public get locations(): Cell[] {
-        return [this.cell];
+    public get locations(): CellPos[] {
+        return [this._pos];
     }
-
 
     public get id(): string {
-        return `${this.cell.pos}@${this.child.id}`;
+        return `${this.pos}@${this.child.id}`;
     }
 
     public accept(t: GrammarPass, env: PassEnv): GrammarResult {

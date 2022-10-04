@@ -1,13 +1,15 @@
 import { 
     TstComponent, TstEmpty, 
-    TstGrid, 
+    TstParamList, 
     TstHeadedGrid, 
     TstHeader, TstResult, 
-    TstRow, 
-    TstPass, 
+    TstParams, 
+    TstPass,
+    TstHeaderContentPair,
+    TstSequence, 
 } from "../tsts";
 import { PassEnv } from "../passes";
-import { Msgs, Warn } from "../msgs";
+import { ContentMsg, Msgs, Warn } from "../msgs";
 
 /**
  * 
@@ -26,10 +28,10 @@ export class AssociateHeaders extends TstPass {
                 return t;
             }
 
-            const newRows: TstRow[] = [];
+            const newRows: TstParams[] = [];
             const msgs: Msgs = [];
             for (const row of t.rows) {
-                const newRow = new TstRow(row.cell);
+                const newRow = new TstParams(row.cell);
                 for (const content of row.content) {
                     const header = this.findHeader(t.headers, content.pos.col);
                     if (header == undefined) {
@@ -40,13 +42,22 @@ export class AssociateHeaders extends TstPass {
                         }
                         continue;
                     }
-                    newRow.addContent(header, content.cell);
+                    const newCell = new TstHeaderContentPair(header, content.cell);
+                    new ContentMsg(
+                        header.getBackgroundColor(),
+                        header.getFontColor()
+                    ).msgTo(msgs);
+
+                    const tag = header.header.getParamName();
+                    if (!(tag in newRow.params)) {
+                        newRow.params[tag] = new TstSequence(row.cell);
+                    }
+                    newRow.params[tag].children.push(newCell);
                 }
                 newRows.push(newRow);
             }
 
-            return new TstGrid(t.cell, t.sibling, new TstEmpty(),
-                            t.headers, newRows).msg(msgs);
+            return new TstParamList(t.cell, newRows).msg(msgs);
 
         });
     }

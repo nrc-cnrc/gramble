@@ -19,11 +19,11 @@ import { parseHeaderCell } from "./headers";
 import { TapeNamespace, VocabMap } from "./tapes";
 import { Expr, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
-import { NameQualifierPass } from "./transforms/nameQualifier";
+import { NameQualifierPass } from "./passes/nameQualifier";
 import { generate } from "./generator";
-import { UnitTestPass } from "./transforms/unitTests";
+import { UnitTestPass } from "./passes/unitTests";
 import { MissingSymbolError, Msgs } from "./msgs";
-import { ALL_GRAMMAR_PASSES, ALL_TST_PASSES } from "./transforms/allPasses";
+import { ALL_GRAMMAR_PASSES, ALL_TST_PASSES } from "./passes/allPasses";
 import { PassEnv } from "./passes";
 
 /**

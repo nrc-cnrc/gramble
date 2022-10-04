@@ -1,12 +1,11 @@
 import { 
     TstComponent, TstHeader, 
-    TstResult, TstGrid, 
-    TstPass, TstOp 
+    TstResult, TstParamList, 
+    TstPass, TstOp, TstHeadedGrid 
 } from "../tsts";
 import { PassEnv } from "../passes";
 import { Err, Msgs } from "../msgs";
 import { Header, TagHeader, TapeNameHeader } from "../headers";
-import { BLANK_PARAM } from "../ops";
 
 /**
  * This pass checks whether named parameters in headers
@@ -39,7 +38,7 @@ export class CheckTestLiterals extends TstPass {
     public handleOp(t: TstOp): TstResult {
 
         const msgs: Msgs = [];
-        if (t.op.requireLiteralParams && t.child instanceof TstGrid) {
+        if (t.op.requireLiteralParams && t.child instanceof TstHeadedGrid) {
             const newHeaders: TstHeader[] = []
             for (const header of t.child.headers) {
                 if (!this.isLiteral(header.header) || header.header.isRegex) {
