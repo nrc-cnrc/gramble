@@ -4,12 +4,12 @@ import {
 import { resultList } from "../msgs";
 import { PassEnv } from "../passes";
 import { 
-    TstComponent, TstResult, 
-    TstPass, TstOp, 
+    TstOp, 
     TstEmpty,
     TstGrid,
     TstNamespace
 } from "../tsts";
+import { Component, CPass, CResult } from "../components";
 
 /**
  * This pass goes through and make sure that TstOps have 
@@ -20,13 +20,13 @@ import {
  * assignments, etc.)
  */
 
-export class InsertTables extends TstPass {
+export class InsertTables extends CPass {
 
     public get desc(): string {
         return "Inserting tables";
     }
 
-    public transform(t: TstComponent, env: PassEnv): TstResult {
+    public transform(t: Component, env: PassEnv): CResult {
         return t.mapChildren(this, env).bind(t => {
             switch (t.constructor) {
                 case TstOp: 
@@ -38,7 +38,7 @@ export class InsertTables extends TstPass {
         });
     }
 
-    public handleNamespace(t: TstNamespace): TstResult {
+    public handleNamespace(t: TstNamespace): CResult {
         return resultList(t.children).map(c => {
             if (c instanceof TstGrid) {
                 return new TstOp(c.cell, new TableOp(), 

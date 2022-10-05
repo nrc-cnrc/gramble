@@ -1,12 +1,13 @@
 import { 
     TstAssignment,
     TstBinary, TstBinaryOp,
-    TstComponent, TstEmpty, 
+    TstEmpty, 
     TstFilter, TstHeaderContentPair, 
     TstHide, TstNamespace, TstNegativeUnitTest, TstRename, 
     TstReplace, 
     TstReplaceTape, TstSequence, TstTable, TstUnitTest 
 } from "../tsts";
+import { Component } from "../components";
 import { Pass, PassEnv } from "../passes";
 import { 
     AlternationGrammar,
@@ -19,7 +20,7 @@ import {
 } from "../grammars";
 import { TapeNameHeader } from "../headers";
 import { Err, Msgs, resultList, Warn } from "../msgs";
-import { BLANK_PARAM } from "../ops";
+import { BINARY_OPS_MAP, BLANK_PARAM } from "../ops";
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -28,13 +29,13 @@ import { BLANK_PARAM } from "../ops";
  * grammars, which describe the language being generated (in terms
  * of sequences, alternations, filters, joins, renames, etc.)
  */
-export class CreateGrammars extends Pass<TstComponent,Grammar> {
+export class CreateGrammars extends Pass<Component,Grammar> {
 
     public get desc(): string {
         return "Creating TST";
     }
 
-    public transform(t: TstComponent, env: PassEnv): GrammarResult {
+    public transform(t: Component, env: PassEnv): GrammarResult {
 
         switch(t.constructor) {
             case TstHeaderContentPair:
@@ -131,9 +132,10 @@ export class CreateGrammars extends Pass<TstComponent,Grammar> {
     }
     
     public handleBinaryOp(t: TstBinaryOp, env: PassEnv): GrammarResult {
+        const op = BINARY_OPS_MAP[t.opName];
         return resultList([t.sibling, t.child])
                     .map(c => this.transform(c, env))
-                    .bind(([s,c]) => t.op(s,c));
+                    .bind(([s,c]) => op(s,c));
     }
     
     public handleReplaceTape(t: TstReplaceTape, env: PassEnv): GrammarResult {

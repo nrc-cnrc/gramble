@@ -1,12 +1,12 @@
 import { PassEnv } from "../passes";
 import { Msgs } from "../msgs";
 import { 
-    TstComponent, TstNamespace, 
-    TstResult, TstPass, 
+    TstNamespace, 
     TstOp, TstEmpty, 
     TstEnclosure
 } from "../tsts";
 import { NamespaceOp, SymbolOp } from "../ops";
+import { Component, CPass, CResult } from "../components";
 
 /**
  * Namespace works somewhat differently from other operators,
@@ -37,13 +37,13 @@ import { NamespaceOp, SymbolOp } from "../ops";
  *      ,              , f   , m
  * 
  */
-export class CreateNamespaces extends TstPass {
+export class CreateNamespaces extends CPass {
 
     public get desc(): string {
         return "Creating namespaces";
     }
 
-    public transform(t: TstComponent, env: PassEnv): TstResult {
+    public transform(t: Component, env: PassEnv): CResult {
 
         return t.mapChildren(this, env).bind(t => {
             switch(t.constructor) {
@@ -55,7 +55,7 @@ export class CreateNamespaces extends TstPass {
         });
     }
 
-    public handleOp(t: TstOp): TstResult {
+    public handleOp(t: TstOp): CResult {
 
         const msgs: Msgs = [];
 
@@ -63,7 +63,7 @@ export class CreateNamespaces extends TstPass {
             return t.msg(msgs);
         }
 
-        const children: TstComponent[] = [];
+        const children: Component[] = [];
 
         // flatten and reverse the results
         let child = t.child;
@@ -77,7 +77,7 @@ export class CreateNamespaces extends TstPass {
 
         // now rescope bare binary ops that immediately 
         // follow assignments
-        const newChildren: TstComponent[] = [];
+        const newChildren: Component[] = [];
         for (const child of children) {
 
             if (child instanceof TstOp &&

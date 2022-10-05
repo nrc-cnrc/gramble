@@ -1,37 +1,48 @@
 import { GenOptions, StringDict } from "../util";
 import { CounterStack, SymbolTable } from "../exprs";
-import { Msgs, Err, Success } from "../msgs";
+import { Msgs, Err, Success, Result, result } from "../msgs";
 import { 
     CountGrammar, EqualsGrammar, 
-    Grammar, GrammarResult, NegativeUnitTestGrammar, 
+    Grammar, GrammarPass, GrammarResult, NegativeUnitTestGrammar, 
     NsGrammar, PriorityGrammar, 
     UnitTestGrammar 
 } from "../grammars";
 import { VocabMap, TapeNamespace} from "../tapes";
 import { generate } from "../generator";
-import { IdentityPass } from "./identityPass";
 import { PassEnv } from "../passes";
 
-
-export class UnitTestPass extends IdentityPass {
+export class UnitTestPass extends GrammarPass {
 
     constructor(
-        ns: NsGrammar,
         public vocab: VocabMap,
         public tapeNS: TapeNamespace,
         public symbolTable: SymbolTable
     ) {
-        super(ns);
+        super();
     }
 
     public get desc(): string {
         return "Running unit tests"
     }
 
-    public transformUnitTest(g: UnitTestGrammar, env: PassEnv): GrammarResult {
-        const [test, msgs] = super.transformUnitTest(g, env).destructure() as [UnitTestGrammar, Msgs];
-        const results = this.executeTest(test);
+    public transform(g: Grammar, env: PassEnv): GrammarResult {
+        const result = g.mapChildren(this, env) as GrammarResult;
+        return result.bind(g => {
+            switch (g.constructor) {
+                case UnitTestGrammar:
+                    return this.handleTest(g as UnitTestGrammar);
+                case NegativeUnitTestGrammar:
+                    return this.handleNegativeTest(g as NegativeUnitTestGrammar);
+                default:
+                    return g;
+            }
+        });
 
+    }
+
+    public handleTest(g: UnitTestGrammar): GrammarResult {
+        const results = this.executeTest(g);
+        const msgs: Msgs = [];
         if (results.length == 0) {
             Err("Failed unit test",
                 "The grammar above has no outputs compatible with these inputs.").msgTo(msgs);
@@ -40,7 +51,7 @@ export class UnitTestPass extends IdentityPass {
                 "The grammar above has outputs compatible with these inputs.").msgTo(msgs);
         }
 
-        uniqueLoop: for (const unique of test.uniques) {
+        uniqueLoop: for (const unique of g.uniques) {
             resultLoop: for (const result of results) {
                 if (!(unique.tapeName in result)) {
                     Err("Failed unit test",
@@ -57,21 +68,19 @@ export class UnitTestPass extends IdentityPass {
             }
         }
 
-        return test.msg(msgs);
+        return g.msg(msgs);
     }
 
-    public transformNegativeUnitTest(g: NegativeUnitTestGrammar, env: PassEnv): GrammarResult {
-        const [test, msgs] = super.transformNegativeUnitTest(g, env).destructure() as [NegativeUnitTestGrammar, Msgs];
-        const results = this.executeTest(test);
-        
+    public handleNegativeTest(g: NegativeUnitTestGrammar): GrammarResult {
+        const results = this.executeTest(g);
         if (results.length > 0) {
-            Err("Failed unit test",
-                "The grammar above incorrectly has outputs compatible with these inputs.").msgTo(msgs);
+            return result(g).err("Failed unit test",
+                "The grammar above incorrectly has outputs compatible with these inputs.");
         } else {
-            Success(
-                "The grammar above correctly has no outputs compatible with these inputs.").msgTo(msgs);
+            return result(g).msg(Success(
+                "The grammar above correctly has no outputs compatible with these inputs."));
         }
-        return test.msg(msgs);
+        return g.msg();
     }
     
     public executeTest(test: UnitTestGrammar): StringDict[] {

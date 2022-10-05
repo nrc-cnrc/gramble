@@ -1,11 +1,12 @@
 import { 
-    TstComponent, TstHeader, 
-    TstResult, TstParamList, 
-    TstPass, TstOp, TstHeadedGrid 
+    TstHeader, 
+    TstParamList, 
+    TstOp, TstHeadedGrid 
 } from "../tsts";
 import { PassEnv } from "../passes";
 import { Err, Msgs } from "../msgs";
 import { Header, TagHeader, TapeNameHeader } from "../headers";
+import { Component, CPass, CResult } from "../components";
 
 /**
  * This pass checks whether named parameters in headers
@@ -17,13 +18,13 @@ import { Header, TagHeader, TapeNameHeader } from "../headers";
  * allows unnamed params, then the fix is to remove that TagHeader in favor 
  * of its child.  Otherwise, the fix is to remove the header entirely.
  */
-export class CheckTestLiterals extends TstPass {
+export class CheckTestLiterals extends CPass {
 
     public get desc(): string {
         return "Checking that all test content is literal";
     }
 
-    public transform(t: TstComponent, env: PassEnv): TstResult {
+    public transform(t: Component, env: PassEnv): CResult {
 
         return t.mapChildren(this, env).bind(t => {
             switch(t.constructor) {
@@ -35,7 +36,7 @@ export class CheckTestLiterals extends TstPass {
         });
     }
 
-    public handleOp(t: TstOp): TstResult {
+    public handleOp(t: TstOp): CResult {
 
         const msgs: Msgs = [];
         if (t.op.requireLiteralParams && t.child instanceof TstHeadedGrid) {

@@ -1,14 +1,15 @@
 import { MissingSymbolError, Msgs, Result } from "../msgs";
 import { 
+    CounterStack,
     EmbedGrammar,
     EpsilonGrammar,
     Grammar,
+    GrammarPass,
     GrammarResult,
+    Ns,
     NsGrammar
 } from "../grammars";
-
-import { IdentityPass } from "./identityPass";
-import { PassEnv } from "../passes";
+import { Pass, PassEnv } from "../passes";
 
 /**
  * Goes through the tree and 
@@ -23,22 +24,45 @@ import { PassEnv } from "../passes";
  * (3) gives EmbedGrammars reference to the namespace they'll need
  * to reference that symbol later.
  */
-export class NameQualifierPass extends IdentityPass {
+export class QualifyNames extends Pass<Grammar,Grammar> {
 
     constructor(
-        ns: NsGrammar,
         public nsStack: [string, NsGrammar][] = []
     ) {
-        super(ns);
+        super();
     }
 
-    public transform(env: PassEnv): Result<NsGrammar> {
-        const newNamespace = new NsGrammar();
-        const newStack: [string, NsGrammar][] = [["", this.ns]];
-        const newTransform = new NameQualifierPass(newNamespace, newStack);
-        const result = this.ns.accept(newTransform, env);
-        return result.bind(r => newNamespace); // throw out the resulting namespace, 
-                                               // we only care about this new one
+    public transformRoot(g: Grammar, env: PassEnv): Result<Grammar> {
+        
+        if (!(g instanceof NsGrammar)) {
+            throw new Error("QualifyNames requires an NsGrammar root");
+        }
+
+        // the root of the tree is the existing namespace
+        // we'll be replacing that with the new one in env.
+        // this will then be the only namespace in the tree.
+        env.ns = new NsGrammar();
+
+        // we keep a stack of the old namespaces, in which we'll
+        // attempt to find the referents of embedded symbols
+        const startingStack: [string, NsGrammar][] = [["", g]];
+        const newThis = new QualifyNames(startingStack);
+
+        return newThis.transform(g, env)
+                      .bind(_ => env.ns);
+    }
+
+    public transform(g: Grammar, env: PassEnv): GrammarResult {
+        
+        switch(g.constructor) {
+            case NsGrammar:
+                return this.transformNamespace(g as NsGrammar, env);
+            case EmbedGrammar:
+                return this.transformEmbed(g as EmbedGrammar, env);
+            default: 
+                return g.mapChildren(this, env) as GrammarResult;
+        }
+
     }
     
     public get desc(): string {
@@ -52,24 +76,24 @@ export class NameQualifierPass extends IdentityPass {
         for (const [k, v] of Object.entries(g.symbols)) {
             if (v instanceof NsGrammar) {
                 const newStack: [string, NsGrammar][] = [ ...this.nsStack, [k, v] ];
-                const newTransform = new NameQualifierPass(this.ns, newStack);
-                const _ = v.accept(newTransform, env)
-                           .msgTo(msgs);
+                const newThis = new QualifyNames(newStack);
+                const _ = newThis.transform(v, env)
+                                 .msgTo(msgs);
             } else {
                 const newName = g.calculateQualifiedName(k, stackNames);
-                const newV = v.accept(this, env)
-                              .msgTo(msgs);
-                this.ns.addSymbol(newName, newV);
+                const newV = this.transform(v, env)
+                                 .msgTo(msgs);
+                env.ns.addSymbol(newName, newV);
             }
         }
         const defaultName = g.calculateQualifiedName("", stackNames);
-        const defaultSymbol = this.ns.symbols[defaultName];
+        const defaultSymbol = env.ns.symbols[defaultName];
         if (defaultSymbol == undefined) {
-            const defaultRef = this.ns.getDefaultSymbol();
-            this.ns.addSymbol(defaultName, defaultRef);
+            const defaultRef = env.ns.getDefaultSymbol();
+            env.ns.addSymbol(defaultName, defaultRef);
         }
-        return g.msg(msgs); // doesn't really matter what the
-                            // result.item is, it'll be discarded anyway
+        return g.msg(msgs);  // doesn't actually matter what grammar
+                             // we return here; it gets ignored
     }
 
     public transformEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {
@@ -82,7 +106,7 @@ export class NameQualifierPass extends IdentityPass {
             resolution = topOfStack.resolveName(g.name, stackNames);
             if (resolution != undefined) {              
                 const [qualifiedName, _] = resolution;
-                const result = new EmbedGrammar(qualifiedName, this.ns);
+                const result = new EmbedGrammar(qualifiedName, env.ns);
                 return result.msg();
             }
         }

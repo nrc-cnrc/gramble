@@ -1,13 +1,14 @@
-import { PassEnv } from "../passes";
+import { Pass, PassEnv } from "../passes";
 import { 
     AlternationGrammar, ContainsGrammar, 
+    CounterStack, 
     DotGrammar, EndsGrammar, Grammar,
+    GrammarPass,
     GrammarResult,
-    IntersectionGrammar, LocatorGrammar, NegationGrammar, 
+    IntersectionGrammar, LocatorGrammar, 
+    NegationGrammar, NsGrammar, 
     RepeatGrammar, SequenceGrammar, StartsGrammar
 } from "../grammars";
-
-import { IdentityPass } from "./identityPass";
 
 /**
  * There's a semantic gotcha in starts/ends/contains that could throw programmers for a 
@@ -30,10 +31,25 @@ import { IdentityPass } from "./identityPass";
  * they really want the string to match (i.e. putting the .* exactly where they intend it to
  * be) and wrap that in an equals rather than using starts/ends/contains.
  */
-export class FilterPass extends IdentityPass {
+export class AdjustFilters extends GrammarPass {
     
     public get desc(): string {
-        return "Constructing filters";
+        return "Adjusting filter scope";
+    }
+
+    public transform(g: Grammar, env: PassEnv): GrammarResult {
+        
+        switch (g.constructor) {
+            case StartsGrammar:
+                return this.transformStarts(g as StartsGrammar, env);
+            case EndsGrammar:
+                return this.transformEnds(g as EndsGrammar, env);
+            case ContainsGrammar:
+                return this.transformContains(g as ContainsGrammar, env);
+            default:
+                return g.mapChildren(this, env) as GrammarResult;
+        }
+        
     }
 
     public transformStarts(g: StartsGrammar, env: PassEnv): GrammarResult {
@@ -42,7 +58,7 @@ export class FilterPass extends IdentityPass {
             // this(not(x) -> not(this(x))
             const newFilter = new StartsGrammar(g.child.child, g.tapes);
             const newNegation = new NegationGrammar(newFilter, g.child.maxReps);
-            return newNegation.accept(this, env);
+            return newNegation.mapChildren(this, env) as GrammarResult;
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -52,14 +68,14 @@ export class FilterPass extends IdentityPass {
                 newChildren[newChildren.length-1], g.tapes);
             newChildren[newChildren.length-1] = newLastChild;
             const newSequence = new SequenceGrammar(newChildren);
-            return newSequence.accept(this, env);
+            return newSequence.mapChildren(this, env) as GrammarResult;
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new StartsGrammar(c, g.tapes));
             const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation.accept(this, env);
+            return newAlternation.mapChildren(this, env) as GrammarResult;
         }
 
         if (g.child instanceof IntersectionGrammar) {
@@ -67,24 +83,26 @@ export class FilterPass extends IdentityPass {
             const newFilter1 = new StartsGrammar(g.child.child1, g.tapes);
             const newFilter2 = new StartsGrammar(g.child.child2, g.tapes);
             const newIntersection = new IntersectionGrammar(newFilter1, newFilter2);
-            return newIntersection.accept(this, env);
+            return newIntersection.mapChildren(this, env) as GrammarResult;
         }
 
         if (g.child instanceof LocatorGrammar) {
             const newFilter = new StartsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child._pos, newFilter);
-            return newLocation.accept(this, env);
+            return newLocation.mapChildren(this, env) as GrammarResult;
         }
 
         // construct the filter
-        const [child, msgs] = g.child.accept(this, env).destructure();
-        const dotStars: Grammar[] = [];
-        for (const tape of g.tapes) {
-            const dot = new DotGrammar(tape);
-            const dotStar = new RepeatGrammar(dot);
-            dotStars.push(dotStar);
-        }
-        return new SequenceGrammar([child, ...dotStars ]).msg(msgs);
+        const newG = this.transform(g.child, env) as GrammarResult;
+        return newG.bind(c => {
+            const dotStars: Grammar[] = [];
+            for (const tape of g.tapes) {
+                const dot = new DotGrammar(tape);
+                const dotStar = new RepeatGrammar(dot);
+                dotStars.push(dotStar);
+            }
+            return new SequenceGrammar([c, ...dotStars ]);
+        });
     }
     
     public transformEnds(g: StartsGrammar, env: PassEnv): GrammarResult {
@@ -93,7 +111,7 @@ export class FilterPass extends IdentityPass {
             // this(not(x) -> not(this(x))
             const newFilter = new EndsGrammar(g.child.child, g.tapes);
             const newNegation = new NegationGrammar(newFilter, g.child.maxReps);
-            return newNegation.accept(this, env);
+            return newNegation.mapChildren(this, env) as GrammarResult;
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -102,14 +120,14 @@ export class FilterPass extends IdentityPass {
             const newFirstChild = new EndsGrammar(newChildren[0], g.tapes);
             newChildren[0] = newFirstChild;
             const newSequence = new SequenceGrammar(newChildren);
-            return newSequence.accept(this, env);
+            return newSequence.mapChildren(this, env) as GrammarResult;
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new EndsGrammar(c, g.tapes));
             const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation.accept(this, env);
+            return newAlternation.mapChildren(this, env) as GrammarResult;
         }
 
         if (g.child instanceof IntersectionGrammar) {
@@ -117,24 +135,26 @@ export class FilterPass extends IdentityPass {
             const newFilter1 = new EndsGrammar(g.child.child1, g.tapes);
             const newFilter2 = new EndsGrammar(g.child.child2, g.tapes);
             const newIntersection = new IntersectionGrammar(newFilter1, newFilter2);
-            return newIntersection.accept(this, env);
+            return newIntersection.mapChildren(this, env) as GrammarResult;
         }
         
         if (g.child instanceof LocatorGrammar) {
             const newFilter = new EndsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child._pos, newFilter);
-            return newLocation.accept(this, env);
+            return newLocation.mapChildren(this, env) as GrammarResult;
         }
 
         // create the filter
-        const [child, msgs] = g.child.accept(this, env).destructure();
-        const dotStars: Grammar[] = [];
-        for (const tape of g.tapes) {
-            const dot = new DotGrammar(tape);
-            const dotStar = new RepeatGrammar(dot);
-            dotStars.push(dotStar);
-        }
-        return new SequenceGrammar([ ...dotStars, child ]).msg(msgs);
+        const newG = this.transform(g.child, env) as GrammarResult;
+        return newG.bind(c => {
+            const dotStars: Grammar[] = [];
+            for (const tape of g.tapes) {
+                const dot = new DotGrammar(tape);
+                const dotStar = new RepeatGrammar(dot);
+                dotStars.push(dotStar);
+            }
+            return new SequenceGrammar([ ...dotStars, c ]);
+        });
     }
     
     public transformContains(g: ContainsGrammar, env: PassEnv): GrammarResult {
@@ -143,7 +163,7 @@ export class FilterPass extends IdentityPass {
             // this(not(x) -> not(this(x))
             const newFilter = new ContainsGrammar(g.child.child, g.tapes);
             const newNegation = new NegationGrammar(newFilter, g.child.maxReps);
-            return newNegation.accept(this, env);
+            return newNegation.mapChildren(this, env) as GrammarResult;
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -154,14 +174,14 @@ export class FilterPass extends IdentityPass {
             const newLastChild = new StartsGrammar(newChildren[newChildren.length-1], g.tapes);
             newChildren[newChildren.length-1] = newLastChild;
             const newSequence = new SequenceGrammar(newChildren);
-            return newSequence.accept(this, env);
+            return newSequence.mapChildren(this, env) as GrammarResult;
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new ContainsGrammar(c, g.tapes));
             const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation.accept(this, env);
+            return newAlternation.mapChildren(this, env) as GrammarResult;
         }
 
         if (g.child instanceof IntersectionGrammar) {
@@ -169,25 +189,25 @@ export class FilterPass extends IdentityPass {
             const newFilter1 = new ContainsGrammar(g.child.child1, g.tapes);
             const newFilter2 = new ContainsGrammar(g.child.child2, g.tapes);
             const newIntersection = new IntersectionGrammar(newFilter1, newFilter2);
-            return newIntersection.accept(this, env);
+            return newIntersection.mapChildren(this, env) as GrammarResult;
         }
 
         if (g.child instanceof LocatorGrammar) {
             const newFilter = new ContainsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child._pos, newFilter);
-            return newLocation.accept(this, env);
+            return newLocation.mapChildren(this, env) as GrammarResult;
         }
 
         // create the filter
-        const [child, msgs] = g.child.accept(this, env).destructure();
-        const dotStars: Grammar[] = [];
-        for (const tape of g.tapes) {
-            const dot = new DotGrammar(tape);
-            const dotStar = new RepeatGrammar(dot);
-            dotStars.push(dotStar);
-        }
-        return new SequenceGrammar(
-                    [ ...dotStars, child, ...dotStars ])
-                   .msg(msgs);
+        const newG = this.transform(g.child, env) as GrammarResult;
+        return newG.bind(c => {
+            const dotStars: Grammar[] = [];
+            for (const tape of g.tapes) {
+                const dot = new DotGrammar(tape);
+                const dotStar = new RepeatGrammar(dot);
+                dotStars.push(dotStar);
+            }
+            return new SequenceGrammar([...dotStars, c, ...dotStars]);
+        });
     }
 }

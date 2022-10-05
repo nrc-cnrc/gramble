@@ -5,11 +5,11 @@ import {
 import { Err, Msgs, result, Result, Warn } from "../msgs";
 import { PassEnv } from "../passes";
 import { 
-    TstComponent, TstResult, 
-    TstPass, TstOp, 
+    TstOp, 
     TstEmpty,
     TstGrid
 } from "../tsts";
+import { Component, CPass, CResult } from "../components";
 
 /**
  * This pass goes through and make sure that TstOps have 
@@ -20,13 +20,13 @@ import {
  * assignments, etc.)
  */
 
-export class CheckStructuralParams extends TstPass {
+export class CheckStructuralParams extends CPass {
 
     public get desc(): string {
         return "Checking structural params";
     }
 
-    public transform(t: TstComponent, env: PassEnv): TstResult {
+    public transform(t: Component, env: PassEnv): CResult {
         
         if (!(t instanceof TstOp)) {
             return t.mapChildren(this, env);
@@ -73,7 +73,7 @@ export class CheckStructuralParams extends TstPass {
         });
     }
 
-    public handleAssignment(t: TstOp): TstResult {
+    public handleAssignment(t: TstOp): CResult {
         
         const msgs: Msgs = [];
 
@@ -94,7 +94,7 @@ export class CheckStructuralParams extends TstPass {
 
     }
 
-    public handleError(t: TstOp): TstResult {
+    public handleError(t: TstOp): CResult {
         const op = t.op as ErrorOp;
         const replacement = !(t.sibling instanceof TstEmpty) ?
                             t.sibling :
@@ -103,7 +103,7 @@ export class CheckStructuralParams extends TstPass {
                         .bind(_ => replacement);      
     }
 
-    public handleOp(t: TstOp): TstResult {
+    public handleOp(t: TstOp): CResult {
 
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.

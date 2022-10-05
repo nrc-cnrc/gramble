@@ -1,13 +1,10 @@
 import { 
     TstSequence, 
-    TstComponent,
     TstFilter,
     TstHeaderContentPair,
     TstHeader,
     TstHide,
-    TstRename, 
-    TstResult, 
-    TstPass 
+    TstRename,
 } from "../tsts";
 import {
     ContainsHeader,
@@ -17,18 +14,19 @@ import {
     RenameHeader,
     StartsHeader
 } from "../headers";
+import { Component, CPass, CResult } from "../components";
 
 import { Err, Msgs } from "../msgs";
 import { PassEnv } from "../passes";
 
 
-export class RescopeLeftBinders extends TstPass {
+export class RescopeLeftBinders extends CPass {
 
     public get desc(): string {
         return "Rescoping left-binding headers";
     }
 
-    public transform(t: TstComponent, env: PassEnv): TstResult {
+    public transform(t: Component, env: PassEnv): CResult {
 
         return t.mapChildren(this, env).bind(t => {
 
@@ -42,11 +40,11 @@ export class RescopeLeftBinders extends TstPass {
         });
     }
     
-    handleCellSequence(t: TstSequence): TstResult {
+    handleCellSequence(t: TstSequence): CResult {
         
         const msgs: Msgs = [];
 
-        const newChildren: TstComponent[] = [];
+        const newChildren: Component[] = [];
         for (const child of t.children) {
 
             if (!(child instanceof TstHeaderContentPair)) {

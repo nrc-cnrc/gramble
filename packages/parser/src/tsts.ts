@@ -7,13 +7,6 @@
  */
 
 import { 
-    Grammar, NsGrammar, AlternationGrammar, 
-    EpsilonGrammar, UnitTestGrammar, 
-    NegativeUnitTestGrammar, SequenceGrammar, 
-    ReplaceGrammar, JoinReplaceGrammar, 
-    LiteralGrammar, JoinRuleGrammar, 
-    LocatorGrammar, RenameGrammar,
-    EqualsGrammar, HideGrammar,
     GrammarResult,
 } from "./grammars";
 import { Cell, CellPos, Dict, TreeNode } from "./util";
@@ -21,37 +14,22 @@ import {
     DEFAULT_SATURATION,
     DEFAULT_VALUE,
     Header,
-    TapeNameHeader
 } from "./headers";
-import { ContentMsg, Err, Msg, Msgs, Result, resultList, Warn, resultDict, ResultVoid, unit, result } from "./msgs";
+import { 
+    Msgs, 
+    Result, resultList, 
+    Warn, resultDict, 
+    ResultVoid, unit
+} from "./msgs";
 import { Pass, PassEnv } from "./passes";
-import { BLANK_PARAM, Op } from "./ops";
-
-
-export type ParamDict = Dict<Grammar>;
-export class TstResult extends Result<TstComponent> { }
-export abstract class TstPass extends Pass<TstComponent,TstComponent> {}
-
-type BinaryOp = (c1: Grammar, c2: Grammar) => Grammar;
-
-export abstract class TstComponent {
-
-    public get pos(): CellPos | undefined {
-        return undefined;
-    }   
-
-    public abstract mapChildren(f: TstPass, env: PassEnv): TstResult;
-
-    public msg(m: Msg | Msgs = []): TstResult {
-        return result(this).msg(m);
-    }
-}
+import { Op } from "./ops";
+import { Component, CPass, CResult } from "./components";
 
 /**
  * A TstCellComponent is just any TstComponent that has a
  * cell.
  */
-export abstract class TstCellComponent extends TstComponent {
+export abstract class TstCellComponent extends Component {
 
     constructor(
         public cell: Cell
@@ -78,7 +56,7 @@ export class TstHeader extends TstCellComponent {
         super(cell);
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return new TstHeader(this.cell, this.header).msg();
     }
 
@@ -105,7 +83,7 @@ export class TstContent extends TstCellComponent {
         super(cell);
     }
     
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return new TstContent(this.cell).msg();
     }
 
@@ -115,7 +93,7 @@ export abstract class TstEnclosure extends TstCellComponent {
 
     constructor(
         cell: Cell, 
-        public sibling: TstComponent = new TstEmpty()
+        public sibling: Component = new TstEmpty()
     ) {
         super(cell)
     }
@@ -137,13 +115,13 @@ export abstract class TstEnclosure extends TstCellComponent {
 
     constructor(
         cell: Cell, 
-        public sibling: TstComponent = new TstEmpty(),
+        public sibling: Component = new TstEmpty(),
         public rows: TstRow[] = []
     ) {
         super(cell, sibling)
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         const [sib, sibMsgs] = f.transform(this.sibling, env).destructure();
         const [rows, rowMsgs] = resultList(this.rows)
                                     .map(c => f.transform(c, env))
@@ -177,7 +155,7 @@ export class TstRow extends TstCellComponent {
         super(cell)
     }
     
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList(this.content)
                 .map(c => f.transform(c, env))
                 .bind(cs => new TstRow(this.cell, cs as TstContent[]));
@@ -194,7 +172,7 @@ export class TstHeadedGrid extends TstGrid {
 
     constructor(
         cell: Cell, 
-        sibling: TstComponent = new TstEmpty(),
+        sibling: Component = new TstEmpty(),
         rows: TstRow[] = [],
         public headers: TstHeader[] = []
         
@@ -207,7 +185,7 @@ export class TstHeadedGrid extends TstGrid {
                     param == h.header.getParamName());
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         const [sib, sibMsgs] = f.transform(this.sibling, env).destructure();
         const [rows, rowMsgs] = resultList(this.rows)
                             .map(c => f.transform(c, env))
@@ -230,7 +208,7 @@ export class TstHeaderContentPair extends TstCellComponent {
         super(content);
     }
     
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return this.msg();
     }
 
@@ -239,14 +217,14 @@ export class TstHeaderContentPair extends TstCellComponent {
 export class TstRename extends TstCellComponent {
 
     constructor(
-        public prev: TstComponent,
+        public prev: Component,
         public header: TstHeader,
         content: Cell
     ) { 
         super(content);
     }
     
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return this.msg();
     }
     
@@ -255,13 +233,13 @@ export class TstRename extends TstCellComponent {
 export class TstHide extends TstCellComponent {
 
     constructor(
-        public prev: TstComponent,
+        public prev: Component,
         content: Cell
     ) { 
         super(content);
     }
     
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return this.msg();
     }
     
@@ -270,22 +248,22 @@ export class TstHide extends TstCellComponent {
 export class TstFilter extends TstCellComponent {
 
     constructor(
-        public prev: TstComponent,
+        public prev: Component,
         public header: TstHeader,
         content: Cell
     ) { 
         super(content);
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return this.msg();
     }
     
 }
 
-export class TstEmpty extends TstComponent {
+export class TstEmpty extends Component {
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return this.msg();
     }
 
@@ -331,13 +309,13 @@ export class TstBinary extends TstEnclosure {
 
     constructor(
         cell: Cell,    
-        sibling: TstComponent = new TstEmpty(),
-        public child: TstComponent = new TstEmpty()
+        sibling: Component = new TstEmpty(),
+        public child: Component = new TstEmpty()
     ) {
         super(cell, sibling);
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
                 .bind(([s,c]) => new TstBinary(this.cell, s, c));
@@ -369,13 +347,13 @@ export class TstOp extends TstBinary {
     constructor(
         cell: Cell,
         public op: Op,
-        sibling: TstComponent = new TstEmpty(),
-        child: TstComponent = new TstEmpty()
+        sibling: Component = new TstEmpty(),
+        child: Component = new TstEmpty()
     ) { 
         super(cell, sibling, child);
     }
         
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
                 .bind(([s,c]) => new TstOp(this.cell, this.op, s, c));
@@ -392,7 +370,7 @@ export class TstTable extends TstCellComponent {
         super(cell);
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
                 .bind(c => new TstTable(this.cell, c as TstParamList));
     }
@@ -403,17 +381,18 @@ export class TstBinaryOp extends TstBinary {
 
     constructor(
         cell: Cell,    
-        public op: BinaryOp,
-        sibling: TstComponent = new TstEmpty(),
-        child: TstComponent = new TstEmpty()
+        public opName: string,
+        sibling: Component = new TstEmpty(),
+        child: Component = new TstEmpty()
     ) {
         super(cell, sibling, child);
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
-            .bind(([s,c]) => new TstBinaryOp(this.cell, this.op, s, c));
+            .bind(([s,c]) => new TstBinaryOp(this.cell, 
+                                this.opName, s, c));
     }
 }
 
@@ -422,13 +401,13 @@ export class TstReplaceTape extends TstCellComponent {
     constructor(
         cell: Cell,
         public tape: string,
-        public sibling: TstComponent,
+        public sibling: Component,
         public child: TstParamList
     ) { 
         super(cell);
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
             .bind(([s,c]) => new TstReplaceTape(this.cell, this.tape, 
@@ -441,13 +420,13 @@ export class TstReplace extends TstCellComponent {
 
     constructor(
         cell: Cell,
-        public sibling: TstComponent,
+        public sibling: Component,
         public child: TstParamList
     ) { 
         super(cell);
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
                 .bind(([s,c]) => new TstReplace(this.cell, 
@@ -464,13 +443,13 @@ export class TstUnitTest extends TstCellComponent {
 
     constructor(
         cell: Cell,
-        public sibling: TstComponent,
+        public sibling: Component,
         public child: TstParamList
     ) { 
         super(cell);
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
                 .bind(([s,c]) => new TstUnitTest(this.cell, s, c as TstParamList));
@@ -486,7 +465,7 @@ export class TstUnitTest extends TstCellComponent {
  */
 export class TstNegativeUnitTest extends TstUnitTest {
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
             .bind(([s,c]) => new TstNegativeUnitTest(this.cell, s, c as TstParamList));
@@ -506,7 +485,7 @@ export class TstParamList extends TstCellComponent {
         super(cell);
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList(this.rows)
                     .map(r => f.transform(r, env))
                     .bind(rs => new TstParamList(this.cell, rs as TstParams[]));
@@ -522,12 +501,12 @@ export class TstSequence extends TstCellComponent {
 
     constructor(
         cell: Cell,
-        public children: TstComponent[] = []
+        public children: Component[] = []
     ) { 
         super(cell);
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList(this.children)
                    .map(c => f.transform(c, env))
                    .bind((cs) => new TstSequence(this.cell, cs));
@@ -549,7 +528,7 @@ export class TstParams extends TstCellComponent {
         super(cell);
     }
     
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultDict(this.params)
                 .map(c => f.transform(c, env) as Result<TstSequence>)
                 .bind(cs => new TstParams(this.cell, cs));
@@ -560,7 +539,7 @@ export class TstParams extends TstCellComponent {
         throw new Error("not implemented");
     } 
 
-    public getParam(name: string): TstComponent {
+    public getParam(name: string): Component {
         if (name in this.params) {
             return this.params[name];
         }
@@ -573,12 +552,12 @@ export class TstAssignment extends TstCellComponent {
     constructor(
         cell: Cell,
         public name: string,
-        public child: TstComponent = new TstEmpty()
+        public child: Component = new TstEmpty()
     ) {
         super(cell);
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
             .bind(c => new TstAssignment(this.cell, this.name, c));
     }
@@ -589,17 +568,17 @@ export class TstNamespace extends TstCellComponent {
 
     constructor(
         cell: Cell,
-        public children: TstComponent[] = []
+        public children: Component[] = []
     ) {
         super(cell);
     }
     
-    public addChild(child: TstComponent): ResultVoid {
+    public addChild(child: Component): ResultVoid {
         this.children.push(child);
         return unit;
     }
 
-    public mapChildren(f: TstPass, env: PassEnv): TstResult {
+    public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList(this.children)
                 .map(c => f.transform(c, env) as Result<TstEnclosure>)
                 .bind(cs => new TstNamespace(this.cell, cs));

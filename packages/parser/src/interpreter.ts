@@ -24,7 +24,7 @@ import { MissingSymbolError, Msgs } from "./msgs";
 import { PassEnv } from "./passes";
 import { 
     ALL_PASSES, GRAMMAR_PASSES, 
-    NAME_QUALIFICATION, PRE_GRAMMAR_PASSES 
+    QUALIFY_NAMES, PRE_GRAMMAR_PASSES 
 } from "./passes/allPasses";
 import { UnitTestPass } from "./passes/unitTests";
 
@@ -87,7 +87,7 @@ export class Interpreter {
         const env = new PassEnv();
         env.verbose = verbose;
         const [newGrammar, msgs] = this.grammar.msg() // lift to result
-                     .bind(g => GRAMMAR_PASSES.transformAndLog(g, env))
+                     .bind(g => GRAMMAR_PASSES.go(g, env))
                      .destructure();
         this.grammar = newGrammar as NsGrammar;
         sendMessages(devEnv, msgs);
@@ -130,7 +130,7 @@ export class Interpreter {
         startTime = Date.now();
         const transEnv = new PassEnv();
         transEnv.verbose = verbose;
-        const grammar = PRE_GRAMMAR_PASSES.transformAndLog(workbook, transEnv)
+        const grammar = PRE_GRAMMAR_PASSES.go(workbook, transEnv)
                                   .msgTo(m => devEnv.message(m));
         elapsedTime = msToTime(Date.now() - startTime);
         logTime(verbose, `Converted to grammar; ${elapsedTime}`);
@@ -321,8 +321,8 @@ export class Interpreter {
     public runUnitTests(): void {
         this.grammar.constructExpr(this.symbolTable);  // fill the symbol table if it isn't already
         const env = new PassEnv();
-        const t = new UnitTestPass(this.grammar, this.vocab, this.tapeNS, this.symbolTable);
-        const [_, msgs] = t.transform(env).destructure(); // results.item isn't important
+        const t = new UnitTestPass(this.vocab, this.tapeNS, this.symbolTable);
+        const [_, msgs] = t.transform(this.grammar, env).destructure(); // results.item isn't important
         sendMessages(this.devEnv, msgs);
     }
 }
@@ -362,10 +362,10 @@ function addSheet(
     const sheet = new Worksheet(sheetName, cells);
     project.sheets[sheetName] = sheet;
     const transEnv = new PassEnv();
-    const grammar = PRE_GRAMMAR_PASSES.transform(project, transEnv)
+    const grammar = PRE_GRAMMAR_PASSES.go(project, transEnv)
                                      .msgTo((_) => {});
     // check to see if any names didn't get resolved
-    const [_, nameMsgs] = NAME_QUALIFICATION.transform(grammar, transEnv)
+    const [_, nameMsgs] = QUALIFY_NAMES.go(grammar, transEnv)
                                             .destructure();
 
     const unresolvedNames: Set<string> = new Set(); 

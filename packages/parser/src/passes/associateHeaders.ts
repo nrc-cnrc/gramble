@@ -1,26 +1,25 @@
-import { 
-    TstComponent, TstEmpty, 
+import {
     TstParamList, 
     TstHeadedGrid, 
-    TstHeader, TstResult, 
+    TstHeader, 
     TstParams, 
-    TstPass,
     TstHeaderContentPair,
     TstSequence, 
 } from "../tsts";
+import { Component, CPass, CResult } from "../components";
 import { PassEnv } from "../passes";
 import { ContentMsg, Msgs, Warn } from "../msgs";
 
 /**
  * 
  */
-export class AssociateHeaders extends TstPass {
+export class AssociateHeaders extends CPass {
 
     public get desc(): string {
         return "Parsing headers";
     }
 
-    public transform(t: TstComponent, env: PassEnv): TstResult {
+    public transform(t: Component, env: PassEnv): CResult {
 
         return t.mapChildren(this, env).bind(t => {
             

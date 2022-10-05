@@ -1,12 +1,12 @@
 import { 
-    TstComponent, TstEmpty, 
-    TstHeader, TstResult, 
-    TstPass, TstOp, TstHeadedGrid 
+    TstEmpty, TstHeader, 
+    TstOp, TstHeadedGrid 
 } from "../tsts";
 import { PassEnv } from "../passes";
 import { Err, Msgs, Result, result, Warn } from "../msgs";
 import { TagHeader } from "../headers";
 import { BLANK_PARAM } from "../ops";
+import { Component, CPass, CResult } from "../components";
 
 /**
  * This pass checks whether named parameters in headers
@@ -18,7 +18,7 @@ import { BLANK_PARAM } from "../ops";
  * allows unnamed params, then the fix is to remove that TagHeader in favor 
  * of its child.  Otherwise, the fix is to remove the header entirely.
  */
-export class CheckNamedParams extends TstPass {
+export class CheckNamedParams extends CPass {
 
     constructor(
         public permissibleParams: Set<string> = new Set(["__"])
@@ -30,7 +30,7 @@ export class CheckNamedParams extends TstPass {
         return "Checking named params";
     }
 
-    public transform(t: TstComponent, env: PassEnv): TstResult {
+    public transform(t: Component, env: PassEnv): CResult {
 
         switch(t.constructor) {
             case TstOp:
@@ -45,7 +45,7 @@ export class CheckNamedParams extends TstPass {
         }
     }
 
-    public handleHeadedGrid(t: TstHeadedGrid, env: PassEnv): TstResult {
+    public handleHeadedGrid(t: TstHeadedGrid, env: PassEnv): CResult {
         const result = t.mapChildren(this, env) as Result<TstHeadedGrid>;
         return result.bind(t => {
             t.headers = t.headers.filter(h => h instanceof TstHeader);
@@ -53,7 +53,7 @@ export class CheckNamedParams extends TstPass {
         });
     }
 
-    public handleOp(t: TstOp, env: PassEnv): TstResult {
+    public handleOp(t: TstOp, env: PassEnv): CResult {
         const [sib, sibMsgs] = this.transform(t.sibling, env).destructure();
         const newPass = new CheckNamedParams(t.op.allowedNamedParams);
         const [child, childMsgs] = newPass.transform(t.child, env).destructure();
@@ -72,7 +72,7 @@ export class CheckNamedParams extends TstPass {
                    .msg(sibMsgs).msg(childMsgs);
     }
 
-    public checkRequiredParams(t: TstOp): TstResult {
+    public checkRequiredParams(t: TstOp): CResult {
 
         const msgs: Msgs = [];
         
@@ -114,7 +114,7 @@ export class CheckNamedParams extends TstPass {
         return t.msg(msgs);
     }
     
-    public handleHeader(t: TstHeader, env: PassEnv): TstResult {
+    public handleHeader(t: TstHeader, env: PassEnv): CResult {
         const mapped = t.mapChildren(this, env) as Result<TstHeader>;
         return mapped.bind(h => {
             const tag = h.header.getParamName();

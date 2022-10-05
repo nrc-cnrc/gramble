@@ -1,11 +1,12 @@
 import { PassEnv, Pass } from "../passes";
 import { CommandMsg, CommentMsg, Err, Msgs } from "../msgs";
 import { 
-    TstAssignment, TstComponent, 
+    TstAssignment,
     TstEnclosure, 
     TstNamespace, TstOp, 
-    TstGrid, TstResult, 
+    TstGrid
 } from "../tsts";
+import { Component, CResult } from "../components";
 import { Worksheet, Workbook } from "../sheets";
 import { Cell, CellPos } from "../util";
 import { NamespaceOp, parseOp } from "../ops";
@@ -17,13 +18,13 @@ type PassInput = Workbook | Worksheet;
  * (Workbooks) and turns them into the basic syntactic objects
  * (TstNamespaces, TstOps, TstGrids, and TstContent).
  */
-export class ParseSheets extends Pass<PassInput,TstComponent> {
+export class ParseSheets extends Pass<PassInput,Component> {
 
     public get desc(): string {
         return "Creating TST";
     }
 
-    public transform(t: PassInput, env: PassEnv): TstResult {
+    public transform(t: PassInput, env: PassEnv): CResult {
 
         switch(t.constructor) {
             case Workbook:
@@ -35,7 +36,7 @@ export class ParseSheets extends Pass<PassInput,TstComponent> {
         }
     }
 
-    public handleWorkbook(t: Workbook, env: PassEnv): TstResult {
+    public handleWorkbook(t: Workbook, env: PassEnv): CResult {
 
         const projectCell = new Cell("", new CellPos("", -1, -1));
         const project = new TstNamespace(projectCell);
@@ -94,7 +95,7 @@ export class ParseSheets extends Pass<PassInput,TstComponent> {
      * felt that was information not relevant to the object itself.  It's only relevant to this algorithm,
      * so it should just stay here.
      */
-    public handleWorksheet(t: Worksheet, env: PassEnv): TstResult {
+    public handleWorksheet(t: Worksheet, env: PassEnv): CResult {
 
         const msgs: Msgs = [];
 

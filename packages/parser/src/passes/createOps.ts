@@ -8,21 +8,21 @@ import {
 import { result, Result } from "../msgs";
 import { PassEnv } from "../passes";
 import { 
-    TstComponent, TstResult, 
-    TstPass, TstOp, 
+    TstOp, 
     TstEmpty, TstUnitTest, 
     TstTable, TstNegativeUnitTest, 
     TstReplace, TstReplaceTape, 
     TstBinaryOp, TstAssignment, TstParamList
 } from "../tsts";
+import { Component, CPass, CResult } from "../components";
 
- export class CreateOps extends TstPass {
+ export class CreateOps extends CPass {
 
     public get desc(): string {
         return "Creating ops";
     }
 
-    public transform(t: TstComponent, env: PassEnv): TstResult {
+    public transform(t: Component, env: PassEnv): CResult {
         
         if (!(t instanceof TstOp)) {
             return t.mapChildren(this, env);
@@ -51,37 +51,38 @@ import {
         });
     }
 
-    public handleOp(t: TstOp): TstResult {
+    public handleOp(t: TstOp): CResult {
         return new TstTable(t.cell, t.child as TstParamList).msg();
     }
 
-    public handleTest(t: TstOp): TstResult {
+    public handleTest(t: TstOp): CResult {
         return new TstUnitTest(t.cell, t.sibling, 
                     t.child as TstParamList).msg();  
     }
 
-    public handleTestNot(t: TstOp): TstResult {
+    public handleTestNot(t: TstOp): CResult {
         return new TstNegativeUnitTest(t.cell, t.sibling, 
                     t.child as TstParamList).msg();
     }
     
-    public handleReplace(t: TstOp): TstResult {
+    public handleReplace(t: TstOp): CResult {
         return new TstReplace(t.cell, t.sibling, 
                     t.child as TstParamList).msg();
     }
 
-    public handleReplaceTape(t: TstOp): TstResult {
+    public handleReplaceTape(t: TstOp): CResult {
         const tapeName = (t.op as ReplaceTapeOp).child.text;
         return new TstReplaceTape(t.cell, tapeName, 
                     t.sibling, t.child as TstParamList).msg();
     }
     
-    public handleBinary(t: TstOp): TstResult {
-        const op = BINARY_OPS_MAP[(t.op as BinaryOp).text];
-        return new TstBinaryOp(t.cell, op, t.sibling, t.child).msg();
+    public handleBinary(t: TstOp): CResult {
+        const opName = (t.op as BinaryOp).text;
+        return new TstBinaryOp(t.cell, opName, 
+                        t.sibling, t.child).msg();
     }
 
-    public handleAssignment(t: TstOp): TstResult {
+    public handleAssignment(t: TstOp): CResult {
         const trimmedText = t.text.endsWith(":")
                           ? t.text.slice(0, t.text.length-1).trim()
                           : t.text;
