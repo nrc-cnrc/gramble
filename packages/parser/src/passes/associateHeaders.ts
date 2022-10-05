@@ -45,7 +45,7 @@ export class AssociateHeaders extends CPass {
                     new ContentMsg(
                         header.getBackgroundColor(),
                         header.getFontColor()
-                    ).msgTo(msgs);
+                    ).localize(content.pos).msgTo(msgs);
 
                     const tag = header.header.getParamName();
                     if (!(tag in newRow.params)) {
