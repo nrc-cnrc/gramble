@@ -4,7 +4,8 @@ import {
     logDebug, 
     BITSETS_ENABLED,
     shuffleArray, StringDict, 
-    tokenizeUnicode 
+    tokenizeUnicode, 
+    Namespace
 } from "./util";
 
 /**
@@ -536,100 +537,7 @@ export class BitsetTape implements Tape {
     }
 }
 
-/**
- * Namespace<T> is a convenience wrapper around Map<string, T> that
- * allows us to rename a given item statelessly.  This is used for Tapes
- * in particular.
- */
-export class Namespace<T> {
-
-    protected entries: Map<string, T> = new Map();
-
-    public getKeys(): Set<string> {
-        return new Set(this.entries.keys());
-    }
-
-    public get(key: string): T {
-        const result = this.entries.get(key);
-        if (result == undefined) {
-            throw new Error(`Cannot find ${key} in namespace, ` +
-                `available: [${[...this.entries.keys()]}]`);
-        }
-        return result;
-    }
-
-    public attemptGet(key: string): T | undefined {
-        return this.entries.get(key);
-    }
-
-    public set(key: string, value: T): void {
-        this.entries.set(key, value);
-    }
-
-    public rename(fromKey: string, toKey: string): Namespace<T> {
-        if (fromKey == toKey) {
-            return this;
-        }
-        const result = new Namespace<T>();
-        for (const [key, value] of this.entries.entries()) {
-            if (key == toKey) {
-                continue;
-            }
-            const newKey = (key == fromKey) ? toKey : key;
-            result.entries.set(newKey, value);
-        }
-        return result;
-    }
-
-}
-
 export class TapeNamespace extends Namespace<Tape> { }
-
-/**
- * RenamedTapeNamespaces are necessary for RenameExpr to work properly.
- * 
- * From the point of view of any particular grammar/expr, it believes that particular
- * tapes have particular names, e.g. "text" or "gloss".  However, because renaming is
- * an operator of our relational algebra, different states may be referred to by different
- * names in different parts of the grammar.  
- * 
- * (For example, consider a composition between two FSTS, {"up":"lr", "down":"ll"} and 
- * {"up":"ll", "down":"lh"}.  In order to express their composition as a "join", we have to make it so that
- * the first "down" and the second "up" have the same name.  Renaming does that.
- * 
- * The simplest way to get renaming, so that each state doesn't have to understand the name structure
- * of the larger grammar, is to wrap TapeNamespaces in a simple adaptor class that makes it seem
- * as if an existing tape has a new name.  That way, any child of a RenameExpr can (for example) ask for the
- * vocabulary of the tape it thinks is called "down", even if outside of that RenameExpr the tape is called
- * "text".  
- */
-/*
-class RenamedTapeNamespace extends TapeNamespace {
-
-    constructor(
-        public child: TapeNamespace,
-        public fromTape: string,
-        public toTape: string
-    ) { 
-        super();
-    }
-    
-    public getTapeNames(): Set<string> {
-        const result = [...this.child.getTapeNames()].map(s => 
-                    renameTape(s, this.fromTape, this.toTape));
-        return new Set(result);
-    }
-
-    public get(tapeName: string): Tape {
-        if (tapeName != this.toTape && tapeName == this.fromTape) {
-            throw new Error(`Looking for tape ${tapeName} ` + 
-            `inside a ${this.toTape}->${this.fromTape} renaming`);
-        }
-        tapeName = renameTape(tapeName, this.toTape, this.fromTape);
-        return this.child.get(tapeName);
-    }
-}
-*/
 
 export function renameTape(
     tapeName: string, 

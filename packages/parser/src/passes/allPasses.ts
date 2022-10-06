@@ -18,6 +18,7 @@ import { CreateHeaders } from "./createHeaders";
 import { AssociateHeaders } from "./associateHeaders";
 import { InsertTables } from "./insertTables";
 import { CreateGrammars } from "./createGrammars";
+import { CheckNamespaces } from "./checkNamespaces";
 
 export const PRE_GRAMMAR_PASSES = 
 
@@ -57,6 +58,10 @@ export const PRE_GRAMMAR_PASSES =
     // appropriate syntactic structures
     new CreateOps().compose(
 
+    // check whether namespaces are in appropriate structural
+    // positions
+    new CheckNamespaces().compose(
+
     // restructure content cells that scope only over the cell to
     // their left (e.g. equals, rename)
     new RescopeLeftBinders().compose(
@@ -64,7 +69,7 @@ export const PRE_GRAMMAR_PASSES =
     // create grammar objects
     new CreateGrammars()
     
-    ))))))))))
+    )))))))))))
 
     
 // qualify symbol names (e.g. turn `VERB` in sheet Sheet1 

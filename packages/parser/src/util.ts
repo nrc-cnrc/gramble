@@ -58,6 +58,58 @@ export type Gen<T> = Generator<T, void, undefined>;
 export type Dict<T> = {[k:string]:T};
 export type StringDict = Dict<string>;
 
+
+/**
+ * Namespace<T> is a convenience wrapper around Map<string, T> that
+ * allows us to rename a given item statelessly.  This is used for Tapes
+ * in particular.
+ */
+ export class Namespace<T> {
+
+    constructor(
+        protected entries: Map<string, T> = new Map(),
+        protected prev: Namespace<T> | undefined = undefined
+    ) { }
+
+    public get(key: string): T {
+        const result = this.attemptGet(key);
+        if (result != undefined) {
+            return result;
+        }
+        throw new Error(`Cannot find ${key} in namespace`);
+    }
+
+    public attemptGet(key: string): T | undefined {
+        const result = this.entries.get(key);
+        if (result == undefined && this.prev != undefined) {
+            return this.prev.attemptGet(key);
+        }
+        return result;
+    }
+
+    public set(key: string, value: T): void {
+        this.entries.set(key, value);
+    }
+
+    public push(key: string, value: T): Namespace<T> {
+        const newMap : Map<string, T> = new Map();
+        newMap.set(key, value);
+        return new Namespace<T>(newMap, this);
+    }
+
+    public rename(fromKey: string, toKey: string): Namespace<T> {
+        if (fromKey == toKey) {
+            return this;
+        }
+        const referent = this.attemptGet(fromKey);
+        if (referent == undefined) {
+            return this;
+        }
+        return this.push(toKey, referent);
+    }
+
+}
+
 /**
  * A convenience class encapsulating information about where a cell
  * is.  Every component of the abstract syntax tree has one of these;
@@ -90,23 +142,6 @@ export class Cell {
     public get id(): string { 
         return this.pos.toString();
     }
-
-}
-
-export interface TreeNode {
-    //readonly id: string;
-
-    readonly subnodes: TreeNode[];
-    create(subnodes: TreeNode[]): TreeNode;
-
-}
-
-export class DictNode<T> {
-
-    constructor(
-        public items: {[k: string]: T}
-    ) { }
-
 
 }
 

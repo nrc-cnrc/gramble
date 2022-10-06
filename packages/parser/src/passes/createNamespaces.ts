@@ -45,22 +45,18 @@ export class CreateNamespaces extends CPass {
 
     public transform(t: Component, env: PassEnv): CResult {
 
-        return t.mapChildren(this, env).bind(t => {
-            switch(t.constructor) {
-                case TstOp:
-                    return this.handleOp(t as TstOp);
-                default: 
-                    return t;
-            }
-        });
+        switch(t.constructor) {
+            case TstOp:
+                return this.handleOp(t as TstOp, env);
+            default: 
+                return t.mapChildren(this, env);
+        }
     }
 
-    public handleOp(t: TstOp): CResult {
-
-        const msgs: Msgs = [];
+    public handleOp(t: TstOp, env: PassEnv): CResult {
 
         if (!(t.op instanceof NamespaceOp)) {
-            return t.msg(msgs);
+            return t.mapChildren(this, env);
         }
 
         const children: Component[] = [];
@@ -80,42 +76,43 @@ export class CreateNamespaces extends CPass {
         const newChildren: Component[] = [];
         for (const child of children) {
 
-            if (child instanceof TstOp &&
-                child.op.siblingReq == "required") {
-                
-                const prev = newChildren.pop();
-                if (prev == undefined) {
-                    // this is the first child, it's erroneous
-                    // to be here, but it will be detected later.
-                    newChildren.push(child);
-                    continue;
-                }
-
-                if (prev instanceof TstOp &&
-                    prev.op instanceof SymbolOp) {
-                    // it's an assignment, so adjust the scope 
-                    // of the assignment so it includes the operator
-                    // too
-                    child.sibling = prev.child;
-                    prev.child = child;
-                    newChildren.push(prev);
-                    continue;
-                }
-
-                // the previous child is not an assignment, so
-                // it's just the first arg to this, but don't assign 
-                // it to anything.  it'll be assigned to __DEFAULT__ if 
-                // it's last, otherwise the unassigned-content pass will
-                // deal with it
-                child.sibling = prev;
+            if (!(child instanceof TstOp) || child.op.siblingReq != "required") {
+                // not one of the ops we're interested in
                 newChildren.push(child);
-
-            } else {
-                newChildren.push(child);
+                continue;
             }
+
+            const prev = newChildren.pop();
+            if (prev == undefined) {
+                // this is the first child, it's erroneous
+                // to be here, but it will be detected later.
+                newChildren.push(child);
+                continue;
+            }
+
+            if (prev instanceof TstOp &&
+                prev.op instanceof SymbolOp) {
+                // it's an assignment, so adjust the scope 
+                // of the assignment so it includes the operator
+                // too
+                child.sibling = prev.child;
+                prev.child = child;
+                newChildren.push(prev);
+                continue;
+            }
+
+            // the previous child is not an assignment, so
+            // it's just the first arg to this, but don't assign 
+            // it to anything.  it'll be assigned to __DEFAULT__ if 
+            // it's last, otherwise the unassigned-content pass will
+            // deal with it
+            child.sibling = prev;
+            newChildren.push(child);
+
         }
 
-        return new TstNamespace(t.cell, newChildren).msg(msgs);
+        const newNamespace = new TstNamespace(t.cell, newChildren);
+        return newNamespace.mapChildren(this, env);
     }
 
 }

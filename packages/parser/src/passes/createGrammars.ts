@@ -242,10 +242,6 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                 continue;
             }
 
-            if (isLastChild) {
-                ns.addSymbol("__DEFAULT__", grammar);
-            }
-
             if (child instanceof TstAssignment) {
                 const referent = ns.getSymbol(child.name);
                 if (referent != undefined) {
@@ -256,6 +252,8 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                     continue;
                 }     
                 ns.addSymbol(child.name, grammar);
+            } else if (isLastChild) {
+                ns.addSymbol("__DEFAULT__", grammar);
             }
             
         }

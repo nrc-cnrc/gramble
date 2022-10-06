@@ -9,7 +9,7 @@
 import { 
     GrammarResult,
 } from "./grammars";
-import { Cell, CellPos, Dict, TreeNode } from "./util";
+import { Cell, CellPos } from "./util";
 import {
     DEFAULT_SATURATION,
     DEFAULT_VALUE,
@@ -21,7 +21,7 @@ import {
     Warn, resultDict, 
     ResultVoid, unit
 } from "./msgs";
-import { Pass, PassEnv } from "./passes";
+import { PassEnv } from "./passes";
 import { Op } from "./ops";
 import { Component, CPass, CResult } from "./components";
 

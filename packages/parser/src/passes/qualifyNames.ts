@@ -27,7 +27,8 @@ import { Pass, PassEnv } from "../passes";
 export class QualifyNames extends Pass<Grammar,Grammar> {
 
     constructor(
-        public nsStack: [string, NsGrammar][] = []
+        public nameStack: string[] = [],
+        public nsStack: NsGrammar[] = []
     ) {
         super();
     }
@@ -45,8 +46,9 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
 
         // we keep a stack of the old namespaces, in which we'll
         // attempt to find the referents of embedded symbols
-        const startingStack: [string, NsGrammar][] = [["", g]];
-        const newThis = new QualifyNames(startingStack);
+        const names: string[] = [""];
+        const grammars: NsGrammar[] = [g];
+        const newThis = new QualifyNames(names, grammars);
 
         return newThis.transform(g, env)
                       .bind(_ => env.ns);
@@ -70,23 +72,23 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
     }
 
     public transformNamespace(g: NsGrammar, env: PassEnv): GrammarResult {
-        const stackNames = this.nsStack.map(([n,g]) => n);
         const msgs: Msgs = [];
 
         for (const [k, v] of Object.entries(g.symbols)) {
             if (v instanceof NsGrammar) {
-                const newStack: [string, NsGrammar][] = [ ...this.nsStack, [k, v] ];
-                const newThis = new QualifyNames(newStack);
+                const newNameStack = [ ...this.nameStack, k ];
+                const newGrammarStack = [ ...this.nsStack, v ];
+                const newThis = new QualifyNames(newNameStack, newGrammarStack);
                 const _ = newThis.transform(v, env)
                                  .msgTo(msgs);
             } else {
-                const newName = g.calculateQualifiedName(k, stackNames);
+                const newName = g.calculateQualifiedName(k, this.nameStack);
                 const newV = this.transform(v, env)
                                  .msgTo(msgs);
                 env.ns.addSymbol(newName, newV);
             }
         }
-        const defaultName = g.calculateQualifiedName("", stackNames);
+        const defaultName = g.calculateQualifiedName("", this.nameStack);
         const defaultSymbol = env.ns.symbols[defaultName];
         if (defaultSymbol == undefined) {
             const defaultRef = env.ns.getDefaultSymbol();
@@ -100,10 +102,9 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
         let resolution: [string, Grammar] | undefined = undefined;
         for (let i = this.nsStack.length-1; i >=0; i--) {
             // we go down the stack asking each to resolve it
-            const subStack = this.nsStack.slice(0, i+1);
-            const topOfStack = subStack[i][1];
-            const stackNames = subStack.map(([n,g]) => n);
-            resolution = topOfStack.resolveName(g.name, stackNames);
+            const subNsStack = this.nsStack.slice(0, i+1);
+            const subNameStack = this.nameStack.slice(0, i+1);
+            resolution = subNsStack[i].resolveName(g.name, subNameStack);
             if (resolution != undefined) {              
                 const [qualifiedName, _] = resolution;
                 const result = new EmbedGrammar(qualifiedName, env.ns);

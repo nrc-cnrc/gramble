@@ -4,5 +4,12 @@
     "mochaExplorer.files": "tests/{,sheets/**/}*.ts",
     "mochaExplorer.require": "ts-node/register",
     "mochaExplorer.logpanel": true,
-    "mochaExplorer.cwd": "./packages/parser"
+    "mochaExplorer.cwd": "./packages/parser",
+    "[csv]": {
+        "editor.acceptSuggestionOnEnter": "off",
+        "editor.inlineSuggest.enabled": false,
+        "editor.quickSuggestions": {
+            "other": "off"
+        }
+    }
 }
