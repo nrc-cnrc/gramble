@@ -253,7 +253,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                 }     
                 ns.addSymbol(child.name, grammar);
             } else if (isLastChild) {
-                ns.addSymbol("__DEFAULT__", grammar);
+                ns.addSymbol("", grammar);
             }
             
         }

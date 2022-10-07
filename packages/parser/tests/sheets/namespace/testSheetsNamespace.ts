@@ -138,4 +138,31 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    describe('Op with namespace as a child', function() {
+        const project = sheetFromFile(`${DIR}/namespaceChildOfOp.csv`);
+        testErrors(project, [
+            ["namespaceChildOfOp",11,2,"error"]
+        ]);
+        testGrammar(project, [
+            {},
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ]);
+    });
+    
+    describe('Op with namespace as a child', function() {
+        const project = sheetFromFile(`${DIR}/namespaceSiblingOfOp.csv`);
+        testErrors(project, [
+            ["namespaceSiblingOfOp",8,1,"error"]
+        ]);
+        testGrammar(project, [
+            {},
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ]);
+    });
 });

@@ -103,7 +103,7 @@ export class CreateNamespaces extends CPass {
 
             // the previous child is not an assignment, so
             // it's just the first arg to this, but don't assign 
-            // it to anything.  it'll be assigned to __DEFAULT__ if 
+            // it to anything.  it'll be assigned to the namespace name if 
             // it's last, otherwise the unassigned-content pass will
             // deal with it
             child.sibling = prev;
