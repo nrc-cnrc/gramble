@@ -173,7 +173,7 @@ export abstract class Grammar extends Component {
         // But it memoizes, so there's no harm in calling it again for safety.
         const tapeNames = this.calculateTapes(new CounterStack(2));
         for (const tapeName of tapeNames) {
-            const tapeInfo = this.getTapeClass(tapeName, {});
+            const tapeInfo = this.getTapeClass(tapeName, new Set());
             const atomic = !tapeInfo.joinable || !tapeInfo.concatenable;
             const oldTape = tapeNS.attemptGet(tapeName);
             if (oldTape == undefined) {
@@ -202,7 +202,7 @@ export abstract class Grammar extends Component {
     
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         let result: TapeClass = { joinable: false, concatenable: false };
         for (const child of this.getChildren()) {
@@ -440,7 +440,7 @@ export class DotGrammar extends AtomicGrammar {
     
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         if (tapeName == this.tapeName) {
             return { joinable: true, concatenable: true };
@@ -528,7 +528,7 @@ export class SequenceGrammar extends NAryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         const result = super.getTapeClass(tapeName, cache);
         let alreadyFound = false;
@@ -634,7 +634,7 @@ export class ShortGrammar extends UnaryGrammar {
     
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         const ts = new Set(this.tapes);
         if (ts.has(tapeName)) {
@@ -664,7 +664,7 @@ export class IntersectionGrammar extends BinaryGrammar {
     
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         const result = super.getTapeClass(tapeName, cache);
         const child1Tapes = this.child1.tapes;
@@ -715,7 +715,7 @@ export class JoinGrammar extends BinaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         const result = super.getTapeClass(tapeName, cache);
         const child1Tapes = this.child1.tapes;
@@ -764,7 +764,7 @@ export class EqualsGrammar extends BinaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         const result = super.getTapeClass(tapeName, cache);
         const child1Tapes = this.child1.tapes;
@@ -971,7 +971,7 @@ export class RenameGrammar extends UnaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
         return this.child.getTapeClass(newTapeName, cache);
@@ -1039,7 +1039,7 @@ export class RepeatGrammar extends UnaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         const result = this.child.getTapeClass(tapeName, cache);
         const ts = new Set(this.tapes);
@@ -1081,7 +1081,7 @@ export class NegationGrammar extends UnaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         const ts = new Set(this.tapes);
         if (ts.has(tapeName)) {
@@ -1196,7 +1196,7 @@ export class MatchFromGrammar extends UnaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         if (tapeName == this.fromTape || tapeName == this.toTape) {
             return { joinable: true, concatenable: true };
@@ -1269,7 +1269,7 @@ export class MatchGrammar extends UnaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         if (this.relevantTapes.has(tapeName)) {
             return { joinable: true, concatenable: true };
@@ -1514,15 +1514,17 @@ export class EmbedGrammar extends AtomicGrammar {
     
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
     ): TapeClass {
         const key = `${this.name}__${tapeName}`
-        if (key in cache) {
-            return cache[key];
+        if (cache.has(key)) { 
+            // we already visited.  these might be true or false,
+            // but we can just return false here because if it's 
+            // true in other contexts it'll end up true in the end
+            return { joinable: false, concatenable: false };
         }
-        const result = this.getReferent().getTapeClass(tapeName, cache);
-        cache[key] = result;
-        return result;
+        cache.add(key);
+        return this.getReferent().getTapeClass(tapeName, cache);
     }
 
     public collectVocab(
@@ -2048,7 +2050,7 @@ export class ReplaceGrammar extends Grammar {
 
     public getTapeClass(
         tapeName: string, 
-        cache: {[key: string]: TapeClass}
+        cache: Set<string>
         ): TapeClass {
         const ts = new Set(this.tapes);
         if (ts.has(tapeName)) {

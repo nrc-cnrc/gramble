@@ -152,7 +152,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Op with namespace as a child', function() {
+    describe('Op with namespace as a sibling', function() {
         const project = sheetFromFile(`${DIR}/namespaceSiblingOfOp.csv`);
         testErrors(project, [
             ["namespaceSiblingOfOp",8,1,"error"]
