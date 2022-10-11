@@ -41,7 +41,7 @@ export class RuleReplacePass2 extends GrammarPass {
 
     public handleJoinRule(g: JoinRuleGrammar, env: PassEnv): GrammarResult {
 
-        g.calculateTapes(new CounterStack(2));
+        g.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar
             // leads to infinite generation.  This is correct but not what anyone
@@ -62,7 +62,7 @@ export class RuleReplacePass2 extends GrammarPass {
         const newTapeName = `.RULE${RULE_HIDE_INDEX++}`
         const hiddenComposition = renameGrammar(grammarComposedWithRules, REPLACE_INPUT_TAPE, newTapeName);
         const renamedComposition = renameGrammar(hiddenComposition, REPLACE_OUTPUT_TAPE, g.inputTape);
-        renamedComposition.calculateTapes(new CounterStack(2));
+        renamedComposition.calculateTapes(new CounterStack(2), env);
         return renamedComposition.msg();
     }
 }

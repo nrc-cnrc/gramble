@@ -95,10 +95,10 @@ export class Interpreter {
         // Next we collect the vocabulary on all tapes
         timeIt(() => {
             // recalculate tapes
-            this.grammar.calculateTapes(new CounterStack(2));
+            this.grammar.calculateTapes(new CounterStack(2), env);
             // collect vocabulary
             this.tapeNS = new TapeNamespace();
-            this.grammar.collectAllVocab(this.vocab, this.tapeNS);
+            this.grammar.collectAllVocab(this.vocab, this.tapeNS, env);
 
         }, timeVerbose, "Collected vocab");
 
@@ -266,9 +266,10 @@ export class Interpreter {
         opt: GenOptions,
         tapePriority: string[] = []
     ): Expr {
+        const env = new PassEnv().pushSymbols(this.grammar.symbols);
 
         if (tapePriority.length == 0) {
-            tapePriority = this.grammar.calculateTapes(new CounterStack(2));
+            tapePriority = this.grammar.calculateTapes(new CounterStack(2), env);
         }
         
         let expr = this.grammar.constructExpr(this.symbolTable);
@@ -279,7 +280,7 @@ export class Interpreter {
             throw new Error(`Missing symbol: ${symbolName}; choices are [${allSymbols}]`);
         }
 
-        tapePriority = targetGrammar.calculateTapes(new CounterStack(2));
+        tapePriority = targetGrammar.calculateTapes(new CounterStack(2), env);
 
         if (Object.keys(query).length > 0) {
             const queryLiterals = Object.entries(query).map(([key, value]) => {
@@ -289,17 +290,16 @@ export class Interpreter {
             });
             const querySeq = new SequenceGrammar(queryLiterals);
             targetGrammar = new EqualsGrammar(targetGrammar, querySeq);
-            tapePriority = targetGrammar.calculateTapes(new CounterStack(2));
+            tapePriority = targetGrammar.calculateTapes(new CounterStack(2), env);
             
             // we have to collect any new vocab, but only from the new material
-            targetGrammar.collectAllVocab(this.vocab, this.tapeNS);
+            targetGrammar.collectAllVocab(this.vocab, this.tapeNS, env);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
-            //targetGrammar.copyVocab(this.tapeNS, new Set());
-        
+            //targetGrammar.copyVocab(this.tapeNS, new Set());        
         }
 
-        const potentiallyInfinite = targetGrammar.potentiallyInfinite(new CounterStack(2));
+        const potentiallyInfinite = targetGrammar.potentiallyInfinite(new CounterStack(2), env);
         if (potentiallyInfinite && opt.maxChars != Infinity) {
             if (targetGrammar instanceof PriorityGrammar) {
                 targetGrammar.child = new CountGrammar(targetGrammar.child, opt.maxChars-1);

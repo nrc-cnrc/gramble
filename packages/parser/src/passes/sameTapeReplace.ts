@@ -28,18 +28,18 @@ export class SameTapeReplacePass extends GrammarPass {
         return result.bind(g => {
             switch (g.constructor) {
                 case JoinReplaceGrammar:
-                    return this.handleJoinReplace(g as JoinReplaceGrammar);
+                    return this.handleJoinReplace(g as JoinReplaceGrammar, env);
                 case ReplaceGrammar:
-                    return this.handleReplace(g as ReplaceGrammar);
+                    return this.handleReplace(g as ReplaceGrammar, env);
                 default:
                     return g;
             }
         });
     }
 
-    public handleJoinReplace(g: JoinReplaceGrammar): GrammarResult {
+    public handleJoinReplace(g: JoinReplaceGrammar, env: PassEnv): GrammarResult {
 
-        g.calculateTapes(new CounterStack(2));
+        g.calculateTapes(new CounterStack(2), env);
         
         let fromTape: string | undefined = undefined;
         let replaceTape: string | undefined = undefined;
@@ -75,8 +75,8 @@ export class SameTapeReplacePass extends GrammarPass {
         return new JoinGrammar(newG, child2).msg();
     }
 
-    public handleReplace(g: ReplaceGrammar): GrammarResult {
-        g.calculateTapes(new CounterStack(2));
+    public handleReplace(g: ReplaceGrammar, env: PassEnv): GrammarResult {
+        g.calculateTapes(new CounterStack(2), env);
         let replaceTapeName = g.fromTapeName;
         for (const toTapeName of g.toTapeNames) {
             if (g.fromTapeName == toTapeName)

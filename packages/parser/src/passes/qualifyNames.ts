@@ -1,4 +1,4 @@
-import { MissingSymbolError, Msgs, Result } from "../msgs";
+import { MissingSymbolError, Msgs, Result, resultDict, resultList } from "../msgs";
 import { 
     CounterStack,
     EmbedGrammar,
@@ -10,6 +10,7 @@ import {
     NsGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
+import { Dict } from "../util";
 
 /**
  * Goes through the tree and 
@@ -39,11 +40,6 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
             throw new Error("QualifyNames requires an NsGrammar root");
         }
 
-        // the root of the tree is the existing namespace
-        // we'll be replacing that with the new one in env.
-        // this will then be the only namespace in the tree.
-        env.ns = new NsGrammar();
-
         // we keep a stack of the old namespaces, in which we'll
         // attempt to find the referents of embedded symbols
         const names: string[] = [""];
@@ -51,7 +47,8 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
         const newThis = new QualifyNames(names, grammars);
 
         return newThis.transform(g, env)
-                      .bind(_ => env.ns);
+            .bind(_ => new NsGrammar(env.symbolNS.entries));
+
     }
 
     public transform(g: Grammar, env: PassEnv): GrammarResult {
@@ -64,7 +61,6 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
             default: 
                 return g.mapChildren(this, env) as GrammarResult;
         }
-
     }
     
     public get desc(): string {
@@ -72,30 +68,42 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
     }
 
     public transformNamespace(g: NsGrammar, env: PassEnv): GrammarResult {
+        const newSymbols: Dict<Grammar> = {};
         const msgs: Msgs = [];
 
-        for (const [k, v] of Object.entries(g.symbols)) {
+        const entries = Object.entries(g.symbols);
+        for (let i = 0; i < entries.length; i++) {
+            const [k, v] = entries[i];
+            const lastChild = i == entries.length-1;
+
+            let newV: Grammar;
             if (v instanceof NsGrammar) {
                 const newNameStack = [ ...this.nameStack, k ];
                 const newGrammarStack = [ ...this.nsStack, v ];
                 const newThis = new QualifyNames(newNameStack, newGrammarStack);
-                const _ = newThis.transform(v, env)
+                newV = newThis.transform(v, env)
                                  .msgTo(msgs);
             } else {
                 const newName = g.calculateQualifiedName(k, this.nameStack);
-                const newV = this.transform(v, env)
+                newV = this.transform(v, env)
                                  .msgTo(msgs);
-                env.ns.addSymbol(newName, newV);
+                env.symbolNS.set(newName, newV);
+            }
+
+            newSymbols[k] = newV;
+
+            if (lastChild) {
+                const defaultName = g.calculateQualifiedName("", this.nameStack);
+                const defaultSymbol = env.symbolNS.attemptGet(defaultName);
+                if (defaultSymbol == undefined) {
+                    const defaultRef = newV.getDefaultSymbol();
+                    env.symbolNS.set(defaultName, defaultRef);
+                }
             }
         }
-        const defaultName = g.calculateQualifiedName("", this.nameStack);
-        const defaultSymbol = env.ns.symbols[defaultName];
-        if (defaultSymbol == undefined) {
-            const defaultRef = env.ns.getDefaultSymbol();
-            env.ns.addSymbol(defaultName, defaultRef);
-        }
-        return g.msg(msgs);  // doesn't actually matter what grammar
-                             // we return here; it gets ignored
+        
+        const r = new NsGrammar(newSymbols);
+        return r.msg(msgs);
     }
 
     public transformEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {
@@ -107,7 +115,7 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
             resolution = subNsStack[i].resolveName(g.name, subNameStack);
             if (resolution != undefined) {              
                 const [qualifiedName, _] = resolution;
-                const result = new EmbedGrammar(qualifiedName, env.ns);
+                const result = new EmbedGrammar(qualifiedName);
                 return result.msg();
             }
         }

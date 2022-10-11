@@ -242,19 +242,15 @@
                 let options = project.allSymbols();
 
                 for (const option of options) {
-                    const el = document.createElement('option');
-
-                    let optionText = option;
-                    const pieces = option.split(".");
-                    const lastPiece = pieces[pieces.length-1];
-                    if (lastPiece == "__MAIN__" || lastPiece == "__DEFAULT__") {
+                    if (option == "") {
                         continue;
-                    } 
-                    el.textContent = optionText;
+                    }
+                    
+                    const el = document.createElement('option');
+                    el.textContent = option;
                     el.value = option;
                     select.appendChild(el);
-                    if (optionText.toLowerCase() == previousSymbol.toLowerCase() ||
-                        el.value.toLowerCase() == previousSymbol.toLowerCase()) {
+                    if (option.toLowerCase() == previousSymbol.toLowerCase()) {
                         el.selected = true;
                     }
 
@@ -409,10 +405,6 @@
 
                 if (symbolName == "" || symbolName == undefined) {
                     return;
-                }
-
-                if (symbolName.endsWith(".__MAIN__")) {
-                    symbolName = symbolName.substr(0, symbolName.length-9);
                 }
 
                 return symbolName;

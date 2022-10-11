@@ -67,8 +67,8 @@ export type StringDict = Dict<string>;
  export class Namespace<T> {
 
     constructor(
-        protected entries: Map<string, T> = new Map(),
-        protected prev: Namespace<T> | undefined = undefined
+        public entries: Dict<T> = {},
+        public prev: Namespace<T> | undefined = undefined
     ) { }
 
     public get(key: string): T {
@@ -76,11 +76,11 @@ export type StringDict = Dict<string>;
         if (result != undefined) {
             return result;
         }
-        throw new Error(`Cannot find ${key} in namespace`);
+        throw new Error(`Cannot find ${key} in namespace, candidates: ${Object.keys(this.entries)}`);
     }
 
     public attemptGet(key: string): T | undefined {
-        const result = this.entries.get(key);
+        const result = this.entries[key];
         if (result == undefined && this.prev != undefined) {
             return this.prev.attemptGet(key);
         }
@@ -88,13 +88,11 @@ export type StringDict = Dict<string>;
     }
 
     public set(key: string, value: T): void {
-        this.entries.set(key, value);
+        this.entries[key] = value;
     }
 
-    public push(key: string, value: T): Namespace<T> {
-        const newMap : Map<string, T> = new Map();
-        newMap.set(key, value);
-        return new Namespace<T>(newMap, this);
+    public push(d: Dict<T>): Namespace<T> {
+        return new Namespace<T>(d, this);
     }
 
     public rename(fromKey: string, toKey: string): Namespace<T> {
@@ -105,7 +103,7 @@ export type StringDict = Dict<string>;
         if (referent == undefined) {
             return this;
         }
-        return this.push(toKey, referent);
+        return this.push({[toKey]: referent});
     }
 
 }

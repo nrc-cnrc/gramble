@@ -1,14 +1,11 @@
 import { Seq, Uni, Join, Embed, Ns } from "../src/grammars";
 import { 
-    t1, t2, t3, 
-    testHasTapes, 
-    //testHasVocab, 
-    testGrammar, 
-    //makeTestNamespace
+    t1,
+    testGrammar,
 } from './testUtils';
 
 import * as path from 'path';
-import { SILENT, VERBOSE_TIME } from "../src/util";
+import { SILENT } from "../src/util";
 
 
 describe(`${path.basename(module.filename)}`, function() {
@@ -182,4 +179,4 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(symbolTable, [{t1: "hiworld"}], 
                         SILENT, "b", 0);
     }); 
-})
+});

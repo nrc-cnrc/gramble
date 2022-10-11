@@ -30,9 +30,9 @@ export class UnitTestPass extends GrammarPass {
         return result.bind(g => {
             switch (g.constructor) {
                 case UnitTestGrammar:
-                    return this.handleTest(g as UnitTestGrammar);
+                    return this.handleTest(g as UnitTestGrammar, env);
                 case NegativeUnitTestGrammar:
-                    return this.handleNegativeTest(g as NegativeUnitTestGrammar);
+                    return this.handleNegativeTest(g as NegativeUnitTestGrammar, env);
                 default:
                     return g;
             }
@@ -40,8 +40,8 @@ export class UnitTestPass extends GrammarPass {
 
     }
 
-    public handleTest(g: UnitTestGrammar): GrammarResult {
-        const results = this.executeTest(g);
+    public handleTest(g: UnitTestGrammar, env: PassEnv): GrammarResult {
+        const results = this.executeTest(g, env);
         const msgs: Msgs = [];
         if (results.length == 0) {
             Err("Failed unit test",
@@ -71,8 +71,8 @@ export class UnitTestPass extends GrammarPass {
         return g.msg(msgs);
     }
 
-    public handleNegativeTest(g: NegativeUnitTestGrammar): GrammarResult {
-        const results = this.executeTest(g);
+    public handleNegativeTest(g: NegativeUnitTestGrammar, env: PassEnv): GrammarResult {
+        const results = this.executeTest(g, env);
         if (results.length > 0) {
             return result(g).err("Failed unit test",
                 "The grammar above incorrectly has outputs compatible with these inputs.");
@@ -83,21 +83,21 @@ export class UnitTestPass extends GrammarPass {
         return g.msg();
     }
     
-    public executeTest(test: UnitTestGrammar): StringDict[] {
+    public executeTest(test: UnitTestGrammar, env: PassEnv): StringDict[] {
 
         const opt = new GenOptions();
 
         // create a filter for each test
         let targetComponent: Grammar = new EqualsGrammar(test.child, test.test);
 
-        const tapePriority = targetComponent.calculateTapes(new CounterStack(2));
+        const tapePriority = targetComponent.calculateTapes(new CounterStack(2), env);
         
         // there won't be any new vocabulary here, but it's possible (indeed, frequent)
         // that the Equals we made above has a different join/concat tape structure
         // than the original grammar, so we have to check
-        targetComponent.collectAllVocab(this.vocab, this.tapeNS);
+        targetComponent.collectAllVocab(this.vocab, this.tapeNS, env);
             
-        const potentiallyInfinite = targetComponent.potentiallyInfinite(new CounterStack(2));
+        const potentiallyInfinite = targetComponent.potentiallyInfinite(new CounterStack(2), env);
         if (potentiallyInfinite && opt.maxChars != Infinity) {
             if (targetComponent instanceof PriorityGrammar) {
                 targetComponent.child = new CountGrammar(targetComponent.child, opt.maxChars-1);

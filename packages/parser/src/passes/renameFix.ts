@@ -34,17 +34,17 @@ export class RenameFix extends GrammarPass {
         return result.bind(g => {
             switch (g.constructor) {
                 case HideGrammar:
-                    return this.handleHide(g as HideGrammar);
+                    return this.handleHide(g as HideGrammar, env);
                 case RenameGrammar:
-                    return this.handleRename(g as RenameGrammar);
+                    return this.handleRename(g as RenameGrammar, env);
                 default:
                     return g;
             }
         });
     }
 
-    public handleHide(g: HideGrammar): GrammarResult {
-        g.calculateTapes(new CounterStack(2));
+    public handleHide(g: HideGrammar, env: PassEnv): GrammarResult {
+        g.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.tapeName) == -1) {  
             return result(g).err("Hiding missing tape",
                             `The grammar to the left does not contain the tape ${g.tapeName}. ` +
@@ -54,8 +54,8 @@ export class RenameFix extends GrammarPass {
         return g.msg();
     }
 
-    public handleRename(g: RenameGrammar): GrammarResult {
-        g.calculateTapes(new CounterStack(2));
+    public handleRename(g: RenameGrammar, env: PassEnv): GrammarResult {
+        g.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.fromTape) == -1) { 
             return result(g).err("Renaming missing tape",
                             `The grammar to the left does not contain the tape ${g.fromTape}. ` +

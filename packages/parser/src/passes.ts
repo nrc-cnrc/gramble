@@ -1,11 +1,21 @@
-import { NsGrammar } from "./grammars";
+import { Grammar, NsGrammar } from "./grammars";
 import { Result } from "./msgs";
-import { SILENT, timeIt, VERBOSE_TIME } from "./util";
+import { Dict, Namespace, SILENT, timeIt, VERBOSE_TIME } from "./util";
 
 export class PassEnv {
-    verbose: number = SILENT;
-    parallelize: boolean = false;
-    ns: NsGrammar = new NsGrammar();
+
+    constructor(
+        public verbose: number = SILENT,
+        public parallelize: boolean = false,
+        public symbolNS: Namespace<Grammar> = new Namespace()
+    ) { }
+
+    public pushSymbols(d: Dict<Grammar>): PassEnv {
+        const newSymbolNS = this.symbolNS.push(d);
+        return new PassEnv(this.verbose, this.parallelize, 
+                        newSymbolNS);
+    }
+
 }
 
 export abstract class Pass<T1,T2> {
