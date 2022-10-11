@@ -8,7 +8,7 @@ import {
 import { 
     Tape, BitsetToken, TapeNamespace, 
     renameTape, Token, EntangledToken,
-    OutputTrie, EpsilonToken, EPSILON_TOKEN
+    OutputTrie, EpsilonToken, EPSILON_TOKEN, NO_CHAR_BITSET
 } from "./tapes";
 
 
@@ -412,12 +412,25 @@ export abstract class Expr {
                 continue;
             } 
 
-            let nextBits = nextToken as BitsetToken;
-            let newResults: [BitsetToken, Expr][] = [];
+            let nextBits: BitsetToken = nextToken instanceof EpsilonToken ?
+                                        NO_CHAR_BITSET : nextToken as BitsetToken;
+            let epsilonPushed = false;
+            let newResults: [BitsetToken | EpsilonToken, Expr][] = [];
             for (let [otherToken, otherNext] of results) {
-                let otherBits = otherToken as BitsetToken;
+                if (otherToken instanceof EpsilonToken) {
+                    if (nextToken instanceof EpsilonToken) {
+                        // there's something in the intersection
+                        const union = constructAlternation(next, otherNext);
+                        newResults.push([nextToken, union]);
+                        epsilonPushed = true;
+                    } else {
+                        newResults.push([otherToken, otherNext]); 
+                    }
+                    continue;
+                }
+                let otherBits: BitsetToken = otherToken as BitsetToken;
                 // they both matched
-                const intersection = nextBits.and(otherBits);
+                const intersection: BitsetToken = nextBits.and(otherBits);
                 if (!intersection.isEmpty()) {
                     // there's something in the intersection
                     const union = constructAlternation(next, otherNext);
@@ -435,8 +448,11 @@ export abstract class Expr {
             results = newResults;
             if (!nextBits.isEmpty()) {
                 results.push([nextBits, next]);
+            } else if ((nextToken instanceof EpsilonToken) && !epsilonPushed) {
+                results.push([nextToken, next]);
             }
         }
+
         yield *results;
     }
 
@@ -554,7 +570,7 @@ class EntangleExpr extends Expr {
     }
 
     public get id(): string {
-        return `(bits)`;
+        return `(bits:${this.token.bits})`;
     }
 
     public delta(
@@ -1504,7 +1520,10 @@ export class PriorityExpr extends UnaryExpr {
                 this.child.disjointDeriv(tapeToTry, startingToken, env)) {
 
             if (!(cNext instanceof NullExpr)) {
-                const cTarget_str = (cTarget instanceof EpsilonToken) ? 'ε' : cTarget;
+                const cTarget_str = (cTarget instanceof EpsilonToken) ? 'ε' : 
+                                    (cTarget instanceof BitsetToken) ?
+                                    `[${cTarget.bits}:${cTarget.entanglements.toString()}]` :
+                                    cTarget;
                 env.logDebug(`D^${tapeToTry}_${cTarget_str} is ${cNext.id}`);
                 const successor = constructPriority(newTapes, cNext);
                 yield [tapeToTry, cTarget, successor];
@@ -1721,10 +1740,14 @@ class NegationExpr extends UnaryExpr {
 
         for (const [childText, childNext] of 
                 this.child.disjointDeriv(tapeName, disentangledTarget, env)) {
+            const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
+            if (childText instanceof EpsilonToken) {
+                yield [childText, successor];
+                continue;
+            }
 
             const complement = (childText as BitsetToken).not();
             remainder = remainder.and(complement);
-            const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
             const reEntangledText = (childText as BitsetToken).reEntangle(entanglements);
             yield [reEntangledText, successor];
         }

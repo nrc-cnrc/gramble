@@ -160,7 +160,7 @@ export class EntangledToken extends BitsetToken {
 let ENTANGLE_INDEX: number = 0;
 
 const ANY_CHAR_BITSET: BitsetToken = new UnentangledToken(new BitSet().flip());
-const NO_CHAR_BITSET: BitsetToken = new UnentangledToken(new BitSet());
+export const NO_CHAR_BITSET: BitsetToken = new UnentangledToken(new BitSet());
 
 
 export class EpsilonToken { }
@@ -317,9 +317,6 @@ export class OutputTrieLeaf extends OutputTrie {
             }
         }
 
-        if (results.length == 0) {
-            results.push({});
-        }
         return results;
     }
 

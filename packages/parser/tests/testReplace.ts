@@ -1328,7 +1328,8 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leeleeh', t2: 'leleh'},
             {t1: 'leeleel', t2: 'lelel'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGrammar(grammar, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('28. Insert a in h_l: t1:0 -> t2:a {0,2} || h_l', function() {
@@ -2236,7 +2237,8 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: "eehh", t2: "eeeh"}, {t1: "eehh", t2: "eehe"},
             {t1: "eehe", t2: "eeee"}, {t1: "eeeh", t2: "eeee"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGrammar(grammar, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('37a. Replace e by ∅: t1:e -> t2:∅ {1} || ^_ (vocab hel/∅)', function() {
@@ -3802,7 +3804,8 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'leeleeh', t2: 'leleh', t4: 'leleh'},
             {t1: 'leeleel', t2: 'lelel', t4: 'lelel'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGrammar(grammar, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('2-28. Insert a/e in h_l: t1:0 -> t2:a t4:e {0,2} || h_l', function() {

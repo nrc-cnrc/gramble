@@ -1320,7 +1320,8 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hh', t2: 'eheehe'},
             {t1: 'hh', t2: 'ehehee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('62a-1. Join (t2:e+M(t1>t2,ε|t1:h)){2} + same ⨝ t2:eeee (vocab hx/hex)', function() {
@@ -1857,7 +1858,8 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hh', t2: 'eheehe'},
             {t1: 'hh', t2: 'ehehee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('63a-1. Join ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ⨝ (t2:ee)* (vocab hx/hex)', function() {
@@ -2145,7 +2147,8 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hh', t2: 'eheehe'},
             {t1: 'hh', t2: 'ehehee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('64a-1. Join ((t2:e+M(t1>t2,ε|t1:h)){2})* ⨝ (t2:ee){2} (vocab hx/hex)', function() {
