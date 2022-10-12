@@ -2704,5 +2704,105 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
+
+    // Testing Sequences of Repleats of Nullable Matches
+
+    describe('66a. (t2:e+M(t1>t2,ε|t1:h)){4} (vocab hx/hex)', function() {
+        const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 4, 4);
+        let grammarWithVocab: Grammar = Seq(grammar,
+                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        grammarWithVocab = CountTape(10, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t2: 'eeee'},
+            {t1: 'h', t2: 'eeeeh'},
+            {t1: 'h', t2: 'eeehe'},
+            {t1: 'h', t2: 'eehee'},
+            {t1: 'h', t2: 'eheee'},
+            {t1: 'hh', t2: 'eeeheh'},
+            {t1: 'hh', t2: 'eeheeh'},
+            {t1: 'hh', t2: 'eehehe'},
+            {t1: 'hh', t2: 'eheeeh'},
+            {t1: 'hh', t2: 'eheehe'},
+            {t1: 'hh', t2: 'ehehee'},
+            {t1: 'hhh', t2: 'eeheheh'},
+            {t1: 'hhh', t2: 'eheeheh'},
+            {t1: 'hhh', t2: 'eheheeh'},
+            {t1: 'hhh', t2: 'ehehehe'},
+            {t1: 'hhhh', t2: 'eheheheh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+
+    describe('66b. (t2:e+M(t1>t2,ε|t1:h)){2} + (t2:e+M(t1>t2,ε|t1:h)){2} (vocab hx/hex)', function() {
+        const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
+        const repGrammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        const grammar: Grammar = Seq(repGrammar, repGrammar);
+        let grammarWithVocab: Grammar = Seq(grammar,
+                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        grammarWithVocab = CountTape(10, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t2: 'eeee'},
+            {t1: 'h', t2: 'eeeeh'},
+            {t1: 'h', t2: 'eeehe'},
+            {t1: 'h', t2: 'eehee'},
+            {t1: 'h', t2: 'eheee'},
+            {t1: 'hh', t2: 'eeeheh'},
+            {t1: 'hh', t2: 'eeheeh'},
+            {t1: 'hh', t2: 'eehehe'},
+            {t1: 'hh', t2: 'eheeeh'},
+            {t1: 'hh', t2: 'eheehe'},
+            {t1: 'hh', t2: 'ehehee'},
+            {t1: 'hhh', t2: 'eeheheh'},
+            {t1: 'hhh', t2: 'eheeheh'},
+            {t1: 'hhh', t2: 'eheheeh'},
+            {t1: 'hhh', t2: 'ehehehe'},
+            {t1: 'hhhh', t2: 'eheheheh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
+    });
+
+    describe('66c. (t2:e+M(t1>t2,ε|t1:h)){2} + (t2:x+M(t1>t2,ε|t1:h)){2} (vocab hx/hex)', function() {
+        const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
+        const rep1Grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        const rep2Grammar: Grammar = Rep(Seq(t2("x"), matchGrammar), 2, 2);
+        const grammar: Grammar = Seq(rep1Grammar, rep2Grammar);
+        let grammarWithVocab: Grammar = Seq(grammar,
+                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        grammarWithVocab = CountTape(10, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t2: 'eexx'},
+            {t1: 'h', t2: 'eexxh'},
+            {t1: 'h', t2: 'eexhx'},
+            {t1: 'h', t2: 'eehxx'},
+            {t1: 'h', t2: 'ehexx'},
+            {t1: 'hh', t2: 'eexhxh'},
+            {t1: 'hh', t2: 'eehxxh'},
+            {t1: 'hh', t2: 'eehxhx'},
+            {t1: 'hh', t2: 'ehexxh'},
+            {t1: 'hh', t2: 'ehexhx'},
+            {t1: 'hh', t2: 'ehehxx'},
+            {t1: 'hhh', t2: 'eehxhxh'},
+            {t1: 'hhh', t2: 'ehexhxh'},
+            {t1: 'hhh', t2: 'ehehxxh'},
+            {t1: 'hhh', t2: 'ehehxhx'},
+            {t1: 'hhhh', t2: 'ehehxhxh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
+    });
     
 });
