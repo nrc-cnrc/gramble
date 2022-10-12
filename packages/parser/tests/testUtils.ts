@@ -131,23 +131,13 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
         const testName = `should match items ${start}-${end_expected-1}: ${expected_outputs_str}`;
         it(`${testName}`, function() {
             this.timeout(10000);
-            for (const expected_output of expected_outputs.slice(start, end_expected)) {
-                try {
-                    expect(outputs).to.deep.include(expected_output);
-                } catch (e) {
-                    console.log("");
-                    console.log(`[${date_str}] [${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
-                    throw e;
-                }
-            }
-            for (const output of outputs.slice(start, end_outputs)) {
-                try {
-                    expect(expected_outputs).to.deep.include(output);
-                } catch (e) {
-                    console.log("");
-                    console.log(`[${date_str}] [${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
-                    throw e;
-                }
+            try {
+                expect(outputs).to.deep.include.members(expected_outputs.slice(start, end_expected));
+                expect(expected_outputs).to.deep.include.members(outputs.slice(start, end_outputs));
+            } catch (e) {
+                console.log("");
+                console.log(`[${date_str}] [${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
+                throw e;
             }
         });
     });
