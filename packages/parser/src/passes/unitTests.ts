@@ -110,7 +110,7 @@ export class UnitTestPass extends GrammarPass {
             targetComponent = new PriorityGrammar(targetComponent, tapePriority);
         }
 
-        const expr = targetComponent.constructExpr(this.symbolTable);
+        const expr = targetComponent.constructExpr(this.tapeNS, this.symbolTable);
 
         return [...generate(expr, this.tapeNS, opt)];
 

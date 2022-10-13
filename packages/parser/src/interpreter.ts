@@ -99,7 +99,6 @@ export class Interpreter {
             // collect vocabulary
             this.tapeNS = new TapeNamespace();
             this.grammar.collectAllVocab(this.vocab, this.tapeNS, env);
-
         }, timeVerbose, "Collected vocab");
 
         logGrammar(this.verbose, this.grammar.id)
@@ -272,8 +271,7 @@ export class Interpreter {
             tapePriority = this.grammar.calculateTapes(new CounterStack(2), env);
         }
         
-        let expr = this.grammar.constructExpr(this.symbolTable);
-
+        let expr = this.grammar.constructExpr(this.tapeNS, this.symbolTable);
         let targetGrammar = this.grammar.getSymbol(symbolName);
         if (targetGrammar == undefined) {
             const allSymbols = this.grammar.allSymbols();
@@ -313,13 +311,12 @@ export class Interpreter {
             //logTime(this.verbose, `priority = ${(targetGrammar as PriorityGrammar).tapePriority}`)
         }
 
-        expr = targetGrammar.constructExpr(this.symbolTable);
-
+        expr = targetGrammar.constructExpr(this.tapeNS, this.symbolTable);
         return expr;    
     }
 
     public runUnitTests(): void {
-        this.grammar.constructExpr(this.symbolTable);  // fill the symbol table if it isn't already
+        this.grammar.constructExpr(this.tapeNS, this.symbolTable);  // fill the symbol table if it isn't already
         const env = new PassEnv();
         const t = new UnitTestPass(this.vocab, this.tapeNS, this.symbolTable);
         const [_, msgs] = t.transform(this.grammar, env).destructure(); // results.item isn't important

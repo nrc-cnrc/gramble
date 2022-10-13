@@ -10,6 +10,7 @@ import {
     renameTape, Token, EntangledToken,
     OutputTrie, EpsilonToken, EPSILON_TOKEN
 } from "./tapes";
+import { Embed } from "./grammars";
 
 
 /** 
@@ -890,14 +891,12 @@ class RTLLiteralExpr extends LiteralExpr {
 
         const tape = env.getTape(tapeName);
         if (tape.atomic) {
-            env.logDebug(`${tapeName} is atomic`)
             if (target == ANY_CHAR_STR || target == this.text) {
                 yield [this.text, EPSILON];
             }
             return;
         }
 
-        env.logDebug(`${tapeName} is not atomic, tokens are ${this.tokens}`)
         if (target == ANY_CHAR_STR || target == this.tokens[this.index]) {
             const nextExpr = constructLiteral(this.tapeName, this.text, this.tokens, this.index-1);
             yield [this.tokens[this.index], nextExpr];
@@ -1443,6 +1442,13 @@ export class PriorityExpr extends UnaryExpr {
         env: Env
     ): Expr {
         const delta = this.child.delta(tapeName, env);
+        if (this.tapes.length == 0 && (!(delta instanceof NullExpr || delta instanceof EpsilonExpr))) {
+            if (delta instanceof EmbedExpr) {
+                const referent = delta._child;
+                throw new Error(`warning, nontrivial embed at end: ${delta.symbolName}:${referent?.id}`);
+            }
+            throw new Error(`warning, nontrivial expr at end: ${delta.id}`);
+        }
         return constructPriority(this.tapes, delta);
     }
 
@@ -1462,10 +1468,17 @@ export class PriorityExpr extends UnaryExpr {
         env: Env
     ): Expr {
         const tapeToTry = this.tapes[0];
-        const childDelta = this.child.delta(tapeToTry, env);
-        env.logDebug(`d^${tapeToTry} is ${childDelta.id}`);
+        const delta = this.child.delta(tapeToTry, env);
+        env.logDebug(`d^${tapeToTry} is ${delta.id}`);
         const newTapes = this.tapes.slice(1);
-        return constructPriority(newTapes, childDelta);
+        if (newTapes.length == 0 && (!(delta instanceof NullExpr || delta instanceof EpsilonExpr))) {
+            if (delta instanceof EmbedExpr) {
+                const referent = delta._child;
+                throw new Error(`warning, nontrivial embed at end: ${delta.symbolName}:${referent?.id}`);
+            }
+            throw new Error(`warning, nontrivial expr at end: ${delta.id}`);
+        }
+        return constructPriority(newTapes, delta);
     }
 
     public *openDeriv(
@@ -1621,7 +1634,7 @@ class RenameExpr extends UnaryExpr {
     }
     
     public get id(): string {
-        return `${this.fromTape}>${this.toTape}(${this.child.id})`;
+        return `${this.toTape}<-${this.fromTape}(${this.child.id})`;
     }
 
     public *deriv(
@@ -2296,7 +2309,7 @@ export function constructEntangle(
 export function constructPriority(tapes: string[], child: Expr): Expr {
 
     if (tapes.length == 0) {
-        if (!(child instanceof NullExpr || child instanceof EpsilonExpr)) {
+        if (!(child instanceof NullExpr || child instanceof EpsilonExpr)) {            
             throw new Error(`warning, nontrivial expr at end: ${child.id}`);
         }
         return child;
