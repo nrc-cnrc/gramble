@@ -349,7 +349,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/testWithRegexHeader.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["testWithRegexHeader",3,3,"error"]
+            ["testWithRegexHeader",3,3,"error"],
+            ["testWithRegexHeader",4,3,"warning"]
         ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run-1SG" }
@@ -360,7 +361,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/testWithOptionalHeader.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["testWithOptionalHeader",3,3,"error"]
+            ["testWithOptionalHeader",3,3,"error"],
+            ["testWithOptionalHeader",4,3,"warning"]
         ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run" }
@@ -371,7 +373,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/testWithSlashHeader.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["testWithSlashHeader",3,3,"error"]
+            ["testWithSlashHeader",3,3,"error"],
+            ["testWithSlashHeader",4,3,"warning"]
         ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run", eng: "run" }
@@ -382,7 +385,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const interpreter = sheetFromFile(`${DIR}/testWithEmbedHeader.csv`);
         interpreter.runUnitTests();
         testErrors(interpreter, [
-            ["testWithEmbedHeader",6,3,"error"]
+            ["testWithEmbedHeader",6,3,"error"],
+            ["testWithEmbedHeader",7,3,"warning"]
         ]);
         testGrammar(interpreter, [
             { text: "foobar", gloss: "run-1SG" }

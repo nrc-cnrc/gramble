@@ -6,19 +6,23 @@ import {
     SymbolOp 
 } from "../ops";
 import { result, Result } from "../msgs";
-import { TransEnv } from "../transforms";
+import { PassEnv } from "../passes";
 import { 
-    TstComponent, TstResult, 
-    TstTransform, TstOp, TstEmpty, TstGrid, TstUnitTest, TstTableOp, TstNegativeUnitTest, TstReplace, TstReplaceTape, TstBinaryOp, TstAssignment
+    TstOp, 
+    TstEmpty, TstUnitTest, 
+    TstTable, TstNegativeUnitTest, 
+    TstReplace, TstReplaceTape, 
+    TstBinaryOp, TstAssignment, TstParamList
 } from "../tsts";
+import { Component, CPass, CResult } from "../components";
 
- export class CreateOps extends TstTransform {
+ export class CreateOps extends CPass {
 
     public get desc(): string {
         return "Creating ops";
     }
 
-    public transform(t: TstComponent, env: TransEnv): TstResult {
+    public transform(t: Component, env: PassEnv): CResult {
         
         if (!(t instanceof TstOp)) {
             return t.mapChildren(this, env);
@@ -28,59 +32,62 @@ import {
         return result.bind(t => {
             switch(t.op.constructor) {
                 case TestOp:
-                    return this.transformTest(t);
+                    return this.handleTest(t);
                 case TestNotOp:
-                    return this.transformTestNot(t);
+                    return this.handleTestNot(t);
                 case TableOp:
-                    return this.transformTable(t);
+                    return this.handleOp(t);
                 case ReplaceOp:
-                    return this.transformReplace(t);
+                    return this.handleReplace(t);
                 case ReplaceTapeOp:
-                    return this.transformReplaceTape(t);
+                    return this.handleReplaceTape(t);
                 case BinaryOp:
-                    return this.transformBinary(t);
+                    return this.handleBinary(t);
                 case SymbolOp:
-                    return this.transformAssignment(t);
+                    return this.handleAssignment(t);
                 default: 
                     throw new Error(`didn't handle ${t.op.constructor.name} op`);
             }
         });
     }
 
-    public transformTable(t: TstOp): TstResult {
-        return new TstTableOp(t.cell, t.sibling, t.child).msg();
+    public handleOp(t: TstOp): CResult {
+        return new TstTable(t.cell, t.child as TstParamList).msg();
     }
 
-    public transformTest(t: TstOp): TstResult {
-        return new TstUnitTest(t.cell, t.sibling, t.child).msg();
+    public handleTest(t: TstOp): CResult {
+        return new TstUnitTest(t.cell, t.sibling, 
+                    t.child as TstParamList).msg();  
+    }
+
+    public handleTestNot(t: TstOp): CResult {
+        return new TstNegativeUnitTest(t.cell, t.sibling, 
+                    t.child as TstParamList).msg();
+    }
     
+    public handleReplace(t: TstOp): CResult {
+        return new TstReplace(t.cell, t.sibling, 
+                    t.child as TstParamList).msg();
     }
 
-    public transformTestNot(t: TstOp): TstResult {
-        return new TstNegativeUnitTest(t.cell, t.sibling, t.child).msg();
-    }
-    
-    public transformReplace(t: TstOp): TstResult {
-        return new TstReplace(t.cell, t.sibling, t.child).msg();
-    }
-
-    public transformReplaceTape(t: TstOp): TstResult {
+    public handleReplaceTape(t: TstOp): CResult {
         const tapeName = (t.op as ReplaceTapeOp).child.text;
         return new TstReplaceTape(t.cell, tapeName, 
-                                  t.sibling, t.child).msg();
+                    t.sibling, t.child as TstParamList).msg();
     }
     
-    public transformBinary(t: TstOp): TstResult {
-        const op = BINARY_OPS_MAP[(t.op as BinaryOp).text];
-        return new TstBinaryOp(t.cell, op, t.sibling, t.child).msg();
+    public handleBinary(t: TstOp): CResult {
+        const opName = (t.op as BinaryOp).text;
+        return new TstBinaryOp(t.cell, opName, 
+                        t.sibling, t.child).msg();
     }
 
-    public transformAssignment(t: TstOp): TstResult {
+    public handleAssignment(t: TstOp): CResult {
         const trimmedText = t.text.endsWith(":")
                           ? t.text.slice(0, t.text.length-1).trim()
                           : t.text;
 
-        const assignment = new TstAssignment(t.cell, trimmedText, t.sibling, t.child);
+        const assignment = new TstAssignment(t.cell, trimmedText, t.child);
 
         if (trimmedText.indexOf(".") != -1) {
             return result(assignment).warn("You can't assign to a name that contains a period.")

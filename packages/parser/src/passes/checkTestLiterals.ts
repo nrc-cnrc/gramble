@@ -1,16 +1,15 @@
 import { 
-    TstComponent, TstEmpty, 
     TstHeader, 
-    TstResult, TstGrid, 
-    TstTransform, TstOp 
+    TstParamList, 
+    TstOp, TstHeadedGrid 
 } from "../tsts";
-import { TransEnv } from "../transforms";
-import { Err, Msgs, Result, result, Warn } from "../msgs";
+import { PassEnv } from "../passes";
+import { Err, Msgs } from "../msgs";
 import { Header, TagHeader, TapeNameHeader } from "../headers";
-import { BLANK_PARAM } from "../ops";
+import { Component, CPass, CResult } from "../components";
 
 /**
- * This transformation checks whether named parameters in headers
+ * This pass checks whether named parameters in headers
  * (e.g. `from text`) are appropriately licensed by the operator that
  * encloses them.
  * 
@@ -19,28 +18,28 @@ import { BLANK_PARAM } from "../ops";
  * allows unnamed params, then the fix is to remove that TagHeader in favor 
  * of its child.  Otherwise, the fix is to remove the header entirely.
  */
-export class CheckTestLiterals extends TstTransform {
+export class CheckTestLiterals extends CPass {
 
     public get desc(): string {
         return "Checking that all test content is literal";
     }
 
-    public transform(t: TstComponent, env: TransEnv): TstResult {
+    public transform(t: Component, env: PassEnv): CResult {
 
         return t.mapChildren(this, env).bind(t => {
             switch(t.constructor) {
                 case TstOp:
-                    return this.transformOp(t as TstOp);
+                    return this.handleOp(t as TstOp);
                 default:  // everything else is default
                     return t;
             }
         });
     }
 
-    public transformOp(t: TstOp): TstResult {
+    public handleOp(t: TstOp): CResult {
 
         const msgs: Msgs = [];
-        if (t.op.requireLiteralParams && t.child instanceof TstGrid) {
+        if (t.op.requireLiteralParams && t.child instanceof TstHeadedGrid) {
             const newHeaders: TstHeader[] = []
             for (const header of t.child.headers) {
                 if (!this.isLiteral(header.header) || header.header.isRegex) {

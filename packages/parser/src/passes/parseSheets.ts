@@ -1,39 +1,42 @@
-import { TransEnv, Transform } from "../transforms";
+import { PassEnv, Pass } from "../passes";
 import { CommandMsg, CommentMsg, Err, Msgs } from "../msgs";
 import { 
-    TstAssignment, TstComponent, 
-    TstEmpty, TstEnclosure, 
+    TstAssignment,
+    TstEnclosure, 
     TstNamespace, TstOp, 
-    TstPreGrid, TstResult, 
+    TstGrid
 } from "../tsts";
-import { Sheet, SheetComponent, SheetProject } from "../sheets";
+import { Component, CResult } from "../components";
+import { Worksheet, Workbook } from "../sheets";
 import { Cell, CellPos } from "../util";
 import { NamespaceOp, parseOp } from "../ops";
 
+type PassInput = Workbook | Worksheet;
+
 /**
- * Namespace works somewhat differently from other operators,
- * so in this transformation we take "namespace:" TstOps and
- * instantiate them as actual namespaces.
+ * This takes grids of cells (Worksheets) and collections of them
+ * (Workbooks) and turns them into the basic syntactic objects
+ * (TstNamespaces, TstOps, TstGrids, and TstContent).
  */
-export class CreateTST extends Transform<SheetComponent,TstComponent> {
+export class ParseSheets extends Pass<PassInput,Component> {
 
     public get desc(): string {
         return "Creating TST";
     }
 
-    public transform(t: SheetComponent, env: TransEnv): TstResult {
+    public transform(t: PassInput, env: PassEnv): CResult {
 
         switch(t.constructor) {
-            case SheetProject:
-                return this.transformProject(t as SheetProject, env);
-            case Sheet:
-                return this.transformSheet(t as Sheet, env);
+            case Workbook:
+                return this.handleWorkbook(t as Workbook, env);
+            case Worksheet:
+                return this.handleWorksheet(t as Worksheet, env);
             default: 
                 throw new Error(`unhandled ${t.constructor.name}`);
         }
     }
 
-    public transformProject(t: SheetProject, env: TransEnv): TstResult {
+    public handleWorkbook(t: Workbook, env: PassEnv): CResult {
 
         const projectCell = new Cell("", new CellPos("", -1, -1));
         const project = new TstNamespace(projectCell);
@@ -92,7 +95,7 @@ export class CreateTST extends Transform<SheetComponent,TstComponent> {
      * felt that was information not relevant to the object itself.  It's only relevant to this algorithm,
      * so it should just stay here.
      */
-    public transformSheet(t: Sheet, env: TransEnv): TstResult {
+    public handleWorksheet(t: Worksheet, env: PassEnv): CResult {
 
         const msgs: Msgs = [];
 
@@ -152,7 +155,7 @@ export class CreateTST extends Transform<SheetComponent,TstComponent> {
                 // next check if this is "content" -- that is, something to the lower left
                 // of the topmost op.  NB: This is the only kind of operation we'll do on 
                 // empty cells, so that, if appropriate, we can mark them for syntax highlighting.
-                if (top.tst instanceof TstPreGrid && colIndex > top.col && rowIndex > top.row) {
+                if (top.tst instanceof TstGrid && colIndex > top.col && rowIndex > top.row) {
                     top.tst.addContent(cell).msgTo(msgs, cellPos);
                     continue;
                 }
@@ -169,7 +172,7 @@ export class CreateTST extends Transform<SheetComponent,TstComponent> {
                     const newEnclosure = new TstOp(cell, op);
                     new CommandMsg().msgTo(msgs, cellPos);
 
-                    if (top.tst instanceof TstPreGrid) {
+                    if (top.tst instanceof TstGrid) {
                         Err(`Unexpected operator`,
                             "This looks like an operator, " +
                             " but only a header can follow a header.")
@@ -188,20 +191,20 @@ export class CreateTST extends Transform<SheetComponent,TstComponent> {
                 // from content
                 
                 // if the top isn't a TstGrid, make it so
-                if (!(top.tst instanceof TstPreGrid)) {
-                    const newGrid = new TstPreGrid(cell);
+                if (!(top.tst instanceof TstGrid)) {
+                    const newGrid = new TstGrid(cell);
                     top.tst.setChild(newGrid).msgTo(msgs, cellPos);
                     top = { tst: newGrid, row: rowIndex, col: colIndex-1 };
                     stack.push(top);
                 }
 
-                (top.tst as TstPreGrid).addContent(cell)
+                (top.tst as TstGrid).addContent(cell)
                                        .msgTo(msgs, cellPos);
 
             }
         }
     
-        return new TstAssignment(startCell, t.name, new TstEmpty(), root).msg(msgs);
+        return new TstAssignment(startCell, t.name, root).msg(msgs);
     }
 }
 

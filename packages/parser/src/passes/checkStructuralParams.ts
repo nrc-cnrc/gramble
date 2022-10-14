@@ -1,19 +1,18 @@
 import { 
     ErrorOp,
     SymbolOp,
-    TableOp, 
 } from "../ops";
 import { Err, Msgs, result, Result, Warn } from "../msgs";
-import { TransEnv } from "../transforms";
+import { PassEnv } from "../passes";
 import { 
-    TstComponent, TstResult, 
-    TstTransform, TstOp, 
+    TstOp, 
     TstEmpty,
-    TstPreGrid
+    TstGrid
 } from "../tsts";
+import { Component, CPass, CResult } from "../components";
 
 /**
- * This transform goes through and make sure that TstOps have 
+ * This pass goes through and make sure that TstOps have 
  * the structural parameters (i.e. .sibling and .child) that they
  * need to be interpreted, and also ensures that these are the
  * right types (e.g., that they're grids when they need to be 
@@ -21,13 +20,13 @@ import {
  * assignments, etc.)
  */
 
-export class CheckStructuralParams extends TstTransform {
+export class CheckStructuralParams extends CPass {
 
     public get desc(): string {
         return "Checking structural params";
     }
 
-    public transform(t: TstComponent, env: TransEnv): TstResult {
+    public transform(t: Component, env: PassEnv): CResult {
         
         if (!(t instanceof TstOp)) {
             return t.mapChildren(this, env);
@@ -61,20 +60,20 @@ export class CheckStructuralParams extends TstTransform {
 
             // don't bother doing structural param checks on ErrorOps
             if (t.op instanceof ErrorOp) {
-                return this.transformError(t).msg(msgs);
+                return this.handleError(t).msg(msgs);
             }
 
             // assignments have some special behavior, like that they
             // don't disappear if they don't have a child
             if (t.op instanceof SymbolOp) {
-                return this.transformAssignment(t).msg(msgs);
+                return this.handleAssignment(t).msg(msgs);
             }
 
-            return this.transformOp(t).msg(msgs);
+            return this.handleOp(t).msg(msgs);
         });
     }
 
-    public transformAssignment(t: TstOp): TstResult {
+    public handleAssignment(t: TstOp): CResult {
         
         const msgs: Msgs = [];
 
@@ -83,11 +82,6 @@ export class CheckStructuralParams extends TstTransform {
                 Warn("This content does not get " +
                     "assigned to anything and will be ignored.",
                     t.sibling.pos).msgTo(msgs);
-        }
-
-        // if the child is a grid, silently insert a table op in between
-        if (t.child instanceof TstPreGrid) {
-            t.child = new TstOp(t.cell, new TableOp(), new TstEmpty(), t.child);
         }
 
         // all operators need something in their .child param.  if
@@ -100,7 +94,7 @@ export class CheckStructuralParams extends TstTransform {
 
     }
 
-    public transformError(t: TstOp): TstResult {
+    public handleError(t: TstOp): CResult {
         const op = t.op as ErrorOp;
         const replacement = !(t.sibling instanceof TstEmpty) ?
                             t.sibling :
@@ -109,29 +103,21 @@ export class CheckStructuralParams extends TstTransform {
                         .bind(_ => replacement);      
     }
 
-    public transformOp(t: TstOp): TstResult {
+    public handleOp(t: TstOp): CResult {
 
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.
-        if (t.op.childGridRequirement == "required" && 
-            !(t.child instanceof TstPreGrid)) {
+        if (t.op.childGridReq == "required" && 
+            !(t.child instanceof TstGrid)) {
             return result(t).err(`'${t.cell.text}' requires grid`,
                     "This operator requires a grid to the right, " +
                     "but has another operator instead.")
                     .bind(r => r.sibling);
         }
 
-        // if the op forbids a grid to the right (e.g. it needs another
-        // operator), but there's a grid, that's fine, just insert an implicit
-        // table op between the op and its child.
-        if (t.op.childGridRequirement == "forbidden" && 
-            t.child instanceof TstPreGrid) {
-            t.child = new TstOp(t.cell, new TableOp(), new TstEmpty(), t.child);
-        }
-
         // if the op must have a sibling, but has neither a sibling
         // nor a child, issue an error, and return empty.
-        if (t.op.siblingRequirement == "required" 
+        if (t.op.siblingReq == "required" 
                 && t.sibling instanceof TstEmpty
                 && t.child instanceof TstEmpty) {
             return result(t).err(`Missing args to '${t.cell.text}'`,
@@ -142,7 +128,7 @@ export class CheckStructuralParams extends TstTransform {
 
         // if the op must have a sibling and doesn't, issue an error,
         // and return empty
-        if (t.op.siblingRequirement == "required" && t.sibling instanceof TstEmpty) {
+        if (t.op.siblingReq == "required" && t.sibling instanceof TstEmpty) {
             return result(t).err(`Missing argument to ${t.cell.text}`,
                             "This operator requires content above it, but it's empty or erroneous.")
                         .bind(r => new TstEmpty());
@@ -157,7 +143,7 @@ export class CheckStructuralParams extends TstTransform {
 
         // if there's something in the sibling, but it's forbidden,
         // warn about it.
-        if (t.op.siblingRequirement == "forbidden" &&
+        if (t.op.siblingReq == "forbidden" &&
                 !(t.sibling instanceof TstEmpty)) {
             return result(t).msg(Warn("This content does not get " +
                 "assigned to anything and will be ignored.",

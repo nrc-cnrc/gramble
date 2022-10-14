@@ -288,6 +288,18 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    
+    describe('startswith with not value, embedded', function() {
+        const project = sheetFromFile(`${DIR}/embeddedStartsWithNot.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "umfoo", gloss: "[1SG]run" },
+            { text: "ummoo", gloss: "[1SG]jump" },
+            { text: "ungoo", gloss: "[1SG]climb" }
+        ]);
+    });
+
+
     describe('startswith embed', function() {
         const project = sheetFromFile(`${DIR}/startsWithEmbed.csv`);
         testErrors(project, []);

@@ -79,6 +79,35 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"ava"}
         ]);
     });
+    describe('Replacing, embedded', function() {
+        const project = sheetFromFile(
+            `${DIR}/replaceEmbedded.csv`);
+        testHasVocab(project, {text: 3})
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ava"}
+        ]);
+    });
+
+    describe('Rule cascade, embedded', function() {
+        const project = sheetFromFile(
+            `${DIR}/cascadeEmbedded.csv`);
+        testHasVocab(project, {text: 4})
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"awa"}
+        ]);
+    });
+
+    describe('Replacing an embedded replace', function() {
+        const project = sheetFromFile(
+            `${DIR}/replaceEmbeddedReplace.csv`);
+        testHasVocab(project, {text: 4})
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"awa"}
+        ]);
+    });
 
     describe('Nested replace', function() {
         const project = sheetFromFile(`${DIR}/nestedSame.csv`);

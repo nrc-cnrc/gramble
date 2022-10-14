@@ -3,6 +3,10 @@ import { CellPos, Dict } from "./util";
 type MsgType = "error" | "warning" | "info" | 
                 "command" | "header" | "comment" | "content"
 
+function isPositioned(p: any): p is { pos: CellPos } {
+    return p !== undefined && p.pos !== undefined;
+}
+
 /**
  * Msg ("message") is a communication between the compiler and 
  * the dev environment -- errors, unit test success and failure, 
@@ -111,9 +115,6 @@ export function Success(longMsg: string, pos?: CellPos): Msg {
     return new Msg("info", "success", longMsg, pos);
 }
 
-function isPositioned(p: any): p is { pos: CellPos } {
-    return p !== undefined && p.pos !== undefined;
-}
 
 type MsgCallback = (m: Msg) => void; 
 type Func<T1,T2> = (input: T1) => (T2|Result<T2>);

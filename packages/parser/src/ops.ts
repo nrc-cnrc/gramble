@@ -86,11 +86,11 @@ export type Requirement = "required" | "forbidden";
 
 export abstract class Op {
 
-    public get siblingRequirement(): Requirement {
+    public get siblingReq(): Requirement {
         return "forbidden";
     }
 
-    public get childGridRequirement(): Requirement {
+    public get childGridReq(): Requirement {
         return "forbidden";
     }
 
@@ -104,7 +104,7 @@ export abstract class Op {
 
     /**
      * This is for operators that require a perfect parameterization
-     * to execute at all, lest their be unanticipated effects.
+     * to execute at all, lest there be unanticipated effects.
      */
     public get requirePerfectParams(): boolean {
         return false;
@@ -120,17 +120,21 @@ export abstract class Op {
 
 }
 
-export class TableOp extends Op { }
+export class TableOp extends Op { 
+    public get childGridReq(): Requirement {
+        return "required";
+    }
+}
 
 export class NamespaceOp extends Op { }
 
 export abstract class SpecialOp extends Op {
 
-    public get siblingRequirement(): Requirement {
+    public get siblingReq(): Requirement {
         return "required";
     }
 
-    public get childGridRequirement(): Requirement {
+    public get childGridReq(): Requirement {
         return "required";
     }
 
@@ -201,7 +205,7 @@ export class BinaryOp extends Op {
         super();
     }
 
-    public get siblingRequirement(): Requirement {
+    public get siblingReq(): Requirement {
         return "required";
     }
 }

@@ -1,15 +1,15 @@
 import { 
-    TstComponent, TstEmpty, 
-    TstHeader, TstResult, 
-    TstTransform, TstOp, TstHeadedGrid 
+    TstEmpty, TstHeader, 
+    TstOp, TstHeadedGrid 
 } from "../tsts";
-import { TransEnv } from "../transforms";
+import { PassEnv } from "../passes";
 import { Err, Msgs, Result, result, Warn } from "../msgs";
-import { Header, TagHeader, TapeNameHeader } from "../headers";
+import { TagHeader } from "../headers";
 import { BLANK_PARAM } from "../ops";
+import { Component, CPass, CResult } from "../components";
 
 /**
- * This transformation checks whether named parameters in headers
+ * This pass checks whether named parameters in headers
  * (e.g. `from text`) are appropriately licensed by the operator that
  * encloses them.
  * 
@@ -18,7 +18,7 @@ import { BLANK_PARAM } from "../ops";
  * allows unnamed params, then the fix is to remove that TagHeader in favor 
  * of its child.  Otherwise, the fix is to remove the header entirely.
  */
-export class CheckNamedParams extends TstTransform {
+export class CheckNamedParams extends CPass {
 
     constructor(
         public permissibleParams: Set<string> = new Set(["__"])
@@ -30,22 +30,22 @@ export class CheckNamedParams extends TstTransform {
         return "Checking named params";
     }
 
-    public transform(t: TstComponent, env: TransEnv): TstResult {
+    public transform(t: Component, env: PassEnv): CResult {
 
         switch(t.constructor) {
             case TstOp:
-                return this.transformOp(t as TstOp, env);
+                return this.handleOp(t as TstOp, env);
             case TstHeader:
-                return this.transformHeader(t as TstHeader, env);
+                return this.handleHeader(t as TstHeader, env);
             case TstHeadedGrid: // tables are transparent
-                return this.transformHeadedGrid(t as TstHeadedGrid, env);
+                return this.handleHeadedGrid(t as TstHeadedGrid, env);
             default:  // everything else is default
                 const defaultThis = new CheckNamedParams();
                 return t.mapChildren(defaultThis, env);
         }
     }
 
-    public transformHeadedGrid(t: TstHeadedGrid, env: TransEnv): TstResult {
+    public handleHeadedGrid(t: TstHeadedGrid, env: PassEnv): CResult {
         const result = t.mapChildren(this, env) as Result<TstHeadedGrid>;
         return result.bind(t => {
             t.headers = t.headers.filter(h => h instanceof TstHeader);
@@ -53,10 +53,10 @@ export class CheckNamedParams extends TstTransform {
         });
     }
 
-    public transformOp(t: TstOp, env: TransEnv): TstResult {
+    public handleOp(t: TstOp, env: PassEnv): CResult {
         const [sib, sibMsgs] = this.transform(t.sibling, env).destructure();
-        const newTransform = new CheckNamedParams(t.op.allowedNamedParams);
-        const [child, childMsgs] = newTransform.transform(t.child, env).destructure();
+        const newPass = new CheckNamedParams(t.op.allowedNamedParams);
+        const [child, childMsgs] = newPass.transform(t.child, env).destructure();
         
         // if there are any problems with params and we require
         // perfection, warn and return the sibling
@@ -72,7 +72,7 @@ export class CheckNamedParams extends TstTransform {
                    .msg(sibMsgs).msg(childMsgs);
     }
 
-    public checkRequiredParams(t: TstOp): TstResult {
+    public checkRequiredParams(t: TstOp): CResult {
 
         const msgs: Msgs = [];
         
@@ -114,7 +114,7 @@ export class CheckNamedParams extends TstTransform {
         return t.msg(msgs);
     }
     
-    public transformHeader(t: TstHeader, env: TransEnv): TstResult {
+    public handleHeader(t: TstHeader, env: PassEnv): CResult {
         const mapped = t.mapChildren(this, env) as Result<TstHeader>;
         return mapped.bind(h => {
             const tag = h.header.getParamName();
