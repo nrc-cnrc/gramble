@@ -5,12 +5,11 @@ import {
     GrammarResult, 
     JoinGrammar, 
     JoinRuleGrammar, 
-    NsGrammar, 
     RenameGrammar
 } from "../grammars";
 import { foldRight, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
-import { result, Result } from "../msgs";
-import { Pass, PassEnv } from "../passes";
+import { result } from "../msgs";
+import { PassEnv } from "../passes";
 
 let RULE_HIDE_INDEX = 0;
 
@@ -19,7 +18,7 @@ let RULE_HIDE_INDEX = 0;
  * (where you just say "from"/"to" rather than "from text"/"to text") and
  * cascades of them.
  */
-export class RuleReplacePass2 extends GrammarPass {
+export class ReplaceRules extends GrammarPass {
 
     public replaceIndex: number = 0;
 

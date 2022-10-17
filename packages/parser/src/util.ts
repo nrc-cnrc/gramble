@@ -313,7 +313,7 @@ export function parseCSV(str: string): string[][] {
     return arr;
 }
 
-function sum(a: number[]): number {
+export function sum(a: number[]): number {
     let s = 0;
     for (let i = 0; i < a.length; i++) s += a[i];
     return s;

@@ -79,6 +79,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"ava"}
         ]);
     });
+
     describe('Replacing, embedded', function() {
         const project = sheetFromFile(
             `${DIR}/replaceEmbedded.csv`);
@@ -88,7 +89,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"ava"}
         ]);
     });
-
+    
     describe('Rule cascade, embedded', function() {
         const project = sheetFromFile(
             `${DIR}/cascadeEmbedded.csv`);
@@ -106,6 +107,16 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, []);
         testGrammar(project, [
             {"text":"awa"}
+        ]);
+    });
+    
+    describe('Cascading an embedded casecade', function() {
+        const project = sheetFromFile(
+            `${DIR}/cascadeOfCascade.csv`);
+        testHasVocab(project, {text: 8})
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ABCD"}
         ]);
     });
 

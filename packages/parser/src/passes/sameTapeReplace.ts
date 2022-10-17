@@ -91,7 +91,7 @@ export class SameTapeReplacePass extends GrammarPass {
                     renamedPre, renamedPost, g.otherContext,
                     g.beginsWith, g.endsWith, g.minReps, 
                     g.maxReps, g.maxExtraChars, g.maxCopyChars,
-                    g.vocabBypass).msg();
+                    g.vocabBypass, g.hiddenTapeName).msg();
     }
 
 }

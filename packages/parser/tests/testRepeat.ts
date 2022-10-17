@@ -274,7 +274,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: 'h', t2:'i'},
                               {t2: 'i'},
                             ],
-                    VERBOSE_DEBUG, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('32. (t1:a+t2:a|t1:b+t2:b)*', function() {

@@ -12,12 +12,10 @@ import {
 } from "../src/grammars";
 
 import { 
-    t1, t2, t3, t4,
+    t1,
     testHasTapes, 
     testHasVocab, 
-    //testHasNoVocab,  
     testGrammar,
-    generateOutputsFromGrammar,
 } from './testUtils';
 
 import * as path from 'path';

@@ -5,7 +5,7 @@ import { Result } from "../msgs";
 import { timeIt, VERBOSE_TIME } from "../util";
 import { QualifyNames } from "./qualifyNames";
 import { RenameFix } from "./renameFix";
-import { RuleReplacePass2 } from "./ruleReplace2";
+import { ReplaceRules } from "./replaceRules";
 import { SameTapeReplacePass } from "./sameTapeReplace";
 import { AdjustFilters } from "./adjustFilters";
 import { CheckNamedParams } from "./checkNamedParams";
@@ -19,6 +19,7 @@ import { AssociateHeaders } from "./associateHeaders";
 import { InsertTables } from "./insertTables";
 import { CreateGrammars } from "./createGrammars";
 import { CheckNamespaces } from "./checkNamespaces";
+import { ReplaceRulesOld } from "./replaceRulesOld";
 
 export const PRE_GRAMMAR_PASSES = 
 
@@ -89,7 +90,7 @@ export const GRAMMAR_PASSES =
 
     // turn new-style replacement cascades into the appropriate
     // structures
-    new RuleReplacePass2().compose(
+    new ReplaceRulesOld().compose(
 
     // take old-style replacement rules and (when the from/to tapes
     // are the same) insert renaming so that there's no conflict

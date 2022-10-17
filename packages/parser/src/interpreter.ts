@@ -23,8 +23,9 @@ import { generate } from "./generator";
 import { MissingSymbolError, Msgs } from "./msgs";
 import { PassEnv } from "./passes";
 import { 
-    ALL_PASSES, GRAMMAR_PASSES, 
-    QUALIFY_NAMES, PRE_GRAMMAR_PASSES 
+    GRAMMAR_PASSES, 
+    QUALIFY_NAMES, 
+    PRE_GRAMMAR_PASSES 
 } from "./passes/allPasses";
 import { UnitTestPass } from "./passes/unitTests";
 
@@ -268,7 +269,7 @@ export class Interpreter {
         const env = new PassEnv().pushSymbols(this.grammar.symbols);
 
         if (tapePriority.length == 0) {
-            tapePriority = this.grammar.calculateTapes(new CounterStack(2), env);
+            tapePriority = this.grammar.getAllTapePriority(env);
         }
         
         let expr = this.grammar.constructExpr(this.tapeNS, this.symbolTable);
@@ -278,7 +279,7 @@ export class Interpreter {
             throw new Error(`Missing symbol: ${symbolName}; choices are [${allSymbols}]`);
         }
 
-        tapePriority = targetGrammar.calculateTapes(new CounterStack(2), env);
+        tapePriority = this.grammar.getAllTapePriority(env);
 
         if (Object.keys(query).length > 0) {
             const queryLiterals = Object.entries(query).map(([key, value]) => {
@@ -288,7 +289,7 @@ export class Interpreter {
             });
             const querySeq = new SequenceGrammar(queryLiterals);
             targetGrammar = new EqualsGrammar(targetGrammar, querySeq);
-            tapePriority = targetGrammar.calculateTapes(new CounterStack(2), env);
+            tapePriority = this.grammar.getAllTapePriority(env);
             
             // we have to collect any new vocab, but only from the new material
             targetGrammar.collectAllVocab(this.vocab, this.tapeNS, env);

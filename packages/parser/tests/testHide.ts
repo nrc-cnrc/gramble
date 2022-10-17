@@ -40,10 +40,10 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('2b. hide(t2) of t1:hello+t2:foo', function() {
         const grammar = Hide(Seq(t1("hello"), t2("foo")), "t2", "HIDDEN");
         const expectedResults: StringDict[] = [
-            {t1: "hello", '.HIDDEN_t2': "foo"}
+            {t1: "hello", '.HIDDEN': "foo"}
         ];
-        testHasTapes(grammar, ["t1", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
-        //testHasVocab(grammar, {t1: 4, '.HIDDEN_t2': 2});
+        testHasTapes(grammar, ["t1", ".HIDDEN"], DUMMY_SYMBOL, false);
+        //testHasVocab(grammar, {t1: 4, '.HIDDEN': 2});
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
@@ -60,7 +60,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(Hide(Seq(t1("hello"), t2("foo")), "t2", "HIDDEN"),
                             t2("bar"));
         const expectedResults: StringDict[] = [
-            {t1: "hello", t2: "bar", '.HIDDEN_t2': "foo"}
+            {t1: "hello", t2: "bar", '.HIDDEN': "foo"}
         ];
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
@@ -78,7 +78,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Seq(t2("bar"),
                             Hide(Seq(t1("hello"), t2("foo")), "t2", "HIDDEN"));
         const expectedResults: StringDict[] = [
-            {t1: "hello", t2: "bar", '.HIDDEN_t2': "foo"}
+            {t1: "hello", t2: "bar", '.HIDDEN': "foo"}
         ];
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
@@ -96,7 +96,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(Hide(Seq(t1("hello"), t2("foo")), "t2", "HIDDEN"),
                              t2("bar"));
         const expectedResults: StringDict[] = [
-            {t1: "hello", t2: "bar", '.HIDDEN_t2': "foo"}
+            {t1: "hello", t2: "bar", '.HIDDEN': "foo"}
         ];
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
@@ -114,7 +114,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Join(t2("bar"),
                              Hide(Seq(t1("hello"), t2("foo")), "t2", "HIDDEN"));
         const expectedResults: StringDict[] = [
-            {t1: "hello", t2: "bar", '.HIDDEN_t2': "foo"}
+            {t1: "hello", t2: "bar", '.HIDDEN': "foo"}
         ];
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
@@ -132,7 +132,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Hide(Join(Seq(t1("hello"), t2("foo")),
                                   Seq(t1("hello"), t2("foo"))), "t2", "HIDDEN");
         const expectedResults: StringDict[] = [
-            {t1: "hello", '.HIDDEN_t2': "foo"}
+            {t1: "hello", '.HIDDEN': "foo"}
         ];
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
@@ -159,8 +159,8 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('9b. Nested hide', function() {
         const grammar = Hide(Hide(Seq(t1("foo"), t2("hello"), t3("bar")),
-                                  "t1", "HIDDEN"),
-                             "t3", "HIDDEN");
+                                  "t1", "HIDDEN_t1"),
+                                "t3", "HIDDEN_t3");
         const expectedResults: StringDict[] = [
             {t2: "hello", '.HIDDEN_t1': "foo", '.HIDDEN_t3': "bar"}
         ];
@@ -180,10 +180,10 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('10b. Rename t1>t2 of hide(t2) of t1:hello+t2:foo', function() {
         const grammar = Rename(Hide(Seq(t1("hello"), t2("foo")), "t2", "HIDDEN"),
                                "t1", "t2")
-        testHasTapes(grammar, ["t2", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
-        // testHasVocab(grammar, {t1: 4, '.HIDDEN_t2': 2});
+        testHasTapes(grammar, ["t2", ".HIDDEN"], DUMMY_SYMBOL, false);
+        // testHasVocab(grammar, {t1: 4, '.HIDDEN': 2});
         const expectedResults: StringDict[] = [
-            {t2: "hello", '.HIDDEN_t2': "foo"}
+            {t2: "hello", '.HIDDEN': "foo"}
         ];
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
@@ -202,10 +202,10 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Rename(Hide(Seq(t1("hello"), t2("foo")), "t2", "HIDDEN"),
                                "t1", "t3")
         const expectedResults: StringDict[] = [
-            {t3: "hello", '.HIDDEN_t2': "foo"}
+            {t3: "hello", '.HIDDEN': "foo"}
         ];
-        testHasTapes(grammar, ["t3", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
-        //testHasVocab(grammar, {t3: 4, '.HIDDEN_t2': 2});
+        testHasTapes(grammar, ["t3", ".HIDDEN"], DUMMY_SYMBOL, false);
+        //testHasVocab(grammar, {t3: 4, '.HIDDEN': 2});
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
@@ -223,10 +223,10 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar = Rename(Hide(Seq(t1("hello"), t2("foo")), "t2", "HIDDEN"),
                                "t2", "t3")
         const expectedResults: StringDict[] = [
-            {t1: "hello", ".HIDDEN_t2": "foo"}
+            {t1: "hello", ".HIDDEN": "foo"}
         ];
-        testHasTapes(grammar, ["t1", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
-        //testHasVocab(grammar, {t1: 4, '.HIDDEN_t2': 2});
+        testHasTapes(grammar, ["t1", ".HIDDEN"], DUMMY_SYMBOL, false);
+        //testHasVocab(grammar, {t1: 4, '.HIDDEN': 2});
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
@@ -242,9 +242,9 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('13b. Filter using a field and then hide it', function() {
         const grammar = Hide(Equals(Seq(t1("hello"), t2("foo")), t2("foo")), "t2", "HIDDEN");
         const expectedResults: StringDict[] = [
-            {t1: "hello", ".HIDDEN_t2": "foo"}
+            {t1: "hello", ".HIDDEN": "foo"}
         ];
-        testHasTapes(grammar, ["t1", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
+        testHasTapes(grammar, ["t1", ".HIDDEN"], DUMMY_SYMBOL, false);
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
@@ -259,8 +259,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('14b. Hide-filter-hide', function() {
-        const grammar = Hide(Equals(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3", "HIDDEN"),
-                                    t2("foo")), "t2", "HIDDEN");
+        const grammar = Hide(Equals(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3", "HIDDEN_t3"),
+                                    t2("foo")), "t2", "HIDDEN_t2");
         const expectedResults: StringDict[] = [
             {t1: "hello", '.HIDDEN_t2': "foo", '.HIDDEN_t3': "goo"}
         ];
@@ -288,11 +288,11 @@ describe(`${path.basename(module.filename)}`, function() {
             "b": Hide(Embed("a"), "t2", "HIDDEN") 
         });
         const expectedResults: StringDict[] = [
-            {t1: "hi", '.HIDDEN_t2': "world"}
+            {t1: "hi", '.HIDDEN': "world"}
         ];
-        testHasTapes(grammar, ["t1", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
-        testHasTapes(grammar, ["t1", ".HIDDEN_t2"], "b", false);
-        //testHasVocab(grammar, {t1: 2, '.HIDDEN_t2': 2});
+        testHasTapes(grammar, ["t1", ".HIDDEN"], DUMMY_SYMBOL, false);
+        testHasTapes(grammar, ["t1", ".HIDDEN"], "b", false);
+        //testHasVocab(grammar, {t1: 2, '.HIDDEN': 2});
         testGrammar(grammar, expectedResults, SILENT, "b", DEFAULT_MAX_RECURSION, false);
     });
 
@@ -315,10 +315,10 @@ describe(`${path.basename(module.filename)}`, function() {
             "c": Embed("b")
         });
         const expectedResults: StringDict[] = [
-            {t1: "hi", '.HIDDEN_t2': "foo"}
+            {t1: "hi", '.HIDDEN': "foo"}
         ];
-        testHasTapes(grammar, ["t1", ".HIDDEN_t2"], DUMMY_SYMBOL, false);
-        //testHasVocab(grammar, {t1: 2, '.HIDDEN_t2': 2});
+        testHasTapes(grammar, ["t1", ".HIDDEN"], DUMMY_SYMBOL, false);
+        //testHasVocab(grammar, {t1: 2, '.HIDDEN': 2});
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 

@@ -149,7 +149,9 @@ export class CreateGrammars extends Pass<Component,Grammar> {
             const toArg = this.transform(params.getParam("to"), env).msgTo(newMsgs);
             const preArg = this.transform(params.getParam("pre"), env).msgTo(newMsgs);
             const postArg = this.transform(params.getParam("post"), env).msgTo(newMsgs);
-            const replaceRule = new ReplaceGrammar(fromArg, toArg, preArg, postArg);
+            const replaceRule = new ReplaceGrammar(fromArg, toArg, preArg, postArg,
+                new EpsilonGrammar(), false, false, 0, Infinity, Infinity, Infinity,
+                true, `${params.pos.sheet}_${params.pos.row}`);
             replaceRules.push(replaceRule);
         }
 
@@ -172,7 +174,9 @@ export class CreateGrammars extends Pass<Component,Grammar> {
             const toArg = this.transform(params.getParam("to"), env).msgTo(newMsgs);
             const preArg = this.transform(params.getParam("pre"), env).msgTo(newMsgs);
             const postArg = this.transform(params.getParam("post"), env).msgTo(newMsgs);
-            const replaceRule = new ReplaceGrammar(fromArg, toArg, preArg, postArg);
+            const replaceRule = new ReplaceGrammar(fromArg, toArg, preArg, postArg,
+                new EpsilonGrammar(), false, false, 0, Infinity, Infinity, Infinity,
+                true, `${params.pos.sheet}_${params.pos.row}`);
             replaceRules.push(replaceRule);
         }
 
