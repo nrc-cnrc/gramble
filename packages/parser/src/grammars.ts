@@ -160,17 +160,28 @@ export abstract class Grammar extends Component {
     public abstract getChildren(): Grammar[];
 
     public getAllTapePriority(
+        tapeNS: TapeNamespace,
         env: PassEnv
     ): string[] {
         const tapeNames = this.calculateTapes(new CounterStack(2), env);
-        const priorities: [string, number][] = tapeNames.map(s => {
-            const priority = this.getTapePriority(s, new Set(), env);
-            return [s, priority];
+        const priorities: [string, number][] = tapeNames.map(t => {
+            const joinWeight = this.getTapePriority(t, new Set(), env);
+            const tape = tapeNS.get(t);
+            const priority = joinWeight * tape.vocabSize;
+            return [t, priority];
         });
-        priorities.sort((a, b) => b[1] - a[1]);
-        //console.log(JSON.stringify(priorities));
-        const res = priorities.map(([a,_]) => a);
-        return res;
+        return priorities.sort((a, b) => b[1] - a[1])
+                         .map(([a,_]) => a);
+    }
+    
+    public getTapePriority(
+        tapeName: string,
+        symbolsVisited: Set<string>,
+        env: PassEnv
+    ): number {
+        return Math.max(...this.getChildren().map(c => 
+            c.getTapePriority(tapeName, symbolsVisited, env)
+        ));
     }
 
     /**
@@ -241,16 +252,6 @@ export abstract class Grammar extends Component {
         for (const child of this.getChildren()) {
             child.collectVocab(tapeName, tapeNS, symbolsVisited, env);
         }
-    }
-
-    public getTapePriority(
-        tapeName: string, 
-        symbolsVisited: Set<string>,
-        env: PassEnv
-    ): number {
-        return Math.max(...this.getChildren().map(c => 
-            c.getTapePriority(tapeName, symbolsVisited, env)
-        ));
     }
 
     public getVocabCopyEdges(
@@ -719,7 +720,7 @@ abstract class BinaryGrammar extends Grammar {
     ): number {
         const c1priority = this.child1.getTapePriority(tapeName, symbolsVisited, env);
         const c2priority = this.child2.getTapePriority(tapeName, symbolsVisited, env);
-        return (c1priority * 2 + c2priority);
+        return (c1priority * 10 + c2priority);
     }
 }
 

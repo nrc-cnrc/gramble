@@ -267,10 +267,6 @@ export class Interpreter {
         tapePriority: string[] = []
     ): Expr {
         const env = new PassEnv().pushSymbols(this.grammar.symbols);
-
-        if (tapePriority.length == 0) {
-            tapePriority = this.grammar.getAllTapePriority(env);
-        }
         
         let expr = this.grammar.constructExpr(this.tapeNS, this.symbolTable);
         let targetGrammar = this.grammar.getSymbol(symbolName);
@@ -279,7 +275,7 @@ export class Interpreter {
             throw new Error(`Missing symbol: ${symbolName}; choices are [${allSymbols}]`);
         }
 
-        tapePriority = this.grammar.getAllTapePriority(env);
+        tapePriority = this.grammar.getAllTapePriority(this.tapeNS, env);
 
         if (Object.keys(query).length > 0) {
             const queryLiterals = Object.entries(query).map(([key, value]) => {
@@ -289,7 +285,7 @@ export class Interpreter {
             });
             const querySeq = new SequenceGrammar(queryLiterals);
             targetGrammar = new EqualsGrammar(targetGrammar, querySeq);
-            tapePriority = this.grammar.getAllTapePriority(env);
+            tapePriority = this.grammar.getAllTapePriority(this.tapeNS, env);
             
             // we have to collect any new vocab, but only from the new material
             targetGrammar.collectAllVocab(this.vocab, this.tapeNS, env);
