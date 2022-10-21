@@ -1,0 +1,7 @@
+word:, table:, text
+    ,       , abc
+    ,       ,     ,
+    , replace text:, from, to
+    ,         , a, ,
+    ,         , b, B,
+    ,         , c, C

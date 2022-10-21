@@ -3,6 +3,7 @@ import {
     testHasVocab, testGrammar 
 } from "../../testUtils";
 import * as path from 'path';
+import { VERBOSE_DEBUG, VERBOSE_STATES } from "../../../src/util";
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
 
@@ -329,4 +330,15 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"moobar", "gloss":"jump-1SG"}
         ]);
     });
+
+    describe('Long rule with an empty to', function() {
+        const project = sheetFromFile(
+            `${DIR}/cascadeBlankTo.csv`, VERBOSE_DEBUG | VERBOSE_STATES);
+        testHasVocab(project, {text: 5})
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"BC"}
+        ]);
+    });
+
 });
