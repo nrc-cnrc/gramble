@@ -331,9 +331,40 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Long rule with an empty to', function() {
+    describe('Rule with an empty to', function() {
         const project = sheetFromFile(
-            `${DIR}/cascadeBlankTo.csv`, VERBOSE_DEBUG | VERBOSE_STATES);
+            `${DIR}/blankTo.csv`);
+        testHasVocab(project, {text: 2})
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aa"}
+        ]);
+    });
+    
+    describe('Rule with an empty from', function() {
+        const project = sheetFromFile(
+            `${DIR}/blankFrom.csv`);
+        testHasVocab(project, {text: 3})
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"abca"},
+            {"text":"cabac"}
+        ]);
+    });
+
+    describe('Rule with an empty from, with pre and post', function() {
+        const project = sheetFromFile(
+            `${DIR}/blankFromPrePost.csv`);
+        testHasVocab(project, {text: 3})
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"abca"},
+        ]);
+    });
+
+    describe('Rule cascade with an empty to', function() {
+        const project = sheetFromFile(
+            `${DIR}/cascadeBlankTo.csv`);
         testHasVocab(project, {text: 5})
         testErrors(project, []);
         testGrammar(project, [

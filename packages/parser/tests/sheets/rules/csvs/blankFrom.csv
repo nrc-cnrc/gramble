@@ -1,0 +1,10 @@
+word:, table:, text
+    ,       , aba
+    ,       ,     ,
+    , replace text:, from, to
+    ,         , , c,
+    ,
+    , join:, text
+    ,      , abca
+    ,      , cabac
+    ,      , abba
