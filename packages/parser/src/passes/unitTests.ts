@@ -1,5 +1,5 @@
-import { GenOptions, StringDict } from "../util";
-import { CounterStack, SymbolTable } from "../exprs";
+import { Dict, GenOptions, StringDict } from "../util";
+import { constructSymbolNs, CounterStack, Expr, ExprNamespace, SymbolTable } from "../exprs";
 import { Msgs, Err, Success, Result, result } from "../msgs";
 import { 
     CountGrammar, EqualsGrammar, 
@@ -16,7 +16,7 @@ export class UnitTestPass extends GrammarPass {
     constructor(
         public vocab: VocabMap,
         public tapeNS: TapeNamespace,
-        public symbolTable: SymbolTable
+        public symbolTable: Dict<Expr>
     ) {
         super();
     }
@@ -109,8 +109,9 @@ export class UnitTestPass extends GrammarPass {
             targetComponent = new PriorityGrammar(targetComponent, tapePriority);
         }
 
-        const expr = targetComponent.constructExpr(this.tapeNS, this.symbolTable);
-
+        const symbols = new ExprNamespace(this.symbolTable);
+        let expr = targetComponent.constructExpr(this.tapeNS, symbols);
+        expr = constructSymbolNs(expr, this.symbolTable);
         return [...generate(expr, this.tapeNS, opt)];
 
     }

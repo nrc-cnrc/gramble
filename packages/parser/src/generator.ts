@@ -1,7 +1,7 @@
 import { 
     constructAlternation, constructPriority,
-    CounterStack, Env, 
-    EpsilonExpr, Expr, NullExpr, PriorityExpr 
+    CounterStack, DerivEnv, 
+    EpsilonExpr, Expr, ExprNamespace, NullExpr, PriorityExpr, SymbolNsExpr 
 } from "./exprs";
 import { OutputTrie, TapeNamespace, Token, EpsilonToken } from "./tapes";
 import { 
@@ -31,7 +31,8 @@ export function* generate(
     opt: GenOptions
 ): Gen<StringDict> {
     const stack = new CounterStack(opt.maxRecursion);
-    const env = new Env(tapeNS, stack, opt);
+    const symbolNS = new ExprNamespace();
+    const env = new DerivEnv(tapeNS, symbolNS, stack, opt);
 
     const startingTime = Date.now();
 
@@ -87,7 +88,7 @@ export function* generate(
             // that have prevOutput as a prefix), so abandon this node 
             // and move on
             continue;
-        } else if (prevExpr instanceof PriorityExpr) {
+        } else if (prevExpr instanceof PriorityExpr || prevExpr instanceof SymbolNsExpr) {
             // we've neither found a valid output nor failed; there is 
             // still a possibility of finding an output with prevOutput
             // as its prefix

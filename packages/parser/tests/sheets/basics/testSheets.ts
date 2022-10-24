@@ -13,7 +13,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moo", gloss: "jump" }
         ]);
     });
-
+    
     describe('Minimal grammar with no table: op', function() {
         const project = sheetFromFile(`${DIR}/minimalGrammarNoTable.csv`);
         testErrors(project, []);

@@ -173,7 +173,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar = JoinReplace(t1("i"),
                                   [HiddenTapeNameReplaceBypass("R_HIDDEN", t1("i"), t1("a"))]);
 
-        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
+        testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
 
         const expectedResults: StringDict[] = [
@@ -212,7 +212,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                    [HiddenTapeNameReplaceBypass("R_HIDDEN", t1("i"), t1("a"))]));
         grammar = CountTape(2, grammar);
 
-        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
+        testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
 
         let resultsGrammar: Grammar = Seq(Vocab("t1", "ai"),
@@ -389,7 +389,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = HiddenTapeNameReplaceBypass("R_HIDDEN", t1("i"), t1("a"));
         grammar = CountTape(2, grammar);
 
-        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
+        testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
 
         const expectedResults: StringDict[] = [
@@ -408,7 +408,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                            Seq(Lit(".R_HIDDEN", "ii"), t1("aa")))));
         grammar = CountTape(2, grammar);
 
-        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
+        testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
 
         const expectedResults: StringDict[] = [
@@ -430,7 +430,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Not(HiddenTapeNameReplaceBypass("R_HIDDEN", t1("i"), t1("a")));
         grammar = CountTape(2, grammar);
 
-        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
+        testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
 
         let resultsGrammar: Grammar = Seq(Vocab("t1", "ai"),

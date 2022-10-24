@@ -17,7 +17,7 @@ import {
 import { Worksheet, Workbook } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { TapeNamespace, VocabMap } from "./tapes";
-import { Expr, SymbolTable } from "./exprs";
+import { Expr, ExprNamespace, SymbolNsExpr, SymbolTable } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
 import { MissingSymbolError, Msgs } from "./msgs";
@@ -54,7 +54,7 @@ export class Interpreter {
     // the symbol table doesn't change in between invocations because queries
     // and unit tests are only filters containing sequences of literals -- nothing
     // that could change the meaning of a symbol.
-    public symbolTable: SymbolTable = {};
+    //public symbolTable: SymbolTable = {};
 
     // for convenience, rather than parse it as a header every time
     public tapeColors: {[tapeName: string]: string} = {};
@@ -267,9 +267,9 @@ export class Interpreter {
         tapePriority: string[] = []
     ): Expr {
         const env = new PassEnv().pushSymbols(this.grammar.symbols);
-        
-        let expr = this.grammar.constructExpr(this.tapeNS, this.symbolTable);
-        let targetGrammar = this.grammar.getSymbol(symbolName);
+        const symbols = new ExprNamespace();
+        //let expr = this.grammar.constructExpr(this.tapeNS, symbols);
+        let targetGrammar: Grammar = this.grammar.selectSymbol(symbolName);
         if (targetGrammar == undefined) {
             const allSymbols = this.grammar.allSymbols();
             throw new Error(`Missing symbol: ${symbolName}; choices are [${allSymbols}]`);
@@ -285,13 +285,14 @@ export class Interpreter {
             });
             const querySeq = new SequenceGrammar(queryLiterals);
             targetGrammar = new EqualsGrammar(targetGrammar, querySeq);
-            tapePriority = this.grammar.getAllTapePriority(this.tapeNS, env);
             
             // we have to collect any new vocab, but only from the new material
             targetGrammar.collectAllVocab(this.vocab, this.tapeNS, env);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
             //targetGrammar.copyVocab(this.tapeNS, new Set());        
+            
+            tapePriority = this.grammar.getAllTapePriority(this.tapeNS, env);
         }
 
         const potentiallyInfinite = targetGrammar.potentiallyInfinite(new CounterStack(2), env);
@@ -308,14 +309,17 @@ export class Interpreter {
             //logTime(this.verbose, `priority = ${(targetGrammar as PriorityGrammar).tapePriority}`)
         }
 
-        expr = targetGrammar.constructExpr(this.tapeNS, this.symbolTable);
+        const expr = targetGrammar.constructExpr(this.tapeNS, symbols);
         return expr;    
     }
 
     public runUnitTests(): void {
-        this.grammar.constructExpr(this.tapeNS, this.symbolTable);  // fill the symbol table if it isn't already
+        const expr = this.grammar.constructExpr(this.tapeNS, new ExprNamespace());  // fill the symbol table if it isn't already
+        const symbols = expr instanceof SymbolNsExpr
+                      ? expr.symbols
+                      : {};
         const env = new PassEnv();
-        const t = new UnitTestPass(this.vocab, this.tapeNS, this.symbolTable);
+        const t = new UnitTestPass(this.vocab, this.tapeNS, symbols);
         const [_, msgs] = t.transform(this.grammar, env).destructure(); // results.item isn't important
         sendMessages(this.devEnv, msgs);
     }

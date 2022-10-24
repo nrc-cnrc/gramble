@@ -35,6 +35,13 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, [{}], SILENT, "b");
     });
 
+    describe('Symbol containing ε, other order', function() {
+        const grammar = Ns({ "b": Embed("a"),
+                            "a": Epsilon() });
+        //testHasVocab(grammar, {t1: 2});
+        testGrammar(grammar, [{}], SILENT, "b");
+    });
+
     describe('Symbol containing ε+ε', function() {
         const grammar = Ns({ "a": Seq(Epsilon(), Epsilon()),
                           "b": Embed("a") });
