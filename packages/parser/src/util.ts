@@ -57,6 +57,7 @@ export type Gen<T> = Generator<T, void, undefined>;
 
 export type Dict<T> = {[k:string]:T};
 export type StringDict = Dict<string>;
+export type StringSet = Set<string>;
 
 
 /**
@@ -415,6 +416,10 @@ export function listUnique<T>(lst: T[]): T[] {
 export function listIntersection<T>(s1: T[], s2: T[]): T[] {
     const set2 = new Set(s2);
     return s1.filter(i => set2.has(i));
+}
+
+export function setUnion<T>(s1: Set<T>, s2: Set<T>): Set<T> {
+    return new Set([...s1, ...s2]);
 }
 
 export function setDifference<T>(s1: Set<T>, s2: Set<T>): Set<T> {

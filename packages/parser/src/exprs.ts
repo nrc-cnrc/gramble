@@ -3,15 +3,14 @@ import {
     DIRECTION_LTR, Gen, GenOptions, 
     logDebug, logTime, logStates, 
     logGrammar, setDifference, foldRight, foldLeft,
-    VERBOSE_DEBUG
+    VERBOSE_DEBUG,
+    Dict
 } from "./util";
 import { 
     Tape, BitsetToken, TapeNamespace, 
     renameTape, Token, EntangledToken,
     OutputTrie, EpsilonToken, EPSILON_TOKEN, NO_CHAR_BITSET
 } from "./tapes";
-import { Embed } from "./grammars";
-
 
 /** 
  * An Env[ironment] encapsulates the execution environment for 
@@ -29,6 +28,11 @@ export class Env {
 
     public renameTape(fromKey: string, toKey: string): Env {
         const newTapeNS = this.tapeNS.rename(fromKey, toKey);
+        return new Env(newTapeNS, this.stack, this.opt);
+    }
+
+    public addTapes(tapes: Dict<Tape>): Env {
+        const newTapeNS = new TapeNamespace(tapes, this.tapeNS);
         return new Env(newTapeNS, this.stack, this.opt);
     }
 
@@ -1644,6 +1648,42 @@ class RepeatExpr extends UnaryExpr {
             yield [EPSILON_TOKEN, constructPrecede(deltad, oneLess)];
         }
     }
+}
+
+class TapeNsExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public tapes: Dict<Tape>
+    ) {
+        super(child);
+    }
+
+    public delta(
+        tapeName: string,
+        env: Env
+    ): Expr {
+        const newEnv = env.addTapes(this.tapes);
+        const newChild = this.child.delta(tapeName, newEnv);
+        return constructTapeNS(newChild, this.tapes);
+    }
+    
+    public *deriv(
+        tapeName: string, 
+        target: Token,
+        env: Env
+    ): DerivResults {
+        const newEnv = env.addTapes(this.tapes);
+        for (const [childTarget, childNext] of 
+                this.child.deriv(tapeName, target, newEnv)) {
+            yield [childTarget, constructTapeNS(childNext, this.tapes)];
+        }
+    }
+
+}
+
+export function constructTapeNS(child: Expr, tapes: Dict<Tape>): TapeNsExpr {
+    return new TapeNsExpr(child, tapes);
 }
 
 /**

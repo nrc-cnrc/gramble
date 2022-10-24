@@ -90,13 +90,12 @@ export class UnitTestPass extends GrammarPass {
         // create a filter for each test
         let targetComponent: Grammar = new EqualsGrammar(test.child, test.test);
 
-        const tapePriority = targetComponent.getAllTapePriority(this.tapeNS, env);
-        
         // there won't be any new vocabulary here, but it's possible (indeed, frequent)
         // that the Equals we made above has a different join/concat tape structure
         // than the original grammar, so we have to check
-        targetComponent.collectAllVocab(this.vocab, this.tapeNS, env);
-            
+        targetComponent.collectAllVocab(this.vocab, this.tapeNS, env);        
+        const tapePriority = targetComponent.getAllTapePriority(this.tapeNS, env);
+        
         const potentiallyInfinite = targetComponent.potentiallyInfinite(new CounterStack(2), env);
         if (potentiallyInfinite && opt.maxChars != Infinity) {
             if (targetComponent instanceof PriorityGrammar) {
