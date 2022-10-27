@@ -7,7 +7,7 @@ suffix:, table:, text, gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
 
-word:, test:, text, gloss
+default:, test:, text, gloss
     ,     , foobar, run-1SG,
     ,     , moobar, jump-1SG,
     ,     , foobaz, run-2SG

@@ -7,5 +7,5 @@ suffix:, table:, text, gloss/subj
     ,       , baz, [2SG]
     ,       ,    , [3SG]
 
-word:, table:, embed, >gloss, embed,
+default:, table:, embed, >gloss, embed,
     ,       , verb, pos, suffix, 

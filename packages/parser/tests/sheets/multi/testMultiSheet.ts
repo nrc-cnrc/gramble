@@ -9,10 +9,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/externalRef.csv`);
         testErrors(project, []);
         testGrammar(project, [
-            { text: "foobarable", gloss: "run-1SG" },
-            { text: "moobarable", gloss: "jump-1SG" },
-            { text: "foobazable", gloss: "run-2SG" },
-            { text: "moobazable", gloss: "jump-2SG" }
+            { text: "fooable", gloss: "run" },
+            { text: "mooable", gloss: "jump" },
         ]);
     });
     
@@ -20,10 +18,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/lowercaseExternalRef.csv`);
         testErrors(project, []);
         testGrammar(project, [
-            { text: "foobarable", gloss: "run-1SG" },
-            { text: "moobarable", gloss: "jump-1SG" },
-            { text: "foobazable", gloss: "run-2SG" },
-            { text: "moobazable", gloss: "jump-2SG" }
+            { text: "fooable", gloss: "run" },
+            { text: "mooable", gloss: "jump" },
         ]);
     });
 
@@ -31,10 +27,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/externalBareRef.csv`);
         testErrors(project, []);
         testGrammar(project, [
-            { text: "foobarable", gloss: "run-1SG" },
-            { text: "moobarable", gloss: "jump-1SG" },
-            { text: "foobazable", gloss: "run-2SG" },
-            { text: "moobazable", gloss: "jump-2SG" }
+            { text: "fooable", gloss: "run" },
+            { text: "mooable", gloss: "jump" },
         ]);
     });
     
@@ -42,10 +36,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/externalBareRefToBareGrammar.csv`);
         testErrors(project, []);
         testGrammar(project, [
-            { text: "foobarable", gloss: "run-1SG" },
-            { text: "moobarable", gloss: "jump-1SG" },
-            { text: "foobazable", gloss: "run-2SG" },
-            { text: "moobazable", gloss: "jump-2SG" }
+            { text: "fooable", gloss: "run" },
+            { text: "mooable", gloss: "jump" },
         ]);
     });
 
@@ -91,7 +83,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Multi-sheet project with a reference to a namespace in an external document', function() {
+    describe('Multi-sheet project with a reference to a collection in an external document', function() {
         const project = sheetFromFile(`${DIR}/externalRefToNs.csv`);
         testErrors(project, []);
         testGrammar(project, [
@@ -102,14 +94,12 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Multi-sheet project with the external reference in a namespace', function() {
+    describe('Multi-sheet project with the external reference in a collection', function() {
         const project = sheetFromFile(`${DIR}/externalRefInNs.csv`);
         testErrors(project, []);
         testGrammar(project, [
-            { text: "foobarable", gloss: "run-1SG" },
-            { text: "moobarable", gloss: "jump-1SG" },
-            { text: "foobazable", gloss: "run-2SG" },
-            { text: "moobazable", gloss: "jump-2SG" }
+            { text: "fooable", gloss: "run" },
+            { text: "mooable", gloss: "jump" },
         ]);
     });
 });

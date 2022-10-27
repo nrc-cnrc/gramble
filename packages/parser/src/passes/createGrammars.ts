@@ -3,7 +3,7 @@ import {
     TstBinary, TstBinaryOp,
     TstEmpty, 
     TstFilter, TstHeaderContentPair, 
-    TstHide, TstNamespace, TstNegativeUnitTest, TstRename, 
+    TstHide, TstCollection, TstNegativeUnitTest, TstRename, 
     TstReplace, 
     TstReplaceTape, TstSequence, TstTable, TstUnitTest 
 } from "../tsts";
@@ -11,16 +11,18 @@ import { Component } from "../components";
 import { Pass, PassEnv } from "../passes";
 import { 
     AlternationGrammar,
+    EmbedGrammar,
     EpsilonGrammar, EqualsGrammar, 
     Grammar, GrammarResult, 
     HideGrammar, JoinReplaceGrammar, JoinRuleGrammar, LocatorGrammar, 
     NegativeUnitTestGrammar, 
-    NsGrammar, 
+    CollectionGrammar, 
     RenameGrammar, ReplaceGrammar, SequenceGrammar, UnitTestGrammar
 } from "../grammars";
 import { TapeNameHeader } from "../headers";
 import { Err, Msgs, resultList, Warn } from "../msgs";
 import { BINARY_OPS_MAP, BLANK_PARAM } from "../ops";
+import { DEFAULT_SYMBOL_NAME } from "../util";
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -32,7 +34,7 @@ import { BINARY_OPS_MAP, BLANK_PARAM } from "../ops";
 export class CreateGrammars extends Pass<Component,Grammar> {
 
     public get desc(): string {
-        return "Creating TST";
+        return "Creating grammar objects";
     }
 
     public transform(t: Component, env: PassEnv): GrammarResult {
@@ -66,8 +68,8 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                 return this.handleSequence(t as TstSequence, env);
             case TstAssignment:
                 return this.handleAssignment(t as TstAssignment, env);
-            case TstNamespace:
-                return this.handleNamespace(t as TstNamespace, env);
+            case TstCollection:
+                return this.handleCollection(t as TstCollection, env);
             default: 
                 throw new Error(`unhandled ${t.constructor.name}`);
         }
@@ -230,23 +232,16 @@ export class CreateGrammars extends Pass<Component,Grammar> {
         return this.transform(t.child, env);
     }
 
-    
-    public handleNamespace(t: TstNamespace, env: PassEnv): GrammarResult {
-        const ns = new NsGrammar();
+    public handleCollection(t: TstCollection, env: PassEnv): GrammarResult {
+        const ns = new CollectionGrammar();
         const msgs: Msgs = [];
-        for (let i = 0; i < t.children.length; i++) {
-            const child = t.children[i];
-            const isLastChild = i == t.children.length - 1;
-            const grammar = this.transform(child, env).msgTo(msgs);
-            if (!(child instanceof TstAssignment) && !isLastChild) {
-                // warn that the child isn't going to be assigned to anything
-                Warn(
-                    "This content doesn't end up being assigned to anything and will be ignored.", 
-                    child.pos).msgTo(msgs);
-                continue;
-            }
 
+
+        for (const child of t.children) {
+
+            const grammar = this.transform(child, env).msgTo(msgs);
             if (child instanceof TstAssignment) {
+
                 const referent = ns.getSymbol(child.name);
                 if (referent != undefined) {
                     // we're reassigning an existing symbol!
@@ -255,12 +250,22 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                         child.pos).msgTo(msgs);
                     continue;
                 }     
-                ns.addSymbol(child.name, grammar);
-            } else if (isLastChild) {
-                ns.addSymbol("", grammar);
+                ns.symbols[child.name] = grammar;
+
+                /*
+                const embedded = new EmbedGrammar(child.name);
+                defaultChildren.push(embedded);
+                continue;
+                */
             }
-            
         }
+
+        /*
+        if (!defaultIsAssigned) {
+            const alternation = new AlternationGrammar(defaultChildren);
+            ns.symbols[DEFAULT_SYMBOL_NAME] = alternation;
+        } */
+
         return ns.msg(msgs);
     }
 }

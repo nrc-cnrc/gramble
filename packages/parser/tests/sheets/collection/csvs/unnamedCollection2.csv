@@ -2,9 +2,9 @@ suffix:, table:, text, gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
 
-namespace:, verb:, table:, text, gloss
+collection:, verb:, table:, text, gloss
     , , , foo, run
     , , , moo, jump
 
-word:, table:, embed
+default:, table:, embed
     ,       , suffix 

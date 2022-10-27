@@ -40,18 +40,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Testing a default grammar', function() {
-        const interpreter = sheetFromFile(`${DIR}/testingDefaultGrammar.csv`);
-        interpreter.runUnitTests();
-        testErrors(interpreter, []);
-        testGrammar(interpreter, [
-            { text: "foobar", gloss: "run-1SG" },
-            { text: "moobar", gloss: "jump-1SG" },
-            { text: "foobaz", gloss: "run-2SG" },
-            { text: "moobaz", gloss: "jump-2SG" }
-        ]);
-    });
-    
     describe('Testing a grammar directly underneath (without "table:" op)', function() {
         const interpreter = sheetFromFile(`${DIR}/testingWithoutTableOp.csv`);
         interpreter.runUnitTests();

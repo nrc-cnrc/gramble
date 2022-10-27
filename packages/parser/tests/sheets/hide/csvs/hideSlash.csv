@@ -11,5 +11,5 @@ suffix:, table:, text, gloss/subj
 word:, table:, embed, embed
     ,       , verb, suffix
 
-main:, table:, embed, hide
+default:, table:, embed, hide
      ,       , word, pos/subj

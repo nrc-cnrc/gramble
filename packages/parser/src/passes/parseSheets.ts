@@ -3,20 +3,23 @@ import { CommandMsg, CommentMsg, Err, Msgs } from "../msgs";
 import { 
     TstAssignment,
     TstEnclosure, 
-    TstNamespace, TstOp, 
-    TstGrid
+    TstCollection, TstOp, 
+    TstGrid,
+    TstHeaderContentPair,
+    TstHeader
 } from "../tsts";
 import { Component, CResult } from "../components";
 import { Worksheet, Workbook } from "../sheets";
-import { Cell, CellPos } from "../util";
-import { NamespaceOp, parseOp } from "../ops";
+import { Cell, CellPos, DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL_NAME } from "../util";
+import { CollectionOp, parseOp, SymbolOp } from "../ops";
+import { EmbedHeader } from "../headers";
 
 type PassInput = Workbook | Worksheet;
 
 /**
  * This takes grids of cells (Worksheets) and collections of them
  * (Workbooks) and turns them into the basic syntactic objects
- * (TstNamespaces, TstOps, TstGrids, and TstContent).
+ * (TstCollections, TstOps, TstGrids, and TstContent).
  */
 export class ParseSheets extends Pass<PassInput,Component> {
 
@@ -39,23 +42,29 @@ export class ParseSheets extends Pass<PassInput,Component> {
     public handleWorkbook(t: Workbook, env: PassEnv): CResult {
 
         const projectCell = new Cell("", new CellPos("", -1, -1));
-        const project = new TstNamespace(projectCell);
+        const project = new TstCollection(projectCell);
         const msgs: Msgs = [];
+        let defaultFound = false;
+
         for (const [sheetName, sheet] of Object.entries(t.sheets)) {
-            if (sheetName == t.mainSheetName) {
-                continue; // save this for last
-            }
-            const tstSheet = this.transform(sheet, env).msgTo(msgs);
+            
+            const tstSheet = this.transform(sheet, env).msgTo(msgs) as TstAssignment;
             project.addChild(tstSheet).msgTo(msgs);
+            if (sheetName.toLowerCase() == DEFAULT_SYMBOL_NAME.toLowerCase()) {
+                defaultFound = true;
+            }
         }
 
-        if (!(t.mainSheetName in t.sheets)) { 
-            return project.msg(msgs); // unset or incorrect main sheet name
+        if (!defaultFound) {
+            // make an embed for the main sheet name and assign that to 
+            // the default symbol name
+            const tstEmbedHeader = new TstHeader(projectCell, new EmbedHeader());
+            const embedCell = new Cell(t.mainSheetName, projectCell.pos);
+            const embed = new TstHeaderContentPair(tstEmbedHeader, embedCell);
+            const a = new TstAssignment(projectCell, DEFAULT_SYMBOL_NAME, embed);
+            project.addChild(a);
         }
 
-        const mainSheet = this.transform(t.sheets[t.mainSheetName], env)
-                              .msgTo(msgs);
-        project.addChild(mainSheet).msgTo(msgs);
         return project.msg(msgs);
 
     }
@@ -102,7 +111,7 @@ export class ParseSheets extends Pass<PassInput,Component> {
         // sheets are treated as having an invisible cell containing their names at 0, -1
         const startCell = new Cell(t.name, new CellPos(t.name, 0, 0));
 
-        const root = new TstOp(startCell, new NamespaceOp());
+        const root = new TstOp(startCell, new CollectionOp());
 
         const stack: {tst: TstEnclosure, row: number, col: number}[] = 
                 [{ tst: root, row: 0, col: -1 }];

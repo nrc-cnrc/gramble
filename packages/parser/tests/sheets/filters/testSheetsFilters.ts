@@ -192,10 +192,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
             { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
             { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
-            ], 
-            SILENT,
-            "equalsEmbedAfter.word"
-        );
+        ]);
     });
     
     describe('Equals with not value', function() {
@@ -299,7 +296,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-
     describe('startswith embed', function() {
         const project = sheetFromFile(`${DIR}/startsWithEmbed.csv`);
         testErrors(project, []);
@@ -317,9 +313,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "umfoo", gloss: "[1SG]run" },
             { text: "ummoo", gloss: "[1SG]jump" },
             { text: "ungoo", gloss: "[1SG]climb" }
-        ], 
-        SILENT,
-        "startsWithEmbedAfter.word");
+        ]);
     });
 
     describe('startswith negated embed', function() {
@@ -407,9 +401,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foobarq", gloss: "run[1SG]" },
             { text: "foobazk", gloss: "jump[1SG]" },
             { text: "foobask", gloss: "climb[1SG]" }
-        ], 
-        SILENT,
-        "endsWithEmbedAfter.word");
+        ]);
     });
 
     describe('endswith negated embed', function() {
@@ -524,9 +516,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
             { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
-        ],
-        SILENT,
-        "containsEmbedAfter.word");
+        ]);
     });
 
     /*

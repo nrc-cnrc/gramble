@@ -6,5 +6,8 @@ suffix:, table:, text, gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
 
-namespace:, word:, table:, embed, embed
-    ,     ,       , verb,  suffix 
+default:, collection:, noun:, text
+    ,       ,            , goo
+    ,
+    , or:, embed, embed
+    ,    , verb, suffix

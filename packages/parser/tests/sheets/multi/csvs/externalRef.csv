@@ -1,2 +1,2 @@
-word:, embed, text,
-    , embedGrammar.word, able
+default:, embed, text,
+    , embedGrammar, able

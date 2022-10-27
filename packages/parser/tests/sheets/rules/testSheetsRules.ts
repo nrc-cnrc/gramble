@@ -286,7 +286,8 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Replace with no sibling bare', function() {
         const project = sheetFromFile(`${DIR}/replaceWithNoSiblingBare.csv`);
         testErrors(project, [
-            ["replaceWithNoSiblingBare",0,0,"error"]
+            ["replaceWithNoSiblingBare",0,0,"error"],
+            ["replaceWithNoSiblingBare",0,0,"warning"]
         ]);        
         testGrammar(project, [{}]);
     });

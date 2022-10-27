@@ -7,7 +7,7 @@ import {
     TstOp, 
     TstEmpty,
     TstGrid,
-    TstNamespace
+    TstCollection
 } from "../tsts";
 import { Component, CPass, CResult } from "../components";
 
@@ -31,21 +31,21 @@ export class InsertTables extends CPass {
             switch (t.constructor) {
                 case TstOp: 
                     return this.handleOp(t as TstOp);
-                case TstNamespace: 
-                    return this.handleNamespace(t as TstNamespace);
+                case TstCollection: 
+                    return this.handleCollection(t as TstCollection);
                 default: return t;
             }
         });
     }
 
-    public handleNamespace(t: TstNamespace): CResult {
+    public handleCollection(t: TstCollection): CResult {
         return resultList(t.children).map(c => {
             if (c instanceof TstGrid) {
                 return new TstOp(c.cell, new TableOp(), 
                                 new TstEmpty(), c);
             }
             return c;
-        }).bind(cs => new TstNamespace(t.cell, cs));
+        }).bind(cs => new TstCollection(t.cell, cs));
     }
 
     public handleOp(t: TstOp): TstOp {

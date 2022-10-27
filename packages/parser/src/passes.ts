@@ -1,4 +1,4 @@
-import { Grammar, NsGrammar } from "./grammars";
+import { Grammar, CollectionGrammar } from "./grammars";
 import { Result } from "./msgs";
 import { Dict, Namespace, SILENT, timeIt, VERBOSE_TIME } from "./util";
 

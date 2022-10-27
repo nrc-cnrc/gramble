@@ -8,11 +8,8 @@ import {
 } from "../grammars";
 
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
-import { result, resultList } from "../msgs";
+import { result } from "../msgs";
 import { PassEnv } from "../passes";
-
-
-let RULE_HIDE_INDEX = 0;
 
 /**
  * This pass handles the construction of implicit-tape replacement rules

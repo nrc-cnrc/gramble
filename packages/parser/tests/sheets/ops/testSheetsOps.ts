@@ -26,7 +26,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Table op within a join', function() {
-        const project = sheetFromFile(`${DIR}/tableWithinJoin.csv`);
+        const project = sheetFromFile(`${DIR}/joinUnderTable.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobar", gloss: "run[1SG]", subj: "1SG" },

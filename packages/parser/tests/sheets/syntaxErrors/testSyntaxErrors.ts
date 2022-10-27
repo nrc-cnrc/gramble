@@ -12,7 +12,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["headerUsingReservedWord", 5, 4, "warning"]
         ]);
         testGrammar(project, [
-            {"text":"foobar","gloss":"run-1SG"}
+            {text: "foobar", gloss: "run-1SG"}
         ]);
     });
 
@@ -23,8 +23,8 @@ describe(`${path.basename(module.filename)}`, function() {
             ["assignmentToReservedWord", 1, 0, "warning"]
         ]);
         testGrammar(project, [
-            {"gloss":"-1SG","text":"bar"},
-            {"gloss":"-2SG","text":"baz"}
+            {gloss: "-1SG",text: "bar"},
+            {gloss: "-2SG",text: "baz"}
         ]);
     });
 
@@ -33,10 +33,10 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/optional.csv`);
         testErrors(project, []);
         testGrammar(project,[
-            {"text":"moobaz","gloss":"jump-2SG"},
-            {"text":"moobar","gloss":"jump-1SG"},
-            {"text":"foobaz","gloss":"run-2SG"},
-            {"text":"foobar","gloss":"run-1SG"}
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobar", gloss: "run-1SG"}
         ]);
     });
 
@@ -46,8 +46,8 @@ describe(`${path.basename(module.filename)}`, function() {
             ["reassigningSymbol", 4, 0, "error"]
         ]);
         testGrammar(project, [
-            {"text":"moo","gloss":"jump"},
-            {"text":"foo","gloss":"run"}
+            {text: "moo", gloss: "jump"},
+            {text: "foo", gloss: "run"}
         ]);
     });
     
@@ -76,6 +76,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('Bare join op, missing sibling argument', function() {
         const project = sheetFromFile(`${DIR}/bareOp.csv`);
         testErrors(project, [
+            ["bareOp", 0, 0, "error"],
             ["bareOp", 0, 0, "warning"]
         ]);
         testGrammar(project, [
@@ -102,12 +103,12 @@ describe(`${path.basename(module.filename)}`, function() {
             ["assignmentSiblingOp", 12, 2, "error"]
         ]);
         testGrammar(project, [
-            {"text":"moo","gloss":"jump"},
-            {"text":"moobaz","gloss":"jump-2SG"},
-            {"text":"moobar","gloss":"jump-1SG"},
-            {"text":"foo","gloss":"run"},
-            {"text":"foobaz","gloss":"run-2SG"},
-            {"text":"foobar","gloss":"run-1SG"}
+            {text: "moo", gloss: "jump"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foo", gloss: "run"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobar", gloss: "run-1SG"}
         ]);
     });
 
@@ -117,12 +118,12 @@ describe(`${path.basename(module.filename)}`, function() {
             ["assignmentChildOp", 9, 1, "error"]
         ]);
         testGrammar(project, [
-            {"text":"moo","gloss":"jump"},
-            {"text":"moobaz","gloss":"jump-2SG"},
-            {"text":"moobar","gloss":"jump-1SG"},
-            {"text":"foo","gloss":"run"},
-            {"text":"foobaz","gloss":"run-2SG"},
-            {"text":"foobar","gloss":"run-1SG"}
+            {text: "moo", gloss: "jump"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foo", gloss: "run"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobar", gloss: "run-1SG"}
         ]);
     });
     
@@ -132,22 +133,24 @@ describe(`${path.basename(module.filename)}`, function() {
             ["inappropriateAssignment", 9, 1, "error"]
         ]);
         testGrammar(project, [
-            {"text":"moobaz","gloss":"jump-2SG"},
-            {"text":"moobar","gloss":"jump-1SG"},
-            {"text":"foobaz","gloss":"run-2SG"},
-            {"text":"foobar","gloss":"run-1SG"}
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobar", gloss: "run-1SG"}
         ]);
     });
-
-    
+ 
     describe('Content obliteration by table', function() {
         const project = sheetFromFile(`${DIR}/obliterationByTable.csv`);
         testErrors(project, [
-            ["obliterationByTable",0,0,"error"]
+            ["obliterationByTable",0,0,"warning"],
+            ["obliterationByTable",4,0,"warning"]
         ]);
         testGrammar(project, [
-            {"text":"baz"},
-            {"text":"bar"}
+            {text: "foo"},
+            {text: "goo"},
+            {text: "bar"},
+            {text: "baz"}
         ]);
     });
 
@@ -157,8 +160,8 @@ describe(`${path.basename(module.filename)}`, function() {
             ["obliterationByAssignment",0,0,"error"]
         ]);
         testGrammar(project, [
-            {"text":"baz"},
-            {"text":"bar"}
+            {text: "baz"},
+            {text: "bar"}
         ]);
     });
 
@@ -168,7 +171,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["childOnSameLine", 4, 4, "error"]
         ]);
         testGrammar(project, [
-            {"text":"foobarbaz","gloss":"run-1SG-2SG"}
+            {text: "foobarbaz", gloss: "run-1SG-2SG"}
         ]);
     });
 
@@ -190,7 +193,7 @@ describe(`${path.basename(module.filename)}`, function() {
             ["weirdIndentation", 10, 1, "warning"]
         ]);
         testGrammar(project, [
-            {"text":"foobar","gloss":"run-1SG","finite":"true"}
+            {text: "foobar", gloss: "run-1SG","finite":"true"}
         ]);
     });
 
@@ -202,10 +205,10 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
         /*
         testGrammar(project, [
-            {"gloss":"run","text":"baz"},
-            {"gloss":"run","text":"bar"},
-            {"gloss":"jump","text":"bar"},
-            {"gloss":"jump","text":"baz"}
+            {gloss: "run",text: "baz"},
+            {gloss: "run",text: "bar"},
+            {gloss: "jump",text: "bar"},
+            {gloss: "jump",text: "baz"}
         ]);
         */
     });

@@ -13,5 +13,5 @@ word:, embed, embed
 join:, subj, 
      , 1SG,
 
-main:, embed,
+default:, embed,
      , word

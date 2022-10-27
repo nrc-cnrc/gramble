@@ -4,6 +4,6 @@ root:, text, gloss
      , foobaz, jump
      , foobas, climb
 
-word:, embed, ends re text, text, gloss
+default:, embed, ends re text, text, gloss
      , root, r, q, [1SG]
      , root, s|z, k, [1SG]

@@ -8,6 +8,6 @@ root:, text, gloss
      , moo, jump
      , goo, climb
 
-word:, text, gloss, embed, starts re embed
+default:, text, gloss, embed, starts re embed
      , um, [1SG], root, labials
      , un, [1SG], root, ~labials

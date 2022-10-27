@@ -7,7 +7,7 @@ suffix:, table:, text, gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
 
-main:, table:, embed, embed
+default:, table:, embed, embed
     ,       , verb, suffix 
     ,
     , or:   , suffixless:, embed

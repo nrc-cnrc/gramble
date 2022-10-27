@@ -4,7 +4,7 @@ VERB:, table:, text
     , replace text:, from, to
     ,        , b, v
 
-WORD:, table:, embed
+default:, table:, embed
     ,       , VERB
     ,       ,     ,
     , replace text:, from, to

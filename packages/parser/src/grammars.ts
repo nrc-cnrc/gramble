@@ -8,7 +8,7 @@ import {
     constructLiteral, constructMatchFrom, constructCharSet,
     constructDotRep, constructCount, constructCountTape,
     constructPriority, EpsilonExpr, constructShort,
-    constructNotContains, constructParallel, DerivEnv, ExprNamespace, SymbolNsExpr, constructSymbolNs
+    constructNotContains, constructParallel, DerivEnv, ExprNamespace, CollectionExpr, constructCollection
 } from "./exprs";
 import { Msg, Msgs, result, Result, resultDict, resultList } from "./msgs";
 
@@ -23,17 +23,16 @@ import { Pass, PassEnv } from "./passes";
 
 import {
     CellPos,
+    DEFAULT_SYMBOL_NAME,
     Dict,
     flatten,
     HIDDEN_TAPE_PREFIX,
     listDifference,
     listIntersection,
     listUnique,
-    Namespace,
     setUnion,
     StringDict,
     StringSet,
-    sum,
     tokenizeUnicode
 } from "./util";
 
@@ -52,9 +51,6 @@ export class GrammarResult extends Result<Grammar> { }
 export abstract class GrammarPass extends Pass<Grammar,Grammar> { 
 
     public transformRoot(g: Grammar, env: PassEnv): GrammarResult {
-        if (!(g instanceof NsGrammar)) {
-            throw new Error(`${this.constructor.name} requires an NsGrammar root`);
-        }
         g.calculateTapes(new CounterStack(2), env);
         return this.transform(g, env);
     }
@@ -80,7 +76,7 @@ export abstract class GrammarPass extends Pass<Grammar,Grammar> {
  * 
  *   * qualifying and resolving symbol names (e.g., figuring out that
  *     a particular reference to VERB refers to, say, the VERB symbol in the
- *     IntransitiveVerbs namespace, and qualifying that reference so that it
+ *     IntransitiveVerbs collection, and qualifying that reference so that it
  *     uniquely identifies that symbol (e.g. "IntransitiveVerb.VERB")
  * 
  *   * working out what tapes a particular component refers to.  This is 
@@ -118,7 +114,6 @@ export abstract class Grammar extends Component {
     }
     
     protected _tapes: string[] | undefined = undefined;
-    public concatenableTapes: StringSet = new Set(); 
 
     public get tapes(): string[] {
         if (this._tapes == undefined) {
@@ -283,14 +278,6 @@ export abstract class Grammar extends Component {
         }
         return this._tapes;
     }
-
-    /*public getAllTapes(): TapeNamespace {
-        const tapes = new TapeNamespace();
-        const vocab = new VocabMap();
-        const env = new PassEnv();
-        this.collectAllVocab(vocab, tapes, env);
-        return tapes;
-    } */
 
     public abstract constructExpr(
         tapeNS: TapeNamespace,
@@ -581,7 +568,7 @@ export class ParallelGrammar extends NAryGrammar {
         tapeNS: TapeNamespace,
         symbols: ExprNamespace
     ): Expr {
-        const childExprs: {[tapeName: string]: Expr} = {};
+        const childExprs: Dict<Expr> = {};
         for (const child of this.children) {
             if (child.tapes.length != 1) {
                 throw new Error(`Each child of par must have 1 tape`);
@@ -972,7 +959,7 @@ export class CountTapeGrammar extends UnaryGrammar {
 
     constructor(
         child: Grammar,
-        public maxChars: number | {[tape: string]: number}
+        public maxChars: number | Dict<number>
     ) {
         super(child);
     }
@@ -1002,7 +989,7 @@ export class CountTapeGrammar extends UnaryGrammar {
         tapeNS: TapeNamespace,
         symbols: ExprNamespace
     ): Expr {
-        let maxCharsDict: {[tape: string]: number} = {};
+        let maxCharsDict: Dict<number> = {};
         if (typeof this.maxChars == 'number') {
             for (const tape of this.tapes) {
                 maxCharsDict[tape] = this.maxChars;
@@ -1583,10 +1570,11 @@ export class TapeNsGrammar extends UnaryGrammar {
 
 }
 
-export class NsGrammar extends Grammar {
+export class CollectionGrammar extends Grammar {
 
     constructor(
         public symbols: Dict<Grammar> = {},
+        //public aliases: Dict<string> = {},
         public selectedSymbol: string = ""
     ) {
         super();
@@ -1596,15 +1584,19 @@ export class NsGrammar extends Grammar {
         const newEnv = env.pushSymbols(this.symbols);
         const result = resultDict(this.symbols)
                 .map(c => f.transform(c, newEnv))
-                .bind(cs => new NsGrammar(cs as Dict<Grammar>, this.selectedSymbol));
+                .bind(cs => new CollectionGrammar(cs as Dict<Grammar>, 
+                                        //this.aliases, 
+                                        this.selectedSymbol));
         return result;
     }
 
-    public selectSymbol(symbolName: string): NsGrammar {
+    public selectSymbol(symbolName: string): CollectionGrammar {
         if (!(symbolName in this.symbols)) {
-            throw new Error("cannot find symbol ${symbolName}");
+            throw new Error(`cannot find symbol ${symbolName}`);
         }
-        return new NsGrammar(this.symbols, symbolName);
+        return new CollectionGrammar(this.symbols, 
+                            //this.aliases, 
+                            symbolName);
     }
 
     public get id(): string {
@@ -1624,32 +1616,24 @@ export class NsGrammar extends Grammar {
             c => c.potentiallyInfinite(stack, newEnv));
     }
 
-    public addSymbol(symbolName: string, g: Grammar): void {
-        this.symbols[symbolName] = g;
-    }
-
     public getDefaultSymbol(): Grammar {
-        const size = Object.values(this.symbols).length;
-        if (size == 0) {
-            return new EpsilonGrammar();
+        const result = this.resolveNameLocal(DEFAULT_SYMBOL_NAME);
+        if (result == undefined) {
+            throw new Error("Collection has no default symbol");
         }
-        return Object.values(this.symbols)[size-1].getDefaultSymbol();
+        const [_, referent] = result;
+        return referent;
     }
 
     public getSymbol(symbolName: string): Grammar | undefined {
-
-        if (symbolName == "") {
-            return this.getDefaultSymbol();
-        }
 
         const result = this.resolveNameLocal(symbolName);
         if (result == undefined) {
             return undefined;
         }
 
-        const [name, referent] = result;
+        const [_, referent] = result;
         return referent;
-        
     }
 
     public allSymbols(): string[] {
@@ -1667,12 +1651,14 @@ export class NsGrammar extends Grammar {
     }
 
     public calculateQualifiedName(name: string, nsStack: string[]): string {
-        const pieces = [...nsStack, name].filter(s => s.length > 0);
+        const pieces = [...nsStack, name]
+                       .filter(s => s.length > 0 &&
+                               s.toLowerCase() != DEFAULT_SYMBOL_NAME.toLowerCase());
         return pieces.join(".");
     }
 
     /**
-     * Looks up an unqualified name in this namespace's symbol table,
+     * Looks up an unqualified name in this collection's symbol table,
      * case-insensitive.
      */
     public resolveNameLocal(name: string): [string, Grammar] | undefined {
@@ -1691,10 +1677,10 @@ export class NsGrammar extends Grammar {
         nsStack: string[]
     ): [string, Grammar] | undefined {
 
-        // split into (potentially) namespace prefix(es) and symbol name
+        // split into (potentially) collection prefix(es) and symbol name
         const namePieces = unqualifiedName.split(".");
 
-        // it's got no namespace prefix, it's a symbol name
+        // it's got no collection prefix, it's a symbol name
         if (namePieces.length == 1) {
 
             const localResult = this.resolveNameLocal(unqualifiedName);
@@ -1704,27 +1690,27 @@ export class NsGrammar extends Grammar {
                 return undefined;
             }
             
-            // it IS a symbol defined in this namespace,
+            // it IS a symbol defined in this collectio ,
             // so get the fully-qualified name.
             const [localName, referent] = localResult;
             const newName = this.calculateQualifiedName(localName, nsStack);
             return [newName, referent.getDefaultSymbol()];
         }
 
-        // it's got a namespace prefix
+        // it's got a collection prefix
         const child = this.resolveNameLocal(namePieces[0]);
         if (child == undefined) {
-            // but it's not a child of this namespace
+            // but it's not a child of this collection
             return undefined;
         }
 
         const [localName, referent] = child;
-        if (!(referent instanceof NsGrammar)) {
-            // if symbol X isn't a namespace, "X.Y" can't refer to anything real
+        if (!(referent instanceof CollectionGrammar)) {
+            // if symbol X isn't a collection, "X.Y" can't refer to anything real
             return undefined;
         }
 
-        // this namespace has a child of the correct name
+        // this collection has a child of the correct name
         const remnant = namePieces.slice(1).join(".");
         const newStack = [ ...nsStack, localName ];
         return referent.resolveName(remnant, newStack);  // try the child
@@ -1794,7 +1780,7 @@ export class NsGrammar extends Grammar {
             throw new Error(`cannot find symbol ${this.selectedSymbol}`);
         }
         const result = newSymbols[this.selectedSymbol];
-        return constructSymbolNs(result, newSymbols);
+        return constructCollection(result, newSymbols);
     }
 }
 
@@ -2135,12 +2121,12 @@ export function Not(child: Grammar, maxChars:number=Infinity): NegationGrammar {
     return new NegationGrammar(child, maxChars);
 }
 
-export function Ns(
-    symbols: {[name: string]: Grammar} = {}
-): NsGrammar {
-    const result = new NsGrammar();
+export function Collection(
+    symbols: Dict<Grammar> = {}
+): CollectionGrammar {
+    const result = new CollectionGrammar();
     for (const [symbolName, component] of Object.entries(symbols)) {
-        result.addSymbol(symbolName, component);
+        result.symbols[symbolName] = component;
     }
     return result;
 }
@@ -2165,7 +2151,7 @@ export function Count(maxChars: number, child: Grammar): Grammar {
     return new CountGrammar(child, maxChars);
 }
 
-export function CountTape(maxChars: number | {[tape: string]: number}, child: Grammar): Grammar {
+export function CountTape(maxChars: number | Dict<number>, child: Grammar): Grammar {
     return new CountTapeGrammar(child, maxChars);
 }
 
@@ -2273,12 +2259,6 @@ export class JoinReplaceGrammar extends Grammar {
                 let fromTapeName: string | undefined = undefined;
                 if (rule.fromTapeName != undefined) {
                     if (fromTapeName != undefined && fromTapeName != rule.fromTapeName) {
-                        //rule.message({
-                        //    type: "error",
-                        //    shortMsg: "Inconsistent from fields",
-                        //    longMsg: "Each rule in a block of rules needs to " +
-                        //     "agree on what the 'from' fields are. "
-                        //});
                         continue;
                     }
                     fromTapeName = rule.fromTapeName;
@@ -2287,12 +2267,6 @@ export class JoinReplaceGrammar extends Grammar {
                 let toTapeNames: string[] = [];
                 if (rule.toTapeNames.length) {
                     if (toTapeNames.length && listDifference(toTapeNames, rule.toTapeNames).length) {
-                        //rule.message({
-                        //    type: "error",
-                        //    shortMsg: "Inconsistent to fields",
-                        //    longMsg: "All rules in a block of rules need to " +
-                        //      "agree on what the 'to' fields are. "
-                        //});
                         continue;
                     }
                     toTapeNames = rule.toTapeNames;

@@ -1,10 +1,10 @@
 import { Dict, GenOptions, StringDict } from "../util";
-import { constructSymbolNs, CounterStack, Expr, ExprNamespace, SymbolTable } from "../exprs";
+import { constructCollection, CounterStack, Expr, ExprNamespace } from "../exprs";
 import { Msgs, Err, Success, Result, result } from "../msgs";
 import { 
     CountGrammar, EqualsGrammar, 
     Grammar, GrammarPass, GrammarResult, NegativeUnitTestGrammar, 
-    NsGrammar, PriorityGrammar, 
+    CollectionGrammar, PriorityGrammar, 
     UnitTestGrammar 
 } from "../grammars";
 import { VocabMap, TapeNamespace} from "../tapes";
@@ -111,7 +111,7 @@ export class UnitTestPass extends GrammarPass {
 
         const symbols = new ExprNamespace(this.symbolTable);
         let expr = targetComponent.constructExpr(this.tapeNS, symbols);
-        expr = constructSymbolNs(expr, this.symbolTable);
+        expr = constructCollection(expr, this.symbolTable);
         return [...generate(expr, this.tapeNS, opt)];
 
     }

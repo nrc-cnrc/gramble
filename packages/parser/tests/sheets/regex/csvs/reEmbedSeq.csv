@@ -6,5 +6,5 @@ verbs:, table:, text
         ,       , goo
         ,       , boo
 
-word:, table:, re embed, text
+default:, table:, re embed, text
     ,       , (nouns)(verbs), bar

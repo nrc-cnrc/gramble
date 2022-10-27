@@ -564,7 +564,7 @@ export class TstAssignment extends TstCellComponent {
 
 }
 
-export class TstNamespace extends TstCellComponent {
+export class TstCollection extends TstCellComponent {
 
     constructor(
         cell: Cell,
@@ -581,7 +581,7 @@ export class TstNamespace extends TstCellComponent {
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList(this.children)
                 .map(c => f.transform(c, env) as Result<TstEnclosure>)
-                .bind(cs => new TstNamespace(this.cell, cs));
+                .bind(cs => new TstCollection(this.cell, cs));
     }
 
 }

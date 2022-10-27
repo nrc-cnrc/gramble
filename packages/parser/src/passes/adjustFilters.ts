@@ -6,7 +6,7 @@ import {
     GrammarPass,
     GrammarResult,
     IntersectionGrammar, LocatorGrammar, 
-    NegationGrammar, NsGrammar, 
+    NegationGrammar, CollectionGrammar, 
     RepeatGrammar, SequenceGrammar, StartsGrammar
 } from "../grammars";
 

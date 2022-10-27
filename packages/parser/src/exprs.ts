@@ -203,8 +203,6 @@ export type DerivResults = Gen<DerivResult>;
  * have to take an extra step to do so.
  */
 
-export type SymbolTable = {[key: string]: Expr};
-
 export class CounterStack {
 
     constructor(
@@ -947,7 +945,7 @@ class RTLLiteralExpr extends LiteralExpr {
 export class ParallelExpr extends Expr {
 
     constructor(
-        public children: {[tapeName: string]: Expr}
+        public children: Dict<Expr>
     ) {
         super();
     }
@@ -988,9 +986,9 @@ export class ParallelExpr extends Expr {
 }
 
 export function constructParallel(
-    children: {[tapeName: string]: Expr},
+    children: Dict<Expr>,
 ): Expr {
-    const newChildren: {[tapeName: string]: Expr} = {};
+    const newChildren: Dict<Expr> = {};
     let childFound = false;
     for (const [tapeName, child] of Object.entries(children)) {
         if (child instanceof NullExpr) {
@@ -1010,7 +1008,7 @@ export function constructParallel(
 }
 
 export function updateParallel(
-    children: {[tapeName: string]: Expr},
+    children: Dict<Expr>,
     newTape: string,
     newChild: Expr
 ): Expr {
@@ -1018,7 +1016,7 @@ export function updateParallel(
         return newChild;
     }
 
-    const newChildren: {[tapeName: string]: Expr} = {};
+    const newChildren: Dict<Expr> = {};
     Object.assign(newChildren, children);
         
     if (newChild instanceof EpsilonExpr) {
@@ -1415,7 +1413,7 @@ export abstract class UnaryExpr extends Expr {
     }
 }
 
-export class SymbolNsExpr extends UnaryExpr {
+export class CollectionExpr extends UnaryExpr {
 
     constructor(
         child: Expr,
@@ -1434,7 +1432,7 @@ export class SymbolNsExpr extends UnaryExpr {
     ): Expr {
         const newEnv = env.pushSymbols(this.symbols);
         const newChild = this.child.delta(tapeName, newEnv);
-        return constructSymbolNs(newChild, this.symbols);
+        return constructCollection(newChild, this.symbols);
     }
 
     public *deriv(
@@ -1445,7 +1443,7 @@ export class SymbolNsExpr extends UnaryExpr {
         const newEnv = env.pushSymbols(this.symbols);
         for (const [childTarget, childNext] of 
                 this.child.deriv(tapeName, target, newEnv)) {
-            yield [childTarget, constructSymbolNs(childNext, this.symbols)];
+            yield [childTarget, constructCollection(childNext, this.symbols)];
         }
     }
     
@@ -1458,7 +1456,7 @@ export class SymbolNsExpr extends UnaryExpr {
         }
         const newEnv = env.pushSymbols(this.symbols);
         const newChild = this.child.openDelta(newEnv);
-        return constructSymbolNs(newChild, this.symbols);
+        return constructCollection(newChild, this.symbols);
     }
 
     public *openDeriv(
@@ -1470,16 +1468,16 @@ export class SymbolNsExpr extends UnaryExpr {
         const newEnv = env.pushSymbols(this.symbols);
         for (const [childTape, childTarget, childNext] of 
                 this.child.openDeriv(newEnv)) {
-            yield [childTape, childTarget, constructSymbolNs(childNext, this.symbols)];
+            yield [childTape, childTarget, constructCollection(childNext, this.symbols)];
         }
     }
 }
 
-export function constructSymbolNs(child: Expr, symbols: Dict<Expr>): Expr {
+export function constructCollection(child: Expr, symbols: Dict<Expr>): Expr {
     if (child instanceof EpsilonExpr || child instanceof NullExpr) {
         return child;
     }
-    return new SymbolNsExpr(child, symbols);
+    return new CollectionExpr(child, symbols);
 }
 
 export class CountExpr extends UnaryExpr {
@@ -1524,7 +1522,7 @@ export class CountTapeExpr extends UnaryExpr {
 
     constructor(
         child: Expr,
-        public maxChars: {[tape: string]: number}
+        public maxChars: Dict<number>
     ) {
         super(child);
     }
@@ -1556,7 +1554,7 @@ export class CountTapeExpr extends UnaryExpr {
         }
 
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
-            let newMax: {[tape: string]: number} = {};
+            let newMax: Dict<number> = {};
             Object.assign(newMax, this.maxChars);
             if (!(cTarget instanceof EpsilonToken)) {
                 newMax[tapeName] -= 1;
@@ -2304,7 +2302,7 @@ export function constructCount(child: Expr, maxChars: number): Expr {
     return new CountExpr(child, maxChars);
 }
 
-export function constructCountTape(child: Expr, maxChars: {[t: string]: number}): Expr {
+export function constructCountTape(child: Expr, maxChars: Dict<number>): Expr {
     if (child instanceof EpsilonExpr || child instanceof NullExpr) {
         return child;
     }

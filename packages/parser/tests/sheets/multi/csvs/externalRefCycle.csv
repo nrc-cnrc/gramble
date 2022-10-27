@@ -2,5 +2,5 @@ verb:, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-word:, embed, text,
-    , embedGrammarCycle.word, able
+default:, embed, text,
+    , embedGrammarCycle, able

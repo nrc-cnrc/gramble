@@ -1,23 +1,24 @@
 import { 
     CounterStack, CountGrammar, 
     EqualsGrammar, Grammar, 
-    LiteralGrammar, NsGrammar, 
+    LiteralGrammar, CollectionGrammar, 
     PriorityGrammar, SequenceGrammar, 
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
     msToTime, StringDict, timeIt, 
-    stripHiddenTapes, GenOptions, 
-    HIDDEN_TAPE_PREFIX,
+    stripHiddenTapes, GenOptions,
     SILENT,
     VERBOSE_TIME,
     logTime,
-    logGrammar
+    logGrammar,
+    Dict,
+    DEFAULT_SYMBOL_NAME
 } from "./util";
 import { Worksheet, Workbook } from "./sheets";
 import { parseHeaderCell } from "./headers";
 import { TapeNamespace, VocabMap } from "./tapes";
-import { Expr, ExprNamespace, SymbolNsExpr, SymbolTable } from "./exprs";
+import { Expr, ExprNamespace, CollectionExpr } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
 import { MissingSymbolError, Msgs } from "./msgs";
@@ -57,9 +58,9 @@ export class Interpreter {
     //public symbolTable: SymbolTable = {};
 
     // for convenience, rather than parse it as a header every time
-    public tapeColors: {[tapeName: string]: string} = {};
+    public tapeColors: Dict<string> = {};
 
-    public grammar: NsGrammar;
+    public grammar: CollectionGrammar;
 
     constructor(
         public devEnv: DevEnvironment,
@@ -67,15 +68,16 @@ export class Interpreter {
         public verbose: number = SILENT
     ) { 
 
-        // First, all grammars within Interpreters must have a namespace as their root.  
+        // First, all grammars within Interpreters must have a collection as their root.  
         // This simplifies the API and some of the passes that follow; rather 
-        // than every part having to check whether something is a namespace or not,
-        // we wrap non-namespaces in a trivial namespace.
-        if (g instanceof NsGrammar) {
+        // than every part having to check whether something is a collection or not,
+        // we wrap non-collections in a trivial collection.
+        if (g instanceof CollectionGrammar) {
             this.grammar = g;
         } else {
-            this.grammar = new NsGrammar();
-            this.grammar.addSymbol("", g);
+            const newNS = new CollectionGrammar();
+            newNS.symbols[DEFAULT_SYMBOL_NAME] = g;
+            this.grammar = newNS;
         }
 
         const timeVerbose = (verbose & VERBOSE_TIME) != 0;
@@ -90,7 +92,7 @@ export class Interpreter {
         const [newGrammar, msgs] = this.grammar.msg() // lift to result
                      .bind(g => GRAMMAR_PASSES.go(g, env))
                      .destructure();
-        this.grammar = newGrammar as NsGrammar;
+        this.grammar = newGrammar as CollectionGrammar;
         sendMessages(devEnv, msgs);
 
         // Next we collect the vocabulary on all tapes
@@ -153,6 +155,7 @@ export class Interpreter {
         return this.grammar.allSymbols();
     }
     
+    /*
     public getTapeNames(
         symbolName: string,
         stripHidden: boolean = true
@@ -165,7 +168,7 @@ export class Interpreter {
             return target.tapes.filter(t => !t.startsWith(HIDDEN_TAPE_PREFIX));
         }
         return target.tapes;
-    }
+    } */
 
     public getTapeColor(
         tapeName: string, 
@@ -315,7 +318,7 @@ export class Interpreter {
 
     public runUnitTests(): void {
         const expr = this.grammar.constructExpr(this.tapeNS, new ExprNamespace());  // fill the symbol table if it isn't already
-        const symbols = expr instanceof SymbolNsExpr
+        const symbols = expr instanceof CollectionExpr
                       ? expr.symbols
                       : {};
         const env = new PassEnv();

@@ -5,5 +5,5 @@ VERB:, table:, text
     ,        , b, v
     ,        , v, w
 
-WORD:, table:, embed
+default:, table:, embed
     ,       , VERB

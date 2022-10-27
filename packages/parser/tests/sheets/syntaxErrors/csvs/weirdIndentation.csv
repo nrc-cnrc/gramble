@@ -5,7 +5,7 @@ verb:, table:, text, gloss
 suffix:, table:, text, gloss
     ,       , bar, -1SG
 
-word:,       , table:, embed, embed
+default:,       , table:, embed, embed
     ,       ,       , verb, suffix 
     ,
     , join:, finite

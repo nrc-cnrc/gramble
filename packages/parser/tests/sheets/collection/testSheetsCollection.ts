@@ -5,8 +5,8 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe('Namespace containing one assignment', function() {
-        const project = sheetFromFile(`${DIR}/simpleNs.csv`);
+    describe('Collection containing one assignment', function() {
+        const project = sheetFromFile(`${DIR}/simpleCollection.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobar", gloss: "run-1SG" },
@@ -16,8 +16,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Namespace containing two assignments', function() {
-        const project = sheetFromFile(`${DIR}/multiSymbolNs.csv`);
+    describe('Collection containing two assignments', function() {
+        const project = sheetFromFile(`${DIR}/multiSymbolCollection.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobar", gloss: "run-1SG" },
@@ -27,10 +27,10 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Reference to a non-existent namespace', function() {
-        const project = sheetFromFile(`${DIR}/nonexistentNs.csv`);
+    describe('Reference to a non-existent collection', function() {
+        const project = sheetFromFile(`${DIR}/nonexistentCollection.csv`);
         testErrors(project, [
-            ["nonexistentNs", 9, 2, "error",]
+            ["nonexistentCollection", 9, 2, "error",]
         ]);
         testGrammar(project, [
             { text: "bar", gloss: "-1SG" },
@@ -38,7 +38,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Reference to a non-existent symbol within a namespace', function() {
+    describe('Reference to a non-existent symbol within a collection', function() {
         const project = sheetFromFile(`${DIR}/nonexistentSymbol.csv`);
         testErrors(project, [
             ["nonexistentSymbol", 9, 2, "error",]
@@ -49,10 +49,10 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Symbol reference without namespace prefix', function() {
-        const project = sheetFromFile(`${DIR}/symbolRefWithoutNs.csv`);
+    describe('Symbol reference without collection prefix', function() {
+        const project = sheetFromFile(`${DIR}/symbolRefWithoutCollection.csv`);
         testErrors(project, [
-            ["symbolRefWithoutNs", 9, 2, "error",]
+            ["symbolRefWithoutCollection", 9, 2, "error",]
         ]);
         testGrammar(project, [
             { text: "bar", gloss: "-1SG" },
@@ -60,8 +60,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Namespace with embeds referring outside of it', function() {
-        const project = sheetFromFile(`${DIR}/nsReferringOut.csv`);
+    describe('Collection with embeds referring outside of it', function() {
+        const project = sheetFromFile(`${DIR}/collectionReferringOut.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobar", gloss: "run-1SG" },
@@ -71,8 +71,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Namespace with embeds referring to symbols in a sibling namespace', function() {
-        const project = sheetFromFile(`${DIR}/nsReferringSibling.csv`);
+    describe('Collection with embeds referring to symbols in a sibling collection', function() {
+        const project = sheetFromFile(`${DIR}/collectionReferringSibling.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobar", gloss: "run-1SG" },
@@ -82,8 +82,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Namespace with embeds referring to symbols in itself', function() {
-        const project = sheetFromFile(`${DIR}/nsReferringSelf.csv`);
+    describe('Collection with embeds referring to symbols in itself', function() {
+        const project = sheetFromFile(`${DIR}/collectionReferringSelf.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobar", gloss: "run-1SG" },
@@ -93,8 +93,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Bare reference to a namespace', function() {
-        const project = sheetFromFile(`${DIR}/nsBareRef.csv`);
+    describe('Bare reference to a collection', function() {
+        const project = sheetFromFile(`${DIR}/collectionBareRef.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobar", gloss: "run-1SG" },
@@ -104,11 +104,10 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Unnamed namespace as first child', function() {
-        const project = sheetFromFile(`${DIR}/unnamedNamespace.csv`);
+    describe('Unnamed collection as first child', function() {
+        const project = sheetFromFile(`${DIR}/unnamedCollection.csv`);
         testErrors(project, [
-            ["unnamedNamespace",0,0,"error"],
-            ["unnamedNamespace",0,0,"warning"]
+            ["unnamedCollection",0,0,"warning"]
         ]);
         testGrammar(project, [
             { text: "bar", gloss: "-1SG" },
@@ -116,11 +115,10 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Unnamed namespace as second child', function() {
-        const project = sheetFromFile(`${DIR}/unnamedNamespace2.csv`);
+    describe('Unnamed collection as second child', function() {
+        const project = sheetFromFile(`${DIR}/unnamedCollection2.csv`);
         testErrors(project, [
-            ["unnamedNamespace2",4,0,"error"],
-            ["unnamedNamespace2",4,0,"warning"]
+            ["unnamedCollection2",4,0,"warning"]
         ]);
         testGrammar(project, [
             { text: "bar", gloss: "-1SG" },
@@ -128,20 +126,27 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Unnamed namespace as last child', function() {
-        const project = sheetFromFile(`${DIR}/unnamedNamespace3.csv`);
+    describe('Unnamed collection as last child', function() {
+        const project = sheetFromFile(`${DIR}/unnamedCollection3.csv`);
         testErrors(project, [
-            ["unnamedNamespace3",8,0,"error"]
+            ["unnamedCollection3",8,0,"warning"]
         ]);
         testGrammar(project, [
-            {}
+            {text: "baz", gloss: "-2SG"},
+            {text: "bar", gloss: "-1SG"},
+            {text: "moo", gloss: "jump"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foo", gloss: "run"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobar", gloss: "run-1SG"}
         ]);
     });
     
-    describe('Op with namespace as a child', function() {
-        const project = sheetFromFile(`${DIR}/namespaceChildOfOp.csv`);
+    describe('Op with collection as a child', function() {
+        const project = sheetFromFile(`${DIR}/collectionChildOfOp.csv`);
         testErrors(project, [
-            ["namespaceChildOfOp",11,2,"error"]
+            ["collectionChildOfOp",11,2,"error"]
         ]);
         testGrammar(project, [
             {},
@@ -152,10 +157,10 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Op with namespace as a sibling', function() {
-        const project = sheetFromFile(`${DIR}/namespaceSiblingOfOp.csv`);
+    describe('Op with collection as a sibling', function() {
+        const project = sheetFromFile(`${DIR}/collectionSiblingOfOp.csv`);
         testErrors(project, [
-            ["namespaceSiblingOfOp",8,1,"error"]
+            ["collectionSiblingOfOp",8,1,"error"]
         ]);
         testGrammar(project, [
             {},

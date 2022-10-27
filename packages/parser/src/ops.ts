@@ -57,7 +57,7 @@ const RESERVED_OPS: Set<string> = new Set([
     "test", 
     "testnot",
     "replace",
-    "namespace",
+    "collection",
     ...BINARY_OPS
 ]);
 
@@ -126,7 +126,7 @@ export class TableOp extends Op {
     }
 }
 
-export class NamespaceOp extends Op { }
+export class CollectionOp extends Op { }
 
 export abstract class SpecialOp extends Op {
 
@@ -244,9 +244,9 @@ const OP_TABLE = MPSequence<Op>(
     () => new TableOp()
 );
 
-const OP_NAMESPACE = MPSequence<Op>(
-    ["namespace"],
-    () => new NamespaceOp()
+const OP_COLLECTION = MPSequence<Op>(
+    ["collection"],
+    () => new CollectionOp()
 );
 
 const OP_TEST = MPSequence<Op>(
@@ -304,7 +304,7 @@ const OP_BINARY = MPReserved<Op>(
 );
 
 const OP_EXPR: MPParser<Op> = MPAlternation(
-    OP_TABLE, OP_NAMESPACE,
+    OP_TABLE, OP_COLLECTION,
     OP_TEST, OP_TESTNOT,
     OP_REPLACE, 
     OP_REPLACE_TAPE, OP_REPLACE_ERROR,

@@ -83,13 +83,10 @@ import { Component, CPass, CResult } from "../components";
     }
 
     public handleAssignment(t: TstOp): CResult {
-        const trimmedText = t.text.endsWith(":")
-                          ? t.text.slice(0, t.text.length-1).trim()
-                          : t.text;
+        const op = t.op as SymbolOp;
+        const assignment = new TstAssignment(t.cell, op.text, t.child);
 
-        const assignment = new TstAssignment(t.cell, trimmedText, t.child);
-
-        if (trimmedText.indexOf(".") != -1) {
+        if (op.text.indexOf(".") != -1) {
             return result(assignment).warn("You can't assign to a name that contains a period.")
                                      .bind(r => r.child)
         }

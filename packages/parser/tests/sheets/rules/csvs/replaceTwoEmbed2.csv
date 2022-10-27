@@ -4,7 +4,7 @@ VERB:, table:, text
 TENSE:, table:, embed
       ,       , VERB, 
       
-WORD:, table:, embed
+default:, table:, embed
     ,       , TENSE
     ,       ,     ,
     , replace text:, from, to

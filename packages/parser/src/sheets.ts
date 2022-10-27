@@ -1,3 +1,5 @@
+import { DEFAULT_SYMBOL_NAME } from "./util";
+
 export class Workbook {
 
     public sheets: {[name: string]: Worksheet} = {};
@@ -19,6 +21,8 @@ export class Workbook {
             results.push([]);  // add an extra line just to make it a little more readable
         }
 
+        results.push([DEFAULT_SYMBOL_NAME, "embed"]);
+        results.push([""                 , this.mainSheetName]);
         return results;
     }
 
@@ -37,7 +41,7 @@ export class Worksheet {
             return [];
         }
 
-        const results: string[][] = [[ this.name+":", "namespace:" ]];
+        const results: string[][] = [[ this.name+":", "collection:" ]];
 
         for (const row of this.cells) {
             if (row.length > 0 && row[0].startsWith("%%")) {

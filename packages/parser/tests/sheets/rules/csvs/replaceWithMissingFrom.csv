@@ -7,7 +7,7 @@ suffix:, table:, text, gloss
     ,       , baz, -2SG
     ,       ,    , .3SG
 
-word:, table:, embed, embed
+default:, table:, embed, embed
     ,       , verb, suffix
     ,       ,     ,
     , replace:, from text

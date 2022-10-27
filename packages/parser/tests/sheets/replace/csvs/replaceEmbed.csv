@@ -2,7 +2,7 @@
 ROOT:,table:, text
         ,       , foo
 
-STEM:,table:,embed
+Default:,table:,embed
     ,       ,ROOT
 
     , replace:, from text,    to text,

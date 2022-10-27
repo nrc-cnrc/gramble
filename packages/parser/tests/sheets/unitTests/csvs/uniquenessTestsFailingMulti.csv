@@ -8,7 +8,7 @@ suffix:, table:, text, gloss/subj
     ,       , bar, [1SG]
     ,       , baz, [2SG]
 
-word:, table:, embed, embed
+default:, table:, embed, embed
     ,       , verb, suffix 
 
     , test:, root, subj, unique text, unique gloss

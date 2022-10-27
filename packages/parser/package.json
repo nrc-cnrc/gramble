@@ -71,7 +71,7 @@
     "testSheetsHide": "mocha -r ts-node/register tests/sheets/hide/*.ts",
     "testSheetsRename": "mocha -r ts-node/register tests/sheets/rename/*.ts",
     "testSheetsRegex": "mocha -r ts-node/register tests/sheets/regex/*.ts",
-    "testSheetsNamespace": "mocha -r ts-node/register tests/sheets/namespace/*.ts",
+    "testSheetsCollection": "mocha -r ts-node/register tests/sheets/collection/*.ts",
     "testSheetsRules": "mocha -r ts-node/register tests/sheets/rules/*.ts"
   },
   "bugs": {

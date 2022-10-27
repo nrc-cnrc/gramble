@@ -1,6 +1,6 @@
-import { CreateNamespaces } from "./createNamespaces";
+import { CreateCollections } from "./createCollections";
 import { PassEnv, Pass } from "../passes";
-import { Grammar, GrammarPass, GrammarResult, NsGrammar } from "../grammars";
+import { Grammar, GrammarPass, GrammarResult, CollectionGrammar } from "../grammars";
 import { Result } from "../msgs";
 import { timeIt, VERBOSE_TIME } from "../util";
 import { QualifyNames } from "./qualifyNames";
@@ -18,8 +18,9 @@ import { CreateHeaders } from "./createHeaders";
 import { AssociateHeaders } from "./associateHeaders";
 import { InsertTables } from "./insertTables";
 import { CreateGrammars } from "./createGrammars";
-import { CheckNamespaces } from "./checkNamespaces";
+import { CheckCollections } from "./checkCollections";
 import { ReplaceRulesOld } from "./replaceRulesOld";
+import { AssignDefaults } from "./assignDefaults";
 
 export const PRE_GRAMMAR_PASSES = 
 
@@ -28,9 +29,10 @@ export const PRE_GRAMMAR_PASSES =
     // semantics
     new ParseSheets().compose(
 
-    // turn ops that represent namespaces into actual namespaces 
-    // and rescope their children as necessary
-    new CreateNamespaces().compose(
+    // turn ops that represent collections into actual collections, 
+    // rescope their children as necessary, and define default symbols
+    // if necessary
+    new CreateCollections().compose(
         
     // in syntactic positions when there's an implicit table semantics,
     // insert a TstTable as appropriate
@@ -59,9 +61,9 @@ export const PRE_GRAMMAR_PASSES =
     // appropriate syntactic structures
     new CreateOps().compose(
 
-    // check whether namespaces are in appropriate structural
+    // check whether collections are in appropriate structural
     // positions
-    new CheckNamespaces().compose(
+    new CheckCollections().compose(
 
     // restructure content cells that scope only over the cell to
     // their left (e.g. equals, rename)
@@ -70,14 +72,18 @@ export const PRE_GRAMMAR_PASSES =
     // create grammar objects
     new CreateGrammars()
     
-    )))))))))))
+    )))))))))));
 
     
 // qualify symbol names (e.g. turn `VERB` in sheet Sheet1 
 // into `Sheet1.VERB`) and attempt to resolve references to them
 // (e.g. figure out whether VERB refers to Sheet1.VERB or 
 // something else)
-export const QUALIFY_NAMES = new QualifyNames();
+export const QUALIFY_NAMES = 
+
+    new AssignDefaults().compose(
+
+    new QualifyNames());
 
 export const GRAMMAR_PASSES =
 
@@ -99,7 +105,7 @@ export const GRAMMAR_PASSES =
     // some filters (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    new AdjustFilters()))))
+    new AdjustFilters()))));
 
 export const ALL_PASSES = PRE_GRAMMAR_PASSES.compose(GRAMMAR_PASSES);
 

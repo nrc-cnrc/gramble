@@ -62,4 +62,23 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Uppercase default', function() {
+        const project = sheetFromFile(`${DIR}/uppercaseDefault.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
+        ]);
+    });
+    
+    describe('Lowercase default', function() {
+        const project = sheetFromFile(`${DIR}/uppercaseDefault.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
+        ]);
+    });
+
+
 });

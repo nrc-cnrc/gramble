@@ -1,0 +1,7 @@
+default:, table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+text, gloss
+bar, -1SG
+baz, -2SG

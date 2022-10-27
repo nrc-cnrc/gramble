@@ -1,7 +1,7 @@
 VERB:, table:, text
     ,        , aba
 
-WORD:, table:, embed
+default:, table:, embed
     ,       , VERB
     ,       ,     ,
     , replace text:, from, to

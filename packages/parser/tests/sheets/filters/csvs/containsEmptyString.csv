@@ -7,5 +7,5 @@ suffix:, table:, text, gloss/subj
     ,       , bar, [1SG.SUBJ]
     ,       , baz, [2SG.SUBJ]
 
-word:, table:, embed, embed, contains subj
+default:, table:, embed, embed, contains subj
     ,       , verb, suffix, 
