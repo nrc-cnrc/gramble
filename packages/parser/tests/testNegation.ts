@@ -1,6 +1,10 @@
 import { Uni, Join, Not, Rep, Seq, Null, Epsilon, Dot, Any, Vocab, Grammar, Count, CountTape } from "../src/grammars";
-import { t1, t2, 
-    testHasTapes, testHasVocab, testGrammar } from './testUtils';
+import { 
+    t1, t2, 
+    testHasTapes, 
+    testHasVocab, 
+    testGrammar 
+} from './testUtil';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";

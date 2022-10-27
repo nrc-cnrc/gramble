@@ -1,5 +1,5 @@
 import { Seq, Join, Hide, Rename, Equals, Collection, Embed } from "../src/grammars";
-import { t1, t2, t3, testHasTapes, testHasVocab, testGrammar, DEFAULT_MAX_RECURSION } from './testUtils';
+import { t1, t2, t3, testHasTapes, testHasVocab, testGrammar, DEFAULT_MAX_RECURSION } from './testUtil';
 import { SILENT, StringDict } from "../src/util";
 import * as path from 'path';
 

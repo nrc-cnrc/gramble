@@ -1,6 +1,6 @@
 
 import { Seq, Uni, Intersect, Epsilon, Grammar, Rep } from "../src/grammars";
-import { t1, t2, testGrammar } from './testUtils';
+import { t1, t2, testGrammar } from './testUtil';
 
 import * as path from 'path';
 import { StringDict } from "../src/util";

@@ -1,0 +1,6 @@
+word:, table:, text
+    ,       , aba,
+    ,       , apa
+    ,       ,     ,
+    , replace text:, from re, to
+    ,         , b|p,  v

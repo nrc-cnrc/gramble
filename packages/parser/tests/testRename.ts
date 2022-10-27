@@ -17,7 +17,7 @@ import {
     t1, t2, t3, t4, t5,
     testHasTapes,
     testGrammar
-} from "./testUtils";
+} from "./testUtil";
 
 import * as path from 'path';
 import { SILENT } from "../src/util";

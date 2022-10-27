@@ -1,8 +1,12 @@
-import { Seq, Uni, Join, Embed, Collection } from "../src/grammars";
+import { 
+    Seq, Uni, 
+    Join, Embed, 
+    Collection 
+} from "../src/grammars";
 import { 
     t1,
     testGrammar,
-} from './testUtils';
+} from './testUtil';
 
 import * as path from 'path';
 import { SILENT } from "../src/util";

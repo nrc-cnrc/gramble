@@ -1,0 +1,11 @@
+word:, table:, text, gloss
+    ,       , bar, be
+    ,       , foobar, run
+    ,       , goobar, jump
+    ,       , moobar, eat
+    ,       , foofoobar, run.impf,
+    ,       , googoobar, jump.impf
+    ,       , moomoobar, eat.impf
+
+    ,   join:, re text
+    ,       , goo*bar

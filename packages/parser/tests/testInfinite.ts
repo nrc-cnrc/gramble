@@ -6,7 +6,7 @@ import { Count, CountTape, Epsilon,
 import { PassEnv } from '../src/passes';
 import { QUALIFY_NAMES } from '../src/passes/allPasses';
 import { QualifyNames } from '../src/passes/qualifyNames';
-import { t1 } from "./testUtils";
+import { t1 } from "./testUtil";
 
 describe(`${path.basename(module.filename)}`, function() {
 
