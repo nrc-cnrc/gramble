@@ -13,7 +13,8 @@ import {
     logTime,
     logGrammar,
     Dict,
-    DEFAULT_SYMBOL_NAME
+    DEFAULT_SYMBOL_NAME,
+    HIDDEN_TAPE_PREFIX
 } from "./util";
 import { Worksheet, Workbook } from "./sheets";
 import { parseHeaderCell } from "./headers";
@@ -21,14 +22,14 @@ import { TapeNamespace, VocabMap } from "./tapes";
 import { Expr, ExprNamespace, CollectionExpr } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
-import { MissingSymbolError, Msgs } from "./msgs";
+import { MissingSymbolError, Msg, Msgs } from "./msgs";
 import { PassEnv } from "./passes";
 import { 
     GRAMMAR_PASSES, 
-    QUALIFY_NAMES, 
-    PRE_GRAMMAR_PASSES 
+    NAME_PASSES, 
+    SHEET_PASSES 
 } from "./passes/allPasses";
-import { UnitTestPass } from "./passes/unitTests";
+import { ExecuteTests } from "./passes/executeTests";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -68,18 +69,6 @@ export class Interpreter {
         public verbose: number = SILENT
     ) { 
 
-        // First, all grammars within Interpreters must have a collection as their root.  
-        // This simplifies the API and some of the passes that follow; rather 
-        // than every part having to check whether something is a collection or not,
-        // we wrap non-collections in a trivial collection.
-        if (g instanceof CollectionGrammar) {
-            this.grammar = g;
-        } else {
-            const newNS = new CollectionGrammar();
-            newNS.symbols[DEFAULT_SYMBOL_NAME] = g;
-            this.grammar = newNS;
-        }
-
         const timeVerbose = (verbose & VERBOSE_TIME) != 0;
 
         // Next, we perform a variety of grammar-to-grammar passes in order
@@ -89,16 +78,12 @@ export class Interpreter {
         
         const env = new PassEnv();
         env.verbose = verbose;
-        const [newGrammar, msgs] = this.grammar.msg() // lift to result
-                     .bind(g => GRAMMAR_PASSES.go(g, env))
-                     .destructure();
-        this.grammar = newGrammar as CollectionGrammar;
-        sendMessages(devEnv, msgs);
+        this.grammar = g.msg() // lift to result
+                        .bind(g => GRAMMAR_PASSES.go(g, env))
+                        .msgTo(m => sendMsg(this.devEnv, m)) as CollectionGrammar
 
         // Next we collect the vocabulary on all tapes
         timeIt(() => {
-            // recalculate tapes
-            this.grammar.calculateTapes(new CounterStack(2), env);
             // collect vocabulary
             this.tapeNS = new TapeNamespace();
             this.grammar.collectAllVocab(this.vocab, this.tapeNS, env);
@@ -129,13 +114,10 @@ export class Interpreter {
         let elapsedTime = msToTime(Date.now() - startTime);
         logTime(verbose, `Sheets loaded; ${elapsedTime}`);
         
-        startTime = Date.now();
-        const transEnv = new PassEnv();
-        transEnv.verbose = verbose;
-        const grammar = PRE_GRAMMAR_PASSES.go(workbook, transEnv)
+        const env = new PassEnv();
+        env.verbose = verbose;
+        const grammar = SHEET_PASSES.go(workbook, env)
                                   .msgTo(m => devEnv.message(m));
-        elapsedTime = msToTime(Date.now() - startTime);
-        logTime(verbose, `Converted to grammar; ${elapsedTime}`);
 
         const result = new Interpreter(devEnv, grammar, verbose);
         result.workbook = workbook;
@@ -153,6 +135,20 @@ export class Interpreter {
 
     public allSymbols(): string[] {
         return this.grammar.allSymbols();
+    }
+
+    public getTapeNames(
+        symbolName: string,
+        stripHidden: boolean = true
+    ): string[] {
+        const target = this.grammar.getSymbol(symbolName);
+        if (target == undefined) {
+            throw new Error(`Cannot find symbol ${symbolName}`);
+        }
+        if (stripHidden) {
+            return target.tapes.filter(t => !t.startsWith(HIDDEN_TAPE_PREFIX));
+        }
+        return target.tapes;
     }
     
     /*
@@ -266,19 +262,18 @@ export class Interpreter {
     public prepareExpr(
         symbolName: string = "",
         query: StringDict = {},
-        opt: GenOptions,
-        tapePriority: string[] = []
+        opt: GenOptions
     ): Expr {
         const env = new PassEnv().pushSymbols(this.grammar.symbols);
         const symbols = new ExprNamespace();
-        //let expr = this.grammar.constructExpr(this.tapeNS, symbols);
+        
         let targetGrammar: Grammar = this.grammar.selectSymbol(symbolName);
         if (targetGrammar == undefined) {
             const allSymbols = this.grammar.allSymbols();
             throw new Error(`Missing symbol: ${symbolName}; choices are [${allSymbols}]`);
         }
 
-        tapePriority = this.grammar.getAllTapePriority(this.tapeNS, env);
+        let tapePriority = this.grammar.getAllTapePriority(this.tapeNS, env);
 
         if (Object.keys(query).length > 0) {
             const queryLiterals = Object.entries(query).map(([key, value]) => {
@@ -316,27 +311,24 @@ export class Interpreter {
         return expr;    
     }
 
-    public runUnitTests(): void {
+    public runTests(): void {
         const expr = this.grammar.constructExpr(this.tapeNS, new ExprNamespace());  // fill the symbol table if it isn't already
         const symbols = expr instanceof CollectionExpr
                       ? expr.symbols
                       : {};
+        const pass = new ExecuteTests(this.vocab, this.tapeNS, symbols);
         const env = new PassEnv();
-        const t = new UnitTestPass(this.vocab, this.tapeNS, symbols);
-        const [_, msgs] = t.transform(this.grammar, env).destructure(); // results.item isn't important
-        sendMessages(this.devEnv, msgs);
+        pass.transform(this.grammar, env)
+            .msgTo(m => sendMsg(this.devEnv, m));
     }
 }
 
-function sendMessages(devEnv: DevEnvironment, msgs: Msgs): void {
-    for (const msg of msgs) {
-        if (msg.pos == undefined) {
-            // if it's got no location we have nowhere to
-            // display it
-            continue;
-        }
-        devEnv.message(msg);
+function sendMsg(devEnv: DevEnvironment, msg: Msg): void {
+    if (msg.pos == undefined) {
+        // if it's got no location we have nowhere to display it
+        return;
     }
+    devEnv.message(msg);
 }
 
 function addSheet(
@@ -363,11 +355,11 @@ function addSheet(
     const sheet = new Worksheet(sheetName, cells);
     project.sheets[sheetName] = sheet;
     const transEnv = new PassEnv();
-    const grammar = PRE_GRAMMAR_PASSES.go(project, transEnv)
+    const grammar = SHEET_PASSES.go(project, transEnv)
                                      .msgTo((_) => {});
     // check to see if any names didn't get resolved
-    const [_, nameMsgs] = QUALIFY_NAMES.go(grammar, transEnv)
-                                            .destructure();
+    const [_, nameMsgs] = NAME_PASSES.go(grammar, transEnv)
+                                     .destructure();
 
     const unresolvedNames: Set<string> = new Set(); 
     for (const msg of nameMsgs) {

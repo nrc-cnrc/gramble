@@ -74,7 +74,7 @@
     "testSheetRename": "mocha -r ts-node/register tests/sheet/rename/*.ts",
     "testSheetReplace": "mocha -r ts-node/register tests/sheet/replace/*.ts",
     "testSheetRule": "mocha -r ts-node/register tests/sheet/rule/*.ts",
-    "testSheetUnitTest": "mocha -r ts-node/register tests/sheet/unitTest/*.ts"
+    "testSheetTest": "mocha -r ts-node/register tests/sheet/test/*.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"

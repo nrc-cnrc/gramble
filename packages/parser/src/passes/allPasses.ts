@@ -22,7 +22,7 @@ import { CheckCollections } from "./checkCollections";
 import { ReplaceRulesOld } from "./replaceRulesOld";
 import { AssignDefaults } from "./assignDefaults";
 
-export const PRE_GRAMMAR_PASSES = 
+export const SHEET_PASSES = 
 
     // parse the sheet into an initial TST, mostly consisting of
     // placeholder TstOps and TstGrids without any particular 
@@ -79,7 +79,7 @@ export const PRE_GRAMMAR_PASSES =
 // into `Sheet1.VERB`) and attempt to resolve references to them
 // (e.g. figure out whether VERB refers to Sheet1.VERB or 
 // something else)
-export const QUALIFY_NAMES = 
+export const NAME_PASSES = 
 
     new AssignDefaults().compose(
 
@@ -87,7 +87,7 @@ export const QUALIFY_NAMES =
 
 export const GRAMMAR_PASSES =
 
-    QUALIFY_NAMES.compose(
+    NAME_PASSES.compose(
 
     // if the programmer has specified an invalid renaming/hiding
     // structure that would cause problems during evaluation, fix
@@ -107,7 +107,7 @@ export const GRAMMAR_PASSES =
     // semantics that the programmer anticipates 
     new AdjustFilters()))));
 
-export const ALL_PASSES = PRE_GRAMMAR_PASSES.compose(GRAMMAR_PASSES);
+export const ALL_PASSES = SHEET_PASSES.compose(GRAMMAR_PASSES);
 
 
 

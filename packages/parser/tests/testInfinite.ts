@@ -4,7 +4,7 @@ import { CounterStack } from '../src/exprs';
 import { Count, CountTape, Epsilon, 
     Join, Null, Rep, Seq, Uni, Collection, Embed, CollectionGrammar } from '../src/grammars';
 import { PassEnv } from '../src/passes';
-import { QUALIFY_NAMES } from '../src/passes/allPasses';
+import { NAME_PASSES } from '../src/passes/allPasses';
 import { QualifyNames } from '../src/passes/qualifyNames';
 import { t1 } from "./testUtil";
 
@@ -105,7 +105,7 @@ describe(`${path.basename(module.filename)}`, function() {
             "hiWorld": hiWorld
         });
         const env = new PassEnv();
-        const [result, _] = QUALIFY_NAMES.go(ns, env).destructure();
+        const [result, _] = NAME_PASSES.go(ns, env).destructure();
         env.symbolNS.entries = (result as CollectionGrammar).symbols;
         const grammar = result.getSymbol("hiWorld");
         if (grammar == undefined) {
@@ -125,7 +125,7 @@ describe(`${path.basename(module.filename)}`, function() {
             "hiWorld": hiWorld
         });
         const env = new PassEnv();
-        const [result, _] = QUALIFY_NAMES.go(ns, env).destructure();
+        const [result, _] = NAME_PASSES.go(ns, env).destructure();
         env.symbolNS.entries = (result as CollectionGrammar).symbols;
         let grammar = result.getSymbol("hiWorld");
         if (grammar == undefined) {

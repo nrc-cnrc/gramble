@@ -3,26 +3,27 @@ import {
     TstBinary, TstBinaryOp,
     TstEmpty, 
     TstFilter, TstHeaderContentPair, 
-    TstHide, TstCollection, TstNegativeUnitTest, TstRename, 
+    TstHide, TstCollection, 
+    TstTestNot, TstRename, 
     TstReplace, 
-    TstReplaceTape, TstSequence, TstTable, TstUnitTest 
+    TstReplaceTape, TstSequence, 
+    TstTable, TstTest 
 } from "../tsts";
 import { Component } from "../components";
 import { Pass, PassEnv } from "../passes";
 import { 
     AlternationGrammar,
-    EmbedGrammar,
     EpsilonGrammar, EqualsGrammar, 
     Grammar, GrammarResult, 
-    HideGrammar, JoinReplaceGrammar, JoinRuleGrammar, LocatorGrammar, 
-    NegativeUnitTestGrammar, 
+    HideGrammar, JoinReplaceGrammar, 
+    JoinRuleGrammar, LocatorGrammar, 
+    TestNotGrammar, 
     CollectionGrammar, 
-    RenameGrammar, ReplaceGrammar, SequenceGrammar, UnitTestGrammar
+    RenameGrammar, ReplaceGrammar, SequenceGrammar, TestGrammar
 } from "../grammars";
 import { TapeNameHeader } from "../headers";
-import { Err, Msgs, resultList, Warn } from "../msgs";
+import { Err, Msgs, resultList } from "../msgs";
 import { BINARY_OPS_MAP, BLANK_PARAM } from "../ops";
-import { DEFAULT_SYMBOL_NAME } from "../util";
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -60,10 +61,10 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                 return this.handleReplace(t as TstReplace, env);
             case TstReplaceTape:
                 return this.handleReplaceTape(t as TstReplaceTape, env);
-            case TstUnitTest:
-                return this.handleTest(t as TstUnitTest, env);
-            case TstNegativeUnitTest:
-                return this.handleNegativeTest(t as TstNegativeUnitTest, env);
+            case TstTest:
+                return this.handleTest(t as TstTest, env);
+            case TstTestNot:
+                return this.handleNegativeTest(t as TstTestNot, env);
             case TstSequence:
                 return this.handleSequence(t as TstSequence, env);
             case TstAssignment:
@@ -192,7 +193,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     }
 
     
-    public handleTest(t: TstUnitTest, env: PassEnv): GrammarResult {
+    public handleTest(t: TstTest, env: PassEnv): GrammarResult {
         let result = this.transform(t.sibling, env);
 
         const msgs: Msgs = [];
@@ -200,7 +201,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
             const testInputs = this.transform(params.getParam(BLANK_PARAM), env).msgTo(msgs);
             const unique = this.transform(params.getParam("unique"), env).msgTo(msgs);
             const uniqueLiterals = unique.getLiterals();
-            result = result.bind(c => new UnitTestGrammar(c, testInputs, uniqueLiterals))
+            result = result.bind(c => new TestGrammar(c, testInputs, uniqueLiterals))
                            .bind(c => new LocatorGrammar(params.pos, c));
         }
 
@@ -208,13 +209,13 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                      .bind(c => new LocatorGrammar(t.cell.pos, c));
     }
     
-    public handleNegativeTest(t: TstNegativeUnitTest, env: PassEnv): GrammarResult {
+    public handleNegativeTest(t: TstTestNot, env: PassEnv): GrammarResult {
         let result = this.transform(t.sibling, env);
 
         const msgs: Msgs = [];
         for (const params of t.child.rows) {
             const testInputs = this.transform(params.getParam(BLANK_PARAM), env).msgTo(msgs);
-            result = result.bind(c => new NegativeUnitTestGrammar(c, testInputs))
+            result = result.bind(c => new TestNotGrammar(c, testInputs))
                            .bind(c => new LocatorGrammar(params.pos, c));
         }
         

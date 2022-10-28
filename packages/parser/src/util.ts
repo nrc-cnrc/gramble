@@ -61,6 +61,42 @@ export type Gen<T> = Generator<T, void, undefined>;
 
 export type Dict<T> = {[k:string]:T};
 export type StringDict = Dict<string>;
+
+export class ValueSet<T> {
+
+    private keys: Set<string> = new Set();
+    private items: Set<T> = new Set();
+
+    constructor(
+        items: Set<T> = new Set()
+    ) { 
+        this.add(...items);
+    }
+
+    public add(...items: T[]): void {
+        for (const item of items) {
+            const key = JSON.stringify(item);
+            if (this.keys.has(key)) {
+                return;
+            }
+            this.items.add(item);
+            this.keys.add(key);
+        }
+    }
+
+    public has(item: T): boolean {
+        const key = JSON.stringify(item);
+        return this.keys.has(key);
+    }
+
+    public *[Symbol.iterator]() {
+        for(let i of this.items) {
+            yield i;
+        }
+    }
+
+}
+
 export type StringSet = Set<string>;
 
 

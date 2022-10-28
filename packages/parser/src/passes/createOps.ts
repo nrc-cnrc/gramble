@@ -9,8 +9,8 @@ import { result, Result } from "../msgs";
 import { PassEnv } from "../passes";
 import { 
     TstOp, 
-    TstEmpty, TstUnitTest, 
-    TstTable, TstNegativeUnitTest, 
+    TstEmpty, TstTest, 
+    TstTable, TstTestNot, 
     TstReplace, TstReplaceTape, 
     TstBinaryOp, TstAssignment, TstParamList
 } from "../tsts";
@@ -56,12 +56,12 @@ import { Component, CPass, CResult } from "../components";
     }
 
     public handleTest(t: TstOp): CResult {
-        return new TstUnitTest(t.cell, t.sibling, 
+        return new TstTest(t.cell, t.sibling, 
                     t.child as TstParamList).msg();  
     }
 
     public handleTestNot(t: TstOp): CResult {
-        return new TstNegativeUnitTest(t.cell, t.sibling, 
+        return new TstTestNot(t.cell, t.sibling, 
                     t.child as TstParamList).msg();
     }
     

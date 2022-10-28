@@ -439,7 +439,7 @@ export class TstReplace extends TstCellComponent {
  * and one to the right, and makes sure that each line of the one to the right
  * has an output when filtering the table above.
  */
-export class TstUnitTest extends TstCellComponent {
+export class TstTest extends TstCellComponent {
 
     constructor(
         cell: Cell,
@@ -452,7 +452,7 @@ export class TstUnitTest extends TstCellComponent {
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
-                .bind(([s,c]) => new TstUnitTest(this.cell, s, c as TstParamList));
+                .bind(([s,c]) => new TstTest(this.cell, s, c as TstParamList));
     }
 
 
@@ -463,12 +463,12 @@ export class TstUnitTest extends TstCellComponent {
  * and one to the right, and makes sure that each line of the one to the right
  * has no output when filtering the table above.
  */
-export class TstNegativeUnitTest extends TstUnitTest {
+export class TstTestNot extends TstTest {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
-            .bind(([s,c]) => new TstNegativeUnitTest(this.cell, s, c as TstParamList));
+            .bind(([s,c]) => new TstTestNot(this.cell, s, c as TstParamList));
     }
 
 }

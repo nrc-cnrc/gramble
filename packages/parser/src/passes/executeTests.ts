@@ -3,15 +3,15 @@ import { constructCollection, CounterStack, Expr, ExprNamespace } from "../exprs
 import { Msgs, Err, Success, Result, result } from "../msgs";
 import { 
     CountGrammar, EqualsGrammar, 
-    Grammar, GrammarPass, GrammarResult, NegativeUnitTestGrammar, 
+    Grammar, GrammarPass, GrammarResult, TestNotGrammar, 
     CollectionGrammar, PriorityGrammar, 
-    UnitTestGrammar 
+    TestGrammar 
 } from "../grammars";
 import { VocabMap, TapeNamespace} from "../tapes";
 import { generate } from "../generator";
 import { PassEnv } from "../passes";
 
-export class UnitTestPass extends GrammarPass {
+export class ExecuteTests extends GrammarPass {
 
     constructor(
         public vocab: VocabMap,
@@ -29,10 +29,10 @@ export class UnitTestPass extends GrammarPass {
         const result = g.mapChildren(this, env) as GrammarResult;
         return result.bind(g => {
             switch (g.constructor) {
-                case UnitTestGrammar:
-                    return this.handleTest(g as UnitTestGrammar, env);
-                case NegativeUnitTestGrammar:
-                    return this.handleNegativeTest(g as NegativeUnitTestGrammar, env);
+                case TestGrammar:
+                    return this.handleTest(g as TestGrammar, env);
+                case TestNotGrammar:
+                    return this.handleNegativeTest(g as TestNotGrammar, env);
                 default:
                     return g;
             }
@@ -40,7 +40,7 @@ export class UnitTestPass extends GrammarPass {
 
     }
 
-    public handleTest(g: UnitTestGrammar, env: PassEnv): GrammarResult {
+    public handleTest(g: TestGrammar, env: PassEnv): GrammarResult {
         const results = this.executeTest(g, env);
         const msgs: Msgs = [];
         if (results.length == 0) {
@@ -71,7 +71,7 @@ export class UnitTestPass extends GrammarPass {
         return g.msg(msgs);
     }
 
-    public handleNegativeTest(g: NegativeUnitTestGrammar, env: PassEnv): GrammarResult {
+    public handleNegativeTest(g: TestNotGrammar, env: PassEnv): GrammarResult {
         const results = this.executeTest(g, env);
         if (results.length > 0) {
             return result(g).err("Failed unit test",
@@ -83,7 +83,7 @@ export class UnitTestPass extends GrammarPass {
         return g.msg();
     }
     
-    public executeTest(test: UnitTestGrammar, env: PassEnv): StringDict[] {
+    public executeTest(test: TestGrammar, env: PassEnv): StringDict[] {
 
         const opt = new GenOptions();
 
