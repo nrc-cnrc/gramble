@@ -1,5 +1,6 @@
 import { testGrammar, testErrors, sheetFromFile } from "../../testUtil";
 import * as path from 'path';
+import { SILENT } from "../../../src/util";
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
 
@@ -78,6 +79,17 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
         ]);
+    });
+
+    describe('Generating from uppercase ref to lowercase symbol ', function() {
+        const project = sheetFromFile(`${DIR}/embedGrammar.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ], SILENT, "EMBEDGRAMMAR.WORD");
     });
 
 

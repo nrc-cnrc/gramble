@@ -26,6 +26,114 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobaz", gloss: "jump-2SG" }
         ]);
     });
+
+    describe('Sheet with auto default', function() {
+        const project = sheetFromFile(`${DIR}/sheetWithAutoDefault.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" },
+            { text: "goo", gloss: "water" },
+            { text: "boo", gloss: "fire" }
+        ]);
+    });
+    
+    describe('Collection with auto default', function() {
+        const project = sheetFromFile(`${DIR}/collectionWithAutoDefault.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" },
+            { text: "goo", gloss: "water" },
+            { text: "boo", gloss: "fire" }
+        ]);
+    });
+    
+    describe('Reference to auto default', function() {
+        const project = sheetFromFile(`${DIR}/referenceToAutoDefault.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" },
+            { text: "goo", gloss: "water" },
+            { text: "boo", gloss: "fire" }
+        ]);
+    });
+    
+    describe('Reference to auto default by name', function() {
+        const project = sheetFromFile(`${DIR}/referenceToAutoDefault.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" },
+            { text: "goo", gloss: "water" },
+            { text: "boo", gloss: "fire" }
+        ]);
+    });
+
+    describe('Reference to explicit default', function() {
+        const project = sheetFromFile(`${DIR}/referenceToExplicitDefault.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "goo", gloss: "water" },
+            { text: "boo", gloss: "fire" }
+        ]);
+    });
+
+    describe('Reference to explicit default by name', function() {
+        const project = sheetFromFile(`${DIR}/referenceToDefaultByName.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "goo", gloss: "water" },
+            { text: "boo", gloss: "fire" }
+        ]);
+    });
+    
+    describe('Auto default in auto', function() {
+        const project = sheetFromFile(`${DIR}/autoDefaultInAuto.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" },
+            { text: "goo", gloss: "water" },
+            { text: "boo", gloss: "fire" }
+        ]);
+    });
+
+    describe('Auto default in explicit', function() {
+        const project = sheetFromFile(`${DIR}/autoDefaultInExplicit.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "goo", gloss: "water" },
+            { text: "boo", gloss: "fire" }
+        ]);
+    });
+    
+    describe('Explicit default in auto', function() {
+        const project = sheetFromFile(`${DIR}/explicitDefaultInAuto.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" },
+            { text: "goo", gloss: "water" }
+        ]);
+    });
+    
+    describe('Reference to nested explicit default', function() {
+        const project = sheetFromFile(`${DIR}/referenceToNestedExplicitDefault.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "goo", gloss: "water" }
+        ]);
+    });
+    
+    describe('Reference to nested explicit default by name', function() {
+        const project = sheetFromFile(`${DIR}/referenceToNestedExplicitDefaultByName.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "goo", gloss: "water" }
+        ]);
+    });
     
     describe('Reference to a non-existent collection', function() {
         const project = sheetFromFile(`${DIR}/nonexistentCollection.csv`);

@@ -10,7 +10,7 @@ import {
     CollectionGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict } from "../util";
+import { DEFAULT_SYMBOL_NAME, Dict } from "../util";
 
 /**
  * Goes through the tree and 
@@ -79,7 +79,7 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
                 newV = newThis.transform(v, env)
                                  .msgTo(msgs);
             } else {
-                const newName = g.calculateQualifiedName(k, this.nameStack);
+                const newName = calculateQualifiedName(k, this.nameStack);
                 const oldReference = env.symbolNS.attemptGet(newName);
                 if (oldReference != undefined) {
                     Err("Symbol name collision",
@@ -106,7 +106,7 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
             // we go down the stack asking each to resolve it
             const subNsStack = this.collectionStack.slice(0, i+1);
             const subNameStack = this.nameStack.slice(0, i+1);
-            resolution = subNsStack[i].resolveName(g.name, subNameStack);
+            resolution = resolveName(subNsStack[i], g.name, subNameStack);
             if (resolution != undefined) {         
                 const [qualifiedName, _] = resolution;
                 const result = new EmbedGrammar(qualifiedName);
@@ -119,4 +119,70 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
         return new EpsilonGrammar().msg(msg);
     }
 
+}
+
+function resolveNameLocal(
+    coll: CollectionGrammar,
+    name: string
+): [string, Grammar] | undefined {
+    for (const symbolName of Object.keys(coll.symbols)) {
+        if (name.toLowerCase() == symbolName.toLowerCase()) {
+            const referent = coll.symbols[symbolName];
+            if (referent == undefined) { return undefined; } // can't happen, just for linting
+            return [symbolName, referent];
+        }
+    }
+    return undefined;
+}
+
+function resolveName(
+    coll: CollectionGrammar,
+    unqualifiedName: string, 
+    nsStack: string[]
+): [string, Grammar] | undefined {
+
+    // split into (potentially) collection prefix(es) and symbol name
+    const namePieces = unqualifiedName.split(".");
+
+    // it's got no collection prefix, it's a symbol name
+    if (namePieces.length == 1) {
+
+        const localResult = resolveNameLocal(coll, unqualifiedName);
+
+        if (localResult == undefined) {
+            // it's not a symbol assigned in this namespace
+            return undefined;
+        }
+        
+        // it IS a symbol defined in this collection ,
+        // so get the fully-qualified name.
+        const [localName, referent] = localResult;
+        const newName = calculateQualifiedName(localName, nsStack);
+        return [newName, referent];
+    }
+
+    // it's got a collection prefix
+    const child = resolveNameLocal(coll, namePieces[0]);
+    if (child == undefined) {
+        // but it's not a child of this collection
+        return undefined;
+    }
+
+    const [localName, referent] = child;
+    if (!(referent instanceof CollectionGrammar)) {
+        // if symbol X isn't a collection, "X.Y" can't refer to anything real
+        return undefined;
+    }
+
+    // this collection has a child of the correct name
+    const remnant = namePieces.slice(1).join(".");
+    const newStack = [ ...nsStack, localName ];
+    return resolveName(referent, remnant, newStack);  // try the child
+}
+
+function calculateQualifiedName(name: string, nsStack: string[]): string {
+    const pieces = [...nsStack, name]
+                   .filter(s => s.length > 0 &&
+                           s.toLowerCase() != DEFAULT_SYMBOL_NAME.toLowerCase());
+    return pieces.join(".");
 }

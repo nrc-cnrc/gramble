@@ -3,6 +3,7 @@ import * as path from 'path';
 import { CounterStack } from '../src/exprs';
 import { Count, CountTape, Epsilon, 
     Join, Null, Rep, Seq, Uni, Collection, Embed, CollectionGrammar } from '../src/grammars';
+import { Msgs } from '../src/msgs';
 import { PassEnv } from '../src/passes';
 import { NAME_PASSES } from '../src/passes/allPasses';
 import { QualifyNames } from '../src/passes/qualifyNames';
@@ -105,9 +106,10 @@ describe(`${path.basename(module.filename)}`, function() {
             "hiWorld": hiWorld
         });
         const env = new PassEnv();
-        const [result, _] = NAME_PASSES.go(ns, env).destructure();
-        env.symbolNS.entries = (result as CollectionGrammar).symbols;
-        const grammar = result.getSymbol("hiWorld");
+        const [result, _] = NAME_PASSES.go(ns, env) 
+                            .destructure() as [CollectionGrammar, Msgs];
+        env.symbolNS.entries = result.symbols;
+        const grammar = result.symbols["hiWorld"]
         if (grammar == undefined) {
             return;
         }
@@ -125,9 +127,10 @@ describe(`${path.basename(module.filename)}`, function() {
             "hiWorld": hiWorld
         });
         const env = new PassEnv();
-        const [result, _] = NAME_PASSES.go(ns, env).destructure();
-        env.symbolNS.entries = (result as CollectionGrammar).symbols;
-        let grammar = result.getSymbol("hiWorld");
+        const [result, _] = NAME_PASSES.go(ns, env) 
+                            .destructure() as [CollectionGrammar, Msgs];
+        env.symbolNS.entries = result.symbols;
+        let grammar = result.symbols["hiWorld"]
         if (grammar == undefined) {
             return;
         }

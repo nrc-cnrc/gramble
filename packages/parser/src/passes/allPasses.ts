@@ -1,11 +1,6 @@
 import { CreateCollections } from "./createCollections";
-import { PassEnv, Pass } from "../passes";
-import { Grammar, GrammarPass, GrammarResult, CollectionGrammar } from "../grammars";
-import { Result } from "../msgs";
-import { timeIt, VERBOSE_TIME } from "../util";
 import { QualifyNames } from "./qualifyNames";
 import { RenameFix } from "./renameFix";
-import { ReplaceRules } from "./replaceRules";
 import { SameTapeReplacePass } from "./sameTapeReplace";
 import { AdjustFilters } from "./adjustFilters";
 import { CheckNamedParams } from "./checkNamedParams";
@@ -75,14 +70,19 @@ export const SHEET_PASSES =
     )))))))))));
 
     
-// qualify symbol names (e.g. turn `VERB` in sheet Sheet1 
-// into `Sheet1.VERB`) and attempt to resolve references to them
-// (e.g. figure out whether VERB refers to Sheet1.VERB or 
-// something else)
+
 export const NAME_PASSES = 
 
+    // Assign default symbols to collections that don't already
+    // have a default defined.  Also, if the input grammar 
+    // isn't already a collection, return a new collection with 
+    // the input grammar as its default.
     new AssignDefaults().compose(
 
+    // qualify symbol names (e.g. turn `VERB` in sheet Sheet1 
+    // into `Sheet1.VERB`) and attempt to resolve references to them
+    // (e.g. figure out whether VERB refers to Sheet1.VERB or 
+    // something else)
     new QualifyNames());
 
 export const GRAMMAR_PASSES =

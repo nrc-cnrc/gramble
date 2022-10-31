@@ -285,17 +285,6 @@ export abstract class Grammar extends Component {
         tapeNS: TapeNamespace,
         symbols: ExprNamespace
     ): Expr;
-
-    public getSymbol(name: string): Grammar | undefined {
-        if (name == "") {
-            return this;
-        }
-        return undefined;
-    }
-
-    public getDefaultSymbol(): Grammar {
-        return this;
-    }
     
     public allSymbols(): string[] {
         return [];
@@ -1592,7 +1581,8 @@ export class CollectionGrammar extends Grammar {
     }
 
     public selectSymbol(symbolName: string): CollectionGrammar {
-        if (!(symbolName in this.symbols)) {
+        const referent = this.getSymbol(symbolName);
+        if (referent == undefined) {
             throw new Error(`cannot find symbol ${symbolName}, candidates are ${Object.keys(this.symbols)}`);
         }
         return new CollectionGrammar(this.symbols, 
@@ -1617,104 +1607,24 @@ export class CollectionGrammar extends Grammar {
             c => c.potentiallyInfinite(stack, newEnv));
     }
 
-    public getDefaultSymbol(): Grammar {
-        const result = this.resolveNameLocal(DEFAULT_SYMBOL_NAME);
-        if (result == undefined) {
-            throw new Error("Collection has no default symbol");
-        }
-        const [_, referent] = result;
-        return referent;
-    }
-
-    public getSymbol(symbolName: string): Grammar | undefined {
-
-        const result = this.resolveNameLocal(symbolName);
-        if (result == undefined) {
-            return undefined;
-        }
-
-        const [_, referent] = result;
-        return referent;
-    }
-
     public allSymbols(): string[] {
         return Object.keys(this.symbols);
     }
 
     public getChildren(): Grammar[] { 
-        const results: Grammar[] = [];
-        for (const [name, referent] of Object.entries(this.symbols)) {
-            if (results.indexOf(referent) == -1) {
-                results.push(referent);
-            }
-        }
-        return results;
-    }
-
-    public calculateQualifiedName(name: string, nsStack: string[]): string {
-        const pieces = [...nsStack, name]
-                       .filter(s => s.length > 0 &&
-                               s.toLowerCase() != DEFAULT_SYMBOL_NAME.toLowerCase());
-        return pieces.join(".");
+        return Object.values(this.symbols);
     }
 
     /**
-     * Looks up an unqualified name in this collection's symbol table,
-     * case-insensitive.
+     * Looks up a symbol name and returns the referent (if any) 
      */
-    public resolveNameLocal(name: string): [string, Grammar] | undefined {
+    public getSymbol(name: string): Grammar | undefined {
         for (const symbolName of Object.keys(this.symbols)) {
             if (name.toLowerCase() == symbolName.toLowerCase()) {
-                const referent = this.symbols[symbolName];
-                if (referent == undefined) { return undefined; } // can't happen, just for linting
-                return [symbolName, referent];
+                return this.symbols[symbolName];
             }
         }
         return undefined;
-    }
-
-    public resolveName(
-        unqualifiedName: string, 
-        nsStack: string[]
-    ): [string, Grammar] | undefined {
-
-        // split into (potentially) collection prefix(es) and symbol name
-        const namePieces = unqualifiedName.split(".");
-
-        // it's got no collection prefix, it's a symbol name
-        if (namePieces.length == 1) {
-
-            const localResult = this.resolveNameLocal(unqualifiedName);
-
-            if (localResult == undefined) {
-                // it's not a symbol assigned in this namespace
-                return undefined;
-            }
-            
-            // it IS a symbol defined in this collectio ,
-            // so get the fully-qualified name.
-            const [localName, referent] = localResult;
-            const newName = this.calculateQualifiedName(localName, nsStack);
-            return [newName, referent.getDefaultSymbol()];
-        }
-
-        // it's got a collection prefix
-        const child = this.resolveNameLocal(namePieces[0]);
-        if (child == undefined) {
-            // but it's not a child of this collection
-            return undefined;
-        }
-
-        const [localName, referent] = child;
-        if (!(referent instanceof CollectionGrammar)) {
-            // if symbol X isn't a collection, "X.Y" can't refer to anything real
-            return undefined;
-        }
-
-        // this collection has a child of the correct name
-        const remnant = namePieces.slice(1).join(".");
-        const newStack = [ ...nsStack, localName ];
-        return referent.resolveName(remnant, newStack);  // try the child
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
@@ -1769,19 +1679,16 @@ export class CollectionGrammar extends Grammar {
         symbols: ExprNamespace
     ): Expr {
         let newSymbols: Dict<Expr> = {};
+        let selectedExpr: Expr = EPSILON;
         const newSymbolNS = symbols.push(newSymbols);
         for (const [name, referent] of Object.entries(this.symbols)) {
-            if (name in newSymbols) {
-                continue;  // don't bother, it won't have changed.
-            }
             let expr = referent.constructExpr(tapeNS, newSymbolNS);
             newSymbols[name] = expr;
+            if (name.toLowerCase() == this.selectedSymbol.toLowerCase()) {
+                selectedExpr = expr;
+            }
         }
-        if (!(this.selectedSymbol in newSymbols)) {
-            throw new Error(`cannot find symbol ${this.selectedSymbol}`);
-        }
-        const result = newSymbols[this.selectedSymbol];
-        return constructCollection(result, newSymbols);
+        return constructCollection(selectedExpr, newSymbols);
     }
 }
 

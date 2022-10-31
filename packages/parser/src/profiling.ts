@@ -109,7 +109,7 @@ for (let i = 0; i < 1; i++) {
 console.log();
 let t: Grammar = Join(Join(Join(Join(r4,r3),r2),r1),g);
 generateAndLog({
-    name:`((((R4,R3),R2),R1),G), default priority, ${[...t.getAllTapes().getKeys()]}`, 
+    name:`((((R4,R3),R2),R1),G), default priority}`, 
     g:t
 });
 
@@ -126,7 +126,7 @@ generateAndLog({name:"((((R4,R3),R2),R1),G), opposite priority", g:t});
 console.log();
 t = Join(Join(Join(Join(g,r1),r2),r3),r4);
 generateAndLog({
-    name:`((((G,R1),R2),R3),R4), default priority, ${[...t.getAllTapes().getKeys()]}`, 
+    name:`((((G,R1),R2),R3),R4), default priority}`, 
     g:t
 });
 
@@ -144,7 +144,7 @@ generateAndLog({name:"((((G,R1),R2),R3),R4), opposite priority", g:t});
 console.log();
 t = Join(g, Join(r1, Join(r2, Join(r3, r4))));
 generateAndLog({
-    name:`(G,(R1,(R2,(R3,R4)))), default priority, ${[...t.getAllTapes().getKeys()]}`, 
+    name:`(G,(R1,(R2,(R3,R4)))), default priority}`, 
     g:t
 });
 

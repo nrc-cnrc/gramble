@@ -132,7 +132,6 @@ export class Interpreter {
         return new Interpreter(devEnv, grammar, verbose);
     }
 
-
     public allSymbols(): string[] {
         return this.grammar.allSymbols();
     }
@@ -141,30 +140,15 @@ export class Interpreter {
         symbolName: string,
         stripHidden: boolean = true
     ): string[] {
-        const target = this.grammar.getSymbol(symbolName);
-        if (target == undefined) {
+        const referent = this.grammar.getSymbol(symbolName);
+        if (referent == undefined) {
             throw new Error(`Cannot find symbol ${symbolName}`);
         }
         if (stripHidden) {
-            return target.tapes.filter(t => !t.startsWith(HIDDEN_TAPE_PREFIX));
+            return referent.tapes.filter(t => !t.startsWith(HIDDEN_TAPE_PREFIX));
         }
-        return target.tapes;
+        return referent.tapes;
     }
-    
-    /*
-    public getTapeNames(
-        symbolName: string,
-        stripHidden: boolean = true
-    ): string[] {
-        const target = this.grammar.getSymbol(symbolName);
-        if (target == undefined) {
-            throw new Error(`Cannot find symbol ${symbolName}`);
-        }
-        if (stripHidden) {
-            return target.tapes.filter(t => !t.startsWith(HIDDEN_TAPE_PREFIX));
-        }
-        return target.tapes;
-    } */
 
     public getTapeColor(
         tapeName: string, 

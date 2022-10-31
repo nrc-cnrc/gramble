@@ -230,21 +230,21 @@ export function testHasTapes(
                         grammar :
                         Interpreter.fromGrammar(grammar);
                         
-    let target = interpreter.grammar.getSymbol(symbolName);
+    let referent = interpreter.grammar.getSymbol(symbolName);
     
     const bSet = new Set(expectedTapes);
     const date_str: string = (new Date()).toUTCString();
     const testName: string = `${symbolName} should have tapes [${[...bSet]}]`;
     it(`${testName}`, function() {
-        expect(target).to.not.be.undefined;
-        if (target == undefined) {
+        expect(referent).to.not.be.undefined;
+        if (referent == undefined) {
             return;
         }
-        let tapes = target.tapes;
+        let tapes = referent.tapes;
         if (stripHidden) {
             // for the purpose of this comparison, leave out any internal-only
             // tapes, like those created by a Hide().
-            tapes = target.tapes.filter(t => !t.startsWith(HIDDEN_TAPE_PREFIX));
+            tapes = referent.tapes.filter(t => !t.startsWith(HIDDEN_TAPE_PREFIX));
         }
         try {
             expect(tapes.length).to.equal(bSet.size);
