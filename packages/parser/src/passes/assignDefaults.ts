@@ -25,7 +25,7 @@ export class AssignDefaults extends Pass<Grammar,Grammar> {
         return mapped.bind(g => {
             switch(g.constructor) {
                 case CollectionGrammar:
-                    return this.transformCollection(g as CollectionGrammar, env);
+                    return this.handleCollection(g as CollectionGrammar, env);
                 default: 
                     return g;
             }
@@ -36,7 +36,7 @@ export class AssignDefaults extends Pass<Grammar,Grammar> {
         return "Assigning default symbols";
     }
 
-    public transformCollection(g: CollectionGrammar, env: PassEnv): Grammar {
+    public handleCollection(g: CollectionGrammar, env: PassEnv): Grammar {
         
         if (g.getSymbol(DEFAULT_SYMBOL_NAME)) {
             // if Default is already assigned, we don't have to do anything

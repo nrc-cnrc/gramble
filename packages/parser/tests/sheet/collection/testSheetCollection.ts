@@ -176,9 +176,11 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Reference to a symbol inside an explicit default', function() {
         const project = sheetFromFile(`${DIR}/referenceThroughDefault.csv`);
-        testErrors(project, []);
+        testErrors(project, [
+            ["referenceThroughDefault",11,1,"error"]
+        ]);
         testGrammar(project, [
-            { text: "goo", gloss: "water" }
+            {}
         ]);
     });
     
@@ -190,6 +192,14 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    describe('Reference to a symbol with a destractor inside a default', function() {
+        const project = sheetFromFile(`${DIR}/referenceWithDefaultDistractor2.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "zoo", gloss: "earth" }
+        ]);
+    });
+
     describe('Fully-qualified reference to default', function() {
         const project = sheetFromFile(`${DIR}/fullyQualifiedDefaults.csv`);
         testErrors(project, []);

@@ -80,7 +80,7 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
                 defaultReferent = newV;
             }
 
-            const newName = calculateQualifiedName(k, this.nameStack);
+            const newName = newNameStack.join(".");
             env.symbolNS.set(newName, newV);
             //newSymbols[k] = newV;
         }
@@ -132,7 +132,7 @@ function resolveName(
     if (namePieces.length == 0) {
         // an empty name means we've arrived, this is the
         // grammar we're looking for
-        const newName = calculateQualifiedName("", nsStack);
+        const newName = nsStack.join(".");
         return [newName, g];
     }
 
@@ -147,32 +147,13 @@ function resolveName(
     }
 
     const child = resolveNameLocal(g, namePieces[0]);
-    if (child != undefined) {
-        // we found a child of the correct name, try there
-        const [localName, referent] = child;
-        const remnant = namePieces.slice(1);
-        const newStack = [ ...nsStack, localName ];
-        const resolution = resolveName(referent, remnant, newStack);  // try the child
-        if (resolution != undefined) {
-            return resolution;
-        }
-
-    }
-
-    // it's not a locally-defined symbol, but it's possible that
-    // it's defined inside the default symbol of this collection
-    const defaultChild = resolveNameLocal(g, DEFAULT_SYMBOL_NAME);
-    if (defaultChild == undefined) {
+    if (child == undefined) {
         return undefined;
     }
-    const [localName, referent] = defaultChild;
-    const newStack = [ ...nsStack, localName ];
-    return resolveName(referent, namePieces, newStack);
-   
-}
 
-function calculateQualifiedName(name: string, nsStack: string[]): string {
-    const pieces = [...nsStack, name]
-                   .filter(s => s.length > 0);
-    return pieces.join(".");
+    const [localName, referent] = child;
+    const remnant = namePieces.slice(1);
+    const newStack = [ ...nsStack, localName ];
+    return resolveName(referent, remnant, newStack);
+
 }
