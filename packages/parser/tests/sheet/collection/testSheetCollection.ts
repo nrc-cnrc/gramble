@@ -1,5 +1,6 @@
 import { testGrammar, testErrors, sheetFromFile } from "../../testUtil";
 import * as path from 'path';
+import { SILENT } from "../../../src/util";
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
 
@@ -14,6 +15,44 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foobaz", gloss: "run-2SG" },
             { text: "moobaz", gloss: "jump-2SG" }
         ]);
+    });
+
+    describe('Collection containing one assignment, generating from explicit default', function() {
+        const project = sheetFromFile(`${DIR}/simpleCollection.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ], SILENT, "default");
+    });
+    
+    describe('Collection containing one assignment, generating from x', function() {
+        const project = sheetFromFile(`${DIR}/simpleCollection.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
+        ], SILENT, "simpleCollection.x");
+    });
+
+    describe('Collection containing one assignment, generating from x.verb', function() {
+        const project = sheetFromFile(`${DIR}/simpleCollection.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
+        ], SILENT, "simpleCollection.x.verb");
+    });
+    
+    describe('Collection containing one assignment, generating from x.default', function() {
+        const project = sheetFromFile(`${DIR}/simpleCollection.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "jump" }
+        ], SILENT, "simpleCollection.x.default");
     });
     
     describe('Collection containing two assignments', function() {
@@ -132,6 +171,30 @@ describe(`${path.basename(module.filename)}`, function() {
         testErrors(project, []);
         testGrammar(project, [
             { text: "goo", gloss: "water" }
+        ]);
+    });
+
+    describe('Reference to a symbol inside an explicit default', function() {
+        const project = sheetFromFile(`${DIR}/referenceThroughDefault.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "goo", gloss: "water" }
+        ]);
+    });
+    
+    describe('Reference to a symbol with a destractor inside a default', function() {
+        const project = sheetFromFile(`${DIR}/referenceWithDefaultDistractor.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "zoo", gloss: "earth" }
+        ]);
+    });
+    
+    describe('Fully-qualified reference to default', function() {
+        const project = sheetFromFile(`${DIR}/fullyQualifiedDefaults.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "zoogoo", gloss: "earthwater" }
         ]);
     });
     

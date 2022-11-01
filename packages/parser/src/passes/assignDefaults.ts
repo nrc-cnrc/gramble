@@ -19,16 +19,6 @@ import { DEFAULT_SYMBOL_NAME, Dict } from "../util";
  */
 export class AssignDefaults extends Pass<Grammar,Grammar> {
 
-    public transformRoot(t: Grammar, env: PassEnv): Result<Grammar> {    
-        if (t instanceof CollectionGrammar) {
-            return this.transform(t, env);
-        } else {
-            const newNS = new CollectionGrammar();
-            newNS.symbols[DEFAULT_SYMBOL_NAME] = t;
-            return this.transform(newNS, env);
-        }
-    }
-
     public transform(g: Grammar, env: PassEnv): GrammarResult {
         
         const mapped = g.mapChildren(this, env) as GrammarResult;

@@ -74,9 +74,7 @@ export const SHEET_PASSES =
 export const NAME_PASSES = 
 
     // Assign default symbols to collections that don't already
-    // have a default defined.  Also, if the input grammar 
-    // isn't already a collection, return a new collection with 
-    // the input grammar as its default.
+    // have a default defined.
     new AssignDefaults().compose(
 
     // qualify symbol names (e.g. turn `VERB` in sheet Sheet1 

@@ -234,39 +234,30 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     }
 
     public handleCollection(t: TstCollection, env: PassEnv): GrammarResult {
-        const ns = new CollectionGrammar();
+        const newColl = new CollectionGrammar();
         const msgs: Msgs = [];
-
 
         for (const child of t.children) {
 
             const grammar = this.transform(child, env).msgTo(msgs);
-            if (child instanceof TstAssignment) {
-
-                const referent = ns.getSymbol(child.name);
-                if (referent != undefined) {
-                    // we're reassigning an existing symbol!
-                    Err('Reassigning existing symbol', 
-                        `The symbol ${child.name} already refers to another grammar above.`,
-                        child.pos).msgTo(msgs);
-                    continue;
-                }     
-                ns.symbols[child.name] = grammar;
-
-                /*
-                const embedded = new EmbedGrammar(child.name);
-                defaultChildren.push(embedded);
-                continue;
-                */
+            if (!(child instanceof TstAssignment)) {
+                // at this point, all non-assignment children
+                // of collections should have been wrapped in assignments
+                throw new Error(`non-assignment child of collection: ${child.constructor.name}`);
             }
+
+            const existingReferent = newColl.getSymbol(child.name);
+            if (existingReferent != undefined) {
+                // we're reassigning an existing symbol!
+                Err('Reassigning existing symbol', 
+                    `The symbol ${child.name} already refers to another grammar above.`,
+                    child.pos).msgTo(msgs);
+                continue;
+            }     
+            newColl.symbols[child.name] = grammar;
         }
 
-        /*
-        if (!defaultIsAssigned) {
-            const alternation = new AlternationGrammar(defaultChildren);
-            ns.symbols[DEFAULT_SYMBOL_NAME] = alternation;
-        } */
-
-        return ns.msg(msgs);
+        return newColl.msg(msgs)
+                      .bind(c => new LocatorGrammar(t.pos, c));
     }
 }

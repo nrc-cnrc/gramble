@@ -7,7 +7,8 @@ import {
     GrammarPass,
     GrammarResult,
     Collection,
-    CollectionGrammar
+    CollectionGrammar,
+    LocatorGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { DEFAULT_SYMBOL_NAME, Dict } from "../util";
@@ -33,18 +34,17 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
 
     public transformRoot(g: Grammar, env: PassEnv): Result<Grammar> {
 
-        if (!(g instanceof CollectionGrammar)) {
-            throw new Error("QualifyNames requires an NsGrammar root");
-        }
-
         // we keep a stack of the old collections, in which we'll
         // attempt to find the referents of embedded symbols
-        const names: string[] = [""];
-        const grammars: CollectionGrammar[] = [g];
+        const names: string[] = [];
+        const grammars: CollectionGrammar[] = [];
         const newThis = new QualifyNames(names, grammars);
 
-        return newThis.transform(g, env)
-            .bind(_ => new CollectionGrammar(env.symbolNS.entries));
+        return newThis.transform(g, env).bind(g => {
+            const newColl = new CollectionGrammar(env.symbolNS.entries);
+            newColl.symbols[""] = g;
+            return newColl;
+        });
 
     }
 
@@ -64,50 +64,38 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
     }
 
     public transformCollection(g: CollectionGrammar, env: PassEnv): GrammarResult {
-        const newSymbols: Dict<Grammar> = {};
+        //const newSymbols: Dict<Grammar> = {};
         const msgs: Msgs = [];
+        let defaultReferent: Grammar = new EpsilonGrammar();
 
-        const entries = Object.entries(g.symbols);
-        for (let i = 0; i < entries.length; i++) {
-            const [k, v] = entries[i];
+        const newCollectionStack = [ ...this.collectionStack, g ];
 
-            let newV: Grammar;
-            if (v instanceof CollectionGrammar) {
-                const newNameStack = [ ...this.nameStack, k ];
-                const newCollectionStack = [ ...this.collectionStack, v ];
-                const newThis = new QualifyNames(newNameStack, newCollectionStack);
-                newV = newThis.transform(v, env)
-                                 .msgTo(msgs);
-            } else {
-                const newName = calculateQualifiedName(k, this.nameStack);
-                const oldReference = env.symbolNS.attemptGet(newName);
-                if (oldReference != undefined) {
-                    Err("Symbol name collision",
-                        "This symbol name that will refer to this grammar, " +
-                        `${newName}, already refers to a different grammar.`).msgTo(msgs);
-                    continue;
-                }
-                
-                newV = this.transform(v, env)
-                                 .msgTo(msgs);
-                env.symbolNS.set(newName, newV);
+        for (const [k, v] of Object.entries(g.symbols)) {
+            const newNameStack = [ ...this.nameStack, k ];
+            const newThis = new QualifyNames(newNameStack, newCollectionStack);
+            const newV = newThis.transform(v, env)
+                                .msgTo(msgs);
+
+            if (k.toLowerCase() == DEFAULT_SYMBOL_NAME.toLowerCase()) {
+                defaultReferent = newV;
             }
 
-            newSymbols[k] = newV;
+            const newName = calculateQualifiedName(k, this.nameStack);
+            env.symbolNS.set(newName, newV);
+            //newSymbols[k] = newV;
         }
         
-        const r = new CollectionGrammar(newSymbols);
-        return r.msg(msgs);
+        return defaultReferent.msg(msgs);
     }
 
     public transformEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {
-        let resolution: [string, Grammar] | undefined = undefined;
-        for (let i = this.collectionStack.length-1; i >=0; i--) {
+        const namePieces = g.name.split(".");
+        for (let i = this.collectionStack.length; i >=1; i--) {
             // we go down the stack asking each to resolve it
-            const subNsStack = this.collectionStack.slice(0, i+1);
-            const subNameStack = this.nameStack.slice(0, i+1);
-            resolution = resolveName(subNsStack[i], g.name, subNameStack);
-            if (resolution != undefined) {         
+            const subNsStack = this.collectionStack.slice(0, i);
+            const subNameStack = this.nameStack.slice(0, i-1);
+            const resolution = resolveName(subNsStack[i-1], namePieces, subNameStack);
+            if (resolution != undefined) {        
                 const [qualifiedName, _] = resolution;
                 const result = new EmbedGrammar(qualifiedName);
                 return result.msg();
@@ -136,53 +124,55 @@ function resolveNameLocal(
 }
 
 function resolveName(
-    coll: CollectionGrammar,
-    unqualifiedName: string, 
+    g: Grammar,
+    namePieces: string[], 
     nsStack: string[]
 ): [string, Grammar] | undefined {
 
-    // split into (potentially) collection prefix(es) and symbol name
-    const namePieces = unqualifiedName.split(".");
+    if (namePieces.length == 0) {
+        // an empty name means we've arrived, this is the
+        // grammar we're looking for
+        const newName = calculateQualifiedName("", nsStack);
+        return [newName, g];
+    }
 
-    // it's got no collection prefix, it's a symbol name
-    if (namePieces.length == 1) {
+    if (g instanceof LocatorGrammar) {
+        return resolveName(g.child, namePieces, nsStack);
+    }
 
-        const localResult = resolveNameLocal(coll, unqualifiedName);
+    if (!(g instanceof CollectionGrammar)) {
+        // the name we're looking for isn't empty... but this 
+        // isn't a collection, we're not going to find anything!
+        return undefined;
+    }
 
-        if (localResult == undefined) {
-            // it's not a symbol assigned in this namespace
-            return undefined;
+    const child = resolveNameLocal(g, namePieces[0]);
+    if (child != undefined) {
+        // we found a child of the correct name, try there
+        const [localName, referent] = child;
+        const remnant = namePieces.slice(1);
+        const newStack = [ ...nsStack, localName ];
+        const resolution = resolveName(referent, remnant, newStack);  // try the child
+        if (resolution != undefined) {
+            return resolution;
         }
-        
-        // it IS a symbol defined in this collection ,
-        // so get the fully-qualified name.
-        const [localName, referent] = localResult;
-        const newName = calculateQualifiedName(localName, nsStack);
-        return [newName, referent];
+
     }
 
-    // it's got a collection prefix
-    const child = resolveNameLocal(coll, namePieces[0]);
-    if (child == undefined) {
-        // but it's not a child of this collection
+    // it's not a locally-defined symbol, but it's possible that
+    // it's defined inside the default symbol of this collection
+    const defaultChild = resolveNameLocal(g, DEFAULT_SYMBOL_NAME);
+    if (defaultChild == undefined) {
         return undefined;
     }
-
-    const [localName, referent] = child;
-    if (!(referent instanceof CollectionGrammar)) {
-        // if symbol X isn't a collection, "X.Y" can't refer to anything real
-        return undefined;
-    }
-
-    // this collection has a child of the correct name
-    const remnant = namePieces.slice(1).join(".");
+    const [localName, referent] = defaultChild;
     const newStack = [ ...nsStack, localName ];
-    return resolveName(referent, remnant, newStack);  // try the child
+    return resolveName(referent, namePieces, newStack);
+   
 }
 
 function calculateQualifiedName(name: string, nsStack: string[]): string {
     const pieces = [...nsStack, name]
-                   .filter(s => s.length > 0 &&
-                           s.toLowerCase() != DEFAULT_SYMBOL_NAME.toLowerCase());
+                   .filter(s => s.length > 0);
     return pieces.join(".");
 }
