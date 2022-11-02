@@ -944,6 +944,44 @@ class RTLLiteralExpr extends LiteralExpr {
 
 }
 
+class EpsilonLiteralExpr extends Expr {
+
+    constructor(
+        public tapeName: string,
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        return `${this.tapeName}:ε`;
+    }
+
+    public delta(
+        tapeName: string,
+        env: DerivEnv
+    ): Expr {
+        if (tapeName != this.tapeName) {
+            return this;
+        }
+        return NULL;
+    }
+
+    public *deriv(
+        tapeName: string,
+        target: Token, 
+        env: DerivEnv
+    ): DerivResults {
+        if (tapeName != this.tapeName) {
+            return;
+        }
+
+        if (target == ANY_CHAR_STR) {
+            yield [EPSILON_TOKEN, EPSILON];
+        }
+    }
+
+}
+
 export class ParallelExpr extends Expr {
 
     constructor(
@@ -2064,13 +2102,18 @@ export class MatchFromExpr extends UnaryExpr {
         for (const [cTarget, cNext] of 
                 this.child.deriv(this.fromTape, target, newEnv)) {
             const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
-            for (const c of toTape.expandStrings(cTarget as string, fromTape)) {
-                const lit = constructLiteral(oppositeTape, c, [c]);
-                yield [c, constructPrecede(lit, successor)];
+            if (cTarget instanceof EpsilonToken) {
+                console.log("========= EpsilonToken ==========");
+                // const lit = constructEpsilonLiteral(oppositeTape);
+                // yield [EPSILON_TOKEN, constructPrecede(lit, successor)];
+                yield [EPSILON_TOKEN, successor];
+            } else {
+                for (const c of toTape.expandStrings(cTarget as string, fromTape)) {
+                    const lit = constructLiteral(oppositeTape, c, [c]);
+                    yield [c, constructPrecede(lit, successor)];
+                }
             }
         }
-
-        
     }
 }
 
@@ -2192,6 +2235,10 @@ export function constructLiteral(
     }
     return new RTLLiteralExpr(tape, text, tokens, index);
 
+}
+
+export function constructEpsilonLiteral(tape: string): EpsilonLiteralExpr {
+    return new EpsilonLiteralExpr(tape);
 }
 
 export function constructCharSet(tape: string, chars: string[]): CharSetExpr {

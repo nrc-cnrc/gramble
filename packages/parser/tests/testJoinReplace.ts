@@ -1,8 +1,13 @@
 import { 
+    CountTape,
     Epsilon,
+    EpsilonLit,
     Grammar,
     Join,
     JoinReplace,
+    MatchFrom,
+    Priority,
+    Rep,
     Replace,
     ReplaceGrammar,
     Seq,
@@ -639,6 +644,76 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
+    // 2850 states visited
+    describe('8a-5-test-1. single rule with 5>1-char (ε) substitution (vocab abcdABCD)', function() {
+        console.log("------8a-5-test-1. single rule with 5>1-char (ε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaaaabcd"), [ReplaceBypass(t1("aaaaa"), Seq(t2("A"),
+                                                                                    EpsilonLit("t2")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaaaabcd', t2: 'Abcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 376 states visited
+    describe('8a-5-test-2. single rule with 5>1-char (εε) substitution (vocab abcdABCD)', function() {
+        console.log("------8a-5-test-2. single rule with 5>1-char (εε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaaaabcd"), [ReplaceBypass(t1("aaaaa"), Seq(t2("A"),
+                                                                                    EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaaaabcd', t2: 'Abcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 76 states visited
+    describe('8a-5-test-3. single rule with 5>1-char (εεε) substitution (vocab abcdABCD)', function() {
+        console.log("------8a-5-test-3. single rule with 5>1-char (εεε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaaaabcd"), [ReplaceBypass(t1("aaaaa"), Seq(t2("A"),
+                                                                                    EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaaaabcd', t2: 'Abcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 45 states visited
+    describe('8a-5-test-4. single rule with 5>1-char (εεεε) substitution (vocab abcdABCD)', function() {
+        console.log("------8a-5-test-4. single rule with 5>1-char (εεεε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaaaabcd"), [ReplaceBypass(t1("aaaaa"), Seq(t2("A"),
+                                                                                    EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaaaabcd', t2: 'Abcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
     // 21 states visited
     describe('8b-1. 2-rule cascade starting with 1>1-char substitution (vocab abcdABCD)', function() {
         console.log("------8b-1. 2-rule cascade starting with 1>1-char substitution (vocab abcdABCD)");
@@ -657,7 +732,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 93 states visited
     describe('8b-2. 2-rule cascade starting with 2>1-char substitution (vocab abcdABCD)', function() {
-        console.log("------8b-1. 2-rule cascade starting with 2>1-char substitution (vocab abcdABCD)");
+        console.log("------8b-2. 2-rule cascade starting with 2>1-char substitution (vocab abcdABCD)");
         const r1Grammar = JoinReplace(t1("aabcd"), [ReplaceBypass(t1("aa"), t2("A"))]);
         const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
         const voc: string = "abcdABCD"
@@ -676,6 +751,240 @@ describe(`${path.basename(module.filename)}`, function() {
         console.log("------8b-3. 2-rule cascade starting with 3>1-char substitution (vocab abcdABCD)");
         const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), t2("A"))]);
         const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 404 states visited
+    describe('8b-3-test-1. 2-rule cascade starting with 3>1-char (ε) substitution (vocab abcdABCD)', function() {
+        console.log("------8b-3-test-1. 2-rule cascade starting with 3>1-char (ε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), Seq(t2("A"),
+                                                                                EpsilonLit("t2")))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 593 states visited
+    describe('8b-3-test-2. 2-rule cascade starting with 3>1-char (εε) substitution (vocab abcdABCD)', function() {
+        console.log("------8b-3-test-2. 2-rule cascade starting with 3>1-char (εε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), Seq(t2("A"),
+                                                                                EpsilonLit("t2"),
+                                                                                EpsilonLit("t2")))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 3552 states visited
+    describe('8b-3-test-3. 2-rule cascade starting with 3>1-char (εεε) substitution (vocab abcdABCD)', function() {
+        console.log("------8b-3-test-3. 2-rule cascade starting with 3>1-char (εεε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), Seq(t2("A"),
+                                                                                EpsilonLit("t2"),
+                                                                                EpsilonLit("t2"),
+                                                                                EpsilonLit("t2")))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 182 states visited
+    describe('8b-3-test-4. 2-rule cascade starting with 3>1-char (ε/ε) substitution (vocab abcdABCD)', function() {
+        console.log("------8b-3-test-4. 2-rule cascade starting with 3>1-char (ε/ε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), Seq(t2("A"),
+                                                                                EpsilonLit("t2")))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), Seq(t3("B"),
+                                                                                EpsilonLit("t3")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 242 states visited
+    describe('8b-3-test-5. 2-rule cascade starting with 3>1-char (εε/ε) substitution (vocab abcdABCD)', function() {
+        console.log("------8b-3-test-5. 2-rule cascade starting with 3>1-char (εε/ε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), Seq(t2("A"),
+                                                                                EpsilonLit("t2"),
+                                                                                EpsilonLit("t2")))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), Seq(t3("B"),
+                                                                                EpsilonLit("t3")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 1500 states visited
+    describe('8b-3-test-6. 2-rule cascade starting with 3>1-char (εεε/ε) substitution (vocab abcdABCD)', function() {
+        console.log("------8b-3-test-6. 2-rule cascade starting with 3>1-char (εεε/ε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), Seq(t2("A"),
+                                                                                EpsilonLit("t2"),
+                                                                                EpsilonLit("t2"),
+                                                                                EpsilonLit("t2")))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), Seq(t3("B"),
+                                                                                EpsilonLit("t3")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 180 states visited
+    describe('8b-3-test-7. 2-rule cascade starting with 3>1-char (ε/εε) substitution (vocab abcdABCD)', function() {
+        console.log("------8b-3-test-7. 2-rule cascade starting with 3>1-char (ε/εε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), Seq(t2("A"),
+                                                                                EpsilonLit("t2")))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), Seq(t3("B"),
+                                                                                EpsilonLit("t3"),
+                                                                                EpsilonLit("t3")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 195 states visited
+    describe('8b-3-test-8. 2-rule cascade starting with 3>1-char (εε/εε) substitution (vocab abcdABCD)', function() {
+        console.log("------8b-3-test-8. 2-rule cascade starting with 3>1-char (εε/εε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), Seq(t2("A"),
+                                                                                EpsilonLit("t2"),
+                                                                                EpsilonLit("t2")))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), Seq(t3("B"),
+                                                                                EpsilonLit("t3"),
+                                                                                EpsilonLit("t3")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 1188 states visited
+    describe('8b-3-test-9. 2-rule cascade starting with 3>1-char (εεε/εε) substitution (vocab abcdABCD)', function() {
+        console.log("------8b-3-test-9. 2-rule cascade starting with 3>1-char (εεε/εε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), Seq(t2("A"),
+                                                                                EpsilonLit("t2"),
+                                                                                EpsilonLit("t2"),
+                                                                                EpsilonLit("t2")))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), Seq(t3("B"),
+                                                                                EpsilonLit("t3"),
+                                                                                EpsilonLit("t3")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 182 states visited
+    describe('8b-3-test-10. 2-rule cascade starting with 3>1-char (ε/εεε) substitution (vocab abcdABCD)', function() {
+        console.log("------8b-3-test-10. 2-rule cascade starting with 3>1-char (ε/εεε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), Seq(t2("A"),
+                                                                                EpsilonLit("t2")))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), Seq(t3("B"),
+                                                                                EpsilonLit("t3"),
+                                                                                EpsilonLit("t3"),
+                                                                                EpsilonLit("t3")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 196 states visited
+    describe('8b-3-test-11. 2-rule cascade starting with 3>1-char (εε/εεε) substitution (vocab abcdABCD)', function() {
+        console.log("------8b-3-test-11. 2-rule cascade starting with 3>1-char (εε/εεε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), Seq(t2("A"),
+                                                                                EpsilonLit("t2"),
+                                                                                EpsilonLit("t2")))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), Seq(t3("B"),
+                                                                                EpsilonLit("t3"),
+                                                                                EpsilonLit("t3"),
+                                                                                EpsilonLit("t3")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 1149 states visited
+    describe('8b-3-test-12. 2-rule cascade starting with 3>1-char (εεε/εεε) substitution (vocab abcdABCD)', function() {
+        console.log("------8b-3-test-12. 2-rule cascade starting with 3>1-char (εεε/εεε) substitution (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), Seq(t2("A"),
+                                                                                EpsilonLit("t2"),
+                                                                                EpsilonLit("t2"),
+                                                                                EpsilonLit("t2")))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), Seq(t3("B"),
+                                                                                EpsilonLit("t3"),
+                                                                                EpsilonLit("t3"),
+                                                                                EpsilonLit("t3")))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -851,6 +1160,72 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
+    // 3466 states visited
+    describe('9d-test-1. single rule with 4-char (ε) deletion (vocab abcdABCD)', function() {
+        console.log("------9d-test-1. single rule with 4-char deletion (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaaabcd"), [ReplaceBypass(t1("aaaa"), EpsilonLit("t2"))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaaabcd', t2: 'bcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 370 states visited
+    describe('9d-test-2. single rule with 4-char (εε) deletion (vocab abcdABCD)', function() {
+        console.log("------9d-test-2. single rule with 4-char (εε) deletion (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaaabcd"), [ReplaceBypass(t1("aaaa"), Seq(EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaaabcd', t2: 'bcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 66 states visited
+    describe('9d-test-3. single rule with 4-char (εεε) deletion (vocab abcdABCD)', function() {
+        console.log("------9d-test-3. single rule with 4-char (εεε) deletion (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaaabcd"), [ReplaceBypass(t1("aaaa"), Seq(EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaaabcd', t2: 'bcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
+    // 34 states visited
+    describe('9d-test-4. single rule with 4-char (εεεε) deletion (vocab abcdABCD)', function() {
+        console.log("------9d-test-4. single rule with 4-char (εεεε) deletion (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaaabcd"), [ReplaceBypass(t1("aaaa"), Seq(EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaaabcd', t2: 'bcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
     // 134 states visited
     describe('10a. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         console.log("------10a. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)");
@@ -1015,5 +1390,48 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
+
+    // Exploring using EpsilonLit in nullable Matches
+
+    // 16 states visited
+    describe('X1. (t2:e+M(t1>t2,ε|t1:h)){2} (vocab hx/hex)', function() {
+        console.log("------X1");
+        const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        let grammarWithVocab: Grammar = Seq(grammar,
+                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        grammarWithVocab = CountTape({t1: 3, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},
+            {t1: 'h', t2: 'ehe'},
+            {t1: 'h', t2: 'eeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults, VERBOSE_STATES);
+    });
+
+    // 14 states visited
+    describe('X2. (t2:e+M(t1>t2,t1:ε|t1:h)){2} (vocab hx/hex)', function() {
+        console.log("------X2");
+        const fromGrammar: Grammar = Uni(EpsilonLit("t1"), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        let grammarWithVocab: Grammar = Seq(grammar,
+                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        grammarWithVocab = CountTape({t1: 3, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},
+            {t1: 'h', t2: 'ehe'},
+            {t1: 'h', t2: 'eeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults, VERBOSE_STATES);
+    });
+
 
 });

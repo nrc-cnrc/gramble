@@ -8,7 +8,7 @@ import {
     constructLiteral, constructMatchFrom, constructCharSet,
     constructDotRep, constructCount, constructCountTape,
     constructPriority, EpsilonExpr, constructShort,
-    constructNotContains, constructParallel, DerivEnv, ExprNamespace, SymbolNsExpr, constructSymbolNs
+    constructNotContains, constructParallel, DerivEnv, ExprNamespace, SymbolNsExpr, constructSymbolNs, constructEpsilonLiteral
 } from "./exprs";
 import { Msg, Msgs, result, Result, resultDict, resultList } from "./msgs";
 
@@ -426,6 +426,41 @@ export class CharSetGrammar extends AtomicGrammar {
         symbols: ExprNamespace
     ): Expr {
         return constructCharSet(this.tapeName, this.chars);
+    }
+}
+
+export class EpsilonLiteralGrammar extends AtomicGrammar {
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return this.msg();
+    }
+
+    constructor(
+        public tapeName: string,
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        return `${this.tapeName}:ε`;
+    }
+
+    public getLiterals(): LiteralGrammar[] {
+        return [];
+    }
+
+    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
+        if (this._tapes == undefined) {
+            this._tapes = [this.tapeName];
+        }
+        return this._tapes;
+    }
+
+    public constructExpr(
+        tapeNS: TapeNamespace,
+        symbols: ExprNamespace
+    ): Expr {
+        return constructEpsilonLiteral(this.tapeName);
     }
 }
 
@@ -2077,6 +2112,10 @@ export function Rep(
 
 export function Epsilon(): EpsilonGrammar {
     return new EpsilonGrammar();
+}
+
+export function EpsilonLit(tape: string): EpsilonLiteralGrammar {
+    return new EpsilonLiteralGrammar(tape);
 }
 
 export function Null(): NullGrammar {
