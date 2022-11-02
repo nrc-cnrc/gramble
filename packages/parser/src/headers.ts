@@ -517,11 +517,10 @@ export const RESERVED_OPS: Set<string> = new Set([
     "table", 
     "test", 
     "testnot", 
-    "or", 
-    "concat", 
+    "or",
     "join", 
     "replace",
-    "namespace"
+    "collection"
 ]);
 
 export const RESERVED_WORDS = new Set([...SYMBOL, ...RESERVED_HEADERS, ...RESERVED_OPS]);

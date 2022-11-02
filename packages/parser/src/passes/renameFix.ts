@@ -4,7 +4,7 @@ import {
     Grammar, 
     GrammarPass, 
     GrammarResult,
-    HideGrammar, NsGrammar, RenameGrammar
+    HideGrammar, CollectionGrammar, RenameGrammar
 } from "../grammars";
 import { result } from "../msgs";
 import { Pass, PassEnv } from "../passes";

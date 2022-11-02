@@ -1,0 +1,6 @@
+word:, table:, text, >text2
+    ,       , b,    text
+    ,
+    , replace:, from text2, to text2
+    ,          , b        , w
+    

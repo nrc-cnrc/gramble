@@ -1,0 +1,11 @@
+verb:, table:, text, gloss, pos
+    ,       , foo, run, v
+    ,       , moo, jump, v
+
+suffix:, table:, text, gloss/subj
+    ,       , bar, [1SG]
+    ,       , baz, [2SG]
+    ,       ,    , [3SG]
+
+default:, table:, embed, >class, embed,
+    ,       , verb, pos, suffix, 

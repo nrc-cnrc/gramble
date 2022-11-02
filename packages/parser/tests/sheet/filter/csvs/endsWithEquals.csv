@@ -1,0 +1,10 @@
+
+root:, text, gloss, trans
+     , foobar, run, INTR
+     , foobaz, jump, INTR
+     , foobas, see, TR
+
+default:, embed, ends text, equals trans, text, gloss
+     , root, r, INTR, q, [1SG]
+     , root, z, INTR, k, [1SG]
+     , root,  , TR,  , [1SG]

@@ -3,7 +3,7 @@ import {
     GrammarPass,
     GrammarResult,
     JoinGrammar, JoinReplaceGrammar, 
-    NsGrammar, 
+    CollectionGrammar, 
     RenameGrammar, ReplaceGrammar
 } from "../grammars";
 

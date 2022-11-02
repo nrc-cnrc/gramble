@@ -354,9 +354,9 @@ function makeInterpreter() {
     return [interpreter, devEnv];
 }
 
-function runUnitTests() {
+function runTests() {
     const [interpreter, devEnv] = makeInterpreter();
-    interpreter.runUnitTests();
+    interpreter.runTests();
     devEnv.highlight();
 } 
 
@@ -497,7 +497,7 @@ function onOpen() {
     
         .addItem('Show sidebar', 'showSidebar')
         .addSeparator()
-        .addItem('Run unit tests', 'runUnitTests')
+        .addItem('Run unit tests', 'runTests')
         .addSeparator()
         .addItem('Highlight', 'highlight')
         .addItem('Comment', 'GrambleComment')

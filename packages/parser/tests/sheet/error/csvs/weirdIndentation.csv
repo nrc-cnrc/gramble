@@ -1,0 +1,12 @@
+
+verb:, table:, text, gloss
+    ,       , foo, run
+
+suffix:, table:, text, gloss
+    ,       , bar, -1SG
+
+default:,       , table:, embed, embed
+    ,       ,       , verb, suffix 
+    ,
+    , join:, finite
+    ,      , true

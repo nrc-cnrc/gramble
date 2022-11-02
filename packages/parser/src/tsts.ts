@@ -305,7 +305,7 @@ export class TstEmpty extends Component {
  * 2 and the B table are its params.  (For example, 3 might represent "or", and thus
  * the union of the grammar represented by 2 and the grammar represented by the B table.
  */
-export class TstBinary extends TstEnclosure {
+export abstract class TstBinary extends TstEnclosure {
 
     constructor(
         cell: Cell,    
@@ -313,12 +313,6 @@ export class TstBinary extends TstEnclosure {
         public child: Component = new TstEmpty()
     ) {
         super(cell, sibling);
-    }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList([this.sibling, this.child])
-                .map(c => f.transform(c, env))
-                .bind(([s,c]) => new TstBinary(this.cell, s, c));
     }
 
     public setChild(child: TstEnclosure): ResultVoid {
@@ -377,22 +371,22 @@ export class TstTable extends TstCellComponent {
 
 }
 
-export class TstBinaryOp extends TstBinary {
-
-    constructor(
-        cell: Cell,    
-        public opName: string,
-        sibling: Component = new TstEmpty(),
-        child: Component = new TstEmpty()
-    ) {
-        super(cell, sibling, child);
-    }
+export class TstOr extends TstBinary {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
-            .bind(([s,c]) => new TstBinaryOp(this.cell, 
-                                this.opName, s, c));
+            .bind(([s,c]) => new TstOr(this.cell, s, c));
+    }
+}
+
+
+export class TstJoin extends TstBinary {
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return resultList([this.sibling, this.child])
+            .map(c => f.transform(c, env))
+            .bind(([s,c]) => new TstJoin(this.cell, s, c));
     }
 }
 
@@ -439,7 +433,7 @@ export class TstReplace extends TstCellComponent {
  * and one to the right, and makes sure that each line of the one to the right
  * has an output when filtering the table above.
  */
-export class TstUnitTest extends TstCellComponent {
+export class TstTest extends TstCellComponent {
 
     constructor(
         cell: Cell,
@@ -452,7 +446,7 @@ export class TstUnitTest extends TstCellComponent {
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c, env))
-                .bind(([s,c]) => new TstUnitTest(this.cell, s, c as TstParamList));
+                .bind(([s,c]) => new TstTest(this.cell, s, c as TstParamList));
     }
 
 
@@ -463,12 +457,12 @@ export class TstUnitTest extends TstCellComponent {
  * and one to the right, and makes sure that each line of the one to the right
  * has no output when filtering the table above.
  */
-export class TstNegativeUnitTest extends TstUnitTest {
+export class TstTestNot extends TstTest {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
             .map(c => f.transform(c, env))
-            .bind(([s,c]) => new TstNegativeUnitTest(this.cell, s, c as TstParamList));
+            .bind(([s,c]) => new TstTestNot(this.cell, s, c as TstParamList));
     }
 
 }
@@ -564,7 +558,7 @@ export class TstAssignment extends TstCellComponent {
 
 }
 
-export class TstNamespace extends TstCellComponent {
+export class TstCollection extends TstCellComponent {
 
     constructor(
         cell: Cell,
@@ -581,7 +575,7 @@ export class TstNamespace extends TstCellComponent {
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList(this.children)
                 .map(c => f.transform(c, env) as Result<TstEnclosure>)
-                .bind(cs => new TstNamespace(this.cell, cs));
+                .bind(cs => new TstCollection(this.cell, cs));
     }
 
 }

@@ -1,5 +1,5 @@
-import { Seq, Join, Hide, Rename, Equals, Ns, Embed } from "../src/grammars";
-import { t1, t2, t3, testHasTapes, testHasVocab, testGrammar, DEFAULT_MAX_RECURSION } from './testUtils';
+import { Seq, Join, Hide, Rename, Equals, Collection, Embed } from "../src/grammars";
+import { t1, t2, t3, testHasTapes, testHasVocab, testGrammar, DEFAULT_MAX_RECURSION } from './testUtil';
 import { SILENT, StringDict } from "../src/util";
 import * as path from 'path';
 
@@ -269,37 +269,35 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('15a. Hide t2 of symbol t1:hi+t2:world', function() {
-        const grammar = Ns({ 
+        const grammar = Collection({ 
             "a": Seq(t1("hi"), t2("world")),
-            "b": Hide(Embed("a"), "t2") 
+            "default": Hide(Embed("a"), "t2") 
         });
         const expectedResults: StringDict[] = [
             {t1: "hi"}
         ];
         testHasTapes(grammar, ["t1"]);
-        testHasTapes(grammar, ["t1"], "b");
         //testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, expectedResults, SILENT, "b");
+        testGrammar(grammar, expectedResults);
     });
 
     describe('15b. Hide t2 of symbol t1:hi+t2:world', function() {
-        const grammar = Ns({ 
+        const grammar = Collection({ 
             "a": Seq(t1("hi"), t2("world")),
-            "b": Hide(Embed("a"), "t2", "HIDDEN") 
+            "default": Hide(Embed("a"), "t2", "HIDDEN") 
         });
         const expectedResults: StringDict[] = [
             {t1: "hi", '.HIDDEN': "world"}
         ];
         testHasTapes(grammar, ["t1", ".HIDDEN"], DUMMY_SYMBOL, false);
-        testHasTapes(grammar, ["t1", ".HIDDEN"], "b", false);
         //testHasVocab(grammar, {t1: 2, '.HIDDEN': 2});
-        testGrammar(grammar, expectedResults, SILENT, "b", DEFAULT_MAX_RECURSION, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
     describe('16a. Embed of hide(t2) of t1:hi+t2:foo', function() {
-        const grammar = Ns({
+        const grammar = Collection({
             "b": Hide(Seq(t1("hi"), t2("foo")), "t2"),
-            "c": Embed("b")
+            "default": Embed("b")
         });
         const expectedResults: StringDict[] = [
             {t1: "hi"}
@@ -310,9 +308,9 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('16b. Embed of hide(t2) of t1:hi+t2:foo', function() {
-        const grammar = Ns({
+        const grammar = Collection({
             "b": Hide(Seq(t1("hi"), t2("foo")), "t2", "HIDDEN"),
-            "c": Embed("b")
+            "default": Embed("b")
         });
         const expectedResults: StringDict[] = [
             {t1: "hi", '.HIDDEN': "foo"}

@@ -20,7 +20,7 @@ import {
     testHasVocab,
     testGrammar,
     DEFAULT_MAX_RECURSION,
-} from './testUtils';
+} from './testUtil';
 
 import * as path from 'path';
 import { BITSETS_ENABLED, SILENT, StringDict } from "../src/util";

@@ -20,7 +20,7 @@ import {
     testGrammar, 
     testParseMultiple,
     WARN_ONLY_FOR_TOO_MANY_OUTPUTS,
-} from './testUtils';
+} from './testUtil';
 
 import * as path from 'path';
 import { VERBOSE_DEBUG, StringDict } from "../src/util";

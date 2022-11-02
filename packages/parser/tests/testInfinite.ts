@@ -2,10 +2,12 @@ import { expect } from 'chai';
 import * as path from 'path';
 import { CounterStack } from '../src/exprs';
 import { Count, CountTape, Epsilon, 
-    Join, Null, Rep, Seq, Uni, Ns, Embed, NsGrammar } from '../src/grammars';
+    Join, Null, Rep, Seq, Uni, Collection, Embed, CollectionGrammar } from '../src/grammars';
+import { Msgs } from '../src/msgs';
 import { PassEnv } from '../src/passes';
+import { NAME_PASSES } from '../src/passes/allPasses';
 import { QualifyNames } from '../src/passes/qualifyNames';
-import { t1 } from "./testUtils";
+import { t1 } from "./testUtil";
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -98,14 +100,16 @@ describe(`${path.basename(module.filename)}`, function() {
     }); 
 
     describe("Recursive grammar ", function() {
-        let ns = Ns();
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
-        ns.addSymbol("hiWorld", hiWorld);
+        const ns = Collection({
+            "hiWorld": hiWorld
+        });
         const env = new PassEnv();
-        const [result, _] = new QualifyNames().go(ns, env).destructure();
-        env.symbolNS.entries = (result as NsGrammar).symbols;
-        const grammar = result.getSymbol("hiWorld");
+        const [result, _] = NAME_PASSES.go(ns, env) 
+                            .destructure() as [CollectionGrammar, Msgs];
+        env.symbolNS.entries = result.symbols;
+        const grammar = result.symbols["hiWorld"]
         if (grammar == undefined) {
             return;
         }
@@ -116,14 +120,17 @@ describe(`${path.basename(module.filename)}`, function() {
     }); 
 
     describe("Recursive grammar inside a count ", function() {
-        let ns = Ns();
+        
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
-        ns.addSymbol("hiWorld", hiWorld);
+        const ns = Collection({
+            "hiWorld": hiWorld
+        });
         const env = new PassEnv();
-        const [result, _] = new QualifyNames().go(ns, env).destructure();
-        env.symbolNS.entries = (result as NsGrammar).symbols;
-        let grammar = result.getSymbol("hiWorld");
+        const [result, _] = NAME_PASSES.go(ns, env) 
+                            .destructure() as [CollectionGrammar, Msgs];
+        env.symbolNS.entries = result.symbols;
+        let grammar = result.symbols["hiWorld"]
         if (grammar == undefined) {
             return;
         }

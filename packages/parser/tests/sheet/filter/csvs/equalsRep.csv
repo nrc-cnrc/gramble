@@ -1,0 +1,10 @@
+
+root:, table:, text, gloss
+    ,       ,   , be
+    ,       , foo,  run
+    ,       , moo, jump
+    ,       , foofoo, run.impf
+    ,       , moofoo, jump.impf
+
+default:, table:, embed, equals re text
+    ,       , root, foo*

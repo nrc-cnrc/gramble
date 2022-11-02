@@ -16,7 +16,7 @@ import {
     testHasTapes, 
     testHasVocab, 
     testGrammar,
-} from './testUtils';
+} from './testUtil';
 
 import * as path from 'path';
 import { BITSETS_ENABLED, DIRECTION_LTR, StringDict, VERBOSE_DEBUG } from "../src/util";

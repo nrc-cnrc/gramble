@@ -1,6 +1,0 @@
-word:, table:, text
-    ,       , aba,
-    ,       , apa
-    ,       ,     ,
-    , replace:, from re text, to surface
-    ,         , b|p,  v

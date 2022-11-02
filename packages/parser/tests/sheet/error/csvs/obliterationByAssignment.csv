@@ -1,0 +1,7 @@
+table:, text
+      , foo
+      , goo
+
+default:, text
+      , bar
+      , baz

@@ -1,0 +1,15 @@
+x:, collection:, verb:, text, gloss
+  ,            ,      , foo, run
+  ,            ,      , moo, jump
+
+  ,            , default:, collection:, nclass1:, text, gloss
+  ,            ,         ,            ,        , goo, water
+
+  ,            ,         ,             , nclass2:, text, gloss
+  ,            ,         ,            ,        , boo, fire
+  
+  ,            , nclass1:, text, gloss
+  ,            ,         , zoo, earth
+
+default:, embed,
+        , x.nclass1

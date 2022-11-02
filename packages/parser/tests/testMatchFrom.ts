@@ -19,9 +19,8 @@ import {
     t1, t2, t3, t4,
     testHasTapes,
     testGrammar,
-    testHasVocab,
-    DEFAULT_MAX_RECURSION,
-} from './testUtils';
+    testHasVocab
+} from './testUtil';
 
 import * as path from 'path';
 import { StringDict, VERBOSE_DEBUG } from "../src/util";

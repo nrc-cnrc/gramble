@@ -10,7 +10,7 @@ import {
     t1, t2, testHasTapes, 
     //testHasVocab, 
     testGrammar 
-} from './testUtils';
+} from './testUtil';
 
 import * as path from 'path';
 import { BITSETS_ENABLED } from "../src/util";

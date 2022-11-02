@@ -1,0 +1,14 @@
+
+verb:, table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+suffix:, table:, text, gloss
+    ,       , bar, -1SG
+    ,       , baz, -2SG
+
+default:, suffixed:, embed, embed
+    ,           , verb, suffix 
+    ,
+    , or:   ,  embed
+    ,       ,  verb

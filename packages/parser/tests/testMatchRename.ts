@@ -12,12 +12,9 @@ import {
 
 import { 
     t1, t2, t3, 
-    testHasTapes, 
-    //testHasVocab, 
-    //testHasNoVocab,  
-    testGrammar,
-    testHasVocab
-} from './testUtils';
+    testHasTapes,  
+    testGrammar
+} from './testUtil';
 
 import * as path from 'path';
 import { BITSETS_ENABLED, VERBOSE_DEBUG } from "../src/util";
