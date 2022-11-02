@@ -4,7 +4,7 @@ import * as path from 'path';
 const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
-/*
+
     describe('Minimal grammar', function() {
         const project = sheetFromFile(`${DIR}/minimalGrammar.csv`);
         testErrors(project, []);
@@ -40,7 +40,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moo", gloss: "jump" }
         ]);
     });
-*/
+
     describe('Embeds', function() {
         const project = sheetFromFile(`${DIR}/embedGrammar.csv`);
         testErrors(project, []);
@@ -52,7 +52,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    /*
     describe('Table with empty cell', function() {
         const project = sheetFromFile(`${DIR}/emptyCell.csv`);
         testErrors(project, []);
@@ -147,5 +146,4 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
         testGrammar(project, [{}]);
     });
-    */
 });

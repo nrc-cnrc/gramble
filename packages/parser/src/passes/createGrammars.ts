@@ -135,7 +135,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     }
     
     public handleBinaryOp(t: TstBinaryOp, env: PassEnv): GrammarResult {
-        const op = BINARY_OPS_MAP[t.opName];
+        const op = BINARY_OPS_MAP[t.opName.toLowerCase()];
         return resultList([t.sibling, t.child])
                     .map(c => this.transform(c, env))
                     .bind(([s,c]) => op(s,c));

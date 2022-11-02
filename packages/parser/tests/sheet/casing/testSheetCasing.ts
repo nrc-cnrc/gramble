@@ -92,5 +92,14 @@ describe(`${path.basename(module.filename)}`, function() {
         ], SILENT, "EMBEDGRAMMAR.WORD");
     });
 
+    describe('Grammar with uppercase join', function() {
+        const project = sheetFromFile(`${DIR}/uppercaseJoin.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobar", gloss: "run[1SG]", subj: "1SG" },
+            { text: "moobar", gloss: "jump[1SG]", subj: "1SG" },
+        ]);
+    });
+
 
 });

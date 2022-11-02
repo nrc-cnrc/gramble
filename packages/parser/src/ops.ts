@@ -318,7 +318,7 @@ const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
 )
 
 export function parseOp(text: string): Op {
-    const trimmedText = text.trim().toLowerCase();
+    const trimmedText = text.trim();
     const results = miniParse(tokenize, OP_EXPR_WITH_COLON, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error

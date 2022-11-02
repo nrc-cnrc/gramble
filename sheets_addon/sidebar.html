@@ -240,7 +240,19 @@
                 let options = project.allSymbols();
 
                 for (const option of options) {
+
+                    // there's always a symbol called "", but it's always a dup of
+                    // another symbol, and it's confusing to see it in the interface
                     if (option == "") {
+                        continue;
+                    }
+
+                    // if the symbol is <Anything>.Default, there will be another
+                    // symbol with the same semantics but without the .Default, so 
+                    // leave it out
+                    const pieces = option.split(".");
+                    const isDefault = pieces[pieces.length-1].toLowerCase() == "default";
+                    if (isDefault) {
                         continue;
                     }
                     
