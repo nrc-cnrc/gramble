@@ -1,9 +1,10 @@
 import { 
-    ReplaceOp, BINARY_OPS_MAP, 
-    BinaryOp, ErrorOp, 
+    ReplaceOp, 
     ReplaceTapeOp, TableOp, 
     TestNotOp, TestOp, 
-    SymbolOp 
+    SymbolOp, 
+    OrOp,
+    JoinOp
 } from "../ops";
 import { result, Result } from "../msgs";
 import { PassEnv } from "../passes";
@@ -12,7 +13,7 @@ import {
     TstEmpty, TstTest, 
     TstTable, TstTestNot, 
     TstReplace, TstReplaceTape, 
-    TstBinaryOp, TstAssignment, TstParamList
+    TstOr, TstAssignment, TstParamList, TstJoin
 } from "../tsts";
 import { Component, CPass, CResult } from "../components";
 
@@ -41,8 +42,10 @@ import { Component, CPass, CResult } from "../components";
                     return this.handleReplace(t);
                 case ReplaceTapeOp:
                     return this.handleReplaceTape(t);
-                case BinaryOp:
-                    return this.handleBinary(t);
+                case OrOp:
+                    return this.handleOr(t);
+                case JoinOp:
+                    return this.handleJoin(t);
                 case SymbolOp:
                     return this.handleAssignment(t);
                 default: 
@@ -76,10 +79,12 @@ import { Component, CPass, CResult } from "../components";
                     t.sibling, t.child as TstParamList).msg();
     }
     
-    public handleBinary(t: TstOp): CResult {
-        const opName = (t.op as BinaryOp).text;
-        return new TstBinaryOp(t.cell, opName, 
-                        t.sibling, t.child).msg();
+    public handleOr(t: TstOp): CResult {
+        return new TstOr(t.cell, t.sibling, t.child).msg();
+    }
+    
+    public handleJoin(t: TstOp): CResult {
+        return new TstJoin(t.cell, t.sibling, t.child).msg();
     }
 
     public handleAssignment(t: TstOp): CResult {

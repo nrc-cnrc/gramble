@@ -1,13 +1,13 @@
 import { 
     TstAssignment,
-    TstBinary, TstBinaryOp,
+    TstBinary, TstOr,
     TstEmpty, 
     TstFilter, TstHeaderContentPair, 
     TstHide, TstCollection, 
     TstTestNot, TstRename, 
     TstReplace, 
     TstReplaceTape, TstSequence, 
-    TstTable, TstTest 
+    TstTable, TstTest, TstJoin 
 } from "../tsts";
 import { Component } from "../components";
 import { Pass, PassEnv } from "../passes";
@@ -19,11 +19,11 @@ import {
     JoinRuleGrammar, LocatorGrammar, 
     TestNotGrammar, 
     CollectionGrammar, 
-    RenameGrammar, ReplaceGrammar, SequenceGrammar, TestGrammar
+    RenameGrammar, ReplaceGrammar, SequenceGrammar, TestGrammar, JoinGrammar
 } from "../grammars";
 import { TapeNameHeader } from "../headers";
 import { Err, Msgs, resultList } from "../msgs";
-import { BINARY_OPS_MAP, BLANK_PARAM } from "../ops";
+import { BLANK_PARAM } from "../ops";
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -51,12 +51,12 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                 return this.handleFilter(t as TstFilter, env);
             case TstEmpty:
                 return this.handleEmpty(t as TstEmpty, env);
-            case TstBinary:
-                return this.handleBinary(t as TstBinary, env);
             case TstTable:
                 return this.handleTable(t as TstTable, env);
-            case TstBinaryOp:
-                return this.handleBinaryOp(t as TstBinaryOp, env);
+            case TstOr:
+                return this.handleOr(t as TstOr, env);
+            case TstJoin:
+                return this.handleJoin(t as TstJoin, env);
             case TstReplace:
                 return this.handleReplace(t as TstReplace, env);
             case TstReplaceTape:
@@ -117,15 +117,6 @@ export class CreateGrammars extends Pass<Component,Grammar> {
         return new EpsilonGrammar().msg();
     }
 
-    public handleBinary(t: TstBinary, env: PassEnv): GrammarResult {
-        // we only ever end up in this base EncloseComponent compile if it wasn't
-        // a known operator.  this is an error, but we flag it for the programmer
-        // elsewhere.
-        return resultList([t.sibling, t.child])
-                    .map(c => this.transform(c, env))
-                    .bind(([s,c]) => new LocatorGrammar(t.cell.pos, s));
-    }
-
     public handleTable(t: TstTable, env: PassEnv): GrammarResult {
         return resultList(t.child.rows)
                   .map(r => r.getParam(BLANK_PARAM))
@@ -134,12 +125,20 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                   .bind(c => new LocatorGrammar(t.cell.pos, c))
     }
     
-    public handleBinaryOp(t: TstBinaryOp, env: PassEnv): GrammarResult {
-        const op = BINARY_OPS_MAP[t.opName.toLowerCase()];
+    public handleOr(t: TstOr, env: PassEnv): GrammarResult {
         return resultList([t.sibling, t.child])
                     .map(c => this.transform(c, env))
-                    .bind(([s,c]) => op(s,c));
+                    .bind(cs => new AlternationGrammar(cs))
+                    .bind(c => new LocatorGrammar(t.cell.pos, c));
     }
+    
+    public handleJoin(t: TstJoin, env: PassEnv): GrammarResult {
+        return resultList([t.sibling, t.child])
+                    .map(c => this.transform(c, env))
+                    .bind(([c,s]) => new JoinGrammar(c, s))
+                    .bind(c => new LocatorGrammar(t.cell.pos, c));
+    }
+    
     
     public handleReplaceTape(t: TstReplaceTape, env: PassEnv): GrammarResult {
 

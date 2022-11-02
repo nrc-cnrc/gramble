@@ -1,6 +1,6 @@
 import { testGrammar, testErrors, sheetFromFile } from "../../testUtil";
 import * as path from 'path';
-import { SILENT } from "../../../src/util";
+import { SILENT, VERBOSE_DEBUG } from "../../../src/util";
 
 const DIR = `${path.dirname(module.filename)}/csvs`;
 

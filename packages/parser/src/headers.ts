@@ -517,8 +517,7 @@ export const RESERVED_OPS: Set<string> = new Set([
     "table", 
     "test", 
     "testnot", 
-    "or", 
-    "concat", 
+    "or",
     "join", 
     "replace",
     "collection"
