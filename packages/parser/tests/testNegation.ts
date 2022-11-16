@@ -265,7 +265,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Join(~t1:hi & t2:hi)', function() {
         let grammar: Grammar = Join(Not(t1("hi")), t2("hi"));
-        grammar = CountTape( { "t1": 4, "t2": 2}, grammar)
+        grammar = CountTape({t1: 4, t2: 2}, grammar)
         //testHasVocab(grammar, {t1: 2});
         //testHasVocab(grammar, {t2: 2});
         const expectedResults: StringDict[] = [
@@ -284,7 +284,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Join(t2:hi & ~t1:hi)', function() {
         let grammar: Grammar = Join(t2("hi"), Not(t1("hi")));
-        grammar = CountTape( { "t1": 4, "t2": 2}, grammar)
+        grammar = CountTape({t1: 4, t2: 2}, grammar)
         //testHasVocab(grammar, {t1: 2});
         //testHasVocab(grammar, {t2: 2});
         const expectedResults: StringDict[] = [
@@ -333,8 +333,9 @@ describe(`${path.basename(module.filename)}`, function() {
             testGrammar(grammar, expectedResults);
     }); 
     
-    describe('~(t1:he,3)', function() {
-        const grammar = Not(t1("he"), 3);
+    describe('CountTape(3, ~(t1:he))', function() {
+        let grammar: Grammar = Not(t1("he"));
+        grammar = CountTape(3, grammar);
         testHasTapes(grammar, ["t1"]);
         // testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -358,9 +359,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // Testing negation with "dot".
 
-    describe('Dot-1. ~(.i,3)', function() {
-        const notGrammar = Not(Seq(Any('t1'), t1('i')), 3);
-        const grammar = notGrammar;
+    describe('Dot-1. CountTape(3, ~(.i))', function() {
+        const notGrammar = Not(Seq(Any('t1'), t1('i')));
+        const grammar = CountTape(3, notGrammar);
         testHasTapes(grammar, ['t1']);
         // testHasVocab(grammar, {t1: 1});
         const expectedResults: StringDict[] = [
@@ -373,9 +374,10 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
     
-    describe('Dot-2. ~(.,2) with vocab "hi"', function() {
-        const notGrammar = Not(Any('t1'), 2);
-        const grammar = Seq(Vocab('t1', 'hi'), notGrammar);
+    describe('Dot-2. CountTape(2, ~(.)) with vocab "hi"', function() {
+        const notGrammar = Not(Any('t1'));
+        let grammar = CountTape(2, notGrammar);
+        grammar = Seq(Vocab('t1', 'hi'), grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -391,9 +393,10 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('Dot-3. ~(.i,2) with vocab "hi"', function() {
-        const notGrammar = Not(Seq(Any('t1'), t1('i')), 2);
-        const grammar = Seq(Vocab('t1', 'hi'), notGrammar);
+    describe('Dot-3. CountTape(2, ~(.i)) with vocab "hi"', function() {
+        const notGrammar = Not(Seq(Any('t1'), t1('i')));
+        let grammar = CountTape(2, notGrammar);
+        grammar = Seq(Vocab('t1', 'hi'), grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -409,9 +412,10 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('Dot-4. ~(.i,2) with vocab "hi"', function() {
-        const notGrammar = Not(Seq(Dot('t1'), t1('i')), 2);
-        const grammar = Seq(Vocab('t1', 'hi'), notGrammar);
+    describe('Dot-4. CountTape(2, ~(.i)) with vocab "hi"', function() {
+        const notGrammar = Not(Seq(Dot('t1'), t1('i')));
+        let grammar = CountTape(2, notGrammar);
+        grammar = Seq(Vocab('t1', 'hi'), grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -427,10 +431,11 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('Dot-5. ~(.{0,1}i,3) with vocab "hi"', function() {
+    describe('Dot-5. CountTape(3, ~(.{0,1}i)) with vocab "hi"', function() {
         const dotStarGrammar1 = Rep(Dot('t1'), 0, 1);
-        const notGrammar = Not(Seq(dotStarGrammar1, t1('i')), 3);
-        const grammar = Seq(Vocab('t1', 'hi'), notGrammar);
+        const notGrammar = Not(Seq(dotStarGrammar1, t1('i')));
+        let grammar = CountTape(3, notGrammar);
+        grammar = Seq(Vocab('t1', 'hi'), grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -453,10 +458,11 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('Dot-6. ~(.{0,3}i,3) with vocab "hi"', function() {
+    describe('Dot-6. CountTape(3, ~(.{0,3}i)) with vocab "hi"', function() {
         const dotStarGrammar1 = Rep(Dot('t1'), 0, 3);
-        const notGrammar = Not(Seq(dotStarGrammar1, t1('i')), 3);
-        const grammar = Seq(Vocab('t1', 'hi'), notGrammar);
+        const notGrammar = Not(Seq(dotStarGrammar1, t1('i')));
+        let grammar = CountTape(3, notGrammar);
+        grammar = Seq(Vocab('t1', 'hi'), grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [

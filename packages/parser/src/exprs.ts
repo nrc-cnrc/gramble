@@ -1556,7 +1556,7 @@ export class CountTapeExpr extends UnaryExpr {
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
             let newMax: Dict<number> = {};
             Object.assign(newMax, this.maxChars);
-            if (!(cTarget instanceof EpsilonToken)) {
+            if (tapeName in newMax && !(cTarget instanceof EpsilonToken)) {
                 newMax[tapeName] -= 1;
             }
             const successor = constructCountTape(cNext, newMax);
@@ -1843,7 +1843,6 @@ class NegationExpr extends UnaryExpr {
     constructor(
         child: Expr,
         public tapes: Set<string>,
-        public maxChars: number = Infinity
     ) { 
         super(child);
     }
@@ -1862,7 +1861,7 @@ class NegationExpr extends UnaryExpr {
         let result: Expr;
         
         if (childDelta instanceof NullExpr) {
-            result = constructNegation(childDelta, remainingTapes, this.maxChars);
+            result = constructNegation(childDelta, remainingTapes);
             return result;
         }
         if (remainingTapes.size == 0) {
@@ -1870,7 +1869,7 @@ class NegationExpr extends UnaryExpr {
             return result;
         }
         
-        result = constructNegation(childDelta, remainingTapes, this.maxChars);
+        result = constructNegation(childDelta, remainingTapes);
         return result;
     }
     
@@ -1884,16 +1883,12 @@ class NegationExpr extends UnaryExpr {
             return;
         }
 
-        if (this.maxChars == 0) {
-            return;
-        }
-
         const [disentangledTarget, entanglements] = target.disentangle(); 
         let remainder = disentangledTarget.clone();
 
         for (const [childText, childNext] of 
                 this.child.disjointDeriv(tapeName, disentangledTarget, env)) {
-            const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
+            const successor = constructNegation(childNext, this.tapes);
             if (childText instanceof EpsilonToken) {
                 yield [childText, successor];
                 continue;
@@ -1915,7 +1910,7 @@ class NegationExpr extends UnaryExpr {
         // succeeds.
         
         const reEntangledRemainder = remainder.reEntangle(entanglements);
-        yield [reEntangledRemainder, constructUniverse(this.tapes, this.maxChars-1)];
+        yield [reEntangledRemainder, constructUniverse(this.tapes)];
     }
     
     public *stringDeriv(
@@ -1925,10 +1920,6 @@ class NegationExpr extends UnaryExpr {
     ): DerivResults {
 
         if (!this.tapes.has(tapeName)) {
-            return;
-        }
-
-        if (this.maxChars == 0) {
             return;
         }
 
@@ -1943,7 +1934,7 @@ class NegationExpr extends UnaryExpr {
                 const complement = childToken.not();
                 remainder = remainder.and(complement);    
             }
-            const successor = constructNegation(childNext, this.tapes, this.maxChars-1);
+            const successor = constructNegation(childNext, this.tapes);
             yield [childText, successor];
         }
 
@@ -1956,7 +1947,7 @@ class NegationExpr extends UnaryExpr {
         // and are now at a special consume-anything expression that always
         // succeeds.
         for (const c of tape.fromToken(remainder)) {
-            yield [c, constructUniverse(this.tapes, this.maxChars-1)];
+            yield [c, constructUniverse(this.tapes)];
         }
     }
 }
@@ -2312,10 +2303,9 @@ export function constructCountTape(child: Expr, maxChars: Dict<number>): Expr {
 export function constructNegation(
     child: Expr, 
     tapes: Set<string>,
-    maxChars: number = Infinity
 ): Expr {
     if (child instanceof NullExpr) {
-        return constructUniverse(tapes, maxChars);
+        return constructUniverse(tapes);
     }
     if (child instanceof NegationExpr) {
         return child.child;
@@ -2323,14 +2313,14 @@ export function constructNegation(
     if (child instanceof DotStarExpr) {
         return NULL;
     }
-    return new NegationExpr(child, tapes, maxChars);
+    return new NegationExpr(child, tapes);
 }
 
 export function constructDotStar(tape: string): Expr {
     return new DotStarExpr(tape);
 }
 
-export function constructDotRep(tape: string, maxReps:number=Infinity): Expr {
+export function constructDotRep(tape: string, maxReps: number=Infinity): Expr {
     if (maxReps == Infinity) {
         return constructDotStar(tape);
     }
@@ -2374,10 +2364,9 @@ export function constructDotRep(tape: string, maxReps:number=Infinity): Expr {
 
 export function constructUniverse(
     tapes: Set<string>, 
-    maxReps: number = Infinity
 ): Expr {
     return constructSequence(...[...tapes]
-                .map(t => constructDotRep(t, maxReps)));
+                .map(t => constructDotRep(t)));
 }
 
 export function constructMatch(
@@ -2494,10 +2483,9 @@ export function constructNotContains(
     children: Expr[], 
     tapes: string[], 
     begin: boolean,
-    end: boolean,
-    maxExtraChars: number
+    end: boolean
 ): Expr {
-    const dotStar: Expr = constructDotRep(fromTapeName, maxExtraChars);
+    const dotStar: Expr = constructDotRep(fromTapeName);
     let seq: Expr;
     if (begin) {
         seq = DIRECTION_LTR ?
@@ -2512,5 +2500,5 @@ export function constructNotContains(
               constructSequence(constructShort(constructSequence(dotStar, ...children)), dotStar) :
               constructSequence(dotStar, constructShort(constructSequence(...children, dotStar)));
     }
-    return constructNegation(seq, new Set(tapes), maxExtraChars);
+    return constructNegation(seq, new Set(tapes));
 }

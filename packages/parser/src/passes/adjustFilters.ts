@@ -57,7 +57,7 @@ export class AdjustFilters extends GrammarPass {
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
             const newFilter = new StartsGrammar(g.child.child, g.tapes);
-            const newNegation = new NegationGrammar(newFilter, g.child.maxReps);
+            const newNegation = new NegationGrammar(newFilter);
             return newNegation.mapChildren(this, env) as GrammarResult;
         }
 
@@ -110,7 +110,7 @@ export class AdjustFilters extends GrammarPass {
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
             const newFilter = new EndsGrammar(g.child.child, g.tapes);
-            const newNegation = new NegationGrammar(newFilter, g.child.maxReps);
+            const newNegation = new NegationGrammar(newFilter);
             return newNegation.mapChildren(this, env) as GrammarResult;
         }
 
@@ -162,7 +162,7 @@ export class AdjustFilters extends GrammarPass {
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
             const newFilter = new ContainsGrammar(g.child.child, g.tapes);
-            const newNegation = new NegationGrammar(newFilter, g.child.maxReps);
+            const newNegation = new NegationGrammar(newFilter);
             return newNegation.mapChildren(this, env) as GrammarResult;
         }
 

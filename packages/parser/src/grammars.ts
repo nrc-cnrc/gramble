@@ -1234,13 +1234,6 @@ export class RepeatGrammar extends UnaryGrammar {
 }
 
 export class NegationGrammar extends UnaryGrammar {
-
-    constructor(
-        child: Grammar,
-        public maxReps: number = Infinity
-    ) {
-        super(child);
-    }
     
     public get id(): string {
         return `Not(${this.child.id})`;
@@ -1261,7 +1254,7 @@ export class NegationGrammar extends UnaryGrammar {
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new NegationGrammar(c as Grammar, this.maxReps));
+                .bind(c => new NegationGrammar(c as Grammar));
     }
 
     public constructExpr(
@@ -1269,7 +1262,7 @@ export class NegationGrammar extends UnaryGrammar {
         symbols: ExprNamespace
     ): Expr {
         const childExpr = this.child.constructExpr(tapeNS, symbols);
-        return constructNegation(childExpr, new Set(this.child.tapes), this.maxReps);
+        return constructNegation(childExpr, new Set(this.child.tapes));
     }
 }
 
@@ -2021,8 +2014,8 @@ export function Rename(child: Grammar, fromTape: string, toTape: string): Rename
     return new RenameGrammar(child, fromTape, toTape);
 }
 
-export function Not(child: Grammar, maxChars:number=Infinity): NegationGrammar {
-    return new NegationGrammar(child, maxChars);
+export function Not(child: Grammar): NegationGrammar {
+    return new NegationGrammar(child);
 }
 
 export function Collection(
@@ -2484,9 +2477,14 @@ export class ReplaceGrammar extends Grammar {
             negatedTapes.push(...that.preContext.tapes);
             negatedTapes.push(...that.postContext.tapes);
 
-            let notGrammar = constructNotContains(that.fromTapeName, 
-                fromInstance, negatedTapes, that.beginsWith && replaceNone, that.endsWith && replaceNone, maxExtraChars);
-            return constructMatchFrom(notGrammar, that.fromTapeName, ...that.toTapeNames)
+            let maxCharsDict: Dict<number> = {};
+            for (const tape of negatedTapes) {
+                maxCharsDict[tape] = maxExtraChars;
+            }
+            let notExpr: Expr = constructNotContains(that.fromTapeName, fromInstance,
+                negatedTapes, that.beginsWith && replaceNone, that.endsWith && replaceNone);
+            notExpr = constructCountTape(notExpr, maxCharsDict);
+            return constructMatchFrom(notExpr, that.fromTapeName, ...that.toTapeNames)
         }
         
         if (!this.endsWith)
@@ -2512,11 +2510,16 @@ export class ReplaceGrammar extends Grammar {
             if (otherContextExpr != EPSILON) {
                 const negatedTapes: string[] = [];
                 negatedTapes.push(...this.otherContext.tapes);
-                const negatedOtherContext: Expr = constructNegation(otherContextExpr,
-                                                                    new Set(negatedTapes),
-                                                                    this.maxCopyChars);
-                const matchDotStar: Expr = constructMatchFrom(constructDotRep(this.fromTapeName, this.maxCopyChars),
-                                                              this.fromTapeName, ...this.toTapeNames)
+                let maxCharsDict: Dict<number> = {};
+                for (const tape of negatedTapes) {
+                    maxCharsDict[tape] = this.maxCopyChars;
+                }
+                let negatedOtherContext: Expr = 
+                    constructNegation(otherContextExpr, new Set(negatedTapes));
+                negatedOtherContext = constructCountTape(negatedOtherContext, maxCharsDict);
+                const matchDotStar: Expr =
+                    constructMatchFrom(constructDotRep(this.fromTapeName, this.maxCopyChars),
+                                                       this.fromTapeName, ...this.toTapeNames)
                 copyExpr = constructAlternation(constructSequence(matchAnythingElse(true, this.maxCopyChars), otherContextExpr),
                                                 constructSequence(matchDotStar, negatedOtherContext));
             }
