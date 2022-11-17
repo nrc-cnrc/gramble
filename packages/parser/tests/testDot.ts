@@ -1,5 +1,5 @@
 import { Seq, Join, Any, Equals, Uni, Epsilon } from "../src/grammars";
-import { testHasTapes, t1, t2, testGrammar, testHasVocab } from './testUtils';
+import { testHasTapes, t1, t2, testGrammar, testHasVocab } from './testUtil';
 
 import * as path from 'path';
 

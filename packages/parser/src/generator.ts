@@ -1,7 +1,7 @@
 import { 
     constructAlternation, constructPriority,
     CounterStack, DerivEnv, 
-    EpsilonExpr, Expr, ExprNamespace, NullExpr, PriorityExpr, SymbolNsExpr 
+    EpsilonExpr, Expr, ExprNamespace, NullExpr, PriorityExpr, CollectionExpr 
 } from "./exprs";
 import { OutputTrie, TapeNamespace, Token, EpsilonToken } from "./tapes";
 import { 
@@ -88,7 +88,7 @@ export function* generate(
             // that have prevOutput as a prefix), so abandon this node 
             // and move on
             continue;
-        } else if (prevExpr instanceof PriorityExpr || prevExpr instanceof SymbolNsExpr) {
+        } else if (prevExpr instanceof PriorityExpr || prevExpr instanceof CollectionExpr) {
             // we've neither found a valid output nor failed; there is 
             // still a possibility of finding an output with prevOutput
             // as its prefix

@@ -1,7 +1,7 @@
 
 import { Seq, Uni, Equals, Epsilon, Starts, Not, Ends, Contains, Intersect, Null, Grammar } from "../src/grammars";
 import { Any, CountTape, MatchFrom, Priority, Rep, Short, Vocab } from "../src/grammars";
-import { t1, t2, t3, testGrammar } from './testUtils';
+import { t1, t2, t3, testGrammar } from './testUtil';
 
 import * as path from 'path';
 import { VERBOSE_DEBUG, VERBOSE_GRAMMAR } from "../src/util";

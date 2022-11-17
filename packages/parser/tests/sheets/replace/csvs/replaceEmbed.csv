@@ -1,9 +1,0 @@
-
-ROOT:,table:, text
-        ,       , foo
-
-STEM:,table:,embed
-    ,       ,ROOT
-
-    , replace:, from text,    to text,
-    ,         , f     ,   g,

@@ -1,6 +1,10 @@
-import { Grammar, NsGrammar } from "./grammars";
+import { Grammar } from "./grammars";
 import { Result } from "./msgs";
-import { Dict, Namespace, SILENT, timeIt, VERBOSE_TIME } from "./util";
+import { 
+    Dict, Namespace, 
+    SILENT, timeIt, 
+    VERBOSE_TIME 
+} from "./util";
 
 export class PassEnv {
 

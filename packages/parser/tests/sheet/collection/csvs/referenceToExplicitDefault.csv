@@ -1,0 +1,10 @@
+x:, collection:, verb:, text, gloss
+  ,            ,      , foo, run
+  ,            ,      , moo, jump
+
+  ,            , default:, text, gloss
+  ,            ,      , goo, water
+  ,            ,      , boo, fire
+
+default:, embed,
+        , x

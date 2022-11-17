@@ -1,0 +1,7 @@
+word:, table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+word:, table:, text, gloss
+,       , foo, run
+,       , moo, jump

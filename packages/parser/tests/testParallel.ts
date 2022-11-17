@@ -1,6 +1,15 @@
 
-import { CharSet, Epsilon, Par, Seq, Uni } from "../src/grammars";
-import { t1, t2, testHasTapes, testGrammar, testHasVocab, t3 } from './testUtils';
+import {
+     Par,
+     Uni 
+} from "../src/grammars";
+import { 
+    t1, t2, 
+    testHasTapes, 
+    testGrammar, 
+    testHasVocab, 
+    t3 
+} from './testUtil';
 
 import * as path from 'path';
 import { VERBOSE_DEBUG } from "../src/util";

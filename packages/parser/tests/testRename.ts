@@ -4,7 +4,7 @@ import {
     Join, 
     Uni, 
     Equals, 
-    Ns,
+    Collection,
     Embed,
     Intersect,
     Rep,
@@ -17,7 +17,7 @@ import {
     t1, t2, t3, t4, t5,
     testHasTapes,
     testGrammar
-} from "./testUtils";
+} from "./testUtil";
 
 import * as path from 'path';
 import { SILENT } from "../src/util";
@@ -165,13 +165,13 @@ describe(`${path.basename(module.filename)}`, function() {
     */
    
     describe('Rename(t2->t3 of symbol t1:hi+t2:world)', function() {
-        const grammar = Ns({ 
+        const grammar = Collection({ 
             "a": Seq(t1("hi"), t2("world")),
-            "b": Rename(Embed("a"), "t2", "t3") 
+            "default": Rename(Embed("a"), "t2", "t3") 
         });
 
         testHasTapes(grammar, ["t1", "t3"]);
-        testGrammar(grammar, [{t1: "hi", t3: "world"}], SILENT, "b");
+        testGrammar(grammar, [{t1: "hi", t3: "world"}]);
     });
     
     /*

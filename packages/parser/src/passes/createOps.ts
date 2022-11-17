@@ -1,18 +1,19 @@
 import { 
-    ReplaceOp, BINARY_OPS_MAP, 
-    BinaryOp, ErrorOp, 
+    ReplaceOp, 
     ReplaceTapeOp, TableOp, 
     TestNotOp, TestOp, 
-    SymbolOp 
+    SymbolOp, 
+    OrOp,
+    JoinOp
 } from "../ops";
 import { result, Result } from "../msgs";
 import { PassEnv } from "../passes";
 import { 
     TstOp, 
-    TstEmpty, TstUnitTest, 
-    TstTable, TstNegativeUnitTest, 
+    TstEmpty, TstTest, 
+    TstTable, TstTestNot, 
     TstReplace, TstReplaceTape, 
-    TstBinaryOp, TstAssignment, TstParamList
+    TstOr, TstAssignment, TstParamList, TstJoin
 } from "../tsts";
 import { Component, CPass, CResult } from "../components";
 
@@ -41,8 +42,10 @@ import { Component, CPass, CResult } from "../components";
                     return this.handleReplace(t);
                 case ReplaceTapeOp:
                     return this.handleReplaceTape(t);
-                case BinaryOp:
-                    return this.handleBinary(t);
+                case OrOp:
+                    return this.handleOr(t);
+                case JoinOp:
+                    return this.handleJoin(t);
                 case SymbolOp:
                     return this.handleAssignment(t);
                 default: 
@@ -56,12 +59,12 @@ import { Component, CPass, CResult } from "../components";
     }
 
     public handleTest(t: TstOp): CResult {
-        return new TstUnitTest(t.cell, t.sibling, 
+        return new TstTest(t.cell, t.sibling, 
                     t.child as TstParamList).msg();  
     }
 
     public handleTestNot(t: TstOp): CResult {
-        return new TstNegativeUnitTest(t.cell, t.sibling, 
+        return new TstTestNot(t.cell, t.sibling, 
                     t.child as TstParamList).msg();
     }
     
@@ -76,20 +79,19 @@ import { Component, CPass, CResult } from "../components";
                     t.sibling, t.child as TstParamList).msg();
     }
     
-    public handleBinary(t: TstOp): CResult {
-        const opName = (t.op as BinaryOp).text;
-        return new TstBinaryOp(t.cell, opName, 
-                        t.sibling, t.child).msg();
+    public handleOr(t: TstOp): CResult {
+        return new TstOr(t.cell, t.sibling, t.child).msg();
+    }
+    
+    public handleJoin(t: TstOp): CResult {
+        return new TstJoin(t.cell, t.sibling, t.child).msg();
     }
 
     public handleAssignment(t: TstOp): CResult {
-        const trimmedText = t.text.endsWith(":")
-                          ? t.text.slice(0, t.text.length-1).trim()
-                          : t.text;
+        const op = t.op as SymbolOp;
+        const assignment = new TstAssignment(t.cell, op.text, t.child);
 
-        const assignment = new TstAssignment(t.cell, trimmedText, t.child);
-
-        if (trimmedText.indexOf(".") != -1) {
+        if (op.text.indexOf(".") != -1) {
             return result(assignment).warn("You can't assign to a name that contains a period.")
                                      .bind(r => r.child)
         }

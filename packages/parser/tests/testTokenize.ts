@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { testTokenize } from './testUtils';
+import { testTokenize } from './testUtil';
 
 describe(`${path.basename(module.filename)}`, function() {
 

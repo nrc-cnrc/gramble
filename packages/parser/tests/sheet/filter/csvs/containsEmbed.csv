@@ -1,0 +1,16 @@
+
+verb:, table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+suffix:, table:, text, gloss/subj
+    ,       , bar, [1SG.SUBJ]
+    ,       , baz, [2SG.SUBJ]
+    ,       ,    , [3SG.SUBJ]
+
+cond:, table:, subj
+    ,       , 2
+    ,       , 3
+
+default:, table:, embed, embed, contains embed
+    ,       , verb, suffix, cond

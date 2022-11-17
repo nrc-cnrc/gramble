@@ -16,7 +16,7 @@ import { Component, CPass, CResult } from "../components";
  * the structural parameters (i.e. .sibling and .child) that they
  * need to be interpreted, and also ensures that these are the
  * right types (e.g., that they're grids when they need to be 
- * grids, types when they need to be types, that they're not
+ * grids, op when they need to be op, that they're not
  * assignments, etc.)
  */
 

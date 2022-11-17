@@ -1,11 +1,13 @@
 import { 
     TstAssignment,
-    TstBinary, TstBinaryOp,
+    TstBinary, TstOr,
     TstEmpty, 
     TstFilter, TstHeaderContentPair, 
-    TstHide, TstNamespace, TstNegativeUnitTest, TstRename, 
+    TstHide, TstCollection, 
+    TstTestNot, TstRename, 
     TstReplace, 
-    TstReplaceTape, TstSequence, TstTable, TstUnitTest 
+    TstReplaceTape, TstSequence, 
+    TstTable, TstTest, TstJoin 
 } from "../tsts";
 import { Component } from "../components";
 import { Pass, PassEnv } from "../passes";
@@ -13,14 +15,15 @@ import {
     AlternationGrammar,
     EpsilonGrammar, EqualsGrammar, 
     Grammar, GrammarResult, 
-    HideGrammar, JoinReplaceGrammar, JoinRuleGrammar, LocatorGrammar, 
-    NegativeUnitTestGrammar, 
-    NsGrammar, 
-    RenameGrammar, ReplaceGrammar, SequenceGrammar, UnitTestGrammar
+    HideGrammar, JoinReplaceGrammar, 
+    JoinRuleGrammar, LocatorGrammar, 
+    TestNotGrammar, 
+    CollectionGrammar, 
+    RenameGrammar, ReplaceGrammar, SequenceGrammar, TestGrammar, JoinGrammar
 } from "../grammars";
 import { TapeNameHeader } from "../headers";
-import { Err, Msgs, resultList, Warn } from "../msgs";
-import { BINARY_OPS_MAP, BLANK_PARAM } from "../ops";
+import { Err, Msgs, resultList } from "../msgs";
+import { BLANK_PARAM } from "../ops";
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -32,7 +35,7 @@ import { BINARY_OPS_MAP, BLANK_PARAM } from "../ops";
 export class CreateGrammars extends Pass<Component,Grammar> {
 
     public get desc(): string {
-        return "Creating TST";
+        return "Creating grammar objects";
     }
 
     public transform(t: Component, env: PassEnv): GrammarResult {
@@ -48,26 +51,26 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                 return this.handleFilter(t as TstFilter, env);
             case TstEmpty:
                 return this.handleEmpty(t as TstEmpty, env);
-            case TstBinary:
-                return this.handleBinary(t as TstBinary, env);
             case TstTable:
                 return this.handleTable(t as TstTable, env);
-            case TstBinaryOp:
-                return this.handleBinaryOp(t as TstBinaryOp, env);
+            case TstOr:
+                return this.handleOr(t as TstOr, env);
+            case TstJoin:
+                return this.handleJoin(t as TstJoin, env);
             case TstReplace:
                 return this.handleReplace(t as TstReplace, env);
             case TstReplaceTape:
                 return this.handleReplaceTape(t as TstReplaceTape, env);
-            case TstUnitTest:
-                return this.handleTest(t as TstUnitTest, env);
-            case TstNegativeUnitTest:
-                return this.handleNegativeTest(t as TstNegativeUnitTest, env);
+            case TstTest:
+                return this.handleTest(t as TstTest, env);
+            case TstTestNot:
+                return this.handleNegativeTest(t as TstTestNot, env);
             case TstSequence:
                 return this.handleSequence(t as TstSequence, env);
             case TstAssignment:
                 return this.handleAssignment(t as TstAssignment, env);
-            case TstNamespace:
-                return this.handleNamespace(t as TstNamespace, env);
+            case TstCollection:
+                return this.handleCollection(t as TstCollection, env);
             default: 
                 throw new Error(`unhandled ${t.constructor.name}`);
         }
@@ -114,15 +117,6 @@ export class CreateGrammars extends Pass<Component,Grammar> {
         return new EpsilonGrammar().msg();
     }
 
-    public handleBinary(t: TstBinary, env: PassEnv): GrammarResult {
-        // we only ever end up in this base EncloseComponent compile if it wasn't
-        // a known operator.  this is an error, but we flag it for the programmer
-        // elsewhere.
-        return resultList([t.sibling, t.child])
-                    .map(c => this.transform(c, env))
-                    .bind(([s,c]) => new LocatorGrammar(t.cell.pos, s));
-    }
-
     public handleTable(t: TstTable, env: PassEnv): GrammarResult {
         return resultList(t.child.rows)
                   .map(r => r.getParam(BLANK_PARAM))
@@ -131,12 +125,20 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                   .bind(c => new LocatorGrammar(t.cell.pos, c))
     }
     
-    public handleBinaryOp(t: TstBinaryOp, env: PassEnv): GrammarResult {
-        const op = BINARY_OPS_MAP[t.opName];
+    public handleOr(t: TstOr, env: PassEnv): GrammarResult {
         return resultList([t.sibling, t.child])
                     .map(c => this.transform(c, env))
-                    .bind(([s,c]) => op(s,c));
+                    .bind(cs => new AlternationGrammar(cs))
+                    .bind(c => new LocatorGrammar(t.cell.pos, c));
     }
+    
+    public handleJoin(t: TstJoin, env: PassEnv): GrammarResult {
+        return resultList([t.sibling, t.child])
+                    .map(c => this.transform(c, env))
+                    .bind(([c,s]) => new JoinGrammar(c, s))
+                    .bind(c => new LocatorGrammar(t.cell.pos, c));
+    }
+    
     
     public handleReplaceTape(t: TstReplaceTape, env: PassEnv): GrammarResult {
 
@@ -190,7 +192,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     }
 
     
-    public handleTest(t: TstUnitTest, env: PassEnv): GrammarResult {
+    public handleTest(t: TstTest, env: PassEnv): GrammarResult {
         let result = this.transform(t.sibling, env);
 
         const msgs: Msgs = [];
@@ -198,7 +200,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
             const testInputs = this.transform(params.getParam(BLANK_PARAM), env).msgTo(msgs);
             const unique = this.transform(params.getParam("unique"), env).msgTo(msgs);
             const uniqueLiterals = unique.getLiterals();
-            result = result.bind(c => new UnitTestGrammar(c, testInputs, uniqueLiterals))
+            result = result.bind(c => new TestGrammar(c, testInputs, uniqueLiterals))
                            .bind(c => new LocatorGrammar(params.pos, c));
         }
 
@@ -206,13 +208,13 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                      .bind(c => new LocatorGrammar(t.cell.pos, c));
     }
     
-    public handleNegativeTest(t: TstNegativeUnitTest, env: PassEnv): GrammarResult {
+    public handleNegativeTest(t: TstTestNot, env: PassEnv): GrammarResult {
         let result = this.transform(t.sibling, env);
 
         const msgs: Msgs = [];
         for (const params of t.child.rows) {
             const testInputs = this.transform(params.getParam(BLANK_PARAM), env).msgTo(msgs);
-            result = result.bind(c => new NegativeUnitTestGrammar(c, testInputs))
+            result = result.bind(c => new TestNotGrammar(c, testInputs))
                            .bind(c => new LocatorGrammar(params.pos, c));
         }
         
@@ -230,37 +232,31 @@ export class CreateGrammars extends Pass<Component,Grammar> {
         return this.transform(t.child, env);
     }
 
-    
-    public handleNamespace(t: TstNamespace, env: PassEnv): GrammarResult {
-        const ns = new NsGrammar();
+    public handleCollection(t: TstCollection, env: PassEnv): GrammarResult {
+        const newColl = new CollectionGrammar();
         const msgs: Msgs = [];
-        for (let i = 0; i < t.children.length; i++) {
-            const child = t.children[i];
-            const isLastChild = i == t.children.length - 1;
+
+        for (const child of t.children) {
+
             const grammar = this.transform(child, env).msgTo(msgs);
-            if (!(child instanceof TstAssignment) && !isLastChild) {
-                // warn that the child isn't going to be assigned to anything
-                Warn(
-                    "This content doesn't end up being assigned to anything and will be ignored.", 
-                    child.pos).msgTo(msgs);
-                continue;
+            if (!(child instanceof TstAssignment)) {
+                // at this point, all non-assignment children
+                // of collections should have been wrapped in assignments
+                throw new Error(`non-assignment child of collection: ${child.constructor.name}`);
             }
 
-            if (child instanceof TstAssignment) {
-                const referent = ns.getSymbol(child.name);
-                if (referent != undefined) {
-                    // we're reassigning an existing symbol!
-                    Err('Reassigning existing symbol', 
-                        `The symbol ${child.name} already refers to another grammar above.`,
-                        child.pos).msgTo(msgs);
-                    continue;
-                }     
-                ns.addSymbol(child.name, grammar);
-            } else if (isLastChild) {
-                ns.addSymbol("", grammar);
-            }
-            
+            const existingReferent = newColl.getSymbol(child.name);
+            if (existingReferent != undefined) {
+                // we're reassigning an existing symbol!
+                Err('Reassigning existing symbol', 
+                    `The symbol ${child.name} already refers to another grammar above.`,
+                    child.pos).msgTo(msgs);
+                continue;
+            }     
+            newColl.symbols[child.name] = grammar;
         }
-        return ns.msg(msgs);
+
+        return newColl.msg(msgs)
+                      .bind(c => new LocatorGrammar(t.pos, c));
     }
 }

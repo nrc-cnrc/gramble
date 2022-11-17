@@ -8,7 +8,7 @@ import {
     t1, t2,
     testHasTapes, testGrammar, testHasVocab,
     WARN_ONLY_FOR_TOO_MANY_OUTPUTS
-} from './testUtils';
+} from './testUtil';
 import { VERBOSE_DEBUG, StringDict } from "../src/util";
 
 import * as path from 'path';

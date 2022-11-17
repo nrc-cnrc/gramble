@@ -43,22 +43,14 @@ const RESERVED_HEADERS = new Set([
     ...TEST_PARAMS
 ]);
 
-
-export const BINARY_OPS_MAP: {[opName: string]: (c1: Grammar, c2: Grammar) => Grammar;} = {
-    "or": (c1, c2) => new AlternationGrammar([c1, c2]),
-    "concat": (c1, c2) => new SequenceGrammar([c1, c2]),
-    "join": (c1, c2) => new JoinGrammar(c1, c2),
-}
-
-const BINARY_OPS = new Set(Object.keys(BINARY_OPS_MAP));
-
 const RESERVED_OPS: Set<string> = new Set([
     "table", 
     "test", 
     "testnot",
     "replace",
-    "namespace",
-    ...BINARY_OPS
+    "collection",
+    "join",
+    "or"
 ]);
 
 export const RESERVED_WORDS = new Set([
@@ -126,7 +118,7 @@ export class TableOp extends Op {
     }
 }
 
-export class NamespaceOp extends Op { }
+export class CollectionOp extends Op { }
 
 export abstract class SpecialOp extends Op {
 
@@ -197,18 +189,14 @@ export class ReplaceTapeOp extends SpecialOp {
 
 }
 
-export class BinaryOp extends Op {
-    
-    constructor(
-        public text: string
-    ) { 
-        super();
-    }
-
+class BinaryOp extends Op {
     public get siblingReq(): Requirement {
         return "required";
     }
 }
+
+export class OrOp extends BinaryOp { }
+export class JoinOp extends BinaryOp { }
 
 /**
  * This is an op that holds any string that's not a reserved
@@ -244,9 +232,9 @@ const OP_TABLE = MPSequence<Op>(
     () => new TableOp()
 );
 
-const OP_NAMESPACE = MPSequence<Op>(
-    ["namespace"],
-    () => new NamespaceOp()
+const OP_COLLECTION = MPSequence<Op>(
+    ["collection"],
+    () => new CollectionOp()
 );
 
 const OP_TEST = MPSequence<Op>(
@@ -298,17 +286,22 @@ const OP_REPLACE_ERROR = MPSequence<Op>(
     }
 );
 
-const OP_BINARY = MPReserved<Op>(
-    BINARY_OPS, 
-    (s) => new BinaryOp(s)
+const OP_OR = MPSequence<Op>(
+    ["or"], 
+    () => new OrOp()
+);
+
+const OP_JOIN = MPSequence<Op>(
+    ["join"], 
+    () => new JoinOp()
 );
 
 const OP_EXPR: MPParser<Op> = MPAlternation(
-    OP_TABLE, OP_NAMESPACE,
+    OP_TABLE, OP_COLLECTION,
     OP_TEST, OP_TESTNOT,
     OP_REPLACE, 
     OP_REPLACE_TAPE, OP_REPLACE_ERROR,
-    OP_BINARY,
+    OP_OR, OP_JOIN,
     OP_UNRESERVED, OP_RESERVED_HEADER
 );
 
@@ -318,7 +311,7 @@ const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
 )
 
 export function parseOp(text: string): Op {
-    const trimmedText = text.trim().toLowerCase();
+    const trimmedText = text.trim();
     const results = miniParse(tokenize, OP_EXPR_WITH_COLON, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error

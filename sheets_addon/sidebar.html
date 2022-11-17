@@ -162,8 +162,6 @@
                 
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
                 project = gramble.Interpreter.fromSheet(devEnv, currentSheetName, gramble.VERBOSE_TIME);
-                //project.runChecks();
-                //project.runUnitTests();
 
                 createErrorButtons(devEnv.errorMsgs, currentSheetName);
                 reloadSymbols(currentSheetName);
@@ -186,13 +184,13 @@
                 resultsTable.style.visibility = "visible";
             }
 
-            function runUnitTests() {
+            function runTests() {
 
                 if (project == undefined) {
                     throw new Error("Trying to reload symbols without a project");
                 }
 
-                project.runUnitTests();
+                project.runTests();
                 createErrorButtons(devEnv.errorMsgs, currentSheetName);
 
             }
@@ -242,7 +240,19 @@
                 let options = project.allSymbols();
 
                 for (const option of options) {
+
+                    // there's always a symbol called "", but it's always a dup of
+                    // another symbol, and it's confusing to see it in the interface
                     if (option == "") {
+                        continue;
+                    }
+
+                    // if the symbol is <Anything>.Default, there will be another
+                    // symbol with the same semantics but without the .Default, so 
+                    // leave it out
+                    const pieces = option.split(".");
+                    const isDefault = pieces[pieces.length-1].toLowerCase() == "default";
+                    if (isDefault) {
                         continue;
                     }
                     

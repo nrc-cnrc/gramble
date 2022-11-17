@@ -1,0 +1,6 @@
+suffix:, table:, text, gloss
+    ,       , bar, -1SG
+    ,       , baz, -2SG
+
+default:, table:, embed, embed
+    ,       , externalRefCycle.verb, suffix 

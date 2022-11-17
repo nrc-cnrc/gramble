@@ -8,10 +8,10 @@ import {
     constructLiteral, constructMatchFrom, constructCharSet,
     constructDotRep, constructCount, constructCountTape,
     constructPriority, EpsilonExpr, constructShort,
+    constructEpsilonLiteral, 
+    constructPrecede, constructMatchCount, constructPreTape,
     constructNotContains, constructParallel, 
-    DerivEnv, ExprNamespace, 
-    constructSymbolNs, constructEpsilonLiteral, 
-    constructPrecede, constructMatchCount, constructPreTape
+    DerivEnv, ExprNamespace, constructCollection
 } from "./exprs";
 import { Msg, Msgs, result, Result, resultDict, resultList } from "./msgs";
 
@@ -26,18 +26,18 @@ import { Pass, PassEnv } from "./passes";
 
 import {
     CellPos,
+    DEFAULT_SYMBOL_NAME,
     Dict,
     flatten,
     HIDDEN_TAPE_PREFIX,
     listDifference,
     listIntersection,
     listUnique,
-    Namespace,
     setUnion,
     StringDict,
     StringSet,
-    sum,
-    tokenizeUnicode
+    tokenizeUnicode,
+    ValueSet
 } from "./util";
 
 import { GenOptions } from "./util";
@@ -50,14 +50,14 @@ type TapeClass = {
     concatenable: boolean
 };
 
+type StringPair = [string, string];
+class StringPairSet extends ValueSet<StringPair> { }
+
 export class GrammarResult extends Result<Grammar> { }
 
 export abstract class GrammarPass extends Pass<Grammar,Grammar> { 
 
     public transformRoot(g: Grammar, env: PassEnv): GrammarResult {
-        if (!(g instanceof NsGrammar)) {
-            throw new Error(`${this.constructor.name} requires an NsGrammar root`);
-        }
         g.calculateTapes(new CounterStack(2), env);
         return this.transform(g, env);
     }
@@ -83,7 +83,7 @@ export abstract class GrammarPass extends Pass<Grammar,Grammar> {
  * 
  *   * qualifying and resolving symbol names (e.g., figuring out that
  *     a particular reference to VERB refers to, say, the VERB symbol in the
- *     IntransitiveVerbs namespace, and qualifying that reference so that it
+ *     IntransitiveVerbs collection, and qualifying that reference so that it
  *     uniquely identifies that symbol (e.g. "IntransitiveVerb.VERB")
  * 
  *   * working out what tapes a particular component refers to.  This is 
@@ -121,7 +121,6 @@ export abstract class Grammar extends Component {
     }
     
     protected _tapes: string[] | undefined = undefined;
-    public concatenableTapes: StringSet = new Set(); 
 
     public get tapes(): string[] {
         if (this._tapes == undefined) {
@@ -170,7 +169,7 @@ export abstract class Grammar extends Component {
     ): string[] {
         const tapeNames = this.calculateTapes(new CounterStack(2), env);
         const priorities: [string, number][] = tapeNames.map(t => {
-            const joinWeight = this.getTapePriority(t, new Set(), env);
+            const joinWeight = this.getTapePriority(t, new StringPairSet(), env);
             const tape = tapeNS.get(t);
             const priority = joinWeight * tape.vocabSize;
             return [t, priority];
@@ -182,7 +181,7 @@ export abstract class Grammar extends Component {
     
     public getTapePriority(
         tapeName: string,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): number {
         const priorities: number[] = [0];
@@ -204,11 +203,9 @@ export abstract class Grammar extends Component {
         tapeNS: TapeNamespace,
         env: PassEnv
     ): void {
-        // In all current invocations of this, calculateTapes has already been called.
-        // But it memoizes, so there's no harm in calling it again for safety.
         const tapeNames = this.calculateTapes(new CounterStack(2), env);
         for (const tapeName of tapeNames) {
-            const tapeInfo = this.getTapeClass(tapeName, new Set(), env);
+            const tapeInfo = this.getTapeClass(tapeName, new ValueSet(), env);
             const atomic = !tapeInfo.joinable || !tapeInfo.concatenable;
             let tape = tapeNS.attemptGet(tapeName);
             if (tape == undefined) {
@@ -217,17 +214,17 @@ export abstract class Grammar extends Component {
                 tapeNS.set(tapeName, tape);
             }
             tape.atomic = atomic;
-            const strs = this.collectVocab(tapeName, atomic, new Set(), env);
+            const strs = this.collectVocab(tapeName, atomic, new StringPairSet(), env);
             tape.registerTokens([...strs]);
         }
 
-        const vocabCopyEdges: [string, string][] = [];
+        const vocabCopyEdges = new StringPairSet();
         for (const tapeName of tapeNames) {
-            const edges = this.getVocabCopyEdges(tapeName, tapeNS, new Set(), env);
-            vocabCopyEdges.push(...edges);
+            const edges = this.getVocabCopyEdges(tapeName, 
+                tapeNS, new StringPairSet(), env);
+            vocabCopyEdges.add(...edges);
         }
         
-
         let dirty: boolean = true;
         while (dirty) {
             dirty = false;
@@ -244,7 +241,7 @@ export abstract class Grammar extends Component {
     
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         let result: TapeClass = { joinable: false, concatenable: false };
@@ -259,7 +256,7 @@ export abstract class Grammar extends Component {
     public collectVocab(
         tapeName: string,
         atomic: boolean,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringSet { 
         let vocab: StringSet = new Set();
@@ -273,12 +270,12 @@ export abstract class Grammar extends Component {
     public getVocabCopyEdges(
         tapeName: string,
         tapeNS: TapeNamespace,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
-    ): [string, string][] {
-        const results: [string, string][] = [];
+    ): StringPairSet {
+        const results = new StringPairSet();
         for (const child of this.getChildren()) {
-            results.push(...child.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env));
+            results.add(...child.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env));
         }
         return results;
     }
@@ -294,29 +291,10 @@ export abstract class Grammar extends Component {
         return this._tapes;
     }
 
-    /*public getAllTapes(): TapeNamespace {
-        const tapes = new TapeNamespace();
-        const vocab = new VocabMap();
-        const env = new PassEnv();
-        this.collectAllVocab(vocab, tapes, env);
-        return tapes;
-    } */
-
     public abstract constructExpr(
         tapeNS: TapeNamespace,
         symbols: ExprNamespace
     ): Expr;
-
-    public getSymbol(name: string): Grammar | undefined {
-        if (name == "") {
-            return this;
-        }
-        return undefined;
-    }
-
-    public getDefaultSymbol(): Grammar {
-        return this;
-    }
     
     public allSymbols(): string[] {
         return [];
@@ -410,7 +388,7 @@ export class CharSetGrammar extends AtomicGrammar {
     
     public getTapePriority(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): number {
         return (tapeName == this.tapeName) ? 1 : 0;
@@ -426,7 +404,7 @@ export class CharSetGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         atomic: boolean,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringSet { 
         if (tapeName != this.tapeName) {
@@ -504,7 +482,7 @@ export class LiteralGrammar extends AtomicGrammar {
 
     public getTapePriority(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): number {
         return (tapeName == this.tapeName) ? 1 : 0;
@@ -513,7 +491,7 @@ export class LiteralGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         atomic: boolean,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringSet { 
         if (tapeName != this.tapeName) {
@@ -560,7 +538,7 @@ export class DotGrammar extends AtomicGrammar {
     
     public getTapePriority(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): number {
         return (tapeName == this.tapeName) ? 1 : 0;
@@ -568,7 +546,7 @@ export class DotGrammar extends AtomicGrammar {
     
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         if (tapeName == this.tapeName) {
@@ -630,7 +608,7 @@ export class ParallelGrammar extends NAryGrammar {
         tapeNS: TapeNamespace,
         symbols: ExprNamespace
     ): Expr {
-        const childExprs: {[tapeName: string]: Expr} = {};
+        const childExprs: Dict<Expr> = {};
         for (const child of this.children) {
             if (child.tapes.length != 1) {
                 throw new Error(`Each child of par must have 1 tape`);
@@ -665,7 +643,7 @@ export class SequenceGrammar extends NAryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet, 
+        symbolsVisited: StringPairSet, 
         env: PassEnv
     ): TapeClass {
         const result = super.getTapeClass(tapeName, symbolsVisited, env);
@@ -770,7 +748,7 @@ abstract class BinaryGrammar extends Grammar {
     
     public getTapePriority(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): number {
         const c1priority = this.child1.getTapePriority(tapeName, symbolsVisited, env);
@@ -793,7 +771,7 @@ export class ShortGrammar extends UnaryGrammar {
     
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         const ts = new Set(this.tapes);
@@ -827,7 +805,7 @@ export class IntersectionGrammar extends BinaryGrammar {
     
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         const result = super.getTapeClass(tapeName, symbolsVisited, env);
@@ -888,7 +866,7 @@ export class JoinGrammar extends BinaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         const result = super.getTapeClass(tapeName, symbolsVisited, env);
@@ -944,7 +922,7 @@ export class EqualsGrammar extends BinaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         const result = super.getTapeClass(tapeName, symbolsVisited, env);
@@ -1021,7 +999,7 @@ export class CountTapeGrammar extends UnaryGrammar {
 
     constructor(
         child: Grammar,
-        public maxChars: number | {[tape: string]: number}
+        public maxChars: number | Dict<number>
     ) {
         super(child);
     }
@@ -1051,7 +1029,7 @@ export class CountTapeGrammar extends UnaryGrammar {
         tapeNS: TapeNamespace,
         symbols: ExprNamespace
     ): Expr {
-        let maxCharsDict: {[tape: string]: number} = {};
+        let maxCharsDict: Dict<number> = {};
         if (typeof this.maxChars == 'number') {
             for (const tape of this.tapes) {
                 maxCharsDict[tape] = this.maxChars;
@@ -1176,7 +1154,7 @@ export class RenameGrammar extends UnaryGrammar {
 
     public getTapePriority(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): number {
         if (tapeName != this.toTape && tapeName == this.fromTape) {
@@ -1189,7 +1167,7 @@ export class RenameGrammar extends UnaryGrammar {
     
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         if (tapeName != this.toTape && tapeName == this.fromTape) {
@@ -1203,7 +1181,7 @@ export class RenameGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         atomic: boolean,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringSet { 
         if (tapeName != this.toTape && tapeName == this.fromTape) {
@@ -1217,9 +1195,9 @@ export class RenameGrammar extends UnaryGrammar {
     public getVocabCopyEdges(
         tapeName: string,
         tapeNS: TapeNamespace,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
-    ): [string, string][] {
+    ): StringPairSet {
         const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
         const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
         return this.child.getVocabCopyEdges(newTapeName, newTapeNS, symbolsVisited, env);
@@ -1269,7 +1247,7 @@ export class RepeatGrammar extends UnaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         const result = this.child.getTapeClass(tapeName, symbolsVisited, env);
@@ -1319,7 +1297,7 @@ export class NegationGrammar extends UnaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         const ts = new Set(this.tapes);
@@ -1366,7 +1344,7 @@ export class PreTapeGrammar extends UnaryGrammar {
 
     public getTapePriority(
         tapeName: string,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): number {
         if (tapeName == this.fromTape) {
@@ -1411,7 +1389,7 @@ export class HideGrammar extends UnaryGrammar {
     
     public getTapePriority(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): number {
         if (tapeName != this.toTape && tapeName == this.tapeName) {
@@ -1423,7 +1401,7 @@ export class HideGrammar extends UnaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         if (tapeName != this.toTape && tapeName == this.tapeName) {
@@ -1436,7 +1414,7 @@ export class HideGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         atomic: boolean,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringSet { 
         if (tapeName != this.toTape && tapeName == this.tapeName) {
@@ -1449,9 +1427,9 @@ export class HideGrammar extends UnaryGrammar {
     public getVocabCopyEdges(
         tapeName: string,
         tapeNS: TapeNamespace,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
-    ): [string, string][] {
+    ): StringPairSet {
         const newTapeName = renameTape(tapeName, this.toTape, this.tapeName);
         const newTapeNS = tapeNS.rename(this.toTape, this.tapeName);
         return this.child.getVocabCopyEdges(newTapeName, newTapeNS, symbolsVisited, env);
@@ -1504,7 +1482,7 @@ export class MatchFromGrammar extends UnaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         if (tapeName == this.fromTape || tapeName == this.toTape) {
@@ -1532,7 +1510,7 @@ export class MatchFromGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         atomic: boolean,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringSet { 
         // collect from the child as-is
@@ -1552,13 +1530,12 @@ export class MatchFromGrammar extends UnaryGrammar {
     public getVocabCopyEdges(
         tapeName: string,
         tapeNS: TapeNamespace,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
-    ): [string, string][] {
+    ): StringPairSet {
         const results = super.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env);
         if (this.vocabBypass && tapeName == this.fromTape) {    
-            results.push([this.fromTape, this.toTape]);
-            //results.push([this.toTape, this.fromTape]);
+            results.add([this.fromTape, this.toTape]);
         }
         return results;
     }
@@ -1589,7 +1566,7 @@ export class MatchGrammar extends UnaryGrammar {
 
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         if (this.relevantTapes.has(tapeName)) {
@@ -1623,7 +1600,7 @@ export class TapeNsGrammar extends UnaryGrammar {
         child: Grammar,
         public vocab: VocabMap = new VocabMap(),
         public tapeDict: Dict<Tape> = {},
-        public vocabEdges: [string, string][] = []
+        public vocabEdges: StringPairSet = new StringPairSet()
     ) {
         super(child);
     }
@@ -1646,7 +1623,7 @@ export class TapeNsGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         atomic: boolean,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringSet { 
         return new Set();
@@ -1655,9 +1632,9 @@ export class TapeNsGrammar extends UnaryGrammar {
     public getVocabCopyEdges(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: StringSet, 
+        symbolsVisited: StringPairSet, 
         env: PassEnv
-    ): [string, string][] {
+    ): StringPairSet {
         return this.vocabEdges;
     }
 
@@ -1671,10 +1648,11 @@ export class TapeNsGrammar extends UnaryGrammar {
 
 }
 
-export class NsGrammar extends Grammar {
+export class CollectionGrammar extends Grammar {
 
     constructor(
         public symbols: Dict<Grammar> = {},
+        //public aliases: Dict<string> = {},
         public selectedSymbol: string = ""
     ) {
         super();
@@ -1684,15 +1662,20 @@ export class NsGrammar extends Grammar {
         const newEnv = env.pushSymbols(this.symbols);
         const result = resultDict(this.symbols)
                 .map(c => f.transform(c, newEnv))
-                .bind(cs => new NsGrammar(cs as Dict<Grammar>, this.selectedSymbol));
+                .bind(cs => new CollectionGrammar(cs as Dict<Grammar>, 
+                                        //this.aliases, 
+                                        this.selectedSymbol));
         return result;
     }
 
-    public selectSymbol(symbolName: string): NsGrammar {
-        if (!(symbolName in this.symbols)) {
-            throw new Error("cannot find symbol ${symbolName}");
+    public selectSymbol(symbolName: string): CollectionGrammar {
+        const referent = this.getSymbol(symbolName);
+        if (referent == undefined) {
+            throw new Error(`cannot find symbol ${symbolName}, candidates are ${Object.keys(this.symbols)}`);
         }
-        return new NsGrammar(this.symbols, symbolName);
+        return new CollectionGrammar(this.symbols, 
+                            //this.aliases, 
+                            symbolName);
     }
 
     public get id(): string {
@@ -1712,110 +1695,24 @@ export class NsGrammar extends Grammar {
             c => c.potentiallyInfinite(stack, newEnv));
     }
 
-    public addSymbol(symbolName: string, g: Grammar): void {
-        this.symbols[symbolName] = g;
-    }
-
-    public getDefaultSymbol(): Grammar {
-        const size = Object.values(this.symbols).length;
-        if (size == 0) {
-            return new EpsilonGrammar();
-        }
-        return Object.values(this.symbols)[size-1].getDefaultSymbol();
-    }
-
-    public getSymbol(symbolName: string): Grammar | undefined {
-
-        if (symbolName == "") {
-            return this.getDefaultSymbol();
-        }
-
-        const result = this.resolveNameLocal(symbolName);
-        if (result == undefined) {
-            return undefined;
-        }
-
-        const [name, referent] = result;
-        return referent;
-        
-    }
-
     public allSymbols(): string[] {
         return Object.keys(this.symbols);
     }
 
     public getChildren(): Grammar[] { 
-        const results: Grammar[] = [];
-        for (const [name, referent] of Object.entries(this.symbols)) {
-            if (results.indexOf(referent) == -1) {
-                results.push(referent);
-            }
-        }
-        return results;
-    }
-
-    public calculateQualifiedName(name: string, nsStack: string[]): string {
-        const pieces = [...nsStack, name].filter(s => s.length > 0);
-        return pieces.join(".");
+        return Object.values(this.symbols);
     }
 
     /**
-     * Looks up an unqualified name in this namespace's symbol table,
-     * case-insensitive.
+     * Looks up a symbol name and returns the referent (if any) 
      */
-    public resolveNameLocal(name: string): [string, Grammar] | undefined {
+    public getSymbol(name: string): Grammar | undefined {
         for (const symbolName of Object.keys(this.symbols)) {
             if (name.toLowerCase() == symbolName.toLowerCase()) {
-                const referent = this.symbols[symbolName];
-                if (referent == undefined) { return undefined; } // can't happen, just for linting
-                return [symbolName, referent];
+                return this.symbols[symbolName];
             }
         }
         return undefined;
-    }
-
-    public resolveName(
-        unqualifiedName: string, 
-        nsStack: string[]
-    ): [string, Grammar] | undefined {
-
-        // split into (potentially) namespace prefix(es) and symbol name
-        const namePieces = unqualifiedName.split(".");
-
-        // it's got no namespace prefix, it's a symbol name
-        if (namePieces.length == 1) {
-
-            const localResult = this.resolveNameLocal(unqualifiedName);
-
-            if (localResult == undefined) {
-                // it's not a symbol assigned in this namespace
-                return undefined;
-            }
-            
-            // it IS a symbol defined in this namespace,
-            // so get the fully-qualified name.
-            const [localName, referent] = localResult;
-            const newName = this.calculateQualifiedName(localName, nsStack);
-            return [newName, referent.getDefaultSymbol()];
-        }
-
-        // it's got a namespace prefix
-        const child = this.resolveNameLocal(namePieces[0]);
-        if (child == undefined) {
-            // but it's not a child of this namespace
-            return undefined;
-        }
-
-        const [localName, referent] = child;
-        if (!(referent instanceof NsGrammar)) {
-            // if symbol X isn't a namespace, "X.Y" can't refer to anything real
-            return undefined;
-        }
-
-        // this namespace has a child of the correct name
-        const remnant = namePieces.slice(1).join(".");
-        const newStack = [ ...nsStack, localName ];
-        return referent.resolveName(remnant, newStack);  // try the child
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
@@ -1834,7 +1731,7 @@ export class NsGrammar extends Grammar {
     public collectVocab(
         tapeName: string,
         atomic: boolean,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringSet { 
         let vocab: StringSet = new Set();
@@ -1848,7 +1745,7 @@ export class NsGrammar extends Grammar {
 
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet, 
+        symbolsVisited: StringPairSet, 
         env: PassEnv
     ): TapeClass {
         const newEnv = env.pushSymbols(this.symbols);
@@ -1858,9 +1755,9 @@ export class NsGrammar extends Grammar {
     public getVocabCopyEdges(
         tapeName: string,
         tapeNS: TapeNamespace, 
-        symbolsVisited: StringSet, 
+        symbolsVisited: StringPairSet, 
         env: PassEnv
-    ): [string, string][] {
+    ): StringPairSet {
         const newEnv = env.pushSymbols(this.symbols);
         return super.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, newEnv);    
     }
@@ -1870,19 +1767,16 @@ export class NsGrammar extends Grammar {
         symbols: ExprNamespace
     ): Expr {
         let newSymbols: Dict<Expr> = {};
+        let selectedExpr: Expr = EPSILON;
         const newSymbolNS = symbols.push(newSymbols);
         for (const [name, referent] of Object.entries(this.symbols)) {
-            if (name in newSymbols) {
-                continue;  // don't bother, it won't have changed.
-            }
             let expr = referent.constructExpr(tapeNS, newSymbolNS);
             newSymbols[name] = expr;
+            if (name.toLowerCase() == this.selectedSymbol.toLowerCase()) {
+                selectedExpr = expr;
+            }
         }
-        if (!(this.selectedSymbol in newSymbols)) {
-            throw new Error(`cannot find symbol ${this.selectedSymbol}`);
-        }
-        const result = newSymbols[this.selectedSymbol];
-        return constructSymbolNs(result, newSymbols);
+        return constructCollection(selectedExpr, newSymbols);
     }
 }
 
@@ -1930,31 +1824,29 @@ export class EmbedGrammar extends AtomicGrammar {
     
     public getTapePriority(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): number {
-        const key = `${this.name}__${tapeName}`
-        if (symbolsVisited.has(key)) { 
+        if (symbolsVisited.has([this.name, tapeName])) { 
             return 0;
         }
-        symbolsVisited.add(key);
+        symbolsVisited.add([this.name, tapeName]);
         const referent = env.symbolNS.get(this.name);
         return referent.getTapePriority(tapeName, symbolsVisited, env);
     }
 
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
-        const key = `${this.name}__${tapeName}`
-        if (symbolsVisited.has(key)) { 
+        if (symbolsVisited.has([this.name, tapeName])) { 
             // we already visited.  these might be true or false,
             // but we can just return false here because if it's 
             // true in other contexts it'll end up true in the end
             return { joinable: false, concatenable: false };
         }
-        symbolsVisited.add(key);
+        symbolsVisited.add([this.name, tapeName]);
         const referent = env.symbolNS.get(this.name);
         return referent.getTapeClass(tapeName, symbolsVisited, env);
     }
@@ -1962,14 +1854,13 @@ export class EmbedGrammar extends AtomicGrammar {
     public collectVocab(
         tapeName: string,
         atomic: boolean,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringSet { 
-        const key = `${this.name}__${tapeName}`
-        if (symbolsVisited.has(key)) {
+        if (symbolsVisited.has([this.name, tapeName])) {
             return new Set();
         }
-        symbolsVisited.add(key);
+        symbolsVisited.add([this.name, tapeName]);
         const referent = env.symbolNS.get(this.name);
         return referent.collectVocab(tapeName, atomic, symbolsVisited, env);
     }
@@ -1977,14 +1868,13 @@ export class EmbedGrammar extends AtomicGrammar {
     public getVocabCopyEdges(
         tapeName: string,
         tapeNS: TapeNamespace,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
-    ): [string, string][] {
-        const key = `${this.name}__${tapeName}`
-        if (symbolsVisited.has(key)) {
-            return [];
+    ): StringPairSet {
+        if (symbolsVisited.has([this.name, tapeName])) {
+            return new StringPairSet();
         }
-        symbolsVisited.add(key);
+        symbolsVisited.add([this.name, tapeName]);
         const referent = env.symbolNS.get(this.name);
         return referent.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env);
     }
@@ -2037,7 +1927,7 @@ export class LocatorGrammar extends UnaryGrammar {
 
 }
 
-export class UnitTestGrammar extends UnaryGrammar {
+export class TestGrammar extends UnaryGrammar {
 
     constructor(
         child: Grammar,
@@ -2053,7 +1943,7 @@ export class UnitTestGrammar extends UnaryGrammar {
         const [uniques, uniqueMsgs] = resultList(this.uniques)
                                         .map(c => f.transform(c, env))
                                         .destructure();
-        return new UnitTestGrammar(child as Grammar, 
+        return new TestGrammar(child as Grammar, 
                                    test as Grammar, 
                                    uniques as LiteralGrammar[])
                             .msg(childMsgs)
@@ -2068,7 +1958,7 @@ export class UnitTestGrammar extends UnaryGrammar {
     public collectVocab(
         tapeName: string,
         atomic: boolean,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringSet { 
         const childVocab = this.child.collectVocab(tapeName, atomic, symbolsVisited, env);
@@ -2085,12 +1975,12 @@ export class UnitTestGrammar extends UnaryGrammar {
 }
 
 
-export class NegativeUnitTestGrammar extends UnitTestGrammar {
+export class TestNotGrammar extends TestGrammar {
     
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.child, this.test])
                    .map(c => f.transform(c, env))
-                   .bind(([c, t]) => new NegativeUnitTestGrammar(
+                   .bind(([c, t]) => new TestNotGrammar(
                                         c as Grammar, t as Grammar));
     }
 
@@ -2227,12 +2117,12 @@ export function Not(child: Grammar, maxChars:number=Infinity): NegationGrammar {
     return new NegationGrammar(child, maxChars);
 }
 
-export function Ns(
-    symbols: {[name: string]: Grammar} = {}
-): NsGrammar {
-    const result = new NsGrammar();
+export function Collection(
+    symbols: Dict<Grammar> = {}
+): CollectionGrammar {
+    const result = new CollectionGrammar();
     for (const [symbolName, component] of Object.entries(symbols)) {
-        result.addSymbol(symbolName, component);
+        result.symbols[symbolName] = component;
     }
     return result;
 }
@@ -2257,7 +2147,7 @@ export function Count(maxChars: number, child: Grammar): Grammar {
     return new CountGrammar(child, maxChars);
 }
 
-export function CountTape(maxChars: number | {[tape: string]: number}, child: Grammar): Grammar {
+export function CountTape(maxChars: number | Dict<number>, child: Grammar): Grammar {
     return new CountTapeGrammar(child, maxChars);
 }
 
@@ -2365,12 +2255,6 @@ export class JoinReplaceGrammar extends Grammar {
                 let fromTapeName: string | undefined = undefined;
                 if (rule.fromTapeName != undefined) {
                     if (fromTapeName != undefined && fromTapeName != rule.fromTapeName) {
-                        //rule.message({
-                        //    type: "error",
-                        //    shortMsg: "Inconsistent from fields",
-                        //    longMsg: "Each rule in a block of rules needs to " +
-                        //     "agree on what the 'from' fields are. "
-                        //});
                         continue;
                     }
                     fromTapeName = rule.fromTapeName;
@@ -2379,12 +2263,6 @@ export class JoinReplaceGrammar extends Grammar {
                 let toTapeNames: string[] = [];
                 if (rule.toTapeNames.length) {
                     if (toTapeNames.length && listDifference(toTapeNames, rule.toTapeNames).length) {
-                        //rule.message({
-                        //    type: "error",
-                        //    shortMsg: "Inconsistent to fields",
-                        //    longMsg: "All rules in a block of rules need to " +
-                        //      "agree on what the 'to' fields are. "
-                        //});
                         continue;
                     }
                     toTapeNames = rule.toTapeNames;
@@ -2516,7 +2394,7 @@ export class ReplaceGrammar extends Grammar {
 
     public getTapeClass(
         tapeName: string, 
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): TapeClass {
         const ts = new Set(this.tapes);
@@ -2571,9 +2449,9 @@ export class ReplaceGrammar extends Grammar {
     public getVocabCopyEdges(
         tapeName: string,
         tapeNS: TapeNamespace,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
-    ): [string, string][] {
+    ): StringPairSet {
         const results = super.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env);
         
         if (!this.vocabBypass) {
@@ -2583,7 +2461,7 @@ export class ReplaceGrammar extends Grammar {
         const fromTapeGlobalName = tapeNS.get(this.fromTapeName).globalName;
         for (const toTapeName of this.toTapeNames) {
             const toTapeGlobalName = tapeNS.get(toTapeName).globalName;
-            results.push([fromTapeGlobalName, toTapeGlobalName]);
+            results.add([fromTapeGlobalName, toTapeGlobalName]);
         }
         return results;
     }
@@ -2591,7 +2469,7 @@ export class ReplaceGrammar extends Grammar {
     public collectVocab(
         tapeName: string,
         atomic: boolean,
-        symbolsVisited: StringSet,
+        symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringSet { 
         // first, collect vocabulary as normal

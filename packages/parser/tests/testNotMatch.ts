@@ -20,7 +20,7 @@ import {
     //testHasNoVocab,  
     testGrammar,
     generateOutputsFromGrammar,
-} from './testUtils';
+} from './testUtil';
 
 import * as path from 'path';
 import { BITSETS_ENABLED, StringDict } from "../src/util";

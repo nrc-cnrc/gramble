@@ -1,4 +1,4 @@
-import { AlternationGrammar, EpsilonGrammar, Grammar, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "./grammars";
+import { AlternationGrammar, EmbedGrammar, EpsilonGrammar, Grammar, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "./grammars";
 import { 
     MPDelay, 
     MPAlternation, 
@@ -57,6 +57,23 @@ export class LiteralRegex implements Regex {
 
     public toGrammar(): Grammar {
         return new LiteralGrammar(`${HIDDEN_TAPE_PREFIX}`, this.text);
+    }
+}
+
+export class SymbolRegex implements Regex {
+
+    constructor(
+        public child: LiteralRegex
+    ) { 
+        
+    }
+
+    public get id(): string {
+        return `EMB[${this.child.id}]`;
+    }
+
+    public toGrammar(): Grammar {
+        return new EmbedGrammar(this.child.text);
     }
 }
 
@@ -172,10 +189,10 @@ const SUBEXPR: MPParser<Regex> = MPDelay(() =>
 );
 
 const SUBSUBEXPR: MPParser<Regex> = MPDelay(() =>
-    MPAlternation(UNRESERVED, PARENS)
+    MPAlternation(UNRESERVED, PARENS, SYMBOL_REF)
 );
 
-const RESERVED = new Set(["(", ")", "~", "|", "*", "?", "+"]);
+const RESERVED = new Set(["(", ")", "~", "|", "*", "?", "+", "{", "}"]);
 const UNRESERVED = MPUnreserved<Regex>(RESERVED, (s) => new LiteralRegex(s));
 
 const TOPLEVEL_EXPR = MPRepetition(
@@ -201,6 +218,11 @@ const PLUS = MPSequence(
 const PARENS = MPSequence(
     ["(", TOPLEVEL_EXPR, ")"],
     (child) => child 
+);
+
+const SYMBOL_REF = MPSequence(
+    ["{", UNRESERVED, "}"],
+    (child) => new SymbolRegex(child as LiteralRegex) 
 );
 
 const NEGATION = MPSequence(

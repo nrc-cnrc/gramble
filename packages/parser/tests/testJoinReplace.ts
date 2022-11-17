@@ -26,7 +26,7 @@ import {
     testHasTapes,
     testHasVocab,
     testGrammar,
-} from './testUtils';
+} from './testUtil';
 
 import * as path from 'path';
 import { StringDict, VERBOSE_DEBUG, VERBOSE_STATES, VERBOSE_TIME } from "../src/util";
