@@ -12,6 +12,7 @@ import {
     renameTape, Token, EntangledToken,
     OutputTrie, EpsilonToken, EPSILON_TOKEN, NO_CHAR_BITSET
 } from "./tapes";
+import { Null } from "./grammars";
 
 export interface OpenDifferentiable {
 
@@ -1092,18 +1093,14 @@ export abstract class BinaryExpr extends Expr {
 class ConcatExpr extends BinaryExpr {
 
     public get id(): string {
-        const child2ID = this.child2.id;
-
-        if ((this.child1 instanceof LiteralExpr ||
-            this.child1 instanceof DotStarExpr ||
-            this.child1 instanceof DotExpr) && 
-            child2ID.startsWith(this.child1.tapeName)) {
-            // abbreviate!
-            const child2IDTrunc = child2ID.slice(this.child1.tapeName.length+1);
-            return this.child1.id + child2IDTrunc;
+        if (!this.child1.id.startsWith("(")) {
+            const child1IDpieces = this.child1.id.split(":");
+            const child2IDpieces = this.child2.id.split(":");
+            if (child1IDpieces[0] == child2IDpieces[0]) {
+                return this.child1.id + child2IDpieces.slice(1).join(":");
+            }
         }
-
-        return `${this.child1.id}+${this.child2.id}`;
+        return this.child1.id + "+" + this.child2.id;
     }
 
     public delta(
@@ -1605,11 +1602,87 @@ export class CountTapeExpr extends UnaryExpr {
     }
 }
 
+export class PreTapeExpr extends UnaryExpr {
+
+    constructor(
+        public fromTape: string,
+        public toTape: string,
+        child: Expr
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return this.child.id;
+    }
+
+    public delta(
+        tapeName: string,
+        env: DerivEnv
+    ): Expr {
+        if (tapeName == this.fromTape) {
+            throw new Error(`something's gone wrong, querying on ` +
+                `a EagerHideExpr fromTape ${this.fromTape}`);
+        }
+
+        if (tapeName == this.toTape) {
+            const fromDelta = this.child.delta(this.fromTape, env);
+            const toDelta = fromDelta.delta(this.toTape, env);
+            return constructPreTape(this.fromTape, this.toTape, toDelta);
+        }
+
+        const delta = this.child.delta(tapeName, env);
+        return constructPreTape(this.fromTape, this.toTape, delta);
+    }
+
+    
+    public *deriv(
+        tapeName: string, 
+        target: Token,
+        env: DerivEnv
+    ): DerivResults {
+        if (tapeName == this.fromTape) {
+            throw new Error(`something's gone wrong, querying on ` +
+                `a EagerHideExpr fromTape ${this.fromTape}`);
+        }
+
+        if (tapeName == this.toTape) {
+            console.log(`querying on ${tapeName} first`);
+            for (const [fromTarget, fromNext] of this.child.deriv(this.fromTape, target, env)) {
+                console.log(`got "${fromTarget}"`);
+                if (fromTarget instanceof EpsilonToken) {
+                    const wrapped = constructPreTape(this.fromTape, this.toTape, fromNext);
+                    yield [fromTarget, wrapped];
+                    continue;
+                }
+                for (const [toTarget, toNext] of fromNext.deriv(this.toTape, target, env)) {
+                    const wrapped = constructPreTape(this.fromTape, this.toTape, toNext);
+                    yield [toTarget, wrapped];
+                }
+            }
+            return;
+        }
+
+        for (const [toTarget, toNext] of this.child.deriv(tapeName, target, env)) {
+            const wrapped = constructPreTape(this.fromTape, this.toTape, toNext);
+            yield [toTarget, wrapped];
+        }
+
+    }
+}
+
+export function constructPreTape(fromTape: string, toTape: string, child: Expr): Expr {
+    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
+        return child;
+    }
+    return new PreTapeExpr(fromTape, toTape, child);
+}
+
 export class PriorityExpr extends UnaryExpr {
 
     constructor(
         public tapes: string[],
-        public child: Expr
+        child: Expr
     ) { 
         super(child)
     }
@@ -1702,7 +1775,7 @@ export class PriorityExpr extends UnaryExpr {
 class ShortExpr extends UnaryExpr {
 
     public get id(): string {
-        return `Short(${this.child.id})`
+        return `S${this.child.id}`
     }
 
     public delta(
@@ -1728,6 +1801,13 @@ class ShortExpr extends UnaryExpr {
         // Important: the deriv here MUST be disjoint, just like 
         // under negation.
         for (const [cTarget, cNext] of this.child.disjointDeriv(tapeName, target, env)) {
+            
+            const cNextDelta = cNext.delta(tapeName, env);
+            if (!(cNextDelta instanceof NullExpr)) {
+                yield [cTarget, cNextDelta];
+                continue;
+            }
+            
             const successor = constructShort(cNext);
             yield [cTarget, successor];
         }
@@ -1752,8 +1832,11 @@ class RepeatExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        if (this.minReps == 0 && this.maxReps == Infinity) {
+        if (this.minReps <= 0 && this.maxReps == Infinity) {
             return `(${this.child.id})*`;
+        }
+        if (this.maxReps == Infinity) {
+            return `(${this.child.id}){${this.minReps}+}`;
         }
         return `(${this.child.id}){${this.minReps},${this.maxReps}}`;
     }
@@ -1999,6 +2082,156 @@ class NegationExpr extends UnaryExpr {
             yield [c, constructUniverse(this.tapes, this.maxChars-1)];
         }
     }
+}
+
+/**
+ * A MatchCountExpr asserts that, for the tapes it cares about,
+ * they have the same number of characters.  
+ */
+export class MatchCountExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public tapeCounts: Dict<number>
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return this.child.id;
+    }
+
+    public delta(
+        tapeName: string,
+        env: DerivEnv
+    ): Expr {
+        if (!(tapeName in this.tapeCounts)) {
+            return this;
+        }
+
+        let countFound : number | undefined = undefined;
+        for (const [tapeName, count] of Object.entries(this.tapeCounts)) {
+            if (countFound != undefined && countFound != count) {
+                return NULL;
+            }
+            countFound = count;
+        }
+
+        const childDelta = this.child.delta(tapeName, env);
+        return constructMatchCount(childDelta, this.tapeCounts);
+    }
+
+    public *stringDeriv(tapeName: string, target: string, env: DerivEnv): DerivResults {
+        
+        if (!(tapeName in this.tapeCounts)) {
+            // not something we care about
+            return;
+        }
+        const newCounts: Dict<number> = {};
+        Object.assign(newCounts, this.tapeCounts);
+        newCounts[tapeName] += 1;
+        for (const [childTarget, childNext] of this.child.deriv(tapeName, target, env)) {
+            const successor = constructMatchCount(childNext, newCounts);
+            yield [childTarget, childNext];
+        }
+    }
+}
+
+export function constructMatchCount(child: Expr, tapeCounts: Dict<number>): Expr {
+    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
+        return child;
+    }
+    return new MatchCountExpr(child, tapeCounts);
+}
+
+export class MiniMatchExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public fromTape: string,
+        public toTape: string
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `M(${this.fromTape}>${this.toTape},${this.child.id})`;
+    }
+
+    public delta(
+        tapeName: string,
+        env: DerivEnv
+    ): Expr {
+        if (tapeName == this.toTape) {
+            const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
+            const newEnv = env.renameTape(this.toTape, this.fromTape);
+            const nextExpr = this.child.delta(newTapeName, newEnv);
+            return constructMiniMatch(nextExpr, this.fromTape, this.toTape);  
+        }
+
+        const nextExpr = this.child.delta(tapeName, env);
+        return constructMiniMatch(nextExpr, this.fromTape, this.toTape);
+    }
+    
+    public *bitsetDeriv(
+        tapeName: string, 
+        target: BitsetToken,
+        env: DerivEnv
+    ): DerivResults {
+        throw new Error("not implemented");
+    }
+    
+    public *stringDeriv(
+        tapeName: string,
+        target: string, 
+        env: DerivEnv
+    ): DerivResults {
+        
+        // if it's a tape that isn't our from, just forward and wrap 
+        if (tapeName != this.fromTape) {
+            for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
+                const successor = constructMiniMatch(cNext, this.fromTape, this.toTape);
+                yield [cTarget, successor];
+            }
+            return;
+        }
+
+        const fromTape = env.getTape(this.fromTape);
+        const toTape = env.getTape(this.toTape);
+
+        for (const [cTarget, cNext] of 
+                this.child.deriv(this.fromTape, target, env)) {
+            const successor = constructMiniMatch(cNext, this.fromTape, this.toTape);
+            if (cTarget instanceof EpsilonToken) {
+                const lit = constructEpsilonLiteral(this.toTape);
+                yield [EPSILON_TOKEN, constructPrecede(lit, successor)];
+                //yield [EPSILON_TOKEN, successor];
+            } else {
+                for (const c of toTape.expandStrings(cTarget as string, fromTape)) {
+                    const lit = constructLiteral(this.toTape, c, [c]);
+                    yield [c, constructPrecede(lit, successor)];
+                }
+            }
+        }
+    }
+}
+
+export function constructMiniMatch(
+    child: Expr,
+    fromTape: string,
+    ...toTapes: string[]
+): Expr {
+    if (child instanceof EpsilonExpr) {
+        return child;
+    }
+    if (child instanceof NullExpr) {
+        return child;
+    }
+    let result = child;
+    for (const tape of toTapes) {
+        result = new MiniMatchExpr(result, fromTape, tape);
+    }
+    return result;
 }
 
 export class MatchFromExpr extends UnaryExpr {

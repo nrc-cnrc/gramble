@@ -1,16 +1,22 @@
 import { 
+    Any,
+    Count,
     CountTape,
     Epsilon,
     EpsilonLit,
     Grammar,
     Join,
     JoinReplace,
+    MatchDotRep,
     MatchFrom,
+    NegationGrammar,
+    Not,
     Priority,
     Rep,
     Replace,
     ReplaceGrammar,
     Seq,
+    Short,
     Uni,
     Vocab,
 } from "../src/grammars";
@@ -46,6 +52,7 @@ function ReplaceBypass(
 
 describe(`${path.basename(module.filename)}`, function() {
     
+    /*
     describe('0a1. Replace i by o in i: i -> o, only using Join', function() {
         const grammar = Seq(Join(Uni(t1("i")),
                              ReplaceBypass(t1("i"), t2("o"))), Vocab("t1", "io"));
@@ -369,21 +376,49 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
+    describe('does not contain a', function() {
+
+        const r1Grammar = Not(Seq(Short(Seq(Rep(Any("t1")), t1("a"))), Rep(Any("t1"))));
+        const vocGrammar = Vocab({t1:"ab"});
+        const grammar = Count(3, Seq(r1Grammar, vocGrammar));
+        const expectedResults: StringDict[] = [
+            {}, {t1: 'b'}, {t1: 'bb'}, {t1: 'bbb'}
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
+    });
+
     // 134 states visited
     describe('6b. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const voc: string = "abcdABCD"
+        const r1Grammar = JoinReplace(t1("abc"), [ReplaceBypass(t1("a"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("x"))]);
+        const voc: string = "abcx"
+        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
+        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
+        //testHasTapes(grammar, ['t1', 't2', 't3']);
+        //testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'abc', t2: 'bc', t3: 'xc'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
+    });
+
+    */
+    // 134 states visited
+    describe('6b. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
+        const r1Grammar = JoinReplace(t1("abc"), [ReplaceBypass(t1("a"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("x"))]);
+        const voc: string = "abcx"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
         const expectedResults: StringDict[] = [
-            {t1: 'abcd', t2: 'bcd', t3: 'Bcd'},
+            {t1: 'abc', t2: 'bc', t3: 'xc'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
     });
 
+    /*
     // 31 states visited
     describe('6c. 3-rule cascade (vocab abcdABCD)', function() {
         const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
@@ -641,7 +676,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaaaabcd', t2: 'Abcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
     });
 
     // 2850 states visited
@@ -1157,7 +1192,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaaabcd', t2: 'bcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults, VERBOSE_STATES | VERBOSE_DEBUG);
     });
 
     // 3466 states visited
@@ -1433,5 +1468,5 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammarWithVocab, expectedResults, VERBOSE_STATES);
     });
 
-
+*/
 });

@@ -8,7 +8,10 @@ import {
     constructLiteral, constructMatchFrom, constructCharSet,
     constructDotRep, constructCount, constructCountTape,
     constructPriority, EpsilonExpr, constructShort,
-    constructNotContains, constructParallel, DerivEnv, ExprNamespace, SymbolNsExpr, constructSymbolNs, constructEpsilonLiteral
+    constructNotContains, constructParallel, 
+    DerivEnv, ExprNamespace, 
+    constructSymbolNs, constructEpsilonLiteral, 
+    constructPrecede, constructMatchCount, constructPreTape
 } from "./exprs";
 import { Msg, Msgs, result, Result, resultDict, resultList } from "./msgs";
 
@@ -172,7 +175,8 @@ export abstract class Grammar extends Component {
             const priority = joinWeight * tape.vocabSize;
             return [t, priority];
         });
-        return priorities.sort((a, b) => b[1] - a[1])
+        return priorities.filter(([t, priority]) => priority >= 0)
+                         .sort((a, b) => b[1] - a[1])
                          .map(([a,_]) => a);
     }
     
@@ -181,9 +185,15 @@ export abstract class Grammar extends Component {
         symbolsVisited: StringSet,
         env: PassEnv
     ): number {
-        return Math.max(...this.getChildren().map(c => 
-            c.getTapePriority(tapeName, symbolsVisited, env)
-        ));
+        const priorities: number[] = [0];
+        for (const child of this.getChildren()) {
+            const childPriority = child.getTapePriority(tapeName, symbolsVisited, env);
+            if (childPriority < 0) {
+                return childPriority;
+            }
+            priorities.push(childPriority);
+        }
+        return Math.max(...priorities);
     }
 
     /**
@@ -339,7 +349,9 @@ export class EpsilonGrammar extends AtomicGrammar {
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
-            this._tapes = [ `${HIDDEN_TAPE_PREFIX}END` ];
+            this._tapes = [ 
+                //`${HIDDEN_TAPE_PREFIX}END` 
+            ];
         }
         return this._tapes;
     }
@@ -364,7 +376,9 @@ export class NullGrammar extends AtomicGrammar {
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
-            this._tapes = [ `${HIDDEN_TAPE_PREFIX}END` ];
+            this._tapes = [ 
+                //`${HIDDEN_TAPE_PREFIX}END` 
+            ];
         }
         return this._tapes;
     }
@@ -1329,6 +1343,45 @@ export class NegationGrammar extends UnaryGrammar {
         return constructNegation(childExpr, new Set(this.child.tapes), this.maxReps);
     }
 }
+
+export class PreTapeGrammar extends UnaryGrammar {
+
+    constructor(
+        public fromTape: string,
+        public toTape: string,
+        child: Grammar
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `EHIDE(${this.child.id})`;
+    }
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return result(this.child)
+                .bind(c => f.transform(c, env))
+                .bind(c => new PreTapeGrammar(this.fromTape, this.toTape, c as Grammar));
+    }
+
+    public getTapePriority(
+        tapeName: string,
+        symbolsVisited: StringSet,
+        env: PassEnv
+    ): number {
+        if (tapeName == this.fromTape) {
+            return -1;
+        }
+        return super.getTapePriority(tapeName, symbolsVisited, env);
+    }
+
+    public constructExpr(tapeNS: TapeNamespace, symbols: ExprNamespace): Expr {
+        const childExpr = this.child.constructExpr(tapeNS, symbols);
+        return constructPreTape(this.fromTape, this.toTape, childExpr);
+    }
+
+}
+
 
 let HIDE_INDEX = 0; 
 export class HideGrammar extends UnaryGrammar {
@@ -2571,14 +2624,21 @@ export class ReplaceGrammar extends Grammar {
             this.minReps = Math.min(this.minReps, this.maxReps);
         }
 
+        const matchCountTapes: Dict<number> = {};
+        for (const tape of this.toGrammar.tapes) {
+            matchCountTapes[tape] = 0;
+        }
+        for (const tape of this.fromGrammar.tapes) {
+            matchCountTapes[tape] = 0;
+        }
+
         const fromExpr: Expr = this.fromGrammar.constructExpr(tapeNS, symbolTable);
         const toExpr: Expr = this.toGrammar.constructExpr(tapeNS, symbolTable);
         const preContextExpr: Expr = this.preContext.constructExpr(tapeNS, symbolTable);
         const postContextExpr: Expr = this.postContext.constructExpr(tapeNS, symbolTable);
         let states: Expr[] = [
             constructMatchFrom(preContextExpr, this.fromTapeName, ...this.toTapeNames),
-            fromExpr,
-            toExpr,
+            constructMatchCount(constructPrecede(fromExpr, toExpr), matchCountTapes),
             constructMatchFrom(postContextExpr, this.fromTapeName, ...this.toTapeNames)
         ];
 

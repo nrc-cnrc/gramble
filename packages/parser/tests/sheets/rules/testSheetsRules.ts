@@ -9,6 +9,7 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
 
+    /*
     describe('Simple replace', function() {
         const project = sheetFromFile(
             `${DIR}/sameTapeReplace.csv`);
@@ -39,7 +40,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"aba"}
         ]);
     }); 
-    
+
     describe('Replace but the tape is a reserved word', function() {
         const project = sheetFromFile(
             `${DIR}/replaceReservedWord.csv`);
@@ -53,7 +54,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Simple replace with embed', function() {
         const project = sheetFromFile(
-            `${DIR}/replaceEmbed.csv`);
+            `${DIR}/replaceEmbed.csv`, VERBOSE_DEBUG);
         testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGrammar(project, [
@@ -331,15 +332,19 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    
+    */
     describe('Rule with an empty to', function() {
         const project = sheetFromFile(
-            `${DIR}/blankTo.csv`);
+            `${DIR}/blankTo.csv`, VERBOSE_DEBUG);
         testHasVocab(project, {text: 2})
         testErrors(project, []);
         testGrammar(project, [
             {"text":"aa"}
         ]);
     });
+
+    /*
     
     describe('Rule with an empty from', function() {
         const project = sheetFromFile(
@@ -371,5 +376,5 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"BC"}
         ]);
     });
-
+*/
 });
