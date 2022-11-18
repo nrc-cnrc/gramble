@@ -45,6 +45,7 @@
     "testIntersection": "mocha -r ts-node/register tests/testIntersection.ts",
     "testJoin": "mocha -r ts-node/register tests/testJoin.ts",
     "testJoinReplace": "mocha -r ts-node/register tests/testJoinReplace.ts",
+    "testJoinRule":  "mocha -r ts-node/register tests/testJoinRule.ts",
     "testMatch": "mocha -r ts-node/register tests/testMatch.ts",
     "testMatchDanger": "mocha -r ts-node/register tests/testMatchDanger.ts",
     "testMatchFrom": "mocha -r ts-node/register tests/testMatchFrom.ts",

@@ -1645,9 +1645,12 @@ export class PreTapeExpr extends UnaryExpr {
         }
 
         if (tapeName == this.toTape) {
-            console.log(`querying on ${tapeName} first`);
+            const globalTapeName = env.getTape(this.fromTape).globalName;
             for (const [fromTarget, fromNext] of this.child.deriv(this.fromTape, target, env)) {
-                console.log(`got "${fromTarget}"`);
+                if (fromNext instanceof NullExpr) {
+                    continue;
+                }
+                env.logDebug(`D^${globalTapeName}_${fromTarget} = ${fromNext.id}`);
                 if (fromTarget instanceof EpsilonToken) {
                     const wrapped = constructPreTape(this.fromTape, this.toTape, fromNext);
                     yield [fromTarget, wrapped];
@@ -1773,7 +1776,7 @@ export class PriorityExpr extends UnaryExpr {
 class ShortExpr extends UnaryExpr {
 
     public get id(): string {
-        return `S${this.child.id}`
+        return `${this.child.id}`
     }
 
     public delta(
