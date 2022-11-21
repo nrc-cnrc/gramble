@@ -1650,7 +1650,11 @@ export class PreTapeExpr extends UnaryExpr {
                 if (fromNext instanceof NullExpr) {
                     continue;
                 }
-                env.logDebug(`D^${globalTapeName}_${fromTarget} = ${fromNext.id}`);
+                const fromTarget_str = (fromTarget instanceof EpsilonToken) ? 'ε' : 
+                                    (fromTarget instanceof BitsetToken) ?
+                                    `[${fromTarget.bits}:${fromTarget.entanglements.toString()}]` :
+                                    fromTarget;
+                env.logDebug(`D^${globalTapeName}_${fromTarget_str} = ${fromNext.id}`);
                 if (fromTarget instanceof EpsilonToken) {
                     const wrapped = constructPreTape(this.fromTape, this.toTape, fromNext);
                     yield [fromTarget, wrapped];
@@ -2110,6 +2114,7 @@ export class MatchCountExpr extends UnaryExpr {
             return this;
         }
 
+        // if the counts are not equal, we're not done yet
         let countFound : number | undefined = undefined;
         for (const [tapeName, count] of Object.entries(this.tapeCounts)) {
             if (countFound != undefined && countFound != count) {
@@ -2118,6 +2123,7 @@ export class MatchCountExpr extends UnaryExpr {
             countFound = count;
         }
 
+        // the counts are equal, go ahead
         const childDelta = this.child.delta(tapeName, env);
         return constructMatchCount(childDelta, this.tapeCounts);
     }
@@ -2128,12 +2134,15 @@ export class MatchCountExpr extends UnaryExpr {
             // not something we care about
             return;
         }
+
+        const newCount = this.tapeCounts[tapeName] + 1;
+
         const newCounts: Dict<number> = {};
         Object.assign(newCounts, this.tapeCounts);
-        newCounts[tapeName] += 1;
+        newCounts[tapeName] = newCount;
         for (const [childTarget, childNext] of this.child.deriv(tapeName, target, env)) {
             const successor = constructMatchCount(childNext, newCounts);
-            yield [childTarget, childNext];
+            yield [childTarget, successor];
         }
     }
 }

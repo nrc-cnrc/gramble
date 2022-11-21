@@ -1,25 +1,13 @@
 import { 
-    Any,
-    Count,
-    CountTape,
     Epsilon,
     EpsilonLit,
     Grammar,
-    Join,
-    JoinReplace,
     JoinRule,
     Lit,
-    MatchDotRep,
-    MatchFrom,
-    NegationGrammar,
-    Not,
-    Priority,
     Rep,
     Replace,
     ReplaceGrammar,
     Seq,
-    Short,
-    Uni,
     Vocab,
 } from "../src/grammars";
 
@@ -124,7 +112,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('6a. 1-char deletion', function() {
+    describe('5a. 1-char deletion', function() {
         const r1Grammar = IOJoin("abc", IOReplace("a", ""));
         const voc: string = "abcx"
         const vocGrammar = Vocab({t1:voc});
@@ -135,7 +123,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('6b. 2-char deletion', function() {
+    describe('5b. 2-char deletion', function() {
         const r1Grammar = IOJoin("abc", IOReplace("ab", ""));
         const voc: string = "abcx"
         const vocGrammar = Vocab({t1:voc});
@@ -143,10 +131,10 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'c'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
     
-    describe('6c. 2-char deletion, later in string', function() {
+    describe('5c. 2-char deletion, later in string', function() {
         const r1Grammar = IOJoin("abc", IOReplace("bc", ""));
         const voc: string = "abcx"
         const vocGrammar = Vocab({t1:voc});
@@ -154,166 +142,91 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'a'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
-
-
-    /*
 
     // Exploring rule cascades with first 'to' empty - garden path
 
     // 21 states visited
     describe('6a. 2-rule cascade (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = IOJoin("abcd", IOReplace("a", "A"),
+                                        IOReplace("b", "B"));
         const voc: string = "abcdABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
-        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
         const expectedResults: StringDict[] = [
-            {t1: 'abcd', t2: 'Abcd', t3: 'ABcd'},
+            {t1: 'ABcd'}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    // 134 states visited
+    describe('6b. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
+        const r1Grammar = IOJoin("abc", IOReplace("a", ""),
+                                        IOReplace("b", "x"))
+        const voc: string = "abcx"
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
+        const expectedResults: StringDict[] = [
+            {t1: 'xc'},
         ];
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
-    describe('does not contain a', function() {
-
-        const r1Grammar = Not(Seq(Short(Seq(Rep(Any("t1")), t1("a"))), Rep(Any("t1"))));
-        const vocGrammar = Vocab({t1:"ab"});
-        const grammar = Count(3, Seq(r1Grammar, vocGrammar));
-        const expectedResults: StringDict[] = [
-            {}, {t1: 'b'}, {t1: 'bb'}, {t1: 'bbb'}
-        ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
-    });
-
-    // 134 states visited
-    describe('6b. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("abc"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("x"))]);
-        const voc: string = "abcx"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
-        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
-        //testHasTapes(grammar, ['t1', 't2', 't3']);
-        //testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
-        const expectedResults: StringDict[] = [
-            {t1: 'abc', t2: 'bc', t3: 'xc'},
-        ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
-    });
-
-    // 134 states visited
-    describe('6b. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("abc"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("x"))]);
-        const voc: string = "abcx"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
-        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
-        const expectedResults: StringDict[] = [
-            {t1: 'abc', t2: 'bc', t3: 'xc'},
-        ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
-    });
-
     // 31 states visited
     describe('6c. 3-rule cascade (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
+        const r1Grammar = IOJoin("abcd", IOReplace("a", "A"),
+                                         IOReplace("b","B"),
+                                         IOReplace("c", "C"));
         const voc: string = "abcdABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc});
-        const grammar: Grammar = Seq(vocGrammar, r3Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length, t4:voc.length});
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
         const expectedResults: StringDict[] = [
-            {t1: 'abcd', t2: 'Abcd', t3: 'ABcd', t4: 'ABCd'},
+            {t1: 'ABCd'},
         ];
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
     // 226 states visited
     describe('6d. 3-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
+        const r1Grammar = IOJoin("abcd", IOReplace("a", ""),
+                                         IOReplace("b", "B"),
+                                         IOReplace("c", "C"));
         const voc: string = "abcdABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc});
-        const grammar: Grammar = Seq(vocGrammar, r3Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length, t4:voc.length});
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
         const expectedResults: StringDict[] = [
-            {t1: 'abcd', t2: 'bcd', t3: 'Bcd', t4: 'BCd'},
+            {t1: 'BCd'},
         ];
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
     // 43 states visited
     describe('6e. 4-rule cascade (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = IOJoin("abcd", IOReplace("a", "A"),
+                                        IOReplace("b", "B"),
+                                        IOReplace("c", "C"),
+                                        IOReplace("d", "D"));
         const voc: string = "abcdABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
-        const grammar: Grammar = Seq(vocGrammar, r4Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3', 't4', 't5']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length, t4:voc.length, t5:voc.length});
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
         const expectedResults: StringDict[] = [
-            {t1: 'abcd', t2: 'Abcd', t3: 'ABcd', t4: 'ABCd', t5: 'ABCD'},
+            {t1: 'ABCD'},
         ];
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
     // 344 states visited
     describe('6f. 4-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = IOJoin("abcd", IOReplace("a", ""),
+                                        IOReplace("b", "B"),
+                                        IOReplace("c", "C"),
+                                        IOReplace("d", "D"));
         const voc: string = "abcdABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
-        const grammar: Grammar = Seq(vocGrammar, r4Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3', 't4', 't5']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length, t4:voc.length, t5:voc.length});
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
         const expectedResults: StringDict[] = [
-            {t1: 'abcd', t2: 'bcd', t3: 'Bcd', t4: 'BCd', t5: 'BCD'},
-        ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
-    });
-
-    // 43 states visited
-    describe('6g. 4-rule cascade (vocab abcdefghijklABCD)', function() {
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
-        const voc: string = "abcdefghijklABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
-        const grammar: Grammar = Seq(vocGrammar, r4Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3', 't4', 't5']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length, t4:voc.length, t5:voc.length});
-        const expectedResults: StringDict[] = [
-            {t1: 'abcd', t2: 'Abcd', t3: 'ABcd', t4: 'ABCd', t5: 'ABCD'},
-        ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
-    });
-
-    // 616 states visited
-    describe('6h. 4-rule cascade starting with 1-char deletion (vocab abcdefghijklABCD)', function() {
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
-        const voc: string = "abcdefghijklABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
-        const grammar: Grammar = Seq(vocGrammar, r4Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3', 't4', 't5']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length, t4:voc.length, t5:voc.length});
-        const expectedResults: StringDict[] = [
-            {t1: 'abcd', t2: 'bcd', t3: 'Bcd', t4: 'BCd', t5: 'BCD'},
+            {t1: 'BCD'},
         ];
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
@@ -322,85 +235,78 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 50 states visited
     describe('7a. 14-char input, 2-rule cascade (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("CCCCCabcdCCCCC"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = IOJoin("CCCCCabcdCCCCC", IOReplace("a", "A"),
+                                                   IOReplace("b", "B"));
         const voc: string = "abcdABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
-        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
         const expectedResults: StringDict[] = [
-            {t1: 'CCCCCabcdCCCCC', t2: 'CCCCCAbcdCCCCC', t3: 'CCCCCABcdCCCCC'},
+            {t1: 'CCCCCABcdCCCCC'},
         ];
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
     // 80 states visited
     describe('7b. 24-char input, 2-rule cascade (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("BBBBBCCCCCabcdCCCCCBBBBB"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = IOJoin("BBBBBCCCCCabcdCCCCCBBBBB", IOReplace("a", "A"),
+                                                   IOReplace("b", "B"));
         const voc: string = "abcdABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
-        const grammar: Grammar = Seq(vocGrammar, r2Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
         const expectedResults: StringDict[] = [
-            {t1: 'BBBBBCCCCCabcdCCCCCBBBBB', t2: 'BBBBBCCCCCAbcdCCCCCBBBBB', t3: 'BBBBBCCCCCABcdCCCCCBBBBB'},
+            {t1: 'BBBBBCCCCCABcdCCCCCBBBBB'},
         ];
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
-
+    
     // 92 states visited
     describe('7c. 14-char input, 4-rule cascade (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("CCCCCabcdCCCCC"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = IOJoin("CCCCCabcdCCCCC", IOReplace("a", "A"),
+                                                   IOReplace("b", "B"),
+                                                   IOReplace("c", "C"),
+                                                   IOReplace("d", "D"));
+        
         const voc: string = "abcdABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
-        const grammar: Grammar = Seq(vocGrammar, r4Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3', 't4', 't5']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length, t4:voc.length, t5:voc.length});
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
         const expectedResults: StringDict[] = [
-            {t1: 'CCCCCabcdCCCCC', t2: 'CCCCCAbcdCCCCC', t3: 'CCCCCABcdCCCCC', t4: 'CCCCCABCdCCCCC', t5: 'CCCCCABCDCCCCC'},
+            {t1: 'CCCCCABCDCCCCC'},
         ];
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
     // 698 states visited
     describe('7d. 14-char input, 4-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("CCCCCabcdCCCCC"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = IOJoin("CCCCCabcdCCCCC", IOReplace("a", ""),
+                                                   IOReplace("b", "B"),
+                                                   IOReplace("c", "C"),
+                                                   IOReplace("d", "D"));
         const voc: string = "abcdABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
-        const grammar: Grammar = Seq(vocGrammar, r4Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3', 't4', 't5']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length, t4:voc.length, t5:voc.length});
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
         const expectedResults: StringDict[] = [
-            {t1: 'CCCCCabcdCCCCC', t2: 'CCCCCbcdCCCCC', t3: 'CCCCCBcdCCCCC', t4: 'CCCCCBCdCCCCC', t5: 'CCCCCBCDCCCCC'},
+            {t1: 'CCCCCBCDCCCCC'},
         ];
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
     // 1073 states visited
     describe('7e. 24-char input, 4-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
-        const r1Grammar = JoinReplace(t1("BBBBBCCCCCabcdCCCCCBBBBB"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        
+        const r1Grammar = IOJoin("BBBBBCCCCCabcdCCCCCBBBBB", IOReplace("a", ""),
+                                                   IOReplace("b", "B"),
+                                                   IOReplace("c", "C"),
+                                                   IOReplace("d", "D"));
         const voc: string = "abcdABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
-        const grammar: Grammar = Seq(vocGrammar, r4Grammar);
-        testHasTapes(grammar, ['t1', 't2', 't3', 't4', 't5']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length, t4:voc.length, t5:voc.length});
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
         const expectedResults: StringDict[] = [
-            {t1: 'BBBBBCCCCCabcdCCCCCBBBBB', t2: 'BBBBBCCCCCbcdCCCCCBBBBB', t3: 'BBBBBCCCCCBcdCCCCCBBBBB', t4: 'BBBBBCCCCCBCdCCCCCBBBBB', t5: 'BBBBBCCCCCBCDCCCCCBBBBB'},
+            {t1: 'BBBBBCCCCCBCDCCCCCBBBBB'},
         ];
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
+    /*
     // Exploring rule cascades with 'from' being longer than 'to' - garden path
 
     // 13 states visited
