@@ -9,13 +9,26 @@ import {
     testHasTapes, testGrammar, testHasVocab,
     WARN_ONLY_FOR_TOO_MANY_OUTPUTS
 } from './testUtil';
-import { VERBOSE_DEBUG, StringDict } from "../src/util";
+import { VERBOSE_DEBUG, StringDict, VERBOSE_STATES, SILENT, logDebug } from "../src/util";
 
 import * as path from 'path';
 
 const DEFAULT = undefined
 
+// File level control over verbose output
+const VERBOSE = true;
+
+function vb(verbosity: number): number {
+    return VERBOSE ? verbosity : SILENT;
+}
+
+function verbose(...msgs: string[]) {
+    logDebug(vb(VERBOSE_DEBUG), ...msgs);
+}
+
 describe(`${path.basename(module.filename)}`, function() {
+
+    verbose("", `--- ${path.basename(module.filename)} ---`);
 
     describe('1. Between 0 and 1 Os: t1:o{0,1}', function() {
         const grammar = Rep(t1("o"), 0, 1);
@@ -32,7 +45,7 @@ describe(`${path.basename(module.filename)}`, function() {
                               {t1: "oooo"}]);
     });
 
-    describe('3. Between 1 and 4 empty strings: t1:o{1,4}', function() {
+    describe('3. Between 1 and 4 empty strings: t1:{1,4}', function() {
         const grammar = Rep(t1(""), 1, 4);
         testGrammar(grammar, [{}]);
     });
@@ -2804,5 +2817,100 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
-    
+
+    // Repeats involving Multiple Tapes
+
+    // 12 states
+    describe('67. (t1:o+t2:hi){1,4}', function() {
+        verbose('67. (t1:o+t2:hi){1,4}');
+        const grammar = Rep(Seq(t1("o"), t2("hi")), 1, 4);
+        const expectedResults: StringDict[] = [
+            {t1: "o".repeat(1), t2: "hi".repeat(1)},
+            {t1: "o".repeat(2), t2: "hi".repeat(2)},
+            {t1: "o".repeat(3), t2: "hi".repeat(3)},
+            {t1: "o".repeat(4), t2: "hi".repeat(4)},
+        ];
+        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+    });
+
+    // 11 states
+    describe('68. (t1:no+t2:hi,){5}', function() {
+        verbose('68. (t1:no+t2:hi,){5}');
+        const grammar = Rep(Seq(t1("no"), t2("hi,")), 5, 5);
+        const expectedResults: StringDict[] = [
+            {t1: "no".repeat(5), t2: "hi,".repeat(5)},
+        ];
+        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+    });
+
+    // 11 states
+    describe('69. (t1:no+t2:hello,){5}', function() {
+        verbose('69. (t1:no+t2:hello,){5}');
+        const grammar = Rep(Seq(t1("no"), t2("hello,")), 5, 5);
+        const expectedResults: StringDict[] = [
+            {t1: "no".repeat(5), t2: "hello,".repeat(5)},
+        ];
+        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+    });
+
+    // 21 states
+    describe('70. (t1:no+t2:hello,){10}', function() {
+        verbose('70. (t1:no+t2:hello,){10}');
+        const grammar = Rep(Seq(t1("no"), t2("hello,")), 10, 10);
+        const expectedResults: StringDict[] = [
+            {t1: "no".repeat(10), t2: "hello,".repeat(10)},
+        ];
+        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+    });
+
+    // 21 states
+    describe('71. ((t1:no+t2:hello,){5}){2}', function() {
+        verbose('71. ((t1:no+t2:hello,){5}){2}');
+        const grammar = Rep(Rep(Seq(t1("no"), t2("hello,")), 5, 5), 2, 2);
+        const expectedResults: StringDict[] = [
+            {t1: "no".repeat(10), t2: "hello,".repeat(10)},
+        ];
+        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+    });
+
+    // 21 states
+    describe('72. ((t1:no+t2:hello,){2}){5}', function() {
+        verbose('72. ((t1:no+t2:hello,){2}){5}');
+        const grammar = Rep(Rep(Seq(t1("no"), t2("hello,")), 2, 2), 5, 5);
+        const expectedResults: StringDict[] = [
+            {t1: "no".repeat(10), t2: "hello,".repeat(10)},
+        ];
+        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+    });
+
+    // 51 states
+    describe('73. (t1:no+t2:hello,){25}', function() {
+        verbose('73. (t1:no+t2:hello,){25}');
+        const grammar = Rep(Seq(t1("no"), t2("hello,")), 25, 25);
+        const expectedResults: StringDict[] = [
+            {t1: "no".repeat(25), t2: "hello,".repeat(25)},
+        ];
+        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+    });
+
+    // 51 states
+    describe('74. ((t1:no+t2:hello,){5}){5}', function() {
+        verbose('74. ((t1:no+t2:hello,){5}){5}');
+        const grammar = Rep(Rep(Seq(t1("no"), t2("hello,")), 5, 5), 5, 5);
+        const expectedResults: StringDict[] = [
+            {t1: "no".repeat(25), t2: "hello,".repeat(25)},
+        ];
+        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+    });
+
+    // 51 states
+    describe('75. ((t1:hello,+t2:no){5}){5}', function() {
+        verbose('75. ((t1:hello,+t2:no){5}){5}');
+        const grammar = Rep(Rep(Seq(t1("hello,"), t2("no")), 5, 5), 5, 5);
+        const expectedResults: StringDict[] = [
+            {t1: "hello,".repeat(25), t2: "no".repeat(25)},
+        ];
+        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+    });
+
 });

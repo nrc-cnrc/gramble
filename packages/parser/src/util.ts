@@ -25,9 +25,11 @@ export const VERBOSE_DEBUG = 1 << 1;
 export const VERBOSE_STATES = 1 << 2;
 export const VERBOSE_GRAMMAR = 1 << 3;
 
-export function logDebug(verbose: number, msg: string): void {
+export function logDebug(verbose: number, ...msgs: string[]): void {
     if ((verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
-        console.log(msg);
+        for (const msg of msgs) {
+            console.log(msg);
+        }
     }
 }
 
