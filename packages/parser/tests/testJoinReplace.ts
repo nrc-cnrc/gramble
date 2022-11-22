@@ -52,7 +52,6 @@ function ReplaceBypass(
 
 describe(`${path.basename(module.filename)}`, function() {
     
-    /*
     describe('0a1. Replace i by o in i: i -> o, only using Join', function() {
         const grammar = Seq(Join(Uni(t1("i")),
                              ReplaceBypass(t1("i"), t2("o"))), Vocab("t1", "io"));
@@ -402,7 +401,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
     });
 
-    */
     // 134 states visited
     describe('6b. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         const r1Grammar = JoinReplace(t1("abc"), [ReplaceBypass(t1("a"), t2(""))]);
@@ -418,7 +416,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
     });
 
-    /*
     // 31 states visited
     describe('6c. 3-rule cascade (vocab abcdABCD)', function() {
         const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
@@ -1467,6 +1464,4 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammarWithVocab, expectedResults, VERBOSE_STATES);
     });
-
-*/
 });

@@ -11,7 +11,7 @@ import {
     constructEpsilonLiteral, 
     constructPrecede, constructMatchCount, constructPreTape,
     constructNotContains, constructParallel, 
-    DerivEnv, ExprNamespace, constructCollection
+    DerivEnv, ExprNamespace, constructCollection, constructCorrespond
 } from "./exprs";
 import { Msg, Msgs, result, Result, resultDict, resultList } from "./msgs";
 
@@ -2502,13 +2502,15 @@ export class ReplaceGrammar extends Grammar {
             this.minReps = Math.min(this.minReps, this.maxReps);
         }
 
-        const matchCountTapes: Dict<number> = {};
-        for (const tape of this.toGrammar.tapes) {
-            matchCountTapes[tape] = 0;
+        if (this.fromGrammar.tapes.length != 1) {
+            throw new Error(`too many tapes in fromGrammar: ${this.fromGrammar.tapes}`);
         }
-        for (const tape of this.fromGrammar.tapes) {
-            matchCountTapes[tape] = 0;
+        if (this.toGrammar.tapes.length != 1) {
+            throw new Error(`too many tapes in toGrammar: ${this.toGrammar.tapes}`);
         }
+
+        const fromTape = this.fromGrammar.tapes[0];
+        const toTape = this.toGrammar.tapes[0];
 
         const fromExpr: Expr = this.fromGrammar.constructExpr(tapeNS, symbolTable);
         const toExpr: Expr = this.toGrammar.constructExpr(tapeNS, symbolTable);
@@ -2516,7 +2518,7 @@ export class ReplaceGrammar extends Grammar {
         const postContextExpr: Expr = this.postContext.constructExpr(tapeNS, symbolTable);
         let states: Expr[] = [
             constructMatchFrom(preContextExpr, this.fromTapeName, ...this.toTapeNames),
-            constructMatchCount(constructPrecede(fromExpr, toExpr), matchCountTapes),
+            constructCorrespond(constructPrecede(fromExpr, toExpr), fromTape, 0, toTape, 0),
             constructMatchFrom(postContextExpr, this.fromTapeName, ...this.toTapeNames)
         ];
 

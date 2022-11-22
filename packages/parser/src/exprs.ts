@@ -1874,7 +1874,7 @@ class RepeatExpr extends UnaryExpr {
         if (yielded &&
                 !(deltad instanceof NullExpr) && oneLess instanceof RepeatExpr) {
             yield [EPSILON_TOKEN, constructPrecede(deltad, oneLess)];
-        }
+        } 
     }
 }
 
@@ -2087,6 +2087,100 @@ class NegationExpr extends UnaryExpr {
             yield [c, constructUniverse(this.tapes, this.maxChars-1)];
         }
     }
+}
+
+
+export class CorrespondExpr extends Expr {
+
+    constructor(
+        public child: Expr,
+        public fromTape: string,
+        public fromCount: number,
+        public toTape: string,
+        public toCount: number
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        return this.child.id;
+    }
+
+    public delta(tapeName: string, env: DerivEnv): Expr {
+        if (tapeName == this.fromTape) {
+            const childDelta = this.child.delta(tapeName, env);
+            return constructCorrespond(childDelta, this.fromTape, this.fromCount,
+                                            this.toTape, this.toCount);
+        }
+
+        if (tapeName == this.toTape) {
+            if (this.toCount < this.fromCount) {
+                return NULL;
+            }
+            const childDelta = this.child.delta(tapeName, env);
+            return constructCorrespond(childDelta, this.fromTape, this.fromCount,
+                this.toTape, this.toCount);
+        }
+
+        // it's neither tape we care about
+        return this;
+    }
+
+    public *deriv(
+        tapeName: string, 
+        target: Token, 
+        env: DerivEnv
+    ): DerivResults {
+        if (tapeName == this.toTape) {
+            for (const [childTarget, childNext] of this.child.deriv(tapeName, target, env)) {
+                const successor = constructCorrespond(childNext, 
+                                            this.fromTape, this.fromCount,
+                                            this.toTape, this.toCount+1);
+                yield [childTarget, successor];
+            }
+
+            // toTape is special, if it's nullable but has emitted fewer tokens than
+            // fromTape has, it can emit an epsilon
+            const childDelta = this.child.delta(tapeName, env);
+            if (!(childDelta instanceof NullExpr) && this.toCount < this.fromCount) {
+                const successor = constructCorrespond(this.child, 
+                    this.fromTape, this.fromCount,
+                    this.toTape, this.toCount+1);
+                yield [EPSILON_TOKEN, successor];
+            }
+            return;
+        }
+
+        if (tapeName == this.fromTape) {
+            for (const [childTarget, childNext] of this.child.deriv(tapeName, target, env)) {
+                const successor = constructCorrespond(childNext, 
+                                            this.fromTape, this.fromCount+1,
+                                            this.toTape, this.toCount);
+                yield [childTarget, successor];
+            }
+            return;
+        }
+
+        // if it's neither tape, nothing can happen here
+        
+    }
+
+}
+
+export function constructCorrespond(
+    child: Expr,
+    fromTape: string,
+    fromCount: number,
+    toTape: string,
+    toCount: number
+): Expr {
+    if (child instanceof NullExpr) {
+        return child;
+    }
+    if (child instanceof EpsilonExpr && fromCount <= toCount) {
+        return child;
+    }
+    return new CorrespondExpr(child, fromTape, fromCount, toTape, toCount);
 }
 
 /**
