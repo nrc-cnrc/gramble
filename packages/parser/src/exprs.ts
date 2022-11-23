@@ -1632,7 +1632,6 @@ export class PreTapeExpr extends UnaryExpr {
         const delta = this.child.delta(tapeName, env);
         return constructPreTape(this.fromTape, this.toTape, delta);
     }
-
     
     public *deriv(
         tapeName: string, 
@@ -1645,6 +1644,14 @@ export class PreTapeExpr extends UnaryExpr {
         }
 
         if (tapeName == this.toTape) {
+            
+            // if the child is nullable on the fromTape, we can stop 
+            // querying on fromTape -- that is, stop being a PreTapeExpr
+            const childDelta = this.child.delta(this.fromTape, env);
+            if (!(childDelta instanceof NullExpr)) {
+                yield* childDelta.deriv(this.toTape, target, env);
+            }
+
             const globalTapeName = env.getTape(this.fromTape).globalName;
             for (const [fromTarget, fromNext] of this.child.deriv(this.fromTape, target, env)) {
                 if (fromNext instanceof NullExpr) {
