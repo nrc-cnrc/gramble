@@ -9,7 +9,6 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    /*
     describe('Simple replace', function() {
         const project = sheetFromFile(
             `${DIR}/sameTapeReplace.csv`);
@@ -54,7 +53,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Simple replace with embed', function() {
         const project = sheetFromFile(
-            `${DIR}/replaceEmbed.csv`, VERBOSE_DEBUG);
+            `${DIR}/replaceEmbed.csv`);
         testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGrammar(project, [
@@ -140,7 +139,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    
     describe('Nested replace with some unchanged letters', function() {
         const project = sheetFromFile(`${DIR}/nestedSameWithUnchanged.csv`);
         testHasVocab(project, {text: 5})
@@ -209,7 +207,6 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/ruleFromRegex.csv`);
         testErrors(project, []);
         testGrammar(project, [
-            {"text":"ava"},
             {"text":"ava"}
         ]);
     });
@@ -333,11 +330,9 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
-    */
     describe('Rule with an empty to', function() {
         const project = sheetFromFile(
-            `${DIR}/blankTo.csv`, VERBOSE_DEBUG);
+            `${DIR}/blankTo.csv`);
         testHasVocab(project, {text: 2})
         testErrors(project, []);
         testGrammar(project, [
@@ -346,10 +341,9 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     /*
-    
-    describe('Rule with an empty from', function() {
+    describe('DANGER: Rule with an empty from', function() {
         const project = sheetFromFile(
-            `${DIR}/blankFrom.csv`);
+            `${DIR}/blankFrom.csv`, VERBOSE_DEBUG);
         testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGrammar(project, [
@@ -357,6 +351,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"cabac"}
         ]);
     });
+    */
 
     describe('Rule with an empty from, with pre and post', function() {
         const project = sheetFromFile(
@@ -377,5 +372,5 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"BC"}
         ]);
     });
-*/
+
 });

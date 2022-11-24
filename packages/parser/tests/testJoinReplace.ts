@@ -375,17 +375,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
-    describe('does not contain a', function() {
-
-        const r1Grammar = Not(Seq(Short(Seq(Rep(Any("t1")), t1("a"))), Rep(Any("t1"))));
-        const vocGrammar = Vocab({t1:"ab"});
-        const grammar = Count(3, Seq(r1Grammar, vocGrammar));
-        const expectedResults: StringDict[] = [
-            {}, {t1: 'b'}, {t1: 'bb'}, {t1: 'bbb'}
-        ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
-    });
-
     // 134 states visited
     describe('6b. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         const r1Grammar = JoinReplace(t1("abc"), [ReplaceBypass(t1("a"), t2(""))]);
@@ -398,7 +387,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abc', t2: 'bc', t3: 'xc'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
     // 134 states visited
@@ -413,7 +402,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abc', t2: 'bc', t3: 'xc'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
     // 31 states visited
@@ -673,7 +662,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaaaabcd', t2: 'Abcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
     // 2850 states visited
@@ -1189,7 +1178,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaaabcd', t2: 'bcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES | VERBOSE_DEBUG);
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
     // 3466 states visited

@@ -2101,7 +2101,6 @@ class NegationExpr extends UnaryExpr {
     }
 }
 
-
 export class CorrespondExpr extends Expr {
 
     constructor(
@@ -2174,9 +2173,7 @@ export class CorrespondExpr extends Expr {
         }
 
         // if it's neither tape, nothing can happen here
-        
     }
-
 }
 
 export function constructCorrespond(
@@ -2319,9 +2316,9 @@ export class MiniMatchExpr extends UnaryExpr {
                 this.child.deriv(this.fromTape, target, env)) {
             const successor = constructMiniMatch(cNext, this.fromTape, this.toTape);
             if (cTarget instanceof EpsilonToken) {
-                const lit = constructEpsilonLiteral(this.toTape);
-                yield [EPSILON_TOKEN, constructPrecede(lit, successor)];
-                //yield [EPSILON_TOKEN, successor];
+                //const lit = constructEpsilonLiteral(this.toTape);
+                //yield [EPSILON_TOKEN, constructPrecede(lit, successor)];
+                yield [EPSILON_TOKEN, successor];
             } else {
                 for (const c of toTape.expandStrings(cTarget as string, fromTape)) {
                     const lit = constructLiteral(this.toTape, c, [c]);
