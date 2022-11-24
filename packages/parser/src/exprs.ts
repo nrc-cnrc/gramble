@@ -1584,16 +1584,21 @@ export class CountTapeExpr extends UnaryExpr {
             return;
         }
 
-        if (this.maxChars[tapeName] <= 0) {
-            return;
-        }
-
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
+            
+            if (cTarget instanceof EpsilonToken) {
+                const successor = constructCountTape(cNext, this.maxChars);
+                yield [cTarget, successor];
+                continue;
+            }
+            
+            if (this.maxChars[tapeName] <= 0) {
+                return;
+            }
+            
             let newMax: Dict<number> = {};
             Object.assign(newMax, this.maxChars);
-            if (!(cTarget instanceof EpsilonToken)) {
-                newMax[tapeName] -= 1;
-            }
+            newMax[tapeName] -= 1;
             const successor = constructCountTape(cNext, newMax);
             yield [cTarget, successor];
         }

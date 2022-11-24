@@ -19,7 +19,7 @@ import {
 } from './testUtil';
 
 import * as path from 'path';
-import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, StringDict, VERBOSE_DEBUG, VERBOSE_STATES, VERBOSE_TIME } from "../src/util";
+import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, StringDict, VERBOSE_DEBUG } from "../src/util";
 
 const DEFAULT = undefined;
 
@@ -114,7 +114,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'bc'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
+        testGrammar(grammar, expectedResults);
     });
 
     describe('5b. 2-char deletion', function() {
@@ -125,7 +125,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'c'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
     
     describe('5c. 2-char deletion, later in string', function() {
@@ -136,7 +136,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'a'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // Exploring rule cascades with first 'to' empty - garden path
@@ -151,7 +151,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'ABcd'}
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 134 states visited
@@ -164,7 +164,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'Bc'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 31 states visited
@@ -178,7 +178,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'ABCd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 226 states visited
@@ -192,7 +192,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'BCd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 43 states visited
@@ -207,7 +207,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'ABCD'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 344 states visited
@@ -222,7 +222,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'BCD'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // Exploring rule cascades varying the input length
@@ -237,7 +237,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'CCCCCABcdCCCCC'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 80 states visited
@@ -250,7 +250,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'BBBBBCCCCCABcdCCCCCBBBBB'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
     
     // 92 states visited
@@ -266,7 +266,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'CCCCCABCDCCCCC'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 698 states visited
@@ -281,7 +281,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'CCCCCBCDCCCCC'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 1073 states visited
@@ -297,7 +297,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'BBBBBCCCCCBCDCCCCCBBBBB'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
 
@@ -305,7 +305,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 13 states visited
     describe('8a-1. single rule with 1>1-char substitution (vocab abcdABCD)', function() {
-        console.log("------8a-1. single rule with 1>1-char substitution (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("abcd", IOReplace("a", "A"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
@@ -313,12 +313,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'Abcd'}
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 49 states visited
     describe('8a-2. single rule with 2>1-char substitution (vocab abcdABCD)', function() {
-        console.log("------8a-2. single rule with 2>1-char substitution (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("aabcd", IOReplace("aa", "A"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
@@ -326,12 +326,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'Abcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 356 states visited
     describe('8a-3. single rule with 3>1-char substitution (vocab abcdABCD)', function() {
-        console.log("------8a-3. single rule with 3>1-char substitution (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("aaabcd", IOReplace("aaa", "A"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
@@ -339,12 +339,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'Abcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 2803 states visited
     describe('8a-4. single rule with 4>1-char substitution (vocab abcdABCD)', function() {
-        console.log("------8a-4. single rule with 4>1-char substitution (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("aaaabcd", IOReplace("aaaa", "A"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
@@ -352,12 +352,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'Abcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
     
     // 22371 states visited
     describe('8a-5. single rule with 5>1-char substitution (vocab abcdABCD)', function() {
-        console.log("------8a-5. single rule with 5>1-char substitution (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("aaaaabcd", IOReplace("aaaaa", "A"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
@@ -365,12 +365,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'Abcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 93 states visited
     describe('8b-1. 2-rule cascade starting with 2>1-char substitution (vocab abcdABCD)', function() {
-        console.log("------8b-2. 2-rule cascade starting with 2>1-char substitution (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("aabcd", IOReplace("aa", "A"),
                                           IOReplace("b", "B"));
         const voc: string = "abcdABCD"
@@ -379,12 +379,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'ABcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 706 states visited
     describe('8b-3. 2-rule cascade starting with 3>1-char substitution (vocab abcdABCD)', function() {
-        console.log("------8b-3. 2-rule cascade starting with 3>1-char substitution (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("aaabcd", IOReplace("aaa", "A"),
                                             IOReplace("b", "B"));
         const voc: string = "abcdABCD"
@@ -393,13 +393,13 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'ABcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
 
     // 43 states visited
     describe('8c-1. 4-rule cascade starting with 1>1-char substitution (vocab abcdABCD)', function() {
-        console.log("------8c-1. 4-rule cascade starting with 1>1-char substitution (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("abcd", IOReplace("a", "A"),
                                          IOReplace("b", "B"),
                                          IOReplace("c", "C"),
@@ -410,12 +410,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'ABCD'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 223 states visited
     describe('8c-2. 4-rule cascade starting with 2>1-char substitution (vocab abcdABCD)', function() {
-        console.log("------8c-2. 4-rule cascade starting with 2>1-char substitution (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("aabcd", IOReplace("aa", "A"),
                                          IOReplace("b", "B"),
                                          IOReplace("c", "C"),
@@ -426,12 +426,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'ABCD'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 1620 states visited
     describe('8c-3. 4-rule cascade starting with 3>1-char substitution (vocab abcdABCD)', function() {
-        console.log("------8c-3. 4-rule cascade starting with 3>1-char substitution (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("aaabcd", IOReplace("aaa", "A"),
                                            IOReplace("b", "B"),
                                            IOReplace("c", "C"),
@@ -442,12 +442,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'ABCD'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 12956 states visited
     describe('8c-4. 4-rule cascade starting with 4>1-char substitution (vocab abcdABCD)', function() {
-        console.log("------8c-4. 4-rule cascade starting with 4>1-char substitution (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("aaaabcd", IOReplace("aaaa", "A"),
                                          IOReplace("b", "B"),
                                          IOReplace("c", "C"),
@@ -458,12 +458,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'ABCD'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 134 states visited
     describe('10a. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
-        console.log("------10a. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("abcd", IOReplace("a", ""),
                                          IOReplace("b", "B"));
         const voc: string = "abcdABCD"
@@ -472,12 +472,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'Bcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 1600 states visited
     describe('10b. 2-rule cascade starting with 2-char deletion (vocab abcdABCD)', function() {
-        console.log("------10b. 2-rule cascade starting with 2-char deletion (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("aabcd", IOReplace("aa", ""),
                                          IOReplace("b", "B"));
         const voc: string = "abcdABCD"
@@ -486,12 +486,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'Bcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 22616 states visited
     describe('10c. 2-rule cascade starting with 3-char deletion (vocab abcdABCD)', function() {
-        console.log("------10c. 2-rule cascade starting with 3-char deletion (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("aaabcd", IOReplace("aaa", ""),
                                          IOReplace("b", "B"));
         const voc: string = "abcdABCD"
@@ -500,12 +500,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'Bcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
    
     // 344 states visited
     describe('11a. 4-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
-        console.log("-----11a. 4-rule cascade starting with 1-char deletion (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("abcd", IOReplace("a", ""),
                                          IOReplace("b", "B"),
                                          IOReplace("c", "C"),
@@ -516,12 +516,12 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'BCD'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 4498 states visited
     describe('11b. 4-rule cascade starting with 2-char deletion (vocab abcdABCD)', function() {
-        console.log("-----11b. 4-rule cascade starting with 2-char deletion (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("aabcd", IOReplace("aa", ""),
                                          IOReplace("b", "B"),
                                          IOReplace("c", "C"),
@@ -532,14 +532,14 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'BCD'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // Exploring rule cascades with 'from' being shorter than 'to' - NO garden path
 
     // 17 states visited
     describe('12a. single rule with 1>2-char substitution (vocab abcdABCD)', function() {
-        console.log("------12a. single rule with 1>5-char substitution (vocab abcdABCD)");
+        
         const r1Grammar = IOJoin("abcd", IOReplace("a", "AA"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
@@ -547,81 +547,55 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'AAbcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES|VERBOSE_DEBUG);
+        testGrammar(grammar, expectedResults);
     });
 
-/*
-    // 16 states visited
     describe('12b. single rule with 1>5-char substitution (vocab abcdABCD)', function() {
-        console.log("------12b. single rule with 1>5-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("c"), t2("CCCCC"))]);
+        
+        const r1Grammar = IOJoin("abcd", IOReplace("a", "AAAAA"));
         const voc: string = "abcdABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc});
+        const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
-        testHasTapes(grammar, ['t1', 't2']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length});
         const expectedResults: StringDict[] = [
-            {t1: 'abcd', t2: 'abCCCCCd'},
+            {t1: 'AAAAAbcd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
     // 16 states visited
     describe('12c. single rule with 1>5-char substitution (vocab abcdABCD)', function() {
-        console.log("------12c. single rule with 1>5-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("d"), t2("DDDDD"))]);
+        
+        const r1Grammar = IOJoin("abcd", IOReplace("c", "CCCCC"));
         const voc: string = "abcdABCD"
-        const vocGrammar = Vocab({t1:voc, t2:voc});
+        const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
-        testHasTapes(grammar, ['t1', 't2']);
-        testHasVocab(grammar, {t1:voc.length, t2:voc.length});
         const expectedResults: StringDict[] = [
-            {t1: 'abcd', t2: 'abcDDDDD'},
+            {t1: 'abCCCCCd'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
-
-    // Exploring using EpsilonLit in nullable Matches
 
     // 16 states visited
-    describe('X1. (t2:e+M(t1>t2,ε|t1:h)){2} (vocab hx/hex)', function() {
-        console.log("------X1");
-        const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
-        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
-        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
-        let grammarWithVocab: Grammar = Seq(grammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
-        grammarWithVocab = CountTape({t1: 3, t2: 3}, grammarWithVocab);
-        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
-        testHasTapes(grammarWithVocab, ['t1', 't2']);
-        testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
+    describe('12c. single rule with 1>5-char substitution (vocab abcdABCD)', function() {
+        const r1Grammar = IOJoin("abcd", IOReplace("d", "DDDDD"));
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
         const expectedResults: StringDict[] = [
-            {t2: 'ee'},
-            {t1: 'h', t2: 'ehe'},
-            {t1: 'h', t2: 'eeh'},
+            {t1: 'abcDDDDD'},
         ];
-        testGrammar(grammarWithVocab, expectedResults, VERBOSE_STATES);
+        testGrammar(grammar, expectedResults);
     });
 
-    // 14 states visited
-    describe('X2. (t2:e+M(t1>t2,t1:ε|t1:h)){2} (vocab hx/hex)', function() {
-        console.log("------X2");
-        const fromGrammar: Grammar = Uni(EpsilonLit("t1"), t1("h"));
-        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
-        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
-        let grammarWithVocab: Grammar = Seq(grammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
-        grammarWithVocab = CountTape({t1: 3, t2: 3}, grammarWithVocab);
-        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
-        testHasTapes(grammarWithVocab, ['t1', 't2']);
-        testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
+    describe('13a. Deleting twice in one word', function() {
+        const r1Grammar = IOJoin("abcdabcd", IOReplace("a", ""));
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
         const expectedResults: StringDict[] = [
-            {t2: 'ee'},
-            {t1: 'h', t2: 'ehe'},
-            {t1: 'h', t2: 'eeh'},
+            {t1: 'bcdbcd'},
         ];
-        testGrammar(grammarWithVocab, expectedResults, VERBOSE_STATES);
-    });
+        testGrammar(grammar, expectedResults);
 
-*/
+    });
 });
