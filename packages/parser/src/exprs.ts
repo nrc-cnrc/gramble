@@ -1779,6 +1779,57 @@ export class PriorityExpr extends UnaryExpr {
     }
 }
 
+class EpsCountExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public tapeName: string,
+        public maxCount: number = 1
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return this.child.id;
+    }
+
+    public delta(tapeName: string, env: DerivEnv): Expr {
+        const childDelta = this.child.delta(tapeName, env);
+        return constructEpsCount(childDelta, this.tapeName, this.maxCount);
+    }
+
+    public *deriv(
+        tapeName: string, 
+        target: Token, 
+        env: DerivEnv
+    ): DerivResults {
+        for (const [childTarget, childNext] of this.child.deriv(tapeName, target, env)) {
+            if (tapeName == this.tapeName && childTarget instanceof EpsilonToken) {
+                if (this.maxCount == 0) {
+                    continue;
+                }
+                const successor = constructEpsCount(childNext, this.tapeName, this.maxCount-1);
+                yield [childTarget, successor];
+                continue;
+            }
+
+            const successor = constructEpsCount(childNext, this.tapeName);
+            yield [childTarget, successor];
+        }
+    }
+}
+
+export function constructEpsCount(
+    child: Expr, 
+    tapeName: string, 
+    maxCount: number = 1
+): Expr {
+    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
+        return child;
+    }
+    return new EpsCountExpr(child, tapeName, maxCount);
+}
+
 /**
  * ShortExprs "short-circuit" as soon as any of their children
  * are nullable -- that is, it has no derivatives if it has any
@@ -1792,7 +1843,7 @@ export class PriorityExpr extends UnaryExpr {
 class ShortExpr extends UnaryExpr {
 
     public get id(): string {
-        return `${this.child.id}`
+        return this.child.id;
     }
 
     public delta(
@@ -1874,7 +1925,7 @@ class RepeatExpr extends UnaryExpr {
         const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
         const deltad = this.child.delta(tapeName, env);
 
-        const anyChar = BITSETS_ENABLED ? env.getTape(tapeName).any : ANY_CHAR_STR;
+        //const anyChar = BITSETS_ENABLED ? env.getTape(tapeName).any : ANY_CHAR_STR;
 
         let yielded: boolean = false;
 
@@ -1882,9 +1933,10 @@ class RepeatExpr extends UnaryExpr {
             yield [cTarget, constructPrecede(cNext, oneLess)];
             yielded = true;
         }
-
+        
         if (yielded &&
-                !(deltad instanceof NullExpr) && oneLess instanceof RepeatExpr) {
+                !(deltad instanceof NullExpr) 
+                && oneLess instanceof RepeatExpr) {
             yield [EPSILON_TOKEN, constructPrecede(deltad, oneLess)];
         } 
     }

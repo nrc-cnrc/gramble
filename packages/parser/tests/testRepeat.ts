@@ -2804,5 +2804,5 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
-    
+
 });
