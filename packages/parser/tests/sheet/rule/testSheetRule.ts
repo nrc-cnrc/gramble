@@ -9,7 +9,6 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    /*
     describe('Simple replace', function() {
         const project = sheetFromFile(
             `${DIR}/sameTapeReplace.csv`);
@@ -366,7 +365,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(project, [
             {"text":"aa"}
         ]);
-    }); */
+    });
 
     describe('DANGER: Rule with an empty from', function() {
         const project = sheetFromFile(`${DIR}/blankFrom.csv`);
@@ -380,7 +379,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"cabac"}
         ]);
     });
-/*
+
     describe('Rule with an empty from, with pre and post', function() {
         const project = sheetFromFile(`${DIR}/blankFromPrePost.csv`);
         testHasVocab(project, {text: 3})
@@ -399,6 +398,5 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"BC"}
         ]);
     });
-    */
 
 });
