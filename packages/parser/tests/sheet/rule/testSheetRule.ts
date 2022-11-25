@@ -9,6 +9,7 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
 
+    /*
     describe('Simple replace', function() {
         const project = sheetFromFile(
             `${DIR}/sameTapeReplace.csv`);
@@ -341,8 +342,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Shortening rule', function() {
-        const project = sheetFromFile(
-            `${DIR}/shorteningRule.csv`);
+        const project = sheetFromFile(`${DIR}/shorteningRule.csv`);
         testHasVocab(project, {text: 2})
         testErrors(project, []);
         testGrammar(project, [
@@ -351,8 +351,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Shortening rule long', function() {
-        const project = sheetFromFile(
-            `${DIR}/shorteningRuleLong.csv`);
+        const project = sheetFromFile(`${DIR}/shorteningRuleLong.csv`);
         testHasVocab(project, {text: 2})
         testErrors(project, []);
         testGrammar(project, [
@@ -361,32 +360,29 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Shortening rule empty to', function() {
-        const project = sheetFromFile(
-            `${DIR}/shorteningRuleEmptyTo.csv`);
+        const project = sheetFromFile(`${DIR}/shorteningRuleEmptyTo.csv`);
         testHasVocab(project, {text: 2})
         testErrors(project, []);
         testGrammar(project, [
             {"text":"aa"}
         ]);
-    });
+    }); */
 
     describe('DANGER: Rule with an empty from', function() {
-        const project = sheetFromFile(
-            `${DIR}/blankFrom.csv`, VERBOSE_DEBUG);
+        const project = sheetFromFile(`${DIR}/blankFrom.csv`);
         testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGrammar(project, [
             {"text":"aba"},
             {"text":"abca"},
-            {"text":"abcca"},
+            {"text":"abaccc"},
             {"text":"acbca"},           
             {"text":"cabac"}
         ]);
     });
-
+/*
     describe('Rule with an empty from, with pre and post', function() {
-        const project = sheetFromFile(
-            `${DIR}/blankFromPrePost.csv`);
+        const project = sheetFromFile(`${DIR}/blankFromPrePost.csv`);
         testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGrammar(project, [
@@ -403,5 +399,6 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"BC"}
         ]);
     });
+    */
 
 });

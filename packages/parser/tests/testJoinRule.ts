@@ -1,13 +1,16 @@
 import { 
+    CountTape,
     Epsilon,
     EpsilonLit,
     Grammar,
+    Join,
     JoinRule,
     Lit,
     Rep,
     Replace,
     ReplaceGrammar,
     Seq,
+    Uni,
     Vocab,
 } from "../src/grammars";
 
@@ -598,4 +601,19 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
 
     });
+
+    describe('14a. Unconditional generation', function() {
+        const r1Grammar = IOJoin("abc", IOReplace("", "D"));
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc});
+        let grammar: Grammar = Seq(vocGrammar, r1Grammar);
+        grammar = Join(grammar, Uni(t1("abc"), t1("aDbc"), t1("abcDDD")));
+        const expectedResults: StringDict[] = [
+            {t1: 'abc'},
+            {t1: 'aDbc'},
+            {t1: 'abcDDD'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
 });

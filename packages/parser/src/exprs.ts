@@ -1779,7 +1779,7 @@ export class PriorityExpr extends UnaryExpr {
     }
 }
 
-class EpsCountExpr extends UnaryExpr {
+class NoEpsExpr extends UnaryExpr {
 
     constructor(
         child: Expr,
@@ -1790,12 +1790,12 @@ class EpsCountExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return this.child.id;
+        return `NEP${this.tapeName}(${this.child.id})`;
     }
 
     public delta(tapeName: string, env: DerivEnv): Expr {
         const childDelta = this.child.delta(tapeName, env);
-        return constructEpsCount(childDelta, this.tapeName, this.maxCount);
+        return constructNoEps(childDelta, this.tapeName);
     }
 
     public *deriv(
@@ -1805,29 +1805,23 @@ class EpsCountExpr extends UnaryExpr {
     ): DerivResults {
         for (const [childTarget, childNext] of this.child.deriv(tapeName, target, env)) {
             if (tapeName == this.tapeName && childTarget instanceof EpsilonToken) {
-                if (this.maxCount == 0) {
-                    continue;
-                }
-                const successor = constructEpsCount(childNext, this.tapeName, this.maxCount-1);
-                yield [childTarget, successor];
                 continue;
             }
 
-            const successor = constructEpsCount(childNext, this.tapeName);
+            const successor = constructNoEps(childNext, this.tapeName);
             yield [childTarget, successor];
         }
     }
 }
 
-export function constructEpsCount(
+export function constructNoEps(
     child: Expr, 
-    tapeName: string, 
-    maxCount: number = 1
+    tapeName: string,
 ): Expr {
     if (child instanceof EpsilonExpr || child instanceof NullExpr) {
         return child;
     }
-    return new EpsCountExpr(child, tapeName, maxCount);
+    return new NoEpsExpr(child, tapeName);
 }
 
 /**

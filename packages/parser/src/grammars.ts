@@ -11,7 +11,7 @@ import {
     constructEpsilonLiteral, 
     constructPrecede, constructMatchCount, constructPreTape,
     constructNotContains, constructParallel, 
-    DerivEnv, ExprNamespace, constructCollection, constructCorrespond, constructEpsCount
+    DerivEnv, ExprNamespace, constructCollection, constructCorrespond, constructNoEps
 } from "./exprs";
 import { Msg, Msgs, result, Result, resultDict, resultList } from "./msgs";
 
@@ -2594,9 +2594,8 @@ export class ReplaceGrammar extends Grammar {
             states.push(matchAnythingElse());
 
         const replaceOne: Expr = constructSequence(...states);
-        let replaceMultiple: Expr = constructRepeat(replaceOne, Math.max(1, this.minReps), this.maxReps);
-        replaceMultiple = constructEpsCount(replaceMultiple, this.fromTapeName);
-
+        const replaceMultiple: Expr = constructRepeat(replaceOne, Math.max(1, this.minReps), this.maxReps);
+        
         // we need to match the context on other tapes too
         const otherContextExpr: Expr = this.otherContext.constructExpr(tapeNS, symbolTable);
         if (this.beginsWith)
@@ -2605,7 +2604,9 @@ export class ReplaceGrammar extends Grammar {
             states = [matchAnythingElse(), replaceOne, otherContextExpr];
         else
             states = [matchAnythingElse(), replaceMultiple, otherContextExpr];
-        const replaceExpr: Expr = constructSequence(...states);
+        let replaceExpr: Expr = constructSequence(...states);
+        replaceExpr = constructNoEps(replaceExpr, this.fromTapeName);
+
                 
         if (this.minReps > 0) {
             return replaceExpr;
