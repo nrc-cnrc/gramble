@@ -20,6 +20,10 @@ export interface OpenDifferentiable {
     openDeriv(env: DerivEnv): Gen<[string, Token | EpsilonToken, Expr]>;
 }
 
+export class DerivStats {
+    public statesVisited: number = 0;
+}
+
 export class ExprNamespace extends Namespace<Expr> {}
 
 /** 
@@ -34,17 +38,18 @@ export class DerivEnv {
         public tapeNS: TapeNamespace,
         public symbolNS: Namespace<Expr>,
         public stack: CounterStack,
-        public opt: GenOptions
+        public opt: GenOptions,
+        public stats: DerivStats
     ) { }
 
     public renameTape(fromKey: string, toKey: string): DerivEnv {
         const newTapeNS = this.tapeNS.rename(fromKey, toKey);
-        return new DerivEnv(newTapeNS, this.symbolNS, this.stack, this.opt);
+        return new DerivEnv(newTapeNS, this.symbolNS, this.stack, this.opt, this.stats);
     }
 
     public addTapes(tapes: Dict<Tape>): DerivEnv {
         const newTapeNS = new TapeNamespace(tapes, this.tapeNS);
-        return new DerivEnv(newTapeNS, this.symbolNS, this.stack, this.opt);
+        return new DerivEnv(newTapeNS, this.symbolNS, this.stack, this.opt, this.stats);
     }
 
     public getSymbol(symbolName: string): Expr {
@@ -53,7 +58,7 @@ export class DerivEnv {
     
     public pushSymbols(symbols: Dict<Expr>): DerivEnv {
         const newSymbolNS = new ExprNamespace(symbols, this.symbolNS);
-        return new DerivEnv(this.tapeNS, newSymbolNS, this.stack, this.opt);
+        return new DerivEnv(this.tapeNS, newSymbolNS, this.stack, this.opt, this.stats);
     }
 
     public getTape(tapeName: string): Tape {
@@ -62,7 +67,11 @@ export class DerivEnv {
 
     public addSymbol(symbolName: string): DerivEnv {
         const newStack = this.stack.add(symbolName);
-        return new DerivEnv(this.tapeNS, this.symbolNS, newStack, this.opt);
+        return new DerivEnv(this.tapeNS, this.symbolNS, newStack, this.opt, this.stats);
+    }
+
+    public incrStates(): void {
+        this.stats.statesVisited++;
     }
 
     public logDebug(msg: string): void {
@@ -1662,6 +1671,7 @@ export class PreTapeExpr extends UnaryExpr {
                 if (fromNext instanceof NullExpr) {
                     continue;
                 }
+                env.incrStates();
                 const fromTarget_str = (fromTarget instanceof EpsilonToken) ? 'ε' : 
                                     (fromTarget instanceof BitsetToken) ?
                                     `[${fromTarget.bits}:${fromTarget.entanglements.toString()}]` :
@@ -1771,6 +1781,7 @@ export class PriorityExpr extends UnaryExpr {
                                     (cTarget instanceof BitsetToken) ?
                                     `[${cTarget.bits}:${cTarget.entanglements.toString()}]` :
                                     cTarget;
+                env.incrStates();
                 env.logDebug(`D^${tapeToTry}_${cTarget_str} is ${cNext.id}`);
                 const successor = constructPriority(newTapes, cNext);
                 yield [tapeToTry, cTarget, successor];
@@ -2495,7 +2506,7 @@ export class MatchFromExpr extends UnaryExpr {
                 this.child.deriv(this.fromTape, target, newEnv)) {
             const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
             if (cTarget instanceof EpsilonToken) {
-                console.log("========= EpsilonToken ==========");
+                env.logDebug("========= EpsilonToken ==========");
                 // const lit = constructEpsilonLiteral(oppositeTape);
                 // yield [EPSILON_TOKEN, constructPrecede(lit, successor)];
                 yield [EPSILON_TOKEN, successor];

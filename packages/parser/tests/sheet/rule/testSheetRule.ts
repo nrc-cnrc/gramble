@@ -10,8 +10,7 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Simple replace', function() {
-        const project = sheetFromFile(
-            `${DIR}/sameTapeReplace.csv`);
+        const project = sheetFromFile(`${DIR}/sameTapeReplace.csv`);
         testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGrammar(project, [
@@ -20,8 +19,7 @@ describe(`${path.basename(module.filename)}`, function() {
     }); 
     
     describe('Simple replace under assignment', function() {
-        const project = sheetFromFile(
-            `${DIR}/replaceUnderAssignment.csv`);
+        const project = sheetFromFile(`${DIR}/replaceUnderAssignment.csv`);
         testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGrammar(project, [
@@ -30,8 +28,7 @@ describe(`${path.basename(module.filename)}`, function() {
     }); 
     
     describe('Replacing wrong tape', function() {
-        const project = sheetFromFile(
-            `${DIR}/replaceWrongTape.csv`);
+        const project = sheetFromFile( `${DIR}/replaceWrongTape.csv`);
         testErrors(project, [
             ["replaceWrongTape",3,1,"error"]
         ]);
@@ -41,8 +38,7 @@ describe(`${path.basename(module.filename)}`, function() {
     }); 
 
     describe('Replace but the tape is a reserved word', function() {
-        const project = sheetFromFile(
-            `${DIR}/replaceReservedWord.csv`);
+        const project = sheetFromFile(`${DIR}/replaceReservedWord.csv`);
         testErrors(project, [
             ["replaceReservedWord",3,1,"error"]
         ]);
@@ -52,8 +48,7 @@ describe(`${path.basename(module.filename)}`, function() {
     }); 
 
     describe('Simple replace with embed', function() {
-        const project = sheetFromFile(
-            `${DIR}/replaceEmbed.csv`);
+        const project = sheetFromFile(`${DIR}/replaceEmbed.csv`);
         testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGrammar(project, [
@@ -62,8 +57,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Simple replace with two embed', function() {
-        const project = sheetFromFile(
-            `${DIR}/replaceTwoEmbed.csv`);
+        const project = sheetFromFile(`${DIR}/replaceTwoEmbed.csv`);
         testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGrammar(project, [
@@ -72,8 +66,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Simple replace with two embed 2', function() {
-        const project = sheetFromFile(
-            `${DIR}/replaceTwoEmbed2.csv`);
+        const project = sheetFromFile(`${DIR}/replaceTwoEmbed2.csv`);
         testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGrammar(project, [
@@ -82,8 +75,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Replacing, embedded', function() {
-        const project = sheetFromFile(
-            `${DIR}/replaceEmbedded.csv`);
+        const project = sheetFromFile(`${DIR}/replaceEmbedded.csv`);
         testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGrammar(project, [
@@ -92,8 +84,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Rule cascade, embedded', function() {
-        const project = sheetFromFile(
-            `${DIR}/cascadeEmbedded.csv`);
+        const project = sheetFromFile(`${DIR}/cascadeEmbedded.csv`);
         testHasVocab(project, {text: 4})
         testErrors(project, []);
         testGrammar(project, [
@@ -102,8 +93,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Replacing an embedded replace', function() {
-        const project = sheetFromFile(
-            `${DIR}/replaceEmbeddedReplace.csv`);
+        const project = sheetFromFile(`${DIR}/replaceEmbeddedReplace.csv`);
         testHasVocab(project, {text: 4})
         testErrors(project, []);
         testGrammar(project, [
@@ -112,8 +102,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('Cascading an embedded casecade', function() {
-        const project = sheetFromFile(
-            `${DIR}/cascadeOfCascade.csv`);
+        const project = sheetFromFile(`${DIR}/cascadeOfCascade.csv`);
         testHasVocab(project, {text: 8})
         testErrors(project, []);
         testGrammar(project, [

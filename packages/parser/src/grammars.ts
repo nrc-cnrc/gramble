@@ -11,7 +11,7 @@ import {
     constructEpsilonLiteral, 
     constructPrecede, constructMatchCount, constructPreTape,
     constructNotContains, constructParallel, 
-    DerivEnv, ExprNamespace, constructCollection, constructCorrespond, constructNoEps
+    DerivEnv, ExprNamespace, constructCollection, constructCorrespond, constructNoEps, DerivStats
 } from "./exprs";
 import { Msg, Msgs, result, Result, resultDict, resultList } from "./msgs";
 
@@ -2551,7 +2551,8 @@ export class ReplaceGrammar extends Grammar {
             const opt: GenOptions = new GenOptions();
             const stack = new CounterStack(opt.maxRecursion);
             const symbols = new ExprNamespace();
-            const env = new DerivEnv(tapeNS, symbols, stack, opt);
+            const stats = new DerivStats();
+            const env = new DerivEnv(tapeNS, symbols, stack, opt, stats);
             const delta = fromExprWithContext.delta(this.fromTapeName, env);
             if (delta instanceof EpsilonExpr) {
                 emptyFromExpr = true;
@@ -2606,7 +2607,6 @@ export class ReplaceGrammar extends Grammar {
             states = [matchAnythingElse(), replaceMultiple, otherContextExpr];
         let replaceExpr: Expr = constructSequence(...states);
         replaceExpr = constructNoEps(replaceExpr, this.fromTapeName);
-
                 
         if (this.minReps > 0) {
             return replaceExpr;
