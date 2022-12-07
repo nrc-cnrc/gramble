@@ -400,7 +400,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
         const expectedResults: StringDict[] = [
-            {t1: 'abc', t2: 'bc', t3: 'xc'},
+            {t1: 'abcd', t2: 'bcd', t3: 'Bcd'},
         ];
         testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
     });
