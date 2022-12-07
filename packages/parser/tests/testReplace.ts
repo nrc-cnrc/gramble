@@ -2500,7 +2500,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-
+    /*
     // Same tests with 2 'to'-tapes.
 
     describe('2-1. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {1+} || ^h_llo$', function() {
@@ -4318,4 +4318,5 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
+    */
 });

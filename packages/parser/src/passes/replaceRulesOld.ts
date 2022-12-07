@@ -1,5 +1,6 @@
 import { 
     CounterStack,
+    PreTapeGrammar,
     Grammar,
     GrammarPass,
     GrammarResult, HideGrammar,
@@ -66,6 +67,8 @@ export class ReplaceRulesOld extends GrammarPass {
             newG = new JoinGrammar(newG, rule);
             // hide the input tape
             newG = new HideGrammar(newG, REPLACE_INPUT_TAPE, rule.hiddenTapeName);
+            // set priority
+            newG = new PreTapeGrammar(rule.hiddenTapeName, REPLACE_OUTPUT_TAPE, newG);
         }
 
         newG = new RenameGrammar(newG, REPLACE_OUTPUT_TAPE, g.inputTape);

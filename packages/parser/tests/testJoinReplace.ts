@@ -1,11 +1,22 @@
 import { 
+    Any,
+    Count,
+    CountTape,
     Epsilon,
+    EpsilonLit,
     Grammar,
     Join,
     JoinReplace,
+    MatchDotRep,
+    MatchFrom,
+    NegationGrammar,
+    Not,
+    Priority,
+    Rep,
     Replace,
     ReplaceGrammar,
     Seq,
+    Short,
     Uni,
     Vocab,
 } from "../src/grammars";
@@ -389,7 +400,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1:voc.length, t2:voc.length, t3:voc.length});
         const expectedResults: StringDict[] = [
-            {t1: 'abcd', t2: 'bcd', t3: 'Bcd'},
+            {t1: 'abc', t2: 'bc', t3: 'xc'},
         ];
         testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
     });
@@ -662,7 +673,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaaaabcd', t2: 'Abcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
     });
 
     // 21 states visited
@@ -877,6 +888,22 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
+    // 370 states visited
+    describe('9d-test-2. single rule with 4-char (εε) deletion (vocab abcdABCD)', function() {
+        console.log("------9d-test-2. single rule with 4-char (εε) deletion (vocab abcdABCD)");
+        const r1Grammar = JoinReplace(t1("aaaabcd"), [ReplaceBypass(t1("aaaa"), Seq(EpsilonLit("t2"),
+                                                                                    EpsilonLit("t2")))]);
+        const voc: string = "abcdABCD"
+        const vocGrammar = Vocab({t1:voc, t2:voc});
+        const grammar: Grammar = Seq(vocGrammar, r1Grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1:voc.length, t2:voc.length});
+        const expectedResults: StringDict[] = [
+            {t1: 'aaaabcd', t2: 'bcd'},
+        ];
+        testGrammar(grammar, expectedResults, VERBOSE_STATES);
+    });
+
     // 134 states visited
     describe('10a. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         verbose("------10a. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)");
@@ -1042,4 +1069,45 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
+    // Exploring using EpsilonLit in nullable Matches
+
+    // 16 states visited
+    describe('X1. (t2:e+M(t1>t2,ε|t1:h)){2} (vocab hx/hex)', function() {
+        console.log("------X1");
+        const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        let grammarWithVocab: Grammar = Seq(grammar,
+                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        grammarWithVocab = CountTape({t1: 3, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},
+            {t1: 'h', t2: 'ehe'},
+            {t1: 'h', t2: 'eeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults, VERBOSE_STATES);
+    });
+
+    // 14 states visited
+    describe('X2. (t2:e+M(t1>t2,t1:ε|t1:h)){2} (vocab hx/hex)', function() {
+        console.log("------X2");
+        const fromGrammar: Grammar = Uni(EpsilonLit("t1"), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        let grammarWithVocab: Grammar = Seq(grammar,
+                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        grammarWithVocab = CountTape({t1: 3, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},
+            {t1: 'h', t2: 'ehe'},
+            {t1: 'h', t2: 'eeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults, VERBOSE_STATES);
+    });
 });

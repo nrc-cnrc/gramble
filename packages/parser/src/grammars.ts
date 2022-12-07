@@ -8,7 +8,10 @@ import {
     constructLiteral, constructMatchFrom, constructCharSet,
     constructDotRep, constructCount, constructCountTape,
     constructPriority, EpsilonExpr, constructShort,
-    constructNotContains, constructParallel, DerivEnv, ExprNamespace, CollectionExpr, constructCollection
+    constructEpsilonLiteral, 
+    constructPrecede, constructMatchCount, constructPreTape,
+    constructNotContains, constructParallel, 
+    DerivEnv, ExprNamespace, constructCollection, constructCorrespond, constructNoEps, DerivStats
 } from "./exprs";
 import { Msg, Msgs, result, Result, resultDict, resultList } from "./msgs";
 
@@ -171,7 +174,8 @@ export abstract class Grammar extends Component {
             const priority = joinWeight * tape.vocabSize;
             return [t, priority];
         });
-        return priorities.sort((a, b) => b[1] - a[1])
+        return priorities.filter(([t, priority]) => priority >= 0)
+                         .sort((a, b) => b[1] - a[1])
                          .map(([a,_]) => a);
     }
     
@@ -180,9 +184,15 @@ export abstract class Grammar extends Component {
         symbolsVisited: StringPairSet,
         env: PassEnv
     ): number {
-        return Math.max(...this.getChildren().map(c => 
-            c.getTapePriority(tapeName, symbolsVisited, env)
-        ));
+        const priorities: number[] = [0];
+        for (const child of this.getChildren()) {
+            const childPriority = child.getTapePriority(tapeName, symbolsVisited, env);
+            if (childPriority < 0) {
+                return childPriority;
+            }
+            priorities.push(childPriority);
+        }
+        return Math.max(...priorities);
     }
 
     /**
@@ -317,7 +327,9 @@ export class EpsilonGrammar extends AtomicGrammar {
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
-            this._tapes = [ `${HIDDEN_TAPE_PREFIX}END` ];
+            this._tapes = [ 
+                `${HIDDEN_TAPE_PREFIX}END` 
+            ];
         }
         return this._tapes;
     }
@@ -342,7 +354,9 @@ export class NullGrammar extends AtomicGrammar {
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
-            this._tapes = [ `${HIDDEN_TAPE_PREFIX}END` ];
+            this._tapes = [ 
+                `${HIDDEN_TAPE_PREFIX}END` 
+            ];
         }
         return this._tapes;
     }
@@ -404,6 +418,41 @@ export class CharSetGrammar extends AtomicGrammar {
         symbols: ExprNamespace
     ): Expr {
         return constructCharSet(this.tapeName, this.chars);
+    }
+}
+
+export class EpsilonLiteralGrammar extends AtomicGrammar {
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return this.msg();
+    }
+
+    constructor(
+        public tapeName: string,
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        return `${this.tapeName}:ε`;
+    }
+
+    public getLiterals(): LiteralGrammar[] {
+        return [];
+    }
+
+    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
+        if (this._tapes == undefined) {
+            this._tapes = [this.tapeName];
+        }
+        return this._tapes;
+    }
+
+    public constructExpr(
+        tapeNS: TapeNamespace,
+        symbols: ExprNamespace
+    ): Expr {
+        return constructEpsilonLiteral(this.tapeName);
     }
 }
 
@@ -1266,6 +1315,45 @@ export class NegationGrammar extends UnaryGrammar {
     }
 }
 
+export class PreTapeGrammar extends UnaryGrammar {
+
+    constructor(
+        public fromTape: string,
+        public toTape: string,
+        child: Grammar
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `EHIDE(${this.child.id})`;
+    }
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return result(this.child)
+                .bind(c => f.transform(c, env))
+                .bind(c => new PreTapeGrammar(this.fromTape, this.toTape, c as Grammar));
+    }
+
+    public getTapePriority(
+        tapeName: string,
+        symbolsVisited: StringPairSet,
+        env: PassEnv
+    ): number {
+        if (tapeName == this.fromTape) {
+            return -1;
+        }
+        return super.getTapePriority(tapeName, symbolsVisited, env);
+    }
+
+    public constructExpr(tapeNS: TapeNamespace, symbols: ExprNamespace): Expr {
+        const childExpr = this.child.constructExpr(tapeNS, symbols);
+        return constructPreTape(this.fromTape, this.toTape, childExpr);
+    }
+
+}
+
+
 let HIDE_INDEX = 0; 
 export class HideGrammar extends UnaryGrammar {
 
@@ -1962,6 +2050,10 @@ export function Epsilon(): EpsilonGrammar {
     return new EpsilonGrammar();
 }
 
+export function EpsilonLit(tape: string): EpsilonLiteralGrammar {
+    return new EpsilonLiteralGrammar(tape);
+}
+
 export function Null(): NullGrammar {
     return new NullGrammar();
 }
@@ -2403,14 +2495,23 @@ export class ReplaceGrammar extends Grammar {
             this.minReps = Math.min(this.minReps, this.maxReps);
         }
 
+        if (this.fromGrammar.tapes.length != 1) {
+            throw new Error(`too many tapes in fromGrammar: ${this.fromGrammar.tapes}`);
+        }
+        if (this.toGrammar.tapes.length != 1) {
+            throw new Error(`too many tapes in toGrammar: ${this.toGrammar.tapes}`);
+        }
+
+        const fromTape = this.fromGrammar.tapes[0];
+        const toTape = this.toGrammar.tapes[0];
+
         const fromExpr: Expr = this.fromGrammar.constructExpr(tapeNS, symbolTable);
         const toExpr: Expr = this.toGrammar.constructExpr(tapeNS, symbolTable);
         const preContextExpr: Expr = this.preContext.constructExpr(tapeNS, symbolTable);
         const postContextExpr: Expr = this.postContext.constructExpr(tapeNS, symbolTable);
         let states: Expr[] = [
             constructMatchFrom(preContextExpr, this.fromTapeName, ...this.toTapeNames),
-            fromExpr,
-            toExpr,
+            constructCorrespond(constructPrecede(fromExpr, toExpr), fromTape, 0, toTape, 0),
             constructMatchFrom(postContextExpr, this.fromTapeName, ...this.toTapeNames)
         ];
 
@@ -2443,7 +2544,8 @@ export class ReplaceGrammar extends Grammar {
             const opt: GenOptions = new GenOptions();
             const stack = new CounterStack(opt.maxRecursion);
             const symbols = new ExprNamespace();
-            const env = new DerivEnv(tapeNS, symbols, stack, opt);
+            const stats = new DerivStats();
+            const env = new DerivEnv(tapeNS, symbols, stack, opt, stats);
             const delta = fromExprWithContext.delta(this.fromTapeName, env);
             if (delta instanceof EpsilonExpr) {
                 emptyFromExpr = true;
@@ -2492,7 +2594,7 @@ export class ReplaceGrammar extends Grammar {
 
         const replaceOne: Expr = constructSequence(...states);
         const replaceMultiple: Expr = constructRepeat(replaceOne, Math.max(1, this.minReps), this.maxReps);
-
+        
         // we need to match the context on other tapes too
         const otherContextExpr: Expr = this.otherContext.constructExpr(tapeNS, symbolTable);
         if (this.beginsWith)
@@ -2501,7 +2603,8 @@ export class ReplaceGrammar extends Grammar {
             states = [matchAnythingElse(), replaceOne, otherContextExpr];
         else
             states = [matchAnythingElse(), replaceMultiple, otherContextExpr];
-        const replaceExpr: Expr = constructSequence(...states);
+        let replaceExpr: Expr = constructSequence(...states);
+        replaceExpr = constructNoEps(replaceExpr, this.fromTapeName);
                 
         if (this.minReps > 0) {
             return replaceExpr;

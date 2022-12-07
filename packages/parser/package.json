@@ -45,6 +45,7 @@
     "testIntersection": "mocha -r ts-node/register tests/testIntersection.ts",
     "testJoin": "mocha -r ts-node/register tests/testJoin.ts",
     "testJoinReplace": "mocha -r ts-node/register tests/testJoinReplace.ts",
+    "testJoinRule":  "mocha -r ts-node/register tests/testJoinRule.ts",
     "testMatch": "mocha -r ts-node/register tests/testMatch.ts",
     "testMatchDanger": "mocha -r ts-node/register tests/testMatchDanger.ts",
     "testMatchFrom": "mocha -r ts-node/register tests/testMatchFrom.ts",
@@ -83,7 +84,6 @@
     "@types/chai": "^4.2.12",
     "@types/mocha": "^8.0.3",
     "bitset": "^5.1.1",
-    "pattern-matching-ts": "^2.0.0",
     "unicode-properties": "^1.3.1"
   },
   "devDependencies": {

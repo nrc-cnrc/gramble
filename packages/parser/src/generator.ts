@@ -1,7 +1,7 @@
 import { 
     constructAlternation, constructPriority,
     CounterStack, DerivEnv, 
-    EpsilonExpr, Expr, ExprNamespace, NullExpr, PriorityExpr, CollectionExpr 
+    EpsilonExpr, Expr, ExprNamespace, NullExpr, PriorityExpr, CollectionExpr, DerivStats 
 } from "./exprs";
 import { OutputTrie, TapeNamespace, Token, EpsilonToken } from "./tapes";
 import { 
@@ -32,7 +32,8 @@ export function* generate(
 ): Gen<StringDict> {
     const stack = new CounterStack(opt.maxRecursion);
     const symbolNS = new ExprNamespace();
-    const env = new DerivEnv(tapeNS, symbolNS, stack, opt);
+    const stats = new DerivStats();
+    const env = new DerivEnv(tapeNS, symbolNS, stack, opt, stats);
 
     const startingTime = Date.now();
 
@@ -44,14 +45,10 @@ export function* generate(
     // if we're generating randomly, we store candidates rather than output them immediately
     const candidates: OutputTrie[] = [];
 
-    let stateCounter = 0;
-
     env.logDebug("");
     env.logDebugId("*** Generating for expr", expr);
 
     while (prev = states.pop()) {
-
-        stateCounter++;
 
         // first, if we're random, see if it's time to stop and 
         // randomly emit a result.  candidates will only be length > 0
@@ -134,7 +131,7 @@ export function* generate(
 
     env.logDebug("");
     env.logDebugId("*** Finished generating for expr", expr);
-    env.logStates(`States visited: ${stateCounter}`);
+    env.logStates(`States visited: ${env.stats.statesVisited}`);
     const elapsedTime = msToTime(Date.now() - startingTime);
     env.logTime(`Generation time: ${elapsedTime}`);
 

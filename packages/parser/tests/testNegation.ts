@@ -1,4 +1,4 @@
-import { Uni, Join, Not, Rep, Seq, Null, Epsilon, Dot, Any, Vocab, Grammar, Count, CountTape } from "../src/grammars";
+import { Uni, Join, Not, Rep, Seq, Null, Epsilon, Dot, Any, Vocab, Grammar, Count, CountTape, Short } from "../src/grammars";
 import { 
     t1, t2, 
     testHasTapes, 
@@ -484,4 +484,17 @@ describe(`${path.basename(module.filename)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     });
+
+    
+    describe('does not contain a', function() {
+
+        const r1Grammar = Not(Seq(Short(Seq(Rep(Any("t1")), t1("a"))), Rep(Any("t1"))));
+        const vocGrammar = Vocab({t1:"ab"});
+        const grammar = Count(3, Seq(r1Grammar, vocGrammar));
+        const expectedResults: StringDict[] = [
+            {}, {t1: 'b'}, {t1: 'bb'}, {t1: 'bbb'}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
 });

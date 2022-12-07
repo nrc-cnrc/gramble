@@ -6,8 +6,8 @@ import { getCategory } from 'unicode-properties';
 // CONSTANTS
 
 export const HIDDEN_TAPE_PREFIX = ".";
-export const REPLACE_INPUT_TAPE = HIDDEN_TAPE_PREFIX + "input";
-export const REPLACE_OUTPUT_TAPE = HIDDEN_TAPE_PREFIX + "output";
+export const REPLACE_INPUT_TAPE = HIDDEN_TAPE_PREFIX + "i";
+export const REPLACE_OUTPUT_TAPE = HIDDEN_TAPE_PREFIX + "o";
 
 export const ANY_CHAR_STR = "__ANY_CHAR__";
 export const NO_CHAR_STR = "__ANY_CHAR__";

@@ -1,0 +1,1 @@
+../../../../packages/gramble-cli/bin/index.js generate -v longRule2.csv -o outputs.csv
