@@ -7,14 +7,13 @@ import {
     CollectionGrammar, PriorityGrammar, 
     TestGrammar 
 } from "../grammars";
-import { VocabMap, TapeNamespace} from "../tapes";
+import { TapeNamespace} from "../tapes";
 import { generate } from "../generator";
 import { PassEnv } from "../passes";
 
 export class ExecuteTests extends GrammarPass {
 
     constructor(
-        public vocab: VocabMap,
         public tapeNS: TapeNamespace,
         public symbolTable: Dict<Expr>
     ) {
@@ -93,7 +92,7 @@ export class ExecuteTests extends GrammarPass {
         // there won't be any new vocabulary here, but it's possible (indeed, frequent)
         // that the Equals we made above has a different join/concat tape structure
         // than the original grammar, so we have to check
-        targetComponent.collectAllVocab(this.vocab, this.tapeNS, env);        
+        targetComponent.collectAllVocab(this.tapeNS, env);        
         const tapePriority = targetComponent.getAllTapePriority(this.tapeNS, env);
         
         const potentiallyInfinite = targetComponent.potentiallyInfinite(new CounterStack(2), env);

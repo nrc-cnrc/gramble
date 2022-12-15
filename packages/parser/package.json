@@ -29,12 +29,10 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
-    
     "test": "mocha -r ts-node/register tests/*.ts tests/sheet/*/*.ts",
     "testGrammar": "mocha -r ts-node/register tests/*.ts",
     "testSheet": "mocha -r ts-node/register tests/sheet/*/*.ts",
     "testProperty": "mocha -r ts-node/register tests/property/testProperty.ts",
-
     "testBasic": "mocha -r ts-node/register tests/testBasic.ts",
     "testDot": "mocha -r ts-node/register tests/testDot.ts",
     "testEmbed": "mocha -r ts-node/register tests/testEmbed.ts",
@@ -45,7 +43,7 @@
     "testIntersection": "mocha -r ts-node/register tests/testIntersection.ts",
     "testJoin": "mocha -r ts-node/register tests/testJoin.ts",
     "testJoinReplace": "mocha -r ts-node/register tests/testJoinReplace.ts",
-    "testJoinRule":  "mocha -r ts-node/register tests/testJoinRule.ts",
+    "testJoinRule": "mocha -r ts-node/register tests/testJoinRule.ts",
     "testMatch": "mocha -r ts-node/register tests/testMatch.ts",
     "testMatchDanger": "mocha -r ts-node/register tests/testMatchDanger.ts",
     "testMatchFrom": "mocha -r ts-node/register tests/testMatchFrom.ts",
@@ -61,7 +59,6 @@
     "testReplace": "mocha -r ts-node/register tests/testReplace.ts",
     "testShort": "mocha -r ts-node/register tests/testShort.ts",
     "testTokenize": "mocha -r ts-node/register tests/testTokenize.ts",
-    
     "testSheetBare": "mocha -r ts-node/register tests/sheet/bare/*.ts",
     "testSheetBasic": "mocha -r ts-node/register tests/sheet/basic/*.ts",
     "testSheetCasing": "mocha -r ts-node/register tests/sheet/casing/*.ts",
@@ -83,7 +80,6 @@
   "dependencies": {
     "@types/chai": "^4.2.12",
     "@types/mocha": "^8.0.3",
-    "bitset": "^5.1.1",
     "unicode-properties": "^1.3.1"
   },
   "devDependencies": {

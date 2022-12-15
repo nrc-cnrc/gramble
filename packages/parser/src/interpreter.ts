@@ -18,7 +18,7 @@ import {
 } from "./util";
 import { Worksheet, Workbook } from "./sheets";
 import { parseHeaderCell } from "./headers";
-import { TapeNamespace, VocabMap } from "./tapes";
+import { TapeNamespace } from "./tapes";
 import { Expr, ExprNamespace, CollectionExpr } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
@@ -50,7 +50,7 @@ export class Interpreter {
     // or compilation is going to require remembering what indices had previously
     // been assigned to which characters.  (we're not, at the moment, using that 
     // functionality, but even if we're not, it doesn't hurt to keep these around.)
-    public vocab: VocabMap = new VocabMap();
+    //public vocab: VocabMap = new VocabMap();
     public tapeNS: TapeNamespace = new TapeNamespace();
 
     // the symbol table doesn't change in between invocations because queries
@@ -86,7 +86,7 @@ export class Interpreter {
         timeIt(() => {
             // collect vocabulary
             this.tapeNS = new TapeNamespace();
-            this.grammar.collectAllVocab(this.vocab, this.tapeNS, env);
+            this.grammar.collectAllVocab(this.tapeNS, env);
         }, timeVerbose, "Collected vocab");
 
         logGrammar(this.verbose, this.grammar.id)
@@ -269,7 +269,7 @@ export class Interpreter {
             targetGrammar = new EqualsGrammar(targetGrammar, querySeq);
             
             // we have to collect any new vocab, but only from the new material
-            targetGrammar.collectAllVocab(this.vocab, this.tapeNS, env);
+            targetGrammar.collectAllVocab(this.tapeNS, env);
             // we still have to copy though, in case the query added new vocab
             // to something that's eventually a "from" tape of a replace
             //targetGrammar.copyVocab(this.tapeNS, new Set());        
@@ -300,7 +300,7 @@ export class Interpreter {
         const symbols = expr instanceof CollectionExpr
                       ? expr.symbols
                       : {};
-        const pass = new ExecuteTests(this.vocab, this.tapeNS, symbols);
+        const pass = new ExecuteTests(this.tapeNS, symbols);
         const env = new PassEnv();
         pass.transform(this.grammar, env)
             .msgTo(m => sendMsg(this.devEnv, m));

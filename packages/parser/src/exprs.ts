@@ -1,5 +1,5 @@
 import { 
-    ANY_CHAR_STR, BITSETS_ENABLED, 
+    ANY_CHAR_STR, 
     DIRECTION_LTR, Gen, GenOptions, 
     logDebug, logTime, logStates, 
     logGrammar, setDifference, foldRight, foldLeft,
@@ -8,11 +8,10 @@ import {
     Namespace
 } from "./util";
 import { 
-    Tape, BitsetToken, TapeNamespace, 
-    renameTape, Token, EntangledToken,
-    OutputTrie, EpsilonToken, EPSILON_TOKEN, NO_CHAR_BITSET
+    Tape, TapeNamespace, 
+    renameTape, Token, 
+    OutputTrie, EpsilonToken, EPSILON_TOKEN
 } from "./tapes";
-import { Null } from "./grammars";
 
 export interface OpenDifferentiable {
 
@@ -316,34 +315,12 @@ export abstract class Expr {
      * @param env The generation environment containing the tape namespace, stack, etc.
      */
 
-     public *deriv(
+     public abstract deriv(
         tapeName: string, 
         target: Token,
         env: DerivEnv
-    ): DerivResults {
-        if (target instanceof BitsetToken) {
-            yield* this.bitsetDeriv(tapeName, target, env);
-            return;
-        }
-        yield* this.stringDeriv(tapeName, target, env);
-    }
+    ): DerivResults;
 
-    public bitsetDeriv(
-        tapeName: string, 
-        target: BitsetToken,
-        env: DerivEnv
-    ): DerivResults {
-        throw new Error("not implemented");
-    }
-
-    public stringDeriv(
-        tapeName: string,
-        target: string, 
-        env: DerivEnv
-    ): DerivResults {
-        throw new Error("not implemented");
-    }
-        
     /** 
      * Calculates the derivative so that the results are deterministic (or more accurately, so that all returned 
      * transitions are disjoint).
@@ -357,57 +334,9 @@ export abstract class Expr {
      *    X-Y (leading to the expr X would have led to)
      *    Y-X (leading to the expr Y would have led to)
      */ 
-
     public *disjointDeriv(
         tapeName: string, 
         target: Token,
-        env: DerivEnv
-    ): DerivResults {
-        if (target instanceof BitsetToken) {
-            yield* this.disjointBitsetDeriv(tapeName, target, env);
-            return;
-        }
-        yield* this.disjointStringDeriv(tapeName, target, env);
-    }
-    
-    public *disjointBitsetDerivOld(
-        tapeName: string, 
-        target: BitsetToken,
-        env: DerivEnv
-    ): DerivResults {
-        const results: {[c: string]: Expr[]} = {};
-
-        const tape = env.getTape(tapeName);
-
-        for (const [childToken, childExpr] of
-                this.deriv(tapeName, target, env)) {
-
-            // don't perform this operation on entangled tokens
-            if (childToken instanceof EntangledToken) {
-                yield [childToken, childExpr];
-                continue;
-            }
-
-            let c:string;
-            for (c of tape.fromToken(childToken as BitsetToken)) {
-                if (!(c in results)) {
-                    results[c] = [];
-                }
-                results[c].push(childExpr);
-            }
-        }
-
-        for (const c in results) {
-            const nextToken = tape.toToken([c]);
-            const nextExprs = results[c];
-            const nextExpr = constructAlternation(...nextExprs);
-            yield [nextToken, nextExpr];
-        }
-    }
-    
-    public *disjointStringDeriv(
-        tapeName: string,
-        target: string, 
         env: DerivEnv
     ): DerivResults {
         const results: {[c: string]: Expr[]} = {};
@@ -426,66 +355,6 @@ export abstract class Expr {
             const cToken: Token | EpsilonToken = (c == "") ? EPSILON_TOKEN : c;
             yield [cToken, nextExpr];
         }
-    }
-
-    public *disjointBitsetDeriv(
-        tapeName: string,
-        target: BitsetToken, 
-        env: DerivEnv
-    ): DerivResults {
-
-        let results: DerivResult[] = [];
-        let nextExprs: DerivResult[] = [... this.deriv(tapeName, target, env)];
-        
-        for (let [nextToken, next] of nextExprs) {
-
-            if (nextToken instanceof EntangledToken) {
-                yield [nextToken, next];
-                continue;
-            } 
-
-            let nextBits: BitsetToken = nextToken instanceof EpsilonToken ?
-                                        NO_CHAR_BITSET : nextToken as BitsetToken;
-            let epsilonPushed = false;
-            let newResults: [BitsetToken | EpsilonToken, Expr][] = [];
-            for (let [otherToken, otherNext] of results) {
-                if (otherToken instanceof EpsilonToken) {
-                    if (nextToken instanceof EpsilonToken) {
-                        // there's something in the intersection
-                        const union = constructAlternation(next, otherNext);
-                        newResults.push([nextToken, union]);
-                        epsilonPushed = true;
-                    } else {
-                        newResults.push([otherToken, otherNext]); 
-                    }
-                    continue;
-                }
-                let otherBits: BitsetToken = otherToken as BitsetToken;
-                // they both matched
-                const intersection: BitsetToken = nextBits.and(otherBits);
-                if (!intersection.isEmpty()) {
-                    // there's something in the intersection
-                    const union = constructAlternation(next, otherNext);
-                    newResults.push([intersection, union]); 
-                }
-                const notIntersection = intersection.not();
-                nextBits = nextBits.and(notIntersection)
-                otherBits = otherBits.and(notIntersection);
-
-                // there's something left over
-                if (!otherBits.isEmpty()) {
-                    newResults.push([otherBits, otherNext]);
-                }
-            }
-            results = newResults;
-            if (!nextBits.isEmpty()) {
-                results.push([nextBits, next]);
-            } else if ((nextToken instanceof EpsilonToken) && !epsilonPushed) {
-                results.push([nextToken, next]);
-            }
-        }
-
-        yield *results;
     }
 
 }
@@ -564,18 +433,7 @@ class DotExpr extends Expr {
         return NULL;
     }
 
-    public *bitsetDeriv(
-        tapeName: string, 
-        target: BitsetToken,
-        env: DerivEnv
-    ): DerivResults {
-        if (tapeName != this.tapeName) {
-            return;
-        }
-        yield [target, EPSILON];
-    }
-
-    public *stringDeriv(
+    public *deriv(
         tapeName: string,
         target: string, 
         env: DerivEnv
@@ -589,55 +447,6 @@ class DotExpr extends Expr {
         for (const c of tape.expandStrings(target)) {
             yield [c, EPSILON];
         }
-    }
-}
-
-class EntangleExpr extends Expr {
-
-    constructor(
-        public tapeName: string,
-        public token: EntangledToken
-    ) {
-        super();
-    }
-
-    public get id(): string {
-        return `(bits:${this.token.bits})`;
-    }
-
-    public delta(
-        tapeName: string,
-        env: DerivEnv
-    ): Expr {
-        if (tapeName != this.tapeName) {
-            return this;
-        }
-        return NULL;
-    }
-    
-    public *bitsetDeriv(
-        tapeName: string, 
-        target: BitsetToken,
-        env: DerivEnv
-    ): DerivResults {
-        if (tapeName != this.tapeName) {
-            return;
-        }
-
-        const tape = env.getTape(tapeName);
-        const result = tape.match(this.token, target);
-        if (result.isEmpty()) {
-            return;
-        }
-        yield [result, EPSILON];
-    }
-
-    public *stringDeriv(
-        tapeName: string,
-        target: string, 
-        env: DerivEnv
-    ): DerivResults {
-        throw new Error("not implemented")
     }
 }
 
@@ -664,30 +473,7 @@ class CharSetExpr extends Expr {
         return NULL;
     }
 
-    protected getToken(tape: Tape): BitsetToken {
-        return tape.toToken(this.chars);
-    }
-
-    public *bitsetDeriv(
-        tapeName: string, 
-        target: BitsetToken,
-        env: DerivEnv
-    ): DerivResults {
-        if (tapeName != this.tapeName) {
-            return;
-        }
-
-        const tape = env.getTape(tapeName);
-
-        const bits = this.getToken(tape);
-        const result = tape.match(bits, target);
-        if (result.isEmpty()) {
-            return;
-        }
-        yield [result, EPSILON];
-    }
-
-    public *stringDeriv(
+    public *deriv(
         tapeName: string,
         target: string, 
         env: DerivEnv
@@ -728,18 +514,7 @@ class DotStarExpr extends Expr {
         return EPSILON;
     }
 
-    public *bitsetDeriv(
-        tapeName: string, 
-        target: BitsetToken,
-        env: DerivEnv
-    ): DerivResults {
-        if (tapeName != this.tapeName) {
-            return;
-        }
-        yield [target, this];
-    }
-
-    public *stringDeriv(
+    public *deriv(
         tapeName: string,
         target: string, 
         env: DerivEnv
@@ -785,47 +560,7 @@ class LiteralExpr extends Expr {
         return NULL;
     }
 
-    protected getAtomicToken(tape: Tape): BitsetToken {
-        return tape.toToken([this.text]);
-    }
-
-    public *bitsetDeriv(
-        tapeName: string, 
-        target: BitsetToken,
-        env: DerivEnv
-    ): DerivResults {
-
-        if (this.index >= this.tokens.length) {
-            return;
-        }
-
-        if (tapeName != this.tapeName) {
-            return;
-        }
-
-        const tape = env.getTape(tapeName);
-
-        if (tape.atomic) {
-            const currentToken = tape.toToken([this.text]);
-            const result = tape.match(currentToken, target);
-            if (result.isEmpty()) {
-                return;
-            }
-            yield [result, EPSILON];
-            return;
-        }
-
-        const currentToken = tape.toToken([this.tokens[this.index]]);
-        const result = tape.match(currentToken, target);
-        if (result.isEmpty()) {
-            return;
-        }
-        const nextExpr = constructLiteral(this.tapeName, this.text, this.tokens, this.index+1);
-        yield [result, nextExpr];
-
-    }
-
-    public *stringDeriv(
+    public *deriv(
         tapeName: string,
         target: string, 
         env: DerivEnv
@@ -886,43 +621,7 @@ class RTLLiteralExpr extends LiteralExpr {
         return NULL;
     }
 
-    public *bitsetDeriv(
-        tapeName: string, 
-        target: BitsetToken,
-        env: DerivEnv
-    ): DerivResults {
-
-        if (this.index < 0) {
-            return;
-        }
-
-        if (tapeName != this.tapeName) {
-            return;
-        }
-
-        const tape = env.getTape(tapeName);
-
-        if (tape.atomic) {
-            const currentToken = tape.toToken([this.text]);
-            const result = tape.match(currentToken, target);
-            if (result.isEmpty()) {
-                return;
-            }
-            yield [result, EPSILON];
-            return;
-        }
-
-        const currentToken = tape.toToken([this.tokens[this.index]]);
-        const result = tape.match(currentToken, target);
-        if (result.isEmpty()) {
-            return;
-        }
-        const nextExpr = constructLiteral(this.tapeName, this.text, this.tokens, this.index-1);
-        yield [result, nextExpr];
-
-    }
-
-    public *stringDeriv(
+    public *deriv(
         tapeName: string,
         target: string, 
         env: DerivEnv
@@ -1673,9 +1372,7 @@ export class PreTapeExpr extends UnaryExpr {
                 }
                 env.incrStates();
                 const fromTarget_str = (fromTarget instanceof EpsilonToken) ? 'ε' : 
-                                    (fromTarget instanceof BitsetToken) ?
-                                    `[${fromTarget.bits}:${fromTarget.entanglements.toString()}]` :
-                                    fromTarget;
+                                        fromTarget;
                 env.logDebug(`D^${globalTapeName}_${fromTarget_str} = ${fromNext.id}`);
                 if (fromTarget instanceof EpsilonToken) {
                     const wrapped = constructPreTape(this.fromTape, this.toTape, fromNext);
@@ -1770,16 +1467,12 @@ export class PriorityExpr extends UnaryExpr {
         // rotate the tapes so that we don't just 
         // keep trying the same one every time
         const newTapes = [... this.tapes.slice(1), tapeToTry];
-        const tape = env.getTape(tapeToTry);
-        const startingToken = BITSETS_ENABLED ? tape.any : ANY_CHAR_STR;
 
         for (const [cTarget, cNext] of 
-                this.child.disjointDeriv(tapeToTry, startingToken, env)) {
+                this.child.disjointDeriv(tapeToTry, ANY_CHAR_STR, env)) {
 
             if (!(cNext instanceof NullExpr)) {
                 const cTarget_str = (cTarget instanceof EpsilonToken) ? 'ε' : 
-                                    (cTarget instanceof BitsetToken) ?
-                                    `[${cTarget.bits}:${cTarget.entanglements.toString()}]` :
                                     cTarget;
                 env.incrStates();
                 env.logDebug(`D^${tapeToTry}_${cTarget_str} is ${cNext.id}`);
@@ -1930,8 +1623,6 @@ class RepeatExpr extends UnaryExpr {
         const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
         const deltad = this.child.delta(tapeName, env);
 
-        //const anyChar = BITSETS_ENABLED ? env.getTape(tapeName).any : ANY_CHAR_STR;
-
         let yielded: boolean = false;
 
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
@@ -2070,47 +1761,7 @@ class NegationExpr extends UnaryExpr {
         return result;
     }
     
-    public *bitsetDeriv(
-        tapeName: string, 
-        target: BitsetToken,
-        env: DerivEnv
-    ): DerivResults {
-
-        if (!this.tapes.has(tapeName)) {
-            return;
-        }
-
-        const [disentangledTarget, entanglements] = target.disentangle(); 
-        let remainder = disentangledTarget.clone();
-
-        for (const [childText, childNext] of 
-                this.child.disjointDeriv(tapeName, disentangledTarget, env)) {
-            const successor = constructNegation(childNext, this.tapes);
-            if (childText instanceof EpsilonToken) {
-                yield [childText, successor];
-                continue;
-            }
-
-            const complement = (childText as BitsetToken).not();
-            remainder = remainder.and(complement);
-            const reEntangledText = (childText as BitsetToken).reEntangle(entanglements);
-            yield [reEntangledText, successor];
-        }
-
-        if (remainder.isEmpty()) {
-            return;
-        }
-
-        // any chars not yet consumed by the above represent
-        // cases where we've (in FSA terms) "fallen off" the graph,
-        // and are now at a special consume-anything expression that always
-        // succeeds.
-        
-        const reEntangledRemainder = remainder.reEntangle(entanglements);
-        yield [reEntangledRemainder, constructUniverse(this.tapes)];
-    }
-    
-    public *stringDeriv(
+    public *deriv(
         tapeName: string,
         target: string, 
         env: DerivEnv
@@ -2122,28 +1773,22 @@ class NegationExpr extends UnaryExpr {
 
         const tape = env.getTape(tapeName);
 
-        let remainder = tape.toToken([target]);
+        let remainder: Set<string> = new Set(tape.expandStrings(target));
 
         for (const [childText, childNext] of 
                 this.child.disjointDeriv(tapeName, target, env)) {
             if (!(childText instanceof EpsilonToken)) {
-                const childToken = tape.toToken([childText as string]);
-                const complement = childToken.not();
-                remainder = remainder.and(complement);    
+                remainder.delete(childText);  
             }
             const successor = constructNegation(childNext, this.tapes);
             yield [childText, successor];
-        }
-
-        if (remainder.isEmpty()) {
-            return;
         }
 
         // any chars not yet consumed by the above represent
         // cases where we've (in FSA terms) "fallen off" the graph,
         // and are now at a special consume-anything expression that always
         // succeeds.
-        for (const c of tape.fromToken(remainder)) {
+        for (const c of remainder) {
             yield [c, constructUniverse(this.tapes)];
         }
     }
@@ -2279,7 +1924,7 @@ export class MatchCountExpr extends UnaryExpr {
         return constructMatchCount(childDelta, this.tapeCounts);
     }
 
-    public *stringDeriv(tapeName: string, target: string, env: DerivEnv): DerivResults {
+    public *deriv(tapeName: string, target: string, env: DerivEnv): DerivResults {
         
         if (!(tapeName in this.tapeCounts)) {
             // not something we care about
@@ -2334,15 +1979,7 @@ export class MiniMatchExpr extends UnaryExpr {
         return constructMiniMatch(nextExpr, this.fromTape, this.toTape);
     }
     
-    public *bitsetDeriv(
-        tapeName: string, 
-        target: BitsetToken,
-        env: DerivEnv
-    ): DerivResults {
-        throw new Error("not implemented");
-    }
-    
-    public *stringDeriv(
+    public *deriv(
         tapeName: string,
         target: string, 
         env: DerivEnv
@@ -2368,7 +2005,11 @@ export class MiniMatchExpr extends UnaryExpr {
                 //yield [EPSILON_TOKEN, constructPrecede(lit, successor)];
                 yield [EPSILON_TOKEN, successor];
             } else {
-                for (const c of toTape.expandStrings(cTarget as string, fromTape)) {
+                for (const c of fromTape.expandStrings(cTarget)) {
+                    if (!toTape.vocab.has(c)) {
+                        continue;
+                    }
+                    
                     const lit = constructLiteral(this.toTape, c, [c]);
                     yield [c, constructPrecede(lit, successor)];
                 }
@@ -2422,50 +2063,8 @@ export class MatchFromExpr extends UnaryExpr {
         const nextExpr = this.child.delta(tapeName, env);
         return constructMatchFrom(nextExpr, this.fromTape, this.toTape);
     }
-
-    public *bitsetDeriv(
-        tapeName: string, 
-        target: BitsetToken,
-        env: DerivEnv
-    ): DerivResults {
-        
-        // if it's a tape that isn't our to/from, just forward and wrap 
-        if (tapeName != this.fromTape && tapeName != this.toTape) {
-            for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
-                const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
-                yield [cTarget, successor];
-            }
-            return;
-        }
-
-        // tapeName is either our toTape or fromTape.  The only differences
-        // between these two cases is (a) we buffer the literal on the opposite
-        // tape, that's what oppositeTape is below and (b) when tapeName is our
-        // toTape, we have to act like a toTape->fromTape rename.  
-
-        const oppositeTapeName = (tapeName == this.fromTape) ? this.toTape : this.fromTape;
-        const oppositeTape = env.getTape(oppositeTapeName);
-        //const fromTape = env.getTape(this.fromTape);
-        //const toTape = env.getTape(this.toTape);
-
-        // We ask for a namespace rename either way; when tapeName == fromTape,
-        // this is just a no-op
-        const newEnv = env.renameTape(tapeName, this.fromTape); 
-
-        for (const [cTarget, cNext] of 
-                this.child.deriv(this.fromTape, target, newEnv)) {
-            const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
-            const maskedTarget = oppositeTape.restrictToVocab(cTarget as BitsetToken);
-            if (maskedTarget.isEmpty()) {
-                continue;
-            }
-            const entangledTarget = new EntangledToken(maskedTarget);
-            const lit = constructEntangle(oppositeTapeName, entangledTarget);
-            yield [entangledTarget, constructPrecede(lit, successor)];
-        }
-    }
     
-    public *stringDeriv(
+    public *deriv(
         tapeName: string,
         target: string, 
         env: DerivEnv
@@ -2502,7 +2101,11 @@ export class MatchFromExpr extends UnaryExpr {
                 // yield [EPSILON_TOKEN, constructPrecede(lit, successor)];
                 yield [EPSILON_TOKEN, successor];
             } else {
-                for (const c of toTape.expandStrings(cTarget as string, fromTape)) {
+                for (const c of fromTape.expandStrings(cTarget)) {
+                    if (!toTape.vocab.has(c)) {
+                        continue;
+                    }
+                    
                     const lit = constructLiteral(oppositeTape, c, [c]);
                     yield [c, constructPrecede(lit, successor)];
                 }
@@ -2542,15 +2145,7 @@ export class MatchExpr extends UnaryExpr {
         return result;
     }
 
-    public *bitsetDeriv(
-        tapeName: string, 
-        target: BitsetToken,
-        env: DerivEnv
-    ): DerivResults {
-        throw new Error("Method not implemented.");
-    }
-    
-    public *stringDeriv(
+    public *deriv(
         tapeName: string,
         target: string, 
         env: DerivEnv
@@ -2852,15 +2447,6 @@ export function constructMatchFrom(
     return result;
 }
 
-/*
-export function constructMatchFrom(state: Expr, firstTape: string, ...otherTapes: string[]): Expr {
-    // Construct a Match for multiple tapes given a expression for the first tape. 
-    return constructMatch(constructSequence(state,
-                            ...otherTapes.map((t: string) => constructRename(state, firstTape, t))),
-                          new Set([firstTape, ...otherTapes]));
-} */
-
-
 export function constructRename(
     child: Expr, 
     fromTape: string, 
@@ -2905,13 +2491,6 @@ export function constructJoin(c1: Expr, c2: Expr, tapes1: Set<string>, tapes2: S
         return c1;
     }
     return new JoinExpr(c1, c2, tapes1, tapes2);
-}
-
-export function constructEntangle(
-    tapeName: string, 
-    token: EntangledToken
-): Expr {
-    return new EntangleExpr(tapeName, token);
 }
 
 export function constructPriority(tapes: string[], child: Expr): Expr {

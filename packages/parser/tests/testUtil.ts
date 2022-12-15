@@ -276,7 +276,7 @@ export function testHasVocab(
             if (tape == undefined) {
                 return;
             }
-            expect(tape.vocabSize).to.equal(expectedNum);
+            expect(tape.vocab.size).to.equal(expectedNum);
         });
     }
 }
