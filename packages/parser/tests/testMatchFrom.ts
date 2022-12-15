@@ -24,8 +24,6 @@ import {
 
 import * as path from 'path';
 import { StringDict, VERBOSE_DEBUG } from "../src/util";
-import { NULL } from "../src/exprs";
-
 
 describe(`${path.basename(module.filename)}`, function() {
 

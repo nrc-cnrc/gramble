@@ -1,86 +1,11 @@
 import { 
-    ANY_CHAR_STR, DIRECTION_LTR, GenOptions,
-    shuffleArray, StringDict, 
+    ANY_CHAR_STR,
     Namespace
 } from "./util";
 
 export type Token = string;
 export class EpsilonToken { }
 export const EPSILON_TOKEN: EpsilonToken = new EpsilonToken();
-
-/**
- * OutputTrie
- * 
- * The outputs of this algorithm are kept as tries, since that's the natural
- * shape of a set of outputs from a non-deterministic parsing algorithm.  (E.g., if
- * we've already output "fooba", and at the next state we could either output "r" or
- * "z", then just having "r" and "z" point to that previous output is both less effort
- * and less space than copying it twice and concatenating it.  Especially if "z" ends
- * up being a false path and we end up discarding it; that would mean we had copied/
- * concatenated for nothing.)   
- */
-export class OutputTrie {
-
-    public add(tapeName: string, token: Token): OutputTrieLeaf {
-        return new OutputTrieLeaf(tapeName, token, this);
-    }
-
-    public toDict(
-        tapeNS: TapeNamespace,
-        opt: GenOptions
-    ): StringDict[] {
-        return [{}];
-    }
-
-    public getStringsFromToken(
-        tape: Tape, 
-        t: Token
-    ): string[] {
-        return [t]; // if it's not a Token it's already a string
-    }
-}
-
-export class OutputTrieLeaf extends OutputTrie {
-
-    constructor(
-        public tapeName: string,
-        public token: Token,
-        public prev: OutputTrie
-    ) { 
-        super();
-    }
-
-    public toDict(
-        tapeNS: TapeNamespace,
-        opt: GenOptions,
-    ): StringDict[] {
-        const results: StringDict[] = [];
-        const tape = tapeNS.get(this.tapeName);
-        const newStrs = this.getStringsFromToken(tape, this.token);
-        if (opt.random) {
-            shuffleArray(newStrs);
-        }
-
-        for (const newStr of newStrs) {
-            let prevResults = this.prev.toDict(tapeNS, opt);
-            for (const prevResult of prevResults) {
-                const newResult: StringDict = {};
-                Object.assign(newResult, prevResult);
-                if (this.tapeName in prevResult || newStr != '') {
-                    const oldStr = (this.tapeName in prevResult) ?
-                                        prevResult[this.tapeName] : "";
-                    newResult[this.tapeName] = DIRECTION_LTR ?
-                                                oldStr + newStr :
-                                                newStr + oldStr;
-                }
-                results.push(newResult);
-            }
-        }
-
-        return results;
-    }
-
-}
 
 /**
  * Tape

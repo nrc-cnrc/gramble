@@ -5,13 +5,17 @@ import {
     logGrammar, setDifference, foldRight, foldLeft,
     VERBOSE_DEBUG,
     Dict,
-    Namespace
+    Namespace,
+    StringDict
 } from "./util";
 import { 
     Tape, TapeNamespace, 
     renameTape, Token, 
-    OutputTrie, EpsilonToken, EPSILON_TOKEN
+    EpsilonToken, EPSILON_TOKEN
 } from "./tapes";
+
+
+export type Output = OutputExpr | EpsilonExpr;
 
 export interface OpenDifferentiable {
 
@@ -83,9 +87,9 @@ export class DerivEnv {
         }
     }
 
-    public logDebugOutput(msg: string, output: OutputTrie): void {
+    public logDebugOutput(msg: string, output: Output): void {
         if ((this.opt.verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
-            console.log(`${msg} ${JSON.stringify(output.toDict(this.tapeNS, this.opt))}`);
+            console.log(`${msg} ${JSON.stringify(output.toDenotation())}`);
         }
     }
 
@@ -356,7 +360,50 @@ export abstract class Expr {
             yield [cToken, nextExpr];
         }
     }
+}
 
+export class OutputExpr {
+    
+    constructor(
+        public prev: OutputExpr | EpsilonExpr,
+        public unit: LiteralExpr
+    ) { }
+
+    /**
+     * toDenotation converts SOME (but not all) expressions to the 
+     * list of dicts of strings that they denote, in a non-recursive way
+     * (so as not to blow the stack for what can be some very long outputs).
+     * 
+     * In order to do this without recursing, the expression must be either 
+     * a LiteralExpr, an EpsilonExpr, or a ConcatExpr where the first (if RTL)
+     * or second (if LTR) child is a LiteralExpr|EpsilonExpr.  Luckily for 
+     * us, that's exactly what we build when we build outputs.
+     */
+    public toDenotation(): StringDict {
+        
+        const result: StringDict = {};
+        let current: OutputExpr | EpsilonExpr = this;
+        while (current instanceof OutputExpr) {
+            const oldStr = current.unit.tapeName in result ?
+                           result[current.unit.tapeName] : "";
+            result[current.unit.tapeName] = DIRECTION_LTR ?
+                            current.unit.text + oldStr:
+                            oldStr + current.unit.text;
+            current = current.prev;
+        }
+        return result;
+    }
+}
+
+export function addOutput(
+    prev: Output, 
+    tapeName: string, 
+    text: string | EpsilonExpr
+): Output {
+    if (text instanceof EpsilonExpr) {
+        return prev;
+    }
+    return new OutputExpr(prev, new LiteralExpr(tapeName, text, [text]));
 }
 
 /**
@@ -380,6 +427,10 @@ export class EpsilonExpr extends Expr {
         target: Token,
         env: DerivEnv
     ): DerivResults { }
+
+    public toDenotation(): StringDict {
+        return {};
+    }
 
 }
 

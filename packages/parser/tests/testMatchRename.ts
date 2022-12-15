@@ -11,15 +11,12 @@ import {
 } from "../src/grammars";
 
 import { 
-    t1, t2, t3, 
+    t1,
     testHasTapes,  
     testGrammar
 } from './testUtil';
 
 import * as path from 'path';
-import { BITSETS_ENABLED, VERBOSE_DEBUG } from "../src/util";
-
-if (!BITSETS_ENABLED) {
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -605,5 +602,3 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
 });
-
-}
