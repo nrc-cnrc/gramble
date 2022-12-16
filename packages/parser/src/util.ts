@@ -476,6 +476,16 @@ export function listDifference<T>(l1: T[], l2: T[]): T[] {
     return l1.filter(x => !set2.has(x));
 }
 
+export function concatStringDict(d1: StringDict, d2: StringDict): StringDict {
+    const result: StringDict = {};
+    Object.assign(result, d1);
+    for (const [key, value] of Object.entries(d2)) {
+        const oldStr = key in result ? result[key] : "";
+        result[key] = oldStr + value;
+    }
+    return result;
+}
+
 export function foldLeft<T>(
     arr: T[], 
     f: (t1: T, t2: T) => T

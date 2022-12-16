@@ -6,7 +6,8 @@ import {
     VERBOSE_DEBUG,
     Dict,
     Namespace,
-    StringDict
+    StringDict,
+    concatStringDict
 } from "./util";
 import { 
     Tape, TapeNamespace, 
@@ -15,7 +16,7 @@ import {
 } from "./tapes";
 
 
-export type Output = OutputExpr | EpsilonExpr;
+export type Output = ConcatExpr | EpsilonExpr;
 
 export interface OpenDifferentiable {
 
@@ -360,14 +361,6 @@ export abstract class Expr {
             yield [cToken, nextExpr];
         }
     }
-}
-
-export class OutputExpr {
-    
-    constructor(
-        public prev: OutputExpr | EpsilonExpr,
-        public unit: LiteralExpr
-    ) { }
 
     /**
      * toDenotation converts SOME (but not all) expressions to the 
@@ -380,30 +373,16 @@ export class OutputExpr {
      * us, that's exactly what we build when we build outputs.
      */
     public toDenotation(): StringDict {
-        
-        const result: StringDict = {};
-        let current: OutputExpr | EpsilonExpr = this;
-        while (current instanceof OutputExpr) {
-            const oldStr = current.unit.tapeName in result ?
-                           result[current.unit.tapeName] : "";
-            result[current.unit.tapeName] = DIRECTION_LTR ?
-                            current.unit.text + oldStr:
-                            oldStr + current.unit.text;
-            current = current.prev;
-        }
-        return result;
+        throw new Error("not impelmented");
     }
 }
 
 export function addOutput(
     prev: Output, 
     tapeName: string, 
-    text: string | EpsilonExpr
+    text: string
 ): Output {
-    if (text instanceof EpsilonExpr) {
-        return prev;
-    }
-    return new OutputExpr(prev, new LiteralExpr(tapeName, text, [text]));
+    return constructPrecede(prev, new LiteralExpr(tapeName, text, [text]));
 }
 
 /**
@@ -637,6 +616,10 @@ class LiteralExpr extends Expr {
             const nextExpr = constructLiteral(this.tapeName, this.text, this.tokens, this.index+1);
             yield [this.tokens[this.index], nextExpr];
         }
+    }
+
+    public toDenotation(): StringDict {
+        return { [this.tapeName] : this.text };
     }
 
 }
@@ -889,6 +872,31 @@ class ConcatExpr extends BinaryExpr {
                 c2.deriv(tapeName, target, env)) {
             yield [c2target, constructPrecede(c1next, c2next)];
         }
+    }
+
+    public toDenotation(): StringDict {
+        let result: StringDict = {};
+        let current: Output = this;
+        while (current instanceof ConcatExpr) {
+            if (DIRECTION_LTR) {
+                const unitDenotation = current.child2.toDenotation();
+                result = concatStringDict(unitDenotation, result);
+                current = current.child1;
+                continue;
+            }
+
+            const unitDenotation = current.child1.toDenotation();
+            result = concatStringDict(result, unitDenotation);
+            current = current.child2;
+        }
+
+        // now we're at the last current, and it's not a ConcatExpr, get its
+        // denotation, add it on, and we're done
+        const unitDenotation = current.toDenotation();
+        result = DIRECTION_LTR ?
+                 concatStringDict(unitDenotation, result) :
+                 concatStringDict(result, unitDenotation);
+        return result;
     }
 
 }

@@ -10,10 +10,11 @@ export const EPSILON_TOKEN: EpsilonToken = new EpsilonToken();
 /**
  * Tape
  * 
- * This encapsulates information about a tape or set of tapes (like what its name is, what
- * its possible vocabulary is, what counts as concatenation and matching, etc.).  It doesn't,
- * however, encapsulate a tape in the sense of keeping a sequence of character outputs; that
- * would be encapsulated by the Output objects above.
+ * This encapsulates information about a tape (like what its name is, what
+ * its possible vocabulary is, what counts as concatenation and matching, 
+ * etc.).  It doesn't, however, encapsulate a tape in the sense of keeping 
+ * a sequence of character outputs; those are represented by linked lists made
+ * of ConcatExprs.
  */
 export class Tape {
 
