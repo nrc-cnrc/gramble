@@ -88,10 +88,9 @@ export class SameTapeReplacePass extends GrammarPass {
         const renamedPost = renameGrammar(g.postContext, g.fromTapeName, replaceTapeName);
 
         return new ReplaceGrammar(renamedFrom, g.toGrammar, 
-                    renamedPre, renamedPost, g.otherContext,
-                    g.beginsWith, g.endsWith, g.minReps, 
-                    g.maxReps, g.maxExtraChars, g.maxCopyChars,
-                    g.vocabBypass, g.hiddenTapeName).msg();
+                                  renamedPre, renamedPost, g.otherContext,
+                                  g.beginsWith, g.endsWith,
+                                  g.minReps, g.maxReps, g.hiddenTapeName).msg();
     }
 
 }

@@ -1,22 +1,17 @@
 import { 
     Any,
-    Count,
     CountTape,
     Epsilon,
     EpsilonLit,
     Grammar,
     Join,
     JoinReplace,
-    MatchDotRep,
     MatchFrom,
-    NegationGrammar,
     Not,
     Priority,
     Rep,
     Replace,
-    ReplaceGrammar,
     Seq,
-    Short,
     Uni,
     Vocab,
 } from "../src/grammars";
@@ -31,10 +26,6 @@ import {
 import * as path from 'path';
 import { StringDict, SILENT, VERBOSE_DEBUG, VERBOSE_STATES, VERBOSE_TIME, logDebug } from "../src/util";
 
-const DEFAULT = undefined;
-
-const EMPTY_CONTEXT = Epsilon();
-
 // File level control over verbose output
 const VERBOSE = true;
 
@@ -46,20 +37,6 @@ function verbose(...msgs: string[]) {
     logDebug(vb(VERBOSE_DEBUG), ...msgs);
 }
 
-function ReplaceBypass(
-    fromGrammar: Grammar, toGrammar: Grammar,
-    preContext: Grammar = Epsilon(), postContext: Grammar = Epsilon(),
-    otherContext: Grammar = Epsilon(),
-    beginsWith: boolean = false, endsWith: boolean = false,
-    minReps: number = 0, maxReps: number = Infinity,
-    maxExtraChars: number = Infinity,
-    maxCopyChars: number = Infinity,
-    vocabBypass: boolean = true
-): ReplaceGrammar {
-    return Replace(fromGrammar, toGrammar, 
-        preContext, postContext, otherContext, beginsWith, endsWith, 
-        minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass);
-}
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -67,7 +44,8 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('0a1. Replace i by o in i: i -> o, only using Join', function() {
         const grammar = Seq(Join(Uni(t1("i")),
-                             ReplaceBypass(t1("i"), t2("o"))), Vocab("t1", "io"));
+                                 Replace(t1("i"), t2("o"))),
+                            Vocab("t1", "io"));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -78,7 +56,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('0a2. Replace i by o in i: i -> o, only using Join', function() {
         const grammar = Seq(Join(Uni(t1("i")),
-                             ReplaceBypass(t1("i"), t2("o"))), Vocab("t1", "io"));
+                             Replace(t1("i"), t2("o"))), Vocab("t1", "io"));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -89,7 +67,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('0a2. Replace i by o in i: i -> o, only using Join', function() {
         const grammar = Join(Uni(t1("i"), t1("o"), t1("a")),
-                             ReplaceBypass(t1("i"), t2("o")));
+                             Replace(t1("i"), t2("o")));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -102,7 +80,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('0b. Replace i by o in hi: i -> o, only using Join', function() {
         const grammar = Join(t1("hi"),
-                             ReplaceBypass(t1("i"), t2("o")));
+                             Replace(t1("i"), t2("o")));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -113,7 +91,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('0c. Replace i by o in ip: i -> o, only using Join', function() {
         const grammar = Join(t1("ip"),
-                             ReplaceBypass(t1("i"), t2("o")));
+                             Replace(t1("i"), t2("o")));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -124,7 +102,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('0d. Replace i by o in hip: i -> o, only using Join', function() {
         const grammar = Join(t1("hip"),
-                             ReplaceBypass(t1("i"), t2("o")));
+                             Replace(t1("i"), t2("o")));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         const expectedResults: StringDict[] = [
@@ -136,7 +114,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 1. Replace e by a in hello: e -> a
     describe('1. Replace e by a in hello: e -> a', function() {
         const grammar = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t2("a"))]);
+                                    [Replace(t1("e"), t2("a"))]);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 5});
         const expectedResults: StringDict[] = [
@@ -148,7 +126,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 1b. Replace e by a in hello: e -> a, same tape
     describe('1b. Replace e by a in hello: e -> a, same tape', function() {
         const grammar = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t1("a"))]);
+                                    [Replace(t1("e"), t1("a"))]);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 5});
         const expectedResults: StringDict[] = [
@@ -159,9 +137,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('2a. Replace e by a, then a by u, in hello: e -> a, a -> u', function() {
         const innerReplace = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t2("a"))]);
+                                        [Replace(t1("e"), t2("a"))]);
         const grammar = JoinReplace(innerReplace, 
-                                [ ReplaceBypass(t2("a"), t3("u"))]);
+                                    [Replace(t2("a"), t3("u"))]);
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 4, t2:5, t3:6});
         const expectedResults: StringDict[] = [
@@ -172,11 +150,11 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('2a2. Replace e by a, then a by u, in hello: e -> a, a -> u', function() {
         const innerReplace = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t2("a"))]);
+                                        [Replace(t1("e"), t2("a"))]);
         const grammar = JoinReplace(innerReplace, 
-                                [ ReplaceBypass(t2("a"), t3("u"))]);              
+                                    [Replace(t2("a"), t3("u"))]);              
         const grammar2 = JoinReplace(grammar, 
-            [ ReplaceBypass(t3("u"), t4("i"))]);
+            [ Replace(t3("u"), t4("i"))]);
         testHasTapes(grammar2, ['t1', 't2', 't3', 't4']);
         testHasVocab(grammar2, {t1: 4, t2:5, t3:6, t4: 7});
         const expectedResults: StringDict[] = [
@@ -187,9 +165,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('2b. Replace e by a, then a by u, in hello: e -> a, a -> u, same tape', function() {
         const innerReplace = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t1("a"))]);
+                                        [Replace(t1("e"), t1("a"))]);
         const grammar = JoinReplace(innerReplace, 
-                                [ ReplaceBypass(t1("a"), t1("u"))]);
+                                    [Replace(t1("a"), t1("u"))]);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 6});
         const expectedResults: StringDict[] = [
@@ -200,9 +178,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('2c. Replace e by a (same tape), then a by u (diff tape), in hello', function() {
         const innerReplace = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t1("a"))]);
+                                        [Replace(t1("e"), t1("a"))]);
         const grammar = JoinReplace(innerReplace, 
-                                [ ReplaceBypass(t1("a"), t2("u"))]);
+                                    [Replace(t1("a"), t2("u"))]);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 5, t2: 6});
         const expectedResults: StringDict[] = [
@@ -213,9 +191,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('2d. Replace e by a (diff tape), then a by u (same tape), in hello', function() {
         const innerReplace = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t2("a"))]);
+                                        [Replace(t1("e"), t2("a"))]);
         const grammar = JoinReplace(innerReplace, 
-                                [ ReplaceBypass(t2("a"), t2("u"))]);
+                                    [Replace(t2("a"), t2("u"))]);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 6});
         const expectedResults: StringDict[] = [
@@ -226,9 +204,9 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('3a. Replace e by a, then l by w, in hello', function() {
         const innerReplace = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t2("a"))]);
+                                        [Replace(t1("e"), t2("a"))]);
         const grammar = JoinReplace(innerReplace, 
-                                [ ReplaceBypass(t2("l"), t3("w"))]);
+                                    [Replace(t2("l"), t3("w"))]);
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 4, t2:5, t3:6});
         const expectedResults: StringDict[] = [
@@ -239,9 +217,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('3b. Replace e by a (diff tape), then l by w (same tape), in hello', function() {
         const innerReplace = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t2("a"))]);
+                                        [Replace(t1("e"), t2("a"))]);
         const grammar = JoinReplace(innerReplace, 
-                                [ ReplaceBypass(t2("l"), t2("w"))]);
+                                    [Replace(t2("l"), t2("w"))]);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 6});
         const expectedResults: StringDict[] = [
@@ -252,9 +230,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('3c. Replace e by a (same tape), then l by w (diff tape), in hello', function() {
         const innerReplace = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t1("a"))]);
+                                        [Replace(t1("e"), t1("a"))]);
         const grammar = JoinReplace(innerReplace, 
-                                [ ReplaceBypass(t1("l"), t2("w"))]);
+                                    [Replace(t1("l"), t2("w"))]);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 5, t2: 6});
         const expectedResults: StringDict[] = [
@@ -265,9 +243,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('3d. Replace e by a (same tape), then l by w (same tape), in hello', function() {
         const innerReplace = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t1("a"))]);
+                                        [Replace(t1("e"), t1("a"))]);
         const grammar = JoinReplace(innerReplace, 
-                                [ ReplaceBypass(t1("l"), t1("w"))]);
+                                    [Replace(t1("l"), t1("w"))]);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 6});
         const expectedResults: StringDict[] = [
@@ -279,9 +257,9 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('3e. Replace l by w (same tape), then e by a (same tape), in hello', function() {
         const innerReplace = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("l"), t1("w"))]);
+                                        [Replace(t1("l"), t1("w"))]);
         const grammar = JoinReplace(innerReplace, 
-                                [ ReplaceBypass(t1("e"), t1("a"))]);
+                                    [Replace(t1("e"), t1("a"))]);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 6});
         const expectedResults: StringDict[] = [
@@ -292,9 +270,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('3f. Replace b by v (same tape), then a by e (same tape), in ab', function() {
         const innerReplace = JoinReplace(t1("ab"),
-                                    [ReplaceBypass(t1("b"), t1("v"))]);
+                                        [Replace(t1("b"), t1("v"))]);
         const grammar = JoinReplace(innerReplace, 
-                                [ ReplaceBypass(t1("a"), t1("e"))]);
+                                    [Replace(t1("a"), t1("e"))]);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 4});
         const expectedResults: StringDict[] = [
@@ -305,7 +283,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('4a. Replace e -> e in hello', function() {
         const grammar = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t2("e"))]);
+                                    [Replace(t1("e"), t2("e"))]);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
         const expectedResults: StringDict[] = [
@@ -316,7 +294,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('4b. Replace e -> e in hello, same tape', function() {
         const grammar = JoinReplace(t1("hello"),
-                                    [ReplaceBypass(t1("e"), t1("e"))]);
+                                    [Replace(t1("e"), t1("e"))]);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 4});
         const expectedResults: StringDict[] = [
@@ -326,8 +304,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('5a. Replace i by o in i: i -> o, only using Join, other join direction', function() {
-        const grammar = Join(ReplaceBypass(t1("i"), t2("o")), 
-                    Uni(t1("i"), t1("o"), t1("a")));
+        const grammar = Join(Replace(t1("i"), t2("o")), 
+                             Uni(t1("i"), t1("o"), t1("a")));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -339,8 +317,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('5b. Replace i by o in hi: i -> o, only using Join, other join direction', function() {
-        const grammar = Join(ReplaceBypass(t1("i"), t2("o")), 
-                            t1("hi"));
+        const grammar = Join(Replace(t1("i"), t2("o")), 
+                             t1("hi"));
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -350,8 +328,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('5c. Replace e by a, then l by w, in hello, only using Join', function() {
-        const innerReplace = Join(t1("hello"), ReplaceBypass(t1("e"), t2("a")));
-        const grammar = Join(innerReplace, ReplaceBypass(t2("l"), t3("w")));
+        const innerReplace = Join(t1("hello"), Replace(t1("e"), t2("a")));
+        const grammar = Join(innerReplace, Replace(t2("l"), t3("w")));
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 4, t2:5, t3:6});
         const expectedResults: StringDict[] = [
@@ -361,8 +339,8 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('5d. Replace e by a, then l by w, in hello, only using Join', function() {
-        const innerReplace = Join(ReplaceBypass(t1("e"), t2("a")), t1("hello"));
-        const grammar = Join(ReplaceBypass(t2("l"), t3("w")), innerReplace);
+        const innerReplace = Join(Replace(t1("e"), t2("a")), t1("hello"));
+        const grammar = Join(Replace(t2("l"), t3("w")), innerReplace);
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 4, t2:5, t3:6});
         const expectedResults: StringDict[] = [
@@ -376,8 +354,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // 21 states visited
     describe('6a. 2-rule cascade (vocab abcdABCD)', function() {
         verbose("------6a. 2-rule cascade (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -392,8 +370,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // 134 states visited
     describe('6b. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         verbose("------6b. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -408,9 +386,9 @@ describe(`${path.basename(module.filename)}`, function() {
     // 31 states visited
     describe('6c. 3-rule cascade (vocab abcdABCD)', function() {
         verbose("------6c. 3-rule cascade (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc});
         const grammar: Grammar = Seq(vocGrammar, r3Grammar);
@@ -425,9 +403,9 @@ describe(`${path.basename(module.filename)}`, function() {
     // 226 states visited
     describe('6d. 3-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         verbose("------6d. 3-rule cascade starting with 1-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc});
         const grammar: Grammar = Seq(vocGrammar, r3Grammar);
@@ -442,10 +420,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 43 states visited
     describe('6e. 4-rule cascade (vocab abcdABCD)', function() {
         verbose("------6e. 4-rule cascade (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -460,10 +438,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 344 states visited
     describe('6f. 4-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         verbose("------6f. 4-rule cascade starting with 1-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -478,10 +456,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 43 states visited
     describe('6g. 4-rule cascade (vocab abcdefghijklABCD)', function() {
         verbose("------6g. 4-rule cascade (vocab abcdefghijklABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdefghijklABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -496,10 +474,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 616 states visited
     describe('6h. 4-rule cascade starting with 1-char deletion (vocab abcdefghijklABCD)', function() {
         verbose("------6h. 4-rule cascade starting with 1-char deletion (vocab abcdefghijklABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdefghijklABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -516,8 +494,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // 50 states visited
     describe('7a. 14-char input, 2-rule cascade (vocab abcdABCD)', function() {
         verbose("------7a. 14-char input, 2-rule cascade (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("CCCCCabcdCCCCC"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = JoinReplace(t1("CCCCCabcdCCCCC"), [Replace(t1("a"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -532,8 +510,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // 80 states visited
     describe('7b. 24-char input, 2-rule cascade (vocab abcdABCD)', function() {
         verbose("------7b. 24-char input, 2-rule cascade (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("BBBBBCCCCCabcdCCCCCBBBBB"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = JoinReplace(t1("BBBBBCCCCCabcdCCCCCBBBBB"), [Replace(t1("a"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -548,10 +526,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 92 states visited
     describe('7c. 14-char input, 4-rule cascade (vocab abcdABCD)', function() {
         verbose("------7c. 14-char input, 4-rule cascade (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("CCCCCabcdCCCCC"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("CCCCCabcdCCCCC"), [Replace(t1("a"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -566,10 +544,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 698 states visited
     describe('7d. 14-char input, 4-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         verbose("------7d. 14-char input, 4-rule cascade starting with 1-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("CCCCCabcdCCCCC"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("CCCCCabcdCCCCC"), [Replace(t1("a"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -584,10 +562,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 1073 states visited
     describe('7e. 24-char input, 4-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         verbose("------7e. 24-char input, 4-rule cascade starting with 1-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("BBBBBCCCCCabcdCCCCCBBBBB"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("BBBBBCCCCCabcdCCCCCBBBBB"), [Replace(t1("a"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -604,7 +582,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 13 states visited
     describe('8a-1. single rule with 1>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8a-1. single rule with 1>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2("A"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -619,7 +597,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 49 states visited
     describe('8a-2. single rule with 2>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8a-2. single rule with 2>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aabcd"), [ReplaceBypass(t1("aa"), t2("A"))]);
+        const r1Grammar = JoinReplace(t1("aabcd"), [Replace(t1("aa"), t2("A"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -634,7 +612,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 356 states visited
     describe('8a-3. single rule with 3>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8a-3. single rule with 3>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), t2("A"))]);
+        const r1Grammar = JoinReplace(t1("aaabcd"), [Replace(t1("aaa"), t2("A"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -649,7 +627,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 2803 states visited
     describe('8a-4. single rule with 4>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8a-4. single rule with 4>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aaaabcd"), [ReplaceBypass(t1("aaaa"), t2("A"))]);
+        const r1Grammar = JoinReplace(t1("aaaabcd"), [Replace(t1("aaaa"), t2("A"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -664,7 +642,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 22371 states visited
     describe('8a-5. single rule with 5>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8a-5. single rule with 5>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aaaaabcd"), [ReplaceBypass(t1("aaaaa"), t2("A"))]);
+        const r1Grammar = JoinReplace(t1("aaaaabcd"), [Replace(t1("aaaaa"), t2("A"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -679,8 +657,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // 21 states visited
     describe('8b-1. 2-rule cascade starting with 1>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8b-1. 2-rule cascade starting with 1>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -695,8 +673,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // 93 states visited
     describe('8b-2. 2-rule cascade starting with 2>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8b-1. 2-rule cascade starting with 2>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aabcd"), [ReplaceBypass(t1("aa"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = JoinReplace(t1("aabcd"), [Replace(t1("aa"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -711,8 +689,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // 706 states visited
     describe('8b-3. 2-rule cascade starting with 3>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8b-3. 2-rule cascade starting with 3>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = JoinReplace(t1("aaabcd"), [Replace(t1("aaa"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -727,8 +705,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // 5595 states visited
     describe('8b-4. 2-rule cascade starting with 4>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8b-4. 2-rule cascade starting with 4>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aaaabcd"), [ReplaceBypass(t1("aaaa"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = JoinReplace(t1("aaaabcd"), [Replace(t1("aaaa"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -743,8 +721,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // // 44696 states visited
     // describe('8b-5. 2-rule cascade starting with 5>1-char substitution (vocab abcdABCD)', function() {
     //     verbose("------8b-5. 2-rule cascade starting with 5>1-char substitution (vocab abcdABCD)");
-    //     const r1Grammar = JoinReplace(t1("aaaaabcd"), [ReplaceBypass(t1("aaaaa"), t2("A"))]);
-    //     const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+    //     const r1Grammar = JoinReplace(t1("aaaaabcd"), [Replace(t1("aaaaa"), t2("A"))]);
+    //     const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
     //     const voc: string = "abcdABCD"
     //     const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
     //     const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -759,10 +737,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 43 states visited
     describe('8c-1. 4-rule cascade starting with 1>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8c-1. 4-rule cascade starting with 1>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -777,10 +755,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 223 states visited
     describe('8c-2. 4-rule cascade starting with 2>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8c-2. 4-rule cascade starting with 2>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aabcd"), [ReplaceBypass(t1("aa"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("aabcd"), [Replace(t1("aa"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -795,10 +773,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 1620 states visited
     describe('8c-3. 4-rule cascade starting with 3>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8c-3. 4-rule cascade starting with 3>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("aaabcd"), [Replace(t1("aaa"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -813,10 +791,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 12956 states visited
     describe('8c-4. 4-rule cascade starting with 4>1-char substitution (vocab abcdABCD)', function() {
         verbose("------8c-4. 4-rule cascade starting with 4>1-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aaaabcd"), [ReplaceBypass(t1("aaaa"), t2("A"))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("aaaabcd"), [Replace(t1("aaaa"), t2("A"))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -831,7 +809,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 51 states visited
     describe('9a. single rule with 1-char deletion (vocab abcdABCD)', function() {
         verbose("------9a. single rule with 1-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2(""))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2(""))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -846,7 +824,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 381 states visited
     describe('9b. single rule with 2-char deletion (vocab abcdABCD)', function() {
         verbose("------9b. single rule with 2-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aabcd"), [ReplaceBypass(t1("aa"), t2(""))]);
+        const r1Grammar = JoinReplace(t1("aabcd"), [Replace(t1("aa"), t2(""))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -861,7 +839,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 3351 states visited
     describe('9c. single rule with 3-char deletion (vocab abcdABCD)', function() {
         verbose("------9c. single rule with 3-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), t2(""))]);
+        const r1Grammar = JoinReplace(t1("aaabcd"), [Replace(t1("aaa"), t2(""))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -876,7 +854,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 30081 states visited
     describe('9d. single rule with 4-char deletion (vocab abcdABCD)', function() {
         verbose("------9d. single rule with 4-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aaaabcd"), [ReplaceBypass(t1("aaaa"), t2(""))]);
+        const r1Grammar = JoinReplace(t1("aaaabcd"), [Replace(t1("aaaa"), t2(""))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -891,7 +869,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 370 states visited
     describe('9d-test-2. single rule with 4-char (εε) deletion (vocab abcdABCD)', function() {
         console.log("------9d-test-2. single rule with 4-char (εε) deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aaaabcd"), [ReplaceBypass(t1("aaaa"), Seq(EpsilonLit("t2"),
+        const r1Grammar = JoinReplace(t1("aaaabcd"), [Replace(t1("aaaa"), Seq(EpsilonLit("t2"),
                                                                                     EpsilonLit("t2")))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
@@ -907,8 +885,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // 134 states visited
     describe('10a. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         verbose("------10a. 2-rule cascade starting with 1-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -923,8 +901,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // 1600 states visited
     describe('10b. 2-rule cascade starting with 2-char deletion (vocab abcdABCD)', function() {
         verbose("------10b. 2-rule cascade starting with 2-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aabcd"), [ReplaceBypass(t1("aa"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = JoinReplace(t1("aabcd"), [Replace(t1("aa"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -939,8 +917,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // 22616 states visited
     describe('10c. 2-rule cascade starting with 3-char deletion (vocab abcdABCD)', function() {
         verbose("------10c. 2-rule cascade starting with 3-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+        const r1Grammar = JoinReplace(t1("aaabcd"), [Replace(t1("aaa"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
         const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -955,8 +933,8 @@ describe(`${path.basename(module.filename)}`, function() {
     // // 330273 states visited
     // describe('10d. 2-rule cascade starting with 4-char deletion (vocab abcdABCD)', function() {
     //     verbose("------10d. 2-rule cascade starting with 4-char deletion (vocab abcdABCD)");
-    //     const r1Grammar = JoinReplace(t1("aaaabcd"), [ReplaceBypass(t1("aaaa"), t2(""))]);
-    //     const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
+    //     const r1Grammar = JoinReplace(t1("aaaabcd"), [Replace(t1("aaaa"), t2(""))]);
+    //     const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
     //     const voc: string = "abcdABCD"
     //     const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc});
     //     const grammar: Grammar = Seq(vocGrammar, r2Grammar);
@@ -971,10 +949,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 344 states visited
     describe('11a. 4-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         verbose("-----11a. 4-rule cascade starting with 1-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -989,10 +967,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // 4498 states visited
     describe('11b. 4-rule cascade starting with 2-char deletion (vocab abcdABCD)', function() {
         verbose("-----11b. 4-rule cascade starting with 2-char deletion (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("aabcd"), [ReplaceBypass(t1("aa"), t2(""))]);
-        const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-        const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-        const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+        const r1Grammar = JoinReplace(t1("aabcd"), [Replace(t1("aa"), t2(""))]);
+        const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+        const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+        const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
         const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -1007,10 +985,10 @@ describe(`${path.basename(module.filename)}`, function() {
     // // 66575 states visited
     // describe('11c. 4-rule cascade starting with 3-char deletion (vocab abcdABCD)', function() {
     //     verbose("------11c. 4-rule cascade starting with 3-char deletion (vocab abcdABCD)");
-    //     const r1Grammar = JoinReplace(t1("aaabcd"), [ReplaceBypass(t1("aaa"), t2(""))]);
-    //     const r2Grammar = JoinReplace(r1Grammar, [ReplaceBypass(t2("b"), t3("B"))]);
-    //     const r3Grammar = JoinReplace(r2Grammar, [ReplaceBypass(t3("c"), t4("C"))]);
-    //     const r4Grammar = JoinReplace(r3Grammar, [ReplaceBypass(t4("d"), t5("D"))]);
+    //     const r1Grammar = JoinReplace(t1("aaabcd"), [Replace(t1("aaa"), t2(""))]);
+    //     const r2Grammar = JoinReplace(r1Grammar, [Replace(t2("b"), t3("B"))]);
+    //     const r3Grammar = JoinReplace(r2Grammar, [Replace(t3("c"), t4("C"))]);
+    //     const r4Grammar = JoinReplace(r3Grammar, [Replace(t4("d"), t5("D"))]);
     //     const voc: string = "abcdABCD"
     //     const vocGrammar = Vocab({t1:voc, t2:voc, t3:voc, t4:voc, t5:voc});
     //     const grammar: Grammar = Seq(vocGrammar, r4Grammar);
@@ -1027,7 +1005,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 17 states visited
     describe('12a. single rule with 1>5-char substitution (vocab abcdABCD)', function() {
         verbose("------12a. single rule with 1>5-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("a"), t2("AAAAA"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("a"), t2("AAAAA"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -1042,7 +1020,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 16 states visited
     describe('12b. single rule with 1>5-char substitution (vocab abcdABCD)', function() {
         verbose("------12b. single rule with 1>5-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("c"), t2("CCCCC"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("c"), t2("CCCCC"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -1057,7 +1035,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 16 states visited
     describe('12c. single rule with 1>5-char substitution (vocab abcdABCD)', function() {
         verbose("------12c. single rule with 1>5-char substitution (vocab abcdABCD)");
-        const r1Grammar = JoinReplace(t1("abcd"), [ReplaceBypass(t1("d"), t2("DDDDD"))]);
+        const r1Grammar = JoinReplace(t1("abcd"), [Replace(t1("d"), t2("DDDDD"))]);
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc, t2:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -1078,7 +1056,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         let grammarWithVocab: Grammar = Seq(grammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+                                            Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = CountTape({t1: 3, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
@@ -1098,7 +1076,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         let grammarWithVocab: Grammar = Seq(grammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+                                            Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = CountTape({t1: 3, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);

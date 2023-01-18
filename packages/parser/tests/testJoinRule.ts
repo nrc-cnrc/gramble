@@ -1,7 +1,5 @@
 import { 
     CountTape,
-    Epsilon,
-    EpsilonLit,
     Grammar,
     Join,
     JoinRule,
@@ -24,25 +22,6 @@ import {
 import * as path from 'path';
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, StringDict, VERBOSE_DEBUG } from "../src/util";
 
-const DEFAULT = undefined;
-
-const EMPTY_CONTEXT = Epsilon();
-
-function ReplaceBypass(
-    fromGrammar: Grammar, toGrammar: Grammar,
-    preContext: Grammar = Epsilon(), postContext: Grammar = Epsilon(),
-    otherContext: Grammar = Epsilon(),
-    beginsWith: boolean = false, endsWith: boolean = false,
-    minReps: number = 0, maxReps: number = Infinity,
-    maxExtraChars: number = Infinity,
-    maxCopyChars: number = Infinity,
-    vocabBypass: boolean = true
-): ReplaceGrammar {
-    return Replace(fromGrammar, toGrammar, 
-        preContext, postContext, otherContext, beginsWith, endsWith, 
-        minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass);
-}
-
 function IOReplace(
     fromStr: string, 
     toStr: string, 
@@ -53,7 +32,7 @@ function IOReplace(
     const toGrammar = Lit(REPLACE_OUTPUT_TAPE, toStr);
     const preGrammar = Lit(REPLACE_INPUT_TAPE, preStr);
     const postGrammar = Lit(REPLACE_INPUT_TAPE, postStr);
-    return ReplaceBypass(fromGrammar, toGrammar, preGrammar, postGrammar);
+    return Replace(fromGrammar, toGrammar, preGrammar, postGrammar);
 }
 
 function IOJoin(
@@ -147,7 +126,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 21 states visited
     describe('6a. 2-rule cascade (vocab abcdABCD)', function() {
         const r1Grammar = IOJoin("abcd", IOReplace("a", "A"),
-                                        IOReplace("b", "B"));
+                                         IOReplace("b", "B"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -201,9 +180,9 @@ describe(`${path.basename(module.filename)}`, function() {
     // 43 states visited
     describe('6e. 4-rule cascade (vocab abcdABCD)', function() {
         const r1Grammar = IOJoin("abcd", IOReplace("a", "A"),
-                                        IOReplace("b", "B"),
-                                        IOReplace("c", "C"),
-                                        IOReplace("d", "D"));
+                                         IOReplace("b", "B"),
+                                         IOReplace("c", "C"),
+                                         IOReplace("d", "D"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -216,9 +195,9 @@ describe(`${path.basename(module.filename)}`, function() {
     // 344 states visited
     describe('6f. 4-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         const r1Grammar = IOJoin("abcd", IOReplace("a", ""),
-                                        IOReplace("b", "B"),
-                                        IOReplace("c", "C"),
-                                        IOReplace("d", "D"));
+                                         IOReplace("b", "B"),
+                                         IOReplace("c", "C"),
+                                         IOReplace("d", "D"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -246,7 +225,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // 80 states visited
     describe('7b. 24-char input, 2-rule cascade (vocab abcdABCD)', function() {
         const r1Grammar = IOJoin("BBBBBCCCCCabcdCCCCCBBBBB", IOReplace("a", "A"),
-                                                   IOReplace("b", "B"));
+                                                             IOReplace("b", "B"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -291,9 +270,9 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('7e. 24-char input, 4-rule cascade starting with 1-char deletion (vocab abcdABCD)', function() {
         
         const r1Grammar = IOJoin("BBBBBCCCCCabcdCCCCCBBBBB", IOReplace("a", ""),
-                                                   IOReplace("b", "B"),
-                                                   IOReplace("c", "C"),
-                                                   IOReplace("d", "D"));
+                                                             IOReplace("b", "B"),
+                                                             IOReplace("c", "C"),
+                                                             IOReplace("d", "D"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -389,7 +368,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('8b-3. 2-rule cascade starting with 3>1-char substitution (vocab abcdABCD)', function() {
         
         const r1Grammar = IOJoin("aaabcd", IOReplace("aaa", "A"),
-                                            IOReplace("b", "B"));
+                                           IOReplace("b", "B"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -420,9 +399,9 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('8c-2. 4-rule cascade starting with 2>1-char substitution (vocab abcdABCD)', function() {
         
         const r1Grammar = IOJoin("aabcd", IOReplace("aa", "A"),
-                                         IOReplace("b", "B"),
-                                         IOReplace("c", "C"),
-                                         IOReplace("d", "D"));
+                                          IOReplace("b", "B"),
+                                          IOReplace("c", "C"),
+                                          IOReplace("d", "D"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -452,9 +431,9 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('8c-4. 4-rule cascade starting with 4>1-char substitution (vocab abcdABCD)', function() {
         
         const r1Grammar = IOJoin("aaaabcd", IOReplace("aaaa", "A"),
-                                         IOReplace("b", "B"),
-                                         IOReplace("c", "C"),
-                                         IOReplace("d", "D"));
+                                            IOReplace("b", "B"),
+                                            IOReplace("c", "C"),
+                                            IOReplace("d", "D"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -482,7 +461,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('10b. 2-rule cascade starting with 2-char deletion (vocab abcdABCD)', function() {
         
         const r1Grammar = IOJoin("aabcd", IOReplace("aa", ""),
-                                         IOReplace("b", "B"));
+                                          IOReplace("b", "B"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -496,7 +475,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('10c. 2-rule cascade starting with 3-char deletion (vocab abcdABCD)', function() {
         
         const r1Grammar = IOJoin("aaabcd", IOReplace("aaa", ""),
-                                         IOReplace("b", "B"));
+                                           IOReplace("b", "B"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);
@@ -526,9 +505,9 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('11b. 4-rule cascade starting with 2-char deletion (vocab abcdABCD)', function() {
         
         const r1Grammar = IOJoin("aabcd", IOReplace("aa", ""),
-                                         IOReplace("b", "B"),
-                                         IOReplace("c", "C"),
-                                         IOReplace("d", "D"));
+                                          IOReplace("b", "B"),
+                                          IOReplace("c", "C"),
+                                          IOReplace("d", "D"));
         const voc: string = "abcdABCD";
         const vocGrammar = Vocab({t1:voc});
         const grammar: Grammar = Seq(vocGrammar, r1Grammar);

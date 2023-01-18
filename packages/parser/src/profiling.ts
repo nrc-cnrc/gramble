@@ -9,21 +9,6 @@ export const t4 = (s: string) => Lit("t4", s);
 export const t5 = (s: string) => Lit("t5", s);
 export const t6 = (s: string) => Lit("t6", s);
 
-function ReplaceBypass(
-    fromGrammar: Grammar, toGrammar: Grammar,
-    preContext: Grammar = Epsilon(), postContext: Grammar = Epsilon(),
-    otherContext: Grammar = Epsilon(),
-    beginsWith: boolean = false, endsWith: boolean = false,
-    minReps: number = 0, maxReps: number = Infinity,
-    maxExtraChars: number = 100,
-    maxCopyChars: number = Infinity,
-    vocabBypass: boolean = true
-): ReplaceGrammar {
-    return Replace(fromGrammar, toGrammar, 
-        preContext, postContext, otherContext, beginsWith, endsWith, 
-        minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass);
-}
-
 function generateAndLog(inputs: {name: string, g: Grammar}): void {
     console.log(inputs.name);
     let interpreter = Interpreter.fromGrammar(inputs.g, VERBOSE_STATES);
@@ -32,7 +17,6 @@ function generateAndLog(inputs: {name: string, g: Grammar}): void {
 }
 
 function randomGrammar(): Grammar {
-
     const literals: Grammar[] = [];
     for (let i = 0; i < 10; i++) {
         let s = "";
@@ -46,11 +30,11 @@ function randomGrammar(): Grammar {
 }
 
 const g = randomGrammar();
-const r1 = ReplaceBypass(t1("a"), t2("A"));
-const r2 = ReplaceBypass(t2("b"), t3("B"));
-const r3 = ReplaceBypass(t3("c"), t4("C"));
-const r4 = ReplaceBypass(t4("d"), t5("D"));
-const r5 = ReplaceBypass(t5("e"), t6("E"));
+const r1 = Replace(t1("a"), t2("A"));
+const r2 = Replace(t2("b"), t3("B"));
+const r3 = Replace(t3("c"), t4("C"));
+const r4 = Replace(t4("d"), t5("D"));
+const r5 = Replace(t5("e"), t6("E"));
 
 const items: [string, Grammar][] = [
     ["G", g],

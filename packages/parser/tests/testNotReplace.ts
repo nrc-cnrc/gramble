@@ -1,5 +1,4 @@
 import { 
-    Count,
     CountTape,
     Epsilon,
     Grammar,
@@ -29,36 +28,18 @@ const EMPTY_CONTEXT = Epsilon();
 
 const DUMMY_SYMBOL: string = "";
 
-function ReplaceBypass(
-    fromGrammar: Grammar, toGrammar: Grammar,
-    preContext: Grammar = Epsilon(), postContext: Grammar = Epsilon(),
-    otherContext: Grammar = Epsilon(),
-    beginsWith: boolean = false, endsWith: boolean = false,
-    minReps: number = 0, maxReps: number = Infinity,
-    maxExtraChars: number = 100,
-    maxCopyChars: number = Infinity,
-    vocabBypass: boolean = true,
-    hiddenTapeName: string = ""
-): ReplaceGrammar {
-    return Replace(fromGrammar, toGrammar, 
-        preContext, postContext, otherContext, beginsWith, endsWith, 
-        minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass, hiddenTapeName);
-}
-
-function HiddenTapeNameReplaceBypass(
+function HiddenTapeNameReplace(
     hiddenTapeName: string = "",
     fromGrammar: Grammar, toGrammar: Grammar,
     preContext: Grammar = Epsilon(), postContext: Grammar = Epsilon(),
     otherContext: Grammar = Epsilon(),
     beginsWith: boolean = false, endsWith: boolean = false,
     minReps: number = 0, maxReps: number = Infinity,
-    maxExtraChars: number = 100,
-    maxCopyChars: number = Infinity,
-    vocabBypass: boolean = true
 ): ReplaceGrammar {
     return Replace(fromGrammar, toGrammar, 
-        preContext, postContext, otherContext, beginsWith, endsWith, 
-        minReps, maxReps, maxExtraChars, maxCopyChars, vocabBypass, hiddenTapeName);
+                   preContext, postContext, otherContext, 
+                   beginsWith, endsWith, minReps, maxReps,
+                   hiddenTapeName);
 }
 
 if (!BITSETS_ENABLED) {
@@ -67,7 +48,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('1a. JoinReplace i by a in i: i -> a, different tape', function() {
         const grammar = JoinReplace(t1("i"),
-                                    [ReplaceBypass(t1("i"), t2("a"))]);
+                                    [Replace(t1("i"), t2("a"))]);
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
@@ -100,7 +81,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('1c. Negation of grammar of 1a', function() {
         let grammar: Grammar = Not(JoinReplace(t1("i"),
-                                    [ReplaceBypass(t1("i"), t2("a"))]));
+                                    [Replace(t1("i"), t2("a"))]));
         grammar = CountTape(2, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
@@ -118,7 +99,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('2a. JoinReplace i by a in i: i -> a, same tape', function() {
         const grammar = JoinReplace(t1("i"),
-                                    [ReplaceBypass(t1("i"), t1("a"))]);
+                                    [Replace(t1("i"), t1("a"))]);
         const expectedResults: StringDict[] = [
             {t1: 'a'},
         ];
@@ -152,7 +133,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('2c. Negation of grammar of 2a', function() {
         let grammar: Grammar = Not(JoinReplace(t1("i"),
-                                    [ReplaceBypass(t1("i"), t1("a"))]));
+                                    [Replace(t1("i"), t1("a"))]));
         grammar = Count(2, grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
@@ -171,7 +152,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('2a-show-hidden. JoinReplace i by a in i: i -> a, same tape', function() {
         let grammar = JoinReplace(t1("i"),
-                                  [HiddenTapeNameReplaceBypass("R_HIDDEN", t1("i"), t1("a"))]);
+                                  [HiddenTapeNameReplace("R_HIDDEN", t1("i"), t1("a"))]);
 
         testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
@@ -209,7 +190,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('2c-hidden. Negation of grammar of 2a-hidden', function() {
         let grammar: Grammar = Not(JoinReplace(t1("i"),
-                                   [HiddenTapeNameReplaceBypass("R_HIDDEN", t1("i"), t1("a"))]));
+                                   [HiddenTapeNameReplace("R_HIDDEN", t1("i"), t1("a"))]));
         grammar = CountTape(2, grammar);
 
         testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
@@ -225,7 +206,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('3a. Replace i by a: i -> a', function() {
-        let grammar: Grammar = ReplaceBypass(t1("i"), t2("a"));
+        let grammar: Grammar = Replace(t1("i"), t2("a"));
         grammar = CountTape(2, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
@@ -264,7 +245,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('3c. Negation of grammar of 3a', function() {
-        let grammar: Grammar = Not(ReplaceBypass(t1("i"), t2("a")));
+        let grammar: Grammar = Not(Replace(t1("i"), t2("a")));
         grammar = CountTape(2, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
@@ -282,7 +263,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('4a. Replace i by a: i -> a', function() {
-        let grammar: Grammar = ReplaceBypass(t1("i"), t2("a"));
+        let grammar: Grammar = Replace(t1("i"), t2("a"));
         grammar = CountTape(1, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
@@ -316,7 +297,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('4c. Negation of grammar of 4a', function() {
-        let grammar: Grammar = Not(ReplaceBypass(t1("i"), t2("a")));
+        let grammar: Grammar = Not(Replace(t1("i"), t2("a")));
         grammar = CountTape(1, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
@@ -335,7 +316,7 @@ describe(`${path.basename(module.filename)}`, function() {
     /*
 
     describe('5a. Replace i by a: i -> a, same tape', function() {
-        let grammar: Grammar = ReplaceBypass(t1("i"), t1("a"));
+        let grammar: Grammar = Replace(t1("i"), t1("a"));
         grammar = CountTape(2, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'a'},
@@ -365,7 +346,7 @@ describe(`${path.basename(module.filename)}`, function() {
     // See note to 2c.
 
     describe('5c. Negation of grammar of 5a', function() {
-        let grammar: Grammar = Not(ReplaceBypass(t1("i"), t1("a")));
+        let grammar: Grammar = Not(Replace(t1("i"), t1("a")));
         grammar = CountTape(2, grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
@@ -386,7 +367,7 @@ describe(`${path.basename(module.filename)}`, function() {
     */
 
     describe('5a-show-hidden. Replace i by a: i -> a, same tape', function() {
-        let grammar: Grammar = HiddenTapeNameReplaceBypass("R_HIDDEN", t1("i"), t1("a"));
+        let grammar: Grammar = HiddenTapeNameReplace("R_HIDDEN", t1("i"), t1("a"));
         grammar = CountTape(2, grammar);
 
         testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
@@ -427,7 +408,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('5c-show-hidden. Negation of grammar of 5a', function() {
-        let grammar: Grammar = Not(HiddenTapeNameReplaceBypass("R_HIDDEN", t1("i"), t1("a")));
+        let grammar: Grammar = Not(HiddenTapeNameReplace("R_HIDDEN", t1("i"), t1("a")));
         grammar = CountTape(2, grammar);
 
         testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
