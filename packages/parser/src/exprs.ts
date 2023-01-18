@@ -2772,7 +2772,7 @@ export function constructDotStar(tape: string): Expr {
     return new DotStarExpr(tape);
 }
 
-export function constructDotRep(tape: string, maxReps: number=Infinity): Expr {
+export function constructDotRep(tape: string, maxReps: number = Infinity): Expr {
     if (maxReps == Infinity) {
         return constructDotStar(tape);
     }
@@ -2940,14 +2940,10 @@ export function constructNotContains(
     const dotStar: Expr = constructDotRep(fromTapeName);
     let seq: Expr;
     if (begin) {
-        seq = DIRECTION_LTR ?
-              constructSequence(...children, dotStar) :
-              constructShort(constructSequence(...children, dotStar));
-    } else if (end)
-        seq = DIRECTION_LTR ?
-              constructShort(constructSequence(dotStar, ...children)) :
-              constructSequence(dotStar, ...children);
-    else {
+        seq = constructSequence(constructShort(constructSequence(...children)), dotStar);
+    } else if (end) {
+        seq = constructSequence(dotStar, constructShort(constructSequence(...children)));
+    } else {
         seq = DIRECTION_LTR ?
               constructSequence(constructShort(constructSequence(dotStar, ...children)), dotStar) :
               constructSequence(dotStar, constructShort(constructSequence(...children, dotStar)));
