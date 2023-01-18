@@ -109,7 +109,8 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
 
     let incr: number = Math.max(expected_outputs.length, outputs.length, 1);
     if (incr > 2500) {
-        incr = Math.ceil(70000 / incr) * 100;
+        // incr = Math.ceil(62500 / incr) * 100;
+        incr = 2500;
     }
 
     // For running the "it" tests, we cannot use a simple loop incrementing start
@@ -122,7 +123,7 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
         const end_expected: number = Math.min(expected_outputs.length, start+incr);
         let end_outputs: number = end_expected;
         if (end_expected == expected_outputs.length)
-            end_outputs = outputs.length;
+            end_outputs = Math.min(outputs.length, start + incr);
         let expected_outputs_str: string;
         if (end_expected - start < 20)
             expected_outputs_str = JSON.stringify(expected_outputs.slice(start, end_expected));
@@ -366,6 +367,9 @@ export function testParseMultiple(
             try {    
                 //grammar = grammar.compile(2, maxRecursion);
                 const interpreter = Interpreter.fromGrammar(grammar, verbose);
+                if (Object.keys(inputs).length == 0) {
+                    throw new Error(`no input in pair ${JSON.stringify(inputs)}, ${JSON.stringify(expectedResults)}`);
+                }
                 outputs = [...interpreter.generate("", inputs, Infinity, maxRecursion)];
             } catch (e) {
                 it("Unexpected Exception", function() {
