@@ -9,27 +9,26 @@ import {
     constructDotRep, constructCount, constructCountTape,
     constructPriority, EpsilonExpr, constructShort,
     constructEpsilonLiteral, 
-    constructPrecede, constructMatchCount, constructPreTape,
+    constructPrecede, constructPreTape,
     constructNotContains, constructParallel, 
-    DerivEnv, ExprNamespace, constructCollection, constructCorrespond, constructNoEps, DerivStats, constructDotStar
+    DerivEnv, ExprNamespace, constructCollection, 
+    constructCorrespond, constructNoEps, DerivStats, constructDotStar
 } from "./exprs";
 import { Msg, Msgs, result, Result, resultDict, resultList } from "./msgs";
 
-import { 
-    BitsetTape,
+import {
     renameTape,
     Tape, 
-    TapeNamespace, 
-    VocabMap
+    TapeNamespace
 } from "./tapes";
 import { Pass, PassEnv } from "./passes";
 
 import {
     CellPos,
-    DEFAULT_SYMBOL_NAME,
     Dict,
     flatten,
     HIDDEN_TAPE_PREFIX,
+    isSubset,
     listDifference,
     listIntersection,
     listUnique,
@@ -171,7 +170,7 @@ export abstract class Grammar extends Component {
         const priorities: [string, number][] = tapeNames.map(t => {
             const joinWeight = this.getTapePriority(t, new StringPairSet(), env);
             const tape = tapeNS.get(t);
-            const priority = joinWeight * tape.vocabSize;
+            const priority = joinWeight * tape.vocab.size;
             return [t, priority];
         });
         return priorities.filter(([t, priority]) => priority >= 0)
@@ -199,7 +198,6 @@ export abstract class Grammar extends Component {
      * Collects all explicitly mentioned characters in the grammar for all tapes.
      */
     public collectAllVocab(
-        vocab: VocabMap, 
         tapeNS: TapeNamespace,
         env: PassEnv
     ): void {
@@ -210,9 +208,10 @@ export abstract class Grammar extends Component {
             let tape = tapeNS.attemptGet(tapeName);
             if (tape == undefined) {
                 // make a new one if it doesn't exist
-                tape = new BitsetTape(tapeName, vocab, atomic);
-                tapeNS.set(tapeName, tape);
-            }
+                const newTape = new Tape(tapeName, atomic);
+                tapeNS.set(tapeName, newTape);
+            } 
+            tape = tapeNS.get(tapeName); 
             tape.atomic = atomic;
             const strs = this.collectVocab(tapeName, atomic, new StringPairSet(), env);
             tape.registerTokens([...strs]);
@@ -231,9 +230,11 @@ export abstract class Grammar extends Component {
             for (const [fromTapeName, toTapeName] of vocabCopyEdges) {
                 const fromTape = tapeNS.get(fromTapeName);
                 const toTape = tapeNS.get(toTapeName);
-                if (!fromTape.vocabIsSubsetOf(toTape)) {
-                    dirty = true;
-                    toTape.registerTokens(fromTape.vocab);
+                for (const c of fromTape.vocab) {
+                    if (!toTape.vocab.has(c)) {
+                        dirty = true;
+                        toTape.registerTokens([c]);
+                    }
                 }
             }
         }
@@ -1591,7 +1592,6 @@ export class TapeNsGrammar extends UnaryGrammar {
 
     constructor(
         child: Grammar,
-        public vocab: VocabMap = new VocabMap(),
         public tapeDict: Dict<Tape> = {},
         public vocabEdges: StringPairSet = new StringPairSet()
     ) {
@@ -1606,7 +1606,7 @@ export class TapeNsGrammar extends UnaryGrammar {
         return result(this.child)
                     .bind(c => f.transform(c, env))
                     .bind(c => new TapeNsGrammar(c as Grammar, 
-                        this.vocab, this.tapeDict, this.vocabEdges))
+                        this.tapeDict, this.vocabEdges))
     }
 
     public getChildren(): Grammar[] { 
@@ -2496,6 +2496,28 @@ export class ReplaceGrammar extends Grammar {
             constructCorrespond(constructPrecede(fromExpr, toExpr), fromTape, 0, toTape, 0),
             constructMatchFrom(postContextExpr, this.fromTapeName, ...this.toTapeNames)
         ];
+
+        // Determine is the toTape vocabs are supersets of the fromTape vocab.
+        // Note: if the vocabBypass parameter is set, then we treat as if the
+        // toTape vocabs are supersets of the fromTape vocab without checking.
+        let supersetVocab: boolean = this.vocabBypass;
+        if (!supersetVocab) {
+            const fromTape: Tape = tapeNS.get(this.fromTapeName);
+            const fromVocab: string[] = fromTape.vocab;
+            // The following code sets sameVocab to true if the vocab of ANY
+            // toTape is a superset of the fromTape vocab.
+            // Perhaps we should throw an Error if some toTape vocabs are
+            // supersets of the fromTape vocab and some are not.
+            for (const toTapeName of this.toTapeNames) {
+                const toTape = tapeNS.get(toTapeName);
+                if (toTape == undefined) {
+                    continue; // shouldn't happen, just for linting
+                }
+                if (toTape.inVocab(fromVocab)) {
+                    supersetVocab = true;
+                }
+            }
+        }
 
         // Determine whether the fromExpr in context is empty (on the fromTape).
         const fromExprWithContext: Expr = constructSequence(preContextExpr, fromExpr, postContextExpr);

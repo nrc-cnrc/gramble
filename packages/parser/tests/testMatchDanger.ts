@@ -1,12 +1,9 @@
 import { 
     Dot,
-    Epsilon,
-    Grammar,
     Join,
     Match,
     Rep,
     Replace, 
-    ReplaceGrammar, 
     Seq,
     Vocab
 } from "../src/grammars";
@@ -19,9 +16,7 @@ import {
 } from './testUtil';
 
 import * as path from 'path';
-import { BITSETS_ENABLED, StringDict } from "../src/util";
-
-if (!BITSETS_ENABLED) {
+import { StringDict } from "../src/util";
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -104,5 +99,3 @@ describe(`${path.basename(module.filename)}`, function() {
     }); 
 
 });
-
-}

@@ -16,7 +16,6 @@ export const DEFAULT_PROJECT_NAME = "";
 export const DEFAULT_SYMBOL_NAME = "Default";
 export const AUTO_SYMBOL_NAME = "_Auto"
 
-export const BITSETS_ENABLED: boolean = false; // whether to use bitsets or real strings
 export const DIRECTION_LTR: boolean = true; // whether we parse/generate from the beginning or end of words
 
 export const SILENT = 0;
@@ -468,9 +467,23 @@ export function setDifference<T>(s1: Set<T>, s2: Set<T>): Set<T> {
     return new Set([...s1].filter(x => !s2.has(x)));
 }
 
+export function isSubset<T>(s1: Set<T>, s2: Set<T>): boolean {
+    return [...s1].every(item => s2.has(item));
+}
+
 export function listDifference<T>(l1: T[], l2: T[]): T[] {
     const set2 = new Set(l2);
     return l1.filter(x => !set2.has(x));
+}
+
+export function concatStringDict(d1: StringDict, d2: StringDict): StringDict {
+    const result: StringDict = {};
+    Object.assign(result, d1);
+    for (const [key, value] of Object.entries(d2)) {
+        const oldStr = key in result ? result[key] : "";
+        result[key] = oldStr + value;
+    }
+    return result;
 }
 
 export function foldLeft<T>(

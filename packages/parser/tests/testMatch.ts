@@ -13,9 +13,6 @@ import {
 } from './testUtil';
 
 import * as path from 'path';
-import { BITSETS_ENABLED } from "../src/util";
-
-if (!BITSETS_ENABLED) {
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -1041,5 +1038,3 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
 });
-
-}

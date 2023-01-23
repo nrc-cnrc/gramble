@@ -1,9 +1,11 @@
 import { 
     constructAlternation, constructPriority,
     CounterStack, DerivEnv, 
-    EpsilonExpr, Expr, ExprNamespace, NullExpr, PriorityExpr, CollectionExpr, DerivStats 
+    EpsilonExpr, Expr, ExprNamespace, 
+    NullExpr, PriorityExpr, CollectionExpr, 
+    DerivStats, EPSILON, Output, addOutput 
 } from "./exprs";
-import { OutputTrie, TapeNamespace, Token, EpsilonToken } from "./tapes";
+import { TapeNamespace, Token, EpsilonToken } from "./tapes";
 import { 
     Gen, GenOptions,
     msToTime, shuffleArray, StringDict
@@ -37,13 +39,11 @@ export function* generate(
 
     const startingTime = Date.now();
 
-    const initialOutput: OutputTrie = new OutputTrie();
-
-    let states: [OutputTrie, Expr][] = [[initialOutput, expr]];
-    let prev: [OutputTrie, Expr] | undefined = undefined;
+    let states: [Output, Expr][] = [[EPSILON, expr]];
+    let prev: [Output, Expr] | undefined = undefined;
     
     // if we're generating randomly, we store candidates rather than output them immediately
-    const candidates: OutputTrie[] = [];
+    const candidates: Output[] = [];
 
     env.logDebug("");
     env.logDebugId("*** Generating for expr", expr);
@@ -57,7 +57,7 @@ export function* generate(
             break;
         }
 
-        let nexts: [OutputTrie, Expr][] = [];
+        let nexts: [Output, Expr][] = [];
         let [prevOutput, prevExpr] = prev;
 
         env.logDebug("");
@@ -78,7 +78,7 @@ export function* generate(
             }
 
             // if we're not random, yield the result immediately.
-            yield* prevOutput.toDict(tapeNS, opt);
+            yield prevOutput.toDenotation();
             continue;
         } else if (prevExpr instanceof NullExpr) {
             // the search has failed here (there are no valid results
@@ -99,9 +99,9 @@ export function* generate(
             for (const [cTape, cTarget, cNext] of prevExpr.openDeriv(env)) {
                 if (!(cNext instanceof NullExpr)) {
                     let nextExpr: Expr = cNext;
-                    let nextOutput: OutputTrie;
+                    let nextOutput: Output;
                     if (! (cTarget instanceof EpsilonToken)) {
-                        nextOutput = prevOutput.add(cTape, cTarget as Token);
+                        nextOutput = addOutput(prevOutput, cTape, cTarget);
                     } else {
                         nextOutput = prevOutput;
                         const tapes = (cNext as PriorityExpr).tapes;
@@ -145,5 +145,5 @@ export function* generate(
 
     const candidateIndex = Math.floor(Math.random()*candidates.length);
     const candidateOutput = candidates[candidateIndex];
-    yield* candidateOutput.toDict(tapeNS, opt);
+    yield candidateOutput.toDenotation();
 } 

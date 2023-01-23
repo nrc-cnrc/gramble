@@ -23,10 +23,7 @@ import {
 } from './testUtil';
 
 import * as path from 'path';
-import { BITSETS_ENABLED, StringDict } from "../src/util";
-
-
-if (!BITSETS_ENABLED) {
+import { StringDict } from "../src/util";
 
 describe(`${path.basename(module.filename)}`, function() {
 
@@ -795,5 +792,3 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
 });
-
-}

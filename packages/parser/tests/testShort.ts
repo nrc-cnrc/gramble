@@ -19,12 +19,11 @@ import {
 } from './testUtil';
 
 import * as path from 'path';
-import { BITSETS_ENABLED, DIRECTION_LTR, StringDict, VERBOSE_DEBUG } from "../src/util";
+import { DIRECTION_LTR, StringDict, VERBOSE_DEBUG } from "../src/util";
 
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    
     describe('1. Short(t1:h)', function() {
         const grammar = Short(t1("h"));
         const expectedResults: StringDict[] = [ {t1:"h"}];
