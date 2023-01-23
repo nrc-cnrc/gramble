@@ -33,9 +33,9 @@ import {
 
 import { 
     HSVtoRGB, RGBtoString,
-    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE 
+    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RESERVED_SYMBOLS, isValidSymbolName 
 } from "./util";
-import { Msgs, Err, resultList, Result } from "./msgs";
+import { Msgs, resultList, Result } from "./msgs";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
@@ -485,8 +485,6 @@ export class ErrorHeader extends TapeNameHeader {
  * parser for the grammar.
  */
 
-const SYMBOL = [ "(", ")", "%", "/",  ">", ":" ];
-
 export const REPLACE_PARAMS = [
     "from",
     "to",
@@ -523,10 +521,10 @@ export const RESERVED_OPS: Set<string> = new Set([
     "collection"
 ]);
 
-export const RESERVED_WORDS = new Set([...SYMBOL, ...RESERVED_HEADERS, ...RESERVED_OPS]);
+export const RESERVED_WORDS = new Set([...RESERVED_SYMBOLS, ...RESERVED_HEADERS, ...RESERVED_OPS]);
 
 const tokenizer = new RegExp("\\s+|(" + 
-                            SYMBOL.map(s => "\\"+s).join("|") + 
+                            RESERVED_SYMBOLS.map(s => "\\"+s).join("|") + 
                             ")");
 
 function tokenize(text: string): string[] {
@@ -561,7 +559,15 @@ const HP_COMMENT = MPComment<Header>(
 
 const HP_UNRESERVED = MPUnreserved<Header>(
     RESERVED_WORDS, 
-    (s) => new TapeNameHeader(s).msg()
+    (s) => {
+        if (isValidSymbolName(s)) {
+            return new TapeNameHeader(s).msg()
+        } else {
+            return new ErrorHeader(s).msg().err(
+                `Invalid tape name`, 
+                `${s} looks like it should be a tape name, but tape names should start with letters or _`);
+        }
+    } 
 );
 
 const HP_RESERVED_OP = MPReserved<Header>(

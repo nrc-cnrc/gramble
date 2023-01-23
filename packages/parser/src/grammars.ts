@@ -2497,28 +2497,6 @@ export class ReplaceGrammar extends Grammar {
             constructMatchFrom(postContextExpr, this.fromTapeName, ...this.toTapeNames)
         ];
 
-        // Determine is the toTape vocabs are supersets of the fromTape vocab.
-        // Note: if the vocabBypass parameter is set, then we treat as if the
-        // toTape vocabs are supersets of the fromTape vocab without checking.
-        let supersetVocab: boolean = this.vocabBypass;
-        if (!supersetVocab) {
-            const fromTape: Tape = tapeNS.get(this.fromTapeName);
-            const fromVocab: string[] = fromTape.vocab;
-            // The following code sets sameVocab to true if the vocab of ANY
-            // toTape is a superset of the fromTape vocab.
-            // Perhaps we should throw an Error if some toTape vocabs are
-            // supersets of the fromTape vocab and some are not.
-            for (const toTapeName of this.toTapeNames) {
-                const toTape = tapeNS.get(toTapeName);
-                if (toTape == undefined) {
-                    continue; // shouldn't happen, just for linting
-                }
-                if (toTape.inVocab(fromVocab)) {
-                    supersetVocab = true;
-                }
-            }
-        }
-
         // Determine whether the fromExpr in context is empty (on the fromTape).
         const fromExprWithContext: Expr = constructSequence(preContextExpr, fromExpr, postContextExpr);
         const opt: GenOptions = new GenOptions();

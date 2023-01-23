@@ -8,6 +8,7 @@ import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
 import { parseRegex } from "../src/regex";
 import { parseHeaderCell } from "../src/headers";
+import { parseOp } from "../src/ops";
 
 export const DEFAULT_MAX_RECURSION = 4;
 
@@ -53,6 +54,13 @@ export function testHeaderID(header: string, expectedID: string) {
 
 export function testCellID(cell: string, expectedID: string) {
     const result = parseRegex(cell);
+    it(`"${cell}" should have an id of ${expectedID}`, function() {
+        expect(result.id).to.equal(expectedID);
+    });
+}
+
+export function testOpID(cell: string, expectedID: string) {
+    const result = parseOp(cell);
     it(`"${cell}" should have an id of ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });

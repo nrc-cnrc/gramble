@@ -24,6 +24,12 @@ export const VERBOSE_DEBUG = 1 << 1;
 export const VERBOSE_STATES = 1 << 2;
 export const VERBOSE_GRAMMAR = 1 << 3;
 
+export const RESERVED_SYMBOLS = [ "(", ")", "%", "/", "<", ">", "[", "]", ":", "\\", ",", ".", ";" ];
+
+export function isValidSymbolName(s: string): boolean {
+    return /^(\p{L}|\p{M}|\p{Sk}|_)(\p{L}|\p{M}|\p{Sk}|\p{N}|[_@#$&?+\-*^='"])*$/iu.test(s);
+}
+
 export function logDebug(verbose: number, ...msgs: string[]): void {
     if ((verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
         for (const msg of msgs) {

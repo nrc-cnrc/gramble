@@ -51,6 +51,7 @@
     "testNegation": "mocha -r ts-node/register tests/testNegation.ts",
     "testNotMatch": "mocha -r ts-node/register tests/testNotMatch.ts",
     "testNotReplace": "mocha -r ts-node/register tests/testNotReplace.ts",
+    "testOp": "mocha -r ts-node/register tests/testOp.ts",
     "testRepeat": "mocha -r ts-node/register tests/testRepeat.ts",
     "testParallel": "mocha -r ts-node/register tests/testParallel.ts",
     "testRecursion": "mocha -r ts-node/register tests/testRecursion.ts",

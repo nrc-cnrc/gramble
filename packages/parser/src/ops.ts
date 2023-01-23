@@ -3,15 +3,9 @@ import {
     MPParser, MPReserved, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
-import { 
-    AlternationGrammar, Grammar, 
-    JoinGrammar, SequenceGrammar 
-} from "./grammars";
-
+import { isValidSymbolName, RESERVED_SYMBOLS } from "./util";
 
 export const BLANK_PARAM: string = "__";
-
-const SYMBOL = [ ":" ];
 
 const REQUIRED_REPLACE_PARAMS = new Set([
     "from",
@@ -59,13 +53,13 @@ export const RESERVED_WORDS = new Set([
 ]);
 
 export const RESERVED = new Set([
-    ...SYMBOL,
+    ...RESERVED_SYMBOLS,
     ...RESERVED_WORDS
 ]);
 
 
 const tokenizer = new RegExp("\\s+|(" + 
-                            SYMBOL.map(s => "\\"+s).join("|") + 
+                        RESERVED_SYMBOLS.map(s => "\\"+s).join("|") + 
                             ")");
 
 function tokenize(text: string): string[] {
@@ -77,6 +71,8 @@ function tokenize(text: string): string[] {
 export type Requirement = "required" | "forbidden";
 
 export abstract class Op {
+
+    public abstract get id(): string;
 
     public get siblingReq(): Requirement {
         return "forbidden";
@@ -113,12 +109,22 @@ export abstract class Op {
 }
 
 export class TableOp extends Op { 
+
+    public get id(): string {
+        return "table";
+    }
+
     public get childGridReq(): Requirement {
         return "required";
     }
 }
 
-export class CollectionOp extends Op { }
+export class CollectionOp extends Op { 
+
+    public get id(): string {
+        return "collection";
+    }
+}
 
 export abstract class SpecialOp extends Op {
 
@@ -138,6 +144,10 @@ export abstract class SpecialOp extends Op {
 
 export class TestOp extends SpecialOp { 
 
+    public get id(): string {
+        return "test";
+    }
+
     public get allowedNamedParams(): Set<string> {
         return new Set([BLANK_PARAM, ...TEST_PARAMS]);
     }
@@ -150,6 +160,10 @@ export class TestOp extends SpecialOp {
 
 export class TestNotOp extends SpecialOp { 
 
+    public get id(): string {
+        return "testnot";
+    }
+
     public get allowedNamedParams(): Set<string> {
         return new Set([BLANK_PARAM, ...TEST_PARAMS]);
     }
@@ -160,6 +174,10 @@ export class TestNotOp extends SpecialOp {
 }
 
 export class ReplaceOp extends SpecialOp { 
+
+    public get id(): string {
+        return "replace";
+    }
 
     public get requiredNamedParams(): Set<string> {
         return REQUIRED_REPLACE_PARAMS;
@@ -179,6 +197,10 @@ export class ReplaceTapeOp extends SpecialOp {
         super();
     }
 
+    public get id(): string {
+        return `replace[${this.child.id}]`;
+    }
+
     public get requiredNamedParams(): Set<string> {
         return REQUIRED_REPLACE_PARAMS;
     }
@@ -189,14 +211,26 @@ export class ReplaceTapeOp extends SpecialOp {
 
 }
 
-class BinaryOp extends Op {
+abstract class BinaryOp extends Op {
     public get siblingReq(): Requirement {
         return "required";
     }
 }
 
-export class OrOp extends BinaryOp { }
-export class JoinOp extends BinaryOp { }
+export class OrOp extends BinaryOp { 
+
+    public get id(): string {
+        return "or";
+    }
+
+}
+export class JoinOp extends BinaryOp { 
+
+    public get id(): string {
+        return "join";
+    }
+
+}
 
 /**
  * This is an op that holds any string that's not a reserved
@@ -213,6 +247,10 @@ export class SymbolOp extends Op {
         super();
     }
 
+    public get id(): string {
+        return this.text;
+    }
+
 }
 
 export class ErrorOp extends Op {
@@ -224,6 +262,11 @@ export class ErrorOp extends Op {
     ) { 
         super();
     }
+
+    public get id(): string {
+        return "ERR";
+    }
+
     
 }
 
@@ -249,7 +292,15 @@ const OP_TESTNOT = MPSequence<Op>(
 
 const OP_UNRESERVED = MPUnreserved<Op>(
     RESERVED_WORDS, 
-    (s) => new SymbolOp(s)
+    (s) => {
+        if (isValidSymbolName(s)) {
+            return new SymbolOp(s);
+        } else {
+            return new ErrorOp(s, 
+                `Invalid tape name`, 
+                `${s} looks like it should be a tape name, but tape names should start with letters or _`);
+        }
+    } 
 );
 
 const OP_RESERVED_HEADER = MPReserved<Op>(
