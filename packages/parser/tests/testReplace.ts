@@ -5,6 +5,7 @@ import {
     Grammar,
     Intersect,
     Not,
+    Priority,
     Replace,
     Seq,
     Uni,
@@ -1306,6 +1307,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'ee', t2: 'e'},   {t1: 'eee', t2: 'ee'},
             {t1: 'eeh', t2: 'eh'}, {t1: 'eel', t2: 'el'},
             {t1: 'hee', t2: 'he'}, {t1: 'lee', t2: 'le'},
+            // See test 36a for a discussion of the following 2 results.
             {t1: 'eeee', t2: 'ee'},  // (ee)(ee) -> (e)(e)
             {t1: 'eeee', t2: 'eee'}, // e(ee)e -> e(e)e which is valid
             {t1: 'eeeh', t2: 'eeh'},  {t1: 'eeel', t2: 'eel'},
@@ -2424,6 +2426,91 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hee', t2: 'h'},
         ];
         testGrammar(grammar, expectedResults);
+    });
+
+    // Tests to isolate an expression simplification issue in CorrespondExpr.
+    describe('35. Replace aba by X: t1:aba -> t2:X {1}', function() {
+        let grammar: Grammar = Replace(t1("aba"), t2("X"),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 1, 1);
+        grammar = CountTape({t1:3, t2: 1}, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: 'aba', t2: 'X'},
+        ];
+         testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+    });
+
+    describe('35a. Replace aba by X: t1:aba -> t2:X {1} (priority: t1,t2)', function() {
+        let grammar: Grammar = Replace(t1("aba"), t2("X"),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 1, 1);
+        grammar = CountTape({t1:3, t2: 1}, grammar);
+        grammar = Priority(["t1", "t2", ".END"], grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: 'aba', t2: 'X'},
+        ];
+         testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+    });
+
+    describe('35b. Replace aba by X: t1:aba -> t2:X {1} (priority: t2,t1)', function() {
+        let grammar: Grammar = Replace(t1("aba"), t2("X"),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 1, 1);
+        grammar = CountTape({t1:3, t2: 1}, grammar);
+        grammar = Priority(["t2", "t1", ".END"], grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {t1: 'aba', t2: 'X'},
+        ];
+         testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+    });
+
+    // Tests exploring the ways for replacements to yield multiple
+    // outputs for an input.
+    // This is a phenomenon that occurs with repeated overlapping patterns
+    // in a string. For example, the pattern ABA in the string ABABABA can
+    // be found as (ABA)B(ABA) or AB(ABA)BA.
+    // Test 35a is based on test 27.
+    describe('36a. Replace ee by e: t1:ee -> t2:e {1,3}', function() {
+        let grammar: Grammar = Replace(t1("ee"), t2("e"),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 1, 3);
+        grammar = CountTape(6, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 1, t2: 1});
+        // Getting 5 duplicates, expected 7 results but got 12.
+        const expectedResults: StringDict[] = [
+            {t1: 'ee', t2: 'e'},
+            {t1: 'eee', t2: 'ee'},      // 2 ways: (ee)e, e(ee)
+            {t1: 'eeee', t2: 'ee'},     // (ee)(ee) -> (e)(e)
+            {t1: 'eeee', t2: 'eee'},    // e(ee)e -> e(e)e which is valid
+            {t1: 'eeeee', t2: 'eee'},   // 3 ways: e(ee)(ee), (ee)e(ee), (ee)(ee)e
+            {t1: 'eeeeee', t2: 'eee'},  // (ee)(ee)(ee) -> (e)(e)(e)
+            {t1: 'eeeeee', t2: 'eeee'}, // e(ee)e(ee) -> e(e)e(e)
+                                        // (ee)e(ee)e -> (e)e(e)e
+                                        // e(ee)(ee)e -> e(e)(e)e
+        ];
+        testGrammar(grammar, expectedResults, SILENT,
+                    DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
+    });
+
+    // Note: test 36b is affected by the issue explored in tests 35, 35a-b.
+    describe('36b. Replace aba by X: t1:aba -> t2:X {1,3}', function() {
+        let grammar: Grammar = Replace(t1("aba"), t2("X"),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       false, false, 1, 3);
+        grammar = CountTape(8, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const from_to: InputResultsPair[] = [
+            [{t1: 'abababa'},   [{t1: 'abXba', t2: 'XbX'}]],
+        ];
+        testParseMultiple(grammar, from_to);
     });
 
     /*

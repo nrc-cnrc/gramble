@@ -1225,7 +1225,7 @@ export class CollectionExpr extends UnaryExpr {
     }
     
     public get id(): string {
-        return `${this.child.id}`;
+        return `Col(${this.child.id})`;
     }
 
     public delta(
@@ -1292,7 +1292,7 @@ export class CountExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `Count(${this.maxChars},${this.child.id})`;
+        return `Cnt_${this.maxChars}(${this.child.id})`;
     }
 
     public delta(
@@ -1330,7 +1330,7 @@ export class CountTapeExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `CountTape(${JSON.stringify(this.maxChars)},${this.child.id})`;
+        return `CntT_${JSON.stringify(this.maxChars)}(${this.child.id})`;
     }
 
     public delta(
@@ -1383,7 +1383,7 @@ export class PreTapeExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return this.child.id;
+        return `Pre_${this.fromTape}>${this.toTape}(this.child.id)`;
     }
 
     public delta(
@@ -1553,7 +1553,7 @@ class NoEpsExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `NEP${this.tapeName}(${this.child.id})`;
+        return `NEps_${this.tapeName}:${this.maxCount}(${this.child.id})`;
     }
 
     public delta(tapeName: string, env: DerivEnv): Expr {
@@ -1600,7 +1600,7 @@ export function constructNoEps(
 class ShortExpr extends UnaryExpr {
 
     public get id(): string {
-        return this.child.id;
+        return `Sh(${this.child.id})`;
     }
 
     public delta(
@@ -1866,7 +1866,8 @@ export class CorrespondExpr extends Expr {
     }
 
     public get id(): string {
-        return this.child.id;
+        // return this.child.id;
+        return `Cor_${this.fromTape}:${this.fromCount}>${this.toTape}:${this.toCount}(${this.child.id})`;
     }
 
     public delta(tapeName: string, env: DerivEnv): Expr {
@@ -1958,7 +1959,7 @@ export class MatchCountExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return this.child.id;
+        return `MC_${JSON.stringify(this.tapeCounts)}(${this.child.id})`;
     }
 
     public delta(
@@ -2020,7 +2021,7 @@ export class MiniMatchExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `M(${this.fromTape}>${this.toTape},${this.child.id})`;
+        return `MM_${this.fromTape}>${this.toTape}(${this.child.id})`;
     }
 
     public delta(
@@ -2106,7 +2107,7 @@ export class MatchFromExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `M(${this.fromTape}>${this.toTape},${this.child.id})`;
+        return `M_${this.fromTape}>${this.toTape}(${this.child.id})`;
     }
 
     public delta(
@@ -2183,7 +2184,7 @@ export class MatchExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `M(${this.child.id})`;
+        return `M_${JSON.stringify(this.tapes)}(${this.child.id})`;
     }
 
     public delta(
