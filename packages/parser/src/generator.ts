@@ -104,11 +104,16 @@ export function* generate(
                         nextOutput = addOutput(prevOutput, cTape, cTarget);
                     } else {
                         nextOutput = prevOutput;
-                        const tapes = (cNext as PriorityExpr).tapes;
-                        if (!(delta instanceof NullExpr)) {    
+                        if (!(delta instanceof NullExpr)) {
+                            let tapes: string[] = [];
+                            if (cNext instanceof PriorityExpr) {
+                                tapes = cNext.tapes
+                            } else if (cNext instanceof CollectionExpr && cNext.child instanceof PriorityExpr) {
+                                tapes = cNext.child.tapes;
+                            }
                             nextExpr = constructPriority(tapes, constructAlternation(delta, cNext));
+                            deltaPushed = true;
                         }
-                        deltaPushed = true;
                     }
                     nexts.push([nextOutput, nextExpr]);
                 }

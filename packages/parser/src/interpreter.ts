@@ -286,7 +286,12 @@ export class Interpreter {
             }
         }
 
-        if (!(targetGrammar instanceof PriorityGrammar)) {
+        let is_priority_grammar = targetGrammar instanceof PriorityGrammar;
+        if (targetGrammar instanceof CollectionGrammar) {
+            if (targetGrammar.getSymbol(symbolName) instanceof PriorityGrammar)
+                is_priority_grammar = true;
+        }
+        if (!is_priority_grammar) {
             targetGrammar = new PriorityGrammar(targetGrammar, tapePriority);
             //logTime(this.verbose, `priority = ${(targetGrammar as PriorityGrammar).tapePriority}`)
         }
