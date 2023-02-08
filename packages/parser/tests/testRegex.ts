@@ -41,6 +41,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testCellID("1|2SG", "[OR[1,2SG]]");
         testCellID("1~2SG", "[1,NOT[2SG]]");
         testCellID("1SG*", "[STAR[1SG]]");   
+        testCellID("1SG*1SG", "[STAR[1SG],1SG]");
         testCellID("1SG\\*", "[1SG*]");   
         testCellID("1S(G)*", "[1S,STAR[[G]]]");   
         testCellID("~1SG*", "[NOT[STAR[1SG]]]");
@@ -56,6 +57,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testCellID("1SG|2SG+", "[OR[1SG,PLUS[2SG]]]");
         testCellID("(1SG|2SG)+", "[PLUS[[OR[1SG,2SG]]]]");
         testCellID("(1SG)(2SG)+", "[[1SG],PLUS[[2SG]]]"); 
+        testCellID("((1SG)(2SG))+", "[PLUS[[[1SG],[2SG]]]]");
         testCellID("1SG?", "[QUES[1SG]]");   
         testCellID("1SG\\?", "[1SG?]");   
         testCellID("1S(G)?", "[1S,QUES[[G]]]");   

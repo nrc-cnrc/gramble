@@ -1,14 +1,18 @@
 import { AlternationGrammar, EmbedGrammar, EpsilonGrammar, Grammar, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "./grammars";
 import { 
     MPDelay, 
-    MPAlternation, 
+    MPAlt, 
     MPSequence, 
     MPUnreserved, 
     MPParser, 
     miniParse,
-    MPRepetition 
-} from "./miniParser";
+    MPRepetition, 
+    MiniParseEnv,
+    MPEnv
+} from "./miniParserEnv";
 import { HIDDEN_TAPE_PREFIX } from "./util";
+
+export type RegexParser = MPParser<Regex>;
 
 /**
  * This module is concerned with cells that have operators in them (e.g. ~ and |),
@@ -64,9 +68,7 @@ export class SymbolRegex implements Regex {
 
     constructor(
         public child: LiteralRegex
-    ) { 
-        
-    }
+    ) { }
 
     public get id(): string {
         return `EMB[${this.child.id}]`;
@@ -180,89 +182,94 @@ export class SequenceRegex implements Regex {
     }
 }
 
-const EXPR: MPParser<Regex> = MPDelay(() =>
-    MPAlternation(ALTERNATION, SUBEXPR)
-);
+/* RESERVED SYMBOLS */
+const RESERVED_FOR_PLAINTEXT = new Set(["|"]);
+const RESERVED_FOR_REGEX = new Set([...RESERVED_FOR_PLAINTEXT, "(", ")", "~", "*", "?", "+", "{", "}"]);
+const RESERVED_FOR_CONTEXT = new Set([...RESERVED_FOR_REGEX, "#", "_"]);
 
-const SUBEXPR: MPParser<Regex> = MPDelay(() =>
-    MPAlternation(NEGATION, STAR, QUES, PLUS, SUBSUBEXPR)
-);
+/* REGEX GRAMMAR */
 
-const SUBSUBEXPR: MPParser<Regex> = MPDelay(() =>
-    MPAlternation(UNRESERVED, PARENS, SYMBOL_REF)
-);
+const REGEX_EXPR: RegexParser = MPDelay(() => MPAlt(
+    REGEX_ALTERNATION, 
+    REGEX_SUBEXPR
+));
 
-const RESERVED = new Set(["(", ")", "~", "|", "*", "?", "+", "{", "}"]);
-const UNRESERVED = MPUnreserved<Regex>(RESERVED, (s) => new LiteralRegex(s));
+const REGEX_SUBEXPR: RegexParser = MPDelay(() => MPAlt(
+    REGEX_NEGATION, 
+    REGEX_STAR, 
+    REGEX_QUES, 
+    REGEX_PLUS, 
+    REGEX_SUBSUBEXPR
+));
 
-const TOPLEVEL_EXPR = MPRepetition(
-    EXPR, 
+const REGEX_SUBSUBEXPR: RegexParser = MPDelay(() => MPAlt(
+    REGEX_UNRESERVED, 
+    REGEX_PARENS, 
+    REGEX_SYMBOL
+));
+
+const REGEX_UNRESERVED = MPUnreserved<Regex>(s => new LiteralRegex(s));
+
+const REGEX_TOPLEVEL = MPRepetition(
+    REGEX_EXPR, 
     (...children) => new SequenceRegex(children)
 );
 
-const STAR = MPSequence(
-    [ SUBSUBEXPR, "*" ],
+const REGEX_STAR = MPSequence(
+    [ REGEX_SUBSUBEXPR, "*" ],
     (child) => new StarRegex(child)
 )
 
-const QUES = MPSequence(
-    [ SUBSUBEXPR, "?" ],
+const REGEX_QUES = MPSequence(
+    [ REGEX_SUBSUBEXPR, "?" ],
     (child) => new QuestionRegex(child)
 )
 
-const PLUS = MPSequence(
-    [ SUBSUBEXPR, "+" ],
+const REGEX_PLUS = MPSequence(
+    [ REGEX_SUBSUBEXPR, "+" ],
     (child) => new PlusRegex(child)
 )
 
-const PARENS = MPSequence(
-    ["(", TOPLEVEL_EXPR, ")"],
+const REGEX_PARENS = MPSequence(
+    ["(", REGEX_TOPLEVEL, ")"],
     (child) => child 
 );
 
-const SYMBOL_REF = MPSequence(
-    ["{", UNRESERVED, "}"],
+const REGEX_SYMBOL = MPSequence(
+    ["{", REGEX_UNRESERVED, "}"],
     (child) => new SymbolRegex(child as LiteralRegex) 
 );
 
-const NEGATION = MPSequence(
-    ["~", SUBEXPR],
+const REGEX_NEGATION = MPSequence(
+    ["~", REGEX_SUBEXPR],
     (child) => new NegationRegex(child)
 );
 
-const ALTERNATION = MPSequence(
-    [SUBEXPR, "|", EXPR],
+const REGEX_ALTERNATION = MPSequence(
+    [REGEX_SUBEXPR, "|", REGEX_EXPR],
     (c1, c2) => new AlternationRegex(c1, c2)
 );
 
-function tokenize(text: string): string[] {
-    let results: string[] = [ "" ];
-    for (let i = 0; i < text.length; i++) {
-        const c1 = text[i];
-        const c2 = text[i+1];
-        if (c1 == '\\') {
-            results[results.length-1] = results[results.length-1] +
-                                    ((c2 != undefined) ? c2 : "");
-            ++i;
-            continue;
-        } 
+/* PLAINTEXT GRAMMAR */
+const PLAINTEXT_EXPR: RegexParser = MPDelay(() => MPAlt(
+    PLAINTEXT_UNRESERVED, 
+    PLAINTEXT_ALTERNATION)
+);
 
-        if (RESERVED.has(c1)) {
-            results.push(c1);
-            results.push("");
-            continue;
-        }
+const PLAINTEXT_UNRESERVED = MPUnreserved<Regex>(s => new LiteralRegex(s));
 
-        results[results.length-1] = results[results.length-1] + c1;
+const PLAINTEXT_ALTERNATION = MPSequence(
+    [ PLAINTEXT_UNRESERVED, "|", PLAINTEXT_EXPR ],
+    (c1, c2) => new AlternationRegex(c1, c2)
+);
 
-    }
-    results = results.filter(s => s.length > 0);
-    return results;
-
-}
-
-export function parseRegex(text: string): Regex {
-    const results = miniParse(tokenize, TOPLEVEL_EXPR, text);
+export function parse(
+    text: string, 
+    reserved: Set<string>,
+    topLevelExpr: RegexParser
+): Regex {
+    const env = new MiniParseEnv(reserved);
+    const results = miniParse(env, topLevelExpr, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
         return new ErrorRegex(text);
@@ -272,4 +279,16 @@ export function parseRegex(text: string): Regex {
         throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
     }
     return results[0];
+}
+
+export function parseRegex(text: string): Regex {
+    return parse(text, RESERVED_FOR_REGEX, REGEX_TOPLEVEL);
+}
+
+export function parsePlaintext(text: string): Regex {
+    return parse(text, RESERVED_FOR_PLAINTEXT, PLAINTEXT_EXPR);
+}
+
+export function parseContext(text: string): Regex {
+    return parse(text, RESERVED_FOR_CONTEXT, REGEX_TOPLEVEL);
 }
