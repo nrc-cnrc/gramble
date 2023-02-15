@@ -34,6 +34,7 @@
     "testSheet": "mocha -r ts-node/register tests/sheet/*/*.ts",
     "testProperty": "mocha -r ts-node/register tests/property/testProperty.ts",
     "testBasic": "mocha -r ts-node/register tests/testBasic.ts",
+    "testCountTape": "mocha -r ts-node/register tests/testCountTape.ts",
     "testDot": "mocha -r ts-node/register tests/testDot.ts",
     "testEmbed": "mocha -r ts-node/register tests/testEmbed.ts",
     "testFilter": "mocha -r ts-node/register tests/testFilter.ts",

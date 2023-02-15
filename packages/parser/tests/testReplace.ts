@@ -784,7 +784,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('17. Replace e by ee in hel: t1:e -> t2:ee {1+} || ^h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, true, false, 1);
-        grammar = CountTape({t1: 6, t2: 8}, grammar);
+        grammar = CountTape({t1: 6}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -815,7 +815,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('18. Replace e by ee in hel: t1:e -> t2:ee {0+} || ^h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, true, false, 0);
-        grammar = CountTape({t1: 7, t2: 8}, grammar);
+        grammar = CountTape({t1: 7}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const from_to: StringDict[] = [
@@ -842,7 +842,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'helhhel', t2: 'heelhhel'}, {t1: 'helehel', t2: 'heelehel'},
             {t1: 'hellhel', t2: 'heellhel'},
             // Some Invalid Inputs
-            {t1: 'helhhhhellllhel'},
+            {t1: 'helhelhel'},
         ];
         testParseMultiple(grammar, inputResultsPairs(from_to));
     });
@@ -850,7 +850,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('19. Replace e by ee in hel: t1:e -> t2:ee {1+} || h_l$', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, true, 1);
-        grammar = CountTape({t1: 6, t2: 8}, grammar);
+        grammar = CountTape({t1: 6}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -881,7 +881,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('20. Replace e by ee in hel: t1:e -> t2:ee {0+} || h_l$', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, true, 0);
-        grammar = CountTape({t1: 7, t2: 8}, grammar);
+        grammar = CountTape({t1: 7}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const from_to: StringDict[] = [
@@ -909,7 +909,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'helhhel', t2: 'helhheel'}, {t1: 'helehel', t2: 'heleheel'},
             {t1: 'hellhel', t2: 'hellheel'},
             // Some Invalid Inputs
-            {t1: 'helhhhhellllhel'},
+            {t1: 'helhelhel'},
         ];
         testParseMultiple(grammar, inputResultsPairs(from_to));
     });
@@ -917,7 +917,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('21a. Replace e by ee in he: t1:e -> t2:ee {0,2} || h_', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), EMPTY_CONTEXT, 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 4, t2: 8}, grammar);
+        grammar = CountTape({t1: 4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -946,7 +946,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('21. Replace e by ee in he: t1:e -> t2:ee {0,2} || h_', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), EMPTY_CONTEXT, 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 10, t2: 20}, grammar);
+        grammar = CountTape({t1: 10}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         // Full Generation:
@@ -990,7 +990,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('22a. Replace e by ee in el: t1:e -> t2:ee {0,2} || _l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), EMPTY_CONTEXT, t1("l"), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 4, t2: 6}, grammar);
+        grammar = CountTape({t1: 4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -1019,7 +1019,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('22. Replace e by ee in el: t1:e -> t2:ee {0,2} || _l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), EMPTY_CONTEXT, t1("l"), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 10, t2: 12}, grammar);
+        grammar = CountTape({t1: 10}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const from_to: StringDict[] = [
@@ -1058,7 +1058,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                    Replace(t1("e"), t2("ee"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 2));
-        grammar = CountTape({t1: 3, t2: 5}, grammar);
+        grammar = CountTape({t1: 3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1137,7 +1137,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('25a. Replace ee by e in hee: t1:ee -> t2:e {0,2} || h_', function() {
         let grammar: Grammar = Replace(t1("ee"), t2("e"), t1("h"), EMPTY_CONTEXT,
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 6, t2: 4}, grammar);
+        grammar = CountTape({t2: 4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -1216,7 +1216,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('26a. Replace ee by e in eel: t1:ee -> t2:e {0,2} || _l', function() {
         let grammar: Grammar = Replace(t1("ee"), t2("e"), EMPTY_CONTEXT, t1("l"),
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 6, t2: 4}, grammar);
+        grammar = CountTape({t2: 4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -1297,7 +1297,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                    Replace(t1("ee"), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 2));
-        grammar = CountTape({t1: 5, t2: 3}, grammar);
+        grammar = CountTape({t2: 3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         // Getting 7 duplicates, expected 69 results but got 76.
@@ -1350,7 +1350,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('28a. Insert a in h_l: t1:0 -> t2:a {0,2} || h_l', function() {
         let grammar: Grammar = Replace(t1(""), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 4, t2: 8}, grammar);
+        grammar = CountTape({t1: 4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1379,7 +1379,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('28. Insert a in h_l: t1:0 -> t2:a {0,2} || h_l', function() {
         let grammar: Grammar = Replace(t1(""), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 10, t2: 20}, grammar);
+        grammar = CountTape({t1: 10}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         // Full Generation:
@@ -1412,7 +1412,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('29a. Delete e in hel: t1:e -> t2:0 {0,2} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2(""), t1("h"), t1("l"), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 6, t2: 3}, grammar);
+        grammar = CountTape({t2: 3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1449,7 +1449,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('29. Delete e in hel: t1:e -> t2:0 {0,2} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2(""), t1("h"), t1("l"), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 15, t2: 10}, grammar);
+        grammar = CountTape({t2: 10}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         // Full Generation:
@@ -1762,7 +1762,6 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"),
                                        t1("h"), t1("l"), t3("[1SG]"),
                                        false, false, 0, 3);
-        // grammar = CountTape(14, grammar);
         grammar = CountTape(14, grammar);
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 3, t2: 4, t3: 5});
@@ -2060,7 +2059,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                    Replace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 2, 2));
-        grammar = CountTape({t1: 1, t2: 3}, grammar);
+        grammar = CountTape({t1: 1}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
         const expectedResults: StringDict[] = [
@@ -2078,7 +2077,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                    Replace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 2, 2));
-        grammar = CountTape({t1: 2, t2: 4}, grammar);
+        grammar = CountTape({t1: 2}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
         const expectedResults: StringDict[] = [
@@ -2416,7 +2415,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                    Replace(t1("e"), t2(""),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 2, 2));
-        grammar = CountTape({t1: 3, t2: 1}, grammar);
+        grammar = CountTape({t1: 3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -2433,7 +2432,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                        false, false, 1, 1);
-        grammar = CountTape({t1:3, t2: 1}, grammar);
+        grammar = CountTape({t1:3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -2446,7 +2445,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                        false, false, 1, 1);
-        grammar = CountTape({t1:3, t2: 1}, grammar);
+        grammar = CountTape({t1:3}, grammar);
         grammar = Priority(["t1", "t2", ".END"], grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
@@ -2460,7 +2459,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                        false, false, 1, 1);
-        grammar = CountTape({t1:3, t2: 1}, grammar);
+        grammar = CountTape({t1:3}, grammar);
         grammar = Priority(["t2", "t1", ".END"], grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
@@ -2508,7 +2507,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const from_to: InputResultsPair[] = [
-            [{t1: 'abababa'},   [{t1: 'abXba', t2: 'XbX'}]],
+            [{t1: 'abababa'},   [{t1: 'abababa', t2: 'abXba'},
+                                 {t1: 'abababa', t2: 'XbX'}]],
         ];
         testParseMultiple(grammar, from_to);
     });
