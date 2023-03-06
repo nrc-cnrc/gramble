@@ -1,4 +1,4 @@
-import { AlternationGrammar, EmbedGrammar, EpsilonGrammar, Grammar, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "./grammars";
+import { AlternationGrammar, DotGrammar, EmbedGrammar, EpsilonGrammar, Grammar, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "./grammars";
 import { 
     MPDelay, 
     MPAlt, 
@@ -61,6 +61,17 @@ export class LiteralRegex implements Regex {
 
     public toGrammar(): Grammar {
         return new LiteralGrammar(`${HIDDEN_TAPE_PREFIX}`, this.text);
+    }
+}
+
+export class DotRegex implements Regex {
+
+    public get id(): string {
+        return "DOT";
+    }
+
+    public toGrammar(): Grammar {
+        return new DotGrammar(`${HIDDEN_TAPE_PREFIX}`);
     }
 }
 
@@ -184,7 +195,7 @@ export class SequenceRegex implements Regex {
 
 /* RESERVED SYMBOLS */
 const RESERVED_FOR_PLAINTEXT = new Set(["|"]);
-const RESERVED_FOR_REGEX = new Set([...RESERVED_FOR_PLAINTEXT, "(", ")", "~", "*", "?", "+", "{", "}"]);
+const RESERVED_FOR_REGEX = new Set([...RESERVED_FOR_PLAINTEXT, "(", ")", "~", "*", "?", "+", "{", "}", "."]);
 const RESERVED_FOR_CONTEXT = new Set([...RESERVED_FOR_REGEX, "#", "_"]);
 
 /* REGEX GRAMMAR */
@@ -205,7 +216,8 @@ const REGEX_SUBEXPR: RegexParser = MPDelay(() => MPAlt(
 const REGEX_SUBSUBEXPR: RegexParser = MPDelay(() => MPAlt(
     REGEX_UNRESERVED, 
     REGEX_PARENS, 
-    REGEX_SYMBOL
+    REGEX_SYMBOL,
+    REGEX_DOT
 ));
 
 const REGEX_UNRESERVED = MPUnreserved<Regex>(s => new LiteralRegex(s));
@@ -214,6 +226,11 @@ const REGEX_TOPLEVEL = MPRepetition(
     REGEX_EXPR, 
     (...children) => new SequenceRegex(children)
 );
+
+const REGEX_DOT = MPSequence<Regex>(
+    [ "." ],
+    () => new DotRegex()
+)
 
 const REGEX_STAR = MPSequence(
     [ REGEX_SUBSUBEXPR, "*" ],

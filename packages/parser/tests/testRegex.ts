@@ -10,6 +10,12 @@ describe(`${path.basename(module.filename)}`, function() {
         testCellID("(1SG)", "[[1SG]]");
         testCellID("(1SG", "ERR");
         testCellID("1SG)", "ERR");
+        testCellID(".", "[DOT]");
+        testCellID(".*", "[STAR[DOT]]");
+        testCellID("(.)", "[[DOT]]");
+        testCellID(".SG", "[DOT,SG]");
+        testCellID(".SG*", "[DOT,STAR[SG]]");
+        testCellID("(.SG)*", "[STAR[[DOT,SG]]]");
         testCellID("\\\\1SG", "[\\1SG]");
         testCellID("\\(1SG", "[(1SG]");
         testCellID("1SG\\)", "[1SG)]");

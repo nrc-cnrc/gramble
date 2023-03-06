@@ -33,6 +33,45 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Regex including dot', function() {
+        const project = sheetFromFile(`${DIR}/regexDot.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "eat" },
+            { text: "goo", gloss: "jump" },
+        ]);
+    });
+    
+    describe('Regex including dot', function() {
+        const project = sheetFromFile(`${DIR}/regexDotInParens.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "eat" },
+            { text: "goo", gloss: "jump" },
+        ]);
+    });
+    
+    describe('Regex including dot in parens', function() {
+        const project = sheetFromFile(`${DIR}/regexDotInParens.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "eat" },
+            { text: "goo", gloss: "jump" },
+        ]);
+    });
+
+    describe('Regex including dot star', function() {
+        const project = sheetFromFile(`${DIR}/regexDotStar.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "foofoo", gloss: "run.impf" },
+        ]);
+    });
+
     describe('Regex including escaped |', function() {
         const project = sheetFromFile(`${DIR}/escapedAlternation.csv`);
         testErrors(project, []);

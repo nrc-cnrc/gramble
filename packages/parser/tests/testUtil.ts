@@ -39,29 +39,29 @@ export function testTokenize(s: string, expectedResult: string[]): void {
 }
 
 export function testIsType(obj: any, type: any,  objName: string = ""): void {
-    const msg = (objName != "") ? `have ${objName} ` : ""; 
-    it(`should ${msg}be of type ${type.name}`, function() {
+    const msg = (objName != "") ? `have ${objName} ` : "be"; 
+    it(`should ${msg} of type ${type.name}`, function() {
         expect(obj instanceof type).to.be.true;
     });
 }
 
 export function testHeaderID(header: string, expectedID: string) {
     const [result, _] = parseHeaderCell(header).destructure();
-    it(`"${header}" should have an id of ${expectedID}`, function() {
+    it(`"${header}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
 export function testCellID(cell: string, expectedID: string) {
     const result = parseRegex(cell);
-    it(`"${cell}" should have an id of ${expectedID}`, function() {
+    it(`"${cell}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
 export function testOpID(cell: string, expectedID: string) {
     const result = parseOp(cell);
-    it(`"${cell}" should have an id of ${expectedID}`, function() {
+    it(`"${cell}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }

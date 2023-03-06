@@ -9,7 +9,9 @@ import {
     EndsGrammar,
     ContainsGrammar,
     EmbedGrammar,
-    GrammarResult
+    GrammarResult,
+    DotGrammar,
+    IntersectionGrammar
 } from "./grammars";
 
 import { 
@@ -22,7 +24,8 @@ import {
     SequenceRegex, 
     StarRegex, 
     LiteralRegex, 
-    parseRegex 
+    parseRegex, 
+    DotRegex
 } from "./regex";
 
 import { 
@@ -343,6 +346,15 @@ export class RegexHeader extends UnaryHeader {
 
         if (parsedText instanceof LiteralRegex) {
             return this.child.toGrammar(parsedText.text);
+        }
+        
+        if (parsedText instanceof DotRegex) {
+            const [childGrammar, msgs] = this.child.toGrammar("dummy").destructure()
+            console.log(`child grammar is a ${childGrammar.constructor.name}`);
+            if (!(childGrammar instanceof LiteralGrammar)) {
+                throw new Error("expected a literal grammar here");
+            }
+            return new DotGrammar(childGrammar.tapeName).msg(msgs);
         }
 
         if (parsedText instanceof NegationRegex) {
