@@ -95,12 +95,11 @@ export class CheckStructuralParams extends CPass {
     }
 
     public handleError(t: TstOp): CResult {
-        const op = t.op as ErrorOp;
+        //const op = t.op as ErrorOp;
         const replacement = !(t.sibling instanceof TstEmpty) ?
                             t.sibling :
                             t.child
-        return result(t).err(op.shortMsg, op.longMsg)
-                        .bind(_ => replacement);      
+        return result(t).bind(_ => replacement);      
     }
 
     public handleOp(t: TstOp): CResult {

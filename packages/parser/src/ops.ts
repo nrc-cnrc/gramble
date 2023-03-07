@@ -1,8 +1,9 @@
 import { 
-    miniParse, MPAlternation, 
+    miniParse, MiniParseEnv, MPAlt, 
     MPParser, MPReserved, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
+import { Err, Msgs, Result } from "./msgs";
 import { isValidSymbolName, RESERVED_SYMBOLS } from "./util";
 
 export const BLANK_PARAM: string = "__";
@@ -73,6 +74,10 @@ export type Requirement = "required" | "forbidden";
 export abstract class Op {
 
     public abstract get id(): string;
+
+    public msg(msgs: Msgs = []): Result<Op> {
+        return new Result(this, msgs);
+    }
 
     public get siblingReq(): Requirement {
         return "forbidden";
@@ -256,9 +261,7 @@ export class SymbolOp extends Op {
 export class ErrorOp extends Op {
 
     constructor(
-        public text: string,
-        public shortMsg: string,
-        public longMsg: string,
+        public text: string
     ) { 
         super();
     }
@@ -272,88 +275,64 @@ export class ErrorOp extends Op {
 
 const OP_TABLE = MPSequence<Op>(
     ["table"],
-    () => new TableOp()
+    () => new TableOp().msg()
 );
 
 const OP_COLLECTION = MPSequence<Op>(
     ["collection"],
-    () => new CollectionOp()
+    () => new CollectionOp().msg()
 );
 
 const OP_TEST = MPSequence<Op>(
     ["test"],
-    () => new TestOp()
+    () => new TestOp().msg()
 );
 
 const OP_TESTNOT = MPSequence<Op>(
     ["testnot"],
-    () => new TestNotOp()
+    () => new TestNotOp().msg()
 );
 
 const OP_UNRESERVED = MPUnreserved<Op>(
-    RESERVED_WORDS, 
     (s) => {
         if (isValidSymbolName(s)) {
-            return new SymbolOp(s);
+            return new SymbolOp(s).msg()
         } else {
-            return new ErrorOp(s, 
+            return new ErrorOp(s).msg([Err( 
                 `Invalid tape name`, 
-                `${s} looks like it should be a tape name, but tape names should start with letters or _`);
+                `${s} looks like it should be a tape name, but tape names should start with letters or _`
+            )]);
         }
     } 
 );
 
-const OP_RESERVED_HEADER = MPReserved<Op>(
-    RESERVED_HEADERS, 
-    (s) => new ErrorOp(s, "Reserved word in operator", 
-            "This cell has to be a symbol name or " +
-            `an operator, but it's a reserved word ${s}.`)
-);
-
-const OP_RESERVED_WORD = MPReserved<Op>(
-    RESERVED_WORDS, 
-    (s) => new ErrorOp(s, "Reserved word in operator", 
-            "This cell has to be a symbol name or " +
-            `an operator, but it's a reserved word '${s}'.`)
-);
-
 const OP_REPLACE = MPSequence<Op>(
     ["replace"], 
-    () => new ReplaceOp()
+    () => new ReplaceOp().msg()
 );
 
 const OP_REPLACE_TAPE = MPSequence<Op>(
     ["replace", OP_UNRESERVED], 
-    (c) => new ReplaceTapeOp(c as SymbolOp)
-);
-
-const OP_REPLACE_ERROR = MPSequence<Op>(
-    ["replace", OP_RESERVED_WORD], 
-    (c) => { 
-        const s = (c as ErrorOp).text;
-        return new ErrorOp(s, "Reserved word in operator",
-            "This replace has to be followed by a tape name, " +
-            `but is instead followed by the reserved word '${s}'`);
-    }
+    (child) => child.bind(c => new ReplaceTapeOp(c as SymbolOp))
 );
 
 const OP_OR = MPSequence<Op>(
     ["or"], 
-    () => new OrOp()
+    () => new OrOp().msg()
 );
 
 const OP_JOIN = MPSequence<Op>(
     ["join"], 
-    () => new JoinOp()
+    () => new JoinOp().msg()
 );
 
-const OP_EXPR: MPParser<Op> = MPAlternation(
+const OP_EXPR: MPParser<Op> = MPAlt(
     OP_TABLE, OP_COLLECTION,
     OP_TEST, OP_TESTNOT,
     OP_REPLACE, 
-    OP_REPLACE_TAPE, OP_REPLACE_ERROR,
+    OP_REPLACE_TAPE,
     OP_OR, OP_JOIN,
-    OP_UNRESERVED, OP_RESERVED_HEADER
+    OP_UNRESERVED
 );
 
 const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
@@ -361,13 +340,15 @@ const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
     (op) => op
 )
 
-export function parseOp(text: string): Op {
+export function parseOp(text: string): Result<Op> {
     const trimmedText = text.trim();
-    const results = miniParse(tokenize, OP_EXPR_WITH_COLON, trimmedText);
+
+    const env = new MiniParseEnv(new Set(RESERVED_SYMBOLS), RESERVED_WORDS);
+    const results = miniParse(env, OP_EXPR_WITH_COLON, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorOp(text, "Invalid operator",
-                "This ends in a colon so it looks like an operator, but it cannot be parsed.")
+        return new ErrorOp(text).msg([Err("Invalid operator",
+                "This ends in a colon so it looks like an operator, but it cannot be parsed.")]);
     }
     
     if (results.length > 1) {

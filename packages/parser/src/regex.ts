@@ -9,7 +9,7 @@ import {
     MPRepetition, 
     MiniParseEnv,
     MPEnv
-} from "./miniParserEnv";
+} from "./miniParser";
 import { Err, Msgs, Result, resultList } from "./msgs";
 import { HIDDEN_TAPE_PREFIX } from "./util";
 

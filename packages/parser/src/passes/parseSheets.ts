@@ -177,7 +177,7 @@ export class ParseSheets extends Pass<PassInput,Component> {
                 // either we're still in the spec row, or there's no spec row yet
                 if (cellText.endsWith(":")) {
                     // it's an operation, which starts a new enclosures
-                    const op = parseOp(cellText);
+                    const op = parseOp(cellText).msgTo(msgs, cellPos);
                     const newEnclosure = new TstOp(cell, op);
                     new CommandMsg().msgTo(msgs, cellPos);
 

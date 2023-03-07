@@ -32,7 +32,7 @@ import {
     miniParse, MiniParseEnv, MPAlt, MPComment, 
     MPDelay, MPParser, MPReserved, 
     MPSequence, MPUnreserved 
-} from "./miniParserEnv";
+} from "./miniParser";
 
 import { 
     HSVtoRGB, RGBtoString,

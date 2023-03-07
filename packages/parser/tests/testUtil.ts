@@ -46,7 +46,7 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
 }
 
 export function testHeaderID(header: string, expectedID: string) {
-    const [result, _] = parseHeaderCell(header).destructure();
+    const result = parseHeaderCell(header).msgTo([]);
     it(`"${header}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
@@ -60,7 +60,7 @@ export function testCellID(cell: string, expectedID: string) {
 }
 
 export function testOpID(cell: string, expectedID: string) {
-    const result = parseOp(cell);
+    const result = parseOp(cell).msgTo([]);
     it(`"${cell}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
