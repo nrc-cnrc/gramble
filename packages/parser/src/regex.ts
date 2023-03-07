@@ -10,6 +10,7 @@ import {
     MiniParseEnv,
     MPEnv
 } from "./miniParserEnv";
+import { Err, Msgs, Result, resultList } from "./msgs";
 import { HIDDEN_TAPE_PREFIX } from "./util";
 
 export type RegexParser = MPParser<Regex>;
@@ -20,23 +21,30 @@ export type RegexParser = MPParser<Regex>;
  * with Headers) we can assign them the right Grammar objects and later Expr objects.
  */
 
-export interface Regex { 
+export abstract class Regex { 
     
     /**
      * The IDs of Regex objects are deliberately chosen to NOT look like their
      * string when expressed as a regex.  That makes it easy to see from the ID
      * when the regex has been parsed incorrectly.
      */
-    readonly id: string;
+    public abstract get id(): string;
 
-    toGrammar(): Grammar;
+    public abstract toGrammar(): Grammar;
+
+    public msg(msgs: Msgs = []): Result<Regex> {
+        return new Result(this, msgs);
+    }
+
 }
 
-export class ErrorRegex {
+export class ErrorRegex extends Regex {
 
     constructor(
         public text: string
-    ) { }
+    ) { 
+        super();
+    }
 
     public get id(): string {
         return `ERR`;
@@ -47,11 +55,12 @@ export class ErrorRegex {
     }
 }
 
-export class LiteralRegex implements Regex {
+export class LiteralRegex extends Regex {
     
     constructor(
         public text: string
     ) { 
+        super();
         this.text = text.trim();
     }
 
@@ -64,7 +73,7 @@ export class LiteralRegex implements Regex {
     }
 }
 
-export class DotRegex implements Regex {
+export class DotRegex extends Regex {
 
     public get id(): string {
         return "DOT";
@@ -75,11 +84,13 @@ export class DotRegex implements Regex {
     }
 }
 
-export class SymbolRegex implements Regex {
+export class SymbolRegex extends Regex {
 
     constructor(
         public child: LiteralRegex
-    ) { }
+    ) { 
+        super();
+    }
 
     public get id(): string {
         return `EMB[${this.child.id}]`;
@@ -90,11 +101,13 @@ export class SymbolRegex implements Regex {
     }
 }
 
-export class StarRegex implements Regex {
+export class StarRegex extends Regex {
 
     constructor(
         public child: Regex
-    ) { }
+    ) { 
+        super();
+    }
 
     public get id(): string {
         return `STAR[${this.child.id}]`;
@@ -106,11 +119,13 @@ export class StarRegex implements Regex {
     }
 }
 
-export class QuestionRegex implements Regex {
+export class QuestionRegex extends Regex {
 
     constructor(
         public child: Regex
-    ) { }
+    ) { 
+        super();
+    }
 
     public get id(): string {
         return `QUES[${this.child.id}]`;
@@ -122,11 +137,13 @@ export class QuestionRegex implements Regex {
     }
 }
 
-export class PlusRegex implements Regex {
+export class PlusRegex extends Regex {
 
     constructor(
         public child: Regex
-    ) { }
+    ) { 
+        super();
+    }
 
     public get id(): string {
         return `PLUS[${this.child.id}]`;
@@ -138,11 +155,13 @@ export class PlusRegex implements Regex {
     }
 }
 
-export class NegationRegex implements Regex {
+export class NegationRegex extends Regex {
 
     constructor(
         public child: Regex
-    ) { }
+    ) { 
+        super();
+    }
 
     public get id(): string {
         return `NOT[${this.child.id}]`;
@@ -154,12 +173,14 @@ export class NegationRegex implements Regex {
     }
 }
 
-export class AlternationRegex implements Regex {
+export class AlternationRegex extends Regex {
 
     constructor(
         public child1: Regex,
         public child2: Regex
-    ) { }
+    ) { 
+        super();
+    }
     
     public get id(): string {
         return `OR[${this.child1.id},${this.child2.id}]`;
@@ -172,11 +193,13 @@ export class AlternationRegex implements Regex {
     }
 }
 
-export class SequenceRegex implements Regex {
+export class SequenceRegex extends Regex {
 
     constructor(
         public children: Regex[]
-    ) { }
+    ) { 
+        super();
+    }
 
     public get id(): string {
         return `[${this.children.map(c=>c.id).join(",")}]`;
@@ -220,31 +243,34 @@ const REGEX_SUBSUBEXPR: RegexParser = MPDelay(() => MPAlt(
     REGEX_DOT
 ));
 
-const REGEX_UNRESERVED = MPUnreserved<Regex>(s => new LiteralRegex(s));
+const REGEX_UNRESERVED = MPUnreserved<Regex>(
+    s => new LiteralRegex(s).msg()
+);
 
 const REGEX_TOPLEVEL = MPRepetition(
     REGEX_EXPR, 
-    (...children) => new SequenceRegex(children)
+    (...children) => resultList(children)
+                        .bind(cs => new SequenceRegex(cs))
 );
 
 const REGEX_DOT = MPSequence<Regex>(
     [ "." ],
-    () => new DotRegex()
+    () => new DotRegex().msg()
 )
 
 const REGEX_STAR = MPSequence(
     [ REGEX_SUBSUBEXPR, "*" ],
-    (child) => new StarRegex(child)
+    (child) => child.bind(c => new StarRegex(c))
 )
 
 const REGEX_QUES = MPSequence(
     [ REGEX_SUBSUBEXPR, "?" ],
-    (child) => new QuestionRegex(child)
+    (child) => child.bind(c => new QuestionRegex(c))
 )
 
 const REGEX_PLUS = MPSequence(
     [ REGEX_SUBSUBEXPR, "+" ],
-    (child) => new PlusRegex(child)
+    (child) => child.bind(c => new PlusRegex(c))
 )
 
 const REGEX_PARENS = MPSequence(
@@ -254,17 +280,18 @@ const REGEX_PARENS = MPSequence(
 
 const REGEX_SYMBOL = MPSequence(
     ["{", REGEX_UNRESERVED, "}"],
-    (child) => new SymbolRegex(child as LiteralRegex) 
+    (child) => child.bind(c => new SymbolRegex(c as LiteralRegex))
 );
 
 const REGEX_NEGATION = MPSequence(
     ["~", REGEX_SUBEXPR],
-    (child) => new NegationRegex(child)
+    (child) => child.bind(c => new NegationRegex(c))
 );
 
 const REGEX_ALTERNATION = MPSequence(
     [REGEX_SUBEXPR, "|", REGEX_EXPR],
-    (c1, c2) => new AlternationRegex(c1, c2)
+    (c1, c2) => resultList([c1, c2])
+                    .bind(([x, y]) => new AlternationRegex(x, y))
 );
 
 /* PLAINTEXT GRAMMAR */
@@ -273,23 +300,28 @@ const PLAINTEXT_EXPR: RegexParser = MPDelay(() => MPAlt(
     PLAINTEXT_ALTERNATION)
 );
 
-const PLAINTEXT_UNRESERVED = MPUnreserved<Regex>(s => new LiteralRegex(s));
+const PLAINTEXT_UNRESERVED = MPUnreserved<Regex>(
+    s => new LiteralRegex(s).msg()
+);
 
 const PLAINTEXT_ALTERNATION = MPSequence(
     [ PLAINTEXT_UNRESERVED, "|", PLAINTEXT_EXPR ],
-    (c1, c2) => new AlternationRegex(c1, c2)
+    (c1, c2) => resultList([c1, c2])
+                    .bind(([x, y]) => new AlternationRegex(x, y))
 );
 
 export function parse(
     text: string, 
+    splitters: Set<string>,
     reserved: Set<string>,
     topLevelExpr: RegexParser
-): Regex {
-    const env = new MiniParseEnv(reserved);
+): Result<Regex> {
+    const env = new MiniParseEnv(splitters, reserved);
     const results = miniParse(env, topLevelExpr, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorRegex(text);
+        return new ErrorRegex(text).msg([Err("Cannot parse this cell", 
+                    `Cannot parse ${text} as a content cell`)])
     }
     if (results.length > 1) {
         // if this happens, it's an error on our part
@@ -298,14 +330,14 @@ export function parse(
     return results[0];
 }
 
-export function parseRegex(text: string): Regex {
-    return parse(text, RESERVED_FOR_REGEX, REGEX_TOPLEVEL);
+export function parseRegex(text: string): Result<Regex> {
+    return parse(text, RESERVED_FOR_REGEX, new Set(), REGEX_TOPLEVEL);
 }
 
-export function parsePlaintext(text: string): Regex {
-    return parse(text, RESERVED_FOR_PLAINTEXT, PLAINTEXT_EXPR);
+export function parsePlaintext(text: string): Result<Regex> {
+    return parse(text, RESERVED_FOR_PLAINTEXT, new Set(), PLAINTEXT_EXPR);
 }
 
-export function parseContext(text: string): Regex {
-    return parse(text, RESERVED_FOR_CONTEXT, REGEX_TOPLEVEL);
+export function parseContext(text: string): Result<Regex> {
+    return parse(text, RESERVED_FOR_CONTEXT, new Set(), REGEX_TOPLEVEL);
 }

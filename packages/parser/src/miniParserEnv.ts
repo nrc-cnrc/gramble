@@ -1,3 +1,4 @@
+import { Result } from "./msgs";
 import { Gen } from "./util";
 
 /**
@@ -78,14 +79,25 @@ function constructTokenizer(reserved: Set<string>): RegExp {
     ")");
 }
 
+/**
+ * MiniParseEnv is a env parameter that's passed through all the
+ * parsing functions, containing information like what characters can
+ * split the string into tokens (splitters) and what symbols are
+ * reserved.  The reason this is an env variable, rather than a global,
+ * is that what's treated as reserved and what's not can change depending
+ * on context.  (E.g., _ is a reserved symbol at the top level in a 
+ * rule context, but not if it's in parens.  Using an env lets us reflect
+ * that changing status during the parse.)
+ */
 export class MiniParseEnv {
 
     protected tokenizer: RegExp;
 
     constructor(
+        public splitters: Set<string>,
         public reserved: Set<string>
     ) { 
-        this.tokenizer = constructTokenizer(reserved);
+        this.tokenizer = constructTokenizer(splitters);
     }
 
     public tokenize(text: string): string[] {
@@ -95,7 +107,8 @@ export class MiniParseEnv {
     }
 }
 
-export type MPParser<T> = (input: string[], env: MiniParseEnv) => Gen<[T, string[]]>
+export type MPParser<T> = (input: string[], env: MiniParseEnv) => 
+                                        Gen<[Result<T>, string[]]>
 
 /**
  * Delay the evaluation of a parser X to allow reference to a parser before it's defined (e.g. for
@@ -122,7 +135,7 @@ export function MPEnv<T>(
  * Recognizes any word in the "reserved" string set.
  */
 export function MPReserved<T>(
-    constr: (s: string) => T,
+    constr: (s: string) => Result<T>,
     caseSensitive: boolean = false    
 ): MPParser<T> {
     return function*(input: string[], env: MiniParseEnv) {
@@ -142,7 +155,7 @@ export function MPReserved<T>(
  * Recognizes any word that is NOT in the "reserved" string set.
  */
 export function MPUnreserved<T>(
-    constr: (s: string) => T,
+    constr: (s: string) => Result<T>,
     caseSensitive: boolean = false    
 ): MPParser<T> {
     return function*(input: string[], env: MiniParseEnv) {
@@ -151,7 +164,7 @@ export function MPUnreserved<T>(
         }
         const firstToken = caseSensitive ? input[0] 
                                          : input[0].toLowerCase();
-        if (env.reserved.has(firstToken)) {
+        if (env.reserved.has(firstToken) || env.splitters.has(firstToken)) {
             return;
         }
         yield [constr(input[0]), input.slice(1)];
@@ -161,7 +174,10 @@ export function MPUnreserved<T>(
 /**
  * Recognizes a string that begins with commentStarter (e.g. "%" in a header)
  */
-export function MPComment<T>(commentStarter: string, constr: (s: string) => T): MPParser<T> {
+export function MPComment<T>(
+    commentStarter: string, 
+    constr: (s: string) => Result<T>
+): MPParser<T> {
     return function*(input: string[]) {
         if (input.length == 0 || input[0] != commentStarter) {
             return;
@@ -177,15 +193,15 @@ export function MPComment<T>(commentStarter: string, constr: (s: string) => T): 
  */
 export function MPSequence<T>(
     children: (string | MPParser<T>)[], 
-    constr: (...children: T[]) => T,
+    constr: (...children: Result<T>[]) => Result<T>,
     caseSensitive: boolean = false    
 ): MPParser<T> {
     return function*(input: string[], env: MiniParseEnv) {
 
-        let results: [T[], string[]][] = [[[], input]];
+        let results: [Result<T>[], string[]][] = [[[], input]];
 
         for (const child of children) {
-            let newResults: [T[], string[]][] = [];
+            let newResults: [Result<T>[], string[]][] = [];
             for (const [existingOutputs, existingRemnant] of results) {
                 if (typeof child == "string") {
                     if (existingRemnant.length == 0) {
@@ -203,7 +219,7 @@ export function MPSequence<T>(
                 }
     
                 for (const [output2, remnant2] of child(existingRemnant, env)) {
-                    const newOutput: T[] = [...existingOutputs, output2];
+                    const newOutput: Result<T>[] = [...existingOutputs, output2];
                     newResults.push([newOutput, remnant2]);
                 }
             }
@@ -217,20 +233,20 @@ export function MPSequence<T>(
 
 export function MPRepetition<T>(
     child: MPParser<T>,
-    constr: (...children: T[]) => T,
+    constr: (...children: Result<T>[]) => Result<T>,
     minReps: number = 0,
     maxReps: number = Infinity
 ): MPParser<T> {
     return function*(input: string[], env: MiniParseEnv) {
-        let results: [T[], string[]][] = [[[], input]];
+        let results: [Result<T>[], string[]][] = [[[], input]];
         for (let reps = 0; reps <= maxReps && results.length > 0; reps++) {
-            let newResults: [T[], string[]][] = [];
+            let newResults: [Result<T>[], string[]][] = [];
             for (const [existingOutputs, existingRemnant] of results) {
                 if (reps >= minReps) {
                     yield [constr(...existingOutputs), existingRemnant];
                 }
                 for (const [output2, remnant2] of child(existingRemnant, env)) {
-                    const newOutput: T[] = [...existingOutputs, output2];
+                    const newOutput: Result<T>[] = [...existingOutputs, output2];
                     newResults.push([newOutput, remnant2]);
                 }
             }
@@ -262,7 +278,7 @@ export function miniParse<T>(
     env: MiniParseEnv,
     grammar: MPParser<T>,
     text: string
-): T[] {
+): Result<T>[] {
     const pieces = env.tokenize(text);
     let results = [... grammar(pieces, env)];
     // result is a list of [header, remaining_tokens] pairs.  

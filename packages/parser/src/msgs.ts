@@ -256,7 +256,17 @@ export function result<T>(item: T): Result<T> {
     return new Result(item);
 }
 
-export function resultList<T>(items: T[]): ResultList<T> {
+export function resultList<T>(xs: (T|Result<T>)[]): ResultList<T> {
+    const msgs: Msg[] = [];
+    const items: T[] = [];
+    for (const x of xs) {
+        if (!(x instanceof Result)) {
+            items.push(x);
+            continue;
+        }
+        const item = x.msgTo(msgs);
+        items.push(item);
+    }
     return new ResultList(items);
 }
 

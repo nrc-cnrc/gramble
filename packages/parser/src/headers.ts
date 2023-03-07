@@ -318,9 +318,7 @@ export class RegexHeader extends UnaryHeader {
     ): GrammarResult {
 
         if (parsedText instanceof ErrorRegex) {
-            return new EpsilonGrammar().msg()
-                .err("Cannot parse regex",
-                "Cannot parse the regex in this cell");
+            return new EpsilonGrammar().msg(); // we handle the msg elsewhere
         }
 
         if (parsedText instanceof SequenceRegex) {
@@ -350,7 +348,6 @@ export class RegexHeader extends UnaryHeader {
         
         if (parsedText instanceof DotRegex) {
             const [childGrammar, msgs] = this.child.toGrammar("dummy").destructure()
-            console.log(`child grammar is a ${childGrammar.constructor.name}`);
             if (!(childGrammar instanceof LiteralGrammar)) {
                 throw new Error("expected a literal grammar here");
             }
@@ -372,8 +369,8 @@ export class RegexHeader extends UnaryHeader {
     }
 
     public toGrammar(text: string): GrammarResult {
-        const parsedText = parseRegex(text);
-        return this.toGrammarPiece(parsedText);
+        return parseRegex(text)
+                .bind(r => this.toGrammarPiece(r));
     }
 }
 

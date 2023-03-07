@@ -53,7 +53,7 @@ export function testHeaderID(header: string, expectedID: string) {
 }
 
 export function testCellID(cell: string, expectedID: string) {
-    const result = parseRegex(cell);
+    const result = parseRegex(cell).msgTo([]); 
     it(`"${cell}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
