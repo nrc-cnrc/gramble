@@ -29,10 +29,10 @@ import {
 } from "./regex";
 
 import { 
-    miniParse, MPAlternation, MPComment, 
+    miniParse, MiniParseEnv, MPAlt, MPComment, 
     MPDelay, MPParser, MPReserved, 
     MPSequence, MPUnreserved 
-} from "./miniParserMonadic";
+} from "./miniParserEnv";
 
 import { 
     HSVtoRGB, RGBtoString,
@@ -532,18 +532,8 @@ export const RESERVED_OPS: Set<string> = new Set([
 
 export const RESERVED_WORDS = new Set([...RESERVED_SYMBOLS, ...RESERVED_HEADERS, ...RESERVED_OPS]);
 
-const tokenizer = new RegExp("\\s+|(" + 
-                            RESERVED_SYMBOLS.map(s => "\\"+s).join("|") + 
-                            ")");
-
-function tokenize(text: string): string[] {
-    return text.split(tokenizer).filter(
-        (s: string) => s !== undefined && s !== ''
-    );
-}
-
 const HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
-    MPAlternation(
+    MPAlt(
         HP_OPTIONAL, HP_FROM, HP_SLASH,
         HP_TO, HP_PRE, HP_POST,
         HP_FROM_ATOMIC, HP_TO_ATOMIC, 
@@ -556,9 +546,9 @@ const HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
 );
 
 const HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
-    MPAlternation(
+    MPAlt(
         HP_UNRESERVED, HP_EMBED, HP_HIDE, 
-        HP_PARENS, HP_RESERVED_OP)
+        HP_PARENS)
 );
 
 const HP_COMMENT = MPComment<Header>(
@@ -567,7 +557,6 @@ const HP_COMMENT = MPComment<Header>(
 );
 
 const HP_UNRESERVED = MPUnreserved<Header>(
-    RESERVED_WORDS, 
     (s) => {
         if (isValidSymbolName(s)) {
             return new TapeNameHeader(s).msg()
@@ -577,14 +566,6 @@ const HP_UNRESERVED = MPUnreserved<Header>(
                 `${s} looks like it should be a tape name, but tape names should start with letters or _`);
         }
     } 
-);
-
-const HP_RESERVED_OP = MPReserved<Header>(
-    RESERVED_OPS, 
-    (s) => new ErrorHeader(s).msg().err(
-            `Reserved word in header`, 
-            `This looks like a header, but contains the reserved word "${s}". ` + 
-            "If you didn't mean this to be a header, put a colon after it.")
 );
 
 const HP_EMBED = MPSequence<Header>(
@@ -731,11 +712,12 @@ const HP_CONTAINS = MPSequence<Header>(
     (child) => child.bind(c => new ContainsHeader(c))
 );
 
-const HP_EXPR: MPParser<Header> = MPAlternation(HP_COMMENT, HP_NON_COMMENT_EXPR);
+const HP_EXPR: MPParser<Header> = MPAlt(HP_COMMENT, HP_NON_COMMENT_EXPR);
 
 export function parseHeaderCell(text: string): Result<Header> {
 
-    const results = miniParse(tokenize, HP_EXPR, text);
+    const env = new MiniParseEnv(new Set(RESERVED_SYMBOLS), RESERVED_WORDS);
+    const results = miniParse(env, HP_EXPR, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
         return new ErrorHeader(text).msg().err(
@@ -744,6 +726,7 @@ export function parseHeaderCell(text: string): Result<Header> {
         );
     }
     if (results.length > 1) {
+        console.log(results);
         // if this happens, it's an error on our part
         throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
     }
