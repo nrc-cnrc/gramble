@@ -11,7 +11,7 @@ import {
     MPEnv
 } from "./miniParser";
 import { Err, Msgs, Result, resultList } from "./msgs";
-import { HIDDEN_TAPE_PREFIX } from "./util";
+import { DUMMY_REGEX_TAPE, HIDDEN_TAPE_PREFIX } from "./util";
 
 export type RegexParser = MPParser<Regex>;
 
@@ -69,7 +69,7 @@ export class LiteralRegex extends Regex {
     }
 
     public toGrammar(): Grammar {
-        return new LiteralGrammar(`${HIDDEN_TAPE_PREFIX}`, this.text);
+        return new LiteralGrammar(DUMMY_REGEX_TAPE, this.text);
     }
 }
 
@@ -80,7 +80,7 @@ export class DotRegex extends Regex {
     }
 
     public toGrammar(): Grammar {
-        return new DotGrammar(`${HIDDEN_TAPE_PREFIX}`);
+        return new DotGrammar(DUMMY_REGEX_TAPE);
     }
 }
 

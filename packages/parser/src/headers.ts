@@ -11,7 +11,8 @@ import {
     EmbedGrammar,
     GrammarResult,
     DotGrammar,
-    IntersectionGrammar
+    IntersectionGrammar,
+    RenameGrammar
 } from "./grammars";
 
 import { 
@@ -36,9 +37,9 @@ import {
 
 import { 
     HSVtoRGB, RGBtoString,
-    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RESERVED_SYMBOLS, isValidSymbolName 
+    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RESERVED_SYMBOLS, isValidSymbolName, DUMMY_REGEX_TAPE 
 } from "./util";
-import { Msgs, resultList, Result } from "./msgs";
+import { Msgs, resultList, Result, Err } from "./msgs";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
@@ -313,64 +314,15 @@ export class RegexHeader extends UnaryHeader {
         return true;
     }
 
-    public toGrammarPiece(
-        parsedText: Regex
-    ): GrammarResult {
-
-        if (parsedText instanceof ErrorRegex) {
-            return new EpsilonGrammar().msg(); // we handle the msg elsewhere
-        }
-
-        if (parsedText instanceof SequenceRegex) {
-            return resultList(parsedText.children)
-                        .map(c => this.toGrammarPiece(c))
-                        .bind(cs => new SequenceGrammar(cs));
-        }
-
-        if (parsedText instanceof StarRegex) {
-            return this.toGrammarPiece(parsedText.child)
-                       .bind(c => new RepeatGrammar(c));
-        }
-        
-        if (parsedText instanceof QuestionRegex) {
-            return this.toGrammarPiece(parsedText.child)
-                       .bind(c => new RepeatGrammar(c, 0, 1));
-        }
-        
-        if (parsedText instanceof PlusRegex) {
-            return this.toGrammarPiece(parsedText.child)
-                       .bind(c => new RepeatGrammar(c, 1));
-        }
-
-        if (parsedText instanceof LiteralRegex) {
-            return this.child.toGrammar(parsedText.text);
-        }
-        
-        if (parsedText instanceof DotRegex) {
-            const [childGrammar, msgs] = this.child.toGrammar("dummy").destructure()
-            if (!(childGrammar instanceof LiteralGrammar)) {
-                throw new Error("expected a literal grammar here");
-            }
-            return new DotGrammar(childGrammar.tapeName).msg(msgs);
-        }
-
-        if (parsedText instanceof NegationRegex) {
-            return this.toGrammarPiece(parsedText.child)
-                       .bind(c => new NegationGrammar(c));
-        }
-
-        if (parsedText instanceof AlternationRegex) {
-            return resultList([parsedText.child1, parsedText.child2])
-                    .map(c => this.toGrammarPiece(c))
-                    .bind(cs => new AlternationGrammar(cs));
-        }
-
-        throw new Error(`Error constructing boolean expression: ${parsedText}`);
-    }
-
     public toGrammar(text: string): GrammarResult {
+        if (!(this.child instanceof TapeNameHeader)) {
+            return new EpsilonGrammar().msg([Err("Embed in regex", "We can't have embeds under regexes anymore")]);
+        }
+        const tapeName = this.child.text;
         return parseRegex(text)
-                .bind(r => this.toGrammarPiece(r));
+                  .bind(r => r.toGrammar())
+                  .bind(g => new RenameGrammar(g, 
+                                DUMMY_REGEX_TAPE, tapeName))
     }
 }
 

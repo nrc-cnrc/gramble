@@ -209,7 +209,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
+    /*
     describe('Re embed', function() {
         const project = sheetFromFile(`${DIR}/reEmbed.csv`);
         testErrors(project, []);
@@ -239,7 +239,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"mooboobar"},
             {"text":"moogoobar"}
         ]);
-    });
+    }); */
 
 
 });

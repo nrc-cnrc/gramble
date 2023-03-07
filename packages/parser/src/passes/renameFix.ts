@@ -4,10 +4,12 @@ import {
     Grammar, 
     GrammarPass, 
     GrammarResult,
-    HideGrammar, CollectionGrammar, RenameGrammar
+    HideGrammar, 
+    RenameGrammar, 
+    EpsilonGrammar
 } from "../grammars";
 import { result } from "../msgs";
-import { Pass, PassEnv } from "../passes";
+import { PassEnv } from "../passes";
 
 /**
  * This pass finds erroneous renames/hides and fixes them.
@@ -57,8 +59,13 @@ export class RenameFix extends GrammarPass {
     public handleRename(g: RenameGrammar, env: PassEnv): GrammarResult {
         g.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.fromTape) == -1) { 
+
+            if (g.child instanceof EpsilonGrammar) {
+                return result(g.child);
+            }
+
             return result(g).err("Renaming missing tape",
-                            `The grammar to the left does not contain the tape ${g.fromTape}. ` +
+                            `The ${g.child.constructor.name} to the left does not contain the tape ${g.fromTape}. ` +
                             `Available tapes: [${[...g.child.tapes]}]`)
                          .bind(c => c.child);
         }

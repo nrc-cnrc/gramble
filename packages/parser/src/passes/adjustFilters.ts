@@ -7,7 +7,7 @@ import {
     GrammarResult,
     IntersectionGrammar, LocatorGrammar, 
     NegationGrammar, CollectionGrammar, 
-    RepeatGrammar, SequenceGrammar, StartsGrammar
+    RepeatGrammar, SequenceGrammar, StartsGrammar, RenameGrammar
 } from "../grammars";
 
 /**
@@ -92,6 +92,12 @@ export class AdjustFilters extends GrammarPass {
             return newLocation.mapChildren(this, env) as GrammarResult;
         }
 
+        if (g.child instanceof RenameGrammar) {
+            const newFilter = new StartsGrammar(g.child.child, g.child.child.tapes);
+            const newRename = new RenameGrammar(newFilter, g.child.fromTape, g.child.toTape);
+            return newRename.mapChildren(this, env) as GrammarResult;
+        }
+
         // construct the filter
         const newG = this.transform(g.child, env) as GrammarResult;
         return newG.bind(c => {
@@ -142,6 +148,12 @@ export class AdjustFilters extends GrammarPass {
             const newFilter = new EndsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child._pos, newFilter);
             return newLocation.mapChildren(this, env) as GrammarResult;
+        }
+        
+        if (g.child instanceof RenameGrammar) {
+            const newFilter = new EndsGrammar(g.child.child, g.child.child.tapes);
+            const newRename = new RenameGrammar(newFilter, g.child.fromTape, g.child.toTape);
+            return newRename.mapChildren(this, env) as GrammarResult;
         }
 
         // create the filter
@@ -196,6 +208,12 @@ export class AdjustFilters extends GrammarPass {
             const newFilter = new ContainsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child._pos, newFilter);
             return newLocation.mapChildren(this, env) as GrammarResult;
+        }
+        
+        if (g.child instanceof RenameGrammar) {
+            const newFilter = new ContainsGrammar(g.child.child, g.child.child.tapes);
+            const newRename = new RenameGrammar(newFilter, g.child.fromTape, g.child.toTape);
+            return newRename.mapChildren(this, env) as GrammarResult;
         }
 
         // create the filter

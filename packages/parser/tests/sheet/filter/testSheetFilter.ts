@@ -172,7 +172,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-
+    /*
     describe('Equals embed', function() {
         const project = sheetFromFile(`${DIR}/equalsEmbed.csv`);
         testErrors(project, []);
@@ -182,7 +182,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
             { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
         ]);
-    });
+    }); 
     
     describe('Equals embed where the symbol is defined later', function() {
         const project = sheetFromFile(`${DIR}/equalsEmbedAfter.csv`);
@@ -193,7 +193,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
             { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
         ]);
-    });
+    });*/
     
     describe('Equals with not value', function() {
         const project = sheetFromFile(`${DIR}/equalsNot.csv`);
@@ -215,6 +215,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    /*
     describe('Equals with not embed', function() {
         const project = sheetFromFile(`${DIR}/equalsNegatedEmbed.csv`);
         testErrors(project, []);
@@ -223,7 +224,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {gloss: "jump[1SG]", subj: "[1SG]", text: "moobar"}
         ]);
     });
-
+    */
     describe('Equals with a slash header', function() {
         const project = sheetFromFile(`${DIR}/equalsSlash.csv`);
         testErrors(project, []);
@@ -285,7 +286,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
     describe('startswith with not value, embedded', function() {
         const project = sheetFromFile(`${DIR}/embeddedStartsWithNot.csv`);
         testErrors(project, []);
@@ -296,6 +296,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    /*
     describe('startswith embed', function() {
         const project = sheetFromFile(`${DIR}/startsWithEmbed.csv`);
         testErrors(project, []);
@@ -314,7 +315,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "ummoo", gloss: "[1SG]jump" },
             { text: "ungoo", gloss: "[1SG]climb" }
         ]);
-    });
+    }); 
 
     describe('startswith negated embed', function() {
         const project = sheetFromFile(`${DIR}/startsWithNegatedEmbed.csv`);
@@ -325,6 +326,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "ungoo", gloss: "[1SG]climb" }
         ]);
     });
+    */
 
     describe('startswith and equals modifying same embed', function() {
         const project = sheetFromFile(`${DIR}/startsWithEquals.csv`);
@@ -404,6 +406,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    /*
     describe('endswith negated embed', function() {
         const project = sheetFromFile(`${DIR}/endsWithEmbedNot.csv`);
         testErrors(project, []);
@@ -413,7 +416,9 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foobaru", gloss: "climb[1SG]" }
         ]);
     });
-    
+    */
+
+    /*
     describe('endswith complex embed', function() {
         const project = sheetFromFile(`${DIR}/endsWithComplexEmbed.csv`);
         testErrors(project, []);
@@ -424,7 +429,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foobatu", gloss: "eat[1SG]" }
         ]);
     });
-
+*/
     describe('endswith and equals modifying same embed', function() {
         const project = sheetFromFile(`${DIR}/endsWithEquals.csv`);
         testErrors(project, []);
