@@ -1,4 +1,4 @@
-import { Msg, Msgs, result, Result } from "./msgs";
+import { Err, Msg, Msgs, result, Result, Warn } from "./msgs";
 import { Pass, PassEnv } from "./passes";
 import { CellPos } from "./util";
 
@@ -15,5 +15,15 @@ export abstract class Component {
 
     public msg(m: Msg | Msgs = []): CResult {
         return result(this).msg(m);
+    }
+
+    public err(shortMsg: string, longMsg: string): Result<Component> {
+        const e = Err(shortMsg, longMsg, this.pos);
+        return this.msg(e);
+    }
+    
+    public warn(longMsg: string): Result<Component> {
+        const e = Warn(longMsg, this.pos);
+        return this.msg(e);
     }
 }

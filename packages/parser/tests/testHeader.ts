@@ -14,34 +14,41 @@ describe(`${path.basename(module.filename)}`, function() {
         testHeaderID("(text)", "text");
         testHeaderID("(text", "ERR");
         testHeaderID("text)", "ERR");
-        testHeaderID("text/gloss", "SLASH[text,gloss]");
-        testHeaderID("(text/gloss)", "SLASH[text,gloss]");
-        testHeaderID("(text)/(gloss)", "SLASH[text,gloss]");
+        testHeaderID("text/gloss", "slash[text,gloss]");
+        testHeaderID("(text/gloss)", "slash[text,gloss]");
+        testHeaderID("(text)/(gloss)", "slash[text,gloss]");
         testHeaderID("text/", "ERR");
         testHeaderID("/text", "ERR");
-        testHeaderID("optional text", "OPT[text]");
+        testHeaderID("optional text", "optional[text]");
         testHeaderID("optional", "ERR");
         testHeaderID("text optional", "ERR");
         testHeaderID("optional/text", "ERR");
-        testHeaderID("optional(text)", "OPT[text]");
-        testHeaderID("(optional text)", "OPT[text]");
+        testHeaderID("optional(text)", "optional[text]");
+        testHeaderID("(optional text)", "optional[text]");
         testHeaderID("optionaltext", "optionaltext");
-        testHeaderID("pre text", "pre:text");
-        testHeaderID("post text", "post:text");
-        testHeaderID("from text", "from:text");
-        testHeaderID("to text", "to:text");
-        testHeaderID("pre(text)", "pre:text");
-        testHeaderID("(pre text)", "pre:text");
+        testHeaderID("pre text", "pre[text]");
+        testHeaderID("post text", "post[text]");
+        testHeaderID("from text", "from[text]");
+        testHeaderID("to text", "to[text]");
+        testHeaderID("pre", "pre[.i]");
+        testHeaderID("post", "post[.i]");
+        testHeaderID("from", "from[.i]");
+        testHeaderID("to", "to[.o]");
+        testHeaderID("pre(text)", "pre[text]");
+        testHeaderID("(pre text)", "pre[text]");
+        testHeaderID("pre text/gloss", "pre[slash[text,gloss]]"); // this is invalid, but it CAN be parsed
+        
+        testHeaderID("pre embed", "pre[embed]"); // this is invalid, but it CAN be parsed
         testHeaderID("blarg text", "ERR");
-        testHeaderID("re text", "RE[text]");
-        testHeaderID("re text/gloss", "ERR");
-        testHeaderID("equals text", "EQUALS[text]");
-        testHeaderID("equals re text", "EQUALS[RE[text]]");
-        testHeaderID("starts text", "STARTS[text]");
-        testHeaderID("ends text", "ENDS[text]");
-        testHeaderID("contains text", "CONTAINS[text]");
-        testHeaderID("text/gloss/root", "SLASH[text,SLASH[gloss,root]]");
-        testHeaderID("(text/gloss)/root", "SLASH[SLASH[text,gloss],root]");
+        testHeaderID("equals text", "equals[text]");
+        testHeaderID("equals(text)", "equals[text]");
+        testHeaderID("starts text", "starts[text]");
+        testHeaderID("ends text", "ends[text]");
+        testHeaderID("contains text", "contains[text]");
+        testHeaderID("equals text/gloss", "equals[slash[text,gloss]]"); // this is invalid, but it CAN be parsed
+        testHeaderID("equals embed", "equals[embed]"); // // this is invalid, but it CAN be parsed
+        testHeaderID("text/gloss/root", "slash[text,slash[gloss,root]]");
+        testHeaderID("(text/gloss)/root", "slash[slash[text,gloss],root]");
 
         // empty header is invalid
         testHeaderID("", "ERR");

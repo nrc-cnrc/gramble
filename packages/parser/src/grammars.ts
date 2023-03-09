@@ -14,7 +14,7 @@ import {
     DerivEnv, ExprNamespace, constructCollection, 
     constructCorrespond, constructNoEps, DerivStats, constructDotStar
 } from "./exprs";
-import { Msg, Msgs, result, Result, resultDict, resultList } from "./msgs";
+import { Err, Msg, Msgs, result, Result, resultDict, resultList, Warn } from "./msgs";
 
 import {
     renameTape,
@@ -117,6 +117,16 @@ export abstract class Grammar extends Component {
     
     public msg(m: Msg | Msgs = []): GrammarResult {
         return new GrammarResult(this).msg(m);
+    }
+    
+    public err(shortMsg: string, longMsg: string): GrammarResult {
+        const e = Err(shortMsg, longMsg, this.pos);
+        return this.msg(e);
+    }
+    
+    public warn(longMsg: string): GrammarResult {
+        const e = Warn(longMsg, this.pos);
+        return this.msg(e);
     }
     
     protected _tapes: string[] | undefined = undefined;

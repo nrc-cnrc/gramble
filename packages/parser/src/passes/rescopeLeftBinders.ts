@@ -78,9 +78,10 @@ export class RescopeLeftBinders extends CPass {
             }
 
             if (child.header.header instanceof EqualsHeader ||
-                    child.header instanceof StartsHeader ||
-                    child.header instanceof EndsHeader ||
-                    child.header instanceof ContainsHeader) {
+                child.header.header instanceof StartsHeader ||
+                child.header.header instanceof EndsHeader ||
+                child.header.header instanceof ContainsHeader) {
+                
                 const prevChild = newChildren.pop();
                 if (prevChild == undefined) {
                     Err("Wayward filtering",

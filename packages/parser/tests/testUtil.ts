@@ -45,28 +45,28 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
     });
 }
 
-export function testHeaderID(header: string, expectedID: string) {
-    const result = parseHeaderCell(header).msgTo([]);
+export function testHeaderID(header: string, expectedID: string): void {
+    const [result, msgs] = parseHeaderCell(header).destructure();
     it(`"${header}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
-export function testCellID(cell: string, expectedID: string) {
+export function testCellID(cell: string, expectedID: string): void {
     const result = parseRegex(cell).msgTo([]); 
     it(`"${cell}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
-export function testOpID(cell: string, expectedID: string) {
+export function testOpID(cell: string, expectedID: string): void {
     const result = parseOp(cell).msgTo([]);
     it(`"${cell}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
-export function testNumOutputs(outputs: StringDict[], expectedNum: number, warningOnly: boolean = false) {
+export function testNumOutputs(outputs: StringDict[], expectedNum: number, warningOnly: boolean = false): void {
     const date_str: string = (new Date()).toUTCString();
     const testName: string = `should have ${expectedNum} result(s)`;
     it(`${testName}`, function() {

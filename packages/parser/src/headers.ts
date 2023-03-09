@@ -39,7 +39,7 @@ import {
     HSVtoRGB, RGBtoString,
     REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RESERVED_SYMBOLS, isValidSymbolName, DUMMY_REGEX_TAPE, Cell 
 } from "./util";
-import { Msgs, resultList, Result, Err } from "./msgs";
+import { Msgs, resultList, Result, Err, Warn, Msg, result } from "./msgs";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
@@ -68,6 +68,8 @@ export const DEFAULT_VALUE = 1.0;
  */
  export abstract class Header {
     
+    public abstract get name(): string;
+
     /**
      * One of the primary responsibilities of the header tree is to construct the appropriate grammar object
      * for a cell, from the grammar to its left and a string.  This string is usually the text of the 
@@ -89,8 +91,18 @@ export const DEFAULT_VALUE = 1.0;
         return "__";
     }
 
-    public msg(msgs: Msgs = []): Result<Header> {
-        return new Result(this, msgs);
+    public msg(m: Msg | Msgs = []): Result<Header> {
+        return result(this).msg(m);
+    }
+
+    public err(shortMsg: string, longMsg: string): Result<Header> {
+        const e = Err(shortMsg, longMsg);
+        return this.msg(e);
+    }
+    
+    public warn(longMsg: string): Result<Header> {
+        const e = Warn(longMsg);
+        return this.msg(e);
     }
 }
 
@@ -101,6 +113,10 @@ export const DEFAULT_VALUE = 1.0;
 abstract class AtomicHeader extends Header { 
 
     public abstract get text(): string;
+
+    public get name(): string {
+        return this.text;
+    }
 
     public get id(): string {
         return this.text;
@@ -187,6 +203,10 @@ export class CommentHeader extends Header {
     public get id(): string {
         return "%";
     }
+
+    public get name(): string {
+        return "%"
+    }
     
     public getFontColor() {
         return "#669944";
@@ -216,6 +236,10 @@ abstract class UnaryHeader extends Header {
     ) { 
         super();
     }
+    
+    public get id(): string {
+        return `${this.name}[${this.child.id}]`
+    }
 
     public getFontColor() {
         return this.child.getFontColor();
@@ -238,9 +262,9 @@ export class TagHeader extends UnaryHeader {
     ) {
         super(child);
     }
-
-    public get id(): string {
-        return `${this.tag}:${this.child.id}`;
+    
+    public get name(): string {
+        return this.tag;
     }
 
     public getParamName(): string {
@@ -253,8 +277,8 @@ export class TagHeader extends UnaryHeader {
  */
 export class OptionalHeader extends UnaryHeader {
 
-    public get id(): string {
-        return `OPT[${this.child.id}]`;
+    public get name(): string {
+        return "optional";
     }
 
     public toGrammar(
@@ -271,8 +295,8 @@ export class OptionalHeader extends UnaryHeader {
  */
 export class RenameHeader extends UnaryHeader {
 
-    public get id(): string {
-        return `RENAME[${this.child.id}]`;
+    public get name(): string {
+        return "rename";
     }
 }
 
@@ -288,17 +312,15 @@ export class RenameHeader extends UnaryHeader {
  */
 abstract class RegexHeader extends UnaryHeader {
 
-    public get id(): string {
-        return `RE[${this.child.id}]`;
-    }
-
     public getFontColor() {
         return "#bd1128";
     }
 
     public toGrammar(text: string): GrammarResult {
         if (!(this.child instanceof TapeNameHeader)) {
-            throw new Error("regex header whose child isn't a tapename")
+            // shouldn't happen, should already be taken care of, more for linting
+            return new EpsilonGrammar().err("Invalid header",
+                `A header "${this.name} X" can only have a plain tape name as its X, like "${this.name} text".`);
         }
         const tapeName = this.child.text;
         const [g, msg] = parseRegex(text).bind(r => r.toGrammar()).destructure();
@@ -307,31 +329,21 @@ abstract class RegexHeader extends UnaryHeader {
     }
 }
 
-export class FromHeader extends RegexHeader {
+export class RegexTagHeader extends RegexHeader {
 
-    public getParamName(): string {
-        return "from";
+    constructor(
+        public tag: string,
+        child: Header
+    ) {
+        super(child);
     }
-}
 
-export class ToHeader extends RegexHeader {
-
-    public getParamName(): string {
-        return "to";
+    public get name(): string {
+        return this.tag;
     }
-}
-
-export class PreHeader extends RegexHeader {
 
     public getParamName(): string {
-        return "pre";
-    }
-}
-
-export class PostHeader extends RegexHeader {
-
-    public getParamName(): string {
-        return "post";
+        return this.tag;
     }
 }
 
@@ -346,8 +358,8 @@ export class PostHeader extends RegexHeader {
  */
 export class EqualsHeader extends RegexHeader {
     
-    public get id(): string {
-        return `EQUALS[${this.child.id}]`;
+    public get name(): string {
+        return "equals";
     }
 }
 
@@ -357,8 +369,8 @@ export class EqualsHeader extends RegexHeader {
  */
 export class StartsHeader extends RegexHeader {
 
-    public get id(): string {
-        return `STARTS[${this.child.id}]`;
+    public get name(): string {
+        return "starts";
     }
 
     public toGrammar(text: string): GrammarResult {
@@ -373,8 +385,8 @@ export class StartsHeader extends RegexHeader {
  */
 export class EndsHeader extends RegexHeader {
 
-    public get id(): string {
-        return `ENDS[${this.child.id}]`;
+    public get name(): string {
+        return "ends";
     }
 
     public toGrammar(text: string): GrammarResult {
@@ -389,8 +401,8 @@ export class EndsHeader extends RegexHeader {
  */
 export class ContainsHeader extends RegexHeader {
     
-    public get id(): string {
-        return `CONTAINS[${this.child.id}]`;
+    public get name(): string {
+        return "contains";
     }
 
     public toGrammar(text: string): GrammarResult {
@@ -408,8 +420,12 @@ export class SlashHeader extends Header {
         super();
     }
     
+    public get name(): string {
+        return "slash";
+    }
+
     public get id(): string {
-        return `SLASH[${this.child1.id},${this.child2.id}]`;
+        return `${this.name}[${this.child1.id},${this.child2.id}]`;
     }
 
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
@@ -537,51 +553,79 @@ const HP_OPTIONAL = MPSequence<Header>(
 );
 
 const HP_FROM = MPSequence<Header>(
-    ["from", HP_UNRESERVED],
-    (child) => child.bind(c => new FromHeader(c))
+    ["from", HP_NON_COMMENT_EXPR],
+    (child) => child.bind(c => {
+        if (!(c instanceof TapeNameHeader)) {
+            return new ErrorHeader("Invalid header")
+                .err(`Invalid ${c.name} in header`, 
+                    `You can't have a ${c.name} inside a "from" header.`);
+        }
+        return new RegexTagHeader("from", c).msg();
+    })
 );
 
 const HP_TO = MPSequence<Header>(
-    ["to", HP_UNRESERVED],
-    (child) => child.bind(c => new TagHeader("to", c))
+    ["to", HP_NON_COMMENT_EXPR],
+    (child) => child.bind(c => {
+        if (!(c instanceof TapeNameHeader)) {
+            return new ErrorHeader("Invalid header")
+                .err(`Invalid ${c.name} in header`, 
+                    `You can't have a ${c.name} inside a "to" header.`);
+        }
+        return new RegexTagHeader("to", c).msg();
+    })
 );
 
 const HP_PRE = MPSequence<Header>(
-    ["pre", HP_UNRESERVED],
-    (child) => child.bind(c => new PreHeader(c))
+    ["pre", HP_NON_COMMENT_EXPR],
+    (child) => child.bind(c => {
+        if (!(c instanceof TapeNameHeader)) {
+            return new ErrorHeader("Invalid header")
+                .err(`Invalid ${c.name} in header`, 
+                    `You can't have a ${c.name} inside a "pre" header.`);
+        }
+        return new RegexTagHeader("pre", c).msg();
+    })
 );
 
 const HP_POST = MPSequence<Header>(
-    ["post", HP_UNRESERVED],
-    (child) => child.bind(c => new PostHeader(c))
+    ["post", HP_NON_COMMENT_EXPR],
+    (child) => child.bind(c => {
+        if (!(c instanceof TapeNameHeader)) {
+            return new ErrorHeader("Invalid header")
+                .err(`Invalid ${c.name} in header`, 
+                    `You can't have a ${c.name} inside a "post" header.`);
+        }
+        return new RegexTagHeader("post", c).msg();
+    })
 );
 
 const HP_FROM_ATOMIC = MPSequence<Header>(
     ["from"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                .bind(c => new FromHeader(c))
+                .bind(c => new RegexTagHeader("from", c))
 );
 
 const HP_TO_ATOMIC = MPSequence<Header>(
     ["to"],
     () => new TapeNameHeader(REPLACE_OUTPUT_TAPE).msg()
-                    .bind(c => new ToHeader(c))
+                    .bind(c => new RegexTagHeader("to", c))
 );
 
 const HP_PRE_ATOMIC = MPSequence<Header>(
     ["pre"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                    .bind(c => new PreHeader(c))
+                    .bind(c => new RegexTagHeader("pre", c))
 );
 
 const HP_POST_ATOMIC = MPSequence<Header>(
     ["post"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                 .bind(c => new PostHeader(c))
+                 .bind(c => new RegexTagHeader("post", c))
 );
 
 const HP_UNIQUE = MPSequence<Header>(
-    ["unique", HP_UNRESERVED],
+    ["unique", HP_NON_COMMENT_EXPR],
     (child) => child.bind(c => new TagHeader("unique", c))
 );
 
@@ -605,23 +649,51 @@ const HP_PARENS = MPSequence<Header>(
 );
 
 const HP_EQUALS = MPSequence<Header>(
-    ["equals", HP_UNRESERVED],
-    (child) => child.bind(c => new EqualsHeader(c))
+    ["equals", HP_NON_COMMENT_EXPR],
+    (child) => child.bind(c => {
+        if (!(c instanceof TapeNameHeader)) {
+            return new ErrorHeader("Invalid header")
+                .err(`Invalid ${c.name} in header`, 
+                    `You can't have a ${c.name} inside a from header.`);
+        }
+        return new EqualsHeader(c).msg();
+    })
 );
 
 const HP_STARTS = MPSequence<Header>(
-    ["starts", HP_UNRESERVED],
-    (child) => child.bind(c => new StartsHeader(c))
+    ["starts", HP_NON_COMMENT_EXPR],
+    (child) => child.bind(c => {
+        if (!(c instanceof TapeNameHeader)) {
+            return new ErrorHeader("Invalid header")
+                .err(`Invalid ${c.name} in header`, 
+                    `You can't have a ${c.name} inside a "starts" header.`);
+        }
+        return new StartsHeader(c).msg();
+    })
 );
 
 const HP_ENDS = MPSequence<Header>(
-    ["ends", HP_UNRESERVED],
-    (child) => child.bind(c => new EndsHeader(c))
+    ["ends", HP_NON_COMMENT_EXPR],
+    (child) => child.bind(c => {
+        if (!(c instanceof TapeNameHeader)) {
+            return new ErrorHeader("Invalid header")
+                .err(`Invalid ${c.name} in header`, 
+                    `You can't have a ${c.name} inside a "ends" header.`);
+        }
+        return new EndsHeader(c).msg();
+    })
 );
 
 const HP_CONTAINS = MPSequence<Header>(
-    ["contains", HP_UNRESERVED],
-    (child) => child.bind(c => new ContainsHeader(c))
+    ["contains", HP_NON_COMMENT_EXPR],
+    (child) => child.bind(c => {
+        if (!(c instanceof TapeNameHeader)) {
+            return new ErrorHeader("Invalid header")
+                .err(`Invalid ${c.name} in header`, 
+                    `You can't have a ${c.name} inside a "contains" header.`);
+        }
+        return new ContainsHeader(c).msg();
+    })
 );
 
 const HP_EXPR: MPParser<Header> = MPAlt(HP_COMMENT, HP_NON_COMMENT_EXPR);
