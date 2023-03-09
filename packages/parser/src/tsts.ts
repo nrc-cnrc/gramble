@@ -68,11 +68,6 @@ export class TstHeader extends TstCellComponent {
         return this.header.getFontColor();
     }
 
-    public headerToGrammar(content: Cell): GrammarResult {
-        return this.header.toGrammar(content.text)
-                          .localize(content.pos);
-    }
-
 }
 
 export class TstContent extends TstCellComponent {

@@ -4,5 +4,5 @@ verb:, table:, text, pos
     ,       , moo, n
     ,       , goo, v
 
-default:, table:, embed, equals re pos
+default:, table:, embed, equals pos
     ,       , verb, v~

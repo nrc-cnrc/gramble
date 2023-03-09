@@ -4,6 +4,6 @@ root:, text, gloss
      , moo, jump
      , goo, climb
 
-default:, text, gloss, embed, starts re text
+default:, text, gloss, embed, starts text
      , um, [1SG], root, ~g
      , un, [1SG], root, g

@@ -77,8 +77,8 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     }
 
     public handleHeaderContentPair(t: TstHeaderContentPair, env: PassEnv): GrammarResult {
-        return t.header.headerToGrammar(t.cell)
-                    .bind(c => new LocatorGrammar(t.cell.pos, c));
+        return t.header.header.toGrammar(t.cell.text)
+                              .localize(t.cell.pos);
     }
     
     public handleRename(t: TstRename, env: PassEnv): GrammarResult {
@@ -106,8 +106,9 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     public handleFilter(t: TstFilter, env: PassEnv): GrammarResult {
         const [prevGrammar, prevMsgs] = this.transform(t.prev, env)
                                             .destructure();
-        const [grammar, msgs] = t.header.headerToGrammar(t.cell)
-                                        .destructure();
+        const [grammar, msgs] = t.header.header.toGrammar(t.cell.text)
+                                 .localize(t.cell.pos)
+                                 .destructure();
         const result = new EqualsGrammar(prevGrammar, grammar);
         const locatedResult = new LocatorGrammar(t.cell.pos, result);
         return locatedResult.msg(prevMsgs).msg(msgs);

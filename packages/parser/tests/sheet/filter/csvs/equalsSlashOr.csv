@@ -5,5 +5,5 @@ verb:, table:, text, pos, class
     ,       , goo, v, n
     ,       , boo, a, a
 
-default:, table:, embed, equals re pos/class
+default:, table:, embed, equals pos/class
     ,       , verb, v|n

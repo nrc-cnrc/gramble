@@ -37,7 +37,7 @@ import {
 
 import { 
     HSVtoRGB, RGBtoString,
-    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RESERVED_SYMBOLS, isValidSymbolName, DUMMY_REGEX_TAPE 
+    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RESERVED_SYMBOLS, isValidSymbolName, DUMMY_REGEX_TAPE, Cell 
 } from "./util";
 import { Msgs, resultList, Result, Err } from "./msgs";
 
@@ -89,8 +89,6 @@ export const DEFAULT_VALUE = 1.0;
         return "__";
     }
 
-    public abstract get isRegex(): boolean;
-
     public msg(msgs: Msgs = []): Result<Header> {
         return new Result(this, msgs);
     }
@@ -103,10 +101,6 @@ export const DEFAULT_VALUE = 1.0;
 abstract class AtomicHeader extends Header { 
 
     public abstract get text(): string;
-    
-    public get isRegex(): boolean {
-        return false;
-    }
 
     public get id(): string {
         return this.text;
@@ -194,10 +188,6 @@ export class CommentHeader extends Header {
         return "%";
     }
     
-    public get isRegex(): boolean {
-        return false;
-    }
-    
     public getFontColor() {
         return "#669944";
     }
@@ -225,10 +215,6 @@ abstract class UnaryHeader extends Header {
         public child: Header
     ) { 
         super();
-    }
-    
-    public get isRegex(): boolean {
-        return this.child.isRegex;
     }
 
     public getFontColor() {
@@ -300,7 +286,7 @@ export class RenameHeader extends UnaryHeader {
  * starts", etc.) that allow and parse regular expressions 
  * in their fields.
  */
-export class RegexHeader extends UnaryHeader {
+abstract class RegexHeader extends UnaryHeader {
 
     public get id(): string {
         return `RE[${this.child.id}]`;
@@ -310,22 +296,44 @@ export class RegexHeader extends UnaryHeader {
         return "#bd1128";
     }
 
-    public get isRegex(): boolean {
-        return true;
-    }
-
     public toGrammar(text: string): GrammarResult {
         if (!(this.child instanceof TapeNameHeader)) {
-            return new EpsilonGrammar().msg([Err("Embed in regex", "We can't have embeds under regexes anymore")]);
+            throw new Error("regex header whose child isn't a tapename")
         }
         const tapeName = this.child.text;
-        return parseRegex(text)
-                  .bind(r => r.toGrammar())
-                  .bind(g => new RenameGrammar(g, 
+        const [g, msg] = parseRegex(text).bind(r => r.toGrammar()).destructure();
+        return g.msg(msg).bind(g => new RenameGrammar(g, 
                                 DUMMY_REGEX_TAPE, tapeName))
     }
 }
 
+export class FromHeader extends RegexHeader {
+
+    public getParamName(): string {
+        return "from";
+    }
+}
+
+export class ToHeader extends RegexHeader {
+
+    public getParamName(): string {
+        return "to";
+    }
+}
+
+export class PreHeader extends RegexHeader {
+
+    public getParamName(): string {
+        return "pre";
+    }
+}
+
+export class PostHeader extends RegexHeader {
+
+    public getParamName(): string {
+        return "post";
+    }
+}
 
 /**
  * EqualsHeader puts a constraint on the state of the immediately preceding cell (call this state N)
@@ -336,7 +344,7 @@ export class RegexHeader extends UnaryHeader {
  * These constrain N to either start with X (that is, Filter(N, X.*)) or end with X 
  * (that is, Filter(N, .*X)), or contain X (Filter(N, .*X.*)).
  */
-export class EqualsHeader extends UnaryHeader {
+export class EqualsHeader extends RegexHeader {
     
     public get id(): string {
         return `EQUALS[${this.child.id}]`;
@@ -347,15 +355,15 @@ export class EqualsHeader extends UnaryHeader {
  * StartsHeader is a special kind of [EqualsHeader] that only requires its predecessor (call it N) to 
  * start with X (that is, Equals(N, X.*))
  */
-export class StartsHeader extends EqualsHeader {
+export class StartsHeader extends RegexHeader {
 
     public get id(): string {
         return `STARTS[${this.child.id}]`;
     }
 
     public toGrammar(text: string): GrammarResult {
-        return this.child.toGrammar(text)
-                   .bind(c => new StartsGrammar(c));
+        return super.toGrammar(text)
+                    .bind(c => new StartsGrammar(c));
     }
 }
 
@@ -363,15 +371,15 @@ export class StartsHeader extends EqualsHeader {
  * EndsHeader is a special kind of [EqualsHeader] that only requires its predecessor (call it N) to 
  * end with X (that is, Equals(N, .*X))
  */
-export class EndsHeader extends EqualsHeader {
+export class EndsHeader extends RegexHeader {
 
     public get id(): string {
         return `ENDS[${this.child.id}]`;
     }
 
     public toGrammar(text: string): GrammarResult {
-        return this.child.toGrammar(text)
-                   .bind(c => new EndsGrammar(c));
+        return super.toGrammar(text)
+                    .bind(c => new EndsGrammar(c));
     }
 }
 
@@ -379,15 +387,15 @@ export class EndsHeader extends EqualsHeader {
  * ContainsHeader is a special kind of [EqualsHeader] that only requires its predecessor (call it N) to 
  * contain X (that is, Equals(N, .*X.*))
  */
-export class ContainsHeader extends EqualsHeader {
+export class ContainsHeader extends RegexHeader {
     
     public get id(): string {
         return `CONTAINS[${this.child.id}]`;
     }
 
     public toGrammar(text: string): GrammarResult {
-        return this.child.toGrammar(text)
-                   .bind(c => new ContainsGrammar(c));
+        return super.toGrammar(text)
+                    .bind(c => new ContainsGrammar(c));
     }
 }
 
@@ -406,10 +414,6 @@ export class SlashHeader extends Header {
 
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
         return this.child1.getBackgroundColor(saturation, value);
-    }
-    
-    public get isRegex(): boolean {
-        return this.child1.isRegex || this.child2.isRegex;
     }
 
     public getFontColor() {
@@ -467,7 +471,6 @@ export const RESERVED_HEADERS = [
     "starts", 
     "ends", 
     "contains",
-    "re",
     ...REPLACE_PARAMS,
     ...TEST_PARAMS
 ];
@@ -490,9 +493,7 @@ const HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
         HP_TO, HP_PRE, HP_POST,
         HP_FROM_ATOMIC, HP_TO_ATOMIC, 
         HP_PRE_ATOMIC, HP_POST_ATOMIC,  
-        HP_FROM_RE_ATOMIC, HP_TO_RE_ATOMIC, 
-        HP_PRE_RE_ATOMIC, HP_POST_RE_ATOMIC,
-        HP_UNIQUE, HP_REGEX,
+        HP_UNIQUE,
         HP_RENAME, HP_EQUALS, HP_STARTS, 
         HP_ENDS, HP_CONTAINS, HP_SUBEXPR)
 );
@@ -536,93 +537,52 @@ const HP_OPTIONAL = MPSequence<Header>(
 );
 
 const HP_FROM = MPSequence<Header>(
-    ["from", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => new TagHeader("from", c))
+    ["from", HP_UNRESERVED],
+    (child) => child.bind(c => new FromHeader(c))
 );
 
 const HP_TO = MPSequence<Header>(
-    ["to", HP_NON_COMMENT_EXPR],
+    ["to", HP_UNRESERVED],
     (child) => child.bind(c => new TagHeader("to", c))
 );
 
 const HP_PRE = MPSequence<Header>(
-    ["pre", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => new TagHeader("pre", c))
+    ["pre", HP_UNRESERVED],
+    (child) => child.bind(c => new PreHeader(c))
 );
 
 const HP_POST = MPSequence<Header>(
-    ["post", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => new TagHeader("post", c))
+    ["post", HP_UNRESERVED],
+    (child) => child.bind(c => new PostHeader(c))
 );
 
 const HP_FROM_ATOMIC = MPSequence<Header>(
     ["from"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                .bind(c => new TagHeader("from", c))
+                .bind(c => new FromHeader(c))
 );
 
 const HP_TO_ATOMIC = MPSequence<Header>(
     ["to"],
     () => new TapeNameHeader(REPLACE_OUTPUT_TAPE).msg()
-                    .bind(c => new TagHeader("to", c))
+                    .bind(c => new ToHeader(c))
 );
 
 const HP_PRE_ATOMIC = MPSequence<Header>(
     ["pre"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                    .bind(c => new TagHeader("pre", c))
+                    .bind(c => new PreHeader(c))
 );
 
 const HP_POST_ATOMIC = MPSequence<Header>(
     ["post"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                 .bind(c => new TagHeader("post", c))
-);
-
-const HP_FROM_RE_ATOMIC = MPSequence<Header>(
-    ["from", "re"],
-    () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                .bind(c => new RegexHeader(c))
-                .bind(c => new TagHeader("from", c))
-);
-
-const HP_TO_RE_ATOMIC = MPSequence<Header>(
-    ["to", "re"],
-    () => new TapeNameHeader(REPLACE_OUTPUT_TAPE).msg()
-                .bind(c => new RegexHeader(c))
-                .bind(c => new TagHeader("to", c))
-);
-
-const HP_PRE_RE_ATOMIC = MPSequence<Header>(
-    ["pre", "re"],
-    () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                .bind(c => new RegexHeader(c))
-                .bind(c => new TagHeader("pre", c))
-);
-
-const HP_POST_RE_ATOMIC = MPSequence<Header>(
-    ["post", "re"],
-    () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                .bind(c => new RegexHeader(c))
-                .bind(c => new TagHeader("post", c))
+                 .bind(c => new PostHeader(c))
 );
 
 const HP_UNIQUE = MPSequence<Header>(
-    ["unique", HP_NON_COMMENT_EXPR],
+    ["unique", HP_UNRESERVED],
     (child) => child.bind(c => new TagHeader("unique", c))
-);
-
-const HP_REGEX = MPSequence<Header>(
-    ["re", HP_NON_COMMENT_EXPR],
-    (child) => {
-        const [c,msgs] = child.destructure();
-        if (c instanceof SlashHeader) {
-            return new ErrorHeader("").msg()
-                .err("Invalid header",
-                    "You can't have both 're' and a slash in the same header");
-        }
-        return c.msg(msgs).bind(c => new RegexHeader(c));
-    }
 );
 
 const HP_SLASH = MPSequence<Header>(
@@ -645,22 +605,22 @@ const HP_PARENS = MPSequence<Header>(
 );
 
 const HP_EQUALS = MPSequence<Header>(
-    ["equals", HP_NON_COMMENT_EXPR],
+    ["equals", HP_UNRESERVED],
     (child) => child.bind(c => new EqualsHeader(c))
 );
 
 const HP_STARTS = MPSequence<Header>(
-    ["starts", HP_NON_COMMENT_EXPR],
+    ["starts", HP_UNRESERVED],
     (child) => child.bind(c => new StartsHeader(c))
 );
 
 const HP_ENDS = MPSequence<Header>(
-    ["ends", HP_NON_COMMENT_EXPR],
+    ["ends", HP_UNRESERVED],
     (child) => child.bind(c => new EndsHeader(c))
 );
 
 const HP_CONTAINS = MPSequence<Header>(
-    ["contains", HP_NON_COMMENT_EXPR],
+    ["contains", HP_UNRESERVED],
     (child) => child.bind(c => new ContainsHeader(c))
 );
 

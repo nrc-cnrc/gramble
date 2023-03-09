@@ -11,5 +11,5 @@ stem:, table:, embed, text,
         ,      , root, baz,
         ,      , root, ba, 
 
-default:, table:, embed, equals re text
+default:, table:, embed, equals text
     ,       , stem, foo*bar

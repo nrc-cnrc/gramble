@@ -8,5 +8,5 @@ stem:, table:, embed, text, gloss/subj
         ,      , root, baz, [2SG],
         ,      , root, ba, 
 
-default:, table:, embed, equals re subj
+default:, table:, embed, equals subj
     ,       , stem, [(2)(SG)]

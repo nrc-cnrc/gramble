@@ -207,7 +207,7 @@ export class SequenceRegex extends Regex {
 
     public toGrammar(): Grammar {
         if (this.children.length == 0) {
-            return new EpsilonGrammar();
+            return new LiteralGrammar(DUMMY_REGEX_TAPE, "");
         }
 
         const childGrammars = this.children.map(c => 

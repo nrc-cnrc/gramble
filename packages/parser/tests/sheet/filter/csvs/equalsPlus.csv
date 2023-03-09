@@ -6,5 +6,5 @@ root:, table:, text, gloss
     ,       , foofoo, run.impf
     ,       , moofoo, jump.impf
 
-default:, table:, embed, equals re text
+default:, table:, embed, equals text
     ,       , root, foo+

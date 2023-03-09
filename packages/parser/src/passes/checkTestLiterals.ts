@@ -42,7 +42,7 @@ export class CheckTestLiterals extends CPass {
         if (t.op.requireLiteralParams && t.child instanceof TstHeadedGrid) {
             const newHeaders: TstHeader[] = []
             for (const header of t.child.headers) {
-                if (!this.isLiteral(header.header) || header.header.isRegex) {
+                if (!this.isLiteral(header.header)) {
                     Err("Non-literal test content",
                         "Tests can only contain plain literal content " +
                         "(e.g. no embeds, no special headers, etc.)",

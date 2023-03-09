@@ -8,5 +8,5 @@ suffix:, table:, text, gloss/subj
     ,       , baz, [2SG.SUBJ]
     ,       ,    , [3SG.SUBJ]
 
-default:, table:, embed, embed, contains re subj
+default:, table:, embed, embed, contains subj
     ,       , verb, suffix, ~1
