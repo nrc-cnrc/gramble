@@ -1163,6 +1163,16 @@ export class RenameGrammar extends UnaryGrammar {
         return `${this.toTape}<-${this.fromTape}(${this.child.id})`;
     }
 
+    public getLiterals(): LiteralGrammar[] {
+        return this.child.getLiterals()
+                    .map(c => {
+                        if (c.tapeName == this.fromTape) {
+                            return new LiteralGrammar(this.toTape, c.text);
+                        }
+                        return c;
+                    });
+    }
+
     public getTapePriority(
         tapeName: string, 
         symbolsVisited: StringPairSet,

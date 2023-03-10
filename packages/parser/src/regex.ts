@@ -296,7 +296,7 @@ const REGEX_ALTERNATION = MPSequence(
 
 /* PLAINTEXT GRAMMAR */
 const PLAINTEXT_EXPR: RegexParser = MPDelay(() => MPAlt(
-    PLAINTEXT_UNRESERVED, 
+    PLAINTEXT_SEQ, 
     PLAINTEXT_ALTERNATION)
 );
 
@@ -304,8 +304,14 @@ const PLAINTEXT_UNRESERVED = MPUnreserved<Regex>(
     s => new LiteralRegex(s).msg()
 );
 
+const PLAINTEXT_SEQ = MPRepetition<Regex>(
+    PLAINTEXT_UNRESERVED, 
+    (...children) => resultList(children)
+                        .bind(cs => new SequenceRegex(cs))
+);
+
 const PLAINTEXT_ALTERNATION = MPSequence(
-    [ PLAINTEXT_UNRESERVED, "|", PLAINTEXT_EXPR ],
+    [ PLAINTEXT_SEQ, "|", PLAINTEXT_EXPR ],
     (c1, c2) => resultList([c1, c2])
                     .bind(([x, y]) => new AlternationRegex(x, y))
 );

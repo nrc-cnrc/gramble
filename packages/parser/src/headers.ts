@@ -26,7 +26,8 @@ import {
     StarRegex, 
     LiteralRegex, 
     parseRegex, 
-    DotRegex
+    DotRegex,
+    parsePlaintext
 } from "./regex";
 
 import { 
@@ -187,7 +188,10 @@ export class TapeNameHeader extends AtomicHeader {
     }
 
     public toGrammar(text: string): GrammarResult {
-        return new LiteralGrammar(this.text, text).msg();
+        const tapeName = this.text;
+        return parsePlaintext(text).bind(r => r.toGrammar())
+                                   .bind(g => new RenameGrammar(g, 
+                                         DUMMY_REGEX_TAPE, tapeName))
     }
 }
 

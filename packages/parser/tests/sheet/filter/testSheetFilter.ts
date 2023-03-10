@@ -207,7 +207,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
    
     describe('starts', function() {
-        const project = sheetFromFile(`${DIR}/startsWithGrammar.csv`, VERBOSE_GRAMMAR);
+        const project = sheetFromFile(`${DIR}/startsWithGrammar.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "umfoo", gloss: "[1SG]run" },
