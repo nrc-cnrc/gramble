@@ -5,12 +5,65 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
 
+    describe('Content with space', function() {
+        const project = sheetFromFile(`${DIR}/contentWithSpace.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "moofoo", gloss: "run" }
+        ]);
+    });
+
+    describe('Content with escaped space', function() {
+        const project = sheetFromFile(`${DIR}/contentWithEscapedSpace.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "moo foo", gloss: "run" }
+        ]);
+    });
+
     describe('Content including alternation', function() {
         const project = sheetFromFile(`${DIR}/contentAlternation.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "run" },
+        ]);
+    });
+    
+    describe('Content including alternation and spaces', function() {
+        const project = sheetFromFile(`${DIR}/contentAlternationSpace.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "run" },
+        ]);
+    });
+
+    describe('Content including alternation and spaces 2', function() {
+        const project = sheetFromFile(`${DIR}/contentAlternationSpace2.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foogoo", gloss: "run" },
+            { text: "moo", gloss: "run" },
+        ]);
+    });
+
+    
+    describe('Content including alternation and spaces 3', function() {
+        const project = sheetFromFile(`${DIR}/contentAlternationSpace3.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "goomoo", gloss: "run" },
+        ]);
+    });
+
+    describe('Content including alternation and spaces 4', function() {
+        const project = sheetFromFile(`${DIR}/contentAlternationSpace4.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "goo moo", gloss: "run" },
         ]);
     });
 

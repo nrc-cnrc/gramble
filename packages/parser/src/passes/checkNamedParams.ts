@@ -81,7 +81,7 @@ export class CheckNamedParams extends CPass {
         // child isn't a TstGrid, then  
         if (t.child instanceof TstHeadedGrid) {
             for (const param of t.op.requiredNamedParams) {
-                if (!t.child.providesParam(param)) {
+                if (t.child.headers.length > 0 && !t.child.providesParam(param)) {
                     const paramDesc = param == BLANK_PARAM 
                                     ? "a plain header (e.g. not 'from', not 'to', not 'unique')"
                                     : `a ${param} header`;

@@ -67,14 +67,14 @@ function unescape(s: string): string {
  * Used to filter out empty & undefined strings
  */
 function stringIsNontrivial(s: string): boolean {
-    return s !== undefined && s !== '';
+    return s !== undefined && s.trim() !== '';
 }
 
 /**
  * Construct the appropriate regex for splitting Gramble regexes
  */
 function constructTokenizer(reserved: Set<string>): RegExp {
-    return new RegExp("\\s+|(?<!\\\\)(" + 
+    return new RegExp("(?<!\\\\)(\\s+|" + 
         [...reserved].map(escapeRegExp).join("|") + 
     ")");
 }
@@ -280,6 +280,7 @@ export function miniParse<T>(
     text: string
 ): Result<T>[] {
     const pieces = env.tokenize(text);
+    console.log(pieces);
     let results = [... grammar(pieces, env)];
     // result is a list of [header, remaining_tokens] pairs.  
     // we only want results where there are no remaining tokens.

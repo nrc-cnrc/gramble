@@ -217,4 +217,32 @@ describe(`${path.basename(module.filename)}`, function() {
         */
     });
 
+    describe('Invalid tape name', function() {
+        const project = sheetFromFile(`${DIR}/invalidTapeName.csv`);
+        testErrors(project, [
+            ["invalidTapeName", 0, 1, "error"],
+            ["invalidTapeName", 1, 1, "warning"]
+        ]);
+        testGrammar(project, [{}]);
+    });
+
+    describe('Only header in a row in unparseable', function() {
+        const project = sheetFromFile(`${DIR}/onlyUnparseableHeader.csv`);
+        testErrors(project, [
+            ["onlyUnparseableHeader", 0, 1, "error"],
+            ["onlyUnparseableHeader", 1, 1, "warning"]
+        ]);
+        testGrammar(project, [{}]);
+    });
+
+    describe('Header with space', function() {
+        const project = sheetFromFile(`${DIR}/headerWithSpace.csv`);
+        testErrors(project, [
+            ["headerWithSpace", 0, 1, "error"],
+            ["headerWithSpace", 1, 1, "warning"]
+        ]);
+        testGrammar(project, [{}]);
+    });
+
+
 });

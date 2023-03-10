@@ -25,7 +25,7 @@ export const VERBOSE_DEBUG = 1 << 1;
 export const VERBOSE_STATES = 1 << 2;
 export const VERBOSE_GRAMMAR = 1 << 3;
 
-export const RESERVED_SYMBOLS = [ "(", ")", "%", "/", "<", ">", "[", "]", ":", "\\", ",", ".", ";" ];
+export const RESERVED_SYMBOLS = [ "(", ")", "%", "/", "<", ">", "[", "]", ":", ",", ".", ";" ];
 
 export function isValidSymbolName(s: string): boolean {
     return /^(\p{L}|\p{M}|\p{Sk}|_)(\p{L}|\p{M}|\p{Sk}|\p{N}|[_@#$&?+\-*^='"])*$/iu.test(s);
