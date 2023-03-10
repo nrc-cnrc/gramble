@@ -70,7 +70,7 @@
     "testSheetHide": "mocha -r ts-node/register tests/sheet/hide/*.ts",
     "testSheetMulti": "mocha -r ts-node/register tests/sheet/multi/*.ts",
     "testSheetOp": "mocha -r ts-node/register tests/sheet/op/*.ts",
-    "testSheetRegex": "mocha -r ts-node/register tests/sheet/regex/*.ts",
+    "testSheetContent": "mocha -r ts-node/register tests/sheet/content/*.ts",
     "testSheetRename": "mocha -r ts-node/register tests/sheet/rename/*.ts",
     "testSheetReplace": "mocha -r ts-node/register tests/sheet/replace/*.ts",
     "testSheetRule": "mocha -r ts-node/register tests/sheet/rule/*.ts",

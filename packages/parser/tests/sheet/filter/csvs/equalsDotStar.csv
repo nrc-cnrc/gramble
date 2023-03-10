@@ -7,5 +7,5 @@ word:, table:, text, gloss
     ,       , moomoo, eat.impf
     ,       ,       , be
 
-    ,   join:, re text
-    ,       , goo*
+default:, embed , equals text
+        , word  , f.*

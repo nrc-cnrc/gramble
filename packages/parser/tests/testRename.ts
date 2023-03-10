@@ -108,7 +108,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, []);
     });
     
-    describe('Intersecting t2:hello & rename(t2->t1 of t2:hello)', function() {
+    describe('Intersecting rename(t2->t1 of t2:hello) & t2:hello', function() {
         const grammar = Intersect(Seq(t2("hello"), Rep(Any("t1"))),
                              Rename(t2("hello"), "t2", "t1"));
         testGrammar(grammar, []);

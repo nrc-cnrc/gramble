@@ -184,6 +184,15 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Equals with escaped ~', function() {
+        const project = sheetFromFile(`${DIR}/equalsEscapedNot.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { gloss:"jump~[1SG]", text:"moobap", subj:"~[1SG]"},
+            { gloss:"run~[1SG]",  text:"foobap", subj:"~[1SG]"}
+        ]);
+    });
+
     describe('Equals with neither value', function() {
         const project = sheetFromFile(`${DIR}/equalsNotOr.csv`);
         testErrors(project, []);
@@ -205,9 +214,38 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"foo","pos":"v","class":"v"}
         ]);
     });
-   
+
+    describe('Equals with dot', function() {
+        const project = sheetFromFile(`${DIR}/equalsDot.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "eat" },
+            { text: "goo", gloss: "jump" },
+        ]);
+    });
+
+    describe('Equals with dot in parens', function() {
+        const project = sheetFromFile(`${DIR}/equalsDotInParens.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "moo", gloss: "eat" },
+            { text: "goo", gloss: "jump" },
+        ]);
+    });
+
+    describe('Equals with dot star', function() {
+        const project = sheetFromFile(`${DIR}/equalsDotStar.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foo", gloss: "run" },
+            { text: "foofoo", gloss: "run.impf" },
+        ]);
+    });
+
     describe('starts', function() {
-        const project = sheetFromFile(`${DIR}/startsWithGrammar.csv`);
+        const project = sheetFromFile(`${DIR}/startsGrammar.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -215,8 +253,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('startswith empty string', function() {
-        const project = sheetFromFile(`${DIR}/startsWithEmptyString.csv`);
+    describe('starts empty string', function() {
+        const project = sheetFromFile(`${DIR}/startsEmptyString.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "unfoo", gloss: "[1SG]run" },
@@ -224,8 +262,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('startswith with alt value', function() {
-        const project = sheetFromFile(`${DIR}/startsWithOr.csv`);
+    describe('starts with alt value', function() {
+        const project = sheetFromFile(`${DIR}/startsOr.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -234,8 +272,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('startswith with not value', function() {
-        const project = sheetFromFile(`${DIR}/startsWithNot.csv`);
+    describe('starts with not value', function() {
+        const project = sheetFromFile(`${DIR}/startsNot.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -244,8 +282,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('startswith with not value, embedded', function() {
-        const project = sheetFromFile(`${DIR}/embeddedStartsWithNot.csv`);
+    describe('starts with not value, embedded', function() {
+        const project = sheetFromFile(`${DIR}/embeddedStartsNot.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -254,8 +292,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('startswith and equals modifying same embed', function() {
-        const project = sheetFromFile(`${DIR}/startsWithEquals.csv`);
+    describe('starts and equals modifying same embed', function() {
+        const project = sheetFromFile(`${DIR}/startsEquals.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "umfoo", gloss: "[1SG]run", trans: "[INTR]" },
@@ -264,8 +302,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('equals and startswith modifying same embed', function() {
-        const project = sheetFromFile(`${DIR}/equalsStartsWith.csv`);
+    describe('equals and starts modifying same embed', function() {
+        const project = sheetFromFile(`${DIR}/equalsStarts.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "umfoo", gloss: "[1SG]run", trans: "[INTR]" },
@@ -274,8 +312,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('endswith', function() {
-        const project = sheetFromFile(`${DIR}/endsWithGrammar.csv`);
+    describe('ends', function() {
+        const project = sheetFromFile(`${DIR}/endsGrammar.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobarq", gloss: "run[1SG]" },
@@ -283,8 +321,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('endswith empty string', function() {
-        const project = sheetFromFile(`${DIR}/endsWithEmptyString.csv`);
+    describe('ends empty string', function() {
+        const project = sheetFromFile(`${DIR}/endsEmptyString.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobarq", gloss: "run[1SG]" },
@@ -292,8 +330,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('endswith with alt value', function() {
-        const project = sheetFromFile(`${DIR}/endsWithOr.csv`);
+    describe('ends with alt value', function() {
+        const project = sheetFromFile(`${DIR}/endsOr.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobarq", gloss: "run[1SG]" },
@@ -302,8 +340,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('endswith with not value', function() {
-        const project = sheetFromFile(`${DIR}/endsWithNot.csv`);
+    describe('ends with not value', function() {
+        const project = sheetFromFile(`${DIR}/endsNot.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobarq", gloss: "run[1SG]" },
@@ -312,8 +350,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('endswith and equals modifying same embed', function() {
-        const project = sheetFromFile(`${DIR}/endsWithEquals.csv`);
+    describe('ends and equals modifying same embed', function() {
+        const project = sheetFromFile(`${DIR}/endsEquals.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobarq", gloss: "run[1SG]", trans: "INTR" },
@@ -322,8 +360,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('equals and endswith modifying same embed', function() {
-        const project = sheetFromFile(`${DIR}/equalsEndsWith.csv`);
+    describe('equals and ends modifying same embed', function() {
+        const project = sheetFromFile(`${DIR}/equalsEnds.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobarq", gloss: "run[1SG]", trans: "INTR" },
@@ -332,8 +370,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('startswith and endswith modifying same embed', function() {
-        const project = sheetFromFile(`${DIR}/startsWithEndsWith.csv`);
+    describe('starts and ends modifying same embed', function() {
+        const project = sheetFromFile(`${DIR}/startsEnds.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "umfooz", gloss: "[1SG]jump" }
@@ -454,8 +492,8 @@ describe(`${path.basename(module.filename)}`, function() {
     */
    
     /*
-    describe('startswith embed', function() {
-        const project = sheetFromFile(`${DIR}/startsWithEmbed.csv`);
+    describe('starts embed', function() {
+        const project = sheetFromFile(`${DIR}/startsEmbed.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -464,8 +502,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('startswith embed where the symbol is defined later', function() {
-        const project = sheetFromFile(`${DIR}/startsWithEmbedAfter.csv`);
+    describe('starts embed where the symbol is defined later', function() {
+        const project = sheetFromFile(`${DIR}/startsEmbedAfter.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -474,8 +512,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     }); 
 
-    describe('startswith negated embed', function() {
-        const project = sheetFromFile(`${DIR}/startsWithNegatedEmbed.csv`);
+    describe('starts negated embed', function() {
+        const project = sheetFromFile(`${DIR}/startsNegatedEmbed.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "umfoo", gloss: "[1SG]run" },
@@ -486,8 +524,8 @@ describe(`${path.basename(module.filename)}`, function() {
     */
    
     /*
-    describe('endswith negated embed', function() {
-        const project = sheetFromFile(`${DIR}/endsWithEmbedNot.csv`);
+    describe('ends negated embed', function() {
+        const project = sheetFromFile(`${DIR}/endsEmbedNot.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobar", gloss: "run[1SG]" },
@@ -498,8 +536,8 @@ describe(`${path.basename(module.filename)}`, function() {
     */
 
     /*
-    describe('endswith complex embed', function() {
-        const project = sheetFromFile(`${DIR}/endsWithComplexEmbed.csv`);
+    describe('ends complex embed', function() {
+        const project = sheetFromFile(`${DIR}/endsComplexEmbed.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobar", gloss: "run[1SG]" },
@@ -511,8 +549,8 @@ describe(`${path.basename(module.filename)}`, function() {
 */
    
     /*
-    describe('endswith embed', function() {
-        const project = sheetFromFile(`${DIR}/endsWithEmbed.csv`);
+    describe('ends embed', function() {
+        const project = sheetFromFile(`${DIR}/endsEmbed.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobarq", gloss: "run[1SG]" },
@@ -521,8 +559,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('endswith embed where the symbol is defined later', function() {
-        const project = sheetFromFile(`${DIR}/endsWithEmbedAfter.csv`);
+    describe('ends embed where the symbol is defined later', function() {
+        const project = sheetFromFile(`${DIR}/endsEmbedAfter.csv`);
         testErrors(project, []);
         testGrammar(project, [
             { text: "foobarq", gloss: "run[1SG]" },

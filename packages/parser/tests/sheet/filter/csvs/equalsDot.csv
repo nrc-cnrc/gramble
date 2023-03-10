@@ -1,0 +1,11 @@
+word:, text, gloss
+     , foo, run
+     , goo, jump
+     , moo, eat
+     , foofoo, run.impf,
+     , googoo, jump.impf
+     , moomoo, eat.impf
+     ,       , be
+
+default:, embed , equals text
+        , word  , .oo
