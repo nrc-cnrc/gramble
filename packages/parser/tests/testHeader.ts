@@ -36,17 +36,16 @@ describe(`${path.basename(module.filename)}`, function() {
         testHeaderID("to", "to[.o]");
         testHeaderID("pre(text)", "pre[text]");
         testHeaderID("(pre text)", "pre[text]");
-        testHeaderID("pre text/gloss", "pre[slash[text,gloss]]"); // this is invalid, but it CAN be parsed
-        
-        testHeaderID("pre embed", "pre[embed]"); // this is invalid, but it CAN be parsed
+        testHeaderID("pre text/gloss", "ERR");
+        testHeaderID("pre embed", "ERR");
         testHeaderID("blarg text", "ERR");
         testHeaderID("equals text", "equals[text]");
         testHeaderID("equals(text)", "equals[text]");
         testHeaderID("starts text", "starts[text]");
         testHeaderID("ends text", "ends[text]");
         testHeaderID("contains text", "contains[text]");
-        testHeaderID("equals text/gloss", "equals[slash[text,gloss]]"); // this is invalid, but it CAN be parsed
-        testHeaderID("equals embed", "equals[embed]"); // // this is invalid, but it CAN be parsed
+        testHeaderID("equals text/gloss", "ERR");
+        testHeaderID("equals embed", "ERR");
         testHeaderID("text/gloss/root", "slash[text,slash[gloss,root]]");
         testHeaderID("(text/gloss)/root", "slash[slash[text,gloss],root]");
 
