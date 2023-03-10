@@ -78,7 +78,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
 
     public handleHeaderContentPair(t: TstHeaderContentPair, env: PassEnv): GrammarResult {
         return t.header.header.toGrammar(t.cell.text)
-                              .localize(t.cell.pos);
+                              .bind(g => new LocatorGrammar(t.cell.pos, g));
     }
     
     public handleRename(t: TstRename, env: PassEnv): GrammarResult {

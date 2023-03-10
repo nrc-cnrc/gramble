@@ -143,9 +143,6 @@ abstract class AtomicHeader extends Header {
     }
 }
 
-/**
- * EmbedHeaders lead to the complilation of EmbedStates.
- */
 export class EmbedHeader extends AtomicHeader {
 
     public get text(): string {
@@ -323,9 +320,9 @@ abstract class RegexHeader extends UnaryHeader {
                 `A header "${this.name} X" can only have a plain tape name as its X, like "${this.name} text".`);
         }
         const tapeName = this.child.text;
-        const [g, msg] = parseRegex(text).bind(r => r.toGrammar()).destructure();
-        return g.msg(msg).bind(g => new RenameGrammar(g, 
-                                DUMMY_REGEX_TAPE, tapeName))
+        return parseRegex(text).bind(r => r.toGrammar())
+                               .bind(g => new RenameGrammar(g, 
+                                    DUMMY_REGEX_TAPE, tapeName))
     }
 }
 

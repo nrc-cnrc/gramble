@@ -9,7 +9,6 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    /*
     describe('Simple replace', function() {
         const project = sheetFromFile(`${DIR}/sameTapeReplace.csv`);
         testHasVocab(project, {text: 3})
@@ -319,7 +318,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    */
     describe('Rule with an empty to', function() {
         const project = sheetFromFile(
             `${DIR}/blankTo.csv`);
@@ -330,7 +328,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    /*
     describe('Shortening rule', function() {
         const project = sheetFromFile(`${DIR}/shorteningRule.csv`);
         testHasVocab(project, {text: 2})
@@ -390,5 +387,4 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    */
 });

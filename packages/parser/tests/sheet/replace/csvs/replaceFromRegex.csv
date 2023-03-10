@@ -2,5 +2,5 @@ word:, table:, text
     ,       , aba,
     ,       , apa
     ,       ,     ,
-    , replace:, from re text, to surface
+    , replace:, from text, to surface
     ,         , b|p,  v

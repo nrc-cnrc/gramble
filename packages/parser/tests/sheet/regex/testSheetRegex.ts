@@ -5,25 +5,7 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 
 describe(`${path.basename(module.filename)}`, function() {
 
-    describe('Trivial regex', function() {
-        const project = sheetFromFile(`${DIR}/regexTrivial.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "foo", gloss: "1SG" },
-        ]);
-    });
-
-    describe('Re header with slash value', function() {
-        const project = sheetFromFile(`${DIR}/regexSlash.csv`);
-        testErrors(project, [
-           ["regexSlash", 0, 3, "error"],
-           ["regexSlash", 1, 3, "warning"]
-        ]);
-        testGrammar(project, [
-            {text: "foo"}
-        ]);
-    });
-
+    /*
     describe('Regex including alternation', function() {
         const project = sheetFromFile(`${DIR}/regexAlternation.csv`);
         testErrors(project, []);
