@@ -4,9 +4,6 @@ import { AlternationRegex, DotRegex, ErrorRegex, LiteralRegex, NegationRegex, Pl
 import { DUMMY_REGEX_TAPE } from "../util";
 import { resultList } from "../msgs";
 
-
-
-
 export class RegexToGrammar extends Pass<Regex, Grammar> {
     
 

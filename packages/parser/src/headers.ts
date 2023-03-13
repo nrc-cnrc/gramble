@@ -65,20 +65,6 @@ export const DEFAULT_VALUE = 1.0;
  export abstract class Header extends Component {
     
     public abstract get name(): string;
-
-    /**
-     * One of the primary responsibilities of the header tree is to construct the appropriate grammar object
-     * for a cell, from the grammar to its left and a string.  This string is usually the text of the 
-     * cell in question, but (in the case of cells that we parse like "~(A|B)" it could be a substring
-     * of this.  (That's why we need a separate text param and don't just grab it from content.text.)
-     * 
-     * @param text A string expressing the content to be compiled, in light of this header
-     * @returns The grammar corresponding to this header/content pair
-     */
-    public toGrammar(text: string): GrammarResult {
-        throw new Error("not implemented");
-    }
-
     public abstract getFontColor(): string;
     public abstract getBackgroundColor(saturation: number, value: number): string;
     public abstract get id(): string;
@@ -149,10 +135,6 @@ export class EmbedHeader extends AtomicHeader {
         return "embed";
     }
 
-    public toGrammar(text: string): GrammarResult {
-        return new EmbedGrammar(text).msg();
-    }
-
 }
 
 /**
@@ -194,14 +176,6 @@ export class TapeNameHeader extends AtomicHeader {
         return new TapeNameHeader(this.text).msg();
     }
 
-    public toGrammar(text: string): GrammarResult {
-        const tapeName = this.text;
-        const env = new PassEnv();
-        return parsePlaintext(text)
-                    .bind(r => REGEX_PASSES.transform(r, env))
-                    .bind(g => new RenameGrammar(g, 
-                                DUMMY_REGEX_TAPE, tapeName))
-    }
 }
 
 /**
@@ -233,10 +207,6 @@ export class CommentHeader extends Header {
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
         return "#FFFFFF";
     }
-
-    public toGrammar(text: string): GrammarResult {
-        return new EpsilonGrammar().msg();
-    }    
 }
 
 /**
@@ -261,10 +231,6 @@ abstract class UnaryHeader extends Header {
 
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
         return this.child.getBackgroundColor(saturation, value);
-    }
-
-    public toGrammar(text: string): GrammarResult {
-        return this.child.toGrammar(text);
     }
 }
 
@@ -300,14 +266,6 @@ export class OptionalHeader extends UnaryHeader {
         return "optional";
     }
 
-    public toGrammar(
-        text: string
-    ): GrammarResult {
-        return this.child.toGrammar(text)
-                .bind(c => new AlternationGrammar(
-                    [c, new EpsilonGrammar()]));
-    }
-
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
                 .bind(c => new OptionalHeader(c as Header));
@@ -339,24 +297,10 @@ export class RenameHeader extends UnaryHeader {
  * starts", etc.) that allow and parse regular expressions 
  * in their fields.
  */
-abstract class RegexHeader extends UnaryHeader {
+export abstract class RegexHeader extends UnaryHeader {
 
     public getFontColor() {
         return "#bd1128";
-    }
-
-    public toGrammar(text: string): GrammarResult {
-        if (!(this.child instanceof TapeNameHeader)) {
-            // shouldn't happen, should already be taken care of, more for linting
-            return new EpsilonGrammar().err("Invalid header",
-                `A header "${this.name} X" can only have a plain tape name as its X, like "${this.name} text".`);
-        }
-        const tapeName = this.child.text;
-        const env = new PassEnv();
-        return parseRegex(text)
-                    .bind(r => REGEX_PASSES.transform(r, env))
-                    .bind(g => new RenameGrammar(g, 
-                            DUMMY_REGEX_TAPE, tapeName))
     }
 }
 
@@ -413,11 +357,6 @@ export class StartsHeader extends RegexHeader {
     public get name(): string {
         return "starts";
     }
-
-    public toGrammar(text: string): GrammarResult {
-        return super.toGrammar(text)
-                    .bind(c => new StartsGrammar(c));
-    }
     
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
@@ -434,11 +373,6 @@ export class EndsHeader extends RegexHeader {
     public get name(): string {
         return "ends";
     }
-
-    public toGrammar(text: string): GrammarResult {
-        return super.toGrammar(text)
-                    .bind(c => new EndsGrammar(c));
-    }
     
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
@@ -454,11 +388,6 @@ export class ContainsHeader extends RegexHeader {
     
     public get name(): string {
         return "contains";
-    }
-
-    public toGrammar(text: string): GrammarResult {
-        return super.toGrammar(text)
-                    .bind(c => new ContainsGrammar(c));
     }
     
     public mapChildren(f: CPass, env: PassEnv): CResult {
@@ -492,12 +421,6 @@ export class SlashHeader extends Header {
         return this.child1.getFontColor();
     }
     
-    public toGrammar(text: string): GrammarResult {
-        return resultList([this.child1, this.child2])
-                 .map(c => c.toGrammar(text))
-                 .bind(cs => new SequenceGrammar(cs));
-    }
-    
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.child1, this.child2])
                 .map(c => f.transform(c, env))
@@ -509,14 +432,6 @@ export class ErrorHeader extends TapeNameHeader {
 
     public get id(): string {
         return "ERR";
-    }
-
-    public toGrammar(text: string): GrammarResult {
-        if (text.length != 0) {
-            return new EpsilonGrammar().msg()
-                .warn("This content is associated with an invalid header above, ignoring");
-        }
-        return new EpsilonGrammar().msg();
     }
 }
 

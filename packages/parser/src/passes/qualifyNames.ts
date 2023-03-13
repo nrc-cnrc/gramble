@@ -1,17 +1,14 @@
-import { Err, MissingSymbolError, Msgs, Result, resultDict, resultList } from "../msgs";
+import { MissingSymbolError, Msgs, Result } from "../msgs";
 import { 
-    CounterStack,
     EmbedGrammar,
     EpsilonGrammar,
     Grammar,
-    GrammarPass,
     GrammarResult,
-    Collection,
     CollectionGrammar,
     LocatorGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { DEFAULT_SYMBOL_NAME, Dict } from "../util";
+import { DEFAULT_SYMBOL_NAME } from "../util";
 
 /**
  * Goes through the tree and 

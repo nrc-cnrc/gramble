@@ -24,6 +24,7 @@ import {
 import { Header, TapeNameHeader } from "../headers";
 import { Err, Msgs, resultList } from "../msgs";
 import { BLANK_PARAM } from "../ops";
+import { HeaderToGrammar } from "./headerToGrammar";
 
 
 /**
@@ -78,8 +79,9 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     }
 
     public handleHeaderContentPair(t: TstHeaderContentPair, env: PassEnv): GrammarResult {
-        return t.header.header.toGrammar(t.cell.text)
-                              .bind(g => new LocatorGrammar(t.cell.pos, g));
+        const HEADER_PASS = new HeaderToGrammar(t.cell.text);
+        return HEADER_PASS.transform(t.header.header, env)
+                          .bind(g => new LocatorGrammar(t.cell.pos, g));
     }
     
     public handleRename(t: TstRename, env: PassEnv): GrammarResult {
@@ -107,7 +109,8 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     public handleFilter(t: TstFilter, env: PassEnv): GrammarResult {
         const [prevGrammar, prevMsgs] = this.transform(t.prev, env)
                                             .destructure();
-        const [grammar, msgs] = t.header.header.toGrammar(t.cell.text)
+        const HEADER_PASS = new HeaderToGrammar(t.cell.text);
+        const [grammar, msgs] = HEADER_PASS.transform(t.header.header, env)
                                  .localize(t.cell.pos)
                                  .destructure();
         const result = new EqualsGrammar(prevGrammar, grammar);
