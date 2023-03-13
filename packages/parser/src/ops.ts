@@ -4,70 +4,10 @@ import {
     MPSequence, MPUnreserved 
 } from "./miniParser";
 import { Err, Msgs, Result } from "./msgs";
-import { isValidSymbolName, RESERVED_SYMBOLS } from "./util";
+import { REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, RESERVED, RESERVED_SYMBOLS, TEST_PARAMS } from "./reserved";
+import { isValidSymbolName } from "./util";
 
 export const BLANK_PARAM: string = "__";
-
-const REQUIRED_REPLACE_PARAMS = new Set([
-    "from",
-    "to",
-]);
-
-const REPLACE_PARAMS = new Set([
-    "pre",
-    "post",
-    ...REQUIRED_REPLACE_PARAMS
-]);
-
-const TEST_PARAMS = new Set([
-    "unique",
-]);
-
-const RESERVED_HEADERS = new Set([
-    "embed", 
-    "optional", 
-    //"not", 
-    "hide", 
-    //"reveal", 
-    "equals", 
-    "starts", 
-    "ends", 
-    "contains",
-    "re",
-    ...REPLACE_PARAMS,
-    ...TEST_PARAMS
-]);
-
-const RESERVED_OPS: Set<string> = new Set([
-    "table", 
-    "test", 
-    "testnot",
-    "replace",
-    "collection",
-    "join",
-    "or"
-]);
-
-export const RESERVED_WORDS = new Set([
-    ...RESERVED_HEADERS, 
-    ...RESERVED_OPS
-]);
-
-export const RESERVED = new Set([
-    ...RESERVED_SYMBOLS,
-    ...RESERVED_WORDS
-]);
-
-
-const tokenizer = new RegExp("\\s+|(" + 
-                        RESERVED_SYMBOLS.map(s => "\\"+s).join("|") + 
-                            ")");
-
-function tokenize(text: string): string[] {
-    return text.split(tokenizer).filter(
-        (s: string) => s !== undefined && s !== ''
-    );
-}
 
 export type Requirement = "required" | "forbidden";
 
@@ -343,7 +283,7 @@ const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
 export function parseOp(text: string): Result<Op> {
     const trimmedText = text.trim();
 
-    const env = new MiniParseEnv(new Set(RESERVED_SYMBOLS), RESERVED_WORDS);
+    const env = new MiniParseEnv(new Set(RESERVED_SYMBOLS), RESERVED);
     const results = miniParse(env, OP_EXPR_WITH_COLON, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error

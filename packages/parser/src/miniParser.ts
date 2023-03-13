@@ -122,6 +122,14 @@ export function MPDelay<T>(child: () => MPParser<T>): MPParser<T> {
     }
 }
 
+export function MPEmpty<T>(
+    constr: () => Result<T>
+): MPParser<T> {
+    return function*(input: string[], env: MiniParseEnv) {
+        yield [constr(), input];
+    }
+}
+
 export function MPEnv<T>(
     child: MPParser<T>,
     env: MiniParseEnv
@@ -164,7 +172,7 @@ export function MPUnreserved<T>(
         }
         const firstToken = caseSensitive ? input[0] 
                                          : input[0].toLowerCase();
-        if (env.reserved.has(firstToken) || env.splitters.has(firstToken)) {
+        if (env.reserved.has(firstToken)) {
             return;
         }
         yield [constr(input[0]), input.slice(1)];

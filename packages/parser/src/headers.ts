@@ -32,15 +32,21 @@ import {
 
 import { 
     miniParse, MiniParseEnv, MPAlt, MPComment, 
-    MPDelay, MPParser, MPReserved, 
+    MPDelay, MPParser,
     MPSequence, MPUnreserved 
 } from "./miniParser";
 
 import { 
     HSVtoRGB, RGBtoString,
-    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, RESERVED_SYMBOLS, isValidSymbolName, DUMMY_REGEX_TAPE, Cell 
+    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, 
+    isValidSymbolName, DUMMY_REGEX_TAPE 
 } from "./util";
-import { Msgs, resultList, Result, Err, Warn, Msg, result } from "./msgs";
+
+import {
+     Msgs, resultList, Result, 
+     Err, Warn, Msg, result 
+} from "./msgs";
+import { RESERVED, RESERVED_SYMBOLS } from "./reserved";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
@@ -467,43 +473,6 @@ export class ErrorHeader extends TapeNameHeader {
  * parser for the grammar.
  */
 
-export const REPLACE_PARAMS = [
-    "from",
-    "to",
-    "pre",
-    "post"
-]
-
-export const TEST_PARAMS = [
-    "unique"
-]
-
-export const RESERVED_HEADERS = [
-    "embed", 
-    "optional", 
-    //"not", 
-    "hide", 
-    //"reveal", 
-    "equals", 
-    "starts", 
-    "ends", 
-    "contains",
-    ...REPLACE_PARAMS,
-    ...TEST_PARAMS
-];
-
-export const RESERVED_OPS: Set<string> = new Set([
-    "table", 
-    "test", 
-    "testnot", 
-    "or",
-    "join", 
-    "replace",
-    "collection"
-]);
-
-export const RESERVED_WORDS = new Set([...RESERVED_SYMBOLS, ...RESERVED_HEADERS, ...RESERVED_OPS]);
-
 const HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlt(
         HP_OPTIONAL, HP_FROM, HP_SLASH,
@@ -701,7 +670,7 @@ const HP_EXPR: MPParser<Header> = MPAlt(HP_COMMENT, HP_NON_COMMENT_EXPR);
 
 export function parseHeaderCell(text: string): Result<Header> {
 
-    const env = new MiniParseEnv(new Set(RESERVED_SYMBOLS), RESERVED_WORDS);
+    const env = new MiniParseEnv(new Set(RESERVED_SYMBOLS), RESERVED);
     const results = miniParse(env, HP_EXPR, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error

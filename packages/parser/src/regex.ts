@@ -8,9 +8,11 @@ import {
     miniParse,
     MPRepetition, 
     MiniParseEnv,
-    MPEnv
+    MPEnv,
+    MPEmpty
 } from "./miniParser";
 import { Err, Msgs, Result, resultList } from "./msgs";
+import { RESERVED, RESERVED_WORDS } from "./reserved";
 import { DUMMY_REGEX_TAPE, HIDDEN_TAPE_PREFIX } from "./util";
 
 export type RegexParser = MPParser<Regex>;
@@ -218,6 +220,7 @@ export class SequenceRegex extends Regex {
 
 /* RESERVED SYMBOLS */
 const RESERVED_FOR_PLAINTEXT = new Set(["|"]);
+const RESERVED_FOR_SYMBOL = new Set(["|", "."])
 const RESERVED_FOR_REGEX = new Set([...RESERVED_FOR_PLAINTEXT, "(", ")", "~", "*", "?", "+", "{", "}", "."]);
 const RESERVED_FOR_CONTEXT = new Set([...RESERVED_FOR_REGEX, "#", "_"]);
 
@@ -294,24 +297,67 @@ const REGEX_ALTERNATION = MPSequence(
                     .bind(([x, y]) => new AlternationRegex(x, y))
 );
 
+/*********************/
 /* PLAINTEXT GRAMMAR */
-const PLAINTEXT_EXPR: RegexParser = MPDelay(() => MPAlt(
-    PLAINTEXT_SEQ, 
-    PLAINTEXT_ALTERNATION)
-);
+/*********************/
+
+const PLAINTEXT_SUBEXPR: MPParser<Regex> = MPDelay(() => MPAlt(
+    PLAINTEXT_UNRESERVED,
+    PLAINTEXT_ALTERNATION
+));
 
 const PLAINTEXT_UNRESERVED = MPUnreserved<Regex>(
     s => new LiteralRegex(s).msg()
 );
 
-const PLAINTEXT_SEQ = MPRepetition<Regex>(
-    PLAINTEXT_UNRESERVED, 
-    (...children) => resultList(children)
-                        .bind(cs => new SequenceRegex(cs))
+const PLAINTEXT_ALTERNATION = MPSequence(
+    [ PLAINTEXT_UNRESERVED, "|", PLAINTEXT_SUBEXPR ],
+    (c1, c2) => resultList([c1, c2])
+                    .bind(([x, y]) => new AlternationRegex(x, y))
 );
 
-const PLAINTEXT_ALTERNATION = MPSequence(
-    [ PLAINTEXT_SEQ, "|", PLAINTEXT_EXPR ],
+const PLAINTEXT_SEQ = MPRepetition<Regex>(
+    PLAINTEXT_SUBEXPR, 
+    (...children) => resultList(children)
+                        .bind(cs => new SequenceRegex(cs)),
+    1 // minimum of 1 repetition
+);
+
+const PLAINTEXT_EMPTY = MPEmpty(
+    () => new LiteralRegex("").msg()
+);
+
+const PLAINTEXT_EXPR = MPAlt(
+    PLAINTEXT_EMPTY,
+    PLAINTEXT_SEQ
+);
+
+/***********************/
+/* SYMBOL NAME GRAMMAR */
+/***********************/
+
+const SYMBOL_EXPR: RegexParser = MPDelay(() => MPAlt(
+    SYMBOL_EMPTY, 
+    SYMBOL_CHAIN,
+    SYMBOL_ALTERNATION)
+);
+
+const SYMBOL_EMPTY = MPEmpty(
+    () => new LiteralRegex("").msg()
+);
+
+const SYMBOL_UNRESERVED = MPUnreserved<Regex>(
+    s => new LiteralRegex(s).msg()
+);
+
+const SYMBOL_CHAIN = MPSequence(
+    [ SYMBOL_UNRESERVED, ".", SYMBOL_EXPR ],
+    (c1, c2) => resultList([c1, c2])
+                    .bind(cs => new SequenceRegex(cs))
+);
+
+const SYMBOL_ALTERNATION = MPSequence(
+    [ SYMBOL_CHAIN, "|", SYMBOL_EXPR ],
     (c1, c2) => resultList([c1, c2])
                     .bind(([x, y]) => new AlternationRegex(x, y))
 );
@@ -337,13 +383,17 @@ export function parse(
 }
 
 export function parseRegex(text: string): Result<Regex> {
-    return parse(text, RESERVED_FOR_REGEX, new Set(), REGEX_TOPLEVEL);
+    return parse(text, RESERVED_FOR_REGEX, RESERVED_FOR_REGEX, REGEX_TOPLEVEL);
 }
 
 export function parsePlaintext(text: string): Result<Regex> {
-    return parse(text, RESERVED_FOR_PLAINTEXT, new Set(), PLAINTEXT_EXPR);
+    return parse(text, RESERVED_FOR_PLAINTEXT, RESERVED_FOR_PLAINTEXT, PLAINTEXT_EXPR);
 }
 
 export function parseContext(text: string): Result<Regex> {
     return parse(text, RESERVED_FOR_CONTEXT, new Set(), REGEX_TOPLEVEL);
+}
+
+export function parseSymbol(text: string): Result<Regex> {
+    return parse(text, RESERVED_FOR_SYMBOL, RESERVED_WORDS, PLAINTEXT_SUBEXPR);
 }

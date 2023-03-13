@@ -6,7 +6,7 @@ import { HIDDEN_TAPE_PREFIX, SILENT, StringDict, tokenizeUnicode } from "../src/
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
-import { parseRegex } from "../src/regex";
+import { parsePlaintext, parseRegex, parseSymbol } from "../src/regex";
 import { parseHeaderCell } from "../src/headers";
 import { parseOp } from "../src/ops";
 
@@ -45,23 +45,38 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
     });
 }
 
-export function testHeaderID(header: string, expectedID: string): void {
-    const [result, msgs] = parseHeaderCell(header).destructure();
-    it(`"${header}" should parse as ${expectedID}`, function() {
+export function testHeaderID(text: string, expectedID: string): void {
+    const [result, msgs] = parseHeaderCell(text).destructure();
+    it(`"${text}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
-export function testCellID(cell: string, expectedID: string): void {
-    const result = parseRegex(cell).msgTo([]); 
-    it(`"${cell}" should parse as ${expectedID}`, function() {
+export function testPlaintextID(text: string, expectedID: string): void {
+    const [result, msgs] = parsePlaintext(text).destructure();
+    it(`"${text}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
-export function testOpID(cell: string, expectedID: string): void {
-    const result = parseOp(cell).msgTo([]);
-    it(`"${cell}" should parse as ${expectedID}`, function() {
+export function testSymbolID(text: string, expectedID: string): void {
+    const [result, msgs] = parseSymbol(text).destructure();
+    it(`"${text}" should parse as ${expectedID}`, function() {
+        expect(result.id).to.equal(expectedID);
+    });
+}
+
+
+export function testCellID(text: string, expectedID: string): void {
+    const result = parseRegex(text).msgTo([]); 
+    it(`"${text}" should parse as ${expectedID}`, function() {
+        expect(result.id).to.equal(expectedID);
+    });
+}
+
+export function testOpID(text: string, expectedID: string): void {
+    const result = parseOp(text).msgTo([]);
+    it(`"${text}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
