@@ -1,32 +1,17 @@
 import { 
     AlternationGrammar, 
     EpsilonGrammar, 
-    LiteralGrammar, 
-    NegationGrammar, 
     SequenceGrammar,
-    RepeatGrammar,
     StartsGrammar,
     EndsGrammar,
     ContainsGrammar,
     EmbedGrammar,
     GrammarResult,
-    DotGrammar,
-    IntersectionGrammar,
     RenameGrammar
 } from "./grammars";
 
 import { 
-    AlternationRegex, 
-    ErrorRegex, 
-    NegationRegex, 
-    PlusRegex, 
-    QuestionRegex, 
-    Regex, 
-    SequenceRegex, 
-    StarRegex, 
-    LiteralRegex, 
-    parseRegex, 
-    DotRegex,
+    parseRegex,
     parsePlaintext
 } from "./regex";
 
@@ -46,6 +31,7 @@ import {
      Msgs, resultList, Result, 
      Err, Warn, Msg, result 
 } from "./msgs";
+
 import { RESERVED, RESERVED_SYMBOLS } from "./reserved";
 
 export const DEFAULT_SATURATION = 0.05;

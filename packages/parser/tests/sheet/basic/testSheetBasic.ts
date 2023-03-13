@@ -52,6 +52,30 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    
+    describe('Embeds with a _ identifier', function() {
+        const project = sheetFromFile(`${DIR}/embedGrammarWithUnderscore.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobar", gloss: "run-1SG" },
+            { text: "moobar", gloss: "jump-1SG" },
+            { text: "foobaz", gloss: "run-2SG" },
+            { text: "moobaz", gloss: "jump-2SG" }
+        ]);
+    });
+
+    describe('Headers with underscores', function() {
+        const project = sheetFromFile(`${DIR}/headersWithUnderscore.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { _text: "foobar", gloss_: "run-1SG" },
+            { _text: "moobar", gloss_: "jump-1SG" },
+            { _text: "foobaz", gloss_: "run-2SG" },
+            { _text: "moobaz", gloss_: "jump-2SG" }
+        ]);
+    });
+
+
     describe('Table with empty cell', function() {
         const project = sheetFromFile(`${DIR}/emptyCell.csv`);
         testErrors(project, []);

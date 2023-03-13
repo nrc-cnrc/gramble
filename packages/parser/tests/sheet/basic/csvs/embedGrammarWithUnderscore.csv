@@ -1,0 +1,11 @@
+
+_Verb:, table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+Suf_fix:, table:, text, gloss
+    ,       , bar, -1SG
+    ,       , baz, -2SG
+
+Default:, table:, embed, embed
+    ,       , _verb, suf_fix 

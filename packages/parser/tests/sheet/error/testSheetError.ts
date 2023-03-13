@@ -27,6 +27,27 @@ describe(`${path.basename(module.filename)}`, function() {
             {gloss: "-2SG",text: "baz"}
         ]);
     });
+    
+    describe('Assignment to an invalid identifier', function() {
+        const project = sheetFromFile(`${DIR}/assignmentToInvalidIdentifier.csv`);
+        testErrors(project, [
+            ["assignmentToInvalidIdentifier", 0, 0, "error"],
+            ["assignmentToInvalidIdentifier", 0, 0, "warning"],
+            ["assignmentToInvalidIdentifier", 5, 2, "warning"]
+        ]);
+        testGrammar(project, [{}]);
+    });
+
+    
+    describe('Identifier with a space', function() {
+        const project = sheetFromFile(`${DIR}/assignmentToInvalidIdentifier.csv`);
+        testErrors(project, [
+            ["assignmentToInvalidIdentifier", 0, 0, "error"],
+            ["assignmentToInvalidIdentifier", 0, 0, "warning"],
+            ["assignmentToInvalidIdentifier", 5, 2, "warning"]
+        ]);
+        testGrammar(project, [{}]);
+    });
 
     describe('Sheet name using a reserved word', function() {
         // no longer erroneous
