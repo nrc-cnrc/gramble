@@ -21,9 +21,10 @@ import {
     CollectionGrammar, 
     RenameGrammar, ReplaceGrammar, SequenceGrammar, TestGrammar, JoinGrammar
 } from "../grammars";
-import { TapeNameHeader } from "../headers";
+import { Header, TapeNameHeader } from "../headers";
 import { Err, Msgs, resultList } from "../msgs";
 import { BLANK_PARAM } from "../ops";
+
 
 /**
  * This is the workhorse of grammar creation, turning the 

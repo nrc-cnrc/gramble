@@ -33,6 +33,9 @@ import {
 } from "./msgs";
 
 import { RESERVED, RESERVED_SYMBOLS } from "./reserved";
+import { Component, CPass, CResult } from "./components";
+import { Pass, PassEnv } from "./passes";
+import { REGEX_PASSES } from "./passes/allPasses";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
@@ -59,7 +62,7 @@ export const DEFAULT_VALUE = 1.0;
  * 
  * Headers are parsed using the "miniParser" engine, a simple parser/combinator engine.
  */
- export abstract class Header {
+ export abstract class Header extends Component {
     
     public abstract get name(): string;
 
@@ -138,6 +141,10 @@ abstract class AtomicHeader extends Header {
 
 export class EmbedHeader extends AtomicHeader {
 
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return new EmbedHeader().msg();
+    }
+
     public get text(): string {
         return "embed";
     }
@@ -162,6 +169,10 @@ export class HideHeader extends AtomicHeader {
     public get text(): string {
         return "hide";
     }
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return new HideHeader().msg();
+    }
 }
 
 /**
@@ -179,11 +190,17 @@ export class TapeNameHeader extends AtomicHeader {
         return "#064a3f";
     }
 
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return new TapeNameHeader(this.text).msg();
+    }
+
     public toGrammar(text: string): GrammarResult {
         const tapeName = this.text;
-        return parsePlaintext(text).bind(r => r.toGrammar())
-                                   .bind(g => new RenameGrammar(g, 
-                                         DUMMY_REGEX_TAPE, tapeName))
+        const env = new PassEnv();
+        return parsePlaintext(text)
+                    .bind(r => REGEX_PASSES.transform(r, env))
+                    .bind(g => new RenameGrammar(g, 
+                                DUMMY_REGEX_TAPE, tapeName))
     }
 }
 
@@ -201,6 +218,10 @@ export class CommentHeader extends Header {
         return "%"
     }
     
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return new CommentHeader().msg();
+    }
+
     public getFontColor() {
         return "#669944";
     }
@@ -263,6 +284,11 @@ export class TagHeader extends UnaryHeader {
     public getParamName(): string {
         return this.tag;
     }
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new TagHeader(this.tag, c as Header));
+    }
 }
 
 /**
@@ -281,6 +307,11 @@ export class OptionalHeader extends UnaryHeader {
                 .bind(c => new AlternationGrammar(
                     [c, new EpsilonGrammar()]));
     }
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new OptionalHeader(c as Header));
+    }
 }
 
 /**
@@ -290,6 +321,11 @@ export class RenameHeader extends UnaryHeader {
 
     public get name(): string {
         return "rename";
+    }
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new RenameHeader(c as Header));
     }
 }
 
@@ -316,9 +352,11 @@ abstract class RegexHeader extends UnaryHeader {
                 `A header "${this.name} X" can only have a plain tape name as its X, like "${this.name} text".`);
         }
         const tapeName = this.child.text;
-        return parseRegex(text).bind(r => r.toGrammar())
-                               .bind(g => new RenameGrammar(g, 
-                                    DUMMY_REGEX_TAPE, tapeName))
+        const env = new PassEnv();
+        return parseRegex(text)
+                    .bind(r => REGEX_PASSES.transform(r, env))
+                    .bind(g => new RenameGrammar(g, 
+                            DUMMY_REGEX_TAPE, tapeName))
     }
 }
 
@@ -338,6 +376,11 @@ export class RegexTagHeader extends RegexHeader {
     public getParamName(): string {
         return this.tag;
     }
+    
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new RegexTagHeader(this.tag, c as Header));
+    }
 }
 
 /**
@@ -353,6 +396,11 @@ export class EqualsHeader extends RegexHeader {
     
     public get name(): string {
         return "equals";
+    }
+    
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new EqualsHeader(c as Header));
     }
 }
 
@@ -370,6 +418,11 @@ export class StartsHeader extends RegexHeader {
         return super.toGrammar(text)
                     .bind(c => new StartsGrammar(c));
     }
+    
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new StartsHeader(c as Header));
+    }
 }
 
 /**
@@ -386,6 +439,11 @@ export class EndsHeader extends RegexHeader {
         return super.toGrammar(text)
                     .bind(c => new EndsGrammar(c));
     }
+    
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new EndsHeader(c as Header));
+    }
 }
 
 /**
@@ -401,6 +459,11 @@ export class ContainsHeader extends RegexHeader {
     public toGrammar(text: string): GrammarResult {
         return super.toGrammar(text)
                     .bind(c => new ContainsGrammar(c));
+    }
+    
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new ContainsHeader(c as Header));
     }
 }
 
@@ -433,6 +496,12 @@ export class SlashHeader extends Header {
         return resultList([this.child1, this.child2])
                  .map(c => c.toGrammar(text))
                  .bind(cs => new SequenceGrammar(cs));
+    }
+    
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return resultList([this.child1, this.child2])
+                .map(c => f.transform(c, env))
+                .bind(([c1,c2]) => new SlashHeader(c1 as Header,c2 as Header));
     }
 }
 

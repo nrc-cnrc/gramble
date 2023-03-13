@@ -1,3 +1,4 @@
+import { Component, CPass, CResult } from "./components";
 import { AlternationGrammar, DotGrammar, EmbedGrammar, EpsilonGrammar, Grammar, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "./grammars";
 import { 
     MPDelay, 
@@ -12,6 +13,7 @@ import {
     MPEmpty
 } from "./miniParser";
 import { Err, Msgs, Result, resultList } from "./msgs";
+import { PassEnv } from "./passes";
 import { RESERVED, RESERVED_WORDS } from "./reserved";
 import { DUMMY_REGEX_TAPE, HIDDEN_TAPE_PREFIX, isValidSymbolName } from "./util";
 
@@ -23,7 +25,7 @@ export type RegexParser = MPParser<Regex>;
  * with Headers) we can assign them the right Grammar objects and later Expr objects.
  */
 
-export abstract class Regex { 
+export abstract class Regex extends Component { 
     
     /**
      * The IDs of Regex objects are deliberately chosen to NOT look like their
@@ -31,8 +33,6 @@ export abstract class Regex {
      * when the regex has been parsed incorrectly.
      */
     public abstract get id(): string;
-
-    public abstract toGrammar(): Grammar;
 
     public msg(msgs: Msgs = []): Result<Regex> {
         return new Result(this, msgs);
@@ -52,9 +52,10 @@ export class ErrorRegex extends Regex {
         return `ERR`;
     }
 
-    public toGrammar(): Grammar {
-        return new EpsilonGrammar();
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return new ErrorRegex(this.text).msg();
     }
+    
 }
 
 export class LiteralRegex extends Regex {
@@ -70,8 +71,8 @@ export class LiteralRegex extends Regex {
         return this.text;
     }
 
-    public toGrammar(): Grammar {
-        return new LiteralGrammar(DUMMY_REGEX_TAPE, this.text);
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return new LiteralRegex(this.text).msg();
     }
 }
 
@@ -80,9 +81,9 @@ export class DotRegex extends Regex {
     public get id(): string {
         return "DOT";
     }
-
-    public toGrammar(): Grammar {
-        return new DotGrammar(DUMMY_REGEX_TAPE);
+    
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return new DotRegex().msg();
     }
 }
 
@@ -98,8 +99,9 @@ export class SymbolRegex extends Regex {
         return `EMB[${this.child.id}]`;
     }
 
-    public toGrammar(): Grammar {
-        return new EmbedGrammar(this.child.text);
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new SymbolRegex(c as LiteralRegex));
     }
 }
 
@@ -114,10 +116,10 @@ export class StarRegex extends Regex {
     public get id(): string {
         return `STAR[${this.child.id}]`;
     }
-
-    public toGrammar(): Grammar {
-        const childGrammar = this.child.toGrammar();
-        return new RepeatGrammar(childGrammar);
+    
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new StarRegex(c as Regex));
     }
 }
 
@@ -132,10 +134,10 @@ export class QuestionRegex extends Regex {
     public get id(): string {
         return `QUES[${this.child.id}]`;
     }
-    
-    public toGrammar(): Grammar {
-        const childGrammar = this.child.toGrammar();
-        return new RepeatGrammar(childGrammar, 0, 1);
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new QuestionRegex(c as Regex));
     }
 }
 
@@ -151,9 +153,9 @@ export class PlusRegex extends Regex {
         return `PLUS[${this.child.id}]`;
     }
     
-    public toGrammar(): Grammar {
-        const childGrammar = this.child.toGrammar();
-        return new RepeatGrammar(childGrammar, 1);
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new PlusRegex(c as Regex));
     }
 }
 
@@ -168,10 +170,10 @@ export class NegationRegex extends Regex {
     public get id(): string {
         return `NOT[${this.child.id}]`;
     }
-
-    public toGrammar(): Grammar {
-        const childGrammar = this.child.toGrammar();
-        return new NegationGrammar(childGrammar);
+    
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return f.transform(this.child, env)
+                .bind(c => new NegationRegex(c as Regex));
     }
 }
 
@@ -187,11 +189,11 @@ export class AlternationRegex extends Regex {
     public get id(): string {
         return `OR[${this.child1.id},${this.child2.id}]`;
     }
-
-    public toGrammar(): Grammar {
-        const child1Grammar = this.child1.toGrammar();
-        const child2Grammar = this.child2.toGrammar();
-        return new AlternationGrammar([child1Grammar, child2Grammar]);
+    
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return resultList([this.child1, this.child2])
+                .map(c => f.transform(c, env))
+                .bind(([c1,c2]) => new AlternationRegex(c1 as Regex, c2 as Regex));
     }
 }
 
@@ -207,14 +209,10 @@ export class SequenceRegex extends Regex {
         return `[${this.children.map(c=>c.id).join(",")}]`;
     }
 
-    public toGrammar(): Grammar {
-        if (this.children.length == 0) {
-            return new LiteralGrammar(DUMMY_REGEX_TAPE, "");
-        }
-
-        const childGrammars = this.children.map(c => 
-                                c.toGrammar());
-        return new SequenceGrammar(childGrammars);
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return resultList(this.children)
+                .map(c => f.transform(c, env))
+                .bind(cs => new SequenceRegex(cs as Regex[]));
     }
 }
 

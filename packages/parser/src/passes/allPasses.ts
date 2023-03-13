@@ -16,6 +16,7 @@ import { CreateGrammars } from "./createGrammars";
 import { CheckCollections } from "./checkCollections";
 import { ReplaceRulesOld } from "./replaceRulesOld";
 import { AssignDefaults } from "./assignDefaults";
+import { RegexToGrammar } from "./regexToGrammar";
 
 export const SHEET_PASSES = 
 
@@ -69,6 +70,7 @@ export const SHEET_PASSES =
     
     )))))))))));
 
+export const REGEX_PASSES = new RegexToGrammar();
     
 
 export const NAME_PASSES = 
