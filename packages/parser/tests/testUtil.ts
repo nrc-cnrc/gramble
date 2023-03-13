@@ -46,28 +46,27 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
 }
 
 export function testHeaderID(text: string, expectedID: string): void {
-    const [result, msgs] = parseHeaderCell(text).destructure();
+    const result = parseHeaderCell(text).msgTo([]);
     it(`"${text}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
 export function testPlaintextID(text: string, expectedID: string): void {
-    const [result, msgs] = parsePlaintext(text).destructure();
+    const result = parsePlaintext(text).msgTo([]);
     it(`"${text}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
 export function testSymbolID(text: string, expectedID: string): void {
-    const [result, msgs] = parseSymbol(text).destructure();
+    const result = parseSymbol(text).msgTo([]);
     it(`"${text}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
-
-export function testCellID(text: string, expectedID: string): void {
+export function testRegexID(text: string, expectedID: string): void {
     const result = parseRegex(text).msgTo([]); 
     it(`"${text}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);

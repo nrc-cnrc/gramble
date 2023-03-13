@@ -13,7 +13,7 @@ import {
 } from "./miniParser";
 import { Err, Msgs, Result, resultList } from "./msgs";
 import { RESERVED, RESERVED_WORDS } from "./reserved";
-import { DUMMY_REGEX_TAPE, HIDDEN_TAPE_PREFIX } from "./util";
+import { DUMMY_REGEX_TAPE, HIDDEN_TAPE_PREFIX, isValidSymbolName } from "./util";
 
 export type RegexParser = MPParser<Regex>;
 
@@ -316,50 +316,54 @@ const PLAINTEXT_ALTERNATION = MPSequence(
                     .bind(([x, y]) => new AlternationRegex(x, y))
 );
 
-const PLAINTEXT_SEQ = MPRepetition<Regex>(
+const PLAINTEXT_EXPR = MPRepetition<Regex>(
     PLAINTEXT_SUBEXPR, 
     (...children) => resultList(children)
-                        .bind(cs => new SequenceRegex(cs)),
-    1 // minimum of 1 repetition
-);
-
-const PLAINTEXT_EMPTY = MPEmpty(
-    () => new LiteralRegex("").msg()
-);
-
-const PLAINTEXT_EXPR = MPAlt(
-    PLAINTEXT_EMPTY,
-    PLAINTEXT_SEQ
+                        .bind(cs => new SequenceRegex(cs))
 );
 
 /***********************/
 /* SYMBOL NAME GRAMMAR */
 /***********************/
 
-const SYMBOL_EXPR: RegexParser = MPDelay(() => MPAlt(
-    SYMBOL_EMPTY, 
+const SYMBOL_SUBEXPR: RegexParser = MPDelay(() => MPAlt(
     SYMBOL_CHAIN,
-    SYMBOL_ALTERNATION)
-);
+    SYMBOL_ALTERNATION,
+    SYMBOL_UNRESERVED
+));
 
 const SYMBOL_EMPTY = MPEmpty(
     () => new LiteralRegex("").msg()
 );
 
 const SYMBOL_UNRESERVED = MPUnreserved<Regex>(
-    s => new LiteralRegex(s).msg()
+    (s) => {
+        if (isValidSymbolName(s)) {
+            return new LiteralRegex(s).msg()
+        } else {
+            return new ErrorRegex(s).msg([Err( 
+                `Invalid symbol name`, 
+                `${s} looks like it should be an identifier, but identifiers should start with letters or _`
+            )]);
+        }
+    } 
 );
 
-const SYMBOL_CHAIN = MPSequence(
-    [ SYMBOL_UNRESERVED, ".", SYMBOL_EXPR ],
+const SYMBOL_CHAIN: RegexParser = MPDelay(() => MPSequence(
+    [ SYMBOL_UNRESERVED, ".", MPAlt(SYMBOL_CHAIN, SYMBOL_UNRESERVED) ],
     (c1, c2) => resultList([c1, c2])
                     .bind(cs => new SequenceRegex(cs))
-);
+));
 
 const SYMBOL_ALTERNATION = MPSequence(
-    [ SYMBOL_CHAIN, "|", SYMBOL_EXPR ],
+    [ MPAlt(SYMBOL_CHAIN, SYMBOL_UNRESERVED), "|", SYMBOL_SUBEXPR ],
     (c1, c2) => resultList([c1, c2])
                     .bind(([x, y]) => new AlternationRegex(x, y))
+);
+
+const SYMBOL_EXPR = MPAlt(
+    SYMBOL_EMPTY, 
+    SYMBOL_SUBEXPR
 );
 
 export function parse(
@@ -395,5 +399,5 @@ export function parseContext(text: string): Result<Regex> {
 }
 
 export function parseSymbol(text: string): Result<Regex> {
-    return parse(text, RESERVED_FOR_SYMBOL, RESERVED_WORDS, PLAINTEXT_SUBEXPR);
+    return parse(text, RESERVED_FOR_SYMBOL, RESERVED_WORDS, SYMBOL_EXPR);
 }

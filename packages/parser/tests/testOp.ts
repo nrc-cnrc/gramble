@@ -78,5 +78,5 @@ describe(`${path.basename(module.filename)}`, function() {
     testOpID("ﺷﻜﺮﺍﹰ:", "ﺷﻜﺮﺍﹰ");
 
     // but only in certain classes; e.g. zero-width non-joiners are invalid
-    testOpID("کتاب‌ها", "ERR"); // contains a zero-width non-joiner
+    testOpID("کتاب‌ها:", "ERR"); // contains a zero-width non-joiner
 });
