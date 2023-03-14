@@ -23,8 +23,7 @@ import {
 
 import { 
     HSVtoRGB, RGBtoString,
-    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, 
-    isValidSymbolName, DUMMY_REGEX_TAPE 
+    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE
 } from "./util";
 
 import {
@@ -32,7 +31,7 @@ import {
      Err, Warn, Msg, result 
 } from "./msgs";
 
-import { RESERVED, RESERVED_SYMBOLS } from "./reserved";
+import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./reserved";
 import { Component, CPass, CResult } from "./components";
 import { Pass, PassEnv } from "./passes";
 import { REGEX_PASSES } from "./passes/allPasses";
@@ -640,7 +639,7 @@ const HP_EXPR: MPParser<Header> = MPAlt(HP_COMMENT, HP_NON_COMMENT_EXPR);
 
 export function parseHeaderCell(text: string): Result<Header> {
 
-    const env = new MiniParseEnv(new Set(RESERVED_SYMBOLS), RESERVED);
+    const env = new MiniParseEnv(new Set(RESERVED_SYMBOLS), ALL_RESERVED);
     const results = miniParse(env, HP_EXPR, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error

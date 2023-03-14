@@ -1,11 +1,10 @@
 import { 
-    miniParse, MiniParseEnv, MPAlt, 
-    MPParser, MPReserved, 
+    miniParse, MiniParseEnv, 
+    MPAlt, MPParser, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
 import { Err, Msgs, Result } from "./msgs";
-import { REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, RESERVED, RESERVED_SYMBOLS, TEST_PARAMS } from "./reserved";
-import { isValidSymbolName } from "./util";
+import { REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, ALL_RESERVED, RESERVED_SYMBOLS, TEST_PARAMS, isValidSymbolName } from "./reserved";
 
 export const BLANK_PARAM: string = "__";
 
@@ -239,8 +238,8 @@ const OP_UNRESERVED = MPUnreserved<Op>(
             return new SymbolOp(s).msg()
         } else {
             return new ErrorOp(s).msg([Err( 
-                `Invalid tape name`, 
-                `${s} looks like it should be a tape name, but tape names should start with letters or _`
+                `Invalid identifier`, 
+                `${s} looks like it should be an identifier, but it contains an invalid symbol.`
             )]);
         }
     } 
@@ -283,7 +282,7 @@ const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
 export function parseOp(text: string): Result<Op> {
     const trimmedText = text.trim();
 
-    const env = new MiniParseEnv(new Set(RESERVED_SYMBOLS), RESERVED);
+    const env = new MiniParseEnv(new Set(RESERVED_SYMBOLS), ALL_RESERVED);
     const results = miniParse(env, OP_EXPR_WITH_COLON, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error

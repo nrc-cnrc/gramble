@@ -14,8 +14,14 @@ import {
 } from "./miniParser";
 import { Err, Msgs, Result, resultList } from "./msgs";
 import { PassEnv } from "./passes";
-import { RESERVED, RESERVED_WORDS } from "./reserved";
-import { DUMMY_REGEX_TAPE, HIDDEN_TAPE_PREFIX, isValidSymbolName } from "./util";
+import { 
+    isValidSymbolName,
+    RESERVED_FOR_CONTEXT, 
+    RESERVED_FOR_PLAINTEXT, 
+    RESERVED_FOR_REGEX, 
+    RESERVED_FOR_SYMBOL, 
+    RESERVED_WORDS 
+} from "./reserved";
 
 export type RegexParser = MPParser<Regex>;
 
@@ -240,110 +246,6 @@ export class SequenceRegex extends Regex {
     }
 }
 
-/* RESERVED SYMBOLS */
-const RESERVED_FOR_PLAINTEXT = new Set(["|"]);
-const RESERVED_FOR_SYMBOL = new Set(["|", "."])
-const RESERVED_FOR_REGEX = new Set([...RESERVED_FOR_PLAINTEXT, "(", ")", "~", "*", "?", "+", "{", "}", "."]);
-const RESERVED_FOR_CONTEXT = new Set([...RESERVED_FOR_REGEX, "#", "_"]);
-
-/* REGEX GRAMMAR */
-
-const REGEX_EXPR: RegexParser = MPDelay(() => MPAlt(
-    REGEX_ALTERNATION, 
-    REGEX_SUBEXPR
-));
-
-const REGEX_SUBEXPR: RegexParser = MPDelay(() => MPAlt(
-    REGEX_NEGATION, 
-    REGEX_STAR, 
-    REGEX_QUES, 
-    REGEX_PLUS, 
-    REGEX_SUBSUBEXPR
-));
-
-const REGEX_SUBSUBEXPR: RegexParser = MPDelay(() => MPAlt(
-    REGEX_UNRESERVED, 
-    REGEX_PARENS, 
-    REGEX_SYMBOL,
-    REGEX_DOT
-));
-
-const REGEX_UNRESERVED = MPUnreserved<Regex>(
-    s => new LiteralRegex(s).msg()
-);
-
-const REGEX_TOPLEVEL = MPRepetition(
-    REGEX_EXPR, 
-    (...children) => resultList(children)
-                        .bind(cs => new SequenceRegex(cs))
-);
-
-const REGEX_DOT = MPSequence<Regex>(
-    [ "." ],
-    () => new DotRegex().msg()
-)
-
-const REGEX_STAR = MPSequence(
-    [ REGEX_SUBSUBEXPR, "*" ],
-    (child) => child.bind(c => new StarRegex(c))
-)
-
-const REGEX_QUES = MPSequence(
-    [ REGEX_SUBSUBEXPR, "?" ],
-    (child) => child.bind(c => new QuestionRegex(c))
-)
-
-const REGEX_PLUS = MPSequence(
-    [ REGEX_SUBSUBEXPR, "+" ],
-    (child) => child.bind(c => new PlusRegex(c))
-)
-
-const REGEX_PARENS = MPSequence(
-    ["(", REGEX_TOPLEVEL, ")"],
-    (child) => child 
-);
-
-const REGEX_SYMBOL = MPSequence(
-    ["{", REGEX_UNRESERVED, "}"],
-    (child) => child
-);
-
-const REGEX_NEGATION = MPSequence(
-    ["~", REGEX_SUBEXPR],
-    (child) => child.bind(c => new NegationRegex(c))
-);
-
-const REGEX_ALTERNATION = MPSequence(
-    [REGEX_SUBEXPR, "|", REGEX_EXPR],
-    (c1, c2) => resultList([c1, c2])
-                    .bind(([x, y]) => new AlternationRegex(x, y))
-);
-
-/*********************/
-/* PLAINTEXT GRAMMAR */
-/*********************/
-
-const PLAINTEXT_SUBEXPR: MPParser<Regex> = MPDelay(() => MPAlt(
-    PLAINTEXT_UNRESERVED,
-    PLAINTEXT_ALTERNATION
-));
-
-const PLAINTEXT_UNRESERVED = MPUnreserved<Regex>(
-    s => new LiteralRegex(s).msg()
-);
-
-const PLAINTEXT_ALTERNATION = MPSequence(
-    [ PLAINTEXT_UNRESERVED, "|", PLAINTEXT_SUBEXPR ],
-    (c1, c2) => resultList([c1, c2])
-                    .bind(([x, y]) => new AlternationRegex(x, y))
-);
-
-const PLAINTEXT_EXPR = MPRepetition<Regex>(
-    PLAINTEXT_SUBEXPR, 
-    (...children) => resultList(children)
-                        .bind(cs => new SequenceRegex(cs))
-);
-
 /***********************/
 /* SYMBOL NAME GRAMMAR */
 /***********************/
@@ -389,6 +291,107 @@ const SYMBOL_EXPR = MPAlt(
     SYMBOL_SUBEXPR
 );
 
+/* REGEX GRAMMAR */
+
+const REGEX_EXPR: RegexParser = MPDelay(() => MPAlt(
+    REGEX_ALTERNATION, 
+    REGEX_SUBEXPR
+));
+
+const REGEX_SUBEXPR: RegexParser = MPDelay(() => MPAlt(
+    REGEX_NEGATION, 
+    REGEX_STAR, 
+    REGEX_QUES, 
+    REGEX_PLUS, 
+    REGEX_SUBSUBEXPR
+));
+
+const REGEX_SUBSUBEXPR: RegexParser = MPDelay(() => MPAlt(
+    REGEX_UNRESERVED, 
+    REGEX_PARENS, 
+    REGEX_SYMBOL,
+    REGEX_DOT
+));
+
+const REGEX_UNRESERVED = MPUnreserved<Regex>(
+    s => new LiteralRegex(s).msg()
+);
+
+const REGEX_TOPLEVEL = MPRepetition(
+    REGEX_EXPR, 
+    (...children) => resultList(children).bind(cs => {
+        if (cs.length == 0) return new LiteralRegex("");
+        if (cs.length == 1) return cs[0];
+        return new SequenceRegex(cs);
+    })
+);
+
+const REGEX_DOT = MPSequence<Regex>(
+    [ "." ],
+    () => new DotRegex().msg()
+)
+
+const REGEX_STAR = MPSequence(
+    [ REGEX_SUBSUBEXPR, "*" ],
+    (child) => child.bind(c => new StarRegex(c))
+)
+
+const REGEX_QUES = MPSequence(
+    [ REGEX_SUBSUBEXPR, "?" ],
+    (child) => child.bind(c => new QuestionRegex(c))
+)
+
+const REGEX_PLUS = MPSequence(
+    [ REGEX_SUBSUBEXPR, "+" ],
+    (child) => child.bind(c => new PlusRegex(c))
+)
+
+const REGEX_PARENS = MPSequence(
+    ["(", REGEX_TOPLEVEL, ")"],
+    (child) => child 
+);
+
+const REGEX_SYMBOL = MPSequence(
+    ["{", SYMBOL_SUBEXPR, "}"],
+    (child) => child
+);
+
+const REGEX_NEGATION = MPSequence(
+    ["~", REGEX_SUBEXPR],
+    (child) => child.bind(c => new NegationRegex(c))
+);
+
+const REGEX_ALTERNATION = MPSequence(
+    [REGEX_SUBEXPR, "|", REGEX_EXPR],
+    (c1, c2) => resultList([c1, c2])
+                    .bind(([x, y]) => new AlternationRegex(x, y))
+);
+
+/*********************/
+/* PLAINTEXT GRAMMAR */
+/*********************/
+
+const PLAINTEXT_SUBEXPR: MPParser<Regex> = MPDelay(() => MPAlt(
+    PLAINTEXT_UNRESERVED,
+    PLAINTEXT_ALTERNATION
+));
+
+const PLAINTEXT_UNRESERVED = MPUnreserved<Regex>(
+    s => new LiteralRegex(s).msg()
+);
+
+const PLAINTEXT_ALTERNATION = MPSequence(
+    [ PLAINTEXT_UNRESERVED, "|", PLAINTEXT_SUBEXPR ],
+    (c1, c2) => resultList([c1, c2])
+                    .bind(([x, y]) => new AlternationRegex(x, y))
+);
+
+const PLAINTEXT_EXPR = MPRepetition<Regex>(
+    PLAINTEXT_SUBEXPR, 
+    (...children) => resultList(children)
+                        .bind(cs => new SequenceRegex(cs))
+);
+
 export function parse(
     text: string, 
     splitters: Set<string>,
@@ -419,7 +422,7 @@ export function parsePlaintext(text: string): Result<Regex> {
 }
 
 export function parseContext(text: string): Result<Regex> {
-    return parse(text, RESERVED_FOR_CONTEXT, new Set(), REGEX_TOPLEVEL, "context");
+    return parse(text, RESERVED_FOR_CONTEXT, RESERVED_FOR_CONTEXT, REGEX_TOPLEVEL, "context");
 }
 
 export function parseSymbol(text: string): Result<Regex> {
