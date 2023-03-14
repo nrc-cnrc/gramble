@@ -1,6 +1,6 @@
 import { Pass, PassEnv } from "../passes";
 import { AlternationGrammar, DotGrammar, EmbedGrammar, EpsilonGrammar, Grammar, GrammarResult, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "../grammars";
-import { AlternationRegex, DotRegex, ErrorRegex, LiteralRegex, NegationRegex, PlusRegex, QuestionRegex, Regex, SequenceRegex, StarRegex, SymbolRegex } from "../regex";
+import { AlternationRegex, DotRegex, ErrorRegex, LiteralRegex, NegationRegex, PlusRegex, QuestionRegex, Regex, SequenceRegex, StarRegex, SymbolRegex } from "../cell";
 import { DUMMY_REGEX_TAPE } from "../util";
 import { resultList } from "../msgs";
 

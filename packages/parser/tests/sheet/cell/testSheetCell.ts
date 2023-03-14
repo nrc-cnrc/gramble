@@ -126,6 +126,41 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
+    describe('Embed with curly braces', function() {
+        const project = sheetFromFile(`${DIR}/embedBraces.csv`);
+        testErrors(project, [
+            ["embedBraces", 5, 2, "warning"]
+        ]);
+        testGrammar(project, [
+            {"text":"foobar"},
+            {"text":"moobar"}
+        ]);
+    });
+    
+    describe('Embed with alt and curly braces', function() {
+        const project = sheetFromFile(`${DIR}/embedAltBraces.csv`);
+        testErrors(project, [
+            ["embedAltBraces", 9, 2, "warning"]
+        ]);
+        testGrammar(project, [
+            {"text":"boobar"},
+            {"text":"goobar"},
+            {"text":"foobar"},
+            {"text":"moobar"}
+        ]);
+    });
+    
+    describe('Embed with alt and curly braces 2', function() {
+        const project = sheetFromFile(`${DIR}/embedAltBraces2.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"boobar"},
+            {"text":"goobar"},
+            {"text":"foobar"},
+            {"text":"moobar"}
+        ]);
+    });
+    
     describe('Embed with three-way alternation', function() {
         const project = sheetFromFile(`${DIR}/embedThreeAlt.csv`);
         testErrors(project, []);

@@ -18,7 +18,7 @@ import {
     TagHeader, TapeNameHeader 
 } from "../headers";
 import { REGEX_PASSES } from "./allPasses";
-import { parsePlaintext, parseRegex, parseSymbol, Regex } from "../regex";
+import { parsePlaintext, parseRegex, parseSymbol, Regex } from "../cell";
 
 export class HeaderToGrammar extends Pass<Header, Grammar> {
     

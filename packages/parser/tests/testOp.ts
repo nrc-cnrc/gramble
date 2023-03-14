@@ -48,7 +48,7 @@ describe(`${path.basename(module.filename)}`, function() {
     testOpID("123:", "ERR");
     testOpID("123verb:", "ERR");
 
-    // symbol names are allowed to contain $ @ # & ? ' " =, but not at the beginning
+    // symbol names are allowed to contain $ @ # & ' ", but not at the beginning
     testOpID("verb$:", "verb$");
     testOpID("$verb:", "ERR");
     testOpID("verb@:", "verb@");
@@ -57,14 +57,21 @@ describe(`${path.basename(module.filename)}`, function() {
     testOpID("#verb:", "ERR");
     testOpID("verb&:", "verb&");
     testOpID("&verb:", "ERR");
-    testOpID("verb?:", "verb?");
-    testOpID("?verb:", "ERR");
     testOpID("verb':", "verb'");
     testOpID("'verb:", "ERR");  
     testOpID('verb":', 'verb"');
     testOpID('"verb:', "ERR"); 
-    testOpID("verb=:", "verb=");
+
+    // symbol names cannot contain = ? + * :
+    testOpID("verb=:", "ERR");
     testOpID("=verb:", "ERR"); 
+    testOpID("verb?:", "ERR");
+    testOpID("?verb:", "ERR");
+    testOpID("verb+:", "ERR");
+    testOpID("+verb:", "ERR"); 
+    testOpID("verb*:", "ERR");
+    testOpID("*verb:", "ERR");
+    testOpID(":verb:", "ERR");
 
     // symbol names may contain Unicode letters anywhere
     testOpID("verbε:", "verbε");

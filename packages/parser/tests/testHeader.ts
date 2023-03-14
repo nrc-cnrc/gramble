@@ -78,7 +78,7 @@ describe(`${path.basename(module.filename)}`, function() {
     testHeaderID("123", "ERR");
     testHeaderID("123text", "ERR");
 
-    // tape names are allowed to contain $ @ # & ? ' " =, but not at the beginning
+    // tape names are allowed to contain $ @ # & ' " , but not at the beginning
     testHeaderID("text$", "text$");
     testHeaderID("$text", "ERR");
     testHeaderID("text@", "text@");
@@ -87,14 +87,20 @@ describe(`${path.basename(module.filename)}`, function() {
     testHeaderID("#text", "ERR");
     testHeaderID("text&", "text&");
     testHeaderID("&text", "ERR");
-    testHeaderID("text?", "text?");
-    testHeaderID("?text", "ERR");
     testHeaderID("text'", "text'");
     testHeaderID("'text", "ERR");  
     testHeaderID('text"', 'text"');
     testHeaderID('"text', "ERR"); 
-    testHeaderID("text=", "text=");
+
+    // tape names cannot contain ? = * +
+    testHeaderID("text?", "ERR");
+    testHeaderID("?text", "ERR");
+    testHeaderID("text=", "ERR");
     testHeaderID("=text", "ERR"); 
+    testHeaderID("text+", "ERR");
+    testHeaderID("+text", "ERR");
+    testHeaderID("text*", "ERR");
+    testHeaderID("*text", "ERR"); 
 
     // tape names may contain Unicode letters anywhere
     testHeaderID("textε", "textε");

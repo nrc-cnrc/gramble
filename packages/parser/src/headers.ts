@@ -13,7 +13,7 @@ import {
 import { 
     parseRegex,
     parsePlaintext
-} from "./regex";
+} from "./cell";
 
 import { 
     miniParse, MiniParseEnv, MPAlt, MPComment, 

@@ -6,7 +6,7 @@ import { HIDDEN_TAPE_PREFIX, SILENT, StringDict, tokenizeUnicode } from "../src/
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
-import { parsePlaintext, parseRegex, parseSymbol } from "../src/regex";
+import { parsePlaintext, parseRegex, parseSymbol } from "../src/cell";
 import { parseHeaderCell } from "../src/headers";
 import { parseOp } from "../src/ops";
 

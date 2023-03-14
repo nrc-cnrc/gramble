@@ -1,5 +1,4 @@
 import { Component, CPass, CResult } from "./components";
-import { AlternationGrammar, DotGrammar, EmbedGrammar, EpsilonGrammar, Grammar, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "./grammars";
 import { 
     MPDelay, 
     MPAlt, 
@@ -9,7 +8,6 @@ import {
     miniParse,
     MPRepetition, 
     MiniParseEnv,
-    MPEnv,
     MPEmpty
 } from "./miniParser";
 import { Err, Msgs, Result, resultList } from "./msgs";
@@ -251,10 +249,15 @@ export class SequenceRegex extends Regex {
 /***********************/
 
 const SYMBOL_SUBEXPR: RegexParser = MPDelay(() => MPAlt(
-    SYMBOL_CHAIN,
     SYMBOL_ALTERNATION,
-    SYMBOL_UNRESERVED
+    SYMBOL_UNIT
 ));
+
+const SYMBOL_BRACKETED = MPSequence(
+    [ "{", SYMBOL_SUBEXPR, "}" ],
+    (child) => child.warn("Curly braces are not valid under " + 
+                "an 'embed' header or inside other curly braces.")
+);
 
 const SYMBOL_EMPTY = MPEmpty(
     () => new LiteralRegex("").msg()
@@ -280,8 +283,14 @@ const SYMBOL_CHAIN: RegexParser = MPDelay(() => MPSequence(
                     .bind(([c1,c2]) => new SymbolChainRegex(c1, c2))
 ));
 
+const SYMBOL_UNIT = MPAlt(
+    SYMBOL_UNRESERVED,
+    SYMBOL_BRACKETED,
+    SYMBOL_CHAIN,
+)
+
 const SYMBOL_ALTERNATION = MPSequence(
-    [ MPAlt(SYMBOL_CHAIN, SYMBOL_UNRESERVED), "|", SYMBOL_SUBEXPR ],
+    [ SYMBOL_UNIT, "|", SYMBOL_SUBEXPR ],
     (c1, c2) => resultList([c1, c2])
                     .bind(([x, y]) => new AlternationRegex(x, y))
 );

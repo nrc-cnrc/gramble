@@ -55,8 +55,8 @@ export const ALL_RESERVED = new Set([
 
 /* RESERVED SYMBOLS */
 export const RESERVED_FOR_PLAINTEXT = new Set(["|"]);
-export const RESERVED_FOR_SYMBOL = new Set([...RESERVED_FOR_PLAINTEXT, "."])
-export const RESERVED_FOR_REGEX = new Set([...RESERVED_FOR_SYMBOL, "(", ")", "~", "*", "?", "+", "{", "}"]);
+export const RESERVED_FOR_SYMBOL = new Set([...RESERVED_FOR_PLAINTEXT, ".", "{", "}"])
+export const RESERVED_FOR_REGEX = new Set([...RESERVED_FOR_SYMBOL, "(", ")", "~", "*", "?", "+"]);
 export const RESERVED_FOR_CONTEXT = new Set([...RESERVED_FOR_REGEX, "#", "_"]);
 
 export function isValidSymbolName(s: string): boolean {

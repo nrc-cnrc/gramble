@@ -105,6 +105,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
         // but only in certain classes; e.g. zero-width non-joiners are invalid
         testSymbolID("کتاب‌ها", "ERR"); // contains a zero-width non-joiner
+    
+        // putting curly braces around a verb should parse, but it fires a warning message
+        testSymbolID("{verb}", "verb");
     });
 
     describe("Testing regex parsing", function() {
@@ -260,5 +263,9 @@ describe(`${path.basename(module.filename)}`, function() {
 
         // but only in certain classes; e.g. zero-width non-joiners are invalid
         testRegexID("{کتاب‌ها}", "ERR"); // contains a zero-width non-joiner
+    
+        // nesting curly brackets parses, although it causes a warning message
+        testRegexID("{{verb}}", "verb");
+        testRegexID("{{{verb}}}", "verb");
     }); 
 });
