@@ -87,21 +87,45 @@ export class DotRegex extends Regex {
     }
 }
 
+/**
+ * A SymbolRegex represents a single symbol identifier (e.g. "Verb"),
+ * in a potential chain of identifiers (e.g. "Verb.Intrans.ClassB").
+ */
 export class SymbolRegex extends Regex {
 
     constructor(
-        public child: LiteralRegex
+        public text: string
     ) { 
         super();
     }
 
     public get id(): string {
-        return `EMB[${this.child.id}]`;
+        return `${this.text}`;
     }
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new SymbolRegex(c as LiteralRegex));
+        return new SymbolRegex(this.text).msg();
+    }
+}
+
+export class SymbolChainRegex extends Regex {
+
+    constructor(
+        public child1: Regex,
+        public child2: Regex
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        return `CHAIN[${this.child1.id},${this.child2.id}]`;
+    }
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return resultList([this.child1, this.child2])
+                    .map(c => f.transform(c, env))
+                    .bind(([c1,c2]) => new SymbolChainRegex(
+                            c1 as Regex, c2 as Regex))
     }
 }
 
@@ -281,7 +305,7 @@ const REGEX_PARENS = MPSequence(
 
 const REGEX_SYMBOL = MPSequence(
     ["{", REGEX_UNRESERVED, "}"],
-    (child) => child.bind(c => new SymbolRegex(c as LiteralRegex))
+    (child) => child
 );
 
 const REGEX_NEGATION = MPSequence(
@@ -337,11 +361,12 @@ const SYMBOL_EMPTY = MPEmpty(
 const SYMBOL_UNRESERVED = MPUnreserved<Regex>(
     (s) => {
         if (isValidSymbolName(s)) {
-            return new LiteralRegex(s).msg()
+            return new SymbolRegex(s).msg()
         } else {
             return new ErrorRegex(s).msg([Err( 
                 `Invalid symbol name`, 
-                `${s} looks like it should be an identifier, but identifiers should start with letters or _`
+                `${s} looks like it should be an identifier, ` +
+                `but identifiers should start with letters or _`
             )]);
         }
     } 
@@ -349,8 +374,8 @@ const SYMBOL_UNRESERVED = MPUnreserved<Regex>(
 
 const SYMBOL_CHAIN: RegexParser = MPDelay(() => MPSequence(
     [ SYMBOL_UNRESERVED, ".", MPAlt(SYMBOL_CHAIN, SYMBOL_UNRESERVED) ],
-    (c1, c2) => resultList([c1, c2])
-                    .bind(cs => new SequenceRegex(cs))
+    (c1, c2) => resultList([c1,c2])
+                    .bind(([c1,c2]) => new SymbolChainRegex(c1, c2))
 ));
 
 const SYMBOL_ALTERNATION = MPSequence(
@@ -368,14 +393,15 @@ export function parse(
     text: string, 
     splitters: Set<string>,
     reserved: Set<string>,
-    topLevelExpr: RegexParser
+    topLevelExpr: RegexParser,
+    grammarName: string = "content"
 ): Result<Regex> {
     const env = new MiniParseEnv(splitters, reserved);
     const results = miniParse(env, topLevelExpr, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorRegex(text).msg([Err("Cannot parse this cell", 
-                    `Cannot parse ${text} as a content cell`)])
+        return new ErrorRegex(text).msg([Err("Cell parsing error", 
+                    `Cannot parse ${text} as a ${grammarName}`)])
     }
     if (results.length > 1) {
         // if this happens, it's an error on our part
@@ -385,7 +411,7 @@ export function parse(
 }
 
 export function parseRegex(text: string): Result<Regex> {
-    return parse(text, RESERVED_FOR_REGEX, RESERVED_FOR_REGEX, REGEX_TOPLEVEL);
+    return parse(text, RESERVED_FOR_REGEX, RESERVED_FOR_REGEX, REGEX_TOPLEVEL, "regex");
 }
 
 export function parsePlaintext(text: string): Result<Regex> {
@@ -393,9 +419,9 @@ export function parsePlaintext(text: string): Result<Regex> {
 }
 
 export function parseContext(text: string): Result<Regex> {
-    return parse(text, RESERVED_FOR_CONTEXT, new Set(), REGEX_TOPLEVEL);
+    return parse(text, RESERVED_FOR_CONTEXT, new Set(), REGEX_TOPLEVEL, "context");
 }
 
 export function parseSymbol(text: string): Result<Regex> {
-    return parse(text, RESERVED_FOR_SYMBOL, RESERVED_WORDS, SYMBOL_EXPR);
+    return parse(text, RESERVED_FOR_SYMBOL, RESERVED_WORDS, SYMBOL_EXPR, "symbol name");
 }

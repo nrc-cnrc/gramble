@@ -18,7 +18,7 @@ import {
     TagHeader, TapeNameHeader 
 } from "../headers";
 import { REGEX_PASSES } from "./allPasses";
-import { parsePlaintext, parseRegex, Regex } from "../regex";
+import { parsePlaintext, parseRegex, parseSymbol, Regex } from "../regex";
 
 export class HeaderToGrammar extends Pass<Header, Grammar> {
     
@@ -64,13 +64,14 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
     }
 
     public handleEmbed(h: EmbedHeader, env: PassEnv): GrammarResult {
-        return new EmbedGrammar(this.text).msg();
+        return parseSymbol(this.text)
+                    .bind(r => REGEX_PASSES.go(r, env));
     }
 
     public handleTapeName(h: TapeNameHeader, env: PassEnv): GrammarResult {
         const tapeName = h.text;
         return parsePlaintext(this.text)
-                    .bind(r => REGEX_PASSES.transform(r, env))
+                    .bind(r => REGEX_PASSES.go(r, env))
                     .bind(g => new RenameGrammar(g, 
                                 DUMMY_REGEX_TAPE, tapeName))
     }
@@ -89,7 +90,6 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
                     [c, new EpsilonGrammar()]));
     }
 
-    
     public handleRegex(h: RegexHeader, env: PassEnv): GrammarResult {
         if (!(h.child instanceof TapeNameHeader)) {
             // shouldn't happen, should already be taken care of, more for linting
@@ -98,7 +98,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
         }
         const tapeName = h.child.text;
         return parseRegex(this.text)
-                    .bind(r => REGEX_PASSES.transform(r, env))
+                    .bind(r => REGEX_PASSES.go(r, env))
                     .bind(g => new RenameGrammar(g, 
                             DUMMY_REGEX_TAPE, tapeName))
     }

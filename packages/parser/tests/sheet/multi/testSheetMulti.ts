@@ -53,12 +53,11 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Multi-sheet with reserved word reference', function() {
         const project = sheetFromFile(`${DIR}/externalRefToReservedWord.csv`);
-        testErrors(project, []);
+        testErrors(project, [
+            ["externalRefToReservedWord", 1, 1, "error"]
+        ]);
         testGrammar(project, [
-            { text: "foobarable", gloss: "run-1SG" },
-            { text: "moobarable", gloss: "jump-1SG" },
-            { text: "foobazable", gloss: "run-2SG" },
-            { text: "moobazable", gloss: "jump-2SG" }
+            { text: "able"}
         ]);
     });
 

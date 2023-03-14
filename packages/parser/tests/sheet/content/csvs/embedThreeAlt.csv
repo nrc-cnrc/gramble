@@ -6,5 +6,9 @@ verbs:, table:, text
         ,       , goo
         ,       , boo
 
-default:, table:, re embed, text
-    ,       , nouns|verbs, bar
+preps:, table:, text
+        ,       , noo
+        ,       , soo
+
+default:, table:, embed, text
+    ,       , nouns|verbs|preps, bar

@@ -81,6 +81,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     public handleHeaderContentPair(t: TstHeaderContentPair, env: PassEnv): GrammarResult {
         const HEADER_PASS = new HeaderToGrammar(t.cell.text);
         return HEADER_PASS.transform(t.header.header, env)
+                          .localize(t.cell.pos)
                           .bind(g => new LocatorGrammar(t.cell.pos, g));
     }
     

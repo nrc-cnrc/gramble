@@ -115,18 +115,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    /*
-    describe('Re embed', function() {
-        const project = sheetFromFile(`${DIR}/reEmbed.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            {"text":"foobar"},
-            {"text":"moobar"}
-        ]);
-    });
-
-    describe('Re embed with alternation', function() {
-        const project = sheetFromFile(`${DIR}/reEmbedAlt.csv`);
+    describe('Embed with alternation', function() {
+        const project = sheetFromFile(`${DIR}/embedAlt.csv`);
         testErrors(project, []);
         testGrammar(project, [
             {"text":"boobar"},
@@ -135,17 +125,39 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"moobar"}
         ]);
     });
-
-    describe('Re embed with sequence', function() {
-        const project = sheetFromFile(`${DIR}/reEmbedSeq.csv`);
+    
+    describe('Embed with three-way alternation', function() {
+        const project = sheetFromFile(`${DIR}/embedThreeAlt.csv`);
         testErrors(project, []);
         testGrammar(project, [
-            {"text":"fooboobar"},
-            {"text":"foogoobar"},
-            {"text":"mooboobar"},
-            {"text":"moogoobar"}
+            {"text":"boobar"},
+            {"text":"goobar"},
+            {"text":"foobar"},
+            {"text":"moobar"},
+            {"text":"noobar"},
+            {"text":"soobar"}
         ]);
-    }); */
+    });
 
+    describe('Embed with sequence', function() {
+        const project = sheetFromFile(`${DIR}/embedSeq.csv`);
+        testErrors(project, [
+            ["embedSeq", 9, 2, "error"]
+        ]);
+        testGrammar(project, [
+            {"text":"bar"},
+        ]);
+    }); 
+
+    describe('Embed with alternation and space', function() {
+        const project = sheetFromFile(`${DIR}/embedAltSpace.csv`);
+        testErrors(project, [
+            ["embedAltSpace", 13, 2, "error"]
+        ]);
+        testGrammar(project, [
+            {"text":"bar"}
+        ]);
+    });
+    
 
 });

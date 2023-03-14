@@ -52,7 +52,7 @@ export class RegexToGrammar extends Pass<Regex, Grammar> {
     }
 
     public handleSymbol(r: SymbolRegex, env: PassEnv): GrammarResult {
-        return new EmbedGrammar(r.child.text).msg();
+        return new EmbedGrammar(r.text).msg();
     }
     
     public handleStar(r: StarRegex, env: PassEnv): GrammarResult {
