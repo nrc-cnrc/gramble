@@ -13,6 +13,7 @@ import {
 } from "../src/grammars";
 
 import { 
+    testSuiteName, logTestSuite, VERBOSE_TEST, verbose,
     generateOutputsFromGrammar,
     t1, t2, 
     testHasTapes, 
@@ -21,8 +22,10 @@ import {
     DEFAULT_MAX_RECURSION,
 } from './testUtil';
 
-import * as path from 'path';
-import { SILENT, StringDict } from "../src/util";
+import { StringDict, SILENT, VERBOSE_DEBUG } from "../src/util";
+
+// File level control over verbose output
+const VERBOSE = VERBOSE_TEST;
 
 const EMPTY_CONTEXT = Epsilon();
 
@@ -42,7 +45,9 @@ function HiddenTapeNameReplace(
                    hiddenTapeName);
 }
 
-describe(`${path.basename(module.filename)}`, function() {
+describe(`${testSuiteName(module)}`, function() {
+
+    logTestSuite(VERBOSE, module);
 
     describe('1a. JoinReplace i by a in i: i -> a, different tape', function() {
         const grammar = JoinReplace(t1("i"),
@@ -108,7 +113,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('2b. Negation of results of 2a', function() {
         let grammar: Grammar = Not(Seq(t1("a"), Vocab("t1", "i")));
-        grammar = Count(2, grammar);
+        grammar = CountTape(2, grammar);
         const expectedResults: StringDict[] = [
             {"t1":"ii"},
             {"t1":"ai"},
@@ -132,7 +137,7 @@ describe(`${path.basename(module.filename)}`, function() {
     describe('2c. Negation of grammar of 2a', function() {
         let grammar: Grammar = Not(JoinReplace(t1("i"),
                                     [Replace(t1("i"), t1("a"))]));
-        grammar = Count(2, grammar);
+        grammar = CountTape(2, grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [

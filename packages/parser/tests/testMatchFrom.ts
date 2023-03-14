@@ -1,7 +1,6 @@
 import { 
     Any, 
     CharSet,
-    Count,
     CountTape,
     Epsilon,
     Grammar,
@@ -16,16 +15,21 @@ import {
 } from "../src/grammars";
 
 import { 
+    testSuiteName, logTestSuite, VERBOSE_TEST, verbose,
     t1, t2, t3, t4,
     testHasTapes,
     testGrammar,
     testHasVocab
 } from './testUtil';
 
-import * as path from 'path';
 import { StringDict, VERBOSE_DEBUG } from "../src/util";
 
-describe(`${path.basename(module.filename)}`, function() {
+// File level control over verbose output
+const VERBOSE = VERBOSE_TEST;
+
+describe(`${testSuiteName(module)}`, function() {
+
+    logTestSuite(VERBOSE, module);
 
     // MatchFrom tests with two tapes.
 
@@ -404,7 +408,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const subgrammar: Grammar = Rep(Any("t1"));
         let grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), 
                                     MatchFrom(subgrammar, "t1", "t2"));
-        grammar = Count(7, grammar);
+        grammar = CountTape(3, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: 'h', t2: 'h'},
@@ -1065,7 +1069,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const subgrammar: Grammar = Rep(Any("t1"));
         let grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), Vocab("t3", "ZXhi"),
                                    MatchFrom(subgrammar, "t1", "t2", "t3"));
-        grammar = Count(7, grammar);
+        grammar = CountTape(3, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: 'h', t2: 'h', t3: 'h'},
@@ -1074,14 +1078,14 @@ describe(`${path.basename(module.filename)}`, function() {
             {t1: 'hi', t2: 'hi', t3: 'hi'},
             {t1: 'ih', t2: 'ih', t3: 'ih'},
             {t1: 'ii', t2: 'ii', t3: 'ii'},
-            // {t1: 'hhh', t2: 'hhh', t3: 'hhh'},
-            // {t1: 'hhi', t2: 'hhi', t3: 'hhi'},
-            // {t1: 'hih', t2: 'hih', t3: 'hih'},
-            // {t1: 'hii', t2: 'hii', t3: 'hii'},
-            // {t1: 'ihh', t2: 'ihh', t3: 'ihh'},
-            // {t1: 'ihi', t2: 'ihi', t3: 'ihi'},
-            // {t1: 'iih', t2: 'iih', t3: 'iih'},
-            // {t1: 'iii', t2: 'iii', t3: 'iii'},
+            {t1: 'hhh', t2: 'hhh', t3: 'hhh'},
+            {t1: 'hhi', t2: 'hhi', t3: 'hhi'},
+            {t1: 'hih', t2: 'hih', t3: 'hih'},
+            {t1: 'hii', t2: 'hii', t3: 'hii'},
+            {t1: 'ihh', t2: 'ihh', t3: 'ihh'},
+            {t1: 'ihi', t2: 'ihi', t3: 'ihi'},
+            {t1: 'iih', t2: 'iih', t3: 'iih'},
+            {t1: 'iii', t2: 'iii', t3: 'iii'},
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 2, t2: 4, t3: 4});

@@ -2,7 +2,10 @@
 import { assert, expect } from "chai";
 import { Grammar, Lit } from "../src/grammars";
 import { Interpreter } from "../src/interpreter";
-import { HIDDEN_TAPE_PREFIX, SILENT, StringDict, tokenizeUnicode } from "../src/util";
+import {
+    HIDDEN_TAPE_PREFIX, StringDict, tokenizeUnicode,
+    SILENT, VERBOSE_DEBUG, logDebug
+} from "../src/util";
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
@@ -22,6 +25,27 @@ const DEBUG_MAX_RECURSION: number = 4;      // 4
 // for more than the expected number of outputs.
 export const WARN_ONLY_FOR_TOO_MANY_OUTPUTS: boolean = true;
 
+// Permit global control over verbose output in tests.
+// To limit verbose output to a specific test file, set VERBOSE_TEST to
+// false here, then re-define VERBOSE in the test file.
+export const VERBOSE_TEST: boolean = true;
+
+export function verbose(vb: boolean, ...msgs: string[]) {
+    if (!vb)
+        return;
+    logDebug(vb ? VERBOSE_DEBUG : SILENT, ...msgs);
+}
+
+export function testSuiteName(mod: NodeModule): string {
+    return `${basename(mod.filename)}`
+}
+
+export function logTestSuite(vb: boolean, mod: NodeModule): void {
+    if (!vb)
+        return;
+    const date_str: string = (new Date()).toUTCString();
+    verbose(vb, "", `--- ${testSuiteName(mod)} [${date_str}] ---`);
+}
 
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
@@ -67,14 +91,13 @@ export function testOpID(cell: string, expectedID: string) {
 }
 
 export function testNumOutputs(outputs: StringDict[], expectedNum: number, warningOnly: boolean = false) {
-    const date_str: string = (new Date()).toUTCString();
     const testName: string = `should have ${expectedNum} result(s)`;
     it(`${testName}`, function() {
         try {
             expect(outputs.length).to.equal(expectedNum);
         } catch (e) {
             console.log("");
-            console.log(`[${date_str}] [${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
+            console.log(`[${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
             if (warningOnly && outputs.length > expectedNum) {
                 console.log(`Warning: should have ${expectedNum} result(s), but found ${outputs.length}.`)
             } else {
@@ -100,8 +123,8 @@ export function removeHiddenFields(outputs: StringDict[]): StringDict[] {
 }
 
 export function testMatchOutputs(outputs: StringDict[], expected_outputs: StringDict[]): void {
-    // Check that the output dictionaries of State.generate() match the expected
-    // outputs.
+    // Check that the output dictionaries of Interpreter.generate() match
+    // the expected outputs.
     //
     // Outputs can be in any order.
     //
@@ -112,8 +135,6 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
     // the number of expected/actual outputs. We also increase timeout from 2
     // seconds (2000ms) to 10 seconds (10000ms) in order to allow us to keep the
     // comparison blocks quite large. 
-
-    const date_str: string = (new Date()).toUTCString();
 
     let incr: number = Math.max(expected_outputs.length, outputs.length, 1);
     if (incr > 2500) {
@@ -145,7 +166,7 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
                 expect(expected_outputs).to.deep.include.members(outputs.slice(start, end_outputs));
             } catch (e) {
                 console.log("");
-                console.log(`[${date_str}] [${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
+                console.log(`[${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
                 throw e;
             }
         });
@@ -242,7 +263,6 @@ export function testHasTapes(
     let referent = interpreter.grammar.getSymbol(symbolName);
     
     const bSet = new Set(expectedTapes);
-    const date_str: string = (new Date()).toUTCString();
     const testName: string = `${symbolName} should have tapes [${[...bSet]}]`;
     it(`${testName}`, function() {
         expect(referent).to.not.be.undefined;
@@ -262,7 +282,7 @@ export function testHasTapes(
             }
         } catch (e) {
             console.log("");
-            console.log(`[${date_str}] [${testName}] ${tapes.length} tapes [${tapes}]`);
+            console.log(`[${testName}] ${tapes.length} tapes [${tapes}]`);
             throw e;
         }
     });

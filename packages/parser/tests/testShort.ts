@@ -1,6 +1,5 @@
 import { 
     Grammar,
-    Count,
     Join,
     Not,
     Seq,
@@ -9,20 +8,25 @@ import {
     Dot,
     Short,
     Uni,
+    CountTape,
 } from "../src/grammars";
 
 import { 
+    testSuiteName, logTestSuite, VERBOSE_TEST, verbose,
     t1,
     testHasTapes, 
     testHasVocab, 
     testGrammar,
 } from './testUtil';
 
-import * as path from 'path';
 import { DIRECTION_LTR, StringDict, VERBOSE_DEBUG } from "../src/util";
 
+// File level control over verbose output
+const VERBOSE = VERBOSE_TEST;
 
-describe(`${path.basename(module.filename)}`, function() {
+describe(`${testSuiteName(module)}`, function() {
+
+    logTestSuite(VERBOSE, module);
 
     describe('1. Short(t1:h)', function() {
         const grammar = Short(t1("h"));
@@ -97,7 +101,7 @@ describe(`${path.basename(module.filename)}`, function() {
         describe('5. Short(t1:.*i) with vocab [hi]', function() {
             let grammar: Grammar = Short(Seq(Rep(Dot("t1")), t1("i")));
             grammar = Seq(grammar, Vocab("t1", "hi"));
-            grammar = Count(4, grammar);
+            grammar = CountTape(4, grammar);
             const expectedResults: StringDict[] = [ 
                 {t1:"i"}, 
                 {t1:"hi"},
@@ -113,7 +117,7 @@ describe(`${path.basename(module.filename)}`, function() {
             let grammar: Grammar = Short(Seq(Rep(Dot("t1")), t1("i")));
             grammar = Seq(grammar, Rep(Dot("t1")));
             grammar = Seq(grammar, Vocab("t1", "hi"));
-            grammar = Count(4, grammar);
+            grammar = CountTape(4, grammar);
             const expectedResults: StringDict[] = [ 
                 {"t1":"hhhi"},
                 {"t1":"hhih"},
@@ -152,7 +156,7 @@ describe(`${path.basename(module.filename)}`, function() {
             grammar = Seq(grammar, Rep(Dot("t1")));
             grammar = Not(grammar);
             grammar = Seq(grammar, Vocab("t1", "hi"));
-            grammar = Count(4, grammar);
+            grammar = CountTape(4, grammar);
             const expectedResults: StringDict[] = [ 
                 {},
                 {t1:"h"},

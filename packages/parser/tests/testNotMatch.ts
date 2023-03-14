@@ -1,6 +1,5 @@
 import { 
     Grammar,
-    Count,
     CountTape,
     Epsilon,
     Any,
@@ -14,6 +13,7 @@ import {
 } from "../src/grammars";
 
 import { 
+    testSuiteName, logTestSuite, VERBOSE_TEST, verbose,
     t1, t2, t3, t4,
     testHasTapes, 
     testHasVocab, 
@@ -22,17 +22,21 @@ import {
     generateOutputsFromGrammar,
 } from './testUtil';
 
-import * as path from 'path';
-import { StringDict } from "../src/util";
+import { StringDict, VERBOSE_DEBUG } from "../src/util";
 
-describe(`${path.basename(module.filename)}`, function() {
+// File level control over verbose output
+const VERBOSE = VERBOSE_TEST;
+
+describe(`${testSuiteName(module)}`, function() {
+
+    logTestSuite(VERBOSE, module);
 
     // Negated MatchFrom tests with two tapes.
 
     describe.skip('1a. MatchFrom(t1>t2, t1:hi)', function() {
         const grammar1: Grammar = t1("hi");
         let grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
-        grammar = Count(4, grammar);
+        grammar = CountTape(2, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi'},
         ];
@@ -40,296 +44,6 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasVocab(grammar, {t1: 2, t2: 2});
         testGrammar(grammar, expectedResults);
     });
-
-    // Tests 1b* and 1c* are no longer relevant since we are eliminating
-    // the maxChars argument to NotGrammar.
-
-    // describe.skip('1b. Negation of 1a results: ~(t1:hi+t2:hi)', function() {
-    //     let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), Infinity);
-    //     grammar = Count(4, grammar);
-    //     const expectedResults: StringDict[] = [
-    //         {t1: 'h'  , t2: 'h'  }, {t1: 'h', t2: 'hh'},  {t1: 'h', t2: 'hhh'},
-    //         {t1: 'h'  , t2: 'hhi'}, {t1: 'h', t2: 'hi'},  {t1: 'h', t2: 'hih'},
-    //         {t1: 'h'  , t2: 'hii'}, {t1: 'h', t2: 'i'},   {t1: 'h', t2: 'ih'},
-    //         {t1: 'h'  , t2: 'ihh'}, {t1: 'h', t2: 'ihi'}, {t1: 'h', t2: 'ii'},
-    //         {t1: 'h'  , t2: 'iih'}, {t1: 'h', t2: 'iii'}, {t1: 'hh', t2: 'h'},
-    //         {t1: 'hh' , t2: 'hh' }, {t1: 'hh', t2: 'hi'}, {t1: 'hh', t2: 'i'},
-    //         {t1: 'hh' , t2: 'ih' }, {t1: 'hh', t2: 'ii'}, {t1: 'hhh', t2: 'h'},
-    //         {t1: 'hhh', t2: 'i'  }, {t1: 'hhi', t2: 'h'}, {t1: 'hhi', t2: 'i'},
-    //         {t1: 'hi' , t2: 'h'  }, {t1: 'hi', t2: 'hh'}, {t1: 'hi', t2: 'i'},
-    //         {t1: 'hi' , t2: 'ih' }, {t1: 'hi', t2: 'ii'}, {t1: 'hih', t2: 'h'},
-    //         {t1: 'hih', t2: 'i'  }, {t1: 'hii', t2: 'h'}, {t1: 'hii', t2: 'i'},
-    //         {t1: 'i'  , t2: 'h'  }, {t1: 'i', t2: 'hh'},  {t1: 'i', t2: 'hhh'},
-    //         {t1: 'i'  , t2: 'hhi'}, {t1: 'i', t2: 'hi'},  {t1: 'i', t2: 'hih'},
-    //         {t1: 'i'  , t2: 'hii'}, {t1: 'i', t2: 'i'},   {t1: 'i', t2: 'ih'},
-    //         {t1: 'i'  , t2: 'ihh'}, {t1: 'i', t2: 'ihi'}, {t1: 'i', t2: 'ii'},
-    //         {t1: 'i'  , t2: 'iih'}, {t1: 'i', t2: 'iii'}, {t1: 'ih', t2: 'h'},
-    //         {t1: 'ih' , t2: 'hh' }, {t1: 'ih', t2: 'hi'}, {t1: 'ih', t2: 'i'},
-    //         {t1: 'ih' , t2: 'ih' }, {t1: 'ih', t2: 'ii'}, {t1: 'ihh', t2: 'h'},
-    //         {t1: 'ihh', t2: 'i'  }, {t1: 'ihi', t2: 'h'}, {t1: 'ihi', t2: 'i'},
-    //         {t1: 'ii' , t2: 'h'  }, {t1: 'ii', t2: 'hh'}, {t1: 'ii', t2: 'hi'},
-    //         {t1: 'ii' , t2: 'i'  }, {t1: 'ii', t2: 'ih'}, {t1: 'ii', t2: 'ii'},
-    //         {t1: 'iih', t2: 'h'  }, {t1: 'iih', t2: 'i'}, {t1: 'iii', t2: 'h'},
-    //         {t1: 'iii', t2: 'i'  },
-    //         {t1: 'h'   }, {t1: 'hh'  }, {t1: 'hhh' }, {t1: 'hhhh'}, {t1: 'hhhi'},
-    //         {t1: 'hhi' }, {t1: 'hhih'}, {t1: 'hhii'}, {t1: 'hi'  }, {t1: 'hih' },
-    //         {t1: 'hihh'}, {t1: 'hihi'}, {t1: 'hii' }, {t1: 'hiih'}, {t1: 'hiii'},
-    //         {t1: 'i'   }, {t1: 'ih'  }, {t1: 'ihh' }, {t1: 'ihhh'}, {t1: 'ihhi'},
-    //         {t1: 'ihi' }, {t1: 'ihih'}, {t1: 'ihii'}, {t1: 'ii'  }, {t1: 'iih' },
-    //         {t1: 'iihh'}, {t1: 'iihi'}, {t1: 'iii' }, {t1: 'iiih'}, {t1: 'iiii'},
-    //         {t2: 'h'   }, {t2: 'hh'  }, {t2: 'hhh' }, {t2: 'hhhh'}, {t2: 'hhhi'},
-    //         {t2: 'hhi' }, {t2: 'hhih'}, {t2: 'hhii'}, {t2: 'hi'  }, {t2: 'hih' },
-    //         {t2: 'hihh'}, {t2: 'hihi'}, {t2: 'hii' }, {t2: 'hiih'}, {t2: 'hiii'},
-    //         {t2: 'i'   }, {t2: 'ih'  }, {t2: 'ihh' }, {t2: 'ihhh'}, {t2: 'ihhi'},
-    //         {t2: 'ihi' }, {t2: 'ihih'}, {t2: 'ihii'}, {t2: 'ii'  }, {t2: 'iih' },
-    //         {t2: 'iihh'}, {t2: 'iihi'}, {t2: 'iii' }, {t2: 'iiih'}, {t2: 'iiii'},
-    //         {},
-    //     ];
-    //     // testHasTapes(grammar, ['t1', 't2']);
-    //     // testHasVocab(grammar, {t1: 2, t2: 2});
-    //     testGrammar(grammar, expectedResults);
-    // });
-
-    // // Test 1b-1 illustrates that Negation yields the same outputs when 
-    // // Not.maxChars == testGrammar.maxChars as when Not.maxChars == Infinity.
-    // describe.skip('1b-1. Negation of 1a results: ~(t1:hi+t2:hi, 4)', function() {
-    //     let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 4);
-    //     grammar = Count(4, grammar);
-    //     const expectedResults: StringDict[] = [
-    //         {t1: 'h'  , t2: 'h'  }, {t1: 'h', t2: 'hh'},  {t1: 'h', t2: 'hhh'},
-    //         {t1: 'h'  , t2: 'hhi'}, {t1: 'h', t2: 'hi'},  {t1: 'h', t2: 'hih'},
-    //         {t1: 'h'  , t2: 'hii'}, {t1: 'h', t2: 'i'},   {t1: 'h', t2: 'ih'},
-    //         {t1: 'h'  , t2: 'ihh'}, {t1: 'h', t2: 'ihi'}, {t1: 'h', t2: 'ii'},
-    //         {t1: 'h'  , t2: 'iih'}, {t1: 'h', t2: 'iii'}, {t1: 'hh', t2: 'h'},
-    //         {t1: 'hh' , t2: 'hh' }, {t1: 'hh', t2: 'hi'}, {t1: 'hh', t2: 'i'},
-    //         {t1: 'hh' , t2: 'ih' }, {t1: 'hh', t2: 'ii'}, {t1: 'hhh', t2: 'h'},
-    //         {t1: 'hhh', t2: 'i'  }, {t1: 'hhi', t2: 'h'}, {t1: 'hhi', t2: 'i'},
-    //         {t1: 'hi' , t2: 'h'  }, {t1: 'hi', t2: 'hh'}, {t1: 'hi', t2: 'i'},
-    //         {t1: 'hi' , t2: 'ih' }, {t1: 'hi', t2: 'ii'}, {t1: 'hih', t2: 'h'},
-    //         {t1: 'hih', t2: 'i'  }, {t1: 'hii', t2: 'h'}, {t1: 'hii', t2: 'i'},
-    //         {t1: 'i'  , t2: 'h'  }, {t1: 'i', t2: 'hh'},  {t1: 'i', t2: 'hhh'},
-    //         {t1: 'i'  , t2: 'hhi'}, {t1: 'i', t2: 'hi'},  {t1: 'i', t2: 'hih'},
-    //         {t1: 'i'  , t2: 'hii'}, {t1: 'i', t2: 'i'},   {t1: 'i', t2: 'ih'},
-    //         {t1: 'i'  , t2: 'ihh'}, {t1: 'i', t2: 'ihi'}, {t1: 'i', t2: 'ii'},
-    //         {t1: 'i'  , t2: 'iih'}, {t1: 'i', t2: 'iii'}, {t1: 'ih', t2: 'h'},
-    //         {t1: 'ih' , t2: 'hh' }, {t1: 'ih', t2: 'hi'}, {t1: 'ih', t2: 'i'},
-    //         {t1: 'ih' , t2: 'ih' }, {t1: 'ih', t2: 'ii'}, {t1: 'ihh', t2: 'h'},
-    //         {t1: 'ihh', t2: 'i'  }, {t1: 'ihi', t2: 'h'}, {t1: 'ihi', t2: 'i'},
-    //         {t1: 'ii' , t2: 'h'  }, {t1: 'ii', t2: 'hh'}, {t1: 'ii', t2: 'hi'},
-    //         {t1: 'ii' , t2: 'i'  }, {t1: 'ii', t2: 'ih'}, {t1: 'ii', t2: 'ii'},
-    //         {t1: 'iih', t2: 'h'  }, {t1: 'iih', t2: 'i'}, {t1: 'iii', t2: 'h'},
-    //         {t1: 'iii', t2: 'i'  },
-    //         {t1: 'h'   }, {t1: 'hh'  }, {t1: 'hhh' }, {t1: 'hhhh'}, {t1: 'hhhi'},
-    //         {t1: 'hhi' }, {t1: 'hhih'}, {t1: 'hhii'}, {t1: 'hi'  }, {t1: 'hih' },
-    //         {t1: 'hihh'}, {t1: 'hihi'}, {t1: 'hii' }, {t1: 'hiih'}, {t1: 'hiii'},
-    //         {t1: 'i'   }, {t1: 'ih'  }, {t1: 'ihh' }, {t1: 'ihhh'}, {t1: 'ihhi'},
-    //         {t1: 'ihi' }, {t1: 'ihih'}, {t1: 'ihii'}, {t1: 'ii'  }, {t1: 'iih' },
-    //         {t1: 'iihh'}, {t1: 'iihi'}, {t1: 'iii' }, {t1: 'iiih'}, {t1: 'iiii'},
-    //         {t2: 'h'   }, {t2: 'hh'  }, {t2: 'hhh' }, {t2: 'hhhh'}, {t2: 'hhhi'},
-    //         {t2: 'hhi' }, {t2: 'hhih'}, {t2: 'hhii'}, {t2: 'hi'  }, {t2: 'hih' },
-    //         {t2: 'hihh'}, {t2: 'hihi'}, {t2: 'hii' }, {t2: 'hiih'}, {t2: 'hiii'},
-    //         {t2: 'i'   }, {t2: 'ih'  }, {t2: 'ihh' }, {t2: 'ihhh'}, {t2: 'ihhi'},
-    //         {t2: 'ihi' }, {t2: 'ihih'}, {t2: 'ihii'}, {t2: 'ii'  }, {t2: 'iih' },
-    //         {t2: 'iihh'}, {t2: 'iihi'}, {t2: 'iii' }, {t2: 'iiih'}, {t2: 'iiii'},
-    //         {},
-    //     ];
-    //     // testHasTapes(grammar, ['t1', 't2']);
-    //     // testHasVocab(grammar, {t1: 2, t2: 2});
-    //     testGrammar(grammar, expectedResults);
-    // });
-
-    // // Tests 1b-2 to 1b-4 illustrate how Negation works when
-    // // Not.maxChars < testGrammar.maxChars
-    // describe.skip('1b-2. Negation of 1a results: ~(t1:hi+t2:hi, 3)', function() {
-    //     let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 3);
-    //     grammar = Count(4, grammar);
-    //     const expectedResults: StringDict[] = [
-    //         {t1: 'h' , t2: 'h' }, {t1: 'h' , t2: 'hh'}, {t1: 'h', t2: 'hi'},
-    //         {t1: 'h' , t2: 'i' }, {t1: 'h' , t2: 'ih'}, {t1: 'h', t2: 'ii'},
-    //         {t1: 'hh', t2: 'h' }, {t1: 'hh', t2: 'i' }, {t1: 'hi', t2: 'h'},
-    //         {t1: 'hi', t2: 'i' }, {t1: 'i' , t2: 'h' }, {t1: 'i', t2: 'hh'},
-    //         {t1: 'i' , t2: 'hi'}, {t1: 'i' , t2: 'i' }, {t1: 'i', t2: 'ih'},
-    //         {t1: 'i' , t2: 'ii'}, {t1: 'ih', t2: 'h' }, {t1: 'ih', t2: 'i'},
-    //         {t1: 'ii', t2: 'h' }, {t1: 'ii', t2: 'i' },
-    //         {t1: 'h'  }, {t1: 'hh' }, {t1: 'hhh'}, {t1: 'hhi'}, {t1: 'hi'},
-    //         {t1: 'hih'}, {t1: 'hii'}, {t1: 'i'  }, {t1: 'ih' }, {t1: 'ihh'},
-    //         {t1: 'ihi'}, {t1: 'ii' }, {t1: 'iih'}, {t1: 'iii'},
-    //         {t2: 'h'  }, {t2: 'hh' }, {t2: 'hhh'}, {t2: 'hhi'}, {t2: 'hi'},
-    //         {t2: 'hih'}, {t2: 'hii'}, {t2: 'i'  }, {t2: 'ih' }, {t2: 'ihh'},
-    //         {t2: 'ihi'}, {t2: 'ii' }, {t2: 'iih'}, {t2: 'iii'},
-    //         {},
-    //         // The following results should not be generated, but are, because
-    //         // of the way constructUniverse is done in NegationExpr.concreteDeriv
-    //         // (line 1787 atm).
-    //         {t1: 'hh' , t2: 'hh'}, {t1: 'hh' , t2: 'hi'}, {t1: 'hh', t2: 'ih'},
-    //         {t1: 'hh' , t2: 'ii'}, {t1: 'hhh', t2: 'h' }, {t1: 'hhh', t2: 'i'},
-    //         {t1: 'hi' , t2: 'hh'}, {t1: 'hi' , t2: 'ih'}, {t1: 'hih', t2: 'h'},
-    //         {t1: 'hih', t2: 'i' }, {t1: 'ih' , t2: 'hh'}, {t1: 'ih', t2: 'hi'},
-    //         {t1: 'ih' , t2: 'ih'}, {t1: 'ih' , t2: 'ii'}, {t1: 'ihh', t2: 'h'},
-    //         {t1: 'ihh', t2: 'i' }, {t1: 'ii' , t2: 'hh'}, {t1: 'ii', t2: 'ih'},
-    //         {t1: 'iih', t2: 'h' }, {t1: 'iih', t2: 'i' },
-    //     ];
-    //     // testHasTapes(grammar, ['t1', 't2']);
-    //     // testHasVocab(grammar, {t1: 2, t2: 2});
-    //     testGrammar(grammar, expectedResults);
-    // });
-
-    // describe.skip('1b-3. Negation of 1a results: ~(t1:hi+t2:hi, 2)', function() {
-    //     let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 2);
-    //     grammar = Count(4, grammar);
-    //     const expectedResults: StringDict[] = [
-    //         {t1: 'h', t2: 'h'}, {t1: 'h', t2: 'i'},
-    //         {t1: 'i', t2: 'h'}, {t1: 'i', t2: 'i'},
-    //         {t1: 'h' }, {t1: 'i' }, {t1: 'hh'},
-    //         {t1: 'hi'}, {t1: 'ih'}, {t1: 'ii'},
-    //         {t2: 'h' }, {t2: 'i' }, {t2: 'hh'},
-    //         {t2: 'hi'}, {t2: 'ih'}, {t2: 'ii'},
-    //         {},
-    //         // The following results should not be generated, but are, because
-    //         // of the way constructUniverse is done in NegationExpr.concreteDeriv
-    //         // (line 1787 atm).
-    //         {t1: 'hh', t2: 'h'}, {t1: 'hh', t2: 'i'},
-    //         {t1: 'ih', t2: 'h'}, {t1: 'ih', t2: 'i'},
-    //     ];
-    //     // testHasTapes(grammar, ['t1', 't2']);
-    //     // testHasVocab(grammar, {t1: 2, t2: 2});
-    //     testGrammar(grammar, expectedResults);
-    // });
-
-    // describe.skip('1b-4. Negation of 1a results: ~(t1:hi+t2:hi, 1)', function() {
-    //     let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 1);
-    //     grammar = Count(4, grammar);
-    //     const expectedResults: StringDict[] = [
-    //         {t1: 'h'}, {t1: 'i'}, {t2: 'i'}, {t2: 'h'},
-    //         {},
-    //     ];
-    //     // testHasTapes(grammar, ['t1', 't2']);
-    //     // testHasVocab(grammar, {t1: 2, t2: 2});
-    //     testGrammar(grammar, expectedResults);
-    // });
-
-    // describe.skip('1c. Negation of 1a results: ~(t1:hi+t2:hi)', function() {
-    //     let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), Infinity);
-    //     grammar = CountTape(2, grammar);
-    //     const expectedResults: StringDict[] = [
-    //         {t1: 'h' , t2: 'h' }, {t1: 'h' , t2: 'hh'}, {t1: 'h' , t2: 'hi'},
-    //         {t1: 'h' , t2: 'i' }, {t1: 'h' , t2: 'ih'}, {t1: 'h' , t2: 'ii'},
-    //         {t1: 'hh', t2: 'h' }, {t1: 'hh', t2: 'hh'}, {t1: 'hh', t2: 'hi'},
-    //         {t1: 'hh', t2: 'i' }, {t1: 'hh', t2: 'ih'}, {t1: 'hh', t2: 'ii'},
-    //         {t1: 'hi', t2: 'h' }, {t1: 'hi', t2: 'hh'}, {t1: 'hi', t2: 'i'},
-    //         {t1: 'hi', t2: 'ih'}, {t1: 'hi', t2: 'ii'}, {t1: 'i' , t2: 'h'},
-    //         {t1: 'i' , t2: 'hh'}, {t1: 'i' , t2: 'hi'}, {t1: 'i' , t2: 'i'},
-    //         {t1: 'i' , t2: 'ih'}, {t1: 'i' , t2: 'ii'}, {t1: 'ih', t2: 'h'},
-    //         {t1: 'ih', t2: 'hh'}, {t1: 'ih', t2: 'hi'}, {t1: 'ih', t2: 'i'},
-    //         {t1: 'ih', t2: 'ih'}, {t1: 'ih', t2: 'ii'}, {t1: 'ii', t2: 'h'},
-    //         {t1: 'ii', t2: 'hh'}, {t1: 'ii', t2: 'hi'}, {t1: 'ii', t2: 'i'},
-    //         {t1: 'ii', t2: 'ih'}, {t1: 'ii', t2: 'ii'},
-    //         {t1: 'h' }, {t1: 'hh'}, {t1: 'hi'}, {t1: 'i' },
-    //         {t1: 'ih'}, {t1: 'ii'}, {t2: 'h' }, {t2: 'hh'},
-    //         {t2: 'hi'}, {t2: 'i' }, {t2: 'ih'}, {t2: 'ii'},
-    //         {},
-    //     ];
-    //     // testHasTapes(grammar, ['t1', 't2']);
-    //     // testHasVocab(grammar, {t1: 2, t2: 2});
-    //     testGrammar(grammar, expectedResults);
-    // });
-
-    // // Test 1c-1 illustrates that Negation yields the same outputs when 
-    // // Not.maxChars == 2 * CountTape.maxChars as when Not.maxChars == Infinity.
-    // describe.skip('1c-1. Negation of 1a results: ~(t1:hi+t2:hi, 4)', function() {
-    //     let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 4);;
-    //     grammar = CountTape(2, grammar);
-    //     const expectedResults: StringDict[] = [
-    //         {t1: 'h' , t2: 'h' }, {t1: 'h' , t2: 'hh'}, {t1: 'h' , t2: 'hi'},
-    //         {t1: 'h' , t2: 'i' }, {t1: 'h' , t2: 'ih'}, {t1: 'h' , t2: 'ii'},
-    //         {t1: 'hh', t2: 'h' }, {t1: 'hh', t2: 'hh'}, {t1: 'hh', t2: 'hi'},
-    //         {t1: 'hh', t2: 'i' }, {t1: 'hh', t2: 'ih'}, {t1: 'hh', t2: 'ii'},
-    //         {t1: 'hi', t2: 'h' }, {t1: 'hi', t2: 'hh'}, {t1: 'hi', t2: 'i'},
-    //         {t1: 'hi', t2: 'ih'}, {t1: 'hi', t2: 'ii'}, {t1: 'i' , t2: 'h'},
-    //         {t1: 'i' , t2: 'hh'}, {t1: 'i' , t2: 'hi'}, {t1: 'i' , t2: 'i'},
-    //         {t1: 'i' , t2: 'ih'}, {t1: 'i' , t2: 'ii'}, {t1: 'ih', t2: 'h'},
-    //         {t1: 'ih', t2: 'hh'}, {t1: 'ih', t2: 'hi'}, {t1: 'ih', t2: 'i'},
-    //         {t1: 'ih', t2: 'ih'}, {t1: 'ih', t2: 'ii'}, {t1: 'ii', t2: 'h'},
-    //         {t1: 'ii', t2: 'hh'}, {t1: 'ii', t2: 'hi'}, {t1: 'ii', t2: 'i'},
-    //         {t1: 'ii', t2: 'ih'}, {t1: 'ii', t2: 'ii'},
-    //         {t1: 'h' }, {t1: 'hh'}, {t1: 'hi'}, {t1: 'i' },
-    //         {t1: 'ih'}, {t1: 'ii'}, {t2: 'h' }, {t2: 'hh'},
-    //         {t2: 'hi'}, {t2: 'i' }, {t2: 'ih'}, {t2: 'ii'},
-    //         {},
-    //     ];
-    //     // testHasTapes(grammar, ['t1', 't2']);
-    //     // testHasVocab(grammar, {t1: 2, t2: 2});
-    //     testGrammar(grammar, expectedResults);
-    // });
-
-    // // Tests 1c-2 to 1c-4 illustrate how Negation works when
-    // // Not.maxChars < 2 * CountTape.maxChars
-    // describe.skip('1c-2. Negation of 1a results: ~(t1:hi+t2:hi, 3)', function() {
-    //     let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 3);;
-    //     grammar = CountTape(2, grammar);
-    //     const expectedResults: StringDict[] = [
-    //         {t1: 'h' , t2: 'h' }, {t1: 'h' , t2: 'hh'}, {t1: 'h' , t2: 'hi'},
-    //         {t1: 'h' , t2: 'i' }, {t1: 'h' , t2: 'ih'}, {t1: 'h' , t2: 'ii'},
-    //         {t1: 'hh', t2: 'h' }, {t1: 'hh', t2: 'hh'}, {t1: 'hh', t2: 'hi'},
-    //         {t1: 'hh', t2: 'i' }, {t1: 'hh', t2: 'ih'}, {t1: 'hh', t2: 'ii'},
-    //         {t1: 'hi', t2: 'h' }, {t1: 'hi', t2: 'hh'}, {t1: 'hi', t2: 'i'},
-    //         {t1: 'hi', t2: 'ih'}, {t1: 'i' , t2: 'h'},
-    //         {t1: 'i' , t2: 'hh'}, {t1: 'i' , t2: 'hi'}, {t1: 'i' , t2: 'i'},
-    //         {t1: 'i' , t2: 'ih'}, {t1: 'i' , t2: 'ii'}, {t1: 'ih', t2: 'h'},
-    //         {t1: 'ih', t2: 'hh'}, {t1: 'ih', t2: 'hi'}, {t1: 'ih', t2: 'i'},
-    //         {t1: 'ih', t2: 'ih'}, {t1: 'ih', t2: 'ii'}, {t1: 'ii', t2: 'h'},
-    //         {t1: 'ii', t2: 'hh'}, {t1: 'ii', t2: 'i'},
-    //         {t1: 'ii', t2: 'ih'},
-    //         {t1: 'h' }, {t1: 'hh'}, {t1: 'hi'}, {t1: 'i' },
-    //         {t1: 'ih'}, {t1: 'ii'}, {t2: 'h' }, {t2: 'hh'},
-    //         {t2: 'hi'}, {t2: 'i' }, {t2: 'ih'}, {t2: 'ii'},
-    //         {},
-    //         // missing 1c-1 results:
-    //         // {t1: 'hi', t2: 'ii'}, {t1: 'ii', t2: 'hi'}, {t1: 'ii', t2: 'ii'},
-    //     ];
-    //     // testHasTapes(grammar, ['t1', 't2']);
-    //     // testHasVocab(grammar, {t1: 2, t2: 2});
-    //     testGrammar(grammar, expectedResults);
-    // });
-
-    // describe.skip('1c-3. Negation of 1a results: ~(t1:hi+t2:hi, 2)', function() {
-    //     let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 2);;
-    //     grammar = CountTape(2, grammar);
-    //     const expectedResults: StringDict[] = [
-    //         {t1: 'h' , t2: 'h'}, {t1: 'h' , t2: 'i'}, {t1: 'hh', t2: 'h'},
-    //         {t1: 'hh', t2: 'i'}, {t1: 'i' , t2: 'h'}, {t1: 'i' , t2: 'i'},
-    //         {t1: 'ih', t2: 'h'}, {t1: 'ih', t2: 'i'},
-    //         {t1: 'h' }, {t1: 'hh'}, {t1: 'hi'}, {t1: 'i' },
-    //         {t1: 'ih'}, {t1: 'ii'}, {t2: 'h' }, {t2: 'hh'},
-    //         {t2: 'hi'}, {t2: 'i' }, {t2: 'ih'}, {t2: 'ii'},
-    //         {},
-    //         // missing 1c-1 results:
-    //         // {t1: 'h' , t2: 'hh'}, {t1: 'h' , t2: 'hi'}, {t1: 'h' , t2: 'ih'},
-    //         // {t1: 'h' , t2: 'ii'}, {t1: 'hh', t2: 'hh'}, {t1: 'hh', t2: 'hi'},
-    //         // {t1: 'hh', t2: 'ih'}, {t1: 'hh', t2: 'ii'}, {t1: 'hi', t2: 'h' },
-    //         // {t1: 'hi', t2: 'hh'}, {t1: 'hi', t2: 'i' }, {t1: 'hi', t2: 'ih'},
-    //         // {t1: 'hi', t2: 'ii'}, {t1: 'i' , t2: 'hh'}, {t1: 'i' , t2: 'hi'},
-    //         // {t1: 'i' , t2: 'ih'}, {t1: 'i' , t2: 'ii'}, {t1: 'ih', t2: 'hh'},
-    //         // {t1: 'ih', t2: 'hi'}, {t1: 'ih', t2: 'ih'}, {t1: 'ih', t2: 'ii'},
-    //         // {t1: 'ii', t2: 'h' }, {t1: 'ii', t2: 'hh'}, {t1: 'ii', t2: 'hi'},
-    //         // {t1: 'ii', t2: 'i' }, {t1: 'ii', t2: 'ih'}, {t1: 'ii', t2: 'ii'},
-    //     ];
-    //     // testHasTapes(grammar, ['t1', 't2']);
-    //     // testHasVocab(grammar, {t1: 2, t2: 2});
-    //     testGrammar(grammar, expectedResults);
-    // });
-
-    // describe.skip('1c-4. Negation of 1a results: ~(t1:hi+t2:hi, 1)', function() {
-    //     let grammar: Grammar = Not(Seq(t1("hi"), t2("hi")), 1);;
-    //     grammar = CountTape(2, grammar);
-    //     const expectedResults: StringDict[] = [
-    //         {t1: 'h'}, {t1: 'i'}, {t2: 'i'}, {t2: 'h'},
-    //         {},
-    //     ];
-    //     // testHasTapes(grammar, ['t1', 't2']);
-    //     // testHasVocab(grammar, {t1: 2, t2: 2});
-    //     testGrammar(grammar, expectedResults);
-    // });
 
     describe('1. ~(MatchFrom(t1>t2,t1:hi))', function() {
         const grammar1: Grammar = t1("hi");
@@ -346,11 +60,12 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
+    /*
     describe.skip('2a. MatchFrom(t1>t2,ε) (vocab hi)', function() {
         const grammar1: Grammar = Epsilon();
-        let grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
-                                     MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(2, grammar);
+        let grammar: Grammar = Seq(Vocab({t1: "hi", t2: "hi"}),
+                                   MatchFrom(grammar1, "t1", "t2"));
+        grammar = CountTape(2, grammar);
         const expectedResults: StringDict[] = [
             {},
         ];
@@ -360,9 +75,9 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe.skip('2b. Negation of 2a results: ~() (vocab hi)', function() {
-        let grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
-                                     Not(Epsilon()));
-        grammar = Count(2, grammar);
+        let grammar: Grammar = Seq(Vocab({t1: "hi", t2: "hi"}),
+                                   Not(Epsilon()));
+        grammar = CountTape(2, grammar);
         const expectedResults: StringDict[] = [
         ];
         // testHasTapes(grammar, ['t1', 't2']);
@@ -370,18 +85,18 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    /*
     describe('2. ~(MatchFrom(t1>t2,ε)) (vocab hi)', function() {
         const grammar1: Grammar = Epsilon();
-        let grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
-                                     Not(MatchFrom(grammar1, "t1", "t2")));
+        let grammar: Grammar = Seq(Vocab({t1: "hi", t2: "hi"}),
+                                   Not(MatchFrom(grammar1, "t1", "t2")));
         grammar = CountTape(2, grammar);
         const expectedResults: StringDict[] = [
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         testGrammar(grammar, expectedResults);
-    }); */
+    });
+    */
 
     describe('3. ~(MatchFrom(t1>t2,t1:h+t1:i))', function() {
         const grammar1: Grammar = Seq(t1("h"), t1("i"));

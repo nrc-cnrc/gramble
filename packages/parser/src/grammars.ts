@@ -984,7 +984,9 @@ export class CountGrammar extends UnaryGrammar {
         stack: CounterStack,
         env: PassEnv
     ): boolean {
-        return this.maxChars == Infinity
+        if (this.maxChars == Infinity)
+            return this.child.potentiallyInfinite(stack, env);
+        return false;
     }
 
     public constructExpr(
@@ -1021,9 +1023,18 @@ export class CountTapeGrammar extends UnaryGrammar {
         env: PassEnv
     ): boolean {
         if (typeof(this.maxChars) == "number") {
-            return this.maxChars == Infinity;
+            if (this.maxChars == Infinity) {
+                return this.child.potentiallyInfinite(stack, env);
+            }
+            return false;
         }
-        return Object.values(this.maxChars).some(n => n == Infinity);
+
+        const maxChars = Object.values(this.maxChars);
+        if (maxChars.length < this.tapes.length
+                || maxChars.some(n => n == Infinity)) {
+            return this.child.potentiallyInfinite(stack, env);
+        }
+        return false;
     }
 
     public constructExpr(

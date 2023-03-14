@@ -279,7 +279,12 @@ export class Interpreter {
 
         const potentiallyInfinite = targetGrammar.potentiallyInfinite(new CounterStack(2), env);
         if (potentiallyInfinite && opt.maxChars != Infinity) {
-            if (targetGrammar instanceof PriorityGrammar) {
+            if (targetGrammar instanceof CollectionGrammar) {
+                const symGrammar = targetGrammar.getSymbol(symbolName);
+                if (symGrammar instanceof PriorityGrammar) {
+                    symGrammar.child = new CountGrammar(symGrammar.child, opt.maxChars-1);
+                }
+            } else if (targetGrammar instanceof PriorityGrammar) {
                 targetGrammar.child = new CountGrammar(targetGrammar.child, opt.maxChars-1);
             } else {
                 targetGrammar = new CountGrammar(targetGrammar, opt.maxChars-1);

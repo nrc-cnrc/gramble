@@ -13,6 +13,7 @@ import {
 } from "../src/grammars";
 
 import { 
+    testSuiteName, logTestSuite, VERBOSE_TEST, verbose,
     InputResultsPair, 
     t1, t2, t3, t4,
     testHasTapes, 
@@ -22,21 +23,12 @@ import {
     WARN_ONLY_FOR_TOO_MANY_OUTPUTS,
 } from './testUtil';
 
-import * as path from 'path';
-import { VERBOSE_DEBUG, SILENT, logDebug, StringDict, VERBOSE_STATES, VERBOSE_TIME } from "../src/util";
-
-const EMPTY: string = '';
+import {StringDict, SILENT, VERBOSE_DEBUG } from "../src/util";
 
 // File level control over verbose output
-const VERBOSE = true;
+const VERBOSE = VERBOSE_TEST;
 
-function vb(verbosity: number): number {
-    return VERBOSE ? verbosity : SILENT;
-}
-
-function verbose(...msgs: string[]) {
-    logDebug(vb(VERBOSE_DEBUG), ...msgs);
-}
+const EMPTY: string = '';
 
 function inputResultsPairs(expectedOutputs: StringDict[]): InputResultsPair[] {
     let pairs: InputResultsPair[] = [];
@@ -61,9 +53,9 @@ const DEFAULT = undefined;
 
 const EMPTY_CONTEXT = Epsilon();
 
-describe(`${path.basename(module.filename)}`, function() {
+describe(`${testSuiteName(module)}`, function() {
 
-    verbose("", `--- ${path.basename(module.filename)} ---`);
+    logTestSuite(VERBOSE, module);
 
     describe('1. Replace e by a in hello: t1:e -> t2:a {1+} || ^h_llo$', function() {
         const grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"), 
@@ -2442,6 +2434,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('35a. Replace aba by X: t1:aba -> t2:X {1} (priority: t1,t2)', function() {
+        verbose(VERBOSE, '', '--- 35a. Replace aba by X: t1:aba -> t2:X {1} (priority: t1,t2) ---');
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                        false, false, 1, 1);
@@ -2662,7 +2655,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                        t1("h"), t1("llo"), EMPTY_CONTEXT,
                                        false, false, 1, 5, 3);
-        grammar = Count(22, grammar);
+        grammar = CountTape({t1:7}, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4, t4: 4});
         const expectedResults: StringDict[] = [
@@ -2708,7 +2701,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                        t1("h"), t1("l"), EMPTY_CONTEXT,
                                        false, false, 1, Infinity, 1);
-        grammar = Count(30, grammar);
+        grammar = CountTape({t1:9}, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 3, t2: 3, t4: 3});
         const expectedResults: StringDict[] = [
@@ -2757,7 +2750,7 @@ describe(`${path.basename(module.filename)}`, function() {
         let grammar: Grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                        t1("h"), t1("l"), EMPTY_CONTEXT,
                                        false, false, 0, 2, 1);
-        grammar = Count(29, grammar);
+        grammar = CountTape({t1:9}, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 3, t2: 3, t4: 3});
         const expectedResults: StringDict[] = [
@@ -4240,7 +4233,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                    Replace(t1("i"), Seq(t2("o"), t4("oo")),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 3, 3, Infinity, true));
-        grammar = Count(12, grammar);
+        grammar = CountTape({t1:3}, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 3, t4:3});
         const expectedResults: StringDict[] = [
@@ -4275,7 +4268,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                    Replace(t1("i"), Seq(t2("o"), t4("oo")),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 3, 3, 6, true));
-        grammar = Count(12, grammar);
+        grammar = CountTape({t1:4}, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 3, t4:3});
         const expectedResults: StringDict[] = [
@@ -4310,7 +4303,7 @@ describe(`${path.basename(module.filename)}`, function() {
                                    Replace(t1("i"), Seq(t2("o"), t4("oo")),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 3, 3, 2500, true));
-        grammar = Count(12, grammar);
+        grammar = CountTape({t1:4}, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 3, t4:3});
         const expectedResults: StringDict[] = [

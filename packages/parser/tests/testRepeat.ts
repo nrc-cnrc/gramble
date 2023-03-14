@@ -1,534 +1,687 @@
 
 import { 
-    Count, CountTape, Grammar,
+    CountTape, Grammar,
     Seq, Join, Rep, Epsilon, Equals, Uni, Any, Intersect,
     MatchFrom, Priority, Vocab,
 } from "../src/grammars";
+
 import {
+    testSuiteName, logTestSuite, VERBOSE_TEST, verbose,
     t1, t2,
     testHasTapes, testGrammar, testHasVocab,
     WARN_ONLY_FOR_TOO_MANY_OUTPUTS
 } from './testUtil';
-import { VERBOSE_DEBUG, StringDict, VERBOSE_STATES, SILENT, logDebug } from "../src/util";
 
-import * as path from 'path';
-
-const DEFAULT = undefined
+import { StringDict, SILENT, VERBOSE_DEBUG, VERBOSE_STATES } from "../src/util";
 
 // File level control over verbose output
-const VERBOSE = true;
+const VERBOSE = VERBOSE_TEST;
 
 function vb(verbosity: number): number {
     return VERBOSE ? verbosity : SILENT;
 }
 
-function verbose(...msgs: string[]) {
-    logDebug(vb(VERBOSE_DEBUG), ...msgs);
+function log(...msgs: string[]) {
+    verbose(VERBOSE, ...msgs);
 }
 
-describe(`${path.basename(module.filename)}`, function() {
+const DEFAULT = undefined
 
-    verbose("", `--- ${path.basename(module.filename)} ---`);
+describe(`${testSuiteName(module)}`, function() {
 
-    describe('1. Between 0 and 1 Os: t1:o{0,1}', function() {
+    logTestSuite(VERBOSE, module);
+
+    describe('1. Repeat between 0 and 1 Os: t1:o{0,1}', function() {
         const grammar = Rep(t1("o"), 0, 1);
         testHasTapes(grammar, ["t1"]);
-        testGrammar(grammar, [{},
-                              {t1: "o"}]);
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "o"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('2. Between 1 and 4 Os: t1:o{1,4}', function() {
+    describe('2. Repeat between 1 and 4 Os: t1:o{1,4}', function() {
         const grammar = Rep(t1("o"), 1, 4);
-        testGrammar(grammar, [{t1: "o"},
-                              {t1: "oo"},
-                              {t1: "ooo"},
-                              {t1: "oooo"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "o"},
+            {t1: "oo"},
+            {t1: "ooo"},
+            {t1: "oooo"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('3. Between 1 and 4 empty strings: t1:{1,4}', function() {
+    describe('3. Repeat between 1 and 4 empty strings: t1:{1,4}', function() {
         const grammar = Rep(t1(""), 1, 4);
-        testGrammar(grammar, [{}]);
+        const expectedResults: StringDict[] = [
+            {}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('4. Between 1 and 4 Os: t1:o{1,4}, plus a t2:foo', function() {
+    describe('4. t1:o{1,4} + t2:foo', function() {
         const grammar = Seq(Rep(t1("o"), 1, 4), t2("foo"));
-        testGrammar(grammar, [{t1: "o", t2: "foo"},
-                              {t1: "oo", t2: "foo"},
-                              {t1: "ooo", t2: "foo"},
-                              {t1: "oooo", t2: "foo"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "o", t2: "foo"},
+            {t1: "oo", t2: "foo"},
+            {t1: "ooo", t2: "foo"},
+            {t1: "oooo", t2: "foo"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('5. t2:foo + Between 1 and 4 Os: t1:o{1,4}', function() {
+    describe('5. t2:foo + t1:o{1,4}', function() {
         const grammar = Seq(t2("foo"), Rep(t1("o"), 1, 4));
         //testHasVocab(grammar, {t1: 1, t2: 2});
-        testGrammar(grammar, [{t1: "o", t2: "foo"},
-                              {t1: "oo", t2: "foo"},
-                              {t1: "ooo", t2: "foo"},
-                              {t1: "oooo", t2: "foo"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "o", t2: "foo"},
+            {t1: "oo", t2: "foo"},
+            {t1: "ooo", t2: "foo"},
+            {t1: "oooo", t2: "foo"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
     describe('6. Hello with between 1 and 4 Os: t1:hell+t1:o{1,4}', function() {
         const grammar = Seq(t1("hell"), Rep(t1("o"), 1, 4));
-        testGrammar(grammar, [{t1: "hello"},
-                              {t1: "helloo"},
-                              {t1: "hellooo"},
-                              {t1: "helloooo"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hello"},
+            {t1: "helloo"},
+            {t1: "hellooo"},
+            {t1: "helloooo"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
     describe('7. Hello with between 0 and 1 Os: t1:hell+t1:o{0,1}', function() {
         const grammar = Seq(t1("hell"), Rep(t1("o"), 0, 1));
-        testGrammar(grammar, [{t1: "hell"},
-                              {t1: "hello"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hell"},
+            {t1: "hello"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('8. Hello with between 1 and 4 Hs: t1:h{1,4}+t1(ello)', function() {
+    describe('8. Hello with between 1 and 4 Hs: t1:h{1,4}+t1:ello', function() {
         const grammar = Seq(Rep(t1("h"), 1, 4), t1("ello"));
-        testGrammar(grammar, [{t1: "hello"},
-                              {t1: "hhello"},
-                              {t1: "hhhello"},
-                              {t1: "hhhhello"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hello"},
+            {t1: "hhello"},
+            {t1: "hhhello"},
+            {t1: "hhhhello"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('9. Hello with between 0 and 1 Hs: t1:h{0,1}+t1(ello)', function() {
+    describe('9. Hello with between 0 and 1 Hs: t1:h{0,1}+t1:ello', function() {
         const grammar = Seq(Rep(t1("h"), 0, 1), t1("ello"));
-        testGrammar(grammar, [{t1: "ello"},
-                              {t1: "hello"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "ello"},
+            {t1: "hello"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('10. Joining "hhello" & hello with between 1 and 4 Hs', function() {
+    describe('10. Join t1:hhello ⨝ t1:h{1,4}+t1:ello', function() {
         const grammar = Join(t1("hhello"), Seq(Rep(t1("h"), 1, 4), t1("ello")));
-        testGrammar(grammar, [{t1: "hhello"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hhello"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('11. Joining hello with between 1 and 4 Hs and "hhello"', function() {
+    describe('11. Join t1:h{1,4}+t1:ello ⨝ hhello', function() {
         const grammar = Join(Seq(Rep(t1("h"), 1, 4), t1("ello")), t1("hhello"));
-        testGrammar(grammar, [{t1: "hhello"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hhello"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('12. Joining hello with between 1 and 4 Hs and the same', function() {
+    describe('12. Join t1:h{1,4}+t1:ello ⨝ the same', function() {
         const grammar = Join(Seq(Rep(t1("h"), 1, 4), t1("ello")),
                              Seq(Rep(t1("h"), 1, 4), t1("ello")));
-        testGrammar(grammar, [{t1: "hello"},
-                              {t1: "hhello"},
-                              {t1: "hhhello"},
-                              {t1: "hhhhello"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hello"},
+            {t1: "hhello"},
+            {t1: "hhhello"},
+            {t1: "hhhhello"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
     
-    describe('13. Joining between 1 and 4 Hs and the same, with t2 "world"', function() {
+    describe('13. Join t1:h{1,4} + t2:world ⨝ the same', function() {
         const grammar = Join(Seq(Rep(t1("h"), 1, 4), t2("world")),
                              Seq(Rep(t1("h"), 1, 4), t2("world")));
-        testGrammar(grammar, [{t1: "h", t2: "world"},
-                              {t1: "hh", t2: "world"},
-                              {t1: "hhh", t2: "world"},
-                              {t1: "hhhh", t2: "world"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "h", t2: "world"},
+            {t1: "hh", t2: "world"},
+            {t1: "hhh", t2: "world"},
+            {t1: "hhhh", t2: "world"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('14. Joining hello with between 1 and 4 Hs and the same, with t2 "world"', function() {
+    describe('14. Join t1:h{1,4}+t1:ello + t2:world ⨝ the same', function() {
         const grammar = Join(Seq(Rep(t1("h"), 1, 4), t1("ello"), t2("world")),
                              Seq(Rep(t1("h"), 1, 4), t1("ello"), t2("world")));
-        testGrammar(grammar, [{t1: "hello", t2: "world"},
-                              {t1: "hhello", t2: "world"},
-                              {t1: "hhhello", t2: "world"},
-                              {t1: "hhhhello", t2: "world"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hello", t2: "world"},
+            {t1: "hhello", t2: "world"},
+            {t1: "hhhello", t2: "world"},
+            {t1: "hhhhello", t2: "world"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
     
-    describe('15. Joining h{1,4} and ello (with t2 in between) and the same, with t2 "world"', function() {
+    describe('15. Join t1:h{1,4} + t2:world + t1:ello ⨝ the same', function() {
         const grammar = Join(Seq(Rep(t1("h"), 1, 4), t2("world"), t1("ello")),
                              Seq(Rep(t1("h"), 1, 4), t2("world"), t1("ello")));
-        testGrammar(grammar, [{t1: "hello", t2: "world"},
-                              {t1: "hhello", t2: "world"},
-                              {t1: "hhhello", t2: "world"},
-                              {t1: "hhhhello", t2: "world"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hello", t2: "world"},
+            {t1: "hhello", t2: "world"},
+            {t1: "hhhello", t2: "world"},
+            {t1: "hhhhello", t2: "world"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
     
-    describe('16. Filtering t1:na{0,2} & ε', function() {
+    describe('16. Filter t1:na{0,2} [ε]', function() {
         const grammar = Equals(Rep(t1("na"), 0, 2), Epsilon());
-        testGrammar(grammar, [{},
+        const expectedResults: StringDict[] = [
+            {},
             {t1: "na"},
-            {t1: "nana"}]);
+            {t1: "nana"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
     
-    describe('17. Filtering ε & t1:na{0,2}', function() {
+    describe('17. Filter ε [t1:na{0,2}]', function() {
         const grammar = Equals(Epsilon(), Rep(t1("na"), 0, 2));
-        testGrammar(grammar, [{}]);
+        const expectedResults: StringDict[] = [
+            {}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
     
-    describe('18. Joining t1:na{0,2} & ε', function() {
+    describe('18. Join t1:na{0,2} ⨝ ε', function() {
         const grammar = Join(Rep(t1("na"), 0, 2), Epsilon());
-        testGrammar(grammar, [{},
+        const expectedResults: StringDict[] = [
+            {},
             {t1: "na"},
-            {t1: "nana"}]);
+            {t1: "nana"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('19. Joining ε & t1:na{0,2}', function() {
+    describe('19. Join ε ⨝ t1:na{0,2}', function() {
         const grammar = Join(Epsilon(), Rep(t1("na"), 0, 2));
-        testGrammar(grammar, [{},
+        const expectedResults: StringDict[] = [
+            {},
             {t1: "na"},
-            {t1: "nana"}]);
+            {t1: "nana"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('20. t1 with between 1 and 4 NAs: t1:na{1,4}', function() {
+    describe('20. t1:na{1,4}', function() {
         const grammar = Rep(t1("na"), 1, 4);
-        testGrammar(grammar, [{t1: "na"},
-                              {t1: "nana"},
-                              {t1: "nanana"},
-                              {t1: "nananana"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "na"},
+            {t1: "nana"},
+            {t1: "nanana"},
+            {t1: "nananana"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('21. t1 with between 0 and 2 NAs: t1:na{0,2}', function() {
+    describe('21. t1:na{0,2}', function() {
         const grammar = Rep(t1("na"), 0, 2);
-        testGrammar(grammar, [{},
-                              {t1: "na"},
-                              {t1: "nana"}]);
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "na"},
+            {t1: "nana"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('22. t1 with 0 NAs: t1:na{0,0}', function() {
+    describe('22. t1:na{0}', function() {
         const grammar = Rep(t1("na"), 0, 0);
-        testGrammar(grammar, [{}]);
+        const expectedResults: StringDict[] = [
+            {}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('23. t1 with no NAs (min > max): t1:na{4,3}', function() {
+    describe('23. Repeat with min > max: t1:na{4,3}', function() {
         const grammar = Rep(t1("na"), 4, 3);
-        testGrammar(grammar, []);
+        const expectedResults: StringDict[] = [
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('24. t1 with between 0 and 2 NAs (negative min): t1:na{-3,2}', function() {
+    describe('24. Repeat with negative min: t1:na{-3,2}', function() {
         const grammar = Rep(t1("na"), -3, 2);
-        testGrammar(grammar, [{},
-                              {t1: "na"},
-                              {t1: "nana"}]);
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "na"},
+            {t1: "nana"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('25. t1 with between 1 and unlimited Os: t1:o+', function() {
+    describe('25. Repeat with between 1 and unlimited Os: t1:o+', function() {
         let grammar: Grammar = Rep(t1("o"), 1);
-        grammar = Count(5, grammar);
-        testGrammar(grammar, [{t1: "o"},
-                              {t1: "oo"},
-                              {t1: "ooo"},
-                              {t1: "oooo"},
-                              {t1: "ooooo"}]);
+        grammar = CountTape(5, grammar);
+        const expectedResults: StringDict[] = [
+            {t1: "o"},
+            {t1: "oo"},
+            {t1: "ooo"},
+            {t1: "oooo"},
+            {t1: "ooooo"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('26. t1:o*', function() {
+    describe('26. Repeat with unlimited Os: t1:o*', function() {
         let grammar: Grammar = Rep(t1("o"));
-        grammar = Count(5, grammar);
-        testGrammar(grammar, [{},
-                              {t1: "o"},
-                              {t1: "oo"},
-                              {t1: "ooo"},
-                              {t1: "oooo"},
-                              {t1: "ooooo"}]);
+        grammar = CountTape(5, grammar);
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "o"},
+            {t1: "oo"},
+            {t1: "ooo"},
+            {t1: "oooo"},
+            {t1: "ooooo"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('27. t1:h*+t1:i', function() {
+    describe('27. t1:h* + t1:i', function() {
         let grammar: Grammar = Seq(Rep(t1("h")), t1("i"));
-        grammar = Count(6, grammar);
-        testGrammar(grammar, [{t1: "i"},
-                              {t1: "hi"},
-                              {t1: "hhi"},
-                              {t1: "hhhi"},
-                              {t1: "hhhhi"},
-                              {t1: "hhhhhi"}]);
+        grammar = CountTape(6, grammar);
+        const expectedResults: StringDict[] = [
+            {t1: "i"},
+            {t1: "hi"},
+            {t1: "hhi"},
+            {t1: "hhhi"},
+            {t1: "hhhhi"},
+            {t1: "hhhhhi"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
     
-    describe('28. t1:h+t1:i*', function() {
+    describe('28. t1:h + t1:i*', function() {
         let grammar: Grammar = Seq(t1("h"), Rep(t1("i")));
-        grammar = Count(6, grammar);
-        testGrammar(grammar, [{t1: "h"},
-                              {t1: "hi"},
-                              {t1: "hii"},
-                              {t1: "hiii"},
-                              {t1: "hiiii"},
-                              {t1: "hiiiii"}]);
+        grammar = CountTape(6, grammar);
+        const expectedResults: StringDict[] = [
+            {t1: "h"},
+            {t1: "hi"},
+            {t1: "hii"},
+            {t1: "hiii"},
+            {t1: "hiiii"},
+            {t1: "hiiiii"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
     
-    describe('29. (t1:h+t1:i)*', function() {
+    describe('29. (t1:h + t1:i)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t1("i")));
-        grammar = Count(6, grammar);
-        testGrammar(grammar, [{},
-                              {t1: "hi"},
-                              {t1: "hihi"},
-                              {t1: "hihihi"}]);
+        grammar = CountTape(6, grammar);
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "hi"},
+            {t1: "hihi"},
+            {t1: "hihihi"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
     
-    describe('30. (t1:h+t2:i)*', function() {
+    describe('30. (t1:h + t2:i)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("i")));
-        grammar = Count(6, grammar);
-        testGrammar(grammar, [{},
-                            {"t1":"h","t2":"i"},
-                            {"t1":"hh","t2":"ii"},
-                            {"t1":"hhh","t2":"iii"}]);
+        grammar = CountTape(3, grammar);
+        const expectedResults: StringDict[] = [
+            {},
+            {"t1":"h","t2":"i"},
+            {"t1":"hh","t2":"ii"},
+            {"t1":"hhh","t2":"iii"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('31. (t1:h|t2:i)*', function() {
+    describe('31. (t1:h | t2:i)*', function() {
         let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
-        grammar = Count(3, grammar);
-        testGrammar(grammar, [{},
-                              {t1: 'h'},
-                              {t1: 'hh'},
-                              {t1: 'hhh'},
-                              {t1: 'h', t2:'i'},
-                              {t1: 'h', t2:'ii'},
-                              {t1: 'hh', t2:'i'},
-                              {t2: 'i'},
-                              {t2: 'ii'},
-                              {t2: 'iii'}],
+        grammar = CountTape(3, grammar);
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: 'h'},           {t1: 'hh'},           {t1: 'hhh'},
+            {t1: 'h', t2:'i'},   {t1: 'h', t2:'ii'},   {t1: 'h', t2:'iii'},
+            {t1: 'hh', t2:'i'},  {t1: 'hh', t2:'ii'},  {t1: 'hh', t2:'iii'},
+            {t1: 'hhh', t2:'i'}, {t1: 'hhh', t2:'ii'}, {t1: 'hhh', t2:'iii'},
+            {t2: 'i'},           {t2: 'ii'},           {t2: 'iii'},
+        ];
+        testGrammar(grammar, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('31a. (t1:h|t2:i)*', function() {
+    describe('31a. (t1:h | t2:i)*', function() {
         let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
         grammar = CountTape(1, grammar);
-        testGrammar(grammar, [{},
-                              {t1: 'h'},
-                              {t1: 'h', t2:'i'},
-                              {t2: 'i'},
-                            ],
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: 'h'},
+            {t1: 'h', t2:'i'},
+            {t2: 'i'},
+        ];
+        testGrammar(grammar, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('32. (t1:a+t2:a|t1:b+t2:b)*', function() {
+    describe('32. (t1:a+t2:a | t1:b+t2:b)*', function() {
         let grammar: Grammar = Rep(Uni(Seq(t1("a"), t2("a")), 
-                                Seq(t1("b"), t2("b"))));
-        grammar = Count(4, grammar);
-        testGrammar(grammar, [{},
-                                {"t1":"a","t2":"a"},
-                                {"t1":"b","t2":"b"},
-                                {"t1":"aa","t2":"aa"},
-                                {"t1":"ab","t2":"ab"},
-                                {"t1":"ba","t2":"ba"},
-                                {"t1":"bb","t2":"bb"}]);
+                                       Seq(t1("b"), t2("b"))));
+        grammar = CountTape(2, grammar);
+        const expectedResults: StringDict[] = [
+            {},
+            {"t1":"a","t2":"a"},
+            {"t1":"b","t2":"b"},
+            {"t1":"aa","t2":"aa"},
+            {"t1":"ab","t2":"ab"},
+            {"t1":"ba","t2":"ba"},
+            {"t1":"bb","t2":"bb"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('33. Filtering t1:h[ t2:h* ]', function() {
-        const grammar = Equals(t1("h"),
-                                 Rep(t2("h")));
+    describe('33. Filter t1:h [t2:h*]', function() {
+        const grammar = Equals(t1("h"), Rep(t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, [{t1:"h"}]);
+        const expectedResults: StringDict[] = [
+            {t1:"h"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
     
-    describe('34. Filtering t1:h[ (t1:h|t2:h)* ]', function() {
-        const grammar = Equals(t1("h"),
-                                 Rep(Uni(t1("h"), t2("h"))));
+    describe('34. Filter t1:h [(t1:h|t2:h)*]', function() {
+        const grammar = Equals(t1("h"), Rep(Uni(t1("h"), t2("h"))));
         testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, [{'t1': 'h'}]);
+        const expectedResults: StringDict[] = [
+            {'t1': 'h'}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('35. Seq t1:h+ε*', function() {
+    describe('35. t1:h + ε*', function() {
         const grammar = Seq(t1("h"), Rep(Epsilon()));
         testHasTapes(grammar, ['t1']);
-        testGrammar(grammar, [{'t1': 'h'}]);
+        const expectedResults: StringDict[] = [
+            {'t1': 'h'}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('36. (t1:"h"+t2:"")*', function() {
+    describe('36. (t1:h + t2:"")*', function() {
         const grammar = Rep(Seq(t1("h"), t2("")), 0, 4);
         testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, [{},
-                              {t1: "h"},
-                              {t1: "hh"},
-                              {t1: "hhh"},
-                              {t1: "hhhh"}]);
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "h"},
+            {t1: "hh"},
+            {t1: "hhh"},
+            {t1: "hhhh"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('37. (t2:""+t1:"h")*', function() {
+    describe('37. (t2:"" + t1:h)*', function() {
         const grammar = Rep(Seq(t2(""), t1("h")), 0, 4);
         testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, [{},
-                              {t1: "h"},
-                              {t1: "hh"},
-                              {t1: "hhh"},
-                              {t1: "hhhh"}]);
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "h"},
+            {t1: "hh"},
+            {t1: "hhh"},
+            {t1: "hhhh"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
     describe('38. Nested repetition: (t1(ba){1,2}){2,3}', function() {
         const grammar = Rep(Rep(t1("ba"), 1, 2), 2, 3);
-        testGrammar(grammar, [
-                              {t1: "baba"},
-                              {t1: "bababa"},
-                              {t1: "babababa"},
-                              {t1: "bababababa"},
-                              {t1: "babababababa"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "baba"},
+            {t1: "bababa"},
+            {t1: "babababa"},
+            {t1: "bababababa"},
+            {t1: "babababababa"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
     describe('39. (t1:h+t2:h){2}', function() {
         const grammar = Rep(Seq(t1("h"), t2("h")), 2, 2);
-        testGrammar(grammar, [{t1: "hh", t2: "hh"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hh", t2: "hh"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('40. Filtering (t1:h+t2:h){2} with t1:hh+t2:hh ', function() {
-        const grammar = Equals(Rep(Seq(t1("h"), t2("h")), 2, 2), Seq(t1("hh"), t2("hh")));
-        testGrammar(grammar, [{t1: "hh", t2: "hh"}]);
+    describe('40. Filter (t1:h+t2:h){2} [t1:hh+t2:hh]', function() {
+        const grammar = Equals(Rep(Seq(t1("h"), t2("h")), 2, 2),
+                               Seq(t1("hh"), t2("hh")));
+        const expectedResults: StringDict[] = [
+            {t1: "hh", t2: "hh"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('41. Filtering t1:hh+t2:hh with (t1:h+t2:h){2}', function() {
-        const grammar = Equals(Seq(t1("hh"), t2("hh")), Rep(Seq(t1("h"), t2("h")), 2, 2));
-        testGrammar(grammar, [{t1: "hh", t2: "hh"}]);
+    describe('41. Filter t1:hh+t2:hh [(t1:h+t2:h){2}]', function() {
+        const grammar = Equals(Seq(t1("hh"), t2("hh")),
+                               Rep(Seq(t1("h"), t2("h")), 2, 2));
+        const expectedResults: StringDict[] = [
+            {t1: "hh", t2: "hh"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
     
-    describe('42. Filtering (t1:h+t2:h)* with t1:hh+t2:hh ', function() {
-        const grammar = Equals(Rep(Seq(t1("h"), t2("h"))), Seq(t1("hh"), t2("hh")));
-        testGrammar(grammar, [{t1: "hh", t2: "hh"}]);
+    describe('42. Filter (t1:h+t2:h)* [t1:hh+t2:hh] ', function() {
+        const grammar = Equals(Rep(Seq(t1("h"), t2("h"))),
+                               Seq(t1("hh"), t2("hh")));
+        const expectedResults: StringDict[] = [
+            {t1: "hh", t2: "hh"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('43. Filtering t1:hh+t2:hh with (t1:h+t2:h)*', function() {
-        const grammar = Equals(Seq(t1("hh"), t2("hh")), Rep(Seq(t1("h"), t2("h"))));
-        testGrammar(grammar, [{t1: "hh", t2: "hh"}]);
+    describe('43. Filter t1:hh+t2:hh [(t1:h+t2:h)*]', function() {
+        const grammar = Equals(Seq(t1("hh"), t2("hh")),
+                               Rep(Seq(t1("h"), t2("h"))));
+        const expectedResults: StringDict[] = [
+            {t1: "hh", t2: "hh"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
     
     describe('44. Rep(Any): t1:hi+t1:.{0,3}', function() {
         const grammar = Seq(t1("hi"), Rep(Any("t1"), 0, 3));
-        testGrammar(grammar, [ 
-                            {t1: "hi"},
-                            {t1: "hii"},
-                            {t1: "hih"},
-                            {t1: "hiii"},
-                            {t1: "hihi"},
-                            {t1: "hihh"},
-                            {t1: "hiih"},
-                            {t1: "hiiih"},
-                            {t1: "hihih"},
-                            {t1: "hihhh"},
-                            {t1: "hiihh"},
-                            {t1: "hiiii"},
-                            {t1: "hihii"},
-                            {t1: "hihhi"},
-                            {t1: "hiihi"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hi"},
+            {t1: "hii"},   {t1: "hih"},
+            {t1: "hihh"},  {t1: "hihi"},
+            {t1: "hiih"},  {t1: "hiii"},
+            {t1: "hihhh"}, {t1: "hihhi"},
+            {t1: "hihih"}, {t1: "hihii"},
+            {t1: "hiihh"}, {t1: "hiihi"},
+            {t1: "hiiih"}, {t1: "hiiii"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
     describe('45. Rep(Any): t1:.{0,3}+t1:hi', function() {
         const grammar = Seq(Rep(Any("t1"), 0, 3), t1("hi"));
-        testGrammar(grammar, [{t1: "hi"},
-                            {t1: "ihi"},
-                            {t1: "hhi"},
-                            {t1: "iihi"},
-                            {t1: "hihi"},
-                            {t1: "hhhi"},
-                            {t1: "ihhi"},
-                            {t1: "iihhi"},
-                            {t1: "hihhi"},
-                            {t1: "hhhhi"},
-                            {t1: "ihhhi"},
-                            {t1: "iiihi"},
-                            {t1: "hiihi"},
-                            {t1: "hhihi"},
-                            {t1: "ihihi"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hi"},
+            {t1: "hhi"},   {t1: "ihi"},
+            {t1: "hhhi"},  {t1: "hihi"},
+            {t1: "ihhi"},  {t1: "iihi"},
+            {t1: "hhhhi"}, {t1: "hhihi"},
+            {t1: "hihhi"}, {t1: "hiihi"},
+            {t1: "ihhhi"}, {t1: "ihihi"},
+            {t1: "iihhi"}, {t1: "iiihi"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
     
     describe('46. Rep(Any): t1:.{0,1}+t1:hi+t1:.{0,1}', function() {
-        const grammar = Seq( Rep(Any("t1"), 0, 1), t1("hi"), Rep(Any("t1"), 0, 1));
-        testGrammar(grammar, [ 
-                            {t1: "hi"},
-                            {t1: "hhi"},
-                            {t1: "ihi"},
-                            {t1: "hih"},
-                            {t1: "hii"},
-                            {t1: "hhih"},
-                            {t1: "hhii"},
-                            {t1: "ihih"},
-                            {t1: "ihii"}]);
+        const grammar = Seq(Rep(Any("t1"), 0, 1), t1("hi"),
+                            Rep(Any("t1"), 0, 1));
+        const expectedResults: StringDict[] = [
+            {t1: "hi"},
+            {t1: "hih"},  {t1: "hii"},
+            {t1: "hhi"},  {t1: "ihi"},
+            {t1: "hhih"}, {t1: "hhii"},
+            {t1: "ihih"}, {t1: "ihii"},
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('47. Joining t1:hi & t1:.{0,1}', function() {
+    describe('47. Join t1:hi ⨝ t1:.{0,1}', function() {
         const grammar = Join(t1("h"), Rep(Any("t1"), 0, 1));
-        testGrammar(grammar, [{t1: "h"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "h"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
     
-    describe('48. Filtering t1:.{0,1} & ε', function() {
+    describe('48. Filter t1:.{0,1} [ε]', function() {
         const grammar = Equals(Rep(Any("t1"), 0, 2), Epsilon());
-        testGrammar(grammar, [{}]);
+        const expectedResults: StringDict[] = [
+            {}
+        ];
+        testGrammar(grammar, expectedResults);
     });
     
-    describe('49. Filtering ε & t1:.{0,1}', function() {
+    describe('49. Filter ε [t1:.{0,1}]', function() {
         const grammar = Equals(Epsilon(), Rep(Any("t1"), 0, 2));
-        testGrammar(grammar, [{}]);
+        const expectedResults: StringDict[] = [
+            {}
+        ];
+        testGrammar(grammar, expectedResults);
     });
     
-    describe('50. Joining t1:.{0,1} & ε', function() {
+    describe('50. Join t1:.{0,1} ⨝ ε', function() {
         const grammar = Join(Rep(Any("t1"), 0, 2), Epsilon());
-        testGrammar(grammar, [{}]);
+        const expectedResults: StringDict[] = [
+            {}
+        ];
+        testGrammar(grammar, expectedResults);
     });
     
-    describe('51. Joining ε & t1:.{0,1}', function() {
+    describe('51. Join ε ⨝ t1:.{0,1}', function() {
         const grammar = Join(Epsilon(), Rep(Any("t1"), 0, 2));
-        testGrammar(grammar, [{}]);
+        const expectedResults: StringDict[] = [
+            {}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('52. Filtering "hello" with he.*', function() {
+    describe('52. Filter t1:hello [t1:he.*]', function() {
         const grammar = Equals(t1("hello"), Seq(t1("he"), Rep(Any("t1"))));
-        testGrammar(grammar, [ 
-                            {t1: "hello"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hello"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('53. Filtering "hello" with .*lo', function() {
+    describe('53. Filter t1:hello [t1:.*lo]', function() {
         const grammar = Equals(t1("hello"), Seq(Rep(Any("t1")), t1("lo")));
-        testGrammar(grammar, [ 
-                            {t1: "hello"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hello"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('54. Filtering "hello" with .*e.*', function() {
-        const grammar = Equals(t1("hello"), Seq(Rep(Any("t1")), t1("e"), Rep(Any("t1"))));
-        testGrammar(grammar, [ 
-                            {t1: "hello"}]);
+    describe('54. Filter t1:hello [t1:.*e.*]', function() {
+        const grammar = Equals(t1("hello"),
+                               Seq(Rep(Any("t1")), t1("e"), Rep(Any("t1"))));
+        const expectedResults: StringDict[] = [
+            {t1: "hello"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('55. Filtering "hello" with .*l.*', function() {
-        const grammar = Equals(t1("hello"), Seq(Rep(Any("t1")), t1("l"), Rep(Any("t1"))));
-        testGrammar(grammar, [ 
-                            {t1: "hello"}]);
+    describe('55. Filter t1:hello [t1:.*l.*]', function() {
+        const grammar = Equals(t1("hello"),
+                               Seq(Rep(Any("t1")), t1("l"), Rep(Any("t1"))));
+        const expectedResults: StringDict[] = [
+            {t1: "hello"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('56. Filtering "hello" with .*h.*', function() {
-        const grammar = Equals(t1("hello"), Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1"))));
-        testGrammar(grammar, [ 
-                            {t1: "hello"}]);
+    describe('56. Filter t1:hello [t1:.*h.*]', function() {
+        const grammar = Equals(t1("hello"),
+                               Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1"))));
+        const expectedResults: StringDict[] = [
+            {t1: "hello"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
-    describe('57. Filtering "hello" with .*o.*', function() {
-        const grammar = Equals(t1("hello"), Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1"))));
-        testGrammar(grammar, [ 
-                            {t1: "hello"}]);
+    describe('57. Filter t1:hello [t1:.*o.*]', function() {
+        const grammar = Equals(t1("hello"),
+                               Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1"))));
+        const expectedResults: StringDict[] = [
+            {t1: "hello"}
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
     // More joining of repeats
 
-    describe('58a. t1:a + t2:bbb ⨝ (t1:"" + t2:b){3} + t1:a', function() {
+    describe('58a. Join t1:a + t2:bbb ⨝ (t1:"" + t2:b){3} + t1:a', function() {
         const grammar = Join(Seq(t1("a"), t2("bbb")), 
                              Seq(Rep(Seq(t1(""), t2("b")), 3, 3), t1("a")));
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [
+        const expectedResults: StringDict[] = [
             {t1: 'a', t2: 'bbb'},
-        ]);
+        ];
+        testGrammar(grammar, expectedResults);
     }); 
 
-    describe('58b. t1:a + t2:bbb ⨝ (t1:"" + t2:b){0,4} + t1:a', function() {
+    describe('58b. Join t1:a + t2:bbb ⨝ (t1:"" + t2:b){0,4} + t1:a', function() {
         const grammar = Join(Seq(t1("a"), t2("bbb")), 
                              Seq(Rep(Seq(t1(""), t2("b")), 0, 4), t1("a")));
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [
+        const expectedResults: StringDict[] = [
             {t1: 'a', t2: 'bbb'},
-        ]);
+        ];
+        testGrammar(grammar, expectedResults);
     }); 
 
-    describe('58c. (t1:"" + t2:b){3} + t1:a ⨝ t1:a + t2:bbb', function() {
+    describe('58c. Join (t1:"" + t2:b){3} + t1:a ⨝ t1:a + t2:bbb', function() {
         const grammar = Join(Seq(Rep(Seq(t1(""), t2("b")), 3, 3), t1("a")),
                              Seq(t1("a"), t2("bbb")));
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [
+        const expectedResults: StringDict[] = [
             {t1: 'a', t2: 'bbb'},
-        ]);
+        ];
+        testGrammar(grammar, expectedResults);
     }); 
 
-    describe('58d. (t1:"" + t2:b){0,4} + t1:a ⨝ t1:a + t2:bbb', function() {
+    describe('58d. Join (t1:"" + t2:b){0,4} + t1:a ⨝ t1:a + t2:bbb', function() {
         const grammar = Join(Seq(Rep(Seq(t1(""), t2("b")), 0, 4), t1("a")),
                              Seq(t1("a"), t2("bbb")));
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [
+        const expectedResults: StringDict[] = [
             {t1: 'a', t2: 'bbb'},
-        ]);
+        ];
+        testGrammar(grammar, expectedResults);
     }); 
 
     // Repeats of Nullable Matches
@@ -537,8 +690,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
-        let grammarWithVocab: Grammar = Seq(grammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = CountTape({t1: 3, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
@@ -556,8 +708,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const joinGrammar: Grammar = Join(grammar, t2("ee"));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -572,8 +723,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const joinGrammar: Grammar = Join(grammar, Seq(t1("h"), t2("eeh")));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -588,8 +738,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const joinGrammar: Grammar = Join(grammar, Seq(t1("h"), t2("ehe")));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -604,8 +753,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const joinGrammar: Grammar = Join(t2("ee"), grammar);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -620,8 +768,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const joinGrammar: Grammar = Join(Seq(t1("h"), t2("eeh")), grammar);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -636,8 +783,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const joinGrammar: Grammar = Join(Seq(t1("h"), t2("ehe")), grammar);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -652,8 +798,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const filterGrammar: Grammar = Equals(grammar, t2("ee"));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -668,8 +813,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const filterGrammar: Grammar = Equals(grammar, Seq(t1("h"), t2("eeh")));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -684,8 +828,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const filterGrammar: Grammar = Equals(grammar, Seq(t1("h"), t2("ehe")));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -699,9 +842,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
-        const intersectGrammar: Grammar = Intersect(grammar, t2("ee"));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar, t2("ee"));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -715,9 +857,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
-        const intersectGrammar: Grammar = Intersect(grammar, Seq(t1("h"), t2("eeh")));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar, Seq(t1("h"), t2("eeh")));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -731,9 +872,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
-        const intersectGrammar: Grammar = Intersect(grammar, Seq(t1("h"), t2("ehe")));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar, Seq(t1("h"), t2("ehe")));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -747,9 +887,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
-        const intersectGrammar: Grammar = Intersect(t2("ee"), grammar);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(t2("ee"), grammar);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -763,9 +902,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
-        const intersectGrammar: Grammar = Intersect(Seq(t1("h"), t2("eeh")), grammar);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Seq(t1("h"), t2("eeh")), grammar);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -779,9 +917,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
-        const intersectGrammar: Grammar = Intersect(Seq(t1("h"), t2("ehe")), grammar);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Seq(t1("h"), t2("ehe")), grammar);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -795,8 +932,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
-        let grammarWithVocab: Grammar = Seq(grammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = CountTape({t1: 3, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
@@ -814,8 +950,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
         const joinGrammar: Grammar = Join(grammar, Seq(t1("x"), t2("ee")));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -831,8 +966,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
         const joinGrammar: Grammar = Join(grammar, Seq(t1("hx"), t2("eeh")));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -847,8 +981,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
         const joinGrammar: Grammar = Join(grammar, Seq(t1("hx"), t2("ehe")));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -863,8 +996,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
         const joinGrammar: Grammar = Join(Seq(t1("x"), t2("ee")), grammar);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -879,8 +1011,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
         const joinGrammar: Grammar = Join(Seq(t1("hx"), t2("eeh")), grammar);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -895,8 +1026,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
         const joinGrammar: Grammar = Join(Seq(t1("hx"), t2("ehe")), grammar);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -911,8 +1041,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
         const filterGrammar: Grammar = Equals(grammar, Seq(t1("x"), t2("ee")));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -927,8 +1056,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
         const filterGrammar: Grammar = Equals(grammar, Seq(t1("hx"), t2("eeh")));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -943,8 +1071,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
         const filterGrammar: Grammar = Equals(grammar, Seq(t1("hx"), t2("ehe")));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -958,9 +1085,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
-        const intersectGrammar: Grammar = Intersect(grammar, Seq(t1("x"), t2("ee")));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar, Seq(t1("x"), t2("ee")));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -975,9 +1101,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
-        const intersectGrammar: Grammar = Intersect(grammar, Seq(t1("hx"), t2("eeh")));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar, Seq(t1("hx"), t2("eeh")));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -991,9 +1116,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
-        const intersectGrammar: Grammar = Intersect(grammar, Seq(t1("hx"), t2("ehe")));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar, Seq(t1("hx"), t2("ehe")));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1007,9 +1131,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
-        const intersectGrammar: Grammar = Intersect(Seq(t1("x"), t2("ee")), grammar);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Seq(t1("x"), t2("ee")), grammar);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1023,9 +1146,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
-        const intersectGrammar: Grammar = Intersect(Seq(t1("hx"), t2("eeh")), grammar);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Seq(t1("hx"), t2("eeh")), grammar);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1039,9 +1161,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
-        const intersectGrammar: Grammar = Intersect(Seq(t1("hx"), t2("ehe")), grammar);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Seq(t1("hx"), t2("ehe")), grammar);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1055,8 +1176,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
-        let grammarWithVocab: Grammar = Seq(grammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = CountTape({t1: 4, t2: 4}, grammarWithVocab);
         grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
@@ -1074,8 +1194,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
         const joinGrammar: Grammar = Join(grammar, t2("eex"));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1090,8 +1209,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
         const joinGrammar: Grammar = Join(grammar, Seq(t1("h"), t2("eehx")));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1106,8 +1224,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
         const joinGrammar: Grammar = Join(grammar, Seq(t1("h"), t2("ehex")));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1122,8 +1239,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
         const joinGrammar: Grammar = Join(t2("eex"), grammar);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1138,8 +1254,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
         const joinGrammar: Grammar = Join(Seq(t1("h"), t2("eehx")), grammar);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1154,8 +1269,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
         const joinGrammar: Grammar = Join(Seq(t1("h"), t2("ehex")), grammar);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1170,8 +1284,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
         const filterGrammar: Grammar = Equals(grammar, t2("eex"));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1186,8 +1299,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
         const filterGrammar: Grammar = Equals(grammar, Seq(t1("h"), t2("eehx")));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1202,8 +1314,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
         const filterGrammar: Grammar = Equals(grammar, Seq(t1("h"), t2("ehex")));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1217,9 +1328,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
-        const intersectGrammar: Grammar = Intersect(grammar, t2("eex"));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar, t2("eex"));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1233,9 +1343,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
-        const intersectGrammar: Grammar = Intersect(grammar, Seq(t1("h"), t2("eehx")));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar, Seq(t1("h"), t2("eehx")));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1249,9 +1358,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
-        const intersectGrammar: Grammar = Intersect(grammar, Seq(t1("h"), t2("ehex")));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar, Seq(t1("h"), t2("ehex")));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1265,9 +1373,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
-        const intersectGrammar: Grammar = Intersect(t2("eex"), grammar);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(t2("eex"), grammar);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1281,9 +1388,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
-        const intersectGrammar: Grammar = Intersect(Seq(t1("h"), t2("eehx")), grammar);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Seq(t1("h"), t2("eehx")), grammar);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1297,9 +1403,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
-        const intersectGrammar: Grammar = Intersect(Seq(t1("h"), t2("ehex")), grammar);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Seq(t1("h"), t2("ehex")), grammar);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1314,26 +1419,19 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        let grammarWithVocab: Grammar = Seq(grammar2,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(grammar2, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = CountTape({t1: 2, t2: 6}, grammarWithVocab);
         grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
-            {t1: 'h', t2: 'eeeeh'},
-            {t1: 'h', t2: 'eeehe'},
-            {t1: 'h', t2: 'eehee'},
-            {t1: 'h', t2: 'eheee'},
-            {t1: 'hh', t2: 'eeeheh'},
-            {t1: 'hh', t2: 'eeheeh'},
-            {t1: 'hh', t2: 'eehehe'},
-            {t1: 'hh', t2: 'eheeeh'},
-            {t1: 'hh', t2: 'eheehe'},
-            {t1: 'hh', t2: 'ehehee'},
-        ];
-        testGrammar(grammarWithVocab, expectedResults,
+            {t1: 'h', t2: 'eeeeh'},   {t1: 'h', t2: 'eeehe'},
+            {t1: 'h', t2: 'eehee'},   {t1: 'h', t2: 'eheee'},
+            {t1: 'hh', t2: 'eeeheh'}, {t1: 'hh', t2: 'eeheeh'},
+            {t1: 'hh', t2: 'eehehe'}, {t1: 'hh', t2: 'eheeeh'},
+            {t1: 'hh', t2: 'eheehe'}, {t1: 'hh', t2: 'ehehee'},
+        ]; testGrammar(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
@@ -1343,8 +1441,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const joinGrammar: Grammar = Join(grammar2, t2("eeee"));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1360,8 +1457,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const joinGrammar: Grammar = Join(grammar2, Seq(t1("hh"), t2("eeheeh")));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1377,8 +1473,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const joinGrammar: Grammar = Join(grammar2, Seq(t1("hh"), t2("eheehe")));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1394,8 +1489,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const joinGrammar: Grammar = Join(grammar2, Rep(t2("ee")));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1411,8 +1505,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const joinGrammar: Grammar = Join(grammar2, Rep(Seq(t1("h"), t2("eeh"))));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1428,8 +1521,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const joinGrammar: Grammar = Join(grammar2, Rep(Seq(t1("h"), t2("ehe"))));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1445,8 +1537,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const joinGrammar: Grammar = Join(t2("eeee"), grammar2);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1462,8 +1553,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const joinGrammar: Grammar = Join(Seq(t1("hh"), t2("eeheeh")), grammar2);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1479,8 +1569,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const joinGrammar: Grammar = Join(Seq(t1("hh"), t2("eheehe")), grammar2);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1496,8 +1585,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const joinGrammar: Grammar = Join(Rep(t2("ee")), grammar2);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1513,8 +1601,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const joinGrammar: Grammar = Join(Rep(Seq(t1("h"), t2("eeh"))), grammar2);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1530,8 +1617,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const joinGrammar: Grammar = Join(Rep(Seq(t1("h"), t2("ehe"))), grammar2);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1547,8 +1633,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const filterGrammar: Grammar = Equals(grammar2, t2("eeee"));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1564,8 +1649,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const filterGrammar: Grammar = Equals(grammar2, Seq(t1("hh"), t2("eeheeh")));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1581,8 +1665,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const filterGrammar: Grammar = Equals(grammar2, Seq(t1("hh"), t2("eheehe")));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1598,8 +1681,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const filterGrammar: Grammar = Equals(grammar2, Rep(t2("ee")));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1615,8 +1697,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const filterGrammar: Grammar = Equals(grammar2, Rep(Seq(t1("h"), t2("eeh"))));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1632,8 +1713,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
         const filterGrammar: Grammar = Equals(grammar2, Rep(Seq(t1("h"), t2("ehe"))));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1648,9 +1728,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const intersectGrammar: Grammar = Intersect(grammar2, t2("eeee"));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar2, t2("eeee"));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1665,9 +1744,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const intersectGrammar: Grammar = Intersect(grammar2, Seq(t1("hh"), t2("eeheeh")));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar2, Seq(t1("hh"), t2("eeheeh")));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1682,9 +1760,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const intersectGrammar: Grammar = Intersect(grammar2, Seq(t1("hh"), t2("eheehe")));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar2, Seq(t1("hh"), t2("eheehe")));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1699,9 +1776,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const intersectGrammar: Grammar = Intersect(grammar2, Rep(t2("ee")));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar2, Rep(t2("ee")));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1716,9 +1792,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const intersectGrammar: Grammar = Intersect(grammar2, Rep(Seq(t1("h"), t2("eeh"))));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar2, Rep(Seq(t1("h"), t2("eeh"))));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1733,9 +1808,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const intersectGrammar: Grammar = Intersect(grammar2, Rep(Seq(t1("h"), t2("ehe"))));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar2, Rep(Seq(t1("h"), t2("ehe"))));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1750,9 +1824,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const intersectGrammar: Grammar = Intersect(t2("eeee"), grammar2);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(t2("eeee"), grammar2);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1767,9 +1840,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const intersectGrammar: Grammar = Intersect(Seq(t1("hh"), t2("eeheeh")), grammar2);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Seq(t1("hh"), t2("eeheeh")), grammar2);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1784,9 +1856,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const intersectGrammar: Grammar = Intersect(Seq(t1("hh"), t2("eheehe")), grammar2);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Seq(t1("hh"), t2("eheehe")), grammar2);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1801,9 +1872,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const intersectGrammar: Grammar = Intersect(Rep(t2("ee")), grammar2);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Rep(t2("ee")), grammar2);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1818,9 +1888,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const intersectGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("eeh"))), grammar2);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("eeh"))), grammar2);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1835,9 +1904,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const intersectGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("ehe"))), grammar2);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("ehe"))), grammar2);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1852,24 +1920,18 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        let grammarWithVocab: Grammar = Seq(grammar2,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(grammar2, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = CountTape({t1: 2, t2: 6}, grammarWithVocab);
         grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
-            {t1: 'h', t2: 'eeeeh'},
-            {t1: 'h', t2: 'eeehe'},
-            {t1: 'h', t2: 'eehee'},
-            {t1: 'h', t2: 'eheee'},
-            {t1: 'hh', t2: 'eeeheh'},
-            {t1: 'hh', t2: 'eeheeh'},
-            {t1: 'hh', t2: 'eehehe'},
-            {t1: 'hh', t2: 'eheeeh'},
-            {t1: 'hh', t2: 'eheehe'},
-            {t1: 'hh', t2: 'ehehee'},
+            {t1: 'h', t2: 'eeeeh'},   {t1: 'h', t2: 'eeehe'},
+            {t1: 'h', t2: 'eehee'},   {t1: 'h', t2: 'eheee'},
+            {t1: 'hh', t2: 'eeeheh'}, {t1: 'hh', t2: 'eeheeh'},
+            {t1: 'hh', t2: 'eehehe'}, {t1: 'hh', t2: 'eheeeh'},
+            {t1: 'hh', t2: 'eheehe'}, {t1: 'hh', t2: 'ehehee'},
         ];
         testGrammar(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
@@ -1881,8 +1943,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const joinGrammar: Grammar = Join(grammar2, Rep(t2("ee")));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1898,8 +1959,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const joinGrammar: Grammar = Join(grammar2, Rep(Seq(t1("h"), t2("eeh"))));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1915,8 +1975,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const joinGrammar: Grammar = Join(grammar2, Rep(Seq(t1("h"), t2("ehe"))));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1932,8 +1991,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const joinGrammar: Grammar = Join(Rep(t2("ee")), grammar2);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1949,8 +2007,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const joinGrammar: Grammar = Join(Rep(Seq(t1("h"), t2("eeh"))), grammar2);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1966,8 +2023,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const joinGrammar: Grammar = Join(Rep(Seq(t1("h"), t2("ehe"))), grammar2);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1983,8 +2039,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const filterGrammar: Grammar = Equals(grammar2, Rep(t2("ee")));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2000,8 +2055,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const filterGrammar: Grammar = Equals(grammar2, Rep(Seq(t1("h"), t2("eeh"))));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2017,8 +2071,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const filterGrammar: Grammar = Equals(grammar2, Rep(Seq(t1("h"), t2("ehe"))));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2033,9 +2086,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const intersectGrammar: Grammar = Intersect(grammar2, Rep(t2("ee")));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar2, Rep(t2("ee")));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2050,9 +2102,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const intersectGrammar: Grammar = Intersect(grammar2, Rep(Seq(t1("h"), t2("eeh"))));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar2, Rep(Seq(t1("h"), t2("eeh"))));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2067,9 +2118,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const intersectGrammar: Grammar = Intersect(grammar2, Rep(Seq(t1("h"), t2("ehe"))));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar2, Rep(Seq(t1("h"), t2("ehe"))));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2084,9 +2134,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const intersectGrammar: Grammar = Intersect(Rep(t2("ee")), grammar2);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Rep(t2("ee")), grammar2);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2101,9 +2150,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const intersectGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("eeh"))), grammar2);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("eeh"))), grammar2);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2118,9 +2166,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const intersectGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("ehe"))), grammar2);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("ehe"))), grammar2);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2135,8 +2182,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
-        let grammarWithVocab: Grammar = Seq(grammarStar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(grammarStar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = CountTape({t1: 2, t2: 6}, grammarWithVocab);
         grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
@@ -2146,18 +2192,12 @@ describe(`${path.basename(module.filename)}`, function() {
             {t2: 'ee'},
             {t2: 'eeee'},
             {t2: 'eeeeee'},
-            {t1: 'h', t2: 'eeh'},
-            {t1: 'h', t2: 'ehe'},
-            {t1: 'h', t2: 'eeeeh'},
-            {t1: 'h', t2: 'eeehe'},
-            {t1: 'h', t2: 'eehee'},
-            {t1: 'h', t2: 'eheee'},
-            {t1: 'hh', t2: 'eheh'},
-            {t1: 'hh', t2: 'eeeheh'},
-            {t1: 'hh', t2: 'eeheeh'},
-            {t1: 'hh', t2: 'eehehe'},
-            {t1: 'hh', t2: 'eheeeh'},
-            {t1: 'hh', t2: 'eheehe'},
+            {t1: 'h', t2: 'eeh'},     {t1: 'h', t2: 'ehe'},
+            {t1: 'h', t2: 'eeeeh'},   {t1: 'h', t2: 'eeehe'},
+            {t1: 'h', t2: 'eehee'},   {t1: 'h', t2: 'eheee'},
+            {t1: 'hh', t2: 'eheh'},   {t1: 'hh', t2: 'eeeheh'},
+            {t1: 'hh', t2: 'eeheeh'}, {t1: 'hh', t2: 'eehehe'},
+            {t1: 'hh', t2: 'eheeeh'}, {t1: 'hh', t2: 'eheehe'},
             {t1: 'hh', t2: 'ehehee'},
         ];
         testGrammar(grammarWithVocab, expectedResults,
@@ -2170,8 +2210,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
         const joinGrammar: Grammar = Join(grammarStar, Rep(t2("ee"), 2, 2));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2187,8 +2226,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
         const joinGrammar: Grammar = Join(grammarStar, Rep(Seq(t1("h"), t2("eeh")), 2, 2));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2204,8 +2242,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
         const joinGrammar: Grammar = Join(grammarStar, Rep(Seq(t1("h"), t2("ehe")), 2, 2));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2221,8 +2258,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
         const joinGrammar: Grammar = Join(Rep(t2("ee"), 2, 2), grammarStar);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2238,8 +2274,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
         const joinGrammar: Grammar = Join(Rep(Seq(t1("h"), t2("eeh")), 2, 2), grammarStar);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2255,8 +2290,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
         const joinGrammar: Grammar = Join(Rep(Seq(t1("h"), t2("ehe")), 2, 2), grammarStar);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2272,8 +2306,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
         const filterGrammar: Grammar = Equals(grammarStar, Rep(t2("ee"), 2, 2));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2288,9 +2321,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
-        const filterGrammar: Grammar = Equals(grammarStar, Rep(Seq(t1("h"), t2("eeh")), 2, 2));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const filterGrammar: Grammar = Equals(grammarStar,
+                                              Rep(Seq(t1("h"), t2("eeh")), 2, 2));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2305,9 +2338,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
-        const filterGrammar: Grammar = Equals(grammarStar, Rep(Seq(t1("h"), t2("ehe")), 2, 2));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const filterGrammar: Grammar = Equals(grammarStar,
+                                              Rep(Seq(t1("h"), t2("ehe")), 2, 2));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2322,9 +2355,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
-        const intersectGrammar: Grammar = Intersect(grammarStar, Rep(t2("ee"), 2, 2));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammarStar, Rep(t2("ee"), 2, 2));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2339,9 +2371,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
-        const intersectGrammar: Grammar = Intersect(grammarStar, Rep(Seq(t1("h"), t2("eeh")), 2, 2));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammarStar,
+                                                Rep(Seq(t1("h"), t2("eeh")), 2, 2));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2356,9 +2388,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
-        const intersectGrammar: Grammar = Intersect(grammarStar, Rep(Seq(t1("h"), t2("ehe")), 2, 2));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammarStar,
+                                                Rep(Seq(t1("h"), t2("ehe")), 2, 2));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2373,9 +2405,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
-        const intersectGrammar: Grammar = Intersect(Rep(t2("ee"), 2, 2), grammarStar);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Rep(t2("ee"), 2, 2), grammarStar);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2390,9 +2421,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
-        const intersectGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("eeh")), 2, 2), grammarStar);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("eeh")), 2, 2),
+                                                grammarStar);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2407,9 +2438,9 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
-        const intersectGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("ehe")), 2, 2), grammarStar);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("ehe")), 2, 2),
+                                                grammarStar);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2424,38 +2455,40 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        let grammarWithVocab: Grammar = Seq(grammar2,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(grammar2, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = CountTape({t1: 2, t2: 6}, grammarWithVocab);
         grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
             {},
-            {t2: 'e'},    {t2: 'ee'},    {t2: 'eee'},
-            {t2: 'eeee'}, {t2: 'eeeee'}, {t2: 'eeeeee'},
-            {t1: 'h', t2: 'eh'},      {t1: 'h', t2: 'eeh'},     {t1: 'h', t2: 'ehe'},
-            {t1: 'h', t2: 'eeeh'},    {t1: 'h', t2: 'eehe'},    {t1: 'h', t2: 'ehee'},
-            {t1: 'h', t2: 'eeeeh'},   {t1: 'h', t2: 'eeehe'},   {t1: 'h', t2: 'eehee'},
-            {t1: 'h', t2: 'eheee'},   {t1: 'h', t2: 'eeeeeh'},  {t1: 'h', t2: 'eeeehe'},
-            {t1: 'h', t2: 'eeehee'},  {t1: 'h', t2: 'eeheee'},  {t1: 'h', t2: 'eheeee'},
-            {t1: 'hh', t2: 'eheh'},   {t1: 'hh', t2: 'eeheh'},  {t1: 'hh', t2: 'eheeh'},
-            {t1: 'hh', t2: 'ehehe'},  {t1: 'hh', t2: 'eeeheh'}, {t1: 'hh', t2: 'eeheeh'},
-            {t1: 'hh', t2: 'eehehe'}, {t1: 'hh', t2: 'eheeeh'}, {t1: 'hh', t2: 'eheehe'},
+            {t2: 'e'},     {t2: 'ee'},    {t2: 'eee'},
+            {t2: 'eeee'},  {t2: 'eeeee'}, {t2: 'eeeeee'},
+            {t1: 'h', t2: 'eh'},      {t1: 'h', t2: 'eeh'},
+            {t1: 'h', t2: 'ehe'},     {t1: 'h', t2: 'eeeh'},
+            {t1: 'h', t2: 'eehe'},    {t1: 'h', t2: 'ehee'},
+            {t1: 'h', t2: 'eeeeh'},   {t1: 'h', t2: 'eeehe'},
+            {t1: 'h', t2: 'eehee'},   {t1: 'h', t2: 'eheee'},
+            {t1: 'h', t2: 'eeeeeh'},  {t1: 'h', t2: 'eeeehe'},
+            {t1: 'h', t2: 'eeehee'},  {t1: 'h', t2: 'eeheee'},
+            {t1: 'h', t2: 'eheeee'},  {t1: 'hh', t2: 'eheh'},
+            {t1: 'hh', t2: 'eeheh'},  {t1: 'hh', t2: 'eheeh'},
+            {t1: 'hh', t2: 'ehehe'},  {t1: 'hh', t2: 'eeeheh'},
+            {t1: 'hh', t2: 'eeheeh'}, {t1: 'hh', t2: 'eehehe'},
+            {t1: 'hh', t2: 'eheeeh'}, {t1: 'hh', t2: 'eheehe'},
             {t1: 'hh', t2: 'ehehee'},
         ];
         testGrammar(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65a-1. Join ((t2:e+M(t1>t2,ε|t1:h)){2})* ⨝ (t2:ee){2} (vocab hx/hex)', function() {
+    describe('65a-1. Join ((t2:e+M(t1>t2,ε|t1:h))*){2} ⨝ (t2:ee){2} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const joinGrammar: Grammar = Join(grammar2, Rep(t2("ee"), 2, 2));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2466,14 +2499,13 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65a-2. Join ((t2:e+M(t1>t2,ε|t1:h)){2})* ⨝ (t1:h+t2:eeh){2} (vocab hx/hex)', function() {
+    describe('65a-2. Join ((t2:e+M(t1>t2,ε|t1:h))*){2} ⨝ (t1:h+t2:eeh){2} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const joinGrammar: Grammar = Join(grammar2, Rep(Seq(t1("h"), t2("eeh")), 2, 2));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2484,14 +2516,13 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65a-3. Join ((t2:e+M(t1>t2,ε|t1:h)){2})* ⨝ (t1:h+t2:ehe){2} (vocab hx/hex)', function() {
+    describe('65a-3. Join ((t2:e+M(t1>t2,ε|t1:h))*){2} ⨝ (t1:h+t2:ehe){2} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const joinGrammar: Grammar = Join(grammar2, Rep(Seq(t1("h"), t2("ehe")), 2, 2));
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2502,14 +2533,13 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65b-1. Join (t2:ee){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
+    describe('65b-1. Join (t2:ee){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h))*){2} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const joinGrammar: Grammar = Join(Rep(t2("ee"), 2, 2), grammar2);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2520,14 +2550,13 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65b-2. Join (t1:h+t2:eeh){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
+    describe('65b-2. Join (t1:h+t2:eeh){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h))*){2} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const joinGrammar: Grammar = Join(Rep(Seq(t1("h"), t2("eeh")), 2, 2), grammar2);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2538,14 +2567,13 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65b-3. Join (t1:h+t2:ehe){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
+    describe('65b-3. Join (t1:h+t2:ehe){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h))*){2} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const joinGrammar: Grammar = Join(Rep(Seq(t1("h"), t2("ehe")), 2, 2), grammar2);
-        let grammarWithVocab: Grammar = Seq(joinGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(joinGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2556,14 +2584,13 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65c-1. Filter ((t2:e+M(t1>t2,ε|t1:h)){2})* [(t2:ee){2}] (vocab hx/hex)', function() {
+    describe('65c-1. Filter ((t2:e+M(t1>t2,ε|t1:h))*){2} [(t2:ee){2}] (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const filterGrammar: Grammar = Equals(grammar2, Rep(t2("ee"), 2, 2));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2574,14 +2601,13 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65c-2. Filter ((t2:e+M(t1>t2,ε|t1:h)){2})* [(t1:h+t2:eeh){2}] (vocab hx/hex)', function() {
+    describe('65c-2. Filter ((t2:e+M(t1>t2,ε|t1:h))*){2} [(t1:h+t2:eeh){2}] (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const filterGrammar: Grammar = Equals(grammar2, Rep(Seq(t1("h"), t2("eeh")), 2, 2));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2592,14 +2618,13 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65c-3. Filter ((t2:e+M(t1>t2,ε|t1:h)){2})* [(t1:h+t2:ehe){2}] (vocab hx/hex)', function() {
+    describe('65c-3. Filter ((t2:e+M(t1>t2,ε|t1:h))*){2} [(t1:h+t2:ehe){2}] (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
         const filterGrammar: Grammar = Equals(grammar2, Rep(Seq(t1("h"), t2("ehe")), 2, 2));
-        let grammarWithVocab: Grammar = Seq(filterGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(filterGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2610,14 +2635,13 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65d-1. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2})* & (t2:ee){2} (vocab hx/hex)', function() {
+    describe('65d-1. Intersect ((t2:e+M(t1>t2,ε|t1:h))*){2} & (t2:ee){2} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const intersectGrammar: Grammar = Intersect(grammar2, Rep(t2("ee"), 2, 2));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar2, Rep(t2("ee"), 2, 2));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2628,14 +2652,14 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65d-2. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2})* & (t1:h+t2:eeh){2} (vocab hx/hex)', function() {
+    describe('65d-2. Intersect ((t2:e+M(t1>t2,ε|t1:h))*){2} & (t1:h+t2:eeh){2} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const intersectGrammar: Grammar = Intersect(grammar2, Rep(Seq(t1("h"), t2("eeh")), 2, 2));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar2,
+                                                Rep(Seq(t1("h"), t2("eeh")), 2, 2));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2646,14 +2670,14 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65d-3. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2})* & (t1:h+t2:ehe){2} (vocab hx/hex)', function() {
+    describe('65d-3. Intersect ((t2:e+M(t1>t2,ε|t1:h))*){2} & (t1:h+t2:ehe){2} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const intersectGrammar: Grammar = Intersect(grammar2, Rep(Seq(t1("h"), t2("ehe")), 2, 2));
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(grammar2,
+                                                Rep(Seq(t1("h"), t2("ehe")), 2, 2));
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2664,14 +2688,13 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65e-1. Intersect (t2:ee){2} & ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
+    describe('65e-1. Intersect (t2:ee){2} & ((t2:e+M(t1>t2,ε|t1:h))*){2} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const intersectGrammar: Grammar = Intersect(Rep(t2("ee"), 2, 2), grammar2);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Rep(t2("ee"), 2, 2), grammar2);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2682,14 +2705,14 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65e-2. Intersect (t1:h+t2:eeh){2} & ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
+    describe('65e-2. Intersect (t1:h+t2:eeh){2} & ((t2:e+M(t1>t2,ε|t1:h))*){2} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const intersectGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("eeh")), 2, 2), grammar2);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("eeh")), 2, 2),
+                                                grammar2);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2700,14 +2723,14 @@ describe(`${path.basename(module.filename)}`, function() {
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('65e-3. Intersect (t1:h+t2:ehe){2} & ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
+    describe('65e-3. Intersect (t1:h+t2:ehe){2} & ((t2:e+M(t1>t2,ε|t1:h))*){2} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const intersectGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("ehe")), 2, 2), grammar2);
-        let grammarWithVocab: Grammar = Seq(intersectGrammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        const interGrammar: Grammar = Intersect(Rep(Seq(t1("h"), t2("ehe")), 2, 2),
+                                                grammar2);
+        let grammarWithVocab: Grammar = Seq(interGrammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2724,28 +2747,20 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 4, 4);
-        let grammarWithVocab: Grammar = Seq(grammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = CountTape(10, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
-            {t1: 'h', t2: 'eeeeh'},
-            {t1: 'h', t2: 'eeehe'},
-            {t1: 'h', t2: 'eehee'},
-            {t1: 'h', t2: 'eheee'},
-            {t1: 'hh', t2: 'eeeheh'},
-            {t1: 'hh', t2: 'eeheeh'},
-            {t1: 'hh', t2: 'eehehe'},
-            {t1: 'hh', t2: 'eheeeh'},
-            {t1: 'hh', t2: 'eheehe'},
-            {t1: 'hh', t2: 'ehehee'},
-            {t1: 'hhh', t2: 'eeheheh'},
-            {t1: 'hhh', t2: 'eheeheh'},
-            {t1: 'hhh', t2: 'eheheeh'},
-            {t1: 'hhh', t2: 'ehehehe'},
+            {t1: 'h', t2: 'eeeeh'},     {t1: 'h', t2: 'eeehe'},
+            {t1: 'h', t2: 'eehee'},     {t1: 'h', t2: 'eheee'},
+            {t1: 'hh', t2: 'eeeheh'},   {t1: 'hh', t2: 'eeheeh'},
+            {t1: 'hh', t2: 'eehehe'},   {t1: 'hh', t2: 'eheeeh'},
+            {t1: 'hh', t2: 'eheehe'},   {t1: 'hh', t2: 'ehehee'},
+            {t1: 'hhh', t2: 'eeheheh'}, {t1: 'hhh', t2: 'eheeheh'},
+            {t1: 'hhh', t2: 'eheheeh'}, {t1: 'hhh', t2: 'ehehehe'},
             {t1: 'hhhh', t2: 'eheheheh'},
         ];
         testGrammar(grammarWithVocab, expectedResults);
@@ -2756,28 +2771,20 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const repGrammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar: Grammar = Seq(repGrammar, repGrammar);
-        let grammarWithVocab: Grammar = Seq(grammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = CountTape(10, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
-            {t1: 'h', t2: 'eeeeh'},
-            {t1: 'h', t2: 'eeehe'},
-            {t1: 'h', t2: 'eehee'},
-            {t1: 'h', t2: 'eheee'},
-            {t1: 'hh', t2: 'eeeheh'},
-            {t1: 'hh', t2: 'eeheeh'},
-            {t1: 'hh', t2: 'eehehe'},
-            {t1: 'hh', t2: 'eheeeh'},
-            {t1: 'hh', t2: 'eheehe'},
-            {t1: 'hh', t2: 'ehehee'},
-            {t1: 'hhh', t2: 'eeheheh'},
-            {t1: 'hhh', t2: 'eheeheh'},
-            {t1: 'hhh', t2: 'eheheeh'},
-            {t1: 'hhh', t2: 'ehehehe'},
+            {t1: 'h', t2: 'eeeeh'},     {t1: 'h', t2: 'eeehe'},
+            {t1: 'h', t2: 'eehee'},     {t1: 'h', t2: 'eheee'},
+            {t1: 'hh', t2: 'eeeheh'},   {t1: 'hh', t2: 'eeheeh'},
+            {t1: 'hh', t2: 'eehehe'},   {t1: 'hh', t2: 'eheeeh'},
+            {t1: 'hh', t2: 'eheehe'},   {t1: 'hh', t2: 'ehehee'},
+            {t1: 'hhh', t2: 'eeheheh'}, {t1: 'hhh', t2: 'eheeheh'},
+            {t1: 'hhh', t2: 'eheheeh'}, {t1: 'hhh', t2: 'ehehehe'},
             {t1: 'hhhh', t2: 'eheheheh'},
         ];
         testGrammar(grammarWithVocab, expectedResults,
@@ -2790,28 +2797,20 @@ describe(`${path.basename(module.filename)}`, function() {
         const rep1Grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const rep2Grammar: Grammar = Rep(Seq(t2("x"), matchGrammar), 2, 2);
         const grammar: Grammar = Seq(rep1Grammar, rep2Grammar);
-        let grammarWithVocab: Grammar = Seq(grammar,
-                                            Vocab('t1', "hx"), Vocab('t2', "hex"));
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = CountTape(10, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
             {t2: 'eexx'},
-            {t1: 'h', t2: 'eexxh'},
-            {t1: 'h', t2: 'eexhx'},
-            {t1: 'h', t2: 'eehxx'},
-            {t1: 'h', t2: 'ehexx'},
-            {t1: 'hh', t2: 'eexhxh'},
-            {t1: 'hh', t2: 'eehxxh'},
-            {t1: 'hh', t2: 'eehxhx'},
-            {t1: 'hh', t2: 'ehexxh'},
-            {t1: 'hh', t2: 'ehexhx'},
-            {t1: 'hh', t2: 'ehehxx'},
-            {t1: 'hhh', t2: 'eehxhxh'},
-            {t1: 'hhh', t2: 'ehexhxh'},
-            {t1: 'hhh', t2: 'ehehxxh'},
-            {t1: 'hhh', t2: 'ehehxhx'},
+            {t1: 'h', t2: 'eexxh'},     {t1: 'h', t2: 'eexhx'},
+            {t1: 'h', t2: 'eehxx'},     {t1: 'h', t2: 'ehexx'},
+            {t1: 'hh', t2: 'eexhxh'},   {t1: 'hh', t2: 'eehxxh'},
+            {t1: 'hh', t2: 'eehxhx'},   {t1: 'hh', t2: 'ehexxh'},
+            {t1: 'hh', t2: 'ehexhx'},   {t1: 'hh', t2: 'ehehxx'},
+            {t1: 'hhh', t2: 'eehxhxh'}, {t1: 'hhh', t2: 'ehexhxh'},
+            {t1: 'hhh', t2: 'ehehxxh'}, {t1: 'hhh', t2: 'ehehxhx'},
             {t1: 'hhhh', t2: 'ehehxhxh'},
         ];
         testGrammar(grammarWithVocab, expectedResults,
@@ -2822,7 +2821,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 12 states
     describe('67. (t1:o+t2:hi){1,4}', function() {
-        verbose('67. (t1:o+t2:hi){1,4}');
+        log('67. (t1:o+t2:hi){1,4}');
         const grammar = Rep(Seq(t1("o"), t2("hi")), 1, 4);
         const expectedResults: StringDict[] = [
             {t1: "o".repeat(1), t2: "hi".repeat(1)},
@@ -2835,7 +2834,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 11 states
     describe('68. (t1:no+t2:hi,){5}', function() {
-        verbose('68. (t1:no+t2:hi,){5}');
+        log('68. (t1:no+t2:hi,){5}');
         const grammar = Rep(Seq(t1("no"), t2("hi,")), 5, 5);
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(5), t2: "hi,".repeat(5)},
@@ -2845,7 +2844,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 11 states
     describe('69. (t1:no+t2:hello,){5}', function() {
-        verbose('69. (t1:no+t2:hello,){5}');
+        log('69. (t1:no+t2:hello,){5}');
         const grammar = Rep(Seq(t1("no"), t2("hello,")), 5, 5);
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(5), t2: "hello,".repeat(5)},
@@ -2855,7 +2854,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 21 states
     describe('70. (t1:no+t2:hello,){10}', function() {
-        verbose('70. (t1:no+t2:hello,){10}');
+        log('70. (t1:no+t2:hello,){10}');
         const grammar = Rep(Seq(t1("no"), t2("hello,")), 10, 10);
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(10), t2: "hello,".repeat(10)},
@@ -2865,7 +2864,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 21 states
     describe('71. ((t1:no+t2:hello,){5}){2}', function() {
-        verbose('71. ((t1:no+t2:hello,){5}){2}');
+        log('71. ((t1:no+t2:hello,){5}){2}');
         const grammar = Rep(Rep(Seq(t1("no"), t2("hello,")), 5, 5), 2, 2);
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(10), t2: "hello,".repeat(10)},
@@ -2875,7 +2874,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 21 states
     describe('72. ((t1:no+t2:hello,){2}){5}', function() {
-        verbose('72. ((t1:no+t2:hello,){2}){5}');
+        log('72. ((t1:no+t2:hello,){2}){5}');
         const grammar = Rep(Rep(Seq(t1("no"), t2("hello,")), 2, 2), 5, 5);
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(10), t2: "hello,".repeat(10)},
@@ -2885,7 +2884,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 51 states
     describe('73. (t1:no+t2:hello,){25}', function() {
-        verbose('73. (t1:no+t2:hello,){25}');
+        log('73. (t1:no+t2:hello,){25}');
         const grammar = Rep(Seq(t1("no"), t2("hello,")), 25, 25);
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(25), t2: "hello,".repeat(25)},
@@ -2895,7 +2894,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 51 states
     describe('74. ((t1:no+t2:hello,){5}){5}', function() {
-        verbose('74. ((t1:no+t2:hello,){5}){5}');
+        log('74. ((t1:no+t2:hello,){5}){5}');
         const grammar = Rep(Rep(Seq(t1("no"), t2("hello,")), 5, 5), 5, 5);
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(25), t2: "hello,".repeat(25)},
@@ -2905,7 +2904,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     // 51 states
     describe('75. ((t1:hello,+t2:no){5}){5}', function() {
-        verbose('75. ((t1:hello,+t2:no){5}){5}');
+        log('75. ((t1:hello,+t2:no){5}){5}');
         const grammar = Rep(Rep(Seq(t1("hello,"), t2("no")), 5, 5), 5, 5);
         const expectedResults: StringDict[] = [
             {t1: "hello,".repeat(25), t2: "no".repeat(25)},
