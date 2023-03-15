@@ -1,10 +1,10 @@
-nouns:, table:, text
+nouns=, table:, text
         ,       , moo
         ,       , foo
 
-verbs:, table:, text
+verbs=, table:, text
         ,       , goo
         ,       , boo
 
-default:, table:, embed, text
+default=, table:, embed, text
     ,       , {nouns}|{verbs}, bar

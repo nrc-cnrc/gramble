@@ -1,4 +1,4 @@
-word:, text, gloss
+word=, text, gloss
      , foo, run
      , goo, jump
      , moo, eat
@@ -7,5 +7,5 @@ word:, text, gloss
      , moomoo, eat.impf
      ,       , be
 
-default:, embed , equals text
+default=, embed , equals text
         , word  , .oo

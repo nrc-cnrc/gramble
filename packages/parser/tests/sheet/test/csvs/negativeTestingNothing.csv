@@ -1,13 +1,13 @@
 
-verb:, table:, text, gloss
+verb=, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-suffix:, table:, text, gloss
+suffix=, table:, text, gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
 
-default:, testnot:, text, gloss
+default=, testnot:, text, gloss
     ,     , foobar, run-1SG,
     ,     , moobar, jump-1SG,
     ,     , foobaz, run-2SG

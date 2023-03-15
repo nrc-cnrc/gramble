@@ -1,12 +1,12 @@
 
-root:, table:, text, gloss
+root=, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-stem:, table:, embed, text, gloss/subj
+stem=, table:, embed, text, gloss/subj
         ,      , root, bar, [1SG],
         ,      , root, baz, [2SG],
         ,      , root, ba, 
 
-default:, table:, embed, equals subj
+default=, table:, embed, equals subj
     ,       , stem, [(2)(SG)]

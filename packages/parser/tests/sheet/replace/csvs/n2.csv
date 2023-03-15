@@ -1,4 +1,4 @@
-word:, table:, text, >text
+word=, table:, text, >text
     ,       , b,    text
     ,
     , replace:, from text, to text

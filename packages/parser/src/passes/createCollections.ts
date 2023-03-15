@@ -23,7 +23,7 @@ import { AUTO_SYMBOL_NAME, DEFAULT_SYMBOL_NAME } from "../util";
  * 
  * E.g., something like the following:
  * 
- * VERB:, text
+ * VERB=, text
  *      , foo
  *      ,
  * replace text:, from, to
@@ -31,7 +31,7 @@ import { AUTO_SYMBOL_NAME, DEFAULT_SYMBOL_NAME } from "../util";
  * 
  * is rescoped so that it has the same semantics as:
  * 
- * VERB:, table:, text
+ * VERB=, table:, text
  *      ,       , foo
  *      ,
  *      , replace text:, from, to

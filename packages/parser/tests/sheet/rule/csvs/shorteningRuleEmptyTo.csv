@@ -1,4 +1,4 @@
-word:, table:, text
+word=, table:, text
     ,       , abbba
     ,       ,     ,
     , replace text:, from, to

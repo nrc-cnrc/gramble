@@ -1,8 +1,8 @@
 
-verb:, table:, text, pos, class
+verb=, table:, text, pos, class
     ,       , foo, v, v
     ,       , moo, n, n
     ,       , goo, v, n
 
-default:, table:, embed, equals pos/class
+default=, table:, embed, equals pos/class
     ,       , verb, v

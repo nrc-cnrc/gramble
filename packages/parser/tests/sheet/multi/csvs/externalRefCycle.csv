@@ -1,6 +1,6 @@
-verb:, table:, text, gloss
+verb=, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-default:, embed, text,
+default=, embed, text,
     , embedGrammarCycle, able

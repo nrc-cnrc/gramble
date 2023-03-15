@@ -6,11 +6,11 @@ nonuvulars:, text
            , s
            , z
 
-root:, text, gloss
+root=, text, gloss
      , foobar, run
      , foobaz, jump
      , foobas, climb
 
-default:, embed, ends embed, text, gloss
+default=, embed, ends embed, text, gloss
      , root, uvulars, q, [1SG]
      , root, nonuvulars, k, [1SG]

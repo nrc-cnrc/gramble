@@ -265,25 +265,34 @@ const OP_JOIN = MPSequence<Op>(
     () => new JoinOp().msg()
 );
 
-const OP_EXPR: MPParser<Op> = MPAlt(
+const OP_SUBEXPR: MPParser<Op> = MPAlt(
     OP_TABLE, OP_COLLECTION,
     OP_TEST, OP_TESTNOT,
     OP_REPLACE, 
     OP_REPLACE_TAPE,
-    OP_OR, OP_JOIN,
-    OP_UNRESERVED
+    OP_OR, OP_JOIN
 );
 
-const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
-    [OP_EXPR, ":"],
+const OP_SUBEXPR_WITH_COLON: MPParser<Op> = MPSequence(
+    [OP_SUBEXPR, ":"],
     (op) => op
 )
+
+const OP_ASSIGNMENT = MPSequence(
+    [OP_UNRESERVED, "="],
+    (child) => child
+);
+
+const OP_EXPR = MPAlt(
+    OP_ASSIGNMENT,
+    OP_SUBEXPR_WITH_COLON
+);
 
 export function parseOp(text: string): Result<Op> {
     const trimmedText = text.trim();
 
-    const env = new MiniParseEnv(new Set(RESERVED_SYMBOLS), ALL_RESERVED);
-    const results = miniParse(env, OP_EXPR_WITH_COLON, trimmedText);
+    const env = new MiniParseEnv(RESERVED_SYMBOLS, ALL_RESERVED);
+    const results = miniParse(env, OP_EXPR, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
         return new ErrorOp(text).msg([Err("Invalid operator",

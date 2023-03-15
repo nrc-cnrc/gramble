@@ -1,2 +1,2 @@
-default:, table:, verb, >text, gloss,
+default=, table:, verb, >text, gloss,
     ,       , foo, verb, run, 

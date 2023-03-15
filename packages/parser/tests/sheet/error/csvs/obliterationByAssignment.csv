@@ -2,6 +2,6 @@ table:, text
       , foo
       , goo
 
-default:, text
+default=, text
       , bar
       , baz

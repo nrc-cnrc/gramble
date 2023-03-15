@@ -1,4 +1,4 @@
-word:, table:, text, gloss
+word=, table:, text, gloss
     ,       , foo, run
     ,       , goo, jump
     ,       , moo, eat
@@ -7,5 +7,5 @@ word:, table:, text, gloss
     ,       , moomoo, eat.impf
     ,       ,       , be
 
-default:, embed , equals text
+default=, embed , equals text
         , word  , f.*

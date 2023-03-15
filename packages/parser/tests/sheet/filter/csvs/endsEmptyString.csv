@@ -1,7 +1,7 @@
 
-root:, text, gloss
+root=, text, gloss
      , foobar, run
      , foobaz, jump
 
-default:, embed, ends text, text, gloss
+default=, embed, ends text, text, gloss
      , root, , q, [1SG]

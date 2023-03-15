@@ -1,2 +1,2 @@
-default:, table:, text, gloss, hide
+default=, table:, text, gloss, hide
     ,       , foo, run, class

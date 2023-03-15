@@ -1,14 +1,14 @@
-nouns:, table:, text
+nouns=, table:, text
         ,       , moo
         ,       , foo
 
-verbs:, table:, text
+verbs=, table:, text
         ,       , goo
         ,       , boo
 
-preps:, table:, text
+preps=, table:, text
         ,       , noo
         ,       , soo
 
-default:, table:, embed, text
+default=, table:, embed, text
     ,       , nouns|verbs preps, bar

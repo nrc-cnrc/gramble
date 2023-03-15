@@ -1,4 +1,4 @@
-word:, table:, text
+word=, table:, text
     ,       , aba
     ,       ,     ,
     , replace text:, from, to, pre, post

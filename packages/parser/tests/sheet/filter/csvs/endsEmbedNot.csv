@@ -7,11 +7,11 @@ vowels:, text
         , u 
 
 
-root:, text, gloss
+root=, text, gloss
      , fooba, run
      , foobo, jump
      , foobar, climb
 
-default:, embed, ends embed, text, gloss
+default=, embed, ends embed, text, gloss
      , root, vowels, r, [1SG]
      , root, ~vowels, u, [1SG]

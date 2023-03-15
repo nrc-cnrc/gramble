@@ -639,7 +639,7 @@ const HP_EXPR: MPParser<Header> = MPAlt(HP_COMMENT, HP_NON_COMMENT_EXPR);
 
 export function parseHeaderCell(text: string): Result<Header> {
 
-    const env = new MiniParseEnv(new Set(RESERVED_SYMBOLS), ALL_RESERVED);
+    const env = new MiniParseEnv(RESERVED_SYMBOLS, ALL_RESERVED);
     const results = miniParse(env, HP_EXPR, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error

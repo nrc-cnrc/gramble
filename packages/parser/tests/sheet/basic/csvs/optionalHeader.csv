@@ -1,3 +1,3 @@
-default:, table:, text, optional text
+default=, table:, text, optional text
     ,       , foo, bar
     ,       , moo, bar

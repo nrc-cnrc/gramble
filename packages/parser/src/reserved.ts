@@ -1,9 +1,9 @@
 
 
-export const RESERVED_SYMBOLS = [ 
+export const RESERVED_SYMBOLS = new Set([ 
     "(", ")", "%", "/", "<", ">", 
-    "[", "]", ":", ",", ".", ";", "="
-];
+    "[", "]", ":", ",", ".", ";", "=", "{", "}"
+]);
 
 export const REQUIRED_REPLACE_PARAMS = new Set([
     "from",

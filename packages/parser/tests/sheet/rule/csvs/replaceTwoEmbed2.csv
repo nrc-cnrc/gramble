@@ -1,10 +1,10 @@
-VERB:, table:, text
+VERB=, table:, text
     ,        , aba
 
-TENSE:, table:, embed
+TENSE=, table:, embed
       ,       , VERB, 
       
-default:, table:, embed
+default=, table:, embed
     ,       , TENSE
     ,       ,     ,
     , replace text:, from, to

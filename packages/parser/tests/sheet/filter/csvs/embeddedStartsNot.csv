@@ -1,12 +1,12 @@
 
-root:, text, gloss
+root=, text, gloss
      , foo, run
      , moo, jump
      , goo, climb
 
-word:, text, gloss, embed, starts text
+word=, text, gloss, embed, starts text
      , um, [1SG], root, ~g
      , un, [1SG], root, g
 
-default:, embed
+default=, embed
      , word
