@@ -1,21 +1,4 @@
 import { 
-    AlternationGrammar, 
-    EpsilonGrammar, 
-    SequenceGrammar,
-    StartsGrammar,
-    EndsGrammar,
-    ContainsGrammar,
-    EmbedGrammar,
-    GrammarResult,
-    RenameGrammar
-} from "./grammars";
-
-import { 
-    parseRegex,
-    parsePlaintext
-} from "./cell";
-
-import { 
     miniParse, MiniParseEnv, MPAlt, MPComment, 
     MPDelay, MPParser,
     MPSequence, MPUnreserved 
@@ -33,8 +16,7 @@ import {
 
 import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./reserved";
 import { Component, CPass, CResult } from "./components";
-import { Pass, PassEnv } from "./passes";
-import { REGEX_PASSES } from "./passes/allPasses";
+import { PassEnv } from "./passes";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
@@ -233,7 +215,7 @@ abstract class UnaryHeader extends Header {
     }
 }
 
-export class TagHeader extends UnaryHeader {
+export class ParamNameHeader extends UnaryHeader {
 
     constructor(
         public tag: string,
@@ -252,7 +234,7 @@ export class TagHeader extends UnaryHeader {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
-                .bind(c => new TagHeader(this.tag, c as Header));
+                .bind(c => new ParamNameHeader(this.tag, c as Header));
     }
 }
 
@@ -499,7 +481,7 @@ const HP_FROM = MPSequence<Header>(
                 .err(`Invalid ${c.name} in header`, 
                     `You can't have a ${c.name} inside a "from" header.`);
         }
-        return new RegexTagHeader("from", c).msg();
+        return new ParamNameHeader("from", c).msg();
     })
 );
 
@@ -565,7 +547,7 @@ const HP_POST_ATOMIC = MPSequence<Header>(
 
 const HP_UNIQUE = MPSequence<Header>(
     ["unique", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => new TagHeader("unique", c))
+    (child) => child.bind(c => new ParamNameHeader("unique", c))
 );
 
 const HP_SLASH = MPSequence<Header>(

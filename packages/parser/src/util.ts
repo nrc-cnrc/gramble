@@ -9,6 +9,7 @@ export const HIDDEN_TAPE_PREFIX = ".";
 export const REPLACE_INPUT_TAPE = HIDDEN_TAPE_PREFIX + "i";
 export const REPLACE_OUTPUT_TAPE = HIDDEN_TAPE_PREFIX + "o";
 export const DUMMY_REGEX_TAPE = HIDDEN_TAPE_PREFIX + "T";
+export const DUMMY_TAPE = HIDDEN_TAPE_PREFIX + "END";
 
 export const ANY_CHAR_STR = "__ANY_CHAR__";
 export const NO_CHAR_STR = "__ANY_CHAR__";

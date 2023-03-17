@@ -6,7 +6,7 @@ import { HIDDEN_TAPE_PREFIX, SILENT, StringDict, tokenizeUnicode } from "../src/
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
-import { parsePlaintext, parseRegex, parseSymbol } from "../src/cell";
+import { parseCell } from "../src/cell";
 import { parseHeaderCell } from "../src/headers";
 import { parseOp } from "../src/ops";
 
@@ -53,21 +53,21 @@ export function testHeaderID(text: string, expectedID: string): void {
 }
 
 export function testPlaintextID(text: string, expectedID: string): void {
-    const result = parsePlaintext(text).msgTo([]);
+    const result = parseCell("plaintext", text).msgTo([]);
     it(`"${text}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
 export function testSymbolID(text: string, expectedID: string): void {
-    const result = parseSymbol(text).msgTo([]);
+    const result = parseCell("symbol", text).msgTo([]);
     it(`"${text}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
 export function testRegexID(text: string, expectedID: string): void {
-    const result = parseRegex(text).msgTo([]); 
+    const result = parseCell("regex", text).msgTo([]); 
     it(`"${text}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });

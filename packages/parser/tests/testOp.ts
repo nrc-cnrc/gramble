@@ -18,7 +18,6 @@ describe(`${path.basename(module.filename)}`, function() {
     // not having an equals, or having a colon, is invalid for assignments
     testOpID("verb", "ERR");
     testOpID("verb:", "ERR");
-    testOpID("verb=", "ERR");
 
     // not having a colon, or having an equals is invalid for ops
     testOpID("table", "ERR");

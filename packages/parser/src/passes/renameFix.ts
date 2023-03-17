@@ -1,4 +1,4 @@
-import { HIDDEN_TAPE_PREFIX } from "../util";
+import { DUMMY_TAPE, HIDDEN_TAPE_PREFIX } from "../util";
 import { 
     CounterStack, 
     Grammar, 
@@ -60,12 +60,12 @@ export class RenameFix extends GrammarPass {
         g.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.fromTape) == -1) { 
 
-            if (g.child instanceof EpsilonGrammar) {
+            if (g.child.tapes.length == 1 && g.child.tapes[0] == DUMMY_TAPE) {
                 return result(g.child);
             }
 
             return result(g).err("Renaming missing tape",
-                            `The ${g.child.constructor.name} to the left does not contain the tape ${g.fromTape}. ` +
+                            `The ${g.child.constructor.name} to undergo renaming does not contain the tape ${g.fromTape}. ` +
                             `Available tapes: [${[...g.child.tapes]}]`)
                          .bind(c => c.child);
         }

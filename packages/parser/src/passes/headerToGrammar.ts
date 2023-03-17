@@ -1,9 +1,10 @@
 import { Pass, PassEnv } from "../passes";
 import { 
     AlternationGrammar, ContainsGrammar, 
-    EmbedGrammar, EndsGrammar, 
-    EpsilonGrammar, Grammar, 
-    GrammarResult, RenameGrammar, 
+    EndsGrammar, 
+    EpsilonGrammar,
+    Grammar,
+    GrammarResult, LiteralGrammar, RenameGrammar, 
     SequenceGrammar, StartsGrammar 
 } from "../grammars";
 import { DUMMY_REGEX_TAPE } from "../util";
@@ -15,63 +16,80 @@ import {
     Header, OptionalHeader, 
     RegexHeader, RegexTagHeader, 
     SlashHeader, StartsHeader, 
-    TagHeader, TapeNameHeader 
+    ParamNameHeader, TapeNameHeader 
 } from "../headers";
-import { REGEX_PASSES } from "./allPasses";
-import { parsePlaintext, parseRegex, parseSymbol, Regex } from "../cell";
+
+export type ParseClass = "plaintext" | "regex" | "symbol" | "context" | "none";
+export function getParseClass(h: Header): ParseClass {
+    switch (h.constructor) {
+        case EmbedHeader: return "symbol";
+        case TapeNameHeader: return "plaintext";
+        case CommentHeader: return "none";
+        case ParamNameHeader: return getParseClass((h as ParamNameHeader).child);
+        case OptionalHeader: return getParseClass((h as OptionalHeader).child);
+        case RegexTagHeader: return "regex";
+        case EqualsHeader: return "regex";
+        case StartsHeader: return "regex";
+        case EndsHeader: return "regex";
+        case ContainsHeader: return "regex";
+        case SlashHeader: return "plaintext";
+        case ErrorHeader: return "none";
+        default:
+            throw new Error("unhandled header");
+    }
+}
 
 export class HeaderToGrammar extends Pass<Header, Grammar> {
     
     constructor(
-        public text: string
+        public regexGrammar: Grammar
     ) { 
         super()
     }
+
     public get desc(): string {
         return "Creating grammars from header/cell pairs";
     }
 
-    public transform(r: Regex, env: PassEnv): GrammarResult {
+    public transform(h: Header, env: PassEnv): GrammarResult {
         
-        switch(r.constructor) {
+        switch(h.constructor) {
             case EmbedHeader:
-                return this.handleEmbed(r as EmbedHeader, env);
+                return this.handleEmbed(h as EmbedHeader, env);
             case TapeNameHeader:
-                return this.handleTapeName(r as TapeNameHeader, env);
+                return this.handleTapeName(h as TapeNameHeader, env);
             case CommentHeader:
-                return this.handleComment(r as CommentHeader, env);
-            case TagHeader:
-                return this.handleTag(r as TagHeader, env);
+                return this.handleComment(h as CommentHeader, env);
+            case ParamNameHeader:
+                return this.handleTag(h as ParamNameHeader, env);
             case OptionalHeader:
-                return this.handleOptional(r as OptionalHeader, env);
+                return this.handleOptional(h as OptionalHeader, env);
             case RegexTagHeader:
-                return this.handleRegexTag(r as RegexTagHeader, env);
+                return this.handleRegexTag(h as RegexTagHeader, env);
             case EqualsHeader:
-                return this.handleEquals(r as EqualsHeader, env);
+                return this.handleEquals(h as EqualsHeader, env);
             case StartsHeader:
-                return this.handleStarts(r as StartsHeader, env);
+                return this.handleStarts(h as StartsHeader, env);
             case EndsHeader:
-                return this.handleEnds(r as EndsHeader, env);
+                return this.handleEnds(h as EndsHeader, env);
             case ContainsHeader:
-                return this.handleContains(r as ContainsHeader, env);
+                return this.handleContains(h as ContainsHeader, env);
             case SlashHeader:
-                return this.handleSlash(r as SlashHeader, env);
+                return this.handleSlash(h as SlashHeader, env);
             case ErrorHeader:
-                return this.handleError(r as ErrorHeader, env);
+                return this.handleError(h as ErrorHeader, env);
             default:
                 throw new Error("unhandled header");
         }
     }
 
     public handleEmbed(h: EmbedHeader, env: PassEnv): GrammarResult {
-        return parseSymbol(this.text)
-                    .bind(r => REGEX_PASSES.go(r, env));
+        return this.regexGrammar.msg();
     }
 
     public handleTapeName(h: TapeNameHeader, env: PassEnv): GrammarResult {
         const tapeName = h.text;
-        return parsePlaintext(this.text)
-                    .bind(r => REGEX_PASSES.go(r, env))
+        return this.regexGrammar.msg()
                     .bind(g => new RenameGrammar(g, 
                                 DUMMY_REGEX_TAPE, tapeName))
     }
@@ -80,7 +98,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
         return new EpsilonGrammar().msg();
     }
 
-    public handleTag(h: TagHeader, env: PassEnv): GrammarResult {
+    public handleTag(h: ParamNameHeader, env: PassEnv): GrammarResult {
         return this.transform(h.child, env);
     }
     
@@ -97,8 +115,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
                 `A header "${h.name} X" can only have a plain tape name as its X, like "${h.name} text".`);
         }
         const tapeName = h.child.text;
-        return parseRegex(this.text)
-                    .bind(r => REGEX_PASSES.go(r, env))
+        return this.regexGrammar.msg()
                     .bind(g => new RenameGrammar(g, 
                             DUMMY_REGEX_TAPE, tapeName))
     }
@@ -133,7 +150,8 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
     }
 
     public handleError(h: ErrorHeader, env: PassEnv): GrammarResult {
-        if (this.text.length != 0) {
+        if (!(this.regexGrammar instanceof EpsilonGrammar) || 
+            (this.regexGrammar instanceof LiteralGrammar && this.regexGrammar.text.length > 0)) {
             return new EpsilonGrammar().msg()
                 .warn("This content is associated with an invalid header above, ignoring");
         }

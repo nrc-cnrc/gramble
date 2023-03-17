@@ -5,7 +5,7 @@ import {
 } from "../tsts";
 import { PassEnv } from "../passes";
 import { Err, Msgs } from "../msgs";
-import { Header, TagHeader, TapeNameHeader } from "../headers";
+import { Header, ParamNameHeader, TapeNameHeader } from "../headers";
 import { Component, CPass, CResult } from "../components";
 
 /**
@@ -60,7 +60,7 @@ export class CheckTestLiterals extends CPass {
         if (t instanceof TapeNameHeader) {
             return true;
         }
-        if (t instanceof TagHeader) {
+        if (t instanceof ParamNameHeader) {
             return this.isLiteral(t.child);
         }
         return false;

@@ -26,6 +26,7 @@ import { Pass, PassEnv } from "./passes";
 import {
     CellPos,
     Dict,
+    DUMMY_TAPE,
     flatten,
     HIDDEN_TAPE_PREFIX,
     isSubset,
@@ -339,7 +340,7 @@ export class EpsilonGrammar extends AtomicGrammar {
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = [ 
-                `${HIDDEN_TAPE_PREFIX}END` 
+                DUMMY_TAPE
             ];
         }
         return this._tapes;
@@ -366,7 +367,7 @@ export class NullGrammar extends AtomicGrammar {
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = [ 
-                `${HIDDEN_TAPE_PREFIX}END` 
+                DUMMY_TAPE
             ];
         }
         return this._tapes;

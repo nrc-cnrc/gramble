@@ -1,4 +1,5 @@
 import { Component, CPass, CResult } from "./components";
+import { EpsilonGrammar } from "./grammars";
 import { 
     MPDelay, 
     MPAlt, 
@@ -12,6 +13,7 @@ import {
 } from "./miniParser";
 import { Err, Msgs, Result, resultList } from "./msgs";
 import { PassEnv } from "./passes";
+import { ParseClass } from "./passes/headerToGrammar";
 import { 
     isValidSymbolName,
     RESERVED_FOR_CONTEXT, 
@@ -401,39 +403,51 @@ const PLAINTEXT_EXPR = MPRepetition<Regex>(
                         .bind(cs => new SequenceRegex(cs))
 );
 
-export function parse(
-    text: string, 
-    splitters: Set<string>,
-    reserved: Set<string>,
-    topLevelExpr: RegexParser,
-    grammarName: string = "content"
+const parseParams = {
+
+    "plaintext": {
+        splitters: RESERVED_FOR_PLAINTEXT,
+        reserved: RESERVED_FOR_PLAINTEXT,
+        expr: PLAINTEXT_EXPR
+    },
+
+    "regex": {
+        splitters: RESERVED_FOR_REGEX,
+        reserved: RESERVED_FOR_REGEX,
+        expr: REGEX_TOPLEVEL
+    },
+
+    "context": {
+        splitters: RESERVED_FOR_CONTEXT,
+        reserved: RESERVED_FOR_CONTEXT,
+        expr: REGEX_TOPLEVEL  // TODO: this eventually won't be regex
+    },
+
+    "symbol": {
+        splitters: RESERVED_FOR_SYMBOL, 
+        reserved: RESERVED_WORDS, 
+        expr: SYMBOL_EXPR
+    }
+}
+
+export function parseCell(
+    parseClass: ParseClass,
+    text: string
 ): Result<Regex> {
-    const env = new MiniParseEnv(splitters, reserved);
-    const results = miniParse(env, topLevelExpr, text);
+    if (parseClass == "none") {
+        return new ErrorRegex(text).msg();
+    }
+    const params = parseParams[parseClass];
+    const env = new MiniParseEnv(params.splitters, params.reserved);
+    const results = miniParse(env, params.expr, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
         return new ErrorRegex(text).msg([Err("Cell parsing error", 
-                    `Cannot parse ${text} as a ${grammarName}`)])
+                    `Cannot parse ${text} as a ${parseClass}`)])
     }
     if (results.length > 1) {
         // if this happens, it's an error on our part
         throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
     }
     return results[0];
-}
-
-export function parseRegex(text: string): Result<Regex> {
-    return parse(text, RESERVED_FOR_REGEX, RESERVED_FOR_REGEX, REGEX_TOPLEVEL, "regex");
-}
-
-export function parsePlaintext(text: string): Result<Regex> {
-    return parse(text, RESERVED_FOR_PLAINTEXT, RESERVED_FOR_PLAINTEXT, PLAINTEXT_EXPR);
-}
-
-export function parseContext(text: string): Result<Regex> {
-    return parse(text, RESERVED_FOR_CONTEXT, RESERVED_FOR_CONTEXT, REGEX_TOPLEVEL, "context");
-}
-
-export function parseSymbol(text: string): Result<Regex> {
-    return parse(text, RESERVED_FOR_SYMBOL, RESERVED_WORDS, SYMBOL_EXPR, "symbol name");
 }
