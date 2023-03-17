@@ -13,31 +13,11 @@ import {
     CommentHeader, ContainsHeader, 
     EmbedHeader, EndsHeader, 
     EqualsHeader, ErrorHeader, 
-    Header, OptionalHeader, 
-    RegexHeader, RegexTagHeader, 
+    Header, OptionalHeader,
     SlashHeader, StartsHeader, 
-    ParamNameHeader, TapeNameHeader 
+    ParamNameHeader, TapeNameHeader, UnaryHeader 
 } from "../headers";
 
-export type ParseClass = "plaintext" | "regex" | "symbol" | "context" | "none";
-export function getParseClass(h: Header): ParseClass {
-    switch (h.constructor) {
-        case EmbedHeader: return "symbol";
-        case TapeNameHeader: return "plaintext";
-        case CommentHeader: return "none";
-        case ParamNameHeader: return getParseClass((h as ParamNameHeader).child);
-        case OptionalHeader: return getParseClass((h as OptionalHeader).child);
-        case RegexTagHeader: return "regex";
-        case EqualsHeader: return "regex";
-        case StartsHeader: return "regex";
-        case EndsHeader: return "regex";
-        case ContainsHeader: return "regex";
-        case SlashHeader: return "plaintext";
-        case ErrorHeader: return "none";
-        default:
-            throw new Error("unhandled header");
-    }
-}
 
 export class HeaderToGrammar extends Pass<Header, Grammar> {
     
@@ -64,8 +44,6 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
                 return this.handleTag(h as ParamNameHeader, env);
             case OptionalHeader:
                 return this.handleOptional(h as OptionalHeader, env);
-            case RegexTagHeader:
-                return this.handleRegexTag(h as RegexTagHeader, env);
             case EqualsHeader:
                 return this.handleEquals(h as EqualsHeader, env);
             case StartsHeader:
@@ -108,7 +86,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
                     [c, new EpsilonGrammar()]));
     }
 
-    public handleRegex(h: RegexHeader, env: PassEnv): GrammarResult {
+    public handleRegex(h: UnaryHeader, env: PassEnv): GrammarResult {
         if (!(h.child instanceof TapeNameHeader)) {
             // shouldn't happen, should already be taken care of, more for linting
             return new EpsilonGrammar().err("Invalid header",
@@ -118,10 +96,6 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
         return this.regexGrammar.msg()
                     .bind(g => new RenameGrammar(g, 
                             DUMMY_REGEX_TAPE, tapeName))
-    }
-    
-    public handleRegexTag(h: RegexTagHeader, env: PassEnv): GrammarResult {
-        return this.handleRegex(h, env);
     }
 
     public handleEquals(h: EqualsHeader, env: PassEnv): GrammarResult {

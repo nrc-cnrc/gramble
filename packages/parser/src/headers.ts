@@ -21,6 +21,9 @@ import { PassEnv } from "./passes";
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
 
+export type ParseClass = "plaintext" | "regex" | "symbol" | "context" | "none" | "comment";
+export type HeaderParamNames = "unique" | "from" | "to" | "pre" | "post";
+
 /**
  * A Header is a cell in the top row of a table, consisting of one of
  * 
@@ -46,7 +49,6 @@ export const DEFAULT_VALUE = 1.0;
  export abstract class Header extends Component {
     
     public abstract get name(): string;
-    public abstract getFontColor(): string;
     public abstract getBackgroundColor(saturation: number, value: number): string;
     public abstract get id(): string;
 
@@ -83,10 +85,6 @@ abstract class AtomicHeader extends Header {
 
     public get id(): string {
         return this.text;
-    }
-
-    public getFontColor(): string {
-        return "#000000";
     }
 
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
@@ -149,10 +147,6 @@ export class TapeNameHeader extends AtomicHeader {
         super();
     }
 
-    public getFontColor() {
-        return "#064a3f";
-    }
-
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return new TapeNameHeader(this.text).msg();
     }
@@ -177,10 +171,6 @@ export class CommentHeader extends Header {
         return new CommentHeader().msg();
     }
 
-    public getFontColor() {
-        return "#669944";
-    }
-
     public get hue(): number {
         return 0;
     }
@@ -194,7 +184,7 @@ export class CommentHeader extends Header {
  * The ancestor class of unary header operators like "optional", 
  * "not", and ">" (the rename operator)
  */
-abstract class UnaryHeader extends Header {
+export abstract class UnaryHeader extends Header {
 
     public constructor(
         public child: Header
@@ -206,8 +196,8 @@ abstract class UnaryHeader extends Header {
         return `${this.name}[${this.child.id}]`
     }
 
-    public getFontColor() {
-        return this.child.getFontColor();
+    public getParamName(): string {
+        return this.child.getParamName();
     }
 
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
@@ -269,46 +259,6 @@ export class RenameHeader extends UnaryHeader {
 }
 
 /**
- * The command "re X:Y" allows the use of regex operators and negation
- *  in the cells beneath.
- * 
- * e.g. "~(A|B)" is interpreted as "neither A nor B" rather than this literal string.
- * 
- * This is also the ancestor class of all other headers (e.g. "equals", 
- * starts", etc.) that allow and parse regular expressions 
- * in their fields.
- */
-export abstract class RegexHeader extends UnaryHeader {
-
-    public getFontColor() {
-        return "#bd1128";
-    }
-}
-
-export class RegexTagHeader extends RegexHeader {
-
-    constructor(
-        public tag: string,
-        child: Header
-    ) {
-        super(child);
-    }
-
-    public get name(): string {
-        return this.tag;
-    }
-
-    public getParamName(): string {
-        return this.tag;
-    }
-    
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new RegexTagHeader(this.tag, c as Header));
-    }
-}
-
-/**
  * EqualsHeader puts a constraint on the state of the immediately preceding cell (call this state N)
  * that Filter(N, X) -- that is, it filters the results of N such that every surviving record is a 
  * superset of X.
@@ -317,7 +267,7 @@ export class RegexTagHeader extends RegexHeader {
  * These constrain N to either start with X (that is, Filter(N, X.*)) or end with X 
  * (that is, Filter(N, .*X)), or contain X (Filter(N, .*X.*)).
  */
-export class EqualsHeader extends RegexHeader {
+export class EqualsHeader extends UnaryHeader {
     
     public get name(): string {
         return "equals";
@@ -333,7 +283,7 @@ export class EqualsHeader extends RegexHeader {
  * StartsHeader is a special kind of [EqualsHeader] that only requires its predecessor (call it N) to 
  * start with X (that is, Equals(N, X.*))
  */
-export class StartsHeader extends RegexHeader {
+export class StartsHeader extends UnaryHeader {
 
     public get name(): string {
         return "starts";
@@ -349,7 +299,7 @@ export class StartsHeader extends RegexHeader {
  * EndsHeader is a special kind of [EqualsHeader] that only requires its predecessor (call it N) to 
  * end with X (that is, Equals(N, .*X))
  */
-export class EndsHeader extends RegexHeader {
+export class EndsHeader extends UnaryHeader {
 
     public get name(): string {
         return "ends";
@@ -365,7 +315,7 @@ export class EndsHeader extends RegexHeader {
  * ContainsHeader is a special kind of [EqualsHeader] that only requires its predecessor (call it N) to 
  * contain X (that is, Equals(N, .*X.*))
  */
-export class ContainsHeader extends RegexHeader {
+export class ContainsHeader extends UnaryHeader {
     
     public get name(): string {
         return "contains";
@@ -398,10 +348,6 @@ export class SlashHeader extends Header {
         return this.child1.getBackgroundColor(saturation, value);
     }
 
-    public getFontColor() {
-        return this.child1.getFontColor();
-    }
-    
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.child1, this.child2])
                 .map(c => f.transform(c, env))
@@ -493,7 +439,7 @@ const HP_TO = MPSequence<Header>(
                 .err(`Invalid ${c.name} in header`, 
                     `You can't have a ${c.name} inside a "to" header.`);
         }
-        return new RegexTagHeader("to", c).msg();
+        return new ParamNameHeader("to", c).msg();
     })
 );
 
@@ -505,7 +451,7 @@ const HP_PRE = MPSequence<Header>(
                 .err(`Invalid ${c.name} in header`, 
                     `You can't have a ${c.name} inside a "pre" header.`);
         }
-        return new RegexTagHeader("pre", c).msg();
+        return new ParamNameHeader("pre", c).msg();
     })
 );
 
@@ -517,32 +463,32 @@ const HP_POST = MPSequence<Header>(
                 .err(`Invalid ${c.name} in header`, 
                     `You can't have a ${c.name} inside a "post" header.`);
         }
-        return new RegexTagHeader("post", c).msg();
+        return new ParamNameHeader("post", c).msg();
     })
 );
 
 const HP_FROM_ATOMIC = MPSequence<Header>(
     ["from"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                .bind(c => new RegexTagHeader("from", c))
+                .bind(c => new ParamNameHeader("from", c))
 );
 
 const HP_TO_ATOMIC = MPSequence<Header>(
     ["to"],
     () => new TapeNameHeader(REPLACE_OUTPUT_TAPE).msg()
-                    .bind(c => new RegexTagHeader("to", c))
+                    .bind(c => new ParamNameHeader("to", c))
 );
 
 const HP_PRE_ATOMIC = MPSequence<Header>(
     ["pre"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                    .bind(c => new RegexTagHeader("pre", c))
+                    .bind(c => new ParamNameHeader("pre", c))
 );
 
 const HP_POST_ATOMIC = MPSequence<Header>(
     ["post"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                 .bind(c => new RegexTagHeader("post", c))
+                 .bind(c => new ParamNameHeader("post", c))
 );
 
 const HP_UNIQUE = MPSequence<Header>(
@@ -636,4 +582,46 @@ export function parseHeaderCell(text: string): Result<Header> {
         throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
     }
     return results[0];
+}
+
+export function getParseClass(h: Header): ParseClass {
+    switch (h.constructor) {
+        case EmbedHeader: return "symbol";
+        case TapeNameHeader: return "plaintext";
+        case CommentHeader: return "none";
+        case OptionalHeader: return getParseClass((h as OptionalHeader).child);
+        case EqualsHeader: return "regex";
+        case StartsHeader: return "regex";
+        case EndsHeader: return "regex";
+        case ContainsHeader: return "regex";
+        case SlashHeader: return "plaintext";
+        case HideHeader: return "none";
+        case RenameHeader: return "none";
+        case ErrorHeader: return "none";
+        case ParamNameHeader:
+            const paramName = (h as ParamNameHeader).name;
+            switch (paramName) {
+                case "unique": return "plaintext";
+                case "from": return "regex";
+                case "to": return "regex";
+                case "pre": return "regex";
+                case "post": return "regex";
+                default:
+                    throw new Error(`unhandled header: ${h.constructor.name}`);
+            }
+        default:
+            throw new Error(`unhandled header: ${h.constructor.name}`);
+    }
+}
+
+export function getFontColor(h: Header): string {
+    const parseClass = getParseClass(h);
+    switch (parseClass) {
+        case "comment": return "#669944";
+        case "none": return "#000000";
+        case "plaintext": return "#064a3f";
+        case "regex": return "#bd1128";
+        case "context": return "#bd1128";
+        case "symbol": return "#333333"; 
+    }
 }

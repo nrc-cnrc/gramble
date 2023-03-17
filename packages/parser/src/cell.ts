@@ -1,5 +1,6 @@
 import { Component, CPass, CResult } from "./components";
 import { EpsilonGrammar } from "./grammars";
+import { ParseClass } from "./headers";
 import { 
     MPDelay, 
     MPAlt, 
@@ -13,7 +14,6 @@ import {
 } from "./miniParser";
 import { Err, Msgs, Result, resultList } from "./msgs";
 import { PassEnv } from "./passes";
-import { ParseClass } from "./passes/headerToGrammar";
 import { 
     isValidSymbolName,
     RESERVED_FOR_CONTEXT, 
@@ -434,7 +434,7 @@ export function parseCell(
     parseClass: ParseClass,
     text: string
 ): Result<Regex> {
-    if (parseClass == "none") {
+    if (parseClass == "none" || parseClass == "comment") {
         return new ErrorRegex(text).msg();
     }
     const params = parseParams[parseClass];

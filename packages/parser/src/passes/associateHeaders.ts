@@ -9,6 +9,7 @@ import {
 import { Component, CPass, CResult } from "../components";
 import { PassEnv } from "../passes";
 import { ContentMsg, Msgs, Warn } from "../msgs";
+import { getFontColor } from "../headers";
 
 /**
  * 
@@ -44,7 +45,7 @@ export class AssociateHeaders extends CPass {
                     const newCell = new TstHeaderContentPair(header, content.cell);
                     new ContentMsg(
                         header.getBackgroundColor(),
-                        header.getFontColor()
+                        getFontColor(header.header)
                     ).localize(content.pos).msgTo(msgs);
 
                     const tag = header.header.getParamName();

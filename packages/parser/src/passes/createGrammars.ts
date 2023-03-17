@@ -21,10 +21,10 @@ import {
     CollectionGrammar, 
     RenameGrammar, ReplaceGrammar, SequenceGrammar, TestGrammar, JoinGrammar
 } from "../grammars";
-import { Header, TapeNameHeader } from "../headers";
+import { getParseClass, Header, TapeNameHeader } from "../headers";
 import { Err, Msgs, resultList } from "../msgs";
 import { BLANK_PARAM } from "../ops";
-import { getParseClass, HeaderToGrammar } from "./headerToGrammar";
+import { HeaderToGrammar } from "./headerToGrammar";
 import { parseCell } from "../cell";
 import { REGEX_PASSES } from "./allPasses";
 

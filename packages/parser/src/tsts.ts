@@ -61,10 +61,6 @@ export class TstHeader extends TstCellComponent {
         return this.header.getBackgroundColor(saturation, value);
     }
 
-    public getFontColor(): string {
-        return this.header.getFontColor();
-    }
-
 }
 
 export class TstContent extends TstCellComponent {
