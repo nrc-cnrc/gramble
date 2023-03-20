@@ -18,6 +18,7 @@ import { ReplaceRulesOld } from "./replaceRulesOld";
 import { AssignDefaults } from "./assignDefaults";
 import { RegexToGrammar } from "./regexToGrammar";
 import { MergeSymbolChains } from "./mergeSymbolChains";
+import { HandleSingleTapes } from "./handleSingleTapes";
 
 export const SHEET_PASSES = 
 
@@ -97,6 +98,11 @@ export const GRAMMAR_PASSES =
     // if the programmer has specified an invalid renaming/hiding
     // structure that would cause problems during evaluation, fix
     // it so it doesn't
+    new HandleSingleTapes().compose(
+
+    // if the programmer has specified an invalid renaming/hiding
+    // structure that would cause problems during evaluation, fix
+    // it so it doesn't
     new RenameFix().compose(
 
     // turn new-style replacement cascades into the appropriate
@@ -110,7 +116,7 @@ export const GRAMMAR_PASSES =
     // some filters (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    new AdjustFilters()))));
+    new AdjustFilters())))));
 
 export const ALL_PASSES = SHEET_PASSES.compose(GRAMMAR_PASSES);
 

@@ -8,9 +8,9 @@ suffix=, table:, text, gloss/subj
     ,       , baz, [2SG.SUBJ]
     ,       ,    , [3SG.SUBJ]
 
-default=, table:, embed, embed, contains embed
-    ,       , verb, suffix, cond
+default=, table:, embed, embed, contains subj
+    ,       , verb, suffix, {cond}
 
-cond:, table:, subj
+cond=, table:, subj
     ,       , 2
     ,       , 3

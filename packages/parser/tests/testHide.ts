@@ -1,6 +1,11 @@
-import { Seq, Join, Hide, Rename, Equals, Collection, Embed } from "../src/grammars";
-import { t1, t2, t3, testHasTapes, testHasVocab, testGrammar, DEFAULT_MAX_RECURSION } from './testUtil';
-import { SILENT, StringDict } from "../src/util";
+import { 
+    Seq, Join, Hide, 
+    Rename, Equals, 
+    Collection, Embed, Lit 
+} from "../src/grammars";
+import { t1, t2, t3, testHasTapes, 
+    testGrammar, DEFAULT_MAX_RECURSION } from './testUtil';
+import { SILENT, StringDict, VERBOSE_DEBUG } from "../src/util";
 import * as path from 'path';
 
 const DUMMY_SYMBOL: string = "";
@@ -247,6 +252,18 @@ describe(`${path.basename(module.filename)}`, function() {
         testHasTapes(grammar, ["t1", ".HIDDEN"], DUMMY_SYMBOL, false);
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
+    
+    describe('13c. Filter using a field, embed it, and then hide it', function() {
+        const grammar = Collection({
+            "a": Equals(Seq(t1("hello"), t2("foo")), t2("foo")),
+            "default": Hide(Embed("a"), "t2", "HIDDEN")
+        });
+        const expectedResults: StringDict[] = [
+            {t1: "hello", ".HIDDEN": "foo"}
+        ];
+        testHasTapes(grammar, ["t1", ".HIDDEN"], DUMMY_SYMBOL, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
+    });
 
     describe('14a. Hide-filter-hide', function() {
         const grammar = Hide(Equals(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3"),
@@ -320,4 +337,14 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
+    describe('17. Hiding a hidden tape', function() {
+        const grammar = Hide(Seq(t1("hello"), Lit(".t2", "foo")), ".t2");
+        const expectedResults: StringDict[] = [
+            {t1: "hello"}
+        ];
+        testHasTapes(grammar, ["t1"]);
+        //testHasVocab(grammar, {t1: 4});
+        testGrammar(grammar, expectedResults);
+
+    });
 });

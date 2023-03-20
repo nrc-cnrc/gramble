@@ -9,6 +9,7 @@ import {
     NegationGrammar, CollectionGrammar, 
     RepeatGrammar, SequenceGrammar, StartsGrammar, RenameGrammar
 } from "../grammars";
+import { HIDDEN_TAPE_PREFIX } from "../util";
 
 /**
  * There's a semantic gotcha in starts/ends/contains that could throw programmers for a 
@@ -102,7 +103,9 @@ export class AdjustFilters extends GrammarPass {
         const newG = this.transform(g.child, env) as GrammarResult;
         return newG.bind(c => {
             const dotStars: Grammar[] = [];
+            //console.log(`starts considers these tapes: ${g.tapes}`);
             for (const tape of g.tapes) {
+                if (tape.startsWith(HIDDEN_TAPE_PREFIX)) continue;
                 const dot = new DotGrammar(tape);
                 const dotStar = new RepeatGrammar(dot);
                 dotStars.push(dotStar);

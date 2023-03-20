@@ -1,8 +1,8 @@
 
-uvulars:, text
+uvulars=, text
         , r 
 
-nonuvulars:, text
+nonuvulars=, text
            , s
            , z
 
@@ -11,6 +11,6 @@ root=, text, gloss
      , foobaz, jump
      , foobas, climb
 
-default=, embed, ends embed, text, gloss
-     , root, uvulars, q, [1SG]
-     , root, nonuvulars, k, [1SG]
+default=, embed, ends text, text, gloss
+     , root, {uvulars}, q, [1SG]
+     , root, {nonuvulars}, k, [1SG]

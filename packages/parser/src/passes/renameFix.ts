@@ -49,8 +49,8 @@ export class RenameFix extends GrammarPass {
         g.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.tapeName) == -1) {  
             return result(g).err("Hiding missing tape",
-                            `The grammar to the left does not contain the tape ${g.tapeName}. ` +
-                            ` Available tapes: [${[...g.child.tapes]}`)
+                            `The grammar being hidden does not contain the tape ${g.tapeName}. ` +
+                            ` Available tapes: [${[...g.child.tapes]}]`)
                          .bind(c => c.child);
         }
         return g.msg();

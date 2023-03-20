@@ -83,14 +83,14 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     public handleHeaderContentPair(t: TstHeaderContentPair, env: PassEnv): GrammarResult {
         const parseClass = getParseClass(t.header.header);
         return parseCell(parseClass, t.cell.text)
-                                .bind(c => REGEX_PASSES.go(c, env))
-                                .localize(t.cell.pos)
-                                .bind(g => new LocatorGrammar(t.cell.pos, g))
-                                .bind(g => new HeaderToGrammar(g))
-                                .bind(h => h.transform(t.header.header, env))
-                                .localize(t.cell.pos)
-                                .bind(g => new LocatorGrammar(t.cell.pos, g));
-    }
+                .bind(c => REGEX_PASSES.go(c, env))
+                .localize(t.cell.pos)
+                .bind(g => new LocatorGrammar(t.cell.pos, g))
+                .bind(g => new HeaderToGrammar(g))
+                .bind(h => h.transform(t.header.header, env))
+                .localize(t.cell.pos)
+                .bind(g => new LocatorGrammar(t.cell.pos, g));
+}
     
     public handleRename(t: TstRename, env: PassEnv): GrammarResult {
         if (!(t.header.header instanceof TapeNameHeader)) {

@@ -4,10 +4,9 @@ import {
     EndsGrammar, 
     EpsilonGrammar,
     Grammar,
-    GrammarResult, LiteralGrammar, RenameGrammar, 
-    SequenceGrammar, StartsGrammar 
+    GrammarResult, LiteralGrammar, 
+    SequenceGrammar, SingleTapeGrammar, StartsGrammar 
 } from "../grammars";
-import { DUMMY_REGEX_TAPE } from "../util";
 import { resultList } from "../msgs";
 import { 
     CommentHeader, ContainsHeader, 
@@ -68,8 +67,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
     public handleTapeName(h: TapeNameHeader, env: PassEnv): GrammarResult {
         const tapeName = h.text;
         return this.regexGrammar.msg()
-                    .bind(g => new RenameGrammar(g, 
-                                DUMMY_REGEX_TAPE, tapeName))
+                    .bind(g => new SingleTapeGrammar(tapeName, g))
     }
 
     public handleComment(h: CommentHeader, env: PassEnv): GrammarResult {
@@ -94,8 +92,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
         }
         const tapeName = h.child.text;
         return this.regexGrammar.msg()
-                    .bind(g => new RenameGrammar(g, 
-                            DUMMY_REGEX_TAPE, tapeName))
+                    .bind(g => new SingleTapeGrammar(tapeName, g))
     }
 
     public handleEquals(h: EqualsHeader, env: PassEnv): GrammarResult {

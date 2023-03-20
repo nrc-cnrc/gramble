@@ -22,7 +22,6 @@ export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
 
 export type ParseClass = "plaintext" | "regex" | "symbol" | "context" | "none" | "comment";
-export type HeaderParamNames = "unique" | "from" | "to" | "pre" | "post";
 
 /**
  * A Header is a cell in the top row of a table, consisting of one of

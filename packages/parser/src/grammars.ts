@@ -12,7 +12,8 @@ import {
     constructPrecede, constructPreTape,
     constructNotContains, constructParallel, 
     DerivEnv, ExprNamespace, constructCollection, 
-    constructCorrespond, constructNoEps, DerivStats, constructDotStar
+    constructCorrespond, constructNoEps, 
+    DerivStats, constructDotStar
 } from "./exprs";
 import { Err, Msg, Msgs, result, Result, resultDict, resultList, Warn } from "./msgs";
 
@@ -26,6 +27,7 @@ import { Pass, PassEnv } from "./passes";
 import {
     CellPos,
     Dict,
+    DUMMY_REGEX_TAPE,
     DUMMY_TAPE,
     flatten,
     HIDDEN_TAPE_PREFIX,
@@ -78,8 +80,7 @@ export abstract class GrammarPass extends Pass<Grammar,Grammar> {
  * because they refer to non-existant fields?"
  * 
  * At the Grammar level we do the following operations.  Some of these are done
- * within the grammar objects themselves, others are performed by GrammarTransformation objects (which are
- * GoF Visitors).  
+ * within the grammar objects themselves, others are performed by Passes.
  * 
  *   * qualifying and resolving symbol names (e.g., figuring out that
  *     a particular reference to VERB refers to, say, the VERB symbol in the
@@ -1140,6 +1141,73 @@ export class ContainsGrammar extends FilterGrammar {
     public get id(): string {
         return `ContainsFilter(${this.child.id})`;
     }
+}
+
+/** This is used internally, to wrap potentially complex grammars
+ * so that they work in contexts where only grammars with single 
+ * tapes are permitted.
+ * 
+ * For example, "equals text: q{HighVowel}".  HighVowel might 
+ * define multiple tapes, but for this purpose we only care about 
+ * its text tape, and the others have to be hidden.  (Not thrown out
+ * or ignored, just hidden.)
+ * 
+ * But when we create this header/regex combination, we don't yet know
+ * what HighVowel refers to or what tapes it defines; we only learn that
+ * in later stages.  This grammar is a kind of stub that wraps the regex
+ * and sticks around until we have that information, at which point we can
+ * create the appropriate structures. 
+ * 
+ */
+export class SingleTapeGrammar extends UnaryGrammar {
+
+    constructor(
+        public tapeName: string,
+        child: Grammar
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `Tape<${this.tapeName}>(${this.child.id}`;
+    }
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return result(this.child)
+                .bind(c => f.transform(c, env))
+                .bind(c => new SingleTapeGrammar(
+                        this.tapeName, c as Grammar));
+    }
+
+    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
+        if (this._tapes == undefined) {
+            this._tapes = [];
+            // in the scope of a SingleTapeGrammar, there are often
+            // grammars with the dummy tape .T.  We don't want to consider
+            // this as a genuine tape outside of this scope, outside of this
+            // scope that will be tapeName.  
+            for (const tapeName of this.child.calculateTapes(stack, env)) {
+                if (tapeName == DUMMY_REGEX_TAPE) {
+                    this._tapes.push(this.tapeName);
+                } else {
+                    this._tapes.push(tapeName);
+                }
+            }
+            this._tapes = listUnique(this._tapes);
+        }
+        return this._tapes;
+    }
+    
+    public getLiterals(): LiteralGrammar[] {
+        return this.child.getLiterals()
+                    .map(c => {
+                        if (c.tapeName == DUMMY_REGEX_TAPE) {
+                            return new LiteralGrammar(this.tapeName, c.text);
+                        }
+                        return c;
+                    });
+    }
+
 }
 
 export class RenameGrammar extends UnaryGrammar {

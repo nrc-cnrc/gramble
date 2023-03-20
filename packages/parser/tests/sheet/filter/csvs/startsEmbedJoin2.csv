@@ -1,11 +1,15 @@
 
-labials=, text
-        , f
-        , m
 
-nonlabials=, text
-           , g
+consonants=, text, labial
+          , f, T
+          , m, T
+          , g, F
 
+labials=, embed, equals labial
+        , consonants, T
+
+nonlabials=, embed, equals labial
+        , consonants, F
 
 root=, text, gloss
      , foo, run

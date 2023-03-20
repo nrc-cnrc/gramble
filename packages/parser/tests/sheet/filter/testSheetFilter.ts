@@ -1,4 +1,4 @@
-import { testGrammar, testErrors, sheetFromFile } from "../../testUtil";
+import { testGrammar, testErrors, sheetFromFile, testHasVocab } from "../../testUtil";
 import * as path from 'path';
 import { SILENT, VERBOSE_DEBUG, VERBOSE_GRAMMAR } from "../../../src/util";
 
@@ -244,6 +244,46 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Equals embed', function() {
+        const project = sheetFromFile(`${DIR}/equalsEmbed.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
+            { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
+            { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
+        ]);
+    }); 
+
+    describe('Equals embed with a join', function() {
+        const project = sheetFromFile(`${DIR}/equalsEmbedJoin.csv`, VERBOSE_GRAMMAR|VERBOSE_DEBUG);
+        testErrors(project, []);
+        testHasVocab(project, {text: 2, subj: 3});
+        testGrammar(project, [
+            { text: "baz", gloss: "[2SG]", subj: "[2SG]" },
+        ]);
+    }); 
+
+    describe('Equals embed where the symbol is defined later', function() {
+        const project = sheetFromFile(`${DIR}/equalsEmbedAfter.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
+            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
+            { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
+            { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
+        ]);
+    });
+
+    describe('Equals with not embed', function() {
+        const project = sheetFromFile(`${DIR}/equalsNegatedEmbed.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {gloss: "run[1SG]", subj: "[1SG]", text: "foobar"},
+            {gloss: "jump[1SG]", subj: "[1SG]", text: "moobar"}
+        ]);
+    });
+
     describe('starts', function() {
         const project = sheetFromFile(`${DIR}/startsGrammar.csv`);
         testErrors(project, []);
@@ -299,6 +339,44 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "umfoo", gloss: "[1SG]run", trans: "[INTR]" },
             { text: "ungoo", gloss: "[1SG]climb", trans: "[INTR]" },
             { text: "moo", gloss: "[1SG]see", trans: "[TR]" }
+        ]);
+    });
+    
+    describe('starts embed', function() {
+        const project = sheetFromFile(`${DIR}/startsEmbed.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "umfoo", gloss: "[1SG]run" },
+            { text: "ummoo", gloss: "[1SG]jump" },
+            { text: "ungoo", gloss: "[1SG]climb" }
+        ]);
+    });
+
+    describe('starts embed where the symbol is defined later', function() {
+        const project = sheetFromFile(`${DIR}/startsEmbedAfter.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "umfoo", gloss: "[1SG]run" },
+            { text: "ummoo", gloss: "[1SG]jump" },
+            { text: "ungoo", gloss: "[1SG]climb" }
+        ]);
+    }); 
+
+    describe('starts negated embed', function() {
+        const project = sheetFromFile(`${DIR}/startsNegatedEmbed.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "umfoo", gloss: "[1SG]run" },
+            { text: "ummoo", gloss: "[1SG]jump" },
+            { text: "ungoo", gloss: "[1SG]climb" }
+        ]);
+    });
+    
+    describe('starts embed with a hidden join', function() {
+        const project = sheetFromFile(`${DIR}/startsEmbedJoin.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "umfoo", gloss: "[1SG]run" },
         ]);
     });
 
@@ -377,6 +455,46 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "umfooz", gloss: "[1SG]jump" }
         ]);
     });
+    describe('ends embed', function() {
+        const project = sheetFromFile(`${DIR}/endsEmbed.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobarq", gloss: "run[1SG]" },
+            { text: "foobazk", gloss: "jump[1SG]" },
+            { text: "foobask", gloss: "climb[1SG]" }
+        ]);
+    });
+
+    describe('ends embed where the symbol is defined later', function() {
+        const project = sheetFromFile(`${DIR}/endsEmbedAfter.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobarq", gloss: "run[1SG]" },
+            { text: "foobazk", gloss: "jump[1SG]" },
+            { text: "foobask", gloss: "climb[1SG]" }
+        ]);
+    });
+
+    describe('ends negated embed', function() {
+        const project = sheetFromFile(`${DIR}/endsEmbedNot.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobar", gloss: "run[1SG]" },
+            { text: "foobor", gloss: "jump[1SG]" },
+            { text: "foobaru", gloss: "climb[1SG]" }
+        ]);
+    });
+
+    describe('ends complex embed', function() {
+        const project = sheetFromFile(`${DIR}/endsComplexEmbed.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobar", gloss: "run[1SG]" },
+            { text: "foobor", gloss: "jump[1SG]" },
+            { text: "foobart", gloss: "climb[1SG]" },
+            { text: "foobatu", gloss: "eat[1SG]" }
+        ]);
+    });
     
     describe('Contains', function() {
         const project = sheetFromFile(`${DIR}/containsGrammar.csv`);
@@ -408,21 +526,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
         ]);
     });
-
-    /*
-    describe('Contains with not value', function() {
-        const project = sheetFromFile(`${DIR}/containsNot.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
-            { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
-            { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
-            { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
-        ]);
-    }); 
-    */
-
-    /*
+    
     describe('Contains with embed', function() {
         const project = sheetFromFile(`${DIR}/containsEmbed.csv`);
         testErrors(project, []);
@@ -443,7 +547,20 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
             { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
         ]);
-    }); */
+    }); 
+
+    /*
+    describe('Contains with not value', function() {
+        const project = sheetFromFile(`${DIR}/containsNot.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
+            { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
+            { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
+            { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
+        ]);
+    }); 
+    */
 
     /*
     describe('Contains with negated embed', function() {
@@ -454,120 +571,7 @@ describe(`${path.basename(module.filename)}`, function() {
             { text: "moobar", gloss: "jump[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
         ]);
     });
-    */
 
-    
-    /*
-    describe('Equals embed', function() {
-        const project = sheetFromFile(`${DIR}/equalsEmbed.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
-            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
-            { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
-            { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
-        ]);
-    }); 
-    
-    describe('Equals embed where the symbol is defined later', function() {
-        const project = sheetFromFile(`${DIR}/equalsEmbedAfter.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
-            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
-            { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
-            { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
-        ]);
-    });*/
-    
-    /*
-    describe('Equals with not embed', function() {
-        const project = sheetFromFile(`${DIR}/equalsNegatedEmbed.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            {gloss: "run[1SG]", subj: "[1SG]", text: "foobar"},
-            {gloss: "jump[1SG]", subj: "[1SG]", text: "moobar"}
-        ]);
-    });
-    */
-   
-    /*
-    describe('starts embed', function() {
-        const project = sheetFromFile(`${DIR}/startsEmbed.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "umfoo", gloss: "[1SG]run" },
-            { text: "ummoo", gloss: "[1SG]jump" },
-            { text: "ungoo", gloss: "[1SG]climb" }
-        ]);
-    });
-
-    describe('starts embed where the symbol is defined later', function() {
-        const project = sheetFromFile(`${DIR}/startsEmbedAfter.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "umfoo", gloss: "[1SG]run" },
-            { text: "ummoo", gloss: "[1SG]jump" },
-            { text: "ungoo", gloss: "[1SG]climb" }
-        ]);
-    }); 
-
-    describe('starts negated embed', function() {
-        const project = sheetFromFile(`${DIR}/startsNegatedEmbed.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "umfoo", gloss: "[1SG]run" },
-            { text: "ummoo", gloss: "[1SG]jump" },
-            { text: "ungoo", gloss: "[1SG]climb" }
-        ]);
-    });
-    */
-   
-    /*
-    describe('ends negated embed', function() {
-        const project = sheetFromFile(`${DIR}/endsEmbedNot.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "foobar", gloss: "run[1SG]" },
-            { text: "foobor", gloss: "jump[1SG]" },
-            { text: "foobaru", gloss: "climb[1SG]" }
-        ]);
-    });
-    */
-
-    /*
-    describe('ends complex embed', function() {
-        const project = sheetFromFile(`${DIR}/endsComplexEmbed.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "foobar", gloss: "run[1SG]" },
-            { text: "foobor", gloss: "jump[1SG]" },
-            { text: "foobart", gloss: "climb[1SG]" },
-            { text: "foobatu", gloss: "eat[1SG]" }
-        ]);
-    });
-*/
-   
-    /*
-    describe('ends embed', function() {
-        const project = sheetFromFile(`${DIR}/endsEmbed.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "foobarq", gloss: "run[1SG]" },
-            { text: "foobazk", gloss: "jump[1SG]" },
-            { text: "foobask", gloss: "climb[1SG]" }
-        ]);
-    });
-
-    describe('ends embed where the symbol is defined later', function() {
-        const project = sheetFromFile(`${DIR}/endsEmbedAfter.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "foobarq", gloss: "run[1SG]" },
-            { text: "foobazk", gloss: "jump[1SG]" },
-            { text: "foobask", gloss: "climb[1SG]" }
-        ]);
-    });
     */
 });
 

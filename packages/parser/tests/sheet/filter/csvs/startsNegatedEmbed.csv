@@ -1,5 +1,5 @@
 
-labials:, text
+labials=, text
         , f
         , m
 
@@ -8,6 +8,6 @@ root=, text, gloss
      , moo, jump
      , goo, climb
 
-default=, text, gloss, embed, starts embed
-     , um, [1SG], root, labials
-     , un, [1SG], root, ~labials
+default=, text, gloss, embed, starts text
+     , um, [1SG], root, {labials}
+     , un, [1SG], root, ~{labials}
