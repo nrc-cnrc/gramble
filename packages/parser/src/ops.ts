@@ -3,8 +3,9 @@ import {
     MPAlt, MPParser, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
-import { Err, Msg, Msgs, Result, Warn } from "./msgs";
+import { Err, Msg, Msgs, Result, ResultVoid, Warn } from "./msgs";
 import { REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, ALL_RESERVED, RESERVED_SYMBOLS, TEST_PARAMS, isValidSymbolName } from "./reserved";
+import { CellPos } from "./util";
 
 export const BLANK_PARAM: string = "__";
 
@@ -46,18 +47,18 @@ export abstract class Op {
         return false;
     }
 
-    public msg(m: Msg | Msgs = []): Result<Op> {
+    public msg(m: Msg | Msgs | ResultVoid = []): Result<Op> {
         return new Result(this).msg(m);
     }
     
-    public err(shortMsg: string, longMsg: string): Result<Op> {
+    public err(shortMsg: string, longMsg: string, pos?: CellPos): Result<Op> {
         const e = Err(shortMsg, longMsg);
-        return this.msg(e);
+        return this.msg(e).localize(pos);
     }
     
-    public warn(longMsg: string): Result<Op> {
+    public warn(longMsg: string, pos?: CellPos): Result<Op> {
         const e = Warn(longMsg);
-        return this.msg(e);
+        return this.msg(e).localize(pos);
     }
 
 }
@@ -285,7 +286,7 @@ const OP_SUBEXPR: MPParser<Op> = MPAlt(
 
 const OP_SUBEXPR_WITH_COLON: MPParser<Op> = MPSequence(
     [OP_SUBEXPR, ":"],
-    (op) => op
+    (child) => child
 )
 
 const OP_ASSIGNMENT = MPSequence(

@@ -144,9 +144,9 @@ export class CheckStructuralParams extends CPass {
         // warn about it.
         if (t.op.siblingReq == "forbidden" &&
                 !(t.sibling instanceof TstEmpty)) {
-            return result(t).msg(Warn("This content does not get " +
+            return t.warn("This content does not get " +
                 "assigned to anything and will be ignored.",
-                t.sibling.pos));
+                t.sibling.pos);
         }
 
         return t.msg();

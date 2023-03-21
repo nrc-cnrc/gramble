@@ -6,12 +6,12 @@ import {
 
 import { 
     HSVtoRGB, RGBtoString,
-    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE
+    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, CellPos
 } from "./util";
 
 import {
      Msgs, resultList, Result, 
-     Err, Warn, Msg, result 
+     Err, Warn, Msg, result, ResultVoid 
 } from "./msgs";
 
 import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./reserved";
@@ -55,18 +55,18 @@ export type ParseClass = "plaintext" | "regex" | "symbol" | "context" | "none" |
         return "__";
     }
 
-    public msg(m: Msg | Msgs = []): Result<Header> {
+    public msg(m: Msg | Msgs | ResultVoid = []): Result<Header> {
         return result(this).msg(m);
     }
 
-    public err(shortMsg: string, longMsg: string): Result<Header> {
+    public err(shortMsg: string, longMsg: string, pos?: CellPos): Result<Header> {
         const e = Err(shortMsg, longMsg);
-        return this.msg(e);
+        return this.msg(e).localize(pos).localize(this.pos);
     }
     
-    public warn(longMsg: string): Result<Header> {
+    public warn(longMsg: string, pos?: CellPos): Result<Header> {
         const e = Warn(longMsg);
-        return this.msg(e);
+        return this.msg(e).localize(pos).localize(this.pos);
     }
 }
 

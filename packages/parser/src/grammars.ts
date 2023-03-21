@@ -15,7 +15,7 @@ import {
     constructCorrespond, constructNoEps, 
     DerivStats, constructDotStar
 } from "./exprs";
-import { Err, Msg, Msgs, result, Result, resultDict, resultList, Warn } from "./msgs";
+import { Err, Msg, Msgs, result, Result, resultDict, resultList, ResultVoid, Warn } from "./msgs";
 
 import {
     renameTape,
@@ -115,18 +115,18 @@ export abstract class Grammar extends Component {
 
     public abstract mapChildren(f: GrammarPass, env: PassEnv): GrammarResult;
 
-    public msg(m: Msg | Msgs = []): GrammarResult {
+    public msg(m: Msg | Msgs | ResultVoid = []): GrammarResult {
         return new GrammarResult(this).msg(m);
     }
     
-    public err(shortMsg: string, longMsg: string): GrammarResult {
-        const e = Err(shortMsg, longMsg, this.pos);
-        return this.msg(e);
+    public err(shortMsg: string, longMsg: string, pos?: CellPos): GrammarResult {
+        const e = Err(shortMsg, longMsg);
+        return this.msg(e).localize(pos).localize(this.pos);
     }
     
-    public warn(longMsg: string): GrammarResult {
-        const e = Warn(longMsg, this.pos);
-        return this.msg(e);
+    public warn(longMsg: string, pos?: CellPos): GrammarResult {
+        const e = Warn(longMsg);
+        return this.msg(e).localize(pos).localize(this.pos);
     }
     
     protected _tapes: string[] | undefined = undefined;

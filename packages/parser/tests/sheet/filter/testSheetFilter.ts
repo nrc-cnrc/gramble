@@ -256,7 +256,7 @@ describe(`${path.basename(module.filename)}`, function() {
     }); 
 
     describe('Equals embed with a join', function() {
-        const project = sheetFromFile(`${DIR}/equalsEmbedJoin.csv`, VERBOSE_GRAMMAR|VERBOSE_DEBUG);
+        const project = sheetFromFile(`${DIR}/equalsEmbedJoin.csv`);
         testErrors(project, []);
         testHasVocab(project, {text: 2, subj: 3});
         testGrammar(project, [

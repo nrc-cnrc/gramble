@@ -1,4 +1,4 @@
-import { Err, Msg, Msgs, result, Result, Warn } from "./msgs";
+import { Err, Msg, Msgs, result, Result, ResultVoid, Warn } from "./msgs";
 import { Pass, PassEnv } from "./passes";
 import { CellPos } from "./util";
 
@@ -13,17 +13,17 @@ export abstract class Component {
 
     public abstract mapChildren(f: CPass, env: PassEnv): CResult;
 
-    public msg(m: Msg | Msgs = []): CResult {
+    public msg(m: Msg | Msgs | ResultVoid = []): CResult {
         return result(this).msg(m);
     }
 
-    public err(shortMsg: string, longMsg: string): CResult {
-        const e = Err(shortMsg, longMsg, this.pos);
-        return this.msg(e);
+    public err(shortMsg: string, longMsg: string, pos?: CellPos): CResult {
+        const e = Err(shortMsg, longMsg);
+        return this.msg(e).localize(pos).localize(this.pos);
     }
     
-    public warn(longMsg: string): CResult {
-        const e = Warn(longMsg, this.pos);
-        return this.msg(e);
+    public warn(longMsg: string, pos?: CellPos): CResult {
+        const e = Warn(longMsg);
+        return this.msg(e).localize(pos).localize(this.pos);
     }
 }
