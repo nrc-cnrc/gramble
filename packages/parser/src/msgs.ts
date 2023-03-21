@@ -267,7 +267,7 @@ export function resultList<T>(xs: (T|Result<T>)[]): ResultList<T> {
         const item = x.msgTo(msgs);
         items.push(item);
     }
-    return new ResultList(items);
+    return new ResultList(items, msgs);
 }
 
 export function resultDict<T>(items: Dict<T>): ResultDict<T> {

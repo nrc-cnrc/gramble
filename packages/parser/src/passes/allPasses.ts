@@ -16,8 +16,6 @@ import { CreateGrammars } from "./createGrammars";
 import { CheckCollections } from "./checkCollections";
 import { ReplaceRulesOld } from "./replaceRulesOld";
 import { AssignDefaults } from "./assignDefaults";
-import { RegexToGrammar } from "./regexToGrammar";
-import { MergeSymbolChains } from "./mergeSymbolChains";
 import { HandleSingleTapes } from "./handleSingleTapes";
 
 export const SHEET_PASSES = 
@@ -71,13 +69,6 @@ export const SHEET_PASSES =
     new CreateGrammars()
     
     )))))))))));
-
-export const REGEX_PASSES = 
-
-    new MergeSymbolChains().compose(
-    
-    new RegexToGrammar());
-    
 
 export const NAME_PASSES = 
 

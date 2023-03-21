@@ -152,7 +152,9 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('Embed with alt and curly braces 2', function() {
         const project = sheetFromFile(`${DIR}/embedAltBraces2.csv`);
-        testErrors(project, []);
+        testErrors(project, [
+            ["embedAltBraces2", 9, 2, "warning"]
+        ]);
         testGrammar(project, [
             {"text":"boobar"},
             {"text":"goobar"},

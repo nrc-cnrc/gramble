@@ -40,7 +40,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
             case CommentHeader:
                 return this.handleComment(h as CommentHeader, env);
             case ParamNameHeader:
-                return this.handleTag(h as ParamNameHeader, env);
+                return this.handleParamName(h as ParamNameHeader, env);
             case OptionalHeader:
                 return this.handleOptional(h as OptionalHeader, env);
             case EqualsHeader:
@@ -74,7 +74,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
         return new EpsilonGrammar().msg();
     }
 
-    public handleTag(h: ParamNameHeader, env: PassEnv): GrammarResult {
+    public handleParamName(h: ParamNameHeader, env: PassEnv): GrammarResult {
         return this.transform(h.child, env);
     }
     

@@ -1,96 +1,98 @@
 import * as path from 'path';
+
 import { testRegexID, testPlaintextID, testSymbolID } from "./testUtil";
+
 
 describe(`${path.basename(module.filename)}`, function() {
 
     describe("Testing plaintext parsing", function() {
-        testPlaintextID("", "[]");
-        testPlaintextID(" ", "[]");
-        testPlaintextID("()", "[()]");
+        testPlaintextID("", "");
+        testPlaintextID(" ", "");
+        testPlaintextID("()", "()");
         testPlaintextID("( )", "[(,)]");
-        testPlaintextID("1SG", "[1SG]");
-        testPlaintextID(" 1SG", "[1SG]");
-        testPlaintextID("1SG ", "[1SG]");
+        testPlaintextID("1SG", "1SG");
+        testPlaintextID(" 1SG", "1SG");
+        testPlaintextID("1SG ", "1SG");
         testPlaintextID("1 SG", "[1,SG]");
-        testPlaintextID("1\\ SG", "[1 SG]");
-        testPlaintextID("(1SG)", "[(1SG)]");
-        testPlaintextID("(1SG", "[(1SG]");
-        testPlaintextID("1SG)", "[1SG)]");
-        testPlaintextID(".", "[.]");
-        testPlaintextID(".*", "[.*]");
-        testPlaintextID("(.)", "[(.)]");
-        testPlaintextID("1SG|2SG", "[OR[1SG,2SG]]");
-        testPlaintextID("1SG\\|2SG", "[1SG|2SG]");
-        testPlaintextID("|1SG", "ERR");
-        testPlaintextID("1SG|", "ERR");
-        testPlaintextID("(1SG)|(2SG)", "[OR[(1SG),(2SG)]]");
-        testPlaintextID("(1SG|2SG)", "[OR[(1SG,2SG)]]");
-        testPlaintextID("|", "ERR");
+        testPlaintextID("1\\ SG", "1 SG");
+        testPlaintextID("(1SG)", "(1SG)");
+        testPlaintextID("(1SG", "(1SG");
+        testPlaintextID("1SG)", "1SG)");
+        testPlaintextID(".", ".");
+        testPlaintextID(".*", ".*");
+        testPlaintextID("(.)", "(.)");
+        testPlaintextID("1SG|2SG", "OR[1SG,2SG]");
+        testPlaintextID("1SG\\|2SG", "1SG|2SG");
+        testPlaintextID("|1SG", "ε", 1);
+        testPlaintextID("1SG|", "ε", 1);
+        testPlaintextID("(1SG)|(2SG)", "OR[(1SG),(2SG)]");
+        testPlaintextID("(1SG|2SG)", "OR[(1SG,2SG)]");
+        testPlaintextID("|", "ε", 1);
         testPlaintextID("1SG 2SG|3SG", "[1SG,OR[2SG,3SG]]");
         testPlaintextID("1SG|2SG 3SG", "[OR[1SG,2SG],3SG]");
     
         // plaintext may contain Unicode letters anywhere
 
-        testPlaintextID("textε", "[textε]");
-        testPlaintextID("εtext", "[εtext]");
-        testPlaintextID("नमस्ते", "[नमस्ते]");
-        testPlaintextID("Привет", "[Привет]");
-        testPlaintextID("ᓄᓇᕕᒃ", "[ᓄᓇᕕᒃ]");
-        testPlaintextID("οἶκος", "[οἶκος]");
-        testPlaintextID("あの人", "[あの人]");
-        testPlaintextID("恭喜发财", "[恭喜发财]");
-        testPlaintextID("ﺷﻜﺮﺍﹰ", "[ﺷﻜﺮﺍﹰ]");
+        testPlaintextID("textε", "textε");
+        testPlaintextID("εtext", "εtext");
+        testPlaintextID("नमस्ते", "नमस्ते");
+        testPlaintextID("Привет", "Привет");
+        testPlaintextID("ᓄᓇᕕᒃ", "ᓄᓇᕕᒃ");
+        testPlaintextID("οἶκος", "οἶκος");
+        testPlaintextID("あの人", "あの人");
+        testPlaintextID("恭喜发财", "恭喜发财");
+        testPlaintextID("ﺷﻜﺮﺍﹰ", "ﺷﻜﺮﺍﹰ");
 
         // plaintext can even contain zero-width non-joiners
-        testPlaintextID("کتاب‌ها", "[کتاب‌ها]"); // contains a zero-width non-joiner
+        testPlaintextID("کتاب‌ها", "کتاب‌ها"); // contains a zero-width non-joiner
 
     });
 
     describe("Testing symbol parsing", function() {
         testSymbolID("verb", "verb");
         testSymbolID("_verb", "_verb");
-        testSymbolID("9verb", "ERR");
-        testSymbolID("verb intrans", "ERR");
+        testSymbolID("9verb", "ε", 1);
+        testSymbolID("verb intrans", "ε", 1);
         testSymbolID("verb-intrans", "verb-intrans");
-        testSymbolID("verb*intrans", "ERR");
-        testSymbolID("verb.intrans", "CHAIN[verb,intrans]");
-        testSymbolID("verb._intrans", "CHAIN[verb,_intrans]");
-        testSymbolID("verb.9intrans", "CHAIN[verb,ERR]");
-        testSymbolID("9verb.intrans", "CHAIN[ERR,intrans]");
-        testSymbolID("verb.intrans.classB", "CHAIN[verb,CHAIN[intrans,classB]]");
+        testSymbolID("verb*intrans", "ε", 1);
+        testSymbolID("verb.intrans", "verb.intrans");
+        testSymbolID("verb._intrans", "verb._intrans");
+        testSymbolID("verb.9intrans", "ε", 1);
+        testSymbolID("9verb.intrans", "ε", 1);
+        testSymbolID("verb.intrans.classB", "verb.intrans.classB");
         testSymbolID("verb|noun", "OR[verb,noun]");
-        testSymbolID("verb.intrans|noun", "OR[CHAIN[verb,intrans],noun]");
-        testSymbolID("verb|noun.classB", "OR[verb,CHAIN[noun,classB]]");
-        testSymbolID("verb|noun,classB", "OR[verb,ERR]");
-        testSymbolID("verb|noun classB", "ERR");
-        testSymbolID("|verb", "ERR");
-        testSymbolID("verb|", "ERR");
-        testSymbolID("|", "ERR");
+        testSymbolID("verb.intrans|noun", "OR[verb.intrans,noun]");
+        testSymbolID("verb|noun.classB", "OR[verb,noun.classB]");
+        testSymbolID("verb|noun,classB", "OR[verb,ε]", 1);
+        testSymbolID("verb|noun classB", "ε", 1);
+        testSymbolID("|verb", "ε", 1);
+        testSymbolID("verb|", "ε", 1);
+        testSymbolID("|", "ε", 1);
         testSymbolID("verb|noun|prep", "OR[verb,OR[noun,prep]]");
 
         // valid symbol names start with letters or underscore
         testSymbolID("_verb", "_verb");
         testSymbolID("verb_verb", "verb_verb");
-        testSymbolID("123", "ERR");
-        testSymbolID("123verb", "ERR");
+        testSymbolID("123", "ε", 1);
+        testSymbolID("123verb", "ε", 1);
 
         // symbol names are allowed to contain $ @ # & ? ' " =, but not at the beginning
         testSymbolID("verb$", "verb$");
-        testSymbolID("$verb", "ERR");
+        testSymbolID("$verb", "ε", 1);
         testSymbolID("verb@", "verb@");
-        testSymbolID("@verb", "ERR");
+        testSymbolID("@verb", "ε", 1);
         testSymbolID("verb#", "verb#");
-        testSymbolID("#verb", "ERR");
+        testSymbolID("#verb", "ε", 1);
         testSymbolID("verb&", "verb&");
-        testSymbolID("&verb", "ERR");
-        testSymbolID("verb?", "ERR");
-        testSymbolID("?verb", "ERR");
+        testSymbolID("&verb", "ε", 1);
+        testSymbolID("verb?", "ε", 1);
+        testSymbolID("?verb", "ε", 1);
         testSymbolID("verb'", "verb'");
-        testSymbolID("'verb", "ERR");  
+        testSymbolID("'verb", "ε", 1);  
         testSymbolID('verb"', 'verb"');
-        testSymbolID('"verb', "ERR"); 
-        testSymbolID("verb=", "ERR");
-        testSymbolID("=verb", "ERR"); 
+        testSymbolID('"verb', "ε", 1); 
+        testSymbolID("verb=", "ε", 1);
+        testSymbolID("=verb", "ε", 1); 
 
         // symbol names may contain Unicode letters anywhere
         testSymbolID("verbε", "verbε");
@@ -104,10 +106,10 @@ describe(`${path.basename(module.filename)}`, function() {
         testSymbolID("ﺷﻜﺮﺍﹰ", "ﺷﻜﺮﺍﹰ");
 
         // but only in certain classes; e.g. zero-width non-joiners are invalid
-        testSymbolID("کتاب‌ها", "ERR"); // contains a zero-width non-joiner
+        testSymbolID("کتاب‌ها", "ε", 1); // contains a zero-width non-joiner
     
         // putting curly braces around a verb should parse, but it fires a warning message
-        testSymbolID("{verb}", "verb");
+        testSymbolID("{verb}", "verb", 1);
     });
 
     describe("Testing regex parsing", function() {
@@ -121,8 +123,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testRegexID("1 SG", "[1,SG]");
         testRegexID("1\\ SG", "1 SG");
         testRegexID("(1SG)", "1SG");
-        testRegexID("(1SG", "ERR");
-        testRegexID("1SG)", "ERR");
+        testRegexID("(1SG", "ε", 1);
+        testRegexID("1SG)", "ε", 1);
         testRegexID(".", "DOT");
         testRegexID(".*", "STAR[DOT]");
         testRegexID("(.)", "DOT");
@@ -136,23 +138,23 @@ describe(`${path.basename(module.filename)}`, function() {
         testRegexID("~1SG", "NOT[1SG]");
         testRegexID("\\~1SG", "~1SG");
         testRegexID("~ 1SG", "NOT[1SG]");
-        testRegexID("~", "ERR");    
-        testRegexID('1SG~', "ERR");
+        testRegexID("~", "ε", 1);    
+        testRegexID('1SG~', "ε", 1);
         testRegexID("~(1SG)", "NOT[1SG]");
         testRegexID("(~1SG)", "NOT[1SG]");
         testRegexID("1SG|2SG", "OR[1SG,2SG]");
         testRegexID("1SG\\|2SG", "1SG|2SG");
-        testRegexID("|1SG", "ERR");
-        testRegexID("1SG|", "ERR");
+        testRegexID("|1SG", "ε", 1);
+        testRegexID("1SG|", "ε", 1);
         testRegexID("1SG|()", "OR[1SG,]");
         testRegexID("()|2SG", "OR[,2SG]");
         testRegexID("(1SG)|(2SG)", "OR[1SG,2SG]");
         testRegexID("(1SG|2SG)", "OR[1SG,2SG]");
         testRegexID("~(1SG|2SG)", "NOT[OR[1SG,2SG]]");
-        testRegexID("(1SG|)2SG", "ERR");
-        testRegexID("|", "ERR");
-        testRegexID("~|1SG", "ERR");
-        testRegexID("~1SG|", "ERR");
+        testRegexID("(1SG|)2SG", "ε", 1);
+        testRegexID("|", "ε", 1);
+        testRegexID("~|1SG", "ε", 1);
+        testRegexID("~1SG|", "ε", 1);
         testRegexID("1SG|2SG|3SG", "OR[1SG,OR[2SG,3SG]]");
         testRegexID("(1SG|2SG)|3SG", "OR[OR[1SG,2SG],3SG]");
         testRegexID("(1)(SG)", "[1,SG]");
@@ -203,52 +205,52 @@ describe(`${path.basename(module.filename)}`, function() {
         testRegexID("کتاب‌ها", "کتاب‌ها"); // contains a zero-width non-joiner
 
         // testing symbols inside regexes
-        testRegexID("{}", "ERR");
-        testRegexID("{ }", "ERR");
+        testRegexID("{}", "ε", 1);
+        testRegexID("{ }", "ε", 1);
         testRegexID("{verb}", "verb");
         testRegexID("{_verb}", "_verb");
-        testRegexID("{9verb}", "ERR");
-        testRegexID("{verb intrans}", "ERR");
+        testRegexID("{9verb}", "ε", 1);
+        testRegexID("{verb intrans}", "ε", 1);
         testRegexID("{verb-intrans}", "verb-intrans");
-        testRegexID("{verb*intrans}", "ERR");
-        testRegexID("{verb.intrans}", "CHAIN[verb,intrans]");
-        testRegexID("{verb._intrans}", "CHAIN[verb,_intrans]");
-        testRegexID("{verb.9intrans}", "CHAIN[verb,ERR]");
-        testRegexID("{9verb.intrans}", "CHAIN[ERR,intrans]");
-        testRegexID("{verb.intrans.classB}", "CHAIN[verb,CHAIN[intrans,classB]]");
+        testRegexID("{verb*intrans}", "ε", 1);
+        testRegexID("{verb.intrans}", "verb.intrans");
+        testRegexID("{verb._intrans}", "verb._intrans");
+        testRegexID("{verb.9intrans}", "ε", 1);
+        testRegexID("{9verb.intrans}", "ε", 1);
+        testRegexID("{verb.intrans.classB}", "verb.intrans.classB");
         testRegexID("{verb|noun}", "OR[verb,noun]");
-        testRegexID("{verb.intrans|noun}", "OR[CHAIN[verb,intrans],noun]");
-        testRegexID("{verb|noun.classB}", "OR[verb,CHAIN[noun,classB]]");
-        testRegexID("{verb|noun,classB}", "OR[verb,ERR]");
-        testRegexID("{verb|noun classB}", "ERR");
-        testRegexID("{|verb}", "ERR");
-        testRegexID("{verb|}", "ERR");
-        testRegexID("{|}", "ERR");
+        testRegexID("{verb.intrans|noun}", "OR[verb.intrans,noun]");
+        testRegexID("{verb|noun.classB}", "OR[verb,noun.classB]");
+        testRegexID("{verb|noun,classB}", "OR[verb,ε]", 1);
+        testRegexID("{verb|noun classB}", "ε", 1);
+        testRegexID("{|verb}", "ε", 1);
+        testRegexID("{verb|}", "ε", 1);
+        testRegexID("{|}", "ε", 1);
         testRegexID("{verb|noun|prep}", "OR[verb,OR[noun,prep]]");
         
         // valid symbol names start with letters or underscore
         testRegexID("{_verb}", "_verb");
         testRegexID("{verb_verb}", "verb_verb");
-        testRegexID("{123}", "ERR");
-        testRegexID("{123verb}", "ERR");
+        testRegexID("{123}", "ε", 1);
+        testRegexID("{123verb}", "ε", 1);
 
         // symbol names are allowed to contain $ @ # & ? ' " =, but not at the beginning
         testRegexID("{verb$}", "verb$");
-        testRegexID("{$verb}", "ERR");
+        testRegexID("{$verb}", "ε", 1);
         testRegexID("{verb@}", "verb@");
-        testRegexID("{@verb}", "ERR");
+        testRegexID("{@verb}", "ε", 1);
         testRegexID("{verb#}", "verb#");
-        testRegexID("{#verb}", "ERR");
+        testRegexID("{#verb}", "ε", 1);
         testRegexID("{verb&}", "verb&");
-        testRegexID("{&verb}", "ERR");
-        testRegexID("{verb?}", "ERR");
-        testRegexID("{?verb}", "ERR");
+        testRegexID("{&verb}", "ε", 1);
+        testRegexID("{verb?}", "ε", 1);
+        testRegexID("{?verb}", "ε", 1);
         testRegexID("{verb'}", "verb'");
-        testRegexID("{'verb}", "ERR");  
+        testRegexID("{'verb}", "ε", 1);  
         testRegexID('{verb"}', 'verb"');
-        testRegexID('{"verb}', "ERR"); 
-        testRegexID("{verb=}", "ERR");
-        testRegexID("{=verb}", "ERR"); 
+        testRegexID('{"verb}', "ε", 1); 
+        testRegexID("{verb=}", "ε", 1);
+        testRegexID("{=verb}", "ε", 1); 
 
         // symbol names may contain Unicode letters anywhere
         testRegexID("{verbε}", "verbε");
@@ -262,10 +264,10 @@ describe(`${path.basename(module.filename)}`, function() {
         testRegexID("{ﺷﻜﺮﺍﹰ}", "ﺷﻜﺮﺍﹰ");
 
         // but only in certain classes; e.g. zero-width non-joiners are invalid
-        testRegexID("{کتاب‌ها}", "ERR"); // contains a zero-width non-joiner
+        testRegexID("{کتاب‌ها}", "ε", 1); // contains a zero-width non-joiner
     
         // nesting curly brackets parses, although it causes a warning message
-        testRegexID("{{verb}}", "verb");
-        testRegexID("{{{verb}}}", "verb");
+        testRegexID("{{verb}}", "verb", 1);
+        testRegexID("{{{verb}}}", "verb", 2);
     }); 
 });

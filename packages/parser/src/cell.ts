@@ -1,5 +1,4 @@
-import { Component, CPass, CResult } from "./components";
-import { EpsilonGrammar } from "./grammars";
+import { AlternationGrammar, DotGrammar, EmbedGrammar, EpsilonGrammar, Grammar, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "./grammars";
 import { ParseClass } from "./headers";
 import { 
     MPDelay, 
@@ -12,8 +11,7 @@ import {
     MiniParseEnv,
     MPEmpty
 } from "./miniParser";
-import { Err, Msgs, Result, resultList } from "./msgs";
-import { PassEnv } from "./passes";
+import { Err, Result, resultList } from "./msgs";
 import { 
     isValidSymbolName,
     RESERVED_FOR_CONTEXT, 
@@ -22,229 +20,15 @@ import {
     RESERVED_FOR_SYMBOL, 
     RESERVED_WORDS 
 } from "./reserved";
+import { DUMMY_REGEX_TAPE } from "./util";
 
-export type RegexParser = MPParser<Regex>;
+export type RegexParser = MPParser<Grammar>;
 
 /**
  * This module is concerned with cells that have operators in them (e.g. ~ and |),
  * which need to be parsed into more complex structures in order that (in combination
  * with Headers) we can assign them the right Grammar objects and later Expr objects.
  */
-
-export abstract class Regex extends Component { 
-    
-    /**
-     * The IDs of Regex objects are deliberately chosen to NOT look like their
-     * string when expressed as a regex.  That makes it easy to see from the ID
-     * when the regex has been parsed incorrectly.
-     */
-    public abstract get id(): string;
-
-    public msg(msgs: Msgs = []): Result<Regex> {
-        return new Result(this, msgs);
-    }
-
-}
-
-export class ErrorRegex extends Regex {
-
-    constructor(
-        public text: string
-    ) { 
-        super();
-    }
-
-    public get id(): string {
-        return `ERR`;
-    }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return new ErrorRegex(this.text).msg();
-    }
-    
-}
-
-export class LiteralRegex extends Regex {
-    
-    constructor(
-        public text: string
-    ) { 
-        super();
-        this.text = text.trim();
-    }
-
-    public get id(): string {
-        return this.text;
-    }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return new LiteralRegex(this.text).msg();
-    }
-}
-
-export class DotRegex extends Regex {
-
-    public get id(): string {
-        return "DOT";
-    }
-    
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return new DotRegex().msg();
-    }
-}
-
-/**
- * A SymbolRegex represents a single symbol identifier (e.g. "Verb"),
- * in a potential chain of identifiers (e.g. "Verb.Intrans.ClassB").
- */
-export class SymbolRegex extends Regex {
-
-    constructor(
-        public text: string
-    ) { 
-        super();
-    }
-
-    public get id(): string {
-        return `${this.text}`;
-    }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return new SymbolRegex(this.text).msg();
-    }
-}
-
-export class SymbolChainRegex extends Regex {
-
-    constructor(
-        public child1: Regex,
-        public child2: Regex
-    ) {
-        super();
-    }
-
-    public get id(): string {
-        return `CHAIN[${this.child1.id},${this.child2.id}]`;
-    }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList([this.child1, this.child2])
-                    .map(c => f.transform(c, env))
-                    .bind(([c1,c2]) => new SymbolChainRegex(
-                            c1 as Regex, c2 as Regex))
-    }
-}
-
-export class StarRegex extends Regex {
-
-    constructor(
-        public child: Regex
-    ) { 
-        super();
-    }
-
-    public get id(): string {
-        return `STAR[${this.child.id}]`;
-    }
-    
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new StarRegex(c as Regex));
-    }
-}
-
-export class QuestionRegex extends Regex {
-
-    constructor(
-        public child: Regex
-    ) { 
-        super();
-    }
-
-    public get id(): string {
-        return `QUES[${this.child.id}]`;
-    }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new QuestionRegex(c as Regex));
-    }
-}
-
-export class PlusRegex extends Regex {
-
-    constructor(
-        public child: Regex
-    ) { 
-        super();
-    }
-
-    public get id(): string {
-        return `PLUS[${this.child.id}]`;
-    }
-    
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new PlusRegex(c as Regex));
-    }
-}
-
-export class NegationRegex extends Regex {
-
-    constructor(
-        public child: Regex
-    ) { 
-        super();
-    }
-
-    public get id(): string {
-        return `NOT[${this.child.id}]`;
-    }
-    
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new NegationRegex(c as Regex));
-    }
-}
-
-export class AlternationRegex extends Regex {
-
-    constructor(
-        public child1: Regex,
-        public child2: Regex
-    ) { 
-        super();
-    }
-    
-    public get id(): string {
-        return `OR[${this.child1.id},${this.child2.id}]`;
-    }
-    
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList([this.child1, this.child2])
-                .map(c => f.transform(c, env))
-                .bind(([c1,c2]) => new AlternationRegex(c1 as Regex, c2 as Regex));
-    }
-}
-
-export class SequenceRegex extends Regex {
-
-    constructor(
-        public children: Regex[]
-    ) { 
-        super();
-    }
-
-    public get id(): string {
-        return `[${this.children.map(c=>c.id).join(",")}]`;
-    }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList(this.children)
-                .map(c => f.transform(c, env))
-                .bind(cs => new SequenceRegex(cs as Regex[]));
-    }
-}
 
 /***********************/
 /* SYMBOL NAME GRAMMAR */
@@ -262,27 +46,31 @@ const SYMBOL_BRACKETED = MPSequence(
 );
 
 const SYMBOL_EMPTY = MPEmpty(
-    () => new LiteralRegex("").msg()
+    () => new LiteralGrammar(DUMMY_REGEX_TAPE, "").msg()
 );
 
-const SYMBOL_UNRESERVED = MPUnreserved<Regex>(
+const SYMBOL_UNRESERVED = MPUnreserved<Grammar>(
     (s) => {
         if (isValidSymbolName(s)) {
-            return new SymbolRegex(s).msg()
+            return new EmbedGrammar(s).msg()
         } else {
-            return new ErrorRegex(s).msg([Err( 
+            return new EpsilonGrammar().err(
                 `Invalid symbol name`, 
                 `${s} looks like it should be an identifier, ` +
                 `but identifiers should start with letters or _`
-            )]);
+            );
         }
     } 
 );
 
 const SYMBOL_CHAIN: RegexParser = MPDelay(() => MPSequence(
     [ SYMBOL_UNRESERVED, ".", MPAlt(SYMBOL_CHAIN, SYMBOL_UNRESERVED) ],
-    (c1, c2) => resultList([c1,c2])
-                    .bind(([c1,c2]) => new SymbolChainRegex(c1, c2))
+    (c1, c2) => resultList([c1,c2]).bind(([c1,c2]) => {
+        if (!(c1 instanceof EmbedGrammar) || !(c2 instanceof EmbedGrammar)) {
+            return new EpsilonGrammar();
+        }
+        return new EmbedGrammar(c1.name + "." + c2.name);
+    })
 ));
 
 const SYMBOL_UNIT = MPAlt(
@@ -294,7 +82,7 @@ const SYMBOL_UNIT = MPAlt(
 const SYMBOL_ALTERNATION = MPSequence(
     [ SYMBOL_UNIT, "|", SYMBOL_SUBEXPR ],
     (c1, c2) => resultList([c1, c2])
-                    .bind(([x, y]) => new AlternationRegex(x, y))
+                    .bind(cs => new AlternationGrammar(cs))
 );
 
 const SYMBOL_EXPR = MPAlt(
@@ -324,37 +112,37 @@ const REGEX_SUBSUBEXPR: RegexParser = MPDelay(() => MPAlt(
     REGEX_DOT
 ));
 
-const REGEX_UNRESERVED = MPUnreserved<Regex>(
-    s => new LiteralRegex(s).msg()
+const REGEX_UNRESERVED = MPUnreserved<Grammar>(
+    s => new LiteralGrammar(DUMMY_REGEX_TAPE, s).msg()
 );
 
 const REGEX_TOPLEVEL = MPRepetition(
     REGEX_EXPR, 
     (...children) => resultList(children).bind(cs => {
-        if (cs.length == 0) return new LiteralRegex("");
+        if (cs.length == 0) return new LiteralGrammar(DUMMY_REGEX_TAPE, "");
         if (cs.length == 1) return cs[0];
-        return new SequenceRegex(cs);
+        return new SequenceGrammar(cs);
     })
 );
 
-const REGEX_DOT = MPSequence<Regex>(
+const REGEX_DOT = MPSequence<Grammar>(
     [ "." ],
-    () => new DotRegex().msg()
+    () => new DotGrammar(DUMMY_REGEX_TAPE).msg()
 )
 
 const REGEX_STAR = MPSequence(
     [ REGEX_SUBSUBEXPR, "*" ],
-    (child) => child.bind(c => new StarRegex(c))
+    (child) => child.bind(c => new RepeatGrammar(c))
 )
 
 const REGEX_QUES = MPSequence(
     [ REGEX_SUBSUBEXPR, "?" ],
-    (child) => child.bind(c => new QuestionRegex(c))
+    (child) => child.bind(c => new RepeatGrammar(c, 0, 1))
 )
 
 const REGEX_PLUS = MPSequence(
     [ REGEX_SUBSUBEXPR, "+" ],
-    (child) => child.bind(c => new PlusRegex(c))
+    (child) => child.bind(c => new RepeatGrammar(c, 1))
 )
 
 const REGEX_PARENS = MPSequence(
@@ -369,38 +157,41 @@ const REGEX_SYMBOL = MPSequence(
 
 const REGEX_NEGATION = MPSequence(
     ["~", REGEX_SUBEXPR],
-    (child) => child.bind(c => new NegationRegex(c))
+    (child) => child.bind(c => new NegationGrammar(c))
 );
 
 const REGEX_ALTERNATION = MPSequence(
     [REGEX_SUBEXPR, "|", REGEX_EXPR],
     (c1, c2) => resultList([c1, c2])
-                    .bind(([x, y]) => new AlternationRegex(x, y))
+                    .bind(cs => new AlternationGrammar(cs))
 );
 
 /*********************/
 /* PLAINTEXT GRAMMAR */
 /*********************/
 
-const PLAINTEXT_SUBEXPR: MPParser<Regex> = MPDelay(() => MPAlt(
+const PLAINTEXT_SUBEXPR: MPParser<Grammar> = MPDelay(() => MPAlt(
     PLAINTEXT_UNRESERVED,
     PLAINTEXT_ALTERNATION
 ));
 
-const PLAINTEXT_UNRESERVED = MPUnreserved<Regex>(
-    s => new LiteralRegex(s).msg()
+const PLAINTEXT_UNRESERVED = MPUnreserved<Grammar>(
+    s => new LiteralGrammar(DUMMY_REGEX_TAPE, s).msg()
 );
 
 const PLAINTEXT_ALTERNATION = MPSequence(
     [ PLAINTEXT_UNRESERVED, "|", PLAINTEXT_SUBEXPR ],
     (c1, c2) => resultList([c1, c2])
-                    .bind(([x, y]) => new AlternationRegex(x, y))
+                    .bind(cs => new AlternationGrammar(cs))
 );
 
-const PLAINTEXT_EXPR = MPRepetition<Regex>(
+const PLAINTEXT_EXPR = MPRepetition<Grammar>(
     PLAINTEXT_SUBEXPR, 
-    (...children) => resultList(children)
-                        .bind(cs => new SequenceRegex(cs))
+    (...children) => resultList(children).bind(cs => {
+        if (cs.length == 0) return new LiteralGrammar(DUMMY_REGEX_TAPE, "");
+        if (cs.length == 1) return cs[0];
+        return new SequenceGrammar(cs);
+    })
 );
 
 const parseParams = {
@@ -433,16 +224,16 @@ const parseParams = {
 export function parseCell(
     parseClass: ParseClass,
     text: string
-): Result<Regex> {
+): Result<Grammar> {
     if (parseClass == "none" || parseClass == "comment") {
-        return new ErrorRegex(text).msg();
+        return new EpsilonGrammar().msg();
     }
     const params = parseParams[parseClass];
     const env = new MiniParseEnv(params.splitters, params.reserved);
     const results = miniParse(env, params.expr, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorRegex(text).msg([Err("Cell parsing error", 
+        return new EpsilonGrammar().msg([Err("Cell parsing error", 
                     `Cannot parse ${text} as a ${parseClass}`)])
     }
     if (results.length > 1) {
@@ -450,4 +241,32 @@ export function parseCell(
         throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
     }
     return results[0];
+}
+
+export function cellID(g: Grammar): string {
+
+    switch (g.constructor) {
+        case LiteralGrammar: 
+            return (g as LiteralGrammar).text;
+        case EmbedGrammar: 
+            return (g as EmbedGrammar).name;
+        case DotGrammar:
+            return "DOT";
+        case SequenceGrammar: 
+            return "[" + (g as SequenceGrammar).children.map(c => cellID(c)).join(",") + "]";
+        case AlternationGrammar: 
+            return "OR[" + (g as AlternationGrammar).children.map(c => cellID(c)).join(",") + "]";
+        case RepeatGrammar: 
+            const r = g as RepeatGrammar;
+            if (r.minReps == 0 && r.maxReps == 1) return `QUES[${cellID(r.child)}]`;
+            if (r.minReps == 1 && r.maxReps == Infinity) return `PLUS[${cellID(r.child)}]`;
+            if (r.minReps == 0 && r.maxReps == Infinity) return `STAR[${cellID((g as RepeatGrammar).child)}]`;
+            return "???"; // other options don't correspond to any possible cell
+        case NegationGrammar:
+            return "NOT[" + cellID((g as NegationGrammar).child) + "]";
+        case EpsilonGrammar:
+            return "ε";
+        default: 
+            return "???";
+    }
 }

@@ -21,12 +21,11 @@ import {
     CollectionGrammar, 
     RenameGrammar, ReplaceGrammar, SequenceGrammar, TestGrammar, JoinGrammar
 } from "../grammars";
-import { getParseClass, Header, TapeNameHeader } from "../headers";
+import { getParseClass, TapeNameHeader } from "../headers";
 import { Err, Msgs, resultList } from "../msgs";
 import { BLANK_PARAM } from "../ops";
 import { HeaderToGrammar } from "./headerToGrammar";
 import { parseCell } from "../cell";
-import { REGEX_PASSES } from "./allPasses";
 
 
 /**
@@ -83,7 +82,6 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     public handleHeaderContentPair(t: TstHeaderContentPair, env: PassEnv): GrammarResult {
         const parseClass = getParseClass(t.header.header);
         return parseCell(parseClass, t.cell.text)
-                .bind(c => REGEX_PASSES.go(c, env))
                 .localize(t.cell.pos)
                 .bind(g => new LocatorGrammar(t.cell.pos, g))
                 .bind(g => new HeaderToGrammar(g))
@@ -120,7 +118,6 @@ export class CreateGrammars extends Pass<Component,Grammar> {
 
         const parseClass = getParseClass(t.header.header);
         const [grammar, msgs] = parseCell(parseClass, t.cell.text)
-                .bind(c => REGEX_PASSES.go(c, env))
                 .bind(g => new HeaderToGrammar(g))
                 .bind(h => h.transform(t.header.header, env))
                 .localize(t.cell.pos)

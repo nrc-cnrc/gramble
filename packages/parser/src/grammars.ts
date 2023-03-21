@@ -1868,7 +1868,7 @@ export class EmbedGrammar extends AtomicGrammar {
     }
 
     public get id(): string {
-        return `$${this.name}`;
+        return `{${this.name}}`;
     }
 
     public potentiallyInfinite(

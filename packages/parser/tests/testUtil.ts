@@ -6,7 +6,7 @@ import { HIDDEN_TAPE_PREFIX, SILENT, StringDict, tokenizeUnicode } from "../src/
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
-import { parseCell } from "../src/cell";
+import { cellID, parseCell } from "../src/cell";
 import { parseHeaderCell } from "../src/headers";
 import { parseOp } from "../src/ops";
 
@@ -52,24 +52,51 @@ export function testHeaderID(text: string, expectedID: string): void {
     });
 }
 
-export function testPlaintextID(text: string, expectedID: string): void {
-    const result = parseCell("plaintext", text).msgTo([]);
-    it(`"${text}" should parse as ${expectedID}`, function() {
-        expect(result.id).to.equal(expectedID);
+export function testPlaintextID(
+    text: string, 
+    expectedID: string,
+    numErrorsExpected: number = 0
+): void {
+    const [result, msgs] = parseCell("plaintext", text).destructure();
+    describe(`${text}`, function() {
+        it(`should parse as ${expectedID}`, function() {
+            expect(cellID(result)).to.equal(expectedID);
+        });
+        it(`should have ${numErrorsExpected} errors`, function() {
+            expect(msgs.length).to.equal(numErrorsExpected);
+        });
     });
 }
 
-export function testSymbolID(text: string, expectedID: string): void {
-    const result = parseCell("symbol", text).msgTo([]);
-    it(`"${text}" should parse as ${expectedID}`, function() {
-        expect(result.id).to.equal(expectedID);
+export function testSymbolID(
+    text: string, 
+    expectedID: string,
+    numErrorsExpected: number = 0
+): void {
+    const [result, msgs] = parseCell("symbol", text).destructure();
+    describe(`${text}`, function() {
+        it(`should parse as ${expectedID}`, function() {
+            expect(cellID(result)).to.equal(expectedID);
+        });
+        it(`should have ${numErrorsExpected} errors`, function() {
+            expect(msgs.length).to.equal(numErrorsExpected);
+        });
     });
 }
 
-export function testRegexID(text: string, expectedID: string): void {
-    const result = parseCell("regex", text).msgTo([]); 
-    it(`"${text}" should parse as ${expectedID}`, function() {
-        expect(result.id).to.equal(expectedID);
+export function testRegexID(
+    text: string, 
+    expectedID: string,
+    numErrorsExpected: number = 0
+): void {
+    const [result, msgs] = parseCell("regex", text).destructure();
+    describe(`${text}`, function() {
+        it(`should parse as ${expectedID}`, function() {
+            expect(cellID(result)).to.equal(expectedID);
+        });
+        it(`should have ${numErrorsExpected} errors`, function() {
+            expect(msgs.length).to.equal(numErrorsExpected);
+        });
     });
 }
 
