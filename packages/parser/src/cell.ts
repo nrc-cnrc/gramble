@@ -1,4 +1,4 @@
-import { AlternationGrammar, DotGrammar, EmbedGrammar, EpsilonGrammar, Grammar, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "./grammars";
+import { AlternationGrammar, DotGrammar, EmbedGrammar, EpsilonGrammar, Grammar, GrammarResult, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "./grammars";
 import { ParseClass } from "./headers";
 import { 
     MPDelay, 
@@ -224,7 +224,7 @@ const parseParams = {
 export function parseCell(
     parseClass: ParseClass,
     text: string
-): Result<Grammar> {
+): GrammarResult {
     if (parseClass == "none" || parseClass == "comment") {
         return new EpsilonGrammar().msg();
     }
@@ -233,8 +233,8 @@ export function parseCell(
     const results = miniParse(env, params.expr, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new EpsilonGrammar().msg([Err("Cell parsing error", 
-                    `Cannot parse ${text} as a ${parseClass}`)])
+        return new EpsilonGrammar().err("Cell parsing error", 
+                    `Cannot parse ${text} as a ${parseClass}`);
     }
     if (results.length > 1) {
         // if this happens, it's an error on our part

@@ -16,7 +16,7 @@ export class AssignDefaults extends Pass<Grammar,Grammar> {
 
     public transform(g: Grammar, env: PassEnv): GrammarResult {
         
-        const mapped = g.mapChildren(this, env) as GrammarResult;
+        const mapped = g.mapChildren(this, env);
         return mapped.bind(g => {
             switch(g.constructor) {
                 case CollectionGrammar:

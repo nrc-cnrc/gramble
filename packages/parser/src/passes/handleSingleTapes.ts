@@ -67,14 +67,14 @@ export class HandleSingleTapes extends GrammarPass {
             case EmbedGrammar:
                 return this.handleEmbed(g as EmbedGrammar, env);
             default:
-                return g.mapChildren(this, env) as GrammarResult;
+                return g.mapChildren(this, env);
         }
     }
 
     handleEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {
         if (this.tapeName == undefined) {
             // we're not in singleTape env
-            return g.mapChildren(this, env) as GrammarResult;
+            return g.mapChildren(this, env);
         }
 
         if (g.tapes.indexOf(this.tapeName) == -1) {

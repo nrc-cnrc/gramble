@@ -1,4 +1,4 @@
-import { MissingSymbolError, Msgs, Result } from "../msgs";
+import { MissingSymbolError, Msgs } from "../msgs";
 import { 
     EmbedGrammar,
     EpsilonGrammar,
@@ -29,7 +29,7 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
         super();
     }
 
-    public transformRoot(g: Grammar, env: PassEnv): Result<Grammar> {
+    public transformRoot(g: Grammar, env: PassEnv): GrammarResult {
 
         // we keep a stack of the old collections, in which we'll
         // attempt to find the referents of embedded symbols
@@ -52,7 +52,7 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
             case EmbedGrammar:
                 return this.transformEmbed(g as EmbedGrammar, env);
             default: 
-                return g.mapChildren(this, env) as GrammarResult;
+                return g.mapChildren(this, env);
         }
     }
     

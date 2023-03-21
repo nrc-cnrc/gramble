@@ -3,7 +3,7 @@ import {
     MPAlt, MPParser, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
-import { Err, Msgs, Result } from "./msgs";
+import { Err, Msg, Msgs, Result, Warn } from "./msgs";
 import { REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, ALL_RESERVED, RESERVED_SYMBOLS, TEST_PARAMS, isValidSymbolName } from "./reserved";
 
 export const BLANK_PARAM: string = "__";
@@ -13,10 +13,6 @@ export type Requirement = "required" | "forbidden";
 export abstract class Op {
 
     public abstract get id(): string;
-
-    public msg(msgs: Msgs = []): Result<Op> {
-        return new Result(this, msgs);
-    }
 
     public get siblingReq(): Requirement {
         return "forbidden";
@@ -48,6 +44,20 @@ export abstract class Op {
      */
     public get requireLiteralParams(): boolean {
         return false;
+    }
+
+    public msg(m: Msg | Msgs = []): Result<Op> {
+        return new Result(this).msg(m);
+    }
+    
+    public err(shortMsg: string, longMsg: string): Result<Op> {
+        const e = Err(shortMsg, longMsg);
+        return this.msg(e);
+    }
+    
+    public warn(longMsg: string): Result<Op> {
+        const e = Warn(longMsg);
+        return this.msg(e);
     }
 
 }
@@ -237,10 +247,10 @@ const OP_UNRESERVED = MPUnreserved<Op>(
         if (isValidSymbolName(s)) {
             return new SymbolOp(s).msg()
         } else {
-            return new ErrorOp(s).msg([Err( 
+            return new ErrorOp(s).err( 
                 `Invalid identifier`, 
                 `${s} looks like it should be an identifier, but it contains an invalid symbol.`
-            )]);
+            );
         }
     } 
 );
@@ -295,8 +305,8 @@ export function parseOp(text: string): Result<Op> {
     const results = miniParse(env, OP_EXPR, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorOp(text).msg([Err("Invalid operator",
-                "This ends in a colon so it looks like an operator, but it cannot be parsed.")]);
+        return new ErrorOp(text).err("Invalid operator",
+                "This ends in a colon so it looks like an operator, but it cannot be parsed.");
     }
     
     if (results.length > 1) {

@@ -47,7 +47,7 @@ export class AdjustConditions extends GrammarPass {
             case ContainsGrammar:
                 return this.transformContains(g as ContainsGrammar, env);
             default:
-                return g.mapChildren(this, env) as GrammarResult;
+                return g.mapChildren(this, env);
         }
         
     }
@@ -58,7 +58,7 @@ export class AdjustConditions extends GrammarPass {
             // this(not(x) -> not(this(x))
             const newCond = new StartsGrammar(g.child.child, g.tapes);
             const newNegation = new NegationGrammar(newCond);
-            return newNegation.mapChildren(this, env) as GrammarResult;
+            return newNegation.mapChildren(this, env);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -68,14 +68,14 @@ export class AdjustConditions extends GrammarPass {
                 newChildren[newChildren.length-1], g.tapes);
             newChildren[newChildren.length-1] = newLastChild;
             const newSequence = new SequenceGrammar(newChildren);
-            return newSequence.mapChildren(this, env) as GrammarResult;
+            return newSequence.mapChildren(this, env);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new StartsGrammar(c, g.tapes));
             const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation.mapChildren(this, env) as GrammarResult;
+            return newAlternation.mapChildren(this, env);
         }
 
         if (g.child instanceof IntersectionGrammar) {
@@ -83,23 +83,23 @@ export class AdjustConditions extends GrammarPass {
             const newCond1 = new StartsGrammar(g.child.child1, g.tapes);
             const newCond2 = new StartsGrammar(g.child.child2, g.tapes);
             const newIntersection = new IntersectionGrammar(newCond1, newCond2);
-            return newIntersection.mapChildren(this, env) as GrammarResult;
+            return newIntersection.mapChildren(this, env);
         }
 
         if (g.child instanceof LocatorGrammar) {
             const newCond = new StartsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child._pos, newCond);
-            return newLocation.mapChildren(this, env) as GrammarResult;
+            return newLocation.mapChildren(this, env);
         }
 
         if (g.child instanceof RenameGrammar) {
             const newCond = new StartsGrammar(g.child.child, g.child.child.tapes);
             const newRename = new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
-            return newRename.mapChildren(this, env) as GrammarResult;
+            return newRename.mapChildren(this, env);
         }
 
         // construct the condition
-        const newG = this.transform(g.child, env) as GrammarResult;
+        const newG = this.transform(g.child, env);
         return newG.bind(c => {
             const dotStars: Grammar[] = [];
             for (const tape of g.tapes) {
@@ -118,7 +118,7 @@ export class AdjustConditions extends GrammarPass {
             // this(not(x) -> not(this(x))
             const newCond = new EndsGrammar(g.child.child, g.tapes);
             const newNegation = new NegationGrammar(newCond);
-            return newNegation.mapChildren(this, env) as GrammarResult;
+            return newNegation.mapChildren(this, env);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -127,14 +127,14 @@ export class AdjustConditions extends GrammarPass {
             const newFirstChild = new EndsGrammar(newChildren[0], g.tapes);
             newChildren[0] = newFirstChild;
             const newSequence = new SequenceGrammar(newChildren);
-            return newSequence.mapChildren(this, env) as GrammarResult;
+            return newSequence.mapChildren(this, env);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new EndsGrammar(c, g.tapes));
             const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation.mapChildren(this, env) as GrammarResult;
+            return newAlternation.mapChildren(this, env);
         }
 
         if (g.child instanceof IntersectionGrammar) {
@@ -142,23 +142,23 @@ export class AdjustConditions extends GrammarPass {
             const newCond1 = new EndsGrammar(g.child.child1, g.tapes);
             const newCond2 = new EndsGrammar(g.child.child2, g.tapes);
             const newIntersection = new IntersectionGrammar(newCond1, newCond2);
-            return newIntersection.mapChildren(this, env) as GrammarResult;
+            return newIntersection.mapChildren(this, env);
         }
         
         if (g.child instanceof LocatorGrammar) {
             const newCond = new EndsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child._pos, newCond);
-            return newLocation.mapChildren(this, env) as GrammarResult;
+            return newLocation.mapChildren(this, env);
         }
         
         if (g.child instanceof RenameGrammar) {
             const newCond = new EndsGrammar(g.child.child, g.child.child.tapes);
             const newRename = new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
-            return newRename.mapChildren(this, env) as GrammarResult;
+            return newRename.mapChildren(this, env);
         }
 
         // create the condition
-        const newG = this.transform(g.child, env) as GrammarResult;
+        const newG = this.transform(g.child, env);
         return newG.bind(c => {
             const dotStars: Grammar[] = [];
             for (const tape of g.tapes) {
@@ -176,7 +176,7 @@ export class AdjustConditions extends GrammarPass {
             // this(not(x) -> not(this(x))
             const newCond = new ContainsGrammar(g.child.child, g.tapes);
             const newNegation = new NegationGrammar(newCond);
-            return newNegation.mapChildren(this, env) as GrammarResult;
+            return newNegation.mapChildren(this, env);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -187,14 +187,14 @@ export class AdjustConditions extends GrammarPass {
             const newLastChild = new StartsGrammar(newChildren[newChildren.length-1], g.tapes);
             newChildren[newChildren.length-1] = newLastChild;
             const newSequence = new SequenceGrammar(newChildren);
-            return newSequence.mapChildren(this, env) as GrammarResult;
+            return newSequence.mapChildren(this, env);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new ContainsGrammar(c, g.tapes));
             const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation.mapChildren(this, env) as GrammarResult;
+            return newAlternation.mapChildren(this, env);
         }
 
         if (g.child instanceof IntersectionGrammar) {
@@ -202,23 +202,23 @@ export class AdjustConditions extends GrammarPass {
             const newCond1 = new ContainsGrammar(g.child.child1, g.tapes);
             const newCond2 = new ContainsGrammar(g.child.child2, g.tapes);
             const newIntersection = new IntersectionGrammar(newCond1, newCond2);
-            return newIntersection.mapChildren(this, env) as GrammarResult;
+            return newIntersection.mapChildren(this, env);
         }
 
         if (g.child instanceof LocatorGrammar) {
             const newCond = new ContainsGrammar(g.child.child, g.tapes);
             const newLocation = new LocatorGrammar(g.child._pos, newCond);
-            return newLocation.mapChildren(this, env) as GrammarResult;
+            return newLocation.mapChildren(this, env);
         }
         
         if (g.child instanceof RenameGrammar) {
             const newCond = new ContainsGrammar(g.child.child, g.child.child.tapes);
             const newRename = new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
-            return newRename.mapChildren(this, env) as GrammarResult;
+            return newRename.mapChildren(this, env);
         }
 
         // create the condition
-        const newG = this.transform(g.child, env) as GrammarResult;
+        const newG = this.transform(g.child, env);
         return newG.bind(c => {
             const dotStars: Grammar[] = [];
             for (const tape of g.tapes) {
