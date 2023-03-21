@@ -84,7 +84,7 @@ export class RescopeLeftBinders extends CPass {
                 
                 const prevChild = newChildren.pop();
                 if (prevChild == undefined) {
-                    Err("Wayward filtering",
+                    Err("Wayward condition",
                         "There is nothing to the left to filter").msgTo(msgs);
                     continue;
                 }

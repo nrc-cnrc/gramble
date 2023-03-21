@@ -1,6 +1,6 @@
 import { 
     CounterStack, CountGrammar, 
-    EqualsGrammar, Grammar, 
+    FilterGrammar, Grammar, 
     LiteralGrammar, CollectionGrammar, 
     PriorityGrammar, SequenceGrammar, 
 } from "./grammars";
@@ -13,7 +13,6 @@ import {
     logTime,
     logGrammar,
     Dict,
-    DEFAULT_SYMBOL_NAME,
     HIDDEN_TAPE_PREFIX
 } from "./util";
 import { Worksheet, Workbook } from "./sheets";
@@ -266,7 +265,7 @@ export class Interpreter {
                 return new LiteralGrammar(key, value);
             });
             const querySeq = new SequenceGrammar(queryLiterals);
-            targetGrammar = new EqualsGrammar(targetGrammar, querySeq);
+            targetGrammar = new FilterGrammar(targetGrammar, querySeq);
             
             // we have to collect any new vocab, but only from the new material
             targetGrammar.collectAllVocab(this.tapeNS, env);

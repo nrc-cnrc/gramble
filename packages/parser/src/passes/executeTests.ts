@@ -2,7 +2,7 @@ import { Dict, GenOptions, StringDict } from "../util";
 import { constructCollection, CounterStack, Expr, ExprNamespace } from "../exprs";
 import { Msgs, Err, Success, Result, result } from "../msgs";
 import { 
-    CountGrammar, EqualsGrammar, 
+    CountGrammar, FilterGrammar, 
     Grammar, GrammarPass, GrammarResult, TestNotGrammar, 
     CollectionGrammar, PriorityGrammar, 
     TestGrammar 
@@ -87,7 +87,7 @@ export class ExecuteTests extends GrammarPass {
         const opt = new GenOptions();
 
         // create a filter for each test
-        let targetComponent: Grammar = new EqualsGrammar(test.child, test.test);
+        let targetComponent: Grammar = new FilterGrammar(test.child, test.test);
 
         // there won't be any new vocabulary here, but it's possible (indeed, frequent)
         // that the Equals we made above has a different join/concat tape structure

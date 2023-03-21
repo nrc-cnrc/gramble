@@ -1,6 +1,6 @@
 import { 
     Seq, Join, Hide, 
-    Rename, Equals, 
+    Rename, Filter, 
     Collection, Embed, Lit 
 } from "../src/grammars";
 import { t1, t2, t3, testHasTapes, 
@@ -236,7 +236,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('13a. Filter using a field and then hide it', function() {
-        const grammar = Hide(Equals(Seq(t1("hello"), t2("foo")), t2("foo")), "t2");
+        const grammar = Hide(Filter(Seq(t1("hello"), t2("foo")), t2("foo")), "t2");
         const expectedResults: StringDict[] = [
             {t1: "hello"}
         ];
@@ -245,7 +245,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('13b. Filter using a field and then hide it', function() {
-        const grammar = Hide(Equals(Seq(t1("hello"), t2("foo")), t2("foo")), "t2", "HIDDEN");
+        const grammar = Hide(Filter(Seq(t1("hello"), t2("foo")), t2("foo")), "t2", "HIDDEN");
         const expectedResults: StringDict[] = [
             {t1: "hello", ".HIDDEN": "foo"}
         ];
@@ -255,7 +255,7 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('13c. Filter using a field, embed it, and then hide it', function() {
         const grammar = Collection({
-            "a": Equals(Seq(t1("hello"), t2("foo")), t2("foo")),
+            "a": Filter(Seq(t1("hello"), t2("foo")), t2("foo")),
             "default": Hide(Embed("a"), "t2", "HIDDEN")
         });
         const expectedResults: StringDict[] = [
@@ -266,7 +266,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('14a. Hide-filter-hide', function() {
-        const grammar = Hide(Equals(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3"),
+        const grammar = Hide(Filter(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3"),
                                     t2("foo")), "t2");
         const expectedResults: StringDict[] = [
             {t1: "hello"}
@@ -276,7 +276,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('14b. Hide-filter-hide', function() {
-        const grammar = Hide(Equals(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3", "HIDDEN_t3"),
+        const grammar = Hide(Filter(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3", "HIDDEN_t3"),
                                     t2("foo")), "t2", "HIDDEN_t2");
         const expectedResults: StringDict[] = [
             {t1: "hello", '.HIDDEN_t2': "foo", '.HIDDEN_t3': "goo"}

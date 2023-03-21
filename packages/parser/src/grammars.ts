@@ -67,7 +67,7 @@ export abstract class GrammarPass extends Pass<Grammar,Grammar> {
 
 /**
  * Grammar components represent the linguistic grammar that the
- * programmer is expressing (in terms of sequences, alternations, joins and filters,
+ * programmer is expressing (in terms of sequences, alternations, joins,
  * etc.), as opposed to its specific layout on the spreadsheet grids (the "tabular
  * syntax tree" or TST), but also as opposed to the specific algebraic expressions
  * that our Brzozowski-style algorithm is juggling (which are even lower-level; a 
@@ -912,12 +912,12 @@ export class JoinGrammar extends BinaryGrammar {
 
 }
 
-export class EqualsGrammar extends BinaryGrammar {
+export class FilterGrammar extends BinaryGrammar {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.child1, this.child2])
                 .map(c => f.transform(c, env))
-                .bind(([c1,c2]) => new EqualsGrammar(
+                .bind(([c1,c2]) => new FilterGrammar(
                                 c1 as Grammar,c2 as Grammar));
     }
 
@@ -960,16 +960,9 @@ export class EqualsGrammar extends BinaryGrammar {
         symbols: ExprNamespace
     ): Expr {
         const expr1 = this.child1.constructExpr(tapeNS, symbols)
-        const expr2 = this.constructFilter(tapeNS, symbols);
+        const expr2 = this.child2.constructExpr(tapeNS, symbols);
         const tapes = new Set(listIntersection(this.child1.tapes, this.child2.tapes));
         return constructFilter(expr1, expr2, tapes);   
-    }
-
-    protected constructFilter(
-        tapeNS: TapeNamespace,
-        symbols: ExprNamespace
-    ): Expr {
-        return this.child2.constructExpr(tapeNS, symbols);
     }
 }
 
@@ -1084,7 +1077,7 @@ export class PriorityGrammar extends UnaryGrammar {
     }
 }
 
-abstract class FilterGrammar extends UnaryGrammar {
+abstract class ConditionGrammar extends UnaryGrammar {
 
     constructor(
         child: Grammar,
@@ -1098,13 +1091,13 @@ abstract class FilterGrammar extends UnaryGrammar {
         tapeNS: TapeNamespace,
         symbols: ExprNamespace
     ): Expr {
-        // All descendants of FilterGrammar should have been replaced by
+        // All descendants of Condition should have been replaced by
         // other grammars by the time exprs are constructed.
         throw new Error("not implemented");
     }
 }
 
-export class StartsGrammar extends FilterGrammar {
+export class StartsGrammar extends ConditionGrammar {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return result(this.child)
@@ -1113,11 +1106,11 @@ export class StartsGrammar extends FilterGrammar {
     }
 
     public get id(): string {
-        return `StartsWithFilter(${this.child.id})`;
+        return `Starts(${this.child.id})`;
     }
 }
 
-export class EndsGrammar extends FilterGrammar {
+export class EndsGrammar extends ConditionGrammar {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return result(this.child)
@@ -1126,11 +1119,11 @@ export class EndsGrammar extends FilterGrammar {
     }
 
     public get id(): string {
-        return `EndsWithFilter(${this.child.id})`;
+        return `Ends(${this.child.id})`;
     }
 }
 
-export class ContainsGrammar extends FilterGrammar {
+export class ContainsGrammar extends ConditionGrammar {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return result(this.child)
@@ -1139,7 +1132,7 @@ export class ContainsGrammar extends FilterGrammar {
     }
 
     public get id(): string {
-        return `ContainsFilter(${this.child.id})`;
+        return `Contains(${this.child.id})`;
     }
 }
 
@@ -2100,8 +2093,8 @@ export function Intersect(child1: Grammar, child2: Grammar): IntersectionGrammar
     return new IntersectionGrammar(child1, child2);
 }
 
-export function Equals(child1: Grammar, child2: Grammar): EqualsGrammar {
-    return new EqualsGrammar(child1, child2);
+export function Filter(child1: Grammar, child2: Grammar): FilterGrammar {
+    return new FilterGrammar(child1, child2);
 }
 
 export function Join(child1: Grammar, child2: Grammar): JoinGrammar {
@@ -2112,19 +2105,19 @@ export function Short(child: Grammar): ShortGrammar {
     return new ShortGrammar(child);
 }
 
-export function Starts(child1: Grammar, child2: Grammar): EqualsGrammar {
+export function Starts(child1: Grammar, child2: Grammar): JoinGrammar {
     const filter = new StartsGrammar(child2);
-    return new EqualsGrammar(child1, filter);
+    return new JoinGrammar(child1, filter);
 }
 
-export function Ends(child1: Grammar, child2: Grammar): EqualsGrammar {
+export function Ends(child1: Grammar, child2: Grammar): JoinGrammar {
     const filter = new EndsGrammar(child2);
-    return new EqualsGrammar(child1, filter);
+    return new JoinGrammar(child1, filter);
 }
 
-export function Contains(child1: Grammar, child2: Grammar): EqualsGrammar {
+export function Contains(child1: Grammar, child2: Grammar): JoinGrammar {
     const filter = new ContainsGrammar(child2);
-    return new EqualsGrammar(child1, filter);
+    return new JoinGrammar(child1, filter);
 }
 
 export function Rep(

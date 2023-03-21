@@ -1,7 +1,7 @@
 
 import { 
     Count, CountTape, Grammar,
-    Seq, Join, Rep, Epsilon, Equals, Uni, Any, Intersect,
+    Seq, Join, Rep, Epsilon, Filter, Uni, Any, Intersect,
     MatchFrom, Priority, Vocab,
 } from "../src/grammars";
 import {
@@ -142,7 +142,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('16. Filtering t1:na{0,2} & ε', function() {
-        const grammar = Equals(Rep(t1("na"), 0, 2), Epsilon());
+        const grammar = Filter(Rep(t1("na"), 0, 2), Epsilon());
         testGrammar(grammar, [{},
             {t1: "na"},
             {t1: "nana"}]);
@@ -150,7 +150,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     
     describe('17. Filtering ε & t1:na{0,2}', function() {
-        const grammar = Equals(Epsilon(), Rep(t1("na"), 0, 2));
+        const grammar = Filter(Epsilon(), Rep(t1("na"), 0, 2));
         testGrammar(grammar, [{}]);
     });
 
@@ -304,14 +304,14 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('33. Filtering t1:h[ t2:h* ]', function() {
-        const grammar = Equals(t1("h"),
+        const grammar = Filter(t1("h"),
                                  Rep(t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         testGrammar(grammar, [{t1:"h"}]);
     });
     
     describe('34. Filtering t1:h[ (t1:h|t2:h)* ]', function() {
-        const grammar = Equals(t1("h"),
+        const grammar = Filter(t1("h"),
                                  Rep(Uni(t1("h"), t2("h"))));
         testHasTapes(grammar, ['t1', 't2']);
         testGrammar(grammar, [{'t1': 'h'}]);
@@ -359,23 +359,23 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('40. Filtering (t1:h+t2:h){2} with t1:hh+t2:hh ', function() {
-        const grammar = Equals(Rep(Seq(t1("h"), t2("h")), 2, 2), Seq(t1("hh"), t2("hh")));
+        const grammar = Filter(Rep(Seq(t1("h"), t2("h")), 2, 2), Seq(t1("hh"), t2("hh")));
         testGrammar(grammar, [{t1: "hh", t2: "hh"}]);
     });
 
     describe('41. Filtering t1:hh+t2:hh with (t1:h+t2:h){2}', function() {
-        const grammar = Equals(Seq(t1("hh"), t2("hh")), Rep(Seq(t1("h"), t2("h")), 2, 2));
+        const grammar = Filter(Seq(t1("hh"), t2("hh")), Rep(Seq(t1("h"), t2("h")), 2, 2));
         testGrammar(grammar, [{t1: "hh", t2: "hh"}]);
     });
 
     
     describe('42. Filtering (t1:h+t2:h)* with t1:hh+t2:hh ', function() {
-        const grammar = Equals(Rep(Seq(t1("h"), t2("h"))), Seq(t1("hh"), t2("hh")));
+        const grammar = Filter(Rep(Seq(t1("h"), t2("h"))), Seq(t1("hh"), t2("hh")));
         testGrammar(grammar, [{t1: "hh", t2: "hh"}]);
     });
 
     describe('43. Filtering t1:hh+t2:hh with (t1:h+t2:h)*', function() {
-        const grammar = Equals(Seq(t1("hh"), t2("hh")), Rep(Seq(t1("h"), t2("h"))));
+        const grammar = Filter(Seq(t1("hh"), t2("hh")), Rep(Seq(t1("h"), t2("h"))));
         testGrammar(grammar, [{t1: "hh", t2: "hh"}]);
     });
     
@@ -438,12 +438,12 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('48. Filtering t1:.{0,1} & ε', function() {
-        const grammar = Equals(Rep(Any("t1"), 0, 2), Epsilon());
+        const grammar = Filter(Rep(Any("t1"), 0, 2), Epsilon());
         testGrammar(grammar, [{}]);
     });
     
     describe('49. Filtering ε & t1:.{0,1}', function() {
-        const grammar = Equals(Epsilon(), Rep(Any("t1"), 0, 2));
+        const grammar = Filter(Epsilon(), Rep(Any("t1"), 0, 2));
         testGrammar(grammar, [{}]);
     });
     
@@ -458,37 +458,37 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('52. Filtering "hello" with he.*', function() {
-        const grammar = Equals(t1("hello"), Seq(t1("he"), Rep(Any("t1"))));
+        const grammar = Filter(t1("hello"), Seq(t1("he"), Rep(Any("t1"))));
         testGrammar(grammar, [ 
                             {t1: "hello"}]);
     });
 
     describe('53. Filtering "hello" with .*lo', function() {
-        const grammar = Equals(t1("hello"), Seq(Rep(Any("t1")), t1("lo")));
+        const grammar = Filter(t1("hello"), Seq(Rep(Any("t1")), t1("lo")));
         testGrammar(grammar, [ 
                             {t1: "hello"}]);
     });
 
     describe('54. Filtering "hello" with .*e.*', function() {
-        const grammar = Equals(t1("hello"), Seq(Rep(Any("t1")), t1("e"), Rep(Any("t1"))));
+        const grammar = Filter(t1("hello"), Seq(Rep(Any("t1")), t1("e"), Rep(Any("t1"))));
         testGrammar(grammar, [ 
                             {t1: "hello"}]);
     });
 
     describe('55. Filtering "hello" with .*l.*', function() {
-        const grammar = Equals(t1("hello"), Seq(Rep(Any("t1")), t1("l"), Rep(Any("t1"))));
+        const grammar = Filter(t1("hello"), Seq(Rep(Any("t1")), t1("l"), Rep(Any("t1"))));
         testGrammar(grammar, [ 
                             {t1: "hello"}]);
     });
 
     describe('56. Filtering "hello" with .*h.*', function() {
-        const grammar = Equals(t1("hello"), Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1"))));
+        const grammar = Filter(t1("hello"), Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1"))));
         testGrammar(grammar, [ 
                             {t1: "hello"}]);
     });
 
     describe('57. Filtering "hello" with .*o.*', function() {
-        const grammar = Equals(t1("hello"), Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1"))));
+        const grammar = Filter(t1("hello"), Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1"))));
         testGrammar(grammar, [ 
                             {t1: "hello"}]);
     });
@@ -651,7 +651,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
-        const filterGrammar: Grammar = Equals(grammar, t2("ee"));
+        const filterGrammar: Grammar = Filter(grammar, t2("ee"));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -667,7 +667,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
-        const filterGrammar: Grammar = Equals(grammar, Seq(t1("h"), t2("eeh")));
+        const filterGrammar: Grammar = Filter(grammar, Seq(t1("h"), t2("eeh")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -683,7 +683,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
-        const filterGrammar: Grammar = Equals(grammar, Seq(t1("h"), t2("ehe")));
+        const filterGrammar: Grammar = Filter(grammar, Seq(t1("h"), t2("ehe")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -910,7 +910,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
-        const filterGrammar: Grammar = Equals(grammar, Seq(t1("x"), t2("ee")));
+        const filterGrammar: Grammar = Filter(grammar, Seq(t1("x"), t2("ee")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -926,7 +926,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
-        const filterGrammar: Grammar = Equals(grammar, Seq(t1("hx"), t2("eeh")));
+        const filterGrammar: Grammar = Filter(grammar, Seq(t1("hx"), t2("eeh")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -942,7 +942,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t1("x"));
-        const filterGrammar: Grammar = Equals(grammar, Seq(t1("hx"), t2("ehe")));
+        const filterGrammar: Grammar = Filter(grammar, Seq(t1("hx"), t2("ehe")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -1169,7 +1169,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
-        const filterGrammar: Grammar = Equals(grammar, t2("eex"));
+        const filterGrammar: Grammar = Filter(grammar, t2("eex"));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -1185,7 +1185,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
-        const filterGrammar: Grammar = Equals(grammar, Seq(t1("h"), t2("eehx")));
+        const filterGrammar: Grammar = Filter(grammar, Seq(t1("h"), t2("eehx")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -1201,7 +1201,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Seq(Rep(Seq(t2("e"), matchGrammar), 2, 2), t2("x"));
-        const filterGrammar: Grammar = Equals(grammar, Seq(t1("h"), t2("ehex")));
+        const filterGrammar: Grammar = Filter(grammar, Seq(t1("h"), t2("ehex")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -1546,7 +1546,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const filterGrammar: Grammar = Equals(grammar2, t2("eeee"));
+        const filterGrammar: Grammar = Filter(grammar2, t2("eeee"));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -1563,7 +1563,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const filterGrammar: Grammar = Equals(grammar2, Seq(t1("hh"), t2("eeheeh")));
+        const filterGrammar: Grammar = Filter(grammar2, Seq(t1("hh"), t2("eeheeh")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -1580,7 +1580,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const filterGrammar: Grammar = Equals(grammar2, Seq(t1("hh"), t2("eheehe")));
+        const filterGrammar: Grammar = Filter(grammar2, Seq(t1("hh"), t2("eheehe")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -1597,7 +1597,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const filterGrammar: Grammar = Equals(grammar2, Rep(t2("ee")));
+        const filterGrammar: Grammar = Filter(grammar2, Rep(t2("ee")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -1614,7 +1614,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const filterGrammar: Grammar = Equals(grammar2, Rep(Seq(t1("h"), t2("eeh"))));
+        const filterGrammar: Grammar = Filter(grammar2, Rep(Seq(t1("h"), t2("eeh"))));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -1631,7 +1631,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Seq(grammar, grammar);
-        const filterGrammar: Grammar = Equals(grammar2, Rep(Seq(t1("h"), t2("ehe"))));
+        const filterGrammar: Grammar = Filter(grammar2, Rep(Seq(t1("h"), t2("ehe"))));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -1982,7 +1982,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const filterGrammar: Grammar = Equals(grammar2, Rep(t2("ee")));
+        const filterGrammar: Grammar = Filter(grammar2, Rep(t2("ee")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -1999,7 +1999,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const filterGrammar: Grammar = Equals(grammar2, Rep(Seq(t1("h"), t2("eeh"))));
+        const filterGrammar: Grammar = Filter(grammar2, Rep(Seq(t1("h"), t2("eeh"))));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -2016,7 +2016,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const filterGrammar: Grammar = Equals(grammar2, Rep(Seq(t1("h"), t2("ehe"))));
+        const filterGrammar: Grammar = Filter(grammar2, Rep(Seq(t1("h"), t2("ehe"))));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -2271,7 +2271,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
-        const filterGrammar: Grammar = Equals(grammarStar, Rep(t2("ee"), 2, 2));
+        const filterGrammar: Grammar = Filter(grammarStar, Rep(t2("ee"), 2, 2));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -2288,7 +2288,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
-        const filterGrammar: Grammar = Equals(grammarStar, Rep(Seq(t1("h"), t2("eeh")), 2, 2));
+        const filterGrammar: Grammar = Filter(grammarStar, Rep(Seq(t1("h"), t2("eeh")), 2, 2));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -2305,7 +2305,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammarStar: Grammar = Rep(grammar);
-        const filterGrammar: Grammar = Equals(grammarStar, Rep(Seq(t1("h"), t2("ehe")), 2, 2));
+        const filterGrammar: Grammar = Filter(grammarStar, Rep(Seq(t1("h"), t2("ehe")), 2, 2));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -2561,7 +2561,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const filterGrammar: Grammar = Equals(grammar2, Rep(t2("ee"), 2, 2));
+        const filterGrammar: Grammar = Filter(grammar2, Rep(t2("ee"), 2, 2));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -2579,7 +2579,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const filterGrammar: Grammar = Equals(grammar2, Rep(Seq(t1("h"), t2("eeh")), 2, 2));
+        const filterGrammar: Grammar = Filter(grammar2, Rep(Seq(t1("h"), t2("eeh")), 2, 2));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
@@ -2597,7 +2597,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar));
         const grammar2: Grammar = Rep(grammar, 2, 2);
-        const filterGrammar: Grammar = Equals(grammar2, Rep(Seq(t1("h"), t2("ehe")), 2, 2));
+        const filterGrammar: Grammar = Filter(grammar2, Rep(Seq(t1("h"), t2("ehe")), 2, 2));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab('t1', "hx"), Vocab('t2', "hex"));
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);

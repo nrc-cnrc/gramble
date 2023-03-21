@@ -3,7 +3,6 @@ import {
     Seq, 
     Join, 
     Uni, 
-    Equals, 
     Collection,
     Embed,
     Intersect,

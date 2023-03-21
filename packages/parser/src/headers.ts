@@ -261,10 +261,6 @@ export class RenameHeader extends UnaryHeader {
  * EqualsHeader puts a constraint on the state of the immediately preceding cell (call this state N)
  * that Filter(N, X) -- that is, it filters the results of N such that every surviving record is a 
  * superset of X.
- * 
- * This is also the superclass of [StartsHeader], [EndsHeader], and [ContainsHeader].  
- * These constrain N to either start with X (that is, Filter(N, X.*)) or end with X 
- * (that is, Filter(N, .*X)), or contain X (Filter(N, .*X.*)).
  */
 export class EqualsHeader extends UnaryHeader {
     
@@ -279,7 +275,7 @@ export class EqualsHeader extends UnaryHeader {
 }
 
 /**
- * StartsHeader is a special kind of [EqualsHeader] that only requires its predecessor (call it N) to 
+ * StartsHeader is a variant of [EqualsHeader] that only requires its predecessor (call it N) to 
  * start with X (that is, Equals(N, X.*))
  */
 export class StartsHeader extends UnaryHeader {
@@ -295,7 +291,7 @@ export class StartsHeader extends UnaryHeader {
 }
 
 /**
- * EndsHeader is a special kind of [EqualsHeader] that only requires its predecessor (call it N) to 
+ * EndsHeader is a variant of [EqualsHeader] that only requires its predecessor (call it N) to 
  * end with X (that is, Equals(N, .*X))
  */
 export class EndsHeader extends UnaryHeader {
@@ -311,7 +307,7 @@ export class EndsHeader extends UnaryHeader {
 }
 
 /**
- * ContainsHeader is a special kind of [EqualsHeader] that only requires its predecessor (call it N) to 
+ * ContainsHeader is a variant of [EqualsHeader] that only requires its predecessor (call it N) to 
  * contain X (that is, Equals(N, .*X.*))
  */
 export class ContainsHeader extends UnaryHeader {

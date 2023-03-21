@@ -13,7 +13,7 @@ import { Component } from "../components";
 import { Pass, PassEnv } from "../passes";
 import { 
     AlternationGrammar,
-    EpsilonGrammar, EqualsGrammar, 
+    EpsilonGrammar, FilterGrammar, 
     Grammar, GrammarResult, 
     HideGrammar, JoinReplaceGrammar, 
     JoinRuleGrammar, LocatorGrammar, 
@@ -127,7 +127,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                 .bind(g => new LocatorGrammar(t.cell.pos, g))
                 .destructure();
 
-        const result = new EqualsGrammar(prevGrammar, grammar);
+        const result = new JoinGrammar(prevGrammar, grammar);
         const locatedResult = new LocatorGrammar(t.cell.pos, result);
         return locatedResult.msg(prevMsgs).msg(msgs);
     }

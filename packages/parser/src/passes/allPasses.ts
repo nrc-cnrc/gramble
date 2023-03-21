@@ -2,7 +2,7 @@ import { CreateCollections } from "./createCollections";
 import { QualifyNames } from "./qualifyNames";
 import { RenameFix } from "./renameFix";
 import { SameTapeReplacePass } from "./sameTapeReplace";
-import { AdjustFilters } from "./adjustFilters";
+import { AdjustConditions } from "./adjustConditions";
 import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
 import { CreateOps } from "./createOps";
@@ -113,10 +113,10 @@ export const GRAMMAR_PASSES =
     // are the same) insert renaming so that there's no conflict
     new SameTapeReplacePass().compose(
 
-    // some filters (like `starts re text: ~k`) have counterintuitive
+    // some conditions (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    new AdjustFilters())))));
+    new AdjustConditions())))));
 
 export const ALL_PASSES = SHEET_PASSES.compose(GRAMMAR_PASSES);
 

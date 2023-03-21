@@ -1,6 +1,5 @@
 import { 
     TstHeader, 
-    TstParamList, 
     TstOp, TstHeadedGrid 
 } from "../tsts";
 import { PassEnv } from "../passes";
