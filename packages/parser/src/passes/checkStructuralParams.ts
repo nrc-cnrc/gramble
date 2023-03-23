@@ -95,12 +95,11 @@ export class CheckStructuralParams extends CPass {
     }
 
     public handleError(t: TstOp): CResult {
-        const op = t.op as ErrorOp;
+        //const op = t.op as ErrorOp;
         const replacement = !(t.sibling instanceof TstEmpty) ?
                             t.sibling :
                             t.child
-        return result(t).err(op.shortMsg, op.longMsg)
-                        .bind(_ => replacement);      
+        return result(t).bind(_ => replacement);      
     }
 
     public handleOp(t: TstOp): CResult {
@@ -145,9 +144,9 @@ export class CheckStructuralParams extends CPass {
         // warn about it.
         if (t.op.siblingReq == "forbidden" &&
                 !(t.sibling instanceof TstEmpty)) {
-            return result(t).msg(Warn("This content does not get " +
+            return t.warn("This content does not get " +
                 "assigned to anything and will be ignored.",
-                t.sibling.pos));
+                t.sibling.pos);
         }
 
         return t.msg();

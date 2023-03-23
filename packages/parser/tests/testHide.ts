@@ -1,6 +1,11 @@
-import { Seq, Join, Hide, Rename, Equals, Collection, Embed } from "../src/grammars";
-import { t1, t2, t3, testHasTapes, testHasVocab, testGrammar, DEFAULT_MAX_RECURSION } from './testUtil';
-import { SILENT, StringDict } from "../src/util";
+import { 
+    Seq, Join, Hide, 
+    Rename, Filter, 
+    Collection, Embed, Lit 
+} from "../src/grammars";
+import { t1, t2, t3, testHasTapes, 
+    testGrammar, DEFAULT_MAX_RECURSION } from './testUtil';
+import { SILENT, StringDict, VERBOSE_DEBUG } from "../src/util";
 import * as path from 'path';
 
 const DUMMY_SYMBOL: string = "";
@@ -231,7 +236,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('13a. Filter using a field and then hide it', function() {
-        const grammar = Hide(Equals(Seq(t1("hello"), t2("foo")), t2("foo")), "t2");
+        const grammar = Hide(Filter(Seq(t1("hello"), t2("foo")), t2("foo")), "t2");
         const expectedResults: StringDict[] = [
             {t1: "hello"}
         ];
@@ -240,7 +245,19 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('13b. Filter using a field and then hide it', function() {
-        const grammar = Hide(Equals(Seq(t1("hello"), t2("foo")), t2("foo")), "t2", "HIDDEN");
+        const grammar = Hide(Filter(Seq(t1("hello"), t2("foo")), t2("foo")), "t2", "HIDDEN");
+        const expectedResults: StringDict[] = [
+            {t1: "hello", ".HIDDEN": "foo"}
+        ];
+        testHasTapes(grammar, ["t1", ".HIDDEN"], DUMMY_SYMBOL, false);
+        testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
+    });
+    
+    describe('13c. Filter using a field, embed it, and then hide it', function() {
+        const grammar = Collection({
+            "a": Filter(Seq(t1("hello"), t2("foo")), t2("foo")),
+            "default": Hide(Embed("a"), "t2", "HIDDEN")
+        });
         const expectedResults: StringDict[] = [
             {t1: "hello", ".HIDDEN": "foo"}
         ];
@@ -249,7 +266,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('14a. Hide-filter-hide', function() {
-        const grammar = Hide(Equals(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3"),
+        const grammar = Hide(Filter(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3"),
                                     t2("foo")), "t2");
         const expectedResults: StringDict[] = [
             {t1: "hello"}
@@ -259,7 +276,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
     
     describe('14b. Hide-filter-hide', function() {
-        const grammar = Hide(Equals(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3", "HIDDEN_t3"),
+        const grammar = Hide(Filter(Hide(Seq(t1("hello"), t2("foo"), t3("goo")), "t3", "HIDDEN_t3"),
                                     t2("foo")), "t2", "HIDDEN_t2");
         const expectedResults: StringDict[] = [
             {t1: "hello", '.HIDDEN_t2': "foo", '.HIDDEN_t3': "goo"}
@@ -320,4 +337,14 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults, SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
+    describe('17. Hiding a hidden tape', function() {
+        const grammar = Hide(Seq(t1("hello"), Lit(".t2", "foo")), ".t2");
+        const expectedResults: StringDict[] = [
+            {t1: "hello"}
+        ];
+        testHasTapes(grammar, ["t1"]);
+        //testHasVocab(grammar, {t1: 4});
+        testGrammar(grammar, expectedResults);
+
+    });
 });

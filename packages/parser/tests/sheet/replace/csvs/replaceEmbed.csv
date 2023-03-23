@@ -1,8 +1,8 @@
 
-ROOT:,table:, text
+ROOT=,table:, text
         ,       , foo
 
-Default:,table:,embed
+Default=,table:,embed
     ,       ,ROOT
 
     , replace:, from text,    to text,

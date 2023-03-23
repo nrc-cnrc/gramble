@@ -2,7 +2,7 @@ import { CreateCollections } from "./createCollections";
 import { QualifyNames } from "./qualifyNames";
 import { RenameFix } from "./renameFix";
 import { SameTapeReplacePass } from "./sameTapeReplace";
-import { AdjustFilters } from "./adjustFilters";
+import { AdjustConditions } from "./adjustConditions";
 import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
 import { CreateOps } from "./createOps";
@@ -16,6 +16,7 @@ import { CreateGrammars } from "./createGrammars";
 import { CheckCollections } from "./checkCollections";
 import { ReplaceRulesOld } from "./replaceRulesOld";
 import { AssignDefaults } from "./assignDefaults";
+import { HandleSingleTapes } from "./handleSingleTapes";
 
 export const SHEET_PASSES = 
 
@@ -69,8 +70,6 @@ export const SHEET_PASSES =
     
     )))))))))));
 
-    
-
 export const NAME_PASSES = 
 
     // Assign default symbols to collections that don't already
@@ -90,6 +89,11 @@ export const GRAMMAR_PASSES =
     // if the programmer has specified an invalid renaming/hiding
     // structure that would cause problems during evaluation, fix
     // it so it doesn't
+    new HandleSingleTapes().compose(
+
+    // if the programmer has specified an invalid renaming/hiding
+    // structure that would cause problems during evaluation, fix
+    // it so it doesn't
     new RenameFix().compose(
 
     // turn new-style replacement cascades into the appropriate
@@ -100,10 +104,10 @@ export const GRAMMAR_PASSES =
     // are the same) insert renaming so that there's no conflict
     new SameTapeReplacePass().compose(
 
-    // some filters (like `starts re text: ~k`) have counterintuitive
+    // some conditions (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    new AdjustFilters()))));
+    new AdjustConditions())))));
 
 export const ALL_PASSES = SHEET_PASSES.compose(GRAMMAR_PASSES);
 

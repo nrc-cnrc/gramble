@@ -1,8 +1,0 @@
-
-root:, text, gloss
-     , foobar, run
-     , foobaz, jump
-
-default:, embed, ends text, text, gloss
-     , root, r, q, [1SG]
-     , root, z, k, [1SG]

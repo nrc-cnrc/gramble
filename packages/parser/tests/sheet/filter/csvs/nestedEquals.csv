@@ -1,12 +1,12 @@
 
-verb:, table:, text, gloss, trans
+verb=, table:, text, gloss, trans
     ,       , foo, run, INTR,
     ,       , moo, jump, INTR,
     ,       , goo, see, TR,
 
-stem:, table:, embed, text, gloss/subj
+stem=, table:, embed, text, gloss/subj
     ,       , verb, bar, [1SG]
     ,       , verb, baz, [2SG]
 
-default:, table:, embed, equals subj, equals trans
+default=, table:, embed, equals subj, equals trans
     ,       , stem, [2SG], INTR

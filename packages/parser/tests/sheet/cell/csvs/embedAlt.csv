@@ -1,0 +1,10 @@
+nouns=, table:, text
+        ,       , moo
+        ,       , foo
+
+verbs=, table:, text
+        ,       , goo
+        ,       , boo
+
+default=, table:, embed, text
+    ,       , nouns|verbs, bar

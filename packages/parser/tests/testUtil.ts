@@ -9,7 +9,7 @@ import {
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
-import { parseRegex } from "../src/regex";
+import { cellID, parseCell } from "../src/cell";
 import { parseHeaderCell } from "../src/headers";
 import { parseOp } from "../src/ops";
 
@@ -69,28 +69,70 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
     });
 }
 
-export function testHeaderID(header: string, expectedID: string) {
-    const [result, _] = parseHeaderCell(header).destructure();
-    it(`"${header}" should parse as ${expectedID}`, function() {
+export function testHeaderID(text: string, expectedID: string): void {
+    const result = parseHeaderCell(text).msgTo([]);
+    it(`"${text}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
-export function testCellID(cell: string, expectedID: string) {
-    const result = parseRegex(cell);
-    it(`"${cell}" should parse as ${expectedID}`, function() {
+export function testPlaintextID(
+    text: string, 
+    expectedID: string,
+    numErrorsExpected: number = 0
+): void {
+    const [result, msgs] = parseCell("plaintext", text).destructure();
+    describe(`${text}`, function() {
+        it(`should parse as ${expectedID}`, function() {
+            expect(cellID(result)).to.equal(expectedID);
+        });
+        it(`should have ${numErrorsExpected} errors`, function() {
+            expect(msgs.length).to.equal(numErrorsExpected);
+        });
+    });
+}
+
+export function testSymbolID(
+    text: string, 
+    expectedID: string,
+    numErrorsExpected: number = 0
+): void {
+    const [result, msgs] = parseCell("symbol", text).destructure();
+    describe(`${text}`, function() {
+        it(`should parse as ${expectedID}`, function() {
+            expect(cellID(result)).to.equal(expectedID);
+        });
+        it(`should have ${numErrorsExpected} errors`, function() {
+            expect(msgs.length).to.equal(numErrorsExpected);
+        });
+    });
+}
+
+export function testRegexID(
+    text: string, 
+    expectedID: string,
+    numErrorsExpected: number = 0
+): void {
+    const [result, msgs] = parseCell("regex", text).destructure();
+    describe(`${text}`, function() {
+        it(`should parse as ${expectedID}`, function() {
+            expect(cellID(result)).to.equal(expectedID);
+        });
+        it(`should have ${numErrorsExpected} errors`, function() {
+            expect(msgs.length).to.equal(numErrorsExpected);
+        });
+    });
+}
+
+export function testOpID(text: string, expectedID: string): void {
+    const result = parseOp(text).msgTo([]);
+    it(`"${text}" should parse as ${expectedID}`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
-export function testOpID(cell: string, expectedID: string) {
-    const result = parseOp(cell);
-    it(`"${cell}" should parse as ${expectedID}`, function() {
-        expect(result.id).to.equal(expectedID);
-    });
-}
-
-export function testNumOutputs(outputs: StringDict[], expectedNum: number, warningOnly: boolean = false) {
+export function testNumOutputs(outputs: StringDict[], expectedNum: number, warningOnly: boolean = false): void {
+    const date_str: string = (new Date()).toUTCString();
     const testName: string = `should have ${expectedNum} result(s)`;
     it(`${testName}`, function() {
         try {

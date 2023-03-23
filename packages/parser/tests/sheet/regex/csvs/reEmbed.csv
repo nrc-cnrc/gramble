@@ -1,6 +1,0 @@
-nouns:, table:, text
-        ,       , moo
-        ,       , foo
-
-default:, table:, re embed, text
-    ,       , nouns, bar

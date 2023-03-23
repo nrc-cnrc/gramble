@@ -1,11 +1,10 @@
 import { 
     TstHeader, 
-    TstParamList, 
     TstOp, TstHeadedGrid 
 } from "../tsts";
 import { PassEnv } from "../passes";
 import { Err, Msgs } from "../msgs";
-import { Header, TagHeader, TapeNameHeader } from "../headers";
+import { Header, ParamNameHeader, TapeNameHeader } from "../headers";
 import { Component, CPass, CResult } from "../components";
 
 /**
@@ -42,7 +41,7 @@ export class CheckTestLiterals extends CPass {
         if (t.op.requireLiteralParams && t.child instanceof TstHeadedGrid) {
             const newHeaders: TstHeader[] = []
             for (const header of t.child.headers) {
-                if (!this.isLiteral(header.header) || header.header.isRegex) {
+                if (!this.isLiteral(header.header)) {
                     Err("Non-literal test content",
                         "Tests can only contain plain literal content " +
                         "(e.g. no embeds, no special headers, etc.)",
@@ -60,7 +59,7 @@ export class CheckTestLiterals extends CPass {
         if (t instanceof TapeNameHeader) {
             return true;
         }
-        if (t instanceof TagHeader) {
+        if (t instanceof ParamNameHeader) {
             return this.isLiteral(t.child);
         }
         return false;

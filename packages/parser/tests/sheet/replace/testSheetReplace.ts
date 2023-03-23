@@ -101,7 +101,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Replace with pre/post and same tape name', function() {
+    describe('Replace with same tape name', function() {
         const project = sheetFromFile(`${DIR}/sameTapeReplace.csv`);
         testErrors(project, []);
         testGrammar(project, [

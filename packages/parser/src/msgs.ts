@@ -138,7 +138,7 @@ export class Result<T> {
         return result.msg(this.msgs);
     }
 
-    public msg(m: Msg | Msgs | ResultVoid): Result<T> {
+    public msg(m: Msg | Msgs | ResultVoid = []): Result<T> {
         if (m instanceof Result) {
             return new Result(this.item, this.msgs.concat(m.msgs));
         }
@@ -180,9 +180,7 @@ export class Result<T> {
      * handles them as a side effect.
      */
     public msgTo(f: Msgs | MsgCallback, pos?: CellPos): T {
-        const msgs = (pos != undefined) 
-                   ? this.msgs.map(m => m.localize(pos))
-                   : this.msgs;
+        const msgs = this.msgs.map(m => m.localize(pos));
         if (Array.isArray(f)) {
             f.push(...msgs);
             return this.item;
@@ -256,8 +254,18 @@ export function result<T>(item: T): Result<T> {
     return new Result(item);
 }
 
-export function resultList<T>(items: T[]): ResultList<T> {
-    return new ResultList(items);
+export function resultList<T>(xs: (T|Result<T>)[]): ResultList<T> {
+    const msgs: Msg[] = [];
+    const items: T[] = [];
+    for (const x of xs) {
+        if (!(x instanceof Result)) {
+            items.push(x);
+            continue;
+        }
+        const item = x.msgTo(msgs);
+        items.push(item);
+    }
+    return new ResultList(items, msgs);
 }
 
 export function resultDict<T>(items: Dict<T>): ResultDict<T> {

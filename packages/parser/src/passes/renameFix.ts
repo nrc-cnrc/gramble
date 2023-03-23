@@ -1,13 +1,15 @@
-import { HIDDEN_TAPE_PREFIX } from "../util";
+import { DUMMY_TAPE, HIDDEN_TAPE_PREFIX } from "../util";
 import { 
     CounterStack, 
     Grammar, 
     GrammarPass, 
     GrammarResult,
-    HideGrammar, CollectionGrammar, RenameGrammar
+    HideGrammar, 
+    RenameGrammar, 
+    EpsilonGrammar
 } from "../grammars";
 import { result } from "../msgs";
-import { Pass, PassEnv } from "../passes";
+import { PassEnv } from "../passes";
 
 /**
  * This pass finds erroneous renames/hides and fixes them.
@@ -30,7 +32,7 @@ export class RenameFix extends GrammarPass {
     }
 
     public transform(g: Grammar, env: PassEnv): GrammarResult {
-        const result = g.mapChildren(this, env) as GrammarResult;
+        const result = g.mapChildren(this, env);
         return result.bind(g => {
             switch (g.constructor) {
                 case HideGrammar:
@@ -47,8 +49,8 @@ export class RenameFix extends GrammarPass {
         g.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.tapeName) == -1) {  
             return result(g).err("Hiding missing tape",
-                            `The grammar to the left does not contain the tape ${g.tapeName}. ` +
-                            ` Available tapes: [${[...g.child.tapes]}`)
+                            `The grammar being hidden does not contain the tape ${g.tapeName}. ` +
+                            ` Available tapes: [${[...g.child.tapes]}]`)
                          .bind(c => c.child);
         }
         return g.msg();
@@ -57,8 +59,13 @@ export class RenameFix extends GrammarPass {
     public handleRename(g: RenameGrammar, env: PassEnv): GrammarResult {
         g.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.fromTape) == -1) { 
+
+            if (g.child.tapes.length == 1 && g.child.tapes[0] == DUMMY_TAPE) {
+                return result(g.child);
+            }
+
             return result(g).err("Renaming missing tape",
-                            `The grammar to the left does not contain the tape ${g.fromTape}. ` +
+                            `The ${g.child.constructor.name} to undergo renaming does not contain the tape ${g.fromTape}. ` +
                             `Available tapes: [${[...g.child.tapes]}]`)
                          .bind(c => c.child);
         }

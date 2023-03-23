@@ -1,17 +1,12 @@
-import { Err, MissingSymbolError, Msgs, Result, resultDict, resultList } from "../msgs";
 import { 
-    CounterStack,
     EmbedGrammar,
-    EpsilonGrammar,
     Grammar,
-    GrammarPass,
     GrammarResult,
-    Collection,
     CollectionGrammar,
     AlternationGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { DEFAULT_SYMBOL_NAME, Dict } from "../util";
+import { DEFAULT_SYMBOL_NAME } from "../util";
 
 /**
  * Goes through collections and, if a symbol Default isn't present,
@@ -21,7 +16,7 @@ export class AssignDefaults extends Pass<Grammar,Grammar> {
 
     public transform(g: Grammar, env: PassEnv): GrammarResult {
         
-        const mapped = g.mapChildren(this, env) as GrammarResult;
+        const mapped = g.mapChildren(this, env);
         return mapped.bind(g => {
             switch(g.constructor) {
                 case CollectionGrammar:

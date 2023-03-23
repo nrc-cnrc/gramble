@@ -27,17 +27,37 @@ describe(`${path.basename(module.filename)}`, function() {
             {gloss: "-2SG",text: "baz"}
         ]);
     });
+    
+    describe('Assignment to an invalid identifier', function() {
+        const project = sheetFromFile(`${DIR}/assignmentToInvalidIdentifier.csv`);
+        testErrors(project, [
+            ["assignmentToInvalidIdentifier", 0, 0, "error"],
+            ["assignmentToInvalidIdentifier", 0, 0, "warning"],
+            ["assignmentToInvalidIdentifier", 5, 2, "warning"]
+        ]);
+        testGrammar(project, [{}]);
+    });
+
+    
+    describe('Identifier with a space', function() {
+        const project = sheetFromFile(`${DIR}/assignmentToInvalidIdentifier.csv`);
+        testErrors(project, [
+            ["assignmentToInvalidIdentifier", 0, 0, "error"],
+            ["assignmentToInvalidIdentifier", 0, 0, "warning"],
+            ["assignmentToInvalidIdentifier", 5, 2, "warning"]
+        ]);
+        testGrammar(project, [{}]);
+    });
 
     describe('Sheet name using a reserved word', function() {
         // no longer erroneous
         const project = sheetFromFile(`${DIR}/optional.csv`);
-        testErrors(project, []);
-        testGrammar(project,[
-            {text: "moobaz", gloss: "jump-2SG"},
-            {text: "moobar", gloss: "jump-1SG"},
-            {text: "foobaz", gloss: "run-2SG"},
-            {text: "foobar", gloss: "run-1SG"}
+        testErrors(project, [
+            ["", -1, -1, "error"] // the error here is actually in the "global" workspace
+                                  // it's not really clear what cell to report this in, in a 
+                                  // sheets interface this is actually written in a tab, not a cell
         ]);
+        testGrammar(project,[{}]);
     });
 
     describe('Reassigning a symbol', function() {
@@ -203,14 +223,59 @@ describe(`${path.basename(module.filename)}`, function() {
             ["waywardParam", 0, 2, "error"],
             ["waywardParam", 4, 3, "error"],
         ]);
-        /*
         testGrammar(project, [
-            {gloss: "run",text: "baz"},
-            {gloss: "run",text: "bar"},
-            {gloss: "jump",text: "bar"},
-            {gloss: "jump",text: "baz"}
+            {text:"moobaz", gloss:"jump-2SG"},
+            {text:"moobar", gloss:"jump-1SG"},
+            {text:"foobaz", gloss:"run-2SG"},
+            {text:"foobar", gloss:"run-1SG"}
         ]);
-        */
     });
+    
+    describe('Replace param headers with regex ops underneath', function() {
+        // This is testing whether, in cases where we've mistakenly put
+        // a regex-taking header in an inappropriate position, whether the 
+        // cell underneath it is interpreted as a regex or as plaintext.  
+        // Being interpreted as plaintext is correct -- otherwise this could
+        // be a backdoor to getting a regex into an inappropriate position.
+        const project = sheetFromFile(`${DIR}/waywardParamWithRegex.csv`);
+        testErrors(project, [
+            ["waywardParamWithRegex", 0, 2, "error"],
+            ["waywardParamWithRegex", 4, 3, "error"],
+        ]);
+        testGrammar(project, [
+            {text:"moobaz", gloss:"jump-2SG?"},
+            {text:"moobar", gloss:"jump-1SG"},
+            {text:"foo?baz", gloss:"run-2SG?"},
+            {text:"foo?bar", gloss:"run-1SG"}
+        ]);
+    });
+
+    describe('Invalid tape name', function() {
+        const project = sheetFromFile(`${DIR}/invalidTapeName.csv`);
+        testErrors(project, [
+            ["invalidTapeName", 0, 1, "error"],
+            ["invalidTapeName", 1, 1, "warning"]
+        ]);
+        testGrammar(project, [{}]);
+    });
+
+    describe('Only header in a row in unparseable', function() {
+        const project = sheetFromFile(`${DIR}/onlyUnparseableHeader.csv`);
+        testErrors(project, [
+            ["onlyUnparseableHeader", 0, 1, "error"],
+            ["onlyUnparseableHeader", 1, 1, "warning"]
+        ]);
+        testGrammar(project, [{}]);
+    });
+
+    describe('Header with space', function() {
+        const project = sheetFromFile(`${DIR}/headerWithSpace.csv`);
+        testErrors(project, [
+            ["headerWithSpace", 0, 1, "error"],
+            ["headerWithSpace", 1, 1, "warning"]
+        ]);
+        testGrammar(project, [{}]);
+    });
+
 
 });

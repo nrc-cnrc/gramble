@@ -44,7 +44,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Grammar with embeds and a relevant join, under assignment', function() {
+    describe('Grammar with embeds and a relevant join, under assignment 2', function() {
         const project = sheetFromFile(`${DIR}/joinUnderAssignmentEmbedded.csv`);
         testErrors(project, []);
         testGrammar(project, [

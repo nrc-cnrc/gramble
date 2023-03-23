@@ -12,9 +12,10 @@ import {
     constructPrecede, constructPreTape,
     constructNotContains, constructParallel, 
     DerivEnv, ExprNamespace, constructCollection, 
-    constructCorrespond, constructNoEps, DerivStats, constructDotStar
+    constructCorrespond, constructNoEps, 
+    DerivStats, constructDotStar
 } from "./exprs";
-import { Msg, Msgs, result, Result, resultDict, resultList } from "./msgs";
+import { Err, Msg, Msgs, result, Result, resultDict, resultList, ResultVoid, Warn } from "./msgs";
 
 import {
     renameTape,
@@ -26,6 +27,8 @@ import { Pass, PassEnv } from "./passes";
 import {
     CellPos,
     Dict,
+    DUMMY_REGEX_TAPE,
+    DUMMY_TAPE,
     flatten,
     HIDDEN_TAPE_PREFIX,
     isSubset,
@@ -64,7 +67,7 @@ export abstract class GrammarPass extends Pass<Grammar,Grammar> {
 
 /**
  * Grammar components represent the linguistic grammar that the
- * programmer is expressing (in terms of sequences, alternations, joins and filters,
+ * programmer is expressing (in terms of sequences, alternations, joins,
  * etc.), as opposed to its specific layout on the spreadsheet grids (the "tabular
  * syntax tree" or TST), but also as opposed to the specific algebraic expressions
  * that our Brzozowski-style algorithm is juggling (which are even lower-level; a 
@@ -77,8 +80,7 @@ export abstract class GrammarPass extends Pass<Grammar,Grammar> {
  * because they refer to non-existant fields?"
  * 
  * At the Grammar level we do the following operations.  Some of these are done
- * within the grammar objects themselves, others are performed by GrammarTransformation objects (which are
- * GoF Visitors).  
+ * within the grammar objects themselves, others are performed by Passes.
  * 
  *   * qualifying and resolving symbol names (e.g., figuring out that
  *     a particular reference to VERB refers to, say, the VERB symbol in the
@@ -111,12 +113,20 @@ export abstract class GrammarPass extends Pass<Grammar,Grammar> {
 
 export abstract class Grammar extends Component {
 
-    public get pos(): CellPos | undefined {
-        return undefined;
+    public abstract mapChildren(f: GrammarPass, env: PassEnv): GrammarResult;
+
+    public msg(m: Msg | Msgs | ResultVoid = []): GrammarResult {
+        return new GrammarResult(this).msg(m);
     }
     
-    public msg(m: Msg | Msgs = []): GrammarResult {
-        return new GrammarResult(this).msg(m);
+    public err(shortMsg: string, longMsg: string, pos?: CellPos): GrammarResult {
+        const e = Err(shortMsg, longMsg);
+        return this.msg(e).localize(pos).localize(this.pos);
+    }
+    
+    public warn(longMsg: string, pos?: CellPos): GrammarResult {
+        const e = Warn(longMsg);
+        return this.msg(e).localize(pos).localize(this.pos);
     }
     
     protected _tapes: string[] | undefined = undefined;
@@ -314,7 +324,7 @@ abstract class AtomicGrammar extends Grammar {
 
 export class EpsilonGrammar extends AtomicGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return this.msg();
     }
 
@@ -329,7 +339,7 @@ export class EpsilonGrammar extends AtomicGrammar {
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = [ 
-                `${HIDDEN_TAPE_PREFIX}END` 
+                DUMMY_TAPE
             ];
         }
         return this._tapes;
@@ -345,7 +355,7 @@ export class EpsilonGrammar extends AtomicGrammar {
 
 export class NullGrammar extends AtomicGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return this.msg();
     }
     
@@ -356,7 +366,7 @@ export class NullGrammar extends AtomicGrammar {
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = [ 
-                `${HIDDEN_TAPE_PREFIX}END` 
+                DUMMY_TAPE
             ];
         }
         return this._tapes;
@@ -372,7 +382,7 @@ export class NullGrammar extends AtomicGrammar {
 
 export class CharSetGrammar extends AtomicGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return this.msg();
     }
 
@@ -424,7 +434,7 @@ export class CharSetGrammar extends AtomicGrammar {
 
 export class EpsilonLiteralGrammar extends AtomicGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return this.msg();
     }
 
@@ -459,7 +469,7 @@ export class EpsilonLiteralGrammar extends AtomicGrammar {
 
 export class LiteralGrammar extends AtomicGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return this.msg();
     }
 
@@ -529,7 +539,7 @@ export class DotGrammar extends AtomicGrammar {
         super();
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return this.msg();
     }
 
@@ -594,10 +604,10 @@ abstract class NAryGrammar extends Grammar {
 
 export class ParallelGrammar extends NAryGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return resultList(this.children)
                 .map(c => f.transform(c, env))
-                .bind(cs => new ParallelGrammar(cs as Grammar[]));
+                .bind(cs => new ParallelGrammar(cs));
     }
 
     public get id(): string {
@@ -628,10 +638,10 @@ export class ParallelGrammar extends NAryGrammar {
 
 export class SequenceGrammar extends NAryGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return resultList(this.children)
                 .map(c => f.transform(c, env))
-                .bind(cs => new SequenceGrammar(cs as Grammar[]));
+                .bind(cs => new SequenceGrammar(cs));
     }
 
     public get id(): string {
@@ -688,10 +698,10 @@ export class SequenceGrammar extends NAryGrammar {
 
 export class AlternationGrammar extends NAryGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return resultList(this.children)
                 .map(c => f.transform(c, env))
-                .bind(cs => new AlternationGrammar(cs as Grammar[]));
+                .bind(cs => new AlternationGrammar(cs));
     }
     
     public get id(): string {
@@ -764,10 +774,10 @@ export class ShortGrammar extends UnaryGrammar {
         return `Pref(${this.child.id})`;
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new ShortGrammar(c as Grammar));
+                .bind(c => new ShortGrammar(c));
     }
     
     public getTapeClass(
@@ -793,11 +803,10 @@ export class ShortGrammar extends UnaryGrammar {
 
 export class IntersectionGrammar extends BinaryGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return resultList([this.child1, this.child2])
                 .map(c => f.transform(c, env))
-                .bind(([c1,c2]) => new IntersectionGrammar(
-                                c1 as Grammar,c2 as Grammar));
+                .bind(([c1,c2]) => new IntersectionGrammar(c1, c2));
     }
     
     public get id(): string {
@@ -846,11 +855,10 @@ function fillOutWithDotStar(state: Expr, tapes: string[]) {
 
 export class JoinGrammar extends BinaryGrammar {
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return resultList([this.child1, this.child2])
                 .map(c => f.transform(c, env))
-                .bind(([c1,c2]) => new JoinGrammar(
-                                c1 as Grammar,c2 as Grammar));
+                .bind(([c1,c2]) => new JoinGrammar(c1, c2));
     }
 
     public get id(): string {
@@ -900,13 +908,12 @@ export class JoinGrammar extends BinaryGrammar {
 
 }
 
-export class EqualsGrammar extends BinaryGrammar {
+export class FilterGrammar extends BinaryGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return resultList([this.child1, this.child2])
                 .map(c => f.transform(c, env))
-                .bind(([c1,c2]) => new EqualsGrammar(
-                                c1 as Grammar,c2 as Grammar));
+                .bind(([c1,c2]) => new FilterGrammar(c1, c2));
     }
 
     public get id(): string {
@@ -948,16 +955,9 @@ export class EqualsGrammar extends BinaryGrammar {
         symbols: ExprNamespace
     ): Expr {
         const expr1 = this.child1.constructExpr(tapeNS, symbols)
-        const expr2 = this.constructFilter(tapeNS, symbols);
+        const expr2 = this.child2.constructExpr(tapeNS, symbols);
         const tapes = new Set(listIntersection(this.child1.tapes, this.child2.tapes));
         return constructFilter(expr1, expr2, tapes);   
-    }
-
-    protected constructFilter(
-        tapeNS: TapeNamespace,
-        symbols: ExprNamespace
-    ): Expr {
-        return this.child2.constructExpr(tapeNS, symbols);
     }
 }
 
@@ -970,10 +970,10 @@ export class CountGrammar extends UnaryGrammar {
         super(child);
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new CountGrammar(c as Grammar, this.maxChars));
+                .bind(c => new CountGrammar(c, this.maxChars));
     }
 
     public get id(): string {
@@ -1007,10 +1007,10 @@ export class CountTapeGrammar extends UnaryGrammar {
         super(child);
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new CountTapeGrammar(c as Grammar, this.maxChars));
+                .bind(c => new CountTapeGrammar(c, this.maxChars));
     }
 
 
@@ -1063,10 +1063,10 @@ export class PriorityGrammar extends UnaryGrammar {
         super(child);
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new PriorityGrammar(c as Grammar, this.tapePriority));
+                .bind(c => new PriorityGrammar(c, this.tapePriority));
     }
 
 
@@ -1083,7 +1083,7 @@ export class PriorityGrammar extends UnaryGrammar {
     }
 }
 
-abstract class FilterGrammar extends UnaryGrammar {
+abstract class ConditionGrammar extends UnaryGrammar {
 
     constructor(
         child: Grammar,
@@ -1097,49 +1097,116 @@ abstract class FilterGrammar extends UnaryGrammar {
         tapeNS: TapeNamespace,
         symbols: ExprNamespace
     ): Expr {
-        // All descendants of FilterGrammar should have been replaced by
+        // All descendants of Condition should have been replaced by
         // other grammars by the time exprs are constructed.
         throw new Error("not implemented");
     }
 }
 
-export class StartsGrammar extends FilterGrammar {
+export class StartsGrammar extends ConditionGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new StartsGrammar(c as Grammar));
+                .bind(c => new StartsGrammar(c));
     }
 
     public get id(): string {
-        return `StartsWithFilter(${this.child.id})`;
+        return `Starts(${this.child.id})`;
     }
 }
 
-export class EndsGrammar extends FilterGrammar {
+export class EndsGrammar extends ConditionGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new EndsGrammar(c as Grammar));
+                .bind(c => new EndsGrammar(c));
     }
 
     public get id(): string {
-        return `EndsWithFilter(${this.child.id})`;
+        return `Ends(${this.child.id})`;
     }
 }
 
-export class ContainsGrammar extends FilterGrammar {
+export class ContainsGrammar extends ConditionGrammar {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new ContainsGrammar(c as Grammar));
+                .bind(c => new ContainsGrammar(c));
     }
 
     public get id(): string {
-        return `ContainsFilter(${this.child.id})`;
+        return `Contains(${this.child.id})`;
     }
+}
+
+/** This is used internally, to wrap potentially complex grammars
+ * so that they work in contexts where only grammars with single 
+ * tapes are permitted.
+ * 
+ * For example, "equals text: q{HighVowel}".  HighVowel might 
+ * define multiple tapes, but for this purpose we only care about 
+ * its text tape, and the others have to be hidden.  (Not thrown out
+ * or ignored, just hidden.)
+ * 
+ * But when we create this header/regex combination, we don't yet know
+ * what HighVowel refers to or what tapes it defines; we only learn that
+ * in later stages.  This grammar is a kind of stub that wraps the regex
+ * and sticks around until we have that information, at which point we can
+ * create the appropriate structures. 
+ * 
+ */
+export class SingleTapeGrammar extends UnaryGrammar {
+
+    constructor(
+        public tapeName: string,
+        child: Grammar
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `Tape<${this.tapeName}>(${this.child.id}`;
+    }
+
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
+        return result(this.child)
+                .bind(c => f.transform(c, env))
+                .bind(c => new SingleTapeGrammar(
+                        this.tapeName, c));
+    }
+
+    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
+        if (this._tapes == undefined) {
+            this._tapes = [];
+            // in the scope of a SingleTapeGrammar, there are often
+            // grammars with the dummy tape .T.  We don't want to consider
+            // this as a genuine tape outside of this scope, outside of this
+            // scope that will be tapeName.  
+            for (const tapeName of this.child.calculateTapes(stack, env)) {
+                if (tapeName == DUMMY_REGEX_TAPE) {
+                    this._tapes.push(this.tapeName);
+                } else {
+                    this._tapes.push(tapeName);
+                }
+            }
+            this._tapes = listUnique(this._tapes);
+        }
+        return this._tapes;
+    }
+    
+    public getLiterals(): LiteralGrammar[] {
+        return this.child.getLiterals()
+                    .map(c => {
+                        if (c.tapeName == DUMMY_REGEX_TAPE) {
+                            return new LiteralGrammar(this.tapeName, c.text);
+                        }
+                        return c;
+                    });
+    }
+
 }
 
 export class RenameGrammar extends UnaryGrammar {
@@ -1153,15 +1220,25 @@ export class RenameGrammar extends UnaryGrammar {
     }
     
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new RenameGrammar(c as Grammar, 
+                .bind(c => new RenameGrammar(c, 
                             this.fromTape, this.toTape));
     }
 
     public get id(): string {
         return `${this.toTape}<-${this.fromTape}(${this.child.id})`;
+    }
+
+    public getLiterals(): LiteralGrammar[] {
+        return this.child.getLiterals()
+                    .map(c => {
+                        if (c.tapeName == this.fromTape) {
+                            return new LiteralGrammar(this.toTape, c.text);
+                        }
+                        return c;
+                    });
     }
 
     public getTapePriority(
@@ -1278,10 +1355,10 @@ export class RepeatGrammar extends UnaryGrammar {
                     || this.maxReps == Infinity;
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new RepeatGrammar(c as Grammar, 
+                .bind(c => new RepeatGrammar(c, 
                     this.minReps, this.maxReps));
     }
 
@@ -1312,10 +1389,10 @@ export class NegationGrammar extends UnaryGrammar {
         return super.getTapeClass(tapeName, symbolsVisited, env);
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new NegationGrammar(c as Grammar));
+                .bind(c => new NegationGrammar(c));
     }
 
     public constructExpr(
@@ -1341,10 +1418,10 @@ export class PreTapeGrammar extends UnaryGrammar {
         return `EHIDE(${this.child.id})`;
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new PreTapeGrammar(this.fromTape, this.toTape, c as Grammar));
+                .bind(c => new PreTapeGrammar(this.fromTape, this.toTape, c));
     }
 
     public getTapePriority(
@@ -1386,10 +1463,10 @@ export class HideGrammar extends UnaryGrammar {
         return `Hide(${this.child.id},${this.tapeName})`;
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new HideGrammar(c as Grammar, this.tapeName, this.toTape));
+                .bind(c => new HideGrammar(c, this.tapeName, this.toTape));
     }
     
     public getTapePriority(
@@ -1474,10 +1551,10 @@ export class MatchFromGrammar extends UnaryGrammar {
         super(child);
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new MatchFromGrammar(c as Grammar, 
+                .bind(c => new MatchFromGrammar(c,
                     this.fromTape, this.toTape, this.vocabBypass));
     }
 
@@ -1563,10 +1640,10 @@ export class MatchGrammar extends UnaryGrammar {
         super(child);
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new MatchGrammar(c as Grammar, this.relevantTapes));
+                .bind(c => new MatchGrammar(c, this.relevantTapes));
     }
 
     public getTapeClass(
@@ -1613,10 +1690,10 @@ export class TapeNsGrammar extends UnaryGrammar {
         return `<tapes>${this.child.id}`;
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                     .bind(c => f.transform(c, env))
-                    .bind(c => new TapeNsGrammar(c as Grammar, 
+                    .bind(c => new TapeNsGrammar(c, 
                         this.tapeDict, this.vocabEdges))
     }
 
@@ -1662,7 +1739,7 @@ export class CollectionGrammar extends Grammar {
         super();
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         const newEnv = env.pushSymbols(this.symbols);
         const result = resultDict(this.symbols)
                 .map(c => f.transform(c, newEnv))
@@ -1792,12 +1869,12 @@ export class EmbedGrammar extends AtomicGrammar {
         super();
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return new EmbedGrammar(this.name).msg();
     }
 
     public get id(): string {
-        return `$${this.name}`;
+        return `{${this.name}}`;
     }
 
     public potentiallyInfinite(
@@ -1905,11 +1982,11 @@ export class LocatorGrammar extends UnaryGrammar {
         super(child);
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
                 .localize(this.pos)
-                .bind(c => new LocatorGrammar(this.pos, c as Grammar));
+                .bind(c => new LocatorGrammar(this.pos, c));
     }
 
     public get pos(): CellPos {
@@ -1941,15 +2018,13 @@ export class TestGrammar extends UnaryGrammar {
         super(child);
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         const [child, childMsgs] = f.transform(this.child, env).destructure();
         const [test, testMsgs] = f.transform(this.test, env).destructure();
         const [uniques, uniqueMsgs] = resultList(this.uniques)
                                         .map(c => f.transform(c, env))
                                         .destructure();
-        return new TestGrammar(child as Grammar, 
-                                   test as Grammar, 
-                                   uniques as LiteralGrammar[])
+        return new TestGrammar(child, test, uniques as LiteralGrammar[])
                             .msg(childMsgs)
                             .msg(testMsgs)
                             .msg(uniqueMsgs);
@@ -1981,11 +2056,10 @@ export class TestGrammar extends UnaryGrammar {
 
 export class TestNotGrammar extends TestGrammar {
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return resultList([this.child, this.test])
                    .map(c => f.transform(c, env))
-                   .bind(([c, t]) => new TestNotGrammar(
-                                        c as Grammar, t as Grammar));
+                   .bind(([c, t]) => new TestNotGrammar(c, t));
     }
 
 }
@@ -2022,8 +2096,8 @@ export function Intersect(child1: Grammar, child2: Grammar): IntersectionGrammar
     return new IntersectionGrammar(child1, child2);
 }
 
-export function Equals(child1: Grammar, child2: Grammar): EqualsGrammar {
-    return new EqualsGrammar(child1, child2);
+export function Filter(child1: Grammar, child2: Grammar): FilterGrammar {
+    return new FilterGrammar(child1, child2);
 }
 
 export function Join(child1: Grammar, child2: Grammar): JoinGrammar {
@@ -2034,19 +2108,19 @@ export function Short(child: Grammar): ShortGrammar {
     return new ShortGrammar(child);
 }
 
-export function Starts(child1: Grammar, child2: Grammar): EqualsGrammar {
+export function Starts(child1: Grammar, child2: Grammar): JoinGrammar {
     const filter = new StartsGrammar(child2);
-    return new EqualsGrammar(child1, filter);
+    return new JoinGrammar(child1, filter);
 }
 
-export function Ends(child1: Grammar, child2: Grammar): EqualsGrammar {
+export function Ends(child1: Grammar, child2: Grammar): JoinGrammar {
     const filter = new EndsGrammar(child2);
-    return new EqualsGrammar(child1, filter);
+    return new JoinGrammar(child1, filter);
 }
 
-export function Contains(child1: Grammar, child2: Grammar): EqualsGrammar {
+export function Contains(child1: Grammar, child2: Grammar): JoinGrammar {
     const filter = new ContainsGrammar(child2);
-    return new EqualsGrammar(child1, filter);
+    return new JoinGrammar(child1, filter);
 }
 
 export function Rep(
@@ -2228,13 +2302,12 @@ export class JoinReplaceGrammar extends Grammar {
         super();
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         const [child, childMsgs] = f.transform(this.child, env).destructure();
         const [rules, ruleMsgs] = resultList(this.rules)
                                     .map(c => f.transform(c, env))
                                     .destructure();
-        return new JoinReplaceGrammar(child as Grammar, 
-                                        rules as ReplaceGrammar[])
+        return new JoinReplaceGrammar(child, rules as ReplaceGrammar[])
                             .msg(childMsgs)
                             .msg(ruleMsgs);
     }
@@ -2319,12 +2392,12 @@ export class JoinRuleGrammar extends Grammar {
         return `JoinRule(${this.child.id},${cs})`;
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         const [child, childMsgs] = f.transform(this.child, env).destructure();
         const [rules, ruleMsgs] = resultList(this.rules)
                                     .map(c => f.transform(c, env))
                                     .destructure();
-        return new JoinRuleGrammar(this.inputTape, child as Grammar, 
+        return new JoinRuleGrammar(this.inputTape, child, 
                                         rules as ReplaceGrammar[])
                             .msg(childMsgs)
                             .msg(ruleMsgs);
@@ -2399,14 +2472,13 @@ export class ReplaceGrammar extends Grammar {
         return super.getTapeClass(tapeName, symbolsVisited, env);
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         const children = [this.fromGrammar, this.toGrammar, 
             this.preContext, this.postContext, this.otherContext];
         return resultList(children)
                    .map(c => f.transform(c, env))
                    .bind(([fr, to, pre, post, oth]) => new ReplaceGrammar(
-                        fr as Grammar, to as Grammar,
-                        pre as Grammar, post as Grammar, oth as Grammar,
+                        fr, to, pre, post, oth,
                         this.beginsWith, this.endsWith,
                         this.minReps, this.maxReps, this.hiddenTapeName));
     }

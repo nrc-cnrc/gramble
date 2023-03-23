@@ -1,5 +1,5 @@
-word:, table:, text
+word=, table:, text
     ,       , aba,
     ,       ,     ,
-    , replace text:, from, to re
+    , replace text:, from, to
     ,              , b,    p|v

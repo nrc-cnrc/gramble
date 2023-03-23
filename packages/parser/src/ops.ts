@@ -1,72 +1,13 @@
 import { 
-    miniParse, MPAlternation, 
-    MPParser, MPReserved, 
+    miniParse, MiniParseEnv, 
+    MPAlt, MPParser, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
-import { isValidSymbolName, RESERVED_SYMBOLS } from "./util";
+import { Err, Msg, Msgs, Result, ResultVoid, Warn } from "./msgs";
+import { REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, ALL_RESERVED, RESERVED_SYMBOLS, TEST_PARAMS, isValidSymbolName } from "./reserved";
+import { CellPos } from "./util";
 
 export const BLANK_PARAM: string = "__";
-
-const REQUIRED_REPLACE_PARAMS = new Set([
-    "from",
-    "to",
-]);
-
-const REPLACE_PARAMS = new Set([
-    "pre",
-    "post",
-    ...REQUIRED_REPLACE_PARAMS
-]);
-
-const TEST_PARAMS = new Set([
-    "unique",
-]);
-
-const RESERVED_HEADERS = new Set([
-    "embed", 
-    "optional", 
-    //"not", 
-    "hide", 
-    //"reveal", 
-    "equals", 
-    "starts", 
-    "ends", 
-    "contains",
-    "re",
-    ...REPLACE_PARAMS,
-    ...TEST_PARAMS
-]);
-
-const RESERVED_OPS: Set<string> = new Set([
-    "table", 
-    "test", 
-    "testnot",
-    "replace",
-    "collection",
-    "join",
-    "or"
-]);
-
-export const RESERVED_WORDS = new Set([
-    ...RESERVED_HEADERS, 
-    ...RESERVED_OPS
-]);
-
-export const RESERVED = new Set([
-    ...RESERVED_SYMBOLS,
-    ...RESERVED_WORDS
-]);
-
-
-const tokenizer = new RegExp("\\s+|(" + 
-                        RESERVED_SYMBOLS.map(s => "\\"+s).join("|") + 
-                            ")");
-
-function tokenize(text: string): string[] {
-    return text.split(tokenizer).filter(
-        (s: string) => s !== undefined && s !== ''
-    );
-}
 
 export type Requirement = "required" | "forbidden";
 
@@ -104,6 +45,20 @@ export abstract class Op {
      */
     public get requireLiteralParams(): boolean {
         return false;
+    }
+
+    public msg(m: Msg | Msgs | ResultVoid = []): Result<Op> {
+        return new Result(this).msg(m);
+    }
+    
+    public err(shortMsg: string, longMsg: string, pos?: CellPos): Result<Op> {
+        const e = Err(shortMsg, longMsg);
+        return this.msg(e).localize(pos);
+    }
+    
+    public warn(longMsg: string, pos?: CellPos): Result<Op> {
+        const e = Warn(longMsg);
+        return this.msg(e).localize(pos);
     }
 
 }
@@ -256,9 +211,7 @@ export class SymbolOp extends Op {
 export class ErrorOp extends Op {
 
     constructor(
-        public text: string,
-        public shortMsg: string,
-        public longMsg: string,
+        public text: string
     ) { 
         super();
     }
@@ -272,102 +225,89 @@ export class ErrorOp extends Op {
 
 const OP_TABLE = MPSequence<Op>(
     ["table"],
-    () => new TableOp()
+    () => new TableOp().msg()
 );
 
 const OP_COLLECTION = MPSequence<Op>(
     ["collection"],
-    () => new CollectionOp()
+    () => new CollectionOp().msg()
 );
 
 const OP_TEST = MPSequence<Op>(
     ["test"],
-    () => new TestOp()
+    () => new TestOp().msg()
 );
 
 const OP_TESTNOT = MPSequence<Op>(
     ["testnot"],
-    () => new TestNotOp()
+    () => new TestNotOp().msg()
 );
 
 const OP_UNRESERVED = MPUnreserved<Op>(
-    RESERVED_WORDS, 
     (s) => {
         if (isValidSymbolName(s)) {
-            return new SymbolOp(s);
+            return new SymbolOp(s).msg()
         } else {
-            return new ErrorOp(s, 
-                `Invalid tape name`, 
-                `${s} looks like it should be a tape name, but tape names should start with letters or _`);
+            return new ErrorOp(s).err( 
+                `Invalid identifier`, 
+                `${s} looks like it should be an identifier, but it contains an invalid symbol.`
+            );
         }
     } 
 );
 
-const OP_RESERVED_HEADER = MPReserved<Op>(
-    RESERVED_HEADERS, 
-    (s) => new ErrorOp(s, "Reserved word in operator", 
-            "This cell has to be a symbol name or " +
-            `an operator, but it's a reserved word ${s}.`)
-);
-
-const OP_RESERVED_WORD = MPReserved<Op>(
-    RESERVED_WORDS, 
-    (s) => new ErrorOp(s, "Reserved word in operator", 
-            "This cell has to be a symbol name or " +
-            `an operator, but it's a reserved word '${s}'.`)
-);
-
 const OP_REPLACE = MPSequence<Op>(
     ["replace"], 
-    () => new ReplaceOp()
+    () => new ReplaceOp().msg()
 );
 
 const OP_REPLACE_TAPE = MPSequence<Op>(
     ["replace", OP_UNRESERVED], 
-    (c) => new ReplaceTapeOp(c as SymbolOp)
-);
-
-const OP_REPLACE_ERROR = MPSequence<Op>(
-    ["replace", OP_RESERVED_WORD], 
-    (c) => { 
-        const s = (c as ErrorOp).text;
-        return new ErrorOp(s, "Reserved word in operator",
-            "This replace has to be followed by a tape name, " +
-            `but is instead followed by the reserved word '${s}'`);
-    }
+    (child) => child.bind(c => new ReplaceTapeOp(c as SymbolOp))
 );
 
 const OP_OR = MPSequence<Op>(
     ["or"], 
-    () => new OrOp()
+    () => new OrOp().msg()
 );
 
 const OP_JOIN = MPSequence<Op>(
     ["join"], 
-    () => new JoinOp()
+    () => new JoinOp().msg()
 );
 
-const OP_EXPR: MPParser<Op> = MPAlternation(
+const OP_SUBEXPR: MPParser<Op> = MPAlt(
     OP_TABLE, OP_COLLECTION,
     OP_TEST, OP_TESTNOT,
     OP_REPLACE, 
-    OP_REPLACE_TAPE, OP_REPLACE_ERROR,
-    OP_OR, OP_JOIN,
-    OP_UNRESERVED, OP_RESERVED_HEADER
+    OP_REPLACE_TAPE,
+    OP_OR, OP_JOIN
 );
 
-const OP_EXPR_WITH_COLON: MPParser<Op> = MPSequence(
-    [OP_EXPR, ":"],
-    (op) => op
+const OP_SUBEXPR_WITH_COLON: MPParser<Op> = MPSequence(
+    [OP_SUBEXPR, ":"],
+    (child) => child
 )
 
-export function parseOp(text: string): Op {
+const OP_ASSIGNMENT = MPSequence(
+    [OP_UNRESERVED, "="],
+    (child) => child
+);
+
+const OP_EXPR = MPAlt(
+    OP_ASSIGNMENT,
+    OP_SUBEXPR_WITH_COLON
+);
+
+export function parseOp(text: string): Result<Op> {
     const trimmedText = text.trim();
-    const results = miniParse(tokenize, OP_EXPR_WITH_COLON, trimmedText);
+
+    const env = new MiniParseEnv(RESERVED_SYMBOLS, ALL_RESERVED);
+    const results = miniParse(env, OP_EXPR, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorOp(text, "Invalid operator",
-                "This ends in a colon so it looks like an operator, but it cannot be parsed.")
+        return new ErrorOp(text).err("Invalid operator",
+                "This ends in a colon so it looks like an operator, but it cannot be parsed.");
     }
     
     if (results.length > 1) {

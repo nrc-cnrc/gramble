@@ -1,4 +1,4 @@
-import { Seq, Join, Any, Equals, Uni, Epsilon } from "../src/grammars";
+import { Seq, Join, Any, Filter, Uni, Epsilon } from "../src/grammars";
 import { testHasTapes, t1, t2, testGrammar, testHasVocab } from './testUtil';
 
 import * as path from 'path';
@@ -100,22 +100,22 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('Filtering t1:hi & t1:.+t1:.', function() {
-        const grammar = Equals(t1("hi"), Seq(Any("t1"), Any("t1")));
+        const grammar = Filter(t1("hi"), Seq(Any("t1"), Any("t1")));
         testGrammar(grammar, [{t1: "hi"}]);
     });
 
     describe('Filtering t1:hi+t2:hi & t1:.+t1:.+t2:.+t2.', function() {
-        const grammar = Equals(Seq(t1("hi"), t2("hi")), Seq(Any("t1"), Any("t1"), Any("t2"), Any("t2")));
+        const grammar = Filter(Seq(t1("hi"), t2("hi")), Seq(Any("t1"), Any("t1"), Any("t2"), Any("t2")));
         testGrammar(grammar, [{t1: "hi", t2: "hi"}]);
     });
 
     describe('Filtering t1:hi+t2:hi & t1:.+t2:.+t1:.+t2.', function() {
-        const grammar = Equals(Seq(t1("hi"), t2("hi")), Seq(Any("t1"), Any("t2"), Any("t1"), Any("t2")));
+        const grammar = Filter(Seq(t1("hi"), t2("hi")), Seq(Any("t1"), Any("t2"), Any("t1"), Any("t2")));
         testGrammar(grammar, [{t1: "hi", t2: "hi"}]);
     });
 
     describe('Filtering t1:hi+t2:hi & (t1:.+t2:.)+(t1:.+t2.)', function() {
-        const grammar = Equals(Seq(t1("hi"), t2("hi")), Seq(Seq(Any("t1"), Any("t2")), Seq(Any("t1"), Any("t2"))));
+        const grammar = Filter(Seq(t1("hi"), t2("hi")), Seq(Seq(Any("t1"), Any("t2")), Seq(Any("t1"), Any("t2"))));
         testGrammar(grammar, [{t1: "hi", t2: "hi"}]);
     });
 

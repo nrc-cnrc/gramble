@@ -1,7 +1,7 @@
-word:, table:, text
+word=, table:, text
     ,       , aba
     ,       , arba
     ,       , iba
     ,       ,     ,
-    , replace:, from text, to surface, pre re text
+    , replace:, from text, to surface, pre text
     ,         , b,         v         , a|i

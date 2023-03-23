@@ -1,14 +1,14 @@
 
-verb:, table:, text, gloss/root
+verb=, table:, text, gloss/root
     ,       , foo, run
     ,       , goo, run
     ,       , moo, jump
 
-suffix:, table:, text, gloss/subj
+suffix=, table:, text, gloss/subj
     ,       , bar, [1SG]
     ,       , baz, [2SG]
 
-default:, table:, embed, embed
+default=, table:, embed, embed
     ,       , verb, suffix 
 
     , test:, root, subj, unique text, unique gloss

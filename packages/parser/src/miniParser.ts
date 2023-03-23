@@ -1,3 +1,4 @@
+import { Result } from "./msgs";
 import { Gen } from "./util";
 
 /**
@@ -48,9 +49,66 @@ import { Gen } from "./util";
  * JavaScript function hoisting should take care of it.
  */
 
+/**
+ * Prepend any special JS regex characters with backslashes
+ */
+function escapeRegExp(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
+/**
+ * Remove single backslashes (e.g. convert \x to x, and \\ to \)
+ */
+function unescape(s: string): string {
+    return s.replace(/(?:\\(.))/g, '$1');
+}
 
-export type MPParser<T> = (input: string[]) => Gen<[T, string[]]>
+/**
+ * Used to filter out empty & undefined strings
+ */
+function stringIsNontrivial(s: string): boolean {
+    return s !== undefined && s.trim() !== '';
+}
+
+/**
+ * Construct the appropriate regex for splitting Gramble regexes
+ */
+function constructTokenizer(reserved: Set<string>): RegExp {
+    return new RegExp("(?<!\\\\)(\\s+|" + 
+        [...reserved].map(escapeRegExp).join("|") + 
+    ")");
+}
+
+/**
+ * MiniParseEnv is a env parameter that's passed through all the
+ * parsing functions, containing information like what characters can
+ * split the string into tokens (splitters) and what symbols are
+ * reserved.  The reason this is an env variable, rather than a global,
+ * is that what's treated as reserved and what's not can change depending
+ * on context.  (E.g., _ is a reserved symbol at the top level in a 
+ * rule context, but not if it's in parens.  Using an env lets us reflect
+ * that changing status during the parse.)
+ */
+export class MiniParseEnv {
+
+    protected tokenizer: RegExp;
+
+    constructor(
+        public splitters: Set<string>,
+        public reserved: Set<string>
+    ) { 
+        this.tokenizer = constructTokenizer(splitters);
+    }
+
+    public tokenize(text: string): string[] {
+        return text.split(this.tokenizer)
+                   .filter(stringIsNontrivial)
+                   .map(unescape);
+    }
+}
+
+export type MPParser<T> = (input: string[], env: MiniParseEnv) => 
+                                        Gen<[Result<T>, string[]]>
 
 /**
  * Delay the evaluation of a parser X to allow reference to a parser before it's defined (e.g. for
@@ -59,8 +117,25 @@ export type MPParser<T> = (input: string[]) => Gen<[T, string[]]>
  * "const X = ...", you need this to allow the expression of recursive grammars.
  */
 export function MPDelay<T>(child: () => MPParser<T>): MPParser<T> {
-    return function*(input: string[]) {
-        yield* child()(input);
+    return function*(input: string[], env: MiniParseEnv) {
+        yield* child()(input, env);
+    }
+}
+
+export function MPEmpty<T>(
+    constr: () => Result<T>
+): MPParser<T> {
+    return function*(input: string[], env: MiniParseEnv) {
+        yield [constr(), input];
+    }
+}
+
+export function MPEnv<T>(
+    child: MPParser<T>,
+    env: MiniParseEnv
+): MPParser<T> {
+    return function*(input: string[], oldEnv: MiniParseEnv) {
+        yield* child(input, env);
     }
 }
 
@@ -68,17 +143,16 @@ export function MPDelay<T>(child: () => MPParser<T>): MPParser<T> {
  * Recognizes any word in the "reserved" string set.
  */
 export function MPReserved<T>(
-    reserved: Set<string>, 
-    constr: (s: string) => T,
+    constr: (s: string) => Result<T>,
     caseSensitive: boolean = false    
 ): MPParser<T> {
-    return function*(input: string[]) {
+    return function*(input: string[], env: MiniParseEnv) {
         if (input.length == 0) {
             return;
         }
         const firstToken = caseSensitive ? input[0] 
                                          : input[0].toLowerCase();
-        if (!reserved.has(firstToken)) {
+        if (!env.reserved.has(firstToken)) {
             return;
         }
         yield [constr(input[0]), input.slice(1)];
@@ -89,17 +163,16 @@ export function MPReserved<T>(
  * Recognizes any word that is NOT in the "reserved" string set.
  */
 export function MPUnreserved<T>(
-    reserved: Set<string>, 
-    constr: (s: string) => T,
+    constr: (s: string) => Result<T>,
     caseSensitive: boolean = false    
 ): MPParser<T> {
-    return function*(input: string[]) {
+    return function*(input: string[], env: MiniParseEnv) {
         if (input.length == 0) {
             return;
         }
         const firstToken = caseSensitive ? input[0] 
                                          : input[0].toLowerCase();
-        if (reserved.has(firstToken)) {
+        if (env.reserved.has(firstToken)) {
             return;
         }
         yield [constr(input[0]), input.slice(1)];
@@ -109,7 +182,10 @@ export function MPUnreserved<T>(
 /**
  * Recognizes a string that begins with commentStarter (e.g. "%" in a header)
  */
-export function MPComment<T>(commentStarter: string, constr: (s: string) => T): MPParser<T> {
+export function MPComment<T>(
+    commentStarter: string, 
+    constr: (s: string) => Result<T>
+): MPParser<T> {
     return function*(input: string[]) {
         if (input.length == 0 || input[0] != commentStarter) {
             return;
@@ -121,20 +197,19 @@ export function MPComment<T>(commentStarter: string, constr: (s: string) => T): 
 /**
  * Recognizes a sequence of grammar elements and (for convenience) literal strings.  The function constr
  * should have as many elements as the non-strings in your array.  (That is to say, it will pass all
- * non-strings it finds to the constructor, and ignore any literal strings.  If for some reason you need
- * that literal string to be a result object and passed to the constructor, wrap it in an MPReserved.)
+ * non-strings it finds to the constructor, and ignore any literal strings.)
  */
 export function MPSequence<T>(
     children: (string | MPParser<T>)[], 
-    constr: (...children: T[]) => T,
+    constr: (...children: Result<T>[]) => Result<T>,
     caseSensitive: boolean = false    
 ): MPParser<T> {
-    return function*(input: string[]) {
+    return function*(input: string[], env: MiniParseEnv) {
 
-        let results: [T[], string[]][] = [[[], input]];
+        let results: [Result<T>[], string[]][] = [[[], input]];
 
         for (const child of children) {
-            let newResults: [T[], string[]][] = [];
+            let newResults: [Result<T>[], string[]][] = [];
             for (const [existingOutputs, existingRemnant] of results) {
                 if (typeof child == "string") {
                     if (existingRemnant.length == 0) {
@@ -151,8 +226,8 @@ export function MPSequence<T>(
                     continue;
                 }
     
-                for (const [output2, remnant2] of child(existingRemnant)) {
-                    const newOutput: T[] = [...existingOutputs, output2];
+                for (const [output2, remnant2] of child(existingRemnant, env)) {
+                    const newOutput: Result<T>[] = [...existingOutputs, output2];
                     newResults.push([newOutput, remnant2]);
                 }
             }
@@ -166,20 +241,20 @@ export function MPSequence<T>(
 
 export function MPRepetition<T>(
     child: MPParser<T>,
-    constr: (...children: T[]) => T,
+    constr: (...children: Result<T>[]) => Result<T>,
     minReps: number = 0,
     maxReps: number = Infinity
 ): MPParser<T> {
-    return function*(input: string[]) {
-        let results: [T[], string[]][] = [[[], input]];
+    return function*(input: string[], env: MiniParseEnv) {
+        let results: [Result<T>[], string[]][] = [[[], input]];
         for (let reps = 0; reps <= maxReps && results.length > 0; reps++) {
-            let newResults: [T[], string[]][] = [];
+            let newResults: [Result<T>[], string[]][] = [];
             for (const [existingOutputs, existingRemnant] of results) {
                 if (reps >= minReps) {
                     yield [constr(...existingOutputs), existingRemnant];
                 }
-                for (const [output2, remnant2] of child(existingRemnant)) {
-                    const newOutput: T[] = [...existingOutputs, output2];
+                for (const [output2, remnant2] of child(existingRemnant, env)) {
+                    const newOutput: Result<T>[] = [...existingOutputs, output2];
                     newResults.push([newOutput, remnant2]);
                 }
             }
@@ -191,10 +266,10 @@ export function MPRepetition<T>(
 /**
  * The result of MPAlternation(A, B)(X) is just the union of the results of applying A(X) and B(X).
  */
-export function MPAlternation<T>(...children: MPParser<T>[]): MPParser<T> {
-    return function*(input: string[]) {
+export function MPAlt<T>(...children: MPParser<T>[]): MPParser<T> {
+    return function*(input: string[], env: MiniParseEnv) {
         for (const child of children) {
-            yield* child(input);
+            yield* child(input, env);
         }
     }
 }
@@ -208,12 +283,12 @@ export function MPAlternation<T>(...children: MPParser<T>[]): MPParser<T> {
  * are deterministic so it really is an error if we get multiple parses. 
  */
 export function miniParse<T>(
-    tokenizer: (text: string) => string[],
+    env: MiniParseEnv,
     grammar: MPParser<T>,
     text: string
-): T[] {
-    const pieces = tokenizer(text);
-    let results = [... grammar(pieces)];
+): Result<T>[] {
+    const pieces = env.tokenize(text);
+    let results = [... grammar(pieces, env)];
     // result is a list of [header, remaining_tokens] pairs.  
     // we only want results where there are no remaining tokens.
     return results.filter(([t, r]) => r.length == 0)

@@ -1,10 +1,10 @@
-x:, collection:, verb:, table:, text, gloss
+x=, collection:, verb=, table:, text, gloss
     ,       , , , foo, run
     ,       , , , moo, jump
 
-    ,       , suffix:, table:, text, gloss
+    ,       , suffix=, table:, text, gloss
     ,       , , , bar, -1SG
     ,       , , ,baz, -2SG
 
-default:, collection:, word:, table:, embed, embed
+default=, collection:, word=, table:, embed, embed
    ,         ,      ,       , x.verb, x.suffix 

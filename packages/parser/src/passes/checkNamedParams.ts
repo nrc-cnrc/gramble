@@ -4,7 +4,7 @@ import {
 } from "../tsts";
 import { PassEnv } from "../passes";
 import { Err, Msgs, Result, result, Warn } from "../msgs";
-import { TagHeader } from "../headers";
+import { ParamNameHeader } from "../headers";
 import { BLANK_PARAM } from "../ops";
 import { Component, CPass, CResult } from "../components";
 
@@ -81,7 +81,7 @@ export class CheckNamedParams extends CPass {
         // child isn't a TstGrid, then  
         if (t.child instanceof TstHeadedGrid) {
             for (const param of t.op.requiredNamedParams) {
-                if (!t.child.providesParam(param)) {
+                if (t.child.headers.length > 0 && !t.child.providesParam(param)) {
                     const paramDesc = param == BLANK_PARAM 
                                     ? "a plain header (e.g. not 'from', not 'to', not 'unique')"
                                     : `a ${param} header`;
@@ -126,7 +126,7 @@ export class CheckNamedParams extends CPass {
                               "an unnamed parameter" :
                               `a parameter named ${tag}`;
 
-            if (h.header instanceof TagHeader && this.permissibleParams.has("__")) {
+            if (h.header instanceof ParamNameHeader && this.permissibleParams.has("__")) {
                 // if we can easily remove the tag, try that
                 const newHeader = new TstHeader(h.cell, h.header.child);
                 return result(h).err("Invalid parameter",

@@ -1,15 +1,15 @@
 
-root:, table:, text, gloss
+root=, table:, text, gloss
     ,       ,      , be
     ,       , foo,  run
     ,       , moo, jump
     ,       , foofoo, run.impf
     ,       , moofoo, jump.impf
 
-stem:, table:, embed, text,
+stem=, table:, embed, text,
         ,      , root, bar,
         ,      , root, baz,
         ,      , root, ba, 
 
-default:, table:, embed, equals re text
+default=, table:, embed, equals text
     ,       , stem, foo?bar

@@ -6,9 +6,6 @@
  * more abstract grammar that they're representing thereby.)
  */
 
-import { 
-    GrammarResult,
-} from "./grammars";
 import { Cell, CellPos } from "./util";
 import {
     DEFAULT_SATURATION,
@@ -62,15 +59,6 @@ export class TstHeader extends TstCellComponent {
 
     public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string {
         return this.header.getBackgroundColor(saturation, value);
-    }
-
-    public getFontColor(): string {
-        return this.header.getFontColor();
-    }
-
-    public headerToGrammar(content: Cell): GrammarResult {
-        return this.header.toGrammar(content.text)
-                          .localize(content.pos);
     }
 
 }
@@ -484,11 +472,6 @@ export class TstParamList extends TstCellComponent {
                     .map(r => f.transform(r, env))
                     .bind(rs => new TstParamList(this.cell, rs as TstParams[]));
     }
-
-    public toGrammar(env: PassEnv): GrammarResult {
-        // param lists have no inherent semantics
-        throw new Error("not implemented");
-    }
 }
 
 export class TstSequence extends TstCellComponent {
@@ -527,11 +510,6 @@ export class TstParams extends TstCellComponent {
                 .map(c => f.transform(c, env) as Result<TstSequence>)
                 .bind(cs => new TstParams(this.cell, cs));
     }
-
-    public toGrammar(env: PassEnv): GrammarResult {
-        // params have no inherent semantics
-        throw new Error("not implemented");
-    } 
 
     public getParam(name: string): Component {
         if (name in this.params) {

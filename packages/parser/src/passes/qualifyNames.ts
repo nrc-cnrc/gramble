@@ -1,17 +1,14 @@
-import { Err, MissingSymbolError, Msgs, Result, resultDict, resultList } from "../msgs";
+import { MissingSymbolError, Msgs } from "../msgs";
 import { 
-    CounterStack,
     EmbedGrammar,
     EpsilonGrammar,
     Grammar,
-    GrammarPass,
     GrammarResult,
-    Collection,
     CollectionGrammar,
     LocatorGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { DEFAULT_SYMBOL_NAME, Dict } from "../util";
+import { DEFAULT_SYMBOL_NAME } from "../util";
 
 /**
  * Goes through the tree and 
@@ -32,7 +29,7 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
         super();
     }
 
-    public transformRoot(g: Grammar, env: PassEnv): Result<Grammar> {
+    public transformRoot(g: Grammar, env: PassEnv): GrammarResult {
 
         // we keep a stack of the old collections, in which we'll
         // attempt to find the referents of embedded symbols
@@ -55,7 +52,7 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
             case EmbedGrammar:
                 return this.transformEmbed(g as EmbedGrammar, env);
             default: 
-                return g.mapChildren(this, env) as GrammarResult;
+                return g.mapChildren(this, env);
         }
     }
     

@@ -27,7 +27,7 @@ export class ReplaceRules extends GrammarPass {
     }
     
     public transform(g: Grammar, env: PassEnv): GrammarResult {
-        const result = g.mapChildren(this, env) as GrammarResult;
+        const result = g.mapChildren(this, env);
         return result.bind(g => {
             switch (g.constructor) {
                 case JoinRuleGrammar:

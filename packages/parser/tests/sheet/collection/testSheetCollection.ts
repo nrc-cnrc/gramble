@@ -192,7 +192,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Reference to a symbol with a destractor inside a default', function() {
+    describe('Reference to a symbol with a destractor inside a default 2', function() {
         const project = sheetFromFile(`${DIR}/referenceWithDefaultDistractor2.csv`);
         testErrors(project, []);
         testGrammar(project, [

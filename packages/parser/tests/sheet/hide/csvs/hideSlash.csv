@@ -1,15 +1,15 @@
 
-verb:, table:, text, gloss, pos
+verb=, table:, text, gloss, pos
     ,       , foo, run, v
     ,       , moo, jump, v
 
-suffix:, table:, text, gloss/subj
+suffix=, table:, text, gloss/subj
     ,       , bar, [1SG]
     ,       , baz, [2SG]
     ,       ,    , [3SG]
 
-word:, table:, embed, embed
+word=, table:, embed, embed
     ,       , verb, suffix
 
-default:, table:, embed, hide
+default=, table:, embed, hide
      ,       , word, pos/subj

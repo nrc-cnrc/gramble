@@ -1,4 +1,4 @@
-default:, table:, text, gloss, text, gloss
+default=, table:, text, gloss, text, gloss
     ,       , foo, run, bar, -1SG
     ,
     , test:, text, re gloss

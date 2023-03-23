@@ -1,7 +1,7 @@
 import { 
     Uni, 
     Match, 
-    Seq, Any, Join, Equals, MatchDot, Dot, 
+    Seq, Any, Join, Filter, MatchDot, Dot, 
     MatchDotRep, MatchDotRep2, MatchDotStar, 
     MatchDotStar2, CharSet, Rep, Grammar, CountTape
 } from "../src/grammars";

@@ -964,7 +964,7 @@ class IntersectExpr extends BinaryExpr {
             }
     
             for (const [c2target, c2next] of 
-                    this.child2.disjointDeriv(tapeName, c1target as Token, env)) {
+                    this.child2.disjointDeriv(tapeName, c1target, env)) {
                 const c1nxt = (c2target instanceof EpsilonToken) ? this.child1 : c1next;
                 const successor = constructIntersection(c1nxt, c2next);
                 yield [c2target, successor];
@@ -1023,7 +1023,7 @@ class FilterExpr extends BinaryExpr {
             }
     
             for (const [c1target, c1next] of 
-                    this.child1.disjointDeriv(tapeName, c2target as Token, env)) {
+                    this.child1.disjointDeriv(tapeName, c2target, env)) {
                 const c2nxt = (c1target instanceof EpsilonToken) ? this.child2 : c2next;
                 const successor = constructFilter(c1next, c2nxt, this.tapes);
                 yield [c1target, successor];
@@ -1091,7 +1091,7 @@ class JoinExpr extends BinaryExpr {
             }
 
             for (const [rightTarget, rightNext] of 
-                    this.child2.disjointDeriv(tapeName, leftTarget as Token, env)) {
+                    this.child2.disjointDeriv(tapeName, leftTarget, env)) {
                 const lnext = (rightTarget instanceof EpsilonToken) ? this.child1 : leftNext;
                 const successor = constructJoin(lnext, rightNext, this.tapes1, this.tapes2);
                 yield [rightTarget, successor];

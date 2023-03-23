@@ -1,8 +1,0 @@
-
-root:, text, gloss
-     , foo, run
-     , goo, climb
-
-default:, text, gloss, embed, starts text
-     , um, [1SG], root, f
-     , un, [1SG], root, g

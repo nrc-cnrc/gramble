@@ -13,7 +13,7 @@ import { Component } from "../components";
 import { Pass, PassEnv } from "../passes";
 import { 
     AlternationGrammar,
-    EpsilonGrammar, EqualsGrammar, 
+    EpsilonGrammar, FilterGrammar, 
     Grammar, GrammarResult, 
     HideGrammar, JoinReplaceGrammar, 
     JoinRuleGrammar, LocatorGrammar, 
@@ -21,9 +21,12 @@ import {
     CollectionGrammar, 
     RenameGrammar, ReplaceGrammar, SequenceGrammar, TestGrammar, JoinGrammar
 } from "../grammars";
-import { TapeNameHeader } from "../headers";
+import { getParseClass, TapeNameHeader } from "../headers";
 import { Err, Msgs, resultList } from "../msgs";
 import { BLANK_PARAM } from "../ops";
+import { HeaderToGrammar } from "./headerToGrammar";
+import { parseCell } from "../cell";
+
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -77,9 +80,15 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     }
 
     public handleHeaderContentPair(t: TstHeaderContentPair, env: PassEnv): GrammarResult {
-        return t.header.headerToGrammar(t.cell)
-                    .bind(c => new LocatorGrammar(t.cell.pos, c));
-    }
+        const parseClass = getParseClass(t.header.header);
+        return parseCell(parseClass, t.cell.text)
+                .localize(t.cell.pos)
+                .bind(g => new LocatorGrammar(t.cell.pos, g))
+                .bind(g => new HeaderToGrammar(g))
+                .bind(h => h.transform(t.header.header, env))
+                .localize(t.cell.pos)
+                .bind(g => new LocatorGrammar(t.cell.pos, g));
+}
     
     public handleRename(t: TstRename, env: PassEnv): GrammarResult {
         if (!(t.header.header instanceof TapeNameHeader)) {
@@ -106,9 +115,16 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     public handleFilter(t: TstFilter, env: PassEnv): GrammarResult {
         const [prevGrammar, prevMsgs] = this.transform(t.prev, env)
                                             .destructure();
-        const [grammar, msgs] = t.header.headerToGrammar(t.cell)
-                                        .destructure();
-        const result = new EqualsGrammar(prevGrammar, grammar);
+
+        const parseClass = getParseClass(t.header.header);
+        const [grammar, msgs] = parseCell(parseClass, t.cell.text)
+                .bind(g => new HeaderToGrammar(g))
+                .bind(h => h.transform(t.header.header, env))
+                .localize(t.cell.pos)
+                .bind(g => new LocatorGrammar(t.cell.pos, g))
+                .destructure();
+
+        const result = new JoinGrammar(prevGrammar, grammar);
         const locatedResult = new LocatorGrammar(t.cell.pos, result);
         return locatedResult.msg(prevMsgs).msg(msgs);
     }

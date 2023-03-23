@@ -1,5 +1,5 @@
 
-import { Seq, Uni, Equals, Epsilon, Starts, Not, Ends, Contains, Intersect, Null, Grammar } from "../src/grammars";
+import { Seq, Uni, Filter, Epsilon, Starts, Not, Ends, Contains, Intersect, Null, Grammar } from "../src/grammars";
 import { Any, CountTape, MatchFrom, Priority, Rep, Short, Vocab } from "../src/grammars";
 import { t1, t2, t3, testGrammar } from './testUtil';
 
@@ -9,99 +9,99 @@ import { VERBOSE_DEBUG, VERBOSE_GRAMMAR } from "../src/util";
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('F.1 Filter t1:hello[t1:hello]', function() {
-        const grammar = Equals(t1("hello"), t1("hello"));
+        const grammar = Filter(t1("hello"), t1("hello"));
         testGrammar(grammar, [{t1: "hello"}]);
     });
 
     describe('F.2 Filter t1:hello[ε]', function() {
-        const grammar = Equals(t1("hello"), Epsilon());
+        const grammar = Filter(t1("hello"), Epsilon());
         testGrammar(grammar, [{t1:"hello"}]);
     });
 
     describe('F.3 Filter ε[ε]', function() {
-        const grammar = Equals(Epsilon(), Epsilon());
+        const grammar = Filter(Epsilon(), Epsilon());
         testGrammar(grammar, [{}]);
     });
 
     describe('F.4 Filter ε[t1:hello]', function() {
-        const grammar = Equals(Epsilon(), t1("hello"));
+        const grammar = Filter(Epsilon(), t1("hello"));
         testGrammar(grammar, []);
     });
 
     describe('F.5 Filter t1:hello[0]', function() {
-        const grammar = Equals(t1("hello"), Null());
+        const grammar = Filter(t1("hello"), Null());
         testGrammar(grammar, []);
     });
 
     describe('F.6 Filter 0[ε]', function() {
-        const grammar = Equals(Null(), Epsilon());
+        const grammar = Filter(Null(), Epsilon());
         testGrammar(grammar, []);
     });
     
     describe('F.7 Filter ε[0]', function() {
-        const grammar = Equals(Epsilon(), Null());
+        const grammar = Filter(Epsilon(), Null());
         testGrammar(grammar, []);
     });
 
     describe('F.8 Filter 0[t1:hello]', function() {
-        const grammar = Equals(Null(), t1("hello"));
+        const grammar = Filter(Null(), t1("hello"));
         testGrammar(grammar, []);
     });
     
     describe('F.9 Filter t1:hello[t1:""]', function() {
-        const grammar = Equals(t1("hello"), t1(""));
+        const grammar = Filter(t1("hello"), t1(""));
         testGrammar(grammar, []);
     });
 
     describe('F.10 Filter t1:""[t1:""]', function() {
-        const grammar = Equals(t1(""), t1(""));
+        const grammar = Filter(t1(""), t1(""));
         testGrammar(grammar, [{}]);
     });
 
     describe('F.11 Filter (t1:hello|t1:"")[t1:""]', function() {
-        const grammar = Equals(Uni(t1("hello"), t1("")), t1(""));
+        const grammar = Filter(Uni(t1("hello"), t1("")), t1(""));
         testGrammar(grammar, [{}]);
     });
 
     describe('F.12 Filter t1:h[t1:hello]', function() {
-        const grammar = Equals(t1("h"), t1("hello"));
+        const grammar = Filter(t1("h"), t1("hello"));
         testGrammar(grammar, []);
     });
 
     describe('F.13 Filter t1:hello[t1:h]', function() {
-        const grammar = Equals(t1("hello"), t1("h"));
+        const grammar = Filter(t1("hello"), t1("h"));
         testGrammar(grammar, []);
     });
     
     describe('F.14 Filter t1:hello[t1:hello+t2:foo]', function() {
-        const grammar = Equals(t1("hello"), Seq(t1("hello"), t2("foo")));
+        const grammar = Filter(t1("hello"), Seq(t1("hello"), t2("foo")));
         testGrammar(grammar, []);
     }); 
 
     describe('F.15 Filter (t1:hi+t2:foo)[t1:hi]', function() {
-        const grammar = Equals(Seq(t1("hi"), t2("foo")), t1("hi"));
+        const grammar = Filter(Seq(t1("hi"), t2("foo")), t1("hi"));
         testGrammar(grammar, [{t1: "hi", t2: "foo"}]);
     });
     
     describe('F.16 Filter t1:hello[t1:hello+t2:foo]', function() {
-        const grammar = Equals(t1("hello"), Seq(t1("hello"), t2("foo")));
+        const grammar = Filter(t1("hello"), Seq(t1("hello"), t2("foo")));
         testGrammar(grammar, []);
     }); 
     
     describe('F.17 Filter (t1:hi+t2:world)[t1:hi+t2:world]', function() {
-        const grammar = Equals(Seq(t1("hi"), t2("world")),
+        const grammar = Filter(Seq(t1("hi"), t2("world")),
                              Seq(t1("hi"), t2("world")));
         testGrammar(grammar, [{t1: "hi", t2: "world"}]);
     });
 
     describe('F.18 Filter (t2:wo+t1:hi)[t1:hi+t2:wo]', function() {
-        const grammar = Equals(Seq(t2("b"), t1("a")),
+        const grammar = Filter(Seq(t2("b"), t1("a")),
                              Seq(t1("a"), t2("b")));
         testGrammar(grammar, [{t1: "a", t2: "b"}]);
     });
 
     describe('F.19 Filter (t1:hello+t2:world|t1:hello+t2:kitty)[t1:hello]', function() {
-        const grammar = Equals(Uni(Seq(t1("hello"), t2("world")),
+        const grammar = Filter(Uni(Seq(t1("hello"), t2("world")),
                                     Seq(t1("hello"), t2("kitty"))),
                                     t1("hello"));
         testGrammar(grammar, [{t1: "hello", t2: "world"},
@@ -109,7 +109,7 @@ describe(`${path.basename(module.filename)}`, function() {
     }); 
 
     describe('F.20 Filter (t1:hello+t2:world+t3:!|t1:hello+t2:kitty+t3:!)[t1:hello][t3:!]', function() {
-        const grammar = Equals(Equals(Uni(Seq(t1("hello"), t2("world"), t3("!")),
+        const grammar = Filter(Filter(Uni(Seq(t1("hello"), t2("world"), t3("!")),
                                     Seq(t1("hello"), t2("kitty"), t3("!"))),
                                     t1("hello")), t3("!"));
         testGrammar(grammar, [{t1: "hello", t2: "world", t3:"!"},
@@ -117,36 +117,36 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('F.21 Filter different-tape alts in same direction', function() {
-        const grammar = Equals(Uni(t1("hi"), t2("foo")),
+        const grammar = Filter(Uni(t1("hi"), t2("foo")),
                              Uni(t1("hi"), t2("foo")));
         testGrammar(grammar, [{t1: "hi"},
                               {t2: "foo"}]);
     });
 
     describe('F.22 Filter different-tape alts in different directions', function() {
-        const grammar = Equals(Uni(t2("foo"), t1("hi")),
+        const grammar = Filter(Uni(t2("foo"), t1("hi")),
                              Uni(t1("hi"), t2("foo")));
         testGrammar(grammar, [{t2: "foo"},
                               {t1: "hi"}]);
     });
 
     describe('F.23 Filter t1:hi+t2:hi[(t1:h+t2:i)+(t1:h+t2:i)]', function() {
-        const grammar = Equals(Seq(t1("hi"), t2("hi")), Seq(Seq(t1("h"), t2("h")), Seq(t1("i"), t2("i"))));
+        const grammar = Filter(Seq(t1("hi"), t2("hi")), Seq(Seq(t1("h"), t2("h")), Seq(t1("i"), t2("i"))));
         testGrammar(grammar, [{t1: "hi", t2: "hi"}]);
     });
     
     describe('F.24 Nested filter t1:hi[t1:hi][t1:hi]', function() {
-        const grammar = Equals(Equals(t1("hi"), t1("hi")), t1("hi"));
+        const grammar = Filter(Filter(t1("hi"), t1("hi")), t1("hi"));
         testGrammar(grammar, [{t1: "hi"}]);
     });
 
     describe('F.25 Nested filter (t1:hi+t2:wo)[t1:hi][t2:wo]', function() {
-        const grammar = Equals(Equals(Seq(t1("hi"), t2("wo")), t1("hi")), t2("wo"));
+        const grammar = Filter(Filter(Seq(t1("hi"), t2("wo")), t1("hi")), t2("wo"));
         testGrammar(grammar, [{t1: "hi", t2: "wo"}]);
     });
 
     describe('F.26 Nested filter (t1:hi+t2:wo)[t2:wo][t1:hi]', function() {
-        const grammar = Equals(Equals(Seq(t1("hi"), t2("wo")), t2("wo")), t1("hi"));
+        const grammar = Filter(Filter(Seq(t1("hi"), t2("wo")), t2("wo")), t1("hi"));
         testGrammar(grammar, [{t1: "hi", t2: "wo"}]);
     }); 
 
@@ -155,7 +155,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Not(Seq(dotStar, Short(Seq(t1("hel"), dotStar))));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const candidateGrammar: Grammar = Seq(matchGrammar, t3("[1SG]"));
-        const filterGrammar = Equals(candidateGrammar, Seq(t1("hel"), t3("G")));
+        const filterGrammar = Filter(candidateGrammar, Seq(t1("hel"), t3("G")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab({t1:"hel", t2:"hela", t3:"[1SG]"}));
         grammarWithVocab = CountTape(3, grammarWithVocab);
@@ -167,7 +167,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = dotStar;
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const candidateGrammar: Grammar = Seq(matchGrammar, Not(t3("[1SG]")));
-        const filterGrammar = Equals(candidateGrammar, Seq(t1("hel"), t3("G")));
+        const filterGrammar = Filter(candidateGrammar, Seq(t1("hel"), t3("G")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab({t1:"hel", t2:"hela", t3:"[1SG]"}));
         grammarWithVocab = CountTape(3, grammarWithVocab);
@@ -178,7 +178,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const fromGrammar: Grammar = Rep(t1("a"), 0, 3);
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const candidateGrammar: Grammar = Seq(matchGrammar, Not(t3("[1SG]")));
-        const filterGrammar = Equals(candidateGrammar, Seq(t1("aa"), t3("G")));
+        const filterGrammar = Filter(candidateGrammar, Seq(t1("aa"), t3("G")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab({t1:"a", t2:"a", t3:"[1SG]"}));
         grammarWithVocab = CountTape(3, grammarWithVocab);
@@ -187,7 +187,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('RB.2b Filter (t1:aa+t2:aa+~(t3:[1SG]))[t1:aa+t3:G] vocab a/a/[1SG]', function() {
         const candidateGrammar: Grammar = Seq(t1("aa"), t2("aa"), Not(t3("[1SG]")));
-        const filterGrammar = Equals(candidateGrammar, Seq(t1("aa"), t3("G")));
+        const filterGrammar = Filter(candidateGrammar, Seq(t1("aa"), t3("G")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab({t1:"a", t2:"a", t3:"[1SG]"}));
         grammarWithVocab = CountTape(3, grammarWithVocab);
@@ -196,7 +196,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('RB.2c Filter (t1:a{0,3}+~(t3:[1SG]))[t1:aa+t3:G] vocab a/[1SG]', function() {
         const candidateGrammar: Grammar = Seq(Rep(t1("a"), 0, 3), Not(t3("[1SG]")));
-        const filterGrammar = Equals(candidateGrammar, Seq(t1("aa"), t3("G")));
+        const filterGrammar = Filter(candidateGrammar, Seq(t1("aa"), t3("G")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab({t1:"a", t3:"[1SG]"}));
         grammarWithVocab = CountTape(3, grammarWithVocab);
@@ -205,7 +205,7 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('RB.2d Filter (t1:a{0,2}+~(t3:[1SG]))[t1:aa+t3:G] vocab a/[1SG]', function() {
         const candidateGrammar: Grammar = Seq(Rep(t1("a"), 0, 2), Not(t3("[1SG]")));
-        const filterGrammar = Equals(candidateGrammar, Seq(t1("aa"), t3("G")));
+        const filterGrammar = Filter(candidateGrammar, Seq(t1("aa"), t3("G")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab({t1:"a", t3:"[1SG]"}));
         grammarWithVocab = CountTape(3, grammarWithVocab);

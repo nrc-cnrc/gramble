@@ -1,7 +1,7 @@
-word:, table:, text
+word=, table:, text
     ,       , aba
     ,       , arba
     ,       , iba
     ,       ,     ,
-    , replace text:, from, to, pre re
+    , replace text:, from, to, pre
     ,              , b,    v , a|i

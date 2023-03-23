@@ -1,13 +1,13 @@
 
-verb:, text, gloss
+verb=, text, gloss
     ,  foo, run
     ,  moo, jump
 
-suffix:, text, gloss, subj
+suffix=, text, gloss, subj
     ,    bar, [1SG], 1SG
     ,    baz, [2SG], 2SG
 
-default:, embed, embed
+default=, embed, embed
     ,  verb, suffix 
     ,
 join:, subj, 

@@ -1,4 +1,4 @@
-default:, table:, text, gloss
+default=, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 

@@ -1,0 +1,6 @@
+verb vorb:, table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+default=, table:, embed
+    ,       , verb vorb 

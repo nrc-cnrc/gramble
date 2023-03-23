@@ -191,7 +191,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    
     describe('Replace with a regex in from', function() {
         const project = sheetFromFile(`${DIR}/ruleFromRegex.csv`);
         testErrors(project, []);
