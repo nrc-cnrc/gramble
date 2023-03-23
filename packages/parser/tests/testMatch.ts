@@ -412,14 +412,14 @@ describe(`${testSuiteName(module)}`, function() {
     // Filter/Join with Match tests
 
     describe('25. Filter t1:h+t2:h [Match t1:.+t2:.]', function() {
-        const grammar = Equals(Seq(t1("h"), t2("h")), MatchDot("t1", "t2"));
+        const grammar = Filter(Seq(t1("h"), t2("h")), MatchDot("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
     });
 
     describe('26. Filter Match t1:.+t2:. [t1:h+t2:h]', function() {
-        const grammar = Equals(MatchDot("t1", "t2"), Seq(t1("h"), t2("h")));
+        const grammar = Filter(MatchDot("t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
@@ -440,7 +440,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('29a. Filter t1:h+t2:h [Match (t1:.+t2:.){0,3}]', function() {
-        const grammar = Equals(Seq(t1("h"), t2("h")),
+        const grammar = Filter(Seq(t1("h"), t2("h")),
                                MatchDotRep(0, 3, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
@@ -448,7 +448,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('29b. Filter t1:h+t2:h [Match t1:.{0,3}+t2:.{0,3}]', function() {
-        const grammar = Equals(Seq(t1("h"), t2("h")),
+        const grammar = Filter(Seq(t1("h"), t2("h")),
                                MatchDotRep2(0, 3, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
@@ -456,7 +456,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('30a. Filter Match (t1:.+t2:.){0,3} [t1:h+t2:h]', function() {
-        const grammar = Equals(MatchDotRep(0, 3, "t1", "t2"),
+        const grammar = Filter(MatchDotRep(0, 3, "t1", "t2"),
                                Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
@@ -464,7 +464,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('30b. Filter Match t1:.{0,3}+t2:.{0,3} [t1:h+t2:h]', function() {
-        const grammar = Equals(MatchDotRep2(0, 3, "t1", "t2"),
+        const grammar = Filter(MatchDotRep2(0, 3, "t1", "t2"),
                                Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
@@ -504,28 +504,28 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('33a. Filter t1:h+t2:h [Match (t1:.+t2:.)*]', function() {
-        const grammar = Equals(Seq(t1("h"), t2("h")), MatchDotStar("t1", "t2"));
+        const grammar = Filter(Seq(t1("h"), t2("h")), MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
     });
 
     describe('33b. Filter t1:h+t2:h [Match t1:.*+t2:.*]', function() {
-        const grammar = Equals(Seq(t1("h"), t2("h")), MatchDotStar2("t1", "t2"));
+        const grammar = Filter(Seq(t1("h"), t2("h")), MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
     });
 
     describe('34a. Filter Match (t1:.+t2:.)* [t1:h+t2:h]', function() {
-        const grammar = Equals(MatchDotStar("t1", "t2"), Seq(t1("h"), t2("h")));
+        const grammar = Filter(MatchDotStar("t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
     });
 
     describe('34b. Filter Match t1:.*+t2:.* [t1:h+t2:h]', function() {
-        const grammar = Equals(MatchDotStar2("t1", "t2"), Seq(t1("h"), t2("h")));
+        const grammar = Filter(MatchDotStar2("t1", "t2"), Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
@@ -560,7 +560,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('37. Filter t1:hi+t2:hi [Match (t1:.+t2:. + t1:.+t2:.)]', function() {
-        const grammar = Equals(Seq(t1("hi"), t2("hi")),
+        const grammar = Filter(Seq(t1("hi"), t2("hi")),
                                Match(Seq(Dot("t1", "t2"), Dot("t1", "t2")),
                                      "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
@@ -569,7 +569,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('38. Filter (Match t1:.+t2:. + t1:.+t2:.) [t1:hi+t2:hi]', function() {
-        const grammar = Equals(Match(Seq(Dot("t1", "t2"), Dot("t1", "t2")),
+        const grammar = Filter(Match(Seq(Dot("t1", "t2"), Dot("t1", "t2")),
                                      "t1", "t2"),
                                Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
@@ -596,7 +596,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('41a. Filter t1:hi+t2:hi [Match (t1:.+t2:.){2}]', function() {
-        const grammar = Equals(Seq(t1("hi"), t2("hi")),
+        const grammar = Filter(Seq(t1("hi"), t2("hi")),
                                MatchDotRep(2, 2, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
@@ -604,7 +604,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('41b. Filter t1:hi+t2:hi [Match t1:.{2}+t2:.{2}]', function() {
-        const grammar = Equals(Seq(t1("hi"), t2("hi")),
+        const grammar = Filter(Seq(t1("hi"), t2("hi")),
                                MatchDotRep2(2, 2, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
@@ -612,7 +612,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('42a. Filter Match (t1:.+t2:.){2} [t1:hi+t2:hi]', function() {
-        const grammar = Equals(MatchDotRep(2, 2, "t1", "t2"),
+        const grammar = Filter(MatchDotRep(2, 2, "t1", "t2"),
                                Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
@@ -620,7 +620,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('42b. Filter Match t1:.{2}+t2:.{2} [t1:hi+t2:hi]', function() {
-        const grammar = Equals(MatchDotRep2(2, 2, "t1", "t2"),
+        const grammar = Filter(MatchDotRep2(2, 2, "t1", "t2"),
                                Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
@@ -660,7 +660,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('45a. Filter t1:hi+t2:hi [Match (t1:.+t2:.){0,3}]', function() {
-        const grammar = Equals(Seq(t1("hi"), t2("hi")),
+        const grammar = Filter(Seq(t1("hi"), t2("hi")),
                                MatchDotRep(0, 3, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
@@ -668,7 +668,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('45b. Filter t1:hi+t2:hi [Match t1:.{0,3}+t2:.{0,3}]', function() {
-        const grammar = Equals(Seq(t1("hi"), t2("hi")),
+        const grammar = Filter(Seq(t1("hi"), t2("hi")),
                                MatchDotRep2(0, 3, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
@@ -676,7 +676,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('46a. Filter Match (t1:.+t2:.){0,3} [t1:hi+t2:hi]', function() {
-        const grammar = Equals(MatchDotRep(0, 3, "t1", "t2"),
+        const grammar = Filter(MatchDotRep(0, 3, "t1", "t2"),
                                Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
@@ -684,7 +684,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('46b. Filter Match t1:.{0,3}+t2:.{0,3} [t1:hi+t2:hi]', function() {
-        const grammar = Equals(MatchDotRep2(0, 3, "t1", "t2"),
+        const grammar = Filter(MatchDotRep2(0, 3, "t1", "t2"),
                                Seq(t1("hi"), t2("hi")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
@@ -724,7 +724,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('49a. Filter t1:hello+t2:hello [Match (t1:.+t2:.){3,7}]', function() {
-        const grammar = Equals(Seq(t1("hello"), t2("hello")),
+        const grammar = Filter(Seq(t1("hello"), t2("hello")),
                                MatchDotRep(3, 7, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 4, t2: 4});
@@ -732,7 +732,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('49b. Filter t1:hello+t2:hello [Match t1:.{3,7}+t2:.{3,7}]', function() {
-        const grammar = Equals(Seq(t1("hello"), t2("hello")),
+        const grammar = Filter(Seq(t1("hello"), t2("hello")),
                                MatchDotRep2(3, 7, "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 4, t2: 4});
@@ -740,7 +740,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('50a. Filter Match (t1:.+t2:.){3,7} [t1:hello+t2:hello]', function() {
-        const grammar = Equals(MatchDotRep(3, 7, "t1", "t2"),
+        const grammar = Filter(MatchDotRep(3, 7, "t1", "t2"),
                                Seq(t1("hello"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 4, t2: 4});
@@ -748,7 +748,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('50b. Filter Match t1:.{3,7}+t2:.{3,7} [t1:hello+t2:hello]', function() {
-        const grammar = Equals(MatchDotRep2(3, 7, "t1", "t2"),
+        const grammar = Filter(MatchDotRep2(3, 7, "t1", "t2"),
                                Seq(t1("hello"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 4, t2: 4});
@@ -788,7 +788,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('53a. Filter t1:hello+t2:hello [Match (t1:.+t2:.)*]', function() {
-        const grammar = Equals(Seq(t1("hello"), t2("hello")),
+        const grammar = Filter(Seq(t1("hello"), t2("hello")),
                                MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 4, t2: 4});
@@ -796,7 +796,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('53b. Filter t1:hello+t2:hello [Match t1:.*+t2:.*]', function() {
-        const grammar = Equals(Seq(t1("hello"), t2("hello")),
+        const grammar = Filter(Seq(t1("hello"), t2("hello")),
                                MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 4, t2: 4});
@@ -804,7 +804,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('54a. Filter Match (t1:.+t2:.)* [t1:hello+t2:hello]', function() {
-        const grammar = Equals(MatchDotStar("t1", "t2"),
+        const grammar = Filter(MatchDotStar("t1", "t2"),
                                Seq(t1("hello"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 4, t2: 4});
@@ -812,7 +812,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('54b. Filter Match t1:.*+t2:.* [t1:hello+t2:hello]', function() {
-        const grammar = Equals(MatchDotStar2("t1", "t2"),
+        const grammar = Filter(MatchDotStar2("t1", "t2"),
                                Seq(t1("hello"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 4, t2: 4});
@@ -852,7 +852,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('57a. Filter t1:he+t2:hello [Match (t1:.+t2:.)*]', function() {
-        const grammar = Equals(Seq(t1("he"), t2("hello")),
+        const grammar = Filter(Seq(t1("he"), t2("hello")),
                                MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 4});
@@ -860,7 +860,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('57b. Filter t1:he+t2:hello [Match t1:.*+t2:.*]', function() {
-        const grammar = Equals(Seq(t1("he"), t2("hello")),
+        const grammar = Filter(Seq(t1("he"), t2("hello")),
                                MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 4});
@@ -868,7 +868,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('58a. Filter Match (t1:.+t2:.)* [t1:he+t2:hello]', function() {
-        const grammar = Equals(MatchDotStar("t1", "t2"),
+        const grammar = Filter(MatchDotStar("t1", "t2"),
                                Seq(t1("he"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 4});
@@ -876,7 +876,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('58b. Filter Match t1:.*+t2:.* [t1:he+t2:hello]', function() {
-        const grammar = Equals(MatchDotStar2("t1", "t2"),
+        const grammar = Filter(MatchDotStar2("t1", "t2"),
                                Seq(t1("he"), t2("hello")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 4});
@@ -916,7 +916,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('61a. Filter t1:hello+t2:hell [Match (t1:.+t2:.)*]', function() {
-        const grammar = Equals(Seq(t1("hello"), t2("hell")),
+        const grammar = Filter(Seq(t1("hello"), t2("hell")),
                                MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 4, t2: 3});
@@ -924,7 +924,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('61b. Filter t1:hello+t2:hell [Match t1:.*+t2:.*]', function() {
-        const grammar = Equals(Seq(t1("hello"), t2("hell")),
+        const grammar = Filter(Seq(t1("hello"), t2("hell")),
                                MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 4, t2: 3});
@@ -932,7 +932,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('62a. Filter Match (t1:.+t2:.)* [t1:hello+t2:hell]', function() {
-        const grammar = Equals(MatchDotStar("t1", "t2"),
+        const grammar = Filter(MatchDotStar("t1", "t2"),
                                Seq(t1("hello"), t2("hell")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 4, t2: 3});
@@ -940,7 +940,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('62b. Filter Match t1:.*+t2:.* [t1:hello+t2:hell]', function() {
-        const grammar = Equals(MatchDotStar2("t1", "t2"),
+        const grammar = Filter(MatchDotStar2("t1", "t2"),
                                Seq(t1("hello"), t2("hell")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 4, t2: 3});
