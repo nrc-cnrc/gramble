@@ -1400,7 +1400,9 @@ export class NegationGrammar extends UnaryGrammar {
         symbols: ExprNamespace
     ): Expr {
         const childExpr = this.child.constructExpr(tapeNS, symbols);
-        return constructNegation(childExpr, new Set(this.child.tapes));
+        const relevantTapes = new Set(this.child.tapes.filter(t => 
+                              !t.startsWith(HIDDEN_TAPE_PREFIX)));
+        return constructNegation(childExpr, relevantTapes);
     }
 }
 

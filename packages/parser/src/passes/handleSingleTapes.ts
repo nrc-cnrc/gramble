@@ -41,11 +41,10 @@ import { DUMMY_REGEX_TAPE, HIDDEN_TAPE_PREFIX } from "../util";
  */
 
 export class HandleSingleTapes extends GrammarPass {
-    
-    public replaceIndex = 0;
 
     constructor(
-        public tapeName: string | undefined = undefined
+        public tapeName: string | undefined = undefined,    
+        public replaceIndex: number = 0
     ) {
         super();
     }
@@ -89,8 +88,9 @@ export class HandleSingleTapes extends GrammarPass {
         let result: Grammar = g;
         for (const tape of g.tapes) {
             if (tape == this.tapeName) continue;
-            const hiddenTapeName = `${HIDDEN_TAPE_PREFIX}H${this.replaceIndex}_${tape}`
-            //console.log(`hiding ${tape} as ${hiddenTapeName}`);
+            if (tape.startsWith(HIDDEN_TAPE_PREFIX)) continue;
+            const hiddenTapeName = `${HIDDEN_TAPE_PREFIX}H${this.replaceIndex++}`;
+            //console.log(`hiding ${g.name}.${tape} as ${hiddenTapeName}`);
             result = new HideGrammar(result, tape, hiddenTapeName);
         }
         return result.msg();
@@ -111,7 +111,9 @@ export class HandleSingleTapes extends GrammarPass {
     }
 
     private handleSingleTape(g: SingleTapeGrammar, env: PassEnv): GrammarResult {
-        const newThis = new HandleSingleTapes(g.tapeName);
-        return newThis.transform(g.child, env);
+        const newThis = new HandleSingleTapes(g.tapeName, this.replaceIndex);
+        const result = newThis.transform(g.child, env);
+        this.replaceIndex = newThis.replaceIndex;
+        return result;
     }
 }

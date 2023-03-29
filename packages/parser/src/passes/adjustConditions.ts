@@ -162,6 +162,7 @@ export class AdjustConditions extends GrammarPass {
         return newG.bind(c => {
             const dotStars: Grammar[] = [];
             for (const tape of g.tapes) {
+                if (tape.startsWith(HIDDEN_TAPE_PREFIX)) continue;
                 const dot = new DotGrammar(tape);
                 const dotStar = new RepeatGrammar(dot);
                 dotStars.push(dotStar);
@@ -222,6 +223,7 @@ export class AdjustConditions extends GrammarPass {
         return newG.bind(c => {
             const dotStars: Grammar[] = [];
             for (const tape of g.tapes) {
+                if (tape.startsWith(HIDDEN_TAPE_PREFIX)) continue;
                 const dot = new DotGrammar(tape);
                 const dotStar = new RepeatGrammar(dot);
                 dotStars.push(dotStar);

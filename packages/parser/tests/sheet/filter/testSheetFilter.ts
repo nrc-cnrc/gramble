@@ -549,6 +549,97 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     }); 
 
+    describe('HighVowel tests 1', function() {
+        const project = sheetFromFile(`${DIR}/highVowel1.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"gloss":"[3SG]sing","text":"umurf"},
+            {"gloss":"[3SG]climb","text":"umirf"},
+            {"gloss":"[2PL]sing","text":"omurf"},
+            {"gloss":"[2PL]climb","text":"omirf"},
+            {"gloss":"[2SG]sing","text":"imurf"},
+            {"gloss":"[2SG]climb","text":"imirf"},
+            {"gloss":"[1PL]sing","text":"emurf"},
+            {"gloss":"[1PL]climb","text":"emirf"},
+            {"gloss":"[1SG]sing","text":"amurf"},
+            {"gloss":"[1SG]climb","text":"amirf"}
+        ]);
+    }); 
+    
+    describe('HighVowel tests 2', function() {
+        const project = sheetFromFile(`${DIR}/highVowel2.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"gloss":"[3SG]sing","text":"umurf"},
+            {"gloss":"[3SG]climb","text":"umirf"},
+            {"gloss":"[2SG]sing","text":"imurf"},
+            {"gloss":"[2SG]climb","text":"imirf"}
+        ]);
+    }); 
+
+    describe('HighVowel tests 2b', function() {
+        const project = sheetFromFile(`${DIR}/highVowel2b.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"gloss":"[3SG]sing","text":"umurf"},
+            {"gloss":"[3SG]climb","text":"umirf"},
+            {"gloss":"[2SG]sing","text":"imurf"},
+            {"gloss":"[2SG]climb","text":"imirf"}
+        ]);
+    }); 
+
+    describe('HighVowel tests 3', function() {
+        const project = sheetFromFile(`${DIR}/highVowel3.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"gloss":"[2PL]sing","text":"omurf"},
+            {"gloss":"[2PL]climb","text":"omirf"},
+            {"gloss":"[1PL]sing","text":"emurf"},
+            {"gloss":"[1PL]climb","text":"emirf"},
+            {"gloss":"[1SG]sing","text":"amurf"},
+            {"gloss":"[1SG]climb","text":"amirf"}
+        ]);
+    }); 
+
+    describe('HighVowel tests 3b', function() {
+        const project = sheetFromFile(`${DIR}/highVowel3b.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"gloss":"[2PL]sing","text":"omurf"},
+            {"gloss":"[2PL]climb","text":"omirf"},
+            {"gloss":"[1PL]sing","text":"emurf"},
+            {"gloss":"[1PL]climb","text":"emirf"},
+            {"gloss":"[1SG]sing","text":"amurf"},
+            {"gloss":"[1SG]climb","text":"amirf"}
+        ]);
+    }); 
+    
+    describe('HighVowel tests 4', function() {
+        const project = sheetFromFile(`${DIR}/highVowel4.csv`, VERBOSE_DEBUG);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"gloss":"[2PL]sing","text":"omurf"},
+            {"gloss":"[2PL]climb","text":"omirf"},
+            {"gloss":"[1PL]sing","text":"emurf"},
+            {"gloss":"[1PL]climb","text":"emirf"},
+            {"gloss":"[1SG]sing","text":"amurf"},
+            {"gloss":"[1SG]climb","text":"amirf"}
+        ]);
+    }); 
+
+    describe('HighVowel tests 4b', function() {
+        const project = sheetFromFile(`${DIR}/highVowel4b.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"gloss":"[2PL]sing","text":"omurf"},
+            {"gloss":"[2PL]climb","text":"omirf"},
+            {"gloss":"[1PL]sing","text":"emurf"},
+            {"gloss":"[1PL]climb","text":"emirf"},
+            {"gloss":"[1SG]sing","text":"amurf"},
+            {"gloss":"[1SG]climb","text":"amirf"}
+        ]);
+    }); 
+
     /*
     describe('Contains with not value', function() {
         const project = sheetFromFile(`${DIR}/containsNot.csv`);
