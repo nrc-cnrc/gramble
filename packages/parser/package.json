@@ -50,6 +50,7 @@
     "testMatchFrom": "mocha -r ts-node/register tests/testMatchFrom.ts",
     "testMatchRename": "mocha -r ts-node/register tests/testMatchRename.ts",
     "testNegation": "mocha -r ts-node/register tests/testNegation.ts",
+    "testNotHide": "mocha -r ts-node/register tests/testNotHide.ts",
     "testNotMatch": "mocha -r ts-node/register tests/testNotMatch.ts",
     "testNotReplace": "mocha -r ts-node/register tests/testNotReplace.ts",
     "testOp": "mocha -r ts-node/register tests/testOp.ts",
