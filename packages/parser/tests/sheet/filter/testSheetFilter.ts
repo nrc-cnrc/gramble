@@ -257,10 +257,14 @@ describe(`${path.basename(module.filename)}`, function() {
 
     describe('Equals embed with a join', function() {
         const project = sheetFromFile(`${DIR}/equalsEmbedJoin.csv`);
-        testErrors(project, []);
+        testErrors(project, [
+            ["equalsEmbedJoin",13,3,"error"]
+        ]);
         testHasVocab(project, {text: 2, subj: 3});
         testGrammar(project, [
-            { text: "baz", gloss: "[2SG]", subj: "[2SG]" },
+            {"gloss":"[3SG]","subj":"[3SG]"},
+            {"gloss":"[2SG]","subj":"[2SG]","text":"baz"},
+            {"gloss":"[1SG]","subj":"[1SG]","text":"bar"}
         ]);
     }); 
 
@@ -374,9 +378,13 @@ describe(`${path.basename(module.filename)}`, function() {
     
     describe('starts embed with a hidden join', function() {
         const project = sheetFromFile(`${DIR}/startsEmbedJoin.csv`);
-        testErrors(project, []);
+        testErrors(project, [
+            ["startsEmbedJoin",15,4,"error"]
+        ]);
         testGrammar(project, [
-            { text: "umfoo", gloss: "[1SG]run" },
+            {"text":"umgoo","gloss":"[1SG]climb"},
+            {"text":"ummoo","gloss":"[1SG]jump"},
+            {"text":"umfoo","gloss":"[1SG]run"}
         ]);
     });
 

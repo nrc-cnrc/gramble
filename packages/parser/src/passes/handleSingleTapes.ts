@@ -10,41 +10,23 @@ import {
     LiteralGrammar, 
     SingleTapeGrammar
 } from "../grammars";
-import { DUMMY_REGEX_TAPE, HIDDEN_TAPE_PREFIX } from "../util";
+import { DUMMY_REGEX_TAPE } from "../util";
 
 /**
  * Some environments require the grammar inside to only reveal 
  * a single tape.  (E.g. grammars expressed in cells, like regexes.)
  * 
- * One tricky thing here is that regexes can contain arbitrary 
- * symbols like "equals text: (q|x){HighVowel}", and HighVowel 
- * itself might refer to multiple tapes.  We can't just ignore
- * or throw away the irrelevant tapes, though; they have to be 
- * hidden instead.
- * 
- * At the time that we construct this header/regex pair, though,
- * we don't know what HighVowel refers to or what tapes it refers
- * to.  We have to wrap everything in a grammar that just says 
- * "This whole thing can refer to only one non-hidden tape: text",
- * and then wait until we have the information.
- * 
- * This is the pass that occurs once we have that information.  We 
- * go through the tree and:
- * 
- *   (1) If we encounter a SingleTapeGrammar, remember its tapeName.
- * 
- *   (2) If we reach a literal .T:X, replace that with text:X (or
- *       whatever the relevant tape is)
- * 
- *   (3) If we reach a symbol embedding, hide all of the tapes 
- *       that aren't the relevant tape.
+ * Originally we had intended to do something special with multi-tape
+ * grammars inside (e.g. hide the other tapes), but this leads to some
+ * tricky situations that will require a lot of work to handle, so 
+ * for now we're simply forbidding multi-tape embeddings here
+ * and issuing an error.
  */
 
 export class HandleSingleTapes extends GrammarPass {
 
     constructor(
-        public tapeName: string | undefined = undefined,    
-        public replaceIndex: number = 0
+        public tapeName: string | undefined = undefined
     ) {
         super();
     }
@@ -85,6 +67,14 @@ export class HandleSingleTapes extends GrammarPass {
                 .bind(_ => new EpsilonGrammar());
         }
 
+        if (g.tapes.length > 1) {
+            return g.err("Embedding multi-field symbol",
+                `Only grammars with one field (e.g. just "text" but not any other fields) ` +
+                `can be embedded into a regex.`)
+                .bind(_ => new EpsilonGrammar());
+        }
+
+        /*
         let result: Grammar = g;
         for (const tape of g.tapes) {
             if (tape == this.tapeName) continue;
@@ -93,7 +83,9 @@ export class HandleSingleTapes extends GrammarPass {
             //console.log(`hiding ${g.name}.${tape} as ${hiddenTapeName}`);
             result = new HideGrammar(result, tape, hiddenTapeName);
         }
-        return result.msg();
+        */
+
+        return g.msg();
     }
 
     private handleDot(g: DotGrammar, env: PassEnv): GrammarResult {
@@ -111,9 +103,8 @@ export class HandleSingleTapes extends GrammarPass {
     }
 
     private handleSingleTape(g: SingleTapeGrammar, env: PassEnv): GrammarResult {
-        const newThis = new HandleSingleTapes(g.tapeName, this.replaceIndex);
-        const result = newThis.transform(g.child, env);
-        this.replaceIndex = newThis.replaceIndex;
-        return result;
+        const newThis = new HandleSingleTapes(g.tapeName);
+        return newThis.transform(g.child, env);
+        // note that we're not returning a new SingleTapeGrammar, this pass eliminates them
     }
 }
