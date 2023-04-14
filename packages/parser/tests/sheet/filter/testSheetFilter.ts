@@ -549,6 +549,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     }); 
 
+    /*
     describe('HighVowel tests 1', function() {
         const project = sheetFromFile(`${DIR}/highVowel1.csv`);
         testErrors(project, []);

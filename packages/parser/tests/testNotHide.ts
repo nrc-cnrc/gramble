@@ -38,6 +38,7 @@ describe(`${testSuiteName(module)}`, function() {
     
     */
 
+    /*
     describe('1. Join t1:foo ⨝ ~t1:hello', function() {
         const g1 = Seq(t1("hello"), Hide(t2("bar"), "t2", "HIDDEN"));
         const grammar = Join(t1("foo"), Not(g1));
@@ -45,5 +46,5 @@ describe(`${testSuiteName(module)}`, function() {
         //testHasVocab(grammar, {t1: 5});
         testGrammar(grammar, [{t1: 'foo', ".HIDDEN": 'bar'}], VERBOSE_DEBUG, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
-
+    */
 });

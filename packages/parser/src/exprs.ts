@@ -1368,6 +1368,67 @@ export class CountTapeExpr extends UnaryExpr {
     }
 }
 
+export class HideExpr extends UnaryExpr {
+
+    constructor(
+        public tapeName: string,
+        child: Expr
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `Hide_${this.tapeName}(${this.child.id})`;
+    }
+    
+    public delta(
+        tapeName: string,
+        env: DerivEnv
+    ): Expr {
+        if (tapeName == this.tapeName) {
+            // this isn't really our tape, our tape is hidden.  it's just
+            // some unrelated tape with the same name.
+            return EPSILON; 
+        }
+
+        const fromDelta = this.child.delta(this.tapeName, env);
+        const toDelta = fromDelta.delta(tapeName, env);
+        return constructHide(this.tapeName, toDelta);
+    }
+
+    public *deriv(
+        tapeName: string, 
+        target: Token,
+        env: DerivEnv
+    ): DerivResults {
+        if (tapeName == this.tapeName) {
+            // this isn't really our tape, our tape is hidden.  it's just
+            // some unrelated tape with the same name.
+            return;
+        }
+
+        const globalTapeName = env.getTape(this.tapeName).globalName;
+        for (const [fromTarget, fromNext] of this.child.deriv(this.tapeName, target, env)) {
+            if (fromNext instanceof NullExpr) {
+                continue;
+            }
+            env.incrStates();
+            env.logDebug(`D^${globalTapeName}_${fromTarget} = ${fromNext.id}`);
+            for (const [toTarget, toNext] of fromNext.deriv(tapeName, target, env)) {
+                const wrapped = constructHide(this.tapeName, toNext);
+                yield [toTarget, wrapped];
+            }
+        }
+    }
+}
+
+export function constructHide(tapeName: string, child: Expr): Expr {
+    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
+        return child;
+    }
+    return new HideExpr(tapeName, child);
+}
+
 export class PreTapeExpr extends UnaryExpr {
 
     constructor(
@@ -1379,7 +1440,7 @@ export class PreTapeExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `Pre_${this.fromTape}>${this.toTape}(this.child.id)`;
+        return `Pre_${this.fromTape}>${this.toTape}(${this.child.id})`;
     }
 
     public delta(
@@ -1388,7 +1449,7 @@ export class PreTapeExpr extends UnaryExpr {
     ): Expr {
         if (tapeName == this.fromTape) {
             throw new Error(`something's gone wrong, querying on ` +
-                `a EagerHideExpr fromTape ${this.fromTape}`);
+                `a PreTapeExpr fromTape ${this.fromTape}`);
         }
 
         if (tapeName == this.toTape) {
