@@ -1,0 +1,10 @@
+labials=, text,
+        , b
+        , p
+
+word=, table:, text
+    ,       , aba,
+    ,       , apa
+    ,       ,     ,
+    , replace:, from text, to surface
+    ,         , {labials},  v

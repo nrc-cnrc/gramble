@@ -341,7 +341,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"iba","surface":"iva"}
         ]);
     });
-
+    
     describe('Replace with a regex in post', function() {
         const project = sheetFromFile(`${DIR}/replacePostRegex.csv`);
         testErrors(project, []);

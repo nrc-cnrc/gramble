@@ -387,4 +387,45 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Replace with a symbol in regex in from', function() {
+        const project = sheetFromFile(`${DIR}/replaceFromRegexEmbed.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aba","surface":"ava"},
+            {"text":"apa","surface":"ava"}
+        ]);
+    });
+
+    /*
+    describe('Replace with a symbol in regex in pre', function() {
+        const project = sheetFromFile(`${DIR}/replacePreRegexEmbed.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aba","surface":"ava"},
+            {"text":"arba","surface":"arba"},
+            {"text":"iba","surface":"iva"}
+        ]);
+    });
+    
+    describe('Replace with a symbol in regex in post', function() {
+        const project = sheetFromFile(`${DIR}/replacePostRegexEmbed.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aba","surface":"ava"},
+            {"text":"abra","surface":"abra"},
+            {"text":"abi","surface":"avi"}
+        ]);
+    });
+    
+    /*
+    describe('Replace with a multi-tape symbol in regex in post', function() {
+        const project = sheetFromFile(`${DIR}/replacePostRegexMultiTape.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aba","surface":"ava"},
+            {"text":"abra","surface":"abra"},
+            {"text":"abi","surface":"avi"}
+        ]);
+    }); */
+
 });

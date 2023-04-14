@@ -1,0 +1,11 @@
+vowels=, text
+       , a
+       , i
+
+word=, table:, text
+    ,       , aba
+    ,       , arba
+    ,       , iba
+    ,       ,     ,
+    , replace:, from text, to surface, pre text
+    ,         , b,         v         , {vowels}
