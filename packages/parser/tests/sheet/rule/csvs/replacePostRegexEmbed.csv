@@ -2,7 +2,7 @@ vowels=, text
        , a
        , i
 
-word=, table:, text
+default=, table:, text
     ,       , aba
     ,       , abra
     ,       , abi

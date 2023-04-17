@@ -391,11 +391,18 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/replaceFromRegexEmbed.csv`);
         testErrors(project, []);
         testGrammar(project, [
-            {"text":"aba","surface":"ava"},
-            {"text":"apa","surface":"ava"}
+            {"text":"ava"}
         ]);
     });
 
+    describe('Replace with a symbol in regex in from, but the symbol is defined after', function() {
+        const project = sheetFromFile(`${DIR}/replaceFromRegexEmbedAfter.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ava"}
+        ]);
+    });
+    
     /*
     describe('Replace with a symbol in regex in pre', function() {
         const project = sheetFromFile(`${DIR}/replacePreRegexEmbed.csv`);

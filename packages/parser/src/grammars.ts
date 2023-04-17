@@ -2589,9 +2589,9 @@ export class ReplaceGrammar extends Grammar {
         const fromExprWithContext: Expr = constructSequence(preContextExpr, fromExpr, postContextExpr);
         const opt: GenOptions = new GenOptions();
         const stack = new CounterStack(opt.maxRecursion);
-        const symbols = new ExprNamespace();
+        //const symbols = new ExprNamespace();
         const stats = new DerivStats();
-        const env = new DerivEnv(tapeNS, symbols, stack, opt, stats);
+        const env = new DerivEnv(tapeNS, symbolTable, stack, opt, stats);
         const delta = fromExprWithContext.delta(this.fromTapeName, env);
         const emptyFromExpr: boolean = (delta instanceof EpsilonExpr);
 
