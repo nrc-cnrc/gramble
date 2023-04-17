@@ -6,5 +6,5 @@ word=, table:, text
     ,       , aba,
     ,       , apa
     ,       ,     ,
-    , replace:, from text, to surface
+    , replace text:, from, to
     ,         , {labials},  v

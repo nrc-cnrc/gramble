@@ -7,5 +7,5 @@ word=, table:, text
     ,       , arba
     ,       , iba
     ,       ,     ,
-    , replace:, from text, to surface, pre text
+    , replace text:, from, to, pre
     ,         , b,         v         , {vowels}

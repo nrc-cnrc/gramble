@@ -8,6 +8,7 @@ import {
     GrammarResult, 
     HideGrammar, 
     LiteralGrammar, 
+    RenameGrammar, 
     SingleTapeGrammar
 } from "../grammars";
 import { DUMMY_REGEX_TAPE } from "../util";
@@ -53,21 +54,13 @@ export class HandleSingleTapes extends GrammarPass {
     }
 
     handleEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {
+        
         if (this.tapeName == undefined) {
             // we're not in singleTape env
             return g.mapChildren(this, env);
         }
 
-        if (g.tapes.indexOf(this.tapeName) == -1) {
-            // oops, the programmer embedded a symbol that doesn't
-            // reference the desided tape
-            return g.err("Symbol missing field",
-                `This regex references the symbol ${g.name}, ` +
-                `but that symbol doesn't have any ${this.tapeName} field`)
-                .bind(_ => new EpsilonGrammar());
-        }
-
-        if (g.tapes.length > 1) {
+        if (g.tapes.length != 1) {
             return g.err("Embedding multi-field symbol",
                 `Only grammars with one field (e.g. just "text" but not any other fields) ` +
                 `can be embedded into a regex.`)
@@ -84,6 +77,10 @@ export class HandleSingleTapes extends GrammarPass {
             result = new HideGrammar(result, tape, hiddenTapeName);
         }
         */
+        const gTapeName = g.tapes[0];
+        if (this.tapeName != gTapeName) {
+            return new RenameGrammar(g, gTapeName, this.tapeName).msg();
+        }
 
         return g.msg();
     }

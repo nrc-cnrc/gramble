@@ -7,5 +7,5 @@ word=, table:, text
     ,       , abra
     ,       , abi
     ,       ,     ,
-    , replace:, from text, to surface, post text
-    ,         , b,         v         , {vowels}
+    , replace text:, from, to, post 
+    ,         , b,         v, {vowels}

@@ -129,7 +129,7 @@ export abstract class Grammar extends Component {
         return this.msg(e).localize(pos).localize(this.pos);
     }
     
-    protected _tapes: string[] | undefined = undefined;
+    public _tapes: string[] | undefined = undefined;
 
     public get tapes(): string[] {
         if (this._tapes == undefined) {
@@ -2364,7 +2364,7 @@ export function JoinRule(
 
 /**
  * JoinRule is a special case of JoinReplace, where the joiner assumes
- * that all rules are from a tape named ".input" to a tape named ".output".
+ * that all rules are from a tape named "$i" to a tape named "$o".
  * 
  * With this restriction, we don't have to try to infer what the tape names
  * are.
@@ -2406,6 +2406,11 @@ export class JoinRuleGrammar extends Grammar {
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = this.child.calculateTapes(stack, env);
+            for (const rule of this.rules) {
+                // we don't need the answer here, but we have to calculate it so that 
+                // the grammars have a .tapes property
+                rule.calculateTapes(stack, env);
+            }
         }
         return this._tapes;
     }
