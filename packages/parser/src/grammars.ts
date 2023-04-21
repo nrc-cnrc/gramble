@@ -2261,7 +2261,38 @@ export function Replace(
 ): ReplaceGrammar {
     return new ReplaceGrammar(fromGrammar, toGrammar, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
-        minReps, maxReps, hiddenTapeName);
+        minReps, maxReps, hiddenTapeName, false);
+}
+
+/**
+  * Replace implements general phonological replacement rules.
+  * 
+  * NOTE: The defaults for this convenience function differ from those 
+  * in the constructor of ReplaceGrammar.  These are the defaults appropriate
+  * for testing, whereas the defaults in ReplaceGrammar are appropriate for
+  * the purposes of converting tabular syntax into grammars.
+  * 
+  * fromGrammar: input (target) Grammar (on fromTape)
+  * toGrammar: output (change) Grammar (on one or more toTapes)
+  * preContext: context to match before the target fromGrammar (on fromTape)
+  * postContext: context to match after the target fromGrammar (on fromTape)
+  * otherContext: context to match on other tapes (other than fromTape & toTapes)
+  * beginsWith: set to True to match at the start of fromTape
+  * endsWith: set to True to match at the end of fromTape
+  * minReps: minimum number of times the replace rule is applied; normally 0
+  * maxReps: maximum number of times the replace rule is applied
+*/
+export function OptionalReplace(
+    fromGrammar: Grammar, toGrammar: Grammar,
+    preContext: Grammar = Epsilon(), postContext: Grammar = Epsilon(),
+    otherContext: Grammar = Epsilon(),
+    beginsWith: boolean = false, endsWith: boolean = false,
+    minReps: number = 0, maxReps: number = Infinity,
+    hiddenTapeName: string = ""
+): ReplaceGrammar {
+    return new ReplaceGrammar(fromGrammar, toGrammar, 
+        preContext, postContext, otherContext, beginsWith, endsWith, 
+        minReps, maxReps, hiddenTapeName, true);
 }
 
 export function JoinReplace(
@@ -2456,6 +2487,7 @@ export class ReplaceGrammar extends Grammar {
         public minReps: number = 0,
         public maxReps: number = Infinity,
         public hiddenTapeName: string = "",
+        public optional: boolean
     ) {
         super();
         if (this.hiddenTapeName.length == 0) {
@@ -2485,7 +2517,8 @@ export class ReplaceGrammar extends Grammar {
                    .bind(([fr, to, pre, post, oth]) => new ReplaceGrammar(
                         fr, to, pre, post, oth,
                         this.beginsWith, this.endsWith,
-                        this.minReps, this.maxReps, this.hiddenTapeName));
+                        this.minReps, this.maxReps, 
+                        this.hiddenTapeName, this.optional));
     }
 
     public getChildren(): Grammar[] { 
@@ -2585,26 +2618,16 @@ export class ReplaceGrammar extends Grammar {
             constructMatchFrom(postContextExpr, this.fromTapeName, ...this.toTapeNames)
         ];
 
-        // Determine whether the fromExpr in context is empty (on the fromTape).
-        const fromExprWithContext: Expr = constructSequence(preContextExpr, fromExpr, postContextExpr);
-        const opt: GenOptions = new GenOptions();
-        const stack = new CounterStack(opt.maxRecursion);
-        //const symbols = new ExprNamespace();
-        const stats = new DerivStats();
-        const env = new DerivEnv(tapeNS, symbolTable, stack, opt, stats);
-        const delta = fromExprWithContext.delta(this.fromTapeName, env);
-        const emptyFromExpr: boolean = (delta instanceof EpsilonExpr);
-
         const that = this;
 
         function matchAnythingElse(replaceNone: boolean = false): Expr {
-            // 1. If the fromTape is an empty expression, then we don't
-            //    need to exclude the from expression from the match, so
-            //    we can just match .*
+            // 1. If the rule is optional, we just need to match .*
             // 2. If we are matching an instance at the start of text (beginsWith),
-            //    or end of text (endsWith) then matchAnythingElse needs to match any
-            //    other instances of the replacement pattern, so we need to match .*
-            if( emptyFromExpr ||
+            //    or end of text (endsWith), then merely matching the replacement pattern
+            //    isn't really matching.  That is, if we're matching "#b", the fact that b
+            //    occurs elsewhere is no problem, it's not actually a match.  So we just 
+            //    need to match .*
+            if( that.optional ||
                     (that.beginsWith && !replaceNone) ||
                     (that.endsWith && !replaceNone)) {
                 return constructMatchFrom(constructDotStar(that.fromTapeName),
@@ -2620,7 +2643,8 @@ export class ReplaceGrammar extends Grammar {
 
             let notExpr: Expr = constructNotContains(that.fromTapeName, fromInstance,
                 negatedTapes, that.beginsWith && replaceNone, that.endsWith && replaceNone);
-            return constructMatchFrom(notExpr, that.fromTapeName, ...that.toTapeNames)
+            const matchFrom = constructMatchFrom(notExpr, that.fromTapeName, ...that.toTapeNames)
+            return constructAlternation(matchFrom, EPSILON);
         }
         
         if (!this.endsWith)

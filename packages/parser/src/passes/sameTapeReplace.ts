@@ -90,7 +90,7 @@ export class SameTapeReplacePass extends GrammarPass {
         return new ReplaceGrammar(renamedFrom, g.toGrammar, 
                                   renamedPre, renamedPost, g.otherContext,
                                   g.beginsWith, g.endsWith,
-                                  g.minReps, g.maxReps, g.hiddenTapeName).msg();
+                                  g.minReps, g.maxReps, g.hiddenTapeName, g.optional).msg();
     }
 
 }

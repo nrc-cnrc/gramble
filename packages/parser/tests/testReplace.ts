@@ -5,6 +5,7 @@ import {
     Grammar,
     Intersect,
     Not,
+    OptionalReplace,
     Priority,
     Replace,
     Seq,
@@ -1919,7 +1920,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('33h. Replace ∅ by e: t1:∅ -> t2:e {1} (vocab t1:hl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'hl'}),
-                                   Replace(t1(""), t2("e"),
+                                   OptionalReplace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 1, 1));
         grammar = CountTape(4, grammar);
@@ -1972,7 +1973,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('33j. Replace ∅ by e: t1:∅ -> t2:e {0,2} (vocab t1:hl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'hl'}),
-                                   Replace(t1(""), t2("e"),
+                                   OptionalReplace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 2));
         grammar = CountTape(4, grammar);
@@ -2048,7 +2049,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('33k. Replace ∅ by e: t1:∅ -> t2:e {2} (vocab t1:h)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'h'}),
-                                   Replace(t1(""), t2("e"),
+                                    OptionalReplace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 2, 2));
         grammar = CountTape({t1: 1}, grammar);
@@ -2066,7 +2067,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('33k-2. Replace ∅ by e: t1:∅ -> t2:e {2} (vocab t1:h)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'h'}),
-                                   Replace(t1(""), t2("e"),
+                                    OptionalReplace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 2, 2));
         grammar = CountTape({t1: 2}, grammar);
@@ -2090,7 +2091,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('33l. Replace ∅|h by e: t1:∅|t1:h -> t2:e {1} (vocab t1:hl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'hl'}),
-                                   Replace(Uni(t1(""), t1("h")), t2("e"),
+                                   OptionalReplace(Uni(t1(""), t1("h")), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 1, 1));
         grammar = CountTape(4, grammar);
@@ -2154,7 +2155,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('33m. Replace ∅|h by e: t1:∅|t1:h -> t2:e {1} (vocab t1:eh)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'eh'}),
-                                   Replace(Uni(t1(""), t1("h")), t2("e"),
+                                   OptionalReplace(Uni(t1(""), t1("h")), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 1, 1));
         grammar = CountTape(4, grammar);

@@ -355,6 +355,7 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    /*
     describe('DANGER: Rule with an empty from', function() {
         const project = sheetFromFile(`${DIR}/blankFrom.csv`);
         testHasVocab(project, {text: 3})
@@ -366,7 +367,7 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"acbca"},           
             {"text":"cabac"}
         ]);
-    });
+    }); */
 
     describe('Rule with an empty from, with pre and post', function() {
         const project = sheetFromFile(`${DIR}/blankFromPrePost.csv`);

@@ -4,6 +4,7 @@ import {
     Join,
     JoinRule,
     Lit,
+    OptionalReplace,
     Rep,
     Replace,
     ReplaceGrammar,
@@ -33,6 +34,19 @@ function IOReplace(
     const preGrammar = Lit(REPLACE_INPUT_TAPE, preStr);
     const postGrammar = Lit(REPLACE_INPUT_TAPE, postStr);
     return Replace(fromGrammar, toGrammar, preGrammar, postGrammar);
+}
+
+function IOReplaceOptional(
+    fromStr: string, 
+    toStr: string, 
+    preStr: string = "",
+    postStr: string = "",
+): ReplaceGrammar {
+    const fromGrammar = Lit(REPLACE_INPUT_TAPE, fromStr);
+    const toGrammar = Lit(REPLACE_OUTPUT_TAPE, toStr);
+    const preGrammar = Lit(REPLACE_INPUT_TAPE, preStr);
+    const postGrammar = Lit(REPLACE_INPUT_TAPE, postStr);
+    return OptionalReplace(fromGrammar, toGrammar, preGrammar, postGrammar);
 }
 
 function IOJoin(
@@ -582,7 +596,7 @@ describe(`${path.basename(module.filename)}`, function() {
     });
 
     describe('14a. Unconditional generation', function() {
-        const r1Grammar = IOJoin("abc", IOReplace("", "D"));
+        const r1Grammar = IOJoin("abc", IOReplaceOptional("", "D"));
         const voc: string = "abcdABCD"
         const vocGrammar = Vocab({t1:voc});
         let grammar: Grammar = Seq(vocGrammar, r1Grammar);
