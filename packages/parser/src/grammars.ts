@@ -2829,3 +2829,53 @@ export class ReplaceGrammar extends Grammar {
     }
 
 }
+
+export function Query(
+    query: StringDict = {},
+): Grammar {
+    const queryLiterals = Object.entries(query).map(([key, value]) => {
+        key = key.normalize("NFD"); 
+        value = value.normalize("NFD");
+        return new LiteralGrammar(key, value);
+    });
+    return new SequenceGrammar(queryLiterals);
+}
+
+export function infinityProtection(
+    grammar: Grammar,
+    tapes: string[],
+    symbolName: string,
+    maxChars: number,
+    env: PassEnv
+): Grammar {
+
+    let foundInfinite = false;
+    const maxCharsDict: {[tape: string]: number} = {};
+    const stack = new CounterStack(2);
+    for (const tape of tapes) {
+        const length = grammar.estimateLength(tape, stack, env);
+        if (length.null == true) continue;
+        if (length.max == Infinity && maxChars != Infinity) {
+            maxCharsDict[tape] = maxChars-1;
+            foundInfinite = true;
+        }
+    }
+
+    if (!foundInfinite) return grammar;
+
+    if (grammar instanceof CollectionGrammar) {
+        const symGrammar = grammar.getSymbol(symbolName);
+        if (symGrammar instanceof PriorityGrammar) {
+            symGrammar.child = new CountTapeGrammar(symGrammar.child, maxCharsDict);
+        } else {
+            grammar = new CountTapeGrammar(grammar, maxCharsDict);
+        }
+    } else if (grammar instanceof PriorityGrammar) {
+        grammar.child = new CountTapeGrammar(grammar.child, maxCharsDict);
+    } else {
+        grammar = new CountTapeGrammar(grammar, maxCharsDict);
+    }
+
+    return grammar;
+
+}

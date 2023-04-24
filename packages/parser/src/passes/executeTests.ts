@@ -5,7 +5,8 @@ import {
     CountGrammar, FilterGrammar, 
     Grammar, GrammarPass, GrammarResult, TestNotGrammar, 
     CollectionGrammar, PriorityGrammar, 
-    TestGrammar 
+    TestGrammar, 
+    infinityProtection
 } from "../grammars";
 import { TapeNamespace} from "../tapes";
 import { generate } from "../generator";
@@ -87,31 +88,22 @@ export class ExecuteTests extends GrammarPass {
         const opt = new GenOptions();
 
         // create a filter for each test
-        let targetComponent: Grammar = new FilterGrammar(test.child, test.test);
+        let targetGrammar: Grammar = new FilterGrammar(test.child, test.test);
 
         // there won't be any new vocabulary here, but it's possible (indeed, frequent)
         // that the Equals we made above has a different join/concat tape structure
         // than the original grammar, so we have to check
-        targetComponent.collectAllVocab(this.tapeNS, env);        
-        const tapePriority = targetComponent.getAllTapePriority(this.tapeNS, env);
+        targetGrammar.collectAllVocab(this.tapeNS, env);        
+        const tapePriority = targetGrammar.getAllTapePriority(this.tapeNS, env);
         
-        /*
-        const potentiallyInfinite = targetComponent.estimateLength(new CounterStack(2), env);
-        if (potentiallyInfinite && opt.maxChars != Infinity) {
-            if (targetComponent instanceof PriorityGrammar) {
-                targetComponent.child = new CountGrammar(targetComponent.child, opt.maxChars-1);
-            } else {
-                targetComponent = new CountGrammar(targetComponent, opt.maxChars-1);
-            }
-        }
-        */
+        targetGrammar = infinityProtection(targetGrammar, tapePriority, "", opt.maxChars, env);
 
-        if (!(targetComponent instanceof PriorityGrammar)) {
-            targetComponent = new PriorityGrammar(targetComponent, tapePriority);
+        if (!(targetGrammar instanceof PriorityGrammar)) {
+            targetGrammar = new PriorityGrammar(targetGrammar, tapePriority);
         }
 
         const symbols = new ExprNamespace(this.symbolTable);
-        let expr = targetComponent.constructExpr(this.tapeNS, symbols);
+        let expr = targetGrammar.constructExpr(this.tapeNS, symbols);
         expr = constructCollection(expr, this.symbolTable);
         return [...generate(expr, this.tapeNS, opt)];
 

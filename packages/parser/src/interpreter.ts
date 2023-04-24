@@ -2,7 +2,7 @@ import {
     CounterStack, CountGrammar, 
     FilterGrammar, Grammar, 
     LiteralGrammar, CollectionGrammar, 
-    PriorityGrammar, SequenceGrammar, 
+    PriorityGrammar, SequenceGrammar, Query, CountTapeGrammar, infinityProtection
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
@@ -256,40 +256,16 @@ export class Interpreter {
             throw new Error(`Missing symbol: ${symbolName}; choices are [${allSymbols}]`);
         }
 
+        if (Object.keys(query).length > 0) {
+            const querySeq = Query(query);
+            targetGrammar = new FilterGrammar(targetGrammar, querySeq);
+            // there might be new chars in the query
+            targetGrammar.collectAllVocab(this.tapeNS, env);
+        }
+        
         let tapePriority = this.grammar.getAllTapePriority(this.tapeNS, env);
 
-        if (Object.keys(query).length > 0) {
-            const queryLiterals = Object.entries(query).map(([key, value]) => {
-                key = key.normalize("NFD"); 
-                value = value.normalize("NFD");
-                return new LiteralGrammar(key, value);
-            });
-            const querySeq = new SequenceGrammar(queryLiterals);
-            targetGrammar = new FilterGrammar(targetGrammar, querySeq);
-            
-            // we have to collect any new vocab, but only from the new material
-            targetGrammar.collectAllVocab(this.tapeNS, env);
-            // we still have to copy though, in case the query added new vocab
-            // to something that's eventually a "from" tape of a replace
-            //targetGrammar.copyVocab(this.tapeNS, new Set());        
-            
-            tapePriority = this.grammar.getAllTapePriority(this.tapeNS, env);
-        }
-
-        /*
-        const potentiallyInfinite = targetGrammar.estimateLength(new CounterStack(2), env);
-        if (potentiallyInfinite && opt.maxChars != Infinity) {
-            if (targetGrammar instanceof CollectionGrammar) {
-                const symGrammar = targetGrammar.getSymbol(symbolName);
-                if (symGrammar instanceof PriorityGrammar) {
-                    symGrammar.child = new CountGrammar(symGrammar.child, opt.maxChars-1);
-                }
-            } else if (targetGrammar instanceof PriorityGrammar) {
-                targetGrammar.child = new CountGrammar(targetGrammar.child, opt.maxChars-1);
-            } else {
-                targetGrammar = new CountGrammar(targetGrammar, opt.maxChars-1);
-            }
-        } */
+        targetGrammar = infinityProtection(targetGrammar, tapePriority, symbolName, opt.maxChars, env);
 
         let is_priority_grammar = targetGrammar instanceof PriorityGrammar;
         if (targetGrammar instanceof CollectionGrammar) {
