@@ -8,7 +8,6 @@ import {
 import * as path from 'path';
 import { SILENT } from "../src/util";
 
-
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Symbol containing t1:hi, unnamed collection', function() {

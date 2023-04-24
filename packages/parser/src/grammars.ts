@@ -6,14 +6,14 @@ import {
     constructMatch, 
     constructFilter, constructJoin,
     constructLiteral, constructMatchFrom, constructCharSet,
-    constructDotRep, constructCount, constructCountTape,
+    constructCount,
     constructPriority, EpsilonExpr, constructShort,
     constructEpsilonLiteral, 
     constructPrecede, constructPreTape,
     constructNotContains, constructParallel, 
-    DerivEnv, ExprNamespace, constructCollection, 
+    ExprNamespace, constructCollection, 
     constructCorrespond, constructNoEps, 
-    DerivStats, constructDotStar
+    constructDotStar
 } from "./exprs";
 import { Err, Msg, Msgs, result, Result, resultDict, resultList, ResultVoid, Warn } from "./msgs";
 
@@ -1041,43 +1041,6 @@ export class CountGrammar extends UnaryGrammar {
 
     constructor(
         child: Grammar,
-        public maxChars: number
-    ) {
-        super(child);
-    }
-
-    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
-        return result(this.child)
-                .bind(c => f.transform(c, env))
-                .bind(c => new CountGrammar(c, this.maxChars));
-    }
-
-    public get id(): string {
-        return `Count(${this.maxChars},${this.child.id})`;
-    }
-
-    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
-        const childLength = this.child.estimateLength(tapeName, stack, env);
-        return {
-            null: childLength.null,
-            min: childLength.min,
-            max: Math.min(childLength.max, this.maxChars)
-        }
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace,
-        symbols: ExprNamespace
-    ): Expr {
-        const childExpr = this.child.constructExpr(tapeNS, symbols);
-        return constructCount(childExpr, this.maxChars);
-    }
-}
-
-export class CountTapeGrammar extends UnaryGrammar {
-
-    constructor(
-        child: Grammar,
         public maxChars: number | Dict<number>
     ) {
         super(child);
@@ -1086,7 +1049,7 @@ export class CountTapeGrammar extends UnaryGrammar {
     public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new CountTapeGrammar(c, this.maxChars));
+                .bind(c => new CountGrammar(c, this.maxChars));
     }
 
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
@@ -1105,7 +1068,7 @@ export class CountTapeGrammar extends UnaryGrammar {
     }
 
     public get id(): string {
-        return `CountTape(${JSON.stringify(this.maxChars)},${this.child.id})`;
+        return `Count(${JSON.stringify(this.maxChars)},${this.child.id})`;
     }
 
     public constructExpr(
@@ -1121,7 +1084,7 @@ export class CountTapeGrammar extends UnaryGrammar {
             maxCharsDict = this.maxChars;
         }
         const childExpr = this.child.constructExpr(tapeNS, symbols);
-        return constructCountTape(childExpr, maxCharsDict);
+        return constructCount(childExpr, maxCharsDict);
     }
 }
 
@@ -2377,12 +2340,8 @@ export function Vocab(arg1: string | StringDict, arg2: string = ""): Grammar {
     }
 }
 
-export function Count(maxChars: number, child: Grammar): Grammar {
+export function Count(maxChars: number | Dict<number>, child: Grammar): Grammar {
     return new CountGrammar(child, maxChars);
-}
-
-export function CountTape(maxChars: number | Dict<number>, child: Grammar): Grammar {
-    return new CountTapeGrammar(child, maxChars);
 }
 
 export function Priority(tapes: string[], child: Grammar): Grammar {
@@ -2866,14 +2825,14 @@ export function infinityProtection(
     if (grammar instanceof CollectionGrammar) {
         const symGrammar = grammar.getSymbol(symbolName);
         if (symGrammar instanceof PriorityGrammar) {
-            symGrammar.child = new CountTapeGrammar(symGrammar.child, maxCharsDict);
+            symGrammar.child = new CountGrammar(symGrammar.child, maxCharsDict);
         } else {
-            grammar = new CountTapeGrammar(grammar, maxCharsDict);
+            grammar = new CountGrammar(grammar, maxCharsDict);
         }
     } else if (grammar instanceof PriorityGrammar) {
-        grammar.child = new CountTapeGrammar(grammar.child, maxCharsDict);
+        grammar.child = new CountGrammar(grammar.child, maxCharsDict);
     } else {
-        grammar = new CountTapeGrammar(grammar, maxCharsDict);
+        grammar = new CountGrammar(grammar, maxCharsDict);
     }
 
     return grammar;

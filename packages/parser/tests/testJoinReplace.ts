@@ -1,6 +1,6 @@
 import { 
     Any,
-    CountTape,
+    Count,
     Epsilon,
     EpsilonLit,
     Grammar,
@@ -1057,7 +1057,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab({t1: "hx", t2: "hex"}));
-        grammarWithVocab = CountTape({t1: 3, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 3, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -1077,7 +1077,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab({t1: "hx", t2: "hex"}));
-        grammarWithVocab = CountTape({t1: 3, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 3, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});

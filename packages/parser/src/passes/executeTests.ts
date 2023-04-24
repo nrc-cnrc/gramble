@@ -1,10 +1,11 @@
 import { Dict, GenOptions, StringDict } from "../util";
-import { constructCollection, CounterStack, Expr, ExprNamespace } from "../exprs";
-import { Msgs, Err, Success, Result, result } from "../msgs";
+import { constructCollection, Expr, ExprNamespace } from "../exprs";
+import { Msgs, Err, Success, result } from "../msgs";
 import { 
-    CountGrammar, FilterGrammar, 
-    Grammar, GrammarPass, GrammarResult, TestNotGrammar, 
-    CollectionGrammar, PriorityGrammar, 
+    FilterGrammar, 
+    Grammar, GrammarPass, 
+    GrammarResult, TestNotGrammar, 
+    PriorityGrammar, 
     TestGrammar, 
     infinityProtection
 } from "../grammars";

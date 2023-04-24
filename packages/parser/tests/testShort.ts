@@ -8,7 +8,7 @@ import {
     Dot,
     Short,
     Uni,
-    CountTape,
+    Count,
 } from "../src/grammars";
 
 import { 
@@ -101,7 +101,7 @@ describe(`${testSuiteName(module)}`, function() {
         describe('5. Short(t1:.*i) with vocab [hi]', function() {
             let grammar: Grammar = Short(Seq(Rep(Dot("t1")), t1("i")));
             grammar = Seq(grammar, Vocab("t1", "hi"));
-            grammar = CountTape(4, grammar);
+            grammar = Count(4, grammar);
             const expectedResults: StringDict[] = [ 
                 {t1:"i"}, 
                 {t1:"hi"},
@@ -117,7 +117,7 @@ describe(`${testSuiteName(module)}`, function() {
             let grammar: Grammar = Short(Seq(Rep(Dot("t1")), t1("i")));
             grammar = Seq(grammar, Rep(Dot("t1")));
             grammar = Seq(grammar, Vocab("t1", "hi"));
-            grammar = CountTape(4, grammar);
+            grammar = Count(4, grammar);
             const expectedResults: StringDict[] = [ 
                 {"t1":"hhhi"},
                 {"t1":"hhih"},
@@ -156,7 +156,7 @@ describe(`${testSuiteName(module)}`, function() {
             grammar = Seq(grammar, Rep(Dot("t1")));
             grammar = Not(grammar);
             grammar = Seq(grammar, Vocab("t1", "hi"));
-            grammar = CountTape(4, grammar);
+            grammar = Count(4, grammar);
             const expectedResults: StringDict[] = [ 
                 {},
                 {t1:"h"},

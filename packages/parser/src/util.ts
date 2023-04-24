@@ -19,6 +19,8 @@ export const DEFAULT_PROJECT_NAME = "";
 export const DEFAULT_SYMBOL_NAME = "Default";
 export const AUTO_SYMBOL_NAME = "_Auto"
 
+export const DEFAULT_MAX_CHARS = 100;
+
 export const DIRECTION_LTR: boolean = true; // whether we parse/generate from the beginning or end of words
 
 export const SILENT = 0;
@@ -57,7 +59,7 @@ export function logGrammar(verbose: number, msg: string): void {
 export class GenOptions {
     public random: boolean = false;
     public maxRecursion: number = 2; 
-    public maxChars: number = 1000;
+    public maxChars: number = 100;
     public verbose: number = SILENT
 }
 

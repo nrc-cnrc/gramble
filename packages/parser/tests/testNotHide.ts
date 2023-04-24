@@ -1,5 +1,5 @@
 import {
-    Grammar, CountTape, Vocab,
+    Grammar, Count, Vocab,
     Uni, Join, Not, Rep, Seq,
     Dot, Any, Short, Hide
 } from "../src/grammars";

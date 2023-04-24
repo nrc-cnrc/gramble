@@ -1,6 +1,6 @@
 import {
     Any,
-    CountTape,
+    Count,
     Epsilon,
     Grammar,
     Intersect,
@@ -72,7 +72,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('2. Replace e by a in hello: e -> t2:a {1+} || h_llo$', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"),
                                        EMPTY_CONTEXT, false, true, 1);
-        grammar = CountTape(7, grammar);
+        grammar = Count(7, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 5});
         const expectedResults: StringDict[] = [
@@ -94,7 +94,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('3. Replace e by a in hel: t1:e -> t2:a {0+} || h_l$', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, true);
-        grammar = CountTape(5, grammar)
+        grammar = Count(5, grammar)
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         const from_to: StringDict[] = [
@@ -107,7 +107,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lehel', t2: 'lehal'}, {t1: 'lhhel', t2: 'lhhal'},
             {t1: 'llhel', t2: 'llhal'},
             // Valid Inputs - Copy through
-            // There are 351 valid copy through outputs in all for CountTape(5).
+            // There are 351 valid copy through outputs in all for Count(5).
             {t1: 'e', t2: 'e'}, {t1: 'h', t2: 'h'},
             {t1: 'l', t2: 'l'},
             {t1: 'ee', t2: 'ee'}, {t1: 'eh', t2: 'eh'},
@@ -128,7 +128,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('4. Replace e by a in hello: t1:e -> t2:a {1+} || ^h_llo', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"),
                                        EMPTY_CONTEXT, true, false, 1);
-        grammar = CountTape(7, grammar);
+        grammar = Count(7, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 5});
         const expectedResults: StringDict[] = [
@@ -150,7 +150,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('5. Replace e by a in hel: t1:e -> t2:a {0+} || ^h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, true, false);
-        grammar = CountTape(5, grammar);
+        grammar = Count(5, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         const from_to: StringDict[] = [
@@ -163,7 +163,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'helle', t2: 'halle'}, {t1: 'hellh', t2: 'hallh'},
             {t1: 'helll', t2: 'halll'},
             // Valid Inputs - Copy through
-            // There are 351 valid copy through outputs in all for CountTape(5).
+            // There are 351 valid copy through outputs in all for Count(5).
             {t1: 'e', t2: 'e'}, {t1: 'h', t2: 'h'},
             {t1: 'l', t2: 'l'},
             {t1: 'ee', t2: 'ee'}, {t1: 'eh', t2: 'eh'},
@@ -184,7 +184,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('6. Replace e by a in hello: t1:e -> t2:a {1,5} || h_llo', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"), 
                                        EMPTY_CONTEXT, false, false, 1, 5);
-        grammar = CountTape(7, grammar);
+        grammar = Count(7, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 5});
         const expectedResults: StringDict[] = [
@@ -224,7 +224,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('7a. Replace e by a in hel: t1:e -> t2:a {1+} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, false, 1);
-        grammar = CountTape(5, grammar);
+        grammar = Count(5, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         const expectedResults: StringDict[] = [
@@ -252,14 +252,14 @@ describe(`${testSuiteName(module)}`, function() {
     describe('7. Replace e by a in hel: t1:e -> t2:a {1+} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, false, 1);
-        grammar = CountTape(9, grammar);
+        grammar = Count(9, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         // Full Generation:
-        //  CountTape=7: 537 results (CountTape=7)
-        //  CountTape=8: 1941 results (CountTape=8)
-        //  CountTape=9: 6775 results (CountTape=9)
-        //  CountTape=10: 23068 results (CountTape=10)
+        //  Count=7: 537 results (Count=7)
+        //  Count=8: 1941 results (Count=8)
+        //  Count=9: 6775 results (Count=9)
+        //  Count=10: 23068 results (Count=10)
         // Here we spot check some of the possible 6775 results for
         // 9 characters or less.
         const from_to: StringDict[] = [
@@ -294,14 +294,14 @@ describe(`${testSuiteName(module)}`, function() {
     describe('8. Replace e by a in hel: t1:e -> t2:a {0,2} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape(9, grammar);
+        grammar = Count(9, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         // Full Generation:
-        //  CountTape=7: 3280 results
-        //  CountTape=8: 9841 results
-        //  CountTape=9: 29523 results
-        //  CountTape=10: 88560 results
+        //  Count=7: 3280 results
+        //  Count=8: 9841 results
+        //  Count=9: 29523 results
+        //  Count=10: 88560 results
         // Here we spot check some of the possible 29523 results for
         // 9 characters or less.
         const from_to: StringDict[] = [
@@ -340,7 +340,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('9a. Replace e by a in hel: t1:e -> t2:a {1} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, false, 1, 1);
-        grammar = CountTape(5, grammar);
+        grammar = Count(5, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         const expectedResults: StringDict[] = [
@@ -368,14 +368,14 @@ describe(`${testSuiteName(module)}`, function() {
     describe('9. Replace e by a in hel: t1:e -> t2:a {1} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, false, 1, 1);
-        grammar = CountTape(9, grammar);
+        grammar = Count(9, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         // Full Generation:
-        //  CountTape=7: 527 results
-        //  CountTape=8: 1877 results
-        //  CountTape=9: 6443 results
-        //  CountTape=10: 21545 results
+        //  Count=7: 527 results
+        //  Count=8: 1877 results
+        //  Count=9: 6443 results
+        //  Count=10: 21545 results
         // Here we spot check some of the possible 6443 results for
         // 9 characters or less,
         const from_to: StringDict[] = [
@@ -404,15 +404,15 @@ describe(`${testSuiteName(module)}`, function() {
     describe('10. Replace e by a in hel: t1:e -> t2:a {0,3} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"), 
                                        EMPTY_CONTEXT, false, false, 0, 3,);
-        grammar = CountTape(14, grammar);
+        grammar = Count(14, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         // Full Generation:
-        //  CountTape=11: 265720 results
-        //  CountTape=12: 797160 results
-        //  CountTape=13: 2391468 results
-        //  CountTape=14: 7174302 results
-        //  CountTape=17: >180M results
+        //  Count=11: 265720 results
+        //  Count=12: 797160 results
+        //  Count=13: 2391468 results
+        //  Count=14: 7174302 results
+        //  Count=17: >180M results
         // Here we spot check some of the possible 7174302 results for
         // 14 characters or less,
         const from_to: StringDict[] = [
@@ -450,7 +450,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('11a. Replace e by a in he: t1:e -> t2:a {0,2} || h_', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1(""), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -479,14 +479,14 @@ describe(`${testSuiteName(module)}`, function() {
     describe('11. Replace e by a in he: t1:e -> t2:a {0,2} || h_', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1(""), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape(10, grammar);
+        grammar = Count(10, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         // Full Generation:
-        //  CountTape=7: 246 results
-        //  CountTape=8: 465 results
-        //  CountTape=9: 847 results
-        //  CountTape=10: 1485 results
+        //  Count=7: 246 results
+        //  Count=8: 465 results
+        //  Count=9: 847 results
+        //  Count=10: 1485 results
         // Here we spot check some of the possible 1485 results for
         // 10 characters or less,
         const from_to: StringDict[] = [
@@ -526,14 +526,14 @@ describe(`${testSuiteName(module)}`, function() {
     describe('12. Replace e by a in he: t1:e -> t2:a {0,2} || h_ε', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), EMPTY_CONTEXT,
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape(10, grammar);
+        grammar = Count(10, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         // Full Generation:
-        //  CountTape=7: 246 results
-        //  CountTape=8: 465 results
-        //  CountTape=9: 847 results
-        //  CountTape=10: 1485 results
+        //  Count=7: 246 results
+        //  Count=8: 465 results
+        //  Count=9: 847 results
+        //  Count=10: 1485 results
         // Here we spot check some of the possible 1485 results for
         // 10 characters or less,
         const from_to: StringDict[] = [
@@ -572,7 +572,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('13a. Replace e by a in el: t1:e -> t2:a {0,2} || ε_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), EMPTY_CONTEXT, t1("l"), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -602,14 +602,14 @@ describe(`${testSuiteName(module)}`, function() {
     describe('13. Replace e by a in el: t1:e -> t2:a {0,2} || ε_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), EMPTY_CONTEXT, t1("l"), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape(10, grammar);
+        grammar = Count(10, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         // Full Generation:
-        //  CountTape=7: 246 results
-        //  CountTape=8: 465 results
-        //  CountTape=9: 847 results
-        //  CountTape=10: 1485 results
+        //  Count=7: 246 results
+        //  Count=8: 465 results
+        //  Count=9: 847 results
+        //  Count=10: 1485 results
         // Here we spot check some of the possible 1485 results for
         // 10 characters or less,
         const from_to: StringDict[] = [
@@ -649,7 +649,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("e"), t2("a"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 2));
-        grammar = CountTape(3, grammar);
+        grammar = Count(3, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         const expectedResults: StringDict[] = [
@@ -684,14 +684,14 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("e"), t2("a"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 3));
-        grammar = CountTape(11, grammar);
+        grammar = Count(11, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         // Full Generation:
-        //  CountTape=8: 7680 results
-        //  CountTape=9: 20480 results
-        //  CountTape=10: 53504 results
-        //  CountTape=11: 137216 results
+        //  Count=8: 7680 results
+        //  Count=9: 20480 results
+        //  Count=10: 53504 results
+        //  Count=11: 137216 results
         // Here we spot check some of the possible 137216 results for
         // 11 characters or less,
         const from_to: StringDict[] = [
@@ -729,15 +729,15 @@ describe(`${testSuiteName(module)}`, function() {
     describe('16. Replace e by ee in hel: t1:e -> t2:ee {0,2} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape(12, grammar);
+        grammar = Count(12, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         // Full Generation:
-        //  CountTape=8: 8428 results
-        //  CountTape=9: 24636 results
-        //  CountTape=10: 72012 results
-        //  CountTape=11: 210492 results
-        //  CountTape=12: 615268 results
+        //  Count=8: 8428 results
+        //  Count=9: 24636 results
+        //  Count=10: 72012 results
+        //  Count=11: 210492 results
+        //  Count=12: 615268 results
         // Here we spot check some of the possible 615268 results for
         // 12 characters or less,
         const from_to: StringDict[] = [
@@ -777,7 +777,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('17. Replace e by ee in hel: t1:e -> t2:ee {1+} || ^h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, true, false, 1);
-        grammar = CountTape({t1: 6}, grammar);
+        grammar = Count({t1: 6}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -808,7 +808,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('18. Replace e by ee in hel: t1:e -> t2:ee {0+} || ^h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, true, false, 0);
-        grammar = CountTape({t1: 7}, grammar);
+        grammar = Count({t1: 7}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const from_to: StringDict[] = [
@@ -843,7 +843,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('19. Replace e by ee in hel: t1:e -> t2:ee {1+} || h_l$', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, true, 1);
-        grammar = CountTape({t1: 6}, grammar);
+        grammar = Count({t1: 6}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -874,7 +874,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('20. Replace e by ee in hel: t1:e -> t2:ee {0+} || h_l$', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, true, 0);
-        grammar = CountTape({t1: 7}, grammar);
+        grammar = Count({t1: 7}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const from_to: StringDict[] = [
@@ -910,7 +910,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('21a. Replace e by ee in he: t1:e -> t2:ee {0,2} || h_', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), EMPTY_CONTEXT, 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 4}, grammar);
+        grammar = Count({t1: 4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -939,14 +939,14 @@ describe(`${testSuiteName(module)}`, function() {
     describe('21. Replace e by ee in he: t1:e -> t2:ee {0,2} || h_', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), EMPTY_CONTEXT, 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 10}, grammar);
+        grammar = Count({t1: 10}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         // Full Generation:
-        //  t1 CountTape=7: 246 results
-        //  t1 CountTape=8: 465 results
-        //  t1 CountTape=9: 847 results
-        //  t1 CountTape=10: 1485 results
+        //  t1 Count=7: 246 results
+        //  t1 Count=8: 465 results
+        //  t1 Count=9: 847 results
+        //  t1 Count=10: 1485 results
         // Here we spot check some of the possible 1485 results for
         // 10 characters or less on t1.
         const from_to: StringDict[] = [
@@ -983,7 +983,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('22a. Replace e by ee in el: t1:e -> t2:ee {0,2} || _l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), EMPTY_CONTEXT, t1("l"), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 4}, grammar);
+        grammar = Count({t1: 4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -1012,7 +1012,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('22. Replace e by ee in el: t1:e -> t2:ee {0,2} || _l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), EMPTY_CONTEXT, t1("l"), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 10}, grammar);
+        grammar = Count({t1: 10}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const from_to: StringDict[] = [
@@ -1051,7 +1051,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("e"), t2("ee"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 2));
-        grammar = CountTape({t1: 3}, grammar);
+        grammar = Count({t1: 3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1084,15 +1084,15 @@ describe(`${testSuiteName(module)}`, function() {
     describe('24. Replace ee by e in heel: t1:ee -> t2:e {0,2} || h_l', function() {
         let grammar:Grammar = Replace(t1("ee"), t2("e"), t1("h"), t1("l"),
                                 EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape(12, grammar);
+        grammar = Count(12, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         // Full Generation:
-        //  CountTape=8: 9841 results
-        //  CountTape=9: 29524 results
-        //  CountTape=10: 88573 results
-        //  CountTape=11: 265720 results
-        //  CountTape=12: 797160 results
+        //  Count=8: 9841 results
+        //  Count=9: 29524 results
+        //  Count=10: 88573 results
+        //  Count=11: 265720 results
+        //  Count=12: 797160 results
         // Here we spot check some of the possible 797160 results for
         // 12 characters or less,
         const from_to: StringDict[] = [
@@ -1130,7 +1130,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('25a. Replace ee by e in hee: t1:ee -> t2:e {0,2} || h_', function() {
         let grammar: Grammar = Replace(t1("ee"), t2("e"), t1("h"), EMPTY_CONTEXT,
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t2: 4}, grammar);
+        grammar = Count({t2: 4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -1166,13 +1166,13 @@ describe(`${testSuiteName(module)}`, function() {
     describe('25. Replace ee by e in hee: t1:ee -> t2:e {0,2} || h_', function() {
         let grammar: Grammar = Replace(t1("ee"), t2("e"), t1("h"), EMPTY_CONTEXT,
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape(12, grammar);
+        grammar = Count(12, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         // Full Generation:
-        //  CountTape=10: 2038 results
-        //  CountTape=11: 4046 results
-        //  CountTape=12: 7985 results
+        //  Count=10: 2038 results
+        //  Count=11: 4046 results
+        //  Count=12: 7985 results
         // Here we spot check some of the possible 7985 results for
         // 12 characters or less.
         const from_to: StringDict[] = [
@@ -1209,7 +1209,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('26a. Replace ee by e in eel: t1:ee -> t2:e {0,2} || _l', function() {
         let grammar: Grammar = Replace(t1("ee"), t2("e"), EMPTY_CONTEXT, t1("l"),
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t2: 4}, grammar);
+        grammar = Count({t2: 4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -1245,13 +1245,13 @@ describe(`${testSuiteName(module)}`, function() {
     describe('26. Replace ee by e in eel: t1:ee -> t2:e {0,2} || _l', function() {
         let grammar: Grammar = Replace(t1("ee"), t2("e"), EMPTY_CONTEXT, t1("l"),
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape(12, grammar);
+        grammar = Count(12, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         // Full Generation:
-        //  CountTape=10: 2038 results
-        //  CountTape=11: 4046 results
-        //  CountTape=12: 7985 results
+        //  Count=10: 2038 results
+        //  Count=11: 4046 results
+        //  Count=12: 7985 results
         // Here we spot check some of the possible 7985 results for
         // 12 characters or less.
         const from_to: StringDict[] = [
@@ -1290,7 +1290,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("ee"), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 2));
-        grammar = CountTape({t2: 3}, grammar);
+        grammar = Count({t2: 3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         // Getting 7 duplicates, expected 69 results but got 76.
@@ -1343,7 +1343,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('28a. Insert a in h_l: t1:0 -> t2:a {0,2} || h_l', function() {
         let grammar: Grammar = Replace(t1(""), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 4}, grammar);
+        grammar = Count({t1: 4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1372,13 +1372,13 @@ describe(`${testSuiteName(module)}`, function() {
     describe('28. Insert a in h_l: t1:0 -> t2:a {0,2} || h_l', function() {
         let grammar: Grammar = Replace(t1(""), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t1: 10}, grammar);
+        grammar = Count({t1: 10}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         // Full Generation:
-        //  t1 CountTape=8: 465 results
-        //  t1 CountTape=9: 847 results
-        //  t1 CountTape=10: 1485 results
+        //  t1 Count=8: 465 results
+        //  t1 Count=9: 847 results
+        //  t1 Count=10: 1485 results
         // Here we spot check some of the possible 1485 results for
         // t1 with 10 characters or less.
         const from_to: StringDict[] = [
@@ -1405,7 +1405,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('29a. Delete e in hel: t1:e -> t2:0 {0,2} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2(""), t1("h"), t1("l"), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t2: 3}, grammar);
+        grammar = Count({t2: 3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1442,13 +1442,13 @@ describe(`${testSuiteName(module)}`, function() {
     describe('29. Delete e in hel: t1:e -> t2:0 {0,2} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2(""), t1("h"), t1("l"), 
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape({t2: 10}, grammar);
+        grammar = Count({t2: 10}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         // Full Generation:
-        //  t2 CountTape=8: 15853 results
-        //  t2 CountTape=9: 50637 results
-        //  t2 CountTape=10: 161304 results
+        //  t2 Count=8: 15853 results
+        //  t2 Count=9: 50637 results
+        //  t2 Count=10: 161304 results
         // Here we spot check some of the possible 161304 results for
         // t2 with 10 characters or less.
         const from_to: StringDict[] = [
@@ -1477,7 +1477,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"),
                                        t1("h"), Uni(t1("l"), t1("y")),
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape(10, grammar);
+        grammar = Count(10, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 5});
         const from_to: StringDict[] = [
@@ -1513,7 +1513,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"),
                                        Uni(t1("h"), t1("y")), t1("l"),
                                        EMPTY_CONTEXT, false, false, 0, 2);
-        grammar = CountTape(10, grammar);
+        grammar = Count(10, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 5});
         const from_to: StringDict[] = [
@@ -1552,7 +1552,7 @@ describe(`${testSuiteName(module)}`, function() {
                                            Intersect(Any("t1"), Not(t1("h"))),
                                            EMPTY_CONTEXT,
                                            false, false, 0, 2));
-        grammar = CountTape(10, grammar);
+        grammar = Count(10, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 5});
         const from_to: StringDict[] = [
@@ -1592,7 +1592,7 @@ describe(`${testSuiteName(module)}`, function() {
                                            t1("l"),
                                            EMPTY_CONTEXT,
                                            false, false, 0, 2));
-        grammar = CountTape(10, grammar);
+        grammar = Count(10, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 5});
         const from_to: StringDict[] = [
@@ -1628,7 +1628,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(Uni(t1("e"), t1("o")), t2("a"),
                                        t1("h"), t1("l"), EMPTY_CONTEXT,
                                        false, false, 0, 2);
-        grammar = CountTape(10, grammar);
+        grammar = Count(10, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 5});
         const from_to: StringDict[] = [
@@ -1662,7 +1662,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("e"), Uni(t2("a"), t2("o")),
                                        t1("h"), t1("l"), EMPTY_CONTEXT,
                                        false, false, 0, 1);
-        grammar = CountTape(3, grammar);
+        grammar = Count(3, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 5});
         const expectedResults: StringDict[] = [
@@ -1697,7 +1697,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("e"), Uni(t2("a"), t2("o")),
                                        t1("h"), t1("l"), EMPTY_CONTEXT,
                                        false, false, 0, 1);
-        grammar = CountTape(5, grammar);
+        grammar = Count(5, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 5});
         const from_to: InputResultsPair[] = [
@@ -1725,7 +1725,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('31. Replace e by a in hel: t1:e -> t2:a {0,3} || t1:h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, false, 0, 3);
-        grammar = CountTape(14, grammar);
+        grammar = Count(14, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 4});
         const from_to: StringDict[] = [
@@ -1755,7 +1755,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"),
                                        t1("h"), t1("l"), t3("[1SG]"),
                                        false, false, 0, 3);
-        grammar = CountTape(14, grammar);
+        grammar = Count(14, grammar);
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 3, t2: 4, t3: 5});
         const from_to: StringDict[] = [
@@ -1811,7 +1811,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            true, false, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 0, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1825,7 +1825,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, true, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 0, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1839,7 +1839,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            true, true, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 0, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1853,7 +1853,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 0, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1867,7 +1867,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            true, false, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1888,7 +1888,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, true, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1909,7 +1909,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            true, true, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1923,7 +1923,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    OptionalReplace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
             {t1: "h", t2: "eh"},     {t1: "h", t2: "he"},
@@ -1960,7 +1960,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 2));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 0, t2: 3});
         const expectedResults: StringDict[] = [
@@ -1976,7 +1976,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    OptionalReplace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 2));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -2052,7 +2052,7 @@ describe(`${testSuiteName(module)}`, function() {
                                     OptionalReplace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 2, 2));
-        grammar = CountTape({t1: 1}, grammar);
+        grammar = Count({t1: 1}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
         const expectedResults: StringDict[] = [
@@ -2070,7 +2070,7 @@ describe(`${testSuiteName(module)}`, function() {
                                     OptionalReplace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 2, 2));
-        grammar = CountTape({t1: 2}, grammar);
+        grammar = Count({t1: 2}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
         const expectedResults: StringDict[] = [
@@ -2094,7 +2094,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    OptionalReplace(Uni(t1(""), t1("h")), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
             // Insertions
@@ -2158,7 +2158,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    OptionalReplace(Uni(t1(""), t1("h")), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
             // Insertions
@@ -2219,7 +2219,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("e"), t2(""),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            true, false, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -2254,7 +2254,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("e"), t2(""),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, true, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -2289,7 +2289,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("e"), t2(""),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            true, true, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -2303,7 +2303,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("e"), t2(""),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 1, 1));
-        grammar = CountTape(4, grammar);
+        grammar = Count(4, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -2341,7 +2341,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("e"), t2(""),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 2));
-        grammar = CountTape(3, grammar);
+        grammar = Count(3, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -2374,7 +2374,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(Seq(Vocab({t1: 'ehl'}), t1("e")), t2(""),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                        false, false, 0, 2);
-        grammar = CountTape(3, grammar);
+        grammar = Count(3, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
@@ -2408,7 +2408,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("e"), t2(""),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 2, 2));
-        grammar = CountTape({t1: 3}, grammar);
+        grammar = Count({t1: 3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -2425,7 +2425,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                        false, false, 1, 1);
-        grammar = CountTape({t1:3}, grammar);
+        grammar = Count({t1:3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -2439,7 +2439,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                        false, false, 1, 1);
-        grammar = CountTape({t1:3}, grammar);
+        grammar = Count({t1:3}, grammar);
         grammar = Priority(["t1", "t2", ".END"], grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
@@ -2453,7 +2453,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                        false, false, 1, 1);
-        grammar = CountTape({t1:3}, grammar);
+        grammar = Count({t1:3}, grammar);
         grammar = Priority(["t2", "t1", ".END"], grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
@@ -2473,7 +2473,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("ee"), t2("e"),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                        false, false, 1, 3);
-        grammar = CountTape(6, grammar);
+        grammar = Count(6, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 1});
         // Getting 5 duplicates, expected 7 results but got 12.
@@ -2497,7 +2497,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                        false, false, 1, 3);
-        grammar = CountTape(8, grammar);
+        grammar = Count(8, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const from_to: InputResultsPair[] = [
@@ -2656,7 +2656,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                        t1("h"), t1("llo"), EMPTY_CONTEXT,
                                        false, false, 1, 5, 3);
-        grammar = CountTape({t1:7}, grammar);
+        grammar = Count({t1:7}, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4, t4: 4});
         const expectedResults: StringDict[] = [
@@ -2702,7 +2702,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                        t1("h"), t1("l"), EMPTY_CONTEXT,
                                        false, false, 1, Infinity, 1);
-        grammar = CountTape({t1:9}, grammar);
+        grammar = Count({t1:9}, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 3, t2: 3, t4: 3});
         const expectedResults: StringDict[] = [
@@ -2751,7 +2751,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Replace(t1("e"), Seq(t2("a"), t4("aa")),
                                        t1("h"), t1("l"), EMPTY_CONTEXT,
                                        false, false, 0, 2, 1);
-        grammar = CountTape({t1:9}, grammar);
+        grammar = Count({t1:9}, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 3, t2: 3, t4: 3});
         const expectedResults: StringDict[] = [
@@ -4234,7 +4234,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("i"), Seq(t2("o"), t4("oo")),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 3, 3, Infinity, true));
-        grammar = CountTape({t1:3}, grammar);
+        grammar = Count({t1:3}, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 3, t4:3});
         const expectedResults: StringDict[] = [
@@ -4269,7 +4269,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("i"), Seq(t2("o"), t4("oo")),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 3, 3, 6, true));
-        grammar = CountTape({t1:4}, grammar);
+        grammar = Count({t1:4}, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 3, t4:3});
         const expectedResults: StringDict[] = [
@@ -4304,7 +4304,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Replace(t1("i"), Seq(t2("o"), t4("oo")),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 3, 3, 2500, true));
-        grammar = CountTape({t1:4}, grammar);
+        grammar = Count({t1:4}, grammar);
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 3, t4:3});
         const expectedResults: StringDict[] = [

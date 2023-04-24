@@ -1,6 +1,13 @@
 
 import { Seq, Uni, Filter, Epsilon, Starts, Not, Ends, Contains, Intersect, Null, Grammar } from "../src/grammars";
-import { Any, CountTape, MatchFrom, Priority, Rep, Short, Vocab } from "../src/grammars";
+import { 
+    Any, 
+    Count, 
+    MatchFrom, 
+    Rep, 
+    Short, 
+    Vocab 
+} from "../src/grammars";
 import { t1, t2, t3, testGrammar } from './testUtil';
 
 import * as path from 'path';
@@ -158,7 +165,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const filterGrammar = Filter(candidateGrammar, Seq(t1("hel"), t3("G")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab({t1:"hel", t2:"hela", t3:"[1SG]"}));
-        grammarWithVocab = CountTape(3, grammarWithVocab);
+        grammarWithVocab = Count(3, grammarWithVocab);
         testGrammar(grammarWithVocab, []);
     }); 
 
@@ -170,7 +177,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const filterGrammar = Filter(candidateGrammar, Seq(t1("hel"), t3("G")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab({t1:"hel", t2:"hela", t3:"[1SG]"}));
-        grammarWithVocab = CountTape(3, grammarWithVocab);
+        grammarWithVocab = Count(3, grammarWithVocab);
         testGrammar(grammarWithVocab, [{t1: 'hel', t2: 'hel', t3: 'G'}]);
     }); 
 
@@ -181,7 +188,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const filterGrammar = Filter(candidateGrammar, Seq(t1("aa"), t3("G")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab({t1:"a", t2:"a", t3:"[1SG]"}));
-        grammarWithVocab = CountTape(3, grammarWithVocab);
+        grammarWithVocab = Count(3, grammarWithVocab);
         testGrammar(grammarWithVocab, [{t1: 'aa', t2: 'aa', t3: 'G'}]);
     }); 
 
@@ -190,7 +197,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const filterGrammar = Filter(candidateGrammar, Seq(t1("aa"), t3("G")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab({t1:"a", t2:"a", t3:"[1SG]"}));
-        grammarWithVocab = CountTape(3, grammarWithVocab);
+        grammarWithVocab = Count(3, grammarWithVocab);
         testGrammar(grammarWithVocab, [{t1:'aa', t2:'aa', t3: 'G'}]);
     }); 
 
@@ -199,7 +206,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const filterGrammar = Filter(candidateGrammar, Seq(t1("aa"), t3("G")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab({t1:"a", t3:"[1SG]"}));
-        grammarWithVocab = CountTape(3, grammarWithVocab);
+        grammarWithVocab = Count(3, grammarWithVocab);
         testGrammar(grammarWithVocab, [{t1:'aa', t3: 'G'}]);
     }); 
 
@@ -208,7 +215,7 @@ describe(`${path.basename(module.filename)}`, function() {
         const filterGrammar = Filter(candidateGrammar, Seq(t1("aa"), t3("G")));
         let grammarWithVocab: Grammar = Seq(filterGrammar,
                                             Vocab({t1:"a", t3:"[1SG]"}));
-        grammarWithVocab = CountTape(3, grammarWithVocab);
+        grammarWithVocab = Count(3, grammarWithVocab);
         testGrammar(grammarWithVocab, [{t1:'aa', t3: 'G'}]);
     }); 
 

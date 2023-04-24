@@ -1,5 +1,5 @@
 import { 
-    CountTape,
+    Count,
     Grammar,
     Join,
     JoinRule,

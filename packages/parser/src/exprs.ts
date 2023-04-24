@@ -1286,13 +1286,13 @@ export class CountExpr extends UnaryExpr {
 
     constructor(
         child: Expr,
-        public maxChars: number
+        public maxChars: Dict<number>
     ) {
         super(child);
     }
 
     public get id(): string {
-        return `Cnt_${this.maxChars}(${this.child.id})`;
+        return `CntT_${JSON.stringify(this.maxChars)}(${this.child.id})`;
     }
 
     public delta(
@@ -1308,49 +1308,11 @@ export class CountExpr extends UnaryExpr {
         target: Token,
         env: DerivEnv
     ): DerivResults {
-        if (this.maxChars <= 0) {
-            return;
-        }
-
-        for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
-            const newMax = (cTarget instanceof EpsilonToken) ? this.maxChars: this.maxChars-1;
-            const successor = constructCount(cNext, newMax);
-            yield [cTarget, successor];
-        }
-    }
-}
-
-export class CountTapeExpr extends UnaryExpr {
-
-    constructor(
-        child: Expr,
-        public maxChars: Dict<number>
-    ) {
-        super(child);
-    }
-
-    public get id(): string {
-        return `CntT_${JSON.stringify(this.maxChars)}(${this.child.id})`;
-    }
-
-    public delta(
-        tapeName: string,
-        env: DerivEnv
-    ): Expr {
-        const newChild = this.child.delta(tapeName, env);
-        return constructCountTape(newChild, this.maxChars);
-    }
-
-    public *deriv(
-        tapeName: string, 
-        target: Token,
-        env: DerivEnv
-    ): DerivResults {
 
         for (const [cTarget, cNext] of this.child.deriv(tapeName, target, env)) {
             
             if (!(tapeName in this.maxChars) || (cTarget instanceof EpsilonToken)) {
-                const successor = constructCountTape(cNext, this.maxChars);
+                const successor = constructCount(cNext, this.maxChars);
                 yield [cTarget, successor];
                 continue;
             }
@@ -1362,7 +1324,7 @@ export class CountTapeExpr extends UnaryExpr {
             let newMax: Dict<number> = {};
             Object.assign(newMax, this.maxChars);
             newMax[tapeName] -= cTarget.length;
-            const successor = constructCountTape(cNext, newMax);
+            const successor = constructCount(cNext, newMax);
             yield [cTarget, successor];
         }
     }
@@ -2450,18 +2412,11 @@ export function constructMaybe(child: Expr): Expr {
     return constructAlternation(child, EPSILON);
 }
 
-export function constructCount(child: Expr, maxChars: number): Expr {
+export function constructCount(child: Expr, maxChars: Dict<number>): Expr {
     if (child instanceof EpsilonExpr || child instanceof NullExpr) {
         return child;
     }
     return new CountExpr(child, maxChars);
-}
-
-export function constructCountTape(child: Expr, maxChars: Dict<number>): Expr {
-    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
-        return child;
-    }
-    return new CountTapeExpr(child, maxChars);
 }
 
 export function constructNegation(

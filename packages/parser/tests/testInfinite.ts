@@ -2,7 +2,7 @@ import { expect } from 'chai';
 
 import { CounterStack } from '../src/exprs';
 import {
-    Count, CountTape, Epsilon, 
+    Count, Epsilon, 
     Join, Null, Rep, Seq, Uni, Collection,
     Embed, CollectionGrammar, Grammar
 } from '../src/grammars';
@@ -114,28 +114,26 @@ describe(`${testSuiteName(module)}`, function() {
         testLength(grammar, "t2", [0, 100]);
     });
 
-    // CountTapeGrammar.potentiallyInfinite() may need to know its tapes.
-
-    describe("11. CountTape(100, (t1:hello + t2:hi)*))", function() {
-        const grammar = CountTape(100, Rep(Seq(t1("hello"), t2("hi"))));
+    describe("11. Count(100, (t1:hello + t2:hi)*))", function() {
+        const grammar = Count(100, Rep(Seq(t1("hello"), t2("hi"))));
         testLength(grammar, "t1", [0, 100]);
         testLength(grammar, "t2", [0, 100]);
     }); 
 
-    describe("12. CountTape({t1:20, t2:10}, (t1:hello + t2:hi)*)", function() {
-        const grammar = CountTape({t1:20, t2:10}, Rep(Seq(t1("hello"), t2("hi"))));
+    describe("12. Count({t1:20, t2:10}, (t1:hello + t2:hi)*)", function() {
+        const grammar = Count({t1:20, t2:10}, Rep(Seq(t1("hello"), t2("hi"))));
         testLength(grammar, "t1", [0, 20]);
         testLength(grammar, "t2", [0, 10]);
     }); 
     
-    describe("13. CountTape({t1:20}, (t1:hello + t2:hi)*)", function() {
-        const grammar = CountTape({t1:20}, Rep(Seq(t1("hello"), t2("hi"))));
+    describe("13. Count({t1:20}, (t1:hello + t2:hi)*)", function() {
+        const grammar = Count({t1:20}, Rep(Seq(t1("hello"), t2("hi"))));
         testLength(grammar, "t1", [0, 20]);
         testLength(grammar, "t2", [0, Infinity]);
     }); 
 
-    describe("14. CountTape({t1:20}, (t1:hello + t2:hi){0,5})", function() {
-        const grammar = CountTape({t1:20}, Rep(Seq(t1("hello"), t2("hi")), 0, 5));
+    describe("14. Count({t1:20}, (t1:hello + t2:hi){0,5})", function() {
+        const grammar = Count({t1:20}, Rep(Seq(t1("hello"), t2("hi")), 0, 5));
         testLength(grammar, "t1", [0, 20]);
         testLength(grammar, "t2", [0, 10]);
     }); 
@@ -165,37 +163,37 @@ describe(`${testSuiteName(module)}`, function() {
         testLength(grammar, "t1", [4, 100], env);
     }); 
 
-    describe("17. Recursive t1 grammar inside CountTape(40)", function() {
+    describe("17. Recursive t1 grammar inside Count(40)", function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), t2("HI"), world);
         const ns = Collection({
             "hiWorld": hiWorld
         });
         let [grammar, env] = selectSymbol(ns, "hiWorld");
-        grammar = CountTape(40, grammar);
+        grammar = Count(40, grammar);
         testLength(grammar, "t1", [4, 40], env);
     }); 
 
-    describe("18. Recursive t1 grammar inside CountTape({t1:40, t2:10})", function() {
+    describe("18. Recursive t1 grammar inside Count({t1:40, t2:10})", function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), t2("HI"), world);
         const ns = Collection({
             "hiWorld": hiWorld
         });
         let [grammar, env] = selectSymbol(ns, "hiWorld");
-        grammar = CountTape({t1:40, t2:10}, grammar);
+        grammar = Count({t1:40, t2:10}, grammar);
         testLength(grammar, "t1", [4, 40], env);
         testLength(grammar, "t2", [2, 10], env);
     }); 
 
-    describe("19. Recursive t1 grammar inside CountTape({t1:40})", function() {
+    describe("19. Recursive t1 grammar inside Count({t1:40})", function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), t2("HI"), world);
         const ns = Collection({
             "hiWorld": hiWorld
         });
         let [grammar, env] = selectSymbol(ns, "hiWorld");
-        grammar = CountTape({t1:40}, grammar);
+        grammar = Count({t1:40}, grammar);
         testLength(grammar, "t1", [4, 40], env);
         testLength(grammar, "t2", [2, Infinity], env);
     }); 

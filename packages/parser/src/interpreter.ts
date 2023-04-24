@@ -1,8 +1,8 @@
 import { 
-    CounterStack, CountGrammar, 
     FilterGrammar, Grammar, 
-    LiteralGrammar, CollectionGrammar, 
-    PriorityGrammar, SequenceGrammar, Query, CountTapeGrammar, infinityProtection
+    CollectionGrammar, 
+    PriorityGrammar, Query, 
+    infinityProtection
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
@@ -166,7 +166,7 @@ export class Interpreter {
         restriction: StringDict = {},
         maxResults: number = Infinity,
         maxRecursion: number = 2, 
-        maxChars: number = 1000,
+        maxChars: number = 100,
         stripHidden: boolean = true
     ): StringDict[] {
         const gen = this.generateStream(symbolName, 
@@ -178,7 +178,7 @@ export class Interpreter {
         symbolName: string = "",
         restriction: StringDict = {},
         maxRecursion: number = 2, 
-        maxChars: number = 1000,
+        maxChars: number = 100,
         stripHidden: boolean = true
     ): Gen<StringDict> {
 
@@ -202,7 +202,7 @@ export class Interpreter {
         numSamples: number = 1,
         restriction: StringDict | undefined = undefined,
         maxRecursion: number = 4, 
-        maxChars: number = 1000,
+        maxChars: number = 100,
         stripHidden: boolean = true
     ): StringDict[] {
         return [...this.sampleStream(symbolName, 
@@ -213,7 +213,7 @@ export class Interpreter {
         numSamples: number = 1,
         restriction: StringDict | undefined = undefined,
         maxRecursion: number = 4, 
-        maxChars: number = 1000,
+        maxChars: number = 100,
         stripHidden: boolean = true
     ): Gen<StringDict> {
 

@@ -1,5 +1,5 @@
 import { 
-    CountTape,
+    Count,
     Epsilon,
     Grammar,
     JoinReplace,
@@ -64,7 +64,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('1b. Negation of results of 1a', function() {
         let grammar: Grammar = Not(Seq(t1("i"), t2("a"), Vocab("t2", "i")));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
@@ -85,13 +85,13 @@ describe(`${testSuiteName(module)}`, function() {
     describe('1c. Negation of grammar of 1a', function() {
         let grammar: Grammar = Not(JoinReplace(t1("i"),
                                     [Replace(t1("i"), t2("a"))]));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
 
         let resultsGrammar: Grammar = Not(Seq(t1("i"), t2("a"), Vocab("t2", "i")));
-        resultsGrammar = CountTape(2, resultsGrammar);
+        resultsGrammar = Count(2, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -113,7 +113,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('2b. Negation of results of 2a', function() {
         let grammar: Grammar = Not(Seq(t1("a"), Vocab("t1", "i")));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
         const expectedResults: StringDict[] = [
             {"t1":"ii"},
             {"t1":"ai"},
@@ -137,7 +137,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('2c. Negation of grammar of 2a', function() {
         let grammar: Grammar = Not(JoinReplace(t1("i"),
                                     [Replace(t1("i"), t1("a"))]));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -170,7 +170,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('2b-show-hidden. Negation of results of 2a-hidden', function() {
         let grammar: Grammar = Seq(Vocab("t1", "ai"),
                                    Not(Seq(Lit(".R_HIDDEN", "i"), t1("a"))));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
 
         testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
@@ -194,14 +194,14 @@ describe(`${testSuiteName(module)}`, function() {
     describe('2c-hidden. Negation of grammar of 2a-hidden', function() {
         let grammar: Grammar = Not(JoinReplace(t1("i"),
                                    [HiddenTapeNameReplace("R_HIDDEN", t1("i"), t1("a"))]));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
 
         testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
 
         let resultsGrammar: Grammar = Seq(Vocab("t1", "ai"),
                                           Not(Seq(Lit(".R_HIDDEN", "i"), t1("a"))));
-        resultsGrammar = CountTape(2, resultsGrammar);
+        resultsGrammar = Count(2, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
 
@@ -210,7 +210,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('3a. Replace i by a: i -> a', function() {
         let grammar: Grammar = Replace(t1("i"), t2("a"));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
@@ -229,7 +229,7 @@ describe(`${testSuiteName(module)}`, function() {
                                     Not(Uni(Epsilon(),
                                             Seq(t1("i"), t2("a")),
                                             Seq(t1("ii"), t2("aa")))));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
@@ -249,7 +249,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('3c. Negation of grammar of 3a', function() {
         let grammar: Grammar = Not(Replace(t1("i"), t2("a")));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
@@ -258,7 +258,7 @@ describe(`${testSuiteName(module)}`, function() {
                                           Not(Uni(Epsilon(),
                                                   Seq(t1("i"), t2("a")),
                                                   Seq(t1("ii"), t2("aa")))));
-        resultsGrammar = CountTape(2, resultsGrammar);
+        resultsGrammar = Count(2, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -267,7 +267,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('4a. Replace i by a: i -> a', function() {
         let grammar: Grammar = Replace(t1("i"), t2("a"));
-        grammar = CountTape(1, grammar);
+        grammar = Count(1, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
@@ -284,7 +284,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Seq(Vocab("t2", "ai"),
                                     Not(Uni(Epsilon(), 
                                             Seq(t1("i"), t2("a")))));
-        grammar = CountTape(1, grammar);
+        grammar = Count(1, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
@@ -301,7 +301,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('4c. Negation of grammar of 4a', function() {
         let grammar: Grammar = Not(Replace(t1("i"), t2("a")));
-        grammar = CountTape(1, grammar);
+        grammar = Count(1, grammar);
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 2});
@@ -309,7 +309,7 @@ describe(`${testSuiteName(module)}`, function() {
         let resultsGrammar: Grammar = Seq(Vocab("t2", "ai"),
                                           Not(Uni(Epsilon(), 
                                                   Seq(t1("i"), t2("a")))));
-        resultsGrammar = CountTape(1, resultsGrammar);
+        resultsGrammar = Count(1, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -320,7 +320,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('5a. Replace i by a: i -> a, same tape', function() {
         let grammar: Grammar = Replace(t1("i"), t1("a"));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'a'},
             {t1: 'aa'},
@@ -334,7 +334,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('5b. Negation of results of 5a', function() {
         let grammar: Grammar = Seq(Vocab("t1", "ai"),
                                    Not(Uni(Epsilon(), t1("a"), t1("aa"))));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'ii'},
             {t1: 'ai'},
@@ -350,7 +350,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('5c. Negation of grammar of 5a', function() {
         let grammar: Grammar = Not(Replace(t1("i"), t1("a")));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -371,7 +371,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('5a-show-hidden. Replace i by a: i -> a, same tape', function() {
         let grammar: Grammar = HiddenTapeNameReplace("R_HIDDEN", t1("i"), t1("a"));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
 
         testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
@@ -390,7 +390,7 @@ describe(`${testSuiteName(module)}`, function() {
                                    Not(Uni(Epsilon(),
                                            Seq(Lit(".R_HIDDEN", "i"), t1("a")),
                                            Seq(Lit(".R_HIDDEN", "ii"), t1("aa")))));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
 
         testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
@@ -412,7 +412,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('5c-show-hidden. Negation of grammar of 5a', function() {
         let grammar: Grammar = Not(HiddenTapeNameReplace("R_HIDDEN", t1("i"), t1("a")));
-        grammar = CountTape(2, grammar);
+        grammar = Count(2, grammar);
 
         testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
@@ -421,7 +421,7 @@ describe(`${testSuiteName(module)}`, function() {
                                           Not(Uni(Epsilon(),
                                               Seq(Lit(".R_HIDDEN", "i"), t1("a")),
                                               Seq(Lit(".R_HIDDEN", "ii"), t1("aa")))));
-        resultsGrammar = CountTape(2, resultsGrammar);
+        resultsGrammar = Count(2, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
 

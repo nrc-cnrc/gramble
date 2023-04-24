@@ -1,7 +1,7 @@
 import { 
     Any, 
     CharSet,
-    CountTape,
+    Count,
     Epsilon,
     Grammar,
     Join, 
@@ -408,7 +408,7 @@ describe(`${testSuiteName(module)}`, function() {
         const subgrammar: Grammar = Rep(Any("t1"));
         let grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), 
                                     MatchFrom(subgrammar, "t1", "t2"));
-        grammar = CountTape(3, grammar);
+        grammar = Count(3, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: 'h', t2: 'h'},
@@ -437,7 +437,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab('t1', "h"), Vocab('t2', "he"));
-        grammarWithVocab = CountTape({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
@@ -455,7 +455,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab('t1', "h"), Vocab('t2', "he"));
-        grammarWithVocab = CountTape({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
@@ -473,7 +473,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab('t1', "h"), Vocab('t2', "he"));
-        grammarWithVocab = CountTape({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
@@ -491,7 +491,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab('t1', "h"), Vocab('t2', "he"));
-        grammarWithVocab = CountTape({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
@@ -509,7 +509,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab('t1', "h"), Vocab('t2', "he"));
-        grammarWithVocab = CountTape({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
@@ -527,7 +527,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab('t1', "h"), Vocab('t2', "he"));
-        grammarWithVocab = CountTape({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
@@ -545,7 +545,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab('t1', "h"), Vocab('t2', "he"));
-        grammarWithVocab = CountTape({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
@@ -563,7 +563,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab('t1', "h"), Vocab('t2', "he"));
-        grammarWithVocab = CountTape({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
@@ -581,7 +581,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 10);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab('t1', "h"), Vocab('t2', "he"));
-        grammarWithVocab = CountTape({t1: 1, t2: 4}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 1, t2: 4}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
@@ -604,7 +604,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, Infinity);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab('t1', "h"), Vocab('t2', "he"));
-        grammarWithVocab = CountTape({t1: 1, t2: 4}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 1, t2: 4}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
@@ -627,7 +627,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 20);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab('t1', "h"), Vocab('t2', "he"));
-        grammarWithVocab = CountTape({t1: 1, t2: 6}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 1, t2: 6}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
@@ -661,7 +661,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, Infinity);
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab('t1', "h"), Vocab('t2', "he"));
-        grammarWithVocab = CountTape({t1: 1, t2: 6}, grammarWithVocab);
+        grammarWithVocab = Count({t1: 1, t2: 6}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
@@ -1069,7 +1069,7 @@ describe(`${testSuiteName(module)}`, function() {
         const subgrammar: Grammar = Rep(Any("t1"));
         let grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), Vocab("t3", "ZXhi"),
                                    MatchFrom(subgrammar, "t1", "t2", "t3"));
-        grammar = CountTape(3, grammar);
+        grammar = Count(3, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: 'h', t2: 'h', t3: 'h'},
