@@ -65,6 +65,12 @@ export abstract class GrammarPass extends Pass<Grammar,Grammar> {
     }
 }
 
+export type LengthRange = {
+    null: boolean,
+    min: number,
+    max: number
+}
+
 /**
  * Grammar components represent the linguistic grammar that the
  * programmer is expressing (in terms of sequences, alternations, joins,
@@ -168,7 +174,7 @@ export abstract class Grammar extends Component {
      * though, because it truncates the outputs of the grammar-as-written,
      * we want the addition of CountGrammar to be a last resort.
      */
-    public abstract potentiallyInfinite(stack: CounterStack, env: PassEnv): boolean;
+    public abstract estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange;
     
     public abstract getChildren(): Grammar[];
 
@@ -316,16 +322,16 @@ abstract class AtomicGrammar extends Grammar {
 
     public getChildren(): Grammar[] { return []; }
 
-    public potentiallyInfinite(stack: CounterStack, env: PassEnv): boolean {
-        return false;
-    }
-
 }
 
 export class EpsilonGrammar extends AtomicGrammar {
 
     public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return this.msg();
+    }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return { null: false, min: 0, max: 0 };
     }
 
     public get id(): string {
@@ -358,6 +364,10 @@ export class NullGrammar extends AtomicGrammar {
     public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return this.msg();
     }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return { null: true, min: 0, max: 0 };
+    }
     
     public get id(): string {
         return "∅";
@@ -384,6 +394,11 @@ export class CharSetGrammar extends AtomicGrammar {
 
     public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return this.msg();
+    }
+    
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        if (tapeName != this.tapeName) return { null: false, min: 0, max: 0 };
+        return { null: false, min: 1, max: 1 };
     }
 
     constructor(
@@ -438,6 +453,10 @@ export class EpsilonLiteralGrammar extends AtomicGrammar {
         return this.msg();
     }
 
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return { null: false, min: 0, max: 0 };
+    }
+
     constructor(
         public tapeName: string,
     ) {
@@ -471,6 +490,11 @@ export class LiteralGrammar extends AtomicGrammar {
 
     public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return this.msg();
+    }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        if (tapeName != this.tapeName) return { null: false, min: 0, max: 0 };
+        return { null: false, min: this.text.length, max: this.text.length };
     }
 
     protected tokens: string[] = [];
@@ -543,6 +567,11 @@ export class DotGrammar extends AtomicGrammar {
         return this.msg();
     }
 
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        if (tapeName != this.tapeName) return { null: false, min: 0, max: 0 };
+        return { null: false, min: 1, max: 1 };
+    }
+
     public get id(): string {
         return `Dot(${this.tapeName})`;
     }
@@ -592,13 +621,6 @@ abstract class NAryGrammar extends Grammar {
     public getChildren(): Grammar[] { 
         return this.children; 
     }
-    
-    public potentiallyInfinite(
-        stack: CounterStack,
-        env: PassEnv
-    ): boolean {
-        return this.children.some(c => c.potentiallyInfinite(stack, env));
-    }
 
 }
 
@@ -632,6 +654,18 @@ export class ParallelGrammar extends NAryGrammar {
             childExprs[tapeName] = newChild;
         }
         return constructParallel(childExprs);
+    }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        let min = 0;
+        let max = 0;
+        for (const child of this.children) {
+            const childLength = child.estimateLength(tapeName, stack, env);
+            if (childLength.null) { return childLength; } // short-circuit if null
+            min += childLength.min;
+            max += childLength.max;
+        }
+        return { null: false, min: min, max: max };
     }
 
 }
@@ -694,6 +728,18 @@ export class SequenceGrammar extends NAryGrammar {
         }
         return this.children.slice(0, this.children.length-1);
     }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        let min = 0;
+        let max = 0;
+        for (const child of this.children) {
+            const childLength = child.estimateLength(tapeName, stack, env);
+            if (childLength.null) { return childLength; } // short-circuit if null
+            min += childLength.min;
+            max += childLength.max;
+        }
+        return { null: false, min: min, max: max };
+    }
 }
 
 export class AlternationGrammar extends NAryGrammar {
@@ -715,6 +761,21 @@ export class AlternationGrammar extends NAryGrammar {
         const childExprs = this.children.map(s => s.constructExpr(tapeNS, symbols));
         return constructAlternation(...childExprs);
     }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        let min = Infinity;
+        let max = 0;
+        if (this.children.length == 0) {
+            return { null: true, min: min, max: max };
+        }
+        for (const child of this.children) {
+            const childLength = child.estimateLength(tapeName, stack, env);
+            if (childLength.null) continue;
+            min = Math.min(min, childLength.min);
+            max = Math.max(max, childLength.max);
+        }
+        return { null: false, min: min, max: max };
+    }
 }
 
 export abstract class UnaryGrammar extends Grammar {
@@ -723,13 +784,6 @@ export abstract class UnaryGrammar extends Grammar {
         public child: Grammar
     ) {
         super();
-    }
-
-    public potentiallyInfinite(
-        stack: CounterStack,
-        env: PassEnv
-    ): boolean {
-        return this.child.potentiallyInfinite(stack, env);
     }
 
     public getChildren(): Grammar[] { 
@@ -779,6 +833,10 @@ export class ShortGrammar extends UnaryGrammar {
                 .bind(c => f.transform(c, env))
                 .bind(c => new ShortGrammar(c));
     }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return this.child.estimateLength(tapeName, stack, env);
+    }
     
     public getTapeClass(
         tapeName: string, 
@@ -812,6 +870,19 @@ export class IntersectionGrammar extends BinaryGrammar {
     public get id(): string {
         return `Intersect(${this.child1.id},${this.child2.id})`;
     }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        const child1Length = this.child1.estimateLength(tapeName, stack, env);
+        const child2Length = this.child2.estimateLength(tapeName, stack, env);
+        if (child1Length.null == true || child2Length.null == true) {
+            return { null: true, min: 0, max: 0 };
+        }
+        return { 
+            null: false,
+            min: Math.max(child1Length.min, child2Length.min),
+            max: Math.min(child1Length.max, child2Length.max)
+        }
+    }
     
     public getTapeClass(
         tapeName: string, 
@@ -824,14 +895,6 @@ export class IntersectionGrammar extends BinaryGrammar {
         const intersection = new Set(listIntersection(child1Tapes, child2Tapes));
         result.joinable ||= intersection.has(tapeName);
         return result;
-    }
-
-    public potentiallyInfinite(
-        stack: CounterStack,
-        env: PassEnv
-    ): boolean {
-        return this.child1.potentiallyInfinite(stack, env) && 
-                this.child2.potentiallyInfinite(stack, env);
     }
 
     public constructExpr(
@@ -864,14 +927,20 @@ export class JoinGrammar extends BinaryGrammar {
     public get id(): string {
         return `Join(${this.child1.id},${this.child2.id})`;
     }
-    
-    public potentiallyInfinite(
-        stack: CounterStack,
-        env: PassEnv
-    ): boolean {
-        return this.child1.potentiallyInfinite(stack, env) && 
-                this.child2.potentiallyInfinite(stack, env);
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        const child1Length = this.child1.estimateLength(tapeName, stack, env);
+        const child2Length = this.child2.estimateLength(tapeName, stack, env);
+        if (child1Length.null == true || child2Length.null == true) {
+            return { null: true, min: 0, max: 0 };
+        }
+        return { 
+            null: false,
+            min: Math.max(child1Length.min, child2Length.min),
+            max: Math.min(child1Length.max, child2Length.max)
+        }
     }
+    
 
     public getTapeClass(
         tapeName: string, 
@@ -920,13 +989,20 @@ export class FilterGrammar extends BinaryGrammar {
         return `Filter(${this.child1.id},${this.child2.id})`;
     }
     
-    public potentiallyInfinite(
-        stack: CounterStack,
-        env: PassEnv
-    ): boolean {
-        return this.child1.potentiallyInfinite(stack, env) && 
-                this.child2.potentiallyInfinite(stack, env);
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        const child1Length = this.child1.estimateLength(tapeName, stack, env);
+        const child2Length = this.child2.estimateLength(tapeName, stack, env);
+        if (child1Length.null == true || child2Length.null == true) {
+            return { null: true, min: 0, max: 0 };
+        }
+        return { 
+            null: false,
+            min: Math.max(child1Length.min, child2Length.min),
+            max: Math.min(child1Length.max, child2Length.max)
+        }
     }
+    
 
     public getTapeClass(
         tapeName: string, 
@@ -980,13 +1056,13 @@ export class CountGrammar extends UnaryGrammar {
         return `Count(${this.maxChars},${this.child.id})`;
     }
 
-    public potentiallyInfinite(
-        stack: CounterStack,
-        env: PassEnv
-    ): boolean {
-        if (this.maxChars == Infinity)
-            return this.child.potentiallyInfinite(stack, env);
-        return false;
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        const childLength = this.child.estimateLength(tapeName, stack, env);
+        return {
+            null: childLength.null,
+            min: childLength.min,
+            max: Math.min(childLength.max, this.maxChars)
+        }
     }
 
     public constructExpr(
@@ -1013,28 +1089,23 @@ export class CountTapeGrammar extends UnaryGrammar {
                 .bind(c => new CountTapeGrammar(c, this.maxChars));
     }
 
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        const childLength = this.child.estimateLength(tapeName, stack, env);
+        if (typeof this.maxChars == 'number') return {
+            null: childLength.null,
+            min: childLength.min,
+            max: Math.min(childLength.max, this.maxChars)
+        }
+        if (!(tapeName in this.maxChars)) return childLength;
+        return {
+            null: childLength.null,
+            min: childLength.min,
+            max: Math.min(childLength.max, this.maxChars[tapeName])
+        }
+    }
 
     public get id(): string {
         return `CountTape(${JSON.stringify(this.maxChars)},${this.child.id})`;
-    }
-    
-    public potentiallyInfinite(
-        stack: CounterStack,
-        env: PassEnv
-    ): boolean {
-        if (typeof(this.maxChars) == "number") {
-            if (this.maxChars == Infinity) {
-                return this.child.potentiallyInfinite(stack, env);
-            }
-            return false;
-        }
-
-        const maxChars = Object.values(this.maxChars);
-        if (maxChars.length < this.tapes.length
-                || maxChars.some(n => n == Infinity)) {
-            return this.child.potentiallyInfinite(stack, env);
-        }
-        return false;
     }
 
     public constructExpr(
@@ -1069,6 +1140,9 @@ export class PriorityGrammar extends UnaryGrammar {
                 .bind(c => new PriorityGrammar(c, this.tapePriority));
     }
 
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return this.child.estimateLength(tapeName, stack, env);
+    }
 
     public get id(): string {
         return `Priority(${this.tapePriority},${this.child.id})`;
@@ -1111,6 +1185,15 @@ export class StartsGrammar extends ConditionGrammar {
                 .bind(c => new StartsGrammar(c));
     }
 
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        const childLength = this.child.estimateLength(tapeName, stack, env);
+        return {
+            null: childLength.null,
+            min: childLength.min,
+            max: Infinity
+        };
+    }
+
     public get id(): string {
         return `Starts(${this.child.id})`;
     }
@@ -1122,6 +1205,15 @@ export class EndsGrammar extends ConditionGrammar {
         return result(this.child)
                 .bind(c => f.transform(c, env))
                 .bind(c => new EndsGrammar(c));
+    }
+    
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        const childLength = this.child.estimateLength(tapeName, stack, env);
+        return {
+            null: childLength.null,
+            min: childLength.min,
+            max: Infinity
+        };
     }
 
     public get id(): string {
@@ -1135,6 +1227,15 @@ export class ContainsGrammar extends ConditionGrammar {
         return result(this.child)
                 .bind(c => f.transform(c, env))
                 .bind(c => new ContainsGrammar(c));
+    }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        const childLength = this.child.estimateLength(tapeName, stack, env);
+        return {
+            null: childLength.null,
+            min: childLength.min,
+            max: Infinity
+        };
     }
 
     public get id(): string {
@@ -1176,6 +1277,10 @@ export class SingleTapeGrammar extends UnaryGrammar {
                 .bind(c => f.transform(c, env))
                 .bind(c => new SingleTapeGrammar(
                         this.tapeName, c));
+    }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return this.child.estimateLength(tapeName, stack, env);
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
@@ -1225,6 +1330,15 @@ export class RenameGrammar extends UnaryGrammar {
                 .bind(c => f.transform(c, env))
                 .bind(c => new RenameGrammar(c, 
                             this.fromTape, this.toTape));
+    }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        if (tapeName != this.toTape && tapeName == this.fromTape) {
+            return { null: false, min: 0, max: 0 };
+        }
+
+        const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
+        return this.child.estimateLength(newTapeName, stack, env);
     }
 
     public get id(): string {
@@ -1346,13 +1460,14 @@ export class RepeatGrammar extends UnaryGrammar {
         }
         return result;
     }
-
-    public potentiallyInfinite(
-        stack: CounterStack,
-        env: PassEnv
-    ): boolean {
-        return this.child.potentiallyInfinite(stack, env) 
-                    || this.maxReps == Infinity;
+    
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        const childLength = this.child.estimateLength(tapeName, stack, env);
+        return {
+            null: childLength.null,
+            min: childLength.min * this.minReps,
+            max: childLength.max * this.maxReps
+        };
     }
     
     public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
@@ -1395,6 +1510,14 @@ export class NegationGrammar extends UnaryGrammar {
                 .bind(c => new NegationGrammar(c));
     }
 
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return {
+            null: false,
+            min: 0,
+            max: Infinity,
+        };
+    }
+
     public constructExpr(
         tapeNS: TapeNamespace,
         symbols: ExprNamespace
@@ -1422,6 +1545,10 @@ export class PreTapeGrammar extends UnaryGrammar {
         return result(this.child)
                 .bind(c => f.transform(c, env))
                 .bind(c => new PreTapeGrammar(this.fromTape, this.toTape, c));
+    }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return this.child.estimateLength(tapeName, stack, env);
     }
 
     public getTapePriority(
@@ -1538,6 +1665,14 @@ export class HideGrammar extends UnaryGrammar {
         const childExpr = this.child.constructExpr(tapeNS, symbols);
         return constructRename(childExpr, this.tapeName, this.toTape);
     }
+    
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        if (tapeName != this.toTape && tapeName == this.tapeName) {
+            return { null: false, min: 0, max: 0 };
+        }
+        const newTapeName = renameTape(tapeName, this.toTape, this.tapeName);
+        return this.child.estimateLength(newTapeName, stack, env);
+    }
 }
 
 export class MatchFromGrammar extends UnaryGrammar {
@@ -1609,6 +1744,16 @@ export class MatchFromGrammar extends UnaryGrammar {
 
     }
 
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        if (tapeName == this.toTape) {
+            // also collect as a rename
+            let newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
+            return this.child.estimateLength(newTapeName, stack, env);
+        }
+
+        return this.child.estimateLength(tapeName, stack, env);
+    }
+
     public getVocabCopyEdges(
         tapeName: string,
         tapeNS: TapeNamespace,
@@ -1638,6 +1783,10 @@ export class MatchGrammar extends UnaryGrammar {
         public relevantTapes: StringSet
     ) {
         super(child);
+    }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return this.child.estimateLength(tapeName, stack, env);
     }
     
     public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
@@ -1676,6 +1825,7 @@ export class MatchGrammar extends UnaryGrammar {
  * tapes, a namespace for holding the tapes, and vocab-bypass 
  * relationships between the tapes.
  */
+/*
 export class TapeNsGrammar extends UnaryGrammar {
 
     constructor(
@@ -1728,6 +1878,7 @@ export class TapeNsGrammar extends UnaryGrammar {
     }
 
 }
+*/
 
 export class CollectionGrammar extends Grammar {
 
@@ -1749,6 +1900,10 @@ export class CollectionGrammar extends Grammar {
         return result;
     }
 
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return { null: false, min: 0, max: 0 };
+    }
+
     public selectSymbol(symbolName: string): CollectionGrammar {
         const referent = this.getSymbol(symbolName);
         if (referent == undefined) {
@@ -1765,15 +1920,6 @@ export class CollectionGrammar extends Grammar {
             results.push(`${k}:${v.id}`);
         }
         return `Ns(\n  ${results.join("\n  ")}\n)`;
-    }
-
-    public potentiallyInfinite(
-        stack: CounterStack,
-        env: PassEnv
-    ): boolean {
-        const newEnv = env.pushSymbols(this.symbols);
-        return Object.values(this.symbols).some(
-            c => c.potentiallyInfinite(stack, newEnv));
     }
 
     public allSymbols(): string[] {
@@ -1877,17 +2023,18 @@ export class EmbedGrammar extends AtomicGrammar {
         return `{${this.name}}`;
     }
 
-    public potentiallyInfinite(
+    public estimateLength(
+        tapeName: string,
         stack: CounterStack,
         env: PassEnv
-    ): boolean {
+    ): LengthRange {
         if (stack.get(this.name) >= 1) {
             // we're recursive, so potentially infinite
-            return true;
+            return { null: false, min: 0, max: Infinity };
         }
         const newStack = stack.add(this.name);
         const referent = env.symbolNS.get(this.name);
-        return referent.potentiallyInfinite(newStack, env);
+        return referent.estimateLength(tapeName, newStack, env);
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
@@ -1989,6 +2136,10 @@ export class LocatorGrammar extends UnaryGrammar {
                 .bind(c => new LocatorGrammar(this.pos, c));
     }
 
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return this.child.estimateLength(tapeName, stack, env);
+    }
+
     public get pos(): CellPos {
         return this._pos;
     }
@@ -2028,6 +2179,11 @@ export class TestGrammar extends UnaryGrammar {
                             .msg(childMsgs)
                             .msg(testMsgs)
                             .msg(uniqueMsgs);
+    }
+
+    
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return this.child.estimateLength(tapeName, stack, env);
     }
 
     public get id(): string {
@@ -2308,12 +2464,8 @@ export function JoinReplace(
  */
 export class JoinReplaceGrammar extends Grammar {
 
-    public potentiallyInfinite(
-        stack: CounterStack,
-        env: PassEnv
-    ): boolean {
-        return this.child.potentiallyInfinite(stack, env) &&
-                this.rules.every(r => r.potentiallyInfinite(stack, env));
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return this.child.estimateLength(tapeName, stack, env);
     }
 
     public get id(): string {
@@ -2410,12 +2562,8 @@ export class JoinRuleGrammar extends Grammar {
         super();
     }
 
-    public potentiallyInfinite(
-        stack: CounterStack,
-        env: PassEnv
-    ): boolean {
-        return this.child.potentiallyInfinite(stack, env) &&
-                this.rules.every(r => r.potentiallyInfinite(stack, env));
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return this.child.estimateLength(tapeName, stack, env);
     }
 
     public get id(): string {
@@ -2466,11 +2614,8 @@ export class ReplaceGrammar extends Grammar {
         return `Replace(${this.fromGrammar.id}->${this.toGrammar.id}|${this.preContext.id}_${this.postContext.id})`;
     }
 
-    public potentiallyInfinite(
-        stack: CounterStack,
-        env: PassEnv
-    ): boolean {
-        return true;
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return { null: false, min: 0, max: Infinity };
     }
     
     public fromTapeName: string = "__UNKNOWN_TAPE__";

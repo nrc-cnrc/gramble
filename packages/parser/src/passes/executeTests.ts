@@ -95,7 +95,8 @@ export class ExecuteTests extends GrammarPass {
         targetComponent.collectAllVocab(this.tapeNS, env);        
         const tapePriority = targetComponent.getAllTapePriority(this.tapeNS, env);
         
-        const potentiallyInfinite = targetComponent.potentiallyInfinite(new CounterStack(2), env);
+        /*
+        const potentiallyInfinite = targetComponent.estimateLength(new CounterStack(2), env);
         if (potentiallyInfinite && opt.maxChars != Infinity) {
             if (targetComponent instanceof PriorityGrammar) {
                 targetComponent.child = new CountGrammar(targetComponent.child, opt.maxChars-1);
@@ -103,6 +104,7 @@ export class ExecuteTests extends GrammarPass {
                 targetComponent = new CountGrammar(targetComponent, opt.maxChars-1);
             }
         }
+        */
 
         if (!(targetComponent instanceof PriorityGrammar)) {
             targetComponent = new PriorityGrammar(targetComponent, tapePriority);

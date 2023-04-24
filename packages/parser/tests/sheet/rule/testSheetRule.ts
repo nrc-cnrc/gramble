@@ -404,14 +404,23 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    /*
     describe('Replace with a symbol in regex in pre', function() {
         const project = sheetFromFile(`${DIR}/replacePreRegexEmbed.csv`);
         testErrors(project, []);
         testGrammar(project, [
-            {"text":"aba","surface":"ava"},
-            {"text":"arba","surface":"arba"},
-            {"text":"iba","surface":"iva"}
+            {"text":"ava"},
+            {"text":"arba"},
+            {"text":"iva"}
+        ]);
+    });
+
+    describe('Replace with a symbol in regex in pre, but the symbol is defined after', function() {
+        const project = sheetFromFile(`${DIR}/replacePreRegexEmbedAfter.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ava"},
+            {"text":"arba"},
+            {"text":"iva"}
         ]);
     });
     
@@ -419,21 +428,32 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/replacePostRegexEmbed.csv`);
         testErrors(project, []);
         testGrammar(project, [
-            {"text":"aba","surface":"ava"},
-            {"text":"abra","surface":"abra"},
-            {"text":"abi","surface":"avi"}
+            {"text":"ava"},
+            {"text":"abra"},
+            {"text":"avi"}
+        ]);
+    });
+
+    describe('Replace with a symbol in regex in post, but the symbol is defined after', function() {
+        const project = sheetFromFile(`${DIR}/replacePostRegexEmbedAfter.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ava"},
+            {"text":"abra"},
+            {"text":"avi"}
         ]);
     });
     
-    /*
     describe('Replace with a multi-tape symbol in regex in post', function() {
         const project = sheetFromFile(`${DIR}/replacePostRegexMultiTape.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            {"text":"aba","surface":"ava"},
-            {"text":"abra","surface":"abra"},
-            {"text":"abi","surface":"avi"}
+        testErrors(project, [
+            ["replacePostRegexMultiTape",10,4,"error"]
         ]);
-    }); */
+        testGrammar(project, [
+            {"text":"ava"},
+            {"text":"avra"},
+            {"text":"avi"}
+        ]);
+    });
 
 });

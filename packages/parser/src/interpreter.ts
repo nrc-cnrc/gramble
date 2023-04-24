@@ -276,7 +276,8 @@ export class Interpreter {
             tapePriority = this.grammar.getAllTapePriority(this.tapeNS, env);
         }
 
-        const potentiallyInfinite = targetGrammar.potentiallyInfinite(new CounterStack(2), env);
+        /*
+        const potentiallyInfinite = targetGrammar.estimateLength(new CounterStack(2), env);
         if (potentiallyInfinite && opt.maxChars != Infinity) {
             if (targetGrammar instanceof CollectionGrammar) {
                 const symGrammar = targetGrammar.getSymbol(symbolName);
@@ -288,7 +289,7 @@ export class Interpreter {
             } else {
                 targetGrammar = new CountGrammar(targetGrammar, opt.maxChars-1);
             }
-        }
+        } */
 
         let is_priority_grammar = targetGrammar instanceof PriorityGrammar;
         if (targetGrammar instanceof CollectionGrammar) {
