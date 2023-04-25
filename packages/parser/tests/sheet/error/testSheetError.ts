@@ -217,36 +217,16 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Replace param headers in ordinary tables', function() {
+    describe('Test param headers in ordinary tables', function() {
         const project = sheetFromFile(`${DIR}/waywardParam.csv`);
         testErrors(project, [
-            ["waywardParam", 0, 2, "error"],
-            ["waywardParam", 4, 3, "error"],
+            ["waywardParam", 0, 2, "error"]
         ]);
         testGrammar(project, [
             {text:"moobaz", gloss:"jump-2SG"},
             {text:"moobar", gloss:"jump-1SG"},
             {text:"foobaz", gloss:"run-2SG"},
             {text:"foobar", gloss:"run-1SG"}
-        ]);
-    });
-    
-    describe('Replace param headers with regex ops underneath', function() {
-        // This is testing whether, in cases where we've mistakenly put
-        // a regex-taking header in an inappropriate position, whether the 
-        // cell underneath it is interpreted as a regex or as plaintext.  
-        // Being interpreted as plaintext is correct -- otherwise this could
-        // be a backdoor to getting a regex into an inappropriate position.
-        const project = sheetFromFile(`${DIR}/waywardParamWithRegex.csv`);
-        testErrors(project, [
-            ["waywardParamWithRegex", 0, 2, "error"],
-            ["waywardParamWithRegex", 4, 3, "error"],
-        ]);
-        testGrammar(project, [
-            {text:"moobaz", gloss:"jump-2SG?"},
-            {text:"moobar", gloss:"jump-1SG"},
-            {text:"foo?baz", gloss:"run-2SG?"},
-            {text:"foo?bar", gloss:"run-1SG"}
         ]);
     });
 

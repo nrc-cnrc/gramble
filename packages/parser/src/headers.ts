@@ -367,10 +367,9 @@ export class ErrorHeader extends TapeNameHeader {
 
 const HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlt(
-        HP_OPTIONAL, HP_FROM, HP_SLASH,
-        HP_TO, HP_PRE, HP_POST,
-        HP_FROM_ATOMIC, HP_TO_ATOMIC, 
-        HP_PRE_ATOMIC, HP_POST_ATOMIC,  
+        HP_OPTIONAL, HP_SLASH,
+        HP_FROM, HP_TO, 
+        HP_PRE, HP_POST,  
         HP_UNIQUE,
         HP_RENAME, HP_EQUALS, HP_STARTS, 
         HP_ENDS, HP_CONTAINS, HP_SUBEXPR)
@@ -415,72 +414,24 @@ const HP_OPTIONAL = MPSequence<Header>(
 );
 
 const HP_FROM = MPSequence<Header>(
-    ["from", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => {
-        if (!(c instanceof TapeNameHeader)) {
-            return new ErrorHeader("Invalid header")
-                .err(`Invalid ${c.name} in header`, 
-                    `You can't have a ${c.name} inside a "from" header.`);
-        }
-        return new ParamNameHeader("from", c).msg();
-    })
-);
-
-const HP_TO = MPSequence<Header>(
-    ["to", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => {
-        if (!(c instanceof TapeNameHeader)) {
-            return new ErrorHeader("Invalid header")
-                .err(`Invalid ${c.name} in header`, 
-                    `You can't have a ${c.name} inside a "to" header.`);
-        }
-        return new ParamNameHeader("to", c).msg();
-    })
-);
-
-const HP_PRE = MPSequence<Header>(
-    ["pre", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => {
-        if (!(c instanceof TapeNameHeader)) {
-            return new ErrorHeader("Invalid header")
-                .err(`Invalid ${c.name} in header`, 
-                    `You can't have a ${c.name} inside a "pre" header.`);
-        }
-        return new ParamNameHeader("pre", c).msg();
-    })
-);
-
-const HP_POST = MPSequence<Header>(
-    ["post", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => {
-        if (!(c instanceof TapeNameHeader)) {
-            return new ErrorHeader("Invalid header")
-                .err(`Invalid ${c.name} in header`, 
-                    `You can't have a ${c.name} inside a "post" header.`);
-        }
-        return new ParamNameHeader("post", c).msg();
-    })
-);
-
-const HP_FROM_ATOMIC = MPSequence<Header>(
     ["from"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
                 .bind(c => new ParamNameHeader("from", c))
 );
 
-const HP_TO_ATOMIC = MPSequence<Header>(
+const HP_TO = MPSequence<Header>(
     ["to"],
     () => new TapeNameHeader(REPLACE_OUTPUT_TAPE).msg()
                     .bind(c => new ParamNameHeader("to", c))
 );
 
-const HP_PRE_ATOMIC = MPSequence<Header>(
+const HP_PRE = MPSequence<Header>(
     ["pre"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
                     .bind(c => new ParamNameHeader("pre", c))
 );
 
-const HP_POST_ATOMIC = MPSequence<Header>(
+const HP_POST = MPSequence<Header>(
     ["post"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
                  .bind(c => new ParamNameHeader("post", c))

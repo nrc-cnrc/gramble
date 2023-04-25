@@ -1,8 +1,8 @@
-verb=, table:, to text, gloss
+verb=, table:, unique text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-suffix=, table:, text, post gloss
+suffix=, table:, text, gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
 

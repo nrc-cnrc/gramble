@@ -1850,7 +1850,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('33d. Replace ∅ by e: t1:∅ -> t2:e {1} (vocab t2:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t2: 'ehl'}),
-                                   Replace(t1(""), t2("e"),
+                                        OptionalReplace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 1, 1));
         grammar = Count({t1:4,t2:4}, grammar);
@@ -1957,7 +1957,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('33i. Replace ∅ by e: t1:∅ -> t2:e {0,2} (vocab t2:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t2: 'ehl'}),
-                                   Replace(t1(""), t2("e"),
+                                    OptionalReplace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                                            false, false, 0, 2));
         grammar = Count({t1:4,t2:4}, grammar);

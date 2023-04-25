@@ -228,36 +228,6 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Test: op with bad param', function() {
-        const interpreter = sheetFromFile(`${DIR}/testWithBadParam.csv`);
-        interpreter.runTests();
-        testErrors(interpreter, [
-            ["testWithBadParam",12,3,"error"],
-            ["testWithBadParam",12,1,"warning"]
-        ]);
-        testGrammar(interpreter, [
-            { text: "foobar", gloss: "run-1SG" },
-            { text: "moobar", gloss: "jump-1SG" },
-            { text: "foobaz", gloss: "run-2SG" },
-            { text: "moobaz", gloss: "jump-2SG" }
-        ]);
-    });
-
-    describe('Testnot: op with bad param', function() {
-        const interpreter = sheetFromFile(`${DIR}/testnotWithBadParam.csv`);
-        interpreter.runTests();
-        testErrors(interpreter, [
-            ["testnotWithBadParam",12,3,"error"],
-            ["testnotWithBadParam",12,1,"warning"]
-        ]);
-        testGrammar(interpreter, [
-            { text: "foobar", gloss: "run-1SG" },
-            { text: "moobar", gloss: "jump-1SG" },
-            { text: "foobaz", gloss: "run-2SG" },
-            { text: "moobaz", gloss: "jump-2SG" }
-        ]);
-    });
-
     describe('Uniqueness tests', function() {
         const interpreter = sheetFromFile(`${DIR}/uniquenessTests.csv`);
         interpreter.runTests();

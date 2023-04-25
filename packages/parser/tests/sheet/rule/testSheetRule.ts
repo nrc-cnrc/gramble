@@ -10,13 +10,30 @@ const DIR = `${path.dirname(module.filename)}/csvs`;
 describe(`${path.basename(module.filename)}`, function() {
 
     describe('Simple replace', function() {
-        const project = sheetFromFile(`${DIR}/sameTapeReplace.csv`);
+        const project = sheetFromFile(`${DIR}/simpleReplace.csv`);
         testHasVocab(project, {text: 3})
         testErrors(project, []);
         testGrammar(project, [
             {"text":"ava"}
         ]);
     }); 
+    
+    describe('Trivial replace', function() {
+        const project = sheetFromFile(`${DIR}/trivialReplace.csv`);
+        testHasVocab(project, {text: 2})
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aba"}
+        ]);
+    }); 
+
+    describe('Simple replace multiple times', function() {
+        const project = sheetFromFile(`${DIR}/replaceMulti.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"avva"}
+        ]);
+    });
     
     describe('Simple replace under assignment', function() {
         const project = sheetFromFile(`${DIR}/replaceUnderAssignment.csv`);
@@ -487,6 +504,37 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"ava"},
             {"text":"avra"},
             {"text":"avi"}
+        ]);
+    });
+
+    describe('Replace with a table: op nested underneath', function() {
+        const project = sheetFromFile(`${DIR}/replaceWithTableOp.csv`);
+        testErrors(project, [
+            ["replaceWithTableOp",12,1,"error"]
+        ]);
+        testGrammar(project, [
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
+        ]);
+    });
+    
+    describe('Replace with a test: op nested underneath', function() {
+        const project = sheetFromFile(`${DIR}/replaceWithTestOp.csv`);
+        testErrors(project, [
+            ["replaceWithTestOp", 12, 2, "error"],
+            ["replaceWithTestOp",12,1,"warning"]
+        ]);
+        testGrammar(project, [
+            {"text":"foo", "gloss":"run.3SG"},
+            {"text":"foobaz", "gloss":"run-2SG"},
+            {"text":"foobar", "gloss":"run-1SG"},
+            {"text":"moo", "gloss":"jump.3SG"},
+            {"text":"moobaz", "gloss":"jump-2SG"},
+            {"text":"moobar", "gloss":"jump-1SG"}
         ]);
     });
 });

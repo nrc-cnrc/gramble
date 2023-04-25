@@ -12,7 +12,6 @@ describe(`${path.basename(module.filename)}`, function() {
     testOpID("join:", "join");
     testOpID("test:", "test");
     testOpID("testnot:", "testnot");
-    testOpID("replace:", "replace");
     testOpID("replace text:", "replace[text]");
     
     // not having an equals, or having a colon, is invalid for assignments

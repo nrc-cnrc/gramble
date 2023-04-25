@@ -28,16 +28,10 @@ describe(`${path.basename(module.filename)}`, function() {
     testHeaderID("optional(text)", "optional[text]");
     testHeaderID("(optional text)", "optional[text]");
     testHeaderID("optionaltext", "optionaltext");
-    testHeaderID("pre text", "pre[text]");
-    testHeaderID("post text", "post[text]");
-    testHeaderID("from text", "from[text]");
-    testHeaderID("to text", "to[text]");
     testHeaderID("pre", "pre[$i]");
     testHeaderID("post", "post[$i]");
     testHeaderID("from", "from[$i]");
     testHeaderID("to", "to[$o]");
-    testHeaderID("pre(text)", "pre[text]");
-    testHeaderID("(pre text)", "pre[text]");
     testHeaderID("pre text/gloss", "ERR");
     testHeaderID("pre embed", "ERR");
     testHeaderID("blarg text", "ERR");

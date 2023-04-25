@@ -1,4 +1,5 @@
 word=, table:, text
     ,       , aba
     ,       ,     ,
-    , replace:,
+    , replace text:, from, to
+    ,         , b        , b

@@ -256,11 +256,6 @@ const OP_UNRESERVED = MPUnreserved<Op>(
     } 
 );
 
-const OP_REPLACE = MPSequence<Op>(
-    ["replace"], 
-    () => new ReplaceOp().msg()
-);
-
 const OP_REPLACE_TAPE = MPSequence<Op>(
     ["replace", OP_UNRESERVED], 
     (child) => child.bind(c => new ReplaceTapeOp(c as SymbolOp))
@@ -279,7 +274,6 @@ const OP_JOIN = MPSequence<Op>(
 const OP_SUBEXPR: MPParser<Op> = MPAlt(
     OP_TABLE, OP_COLLECTION,
     OP_TEST, OP_TESTNOT,
-    OP_REPLACE, 
     OP_REPLACE_TAPE,
     OP_OR, OP_JOIN
 );

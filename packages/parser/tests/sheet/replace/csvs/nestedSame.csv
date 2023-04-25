@@ -1,9 +1,0 @@
-word=, table:, text
-    ,       , b
-    ,       ,     ,
-    , replace:, from text, to text
-    ,         , b,  v
-    ,
-    , replace:, from text, to text
-    ,          , v        , w
-    

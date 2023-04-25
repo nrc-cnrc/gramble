@@ -10,5 +10,5 @@ suffix=, table:, text, gloss
 default=, table:, embed, embed
     ,       , verb, suffix
     ,       ,     ,
-    , replace:, from text
+    , replace text:, to
     ,         , b,  
