@@ -6,14 +6,14 @@ import {
     constructMatch, 
     constructFilter, constructJoin,
     constructLiteral, constructMatchFrom, constructCharSet,
-    constructCount,
     constructPriority, EpsilonExpr, constructShort,
     constructEpsilonLiteral, 
     constructPrecede, constructPreTape,
     constructNotContains, constructParallel, 
     ExprNamespace, constructCollection, 
     constructCorrespond, constructNoEps, 
-    constructDotStar
+    constructDotStar,
+    constructCount
 } from "./exprs";
 import { Err, Msg, Msgs, result, Result, resultDict, resultList, ResultVoid, Warn } from "./msgs";
 
@@ -1041,7 +1041,8 @@ export class CountGrammar extends UnaryGrammar {
 
     constructor(
         child: Grammar,
-        public maxChars: number | Dict<number>
+        public tapeName: string,
+        public maxChars: number
     ) {
         super(child);
     }
@@ -1049,42 +1050,30 @@ export class CountGrammar extends UnaryGrammar {
     public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return result(this.child)
                 .bind(c => f.transform(c, env))
-                .bind(c => new CountGrammar(c, this.maxChars));
+                .bind(c => new CountGrammar(c, 
+                        this.tapeName, this.maxChars));
     }
 
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
         const childLength = this.child.estimateLength(tapeName, stack, env);
-        if (typeof this.maxChars == 'number') return {
+        if (tapeName != this.tapeName) return childLength;
+        return {
             null: childLength.null,
             min: childLength.min,
             max: Math.min(childLength.max, this.maxChars)
         }
-        if (!(tapeName in this.maxChars)) return childLength;
-        return {
-            null: childLength.null,
-            min: childLength.min,
-            max: Math.min(childLength.max, this.maxChars[tapeName])
-        }
     }
 
     public get id(): string {
-        return `Count(${JSON.stringify(this.maxChars)},${this.child.id})`;
+        return `Count_${this.tapeName}:${this.maxChars}(${this.child.id})`;
     }
 
     public constructExpr(
         tapeNS: TapeNamespace,
         symbols: ExprNamespace
     ): Expr {
-        let maxCharsDict: Dict<number> = {};
-        if (typeof this.maxChars == 'number') {
-            for (const tape of this.tapes) {
-                maxCharsDict[tape] = this.maxChars;
-            }
-        } else {
-            maxCharsDict = this.maxChars;
-        }
-        const childExpr = this.child.constructExpr(tapeNS, symbols);
-        return constructCount(childExpr, maxCharsDict);
+        let childExpr = this.child.constructExpr(tapeNS, symbols);
+        return constructCount(childExpr, this.tapeName, this.maxChars);
     }
 }
 
@@ -2340,8 +2329,12 @@ export function Vocab(arg1: string | StringDict, arg2: string = ""): Grammar {
     }
 }
 
-export function Count(maxChars: number | Dict<number>, child: Grammar): Grammar {
-    return new CountGrammar(child, maxChars);
+export function Count(maxChars: Dict<number>, child: Grammar): Grammar {
+    let result = child;
+    for (const [tapeName, max] of Object.entries(maxChars)) {
+        result = new CountGrammar(result, tapeName, max);
+    }
+    return result;
 }
 
 export function Priority(tapes: string[], child: Grammar): Grammar {
@@ -2825,14 +2818,14 @@ export function infinityProtection(
     if (grammar instanceof CollectionGrammar) {
         const symGrammar = grammar.getSymbol(symbolName);
         if (symGrammar instanceof PriorityGrammar) {
-            symGrammar.child = new CountGrammar(symGrammar.child, maxCharsDict);
+            symGrammar.child = Count(maxCharsDict, symGrammar.child);
         } else {
-            grammar = new CountGrammar(grammar, maxCharsDict);
+            grammar = Count(maxCharsDict, grammar);
         }
     } else if (grammar instanceof PriorityGrammar) {
-        grammar.child = new CountGrammar(grammar.child, maxCharsDict);
+        grammar.child = Count(maxCharsDict, grammar.child);
     } else {
-        grammar = new CountGrammar(grammar, maxCharsDict);
+        grammar = Count(maxCharsDict, grammar);
     }
 
     return grammar;

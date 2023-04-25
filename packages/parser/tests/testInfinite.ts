@@ -109,36 +109,30 @@ describe(`${testSuiteName(module)}`, function() {
     });
     
     describe("10. Count(100, (t1:hello + t2:hi)*)", function() {
-        const grammar = Count(100, Rep(Seq(t1("hello"), t2("hi"))));
+        const grammar = Count({t1:100, t2:100}, Rep(Seq(t1("hello"), t2("hi"))));
         testLength(grammar, "t1", [0, 100]);
         testLength(grammar, "t2", [0, 100]);
     });
 
-    describe("11. Count(100, (t1:hello + t2:hi)*))", function() {
-        const grammar = Count(100, Rep(Seq(t1("hello"), t2("hi"))));
-        testLength(grammar, "t1", [0, 100]);
-        testLength(grammar, "t2", [0, 100]);
-    }); 
-
-    describe("12. Count({t1:20, t2:10}, (t1:hello + t2:hi)*)", function() {
+    describe("11. Count({t1:20, t2:10}, (t1:hello + t2:hi)*)", function() {
         const grammar = Count({t1:20, t2:10}, Rep(Seq(t1("hello"), t2("hi"))));
         testLength(grammar, "t1", [0, 20]);
         testLength(grammar, "t2", [0, 10]);
     }); 
     
-    describe("13. Count({t1:20}, (t1:hello + t2:hi)*)", function() {
+    describe("12. Count({t1:20}, (t1:hello + t2:hi)*)", function() {
         const grammar = Count({t1:20}, Rep(Seq(t1("hello"), t2("hi"))));
         testLength(grammar, "t1", [0, 20]);
         testLength(grammar, "t2", [0, Infinity]);
     }); 
 
-    describe("14. Count({t1:20}, (t1:hello + t2:hi){0,5})", function() {
+    describe("13. Count({t1:20}, (t1:hello + t2:hi){0,5})", function() {
         const grammar = Count({t1:20}, Rep(Seq(t1("hello"), t2("hi")), 0, 5));
         testLength(grammar, "t1", [0, 20]);
         testLength(grammar, "t2", [0, 10]);
     }); 
 
-    describe("15. Recursive t1 grammar", function() {
+    describe("14. Recursive t1 grammar", function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), t2("HI"), world);
         const ns = Collection({
@@ -152,29 +146,29 @@ describe(`${testSuiteName(module)}`, function() {
         // matter in the end, zero, finite, and infinite
     }); 
 
-    describe("16. Recursive t1 grammar inside Count(100)", function() {
+    describe("15. Recursive t1 grammar inside Count(100)", function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), t2("HI"), world);
         const ns = Collection({
             "hiWorld": hiWorld
         });
         let [grammar, env] = selectSymbol(ns, "hiWorld");
-        grammar = Count(100, grammar);
+        grammar = Count({t1:100}, grammar);
         testLength(grammar, "t1", [4, 100], env);
     }); 
 
-    describe("17. Recursive t1 grammar inside Count(40)", function() {
+    describe("16. Recursive t1 grammar inside Count(40)", function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), t2("HI"), world);
         const ns = Collection({
             "hiWorld": hiWorld
         });
         let [grammar, env] = selectSymbol(ns, "hiWorld");
-        grammar = Count(40, grammar);
+        grammar = Count({t1:40}, grammar);
         testLength(grammar, "t1", [4, 40], env);
     }); 
 
-    describe("18. Recursive t1 grammar inside Count({t1:40, t2:10})", function() {
+    describe("17. Recursive t1 grammar inside Count({t1:40, t2:10})", function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), t2("HI"), world);
         const ns = Collection({
@@ -186,7 +180,7 @@ describe(`${testSuiteName(module)}`, function() {
         testLength(grammar, "t2", [2, 10], env);
     }); 
 
-    describe("19. Recursive t1 grammar inside Count({t1:40})", function() {
+    describe("18. Recursive t1 grammar inside Count({t1:40})", function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), t2("HI"), world);
         const ns = Collection({

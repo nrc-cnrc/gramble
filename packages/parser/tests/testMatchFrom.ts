@@ -408,7 +408,7 @@ describe(`${testSuiteName(module)}`, function() {
         const subgrammar: Grammar = Rep(Any("t1"));
         let grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), 
                                     MatchFrom(subgrammar, "t1", "t2"));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: 'h', t2: 'h'},
@@ -1069,7 +1069,7 @@ describe(`${testSuiteName(module)}`, function() {
         const subgrammar: Grammar = Rep(Any("t1"));
         let grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), Vocab("t3", "ZXhi"),
                                    MatchFrom(subgrammar, "t1", "t2", "t3"));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: 'h', t2: 'h', t3: 'h'},

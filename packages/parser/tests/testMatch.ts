@@ -230,7 +230,7 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe('19a. (Match (t1:.+t2:.)*) + t1:hi+t2:ih', function() {
         let grammar: Grammar = Seq(MatchDotStar("t1", "t2"), t1("hi"), t2("ih"));
-        grammar = Count(5, grammar);
+        grammar = Count({t1:5,t2:5}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -248,7 +248,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('19b. (Match t1:.*+t2:.*) + t1:hi+t2:ih', function() {
         let grammar: Grammar = Seq(MatchDotStar2("t1", "t2"), t1("hi"), t2("ih"));
-        grammar = Count(5, grammar);
+        grammar = Count({t1:5,t2:5}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -266,7 +266,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('20a. t1:hi+t2:ih + (Match (t1:.+t2:.)*)', function() {
         let grammar: Grammar = Seq(t1("hi"), t2("ih"), MatchDotStar("t1", "t2"));
-        grammar = Count(5, grammar);
+        grammar = Count({t1:5,t2:5}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -284,7 +284,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('20b. t1:hi+t2:ih + (Match t1:.*+t2:.*)', function() {
         let grammar: Grammar = Seq(t1("hi"), t2("ih"), MatchDotStar2("t1", "t2"));
-        grammar = Count(5, grammar);
+        grammar = Count({t1:5,t2:5}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -332,7 +332,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('23a. (Match (t1:.+t2:.)*) | t1:hi+t2:ih', function() {
         let grammar: Grammar = Uni(MatchDotStar("t1", "t2"),
                                    Seq(t1("hi"), t2("ih")));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -352,7 +352,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('23b. (Match t1:.*+t2:.*) | t1:hi+t2:ih', function() {
         let grammar: Grammar = Uni(MatchDotStar2("t1", "t2"),
                                    Seq(t1("hi"), t2("ih")));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -372,7 +372,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('24a. t1:hi+t2:ih | (Match (t1:.+t2:.)*)', function() {
         let grammar: Grammar = Uni(Seq(t1("hi"), t2("ih")),
                                    MatchDotStar("t1", "t2"));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [
@@ -392,7 +392,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('24b. t1:hi+t2:ih | (Match t1:.*+t2:.*)', function() {
         let grammar: Grammar = Uni(Seq(t1("hi"), t2("ih")),
                                    MatchDotStar2("t1", "t2"));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 2, t2: 2});
         const expectedResults: StringDict[] = [

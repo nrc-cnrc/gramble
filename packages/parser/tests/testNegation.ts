@@ -157,7 +157,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('21. ~t1:hi', function() {
         let grammar: Grammar = Not(t1("hi"));
-        grammar = Count(4, grammar);
+        grammar = Count({t1:4}, grammar);
         testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -177,7 +177,7 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe('22. ~(t1:h+t1:i)', function() {
         let grammar: Grammar = Not(Seq(t1("h"), t1("i")));
-        grammar = Count(4, grammar);
+        grammar = Count({t1:4}, grammar);
         testHasTapes(grammar, ["t1"]);
         //testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -205,7 +205,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('24. Alt ~t1:hi | t2:hi', function() {
         let grammar: Grammar = Uni(Not(t1("hi")), t2("hi"));
-        grammar = Count(4, grammar);
+        grammar = Count({t1:4,t2:4}, grammar);
         testHasTapes(grammar, ["t1", "t2"]);
         //testHasVocab(grammar, {t1: 2});
         //testHasVocab(grammar, {t2: 2});
@@ -227,7 +227,7 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe('25. ~t1:h', function() {
         let grammar: Grammar = Not(t1("h"));
-        grammar = Count(4, grammar);
+        grammar = Count({t1:4}, grammar);
         //testHasVocab(grammar, {t1: 1});
         const expectedResults: StringDict[] = [
             {}, {t1: 'hh'}, {t1: 'hhh'}, {t1: 'hhhh'},
@@ -238,7 +238,7 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe('26. t1:h + (~t1:h)', function() {
         let grammar: Grammar = Seq(t1("h"), Not(t1("h")));
-        grammar = Count(5, grammar);
+        grammar = Count({t1:5}, grammar);
         //testHasVocab(grammar, {t1: 1});
         const expectedResults: StringDict[] = [
             {t1: 'h'}, {t1: 'hhh'}, {t1: 'hhhh'}, {t1: 'hhhhh'},
@@ -248,7 +248,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('27. (~t1:h) + t1:h', function() {
         let grammar: Grammar = Seq(Not(t1("h")), t1("h"));
-        grammar = Count(5, grammar);
+        grammar = Count({t1:5}, grammar);
         //testHasVocab(grammar, {t1: 1});
         const expectedResults: StringDict[] = [
             {t1: 'h'}, {t1: 'hhh'}, {t1: 'hhhh'}, {t1: 'hhhhh'},
@@ -258,7 +258,7 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe('28. ~t1:h{0,1}', function() {
         let grammar: Grammar = Not(Rep(t1("h"), 0, 1));
-        grammar = Count(4, grammar);
+        grammar = Count({t1:4}, grammar);
         //testHasVocab(grammar, {t1: 1});
         const expectedResults: StringDict[] = [
             {t1: 'hh'}, {t1: 'hhh'}, {t1: 'hhhh'},
@@ -269,7 +269,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('29. ~t1:h{1,3}', function() {
         let grammar: Grammar = Not(Rep(t1("h"), 1, 3));
-        grammar = Count(4, grammar);
+        grammar = Count({t1:4}, grammar);
         //testHasVocab(grammar, {t1: 1});
         const expectedResults: StringDict[] = [
             {}, {t1: 'hhhh'},
@@ -329,7 +329,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('32. ~(t1:h+t2:h)', function() {
         let grammar: Grammar = Not(Seq(t1("h"), t2("i")));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: 'h'}, {t1: 'hh'}, {t1: 'hhh'},
@@ -344,7 +344,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('33. ~(t1:h|t2:i)', function() {
         let grammar: Grammar = Not(Uni(t1("h"), t2("i")));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
         const expectedResults: StringDict[] = [
             {},         
             {t1: 'hh'},           {t1: 'hhh'},
@@ -360,7 +360,7 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe('34. ~(t1:he)', function() {
         let grammar: Grammar = Not(t1("he"));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3}, grammar);
         testHasTapes(grammar, ["t1"]);
         // testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
@@ -377,7 +377,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('35. ~(t1:.i)', function() {
         const notGrammar = Not(Seq(Any('t1'), t1('i')));
-        const grammar = Count(3, notGrammar);
+        const grammar = Count({t1:3}, notGrammar);
         testHasTapes(grammar, ['t1']);
         // testHasVocab(grammar, {t1: 1});
         const expectedResults: StringDict[] = [
@@ -388,7 +388,7 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe('36. ~(t1:.) (vocab hi)', function() {
         const notGrammar = Not(Any('t1'));
-        let grammar = Count(2, notGrammar);
+        let grammar = Count({t1:2}, notGrammar);
         grammar = Seq(Vocab('t1', 'hi'), grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
@@ -402,7 +402,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('37. ~(t1:.i)) (vocab hi)', function() {
         const notGrammar = Not(Seq(Any('t1'), t1('i')));
-        let grammar = Count(2, notGrammar);
+        let grammar = Count({t1:2}, notGrammar);
         grammar = Seq(Vocab('t1', 'hi'), grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
@@ -416,7 +416,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('38. ~(t1:.i) (vocab hi)', function() {
         const notGrammar = Not(Seq(Dot('t1'), t1('i')));
-        let grammar = Count(2, notGrammar);
+        let grammar = Count({t1:2}, notGrammar);
         grammar = Seq(Vocab('t1', 'hi'), grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
@@ -431,7 +431,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('39. ~(t1:.{0,1} + t1:i) (vocab hi)', function() {
         const dotStarGrammar1 = Rep(Dot('t1'), 0, 1);
         const notGrammar = Not(Seq(dotStarGrammar1, t1('i')));
-        let grammar = Count(3, notGrammar);
+        let grammar = Count({t1:3}, notGrammar);
         grammar = Seq(Vocab('t1', 'hi'), grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
@@ -448,7 +448,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('40. ~(t1:.{0,3} + t1:i) (vocab hi)', function() {
         const dotStarGrammar1 = Rep(Dot('t1'), 0, 3);
         const notGrammar = Not(Seq(dotStarGrammar1, t1('i')));
-        let grammar = Count(3, notGrammar);
+        let grammar = Count({t1:3}, notGrammar);
         grammar = Seq(Vocab('t1', 'hi'), grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
@@ -464,7 +464,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('41. ~(t1:.*i) (vocab hi)', function() {
         const dotStarGrammar1 = Rep(Dot('t1'));
         const notGrammar = Not(Seq(dotStarGrammar1, t1('i')));
-        let grammar = Count(3, notGrammar);
+        let grammar = Count({t1:3}, notGrammar);
         grammar = Seq(Vocab('t1', 'hi'), grammar);
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
@@ -477,11 +477,10 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    
     describe('42. Does not contain a (vocab ab)', function() {
         const r1Grammar = Not(Seq(Short(Seq(Rep(Any("t1")), t1("a"))), Rep(Any("t1"))));
         const vocGrammar = Vocab({t1:"ab"});
-        const grammar = Count(3, Seq(r1Grammar, vocGrammar));
+        const grammar = Count({t1:3}, Seq(r1Grammar, vocGrammar));
         const expectedResults: StringDict[] = [
             {}, {t1: 'b'}, {t1: 'bb'}, {t1: 'bbb'},
         ];

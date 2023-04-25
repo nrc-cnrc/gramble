@@ -270,7 +270,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('25. Repeat with between 1 and unlimited Os: t1:o+', function() {
         let grammar: Grammar = Rep(t1("o"), 1);
-        grammar = Count(5, grammar);
+        grammar = Count({t1:5}, grammar);
         const expectedResults: StringDict[] = [
             {t1: "o"},
             {t1: "oo"},
@@ -283,7 +283,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('26. Repeat with unlimited Os: t1:o*', function() {
         let grammar: Grammar = Rep(t1("o"));
-        grammar = Count(5, grammar);
+        grammar = Count({t1:5}, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: "o"},
@@ -297,7 +297,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('27. t1:h* + t1:i', function() {
         let grammar: Grammar = Seq(Rep(t1("h")), t1("i"));
-        grammar = Count(6, grammar);
+        grammar = Count({t1:6}, grammar);
         const expectedResults: StringDict[] = [
             {t1: "i"},
             {t1: "hi"},
@@ -311,7 +311,7 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe('28. t1:h + t1:i*', function() {
         let grammar: Grammar = Seq(t1("h"), Rep(t1("i")));
-        grammar = Count(6, grammar);
+        grammar = Count({t1:6}, grammar);
         const expectedResults: StringDict[] = [
             {t1: "h"},
             {t1: "hi"},
@@ -325,7 +325,7 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe('29. (t1:h + t1:i)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t1("i")));
-        grammar = Count(6, grammar);
+        grammar = Count({t1:6}, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: "hi"},
@@ -338,7 +338,7 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe('30. (t1:h + t2:i)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("i")));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
         const expectedResults: StringDict[] = [
             {},
             {"t1":"h","t2":"i"},
@@ -350,7 +350,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('31. (t1:h | t2:i)*', function() {
         let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: 'h'},           {t1: 'hh'},           {t1: 'hhh'},
@@ -365,7 +365,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('31a. (t1:h | t2:i)*', function() {
         let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
-        grammar = Count(1, grammar);
+        grammar = Count({t1:1,t2:1}, grammar);
         const expectedResults: StringDict[] = [
             {},
             {t1: 'h'},
@@ -379,7 +379,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('32. (t1:a+t2:a | t1:b+t2:b)*', function() {
         let grammar: Grammar = Rep(Uni(Seq(t1("a"), t2("a")), 
                                        Seq(t1("b"), t2("b"))));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2}, grammar);
         const expectedResults: StringDict[] = [
             {},
             {"t1":"a","t2":"a"},
@@ -2725,7 +2725,7 @@ describe(`${testSuiteName(module)}`, function() {
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
         const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 4, 4);
         let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "hx", t2: "hex"}));
-        grammarWithVocab = Count(10, grammarWithVocab);
+        grammarWithVocab = Count({t1:10,t2:10}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2749,7 +2749,7 @@ describe(`${testSuiteName(module)}`, function() {
         const repGrammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
         const grammar: Grammar = Seq(repGrammar, repGrammar);
         let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "hx", t2: "hex"}));
-        grammarWithVocab = Count(10, grammarWithVocab);
+        grammarWithVocab = Count({t1:10,t2:10}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
@@ -2775,7 +2775,7 @@ describe(`${testSuiteName(module)}`, function() {
         const rep2Grammar: Grammar = Rep(Seq(t2("x"), matchGrammar), 2, 2);
         const grammar: Grammar = Seq(rep1Grammar, rep2Grammar);
         let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "hx", t2: "hex"}));
-        grammarWithVocab = Count(10, grammarWithVocab);
+        grammarWithVocab = Count({t1:10,t2:10}, grammarWithVocab);
         grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});

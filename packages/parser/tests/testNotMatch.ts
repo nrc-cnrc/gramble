@@ -14,7 +14,7 @@ import {
 
 import { 
     testSuiteName, logTestSuite, VERBOSE_TEST, verbose,
-    t1, t2, t3, t4,
+    t1, t2, t4,
     testHasTapes, 
     testHasVocab, 
     //testHasNoVocab,  
@@ -36,7 +36,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe.skip('1a. MatchFrom(t1>t2, t1:hi)', function() {
         const grammar1: Grammar = t1("hi");
         let grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2}, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi'},
         ];
@@ -48,10 +48,10 @@ describe(`${testSuiteName(module)}`, function() {
     describe('1. ~(MatchFrom(t1>t2,t1:hi))', function() {
         const grammar1: Grammar = t1("hi");
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2}, grammar);
 
         let resultsGrammar: Grammar = Not(Seq(t1("hi"), t2("hi")));
-        resultsGrammar = Count(2, resultsGrammar);
+        resultsGrammar = Count({t1:2,t2:2}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -65,7 +65,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar1: Grammar = Epsilon();
         let grammar: Grammar = Seq(Vocab({t1: "hi", t2: "hi"}),
                                    MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2}, grammar);
         const expectedResults: StringDict[] = [
             {},
         ];
@@ -77,7 +77,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe.skip('2b. Negation of 2a results: ~() (vocab hi)', function() {
         let grammar: Grammar = Seq(Vocab({t1: "hi", t2: "hi"}),
                                    Not(Epsilon()));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2}, grammar);
         const expectedResults: StringDict[] = [
         ];
         // testHasTapes(grammar, ['t1', 't2']);
@@ -89,7 +89,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar1: Grammar = Epsilon();
         let grammar: Grammar = Seq(Vocab({t1: "hi", t2: "hi"}),
                                    Not(MatchFrom(grammar1, "t1", "t2")));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2}, grammar);
         const expectedResults: StringDict[] = [
         ];
         testHasTapes(grammar, ['t1', 't2']);
@@ -101,10 +101,10 @@ describe(`${testSuiteName(module)}`, function() {
     describe('3. ~(MatchFrom(t1>t2,t1:h+t1:i))', function() {
         const grammar1: Grammar = Seq(t1("h"), t1("i"));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2}, grammar);
 
         let resultsGrammar: Grammar = Not(Seq(t1("hi"), t2("hi")));
-        resultsGrammar = Count(2, resultsGrammar);
+        resultsGrammar = Count({t1:2,t2:2}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -116,10 +116,10 @@ describe(`${testSuiteName(module)}`, function() {
     describe('4. ~(MatchFrom(t1>t2,t1:hi+t4:g))', function() {
         const grammar1: Grammar = Seq(t1("hi"), t4("g"));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2,t4:2}, grammar);
 
         let resultsGrammar: Grammar = Not(Seq(t1("hi"), t2("hi"), t4("g")));
-        resultsGrammar = Count(2, resultsGrammar);
+        resultsGrammar = Count({t1:2,t2:2,t4:2}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -132,10 +132,10 @@ describe(`${testSuiteName(module)}`, function() {
     describe('5. ~(MatchFrom(t1>t2,t4:g+t1:hi))', function() {
         const grammar1: Grammar = Seq(t4("g"), t1("hi"));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2,t4:2}, grammar);
         
         let resultsGrammar: Grammar = Not(Seq(t1("hi"), t2("hi"), t4("g")));
-        resultsGrammar = Count(2, resultsGrammar);
+        resultsGrammar = Count({t1:2,t2:2,t4:2}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -149,10 +149,10 @@ describe(`${testSuiteName(module)}`, function() {
     describe('6. ~(MatchFrom(t1>t2,(t1:h+t1:,)+t1:w)) w/ nested seq', function() {
         const grammar1: Grammar = Seq(Seq(t1("h"), t1(",")), t1("w"));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:2,t2:2}, grammar);
 
         let resultsGrammar: Grammar = Not(Seq(t1("h,w"), t2("h,w")));
-        resultsGrammar = Count(3, resultsGrammar);
+        resultsGrammar = Count({t1:2,t2:2}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
         
@@ -164,7 +164,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe.skip('7a. MatchFrom(t1>t2,t1:hi|t1:hh)', function() {
         const grammar1: Grammar = Uni(t1("hi"), t1("hh"));
         let grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2}, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi'},
             {t1: 'hh', t2: 'hh'},
@@ -177,7 +177,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe.skip('7b. Negation of 7a results: ~((t1:hi+t2:hi)|(t1:hh+t2:hh))', function() {
         let grammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")),
                                          Seq(t1("hh"), t2("hh"))));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2}, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'h'  , t2 : 'h' }, {t1: 'h' , t2: 'hh'}, {t1: 'h' , t2: 'hi'},
             {t1: 'h'  , t2 : 'i' }, {t1: 'h' , t2: 'ih'}, {t1: 'h' , t2: 'ii'},
@@ -204,11 +204,11 @@ describe(`${testSuiteName(module)}`, function() {
     describe('7. ~(MatchFrom(t1>t2,t1:hi|t1:hh))', function() {
         const grammar1: Grammar = Uni(t1("hi"), t1("hh"));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
 
         let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")),
                                        Seq(t1("hh"), t2("hh"))));
-        resultsGrammar = Count(3, resultsGrammar);
+        resultsGrammar = Count({t1:3,t2:3}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -221,7 +221,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe.skip('8a. MatchFrom(t1>t2,t1:hi|t4:g)', function() {
         const grammar1: Grammar = Uni(t1("hi"), t4("g"));
         let grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
-        // grammar = Count(2, grammar);
+        // grammar = Count({t1:2,t2:2,t4:2}, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi'},
             {t4: 'gg'},
@@ -233,7 +233,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe.skip('8b. Negation of 8a results: ~((t1:hi+t2:hi)|(t4:gg))', function() {
         let grammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("gg")));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2,t4:2}, grammar);
         const expectedResults: StringDict[] = [
             {t1: 'h' , t2: 'h' , t4: 'g' }, {t1: 'h' , t2: 'h' , t4: 'gg'}, {t1: 'h' , t2: 'hh', t4: 'g' },
             {t1: 'h' , t2: 'hh', t4: 'gg'}, {t1: 'h' , t2: 'hi', t4: 'g' }, {t1: 'h' , t2: 'hi', t4: 'gg'},
@@ -290,10 +290,10 @@ describe(`${testSuiteName(module)}`, function() {
     describe('8. ~(MatchFrom(t1>t2,t1:hi|t4:g))', function() {
         const grammar1: Grammar = Uni(t1("hi"), t4("g"));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2,t4:2}, grammar);
 
         let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("g")));
-        resultsGrammar = Count(2, resultsGrammar);
+        resultsGrammar = Count({t1:2,t2:2,t4:2}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -306,10 +306,10 @@ describe(`${testSuiteName(module)}`, function() {
     describe('9. ~(MatchFrom(t1>t2,t4:g|t1:hi))', function() {
         const grammar1: Grammar = Uni(t4("g"), t1("hi"));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2,t4:2}, grammar);
 
         let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")), t4("g")));
-        resultsGrammar = Count(2, resultsGrammar);
+        resultsGrammar = Count({t1:2,t2:2,t4:2}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
         
@@ -322,13 +322,13 @@ describe(`${testSuiteName(module)}`, function() {
     describe('10. ~(MatchFrom(t1>t2,(t1:h|t1:g)+(t1:k|t1:w)))', function() {
         const grammar1: Grammar = Seq(Uni(t1("h"), t1("g")), Uni(t1("k"), t1("w")));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2}, grammar);
         
         let resultsGrammar: Grammar = Not(Uni(Seq(t1("hk"), t2("hk")),
                                               Seq(t1("gk"), t2("gk")),
                                               Seq(t1("hw"), t2("hw")),
                                               Seq(t1("gw"), t2("gw"))));
-        resultsGrammar = Count(2, resultsGrammar);
+        resultsGrammar = Count({t1:2,t2:2}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
         
@@ -340,11 +340,11 @@ describe(`${testSuiteName(module)}`, function() {
     describe('11. ~(MatchFrom(t1>t2,(t1:h+t1:k)|(t1:g+t1:w)))', function() {
         const grammar1: Grammar = Uni(Seq(t1("h"), t1("k")), Seq(t1("g"), t1("w")));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(2, grammar);
+        grammar = Count({t1:2,t2:2}, grammar);
         
         let resultsGrammar: Grammar = Not(Uni(Seq(t1("hk"), t2("hk")),
                                               Seq(t1("gw"), t2("gw"))));
-        resultsGrammar = Count(2, resultsGrammar);
+        resultsGrammar = Count({t1:2,t2:2}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
         
@@ -356,11 +356,11 @@ describe(`${testSuiteName(module)}`, function() {
     describe('12. ~(MatchFrom(t1>t2,t1:hi+t1:.))', function() {
         const grammar1: Grammar = Seq(t1("hi"), Any("t1"));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
 
         let resultsGrammar: Grammar = Not(Uni(Seq(t1("hih"), t2("hih")),
                                               Seq(t1("hii"), t2("hii"))));
-        resultsGrammar = Count(3, resultsGrammar);
+        resultsGrammar = Count({t1:3,t2:3}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
         
@@ -372,11 +372,11 @@ describe(`${testSuiteName(module)}`, function() {
     describe('13. ~(MatchFrom(t1>t2,t1:o{0,1}))', function() {
         const grammar1: Grammar = Rep(t1("o"), 0, 1);
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
 
         let resultsGrammar: Grammar = Not(Uni(Epsilon(),
                                               Seq(t1("o"), t2("o"))));
-        resultsGrammar = Count(3, resultsGrammar);
+        resultsGrammar = Count({t1:3,t2:3}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -389,11 +389,11 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar1: Grammar = Join(Seq(Rep(t1("h"), 1, 2), t4("g"), t1("i")),
                                        Seq(Rep(t1("h"), 1, 2), t4("g"), t1("i")));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3,t4:3}, grammar);
 
         let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi"), t4("g")),
                                               Seq(t1("hhi"), t2("hhi"), t4("g"))));
-        resultsGrammar = Count(3, resultsGrammar);
+        resultsGrammar = Count({t1:3,t2:3,t4:3}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -407,11 +407,11 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar1: Grammar = Join(Seq(t4("g"), Rep(t1("h"), 1, 2), t1("i")),
                                        Seq(t4("g"), Rep(t1("h"), 1, 2), t1("i")));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3,t4:3}, grammar);
 
         let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi"), t4("g")),
                                               Seq(t1("hhi"), t2("hhi"), t4("g"))));
-        resultsGrammar = Count(3, resultsGrammar);
+        resultsGrammar = Count({t1:3,t2:3,t4:3}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -424,11 +424,11 @@ describe(`${testSuiteName(module)}`, function() {
     describe('16. ~(MatchFrom(t1>t2,t1:na{1,2}))', function() {
         const grammar1: Grammar = Rep(t1("na"), 1, 2);
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(4, grammar);
+        grammar = Count({t1:4,t2:4}, grammar);
 
         let resultsGrammar: Grammar = Not(Uni(Seq(t1("na"), t2("na")),
                                               Seq(t1("nana"), t2("nana"))));
-        resultsGrammar = Count(4, resultsGrammar);
+        resultsGrammar = Count({t1:4,t2:4}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -441,7 +441,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar1: Grammar = Rep(Any("t1"), 0, 0);
         let grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
                                    MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
         const expectedResults: StringDict[] = [
             {},
         ];
@@ -454,10 +454,10 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar1: Grammar = Rep(Any("t1"), 0, 0);
         let grammar: Grammar = Seq(Vocab('t1', "hi"), Vocab ('t2', "hi"),
                                    Not(MatchFrom(grammar1, "t1", "t2")));
-        grammar = Count(3, grammar);
+        grammar = Count({t1:3,t2:3}, grammar);
         
         let resultsGrammar: Grammar = Not(Seq(Vocab('t1', "hi"), Vocab ('t2', "hi")));
-        resultsGrammar = Count(3, resultsGrammar);
+        resultsGrammar = Count({t1:3,t2:3}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
@@ -469,7 +469,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('18. ~(MatchFrom(t1>t2,t1:.{0,2}+t1:hi))', function() {
         const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 2), t1("hi"));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(4, grammar);
+        grammar = Count({t1:4,t2:4}, grammar);
         let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")),
                                               Seq(t1("hhi"), t2("hhi")),
                                               Seq(t1("ihi"), t2("ihi")),
@@ -477,7 +477,7 @@ describe(`${testSuiteName(module)}`, function() {
                                               Seq(t1("hihi"), t2("hihi")),
                                               Seq(t1("ihhi"), t2("ihhi")),
                                               Seq(t1("iihi"), t2("iihi"))));
-        resultsGrammar = Count(4, resultsGrammar);
+        resultsGrammar = Count({t1:4,t2:4}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -488,7 +488,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('19. ~(MatchFrom(t1>t2,t1:.{0,1}+t1:hi+t1:.{0,1}))', function() {
         const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 1), t1("hi"), Rep(Any("t1"), 0, 1));
         let grammar: Grammar = Not(MatchFrom(grammar1, "t1", "t2"));
-        grammar = Count(4, grammar);
+        grammar = Count({t1:4,t2:4}, grammar);
         let resultsGrammar: Grammar = Not(Uni(Seq(t1("hi"), t2("hi")),
                                               Seq(t1("hhi"), t2("hhi")),
                                               Seq(t1("ihi"), t2("ihi")),
@@ -498,7 +498,7 @@ describe(`${testSuiteName(module)}`, function() {
                                               Seq(t1("hhii"), t2("hhii")),
                                               Seq(t1("ihih"), t2("ihih")),
                                               Seq(t1("ihii"), t2("ihii"))));
-        resultsGrammar = Count(4, resultsGrammar);
+        resultsGrammar = Count({t1:4,t2:4}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
         testHasTapes(grammar, ['t1', 't2']);
