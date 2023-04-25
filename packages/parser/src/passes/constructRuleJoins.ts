@@ -17,12 +17,12 @@ import { PassEnv } from "../passes";
  * (where you just say "from"/"to" rather than "from text"/"to text") and
  * cascades of them.
  */
-export class ReplaceRulesOld extends GrammarPass {
+export class ConstructRuleJoins extends GrammarPass {
 
     public replaceIndex: number = 0;
 
     public get desc(): string {
-        return "Constructing new-style replacement rules (2nd version)";
+        return "Joining rules to grammars";
     }
     
     public transform(g: Grammar, env: PassEnv): GrammarResult {
@@ -40,7 +40,6 @@ export class ReplaceRulesOld extends GrammarPass {
 
     public handleJoinRule(g: JoinRuleGrammar, env: PassEnv): GrammarResult {
 
-        
         g.child.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar

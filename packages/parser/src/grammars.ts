@@ -2432,7 +2432,7 @@ export class JoinReplaceGrammar extends Grammar {
 
     constructor(
         public child: Grammar,
-        public rules: ReplaceGrammar[]
+        public rules: (ReplaceGrammar|EpsilonGrammar)[]
     ) {
         super();
     }
@@ -2455,6 +2455,9 @@ export class JoinReplaceGrammar extends Grammar {
         if (this._tapes == undefined) {
 
             for (const rule of this.rules) {
+
+                if (rule instanceof EpsilonGrammar) continue;
+
                 // iterate through the rules to see what tape needs to be renamed, and to what
                 this.ruleTapes.push(...rule.calculateTapes(stack, env));
 
@@ -2740,8 +2743,7 @@ export class ReplaceGrammar extends Grammar {
 
             let notExpr: Expr = constructNotContains(that.fromTapeName, fromInstance,
                 negatedTapes, that.beginsWith && replaceNone, that.endsWith && replaceNone);
-            const matchFrom = constructMatchFrom(notExpr, that.fromTapeName, ...that.toTapeNames)
-            return constructAlternation(matchFrom, EPSILON);
+            return constructMatchFrom(notExpr, that.fromTapeName, ...that.toTapeNames);
         }
         
         if (!this.endsWith)

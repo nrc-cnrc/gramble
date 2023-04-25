@@ -1,0 +1,7 @@
+word=, table:, text
+    ,       , aa,
+    ,       , aba,
+    ,       , abba,
+    ,       ,     ,
+    , replace:, from text, to surface
+    ,         , b+,  v

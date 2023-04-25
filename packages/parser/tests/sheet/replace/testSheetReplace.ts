@@ -37,6 +37,17 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"arba","surface":"arba"}
         ]);
     });
+    
+    describe('Simple replace with pre, wrong tape', function() {
+        const project = sheetFromFile(`${DIR}/replaceWithPreWrongTape.csv`);
+        testErrors(project, [
+            ["replaceWithPreWrongTape",4,1,"error"]
+        ]);
+        testGrammar(project, [
+            {"text":"aba"},
+            {"text":"arba"}
+        ]);
+    });
 
     describe('Simple replace with post', function() {
         const project = sheetFromFile(`${DIR}/replaceWithPost.csv`);
@@ -314,8 +325,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     }); 
 
-    describe('Replace with a regex in from', function() {
-        const project = sheetFromFile(`${DIR}/replaceFromRegex.csv`);
+    describe('Replace with an alternation in from', function() {
+        const project = sheetFromFile(`${DIR}/replaceFromAlt.csv`);
         testErrors(project, []);
         testGrammar(project, [
             {"text":"aba","surface":"ava"},
@@ -323,8 +334,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Replace with a regex in to', function() {
-        const project = sheetFromFile(`${DIR}/replaceToRegex.csv`);
+    describe('Replace with an alternation in to', function() {
+        const project = sheetFromFile(`${DIR}/replaceToAlt.csv`);
         testErrors(project, []);
         testGrammar(project, [
             {"text":"aba","surface":"apa"},
@@ -332,8 +343,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Replace with a regex in pre', function() {
-        const project = sheetFromFile(`${DIR}/replacePreRegex.csv`);
+    describe('Replace with an alternation in pre', function() {
+        const project = sheetFromFile(`${DIR}/replacePreAlt.csv`);
         testErrors(project, []);
         testGrammar(project, [
             {"text":"aba","surface":"ava"},
@@ -342,13 +353,32 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
     
-    describe('Replace with a regex in post', function() {
-        const project = sheetFromFile(`${DIR}/replacePostRegex.csv`);
+    describe('Replace with an alternation in post', function() {
+        const project = sheetFromFile(`${DIR}/replacePostAlt.csv`);
         testErrors(project, []);
         testGrammar(project, [
             {"text":"aba","surface":"ava"},
             {"text":"abra","surface":"abra"},
             {"text":"abi","surface":"avi"}
+        ]);
+    });
+
+    describe('Replace with a repetition in from', function() {
+        const project = sheetFromFile(`${DIR}/replaceFromRep.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aa","surface":"aa"},
+            {"text":"aba","surface":"ava"},
+            {"text":"abba","surface":"ava"},
+            {"text":"abba","surface":"avva"}
+        ]);
+    });
+    
+    describe('Replace with a repetition in to', function() {
+        const project = sheetFromFile(`${DIR}/replaceToRep.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aba","surface":"av*a"},
         ]);
     });
 });

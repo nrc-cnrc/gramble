@@ -598,7 +598,7 @@ export function getParseClass(h: Header): ParseClass {
             switch (paramName) {
                 case "unique": return "plaintext";
                 case "from": return "regex";
-                case "to": return "regex";
+                case "to": return "plaintext";
                 case "pre": return "regex";
                 case "post": return "regex";
                 default:

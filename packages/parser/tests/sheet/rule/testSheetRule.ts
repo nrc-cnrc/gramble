@@ -191,16 +191,16 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Replace with a regex in from', function() {
-        const project = sheetFromFile(`${DIR}/ruleFromRegex.csv`);
+    describe('Replace with an alternation in from', function() {
+        const project = sheetFromFile(`${DIR}/ruleFromAlt.csv`);
         testErrors(project, []);
         testGrammar(project, [
             {"text":"ava"}
         ]);
     });
 
-    describe('Replace with a regex in to', function() {
-        const project = sheetFromFile(`${DIR}/ruleToRegex.csv`);
+    describe('Replace with an alternation in to', function() {
+        const project = sheetFromFile(`${DIR}/ruleToAlt.csv`);
         testErrors(project, []);
         testGrammar(project, [
             {"text":"apa"},
@@ -208,8 +208,8 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Replace with a regex in pre', function() {
-        const project = sheetFromFile(`${DIR}/rulePreRegex.csv`);
+    describe('Replace with an alternation in pre', function() {
+        const project = sheetFromFile(`${DIR}/rulePreAlt.csv`);
         testErrors(project, []);
         testGrammar(project, [
             {"text":"ava"},
@@ -218,13 +218,52 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    describe('Replace with a regex in post', function() {
-        const project = sheetFromFile(`${DIR}/rulePostRegex.csv`);
+    describe('Replace with an alternation in post', function() {
+        const project = sheetFromFile(`${DIR}/rulePostAlt.csv`);
         testErrors(project, []);
         testGrammar(project, [
             {"text":"ava"},
             {"text":"abra"},
             {"text":"avi"}
+        ]);
+    });
+
+    describe('Replace with a repetition in from', function() {
+        const project = sheetFromFile(`${DIR}/ruleFromRep.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aa"},
+            {"text":"ava"},
+            {"text":"ava"},
+            {"text":"avva"}
+        ]);
+    });
+    
+    describe('Replace with a repetition in to', function() {
+        const project = sheetFromFile(`${DIR}/ruleToRep.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"av*a"},
+        ]);
+    });
+
+    describe('Replace with a repetition in pre', function() {
+        const project = sheetFromFile(`${DIR}/rulePreRep.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aba"},
+            {"text":"dava"},
+            {"text":"daava"},
+        ]);
+    });
+
+    describe('Replace with a repetition in post', function() {
+        const project = sheetFromFile(`${DIR}/rulePostRep.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aba"},
+            {"text":"avad"},
+            {"text":"avaad"},
         ]);
     });
     
@@ -355,19 +394,14 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
-    /*
-    describe('DANGER: Rule with an empty from', function() {
+    describe('Rule with an empty from', function() {
         const project = sheetFromFile(`${DIR}/blankFrom.csv`);
         testHasVocab(project, {text: 3})
-        testErrors(project, []);
-        testGrammar(project, [
-            {"text":"aba"},
-            {"text":"abca"},
-            {"text":"abaccc"},
-            {"text":"acbca"},           
-            {"text":"cabac"}
+        testErrors(project, [
+            ["blankFrom",3,1,"warning"]
         ]);
-    }); */
+        testGrammar(project, []);
+    }); 
 
     describe('Rule with an empty from, with pre and post', function() {
         const project = sheetFromFile(`${DIR}/blankFromPrePost.csv`);
@@ -455,5 +489,4 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"avi"}
         ]);
     });
-
 });

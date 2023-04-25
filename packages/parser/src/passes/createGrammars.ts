@@ -1,6 +1,6 @@
 import { 
     TstAssignment,
-    TstBinary, TstOr,
+    TstOr,
     TstEmpty, 
     TstFilter, TstHeaderContentPair, 
     TstHide, TstCollection, 
@@ -19,14 +19,15 @@ import {
     JoinRuleGrammar, LocatorGrammar, 
     TestNotGrammar, 
     CollectionGrammar, 
-    RenameGrammar, ReplaceGrammar, SequenceGrammar, TestGrammar, JoinGrammar
+    RenameGrammar, ReplaceGrammar, 
+    SequenceGrammar, TestGrammar, 
+    JoinGrammar
 } from "../grammars";
 import { getParseClass, TapeNameHeader } from "../headers";
 import { Err, Msgs, resultList } from "../msgs";
 import { BLANK_PARAM } from "../ops";
 import { HeaderToGrammar } from "./headerToGrammar";
 import { parseCell } from "../cell";
-
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -88,7 +89,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                 .bind(h => h.transform(t.header.header, env))
                 .localize(t.cell.pos)
                 .bind(g => new LocatorGrammar(t.cell.pos, g));
-}
+    }
     
     public handleRename(t: TstRename, env: PassEnv): GrammarResult {
         if (!(t.header.header instanceof TapeNameHeader)) {

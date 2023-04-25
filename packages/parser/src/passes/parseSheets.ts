@@ -10,8 +10,8 @@ import {
 } from "../tsts";
 import { Component, CResult } from "../components";
 import { Worksheet, Workbook } from "../sheets";
-import { Cell, CellPos, DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL_NAME } from "../util";
-import { CollectionOp, parseOp, SymbolOp } from "../ops";
+import { Cell, CellPos, DEFAULT_SYMBOL_NAME } from "../util";
+import { CollectionOp, parseOp } from "../ops";
 import { EmbedHeader } from "../headers";
 
 type PassInput = Workbook | Worksheet;

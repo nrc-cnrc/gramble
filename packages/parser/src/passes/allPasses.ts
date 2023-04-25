@@ -14,9 +14,10 @@ import { AssociateHeaders } from "./associateHeaders";
 import { InsertTables } from "./insertTables";
 import { CreateGrammars } from "./createGrammars";
 import { CheckCollections } from "./checkCollections";
-import { ReplaceRulesOld } from "./replaceRulesOld";
+import { ConstructRuleJoins } from "./constructRuleJoins";
 import { AssignDefaults } from "./assignDefaults";
 import { HandleSingleTapes } from "./handleSingleTapes";
+import { SanityCheckRules } from "./sanityCheckRules";
 
 export const SHEET_PASSES = 
 
@@ -96,9 +97,12 @@ export const GRAMMAR_PASSES =
     // it so it doesn't
     new RenameFix().compose(
 
+    // do some sanity checking of rules
+    new SanityCheckRules().compose(
+    
     // turn new-style replacement cascades into the appropriate
     // structures
-    new ReplaceRulesOld().compose(
+    new ConstructRuleJoins().compose(
 
     // take old-style replacement rules and (when the from/to tapes
     // are the same) insert renaming so that there's no conflict
@@ -107,7 +111,7 @@ export const GRAMMAR_PASSES =
     // some conditions (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    new AdjustConditions())))));
+    new AdjustConditions()))))));
 
 export const ALL_PASSES = SHEET_PASSES.compose(GRAMMAR_PASSES);
 

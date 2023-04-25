@@ -4,7 +4,7 @@ import {
     GrammarResult,
     JoinGrammar, JoinReplaceGrammar, 
     CollectionGrammar, 
-    RenameGrammar, ReplaceGrammar
+    RenameGrammar, ReplaceGrammar, EpsilonGrammar
 } from "../grammars";
 
 import { result } from "../msgs";
@@ -44,6 +44,7 @@ export class SameTapeReplacePass extends GrammarPass {
         let fromTape: string | undefined = undefined;
         let replaceTape: string | undefined = undefined;
         for (const rule of g.rules) {
+            if (rule instanceof EpsilonGrammar) continue;
             const ruleFromTape = (rule.fromGrammar as RenameGrammar).fromTape;
             const ruleReplaceTape = (rule.fromGrammar as RenameGrammar).toTape;
             if ((replaceTape != undefined && ruleReplaceTape != replaceTape) ||
