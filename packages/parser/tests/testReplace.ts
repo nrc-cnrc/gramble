@@ -14,7 +14,8 @@ import {
 } from "../src/grammars";
 
 import { 
-    testSuiteName, logTestSuite, VERBOSE_TEST, verbose,
+    testSuiteName, logTestSuite,
+    VERBOSE_TEST_L2, verbose,
     InputResultsPair, 
     t1, t2, t3, t4,
     testHasTapes, 
@@ -24,10 +25,21 @@ import {
     WARN_ONLY_FOR_TOO_MANY_OUTPUTS,
 } from './testUtil';
 
-import {StringDict, SILENT, VERBOSE_DEBUG } from "../src/util";
+import {
+    StringDict, SILENT, VERBOSE_DEBUG,
+} from "../src/util";
 
 // File level control over verbose output
-const VERBOSE = VERBOSE_TEST;
+// const VERBOSE = VERBOSE_TEST_L2;
+const VERBOSE = VERBOSE_TEST_L2;
+
+function vb(verbosity: number): number {
+    return VERBOSE ? verbosity : SILENT;
+}
+
+function log(...msgs: string[]) {
+    verbose(VERBOSE, ...msgs);
+}
 
 const EMPTY: string = '';
 
@@ -56,7 +68,7 @@ const EMPTY_CONTEXT = Epsilon();
 
 describe(`${testSuiteName(module)}`, function() {
 
-    logTestSuite(VERBOSE, module);
+    logTestSuite(this.title);
 
     describe('1. Replace e by a in hello: t1:e -> t2:a {1+} || ^h_llo$', function() {
         const grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"), 
@@ -77,8 +89,8 @@ describe(`${testSuiteName(module)}`, function() {
         testHasVocab(grammar, {t1: 4, t2: 5});
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hallo'},
-            {t1: 'ehello', t2: 'ehallo'}, {t1: 'hhello', t2: 'hhallo'},
-            {t1: 'lhello', t2: 'lhallo'}, {t1: 'ohello', t2: 'ohallo'},
+            {t1: 'ehello', t2: 'ehallo'},   {t1: 'hhello', t2: 'hhallo'},
+            {t1: 'lhello', t2: 'lhallo'},   {t1: 'ohello', t2: 'ohallo'},
             {t1: 'eehello', t2: 'eehallo'}, {t1: 'ehhello', t2: 'ehhallo'},
             {t1: 'elhello', t2: 'elhallo'}, {t1: 'eohello', t2: 'eohallo'},
             {t1: 'hehello', t2: 'hehallo'}, {t1: 'hhhello', t2: 'hhhallo'},
@@ -99,8 +111,8 @@ describe(`${testSuiteName(module)}`, function() {
         testHasVocab(grammar, {t1: 3, t2: 4});
         const from_to: StringDict[] = [
             // Valid Inputs - Replacement
-            {t1: 'hel', t2: 'hal'},   {t1: 'ehel', t2: 'ehal'},
-            {t1: 'hhel', t2: 'hhal'}, {t1: 'lhel', t2: 'lhal'},
+            {t1: 'hel', t2: 'hal'},     {t1: 'ehel', t2: 'ehal'},
+            {t1: 'hhel', t2: 'hhal'},   {t1: 'lhel', t2: 'lhal'},
             {t1: 'eehel', t2: 'eehal'}, {t1: 'ehhel', t2: 'ehhal'},
             {t1: 'elhel', t2: 'elhal'}, {t1: 'hehel', t2: 'hehal'},
             {t1: 'hhhel', t2: 'hhhal'}, {t1: 'hlhel', t2: 'hlhal'},
@@ -494,18 +506,29 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'he', t2: 'ha'},
             {t1: 'heh', t2: 'hah'},
             {t1: 'eheh', t2: 'ehah'},
-            {t1: 'heheee', t2: 'hahaee'},   {t1: 'hehheh', t2: 'hahhah'},
-            {t1: 'hehhhe', t2: 'hahhha'},   {t1: 'hheheh', t2: 'hhahah'},
-            {t1: 'hhehhe', t2: 'hhahha'},   {t1: 'hhhehe', t2: 'hhhaha'},
-            {t1: 'hhhehh', t2: 'hhhahh'},   {t1: 'hehhehh', t2: 'hahhahh'},
-            {t1: 'hehhheh', t2: 'hahhhah'}, {t1: 'eheheee', t2: 'ehahaee'},
+            {t1: 'heheee', t2: 'hahaee'},
+            {t1: 'hehheh', t2: 'hahhah'},
+            {t1: 'hehhhe', t2: 'hahhha'},
+            {t1: 'hheheh', t2: 'hhahah'},
+            {t1: 'hhehhe', t2: 'hhahha'},
+            {t1: 'hhhehe', t2: 'hhhaha'},
+            {t1: 'hhhehh', t2: 'hhhahh'},
+            {t1: 'hehhehh', t2: 'hahhahh'},
+            {t1: 'hehhheh', t2: 'hahhhah'},
+            {t1: 'eheheee', t2: 'ehahaee'},
             {t1: 'eheehee', t2: 'ehaehae'},
-            {t1: 'hhehhhehh', t2: 'hhahhhahh'},   {t1: 'hhhehhehh', t2: 'hhhahhahh'},
-            {t1: 'hhhehhheh', t2: 'hhhahhhah'},   {t1: 'hhhehhhehh', t2: 'hhhahhhahh'},
-            {t1: 'eeheeeheee', t2: 'eehaeehaee'}, {t1: 'ehheeeheeh', t2: 'ehhaeehaeh'},
-            {t1: 'eeehehehhh', t2: 'eeehahahhh'}, {t1: 'eeehehhhhe', t2: 'eeehahhhha'},
-            {t1: 'heeeeeeehe', t2: 'haeeeeeeha'}, {t1: 'hehehhhhhh', t2: 'hahahhhhhh'},
-            {t1: 'heheeeeeee', t2: 'hahaeeeeee'}, {t1: 'hhhhhhhehe', t2: 'hhhhhhhaha'},
+            {t1: 'hhehhhehh', t2: 'hhahhhahh'},
+            {t1: 'hhhehhehh', t2: 'hhhahhahh'},
+            {t1: 'hhhehhheh', t2: 'hhhahhhah'},
+            {t1: 'hhhehhhehh', t2: 'hhhahhhahh'},
+            {t1: 'eeheeeheee', t2: 'eehaeehaee'},
+            {t1: 'ehheeeheeh', t2: 'ehhaeehaeh'},
+            {t1: 'eeehehehhh', t2: 'eeehahahhh'},
+            {t1: 'eeehehhhhe', t2: 'eeehahhhha'},
+            {t1: 'heeeeeeehe', t2: 'haeeeeeeha'},
+            {t1: 'hehehhhhhh', t2: 'hahahhhhhh'},
+            {t1: 'heheeeeeee', t2: 'hahaeeeeee'},
+            {t1: 'hhhhhhhehe', t2: 'hhhhhhhaha'},
             {t1: 'eeeeeehehe', t2: 'eeeeeehaha'},
             // Some Valid Inputs - Copy through
             {t1: 'h', t2: 'h'},
@@ -541,18 +564,30 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'he', t2: 'ha'},
             {t1: 'heh', t2: 'hah'},
             {t1: 'eheh', t2: 'ehah'},
-            {t1: 'heheee', t2: 'hahaee'}, {t1: 'hehheh', t2: 'hahhah'},
-            {t1: 'hehhhe', t2: 'hahhha'}, {t1: 'hheheh', t2: 'hhahah'},
-            {t1: 'hhehhe', t2: 'hhahha'}, {t1: 'hhhehe', t2: 'hhhaha'},
-            {t1: 'hhhehh', t2: 'hhhahh'}, {t1: 'hehhehh', t2: 'hahhahh'},
-            {t1: 'hehhheh', t2: 'hahhhah'},       {t1: 'eheheee', t2: 'ehahaee'},
-            {t1: 'eheehee', t2: 'ehaehae'},       {t1: 'hhehhhehh', t2: 'hhahhhahh'},
-            {t1: 'hhhehhehh', t2: 'hhhahhahh'},   {t1: 'hhhehhheh', t2: 'hhhahhhah'},
-            {t1: 'hhhehhhehh', t2: 'hhhahhhahh'}, {t1: 'eeheeeheee', t2: 'eehaeehaee'},
-            {t1: 'ehheeeheeh', t2: 'ehhaeehaeh'}, {t1: 'eeehehehhh', t2: 'eeehahahhh'},
-            {t1: 'eeehehhhhe', t2: 'eeehahhhha'}, {t1: 'heeeeeeehe', t2: 'haeeeeeeha'},
-            {t1: 'hehehhhhhh', t2: 'hahahhhhhh'}, {t1: 'heheeeeeee', t2: 'hahaeeeeee'},
-            {t1: 'hhhhhhhehe', t2: 'hhhhhhhaha'}, {t1: 'eeeeeehehe', t2: 'eeeeeehaha'},
+            {t1: 'heheee', t2: 'hahaee'},
+            {t1: 'hehheh', t2: 'hahhah'},
+            {t1: 'hehhhe', t2: 'hahhha'},
+            {t1: 'hheheh', t2: 'hhahah'},
+            {t1: 'hhehhe', t2: 'hhahha'},
+            {t1: 'hhhehe', t2: 'hhhaha'},
+            {t1: 'hhhehh', t2: 'hhhahh'},
+            {t1: 'hehhehh', t2: 'hahhahh'},
+            {t1: 'hehhheh', t2: 'hahhhah'},
+            {t1: 'eheheee', t2: 'ehahaee'},
+            {t1: 'eheehee', t2: 'ehaehae'},
+            {t1: 'hhehhhehh', t2: 'hhahhhahh'},
+            {t1: 'hhhehhehh', t2: 'hhhahhahh'},
+            {t1: 'hhhehhheh', t2: 'hhhahhhah'},
+            {t1: 'hhhehhhehh', t2: 'hhhahhhahh'},
+            {t1: 'eeheeeheee', t2: 'eehaeehaee'},
+            {t1: 'ehheeeheeh', t2: 'ehhaeehaeh'},
+            {t1: 'eeehehehhh', t2: 'eeehahahhh'},
+            {t1: 'eeehehhhhe', t2: 'eeehahhhha'},
+            {t1: 'heeeeeeehe', t2: 'haeeeeeeha'},
+            {t1: 'hehehhhhhh', t2: 'hahahhhhhh'},
+            {t1: 'heheeeeeee', t2: 'hahaeeeeee'},
+            {t1: 'hhhhhhhehe', t2: 'hhhhhhhaha'},
+            {t1: 'eeeeeehehe', t2: 'eeeeeehaha'},
             // Some Valid Inputs - Copy through
             {t1: 'h', t2: 'h'},
             {t1: 'hh', t2: 'hh'},
@@ -617,18 +652,30 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'el', t2: 'al'},
             {t1: 'lel', t2: 'lal'},
             {t1: 'elel', t2: 'alal'},
-            {t1: 'eeelel', t2: 'eealal'}, {t1: 'lellel', t2: 'lallal'},
-            {t1: 'elllel', t2: 'alllal'}, {t1: 'lelell', t2: 'lalall'},
-            {t1: 'ellell', t2: 'allall'}, {t1: 'llelel', t2: 'llalal'},
-            {t1: 'llelll', t2: 'llalll'}, {t1: 'ellelll', t2: 'allalll'},
-            {t1: 'elllell', t2: 'alllall'},       {t1: 'eelelee', t2: 'ealalee'},
-            {t1: 'eeleele', t2: 'ealeale'},       {t1: 'lelllelll', t2: 'lalllalll'},
-            {t1: 'llellelll', t2: 'llallalll'},   {t1: 'llelllell', t2: 'llalllall'},
-            {t1: 'llelllelll', t2: 'llalllalll'}, {t1: 'eeeleeelee', t2: 'eealeealee'},
-            {t1: 'leeleeelle', t2: 'lealeealle'}, {t1: 'eeeelellll', t2: 'eeealallll'},
-            {t1: 'eeeellllel', t2: 'eeeallllal'}, {t1: 'eleeeeeeel', t2: 'aleeeeeeal'},
-            {t1: 'elelllllll', t2: 'alalllllll'}, {t1: 'eleleeeeee', t2: 'alaleeeeee'},
-            {t1: 'llllllelel', t2: 'llllllalal'}, {t1: 'eeeeeeelel', t2: 'eeeeeealal'},
+            {t1: 'eeelel', t2: 'eealal'},
+            {t1: 'lellel', t2: 'lallal'},
+            {t1: 'elllel', t2: 'alllal'},
+            {t1: 'lelell', t2: 'lalall'},
+            {t1: 'ellell', t2: 'allall'},
+            {t1: 'llelel', t2: 'llalal'},
+            {t1: 'llelll', t2: 'llalll'},
+            {t1: 'ellelll', t2: 'allalll'},
+            {t1: 'elllell', t2: 'alllall'},
+            {t1: 'eelelee', t2: 'ealalee'},
+            {t1: 'eeleele', t2: 'ealeale'},
+            {t1: 'lelllelll', t2: 'lalllalll'},
+            {t1: 'llellelll', t2: 'llallalll'},
+            {t1: 'llelllell', t2: 'llalllall'},
+            {t1: 'llelllelll', t2: 'llalllalll'},
+            {t1: 'eeeleeelee', t2: 'eealeealee'},
+            {t1: 'leeleeelle', t2: 'lealeealle'},
+            {t1: 'eeeelellll', t2: 'eeealallll'},
+            {t1: 'eeeellllel', t2: 'eeeallllal'},
+            {t1: 'eleeeeeeel', t2: 'aleeeeeeal'},
+            {t1: 'elelllllll', t2: 'alalllllll'},
+            {t1: 'eleleeeeee', t2: 'alaleeeeee'},
+            {t1: 'llllllelel', t2: 'llllllalal'},
+            {t1: 'eeeeeeelel', t2: 'eeeeeealal'},
             // Some Valid Inputs - Copy through only
             {t1: 'l', t2: 'l'},
             {t1: 'll', t2: 'll'},
@@ -647,7 +694,8 @@ describe(`${testSuiteName(module)}`, function() {
     describe('14. Replace e by a: t1:e -> t2:a {0,2} (vocab t1:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t1:'ehl'}),
                                    Replace(t1("e"), t2("a"),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            false, false, 0, 2));
         grammar = Count({t1:3,t2:3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -682,7 +730,8 @@ describe(`${testSuiteName(module)}`, function() {
     describe('15. Replace e by a: t1:e -> t2:a {0,3} (vocab t1:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t1:'ehl'}),
                                    Replace(t1("e"), t2("a"),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            false, false, 0, 3));
         grammar = Count({t1:11,t2:11}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -696,21 +745,30 @@ describe(`${testSuiteName(module)}`, function() {
         // 11 characters or less,
         const from_to: StringDict[] = [
             // Some Valid Inputs - Replacement
-            {t1: 'e', t2: 'a'},     {t1: 'ee', t2: 'aa'},
-            {t1: 'he', t2: 'ha'},   {t1: 'ell', t2: 'all'},
-            {t1: 'eee', t2: 'aaa'}, {t1: 'ehhe', t2: 'ahha'},
+            {t1: 'e', t2: 'a'},         {t1: 'ee', t2: 'aa'},
+            {t1: 'he', t2: 'ha'},       {t1: 'ell', t2: 'all'},
+            {t1: 'eee', t2: 'aaa'},     {t1: 'ehhe', t2: 'ahha'},
             {t1: 'eehh', t2: 'aahh'},   {t1: 'lehel', t2: 'lahal'},
             {t1: 'ehehe', t2: 'ahaha'}, {t1: 'ellee', t2: 'allaa'},
             {t1: 'heeeh', t2: 'haaah'}, {t1: 'lehhe', t2: 'lahha'},
-            {t1: 'eheehl', t2: 'ahaahl'},     {t1: 'ehhell', t2: 'ahhall'},
-            {t1: 'hehhee', t2: 'hahhaa'},     {t1: 'ehehehl', t2: 'ahahahl'},
-            {t1: 'ehheehh', t2: 'ahhaahh'},   {t1: 'ellelle', t2: 'allalla'},
-            {t1: 'elleehh', t2: 'allaahh'},   {t1: 'heheheh', t2: 'hahahah'},
-            {t1: 'hheeehh', t2: 'hhaaahh'},   {t1: 'hehlehle', t2: 'hahlahla'},
-            {t1: 'hhehhehh', t2: 'hhahhahh'}, {t1: 'hhehleheh', t2: 'hhahlahah'},
-            {t1: 'hleellell', t2: 'hlaallall'},     {t1: 'llelhelehh', t2: 'llalhalahh'},
-            {t1: 'llehlehlehh', t2: 'llahlahlahh'}, {t1: 'llellellell', t2: 'llallallall'},
-            {t1: 'ehlhlhlhlhl', t2: 'ahlhlhlhlhl'}, {t1: 'lllllllllle', t2: 'lllllllllla'},
+            {t1: 'eheehl', t2: 'ahaahl'},
+            {t1: 'ehhell', t2: 'ahhall'},
+            {t1: 'hehhee', t2: 'hahhaa'},
+            {t1: 'ehehehl', t2: 'ahahahl'},
+            {t1: 'ehheehh', t2: 'ahhaahh'},
+            {t1: 'ellelle', t2: 'allalla'},
+            {t1: 'elleehh', t2: 'allaahh'},
+            {t1: 'heheheh', t2: 'hahahah'},
+            {t1: 'hheeehh', t2: 'hhaaahh'},
+            {t1: 'hehlehle', t2: 'hahlahla'},
+            {t1: 'hhehhehh', t2: 'hhahhahh'},
+            {t1: 'hhehleheh', t2: 'hhahlahah'},
+            {t1: 'hleellell', t2: 'hlaallall'},
+            {t1: 'llelhelehh', t2: 'llalhalahh'},
+            {t1: 'llehlehlehh', t2: 'llahlahlahh'},
+            {t1: 'llellellell', t2: 'llallallall'},
+            {t1: 'ehlhlhlhlhl', t2: 'ahlhlhlhlhl'},
+            {t1: 'lllllllllle', t2: 'lllllllllla'},
             {t1: 'ehlhlhlhlhe', t2: 'ahlhlhlhlha'},
             // Some Valid Inputs - Copy through
             {t1: 'l', t2: 'l'},
@@ -742,21 +800,32 @@ describe(`${testSuiteName(module)}`, function() {
         // 12 characters or less,
         const from_to: StringDict[] = [
             // Some Valid Inputs - Replacement
-            {t1: 'e', t2: 'e'},        {t1: 'ee', t2: 'ee'},
-            {t1: 'hel', t2: 'heel'},   {t1: 'helh', t2: 'heelh'},
-            {t1: 'hele', t2: 'heele'}, {t1: 'lhel', t2: 'lheel'},
-            {t1: 'hhele', t2: 'hheele'},     {t1: 'ehele', t2: 'eheele'},
-            {t1: 'lhell', t2: 'lheell'},     {t1: 'helhel', t2: 'heelheel'},
-            {t1: 'elhelel', t2: 'elheelel'}, {t1: 'hehelhe', t2: 'heheelhe'},
-            {t1: 'helhele', t2: 'heelheele'},   {t1: 'helhhel', t2: 'heelhheel'},
-            {t1: 'lhelhel', t2: 'lheelheel'},   {t1: 'helhhele', t2: 'heelhheele'},
-            {t1: 'helehell', t2: 'heeleheell'}, {t1: 'hhelhell', t2: 'hheelheell'},
-            {t1: 'hhellhel', t2: 'hheellheel'}, {t1: 'ehelhele', t2: 'eheelheele'},
-            {t1: 'ehelhhel', t2: 'eheelhheel'}, {t1: 'lhelhele', t2: 'lheelheele'},
-            {t1: 'lhellhel', t2: 'lheellheel'}, {t1: 'hhelehele', t2: 'hheeleheele'},
-            {t1: 'ehelehele', t2: 'eheeleheele'},   {t1: 'lhelehell', t2: 'lheeleheell'},
-            {t1: 'heleeeehel', t2: 'heeleeeeheel'}, {t1: 'hhhelhelhh', t2: 'hhheelheelhh'},
-            {t1: 'lllhelehel', t2: 'lllheeleheel'}, {t1: 'eeeeheleeee', t2: 'eeeeheeleeee'},
+            {t1: 'e', t2: 'e'},          {t1: 'ee', t2: 'ee'},
+            {t1: 'hel', t2: 'heel'},     {t1: 'helh', t2: 'heelh'},
+            {t1: 'hele', t2: 'heele'},   {t1: 'lhel', t2: 'lheel'},
+            {t1: 'hhele', t2: 'hheele'}, {t1: 'ehele', t2: 'eheele'},
+            {t1: 'lhell', t2: 'lheell'},
+            {t1: 'helhel', t2: 'heelheel'},
+            {t1: 'elhelel', t2: 'elheelel'},
+            {t1: 'hehelhe', t2: 'heheelhe'},
+            {t1: 'helhele', t2: 'heelheele'},
+            {t1: 'helhhel', t2: 'heelhheel'},
+            {t1: 'lhelhel', t2: 'lheelheel'},
+            {t1: 'helhhele', t2: 'heelhheele'},
+            {t1: 'helehell', t2: 'heeleheell'},
+            {t1: 'hhelhell', t2: 'hheelheell'},
+            {t1: 'hhellhel', t2: 'hheellheel'},
+            {t1: 'ehelhele', t2: 'eheelheele'},
+            {t1: 'ehelhhel', t2: 'eheelhheel'},
+            {t1: 'lhelhele', t2: 'lheelheele'},
+            {t1: 'lhellhel', t2: 'lheellheel'},
+            {t1: 'hhelehele', t2: 'hheeleheele'},
+            {t1: 'ehelehele', t2: 'eheeleheele'},
+            {t1: 'lhelehell', t2: 'lheeleheell'},
+            {t1: 'heleeeehel', t2: 'heeleeeeheel'},
+            {t1: 'hhhelhelhh', t2: 'hhheelheelhh'},
+            {t1: 'lllhelehel', t2: 'lllheeleheel'},
+            {t1: 'eeeeheleeee', t2: 'eeeeheeleeee'},
             {t1: 'hhhheeeellll', t2: 'hhhheeeellll'},
             // Some Valid Inputs - Copy through
             {t1: 'h', t2: 'h'},
@@ -813,12 +882,12 @@ describe(`${testSuiteName(module)}`, function() {
         testHasVocab(grammar, {t1: 3, t2: 3});
         const from_to: StringDict[] = [
             // Some Valid Inputs - Copy through
-            {t1: 'h', t2: 'h'},   {t1: 'e', t2: 'e'},
-            {t1: 'l', t2: 'l'},   {t1: 'hl', t2: 'hl'},
-            {t1: 'eh', t2: 'eh'}, {t1: 'll', t2: 'll'},
-            {t1: 'heh', t2: 'heh'}, {t1: 'hee', t2: 'hee'},
-            {t1: 'elh', t2: 'elh'}, {t1: 'ell', t2: 'ell'},
-            {t1: 'lel', t2: 'lel'}, {t1: 'lll', t2: 'lll'},
+            {t1: 'h', t2: 'h'},       {t1: 'e', t2: 'e'},
+            {t1: 'l', t2: 'l'},       {t1: 'hl', t2: 'hl'},
+            {t1: 'eh', t2: 'eh'},     {t1: 'll', t2: 'll'},
+            {t1: 'heh', t2: 'heh'},   {t1: 'hee', t2: 'hee'},
+            {t1: 'elh', t2: 'elh'},   {t1: 'ell', t2: 'ell'},
+            {t1: 'lel', t2: 'lel'},   {t1: 'lll', t2: 'lll'},
             {t1: 'hhhh', t2: 'hhhh'}, {t1: 'hhee', t2: 'hhee'},
             {t1: 'hhel', t2: 'hhel'}, {t1: 'heel', t2: 'heel'},
             {t1: 'eheh', t2: 'eheh'}, {t1: 'ehee', t2: 'ehee'},
@@ -828,8 +897,8 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhelh', t2: 'hhelh'},     {t1: 'elhelel', t2: 'elhelel'},
             {t1: 'hehelhe', t2: 'hehelhe'}, {t1: 'lhhelhl', t2: 'lhhelhl'},
             // Some Valid Inputs - Replacement
-            {t1: 'hel', t2: 'heel'},   {t1: 'helh', t2: 'heelh'},
-            {t1: 'hele', t2: 'heele'}, {t1: 'hell', t2: 'heell'},
+            {t1: 'hel', t2: 'heel'},         {t1: 'helh', t2: 'heelh'},
+            {t1: 'hele', t2: 'heele'},       {t1: 'hell', t2: 'heell'},
             {t1: 'helhel', t2: 'heelhel'},   {t1: 'helhelh', t2: 'heelhelh'},
             {t1: 'helhele', t2: 'heelhele'}, {t1: 'helhell', t2: 'heelhell'},
             {t1: 'helhhel', t2: 'heelhhel'}, {t1: 'helehel', t2: 'heelehel'},
@@ -847,13 +916,13 @@ describe(`${testSuiteName(module)}`, function() {
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
-            {t1: 'hel', t2: 'heel'},   {t1: 'hhel', t2: 'hheel'},
-            {t1: 'ehel', t2: 'eheel'}, {t1: 'lhel', t2: 'lheel'},
-            {t1: 'hhhel', t2: 'hhheel'}, {t1: 'hehel', t2: 'heheel'},
-            {t1: 'hlhel', t2: 'hlheel'}, {t1: 'ehhel', t2: 'ehheel'},
-            {t1: 'eehel', t2: 'eeheel'}, {t1: 'elhel', t2: 'elheel'},
-            {t1: 'lhhel', t2: 'lhheel'}, {t1: 'lehel', t2: 'leheel'},
-            {t1: 'llhel', t2: 'llheel'}, {t1: 'hhhhel', t2: 'hhhheel'},
+            {t1: 'hel', t2: 'heel'},       {t1: 'hhel', t2: 'hheel'},
+            {t1: 'ehel', t2: 'eheel'},     {t1: 'lhel', t2: 'lheel'},
+            {t1: 'hhhel', t2: 'hhheel'},   {t1: 'hehel', t2: 'heheel'},
+            {t1: 'hlhel', t2: 'hlheel'},   {t1: 'ehhel', t2: 'ehheel'},
+            {t1: 'eehel', t2: 'eeheel'},   {t1: 'elhel', t2: 'elheel'},
+            {t1: 'lhhel', t2: 'lhheel'},   {t1: 'lehel', t2: 'leheel'},
+            {t1: 'llhel', t2: 'llheel'},   {t1: 'hhhhel', t2: 'hhhheel'},
             {t1: 'hhehel', t2: 'hheheel'}, {t1: 'hhlhel', t2: 'hhlheel'},
             {t1: 'hehhel', t2: 'hehheel'}, {t1: 'heehel', t2: 'heeheel'},
             {t1: 'helhel', t2: 'helheel'}, {t1: 'hlhhel', t2: 'hlhheel'},
@@ -879,24 +948,24 @@ describe(`${testSuiteName(module)}`, function() {
         testHasVocab(grammar, {t1: 3, t2: 3});
         const from_to: StringDict[] = [
             // Some Valid Inputs - Copy through
-            {t1: 'h', t2: 'h'},   {t1: 'e', t2: 'e'},
-            {t1: 'l', t2: 'l'},   {t1: 'hl', t2: 'hl'},
-            {t1: 'eh', t2: 'eh'}, {t1: 'll', t2: 'll'},
-            {t1: 'heh', t2: 'heh'}, {t1: 'hee', t2: 'hee'},
-            {t1: 'elh', t2: 'elh'}, {t1: 'ell', t2: 'ell'},
-            {t1: 'lel', t2: 'lel'}, {t1: 'lll', t2: 'lll'},
-            {t1: 'hhhh', t2: 'hhhh'},   {t1: 'hhee', t2: 'hhee'},
-            {t1: 'helh', t2: 'helh'},   {t1: 'hele', t2: 'hele'},
-            {t1: 'hell', t2: 'hell'},   {t1: 'heel', t2: 'heel'},
-            {t1: 'eheh', t2: 'eheh'},   {t1: 'ehee', t2: 'ehee'},
-            {t1: 'ehll', t2: 'ehll'},   {t1: 'ellh', t2: 'ellh'},
-            {t1: 'lhee', t2: 'lhee'},   {t1: 'lheh', t2: 'lheh'},
-            {t1: 'lhle', t2: 'lhle'},   {t1: 'llll', t2: 'llll'},
+            {t1: 'h', t2: 'h'},       {t1: 'e', t2: 'e'},
+            {t1: 'l', t2: 'l'},       {t1: 'hl', t2: 'hl'},
+            {t1: 'eh', t2: 'eh'},     {t1: 'll', t2: 'll'},
+            {t1: 'heh', t2: 'heh'},   {t1: 'hee', t2: 'hee'},
+            {t1: 'elh', t2: 'elh'},   {t1: 'ell', t2: 'ell'},
+            {t1: 'lel', t2: 'lel'},   {t1: 'lll', t2: 'lll'},
+            {t1: 'hhhh', t2: 'hhhh'}, {t1: 'hhee', t2: 'hhee'},
+            {t1: 'helh', t2: 'helh'}, {t1: 'hele', t2: 'hele'},
+            {t1: 'hell', t2: 'hell'}, {t1: 'heel', t2: 'heel'},
+            {t1: 'eheh', t2: 'eheh'}, {t1: 'ehee', t2: 'ehee'},
+            {t1: 'ehll', t2: 'ehll'}, {t1: 'ellh', t2: 'ellh'},
+            {t1: 'lhee', t2: 'lhee'}, {t1: 'lheh', t2: 'lheh'},
+            {t1: 'lhle', t2: 'lhle'}, {t1: 'llll', t2: 'llll'},
             {t1: 'hhelh', t2: 'hhelh'}, {t1: 'elhelel', t2: 'elhelel'},
             {t1: 'hehelhe', t2: 'hehelhe'},
             // Some Valid Inputs - Replacement
-            {t1: 'hel', t2: 'heel'},   {t1: 'hhel', t2: 'hheel'},
-            {t1: 'ehel', t2: 'eheel'}, {t1: 'lhel', t2: 'lheel'},
+            {t1: 'hel', t2: 'heel'},         {t1: 'hhel', t2: 'hheel'},
+            {t1: 'ehel', t2: 'eheel'},       {t1: 'lhel', t2: 'lheel'},
             {t1: 'helhel', t2: 'helheel'},   {t1: 'hhelhel', t2: 'hhelheel'},
             {t1: 'ehelhel', t2: 'ehelheel'}, {t1: 'lhelhel', t2: 'lhelheel'},
             {t1: 'helhhel', t2: 'helhheel'}, {t1: 'helehel', t2: 'heleheel'},
@@ -957,20 +1026,25 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'eeeeeeee', t2: 'eeeeeeee'},
             {t1: 'eeeeehhhhh', t2: 'eeeeehhhhh'},
             // Some Valid Inputs - Replacement
-            {t1: 'he', t2: 'hee'},        {t1: 'hee', t2: 'heee'},
-            {t1: 'hhe', t2: 'hhee'},      {t1: 'hehe', t2: 'heehee'},
-            {t1: 'hheh', t2: 'hheeh'},    {t1: 'ehehe', t2: 'eheehee'},
-            {t1: 'heheh', t2: 'heeheeh'}, {t1: 'hehee', t2: 'heeheee'},
-            {t1: 'hehhe', t2: 'heehhee'}, {t1: 'hhehe', t2: 'hheehee'},
+            {t1: 'he', t2: 'hee'},          {t1: 'hee', t2: 'heee'},
+            {t1: 'hhe', t2: 'hhee'},        {t1: 'hehe', t2: 'heehee'},
+            {t1: 'hheh', t2: 'hheeh'},      {t1: 'ehehe', t2: 'eheehee'},
+            {t1: 'heheh', t2: 'heeheeh'},   {t1: 'hehee', t2: 'heeheee'},
+            {t1: 'hehhe', t2: 'heehhee'},   {t1: 'hhehe', t2: 'hheehee'},
             {t1: 'eeheee', t2: 'eeheeee'},  {t1: 'ehehee', t2: 'eheeheee'},
             {t1: 'eheehe', t2: 'eheeehee'}, {t1: 'hehheh', t2: 'heehheeh'},
             {t1: 'hehhhe', t2: 'heehhhee'}, {t1: 'heehee', t2: 'heeeheee'},
             {t1: 'hhhehh', t2: 'hhheehh'},  {t1: 'hehehhh', t2: 'heeheehhh'},
-            {t1: 'hhehheh', t2: 'hheehheeh'},       {t1: 'eeeeeehehe', t2: 'eeeeeeheehee'},
-            {t1: 'eehehhheee', t2: 'eeheehhheeee'}, {t1: 'heeeeeeehe', t2: 'heeeeeeeehee'},
-            {t1: 'hehehhhhhh', t2: 'heeheehhhhhh'}, {t1: 'hehhhhhhhe', t2: 'heehhhhhhhee'},
-            {t1: 'hehhhhhhhh', t2: 'heehhhhhhhh'},  {t1: 'hhheeeheee', t2: 'hhheeeeheeee'},
-            {t1: 'hhhehhhehh', t2: 'hhheehhheehh'}, {t1: 'hhhhehehhh', t2: 'hhhheeheehhh'},
+            {t1: 'hhehheh', t2: 'hheehheeh'},
+            {t1: 'eeeeeehehe', t2: 'eeeeeeheehee'},
+            {t1: 'eehehhheee', t2: 'eeheehhheeee'},
+            {t1: 'heeeeeeehe', t2: 'heeeeeeeehee'},
+            {t1: 'hehehhhhhh', t2: 'heeheehhhhhh'},
+            {t1: 'hehhhhhhhe', t2: 'heehhhhhhhee'},
+            {t1: 'hehhhhhhhh', t2: 'heehhhhhhhh'},
+            {t1: 'hhheeeheee', t2: 'hhheeeeheeee'},
+            {t1: 'hhhehhhehh', t2: 'hhheehhheehh'},
+            {t1: 'hhhhehehhh', t2: 'hhhheeheehhh'},
             {t1: 'hhhhheeeee', t2: 'hhhhheeeeee'},
             // Some Invalid Inputs
             {t1: 'hehehe'},
@@ -1023,20 +1097,26 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'eeeeeeee', t2: 'eeeeeeee'},
             {t1: 'llllleeeee', t2: 'llllleeeee'},
             // Some Valid Inputs - Replacement
-            {t1: 'el', t2: 'eel'},        {t1: 'ele', t2: 'eele'},
-            {t1: 'eel', t2: 'eeel'},      {t1: 'elel', t2: 'eeleel'},
-            {t1: 'lell', t2: 'leell'},    {t1: 'eelel', t2: 'eeeleel'},
-            {t1: 'elele', t2: 'eeleele'}, {t1: 'elell', t2: 'eeleell'},
-            {t1: 'ellel', t2: 'eelleel'}, {t1: 'lelel', t2: 'leeleel'},
-            {t1: 'eeelee', t2: 'eeeelee'},    {t1: 'eeleel', t2: 'eeeleeel'},
-            {t1: 'eelele', t2: 'eeeleele'},   {t1: 'eleele', t2: 'eeleeele'},
-            {t1: 'ellell', t2: 'eelleell'},   {t1: 'elllel', t2: 'eellleel'},
-            {t1: 'llelll', t2: 'lleelll'},    {t1: 'elellll', t2: 'eeleellll'},
-            {t1: 'lellell', t2: 'leelleell'}, {t1: 'eeeeeeelel', t2: 'eeeeeeeeleel'},
-            {t1: 'eeelllelee', t2: 'eeeellleelee'}, {t1: 'eleeeeeeel', t2: 'eeleeeeeeeel'},
-            {t1: 'elelllllll', t2: 'eeleelllllll'}, {t1: 'elllllllel', t2: 'eellllllleel'},
-            {t1: 'elllllllll', t2: 'eelllllllll'},  {t1: 'lleleeelee', t2: 'lleeleeeelee'},
-            {t1: 'llelllelll', t2: 'lleellleelll'}, {t1: 'lllelellll', t2: 'llleeleellll'},
+            {t1: 'el', t2: 'eel'},          {t1: 'ele', t2: 'eele'},
+            {t1: 'eel', t2: 'eeel'},        {t1: 'elel', t2: 'eeleel'},
+            {t1: 'lell', t2: 'leell'},      {t1: 'eelel', t2: 'eeeleel'},
+            {t1: 'elele', t2: 'eeleele'},   {t1: 'elell', t2: 'eeleell'},
+            {t1: 'ellel', t2: 'eelleel'},   {t1: 'lelel', t2: 'leeleel'},
+            {t1: 'eeelee', t2: 'eeeelee'},  {t1: 'eeleel', t2: 'eeeleeel'},
+            {t1: 'eelele', t2: 'eeeleele'}, {t1: 'eleele', t2: 'eeleeele'},
+            {t1: 'ellell', t2: 'eelleell'}, {t1: 'elllel', t2: 'eellleel'},
+            {t1: 'llelll', t2: 'lleelll'},
+            {t1: 'elellll', t2: 'eeleellll'},
+            {t1: 'lellell', t2: 'leelleell'},
+            {t1: 'eeeeeeelel', t2: 'eeeeeeeeleel'},
+            {t1: 'eeelllelee', t2: 'eeeellleelee'},
+            {t1: 'eleeeeeeel', t2: 'eeleeeeeeeel'},
+            {t1: 'elelllllll', t2: 'eeleelllllll'},
+            {t1: 'elllllllel', t2: 'eellllllleel'},
+            {t1: 'elllllllll', t2: 'eelllllllll'},
+            {t1: 'lleleeelee', t2: 'lleeleeeelee'},
+            {t1: 'llelllelll', t2: 'lleellleelll'},
+            {t1: 'lllelellll', t2: 'llleeleellll'},
             {t1: 'lllleleeee', t2: 'lllleeleeee'},
             // Some Invalid Inputs
             {t1: 'elelel'},
@@ -1049,7 +1129,8 @@ describe(`${testSuiteName(module)}`, function() {
     describe('23. Replace e by ee: t1:e -> t2:ee {0,2} (vocab t1:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t1:'ehl'}),
                                    Replace(t1("e"), t2("ee"),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            false, false, 0, 2));
         grammar = Count({t1: 3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -1057,9 +1138,9 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {},
             // Replacement
-            {t1: 'e', t2: 'ee'},   {t1: 'ee', t2: 'eeee'},
-            {t1: 'eh', t2: 'eeh'}, {t1: 'el', t2: 'eel'},
-            {t1: 'he', t2: 'hee'}, {t1: 'le', t2: 'lee'},
+            {t1: 'e', t2: 'ee'},      {t1: 'ee', t2: 'eeee'},
+            {t1: 'eh', t2: 'eeh'},    {t1: 'el', t2: 'eel'},
+            {t1: 'he', t2: 'hee'},    {t1: 'le', t2: 'lee'},
             {t1: 'eeh', t2: 'eeeeh'}, {t1: 'eel', t2: 'eeeel'},
             {t1: 'ehe', t2: 'eehee'}, {t1: 'ehh', t2: 'eehh'},
             {t1: 'ehl', t2: 'eehl'},  {t1: 'ele', t2: 'eelee'},
@@ -1101,16 +1182,26 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'heele', t2: 'hele'},   {t1: 'lheel', t2: 'lhel'},
             {t1: 'hheele', t2: 'hhele'}, {t1: 'eheele', t2: 'ehele'},
             {t1: 'lheell', t2: 'lhell'}, {t1: 'heelheel', t2: 'helhel'},
-            {t1: 'elheelel', t2: 'elhelel'},    {t1: 'heheelhe', t2: 'hehelhe'},
-            {t1: 'heelheele', t2: 'helhele'},   {t1: 'heelhheel', t2: 'helhhel'},
-            {t1: 'lheelheel', t2: 'lhelhel'},   {t1: 'heelhheele', t2: 'helhhele'},
-            {t1: 'heeleheell', t2: 'helehell'}, {t1: 'hheelheell', t2: 'hhelhell'},
-            {t1: 'hheellheel', t2: 'hhellhel'}, {t1: 'eheelheele', t2: 'ehelhele'},
-            {t1: 'eheelhheel', t2: 'ehelhhel'}, {t1: 'lheelheele', t2: 'lhelhele'},
-            {t1: 'lheellheel', t2: 'lhellhel'}, {t1: 'hheeleheele', t2: 'hhelehele'},
-            {t1: 'eheeleheele', t2: 'ehelehele'},   {t1: 'lheeleheell', t2: 'lhelehell'},
-            {t1: 'heeleeeeheel', t2: 'heleeeehel'}, {t1: 'hhheelheelhh', t2: 'hhhelhelhh'},
-            {t1: 'lllheeleheel', t2: 'lllhelehel'}, {t1: 'eeeeheeleeee', t2: 'eeeeheleeee'},
+            {t1: 'elheelel', t2: 'elhelel'},
+            {t1: 'heheelhe', t2: 'hehelhe'},
+            {t1: 'heelheele', t2: 'helhele'},
+            {t1: 'heelhheel', t2: 'helhhel'},
+            {t1: 'lheelheel', t2: 'lhelhel'},
+            {t1: 'heelhheele', t2: 'helhhele'},
+            {t1: 'heeleheell', t2: 'helehell'},
+            {t1: 'hheelheell', t2: 'hhelhell'},
+            {t1: 'hheellheel', t2: 'hhellhel'},
+            {t1: 'eheelheele', t2: 'ehelhele'},
+            {t1: 'eheelhheel', t2: 'ehelhhel'},
+            {t1: 'lheelheele', t2: 'lhelhele'},
+            {t1: 'lheellheel', t2: 'lhellhel'},
+            {t1: 'hheeleheele', t2: 'hhelehele'},
+            {t1: 'eheeleheele', t2: 'ehelehele'},
+            {t1: 'lheeleheell', t2: 'lhelehell'},
+            {t1: 'heeleeeeheel', t2: 'heleeeehel'},
+            {t1: 'hhheelheelhh', t2: 'hhhelhelhh'},
+            {t1: 'lllheeleheel', t2: 'lllhelehel'},
+            {t1: 'eeeeheeleeee', t2: 'eeeeheleeee'},
             {t1: 'hhhheeeellll', t2: 'hhhheeeellll'},
             // Some Valid Inputs - Copy through
             {t1: 'e', t2: 'e'},     {t1: 'h', t2: 'h'},
@@ -1192,11 +1283,16 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'eheeehee', t2: 'eheehe'}, {t1: 'heehheeh', t2: 'hehheh'},
             {t1: 'heehhhee', t2: 'hehhhe'}, {t1: 'heeeheee', t2: 'heehee'},
             {t1: 'hhheehh', t2: 'hhhehh'},  {t1: 'heeheehhh', t2: 'hehehhh'},
-            {t1: 'hheehheeh', t2: 'hhehheh'},       {t1: 'eeeeeeheehee', t2: 'eeeeeehehe'},
-            {t1: 'eeheehhheeee', t2: 'eehehhheee'}, {t1: 'heeeeeeeehee', t2: 'heeeeeeehe'},
-            {t1: 'heeheehhhhhh', t2: 'hehehhhhhh'}, {t1: 'heehhhhhhhee', t2: 'hehhhhhhhe'},
-            {t1: 'heehhhhhhhh', t2: 'hehhhhhhhh'},  {t1: 'hhheeeeheeee', t2: 'hhheeeheee'},
-            {t1: 'hhheehhheehh', t2: 'hhhehhhehh'}, {t1: 'hhhheeheehhh', t2: 'hhhhehehhh'},
+            {t1: 'hheehheeh', t2: 'hhehheh'},
+            {t1: 'eeeeeeheehee', t2: 'eeeeeehehe'},
+            {t1: 'eeheehhheeee', t2: 'eehehhheee'},
+            {t1: 'heeeeeeeehee', t2: 'heeeeeeehe'},
+            {t1: 'heeheehhhhhh', t2: 'hehehhhhhh'},
+            {t1: 'heehhhhhhhee', t2: 'hehhhhhhhe'},
+            {t1: 'heehhhhhhhh', t2: 'hehhhhhhhh'},
+            {t1: 'hhheeeeheeee', t2: 'hhheeeheee'},
+            {t1: 'hhheehhheehh', t2: 'hhhehhhehh'},
+            {t1: 'hhhheeheehhh', t2: 'hhhhehehhh'},
             {t1: 'hhhhheeeeee', t2: 'hhhhheeeee'},
             // Some Invalid Inputs
             {t1: 'heeheehee'},
@@ -1262,20 +1358,25 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'eeeeeeee', t2: 'eeeeeeee'},
             {t1: 'llllleeeee', t2: 'llllleeeee'},
             // Some Valid Inputs - Replacement
-            {t1: 'eel', t2: 'el'},     {t1: 'eele', t2: 'ele'},
-            {t1: 'eeel', t2: 'eel'},   {t1: 'eeleel', t2: 'elel'},
-            {t1: 'leell', t2: 'lell'}, {t1: 'eeeleel', t2: 'eelel'},
+            {t1: 'eel', t2: 'el'},          {t1: 'eele', t2: 'ele'},
+            {t1: 'eeel', t2: 'eel'},        {t1: 'eeleel', t2: 'elel'},
+            {t1: 'leell', t2: 'lell'},      {t1: 'eeeleel', t2: 'eelel'},
             {t1: 'eeleele', t2: 'elele'},   {t1: 'eeleell', t2: 'elell'},
             {t1: 'eelleel', t2: 'ellel'},   {t1: 'leeleel', t2: 'lelel'},
             {t1: 'eeeelee', t2: 'eeelee'},  {t1: 'eeeleeel', t2: 'eeleel'},
             {t1: 'eeeleele', t2: 'eelele'}, {t1: 'eeleeele', t2: 'eleele'},
             {t1: 'eelleell', t2: 'ellell'}, {t1: 'eellleel', t2: 'elllel'},
             {t1: 'lleelll', t2: 'llelll'},  {t1: 'eeleellll', t2: 'elellll'},
-            {t1: 'leelleell', t2: 'lellell'},       {t1: 'eeeeeeeeleel', t2: 'eeeeeeelel'},
-            {t1: 'eeeellleelee', t2: 'eeelllelee'}, {t1: 'eeleeeeeeeel', t2: 'eleeeeeeel'},
-            {t1: 'eeleelllllll', t2: 'elelllllll'}, {t1: 'eellllllleel', t2: 'elllllllel'},
-            {t1: 'eelllllllll', t2: 'elllllllll'},  {t1: 'lleeleeeelee', t2: 'lleleeelee'},
-            {t1: 'lleellleelll', t2: 'llelllelll'}, {t1: 'llleeleellll', t2: 'lllelellll'},
+            {t1: 'leelleell', t2: 'lellell'},
+            {t1: 'eeeeeeeeleel', t2: 'eeeeeeelel'},
+            {t1: 'eeeellleelee', t2: 'eeelllelee'},
+            {t1: 'eeleeeeeeeel', t2: 'eleeeeeeel'},
+            {t1: 'eeleelllllll', t2: 'elelllllll'},
+            {t1: 'eellllllleel', t2: 'elllllllel'},
+            {t1: 'eelllllllll', t2: 'elllllllll'},
+            {t1: 'lleeleeeelee', t2: 'lleleeelee'},
+            {t1: 'lleellleelll', t2: 'llelllelll'},
+            {t1: 'llleeleellll', t2: 'lllelellll'},
             {t1: 'lllleeleeee', t2: 'lllleleeee'},
             // Some Invalid Inputs
             {t1: 'eeleeleel'},
@@ -1288,7 +1389,8 @@ describe(`${testSuiteName(module)}`, function() {
     describe('27. Replace ee by e: t1:ee -> t2:e {0,2} (vocab t1:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t1:'ehl'}),
                                    Replace(t1("ee"), t2("e"),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            false, false, 0, 2));
         grammar = Count({t2: 3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -1337,7 +1439,8 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lll', t2: 'lll'},
         ];
         testGrammar(grammar, expectedResults,
-                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT,
+                    WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('28a. Insert a in h_l: t1:0 -> t2:a {0,2} || h_l', function() {
@@ -1473,7 +1576,8 @@ describe(`${testSuiteName(module)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    describe('30a. Replace e by a in hel and hey: t1:e -> t2:a {0,2} || h_l|y', function() {
+    describe('30a. Replace e by a in hel and hey: ' +
+             't1:e -> t2:a {0,2} || h_l|y', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"),
                                        t1("h"), Uni(t1("l"), t1("y")),
                                        EMPTY_CONTEXT, false, false, 0, 2);
@@ -1509,7 +1613,8 @@ describe(`${testSuiteName(module)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    describe('30b. Replace e by a in hel and yel: t1:e -> t2:a {0,2} || h|y_l', function() {
+    describe('30b. Replace e by a in hel and yel: ' +
+             't1:e -> t2:a {0,2} || h|y_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"),
                                        Uni(t1("h"), t1("y")), t1("l"),
                                        EMPTY_CONTEXT, false, false, 0, 2);
@@ -1545,7 +1650,8 @@ describe(`${testSuiteName(module)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    describe('30c. Replace e by a in hel, hey, hee: t1:e -> t2:a {0,2} || h_(.&~h) (vocab t1:ehly)', function() {
+    describe('30c. Replace e by a in hel, hey, hee: ' +
+             't1:e -> t2:a {0,2} || h_(.&~h) (vocab t1:ehly)', function() {
         let grammar: Grammar = Seq(Vocab({t1:'ehly'}),
                                    Replace(t1("e"), t2("a"),
                                            t1("h"),
@@ -1585,7 +1691,8 @@ describe(`${testSuiteName(module)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    describe('30d. Replace e by a in hel, yel, eel: t1:e -> t2:a {0,2} || (.&~l)_l (vocab t1:ehly)', function() {
+    describe('30d. Replace e by a in hel, yel, eel: ' +
+             't1:e -> t2:a {0,2} || (.&~l)_l (vocab t1:ehly)', function() {
         let grammar: Grammar = Seq(Vocab({t1:'ehly'}),
                                    Replace(t1("e"), t2("a"),
                                            Intersect(Any("t1"), Not(t1("l"))),
@@ -1624,7 +1731,8 @@ describe(`${testSuiteName(module)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    describe('30e. Replace e or o by a in hel: t1:e|t1:o -> t2:a {0,2} || h_l', function() {
+    describe('30e. Replace e or o by a in hel: ' +
+             't1:e|t1:o -> t2:a {0,2} || h_l', function() {
         let grammar: Grammar = Replace(Uni(t1("e"), t1("o")), t2("a"),
                                        t1("h"), t1("l"), EMPTY_CONTEXT,
                                        false, false, 0, 2);
@@ -1658,7 +1766,8 @@ describe(`${testSuiteName(module)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to));
     });
     
-    describe('30f-a. Replace e by a or o in hel: t1:e -> t2:a|t2:o {0,1} || h_l', function() {
+    describe('30f-a. Replace e by a or o in hel: ' +
+             't1:e -> t2:a|t2:o {0,1} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), Uni(t2("a"), t2("o")),
                                        t1("h"), t1("l"), EMPTY_CONTEXT,
                                        false, false, 0, 1);
@@ -1693,7 +1802,8 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('30f. Replace e by a or o in hel: t1:e -> t2:a|t2:o {0,1} || h_l', function() {
+    describe('30f. Replace e by a or o in hel: ' +
+             't1:e -> t2:a|t2:o {0,1} || h_l', function() {
         let grammar: Grammar = Replace(t1("e"), Uni(t2("a"), t2("o")),
                                        t1("h"), t1("l"), EMPTY_CONTEXT,
                                        false, false, 0, 1);
@@ -1705,15 +1815,24 @@ describe(`${testSuiteName(module)}`, function() {
             [{t1: 'eee'},   [{t1: 'eee', t2: 'eee'}]],
             [{t1: 'lelee'}, [{t1: 'lelee', t2: 'lelee'}]],
             // Some Valid Inputs - Replacement
-            [{t1: 'hel'},   [{t1: 'hel', t2: 'hal'},     {t1: 'hel', t2: 'hol'}]],
-            [{t1: 'hell'},  [{t1: 'hell', t2: 'hall'},   {t1: 'hell', t2: 'holl'}]],
-            [{t1: 'helh'},  [{t1: 'helh', t2: 'halh'},   {t1: 'helh', t2: 'holh'}]],
-            [{t1: 'hhel'},  [{t1: 'hhel', t2: 'hhal'},   {t1: 'hhel', t2: 'hhol'}]],
-            [{t1: 'hhell'}, [{t1: 'hhell', t2: 'hhall'}, {t1: 'hhell', t2: 'hholl'}]],
-            [{t1: 'hhelh'}, [{t1: 'hhelh', t2: 'hhalh'}, {t1: 'hhelh', t2: 'hholh'}]],
-            [{t1: 'lhel'},  [{t1: 'lhel', t2: 'lhal'},   {t1: 'lhel', t2: 'lhol'}]],
-            [{t1: 'lhell'}, [{t1: 'lhell', t2: 'lhall'}, {t1: 'lhell', t2: 'lholl'}]],
-            [{t1: 'lhelh'}, [{t1: 'lhelh', t2: 'lhalh'}, {t1: 'lhelh', t2: 'lholh'}]],
+            [{t1: 'hel'},   [{t1: 'hel', t2: 'hal'},
+                             {t1: 'hel', t2: 'hol'}]],
+            [{t1: 'hell'},  [{t1: 'hell', t2: 'hall'},
+                             {t1: 'hell', t2: 'holl'}]],
+            [{t1: 'helh'},  [{t1: 'helh', t2: 'halh'},
+                             {t1: 'helh', t2: 'holh'}]],
+            [{t1: 'hhel'},  [{t1: 'hhel', t2: 'hhal'},
+                             {t1: 'hhel', t2: 'hhol'}]],
+            [{t1: 'hhell'}, [{t1: 'hhell', t2: 'hhall'},
+                             {t1: 'hhell', t2: 'hholl'}]],
+            [{t1: 'hhelh'}, [{t1: 'hhelh', t2: 'hhalh'},
+                             {t1: 'hhelh', t2: 'hholh'}]],
+            [{t1: 'lhel'},  [{t1: 'lhel', t2: 'lhal'},
+                             {t1: 'lhel', t2: 'lhol'}]],
+            [{t1: 'lhell'}, [{t1: 'lhell', t2: 'lhall'},
+                             {t1: 'lhell', t2: 'lholl'}]],
+            [{t1: 'lhelh'}, [{t1: 'lhelh', t2: 'lhalh'},
+                             {t1: 'lhelh', t2: 'lholh'}]],
             // Some Invalid Inputs
             [{t1: 'helhel'}, []],
             [{t1: 'hhheeelllyyy'}, []],
@@ -1751,7 +1870,8 @@ describe(`${testSuiteName(module)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    describe('32. Replace e by a in hel: t1:e -> t2:a {0,3} || t1:h_l & t3:[1SG]', function() {
+    describe('32. Replace e by a in hel: ' +
+             't1:e -> t2:a {0,3} || t1:h_l & t3:[1SG]', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"),
                                        t1("h"), t1("l"), t3("[1SG]"),
                                        false, false, 0, 3);
@@ -1809,7 +1929,8 @@ describe(`${testSuiteName(module)}`, function() {
     describe('33a. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_ (t2:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t2: 'ehl'}),
                                    Replace(t1(""), t2("e"),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            true, false, 1, 1));
         grammar = Count({t1:4,t2:4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -1820,10 +1941,12 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('33b. Replace ∅ by e: t1:∅ -> t2:e {1} || _$ (vocab t2:ehl)', function() {
+    describe('33b. Replace ∅ by e: t1:∅ -> t2:e {1} || _$ ' +
+             '(vocab t2:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t2: 'ehl'}),
                                    Replace(t1(""), t2("e"),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            false, true, 1, 1));
         grammar = Count({t1:4,t2:4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -1834,10 +1957,12 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('33c. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_$ (vocab t2:ehl)', function() {
+    describe('33c. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_$ ' +
+             '(vocab t2:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t2: 'ehl'}),
                                    Replace(t1(""), t2("e"),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            true, true, 1, 1));
         grammar = Count({t1:4,t2:4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -1862,10 +1987,12 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('33e. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_ (vocab t1:hl)', function() {
+    describe('33e. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_ ' +
+             '(vocab t1:hl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'hl'}),
                                    Replace(t1(""), t2("e"),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            true, false, 1, 1));
         grammar = Count({t1:4,t2:4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -1883,10 +2010,12 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('33f. Replace ∅ by e: t1:∅ -> t2:e {1} || _$ (vocab t1:hl)', function() {
+    describe('33f. Replace ∅ by e: t1:∅ -> t2:e {1} || _$ ' +
+             '(vocab t1:hl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'hl'}),
                                    Replace(t1(""), t2("e"),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            false, true, 1, 1));
         grammar = Count({t1:4,t2:4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -1904,10 +2033,12 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('33g. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_$ (vocab t1:hl)', function() {
+    describe('33g. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_$ ' +
+             '(vocab t1:hl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'hl'}),
                                    Replace(t1(""), t2("e"),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            true, true, 1, 1));
         grammar = Count({t1:4,t2:4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -2044,7 +2175,8 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lllh', t2: 'lllh'}, {t1: 'llll', t2: 'llll'},
         ];
         testGrammar(grammar, expectedResults,
-                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT,
+                    WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('33k. Replace ∅ by e: t1:∅ -> t2:e {2} (vocab t1:h)', function() {
@@ -2062,7 +2194,8 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'hee'},
         ];
         testGrammar(grammar, expectedResults,
-                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT,
+                    WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
     describe('33k-2. Replace ∅ by e: t1:∅ -> t2:e {2} (vocab t1:h)', function() {
@@ -2086,10 +2219,12 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hh', t2: 'hhee'},
         ];
         testGrammar(grammar, expectedResults,
-                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT,
+                    WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('33l. Replace ∅|h by e: t1:∅|t1:h -> t2:e {1} (vocab t1:hl)', function() {
+    describe('33l. Replace ∅|h by e: t1:∅|t1:h -> t2:e {1} ' +
+             '(vocab t1:hl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'hl'}),
                                    OptionalReplace(Uni(t1(""), t1("h")), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2153,7 +2288,8 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('33m. Replace ∅|h by e: t1:∅|t1:h -> t2:e {1} (vocab t1:eh)', function() {
+    describe('33m. Replace ∅|h by e: t1:∅|t1:h -> t2:e {1} ' +
+             '(vocab t1:eh)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'eh'}),
                                    OptionalReplace(Uni(t1(""), t1("h")), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2211,13 +2347,16 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "eehe", t2: "eeee"}, {t1: "eeeh", t2: "eeee"},
         ];
         testGrammar(grammar, expectedResults,
-                    DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT,
+                    WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('34a. Replace e by ∅: t1:e -> t2:∅ {1} || ^_ (vocab t1:ehl)', function() {
+    describe('34a. Replace e by ∅: t1:e -> t2:∅ {1} || ^_ ' +
+             '(vocab t1:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'ehl'}),
                                    Replace(t1("e"), t2(""),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            true, false, 1, 1));
         grammar = Count({t1:4,t2:4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -2249,10 +2388,12 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('34b. Replace e by ∅: t1:e -> t2:∅ {1} || _$ (vocab t1:ehl)', function() {
+    describe('34b. Replace e by ∅: t1:e -> t2:∅ {1} || _$ ' +
+             '(vocab t1:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'ehl'}),
                                    Replace(t1("e"), t2(""),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            false, true, 1, 1));
         grammar = Count({t1:4,t2:4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -2284,10 +2425,12 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('34c. Replace e by ∅: t1:e -> t2:∅ {1} || ^_$ (vocab t1:ehl)', function() {
+    describe('34c. Replace e by ∅: t1:e -> t2:∅ {1} || ^_$ ' +
+             '(vocab t1:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'ehl'}),
                                    Replace(t1("e"), t2(""),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            true, true, 1, 1));
         grammar = Count({t1:4,t2:4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -2301,21 +2444,22 @@ describe(`${testSuiteName(module)}`, function() {
     describe('34d. Replace e by ∅: t1:e -> t2:∅ {1} (vocab t1:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'ehl'}),
                                    Replace(t1("e"), t2(""),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            false, false, 1, 1));
         grammar = Count({t1:4,t2:4}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
         const expectedResults: StringDict[] = [
             {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
-            {t1: 'eh', t2: 'h'}, {t1: 'el', t2: 'l'},
-            {t1: 'he', t2: 'h'}, {t1: 'le', t2: 'l'},
-            {t1: 'ehh', t2: 'hh'}, {t1: 'ehl', t2: 'hl'},
-            {t1: 'elh', t2: 'lh'}, {t1: 'ell', t2: 'll'},
-            {t1: 'heh', t2: 'hh'}, {t1: 'hel', t2: 'hl'},
-            {t1: 'hhe', t2: 'hh'}, {t1: 'hle', t2: 'hl'},
-            {t1: 'leh', t2: 'lh'}, {t1: 'lel', t2: 'll'},
-            {t1: 'lhe', t2: 'lh'}, {t1: 'lle', t2: 'll'},
+            {t1: 'eh', t2: 'h'},     {t1: 'el', t2: 'l'},
+            {t1: 'he', t2: 'h'},     {t1: 'le', t2: 'l'},
+            {t1: 'ehh', t2: 'hh'},   {t1: 'ehl', t2: 'hl'},
+            {t1: 'elh', t2: 'lh'},   {t1: 'ell', t2: 'll'},
+            {t1: 'heh', t2: 'hh'},   {t1: 'hel', t2: 'hl'},
+            {t1: 'hhe', t2: 'hh'},   {t1: 'hle', t2: 'hl'},
+            {t1: 'leh', t2: 'lh'},   {t1: 'lel', t2: 'll'},
+            {t1: 'lhe', t2: 'lh'},   {t1: 'lle', t2: 'll'},
             {t1: 'ehhh', t2: 'hhh'}, {t1: 'ehhl', t2: 'hhl'},
             {t1: 'ehlh', t2: 'hlh'}, {t1: 'ehll', t2: 'hll'},
             {t1: 'elhh', t2: 'lhh'}, {t1: 'elhl', t2: 'lhl'},
@@ -2339,7 +2483,8 @@ describe(`${testSuiteName(module)}`, function() {
     describe('34e. Replace e by ∅: t1:e -> t2:∅ {0,2} (vocab t1:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'ehl'}),
                                    Replace(t1("e"), t2(""),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            false, false, 0, 2));
         grammar = Count({t1:3,t2:3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -2348,11 +2493,11 @@ describe(`${testSuiteName(module)}`, function() {
             {},
             {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
             {t1: 'ee'}, // equivalent to {t1: 'ee', t2: ''}
-            {t1: 'h', t2: 'h'}, {t1: 'l', t2: 'l'},
-            {t1: 'eh', t2: 'h'},  {t1: 'el', t2: 'l'},
-            {t1: 'he', t2: 'h'},  {t1: 'hh', t2: 'hh'},
-            {t1: 'hl', t2: 'hl'}, {t1: 'le', t2: 'l'},
-            {t1: 'lh', t2: 'lh'}, {t1: 'll', t2: 'll'},
+            {t1: 'h', t2: 'h'},     {t1: 'l', t2: 'l'},
+            {t1: 'eh', t2: 'h'},    {t1: 'el', t2: 'l'},
+            {t1: 'he', t2: 'h'},    {t1: 'hh', t2: 'hh'},
+            {t1: 'hl', t2: 'hl'},   {t1: 'le', t2: 'l'},
+            {t1: 'lh', t2: 'lh'},   {t1: 'll', t2: 'll'},
             {t1: 'eeh', t2: 'h'},   {t1: 'eel', t2: 'l'},
             {t1: 'ehe', t2: 'h'},   {t1: 'ehh', t2: 'hh'},
             {t1: 'ehl', t2: 'hl'},  {t1: 'ele', t2: 'l'},
@@ -2381,11 +2526,11 @@ describe(`${testSuiteName(module)}`, function() {
             {},
             {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
             {t1: 'ee'}, // equivalent to {t1: 'ee', t2: ''}
-            {t1: 'h', t2: 'h'}, {t1: 'l', t2: 'l'},
-            {t1: 'eh', t2: 'h'},  {t1: 'el', t2: 'l'},
-            {t1: 'he', t2: 'h'},  {t1: 'hh', t2: 'hh'},
-            {t1: 'hl', t2: 'hl'}, {t1: 'le', t2: 'l'},
-            {t1: 'lh', t2: 'lh'}, {t1: 'll', t2: 'll'},
+            {t1: 'h', t2: 'h'},     {t1: 'l', t2: 'l'},
+            {t1: 'eh', t2: 'h'},    {t1: 'el', t2: 'l'},
+            {t1: 'he', t2: 'h'},    {t1: 'hh', t2: 'hh'},
+            {t1: 'hl', t2: 'hl'},   {t1: 'le', t2: 'l'},
+            {t1: 'lh', t2: 'lh'},   {t1: 'll', t2: 'll'},
             {t1: 'eeh', t2: 'h'},   {t1: 'eel', t2: 'l'},
             {t1: 'ehe', t2: 'h'},   {t1: 'ehh', t2: 'hh'},
             {t1: 'ehl', t2: 'hl'},  {t1: 'ele', t2: 'l'},
@@ -2403,10 +2548,11 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('34f. Replace e by ∅: t1:e -> t2:∅ {2} (vocab t1:eh/e)', function() {
+    describe('34f. Replace e by ∅: t1:e -> t2:∅ {2} (vocab t1:eh)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'eh'}),
                                    Replace(t1("e"), t2(""),
-                                           EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                           EMPTY_CONTEXT,
                                            false, false, 2, 2));
         grammar = Count({t1: 3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -2422,8 +2568,10 @@ describe(`${testSuiteName(module)}`, function() {
 
     // Tests to isolate an expression simplification issue in CorrespondExpr.
     describe('35. Replace aba by X: t1:aba -> t2:X {1}', function() {
+        log('', `------${this.title}`);
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
-                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT,
                                        false, false, 1, 1);
         grammar = Count({t1:3}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -2431,13 +2579,15 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aba', t2: 'X'},
         ];
-         testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+         testGrammar(grammar, expectedResults, vb(VERBOSE_DEBUG));
     });
 
-    describe('35a. Replace aba by X: t1:aba -> t2:X {1} (priority: t1,t2)', function() {
-        verbose(VERBOSE, '', '--- 35a. Replace aba by X: t1:aba -> t2:X {1} (priority: t1,t2) ---');
+    describe('35a. Replace aba by X: t1:aba -> t2:X {1} ' +
+             '(priority: t1,t2)', function() {
+        log('', `------${this.title}`);
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
-                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT,
                                        false, false, 1, 1);
         grammar = Count({t1:3}, grammar);
         grammar = Priority(["t1", "t2", ".END"], grammar);
@@ -2446,12 +2596,15 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aba', t2: 'X'},
         ];
-         testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+         testGrammar(grammar, expectedResults, vb(VERBOSE_DEBUG));
     });
 
-    describe('35b. Replace aba by X: t1:aba -> t2:X {1} (priority: t2,t1)', function() {
+    describe('35b. Replace aba by X: t1:aba -> t2:X {1} ' +
+             '(priority: t2,t1)', function() {
+        log('', `------${this.title}`);
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
-                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT,
                                        false, false, 1, 1);
         grammar = Count({t1:3}, grammar);
         grammar = Priority(["t2", "t1", ".END"], grammar);
@@ -2460,7 +2613,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aba', t2: 'X'},
         ];
-         testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+         testGrammar(grammar, expectedResults, vb(VERBOSE_DEBUG));
     });
 
     // Tests exploring the ways for replacements to yield multiple
@@ -2470,8 +2623,10 @@ describe(`${testSuiteName(module)}`, function() {
     // be found as (ABA)B(ABA) or AB(ABA)BA.
     // Test 35a is based on test 27.
     describe('36a. Replace ee by e: t1:ee -> t2:e {1,3}', function() {
+        log('', `------${this.title}`);
         let grammar: Grammar = Replace(t1("ee"), t2("e"),
-                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT,
                                        false, false, 1, 3);
         grammar = Count({t1:6,t2:6}, grammar);
         testHasTapes(grammar, ['t1', 't2']);
@@ -2494,8 +2649,10 @@ describe(`${testSuiteName(module)}`, function() {
 
     // Note: test 36b is affected by the issue explored in tests 35, 35a-b.
     describe('36b. Replace aba by X: t1:aba -> t2:X {1,3}', function() {
+        log('', `------${this.title}`);
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
-                                       EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT,
                                        false, false, 1, 3);
         grammar = Count({t1:8,t2:8}, grammar);
         testHasTapes(grammar, ['t1', 't2']);

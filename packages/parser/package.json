@@ -50,7 +50,6 @@
     "testMatchFrom": "mocha -r ts-node/register tests/testMatchFrom.ts",
     "testMatchRename": "mocha -r ts-node/register tests/testMatchRename.ts",
     "testNegation": "mocha -r ts-node/register tests/testNegation.ts",
-    "testNotHide": "mocha -r ts-node/register tests/testNotHide.ts",
     "testNotMatch": "mocha -r ts-node/register tests/testNotMatch.ts",
     "testNotReplace": "mocha -r ts-node/register tests/testNotReplace.ts",
     "testOp": "mocha -r ts-node/register tests/testOp.ts",
@@ -73,7 +72,6 @@
     "testSheetOp": "mocha -r ts-node/register tests/sheet/op/*.ts",
     "testSheetCell": "mocha -r ts-node/register tests/sheet/cell/*.ts",
     "testSheetRename": "mocha -r ts-node/register tests/sheet/rename/*.ts",
-    "testSheetReplace": "mocha -r ts-node/register tests/sheet/replace/*.ts",
     "testSheetRule": "mocha -r ts-node/register tests/sheet/rule/*.ts",
     "testSheetTest": "mocha -r ts-node/register tests/sheet/test/*.ts"
   },

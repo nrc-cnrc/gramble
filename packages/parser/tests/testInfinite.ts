@@ -1,23 +1,25 @@
 import { expect } from 'chai';
 
 import { CounterStack } from '../src/exprs';
+
 import {
     Count, Epsilon, 
     Join, Null, Rep, Seq, Uni, Collection,
     Embed, CollectionGrammar, Grammar
 } from '../src/grammars';
+
 import {
-    testSuiteName, logTestSuite, VERBOSE_TEST, verbose,
+    testSuiteName, logTestSuite,
+    VERBOSE_TEST_L2,
     t1, t2
 } from "./testUtil";
 
 import { Msgs } from '../src/msgs';
 import { PassEnv } from '../src/passes';
 import { NAME_PASSES } from '../src/passes/allPasses';
-import { QualifyNames } from '../src/passes/qualifyNames';
 
 // File level control over verbose output
-const VERBOSE = VERBOSE_TEST;
+const VERBOSE = VERBOSE_TEST_L2;
 
 function selectSymbol(
     ns: CollectionGrammar,
@@ -60,7 +62,7 @@ function testLength(
 
 describe(`${testSuiteName(module)}`, function() {
 
-    logTestSuite(VERBOSE, module);
+    logTestSuite(this.title);
 
     describe("1. t1:hello", function() {
         const grammar = t1("hello");

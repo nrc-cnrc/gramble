@@ -15,23 +15,26 @@ import {
 } from "../src/grammars";
 
 import { 
-    testSuiteName, logTestSuite, VERBOSE_TEST, verbose,
+    testSuiteName, logTestSuite, 
+    VERBOSE_TEST_L2,
     t1, t2, t3, t4,
     testHasTapes,
     testGrammar,
     testHasVocab
-} from './testUtil';
+} from "./testUtil";
 
-import { StringDict, VERBOSE_DEBUG } from "../src/util";
+import {
+    StringDict, VERBOSE_DEBUG
+} from "../src/util";
 
 // File level control over verbose output
-const VERBOSE = VERBOSE_TEST;
+const VERBOSE = VERBOSE_TEST_L2;
 
 describe(`${testSuiteName(module)}`, function() {
 
-    logTestSuite(VERBOSE, module);
+    logTestSuite(this.title);
 
-    // MatchFrom tests with two tapes.
+    // MatchFrom tests with one to-tape.
 
     describe('1. MatchFrom t1>t2, t1:hello', function() {
         const grammar1: Grammar = t1("hello");
@@ -50,23 +53,22 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {},
         ];
-        
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 0, t2: 0})
         testGrammar(grammar, expectedResults);
     });
 
-    describe('2. MatchFrom t1>t2, 0', function() {
+    describe('3. MatchFrom t1>t2, 0', function() {
         const grammar1: Grammar = Null();
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
-        const expectedResults: StringDict[] = [];
-        
+        const expectedResults: StringDict[] = [
+        ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 0, t2: 0})
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3. MatchFrom t1>t2, t1:hello+t1:world', function() {
+    describe('4. MatchFrom t1>t2, t1:hello + t1:world', function() {
         const grammar1: Grammar = Seq(t1("hello"), t1("world"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
@@ -77,32 +79,32 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('4. MatchFrom t1>t2, t1:hello+t4:goodbye', function() {
+    describe('5. MatchFrom t1>t2, t1:hello + t4:goodbye', function() {
         const grammar1: Grammar = Seq(t1("hello"), t4("goodbye"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t4: 'goodbye'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('5. MatchFrom t1>t2, t4:goodbye+t1:hello', function() {
+    describe('6. MatchFrom t1>t2, t4:goodbye + t1:hello', function() {
         const grammar1: Grammar = Seq(t4("goodbye"), t1("hello"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t4: 'goodbye'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('6. MatchFrom t1>t2, Nested sequence (t1:hello+t1:,)+t1:world', function() {
-        const grammar1: Grammar = Seq(Seq(t1("hello"), t1(", ")), t1("world"));
+    describe('7. MatchFrom t1>t2, Nested sequence ' +
+             '(t1:hello+t1:,) + t1:world', function() {
+        const grammar1: Grammar = Seq(Seq(t1("hello"), t1(", ")),
+                                      t1("world"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello, world', t2: 'hello, world'},
@@ -112,7 +114,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('7. MatchFrom t1>t2, t1:hello|t1:goodbye', function() {
+    describe('8. MatchFrom t1>t2, t1:hello | t1:goodbye', function() {
         const grammar1: Grammar = Uni(t1("hello"), t1("goodbye"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
@@ -124,35 +126,34 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('8. MatchFrom t1>t2, t1:hello|t4:goodbye', function() {
+    describe('9. MatchFrom t1>t2, t1:hello | t4:goodbye', function() {
         const grammar1: Grammar = Uni(t1("hello"), t4("goodbye"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
             {t4: 'goodbye'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('9. MatchFrom t1>t2, t4:goodbye|t1:hello', function() {
+    describe('10. MatchFrom t1>t2, t4:goodbye | t1:hello', function() {
         const grammar1: Grammar = Uni(t4("goodbye"), t1("hello"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
             {t4: 'goodbye'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('10. MatchFrom t1>t2, (t1:hello|t1:goodbye)+(t1:world|t1:kitty)', function() {
+    describe('11. MatchFrom t1>t2, ' +
+             '(t1:hello|t1:goodbye) + (t1:world|t1:kitty)', function() {
         const grammar1: Grammar = Seq(Uni(t1("hello"), t1("goodbye")),
-                                    Uni(t1("world"), t1("kitty")));
+                                      Uni(t1("world"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'helloworld', t2: 'helloworld'},
@@ -166,9 +167,10 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
    
-    describe('11. MatchFrom t1>t2, (t1:hello+t1:kitty)|(t1:goodbye+t1:world)', function() {
+    describe('12. MatchFrom t1>t2, ' +
+             '(t1:hello+t1:kitty) | (t1:goodbye+t1:world)', function() {
         const grammar1: Grammar = Uni(Seq(t1("hello"), t1("kitty")),
-                                    Seq(t1("goodbye"), t1("world")));
+                                      Seq(t1("goodbye"), t1("world")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t2: 'hellokitty'},
@@ -179,7 +181,19 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('12. MatchFrom t1>t2, t1:hi+t1:.', function() {
+    describe('13. MatchFrom t1>t2, t1:. (vocab t1:hi)', function() {
+        const grammar1: Grammar = Seq(Vocab("t1", "hi"), Any("t1"));
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
+        const expectedResults: StringDict[] = [
+            {t1: 'h', t2: 'h'},
+            {t1: 'i', t2: 'i'},
+        ];
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 2});
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('14. MatchFrom t1>t2, t1:hi+t1:.', function() {
         const grammar1: Grammar = Seq(t1("hi"), Any("t1"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
@@ -191,8 +205,9 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('13. MatchFrom t1>t2, Join t1:hello ⨝ t1:.ello', function() {
-        const grammar1: Grammar = Join(t1("hello"), Seq(Any("t1"), t1('ello')));
+    describe('15. MatchFrom t1>t2, Join t1:hello ⨝ t1:.ello', function() {
+        const grammar1: Grammar = Join(t1("hello"),
+                                       Seq(Any("t1"), t1('ello')));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
@@ -202,34 +217,47 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('14. MatchFrom t1>t2, Join t1:hello ⨝ t4:world', function() {
+    describe('16. MatchFrom t1>t2, Join t1:hello ⨝ t4:world', function() {
         const grammar1: Grammar = Join(t1("hello"), t4('world'));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t4: 'world'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('15. MatchFrom t1>t2, Join t4:world ⨝ t1:hello', function() {
+    describe('17. MatchFrom t1>t2, Join t4:world ⨝ t1:hello', function() {
         const grammar1: Grammar = Join(t4('world'), t1("hello"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t4: 'world'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('16. MatchFrom t2>t3, Join t1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye+t1:kitty)+t2:world', function() {
-        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")),
-                                                Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
-                                                    t2("world")));
+    describe('18. MatchFrom t2>t3, Join t1:hello+t1:kitty ⨝ ' +
+             '(t1:hello+t2:goodbye+t1:kitty)+t2:world', function() {
+        const nestedSeq: Grammar = Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
+                                       t2("world"));
+        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")), nestedSeq);
+        const grammar: Grammar = MatchFrom(grammar1, "t2", "t3");
+        const expectedResults: StringDict[] = [
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld'},
+        ];
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1: 8, t2: 9, t3: 9});
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('19. MatchFrom t2>t3, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ ' +
+             't1:hello+t1:kitty', function() {
+        const nestedSeq: Grammar = Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
+                                       t2("world"));
+        const grammar1: Grammar = Join(nestedSeq, Seq(t1("hello"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld'},
@@ -240,77 +268,63 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('17. MatchFrom t2>t3, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ t1:hello+t1:kitty', function() {
-        const grammar1: Grammar = Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
-                                                    t2("world")),
-                                                Seq(t1("hello"), t1("kitty")));
-        const grammar: Grammar = MatchFrom(grammar1, "t2", "t3");
-        const expectedResults: StringDict[] = [
-            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld'},
-        ];
-        
-        testHasTapes(grammar, ['t1', 't2', 't3']);
-        testHasVocab(grammar, {t1: 8, t2: 9, t3: 9});
-        testGrammar(grammar, expectedResults);
-    });
-
-    describe('18. MatchFrom t1>t3, Join t1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye+t1:kitty)+t2:world', function() {
-        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")),
-                                                Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
-                                                    t2("world")));
+    describe('20. MatchFrom t1>t3, Join t1:hello+t1:kitty ⨝ ' +
+             '(t1:hello+t2:goodbye+t1:kitty)+t2:world', function() {
+        const nestedSeq: Grammar = Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
+                                       t2("world"));
+        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")), nestedSeq);
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('19. MatchFrom t1>t3, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ t1:hello+t1:kitty', function() {
-        const grammar1: Grammar = Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
-                                                    t2("world")),
-                                                Seq(t1("hello"), t1("kitty")));
+    describe('21. MatchFrom t1>t3, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ ' +
+             't1:hello+t1:kitty', function() {
+        const nestedSeq: Grammar = Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
+                                       t2("world"));
+        const grammar1: Grammar = Join(nestedSeq, Seq(t1("hello"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('20. MatchFrom t1>t3, Join t1:hello+t1:kitty ⨝ (t2:goodbye+t1:hello+t2:world)+t1:kitty', function() {
-        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")),
-                                                Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
-                                                    t1("kitty")));
+    describe('22. MatchFrom t1>t3, Join t1:hello+t1:kitty ⨝ ' +
+             '(t2:goodbye+t1:hello+t2:world)+t1:kitty', function() {
+        const nestedSeq: Grammar = Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
+                                       t1("kitty"));
+        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")), nestedSeq);
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('21. MatchFrom t1>t3, Join t1:hello+t1:kitty ⨝ (t2:goodbye+t1:hello+t2:world)+t1:kitty', function() {
-        const grammar1: Grammar = Join(Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
-                                                    t1("kitty")),
-                                                Seq(t1("hello"), t1("kitty")));
+    describe('23. MatchFrom t1>t3, Join t1:hello+t1:kitty ⨝ ' +
+             '(t2:goodbye+t1:hello+t2:world)+t1:kitty', function() {
+        const nestedSeq: Grammar = Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
+                                       t1("kitty"));
+        const grammar1: Grammar = Join(nestedSeq, Seq(t1("hello"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('22. MatchFrom t1>t2, t1:o{0,1}', function() {
+    describe('24. MatchFrom t1>t2, t1:o{0,1}', function() {
         const grammar1: Grammar = Rep(t1("o"), 0, 1);
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
@@ -322,9 +336,10 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('23. MatchFrom t1>t2, Join t1:h{1,4}+t4:world+t1:ello ⨝ the same', function() {
+    describe('25. MatchFrom t1>t2, ' +
+             'Join t1:h{1,4} + t4:world + t1:ello ⨝ the same', function() {
         const grammar1: Grammar = Join(Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")),
-                                     Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")));
+                                       Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t4: 'world'},
@@ -332,15 +347,15 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhhello', t2: 'hhhello', t4: 'world'},
             {t1: 'hhhhello', t2: 'hhhhello', t4: 'world'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t4: 5});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('24. MatchFrom t1>t2, Join t4:world+t1:h{1,4}+t1:ello ⨝ the same', function() {
+    describe('26. MatchFrom t1>t2, ' +
+             'Join t4:world + t1:h{1,4} + t1:ello ⨝ the same', function() {
         const grammar1: Grammar = Join(Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")),
-                                     Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")));
+                                       Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t4: 'world'},
@@ -348,13 +363,12 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhhello', t2: 'hhhello', t4: 'world'},
             {t1: 'hhhhello', t2: 'hhhhello', t4: 'world'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t4: 5});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('25. MatchFrom t1>t2, t1:na{1,4}', function() {
+    describe('27. MatchFrom t1>t2, t1:na{1,4}', function() {
         const grammar1: Grammar = Rep(t1("na"), 1, 4);
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
@@ -368,63 +382,51 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('26. MatchFrom t1>t2, t1:.{0,2}+t1:hi', function() {
+    describe('28. MatchFrom t1>t2, t1:.{0,2} + t1:hi', function() {
         const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 2), t1("hi"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi'},
-            {t1: 'ihi', t2: 'ihi'},
-            {t1: 'hhi', t2: 'hhi'},
-            {t1: 'iihi', t2: 'iihi'},
-            {t1: 'hihi', t2: 'hihi'},
-            {t1: 'hhhi', t2: 'hhhi'},
-            {t1: 'ihhi', t2: 'ihhi'},
+            {t1: 'ihi', t2: 'ihi'},   {t1: 'hhi', t2: 'hhi'},
+            {t1: 'iihi', t2: 'iihi'}, {t1: 'hihi', t2: 'hihi'},
+            {t1: 'hhhi', t2: 'hhhi'}, {t1: 'ihhi', t2: 'ihhi'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('27. MatchFrom t1>t2, t1:.{0,1}+t1:hi+t1:.{0,1}', function() {
-        const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 1), t1("hi"), Rep(Any("t1"), 0, 1));
+    describe('29. MatchFrom t1>t2, t1:.{0,1} + t1:hi + t1:.{0,1}', function() {
+        const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 1),
+                                      t1("hi"),
+                                      Rep(Any("t1"), 0, 1));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2");
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi'},
-            {t1: 'hhi', t2: 'hhi'},
-            {t1: 'ihi', t2: 'ihi'},
-            {t1: 'hih', t2: 'hih'},
-            {t1: 'hii', t2: 'hii'},
-            {t1: 'hhih', t2: 'hhih'},
-            {t1: 'hhii', t2: 'hhii'},
-            {t1: 'ihih', t2: 'ihih'},
-            {t1: 'ihii', t2: 'ihii'},
+            {t1: 'hhi', t2: 'hhi'},   {t1: 'ihi', t2: 'ihi'},
+            {t1: 'hih', t2: 'hih'},   {t1: 'hii', t2: 'hii'},
+            {t1: 'hhih', t2: 'hhih'}, {t1: 'hhii', t2: 'hhii'},
+            {t1: 'ihih', t2: 'ihih'}, {t1: 'ihii', t2: 'ihii'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('28. MatchFrom t1>t2, t1:.* with vocab "hi"', function() {
+    describe('30. MatchFrom t1>t2, t1:.* (vocab hi/XhiZ)', function() {
         const subgrammar: Grammar = Rep(Any("t1"));
-        let grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), 
-                                    MatchFrom(subgrammar, "t1", "t2"));
+        let grammar: Grammar = Seq(Vocab({t1: "hi", t2: "XhiZ"}), 
+                                   MatchFrom(subgrammar, "t1", "t2"));
         grammar = Count({t1:3,t2:3}, grammar);
         const expectedResults: StringDict[] = [
             {},
-            {t1: 'h', t2: 'h'},
-            {t1: 'i', t2: 'i'},
-            {t1: 'hh', t2: 'hh'},
-            {t1: 'hi', t2: 'hi'},
-            {t1: 'ih', t2: 'ih'},
-            {t1: 'ii', t2: 'ii'},
-            {t1: 'hhh', t2: 'hhh'},
-            {t1: 'hhi', t2: 'hhi'},
-            {t1: 'hih', t2: 'hih'},
-            {t1: 'hii', t2: 'hii'},
-            {t1: 'ihh', t2: 'ihh'},
-            {t1: 'ihi', t2: 'ihi'},
-            {t1: 'iih', t2: 'iih'},
-            {t1: 'iii', t2: 'iii'},
+            {t1: 'h', t2: 'h'},     {t1: 'i', t2: 'i'},
+            {t1: 'hh', t2: 'hh'},   {t1: 'hi', t2: 'hi'},
+            {t1: 'ih', t2: 'ih'},   {t1: 'ii', t2: 'ii'},
+            {t1: 'hhh', t2: 'hhh'}, {t1: 'hhi', t2: 'hhi'},
+            {t1: 'hih', t2: 'hih'}, {t1: 'hii', t2: 'hii'},
+            {t1: 'ihh', t2: 'ihh'}, {t1: 'ihi', t2: 'ihi'},
+            {t1: 'iih', t2: 'iih'}, {t1: 'iii', t2: 'iii'},
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 4});
@@ -703,20 +705,28 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-2. MatchFrom t1>t2,t3, ε', function() {
+    describe('2-2. MatchFrom t1>t2,t3, ε', function() {
         const grammar1: Grammar = Epsilon();
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {},
         ];
-        // Even though we are matching on t1, t2, grammar has no tapes.
-        // testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasTapes(grammar, ["t1", "t2", "t3"]);
         testHasVocab(grammar, {t1: 0, t2: 0, t3: 0});
         testGrammar(grammar, expectedResults);
     });
+
+    describe('2-3. MatchFrom t1>t2,t3, 0', function() {
+        const grammar1: Grammar = Null();
+        const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
+        const expectedResults: StringDict[] = [
+        ];
+        testHasTapes(grammar, ['t1', 't2', 't3']);
+        testHasVocab(grammar, {t1: 0, t2: 0, t3: 0})
+        testGrammar(grammar, expectedResults);
+    });
     
-    describe('3-3. MatchFrom t1>t2,t3, t1:hello+t1:world', function() {
+    describe('2-4. MatchFrom t1>t2,t3, t1:hello + t1:world', function() {
         const grammar1: Grammar = Seq(t1("hello"), t1("world"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
@@ -727,7 +737,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-4. MatchFrom t1>t2,t3, t1:hello+t4:goodbye', function() {
+    describe('2-5. MatchFrom t1>t2,t3, t1:hello + t4:goodbye', function() {
         const grammar1: Grammar = Seq(t1("hello"), t4("goodbye"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
@@ -739,7 +749,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-5. MatchFrom t1>t2,t3, t4:goodbye+t1:hello', function() {
+    describe('2-6. MatchFrom t1>t2,t3, t4:goodbye + t1:hello', function() {
         const grammar1: Grammar = Seq(t4("goodbye"), t1("hello"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
@@ -751,8 +761,10 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-6. MatchFrom t1>t2,t3, Nested sequence (t1:hello+t1:,)+t1:world', function() {
-        const grammar1: Grammar = Seq(Seq(t1("hello"), t1(", ")), t1("world"));
+    describe('2-7. MatchFrom t1>t2,t3, Nested sequence ' +
+             '(t1:hello+t1:,) + t1:world', function() {
+        const grammar1: Grammar = Seq(Seq(t1("hello"), t1(", ")),
+                                      t1("world"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello, world', t2: 'hello, world', t3: 'hello, world'},
@@ -762,7 +774,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-7. MatchFrom t1>t2,t3, t1:hello|t1:goodbye', function() {
+    describe('2-8. MatchFrom t1>t2,t3, t1:hello | t1:goodbye', function() {
         const grammar1: Grammar = Uni(t1("hello"), t1("goodbye"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
@@ -774,20 +786,19 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-8. MatchFrom t1>t2,t3, t1:hello|t4:goodbye', function() {
+    describe('2-9. MatchFrom t1>t2,t3, t1:hello | t4:goodbye', function() {
         const grammar1: Grammar = Uni(t1("hello"), t4("goodbye"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
             {t4: 'goodbye'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-9. MatchFrom t1>t2,t3, t4:goodbye|t1:hello', function() {
+    describe('2-10. MatchFrom t1>t2,t3, t4:goodbye | t1:hello', function() {
         const grammar1: Grammar = Uni(t4("goodbye"), t1("hello"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
@@ -800,9 +811,10 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-10. MatchFrom t1>t2,t3, (t1:hello|t1:goodbye)+(t1:world|t1:kitty)', function() {
+    describe('2-11. MatchFrom t1>t2,t3, ' +
+             '(t1:hello|t1:goodbye) + (t1:world|t1:kitty)', function() {
         const grammar1: Grammar = Seq(Uni(t1("hello"), t1("goodbye")),
-                                    Uni(t1("world"), t1("kitty")));
+                                      Uni(t1("world"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'helloworld', t2: 'helloworld', t3: 'helloworld'},
@@ -815,9 +827,10 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-11. MatchFrom t1>t2,t3, (t1:hello+t1:kitty)|(t1:goodbye+t1:world)', function() {
+    describe('2-12. MatchFrom t1>t2,t3, ' +
+             '(t1:hello+t1:kitty) | (t1:goodbye+t1:world)', function() {
         const grammar1: Grammar = Uni(Seq(t1("hello"), t1("kitty")),
-                                    Seq(t1("goodbye"), t1("world")));
+                                      Seq(t1("goodbye"), t1("world")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t2: 'hellokitty', t3: 'hellokitty'},
@@ -828,7 +841,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-12a. MatchFrom t1>t2,t3, t1:.', function() {
+    describe('2-13. MatchFrom t1>t2,t3, t1:. (vocab t1:hi)', function() {
         const grammar1: Grammar = Seq(Vocab("t1", "hi"), Any("t1"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
@@ -840,7 +853,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-12b. MatchFrom t1>t2,t3, t1:hi+t1:.', function() {
+    describe('2-14. MatchFrom t1>t2,t3, t1:hi+t1:.', function() {
         const grammar1: Grammar = Seq(t1("hi"), Any("t1"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
@@ -852,8 +865,9 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-13. MatchFrom t1>t2,t3, t1:hello ⨝ t1:.ello', function() {
-        const grammar1: Grammar = Join(t1("hello"), Seq(Any("t1"), t1('ello')));
+    describe('2-15. MatchFrom t1>t2,t3, Join t1:hello ⨝ t1:.ello', function() {
+        const grammar1: Grammar = Join(t1("hello"),
+                                       Seq(Any("t1"), t1('ello')));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
@@ -863,115 +877,113 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-14. MatchFrom t1>t2,t3 Join t1:hello ⨝ t4:world', function() {
+    describe('2-16. MatchFrom t1>t2,t3 Join t1:hello ⨝ t4:world', function() {
         const grammar1: Grammar = Join(t1("hello"), t4('world'));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'world'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-15. MatchFrom t1>t2,t3 Join t4:world ⨝ t1:hello', function() {
+    describe('2-17. MatchFrom t1>t2,t3 Join t4:world ⨝ t1:hello', function() {
         const grammar1: Grammar = Join(t4('world'), t1("hello"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'world'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-16. MatchFrom t2>t3,t4, Join t1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye+t1:kitty)+t2:world', function() {
-        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")),
-                                                Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
-                                                    t2("world")));
+    describe('2-18. MatchFrom t2>t3,t4, Join t1:hello+t1:kitty ⨝ ' +
+             '(t1:hello+t2:goodbye+t1:kitty)+t2:world', function() {
+        const nestedSeq: Grammar = Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
+                                       t2("world"));
+        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")), nestedSeq);
         const grammar: Grammar = MatchFrom(grammar1, "t2", "t3", "t4");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld', t4: 'goodbyeworld'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         testHasVocab(grammar, {t1: 8, t2: 9, t3: 9, t4: 9});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-17. MatchFrom t2>t3,t4, Join t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ t1:hello+t1:kitty', function() {
-        const grammar1: Grammar = Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
-                                                    t2("world")),
-                                                Seq(t1("hello"), t1("kitty")));
+    describe('2-19. MatchFrom t2>t3,t4, Join t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ ' +
+             't1:hello+t1:kitty', function() {
+        const nestedSeq: Grammar = Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
+                                       t2("world"));
+        const grammar1: Grammar = Join(nestedSeq, Seq(t1("hello"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t2", "t3", "t4");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld', t4: 'goodbyeworld'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         testHasVocab(grammar, {t1: 8, t2: 9, t3: 9, t4: 9});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-18. MatchFrom t1>t3,t4, Join t1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye+t1:kitty)+t2:world', function() {
-        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")),
-                                                Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
-                                                    t2("world")));
+    describe('2-20. MatchFrom t1>t3,t4, Join t1:hello+t1:kitty ⨝ ' +
+             '(t1:hello+t2:goodbye+t1:kitty)+t2:world', function() {
+        const nestedSeq: Grammar = Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
+                                       t2("world"));
+        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")), nestedSeq);
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3", "t4");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-19. MatchFrom t1>t3,t4, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ t1:hello+t1:kitty', function() {
-        const grammar1: Grammar = Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
-                                                    t2("world")),
-                                                Seq(t1("hello"), t1("kitty")));
+    describe('2-21. MatchFrom t1>t3,t4, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ ' +
+             't1:hello+t1:kitty', function() {
+        const nestedSeq: Grammar = Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
+                                       t2("world"));
+        const grammar1: Grammar = Join(nestedSeq, Seq(t1("hello"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3", "t4");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-20. MatchFrom t1>t3,t4, Join t1:hello+t1:kitty ⨝ (t2:goodbye+t1:hello+t2:world)+t1:kitty', function() {
-        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")),
-                                                Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
-                                                    t1("kitty")));
+    describe('2-22. MatchFrom t1>t3,t4, Join t1:hello+t1:kitty ⨝ ' +
+             '(t2:goodbye+t1:hello+t2:world)+t1:kitty', function() {
+        const nestedSeq: Grammar = Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
+                                       t1("kitty"));
+        const grammar1: Grammar = Join(Seq(t1("hello"), t1("kitty")), nestedSeq);
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3", "t4");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-21. MatchFrom t1>t3,t4, Join (t2:goodbye+t1:hello+t2:world)+t1:kitty ⨝ t1:hello+t1:kitty', function() {
-        const grammar1: Grammar = Join(Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
-                                                    t1("kitty")),
-                                                Seq(t1("hello"), t1("kitty")));
+    describe('2-23. MatchFrom t1>t3,t4, Join (t2:goodbye+t1:hello+t2:world)+t1:kitty ⨝ ' +
+             't1:hello+t1:kitty', function() {
+        const nestedSeq: Grammar = Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
+                                       t1("kitty"));
+        const grammar1: Grammar = Join(nestedSeq, Seq(t1("hello"), t1("kitty")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t3", "t4");
         const expectedResults: StringDict[] = [
             {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworld'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-22. MatchFrom t1>t2,t3, t1:o{0,1}', function() {
+    describe('2-24. MatchFrom t1>t2,t3, t1:o{0,1}', function() {
         const grammar1: Grammar = Rep(t1("o"), 0, 1);
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
@@ -983,9 +995,10 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-23. MatchFrom t1>t2,t3, Join t1:h{1,4}+t4:world+t1:ello ⨝ the same', function() {
+    describe('2-25. MatchFrom t1>t2,t3, ' +
+             'Join t1:h{1,4} + t4:world + t1:ello ⨝ the same', function() {
         const grammar1: Grammar = Join(Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")),
-                                     Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")));
+                                       Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'world'},
@@ -993,15 +1006,15 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhhello', t2: 'hhhello', t3: 'hhhello', t4: 'world'},
             {t1: 'hhhhello', t2: 'hhhhello', t3: 'hhhhello', t4: 'world'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 5});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-24. MatchFrom t1>t2,t3, Join t4:world+t1:h{1,4}+t1:ello ⨝ the same', function() {
+    describe('2-26. MatchFrom t1>t2,t3, ' +
+             'Join t4:world+t1:h{1,4}+t1:ello ⨝ the same', function() {
         const grammar1: Grammar = Join(Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")),
-                                     Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")));
+                                       Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'world'},
@@ -1009,13 +1022,12 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhhello', t2: 'hhhello', t3: 'hhhello', t4: 'world'},
             {t1: 'hhhhello', t2: 'hhhhello', t3: 'hhhhello', t4: 'world'},
         ];
-        
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 5});
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-25. MatchFrom t1>t2,t3, t1:na{1,4}', function() {
+    describe('2-27. MatchFrom t1>t2,t3, t1:na{1,4}', function() {
         const grammar1: Grammar = Rep(t1("na"), 1, 4);
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
@@ -1029,7 +1041,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-26. MatchFrom t1>t2,t3, t1:.{0,2}+t1:hi', function() {
+    describe('2-28. MatchFrom t1>t2,t3, t1:.{0,2} + t1:hi', function() {
         const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 2), t1("hi"));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
@@ -1046,8 +1058,10 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-27. MatchFrom t1>t2,t3, t1:.{0,1}+t1:hi+t1:.{0,1}', function() {
-        const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 1), t1("hi"), Rep(Any("t1"), 0, 1));
+    describe('2-29. MatchFrom t1>t2,t3, t1:.{0,1} + t1:hi + t1:.{0,1}', function() {
+        const grammar1: Grammar = Seq(Rep(Any("t1"), 0, 1),
+                                      t1("hi"),
+                                      Rep(Any("t1"), 0, 1));
         const grammar: Grammar = MatchFrom(grammar1, "t1", "t2", "t3");
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi', t3: 'hi'},
@@ -1065,9 +1079,9 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3-28. MatchFrom t1>t2,t3, t1:.* with vocab "hi"', function() {
+    describe('2-30. MatchFrom t1>t2,t3, t1:.* (vocab hi/XhiZ/ZXhi)', function() {
         const subgrammar: Grammar = Rep(Any("t1"));
-        let grammar: Grammar = Seq(Vocab("t1", "hi"), Vocab("t2", "XhiZ"), Vocab("t3", "ZXhi"),
+        let grammar: Grammar = Seq(Vocab({t1: "hi", t2: "XhiZ", t3: "ZXhi"}),
                                    MatchFrom(subgrammar, "t1", "t2", "t3"));
         grammar = Count({t1:3,t2:3}, grammar);
         const expectedResults: StringDict[] = [
@@ -1092,13 +1106,12 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-
     // Joins of Matches
 
-    describe('J-1. t1:h ⨝ MatchFrom(t1:.*, t1>t2)', function() {
+    describe('J-1. t1:h ⨝ MatchFrom(t1>t2, t1:.*) (vocab hi)', function() {
         const grammar2: Grammar = MatchFrom(Any("t1"), "t1", "t2");
-        const grammar3: Grammar = Join(t1("h"), grammar2)
-        const grammarWithVocab: Grammar = Seq(grammar3, Vocab("t1", "hi"), Vocab("t2", "hi"));
+        const grammar3: Grammar = Join(t1("h"), grammar2);
+        const grammarWithVocab: Grammar = Seq(grammar3, Vocab({t1: "hi", t2: "hi"}));
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'h'},
         ];
@@ -1107,10 +1120,10 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammarWithVocab, expectedResults);
     });
     
-    describe('J-2. MatchFrom(t1:.*, t1>t2) ⨝ t1:h', function() {
+    describe('J-2. MatchFrom(t1>t2, t1:.*) ⨝ t1:h (vocab hi)', function() {
         const grammar2: Grammar = MatchFrom(Any("t1"), "t1", "t2");
-        const grammar3: Grammar = Join(grammar2, t1("h"))
-        const grammarWithVocab: Grammar = Seq(grammar3, Vocab("t1", "hi"), Vocab("t2", "hi"));
+        const grammar3: Grammar = Join(grammar2, t1("h"));
+        const grammarWithVocab: Grammar = Seq(grammar3, Vocab({t1: "hi", t2: "hi"}));
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'h'},
         ];
@@ -1119,10 +1132,10 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammarWithVocab, expectedResults);
     });
 
-    describe('J-3. t1:hi ⨝ MatchFrom(t1:.*, t1>t2)', function() {
+    describe('J-3. t1:hi ⨝ MatchFrom(t1>t2, t1:.*) (vocab t2:hi)', function() {
         const grammar2: Grammar = MatchFrom(Rep(Any("t1")), "t1", "t2");
-        const grammar3: Grammar = Join(t1("hi"), grammar2)
-        const grammarWithVocab: Grammar = Seq(grammar3, Vocab("t2", "hi"));
+        const grammar3: Grammar = Join(t1("hi"), grammar2);
+        const grammarWithVocab: Grammar = Seq(grammar3, Vocab({t2: "hi"}));
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'hi'},
         ];
@@ -1131,9 +1144,21 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammarWithVocab, expectedResults);
     });
     
-    describe('J-4. t2:hello ⨝ MatchFrom(t1:.*, t1>t2)', function() {
+    describe('J-4. t2:hello ⨝ MatchFrom(t1>t2, t1:.*) (vocab t1:hello)', function() {
         const grammar2: Grammar = MatchFrom(Rep(Any("t1")), "t1", "t2");
-        const grammar3: Grammar = Seq(Join(t2("hello"), grammar2), Vocab("t1", "hello"))
+        const grammar3: Grammar = Join(t2("hello"), grammar2);
+        const grammarWithVocab: Grammar = Seq(grammar3, Vocab({t1: "hello"}));
+        const expectedResults: StringDict[] = [
+            {t1: 'hello', t2: 'hello'},
+        ];
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 4, t2: 4});
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+    
+    describe('J-5. t1:hello+t2:hello ⨝ MatchFrom(t1>t2, t1:.*)', function() {
+        const grammar2: Grammar = MatchFrom(Rep(Any("t1")), "t1", "t2");
+        const grammar3: Grammar = Join(Seq(t1("hello"), t2("hello")), grammar2);
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
         ];
@@ -1142,22 +1167,13 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar3, expectedResults);
     });
     
-    describe('J-5. t1:hello+t2:hello ⨝ MatchFrom(t1:.*, t1>t2)', function() {
-        const grammar2: Grammar = MatchFrom(Rep(Any("t1")), "t1", "t2");
-        const grammar3: Grammar = Join(Seq(t1("hello"), t2("hello")), grammar2)
-        const expectedResults: StringDict[] = [
-            {t1: 'hello', t2: 'hello'},
-        ];
-        testHasTapes(grammar3, ['t1', 't2']);
-        testHasVocab(grammar3, {t1: 4, t2: 4});
-        testGrammar(grammar3, expectedResults);
-    });
-    
-    describe('J-6. Joining output of two matchFroms', function() {
+    describe('J-6. Join output of two matchFroms: ' +
+             'MatchFrom(t1>t2, t1:[hi]) ⨝ MatchFrom(t3>t2, t3:[ij]) ' +
+             '(vocab t2:hij)', function() {
         const g1 = MatchFrom(CharSet("t1", ["h","i"]), "t1", "t2");
         const g2 = MatchFrom(CharSet("t3", ["i","j"]), "t3", "t2");
         const g3 = Join(g1, g2);
-        const g4 = Seq(g3, Vocab("t2", "hij"))
+        const g4 = Seq(g3, Vocab({t2: "hij"}))
         const expectedResults: StringDict[] = [
             {t1: 'i', t2: 'i', t3: 'i'},
         ];
@@ -1166,11 +1182,13 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(g4, expectedResults);
     });
     
-    describe('J-7. Joining output of one matchFroms with input of another', function() {
+    describe('J-7. Join output of one matchFrom with input of another: ' +
+             'MatchFrom(t1>t2, t1:[hi]) ⨝ MatchFrom(t2>t3, t2:[ij]) ' + 
+             '(vocab t2:hij,t3:hij)', function() {
         const g1 = MatchFrom(CharSet("t1", ["h","i"]), "t1", "t2");
         const g2 = MatchFrom(CharSet("t2", ["i","j"]), "t2", "t3");
         const g3 = Join(g1, g2);
-        const g4 = Seq(g3, Vocab("t2", "hij"), Vocab("t3", "hij"));
+        const g4 = Seq(g3, Vocab({t2: "hij", t3: "hij"}));
         const expectedResults: StringDict[] = [
             {t1: 'i', t2: 'i', t3: 'i'},
         ];
@@ -1179,17 +1197,261 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(g4, expectedResults);
     });
     
-    describe('J-8. Joining output of one matchFroms with input of another, other direction', function() {
+    describe('J-8. Join output of one matchFrom with input of another, other direction: ' + 
+             'MatchFrom(t2>t3, t2:[ij]) ⨝ MatchFrom(t1>t2, t1:[hi]) ' + 
+             '(vocab t2:hij,t3:hij)', function() {
         const g1 = MatchFrom(CharSet("t1", ["h","i"]), "t1", "t2");
         const g2 = MatchFrom(CharSet("t2", ["i","j"]), "t2", "t3");
         const g3 = Join(g2, g1);
-        const g4 = Seq(g3, Vocab("t2", "hij"), Vocab("t3", "hij"));
+        const g4 = Seq(g3, Vocab({t2: "hij", t3: "hij"}));
         const expectedResults: StringDict[] = [
             {t1: 'i', t2: 'i', t3: 'i'},
         ];
         testHasTapes(g4, ['t1', 't2', 't3']);
         testHasVocab(g4, {t1: 2, t2: 3, t3: 3});
         testGrammar(g4, expectedResults);
+    });
+
+    // Repetitions involving nullable matches.
+
+    describe('R-1a. Effectively insert e twice: ' +
+             't2,t1: (t2:e+M(t1>t2,.*)){2} (vocab h/he)', function() {
+        const dotStar: Grammar = Rep(Any("t1"));
+        const matchGrammar: Grammar = MatchFrom(dotStar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "h", t2: "he"}));
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
+            {t1: 'h', t2: 'ehe'},
+            {t1: 'h', t2: 'eeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+
+    describe('R-1b. Effectively insert e twice: ' +
+             't1,t2: (t2:e+M(t1>t2,.*)){2} (vocab h/he)', function() {
+        const dotStar: Grammar = Rep(Any("t1"));
+        const matchGrammar: Grammar = MatchFrom(dotStar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "h", t2: "he"}));
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
+            {t1: 'h', t2: 'ehe'},
+            {t1: 'h', t2: 'eeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+
+    describe('R-2a. Effectively insert e twice: ' +
+             't2,t1: (t2:e+M(t1>t2,h*)){2} (vocab h/he)', function() {
+        const hStar: Grammar = Rep(t1("h"));
+        const matchGrammar: Grammar = MatchFrom(hStar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "h", t2: "he"}));
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
+            {t1: 'h', t2: 'ehe'},
+            {t1: 'h', t2: 'eeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+
+    describe('R-2b. Effectively insert e twice: ' +
+             't1,t2: (t2:e+M(t1>t2,h*)){2} (vocab h/he)', function() {
+        const hStar: Grammar = Rep(t1("h"));
+        const matchGrammar: Grammar = MatchFrom(hStar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "h", t2: "he"}));
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
+            {t1: 'h', t2: 'ehe'},
+            {t1: 'h', t2: 'eeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+
+    describe('R-3a. Effectively insert e twice: ' +
+             't2,t1: (t2:e+M(t1>t2,h{0,1})){2} (vocab h/he)', function() {
+        const hStar: Grammar = Rep(t1("h"), 0, 1);
+        const matchGrammar: Grammar = MatchFrom(hStar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "h", t2: "he"}));
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
+            {t1: 'h', t2: 'ehe'},
+            {t1: 'h', t2: 'eeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+
+    describe('R-3b. Effectively insert e twice: ' +
+             't1,t2: (t2:e+M(t1>t2,h{0,1})){2} (vocab h/he)', function() {
+        const hStar: Grammar = Rep(t1("h"), 0, 1);
+        const matchGrammar: Grammar = MatchFrom(hStar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "h", t2: "he"}));
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
+            {t1: 'h', t2: 'ehe'},
+            {t1: 'h', t2: 'eeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+
+    describe('R-4a. Effectively insert e twice: ' +
+             't2,t1: (t2:e+M(t1>t2,ε|t1:h)){2} (vocab h/he)', function() {
+        const hStar: Grammar = Uni(Epsilon(), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(hStar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "h", t2: "he"}));
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Priority(["t2", "t1"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
+            {t1: 'h', t2: 'ehe'},
+            {t1: 'h', t2: 'eeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+
+    describe('R-4b. Effectively insert e twice: ' +
+             't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2} (vocab h/he)', function() {
+        const hStar: Grammar = Uni(Epsilon(), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(hStar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 2);
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "h", t2: "he"}));
+        grammarWithVocab = Count({t1: 1, t2: 3}, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
+            {t1: 'h', t2: 'ehe'},     // missing for DIRECTION_LTR = false
+            {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+
+    describe('R-5. Effectively insert e 2 or more times: ' +
+             't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2,100} (vocab h/he)', function() {
+        const hStar: Grammar = Uni(Epsilon(), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(hStar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 100);
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "h", t2: "he"}));
+        grammarWithVocab = Count({t1: 1, t2: 4}, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},   // equivalent to {t1: '', t2: 'ee'}
+            {t2: 'eee'},  // equivalent to {t1: '', t2: 'eee'}
+            {t2: 'eeee'}, // equivalent to {t1: '', t2: 'eeee'}
+            {t1: 'h', t2: 'ehe'},  {t1: 'h', t2: 'eeh'},
+            {t1: 'h', t2: 'ehee'}, {t1: 'h', t2: 'eehe'},
+            {t1: 'h', t2: 'eeeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+
+    describe('R-6. Effectively insert e 2 or more times: ' +
+             't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2+} (vocab h/he)', function() {
+        const hStar: Grammar = Uni(Epsilon(), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(hStar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, Infinity);
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "h", t2: "he"}));
+        grammarWithVocab = Count({t1: 1, t2: 4}, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},   // equivalent to {t1: '', t2: 'ee'}
+            {t2: 'eee'},  // equivalent to {t1: '', t2: 'eee'}
+            {t2: 'eeee'}, // equivalent to {t1: '', t2: 'eeee'}
+            {t1: 'h', t2: 'ehe'},  {t1: 'h', t2: 'eeh'},
+            {t1: 'h', t2: 'ehee'}, {t1: 'h', t2: 'eehe'},
+            {t1: 'h', t2: 'eeeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+
+    describe('R-7. Effectively insert e 2 or more times: ' +
+             't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2,6} (vocab h/he)', function() {
+        const hStar: Grammar = Uni(Epsilon(), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(hStar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, 6);
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "h", t2: "he"}));
+        grammarWithVocab = Count({t1: 1, t2: 6}, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},     // equivalent to {t1: '', t2: 'ee'}
+            {t2: 'eee'},    // equivalent to {t1: '', t2: 'eee'}
+            {t2: 'eeee'},   // equivalent to {t1: '', t2: 'eeee'}
+            {t2: 'eeeee'},  // equivalent to {t1: '', t2: 'eeeee'}
+            {t2: 'eeeeee'}, // equivalent to {t1: '', t2: 'eeeeee'}
+            {t1: 'h', t2: 'ehe'},    {t1: 'h', t2: 'eeh'},
+            {t1: 'h', t2: 'ehee'},   {t1: 'h', t2: 'eehe'},
+            {t1: 'h', t2: 'eeeh'},   {t1: 'h', t2: 'eheee'},
+            {t1: 'h', t2: 'eehee'},  {t1: 'h', t2: 'eeehe'},
+            {t1: 'h', t2: 'eeeeh'},  {t1: 'h', t2: 'eheeee'},
+            {t1: 'h', t2: 'eeheee'}, {t1: 'h', t2: 'eeehee'},
+            {t1: 'h', t2: 'eeeehe'}, {t1: 'h', t2: 'eeeeeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
+    });
+
+    describe('R-8. Effectively insert e 2 or more times: ' +
+             't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2+} (vocab h/he)', function() {
+        const hStar: Grammar = Uni(Epsilon(), t1("h"));
+        const matchGrammar: Grammar = MatchFrom(hStar, "t1", "t2");
+        const grammar: Grammar = Rep(Seq(t2("e"), matchGrammar), 2, Infinity);
+        let grammarWithVocab: Grammar = Seq(grammar, Vocab({t1: "h", t2: "he"}));
+        grammarWithVocab = Count({t1: 1, t2: 6}, grammarWithVocab);
+        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        testHasTapes(grammarWithVocab, ['t1', 't2']);
+        testHasVocab(grammarWithVocab, {t1: 1, t2: 2});
+        const expectedResults: StringDict[] = [
+            {t2: 'ee'},      // equivalent to {t1: '', t2: 'ee'}
+            {t2: 'eee'},     // equivalent to {t1: '', t2: 'eee'}
+            {t2: 'eeee'},    // equivalent to {t1: '', t2: 'eeee'}
+            {t2: 'eeeee'},   // equivalent to {t1: '', t2: 'eeeee'}
+            {t2: 'eeeeee'},  // equivalent to {t1: '', t2: 'eeeeee'}
+            {t1: 'h', t2: 'ehe'},    {t1: 'h', t2: 'eeh'},
+            {t1: 'h', t2: 'ehee'},   {t1: 'h', t2: 'eehe'},
+            {t1: 'h', t2: 'eeeh'},   {t1: 'h', t2: 'eheee'},
+            {t1: 'h', t2: 'eehee'},  {t1: 'h', t2: 'eeehe'},
+            {t1: 'h', t2: 'eeeeh'},  {t1: 'h', t2: 'eheeee'},
+            {t1: 'h', t2: 'eeheee'}, {t1: 'h', t2: 'eeehee'},
+            {t1: 'h', t2: 'eeeehe'}, {t1: 'h', t2: 'eeeeeh'},
+        ];
+        testGrammar(grammarWithVocab, expectedResults);
     });
 
 });

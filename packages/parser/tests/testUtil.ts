@@ -26,9 +26,12 @@ const DEBUG_MAX_RECURSION: number = 4;      // 4
 export const WARN_ONLY_FOR_TOO_MANY_OUTPUTS: boolean = true;
 
 // Permit global control over verbose output in tests.
-// To limit verbose output to a specific test file, set VERBOSE_TEST to
-// false here, then re-define VERBOSE in the test file.
-export const VERBOSE_TEST: boolean = true;
+// To limit verbose output to a specific test file, set VERBOSE_TEST_L2
+// to false here, then re-define VERBOSE in the test file.
+// VERBOSE_TEST_L1 is used for verbose output of test filenames.
+// VERBOSE_TEST_L2 is used for other verbose output in tests.
+export const VERBOSE_TEST_L1: boolean = true;
+export const VERBOSE_TEST_L2: boolean = false;
 
 export function verbose(vb: boolean, ...msgs: string[]) {
     if (!vb)
@@ -40,11 +43,11 @@ export function testSuiteName(mod: NodeModule): string {
     return `${basename(mod.filename)}`
 }
 
-export function logTestSuite(vb: boolean, mod: NodeModule): void {
+export function logTestSuite(suiteName: string, vb: boolean = VERBOSE_TEST_L1): void {
     if (!vb)
         return;
     const date_str: string = (new Date()).toUTCString();
-    verbose(vb, "", `--- ${testSuiteName(mod)} [${date_str}] ---`);
+    verbose(vb, "", `--- ${suiteName} [${date_str}] ---`);
 }
 
 export const t1 = (s: string) => Lit("t1", s);
@@ -69,20 +72,31 @@ export function testIsType(obj: any, type: any,  objName: string = ""): void {
     });
 }
 
-export function testHeaderID(text: string, expectedID: string): void {
+export function testHeaderID(
+    testPrefix: string,
+    text: string,
+    expectedID: string
+): void {
     const result = parseHeaderCell(text).msgTo([]);
-    it(`"${text}" should parse as ${expectedID}`, function() {
+    if (testPrefix != "") {
+        testPrefix += ' ';
+    }
+    it(`${testPrefix}"${text}" should parse as "${expectedID}"`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
 export function testPlaintextID(
+    testPrefix: string,
     text: string, 
     expectedID: string,
     numErrorsExpected: number = 0
 ): void {
     const [result, msgs] = parseCell("plaintext", text).destructure();
-    describe(`${text}`, function() {
+    if (testPrefix != "") {
+        testPrefix += ' ';
+    }
+    describe(`${testPrefix}"${text}"`, function() {
         it(`should parse as ${expectedID}`, function() {
             expect(cellID(result)).to.equal(expectedID);
         });
@@ -93,13 +107,17 @@ export function testPlaintextID(
 }
 
 export function testSymbolID(
+    testPrefix: string,
     text: string, 
     expectedID: string,
     numErrorsExpected: number = 0
 ): void {
     const [result, msgs] = parseCell("symbol", text).destructure();
-    describe(`${text}`, function() {
-        it(`should parse as ${expectedID}`, function() {
+    if (testPrefix != "") {
+        testPrefix += ' ';
+    }
+    describe(`${testPrefix}"${text}"`, function() {
+        it(`should parse as "${expectedID}"`, function() {
             expect(cellID(result)).to.equal(expectedID);
         });
         it(`should have ${numErrorsExpected} errors`, function() {
@@ -109,13 +127,17 @@ export function testSymbolID(
 }
 
 export function testRegexID(
+    testPrefix: string,
     text: string, 
     expectedID: string,
     numErrorsExpected: number = 0
 ): void {
     const [result, msgs] = parseCell("regex", text).destructure();
-    describe(`${text}`, function() {
-        it(`should parse as ${expectedID}`, function() {
+    if (testPrefix != "") {
+        testPrefix += ' ';
+    }
+    describe(`${testPrefix}"${text}"`, function() {
+        it(`should parse as "${expectedID}"`, function() {
             expect(cellID(result)).to.equal(expectedID);
         });
         it(`should have ${numErrorsExpected} errors`, function() {
@@ -124,14 +146,25 @@ export function testRegexID(
     });
 }
 
-export function testOpID(text: string, expectedID: string): void {
+export function testOpID(
+    testPrefix: string,
+    text: string,
+    expectedID: string
+): void {
     const result = parseOp(text).msgTo([]);
-    it(`"${text}" should parse as ${expectedID}`, function() {
+    if (testPrefix != "") {
+        testPrefix += ' ';
+    }
+    it(`${testPrefix}"${text}" should parse as "${expectedID}"`, function() {
         expect(result.id).to.equal(expectedID);
     });
 }
 
-export function testNumOutputs(outputs: StringDict[], expectedNum: number, warningOnly: boolean = false): void {
+export function testNumOutputs(
+    outputs: StringDict[],
+    expectedNum: number,
+    warningOnly: boolean = false
+): void {
     const date_str: string = (new Date()).toUTCString();
     const testName: string = `should have ${expectedNum} result(s)`;
     it(`${testName}`, function() {
@@ -139,9 +172,11 @@ export function testNumOutputs(outputs: StringDict[], expectedNum: number, warni
             expect(outputs.length).to.equal(expectedNum);
         } catch (e) {
             console.log("");
-            console.log(`[${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
+            console.log(`[${this.test?.fullTitle()}] ` +
+                        `${outputs.length} outputs: ${JSON.stringify(outputs)}`);
             if (warningOnly && outputs.length > expectedNum) {
-                console.log(`Warning: should have ${expectedNum} result(s), but found ${outputs.length}.`)
+                console.log(`Warning: should have ${expectedNum} result(s), ` +
+                            `but found ${outputs.length}.`)
             } else {
                 throw e;
             }
@@ -164,7 +199,10 @@ export function removeHiddenFields(outputs: StringDict[]): StringDict[] {
     return results;
 }
 
-export function testMatchOutputs(outputs: StringDict[], expected_outputs: StringDict[]): void {
+export function testMatchOutputs(
+    outputs: StringDict[],
+    expected_outputs: StringDict[]
+): void {
     // Check that the output dictionaries of Interpreter.generate() match
     // the expected outputs.
     //
@@ -200,7 +238,8 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
             expected_outputs_str = JSON.stringify(expected_outputs.slice(start, end_expected));
         else
             expected_outputs_str = JSON.stringify(expected_outputs.slice(start, start+20)) + "...";
-        const testName = `should match items ${start}-${end_expected-1}: ${expected_outputs_str}`;
+        const testName = `should match items ${start}-${end_expected-1}: ` +
+                         `${expected_outputs_str}`;
         it(`${testName}`, function() {
             this.timeout(10000);
             try {
@@ -208,7 +247,8 @@ export function testMatchOutputs(outputs: StringDict[], expected_outputs: String
                 expect(expected_outputs).to.deep.include.members(outputs.slice(start, end_outputs));
             } catch (e) {
                 console.log("");
-                console.log(`[${testName}] ${outputs.length} outputs: ${JSON.stringify(outputs)}`);
+                console.log(`[${this.test?.fullTitle()}] ` +
+                            `${outputs.length} outputs: ${JSON.stringify(outputs)}`);
                 throw e;
             }
         });
@@ -233,6 +273,8 @@ export function generateOutputsFromGrammar(
                                            undefined, stripHidden)];
     } catch (e) {
         it("Unexpected Exception", function() {
+            console.log("");
+            console.log(`[${this.test?.fullTitle()}]`);
             console.log(e);
             assert.fail(e);
         });
@@ -258,6 +300,8 @@ function testGrammarAux(
                                            undefined, stripHidden)];
     } catch (e) {
         it("Unexpected Exception", function() {
+            console.log("");
+            console.log(`[${this.test?.fullTitle()}]`);
             console.log(e);
             assert.fail(e);
         });
@@ -324,7 +368,7 @@ export function testHasTapes(
             }
         } catch (e) {
             console.log("");
-            console.log(`[${testName}] ${tapes.length} tapes [${tapes}]`);
+            console.log(`[${this.test?.fullTitle()}] ${tapes.length} tapes [${tapes}]`);
             throw e;
         }
     });
@@ -443,6 +487,8 @@ export function testParseMultiple(
                 outputs = [...interpreter.generate("", inputs, Infinity, maxRecursion)];
             } catch (e) {
                 it("Unexpected Exception", function() {
+                    console.log("");
+                    console.log(`[${this.test?.fullTitle()}]`);
                     console.log(e);
                     assert.fail(e);
                 });
