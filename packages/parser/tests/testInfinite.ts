@@ -1,31 +1,34 @@
 import { expect } from 'chai';
 
 import { CounterStack } from '../src/exprs';
+
 import {
     Count, CountTape, Epsilon, 
     Join, Null, Rep, Seq, Uni, Collection,
     Embed, CollectionGrammar
 } from '../src/grammars';
+
 import {
-    testSuiteName, logTestSuite, VERBOSE_TEST, verbose,
+    testSuiteName, logTestSuite,
+    VERBOSE_TEST_L2,
     t1, t2
 } from "./testUtil";
 
 import { Msgs } from '../src/msgs';
 import { PassEnv } from '../src/passes';
 import { NAME_PASSES } from '../src/passes/allPasses';
-import { QualifyNames } from '../src/passes/qualifyNames';
 
 // File level control over verbose output
-const VERBOSE = VERBOSE_TEST;
+const VERBOSE = VERBOSE_TEST_L2;
 
 describe(`${testSuiteName(module)}`, function() {
 
-    logTestSuite(VERBOSE, module);
+    logTestSuite(this.title);
 
     describe("1. t1:hello", function() {
         const grammar = t1("hello");
-        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2), new PassEnv());
+        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2),
+                                                       new PassEnv());
         it("should be finite", function() {
             expect(isInfinite).to.be.false;
         });
@@ -33,7 +36,8 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe("2. Epsilon", function() {
         const grammar = Epsilon();
-        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2), new PassEnv());
+        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2),
+                                                       new PassEnv());
         it("should be finite", function() {
             expect(isInfinite).to.be.false;
         });
@@ -41,7 +45,8 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe("3. Null", function() {
         const grammar = Null();
-        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2), new PassEnv());
+        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2),
+                                                       new PassEnv());
         it("should be finite", function() {
             expect(isInfinite).to.be.false;
         });
@@ -49,7 +54,8 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe("4. (t1:hello){2:4}", function() {
         const grammar = Rep(t1("hello"), 2, 4);
-        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2), new PassEnv());
+        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2),
+                                                       new PassEnv());
         it("should be finite", function() {
             expect(isInfinite).to.be.false;
         });
@@ -57,7 +63,8 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe("5. (t1:hello)*", function() {
         const grammar = Rep(t1("hello"), 2, Infinity);
-        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2), new PassEnv());
+        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2),
+                                                       new PassEnv());
         it("should be infinite", function() {
             expect(isInfinite).to.be.true;
         });
@@ -65,7 +72,8 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe("6. (t1:hello){2:Infinity}", function() {
         const grammar = Rep(t1("hello"), 2, Infinity);
-        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2), new PassEnv());
+        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2),
+                                                       new PassEnv());
         it("should be infinite", function() {
             expect(isInfinite).to.be.true;
         });
@@ -73,7 +81,8 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe("7. t1:hello ⨝ (t1:hello)*", function() {
         const grammar = Join(t1("hello"), Rep(t1("hello")));
-        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2), new PassEnv());
+        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2),
+                                                       new PassEnv());
         it("should be finite", function() {
             expect(isInfinite).to.be.false;
         });
@@ -81,7 +90,8 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe("8. t1:hello | (t1:hello)*", function() {
         const grammar = Uni(t1("hello"), Rep(t1("hello")));
-        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2), new PassEnv());
+        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2),
+                                                       new PassEnv());
         it("should be infinite", function() {
             expect(isInfinite).to.be.true;
         });
@@ -89,7 +99,8 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe("9. t1:hello + (t1:hello)*", function() {
         const grammar = Seq(t1("hello"), Rep(t1("hello")));
-        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2), new PassEnv());
+        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2),
+                                                       new PassEnv());
         it("should be infinite", function() {
             expect(isInfinite).to.be.true;
         });
@@ -97,7 +108,8 @@ describe(`${testSuiteName(module)}`, function() {
     
     describe("10. Count(100, (t1:hello + t2:hi)*)", function() {
         const grammar = Count(100, Rep(Seq(t1("hello"), t2("hi"))));
-        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2), new PassEnv());
+        const isInfinite = grammar.potentiallyInfinite(new CounterStack(2),
+                                                       new PassEnv());
         it("should be finite", function() {
             expect(isInfinite).to.be.false;
         });
@@ -117,7 +129,8 @@ describe(`${testSuiteName(module)}`, function() {
     }); 
 
     describe("12. CountTape({t1:20, t2:10}, (t1:hello + t2:hi)*)", function() {
-        const grammar = CountTape({t1:20, t2:10}, Rep(Seq(t1("hello"), t2("hi"))));
+        const grammar = CountTape({t1:20, t2:10},
+                                  Rep(Seq(t1("hello"), t2("hi"))));
         let counterStack: CounterStack = new CounterStack(2);
         let env: PassEnv = new PassEnv;
         grammar.calculateTapes(counterStack, env);
@@ -128,7 +141,8 @@ describe(`${testSuiteName(module)}`, function() {
     }); 
 
     describe("13. CountTape({t1:20}, (t1:hello + t2:hi)*)", function() {
-        const grammar = CountTape({t1:20}, Rep(Seq(t1("hello"), t2("hi"))));
+        const grammar = CountTape({t1:20},
+                                  Rep(Seq(t1("hello"), t2("hi"))));
         let counterStack: CounterStack = new CounterStack(2);
         let env: PassEnv = new PassEnv;
         grammar.calculateTapes(counterStack, env);
@@ -144,13 +158,14 @@ describe(`${testSuiteName(module)}`, function() {
     }); 
 
     describe("14. CountTape({t1:20}, (t1:hello + t2:hi){0,5})", function() {
-        const grammar = CountTape({t1:20}, Rep(Seq(t1("hello"), t2("hi")), 0, 5));
+        const grammar = CountTape({t1:20},
+                                  Rep(Seq(t1("hello"), t2("hi")), 0, 5));
         let counterStack: CounterStack = new CounterStack(2);
         let env: PassEnv = new PassEnv;
         grammar.calculateTapes(counterStack, env);
         const isInfinite = grammar.potentiallyInfinite(counterStack, env);
         // Even though the CountTape only limits t1, CountTape.potentiallyInfinite()
-        // is able to determinte that the grammar is finitie because the
+        // is able to determine that the grammar is finitie because the
         // child grammar is finite.
         it("should be finite", function() {
             expect(isInfinite).to.be.false;

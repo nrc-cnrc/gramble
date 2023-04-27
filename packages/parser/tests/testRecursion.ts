@@ -3,184 +3,238 @@ import {
     Join, Embed, 
     Collection 
 } from "../src/grammars";
+
 import { 
+    testSuiteName, logTestSuite,
+    VERBOSE_TEST_L2,
     t1,
     testGrammar,
 } from './testUtil';
 
-import * as path from 'path';
-import { SILENT } from "../src/util";
+import {
+    StringDict, SILENT, VERBOSE_DEBUG,
+} from "../src/util";
 
+// File level control over verbose output
+const VERBOSE = VERBOSE_TEST_L2;
 
-describe(`${path.basename(module.filename)}`, function() {
+describe(`${testSuiteName(module)}`, function() {
 
-    describe('Joining "hiworld" with right-recursive "hi+ world"', function() {
+    logTestSuite(this.title);
+
+    describe('1. Join t1:hiworld ⨝ right-recursive (t1:hi)+ + t1:world', function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
         const coll = Collection({
-            "hiWorld": hiWorld,
-            "default": Join(t1("hiworld"), hiWorld)
+            hiWorld: hiWorld,
+            default: Join(t1("hiworld"), hiWorld)
         });
-        testGrammar(coll, [{t1: "hiworld"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hiworld"}
+        ];
+        testGrammar(coll, expectedResults);
     });
     
-    describe('Joining right-recursive "hi+ world" with "hiworld"', function() {
+    describe('2. Join right-recursive (t1:hi)+ + t1:world ⨝ t1:hiworld', function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
         const coll = Collection({
-            "hiWorld": hiWorld,
-            "default": Join(hiWorld, t1("hiworld"))
+            hiWorld: hiWorld,
+            default: Join(hiWorld, t1("hiworld"))
         });
-        testGrammar(coll, [{t1: "hiworld"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hiworld"}
+        ];
+        testGrammar(coll, expectedResults);
     });
 
-    describe('Joining "hihiworld" with right-recursive "hi+ world"', function() {
-        
+    describe('3. Join t1:hihiworld ⨝ right-recursive (t1:hi)+ + t1:world', function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
         const coll = Collection({
-            "hiWorld": hiWorld,
-            "default": Join(t1("hihiworld"), hiWorld)
+            hiWorld: hiWorld,
+            default: Join(t1("hihiworld"), hiWorld)
         });
-        testGrammar(coll, [{t1: "hihiworld"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hihiworld"}
+        ];
+        testGrammar(coll, expectedResults);
     });
 
-    describe('Joining right-recursive "hi+ world" with "hihiworld"', function() {
-        
+    describe('4. Join right-recursive (t1:hi)+ + t1:world ⨝ t1:hihiworld', function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
         const coll = Collection({
-            "hiWorld": hiWorld,
-            "default": Join(hiWorld, t1("hihiworld"))
+            hiWorld: hiWorld,
+            default: Join(hiWorld, t1("hihiworld"))
         });
-        testGrammar(coll, [{t1: "hihiworld"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hihiworld"}
+        ];
+        testGrammar(coll, expectedResults);
     });
 
-    describe('Joining "hiworld" with left-recursive "hi+ world"', function() {
+    describe('5. Join t1:hiworld ⨝ left-recursive (t1:hi)+ + t1:world', function() {
         const hihi = Uni(t1("hi"), Seq(Embed("hihi"), t1("hi")));
         const hiWorld = Seq(hihi, t1("world"));
         const coll = Collection({
-            "hihi": hihi,
-            "default": Join(t1("hiworld"), hiWorld)
+            hihi: hihi,
+            default: Join(t1("hiworld"), hiWorld)
         });
-        testGrammar(coll, [{t1: "hiworld"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hiworld"}
+        ];
+        testGrammar(coll, expectedResults);
     });
 
-    describe('Joining "hihiworld" with left-recursive "hi+ world"', function() {
+    describe('6. Join t1:hihiworld ⨝ left-recursive (t1:hi)+ + t1:world', function() {
         const hihi = Uni(t1("hi"), Seq(Embed("hihi"), t1("hi")));
         const hiWorld = Seq(hihi, t1("world"));
         const coll = Collection({
-            "hihi": hihi,
-            "default": Join(t1("hihiworld"), hiWorld)
+            hihi: hihi,
+            default: Join(t1("hihiworld"), hiWorld)
         });
-        testGrammar(coll, [{t1: "hihiworld"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hihiworld"}
+        ];
+        testGrammar(coll, expectedResults);
     });
 
-    describe('Joining left-recursive "hi+ world" with "hiworld"', function() {
+    describe('7. Join left-recursive (t1:hi)+ + t1:world ⨝ t1:hiworld', function() {
         const hihi = Uni(t1("hi"), Seq(Embed("hihi"), t1("hi")));
         const hiWorld = Seq(hihi, t1("world"));
         const coll = Collection({
-            "hihi": hihi,
-            "default": Join(hiWorld, t1("hiworld"))
+            hihi: hihi,
+            default: Join(hiWorld, t1("hiworld"))
         });
-        testGrammar(coll, [{t1: "hiworld"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hiworld"}
+        ];
+        testGrammar(coll, expectedResults);
     });
     
-    describe('Joining left-recursive "hi+ world" with "hihiworld"', function() {
+    describe('8. Join left-recursive (t1:hi)+ + t1:world ⨝ t1:hihiworld', function() {
         const hihi = Uni(t1("hi"), Seq(Embed("hihi"), t1("hi")));
         const hiWorld = Seq(hihi, t1("world"));
         const coll = Collection({
-            "hihi": hihi,
-            "default": Join(hiWorld, t1("hihiworld"))
+            hihi: hihi,
+            default: Join(hiWorld, t1("hihiworld"))
         });
-        testGrammar(coll, [{t1: "hihiworld"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hihiworld"}
+        ];
+        testGrammar(coll, expectedResults);
     });
 
-    describe('Generating from right-recursive "hi+ world" with default max recursion (4)', function() {
+    describe('9. Emit from right-recursive (t1:hi)+ + t1:world ' +
+             'with default max recursion (4)', function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
         const coll = Collection({
-            "hiWorld": hiWorld,
-            "default": hiWorld
+            hiWorld: hiWorld,
+            default: hiWorld
         });
-        testGrammar(coll, [{t1: "hiworld"},
-                              {t1: "hihiworld"},
-                              {t1: "hihihiworld"},
-                              {t1: "hihihihiworld"},
-                              {t1: "hihihihihiworld"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hiworld"},
+            {t1: "hihiworld"},
+            {t1: "hihihiworld"},
+            {t1: "hihihihiworld"},
+            {t1: "hihihihihiworld"},
+        ];
+        testGrammar(coll, expectedResults);
     });
 
-    describe('Emitting from right-recursive "hi+ world" with max recursion 2', function() {
+    describe('10. Emit from right-recursive (t1:hi)+ + t1:world ' +
+             'with max recursion 2', function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
         const coll = Collection({
-            "hiWorld": hiWorld,
-            "default": hiWorld
+            hiWorld: hiWorld,
+            default: hiWorld
         });
-        testGrammar(coll, [{t1: "hiworld"},
-                              {t1: "hihiworld"},
-                              {t1: "hihihiworld"}], 
-                            SILENT, "", 2);
+        const expectedResults: StringDict[] = [
+            {t1: "hiworld"},
+            {t1: "hihiworld"},
+            {t1: "hihihiworld"},
+        ];
+        testGrammar(coll, expectedResults, SILENT, "", 2);
     });
     
-    describe('Emitting from center-recursive "hi+ world" with max recursion 2', function() {
+    describe('11. Emit from center-recursive (t1:hi)+ + t1:world ' +
+             'with max recursion 2', function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world, t1("hi"));
         const coll = Collection({
-            "hiWorld": hiWorld,
-            "default": hiWorld
+            hiWorld: hiWorld,
+            default: hiWorld
         });
-        testGrammar(coll, [{t1: "hiworldhi"},
-                              {t1: "hihiworldhihi"},
-                              {t1: "hihihiworldhihihi"}], 
-                            SILENT, "", 2);
+        const expectedResults: StringDict[] = [
+            {t1: "hiworldhi"},
+            {t1: "hihiworldhihi"},
+            {t1: "hihihiworldhihihi"},
+        ];
+        testGrammar(coll, expectedResults, SILENT, "", 2);
     });
 
-    describe('Emitting from right-recursive "hi+ world" with max recursion 0', function() {
+    describe('12. Emit from right-recursive (t1:hi)+ + t1:world ' +
+             'with max recursion 0', function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), world);
         const coll = Collection({
-            "hiWorld": hiWorld,
-            "default": hiWorld
+            hiWorld: hiWorld,
+            default: hiWorld
         });
-        testGrammar(coll, [{t1: "hiworld"}], SILENT, "", 0);
+        const expectedResults: StringDict[] = [
+            {t1: "hiworld"}
+        ];
+        testGrammar(coll, expectedResults, SILENT, "", 0);
     });
 
-    describe('Emitting from left-recursive "hi+ world" with default max recursion (4)', function() {
+    describe('13. Emit from left-recursive (t1:hi)+ + t1:world ' +
+             'with default max recursion (4)', function() {
         const hihi = Uni(t1("hi"), Seq(Embed("hihi"), t1("hi")));
         const hiWorld = Seq(hihi, t1("world"));
         const coll = Collection({
-            "hihi": hihi,
-            "default": hiWorld
+            hihi: hihi,
+            default: hiWorld
         });
-        testGrammar(coll, [{t1: "hiworld"},
-                              {t1: "hihiworld"},
-                              {t1: "hihihiworld"},
-                              {t1: "hihihihiworld"},
-                              {t1: "hihihihihiworld"}]);
+        const expectedResults: StringDict[] = [
+            {t1: "hiworld"},
+            {t1: "hihiworld"},
+            {t1: "hihihiworld"},
+            {t1: "hihihihiworld"},
+            {t1: "hihihihihiworld"},
+        ];
+        testGrammar(coll, expectedResults);
     });
 
-    describe('Emitting from left-recursive "hi+ world" with max recursion 2', function() {
+    describe('14. Emit from left-recursive (t1:hi)+ + t1:world ' +
+             'with max recursion 2', function() {
         const hihi = Uni(t1("hi"), Seq(Embed("hihi"), t1("hi")));
         const hiWorld = Seq(hihi, t1("world"));
         const coll = Collection({
-            "hihi": hihi,
-            "default": hiWorld
+            hihi: hihi,
+            default: hiWorld
         });
-        testGrammar(coll, [{t1: "hiworld"},
-                              {t1: "hihiworld"},
-                              {t1: "hihihiworld"}], 
-                            SILENT, "", 2);
+        const expectedResults: StringDict[] = [
+            {t1: "hiworld"},
+            {t1: "hihiworld"},
+            {t1: "hihihiworld"},
+        ];
+        testGrammar(coll, expectedResults, SILENT, "", 2);
     });
 
-    describe('Emitting from left-recursive "hi+ world" with max recursion 0', function() {
+    describe('15. Emit from left-recursive (t1:hi)+ + t1:world ' +
+             'with max recursion 0', function() {
         const hihi = Uni(t1("hi"), Seq(Embed("hihi"), t1("hi")));
         const hiWorld = Seq(hihi, t1("world"));
         const coll = Collection({
-            "hihi": hihi,
-            "default": hiWorld
+            hihi: hihi,
+            default: hiWorld
         });
-        testGrammar(coll, [{t1: "hiworld"}], 
-                        SILENT, "", 0);
+        const expectedResults: StringDict[] = [
+            {t1: "hiworld"}
+        ];
+        testGrammar(coll, expectedResults, SILENT, "", 0);
     }); 
 });

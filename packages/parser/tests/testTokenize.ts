@@ -1,113 +1,121 @@
-import * as path from 'path';
-import { testTokenize } from './testUtil';
+import {
+    testSuiteName, logTestSuite,
+    VERBOSE_TEST_L2,
+    testTokenize,
+} from './testUtil';
 
-describe(`${path.basename(module.filename)}`, function() {
+// File level control over verbose output
+const VERBOSE = VERBOSE_TEST_L2;
 
-    describe('Empty string', function() {
+describe(`${testSuiteName(module)}`, function() {
+
+    logTestSuite(this.title);
+
+    describe('1. Empty string', function() {
         testTokenize("", []);
     });
 
-    describe('Simple string', function() {
+    describe('2. Simple string', function() {
         testTokenize("foo", [ 'f', 'o', 'o' ]);
     });
     
-    describe('String with a diacritic', function() {
+    describe('3. String with a diacritic', function() {
         testTokenize("fóo", [ 'f', 'ó', 'o']);
     });
 
-    describe('String with a length marker', function() {
+    describe('4. String with a length marker', function() {
         testTokenize("foːo", [ 'f', 'oː', 'o']);
     });
     
-    describe('String with a colon', function() {
+    describe('5. String with a colon', function() {
         testTokenize("fo:o", [ 'f', 'o', ':', 'o']);
     });
     
-    describe('String with superscript h', function() {
+    describe('6. String with superscript h', function() {
         testTokenize("pʰoo", [ 'pʰ', 'o', 'o']);
     });
 
-    describe('String with superscript oe', function() {
+    describe('7. String with superscript oe', function() {
         testTokenize("pꟹoo", [ 'pꟹ', 'o', 'o']);
     });
 
-    describe('String with superscript l', function() {
+    describe('8. String with superscript l', function() {
         testTokenize("pˡoo", [ 'pˡ', 'o', 'o']);
     });
 
-    describe('String with superscript ꚝ', function() {
+    describe('9. String with superscript ꚝ', function() {
         testTokenize("pꚝoo", [ 'pꚝ', 'o', 'o']);
     });
 
-    describe('String with subscript s', function() {
+    describe('10. String with subscript s', function() {
         testTokenize("pₛoo", [ 'pₛ', 'o', 'o']);
     });
     
-    describe('String with superscript a', function() {
+    describe('11. String with superscript a', function() {
         testTokenize("pᵃoo", [ 'pᵃ', 'o', 'o']);
     });
     
-    describe('String with superscript n', function() {
+    describe('12. String with superscript n', function() {
         testTokenize("pⁿoo", [ 'pⁿ', 'o', 'o']);
     });
 
-    describe('String with Medieval German superscript e', function() {
+    describe('13. String with Medieval German superscript e', function() {
         testTokenize("puͤo", [ 'p', 'uͤ', 'o']);
     });
     
-    describe('String with ligature fi', function() {
+    describe('14. String with ligature fi', function() {
         testTokenize("ﬁoo", [ 'ﬁ', 'o', 'o' ]);
     });
 
-    describe('String with ligature ts', function() {
+    describe('15. String with ligature ts', function() {
         testTokenize("ʦoo", [ 'ʦ', 'o', 'o' ]);
     });
     
-    describe('String beginning in a diacritic', function() {
+    describe('16. String beginning in a diacritic', function() {
         testTokenize("óo", [ 'ó', 'o' ]);
     });
     
-    describe('String ending in a diacritic', function() {
+    describe('17. String ending in a diacritic', function() {
         testTokenize("foó", [ 'f', 'o', 'ó' ]);
     });
     
-    describe('String with two diacritics', function() {
+    describe('18. String with two diacritics', function() {
         testTokenize("fö́o", [ 'f', 'ö́', 'o' ]);
     });
     
-    describe('String ending in two diacritics', function() {
+    describe('19. String ending in two diacritics', function() {
         testTokenize("fö́", [ 'f', 'ö́' ]);
     });
     
-    describe('String with a superscript h', function() {
+    describe('20. String with a superscript h', function() {
         testTokenize("pʰoo", [ 'pʰ', 'o', 'o']);
     });
 
-    describe('String beginning with a superscript h', function() {
+    describe('21. String beginning with a superscript h', function() {
         testTokenize("ʰpoo", [ 'ʰ', 'p', 'o', 'o']);
     });
 
-    describe('String with tied characters', function() {
+    describe('22. String with tied characters', function() {
         testTokenize("ut͡su", [ 'u', 't͡s', 'u' ]);
     });
 
-    describe('String with tied characters (under-tie)', function() {
+    describe('23. String with tied characters (under-tie)', function() {
         testTokenize("ut͜su", [ 'u', 't͜s', 'u' ]);
     });
 
-    describe('String ending in tied characters', function() {
+    describe('24. String ending in tied characters', function() {
         testTokenize("ut͡s", [ 'u', 't͡s' ]);
     });
 
-    describe('String ending in tie', function() {
+    describe('25. String ending in tie', function() {
         testTokenize("ut͡", [ 'u', 't͡' ]);
     });
     
-    describe('String with tied characters and a diacritic on 1st one', function() {
+    describe('26. String with tied characters and a diacritic on 1st one', function() {
         testTokenize("ut͡ʼsu", [ 'u', 't͡ʼs', 'u' ]);
     });
 
-    describe('String with tied characters and a diacritic on 2nd one', function() {
+    describe('27. String with tied characters and a diacritic on 2nd one', function() {
         testTokenize("ut͡sʼu", [ 'u', 't͡sʼ', 'u' ]);
     });
 

@@ -1,38 +1,29 @@
 import {
-    Any,
     CountTape,
     Grammar,
     Rep,
     Seq,
-    Uni,
-    Vocab,
 } from "../src/grammars";
 
 import { 
-    t1, t2, t3, t4,
-    testHasTapes, 
-    testHasVocab,
+    testSuiteName, logTestSuite,
+    VERBOSE_TEST_L2,
+    t1, t2,
     testGrammar,
-    WARN_ONLY_FOR_TOO_MANY_OUTPUTS,
-} from './testUtil';
+} from "./testUtil";
 
-import * as path from 'path';
-import {StringDict, logDebug, SILENT, VERBOSE_DEBUG } from "../src/util";
+import {
+    StringDict, SILENT, VERBOSE_DEBUG,
+} from "../src/util";
 
 // File level control over verbose output
-const VERBOSE = true;
+const VERBOSE = VERBOSE_TEST_L2;
 
-function verbose(...msgs: string[]) {
-    logDebug(VERBOSE ? VERBOSE_DEBUG : SILENT, ...msgs);
-}
+describe(`${testSuiteName(module)}`, function() {
 
-const DEFAULT = undefined;
+    logTestSuite(this.title);
 
-describe(`${path.basename(module.filename)}`, function() {
-
-    verbose("", `--- ${path.basename(module.filename)} ---`);
-
-    describe('1a. CT(3) (t1:h + t2:i)*', function() {
+    describe('1a. CountTape(3) (t1:h + t2:i)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("i")));
         grammar = CountTape(3, grammar);
         const expectedResults: StringDict[] = [
@@ -44,7 +35,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('1b. CT({t1:3, t2:3}) (t1:h + t2:i)*', function() {
+    describe('1b. CountTape({t1:3, t2:3}) (t1:h + t2:i)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("i")));
         grammar = CountTape({t1:3, t2:3}, grammar);
         const expectedResults: StringDict[] = [
@@ -56,7 +47,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('1c. CT({t1:3}) (t1:h + t2:i)*', function() {
+    describe('1c. CountTape({t1:3}) (t1:h + t2:i)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("i")));
         grammar = CountTape({t1:3}, grammar);
         const expectedResults: StringDict[] = [
@@ -68,7 +59,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('1d. CT({t2:3}) (t1:h + t2:i)*', function() {
+    describe('1d. CountTape({t2:3}) (t1:h + t2:i)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("i")));
         grammar = CountTape({t2:3}, grammar);
         const expectedResults: StringDict[] = [
@@ -80,7 +71,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('2a. CT(3) (t1:h + t2:ii)*', function() {
+    describe('2a. CountTape(3) (t1:h + t2:ii)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("ii")));
         grammar = CountTape(3, grammar);
         const expectedResults: StringDict[] = [
@@ -90,7 +81,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('2b. CT(6) (t1:h + t2:ii)*', function() {
+    describe('2b. CountTape(6) (t1:h + t2:ii)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("ii")));
         grammar = CountTape(6, grammar);
         const expectedResults: StringDict[] = [
@@ -102,7 +93,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3b. CT({t1:3, t2:6}) (t1:h + t2:ii)*', function() {
+    describe('3b. CountTape({t1:3, t2:6}) (t1:h + t2:ii)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("ii")));
         grammar = CountTape({t1:3, t2:6}, grammar);
         const expectedResults: StringDict[] = [
@@ -114,7 +105,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3c. CT({t1:3}) (t1:h + t2:ii)*', function() {
+    describe('3c. CountTape({t1:3}) (t1:h + t2:ii)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("ii")));
         grammar = CountTape({t1:3}, grammar);
         const expectedResults: StringDict[] = [
@@ -126,7 +117,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('3d. CT({t2:6}) (t1:h + t2:ii)*', function() {
+    describe('3d. CountTape({t2:6}) (t1:h + t2:ii)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("ii")));
         grammar = CountTape({t2:6}, grammar);
         const expectedResults: StringDict[] = [
@@ -138,7 +129,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('4a. CT({t2:5}) CT({t1:3}) (t1:h + t2:ii)*', function() {
+    describe('4a. CountTape({t2:5}) CountTape({t1:3}) (t1:h + t2:ii)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("ii")));
         grammar = CountTape({t1:3}, grammar);
         grammar = CountTape({t2:5}, grammar);
@@ -150,7 +141,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('4b. CT({t1:3}) CT({t2:5}) (t1:h + t2:ii)*', function() {
+    describe('4b. CountTape({t1:3}) CountTape({t2:5}) (t1:h + t2:ii)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("ii")));
         grammar = CountTape({t2:5}, grammar);
         grammar = CountTape({t1:3}, grammar);
@@ -162,7 +153,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('5a. CT({t1:2}) CT({t2:6}) (t1:h + t2:ii)*', function() {
+    describe('5a. CountTape({t1:2}) CountTape({t2:6}) (t1:h + t2:ii)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("ii")));
         grammar = CountTape({t2:6}, grammar);
         grammar = CountTape({t1:2}, grammar);
@@ -174,7 +165,7 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('5b. CT({t2:6}) CT({t1:2}) (t1:h + t2:ii)*', function() {
+    describe('5b. CountTape({t2:6}) CountTape({t1:2}) (t1:h + t2:ii)*', function() {
         let grammar: Grammar = Rep(Seq(t1("h"), t2("ii")));
         grammar = CountTape({t1:2}, grammar);
         grammar = CountTape({t2:6}, grammar);

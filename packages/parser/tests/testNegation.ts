@@ -1,38 +1,41 @@
 import {
     Grammar, CountTape, Vocab,
     Uni, Join, Not, Rep, Seq,
-    Dot, Any, Short
+    Dot, Any, Short,
 } from "../src/grammars";
-import { 
-    testSuiteName, logTestSuite, VERBOSE_TEST, verbose,
-    t1, t2, 
-    testHasTapes, 
-    testHasVocab, 
-    testGrammar 
-} from './testUtil';
 
-import { StringDict } from "../src/util";
+import { 
+    testSuiteName, logTestSuite,
+    VERBOSE_TEST_L2,
+    t1, t2,
+    testHasTapes,
+    testHasVocab,
+    testGrammar,
+} from "./testUtil";
+
+import {
+    StringDict, SILENT, VERBOSE_DEBUG,
+} from "../src/util";
 
 // File level control over verbose output
-const VERBOSE = VERBOSE_TEST;
+const VERBOSE = VERBOSE_TEST_L2;
 
 describe(`${testSuiteName(module)}`, function() {
 
-    logTestSuite(VERBOSE, module);
+    logTestSuite(this.title);
 
     /* I think negation relativized to no tapes can be semantically well-defined
        but I'm iffy about letting grammars actually do that, because I think the 
        results are counter-intuitive.
-    describe('Negation of empty set: ~0', function() {
+    describe('Negation of empty set: ~∅', function() {
         const grammar = Not(Null());
         testGrammar(grammar, [{}]);
     });
 
-    describe('Negation of epsilon: ~e', function() {
+    describe('Negation of epsilon: ~ε', function() {
         const grammar = Not(Epsilon());
         testGrammar(grammar, []);
     });
-    
     */
 
     describe('1. Join t1:foo ⨝ ~t1:hello', function() {
@@ -478,8 +481,10 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     
-    describe('42. Does not contain a (vocab ab)', function() {
-        const r1Grammar = Not(Seq(Short(Seq(Rep(Any("t1")), t1("a"))), Rep(Any("t1"))));
+    describe('42. Does not contain a: ' +
+             '~(Short(t1:.*a) + t1:.*) (vocab ab)', function() {
+        const r1Grammar = Not(Seq(Short(Seq(Rep(Any("t1")), t1("a"))),
+                                  Rep(Any("t1"))));
         const vocGrammar = Vocab({t1:"ab"});
         const grammar = CountTape(3, Seq(r1Grammar, vocGrammar));
         const expectedResults: StringDict[] = [

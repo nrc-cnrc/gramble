@@ -3,24 +3,27 @@ import {
     Match, 
     Seq, Any, Join, Filter, MatchDot, Dot, 
     MatchDotRep, MatchDotRep2, MatchDotStar, 
-    MatchDotStar2, CharSet, Rep, Grammar, CountTape
+    MatchDotStar2, CharSet, Grammar, CountTape
 } from "../src/grammars";
 
 import { 
-    testSuiteName, logTestSuite,  VERBOSE_TEST, verbose,
+    testSuiteName, logTestSuite,
+    VERBOSE_TEST_L2,
     t1, t2, testHasTapes, 
     //testHasVocab, 
     testGrammar 
 } from './testUtil';
 
-import { StringDict, VERBOSE_DEBUG} from "../src/util";
+import {
+    StringDict, VERBOSE_DEBUG
+} from "../src/util";
 
 // File level control over verbose output
-const VERBOSE = VERBOSE_TEST;
+const VERBOSE = VERBOSE_TEST_L2;
 
 describe(`${testSuiteName(module)}`, function() {
 
-    logTestSuite(VERBOSE, module);
+    logTestSuite(this.title);
 
     describe('1. Match t1:h + t2:h', function() {
         const grammar = Match(Seq(t1("h"), t2("h")), "t1", "t2");
@@ -504,56 +507,64 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('33a. Filter t1:h+t2:h [Match (t1:.+t2:.)*]', function() {
-        const grammar = Filter(Seq(t1("h"), t2("h")), MatchDotStar("t1", "t2"));
+        const grammar = Filter(Seq(t1("h"), t2("h")),
+                               MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
     });
 
     describe('33b. Filter t1:h+t2:h [Match t1:.*+t2:.*]', function() {
-        const grammar = Filter(Seq(t1("h"), t2("h")), MatchDotStar2("t1", "t2"));
+        const grammar = Filter(Seq(t1("h"), t2("h")),
+                               MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
     });
 
     describe('34a. Filter Match (t1:.+t2:.)* [t1:h+t2:h]', function() {
-        const grammar = Filter(MatchDotStar("t1", "t2"), Seq(t1("h"), t2("h")));
+        const grammar = Filter(MatchDotStar("t1", "t2"),
+                               Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
     });
 
     describe('34b. Filter Match t1:.*+t2:.* [t1:h+t2:h]', function() {
-        const grammar = Filter(MatchDotStar2("t1", "t2"), Seq(t1("h"), t2("h")));
+        const grammar = Filter(MatchDotStar2("t1", "t2"),
+                               Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
     });
 
     describe('35a. Join t1:h+t2:h ⨝ Match (t1:.+t2:.)*', function() {
-        const grammar = Join(Seq(t1("h"), t2("h")), MatchDotStar("t1", "t2"));
+        const grammar = Join(Seq(t1("h"), t2("h")),
+                             MatchDotStar("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
     });
 
     describe('35b. Join t1:h+t2:h ⨝ Match t1:.*+t2:.*', function() {
-        const grammar = Join(Seq(t1("h"), t2("h")), MatchDotStar2("t1", "t2"));
+        const grammar = Join(Seq(t1("h"), t2("h")),
+                             MatchDotStar2("t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
     });
 
     describe('36a. Join Match (t1:.+t2:.)* ⨝ t1:h+t2:h', function() {
-        const grammar = Join(MatchDotStar("t1", "t2"), Seq(t1("h"), t2("h")));
+        const grammar = Join(MatchDotStar("t1", "t2"),
+                             Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);
     });
 
     describe('36b. Join Match t1:.*+t2:.* ⨝ t1:h+t2:h', function() {
-        const grammar = Join(MatchDotStar2("t1", "t2"), Seq(t1("h"), t2("h")));
+        const grammar = Join(MatchDotStar2("t1", "t2"),
+                             Seq(t1("h"), t2("h")));
         testHasTapes(grammar, ['t1', 't2']);
         //testHasVocab(grammar, {t1: 1, t2: 1});
         testGrammar(grammar, [{t1: 'h', t2: 'h'}]);

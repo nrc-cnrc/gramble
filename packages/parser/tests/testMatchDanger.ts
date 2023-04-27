@@ -9,56 +9,64 @@ import {
 } from "../src/grammars";
 
 import { 
+    testSuiteName, logTestSuite,
+    VERBOSE_TEST_L2,
     t1, t2, 
     testHasTapes, 
     testHasVocab,
     testGrammar,
 } from './testUtil';
 
-import * as path from 'path';
-import { StringDict } from "../src/util";
+import {
+    StringDict, VERBOSE_DEBUG,
+} from "../src/util";
 
-describe(`${path.basename(module.filename)}`, function() {
+// File level control over verbose output
+const VERBOSE = VERBOSE_TEST_L2;
 
-    // 61. t1/t2:hi+Match(t1:hi, t2:.*)
-    describe('1a: t1/t2:hi+Match(t1:hi, t2:.*)', function() {
+describe(`${testSuiteName(module)}`, function() {
+
+    logTestSuite(this.title);
+
+    describe('1a. t1:hi + t2:hi + Match(t1:hi + t2:.*)', function() {
         const grammar =  Seq(t1("hi"), t2("hi"),
                              Match(Seq(t1("hi"), Rep(Dot("t2"))), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, [
-            { t1: "hihi", t2: "hihi" }
-        ]);
+        const expectedResults: StringDict[] = [
+            { t1: 'hihi', t2: 'hihi' },
+        ];
+        testGrammar(grammar, expectedResults);
     }); 
 
-    // 61b. t1/t2:hi+Match(t1:hi, t2:.*)
-    describe('1b: t2/t1:hi+Match(t1:hi, t2:.*)', function() {
+    describe('1b. t2:hi + t1:hi + Match(t1:hi + t2:.*)', function() {
         const grammar =  Seq(t2("hi"), t1("hi"),
                              Match(Seq(t1("hi"), Rep(Dot("t2"))), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, [
-            { t1: "hihi", t2: "hihi" }
-        ]);
+        const expectedResults: StringDict[] = [
+            { t1: 'hihi', t2: 'hihi' },
+        ];
+        testGrammar(grammar, expectedResults);
     }); 
 
-    // 61b. t1/t2:hi+Match(t1:hi, t2:.*)
     // can't succeed -- "a" isn't in the t2 vocab
-    describe('1c: t1:ha+t2:hi+Match(t1:ha, t2:.*)', function() {
+    describe('1c: t1:ha + t2:hi + Match(t1:ha + t2:.*)', function() {
         const grammar =  Seq(t1("ha"), t2("hi"),
                              Match(Seq(t1("ha"), Rep(Dot("t2"))), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         testGrammar(grammar, []);
     }); 
 
-    // 61b. t1/t2:hi+Match(t1:hi, t2:.*)
-    // can't succeed -- "a" isn't in the t2 vocab -- but can churn effectively forever
-    describe('1d: t2:hi+t2:ha+Match(t1:ha, t2:.*)', function() {
+    // can't succeed -- "a" isn't in the t2 vocab -- 
+    // but can churn effectively forever
+    describe('1d: t2:hi + t1:ha + Match(t1:ha + t2:.*)', function() {
         const grammar =  Seq(t2("hi"), t1("ha"),
                              Match(Seq(t1("ha"), Rep(Dot("t2"))), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
         testGrammar(grammar, []);
     }); 
 
-    describe('2a. Joining a literal to matching .* on t1 and t2', function() {
+    describe('2a. Join a literal to matching .* on t1 and t2: ' +
+             't1:hip + (t1:hip ⨝ Match(t1:.* + t2:.*)) (vocab t2:hip)', function() {
         const grammar = Seq(t1("hip"),
                             Join(t1("hip"),
                                  Match(Seq(Rep(Dot("t1")), Rep(Dot("t2"))),
@@ -73,7 +81,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     }); 
 
-    describe('2b. Joining a literal to matching .* on t1 and t2', function() {
+    describe('2b. Join a literal to matching .* on t1 and t2: ' +
+             't2:hip + (t1:hip ⨝ Match(t1:.* + t2:.*))', function() {
         const grammar = Seq(t2("hip"),
                             Join(t1("hip"),
                                  Match(Seq(Rep(Dot("t1")), Rep(Dot("t2"))),
@@ -86,7 +95,8 @@ describe(`${path.basename(module.filename)}`, function() {
         testGrammar(grammar, expectedResults);
     }); 
 
-    describe('3. Replace i by o in hip: i -> o, only using Join', function() {
+    describe('3. Replace i by o in hip: ' +
+             't2:"" + t1:hip ⨝ t1:i -> t2:o, only using Join', function() {
         const grammar = Seq(t2(""),
                             Join(t1("hip"),
                                  Replace(t1("i"), t2("o"))));
