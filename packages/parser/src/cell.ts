@@ -227,7 +227,12 @@ const RULE_CONTEXT_BEGINS_ENDS = MPSequence(
                                      c1, c2, true, true))
 );
 
+const RULE_CONTEXT_EMPTY = MPEmpty(
+    () => new EpsilonGrammar().msg()
+);
+
 const RULE_CONTEXT_TOPLEVEL = MPAlt(
+    RULE_CONTEXT_EMPTY,
     RULE_CONTEXT_BEGINS_ENDS,
     RULE_CONTEXT,
     RULE_CONTEXT_BEGINS,

@@ -49,10 +49,22 @@ export class AssociateHeaders extends CPass {
                     ).localize(content.pos).msgTo(msgs);
 
                     const tag = header.header.getParamName();
+
+                    if (tag != "__" && tag != "unique") {
+                        if (tag in newRow.params) {
+                            Warn("Named parameters can only occur once; " +
+                                "this cell will be ignored.",
+                                content.pos).msgTo(msgs);
+                        }
+                        newRow.params[tag] = newCell;
+                        continue;
+                    }
+
                     if (!(tag in newRow.params)) {
                         newRow.params[tag] = new TstSequence(row.cell);
                     }
-                    newRow.params[tag].children.push(newCell);
+                    const paramSeq = newRow.params[tag] as TstSequence;
+                    paramSeq.children.push(newCell);
                 }
                 newRows.push(newRow);
             }

@@ -207,6 +207,52 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"arba"}
         ]);
     });
+    
+    describe('Replace with pre context', function() {
+        const project = sheetFromFile(`${DIR}/rulePreContext.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ava"},
+            {"text":"arba"}
+        ]);
+    });
+
+    describe('Replace with post context', function() {
+        const project = sheetFromFile(`${DIR}/rulePostContext.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ava"},
+            {"text":"abra"}
+        ]);
+    });
+    
+    describe('Replace with pre and post context', function() {
+        const project = sheetFromFile(`${DIR}/rulePrePostContext.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ava"},
+            {"text":"abra"},
+            {"text":"arba"}
+        ]);
+    });
+
+    describe('Replace with an empty-string context', function() {
+        const project = sheetFromFile(`${DIR}/ruleEmptyStringContext.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ava"},
+            {"text":"arva"}
+        ]);
+    });
+    
+    describe('Replace with an empty context', function() {
+        const project = sheetFromFile(`${DIR}/ruleEmptyContext.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ava"},
+            {"text":"arva"}
+        ]);
+    });
 
     describe('Replace with an alternation in from', function() {
         const project = sheetFromFile(`${DIR}/ruleFromAlt.csv`);

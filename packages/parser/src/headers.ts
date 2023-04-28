@@ -204,6 +204,51 @@ export abstract class UnaryHeader extends Header {
     }
 }
 
+export class FromHeader extends AtomicHeader {
+
+    public get text(): string {
+        return "from";
+    }
+
+    public getParamName(): string {
+        return this.text;
+    }
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return this.msg();
+    }
+}
+
+export class ToHeader extends AtomicHeader {
+
+    public get text(): string {
+        return "to";
+    }
+
+    public getParamName(): string {
+        return this.text;
+    }
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return this.msg();
+    }
+}
+
+export class RuleContextHeader extends AtomicHeader {
+
+    public get text(): string {
+        return "context";
+    }
+
+    public getParamName(): string {
+        return this.text;
+    }
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return this.msg();
+    }
+}
+
 export class ParamNameHeader extends UnaryHeader {
 
     constructor(
@@ -370,6 +415,7 @@ const HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
         HP_OPTIONAL, HP_SLASH,
         HP_FROM, HP_TO, 
         HP_PRE, HP_POST,  
+        HP_RULE_CONTEXT,
         HP_UNIQUE,
         HP_RENAME, HP_EQUALS, HP_STARTS, 
         HP_ENDS, HP_CONTAINS, HP_SUBEXPR)
@@ -415,14 +461,12 @@ const HP_OPTIONAL = MPSequence<Header>(
 
 const HP_FROM = MPSequence<Header>(
     ["from"],
-    () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                .bind(c => new ParamNameHeader("from", c))
+    () => new FromHeader().msg()
 );
 
 const HP_TO = MPSequence<Header>(
     ["to"],
-    () => new TapeNameHeader(REPLACE_OUTPUT_TAPE).msg()
-                    .bind(c => new ParamNameHeader("to", c))
+    () => new ToHeader().msg()
 );
 
 const HP_PRE = MPSequence<Header>(
@@ -435,6 +479,11 @@ const HP_POST = MPSequence<Header>(
     ["post"],
     () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
                  .bind(c => new ParamNameHeader("post", c))
+);
+
+const HP_RULE_CONTEXT = MPSequence<Header>(
+    ["context"],
+    () => new RuleContextHeader().msg()
 );
 
 const HP_UNIQUE = MPSequence<Header>(
@@ -544,12 +593,13 @@ export function getParseClass(h: Header): ParseClass {
         case HideHeader: return "none";
         case RenameHeader: return "none";
         case ErrorHeader: return "none";
+        case FromHeader: return "regex";
+        case ToHeader: return "plaintext";
+        case RuleContextHeader: return "ruleContext";
         case ParamNameHeader:
             const paramName = (h as ParamNameHeader).name;
             switch (paramName) {
                 case "unique": return "plaintext";
-                case "from": return "regex";
-                case "to": return "plaintext";
                 case "pre": return "regex";
                 case "post": return "regex";
                 default:

@@ -29,8 +29,8 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
-    
-    "test": "mocha -r ts-node/register tests/*.ts tests/sheet/*/*.ts",
+
+    "test": "mocha -r ts-node/register tests/*.ts tests/parse/*.ts tests/sheet/*/*.ts",
     "testGrammar": "mocha -r ts-node/register tests/*.ts",
     "testProperty": "mocha -r ts-node/register tests/property/testProperty.ts",
     "testBasic": "mocha -r ts-node/register tests/testBasic.ts",

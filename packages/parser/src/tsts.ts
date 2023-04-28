@@ -500,14 +500,14 @@ export class TstParams extends TstCellComponent {
 
     constructor(
         cell: Cell,
-        public params: {[s: string]: TstSequence} = {}
+        public params: {[s: string]: Component} = {}
     ) {
         super(cell);
     }
     
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultDict(this.params)
-                .map(c => f.transform(c, env) as Result<TstSequence>)
+                .map(c => f.transform(c, env))
                 .bind(cs => new TstParams(this.cell, cs));
     }
 

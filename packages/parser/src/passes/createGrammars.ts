@@ -21,7 +21,8 @@ import {
     CollectionGrammar, 
     RenameGrammar, ReplaceGrammar, 
     SequenceGrammar, TestGrammar, 
-    JoinGrammar
+    JoinGrammar,
+    RuleContextGrammar
 } from "../grammars";
 import { getParseClass, TapeNameHeader } from "../headers";
 import { Err, Msgs, resultList } from "../msgs";
@@ -61,6 +62,8 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                 return this.handleOr(t as TstOr, env);
             case TstJoin:
                 return this.handleJoin(t as TstJoin, env);
+            case RuleContextGrammar:
+                return this.handleRuleContext(t as RuleContextGrammar, env);
             case TstReplace:
                 return this.handleReplace(t as TstReplace, env);
             case TstReplaceTape:
@@ -83,8 +86,6 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     public handleHeaderContentPair(t: TstHeaderContentPair, env: PassEnv): GrammarResult {
         const parseClass = getParseClass(t.header.header);
         return parseCell(parseClass, t.cell.text)
-                .localize(t.cell.pos)
-                .bind(g => new LocatorGrammar(t.cell.pos, g))
                 .bind(g => new HeaderToGrammar(g))
                 .bind(h => h.transform(t.header.header, env))
                 .localize(t.cell.pos)
@@ -156,7 +157,10 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                     .bind(c => new LocatorGrammar(t.cell.pos, c));
     }
     
-    
+    public handleRuleContext(t: RuleContextGrammar, env: PassEnv): GrammarResult {
+        return t.mapChildren(this, env);
+    }
+
     public handleReplaceTape(t: TstReplaceTape, env: PassEnv): GrammarResult {
 
         let [sibling, sibMsgs] = this.transform(t.sibling, env).destructure();
@@ -166,11 +170,27 @@ export class CreateGrammars extends Pass<Component,Grammar> {
         for (const params of t.child.rows) {
             const fromArg = this.transform(params.getParam("from"), env).msgTo(newMsgs);
             const toArg = this.transform(params.getParam("to"), env).msgTo(newMsgs);
-            const preArg = this.transform(params.getParam("pre"), env).msgTo(newMsgs);
-            const postArg = this.transform(params.getParam("post"), env).msgTo(newMsgs);
+            let preArg = this.transform(params.getParam("pre"), env).msgTo(newMsgs);
+            let postArg = this.transform(params.getParam("post"), env).msgTo(newMsgs);
+            let contextArg = this.transform(params.getParam("context"), env).msgTo(newMsgs);
+            let begins = false;
+            let ends = false;
+
+            if (contextArg instanceof LocatorGrammar) {
+                // unwrap it
+                contextArg = contextArg.child;
+            }
+            
+            if (contextArg instanceof RuleContextGrammar) {
+                begins = contextArg.begins;
+                ends = contextArg.ends;
+                preArg = contextArg.preContext;
+                postArg = contextArg.postContext;
+            }
+            
             const replaceRule = new ReplaceGrammar(fromArg, toArg,
                                                    preArg, postArg, new EpsilonGrammar(),
-                                                   false, false, 0, Infinity, 
+                                                   begins, ends, 0, Infinity, 
                                                    `${params.pos.sheet}_${params.pos.row}`, false);
             replaceRules.push(replaceRule);
         }
