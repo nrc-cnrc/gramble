@@ -281,8 +281,28 @@ describe(`${path.basename(module.filename)}`, function() {
         ]);
     });
 
+    describe('Replace with an alternation in pre context', function() {
+        const project = sheetFromFile(`${DIR}/rulePreContextAlt.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ava"},
+            {"text":"arba"},
+            {"text":"iva"}
+        ]);
+    });
+
     describe('Replace with an alternation in post', function() {
         const project = sheetFromFile(`${DIR}/rulePostAlt.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"ava"},
+            {"text":"abra"},
+            {"text":"avi"}
+        ]);
+    });
+    
+    describe('Replace with an alternation in post context', function() {
+        const project = sheetFromFile(`${DIR}/rulePostContextAlt.csv`);
         testErrors(project, []);
         testGrammar(project, [
             {"text":"ava"},
@@ -327,6 +347,64 @@ describe(`${path.basename(module.filename)}`, function() {
             {"text":"aba"},
             {"text":"avad"},
             {"text":"avaad"},
+        ]);
+    });
+
+    describe('Replace with a repetition in pre context', function() {
+        const project = sheetFromFile(`${DIR}/rulePreContextRep.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aba"},
+            {"text":"dava"},
+            {"text":"daava"},
+        ]);
+    });
+
+    describe('Replace with a repetition in post context', function() {
+        const project = sheetFromFile(`${DIR}/rulePostContextRep.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"aba"},
+            {"text":"avad"},
+            {"text":"avaad"},
+        ]);
+    });
+
+
+    // word boundary-sensitive rule tests
+    describe('Replace at beginning', function() {
+        const project = sheetFromFile(`${DIR}/ruleBegins.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"a"},
+            {"text":"v"},
+            {"text":"ab"},
+            {"text":"va"},
+            {"text":"aba"}
+        ]);
+    });
+
+    describe('Replace at end', function() {
+        const project = sheetFromFile(`${DIR}/ruleEnds.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"a"},
+            {"text":"v"},
+            {"text":"av"},
+            {"text":"ba"},
+            {"text":"aba"}
+        ]);
+    });
+
+    describe('Replace at beginning and end', function() {
+        const project = sheetFromFile(`${DIR}/ruleBeginsEnds.csv`);
+        testErrors(project, []);
+        testGrammar(project, [
+            {"text":"a"},
+            {"text":"v"},
+            {"text":"ab"},
+            {"text":"ba"},
+            {"text":"aba"}
         ]);
     });
     

@@ -70,6 +70,8 @@ describe(`${testSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
+    /*
+
     describe('1. Replace e by a in hello: t1:e -> t2:a {1+} || ^h_llo$', function() {
         const grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"), 
                                          EMPTY_CONTEXT, true, true, 1);
@@ -2662,6 +2664,29 @@ describe(`${testSuiteName(module)}`, function() {
                                  {t1: 'abababa', t2: 'XbX'}]],
         ];
         testParseMultiple(grammar, from_to);
+    });
+    */
+
+    describe('37a. Replace a -> b | #_#', function() {
+        log('', `------${this.title}`);
+        let grammar: Grammar = Seq(Vocab({t1:'hi'}), 
+                               Replace(t1("i"), t2("e"),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT,
+                                       true, true));
+        grammar = Count({t1:2,t2:2}, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: "h", t2: "h"},
+            {t1: "i", t2: "e"},
+            {t1: "hh", t2: "hh"},
+            {t1: "hi", t2: "hi"},
+            {t1: "ih", t2: "ih"}, // MISSING!
+            {t1: "ii", t2: "ii"}, // MISSING!
+        ];
+        testGrammar(grammar, expectedResults);
     });
 
     /*
