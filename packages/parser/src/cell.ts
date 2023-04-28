@@ -1,4 +1,5 @@
-import { AlternationGrammar, DotGrammar, EmbedGrammar, EpsilonGrammar, Grammar, GrammarResult, LiteralGrammar, NegationGrammar, RepeatGrammar, SequenceGrammar } from "./grammars";
+import { 
+    AlternationGrammar, DotGrammar, EmbedGrammar, EpsilonGrammar, Grammar, GrammarResult, LiteralGrammar, NegationGrammar, RepeatGrammar, RuleContextGrammar, SequenceGrammar } from "./grammars";
 import { ParseClass } from "./headers";
 import { 
     MPDelay, 
@@ -57,7 +58,7 @@ const SYMBOL_UNRESERVED = MPUnreserved<Grammar>(
             return new EpsilonGrammar().err(
                 `Invalid symbol name`, 
                 `${s} looks like it should be an identifier, ` +
-                `but identifiers should start with letters or _`
+                `but it doesn't follow the rules for one.`
             );
         }
     } 
@@ -194,6 +195,45 @@ const PLAINTEXT_EXPR = MPRepetition<Grammar>(
     })
 );
 
+/************************/
+/* RULE CONTEXT GRAMMAR */
+/************************/
+
+const RULE_CONTEXT = MPSequence(
+    [REGEX_TOPLEVEL, '_', REGEX_TOPLEVEL],
+    (c1, c2) => resultList([c1, c2])
+                .bind(([c1,c2]) => new RuleContextGrammar(
+                                     c1, c2, false, false))
+);
+
+const RULE_CONTEXT_BEGINS = MPSequence(
+    ['#', REGEX_TOPLEVEL, '_', REGEX_TOPLEVEL],
+    (c1, c2) => resultList([c1, c2])
+                .bind(([c1,c2]) => new RuleContextGrammar(
+                                     c1, c2, true, false))
+);
+
+const RULE_CONTEXT_ENDS = MPSequence(
+    [REGEX_TOPLEVEL, '_', REGEX_TOPLEVEL, '#'],
+    (c1, c2) => resultList([c1, c2])
+                .bind(([c1,c2]) => new RuleContextGrammar(
+                                     c1, c2, false, true))
+);
+
+const RULE_CONTEXT_BEGINS_ENDS = MPSequence(
+    ['#', REGEX_TOPLEVEL, '_', REGEX_TOPLEVEL, '#'],
+    (c1, c2) => resultList([c1, c2])
+                .bind(([c1,c2]) => new RuleContextGrammar(
+                                     c1, c2, true, true))
+);
+
+const RULE_CONTEXT_TOPLEVEL = MPAlt(
+    RULE_CONTEXT_BEGINS_ENDS,
+    RULE_CONTEXT,
+    RULE_CONTEXT_BEGINS,
+    RULE_CONTEXT_ENDS,
+);
+
 const parseParams = {
 
     "plaintext": {
@@ -208,10 +248,10 @@ const parseParams = {
         expr: REGEX_TOPLEVEL
     },
 
-    "context": {
+    "ruleContext": {
         splitters: RESERVED_FOR_CONTEXT,
         reserved: RESERVED_FOR_CONTEXT,
-        expr: REGEX_TOPLEVEL  // TODO: this eventually won't be regex
+        expr: RULE_CONTEXT_TOPLEVEL
     },
 
     "symbol": {
@@ -257,15 +297,20 @@ export function cellID(g: Grammar): string {
         case AlternationGrammar: 
             return "OR[" + (g as AlternationGrammar).children.map(c => cellID(c)).join(",") + "]";
         case RepeatGrammar: 
-            const r = g as RepeatGrammar;
-            if (r.minReps == 0 && r.maxReps == 1) return `QUES[${cellID(r.child)}]`;
-            if (r.minReps == 1 && r.maxReps == Infinity) return `PLUS[${cellID(r.child)}]`;
-            if (r.minReps == 0 && r.maxReps == Infinity) return `STAR[${cellID((g as RepeatGrammar).child)}]`;
+            const rep = g as RepeatGrammar;
+            if (rep.minReps == 0 && rep.maxReps == 1) return `QUES[${cellID(rep.child)}]`;
+            if (rep.minReps == 1 && rep.maxReps == Infinity) return `PLUS[${cellID(rep.child)}]`;
+            if (rep.minReps == 0 && rep.maxReps == Infinity) return `STAR[${cellID((g as RepeatGrammar).child)}]`;
             return "???"; // other options don't correspond to any possible cell
         case NegationGrammar:
             return "NOT[" + cellID((g as NegationGrammar).child) + "]";
         case EpsilonGrammar:
             return "ε";
+        case RuleContextGrammar:
+            const rule = g as RuleContextGrammar;
+            const begins = rule.begins ? '#,' : '';
+            const ends = rule.ends ? ',#': '';
+            return `CONTEXT[${begins}${cellID(rule.preContext)},${cellID(rule.postContext)}${ends}]`
         default: 
             return "???";
     }

@@ -2833,3 +2833,39 @@ export function infinityProtection(
     return grammar;
 
 }
+
+export class RuleContextGrammar extends Grammar {
+
+    constructor(
+        public preContext: Grammar,
+        public postContext: Grammar,
+        public begins: boolean = false,
+        public ends: boolean = false
+    ) {
+        super();
+    }
+
+    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
+        return resultList([this.preContext, this.postContext])
+                    .map(c => f.transform(c, env))
+                    .bind(([c1, c2]) => new RuleContextGrammar(
+                        c1, c2, this.begins, this.ends));
+    }
+
+    public get id(): string {
+        throw new Error("Method not implemented.");
+    }
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        throw new Error("Method not implemented.");
+    }
+    public getChildren(): Grammar[] {
+        throw new Error("Method not implemented.");
+    }
+    public constructExpr(tapeNS: TapeNamespace, symbols: ExprNamespace): Expr {
+        throw new Error("Method not implemented.");
+    }
+
+
+
+
+}

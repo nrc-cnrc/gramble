@@ -10,7 +10,7 @@ import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
 import { cellID, parseCell } from "../src/cell";
-import { parseHeaderCell } from "../src/headers";
+import { ParseClass, parseHeaderCell } from "../src/headers";
 import { parseOp } from "../src/ops";
 
 export const DEFAULT_MAX_RECURSION = 4;
@@ -92,18 +92,7 @@ export function testPlaintextID(
     expectedID: string,
     numErrorsExpected: number = 0
 ): void {
-    const [result, msgs] = parseCell("plaintext", text).destructure();
-    if (testPrefix != "") {
-        testPrefix += ' ';
-    }
-    describe(`${testPrefix}"${text}"`, function() {
-        it(`should parse as ${expectedID}`, function() {
-            expect(cellID(result)).to.equal(expectedID);
-        });
-        it(`should have ${numErrorsExpected} errors`, function() {
-            expect(msgs.length).to.equal(numErrorsExpected);
-        });
-    });
+    testCellID("plaintext", testPrefix, text, expectedID, numErrorsExpected);
 }
 
 export function testSymbolID(
@@ -112,18 +101,7 @@ export function testSymbolID(
     expectedID: string,
     numErrorsExpected: number = 0
 ): void {
-    const [result, msgs] = parseCell("symbol", text).destructure();
-    if (testPrefix != "") {
-        testPrefix += ' ';
-    }
-    describe(`${testPrefix}"${text}"`, function() {
-        it(`should parse as "${expectedID}"`, function() {
-            expect(cellID(result)).to.equal(expectedID);
-        });
-        it(`should have ${numErrorsExpected} errors`, function() {
-            expect(msgs.length).to.equal(numErrorsExpected);
-        });
-    });
+    testCellID("symbol", testPrefix, text, expectedID, numErrorsExpected);
 }
 
 export function testRegexID(
@@ -132,7 +110,26 @@ export function testRegexID(
     expectedID: string,
     numErrorsExpected: number = 0
 ): void {
-    const [result, msgs] = parseCell("regex", text).destructure();
+    testCellID("regex", testPrefix, text, expectedID, numErrorsExpected);
+}
+
+export function testRuleContextID(
+    testPrefix: string,
+    text: string, 
+    expectedID: string,
+    numErrorsExpected: number = 0
+): void {
+    testCellID("ruleContext", testPrefix, text, expectedID, numErrorsExpected);
+}
+
+function testCellID(
+    parseClass: ParseClass,
+    testPrefix: string,
+    text: string,
+    expectedID: string,
+    numErrorsExpected: number = 0
+): void {
+    const [result, msgs] = parseCell(parseClass, text).destructure();
     if (testPrefix != "") {
         testPrefix += ' ';
     }
@@ -141,10 +138,15 @@ export function testRegexID(
             expect(cellID(result)).to.equal(expectedID);
         });
         it(`should have ${numErrorsExpected} errors`, function() {
+            if (msgs.length != numErrorsExpected) {
+                console.log(msgs.map(m => m.longMsg));
+            }
             expect(msgs.length).to.equal(numErrorsExpected);
+            
         });
     });
 }
+
 
 export function testOpID(
     testPrefix: string,

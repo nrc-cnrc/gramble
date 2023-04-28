@@ -21,7 +21,7 @@ import { PassEnv } from "./passes";
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
 
-export type ParseClass = "plaintext" | "regex" | "symbol" | "context" | "none" | "comment";
+export type ParseClass = "plaintext" | "regex" | "symbol" | "ruleContext" | "none" | "comment";
 
 /**
  * A Header is a cell in the top row of a table, consisting of one of
@@ -567,7 +567,7 @@ export function getFontColor(h: Header): string {
         case "none": return "#000000";
         case "plaintext": return "#064a3f";
         case "regex": return "#bd1128";
-        case "context": return "#bd1128";
+        case "ruleContext": return "#bd1128";
         case "symbol": return "#333333"; 
     }
 }

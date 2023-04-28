@@ -103,7 +103,6 @@ export class MiniParseEnv {
     public tokenize(text: string): string[] {
         return text.split(this.tokenizer)
                    .filter(stringIsNontrivial)
-                   .map(unescape);
     }
 }
 
@@ -175,7 +174,8 @@ export function MPUnreserved<T>(
         if (env.reserved.has(firstToken)) {
             return;
         }
-        yield [constr(input[0]), input.slice(1)];
+        const result = unescape(input[0]);
+        yield [constr(result), input.slice(1)];
     }
 }
 
@@ -288,6 +288,7 @@ export function miniParse<T>(
     text: string
 ): Result<T>[] {
     const pieces = env.tokenize(text);
+    console.log(pieces);
     let results = [... grammar(pieces, env)];
     // result is a list of [header, remaining_tokens] pairs.  
     // we only want results where there are no remaining tokens.
