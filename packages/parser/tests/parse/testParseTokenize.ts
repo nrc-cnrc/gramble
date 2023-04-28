@@ -1,11 +1,8 @@
 import {
-    testSuiteName, logTestSuite,
-    VERBOSE_TEST_L2,
+    testSuiteName, 
+    logTestSuite,
     testTokenize,
-} from './testUtil';
-
-// File level control over verbose output
-const VERBOSE = VERBOSE_TEST_L2;
+} from '../testUtil';
 
 describe(`${testSuiteName(module)}`, function() {
 

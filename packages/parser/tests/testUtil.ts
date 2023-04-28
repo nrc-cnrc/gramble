@@ -131,7 +131,7 @@ function testCellID(
 ): void {
     const [result, msgs] = parseCell(parseClass, text).destructure();
     if (testPrefix != "") {
-        testPrefix += ' ';
+        testPrefix += '. ';
     }
     describe(`${testPrefix}"${text}"`, function() {
         it(`should parse as "${expectedID}"`, function() {
