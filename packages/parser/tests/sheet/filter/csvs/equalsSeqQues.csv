@@ -12,4 +12,4 @@ stem=, table:, embed, text,
         ,      , root, ba, 
 
 default=, table:, embed, equals text
-    ,       , stem, foo?bar
+    ,       , stem, (foo)?bar

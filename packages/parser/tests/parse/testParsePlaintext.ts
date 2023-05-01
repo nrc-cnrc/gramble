@@ -11,11 +11,11 @@ describe(`${testSuiteName(module)}`, function() {
     testPlaintextID("1a", "", "");
     testPlaintextID("1b", " ", "");
     testPlaintextID("1c", "()", "()");
-    testPlaintextID("1d", "( )", "[(,)]");
+    testPlaintextID("1d", "( )", "()");
     testPlaintextID("1e", "1SG", "1SG");
     testPlaintextID("1f", " 1SG", "1SG");
     testPlaintextID("1g", "1SG ", "1SG");
-    testPlaintextID("1h", "1 SG", "[1,SG]");
+    testPlaintextID("1h", "1 SG", "1SG");
     testPlaintextID("1i", "1\\ SG", "1 SG");
     testPlaintextID("1j", "(1SG)", "(1SG)");
     testPlaintextID("1k", "(1SG", "(1SG");
@@ -34,8 +34,8 @@ describe(`${testSuiteName(module)}`, function() {
     testPlaintextID("2e", "(1SG)|(2SG)", "OR[(1SG),(2SG)]");
     testPlaintextID("2f", "(1SG|2SG)", "OR[(1SG,2SG)]");
     testPlaintextID("2g", "|", "ε", 1);
-    testPlaintextID("2h", "1SG 2SG|3SG", "[1SG,OR[2SG,3SG]]");
-    testPlaintextID("2i", "1SG|2SG 3SG", "[OR[1SG,2SG],3SG]");
+    testPlaintextID("2h", "1SG 2SG|3SG", "OR[1SG2SG,3SG]");
+    testPlaintextID("2i", "1SG|2SG 3SG", "OR[1SG,2SG3SG]");
     testPlaintextID("2j", "\\|", "|");
 
     // plaintext may contain Unicode letters anywhere

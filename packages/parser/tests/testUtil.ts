@@ -12,6 +12,8 @@ import { TextDevEnvironment } from "../src/textInterface";
 import { cellID, parseCell } from "../src/cell";
 import { ParseClass, parseHeaderCell } from "../src/headers";
 import { parseOp } from "../src/ops";
+import { CombineLiterals } from "../src/passes/combineLiterals";
+import { PassEnv } from "../src/passes";
 
 export const DEFAULT_MAX_RECURSION = 4;
 
@@ -129,7 +131,12 @@ function testCellID(
     expectedID: string,
     numErrorsExpected: number = 0
 ): void {
-    const [result, msgs] = parseCell(parseClass, text).destructure();
+
+    const parseResult = parseCell(parseClass, text);
+    const env = new PassEnv();
+    const [result, msgs] = new CombineLiterals()
+                                .go(parseResult, env)
+                                .destructure();
     if (testPrefix != "") {
         testPrefix += '. ';
     }
@@ -146,7 +153,6 @@ function testCellID(
         });
     });
 }
-
 
 export function testOpID(
     testPrefix: string,

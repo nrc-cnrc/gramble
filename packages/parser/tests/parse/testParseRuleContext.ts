@@ -58,7 +58,7 @@ describe(`${testSuiteName(module)}`, function() {
     testRuleContextID("6f", "(#)_(#)", "ε", 1);
 
     // empty context is valid
-    testRuleContextID("7a", "", "ε");
+    testRuleContextID("7a", "", "");
 
     // missing underscore
     testRuleContextID("8a", "#", "ε", 1);

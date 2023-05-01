@@ -43,8 +43,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/contentAlternationSpace2.csv`);
         testErrors(project, []);
         testGrammar(project, [
-            { text: "moogoo", gloss: "run" },
-            { text: "foogoo", gloss: "run" },
+            {text: "foogoo", gloss: "run"},
+            {text: "moo", gloss: "run"}
         ]);
     });
 
@@ -53,8 +53,8 @@ describe(`${path.basename(module.filename)}`, function() {
         const project = sheetFromFile(`${DIR}/contentAlternationSpace3.csv`);
         testErrors(project, []);
         testGrammar(project, [
-            { text: "goofoo", gloss: "run" },
-            { text: "goomoo", gloss: "run" },
+            {text: "foo", gloss: "run"},
+            {text: "goomoo", gloss: "run"}
         ]);
     });
 

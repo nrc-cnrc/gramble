@@ -70,8 +70,6 @@ describe(`${testSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    /*
-
     describe('1. Replace e by a in hello: t1:e -> t2:a {1+} || ^h_llo$', function() {
         const grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"), 
                                          EMPTY_CONTEXT, true, true, 1);
@@ -2665,7 +2663,6 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testParseMultiple(grammar, from_to);
     });
-    */
 
     describe('37a. Replace a -> b | #_#', function() {
         log('', `------${this.title}`);

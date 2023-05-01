@@ -7,4 +7,4 @@ root=, table:, text, gloss
     ,       , moofoo, jump.impf
 
 default=, table:, embed, equals text
-    ,       , root, foo?
+    ,       , root, (foo)?

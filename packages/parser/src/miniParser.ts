@@ -180,6 +180,43 @@ export function MPUnreserved<T>(
 }
 
 /**
+ * Recognizes any single char that isn't in the reserved set
+ */
+export function MPUnreservedChar<T>(
+    constr: (s: string) => Result<T>,
+    caseSensitive: boolean = false    
+): MPParser<T> {
+    return function*(input: string[], env: MiniParseEnv) {
+
+        if (input.length == 0) {
+            return;
+        }
+
+        if (input[0].length == 0) {
+            return; // don't think this can happen, but just in case
+        }
+
+        let [firstChar, remainingChars] = input[0][0] == "\\"
+                                            ? [input[0].slice(0, 2), input[0].slice(2)]
+                                            : [input[0].slice(0, 1), input[0].slice(1)] 
+        
+        const firstCharForComparison = caseSensitive ? firstChar : firstChar.toLowerCase();
+
+        if (env.reserved.has(firstCharForComparison)) {
+            return;
+        }
+
+        const remainder = remainingChars.length > 0 
+                            ? [ remainingChars, ...input.slice(1) ]
+                            : input.slice(1);
+
+
+        const result = unescape(firstChar);
+        yield [constr(result), remainder ];
+    }
+}
+
+/**
  * Recognizes a string that begins with commentStarter (e.g. "%" in a header)
  */
 export function MPComment<T>(

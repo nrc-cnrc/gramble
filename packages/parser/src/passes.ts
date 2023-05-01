@@ -1,5 +1,5 @@
 import { Grammar } from "./grammars";
-import { Result } from "./msgs";
+import { Msgs, Result } from "./msgs";
 import { 
     Dict, Namespace, 
     SILENT, timeIt, 
@@ -24,9 +24,16 @@ export class PassEnv {
 
 export abstract class Pass<T1,T2> {
 
-    public go(t: T1, env: PassEnv): Result<T2> {
+    public go(t: T1|Result<T1>, env: PassEnv): Result<T2> {
+
+        const msgs: Msgs = [];
+
+        if (t instanceof Result) {
+            t = t.msgTo(msgs);     
+        }
+
         const verbose = (env.verbose & VERBOSE_TIME) != 0;
-        return timeIt(() => this.transformRoot(t, env), 
+        return timeIt(() => this.transformRoot(t as T1, env).msg(msgs), 
                verbose, this.desc);
     }
     

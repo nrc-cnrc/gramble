@@ -1,5 +1,5 @@
 import { 
-    AlternationGrammar, DotGrammar, EmbedGrammar, EpsilonGrammar, Grammar, GrammarResult, LiteralGrammar, NegationGrammar, RepeatGrammar, RuleContextGrammar, SequenceGrammar } from "./grammars";
+    AlternationGrammar, DotGrammar, EmbedGrammar, EpsilonGrammar, Grammar, GrammarResult, Lit, LiteralGrammar, NegationGrammar, RepeatGrammar, RuleContextGrammar, SequenceGrammar } from "./grammars";
 import { ParseClass } from "./headers";
 import { 
     MPDelay, 
@@ -10,7 +10,8 @@ import {
     miniParse,
     MPRepetition, 
     MiniParseEnv,
-    MPEmpty
+    MPEmpty,
+    MPUnreservedChar
 } from "./miniParser";
 import { Err, Result, resultList } from "./msgs";
 import { 
@@ -31,23 +32,23 @@ export type RegexParser = MPParser<Grammar>;
  * with Headers) we can assign them the right Grammar objects and later Expr objects.
  */
 
+const CELL_EMPTY = MPEmpty(
+    () => new LiteralGrammar(DUMMY_REGEX_TAPE, "").msg()
+);
+
 /***********************/
 /* SYMBOL NAME GRAMMAR */
 /***********************/
 
-const SYMBOL_SUBEXPR: RegexParser = MPDelay(() => MPAlt(
+const SYMBOL_NONEMPTY: RegexParser = MPDelay(() => MPAlt(
     SYMBOL_ALTERNATION,
     SYMBOL_UNIT
 ));
 
 const SYMBOL_BRACKETED = MPSequence(
-    [ "{", SYMBOL_SUBEXPR, "}" ],
+    [ "{", SYMBOL_NONEMPTY, "}" ],
     (child) => child.warn("Curly braces are not valid under " + 
                 "an 'embed' header or inside other curly braces.")
-);
-
-const SYMBOL_EMPTY = MPEmpty(
-    () => new LiteralGrammar(DUMMY_REGEX_TAPE, "").msg()
 );
 
 const SYMBOL_UNRESERVED = MPUnreserved<Grammar>(
@@ -81,14 +82,14 @@ const SYMBOL_UNIT = MPAlt(
 )
 
 const SYMBOL_ALTERNATION = MPSequence(
-    [ SYMBOL_UNIT, "|", SYMBOL_SUBEXPR ],
+    [ SYMBOL_UNIT, "|", SYMBOL_NONEMPTY ],
     (c1, c2) => resultList([c1, c2])
                     .bind(cs => new AlternationGrammar(cs))
 );
 
 const SYMBOL_EXPR = MPAlt(
-    SYMBOL_EMPTY, 
-    SYMBOL_SUBEXPR
+    CELL_EMPTY, 
+    SYMBOL_NONEMPTY
 );
 
 /* REGEX GRAMMAR */
@@ -100,30 +101,38 @@ const REGEX_EXPR: RegexParser = MPDelay(() => MPAlt(
 
 const REGEX_SUBEXPR: RegexParser = MPDelay(() => MPAlt(
     REGEX_NEGATION, 
-    REGEX_STAR, 
-    REGEX_QUES, 
-    REGEX_PLUS, 
-    REGEX_SUBSUBEXPR
+    REGEX_SUBSEQ
 ));
 
-const REGEX_SUBSUBEXPR: RegexParser = MPDelay(() => MPAlt(
+const REGEX_SUBSEQ: RegexParser = MPDelay(() => MPRepetition(
+    MPAlt(
+        REGEX_STAR, 
+        REGEX_QUES, 
+        REGEX_PLUS, 
+        REGEX_UNIT
+    ),
+    (...children) => resultList(children).bind(cs => {
+        if (cs.length == 0) return new LiteralGrammar(DUMMY_REGEX_TAPE, "");
+        if (cs.length == 1) return cs[0];
+        return new SequenceGrammar(cs);
+    }),
+    1, Infinity
+));
+
+const REGEX_UNIT: RegexParser = MPDelay(() => MPAlt(
     REGEX_UNRESERVED, 
     REGEX_PARENS, 
     REGEX_SYMBOL,
     REGEX_DOT
 ));
 
-const REGEX_UNRESERVED = MPUnreserved<Grammar>(
+const REGEX_UNRESERVED = MPUnreservedChar<Grammar>(
     s => new LiteralGrammar(DUMMY_REGEX_TAPE, s).msg()
 );
 
-const REGEX_TOPLEVEL = MPRepetition(
-    REGEX_EXPR, 
-    (...children) => resultList(children).bind(cs => {
-        if (cs.length == 0) return new LiteralGrammar(DUMMY_REGEX_TAPE, "");
-        if (cs.length == 1) return cs[0];
-        return new SequenceGrammar(cs);
-    })
+const REGEX_TOPLEVEL = MPAlt(
+    CELL_EMPTY,
+    REGEX_EXPR
 );
 
 const REGEX_DOT = MPSequence<Grammar>(
@@ -132,17 +141,17 @@ const REGEX_DOT = MPSequence<Grammar>(
 )
 
 const REGEX_STAR = MPSequence(
-    [ REGEX_SUBSUBEXPR, "*" ],
+    [ REGEX_UNIT, "*" ],
     (child) => child.bind(c => new RepeatGrammar(c))
 )
 
 const REGEX_QUES = MPSequence(
-    [ REGEX_SUBSUBEXPR, "?" ],
+    [ REGEX_UNIT, "?" ],
     (child) => child.bind(c => new RepeatGrammar(c, 0, 1))
 )
 
 const REGEX_PLUS = MPSequence(
-    [ REGEX_SUBSUBEXPR, "+" ],
+    [ REGEX_UNIT, "+" ],
     (child) => child.bind(c => new RepeatGrammar(c, 1))
 )
 
@@ -152,12 +161,12 @@ const REGEX_PARENS = MPSequence(
 );
 
 const REGEX_SYMBOL = MPSequence(
-    ["{", SYMBOL_SUBEXPR, "}"],
+    ["{", SYMBOL_NONEMPTY, "}"],
     (child) => child
 );
 
 const REGEX_NEGATION = MPSequence(
-    ["~", REGEX_SUBEXPR],
+    ["~", REGEX_SUBSEQ],
     (child) => child.bind(c => new NegationGrammar(c))
 );
 
@@ -171,8 +180,9 @@ const REGEX_ALTERNATION = MPSequence(
 /* PLAINTEXT GRAMMAR */
 /*********************/
 
-const PLAINTEXT_SUBEXPR: MPParser<Grammar> = MPDelay(() => MPAlt(
-    PLAINTEXT_UNRESERVED,
+
+const PLAINTEXT_EXPR: MPParser<Grammar> = MPDelay(() => MPAlt(
+    PLAINTEXT_SUBSEQ,
     PLAINTEXT_ALTERNATION
 ));
 
@@ -180,19 +190,26 @@ const PLAINTEXT_UNRESERVED = MPUnreserved<Grammar>(
     s => new LiteralGrammar(DUMMY_REGEX_TAPE, s).msg()
 );
 
-const PLAINTEXT_ALTERNATION = MPSequence(
-    [ PLAINTEXT_UNRESERVED, "|", PLAINTEXT_SUBEXPR ],
-    (c1, c2) => resultList([c1, c2])
-                    .bind(cs => new AlternationGrammar(cs))
-);
-
-const PLAINTEXT_EXPR = MPRepetition<Grammar>(
-    PLAINTEXT_SUBEXPR, 
+const PLAINTEXT_SUBSEQ = MPRepetition(
+    PLAINTEXT_UNRESERVED,
     (...children) => resultList(children).bind(cs => {
         if (cs.length == 0) return new LiteralGrammar(DUMMY_REGEX_TAPE, "");
         if (cs.length == 1) return cs[0];
         return new SequenceGrammar(cs);
-    })
+    }),
+    1, Infinity
+);
+
+
+const PLAINTEXT_ALTERNATION = MPSequence(
+    [ PLAINTEXT_SUBSEQ, "|", PLAINTEXT_EXPR ],
+    (c1, c2) => resultList([c1, c2])
+                    .bind(cs => new AlternationGrammar(cs))
+);
+
+const PLAINTEXT_TOPLEVEL = MPAlt(
+    CELL_EMPTY,
+    PLAINTEXT_EXPR
 );
 
 /************************/
@@ -227,12 +244,8 @@ const RULE_CONTEXT_BEGINS_ENDS = MPSequence(
                                      c1, c2, true, true))
 );
 
-const RULE_CONTEXT_EMPTY = MPEmpty(
-    () => new EpsilonGrammar().msg()
-);
-
 const RULE_CONTEXT_TOPLEVEL = MPAlt(
-    RULE_CONTEXT_EMPTY,
+    CELL_EMPTY,
     RULE_CONTEXT_BEGINS_ENDS,
     RULE_CONTEXT,
     RULE_CONTEXT_BEGINS,
@@ -244,7 +257,7 @@ const parseParams = {
     "plaintext": {
         splitters: RESERVED_FOR_PLAINTEXT,
         reserved: RESERVED_FOR_PLAINTEXT,
-        expr: PLAINTEXT_EXPR
+        expr: PLAINTEXT_TOPLEVEL
     },
 
     "regex": {

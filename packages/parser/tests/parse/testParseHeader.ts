@@ -41,8 +41,9 @@ describe(`${testSuiteName(module)}`, function() {
     testHeaderID("30", "to text", "ERR");
     testHeaderID("31", "pre", "pre[$i]");
     testHeaderID("32", "post", "post[$i]");
-    testHeaderID("33", "from", "from[$i]");
-    testHeaderID("34", "to", "to[$o]");
+    testHeaderID("33", "from", "from");
+    testHeaderID("34", "to", "to");
+    testHeaderID("35", "context", "context");
     testHeaderID("35", "pre(text)", "ERR");
     testHeaderID("36", "(pre text)", "ERR");
     testHeaderID("37", "pre text/gloss", "ERR");
