@@ -48,7 +48,6 @@ export type ParseClass = "plaintext" | "regex" | "symbol" | "ruleContext" | "non
  export abstract class Header extends Component {
     
     public abstract get name(): string;
-    public abstract getBackgroundColor(saturation: number, value: number): string;
     public abstract get id(): string;
 
     public getParamName(): string {
@@ -86,21 +85,6 @@ abstract class AtomicHeader extends Header {
         return this.text;
     }
 
-    public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
-        return RGBtoString(...HSVtoRGB(this.hue, saturation, value));
-    }
-
-    public get hue(): number {
-        const str = this.text + "abcde" // otherwise short strings are boring colors
-        let hash = 0; 
-
-        for (let i = 0; i < str.length; i++) { 
-            hash = ((hash << 5) - hash) + str.charCodeAt(i); 
-            hash = hash & hash; 
-        } 
-        
-        return (hash & 0xFF) / 255;
-    }
 }
 
 export class EmbedHeader extends AtomicHeader {
@@ -169,14 +153,6 @@ export class CommentHeader extends Header {
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return new CommentHeader().msg();
     }
-
-    public get hue(): number {
-        return 0;
-    }
-    
-    public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
-        return "#FFFFFF";
-    }
 }
 
 /**
@@ -197,10 +173,6 @@ export abstract class UnaryHeader extends Header {
 
     public getParamName(): string {
         return this.child.getParamName();
-    }
-
-    public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
-        return this.child.getBackgroundColor(saturation, value);
     }
 }
 
@@ -382,10 +354,6 @@ export class SlashHeader extends Header {
 
     public get id(): string {
         return `${this.name}[${this.child1.id},${this.child2.id}]`;
-    }
-
-    public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string { 
-        return this.child1.getBackgroundColor(saturation, value);
     }
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
@@ -619,5 +587,66 @@ export function getFontColor(h: Header): string {
         case "regex": return "#bd1128";
         case "ruleContext": return "#bd1128";
         case "symbol": return "#333333"; 
+    }
+}
+
+function hueFromText(text: string): number {
+    const str = text + "abcde" // otherwise short strings are boring colors
+    let hash = 0; 
+
+    for (let i = 0; i < str.length; i++) { 
+        hash = ((hash << 5) - hash) + str.charCodeAt(i); 
+        hash = hash & hash; 
+    } 
+    
+    return (hash & 0xFF) / 255;
+}
+
+function colorFromText(
+    text: string, 
+    saturation: number = DEFAULT_SATURATION, 
+    value: number = DEFAULT_VALUE
+): string { 
+    return RGBtoString(...HSVtoRGB(hueFromText(text), saturation, value));
+}
+
+export function getBackgroundColor(
+    h: Header,
+    s: number = DEFAULT_SATURATION,
+    v: number = DEFAULT_VALUE    
+): string {
+    switch (h.constructor) {
+        // fixed colors
+        case CommentHeader: return "FFFFFF";
+        case ErrorHeader: return "FFFFFF";
+        // atomic commands get their colors from their command
+        case EmbedHeader: return colorFromText("embed", s, v);
+        case HideHeader: return colorFromText("hide", s, v);
+        case FromHeader: return colorFromText("from", s, v);
+        case ToHeader: return colorFromText("to", s, v);
+        case RuleContextHeader: return colorFromText("context", s, v);
+        // tapes get their colors from the tape name
+        case TapeNameHeader: return colorFromText((h as TapeNameHeader).name, s, v);
+        // unary headers get their colors from their child
+        case OptionalHeader: return getBackgroundColor((h as OptionalHeader).child, s, v);
+        case EqualsHeader: return getBackgroundColor((h as EqualsHeader).child, s, v);
+        case StartsHeader: return getBackgroundColor((h as StartsHeader).child, s, v);
+        case EndsHeader: return getBackgroundColor((h as EndsHeader).child, s, v);
+        case ContainsHeader: return getBackgroundColor((h as ContainsHeader).child, s, v);
+        case RenameHeader: return getBackgroundColor((h as RenameHeader).child, s, v);
+        // slashes get their colors from their first child only
+        case SlashHeader: return getBackgroundColor((h as SlashHeader).child1, s, v);
+        // param names it depends on the param
+        case ParamNameHeader:
+            const paramName = (h as ParamNameHeader).name;
+            switch (paramName) {
+                case "unique": return getBackgroundColor((h as ParamNameHeader).child, s, v);
+                case "pre": return colorFromText("pre", s, v);
+                case "post": return colorFromText("post", s, v);
+                default:
+                    throw new Error(`unhandled header: ${h.constructor.name}`);
+            }
+        default:
+            throw new Error(`unhandled header: ${h.constructor.name}`);
     }
 }

@@ -57,10 +57,6 @@ export class TstHeader extends TstCellComponent {
         return new TstHeader(this.cell, this.header).msg();
     }
 
-    public getBackgroundColor(saturation: number = DEFAULT_SATURATION, value: number = DEFAULT_VALUE): string {
-        return this.header.getBackgroundColor(saturation, value);
-    }
-
 }
 
 export class TstContent extends TstCellComponent {

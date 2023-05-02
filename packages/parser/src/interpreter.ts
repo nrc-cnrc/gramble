@@ -16,7 +16,7 @@ import {
     HIDDEN_TAPE_PREFIX
 } from "./util";
 import { Worksheet, Workbook } from "./sheets";
-import { parseHeaderCell } from "./headers";
+import { getBackgroundColor, parseHeaderCell } from "./headers";
 import { TapeNamespace } from "./tapes";
 import { Expr, ExprNamespace, CollectionExpr } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
@@ -156,7 +156,7 @@ export class Interpreter {
     ): string {
         if (!(tapeName in this.tapeColors)) {
             const [header, msgs] = parseHeaderCell(tapeName).destructure();
-            this.tapeColors[tapeName] = header.getBackgroundColor(saturation, value);
+            this.tapeColors[tapeName] = getBackgroundColor(header, saturation, value);
         }
         return this.tapeColors[tapeName];
     }

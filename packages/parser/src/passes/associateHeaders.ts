@@ -9,10 +9,13 @@ import {
 import { Component, CPass, CResult } from "../components";
 import { PassEnv } from "../passes";
 import { ContentMsg, Msgs, Warn } from "../msgs";
-import { getFontColor } from "../headers";
+import { getBackgroundColor, getFontColor } from "../headers";
 
 /**
- * 
+ * Before this, headers and their associated content cells aren't
+ * yet associated, they're both just children/grandchildren of a 
+ * [TstHeadedGrid].  This pass uses their column numbers to pair them
+ * up into [TstHeaderContentPair]s.
  */
 export class AssociateHeaders extends CPass {
 
@@ -44,7 +47,7 @@ export class AssociateHeaders extends CPass {
                     }
                     const newCell = new TstHeaderContentPair(header, content.cell);
                     new ContentMsg(
-                        header.getBackgroundColor(),
+                        getBackgroundColor(header.header),
                         getFontColor(header.header)
                     ).localize(content.pos).msgTo(msgs);
 

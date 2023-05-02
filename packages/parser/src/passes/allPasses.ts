@@ -88,11 +88,11 @@ export const GRAMMAR_PASSES =
 
     NAME_PASSES.compose(
 
+    // Joins sequences of single-character literals into multi-
+    // char literals for effeciency.
     new CombineLiterals().compose(
 
-    // if the programmer has specified an invalid renaming/hiding
-    // structure that would cause problems during evaluation, fix
-    // it so it doesn't
+    // handles some local tape renaming for plaintext/regex
     new HandleSingleTapes().compose(
 
     // if the programmer has specified an invalid renaming/hiding

@@ -1,9 +1,6 @@
 import { 
-    EmbedGrammar,
     Grammar,
     GrammarResult,
-    CollectionGrammar,
-    AlternationGrammar,
     SequenceGrammar,
     LiteralGrammar,
     EpsilonGrammar
@@ -11,13 +8,17 @@ import {
 import { Pass, PassEnv } from "../passes";
 
 /**
- * Goes through collections and, if a symbol Default isn't present,
- * assigns that to an alternation of the symbols under the collection.
+ * Plaintext/regex parsing results in a lot of single-character
+ * literals (e.g. `t1:a + t1:b + t1:c`); this joins them into
+ * `t1:abc`.  This is faster (because moving on to the next char
+ * in a literal is one step, whereas moving on from a concatenation
+ * of literals is two), and also allows further optimizations like
+ * atomicity.
  */
 export class CombineLiterals extends Pass<Grammar,Grammar> {
 
     public get desc(): string {
-        return "Recombining literals";
+        return "Combining literals";
     }
 
     public transform(g: Grammar, env: PassEnv): GrammarResult {
