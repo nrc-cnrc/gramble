@@ -2,7 +2,8 @@ import {
     FilterGrammar, Grammar, 
     CollectionGrammar, 
     PriorityGrammar, Query, 
-    infinityProtection
+    infinityProtection,
+    LocatorGrammar
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
@@ -13,7 +14,9 @@ import {
     logTime,
     logGrammar,
     Dict,
-    HIDDEN_TAPE_PREFIX
+    HIDDEN_TAPE_PREFIX,
+    DEFAULT_PROJECT_NAME,
+    DEFAULT_SYMBOL_NAME
 } from "./util";
 import { Worksheet, Workbook } from "./sheets";
 import { getBackgroundColor, parseHeaderCell } from "./headers";
@@ -24,15 +27,17 @@ import { generate } from "./generator";
 import { MissingSymbolError, Msg, Msgs } from "./msgs";
 import { PassEnv } from "./passes";
 import { 
-    GRAMMAR_PASSES, 
     NAME_PASSES, 
+    POST_NAME_PASSES, 
+    PRE_NAME_PASSES, 
     SHEET_PASSES 
 } from "./passes/allPasses";
 import { ExecuteTests } from "./passes/executeTests";
+import { resolveName } from "./passes/qualifyNames";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
- * and expressions.
+ * and expressions, and forwarding queries on to the resulting object.
  * 
  * It also acts as a Facade (in the GoF sense) for the client to interact with, so that they
  * don't necessarily have to understand the ways DevEnvironments, Sheets, TSTs, 
@@ -45,22 +50,18 @@ export class Interpreter {
     // we only need this for constructing single-source projects in the GSuite interface.
     public workbook: Workbook | undefined = undefined;
 
-    // we store previously-collected Tape objects because memoization
-    // or compilation is going to require remembering what indices had previously
-    // been assigned to which characters.  (we're not, at the moment, using that 
-    // functionality, but even if we're not, it doesn't hurt to keep these around.)
-    //public vocab: VocabMap = new VocabMap();
-    public tapeNS: TapeNamespace = new TapeNamespace();
+    // an intermediate grammar that we keep around in order to 
+    // resolve symbol names for user queries.
+    public nameGrammar: CollectionGrammar;
 
-    // the symbol table doesn't change in between invocations because queries
-    // and unit tests are only filters containing sequences of literals -- nothing
-    // that could change the meaning of a symbol.
-    //public symbolTable: SymbolTable = {};
+    // the grammar of the project; this variable will be replaced
+    // as compilation towards an Expr progresses.
+    public grammar: CollectionGrammar;
+
+    public tapeNS: TapeNamespace = new TapeNamespace();
 
     // for convenience, rather than parse it as a header every time
     public tapeColors: Dict<string> = {};
-
-    public grammar: CollectionGrammar;
 
     constructor(
         public devEnv: DevEnvironment,
@@ -77,8 +78,23 @@ export class Interpreter {
         
         const env = new PassEnv();
         env.verbose = verbose;
-        this.grammar = g.msg() // lift to result
-                        .bind(g => GRAMMAR_PASSES.go(g, env))
+
+        const nameGrammar = g.msg()
+                            .bind(g => PRE_NAME_PASSES.go(g, env))
+                            .msgTo(m => sendMsg(this.devEnv, m));
+
+
+        if (nameGrammar instanceof CollectionGrammar) {
+            this.nameGrammar = nameGrammar;
+        } else if (nameGrammar instanceof LocatorGrammar && nameGrammar.child instanceof CollectionGrammar) {
+            this.nameGrammar = nameGrammar.child;
+        } else {
+            throw new Error("name grammar is not a collection!");
+        }
+
+        this.grammar = nameGrammar.msg() // lift to result
+                        .bind(g => NAME_PASSES.go(g, env))
+                        .bind(g => POST_NAME_PASSES.go(g, env))
                         .msgTo(m => sendMsg(this.devEnv, m)) as CollectionGrammar
 
         // Next we collect the vocabulary on all tapes
@@ -128,6 +144,13 @@ export class Interpreter {
         verbose: number = SILENT
     ): Interpreter {
         const devEnv = new SimpleDevEnvironment();
+
+        if (!(grammar instanceof CollectionGrammar)) {
+            const coll = new CollectionGrammar();
+            coll.symbols[DEFAULT_SYMBOL_NAME] = grammar;
+            grammar = coll;
+        }
+
         return new Interpreter(devEnv, grammar, verbose);
     }
 
@@ -135,13 +158,24 @@ export class Interpreter {
         return this.grammar.allSymbols();
     }
 
+    public resolveName(name: string): string {
+        const namePieces = name.split(".").filter(s => s.length > 0);
+        const qualifiedName = resolveName(this.nameGrammar, namePieces);
+        if (qualifiedName == undefined) {
+            throw new Error(`Cannot resolve symbol ${name}`);
+        }
+        return qualifiedName;
+    }
+
     public getTapeNames(
         symbolName: string,
         stripHidden: boolean = true
     ): string[] {
-        const referent = this.grammar.getSymbol(symbolName);
+        const qualifiedName = this.resolveName(symbolName);
+        const referent = this.grammar.getSymbol(qualifiedName);
         if (referent == undefined) {
-            throw new Error(`Cannot find symbol ${symbolName}`);
+            throw new Error(`Internal error: symbol ${name} resolves, but ${qualifiedName} ` +
+                    ` does not exist`);
         }
         if (stripHidden) {
             return referent.tapes.filter(t => !t.startsWith(HIDDEN_TAPE_PREFIX));
@@ -249,8 +283,9 @@ export class Interpreter {
     ): Expr {
         const env = new PassEnv().pushSymbols(this.grammar.symbols);
         const symbols = new ExprNamespace();
+        const qualifiedName = this.resolveName(symbolName);
         
-        let targetGrammar: Grammar = this.grammar.selectSymbol(symbolName);
+        let targetGrammar: Grammar = this.grammar.selectSymbol(qualifiedName);
         if (targetGrammar == undefined) {
             const allSymbols = this.grammar.allSymbols();
             throw new Error(`Missing symbol: ${symbolName}; choices are [${allSymbols}]`);
@@ -269,7 +304,7 @@ export class Interpreter {
 
         let is_priority_grammar = targetGrammar instanceof PriorityGrammar;
         if (targetGrammar instanceof CollectionGrammar) {
-            if (targetGrammar.getSymbol(symbolName) instanceof PriorityGrammar)
+            if (targetGrammar.getSymbol(qualifiedName) instanceof PriorityGrammar)
                 is_priority_grammar = true;
         }
         if (!is_priority_grammar) {

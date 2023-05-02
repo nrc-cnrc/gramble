@@ -93,7 +93,7 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
             const subNameStack = this.nameStack.slice(0, i-1);
             const resolution = resolveName(subNsStack[i-1], namePieces, subNameStack);
             if (resolution != undefined) {        
-                const [qualifiedName, _] = resolution;
+                const qualifiedName = resolution;
                 const result = new EmbedGrammar(qualifiedName);
                 return result.msg();
             }
@@ -120,17 +120,16 @@ function resolveNameLocal(
     return undefined;
 }
 
-function resolveName(
+export function resolveName(
     g: Grammar,
     namePieces: string[], 
-    nsStack: string[]
-): [string, Grammar] | undefined {
+    nsStack: string[] = []
+): string | undefined {
 
     if (namePieces.length == 0) {
         // an empty name means we've arrived, this is the
         // grammar we're looking for
-        const newName = nsStack.join(".");
-        return [newName, g];
+        return nsStack.join(".");
     }
 
     if (g instanceof LocatorGrammar) {
@@ -152,5 +151,4 @@ function resolveName(
     const remnant = namePieces.slice(1);
     const newStack = [ ...nsStack, localName ];
     return resolveName(referent, remnant, newStack);
-
 }

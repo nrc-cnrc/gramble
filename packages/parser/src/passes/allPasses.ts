@@ -72,21 +72,22 @@ export const SHEET_PASSES =
     
     )))))))))));
 
-export const NAME_PASSES = 
+
+export const PRE_NAME_PASSES = 
 
     // Assign default symbols to collections that don't already
     // have a default defined.
-    new AssignDefaults().compose(
+    new AssignDefaults();
+
+export const NAME_PASSES = 
 
     // qualify symbol names (e.g. turn `VERB` in sheet Sheet1 
     // into `Sheet1.VERB`) and attempt to resolve references to them
     // (e.g. figure out whether VERB refers to Sheet1.VERB or 
     // something else)
-    new QualifyNames());
+    new QualifyNames();
 
-export const GRAMMAR_PASSES =
-
-    NAME_PASSES.compose(
+export const POST_NAME_PASSES =
 
     // Joins sequences of single-character literals into multi-
     // char literals for effeciency.
@@ -114,7 +115,15 @@ export const GRAMMAR_PASSES =
     // some conditions (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    new AdjustConditions())))))));
+    new AdjustConditions()))))));
+
+export const GRAMMAR_PASSES = 
+
+    PRE_NAME_PASSES.compose(
+
+    NAME_PASSES.compose(
+        
+    POST_NAME_PASSES));
 
 export const ALL_PASSES = SHEET_PASSES.compose(GRAMMAR_PASSES);
 
