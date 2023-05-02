@@ -31,7 +31,7 @@ import {
 
 // File level control over verbose output
 // const VERBOSE = VERBOSE_TEST_L2;
-const VERBOSE = VERBOSE_TEST_L2;
+const VERBOSE = true;
 
 function vb(verbosity: number): number {
     return VERBOSE ? verbosity : SILENT;
@@ -70,7 +70,9 @@ describe(`${testSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    describe('1. Replace e by a in hello: t1:e -> t2:a {1+} || ^h_llo$', function() {
+    // Note: # denotes a word boundary, i.e. starts with or ends with
+
+    describe('1. Replace e by a in hello: t1:e -> t2:a {1+} || #h_llo#', function() {
         const grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"), 
                                          EMPTY_CONTEXT, true, true, 1);
         testHasTapes(grammar, ['t1', 't2']);
@@ -81,7 +83,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('2. Replace e by a in hello: e -> t2:a {1+} || h_llo$', function() {
+    describe('2. Replace e by a in hello: e -> t2:a {1+} || h_llo#', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"),
                                        EMPTY_CONTEXT, false, true, 1);
         grammar = Count({t1:7,t2:7}, grammar);
@@ -103,7 +105,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults); 
     });
 
-    describe('3. Replace e by a in hel: t1:e -> t2:a {0+} || h_l$', function() {
+    describe('3. Replace e by a in hel: t1:e -> t2:a {0+} || h_l#', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, true);
         grammar = Count({t1:5,t2:5}, grammar)
@@ -137,7 +139,7 @@ describe(`${testSuiteName(module)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    describe('4. Replace e by a in hello: t1:e -> t2:a {1+} || ^h_llo', function() {
+    describe('4. Replace e by a in hello: t1:e -> t2:a {1+} || #h_llo', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("llo"),
                                        EMPTY_CONTEXT, true, false, 1);
         grammar = Count({t1:7,t2:7}, grammar);
@@ -159,7 +161,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('5. Replace e by a in hel: t1:e -> t2:a {0+} || ^h_l', function() {
+    describe('5. Replace e by a in hel: t1:e -> t2:a {0+} || #h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, true, false);
         grammar = Count({t1:5,t2:5}, grammar);
@@ -843,7 +845,7 @@ describe(`${testSuiteName(module)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to));
     }); 
     
-    describe('17. Replace e by ee in hel: t1:e -> t2:ee {1+} || ^h_l', function() {
+    describe('17. Replace e by ee in hel: t1:e -> t2:ee {1+} || #h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, true, false, 1);
         grammar = Count({t1: 6}, grammar);
@@ -874,7 +876,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('18. Replace e by ee in hel: t1:e -> t2:ee {0+} || ^h_l', function() {
+    describe('18. Replace e by ee in hel: t1:e -> t2:ee {0+} || #h_l', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, true, false, 0);
         grammar = Count({t1: 7}, grammar);
@@ -909,7 +911,7 @@ describe(`${testSuiteName(module)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    describe('19. Replace e by ee in hel: t1:e -> t2:ee {1+} || h_l$', function() {
+    describe('19. Replace e by ee in hel: t1:e -> t2:ee {1+} || h_l#', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, true, 1);
         grammar = Count({t1: 6}, grammar);
@@ -940,7 +942,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('20. Replace e by ee in hel: t1:e -> t2:ee {0+} || h_l$', function() {
+    describe('20. Replace e by ee in hel: t1:e -> t2:ee {0+} || h_l#', function() {
         let grammar: Grammar = Replace(t1("e"), t2("ee"), t1("h"), t1("l"),
                                        EMPTY_CONTEXT, false, true, 0);
         grammar = Count({t1: 7}, grammar);
@@ -1871,7 +1873,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     describe('32. Replace e by a in hel: ' +
-             't1:e -> t2:a {0,3} || t1:h_l & t3:[1SG]', function() {
+             't1:e -> t2:a {0,3} || t1:h_l + t3:[1SG]', function() {
         let grammar: Grammar = Replace(t1("e"), t2("a"),
                                        t1("h"), t1("l"), t3("[1SG]"),
                                        false, false, 0, 3);
@@ -1926,7 +1928,7 @@ describe(`${testSuiteName(module)}`, function() {
         testParseMultiple(grammar, inputResultsPairs(from_to));
     });
 
-    describe('33a. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_ (t2:ehl)', function() {
+    describe('33a. Replace ∅ by e: t1:∅ -> t2:e {1} || #_ (t2:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t2: 'ehl'}),
                                    Replace(t1(""), t2("e"),
                                            EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -1941,7 +1943,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('33b. Replace ∅ by e: t1:∅ -> t2:e {1} || _$ ' +
+    describe('33b. Replace ∅ by e: t1:∅ -> t2:e {1} || _# ' +
              '(vocab t2:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t2: 'ehl'}),
                                    Replace(t1(""), t2("e"),
@@ -1957,7 +1959,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('33c. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_$ ' +
+    describe('33c. Replace ∅ by e: t1:∅ -> t2:e {1} || #_# ' +
              '(vocab t2:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t2: 'ehl'}),
                                    Replace(t1(""), t2("e"),
@@ -1987,7 +1989,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('33e. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_ ' +
+    describe('33e. Replace ∅ by e: t1:∅ -> t2:e {1} || #_ ' +
              '(vocab t1:hl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'hl'}),
                                    Replace(t1(""), t2("e"),
@@ -2010,7 +2012,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('33f. Replace ∅ by e: t1:∅ -> t2:e {1} || _$ ' +
+    describe('33f. Replace ∅ by e: t1:∅ -> t2:e {1} || _# ' +
              '(vocab t1:hl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'hl'}),
                                    Replace(t1(""), t2("e"),
@@ -2033,7 +2035,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('33g. Replace ∅ by e: t1:∅ -> t2:e {1} || ^_$ ' +
+    describe('33g. Replace ∅ by e: t1:∅ -> t2:e {1} || #_# ' +
              '(vocab t1:hl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'hl'}),
                                    Replace(t1(""), t2("e"),
@@ -2351,7 +2353,7 @@ describe(`${testSuiteName(module)}`, function() {
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    describe('34a. Replace e by ∅: t1:e -> t2:∅ {1} || ^_ ' +
+    describe('34a. Replace e by ∅: t1:e -> t2:∅ {1} || #_ ' +
              '(vocab t1:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'ehl'}),
                                    Replace(t1("e"), t2(""),
@@ -2388,7 +2390,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('34b. Replace e by ∅: t1:e -> t2:∅ {1} || _$ ' +
+    describe('34b. Replace e by ∅: t1:e -> t2:∅ {1} || _# ' +
              '(vocab t1:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'ehl'}),
                                    Replace(t1("e"), t2(""),
@@ -2425,7 +2427,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('34c. Replace e by ∅: t1:e -> t2:∅ {1} || ^_$ ' +
+    describe('34c. Replace e by ∅: t1:e -> t2:∅ {1} || #_# ' +
              '(vocab t1:ehl)', function() {
         let grammar: Grammar = Seq(Vocab({t1: 'ehl'}),
                                    Replace(t1("e"), t2(""),
@@ -2623,7 +2625,6 @@ describe(`${testSuiteName(module)}`, function() {
     // be found as (ABA)B(ABA) or AB(ABA)BA.
     // Test 35a is based on test 27.
     describe('36a. Replace ee by e: t1:ee -> t2:e {1,3}', function() {
-        log('', `------${this.title}`);
         let grammar: Grammar = Replace(t1("ee"), t2("e"),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT,
                                        EMPTY_CONTEXT,
@@ -2649,7 +2650,6 @@ describe(`${testSuiteName(module)}`, function() {
 
     // Note: test 36b is affected by the issue explored in tests 35, 35a-b.
     describe('36b. Replace aba by X: t1:aba -> t2:X {1,3}', function() {
-        log('', `------${this.title}`);
         let grammar: Grammar = Replace(t1("aba"), t2("X"),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT,
                                        EMPTY_CONTEXT,
@@ -2664,8 +2664,49 @@ describe(`${testSuiteName(module)}`, function() {
         testParseMultiple(grammar, from_to);
     });
 
-    describe('37a. Replace a -> b | #_#', function() {
-        log('', `------${this.title}`);
+    describe('37a. Replace i -> e | #_ (vocab t1:hi)', function() {
+        let grammar: Grammar = Seq(Vocab({t1:'hi'}), 
+                               Replace(t1("i"), t2("e"),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT,
+                                       true, false));
+        grammar = Count({t1:2,t2:2}, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: 'h', t2: 'h'},
+            {t1: 'i', t2: 'e'},
+            {t1: 'hh', t2: 'hh'},
+            {t1: 'hi', t2: 'hi'},
+            {t1: 'ih', t2: 'eh'},
+            {t1: 'ii', t2: 'ei'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37b. Replace i -> e | _# (vocab t1:hi)', function() {
+        let grammar: Grammar = Seq(Vocab({t1:'hi'}), 
+                               Replace(t1("i"), t2("e"),
+                                       EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                       EMPTY_CONTEXT,
+                                       false, true));
+        grammar = Count({t1:2,t2:2}, grammar);
+        testHasTapes(grammar, ['t1', 't2']);
+        testHasVocab(grammar, {t1: 2, t2: 3});
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: 'h', t2: 'h'},
+            {t1: 'i', t2: 'e'},
+            {t1: 'hh', t2: 'hh'},
+            {t1: 'hi', t2: 'he'},
+            {t1: 'ih', t2: 'ih'},
+            {t1: 'ii', t2: 'ie'},
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
+    describe('37c. Replace i -> e | #_# (vocab t1:hi)', function() {
         let grammar: Grammar = Seq(Vocab({t1:'hi'}), 
                                Replace(t1("i"), t2("e"),
                                        EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2676,12 +2717,12 @@ describe(`${testSuiteName(module)}`, function() {
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
             {},
-            {t1: "h", t2: "h"},
-            {t1: "i", t2: "e"},
-            {t1: "hh", t2: "hh"},
-            {t1: "hi", t2: "hi"},
-            {t1: "ih", t2: "ih"}, // MISSING!
-            {t1: "ii", t2: "ii"}, // MISSING!
+            {t1: 'h', t2: 'h'},
+            {t1: 'i', t2: 'e'},
+            {t1: 'hh', t2: 'hh'},
+            {t1: 'hi', t2: 'hi'},
+            {t1: 'ih', t2: 'ih'},
+            {t1: 'ii', t2: 'ii'},
         ];
         testGrammar(grammar, expectedResults);
     });

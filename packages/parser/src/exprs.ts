@@ -2596,7 +2596,9 @@ export function constructNotContains(
 ): Expr {
     const dotStar: Expr = constructDotRep(fromTapeName);
     let seq: Expr;
-    if (begin) {
+    if (begin && end) {
+        seq = constructShort(constructSequence(...children));
+    } else if (begin) {
         seq = constructSequence(constructShort(constructSequence(...children)), dotStar);
     } else if (end) {
         seq = constructSequence(dotStar, constructShort(constructSequence(...children)));
