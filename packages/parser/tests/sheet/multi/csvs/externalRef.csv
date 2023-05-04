@@ -1,2 +1,2 @@
 default=, embed, text,
-    , embedGrammar, able
+    , embedGrammar.word, able

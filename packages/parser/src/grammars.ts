@@ -13,7 +13,8 @@ import {
     ExprNamespace, constructCollection, 
     constructCorrespond, constructNoEps, 
     constructDotStar,
-    constructCount
+    constructCount,
+    CollectionExpr
 } from "./exprs";
 import { Err, Msg, Msgs, result, Result, resultDict, resultList, ResultVoid, Warn } from "./msgs";
 
@@ -26,6 +27,7 @@ import { Pass, PassEnv } from "./passes";
 
 import {
     CellPos,
+    DEFAULT_SYMBOL_NAME,
     Dict,
     DUMMY_REGEX_TAPE,
     DUMMY_TAPE,
@@ -1837,7 +1839,7 @@ export class CollectionGrammar extends Grammar {
     constructor(
         public symbols: Dict<Grammar> = {},
         //public aliases: Dict<string> = {},
-        public selectedSymbol: string = ""
+        public selectedSymbol: string = DEFAULT_SYMBOL_NAME
     ) {
         super();
     }
@@ -1947,15 +1949,20 @@ export class CollectionGrammar extends Grammar {
     ): Expr {
         let newSymbols: Dict<Expr> = {};
         let selectedExpr: Expr = EPSILON;
+        let selectedFound = false;
         const newSymbolNS = symbols.push(newSymbols);
         for (const [name, referent] of Object.entries(this.symbols)) {
             let expr = referent.constructExpr(tapeNS, newSymbolNS);
             newSymbols[name] = expr;
             if (name.toLowerCase() == this.selectedSymbol.toLowerCase()) {
                 selectedExpr = expr;
+                selectedFound = true;
             }
         }
-        return constructCollection(selectedExpr, newSymbols);
+        if (selectedFound) {
+            return constructCollection(selectedExpr, newSymbols);
+        }
+        return new CollectionExpr(selectedExpr, newSymbols);
     }
 }
 

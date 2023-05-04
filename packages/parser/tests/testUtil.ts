@@ -354,7 +354,7 @@ export function testHasTapes(
                         grammar :
                         Interpreter.fromGrammar(grammar);
                         
-    let referent = interpreter.grammar.getSymbol(symbolName);
+    let referent = interpreter.getSymbol(symbolName);
     
     const bSet = new Set(expectedTapes);
     const testName: string = `${symbolName} should have tapes [${[...bSet]}]`;

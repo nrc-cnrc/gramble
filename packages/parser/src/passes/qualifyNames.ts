@@ -30,18 +30,8 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
     }
 
     public transformRoot(g: Grammar, env: PassEnv): GrammarResult {
-
-        // we keep a stack of the old collections, in which we'll
-        // attempt to find the referents of embedded symbols
-        const names: string[] = [];
-        const grammars: CollectionGrammar[] = [];
-        const newThis = new QualifyNames(names, grammars);
-
-        return newThis.transform(g, env).bind(g => {
-            const newColl = new CollectionGrammar(env.symbolNS.entries);
-            newColl.symbols[""] = g;
-            return newColl;
-        });
+        return this.transform(g, env).bind(_ => 
+            new CollectionGrammar(env.symbolNS.entries));
 
     }
 
@@ -61,10 +51,7 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
     }
 
     public transformCollection(g: CollectionGrammar, env: PassEnv): GrammarResult {
-        //const newSymbols: Dict<Grammar> = {};
         const msgs: Msgs = [];
-        let defaultReferent: Grammar = new EpsilonGrammar();
-
         const newCollectionStack = [ ...this.collectionStack, g ];
 
         for (const [k, v] of Object.entries(g.symbols)) {
@@ -73,16 +60,16 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
             const newV = newThis.transform(v, env)
                                 .msgTo(msgs);
 
-            if (k.toLowerCase() == DEFAULT_SYMBOL_NAME.toLowerCase()) {
-                defaultReferent = newV;
+            if (v instanceof CollectionGrammar || 
+                    v instanceof LocatorGrammar && v.child instanceof CollectionGrammar) {
+                continue;
             }
 
             const newName = newNameStack.join(".");
             env.symbolNS.set(newName, newV);
-            //newSymbols[k] = newV;
         }
-        
-        return defaultReferent.msg(msgs);
+
+        return new CollectionGrammar().msg(msgs);
     }
 
     public transformEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {
@@ -91,14 +78,14 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
             // we go down the stack asking each to resolve it
             const subNsStack = this.collectionStack.slice(0, i);
             const subNameStack = this.nameStack.slice(0, i-1);
-            const resolutionResult = resolveName(subNsStack[i-1], namePieces, subNameStack);
-            if (resolutionResult.name != undefined) {     
-                if (resolutionResult.error.length > 0) {
-                    return new EpsilonGrammar().err(
-                        "Reference to collection",
-                        resolutionResult.error);
-                }
-                return new EmbedGrammar(resolutionResult.name).msg();
+            const resolution = resolveName(subNsStack[i-1], namePieces, subNameStack);
+            if (resolution.error.length > 0) {
+                return new EpsilonGrammar().err(
+                    "Reference to collection",
+                    resolution.error);
+            }
+            if (resolution.name != undefined) {         
+                return new EmbedGrammar(resolution.name).msg();
             }
         }
 
@@ -123,7 +110,7 @@ function resolveNameLocal(
     return undefined;
 }
 
-type ResolutionResult = {
+export type ResolutionResult = {
     name: string | undefined,
     error: string
 }
@@ -135,31 +122,32 @@ export function resolveName(
 ): ResolutionResult {
 
     if (namePieces.length == 0) {
-        // an empty name means we've arrived, this is the
-        // grammar we're looking for
-
+        // an empty name means we've found the reference, but it may
+        // or may not denote a grammar.  if it's a collection grammar
+        // but doesn't have a default, we don't resolve it and have a special
+        // error status.
         if (g instanceof CollectionGrammar) {
-            const newStack = [ ...nsStack, DEFAULT_SYMBOL_NAME ];
-            const result = resolveName(g, [ DEFAULT_SYMBOL_NAME ], newStack)
+            const result = resolveName(g, [ DEFAULT_SYMBOL_NAME ], nsStack)
             if (result.name == undefined) {
                 return { 
-                    name: namePieces.join("."), 
+                    name: undefined, 
                     error: `${namePieces.join(".")} appears to refer to a sheet or collection,
                         but the sheet/collection has no Default symbol defined.`
                 }
             }
+            return result;
         }
 
         if (g instanceof LocatorGrammar && g.child instanceof CollectionGrammar) {
-            const newStack = [ ...nsStack, DEFAULT_SYMBOL_NAME ];
-            const result = resolveName(g.child, [ DEFAULT_SYMBOL_NAME ], newStack);
+            const result = resolveName(g.child, [ DEFAULT_SYMBOL_NAME ], nsStack);
             if (result.name == undefined) {
                 return { 
                     name: namePieces.join("."), 
-                    error: `${namePieces.join(".")} appears to refer to a sheet or collection,
-                        but the sheet/collection has no Default symbol defined.`
+                    error: `${namePieces.join(".")} appears to refer to a sheet or collection, ` +
+                        `but the sheet/collection has no Default symbol defined.`
                 }
             }
+            return result;
         }
 
         return { name: nsStack.join("."), error: ""}

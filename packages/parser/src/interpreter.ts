@@ -170,6 +170,14 @@ export class Interpreter {
         return resolution.name;
     }
 
+    /*
+     * Resolves `name` and gets the associated symbol (if it exists)
+     */ 
+    public getSymbol(name: string): Grammar | undefined {
+        const qualifiedName = this.resolveName(name);
+        return this.grammar.getSymbol(qualifiedName);
+    }
+
     public getTapeNames(
         symbolName: string,
         stripHidden: boolean = true
@@ -320,7 +328,8 @@ export class Interpreter {
     }
 
     public runTests(): void {
-        const expr = this.grammar.constructExpr(this.tapeNS, new ExprNamespace());  // fill the symbol table if it isn't already
+        const exprNS = new ExprNamespace();
+        const expr = this.grammar.constructExpr(this.tapeNS, exprNS);
         const symbols = expr instanceof CollectionExpr
                       ? expr.symbols
                       : {};
