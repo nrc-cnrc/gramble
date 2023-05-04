@@ -363,10 +363,24 @@ export class SlashHeader extends Header {
     }
 }
 
-export class ErrorHeader extends TapeNameHeader {
+export class ErrorHeader extends Header {
+
+    public constructor(
+        public text: string
+    ) {
+        super();
+    }
+
+    public get name(): string {
+        return "error";
+    }
 
     public get id(): string {
         return "ERR";
+    }
+    
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return new ErrorHeader(this.text).msg();
     }
 }
 
