@@ -160,11 +160,14 @@ export class Interpreter {
 
     public resolveName(name: string): string {
         const namePieces = name.split(".").filter(s => s.length > 0);
-        const qualifiedName = resolveName(this.nameGrammar, namePieces);
-        if (qualifiedName == undefined) {
+        const resolution = resolveName(this.nameGrammar, namePieces);
+        if (resolution.name == undefined) {
             throw new Error(`Cannot resolve symbol ${name}`);
         }
-        return qualifiedName;
+        if (resolution.error.length > 0) {
+            throw new Error(resolution.error);
+        }
+        return resolution.name;
     }
 
     public getTapeNames(

@@ -91,11 +91,14 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
             // we go down the stack asking each to resolve it
             const subNsStack = this.collectionStack.slice(0, i);
             const subNameStack = this.nameStack.slice(0, i-1);
-            const resolution = resolveName(subNsStack[i-1], namePieces, subNameStack);
-            if (resolution != undefined) {        
-                const qualifiedName = resolution;
-                const result = new EmbedGrammar(qualifiedName);
-                return result.msg();
+            const resolutionResult = resolveName(subNsStack[i-1], namePieces, subNameStack);
+            if (resolutionResult.name != undefined) {     
+                if (resolutionResult.error.length > 0) {
+                    return new EpsilonGrammar().err(
+                        "Reference to collection",
+                        resolutionResult.error);
+                }
+                return new EmbedGrammar(resolutionResult.name).msg();
             }
         }
 
@@ -120,16 +123,46 @@ function resolveNameLocal(
     return undefined;
 }
 
+type ResolutionResult = {
+    name: string | undefined,
+    error: string
+}
+
 export function resolveName(
     g: Grammar,
     namePieces: string[], 
     nsStack: string[] = []
-): string | undefined {
+): ResolutionResult {
 
     if (namePieces.length == 0) {
         // an empty name means we've arrived, this is the
         // grammar we're looking for
-        return nsStack.join(".");
+
+        if (g instanceof CollectionGrammar) {
+            const newStack = [ ...nsStack, DEFAULT_SYMBOL_NAME ];
+            const result = resolveName(g, [ DEFAULT_SYMBOL_NAME ], newStack)
+            if (result.name == undefined) {
+                return { 
+                    name: namePieces.join("."), 
+                    error: `${namePieces.join(".")} appears to refer to a sheet or collection,
+                        but the sheet/collection has no Default symbol defined.`
+                }
+            }
+        }
+
+        if (g instanceof LocatorGrammar && g.child instanceof CollectionGrammar) {
+            const newStack = [ ...nsStack, DEFAULT_SYMBOL_NAME ];
+            const result = resolveName(g.child, [ DEFAULT_SYMBOL_NAME ], newStack);
+            if (result.name == undefined) {
+                return { 
+                    name: namePieces.join("."), 
+                    error: `${namePieces.join(".")} appears to refer to a sheet or collection,
+                        but the sheet/collection has no Default symbol defined.`
+                }
+            }
+        }
+
+        return { name: nsStack.join("."), error: ""}
     }
 
     if (g instanceof LocatorGrammar) {
@@ -139,12 +172,12 @@ export function resolveName(
     if (!(g instanceof CollectionGrammar)) {
         // the name we're looking for isn't empty... but this 
         // isn't a collection, we're not going to find anything!
-        return undefined;
+        return { name: undefined, error: "" };
     }
 
     const child = resolveNameLocal(g, namePieces[0]);
     if (child == undefined) {
-        return undefined;
+        return { name: undefined, error: "" };
     }
 
     const [localName, referent] = child;
