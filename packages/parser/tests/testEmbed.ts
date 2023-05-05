@@ -172,10 +172,6 @@ describe(`${testSuiteName(module)}`, function() {
         testHasTapes(outer, ["t1"], "inner.x");
         testHasTapes(outer, ["t2"], "x");
 
-        const expectedResults_Default: StringDict[] = [
-            {t1: 'hello'},
-            {t2: 'goodbye'},
-        ];
         const expectedResults_InnerX: StringDict[] = [
             {t1: 'hello'}
         ];

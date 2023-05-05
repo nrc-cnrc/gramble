@@ -11,7 +11,7 @@ function test(params: ProjectTest): () => void {
 describe(`Sheets ${DIR}`, function() {
 
     describe('1a. Minimal grammar', test({
-        file: "1a",
+        id: "1a",
         results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
@@ -19,7 +19,7 @@ describe(`Sheets ${DIR}`, function() {
     }));
     
     describe('1b. Minimal grammar with no table: op', test({
-        file: "1b",
+        id: "1b",
         results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
@@ -27,7 +27,7 @@ describe(`Sheets ${DIR}`, function() {
     }));
     
     describe('1c. Minimal grammar with empty row', test({
-        file: "1c",
+        id: "1c",
         results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
@@ -35,7 +35,7 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     describe('1d. Minimal grammar with empty column', test({
-        file: "1d",
+        id: "1d",
         results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
@@ -43,7 +43,7 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     describe('2a. Embeds', test({
-        file: "2",
+        id: "2",
         results: [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -53,7 +53,7 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     describe('3a. Embeds with _ identifiers', test({
-        file: "3a",
+        id: "3a",
         symbol: "_Word",
         results: [
             { text: "foobar", gloss: "run-1SG" },
@@ -65,7 +65,7 @@ describe(`Sheets ${DIR}`, function() {
 
 
     describe('3b. Headers with underscores', test({
-        file: "3b",
+        id: "3b",
         results: [
             { _text: "foobar", gloss_: "run-1SG" },
             { _text: "moobar", gloss_: "jump-1SG" },
@@ -75,7 +75,7 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     describe('4a. Table with empty cell', test({
-        file: "4",
+        id: "4",
         results: [
             { text: "foobar", gloss: "run-1SG", pos:"v" },
             { text: "moobar", gloss: "jump-1SG", pos:"v" },
@@ -87,7 +87,7 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     describe('5a. Empty "table:" op', test({
-        file: "5",
+        id: "5",
         results: [
             {text:"baz", gloss:"-2SG"},
             {text:"bar", gloss:"-1SG"}
@@ -95,8 +95,8 @@ describe(`Sheets ${DIR}`, function() {
         errors: [ Warning(1, 0), Warning(1, 1) ]
     }));
 
-    describe('"6a. optional text" header', test({
-        file: "6a",
+    describe('6a. "optional text" header', test({
+        id: "6a",
         results: [
             { text: "foo" },
             { text: "moo" },
@@ -105,8 +105,8 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
 
-    describe('"optional embed" header', test({
-        file: "6b",
+    describe('6b. "optional embed" header', test({
+        id: "6b",
         results: [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -117,8 +117,8 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
 
-    describe('Slash header', test({
-        file: "7a",
+    describe('7a. Slash header', test({
+        id: "7a",
         results: [
             { text: "foobar", gloss: "foo-1SG" },
             { text: "moobar", gloss: "moo-1SG" },
@@ -127,8 +127,8 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
     
-    describe('Double slash header', test({
-        file: "7b",
+    describe('7b. Double slash header', test({
+        id: "7b",
         results: [
             { text: "foobar", gloss: "foo-1SG", root: "foo" },
             { text: "moobar", gloss: "moo-1SG", root: "moo" },
@@ -138,7 +138,7 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     describe('8. Header commented out', test({
-        file: "8",
+        id: "8",
         results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
@@ -146,7 +146,7 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     describe('9. Headers with lots of parens', test({
-        file: "9",
+        id: "9",
         results: [
             { text: "foo", gloss: "foo" },
             { text: "moo", gloss: "moo" }
@@ -154,13 +154,13 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     describe('10. Empty assignment', test({
-        file: "10",
+        id: "10",
         results: [{}],
         errors: [ Error(0, 0) ]
     }));
     
     describe('11. Nested tables', test({
-        file: "11",
+        id: "11",
         results: [{}],
         errors: [ Warning(0, 0), Error(0, 1) ]
     }));

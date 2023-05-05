@@ -1,4 +1,5 @@
-verb=, table:, text, gloss
+
+optional:, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
@@ -6,5 +7,5 @@ suffix=, table:, text, gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
 
-default=, table:, embed, blarg embed
-    ,       , verb, suffix 
+word=, table:, embed
+    ,       , suffix 

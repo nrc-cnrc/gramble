@@ -11,12 +11,12 @@ function test(params: ProjectTest): () => void {
 describe(`Sheets ${DIR}`, function() {
 
     describe('1. Empty grammar', test({
-        file: "1",
+        id: "1",
         results: undefined
     }));
 
     describe('2a. Bare grammar', test({
-        file: "2a",
+        id: "2a",
         symbol: "",
         results: [
             { text: "foo", gloss: "run" },
@@ -25,7 +25,7 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     describe('2b. Bare grammar with table op', test({
-        file: "2b",
+        id: "2b",
         symbol: "",
         results: [
             { text: "foo", gloss: "run" },
@@ -33,18 +33,18 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
 
-    describe('Bare grammar with embeds', test({
-        file: "3a",
+    describe('3a. Bare grammar with embeds', test({
+        id: "3a",
         errors: [ Warning(8,0) ]
     }))
     
-    describe('Bare grammar with embeds and table op', test({
-        file: "3b",
+    describe('3b. Bare grammar with embeds and table op', test({
+        id: "3b",
         errors: [ Warning(8,0) ]
     }))
     
-    describe('Generating from symbol before bare grammar', test({
-        file: "4",
+    describe('4a. Generating from symbol before bare grammar', test({
+        id: "4",
         errors: [ Warning(4,0) ],
         results: [
             { text: "foo", gloss: "run" },
@@ -52,8 +52,8 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
 
-    describe('Content obliteration by bare table', test({
-        file: "5",
+    describe('5a. Content obliteration by bare table', test({
+        id: "5",
         errors: [ Warning(0,0), Warning(4,0) ]
     }));
 });

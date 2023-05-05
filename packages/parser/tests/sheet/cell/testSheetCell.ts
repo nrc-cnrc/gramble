@@ -14,21 +14,21 @@ function test(params: ProjectTest): () => void {
 describe(`Sheets ${DIR}`, function() {
 
     describe('1a. Content with space', test({
-        file: "1a",
+        id: "1a",
         results: [
             { text: "moofoo", gloss: "run" }
         ]
     }));
 
     describe('1b. Content with escaped space', test({
-        file: "1b",
+        id: "1b",
         results: [
             { text: "moo foo", gloss: "run" }
         ]
     }));
 
     describe('2a. Content including alternation', test({
-        file: "2a",
+        id: "2a",
         results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "run" },
@@ -36,14 +36,14 @@ describe(`Sheets ${DIR}`, function() {
     }));
     
     describe('2b. Content including escaped |', test({
-        file: "2b",
+        id: "2b",
         results: [
             { text: "moo|foo", gloss: "run" },
         ]
     }));
     
     describe('3a. Content including alternation and spaces', test({
-        file: "3a",
+        id: "3a",
         results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "run" },
@@ -51,7 +51,7 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     describe('3b. Content including alternation and spaces 2', test({
-        file: "3b",
+        id: "3b",
         results: [
             {text: "foogoo", gloss: "run"},
             {text: "moo", gloss: "run"}
@@ -59,7 +59,7 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     describe('3c. Content including alternation and spaces 3', test({
-        file: "3c",
+        id: "3c",
         results: [
             {text: "foo", gloss: "run"},
             {text: "goomoo", gloss: "run"}
@@ -67,50 +67,50 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     describe('3d. Content including alternation and spaces 4', test({
-        file: "3d",
+        id: "3d",
         results: [
             { text: "foo", gloss: "run" },
             { text: "goo moo", gloss: "run" },
         ]
     }));
 
-    describe('Content including one backslash', test({
-        file: "4a",
+    describe('4a. Content including one backslash', test({
+        id: "4a",
         results: [
             { text: "foo", gloss: "run" },
         ]
     }));
 
-    describe('Content including two backslashes', test({
-        file: "4b",
+    describe('4b. Content including two backslashes', test({
+        id: "4b",
         results: [
             { text: "\\foo", gloss: "run" },
         ]
     }));
 
-    describe('Content including escaped backslash', test({
-        file: "4c",
+    describe('4c. Content including escaped backslash', test({
+        id: "4c",
         results: [
             { text: "\\foo", gloss: "run" },
         ]
     }));
     
-    describe('Content including parens', test({
-        file: "5a",
+    describe('5a. Content including parens', test({
+        id: "5a",
         results: [
             { text: "(foo)", gloss: "run" },
         ]
     }));
 
-    describe('Content including escaped parens', test({
-        file: "5b",
+    describe('5b. Content including escaped parens', test({
+        id: "5b",
         results: [
             { text: "(foo)", gloss: "run" },
         ]
     }));
 
-    describe('Embed with alternation', test({
-        file: "6a",
+    describe('6a. Embed with alternation', test({
+        id: "6a",
         results: [
             {"text":"boobar"},
             {"text":"goobar"},
@@ -119,8 +119,8 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
     
-    describe('Embed with three-way alternation', test({
-        file: "6b",
+    describe('6b. Embed with three-way alternation', test({
+        id: "6b",
         results: [
             {"text":"boobar"},
             {"text":"goobar"},
@@ -131,8 +131,8 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
     
-    describe('Embed with curly braces', test({
-        file: "7a",
+    describe('7a. Embed with curly braces', test({
+        id: "7a",
         results: [
             {"text":"foobar"},
             {"text":"moobar"}
@@ -140,8 +140,8 @@ describe(`Sheets ${DIR}`, function() {
         errors: [ Warning(5,2) ]
     }));
     
-    describe('Embed with alt and curly braces', test({
-        file: "7b",
+    describe('7b. Embed with alt and curly braces', test({
+        id: "7b",
         results: [
             {"text":"boobar"},
             {"text":"goobar"},
@@ -151,8 +151,8 @@ describe(`Sheets ${DIR}`, function() {
         errors: [ Warning(9,2) ]
     }));
     
-    describe('Embed with alt and curly braces 2', test({
-        file: "7c",
+    describe('7c. Embed with alt and curly braces 2', test({
+        id: "7c",
         results: [
             {"text":"boobar"},
             {"text":"goobar"},
@@ -162,16 +162,16 @@ describe(`Sheets ${DIR}`, function() {
         errors: [ Warning(9,2) ]
     }));
 
-    describe('Embed with sequence', test({
-        file: "8a",
+    describe('8a. Embed with sequence', test({
+        id: "8a",
         results: [
             {"text":"bar"},
         ],
         errors: [ Error(9,2) ]
     }));
     
-    describe('Embed with alternation and space', test({
-        file: "8b",
+    describe('8b. Embed with alternation and space', test({
+        id: "8b",
         results: [
             {"text":"bar"},
         ],

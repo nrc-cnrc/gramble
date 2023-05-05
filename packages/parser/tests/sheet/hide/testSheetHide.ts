@@ -1,77 +1,78 @@
-import { testGrammar, testErrors, sheetFromFile } from "../../testUtil";
-import * as path from 'path';
+import { 
+    testProject, ProjectTest, 
+    Error, Warning 
+} from "../testSheetUtil";
 
-const DIR = `${path.dirname(module.filename)}/csvs`;
+const DIR = "hide";
 
-describe(`${path.basename(module.filename)}`, function() {
+function test(params: ProjectTest): () => void {
+    return function() {
+        return testProject({ dir: DIR, ...params });
+    };
+}
 
-    describe('Hide header', function() {
-        const project = sheetFromFile(`${DIR}/hideGrammar.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+describe(`Sheets ${DIR}`, function() {
+
+    describe('1. Hide header', test({
+        id: "1",
+        results: [
             { text: "foo" }
-        ]);
-    });
+        ]
+    }));
     
-    describe('Hiding an irrelevant tape', function() {
-        const project = sheetFromFile(`${DIR}/hideIrrelevant.csv`);
-        testErrors(project, 
-            [["hideIrrelevant", 1, 4, "error"]]
-        );
-        testGrammar(project, [
+    describe('2. Hiding an irrelevant tape', test({
+        id: "2",
+        errors: [ Error(1,4) ],
+        results: [
             { text: "foo", gloss: "run" }
-        ]);
-    });
-
-    describe('Hide header with embeds', function() {
-        const project = sheetFromFile(`${DIR}/hideEmbed.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+        ]
+    }));
+    
+    describe('3. Hide header with embeds', test({
+        id: "3",
+        results: [
             { text: "foobar", gloss: "run[1SG]", subj: "[1SG]" },
             { text: "moobar", gloss: "jump[1SG]", subj: "[1SG]" },
             { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
             { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
             { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('Two hide headers', function() {
-        const project = sheetFromFile(`${DIR}/doubleHide.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('4. Two hide headers', test({
+        id: "4",
+        results: [
             { text: "foobar", gloss: "run[1SG]" },
             { text: "moobar", gloss: "jump[1SG]" },
             { text: "foobaz", gloss: "run[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]" },
             { text: "foo", gloss: "run[3SG]" },
             { text: "moo", gloss: "jump[3SG]" }
-        ]);
-    });
+        ]
+    }));
     
-    describe('Nested hide headers', function() {
-        const project = sheetFromFile(`${DIR}/nestedHide.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('5. Nested hide headers', test({
+        id: "5",
+        results: [
             { text: "foobar", gloss: "run[1SG]" },
             { text: "moobar", gloss: "jump[1SG]" },
             { text: "foobaz", gloss: "run[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]" },
             { text: "foo", gloss: "run[3SG]" },
             { text: "moo", gloss: "jump[3SG]" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('Hide header with a slash value', function() {
-        const project = sheetFromFile(`${DIR}/hideSlash.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('6. Hide header with a slash value', test({
+        id: "6",
+        results: [
             { text: "foobar", gloss: "run[1SG]" },
             { text: "moobar", gloss: "jump[1SG]" },
             { text: "foobaz", gloss: "run[2SG]" },
             { text: "moobaz", gloss: "jump[2SG]" },
             { text: "foo", gloss: "run[3SG]" },
             { text: "moo", gloss: "jump[3SG]" }
-        ]);
-    });
+        ]
+    }));
 });

@@ -7,11 +7,11 @@ suffix=, text, gloss, subj
     ,    bar, [1SG], 1SG
     ,    baz, [2SG], 2SG
 
-word=, embed, embed
+stem=, embed, embed
     ,  verb, suffix 
     ,
 join:, subj, 
      , 1SG,
 
-default=, embed,
-     , word
+word=, embed,
+     , stem

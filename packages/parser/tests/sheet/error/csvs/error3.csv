@@ -3,5 +3,5 @@ verb=, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-default=, table:, embed, embed
+word=, table:, embed, embed
     ,       , verb, suffix 

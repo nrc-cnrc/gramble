@@ -7,8 +7,8 @@ suffix=, table:, text, gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
 
-default=, suffixed:, embed, embed
-    ,           , verb, suffix 
+word=, table:, embed, embed
+    ,       , verb, suffix 
     ,
-    , or:   ,  embed
-    ,       ,  verb
+    , or:   , suffixless:, embed
+    ,       ,            , verb

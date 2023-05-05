@@ -5,5 +5,5 @@ verb=, table:, text, gloss
 suffix=, table:, text, gloss, table,
     ,       , bar, -1SG, foo
 
-default=, table:, embed, embed
+word=, table:, embed, embed
     ,       , verb, suffix,   

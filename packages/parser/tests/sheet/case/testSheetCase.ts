@@ -13,8 +13,8 @@ function test(params: ProjectTest): () => void {
 
 describe(`Sheets ${DIR}`, function() {
 
-    describe('Uppercase table ops', test({
-        file: "1a",
+    describe('1a. Uppercase table ops', test({
+        id: "1a",
         results: [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -23,16 +23,16 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
 
-    describe('Uppercase join op', test({
-        file: "1b",
+    describe('1b. Uppercase join op', test({
+        id: "1b",
         results: [
             { text: "foobar", gloss: "run[1SG]", subj: "1SG" },
             { text: "moobar", gloss: "jump[1SG]", subj: "1SG" },
         ]
     }));
     
-    describe('Uppercase embed header', test({
-        file: "2a",
+    describe('2a. Uppercase embed header', test({
+        id: "2a",
         results: [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -41,8 +41,8 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
     
-    describe('Uppercase optional header', test({
-        file: "2b",
+    describe('2b. Uppercase optional header', test({
+        id: "2b",
         results: [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -54,8 +54,8 @@ describe(`Sheets ${DIR}`, function() {
     }));
 
     
-    describe('Lowercase reference to uppercase symbol', test({
-        file: "3a",
+    describe('3a. Lowercase reference to uppercase symbol', test({
+        id: "3a",
         results: [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -64,8 +64,8 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
 
-    describe('Uppercase reference to lowercase symbol', test({
-        file: "3b",
+    describe('3b. Uppercase reference to lowercase symbol', test({
+        id: "3b",
         results: [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -74,8 +74,8 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
 
-    describe('Generating from uppercase ref to lowercase symbol ', test({
-        file: "4",
+    describe('4. Generating from uppercase ref to lowercase symbol ', test({
+        id: "4",
         symbol: "WORD",
         results: [
             { text: "foobar", gloss: "run-1SG" },

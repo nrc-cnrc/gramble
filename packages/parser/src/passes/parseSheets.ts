@@ -3,16 +3,15 @@ import { CommandMsg, CommentMsg, Err, Msgs } from "../msgs";
 import { 
     TstAssignment,
     TstEnclosure, 
-    TstCollection, TstOp, 
-    TstGrid,
-    TstHeaderContentPair,
-    TstHeader
+    TstCollection, 
+    TstOp, 
+    TstGrid
 } from "../tsts";
 import { Component, CResult } from "../components";
 import { Worksheet, Workbook } from "../sheets";
-import { Cell, CellPos, DEFAULT_SYMBOL_NAME } from "../util";
+import { Cell, CellPos } from "../util";
 import { CollectionOp, parseOp } from "../ops";
-import { EmbedHeader } from "../headers";
+import { RESERVED_WORDS } from "../reserved";
 
 type PassInput = Workbook | Worksheet;
 
@@ -48,6 +47,12 @@ export class ParseSheets extends Pass<PassInput,Component> {
 
         for (const [sheetName, sheet] of Object.entries(t.sheets)) {
             
+            if (RESERVED_WORDS.has(sheetName.toLowerCase())) {
+                msgs.push(Err("Reserved sheet name",
+                    `${sheetName} is a reserved word; you cannot name a sheet this.`,
+                    new CellPos(sheetName, 0, 0)))
+                continue;
+            }
             const tstSheet = this.transform(sheet, env).msgTo(msgs) as TstAssignment;
             project.addChild(tstSheet).msgTo(msgs);
             //if (sheetName.toLowerCase() == DEFAULT_SYMBOL_NAME.toLowerCase()) {

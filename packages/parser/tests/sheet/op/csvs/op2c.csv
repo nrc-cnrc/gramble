@@ -7,7 +7,7 @@ suffix=, text, gloss, subj
     ,    bar, [1SG], 1SG
     ,    baz, [2SG], 2SG
 
-default=, embed, embed
+word=, embed, embed
     ,  verb, suffix 
     ,
 join:, subj, 

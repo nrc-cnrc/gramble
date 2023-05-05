@@ -3,7 +3,7 @@ verb=, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-default=, table:, embed, text, gloss
+word=, table:, embed, text, gloss
     ,       , verb, bar, [2SG]
     ,
     , or:   , text, gloss, embed

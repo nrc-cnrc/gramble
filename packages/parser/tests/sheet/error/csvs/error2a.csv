@@ -2,5 +2,5 @@
     ,       , foo, run
     ,       , moo, jump
 
-default=, table:, embed
+word=, table:, embed
     ,       , 123verb 
