@@ -17,7 +17,8 @@ export const NO_CHAR_STR = "__ANY_CHAR__";
 
 export const DEFAULT_PROJECT_NAME = "";
 export const DEFAULT_SYMBOL_NAME = "Default";
-export const AUTO_SYMBOL_NAME = "_Auto"
+export const ALL_SYMBOL_NAME = "All"
+export const AUTO_SYMBOL_NAME = INTERNAL_TAPE_PREFIX + "Auto"
 
 export const DEFAULT_MAX_CHARS = 100;
 

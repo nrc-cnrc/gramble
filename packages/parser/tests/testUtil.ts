@@ -171,10 +171,12 @@ export function testOpID(
 export function testNumOutputs(
     outputs: StringDict[],
     expectedNum: number,
-    warningOnly: boolean = false
+    warningOnly: boolean = false,
+    symbolName: string = "",
 ): void {
     const date_str: string = (new Date()).toUTCString();
-    const testName: string = `should have ${expectedNum} result(s)`;
+    if (symbolName !== "") symbolName = symbolName + " ";
+    const testName: string = `${symbolName}should have ${expectedNum} result(s)`;
     it(`${testName}`, function() {
         try {
             expect(outputs.length).to.equal(expectedNum);
@@ -209,7 +211,8 @@ export function removeHiddenFields(outputs: StringDict[]): StringDict[] {
 
 export function testMatchOutputs(
     outputs: StringDict[],
-    expected_outputs: StringDict[]
+    expected_outputs: StringDict[],
+    symbolName: string = ""
 ): void {
     // Check that the output dictionaries of Interpreter.generate() match
     // the expected outputs.
@@ -246,7 +249,8 @@ export function testMatchOutputs(
             expected_outputs_str = JSON.stringify(expected_outputs.slice(start, end_expected));
         else
             expected_outputs_str = JSON.stringify(expected_outputs.slice(start, start+20)) + "...";
-        const testName = `should match items ${start}-${end_expected-1}: ` +
+        if (symbolName !== "") symbolName = symbolName + " ";
+        const testName = `${symbolName}should match items ${start}-${end_expected-1}: ` +
                          `${expected_outputs_str}`;
         it(`${testName}`, function() {
             this.timeout(10000);
@@ -290,14 +294,18 @@ export function generateOutputsFromGrammar(
     return outputs;
 }
 
-function testGrammarAux(
-    interpreter: Interpreter,
-    expectedResults: StringDict[], 
-    symbolName: string,
-    maxRecursion: number, 
-    stripHidden: boolean,
-    warnOnlyForTooManyOutputs: boolean
+export function testGrammar(
+    grammar: Grammar | Interpreter,
+    expectedResults: StringDict[],
+    verbose: number = SILENT,
+    symbolName: string = "",
+    maxRecursion: number = DEFAULT_MAX_RECURSION,
+    stripHidden: boolean = true,
+    warnOnlyForTooManyOutputs: boolean = false
 ): void {
+    const interpreter = (grammar instanceof Interpreter) ?
+                        grammar :
+                        Interpreter.fromGrammar(grammar, verbose);
     let outputs: StringDict[] = [];
 
     maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
@@ -314,33 +322,8 @@ function testGrammarAux(
             assert.fail(e);
         });
     }
-    testNumOutputs(outputs, expectedResults.length, warnOnlyForTooManyOutputs);
-    testMatchOutputs(outputs, expectedResults);
-}
-
-export function testGrammar(
-    grammar: Grammar | Interpreter,
-    expectedResults: StringDict[],
-    verbose: number = SILENT,
-    symbolName: string = "",
-    maxRecursion: number = DEFAULT_MAX_RECURSION,
-    stripHidden: boolean = true,
-    warnOnlyForTooManyOutputs: boolean = false
-): void {
-    
-    const interpreter = (grammar instanceof Interpreter) ?
-                        grammar :
-                        Interpreter.fromGrammar(grammar, verbose);
-                        
-    if (symbolName == "") {
-        testGrammarAux(interpreter, expectedResults, symbolName, maxRecursion,
-                       stripHidden, warnOnlyForTooManyOutputs);
-    } else {
-        describe(`Generating from \${${symbolName}}`, function() {
-            testGrammarAux(interpreter, expectedResults, symbolName, maxRecursion,
-                           stripHidden, warnOnlyForTooManyOutputs);
-        });
-    }   
+    testNumOutputs(outputs, expectedResults.length, warnOnlyForTooManyOutputs, symbolName);
+    testMatchOutputs(outputs, expectedResults, symbolName);
 }
 
 export function testHasTapes(

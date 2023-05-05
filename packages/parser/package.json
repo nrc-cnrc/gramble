@@ -70,7 +70,7 @@
     "testSheet": "mocha -r ts-node/register tests/sheet/*/*.ts",
     "testSheetBare": "mocha -r ts-node/register tests/sheet/bare/*.ts",
     "testSheetBasic": "mocha -r ts-node/register tests/sheet/basic/*.ts",
-    "testSheetCasing": "mocha -r ts-node/register tests/sheet/casing/*.ts",
+    "testSheetCase": "mocha -r ts-node/register tests/sheet/case/*.ts",
     "testSheetCollection": "mocha -r ts-node/register tests/sheet/collection/*.ts",
     "testSheetError": "mocha -r ts-node/register tests/sheet/error/*.ts",
     "testSheetFilter": "mocha -r ts-node/register tests/sheet/filter/*.ts",

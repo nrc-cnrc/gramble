@@ -1,90 +1,59 @@
-import { testGrammar, testErrors, sheetFromFile } from "../../testUtil";
-import * as path from 'path';
+import { testProject, ProjectTest, Error, Warning } from "../testSheetUtil";
 
-const DIR = `${path.dirname(module.filename)}/csvs`;
+const defaults = { dir: "bare" }
 
-describe(`${path.basename(module.filename)}`, function() {
+function test(params: ProjectTest): () => void {
+    return function() {
+        return testProject({ ...defaults, ...params });
+    };
+}
 
-    describe('Empty grammar', function() {
-        const project = sheetFromFile(`${DIR}/emptyGrammar.csv`);
-        testErrors(project, []);
-        testGrammar(project, []);
-    });
+describe(`Sheets ${defaults.dir}`, function() {
 
-    describe('Bare grammar', function() {
-        const project = sheetFromFile(`${DIR}/bareGrammar.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('1. Empty grammar', test({
+        file: "1",
+        results: undefined
+    }));
+
+    describe('2a. Bare grammar', test({
+        file: "2a",
+        symbol: "",
+        results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('Bare grammar with table', function() {
-        const project = sheetFromFile(`${DIR}/bareGrammarWithTable.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('2b. Bare grammar with table op', test({
+        file: "2b",
+        symbol: "",
+        results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('Bare grammar with embeds', function() {
-        const project = sheetFromFile(`${DIR}/bareGrammarWithEmbeds.csv`);
-        testErrors(project, [
-            ["bareGrammarWithEmbeds",8,0,"warning"]
-        ]);
-        testGrammar(project, [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" },
-            { text: "bar", gloss: "-1SG" },
-            { text: "baz", gloss: "-2SG" },
-            { text: "foobar", gloss: "run-1SG" },
-            { text: "moobar", gloss: "jump-1SG" },
-            { text: "foobaz", gloss: "run-2SG" },
-            { text: "moobaz", gloss: "jump-2SG" }
-        ]);
-    });
+    describe('Bare grammar with embeds', test({
+        file: "3a",
+        errors: [ Warning(8,0) ]
+    }))
     
-    describe('Bare grammar after default', function() {
-        const project = sheetFromFile(`${DIR}/bareGrammarAfterDefault.csv`);
-        testErrors(project, [
-            ["bareGrammarAfterDefault",4,0,"warning"]
-        ]);
-        testGrammar(project, [
+    describe('Bare grammar with embeds and table op', test({
+        file: "3b",
+        errors: [ Warning(8,0) ]
+    }))
+    
+    describe('Generating from symbol before bare grammar', test({
+        file: "4",
+        errors: [ Warning(4,0) ],
+        results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" },
-        ]);
-    });
+        ]
+    }));
 
-    describe('Bare grammar with embeds and table', function() {
-        const project = sheetFromFile(`${DIR}/bareGrammarWithEmbedsAndTable.csv`);
-        testErrors(project, [
-            ["bareGrammarWithEmbedsAndTable",8,0,"warning"]
-        ]);
-        testGrammar(project, [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" },
-            { text: "bar", gloss: "-1SG" },
-            { text: "baz", gloss: "-2SG" },
-            { text: "foobar", gloss: "run-1SG" },
-            { text: "moobar", gloss: "jump-1SG" },
-            { text: "foobaz", gloss: "run-2SG" },
-            { text: "moobaz", gloss: "jump-2SG" }
-        ]);
-    });
-
-    describe('Content obliteration by bare table', function() {
-        const project = sheetFromFile(`${DIR}/obliterationByBareTable.csv`);
-        testErrors(project, [
-            ["obliterationByBareTable",0,0,"warning"],
-            ["obliterationByBareTable",4,0,"warning"],
-        ]);
-        testGrammar(project, [
-            {text: "baz"},
-            {text: "bar"},
-            {text: "foo"},
-            {text: "goo"}
-        ]);
-    });
+    describe('Content obliteration by bare table', test({
+        file: "5",
+        errors: [ Warning(0,0), Warning(4,0) ]
+    }));
 });

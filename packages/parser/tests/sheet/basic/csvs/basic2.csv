@@ -1,10 +1,11 @@
-verb=, table:, text, gloss
+
+Verb=, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
-suffix=, table:, text, gloss
+Suffix=, table:, text, gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
 
-default=, table:, embed, optional embed
+Word=, table:, embed, embed
     ,       , verb, suffix 

@@ -1,173 +1,167 @@
-import { testGrammar, testErrors, sheetFromFile } from "../../testUtil";
-import * as path from 'path';
+import { testProject, ProjectTest, Error, Warning } from "../testSheetUtil";
 
-const DIR = `${path.dirname(module.filename)}/csvs`;
+const defaults = { dir: "basic" }
 
-describe(`${path.basename(module.filename)}`, function() {
+function test(params: ProjectTest): () => void {
+    return function() {
+        return testProject({ ...defaults, ...params });
+    };
+}
 
-    describe('Minimal grammar', function() {
-        const project = sheetFromFile(`${DIR}/minimalGrammar.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+describe(`Sheets ${defaults.dir}`, function() {
+
+    describe('1a. Minimal grammar', test({
+        file: "1a",
+        results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
-        ]);
-    });
+        ]
+    }));
     
-    describe('Minimal grammar with no table: op', function() {
-        const project = sheetFromFile(`${DIR}/minimalGrammarNoTable.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('1b. Minimal grammar with no table: op', test({
+        file: "1b",
+        results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
-        ]);
-    });
-
-    describe('Minimal grammar with empty row', function() {
-        const project = sheetFromFile(`${DIR}/emptyRow.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+        ]
+    }));
+    
+    describe('1c. Minimal grammar with empty row', test({
+        file: "1c",
+        results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('Minimal grammar with empty column', function() {
-        const project = sheetFromFile(`${DIR}/emptyColumn.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('1d. Minimal grammar with empty column', test({
+        file: "1d",
+        results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('Embeds', function() {
-        const project = sheetFromFile(`${DIR}/embedGrammar.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('2a. Embeds', test({
+        file: "2",
+        results: [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
             { text: "moobaz", gloss: "jump-2SG" }
-        ]);
-    });
+        ]
+    }));
 
-    
-    describe('Embeds with a _ identifier', function() {
-        const project = sheetFromFile(`${DIR}/embedGrammarWithUnderscore.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('3a. Embeds with _ identifiers', test({
+        file: "3a",
+        symbol: "_Word",
+        results: [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
             { text: "moobaz", gloss: "jump-2SG" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('Headers with underscores', function() {
-        const project = sheetFromFile(`${DIR}/headersWithUnderscore.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+
+    describe('3b. Headers with underscores', test({
+        file: "3b",
+        results: [
             { _text: "foobar", gloss_: "run-1SG" },
             { _text: "moobar", gloss_: "jump-1SG" },
             { _text: "foobaz", gloss_: "run-2SG" },
             { _text: "moobaz", gloss_: "jump-2SG" }
-        ]);
-    });
+        ]
+    }));
 
-
-    describe('Table with empty cell', function() {
-        const project = sheetFromFile(`${DIR}/emptyCell.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('4a. Table with empty cell', test({
+        file: "4",
+        results: [
             { text: "foobar", gloss: "run-1SG", pos:"v" },
             { text: "moobar", gloss: "jump-1SG", pos:"v" },
             { text: "foobaz", gloss: "run-2SG", pos:"v" },
             { text: "moobaz", gloss: "jump-2SG", pos:"v"},
             { text: "foo", gloss: "run.3SG", pos:"v" },
             { text: "moo", gloss: "jump.3SG", pos:"v" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('Empty "table:" op', function() {
-        const project = sheetFromFile(`${DIR}/emptyTable.csv`);
-        testErrors(project, [
-            ["emptyTable", 1, 0, "warning"],
-            ["emptyTable", 1, 1, "warning"]
-        ]);
-        testGrammar(project, [
-            {"text":"baz","gloss":"-2SG"},
-            {"text":"bar","gloss":"-1SG"}
-        ]);
-    });
+    describe('5a. Empty "table:" op', test({
+        file: "5",
+        results: [
+            {text:"baz", gloss:"-2SG"},
+            {text:"bar", gloss:"-1SG"}
+        ],
+        errors: [ Warning(1, 0), Warning(1, 1) ]
+    }));
 
-    describe('"optional text" header', function() {
-        const project = sheetFromFile(`${DIR}/optionalHeader.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('"6a. optional text" header', test({
+        file: "6a",
+        results: [
             { text: "foo" },
             { text: "moo" },
             { text: "foobar" },
             { text: "moobar" },
-        ]);
-    });
+        ]
+    }));
 
-    describe('"optional embed" header', function() {
-        const project = sheetFromFile(`${DIR}/optionalEmbed.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('"optional embed" header', test({
+        file: "6b",
+        results: [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
             { text: "foobaz", gloss: "run-2SG" },
             { text: "moobaz", gloss: "jump-2SG" },
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('"text/gloss" header', function() {
-        const project = sheetFromFile(`${DIR}/slashHeader.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('Slash header', test({
+        file: "7a",
+        results: [
             { text: "foobar", gloss: "foo-1SG" },
             { text: "moobar", gloss: "moo-1SG" },
             { text: "foobaz", gloss: "foo-2SG" },
             { text: "moobaz", gloss: "moo-2SG" }
-        ]);
-    });
+        ]
+    }));
+    
+    describe('Double slash header', test({
+        file: "7b",
+        results: [
+            { text: "foobar", gloss: "foo-1SG", root: "foo" },
+            { text: "moobar", gloss: "moo-1SG", root: "moo" },
+            { text: "foobaz", gloss: "foo-2SG", root: "foo" },
+            { text: "moobaz", gloss: "moo-2SG", root: "moo" }
+        ]
+    }));
 
-    describe('Header commented out', function() {
-        const project = sheetFromFile(`${DIR}/commentHeader.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('8. Header commented out', test({
+        file: "8",
+        results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('Headers with lots of parens', function() {
-        const project = sheetFromFile(`${DIR}/headerWithParens.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('9. Headers with lots of parens', test({
+        file: "9",
+        results: [
             { text: "foo", gloss: "foo" },
             { text: "moo", gloss: "moo" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('Empty assignment', function() {
-        const project = sheetFromFile(`${DIR}/emptyAssignment.csv`);
-        testErrors(project, [
-            ["emptyAssignment", 0, 0, "error"]
-        ]);
-        testGrammar(project, [{}]);
-    });
+    describe('10. Empty assignment', test({
+        file: "10",
+        results: [{}],
+        errors: [ Error(0, 0) ]
+    }));
     
-    describe('Nested tables', function() {
-        const project = sheetFromFile(`${DIR}/nestedTables.csv`);
-        testErrors(project, [
-            ["nestedTables",0,0,"warning"],
-            ["nestedTables",0,1,"error"]
-        ]);
-        testGrammar(project, [{}]);
-    });
+    describe('11. Nested tables', test({
+        file: "11",
+        results: [{}],
+        errors: [ Warning(0, 0), Error(0, 1) ]
+    }));
 });

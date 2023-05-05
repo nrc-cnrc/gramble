@@ -7,5 +7,5 @@ Suf_fix=, table:, text, gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
 
-Default=, table:, embed, embed
+_Word=, table:, embed, embed
     ,       , _verb, suf_fix 

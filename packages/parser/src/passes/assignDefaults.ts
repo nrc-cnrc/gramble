@@ -3,10 +3,12 @@ import {
     Grammar,
     GrammarResult,
     CollectionGrammar,
-    AlternationGrammar
+    AlternationGrammar,
+    EpsilonGrammar,
+    LocatorGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { DEFAULT_SYMBOL_NAME } from "../util";
+import { ALL_SYMBOL_NAME, DEFAULT_SYMBOL_NAME } from "../util";
 
 /**
  * Goes through collections and, if a symbol Default isn't present,
@@ -33,16 +35,21 @@ export class AssignDefaults extends Pass<Grammar,Grammar> {
 
     public handleCollection(g: CollectionGrammar, env: PassEnv): Grammar {
         
-        if (g.getSymbol(DEFAULT_SYMBOL_NAME)) {
-            // if Default is already assigned, we don't have to do anything
-            return g;
-        }
+        const entries = Object.entries(g.symbols);
         
-        const keys = Object.keys(g.symbols);
-        const embeds = keys.map(k => new EmbedGrammar(k));
-        const alt = new AlternationGrammar(embeds);
-        g.symbols[DEFAULT_SYMBOL_NAME] = alt;
+        if (g.getSymbol(ALL_SYMBOL_NAME) == undefined) {
+            const embeds = entries.map(([k,v]) => {
+                if (v instanceof CollectionGrammar || 
+                    v instanceof LocatorGrammar && 
+                    v.child instanceof CollectionGrammar) {
+                    return new EmbedGrammar(`${k}.${ALL_SYMBOL_NAME}`);
+                } else {
+                    return new EmbedGrammar(k);
+                }
+            });
+            const alt = new AlternationGrammar(embeds);
+            g.symbols[ALL_SYMBOL_NAME] = alt;
+        }
         return g;
     }
-
 }

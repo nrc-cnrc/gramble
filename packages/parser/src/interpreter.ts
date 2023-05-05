@@ -15,7 +15,6 @@ import {
     logGrammar,
     Dict,
     HIDDEN_TAPE_PREFIX,
-    DEFAULT_PROJECT_NAME,
     DEFAULT_SYMBOL_NAME
 } from "./util";
 import { Worksheet, Workbook } from "./sheets";
@@ -159,8 +158,10 @@ export class Interpreter {
     }
 
     public resolveName(name: string): string {
+        console.log(`resolving "${name}" from Interpreter`);
         const namePieces = name.split(".").filter(s => s.length > 0);
         const resolution = resolveName(this.nameGrammar, namePieces);
+        console.log(`resolves to ${resolution.name}, ${resolution.error}`);
         if (resolution.name == undefined) {
             throw new Error(`Cannot resolve symbol ${name}`);
         }
@@ -183,9 +184,9 @@ export class Interpreter {
         stripHidden: boolean = true
     ): string[] {
         const qualifiedName = this.resolveName(symbolName);
-        const referent = this.grammar.getSymbol(qualifiedName);
+        const referent = this.getSymbol(qualifiedName);
         if (referent == undefined) {
-            throw new Error(`Internal error: symbol ${name} resolves, but ${qualifiedName} ` +
+            throw new Error(`Internal error: symbol ${symbolName} resolves, but ${qualifiedName} ` +
                     ` does not exist`);
         }
         if (stripHidden) {

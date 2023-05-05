@@ -44,17 +44,18 @@ export class ParseSheets extends Pass<PassInput,Component> {
         const projectCell = new Cell("", new CellPos("", -1, -1));
         const project = new TstCollection(projectCell);
         const msgs: Msgs = [];
-        let defaultFound = false;
+        //let defaultFound = false;
 
         for (const [sheetName, sheet] of Object.entries(t.sheets)) {
             
             const tstSheet = this.transform(sheet, env).msgTo(msgs) as TstAssignment;
             project.addChild(tstSheet).msgTo(msgs);
-            if (sheetName.toLowerCase() == DEFAULT_SYMBOL_NAME.toLowerCase()) {
-                defaultFound = true;
-            }
+            //if (sheetName.toLowerCase() == DEFAULT_SYMBOL_NAME.toLowerCase()) {
+            //    defaultFound = true;
+            //}
         }
 
+        /*
         if (!defaultFound) {
             // make an embed for the main sheet name and assign that to 
             // the default symbol name
@@ -64,6 +65,7 @@ export class ParseSheets extends Pass<PassInput,Component> {
             const a = new TstAssignment(projectCell, DEFAULT_SYMBOL_NAME, embed);
             project.addChild(a);
         }
+        */
 
         return project.msg(msgs);
 

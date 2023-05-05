@@ -1838,7 +1838,6 @@ export class CollectionGrammar extends Grammar {
 
     constructor(
         public symbols: Dict<Grammar> = {},
-        //public aliases: Dict<string> = {},
         public selectedSymbol: string = DEFAULT_SYMBOL_NAME
     ) {
         super();

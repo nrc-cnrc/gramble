@@ -123,7 +123,7 @@ export function resolveName(
 
     if (namePieces.length == 0) {
         // an empty name means we've found the reference, but it may
-        // or may not denote a grammar.  if it's a collection grammar
+        // or may not denote a grammar.  if it's a CollectionGrammar
         // but doesn't have a default, we don't resolve it and have a special
         // error status.
         if (g instanceof CollectionGrammar) {
@@ -131,7 +131,7 @@ export function resolveName(
             if (result.name == undefined) {
                 return { 
                     name: undefined, 
-                    error: `${namePieces.join(".")} appears to refer to a sheet or collection,
+                    error: `${nsStack.join(".")} appears to refer to a sheet or collection,
                         but the sheet/collection has no Default symbol defined.`
                 }
             }
@@ -142,8 +142,8 @@ export function resolveName(
             const result = resolveName(g.child, [ DEFAULT_SYMBOL_NAME ], nsStack);
             if (result.name == undefined) {
                 return { 
-                    name: namePieces.join("."), 
-                    error: `${namePieces.join(".")} appears to refer to a sheet or collection, ` +
+                    name: undefined, 
+                    error: `${nsStack.join(".")} appears to refer to a sheet or collection, ` +
                         `but the sheet/collection has no Default symbol defined.`
                 }
             }
