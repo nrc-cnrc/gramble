@@ -158,10 +158,8 @@ export class Interpreter {
     }
 
     public resolveName(name: string): string {
-        console.log(`resolving "${name}" from Interpreter`);
         const namePieces = name.split(".").filter(s => s.length > 0);
         const resolution = resolveName(this.nameGrammar, namePieces);
-        console.log(`resolves to ${resolution.name}, ${resolution.error}`);
         if (resolution.name == undefined) {
             throw new Error(`Cannot resolve symbol ${name}`);
         }

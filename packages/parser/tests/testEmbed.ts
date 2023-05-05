@@ -22,7 +22,6 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('1. Symbol containing t1:hi, unnamed collection', function() {
         const grammar = Collection({a: t1("hi"), b: Embed("a")});
-        testHasTapes(grammar, ["t1"]);
         testHasTapes(grammar, ["t1"], "a");
         testHasTapes(grammar, ["t1"], "b");
         testGrammar(grammar, [{t1: 'hi'}], SILENT, "a");
@@ -58,14 +57,14 @@ describe(`${testSuiteName(module)}`, function() {
 
     describe('6. Lowercase assignment, uppercase reference', function() {
         const grammar = Collection({a: t1("hi"), b: Embed("A")});
-        testHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"], "b");
         //testHasVocab(grammar, {t1: 2});
         testGrammar(grammar, [{t1: 'hi'}], SILENT, "b");
     });
 
     describe('7. Uppercase assignment, lowercase reference', function() {
         const grammar = Collection({A: t1("hi"), b: Embed("a")});
-        testHasTapes(grammar, ["t1"]);
+        testHasTapes(grammar, ["t1"], "b");
         //testHasVocab(grammar, {t1: 2});
         testGrammar(grammar, [{t1: 'hi'}], SILENT, "b");
     });
@@ -97,7 +96,7 @@ describe(`${testSuiteName(module)}`, function() {
             a: Seq(t1("hi"), t2("world")),
             b: Embed("a"),
         });
-        testHasTapes(grammar, ["t1", "t2"]);
+        testHasTapes(grammar, ["t1", "t2"], "b");
         //testHasVocab(grammar, {t1: 2});
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'world'}
@@ -160,29 +159,8 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testGrammar(grammar, expectedResults, SILENT, "b");
     });
-    
-    describe('16. Simple collections, generating from ' +
-             'default symbol', function() {
-        const grammar = Collection({
-            x: t1("hello")
-        });
-        testHasTapes(grammar, ["t1"]);
-        testGrammar(grammar, [{t1: 'hello'}]);
-    });
 
-    describe('17. Nested collections, generating from ' +
-             'default symbols', function() {
-        const inner = Collection({
-            x: t1("hello")
-        });
-        const outer = Collection({
-            inner: inner
-        });
-        testGrammar(outer, [{t1: 'hello'}]);
-    });
-
-    describe('18. Nested collections with name shadowing, ' +
-             'generating from default symbols', function() {
+    describe('18. Nested collections with name shadowing', function() {
         const inner = Collection({
             x: t1("hello")
         });
@@ -191,7 +169,6 @@ describe(`${testSuiteName(module)}`, function() {
             inner: inner
         });
 
-        testHasTapes(outer, ["t1", "t2"]);
         testHasTapes(outer, ["t1"], "inner.x");
         testHasTapes(outer, ["t2"], "x");
 
@@ -205,7 +182,6 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults_X: StringDict[] = [
             {t2: 'goodbye'}
         ];
-        testGrammar(outer, expectedResults_Default);
         testGrammar(outer, expectedResults_InnerX, SILENT, "inner.x");
         testGrammar(outer, expectedResults_X, SILENT, "x");
     });
@@ -277,22 +253,6 @@ describe(`${testSuiteName(module)}`, function() {
              'embed in first refers to symbol in second', function() {
         const inner1 = Collection({
             x: Embed("inner2.x")
-        });
-        const inner2 = Collection({
-            x: t1("hello")
-        });
-        const outer = Collection({
-            inner1: inner1,
-            inner2: inner2
-        });
-        testGrammar(outer, [{t1: 'hello'}], SILENT, "inner1.x");
-        testGrammar(outer, [{t1: 'hello'}], SILENT, "inner2.x");
-    }); 
-
-    describe('24. Nested collections with two inners, and ' +
-             'embed in first refers to default symbol in second', function() {
-        const inner1 = Collection({
-            x: Embed("inner2")
         });
         const inner2 = Collection({
             x: t1("hello")

@@ -1,14 +1,14 @@
 import { testProject, ProjectTest, Error, Warning } from "../testSheetUtil";
 
-const defaults = { dir: "basic" }
+const DIR = "basic";
 
 function test(params: ProjectTest): () => void {
     return function() {
-        return testProject({ ...defaults, ...params });
+        return testProject({ dir: DIR, ...params });
     };
 }
 
-describe(`Sheets ${defaults.dir}`, function() {
+describe(`Sheets ${DIR}`, function() {
 
     describe('1a. Minimal grammar', test({
         file: "1a",

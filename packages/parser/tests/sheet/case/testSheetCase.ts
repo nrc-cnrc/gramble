@@ -1,14 +1,17 @@
-import { testProject, ProjectTest, Error, Warning } from "../testSheetUtil";
+import { 
+    testProject, ProjectTest, 
+    Error, Warning 
+} from "../testSheetUtil";
 
-const defaults = { dir: "case" }
+const DIR = "case";
 
 function test(params: ProjectTest): () => void {
     return function() {
-        return testProject({ ...defaults, ...params });
+        return testProject({ dir: DIR, ...params });
     };
 }
 
-describe(`Sheets ${defaults.dir}`, function() {
+describe(`Sheets ${DIR}`, function() {
 
     describe('Uppercase table ops', test({
         file: "1a",
@@ -38,7 +41,7 @@ describe(`Sheets ${defaults.dir}`, function() {
         ]
     }));
     
-    describe('"OPTIONAL X" header to test header case insensitivity', test({
+    describe('Uppercase optional header', test({
         file: "2b",
         results: [
             { text: "foobar", gloss: "run-1SG" },

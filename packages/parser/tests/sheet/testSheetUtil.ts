@@ -1,6 +1,9 @@
 import * as path from 'path';
+import * as fs from 'fs';
+
 import { SILENT, StringDict } from '../../src/util';
 import { sheetFromFile, testErrors, testGrammar } from '../testUtil';
+import { expect } from 'chai';
 
 const TEST_DIR = path.dirname(module.filename);
 
@@ -38,6 +41,13 @@ export function testProject({
 }: ProjectTest): void {
     const projectName = `${dir}${file}`;
     const filename = `${TEST_DIR}/${dir}/csvs/${projectName}.csv`;
+    const fileExists = fs.existsSync(filename);
+    if (!fileExists){
+        it(`file ${dir}/csvs/${projectName}.csv should exist`, function() {
+            expect(fileExists).to.be.true;
+        });
+        return;
+    }
     const project = sheetFromFile(filename, verbose);
     const qualifiedName = [ projectName, symbol ]
                             .filter(s => s !== undefined && s.length > 0)

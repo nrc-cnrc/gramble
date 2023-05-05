@@ -2,5 +2,5 @@ nouns=, table:, text
         ,       , moo
         ,       , foo
 
-default=, table:, embed, text
+word=, table:, embed, text
     ,       , {nouns}, bar

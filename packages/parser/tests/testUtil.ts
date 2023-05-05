@@ -308,6 +308,15 @@ export function testGrammar(
                         Interpreter.fromGrammar(grammar, verbose);
     let outputs: StringDict[] = [];
 
+    try {
+        interpreter.resolveName(symbolName);
+    } catch(e) {
+        it(`symbol "${symbolName} should exist`, function() {
+            assert.fail(e);
+        });
+        return;
+    }
+
     maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
     //maxChars = Math.min(maxChars, DEBUG_MAX_CHARS);
 
@@ -336,7 +345,16 @@ export function testHasTapes(
     const interpreter = (grammar instanceof Interpreter) ?
                         grammar :
                         Interpreter.fromGrammar(grammar);
-                        
+    
+    try {
+        interpreter.resolveName(symbolName);
+    } catch(e) {
+        it(`symbol "${symbolName} should have tapes`, function() {
+            assert.fail(e);
+        });
+        return;
+    }
+
     let referent = interpreter.getSymbol(symbolName);
     
     const bSet = new Set(expectedTapes);

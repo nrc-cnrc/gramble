@@ -1,200 +1,180 @@
-import { testGrammar, testErrors, sheetFromFile } from "../../testUtil";
-import * as path from 'path';
+import { 
+    testProject, ProjectTest, 
+    Error, Warning 
+} from "../testSheetUtil";
 
-const DIR = `${path.dirname(module.filename)}/csvs`;
+const DIR = "cell";
 
-describe(`${path.basename(module.filename)}`, function() {
+function test(params: ProjectTest): () => void {
+    return function() {
+        return testProject({ dir: DIR, ...params });
+    };
+}
 
-    describe('Content with space', function() {
-        const project = sheetFromFile(`${DIR}/contentWithSpace.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+describe(`Sheets ${DIR}`, function() {
+
+    describe('1a. Content with space', test({
+        file: "1a",
+        results: [
             { text: "moofoo", gloss: "run" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('Content with escaped space', function() {
-        const project = sheetFromFile(`${DIR}/contentWithEscapedSpace.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('1b. Content with escaped space', test({
+        file: "1b",
+        results: [
             { text: "moo foo", gloss: "run" }
-        ]);
-    });
+        ]
+    }));
 
-    describe('Content including alternation', function() {
-        const project = sheetFromFile(`${DIR}/contentAlternation.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('2a. Content including alternation', test({
+        file: "2a",
+        results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "run" },
-        ]);
-    });
+        ]
+    }));
     
-    describe('Content including alternation and spaces', function() {
-        const project = sheetFromFile(`${DIR}/contentAlternationSpace.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('2b. Content including escaped |', test({
+        file: "2b",
+        results: [
+            { text: "moo|foo", gloss: "run" },
+        ]
+    }));
+    
+    describe('3a. Content including alternation and spaces', test({
+        file: "3a",
+        results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "run" },
-        ]);
-    });
+        ]
+    }));
 
-    describe('Content including alternation and spaces 2', function() {
-        const project = sheetFromFile(`${DIR}/contentAlternationSpace2.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('3b. Content including alternation and spaces 2', test({
+        file: "3b",
+        results: [
             {text: "foogoo", gloss: "run"},
             {text: "moo", gloss: "run"}
-        ]);
-    });
+        ]
+    }));
 
-    
-    describe('Content including alternation and spaces 3', function() {
-        const project = sheetFromFile(`${DIR}/contentAlternationSpace3.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('3c. Content including alternation and spaces 3', test({
+        file: "3c",
+        results: [
             {text: "foo", gloss: "run"},
             {text: "goomoo", gloss: "run"}
-        ]);
-    });
+        ]
+    }));
 
-    describe('Content including alternation and spaces 4', function() {
-        const project = sheetFromFile(`${DIR}/contentAlternationSpace4.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('3d. Content including alternation and spaces 4', test({
+        file: "3d",
+        results: [
             { text: "foo", gloss: "run" },
             { text: "goo moo", gloss: "run" },
-        ]);
-    });
+        ]
+    }));
 
-    describe('Content including escaped |', function() {
-        const project = sheetFromFile(`${DIR}/escapedAlternation.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "moo|foo", gloss: "run" },
-        ]);
-    });
-
-    describe('Content including escaped backslash', function() {
-        const project = sheetFromFile(`${DIR}/escapedBackslash.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "\\foo", gloss: "run" },
-        ]);
-    });
-    
-    describe('Content including parens', function() {
-        const project = sheetFromFile(`${DIR}/parens.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "(foo)", gloss: "run" },
-        ]);
-    });
-
-    describe('Content including escaped parens', function() {
-        const project = sheetFromFile(`${DIR}/escapedParens.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
-            { text: "(foo)", gloss: "run" },
-        ]);
-    });
-
-    describe('Content including one backslash', function() {
-        const project = sheetFromFile(`${DIR}/backslash.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('Content including one backslash', test({
+        file: "4a",
+        results: [
             { text: "foo", gloss: "run" },
-        ]);
-    });
+        ]
+    }));
 
-    describe('Content including two backslashes', function() {
-        const project = sheetFromFile(`${DIR}/doubleBackslash.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('Content including two backslashes', test({
+        file: "4b",
+        results: [
             { text: "\\foo", gloss: "run" },
-        ]);
-    });
+        ]
+    }));
 
-    describe('Embed with alternation', function() {
-        const project = sheetFromFile(`${DIR}/embedAlt.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('Content including escaped backslash', test({
+        file: "4c",
+        results: [
+            { text: "\\foo", gloss: "run" },
+        ]
+    }));
+    
+    describe('Content including parens', test({
+        file: "5a",
+        results: [
+            { text: "(foo)", gloss: "run" },
+        ]
+    }));
+
+    describe('Content including escaped parens', test({
+        file: "5b",
+        results: [
+            { text: "(foo)", gloss: "run" },
+        ]
+    }));
+
+    describe('Embed with alternation', test({
+        file: "6a",
+        results: [
             {"text":"boobar"},
             {"text":"goobar"},
             {"text":"foobar"},
             {"text":"moobar"}
-        ]);
-    });
+        ]
+    }));
     
-    describe('Embed with curly braces', function() {
-        const project = sheetFromFile(`${DIR}/embedBraces.csv`);
-        testErrors(project, [
-            ["embedBraces", 5, 2, "warning"]
-        ]);
-        testGrammar(project, [
-            {"text":"foobar"},
-            {"text":"moobar"}
-        ]);
-    });
-    
-    describe('Embed with alt and curly braces', function() {
-        const project = sheetFromFile(`${DIR}/embedAltBraces.csv`);
-        testErrors(project, [
-            ["embedAltBraces", 9, 2, "warning"]
-        ]);
-        testGrammar(project, [
-            {"text":"boobar"},
-            {"text":"goobar"},
-            {"text":"foobar"},
-            {"text":"moobar"}
-        ]);
-    });
-    
-    describe('Embed with alt and curly braces 2', function() {
-        const project = sheetFromFile(`${DIR}/embedAltBraces2.csv`);
-        testErrors(project, [
-            ["embedAltBraces2", 9, 2, "warning"]
-        ]);
-        testGrammar(project, [
-            {"text":"boobar"},
-            {"text":"goobar"},
-            {"text":"foobar"},
-            {"text":"moobar"}
-        ]);
-    });
-    
-    describe('Embed with three-way alternation', function() {
-        const project = sheetFromFile(`${DIR}/embedThreeAlt.csv`);
-        testErrors(project, []);
-        testGrammar(project, [
+    describe('Embed with three-way alternation', test({
+        file: "6b",
+        results: [
             {"text":"boobar"},
             {"text":"goobar"},
             {"text":"foobar"},
             {"text":"moobar"},
             {"text":"noobar"},
             {"text":"soobar"}
-        ]);
-    });
-
-    describe('Embed with sequence', function() {
-        const project = sheetFromFile(`${DIR}/embedSeq.csv`);
-        testErrors(project, [
-            ["embedSeq", 9, 2, "error"]
-        ]);
-        testGrammar(project, [
-            {"text":"bar"},
-        ]);
-    }); 
-
-    describe('Embed with alternation and space', function() {
-        const project = sheetFromFile(`${DIR}/embedAltSpace.csv`);
-        testErrors(project, [
-            ["embedAltSpace", 13, 2, "error"]
-        ]);
-        testGrammar(project, [
-            {"text":"bar"}
-        ]);
-    });
+        ]
+    }));
     
+    describe('Embed with curly braces', test({
+        file: "7a",
+        results: [
+            {"text":"foobar"},
+            {"text":"moobar"}
+        ],
+        errors: [ Warning(5,2) ]
+    }));
+    
+    describe('Embed with alt and curly braces', test({
+        file: "7b",
+        results: [
+            {"text":"boobar"},
+            {"text":"goobar"},
+            {"text":"foobar"},
+            {"text":"moobar"}
+        ],
+        errors: [ Warning(9,2) ]
+    }));
+    
+    describe('Embed with alt and curly braces 2', test({
+        file: "7c",
+        results: [
+            {"text":"boobar"},
+            {"text":"goobar"},
+            {"text":"foobar"},
+            {"text":"moobar"}
+        ],
+        errors: [ Warning(9,2) ]
+    }));
 
+    describe('Embed with sequence', test({
+        file: "8a",
+        results: [
+            {"text":"bar"},
+        ],
+        errors: [ Error(9,2) ]
+    }));
+    
+    describe('Embed with alternation and space', test({
+        file: "8b",
+        results: [
+            {"text":"bar"},
+        ],
+        errors: [ Error(13,2) ]
+    }));
 });
