@@ -1,0 +1,16 @@
+
+uvulars=, text
+        , r 
+
+nonuvulars=, text
+           , s
+           , z
+
+root=, text, gloss
+     , foobar, run
+     , foobaz, jump
+     , foobas, climb
+
+word=, embed, ends text, text, gloss
+     , root, {uvulars}, q, [1SG]
+     , root, {nonuvulars}, k, [1SG]

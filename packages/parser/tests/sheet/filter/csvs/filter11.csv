@@ -1,0 +1,12 @@
+
+root=, table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+stem=, table:, embed, text, gloss/subj
+        ,      , root, bar, [1SG],
+        ,      , root, baz, [2SG],
+        ,      , root, ba, [3SG]
+
+word=, table:, embed, equals subj
+    ,       , stem, [(~3)SG]

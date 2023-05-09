@@ -17,7 +17,7 @@ Root=, text, gloss
      , orf, dance
      , urf, sing
 
-Default=, text, gloss, embed, starts text
+Word=, text, gloss, embed, starts text
      , am, [1SG], root, {HighVowel}
      , em, [1PL], root, {HighVowel}
      , im, [2SG], root, {HighVowel}

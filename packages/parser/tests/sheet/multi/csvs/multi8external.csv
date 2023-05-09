@@ -1,0 +1,6 @@
+suffix=, table:, text, gloss
+    ,       , bar, -1SG
+    ,       , baz, -2SG
+
+word=, table:, embed, embed
+    ,       , multi8.verb, suffix 

@@ -1,0 +1,8 @@
+
+verb=, table:, text, pos
+    ,       , foo, v
+    ,       , moo, n
+    ,       , goo, v
+
+word=, table:, embed, equals pos
+    ,       , verb, v~

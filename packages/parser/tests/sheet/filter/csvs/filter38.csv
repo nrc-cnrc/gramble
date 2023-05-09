@@ -1,0 +1,16 @@
+
+
+consonants=, text, labial
+          , f, T
+          , g, F
+
+labials=, embed, equals labial
+        , consonants, T
+
+root=, text, gloss
+     , foo, run
+     , moo, jump
+     , goo, climb
+
+word=, text, gloss, embed, starts text
+     , um, [1SG], root, {labials}

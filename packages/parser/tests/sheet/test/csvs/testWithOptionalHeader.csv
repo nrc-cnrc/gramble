@@ -1,5 +1,0 @@
-default=, table:, text, gloss, text
-    ,       , foo, run, bar
-    ,
-    , test:, text, optional gloss
-    ,     , foobar, run

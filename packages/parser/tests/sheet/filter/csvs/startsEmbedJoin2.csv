@@ -16,6 +16,6 @@ root=, text, gloss
      , moo, jump
      , goo, climb
 
-default=, text, gloss, embed, starts text
+word=, text, gloss, embed, starts text
      , um, [1SG], root, {labials}
      , un, [1SG], root, {nonlabials}

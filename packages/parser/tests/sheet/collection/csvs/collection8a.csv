@@ -1,0 +1,12 @@
+x=, collection:, verb=, text, gloss
+  ,            ,      , foo, run
+  ,            ,      , moo, jump
+
+  ,            , nclass1=, text, gloss
+  ,            ,         , zoo, earth
+  
+  ,            , all=, embed,
+  ,            ,     , verb
+
+word=, embed,
+        , x.all

@@ -306,6 +306,11 @@ export function testGrammar(
     const interpreter = (grammar instanceof Interpreter) ?
                         grammar :
                         Interpreter.fromGrammar(grammar, verbose);
+    
+    interpreter.runTests(); // in case there are any tests, 
+                        // we want to run them so their errors
+                        // accumulate
+                          
     let outputs: StringDict[] = [];
 
     try {

@@ -1,0 +1,17 @@
+
+vowels=, text
+        , a
+        , e
+        , i
+        , o
+        , u 
+
+
+root=, text, gloss
+     , fooba, run
+     , foobo, jump
+     , foobar, climb
+
+word=, embed, ends text, text, gloss
+     , root, {vowels}, r, [1SG]
+     , root, ~{vowels}, u, [1SG]

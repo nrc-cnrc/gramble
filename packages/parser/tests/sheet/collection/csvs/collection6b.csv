@@ -1,0 +1,12 @@
+x=, collection:, verb=, text, gloss
+  ,            ,      , foo, run
+  ,            ,      , moo, jump
+
+  ,            , noun=, collection:, nclass1=, text, gloss
+  ,            ,         ,            ,        , goo, water
+
+  ,            ,         ,             , nclass2=, text, gloss
+  ,            ,         ,            ,        , boo, fire
+
+word=, embed,
+        , x.all.all

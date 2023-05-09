@@ -27,5 +27,5 @@ Stem=, text, gloss, embed, starts text
      , om, [2PL], root, {HighVowel}   
      , um, [3SG], root, {HighVowel}
 
-Default=, embed, starts text
+Word=, embed, starts text
         , Stem, {LowVowel}

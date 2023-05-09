@@ -1,9 +1,0 @@
-VERB=, table:, text
-    ,        , aba
-    ,        ,
-    , replace text:, from, to
-    ,        , b, v
-    ,        , v, w
-
-default=, table:, embed
-    ,       , VERB

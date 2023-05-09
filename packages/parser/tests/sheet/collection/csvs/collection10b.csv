@@ -1,0 +1,13 @@
+x=, collection:, verb=, table:, text, gloss
+    ,       , , , foo, run
+    ,       , , , moo, jump
+
+    ,       , suffix=, table:, text, gloss
+    ,       , , , bar, -1SG
+    ,       , , ,baz, -2SG
+
+y=, collection:, stem=, table:, embed, embed
+   ,         ,      ,       , x.verb, x.suffix 
+
+word=, embed
+     , y.stem

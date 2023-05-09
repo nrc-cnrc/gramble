@@ -1,0 +1,16 @@
+
+verb=, table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+suffix=, table:, text, gloss/subj
+    ,       , bar, [1SG]
+    ,       , baz, [2SG]
+    ,       , bat,
+
+word=, table:, embed, embed
+    ,       , verb, suffix 
+    ,
+    , test:, text, gloss, subj
+    ,     , foobar, run[1SG], [1SG]
+    ,     , foobar, run[1SG]

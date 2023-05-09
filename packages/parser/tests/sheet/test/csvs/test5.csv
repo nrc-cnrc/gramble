@@ -1,0 +1,15 @@
+
+verb=, table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+suffix=, table:, text, gloss
+    ,       , bar, -1SG
+    ,       , baz, -2SG
+
+word=, table:, embed, embed
+    ,       , verb, suffix 
+    ,
+    , testnot:, text, gloss, pos
+    ,     , foobeer, run-1SG,
+    ,     , moobar, jump-1SG, V
