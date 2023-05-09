@@ -469,7 +469,7 @@ describe(`Sheets ${DIR}`, function() {
     
     describe('24a. Replace with a multi-tape symbol in regex in from', test({
         id: "24a",
-        errors: [ Error(10,2), Error(9,1) ],
+        errors: [ Error(10,2), Error(9,1), Warning(9,1) ],
         results: [
             {text: "abi"},
             {text: "abra"},

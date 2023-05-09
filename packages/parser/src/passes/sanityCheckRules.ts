@@ -8,10 +8,12 @@ import {
     RenameGrammar,
     ReplaceGrammar,
     SequenceGrammar,
-    Epsilon
+    Epsilon,
+    Rep,
+    EpsilonGrammar
 } from "../grammars";
 
-import { DUMMY_TAPE, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { DUMMY_TAPE } from "../util";
 import { Msgs, Warn, result } from "../msgs";
 import { PassEnv } from "../passes";
 
@@ -45,10 +47,26 @@ export class SanityCheckRules extends GrammarPass {
             switch (g.constructor) {
                 case ReplaceGrammar:
                     return this.handleReplace(g as ReplaceGrammar, env);
+                case JoinRuleGrammar:
+                    return this.handleJoinRule(g as JoinRuleGrammar, env);
                 default:
                     return g;
             }
         });
+    }
+
+    public handleJoinRule(g: JoinRuleGrammar, env: PassEnv): GrammarResult {
+        // clean up JoinRules for situations where a rule has
+        // ceased to exist in handleReplace, and/or when no rules
+        // are left
+
+        if (g.rules.length == 0) {
+            return result(g)
+                    .warn("This replace has no valid rules")
+                    .bind(g => g.child);
+        }
+
+        return g.msg();
     }
 
     public handleReplace(g: ReplaceGrammar, env: PassEnv): GrammarResult {
@@ -88,7 +106,7 @@ export class SanityCheckRules extends GrammarPass {
         const toLength = g.toGrammar.estimateLength(toTape, stack, env);
         if (toLength.null == false && toLength.max == Infinity) {
             // this shouldn't be syntactically possible to express in sheets, but if
-            // it does happen, it's bad news because it's infinite generaation.
+            // it does happen, it's bad news because it's infinite generation.
             return g.err("Infinite 'to'",
                     `This rule will generate infinitely.`)
                     .bind(_ => Epsilon());

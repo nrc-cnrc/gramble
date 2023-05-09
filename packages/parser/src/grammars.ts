@@ -2518,7 +2518,7 @@ export class JoinRuleGrammar extends Grammar {
     constructor(
         public inputTape: string,
         public child: Grammar,
-        public rules: (ReplaceGrammar|EpsilonGrammar)[]
+        public rules: ReplaceGrammar[]
     ) {
         super();
     }
@@ -2534,11 +2534,15 @@ export class JoinRuleGrammar extends Grammar {
     
     public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         const [child, childMsgs] = f.transform(this.child, env).destructure();
+        const isReplace = (r: Grammar): r is ReplaceGrammar => 
+                                r instanceof ReplaceGrammar;
+        // it's possible for rule transformation to result in a non
+        // rule (due to errors), so we filter those out
         const [rules, ruleMsgs] = resultList(this.rules)
                                     .map(c => f.transform(c, env))
+                                    .bind(cs => cs.filter(isReplace))
                                     .destructure();
-        return new JoinRuleGrammar(this.inputTape, child, 
-                                        rules as ReplaceGrammar[])
+        return new JoinRuleGrammar(this.inputTape, child, rules)
                             .msg(childMsgs)
                             .msg(ruleMsgs);
     }

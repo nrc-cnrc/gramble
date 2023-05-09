@@ -52,23 +52,10 @@ export class ConstructRuleJoins extends GrammarPass {
                             `${g.inputTape} to replace on`)
                         .bind(r => r.child);
         }
-
-        if (g.rules.length == 0) {
-            return g.child.msg();
-        }
-
-        const validRules = g.rules.filter(r => 
-                r instanceof ReplaceGrammar) as ReplaceGrammar[]; 
-                    // TS type checking needs a hint here
-        if (validRules.length == 0) {
-            return g.child.msg();
-        }
         
         let relevantTape = g.inputTape;
         let newG = g.child;
-
-        for (const rule of validRules) {
-
+        for (const rule of g.rules) {
             // first, rename the relevant tape of the child to ".input"
             newG = new RenameGrammar(newG, relevantTape, REPLACE_INPUT_TAPE);
             // now the relevant tape is "output"
