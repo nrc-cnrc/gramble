@@ -23,24 +23,24 @@ export function Warning(row: number, col: number) {
 }
 
 export interface ProjectTest {
-    id?: string,
-    filename?: string,
-    dir?: string,
-    results?: StringDict[],
-    errors?: ProjectError[],
-    verbose?: number,
-    symbol?: string
+    id: string,
+    filename: string,
+    dir: string,
+    results: StringDict[],
+    errors: ProjectError[],
+    verbose: number,
+    symbol: string
 }
 
 export function testProject({
     id,
     filename = undefined,
     dir,
-    results,
+    results = undefined,
     errors = [],
     verbose = SILENT,
     symbol = "word"
-}: ProjectTest): void {
+}: Partial<ProjectTest>): void {
     const projectName = filename || `${dir}${id}`;
     const path = `${dir}/csvs/${projectName}.csv`;
     const abspath = `${TEST_DIR}/${path}`;

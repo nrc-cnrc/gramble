@@ -5,7 +5,7 @@ import {
 
 const DIR = "test";
 
-function test(params: ProjectTest): () => void {
+function test(params: Partial<ProjectTest>): () => void {
     return function() {
         return testProject({ dir: DIR, ...params });
     };

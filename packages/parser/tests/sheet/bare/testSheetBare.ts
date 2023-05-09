@@ -2,7 +2,7 @@ import { testProject, ProjectTest, Error, Warning } from "../testSheetUtil";
 
 const DIR = "bare";
 
-function test(params: ProjectTest): () => void {
+function test(params: Partial<ProjectTest>): () => void {
     return function() {
         return testProject({ dir: DIR, ...params });
     };
