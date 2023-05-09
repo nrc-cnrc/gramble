@@ -1,12 +1,6 @@
-import {
-    testSuiteName, 
-    logTestSuite,
-    testRegexID
-} from "../testUtil";
+import { testRegexID } from "./testParseUtils";
 
-describe(`${testSuiteName(module)}`, function() {
-
-    logTestSuite(this.title);
+describe(`Parse regex`, function() {
 
     testRegexID("1a", "", "");
     testRegexID("1b", " ", "");

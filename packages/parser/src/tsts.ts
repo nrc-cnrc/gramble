@@ -11,6 +11,7 @@ import {
     DEFAULT_SATURATION,
     DEFAULT_VALUE,
     Header,
+    getParamName,
 } from "./headers";
 import { 
     Msgs, 
@@ -166,7 +167,7 @@ export class TstHeadedGrid extends TstGrid {
     
     public providesParam(param: string): boolean {
         return this.headers.some(h => 
-                    param == h.header.getParamName());
+                    param == getParamName(h.header));
     }
 
     public mapChildren(f: CPass, env: PassEnv): CResult {

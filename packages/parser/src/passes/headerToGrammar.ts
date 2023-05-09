@@ -15,7 +15,7 @@ import {
     EqualsHeader, ErrorHeader, 
     Header, OptionalHeader,
     SlashHeader, StartsHeader, 
-    ParamNameHeader, TapeNameHeader, UnaryHeader, FromHeader, ToHeader, RuleContextHeader 
+    UniqueHeader, TapeNameHeader, UnaryHeader, FromHeader, ToHeader, RuleContextHeader 
 } from "../headers";
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
 
@@ -47,8 +47,8 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
                 return this.handleTo(h as ToHeader, env);  
             case RuleContextHeader:
                 return this.handleRuleContext(h as RuleContextHeader, env);
-            case ParamNameHeader:
-                return this.handleParamName(h as ParamNameHeader, env);
+            case UniqueHeader:
+                return this.handleUnique(h as UniqueHeader, env);
             case OptionalHeader:
                 return this.handleOptional(h as OptionalHeader, env);
             case EqualsHeader:
@@ -73,7 +73,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
     }
 
     public handleTapeName(h: TapeNameHeader, env: PassEnv): GrammarResult {
-        const tapeName = h.text;
+        const tapeName = h.tapeName;
         return this.cellGrammar.msg()
                     .bind(g => new SingleTapeGrammar(tapeName, g))
     }
@@ -82,7 +82,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
         return new EpsilonGrammar().msg();
     }
 
-    public handleParamName(h: ParamNameHeader, env: PassEnv): GrammarResult {
+    public handleUnique(h: UniqueHeader, env: PassEnv): GrammarResult {
         return this.transform(h.child, env);
     }
 
@@ -114,9 +114,9 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
         if (!(h.child instanceof TapeNameHeader)) {
             // shouldn't happen, should already be taken care of, more for linting
             return new EpsilonGrammar().err("Invalid header",
-                `A header "${h.name} X" can only have a plain tape name as its X, like "${h.name} text".`);
+                'This header can only take a plain tape name (e.g. "text").');
         }
-        const tapeName = h.child.text;
+        const tapeName = h.child.tapeName;
         return this.cellGrammar.msg()
                     .bind(g => new SingleTapeGrammar(tapeName, g))
     }

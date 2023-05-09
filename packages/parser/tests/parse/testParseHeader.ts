@@ -1,13 +1,6 @@
-import {
-    testSuiteName, 
-    logTestSuite,
-    testHeaderID
-} from "../testUtil";
+import { testHeaderID } from "./testParseUtils";
 
-
-describe(`${testSuiteName(module)}`, function() {
-
-    logTestSuite(this.title);
+describe(`Parse header`, function() {
 
     testHeaderID("1", "text", "text");
     testHeaderID("2", "text ", "text");
@@ -39,8 +32,8 @@ describe(`${testSuiteName(module)}`, function() {
     testHeaderID("28", "post text", "ERR");
     testHeaderID("29", "from text", "ERR");
     testHeaderID("30", "to text", "ERR");
-    testHeaderID("31", "pre", "pre[$i]");
-    testHeaderID("32", "post", "post[$i]");
+    testHeaderID("31", "pre", "pre"); // this is just a header now, it's not reserved
+    testHeaderID("32", "post", "post"); // this is just a header now, it's not reserved
     testHeaderID("33", "from", "from");
     testHeaderID("34", "to", "to");
     testHeaderID("35", "context", "context");

@@ -100,7 +100,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                     "Rename (>) needs to have a tape name after it");
         }
         const fromTape = t.cell.text;
-        const toTape = t.header.header.text;
+        const toTape = t.header.header.tapeName;
         return this.transform(t.prev, env)
                     .bind(c => new RenameGrammar(c, fromTape, toTape))
                     .bind(c => new LocatorGrammar(t.cell.pos, c));

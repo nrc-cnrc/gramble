@@ -1,12 +1,6 @@
-import {
-    testSuiteName, 
-    logTestSuite,
-    testRuleContextID
-} from "../testUtil";
+import { testRuleContextID } from "./testParseUtils";
 
-describe(`${testSuiteName(module)}`, function() {
-
-    logTestSuite(this.title);
+describe(`Parse rule context`, function() {
 
     // simple contexts
     testRuleContextID("1a", "a_b", "CONTEXT[a,b]");

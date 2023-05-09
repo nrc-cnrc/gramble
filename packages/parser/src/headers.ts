@@ -5,8 +5,7 @@ import {
 } from "./miniParser";
 
 import { 
-    HSVtoRGB, RGBtoString,
-    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, CellPos
+    HSVtoRGB, RGBtoString, CellPos
 } from "./util";
 
 import {
@@ -46,13 +45,6 @@ export type ParseClass = "plaintext" | "regex" | "symbol" | "ruleContext" | "non
  * Headers are parsed using the "miniParser" engine, a simple parser/combinator engine.
  */
  export abstract class Header extends Component {
-    
-    public abstract get name(): string;
-    public abstract get id(): string;
-
-    public getParamName(): string {
-        return "__";
-    }
 
     public msg(m: Msg | Msgs | ResultVoid = []): Result<Header> {
         return result(this).msg(m);
@@ -69,34 +61,11 @@ export type ParseClass = "plaintext" | "regex" | "symbol" | "ruleContext" | "non
     }
 }
 
-/**
- * AtomicHeader is the ancestor class of all single-token headers, like "embed" and 
- * literals (e.g. "text").
- */
-abstract class AtomicHeader extends Header { 
-
-    public abstract get text(): string;
-
-    public get name(): string {
-        return this.text;
-    }
-
-    public get id(): string {
-        return this.text;
-    }
-
-}
-
-export class EmbedHeader extends AtomicHeader {
+export class EmbedHeader extends Header {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return new EmbedHeader().msg();
     }
-
-    public get text(): string {
-        return "embed";
-    }
-
 }
 
 /**
@@ -108,11 +77,7 @@ export class EmbedHeader extends AtomicHeader {
  * internally-relevant, and avoid unexpected behavior when joining two classes
  * that define same-named fields internally for different purposes.  
  */
-export class HideHeader extends AtomicHeader {
-
-    public get text(): string {
-        return "hide";
-    }
+export class HideHeader extends Header {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return new HideHeader().msg();
@@ -122,16 +87,16 @@ export class HideHeader extends AtomicHeader {
 /**
  * TapeNameHeaders are references to a particular tape name (e.g. "text")
  */
-export class TapeNameHeader extends AtomicHeader {
+export class TapeNameHeader extends Header {
 
     constructor(
-        public text: string
+        public tapeName: string
     ) {
         super();
     }
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
-        return new TapeNameHeader(this.text).msg();
+        return new TapeNameHeader(this.tapeName).msg();
     }
 
 }
@@ -141,14 +106,6 @@ export class TapeNameHeader extends AtomicHeader {
  * Empty() states.
  */
 export class CommentHeader extends Header { 
-
-    public get id(): string {
-        return "%";
-    }
-
-    public get name(): string {
-        return "%"
-    }
     
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return new CommentHeader().msg();
@@ -166,81 +123,40 @@ export abstract class UnaryHeader extends Header {
     ) { 
         super();
     }
-    
-    public get id(): string {
-        return `${this.name}[${this.child.id}]`
-    }
-
-    public getParamName(): string {
-        return this.child.getParamName();
-    }
 }
 
-export class FromHeader extends AtomicHeader {
-
-    public get text(): string {
-        return "from";
-    }
-
-    public getParamName(): string {
-        return this.text;
-    }
+export class FromHeader extends Header {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return this.msg();
     }
 }
 
-export class ToHeader extends AtomicHeader {
-
-    public get text(): string {
-        return "to";
-    }
-
-    public getParamName(): string {
-        return this.text;
-    }
+export class ToHeader extends Header {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return this.msg();
     }
 }
 
-export class RuleContextHeader extends AtomicHeader {
-
-    public get text(): string {
-        return "context";
-    }
-
-    public getParamName(): string {
-        return this.text;
-    }
+export class RuleContextHeader extends Header {
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return this.msg();
     }
 }
 
-export class ParamNameHeader extends UnaryHeader {
+export class UniqueHeader extends UnaryHeader {
 
     constructor(
-        public tag: string,
         child: Header
     ) {
         super(child);
     }
-    
-    public get name(): string {
-        return this.tag;
-    }
-
-    public getParamName(): string {
-        return this.tag;
-    }
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
-                .bind(c => new ParamNameHeader(this.tag, c as Header));
+                .bind(c => new UniqueHeader(c as Header));
     }
 }
 
@@ -248,10 +164,6 @@ export class ParamNameHeader extends UnaryHeader {
  * Header that constructs optional parsers, e.g. "optional text"
  */
 export class OptionalHeader extends UnaryHeader {
-
-    public get name(): string {
-        return "optional";
-    }
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
@@ -263,10 +175,6 @@ export class OptionalHeader extends UnaryHeader {
  * Header that constructs renames
  */
 export class RenameHeader extends UnaryHeader {
-
-    public get name(): string {
-        return "rename";
-    }
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
@@ -281,10 +189,6 @@ export class RenameHeader extends UnaryHeader {
  */
 export class EqualsHeader extends UnaryHeader {
     
-    public get name(): string {
-        return "equals";
-    }
-    
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
                 .bind(c => new EqualsHeader(c as Header));
@@ -297,10 +201,6 @@ export class EqualsHeader extends UnaryHeader {
  */
 export class StartsHeader extends UnaryHeader {
 
-    public get name(): string {
-        return "starts";
-    }
-    
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
                 .bind(c => new StartsHeader(c as Header));
@@ -312,10 +212,6 @@ export class StartsHeader extends UnaryHeader {
  * end with X (that is, Equals(N, .*X))
  */
 export class EndsHeader extends UnaryHeader {
-
-    public get name(): string {
-        return "ends";
-    }
     
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
@@ -328,10 +224,6 @@ export class EndsHeader extends UnaryHeader {
  * contain X (that is, Equals(N, .*X.*))
  */
 export class ContainsHeader extends UnaryHeader {
-    
-    public get name(): string {
-        return "contains";
-    }
     
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return f.transform(this.child, env)
@@ -347,14 +239,6 @@ export class SlashHeader extends Header {
     ) { 
         super();
     }
-    
-    public get name(): string {
-        return "slash";
-    }
-
-    public get id(): string {
-        return `${this.name}[${this.child1.id},${this.child2.id}]`;
-    }
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.child1, this.child2])
@@ -369,14 +253,6 @@ export class ErrorHeader extends Header {
         public text: string
     ) {
         super();
-    }
-
-    public get name(): string {
-        return "error";
-    }
-
-    public get id(): string {
-        return "ERR";
     }
     
     public mapChildren(f: CPass, env: PassEnv): CResult {
@@ -396,7 +272,6 @@ const HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlt(
         HP_OPTIONAL, HP_SLASH,
         HP_FROM, HP_TO, 
-        HP_PRE, HP_POST,  
         HP_RULE_CONTEXT,
         HP_UNIQUE,
         HP_RENAME, HP_EQUALS, HP_STARTS, 
@@ -451,18 +326,6 @@ const HP_TO = MPSequence<Header>(
     () => new ToHeader().msg()
 );
 
-const HP_PRE = MPSequence<Header>(
-    ["pre"],
-    () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                    .bind(c => new ParamNameHeader("pre", c))
-);
-
-const HP_POST = MPSequence<Header>(
-    ["post"],
-    () => new TapeNameHeader(REPLACE_INPUT_TAPE).msg()
-                 .bind(c => new ParamNameHeader("post", c))
-);
-
 const HP_RULE_CONTEXT = MPSequence<Header>(
     ["context"],
     () => new RuleContextHeader().msg()
@@ -470,7 +333,7 @@ const HP_RULE_CONTEXT = MPSequence<Header>(
 
 const HP_UNIQUE = MPSequence<Header>(
     ["unique", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => new ParamNameHeader("unique", c))
+    (child) => child.bind(c => new UniqueHeader(c))
 );
 
 const HP_SLASH = MPSequence<Header>(
@@ -497,8 +360,8 @@ const HP_EQUALS = MPSequence<Header>(
     (child) => child.bind(c => {
         if (!(c instanceof TapeNameHeader)) {
             return new ErrorHeader("Invalid header")
-                .err(`Invalid ${c.name} in header`, 
-                    `You can't have a ${c.name} inside a from header.`);
+                .err(`Equals requires tape name`, 
+                    `Equals can only apply to tape names (e.g. "equals text")`);
         }
         return new EqualsHeader(c).msg();
     })
@@ -509,8 +372,8 @@ const HP_STARTS = MPSequence<Header>(
     (child) => child.bind(c => {
         if (!(c instanceof TapeNameHeader)) {
             return new ErrorHeader("Invalid header")
-                .err(`Invalid ${c.name} in header`, 
-                    `You can't have a ${c.name} inside a "starts" header.`);
+                .err(`Equals requires tape name`, 
+                    `Equals can only apply to tape names (e.g. "equals text")`);
         }
         return new StartsHeader(c).msg();
     })
@@ -521,8 +384,8 @@ const HP_ENDS = MPSequence<Header>(
     (child) => child.bind(c => {
         if (!(c instanceof TapeNameHeader)) {
             return new ErrorHeader("Invalid header")
-                .err(`Invalid ${c.name} in header`, 
-                    `You can't have a ${c.name} inside a "ends" header.`);
+                 .err(`Equals requires tape name`, 
+                    `Equals can only apply to tape names (e.g. "equals text")`);
         }
         return new EndsHeader(c).msg();
     })
@@ -533,8 +396,8 @@ const HP_CONTAINS = MPSequence<Header>(
     (child) => child.bind(c => {
         if (!(c instanceof TapeNameHeader)) {
             return new ErrorHeader("Invalid header")
-                .err(`Invalid ${c.name} in header`, 
-                    `You can't have a ${c.name} inside a "contains" header.`);
+              .err(`Equals requires tape name`, 
+                    `Equals can only apply to tape names (e.g. "equals text")`);
         }
         return new ContainsHeader(c).msg();
     })
@@ -578,15 +441,7 @@ export function getParseClass(h: Header): ParseClass {
         case FromHeader: return "regex";
         case ToHeader: return "plaintext";
         case RuleContextHeader: return "ruleContext";
-        case ParamNameHeader:
-            const paramName = (h as ParamNameHeader).name;
-            switch (paramName) {
-                case "unique": return "plaintext";
-                case "pre": return "regex";
-                case "post": return "regex";
-                default:
-                    throw new Error(`unhandled header: ${h.constructor.name}`);
-            }
+        case UniqueHeader: return "plaintext";
         default:
             throw new Error(`unhandled header: ${h.constructor.name}`);
     }
@@ -640,7 +495,7 @@ export function getBackgroundColor(
         case ToHeader: return colorFromText("to", s, v);
         case RuleContextHeader: return colorFromText("context", s, v);
         // tapes get their colors from the tape name
-        case TapeNameHeader: return colorFromText((h as TapeNameHeader).name, s, v);
+        case TapeNameHeader: return colorFromText((h as TapeNameHeader).tapeName, s, v);
         // unary headers get their colors from their child
         case OptionalHeader: return getBackgroundColor((h as OptionalHeader).child, s, v);
         case EqualsHeader: return getBackgroundColor((h as EqualsHeader).child, s, v);
@@ -651,15 +506,61 @@ export function getBackgroundColor(
         // slashes get their colors from their first child only
         case SlashHeader: return getBackgroundColor((h as SlashHeader).child1, s, v);
         // param names it depends on the param
-        case ParamNameHeader:
-            const paramName = (h as ParamNameHeader).name;
-            switch (paramName) {
-                case "unique": return getBackgroundColor((h as ParamNameHeader).child, s, v);
-                case "pre": return colorFromText("pre", s, v);
-                case "post": return colorFromText("post", s, v);
-                default:
-                    throw new Error(`unhandled header: ${h.constructor.name}`);
-            }
+        case UniqueHeader: return getBackgroundColor((h as UniqueHeader).child, s, v);
+        default:
+            throw new Error(`unhandled header: ${h.constructor.name}`);
+    }
+}
+
+export function getHeaderID(h: Header): string {
+    switch (h.constructor) {
+        case EmbedHeader: return "embed";
+        case TapeNameHeader: return (h as TapeNameHeader).tapeName;
+        case CommentHeader: return "%";
+        case OptionalHeader: 
+            return "optional[" + getHeaderID((h as OptionalHeader).child) + "]";
+        case EqualsHeader: 
+            return "equals[" + getHeaderID((h as EqualsHeader).child) + "]";
+        case StartsHeader: 
+            return "starts[" + getHeaderID((h as StartsHeader).child) + "]";
+        case EndsHeader: 
+            return "ends[" + getHeaderID((h as StartsHeader).child) + "]";
+        case ContainsHeader: 
+            return "contains[" + getHeaderID((h as ContainsHeader).child) + "]";
+        case SlashHeader:
+            const s = h as SlashHeader;
+            return `slash[${getHeaderID(s.child1)},${getHeaderID(s.child2)}]`;
+        case HideHeader: return "hide";
+        case RenameHeader: 
+            return "contains[" + getHeaderID((h as RenameHeader).child) + "]";
+        case ErrorHeader: return "ERR";
+        case FromHeader: return "from";
+        case ToHeader: return "to";
+        case RuleContextHeader: return "context";
+        case UniqueHeader: return "unique";
+        default:
+            throw new Error(`unhandled header: ${h.constructor.name}`);
+    }
+}
+
+export function getParamName(h: Header): string {
+    switch (h.constructor) {
+        case EmbedHeader: return "__";
+        case TapeNameHeader: return "__";
+        case CommentHeader: return "__";
+        case OptionalHeader: return getParamName((h as OptionalHeader).child);
+        case EqualsHeader: return "__";
+        case StartsHeader: return "__";
+        case EndsHeader: return "__";
+        case ContainsHeader: return "__";
+        case SlashHeader: return "__";
+        case HideHeader: return "__";
+        case RenameHeader: return "__";
+        case ErrorHeader: return "__";
+        case FromHeader: return "from";
+        case ToHeader: return "to";
+        case RuleContextHeader: return "context";
+        case UniqueHeader: return "unique";
         default:
             throw new Error(`unhandled header: ${h.constructor.name}`);
     }

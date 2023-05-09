@@ -1,12 +1,6 @@
-import {
-    testSuiteName, 
-    logTestSuite,
-    testSymbolID
-} from "../testUtil";
+import { testSymbolID } from "./testParseUtils";
 
-describe(`${testSuiteName(module)}`, function() {
-
-    logTestSuite(this.title);
+describe(`Parse symbol`, function() {
 
     //basics
     testSymbolID("1a", "verb", "verb");

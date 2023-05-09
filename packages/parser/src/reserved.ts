@@ -11,8 +11,6 @@ export const REQUIRED_REPLACE_PARAMS = new Set([
 ]);
 
 export const REPLACE_PARAMS = new Set([
-    "pre",
-    "post",
     "context",
     ...REQUIRED_REPLACE_PARAMS
 ]);

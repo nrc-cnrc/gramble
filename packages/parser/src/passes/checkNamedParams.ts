@@ -4,7 +4,7 @@ import {
 } from "../tsts";
 import { PassEnv } from "../passes";
 import { Err, Msgs, Result, result, Warn } from "../msgs";
-import { ParamNameHeader } from "../headers";
+import { UniqueHeader, getParamName } from "../headers";
 import { BLANK_PARAM } from "../ops";
 import { Component, CPass, CResult } from "../components";
 
@@ -117,7 +117,7 @@ export class CheckNamedParams extends CPass {
     public handleHeader(t: TstHeader, env: PassEnv): CResult {
         const mapped = t.mapChildren(this, env) as Result<TstHeader>;
         return mapped.bind(h => {
-            const tag = h.header.getParamName();
+            const tag = getParamName(h.header);
             if (this.permissibleParams.has(tag)) {
                 return h; // we're good
             }
@@ -126,7 +126,7 @@ export class CheckNamedParams extends CPass {
                               "an unnamed parameter" :
                               `a parameter named ${tag}`;
 
-            if (h.header instanceof ParamNameHeader && this.permissibleParams.has("__")) {
+            if (h.header instanceof UniqueHeader && this.permissibleParams.has("__")) {
                 // if we can easily remove the tag, try that
                 const newHeader = new TstHeader(h.cell, h.header.child);
                 return result(h).err("Invalid parameter",

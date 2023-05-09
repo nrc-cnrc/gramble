@@ -1,12 +1,6 @@
-import {
-    testSuiteName, 
-    logTestSuite,
-    testTokenize,
-} from '../testUtil';
+import { testTokenize } from "./testParseUtils";
 
-describe(`${testSuiteName(module)}`, function() {
-
-    logTestSuite(this.title);
+describe(`Parse tokenize`, function() {
 
     describe('1. Empty string', function() {
         testTokenize("", []);

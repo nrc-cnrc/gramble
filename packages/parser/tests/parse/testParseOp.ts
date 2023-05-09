@@ -1,13 +1,6 @@
-import {
-    testSuiteName, 
-    logTestSuite,
-    testOpID,
-} from "../testUtil";
+import { testOpID } from "./testParseUtils";
 
-
-describe(`${testSuiteName(module)}`, function() {
-
-    logTestSuite(this.title);
+describe(`Parse op`, function() {
 
     testOpID("1a", "verb=", "verb");
     testOpID("1b", "verb =", "verb");

@@ -9,7 +9,7 @@ import {
 import { Component, CPass, CResult } from "../components";
 import { PassEnv } from "../passes";
 import { ContentMsg, Msgs, Warn } from "../msgs";
-import { getBackgroundColor, getFontColor } from "../headers";
+import { getBackgroundColor, getFontColor, getParamName } from "../headers";
 
 /**
  * Before this, headers and their associated content cells aren't
@@ -51,22 +51,22 @@ export class AssociateHeaders extends CPass {
                         getFontColor(header.header)
                     ).localize(content.pos).msgTo(msgs);
 
-                    const tag = header.header.getParamName();
+                    const paramName = getParamName(header.header);
 
-                    if (tag != "__" && tag != "unique") {
-                        if (tag in newRow.params) {
+                    if (paramName != "__" && paramName != "unique") {
+                        if (paramName in newRow.params) {
                             Warn("Named parameters can only occur once; " +
                                 "this cell will be ignored.",
                                 content.pos).msgTo(msgs);
                         }
-                        newRow.params[tag] = newCell;
+                        newRow.params[paramName] = newCell;
                         continue;
                     }
 
-                    if (!(tag in newRow.params)) {
-                        newRow.params[tag] = new TstSequence(row.cell);
+                    if (!(paramName in newRow.params)) {
+                        newRow.params[paramName] = new TstSequence(row.cell);
                     }
-                    const paramSeq = newRow.params[tag] as TstSequence;
+                    const paramSeq = newRow.params[paramName] as TstSequence;
                     paramSeq.children.push(newCell);
                 }
                 newRows.push(newRow);

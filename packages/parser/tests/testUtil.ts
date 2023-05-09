@@ -3,17 +3,12 @@ import { assert, expect } from "chai";
 import { Grammar, Lit } from "../src/grammars";
 import { Interpreter } from "../src/interpreter";
 import {
-    HIDDEN_TAPE_PREFIX, StringDict, tokenizeUnicode,
+    HIDDEN_TAPE_PREFIX, StringDict,
     SILENT, VERBOSE_DEBUG, logDebug
 } from "../src/util";
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
-import { cellID, parseCell } from "../src/cell";
-import { ParseClass, parseHeaderCell } from "../src/headers";
-import { parseOp } from "../src/ops";
-import { CombineLiterals } from "../src/passes/combineLiterals";
-import { PassEnv } from "../src/passes";
 
 export const DEFAULT_MAX_RECURSION = 4;
 
@@ -58,113 +53,10 @@ export const t3 = (s: string) => Lit("t3", s);
 export const t4 = (s: string) => Lit("t4", s);
 export const t5 = (s: string) => Lit("t5", s);
 
-export function testTokenize(s: string, expectedResult: string[]): void {
-    s = s.normalize('NFD');
-    const result = tokenizeUnicode(s);
-    expectedResult = expectedResult.map(s => s.normalize('NFD'));
-    it(`${s} should tokenize to [${expectedResult.join(" ")}]`, function() {
-        expect(result).to.deep.equal(expectedResult);
-    });
-}
-
 export function testIsType(obj: any, type: any,  objName: string = ""): void {
     const msg = (objName != "") ? `have ${objName} ` : "be"; 
     it(`should ${msg} of type ${type.name}`, function() {
         expect(obj instanceof type).to.be.true;
-    });
-}
-
-export function testHeaderID(
-    testPrefix: string,
-    text: string,
-    expectedID: string
-): void {
-    const result = parseHeaderCell(text).msgTo([]);
-    if (testPrefix != "") {
-        testPrefix += ' ';
-    }
-    it(`${testPrefix}"${text}" should parse as "${expectedID}"`, function() {
-        expect(result.id).to.equal(expectedID);
-    });
-}
-
-export function testPlaintextID(
-    testPrefix: string,
-    text: string, 
-    expectedID: string,
-    numErrorsExpected: number = 0
-): void {
-    testCellID("plaintext", testPrefix, text, expectedID, numErrorsExpected);
-}
-
-export function testSymbolID(
-    testPrefix: string,
-    text: string, 
-    expectedID: string,
-    numErrorsExpected: number = 0
-): void {
-    testCellID("symbol", testPrefix, text, expectedID, numErrorsExpected);
-}
-
-export function testRegexID(
-    testPrefix: string,
-    text: string, 
-    expectedID: string,
-    numErrorsExpected: number = 0
-): void {
-    testCellID("regex", testPrefix, text, expectedID, numErrorsExpected);
-}
-
-export function testRuleContextID(
-    testPrefix: string,
-    text: string, 
-    expectedID: string,
-    numErrorsExpected: number = 0
-): void {
-    testCellID("ruleContext", testPrefix, text, expectedID, numErrorsExpected);
-}
-
-function testCellID(
-    parseClass: ParseClass,
-    testPrefix: string,
-    text: string,
-    expectedID: string,
-    numErrorsExpected: number = 0
-): void {
-
-    const parseResult = parseCell(parseClass, text);
-    const env = new PassEnv();
-    const [result, msgs] = new CombineLiterals()
-                                .go(parseResult, env)
-                                .destructure();
-    if (testPrefix != "") {
-        testPrefix += '. ';
-    }
-    describe(`${testPrefix}"${text}"`, function() {
-        it(`should parse as "${expectedID}"`, function() {
-            expect(cellID(result)).to.equal(expectedID);
-        });
-        it(`should have ${numErrorsExpected} errors`, function() {
-            if (msgs.length != numErrorsExpected) {
-                console.log(msgs.map(m => m.longMsg));
-            }
-            expect(msgs.length).to.equal(numErrorsExpected);
-            
-        });
-    });
-}
-
-export function testOpID(
-    testPrefix: string,
-    text: string,
-    expectedID: string
-): void {
-    const result = parseOp(text).msgTo([]);
-    if (testPrefix != "") {
-        testPrefix += ' ';
-    }
-    it(`${testPrefix}"${text}" should parse as "${expectedID}"`, function() {
-        expect(result.id).to.equal(expectedID);
     });
 }
 

@@ -1,12 +1,6 @@
-import {
-    testSuiteName, 
-    logTestSuite,
-    testPlaintextID
-} from "../testUtil";
+import { testPlaintextID } from "./testParseUtils";
 
-describe(`${testSuiteName(module)}`, function() {
-
-    logTestSuite(this.title);
+describe(`Parse plaintext`, function() {
 
     testPlaintextID("1a", "", "");
     testPlaintextID("1b", " ", "");
