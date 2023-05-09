@@ -2518,7 +2518,7 @@ export class JoinRuleGrammar extends Grammar {
     constructor(
         public inputTape: string,
         public child: Grammar,
-        public rules: ReplaceGrammar[]
+        public rules: (ReplaceGrammar|EpsilonGrammar)[]
     ) {
         super();
     }

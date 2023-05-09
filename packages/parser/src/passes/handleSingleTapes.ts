@@ -63,7 +63,7 @@ export class HandleSingleTapes extends GrammarPass {
         if (g.tapes.length != 1) {
             return g.err("Embedding multi-field symbol",
                 `Only grammars with one field (e.g. just "text" but not any other fields) ` +
-                `can be embedded into a regex.`)
+                `can be embedded into a regex or rule context.`)
                 .bind(_ => new EpsilonGrammar());
         }
 

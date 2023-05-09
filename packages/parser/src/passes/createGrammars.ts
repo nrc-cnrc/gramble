@@ -170,16 +170,12 @@ export class CreateGrammars extends Pass<Component,Grammar> {
         for (const params of t.child.rows) {
             const fromArg = this.transform(params.getParam("from"), env).msgTo(newMsgs);
             const toArg = this.transform(params.getParam("to"), env).msgTo(newMsgs);
-            let preArg = this.transform(params.getParam("pre"), env).msgTo(newMsgs);
-            let postArg = this.transform(params.getParam("post"), env).msgTo(newMsgs);
+            let preArg = new EpsilonGrammar();
+            let postArg = new EpsilonGrammar();
             let contextArg = this.transform(params.getParam("context"), env).msgTo(newMsgs);
             let begins = false;
             let ends = false;
 
-            if (contextArg instanceof LocatorGrammar) {
-                // unwrap it
-                contextArg = contextArg.child;
-            }
             
             if (contextArg instanceof RuleContextGrammar) {
                 begins = contextArg.begins;
@@ -188,6 +184,16 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                 postArg = contextArg.postContext;
             }
             
+            if (contextArg instanceof LocatorGrammar && 
+                    contextArg.child instanceof RuleContextGrammar) {
+                begins = contextArg.child.begins;
+                ends = contextArg.child.ends;
+                preArg = new LocatorGrammar(contextArg.pos,
+                                contextArg.child.preContext);
+                postArg = new LocatorGrammar(contextArg.pos,
+                                contextArg.child.postContext); 
+            }
+
             const replaceRule = new ReplaceGrammar(fromArg, toArg,
                                                    preArg, postArg, new EpsilonGrammar(),
                                                    begins, ends, 0, Infinity, 
