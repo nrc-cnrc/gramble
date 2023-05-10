@@ -399,14 +399,42 @@ describe(`Sheets ${DIR}`, function() {
 
     describe('21a. Rule with an empty from', test({
         id: "21a",
-        errors: [ Error(3,1) ],
-        results: []
+        errors: [ Error(3,1), Warning(3,1) ],
+        results: [{text: "aba"}]
     }));
 
     describe('21b. Rule with an empty from, with pre and post', test({
         id: "21b",
         results: [
             {text: "abca"},
+        ]
+    }));
+
+    describe('21c. Rule with an empty from, with pre', test({
+        id: "21c",
+        results: [
+            {text: "abca"},
+        ]
+    }));
+
+    describe('21d. Rule with an empty from, with post', test({
+        id: "21d",
+        results: [
+            {text: "cabca"}
+        ]
+    }));
+    
+    describe('21e. Rule with an empty from, begins', test({
+        id: "21e",
+        results: [
+            {text: "caba"}
+        ]
+    }));
+    
+    describe('21f. Rule with an empty from, ends', test({
+        id: "21f",
+        results: [
+            {text: "abac"}
         ]
     }));
 

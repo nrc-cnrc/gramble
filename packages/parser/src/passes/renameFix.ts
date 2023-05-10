@@ -1,15 +1,12 @@
 import { DUMMY_TAPE, HIDDEN_TAPE_PREFIX } from "../util";
 import { 
     CounterStack, 
-    Grammar, 
-    GrammarPass, 
-    GrammarResult,
+    Grammar,
     HideGrammar, 
     RenameGrammar, 
-    EpsilonGrammar
 } from "../grammars";
-import { result } from "../msgs";
 import { PassEnv } from "../passes";
+import { PostGrammarPass, GrammarError } from "./ancestorPasses";
 
 /**
  * This pass finds erroneous renames/hides and fixes them.
@@ -25,61 +22,59 @@ import { PassEnv } from "../passes";
  * is well-formed again and does not lead to exceptions to otherwise invariant 
  * properties of the algorithm.
  */
-export class RenameFix extends GrammarPass {
+export class RenameFix extends PostGrammarPass {
 
     public get desc(): string {
         return "Validating tape-rename structure";
     }
 
-    public transform(g: Grammar, env: PassEnv): GrammarResult {
-        const result = g.mapChildren(this, env);
-        return result.bind(g => {
-            switch (g.constructor) {
-                case HideGrammar:
-                    return this.handleHide(g as HideGrammar, env);
-                case RenameGrammar:
-                    return this.handleRename(g as RenameGrammar, env);
-                default:
-                    return g;
-            }
-        });
-    }
-
-    public handleHide(g: HideGrammar, env: PassEnv): GrammarResult {
-        g.calculateTapes(new CounterStack(2), env);
-        if (g.child.tapes.indexOf(g.tapeName) == -1) {  
-            return result(g).err("Hiding missing tape",
-                            `The grammar being hidden does not contain the tape ${g.tapeName}. ` +
-                            ` Available tapes: [${[...g.child.tapes]}]`)
-                         .bind(c => c.child);
+    public postTransform(g: Grammar, env: PassEnv): Grammar {
+        switch (g.constructor) {
+            case HideGrammar:
+                return this.handleHide(g as HideGrammar, env);
+            case RenameGrammar:
+                return this.handleRename(g as RenameGrammar, env);
+            default:
+                return g;
         }
-        return g.msg();
     }
 
-    public handleRename(g: RenameGrammar, env: PassEnv): GrammarResult {
+    public handleHide(g: HideGrammar, env: PassEnv): Grammar {
+        g.calculateTapes(new CounterStack(2), env);
+        if (g.child.tapes.indexOf(g.tapeName) == -1) { 
+            throw GrammarError("Hiding missing tape -- " + 
+                            `The grammar being hidden does not contain the tape ${g.tapeName}. ` +
+                            ` Available tapes: [${[...g.child.tapes]}]`,
+                            g.child);
+        }
+        return g;
+    }
+
+    public handleRename(g: RenameGrammar, env: PassEnv): Grammar {
         g.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.fromTape) == -1) { 
 
             if (g.child.tapes.length == 1 && g.child.tapes[0] == DUMMY_TAPE) {
-                return result(g.child);
+                return g.child;
             }
 
-            return result(g).err("Renaming missing tape",
+            throw GrammarError("Renaming missing tape -- " +
                             `The ${g.child.constructor.name} to undergo renaming does not contain the tape ${g.fromTape}. ` +
-                            `Available tapes: [${[...g.child.tapes]}]`)
-                         .bind(c => c.child);
+                            `Available tapes: [${[...g.child.tapes]}]`,
+                            g.child);
         }
 
         if (g.fromTape != g.toTape && g.child.tapes.indexOf(g.toTape) != -1) {
             const errTapeName = `${HIDDEN_TAPE_PREFIX}ERR${g.toTape}`;
-            return result(g).err("Destination tape already exists",
+            let repair = new RenameGrammar(g.child, g.toTape, errTapeName);
+            repair = new RenameGrammar(repair, g.fromTape, g.toTape)
+            throw GrammarError("Destination tape already exists -- " +
                             `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
-                            `to the left already contains the tape ${g.toTape}. `)
-                        .bind(c => new RenameGrammar(c.child, g.toTape, errTapeName))
-                        .bind(c => new RenameGrammar(c, g.fromTape, g.toTape));
+                            `to the left already contains the tape ${g.toTape}. `,
+                            repair)
         }
 
-        return g.msg();
+        return g;
     }
 
 

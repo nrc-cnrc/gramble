@@ -1,5 +1,7 @@
-import { Grammar } from "./grammars";
-import { Msgs, Result } from "./msgs";
+import { Component } from "./components";
+import { EpsilonGrammar, Grammar } from "./grammars";
+import { Err, Msg, Msgs, Result, Warn, result } from "./msgs";
+import { TstEmpty } from "./tsts";
 import { 
     Dict, Namespace, 
     SILENT, timeIt, 
@@ -79,6 +81,59 @@ export class ComposedPass<T1,T2,T3> extends Pass<T1,T3> {
 
     public transform(t: T1, env: PassEnv): Result<T3> {
         throw new Error("calling transform on a composed pass");
+    }
+
+}
+
+export function stringToMsg(msg: string): Msg {
+
+    const pieces = msg.split("--");
+    if (pieces.length == 1) {
+        const shortMsg = msg.slice(0, 20).trim() + "...";
+        const longMsg = msg;
+        return Err(shortMsg, longMsg);
+    }
+
+    const shortMsg = pieces[0].trim();
+    const longMsg = pieces.slice(1).join("--").trim();
+    
+    if (shortMsg.toLowerCase() == "warning") {
+        return Warn(longMsg);
+    }
+
+    return Err(shortMsg, longMsg);
+}
+
+export class PassError<T> {
+
+    constructor(
+        public repair: T,
+        public msgs: Msg | Msgs
+    ) { }
+}
+
+export abstract class PostPass<T extends Component> extends Pass<T,T> {
+
+    public transform(g: T, env: PassEnv): Result<T> {
+        const newG = g.mapChildren(this, env) as Result<T>;
+        return newG.bind(g => {
+            try {
+                return result(this.postTransform(g, env));
+            } catch (e) {
+                if (typeof e === "string") {
+                    const m = stringToMsg(e).localize(g.pos);
+                    return this.getDefaultRepair().msg(m);
+                }
+                if (!(e instanceof PassError)) throw e;
+                return e.repair.msg(e.msgs).localize(g.pos);
+            }
+        });
+    }
+
+    public abstract getDefaultRepair(): T;
+
+    public postTransform(g: T, env: PassEnv): T {
+        return g;
     }
 
 }

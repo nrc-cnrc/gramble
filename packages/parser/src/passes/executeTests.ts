@@ -77,11 +77,10 @@ export class ExecuteTests extends GrammarPass {
         if (results.length > 0) {
             return result(g).err("Failed unit test",
                 "The grammar above incorrectly has outputs compatible with these inputs.");
-        } else {
-            return result(g).msg(Success(
-                "The grammar above correctly has no outputs compatible with these inputs."));
-        }
-        return g.msg();
+        } 
+
+        return result(g).msg(Success(
+            "The grammar above correctly has no outputs compatible with these inputs."));
     }
     
     public executeTest(test: TestGrammar, env: PassEnv): StringDict[] {

@@ -6,8 +6,6 @@ import {
     GrammarResult, HideGrammar,
     JoinGrammar, JoinRuleGrammar, 
     RenameGrammar,
-    EpsilonGrammar,
-    ReplaceGrammar
 } from "../grammars";
 
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";

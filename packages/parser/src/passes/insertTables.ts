@@ -1,7 +1,6 @@
 import { 
     TableOp, 
 } from "../ops";
-import { resultList } from "../msgs";
 import { PassEnv } from "../passes";
 import { 
     TstOp, 
@@ -9,7 +8,8 @@ import {
     TstGrid,
     TstCollection
 } from "../tsts";
-import { Component, CPass, CResult } from "../components";
+import { Component } from "../components";
+import { PostComponentPass } from "./ancestorPasses";
 
 /**
  * This pass goes through and make sure that TstOps have 
@@ -20,32 +20,31 @@ import { Component, CPass, CResult } from "../components";
  * assignments, etc.)
  */
 
-export class InsertTables extends CPass {
+export class InsertTables extends PostComponentPass {
 
     public get desc(): string {
         return "Inserting tables";
     }
 
-    public transform(t: Component, env: PassEnv): CResult {
-        return t.mapChildren(this, env).bind(t => {
-            switch (t.constructor) {
-                case TstOp: 
-                    return this.handleOp(t as TstOp);
-                case TstCollection: 
-                    return this.handleCollection(t as TstCollection);
-                default: return t;
-            }
-        });
+    public postTransform(t: Component, env: PassEnv): Component {
+        switch (t.constructor) {
+            case TstOp: 
+                return this.handleOp(t as TstOp);
+            case TstCollection: 
+                return this.handleCollection(t as TstCollection);
+            default: return t;
+        }
     }
 
-    public handleCollection(t: TstCollection): CResult {
-        return resultList(t.children).map(c => {
+    public handleCollection(t: TstCollection): Component {
+        const newChildren = t.children.map(c => {
             if (c instanceof TstGrid) {
                 return new TstOp(c.cell, new TableOp(), 
                                 new TstEmpty(), c);
             }
             return c;
-        }).bind(cs => new TstCollection(t.cell, cs));
+        })
+        return new TstCollection(t.cell, newChildren);
     }
 
     public handleOp(t: TstOp): TstOp {
