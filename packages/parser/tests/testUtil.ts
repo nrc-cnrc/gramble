@@ -9,6 +9,7 @@ import {
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { TextDevEnvironment } from "../src/textInterface";
+import { Tape } from "../src/tapes";
 
 export const DEFAULT_MAX_RECURSION = 4;
 
@@ -290,7 +291,15 @@ export function testHasVocab(
                         Interpreter.fromGrammar(grammar);
 
     for (const tapeName in expectedVocab) {
-        const tape = interpreter.tapeNS.get(tapeName);
+        let tape: Tape;
+        try {
+            tape = interpreter.tapeNS.get(tapeName);
+        } catch (e) {
+            it(`should have tape ${tapeName}`, function() {
+                assert.fail(e);
+            });
+            continue;
+        }
         const expectedNum = expectedVocab[tapeName];
         it(`should have ${expectedNum} tokens in the ${tapeName} vocab`, function() {
             expect(tape).to.not.be.undefined;
