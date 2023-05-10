@@ -174,7 +174,7 @@ describe(`Sheets ${DIR}`, function() {
         results: [{}]
     }));
 
-    describe('8d. Only header in a row in unparseable', test({
+    describe('8d. Only header in a row in unparsable', test({
         id: "8d",
         errors: [ Error(0,1), Warning(1,1) ],
         results: [{}]

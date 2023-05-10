@@ -85,7 +85,7 @@ export type LengthRange = {
  * It's the main level at which we (the compiler) can ask, "Does this grammar 
  * make any sense?  Do the symbols actually refer to defined things?  Is the 
  * programmer doing things like defining filters that can't possibly have any output
- * because they refer to non-existant fields?"
+ * because they refer to non-existent fields?"
  * 
  * At the Grammar level we do the following operations.  Some of these are done
  * within the grammar objects themselves, others are performed by Passes.
@@ -104,7 +104,7 @@ export type LengthRange = {
  * 
  *   * adjusting tape names in cases (specifically replacement rules) where
  *     the stated to/from tapes can't literally be true.  (If we say that "a" 
- *     changes to "b" on tape T, that's not really true underlyingly; in both
+ *     changes to "b" on tape T, that's not really true underlying; in both
  *     our Turing Machine metaphor and our implementation, we never "back up"
  *     the cursor and change anything.  Once something's written, it's written.
  *     So really, the "from T" and the "two T" have to be two different tapes 

@@ -42,7 +42,7 @@ describe(`Parse rule context`, function() {
     testRuleContextID("5e", "a_##", "ε", 1);
     testRuleContextID("5f", "##_##", "ε", 1);
 
-    // these are currently unparseable but may become parseable 
+    // these are currently unparsable but may become parsable 
     // in the future
     testRuleContextID("6a", "(_)_b", "ε", 1);
     testRuleContextID("6b", "a_(_)", "ε", 1);

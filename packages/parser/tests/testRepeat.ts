@@ -3069,7 +3069,7 @@ describe(`${testSuiteName(module)}`, function() {
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
-    // Testing Sequences of Repleats of Nullable Matches
+    // Testing Sequences of Repeats of Nullable Matches
 
     describe('66a. (t2:e+M(t1>t2,ε|t1:h)){4} (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));

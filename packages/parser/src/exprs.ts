@@ -373,7 +373,7 @@ export abstract class Expr {
      * us, that's exactly what we build when we build outputs.
      */
     public toDenotation(): StringDict {
-        throw new Error("not impelmented");
+        throw new Error("not implemented");
     }
 }
 
