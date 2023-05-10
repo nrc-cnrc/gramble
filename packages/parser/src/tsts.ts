@@ -1,4 +1,3 @@
-
 /**
  * TSTS -- "tabular syntax trees" -- represent the structure of the program
  * in terms of the high-level tabular syntax: the structures, operators, headers,
@@ -8,15 +7,11 @@
 
 import { Cell, CellPos } from "./util";
 import {
-    DEFAULT_SATURATION,
-    DEFAULT_VALUE,
     Header,
     getParamName,
 } from "./headers";
 import { 
-    Msgs, 
-    Result, resultList, 
-    Warn, resultDict, 
+    Msgs, resultList, Warn, 
     ResultVoid, unit
 } from "./msgs";
 import { PassEnv } from "./passes";
@@ -309,23 +304,11 @@ export class TstJoin extends TstBinary {
 
 }
 
-export class TstReplaceTape extends TstCellComponent {
-
-    constructor(
-        cell: Cell,
-        public tape: string,
-        public sibling: Component,
-        public child: TstParamList
-    ) { 
-        super(cell);
-    }
-
-}
-
 export class TstReplace extends TstCellComponent {
 
     constructor(
         cell: Cell,
+        public tape: string,
         public sibling: Component,
         public child: TstParamList
     ) { 

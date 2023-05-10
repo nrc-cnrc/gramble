@@ -128,23 +128,7 @@ export class TestNotOp extends SpecialOp {
     }
 }
 
-export class ReplaceOp extends SpecialOp { 
-
-    public get id(): string {
-        return "replace";
-    }
-
-    public get requiredNamedParams(): Set<string> {
-        return REQUIRED_REPLACE_PARAMS;
-    }
-
-    public get allowedNamedParams(): Set<string> {
-        return REPLACE_PARAMS;
-    }
-
-}
-
-export class ReplaceTapeOp extends SpecialOp {
+export class ReplaceOp extends SpecialOp {
 
     constructor(
         public child: SymbolOp
@@ -256,9 +240,9 @@ const OP_UNRESERVED = MPUnreserved<Op>(
     } 
 );
 
-const OP_REPLACE_TAPE = MPSequence<Op>(
+const OP_REPLACE = MPSequence<Op>(
     ["replace", OP_UNRESERVED], 
-    (child) => child.bind(c => new ReplaceTapeOp(c as SymbolOp))
+    (child) => child.bind(c => new ReplaceOp(c as SymbolOp))
 );
 
 const OP_OR = MPSequence<Op>(
@@ -274,7 +258,7 @@ const OP_JOIN = MPSequence<Op>(
 const OP_SUBEXPR: MPParser<Op> = MPAlt(
     OP_TABLE, OP_COLLECTION,
     OP_TEST, OP_TESTNOT,
-    OP_REPLACE_TAPE,
+    OP_REPLACE,
     OP_OR, OP_JOIN
 );
 

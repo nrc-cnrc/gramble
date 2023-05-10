@@ -4,9 +4,8 @@ import {
     TstEmpty, 
     TstFilter, TstHeaderContentPair, 
     TstHide, TstCollection, 
-    TstTestNot, TstRename, 
-    TstReplace, 
-    TstReplaceTape, TstSequence, 
+    TstTestNot, TstRename,
+    TstReplace, TstSequence, 
     TstTable, TstTest, TstJoin 
 } from "../tsts";
 import { Component } from "../components";
@@ -66,8 +65,6 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                 return this.handleRuleContext(t as RuleContextGrammar, env);
             case TstReplace:
                 return this.handleReplace(t as TstReplace, env);
-            case TstReplaceTape:
-                return this.handleReplaceTape(t as TstReplaceTape, env);
             case TstTest:
                 return this.handleTest(t as TstTest, env);
             case TstTestNot:
@@ -161,7 +158,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
         return t.mapChildren(this, env);
     }
 
-    public handleReplaceTape(t: TstReplaceTape, env: PassEnv): GrammarResult {
+    public handleReplace(t: TstReplace, env: PassEnv): GrammarResult {
 
         let [sibling, sibMsgs] = this.transform(t.sibling, env).destructure();
         const replaceRules: ReplaceGrammar[] = [];
@@ -209,33 +206,6 @@ export class CreateGrammars extends Pass<Component,Grammar> {
         result = new LocatorGrammar(t.cell.pos, result);
         return result.msg(sibMsgs).msg(newMsgs);
     }
-
-    public handleReplace(t: TstReplace, env: PassEnv): GrammarResult {
-        let [sibling, sibMsgs] = this.transform(t.sibling, env).destructure();
-        const replaceRules: ReplaceGrammar[] = [];
-        const newMsgs: Msgs = [];
-
-        for (const params of t.child.rows) {
-            const fromArg = this.transform(params.getParam("from"), env).msgTo(newMsgs);
-            const toArg = this.transform(params.getParam("to"), env).msgTo(newMsgs);
-            const preArg = this.transform(params.getParam("pre"), env).msgTo(newMsgs);
-            const postArg = this.transform(params.getParam("post"), env).msgTo(newMsgs);
-            const replaceRule = new ReplaceGrammar(fromArg, toArg,
-                                                   preArg, postArg, new EpsilonGrammar(),
-                                                   false, false, 0, Infinity,
-                                                   `${params.pos.sheet}_${params.pos.row}`, false);
-            replaceRules.push(replaceRule);
-        }
-
-        if (replaceRules.length == 0) {
-            return sibling.msg(sibMsgs).msg(newMsgs);  // in case every rule fails, at least generate something
-        }
-
-        let result: Grammar = new JoinReplaceGrammar(sibling, replaceRules);
-        result = new LocatorGrammar(t.cell.pos, result);
-        return result.msg(sibMsgs).msg(newMsgs);
-    }
-
     
     public handleTest(t: TstTest, env: PassEnv): GrammarResult {
         let result = this.transform(t.sibling, env);

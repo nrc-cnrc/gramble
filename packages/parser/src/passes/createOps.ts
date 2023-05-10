@@ -1,6 +1,5 @@
 import { 
-    ReplaceOp, 
-    ReplaceTapeOp, TableOp, 
+    ReplaceOp, TableOp, 
     TestNotOp, TestOp, 
     SymbolOp, 
     OrOp,
@@ -11,8 +10,7 @@ import { PassEnv } from "../passes";
 import { 
     TstOp, 
     TstEmpty, TstTest, 
-    TstTable, TstTestNot, 
-    TstReplace, TstReplaceTape, 
+    TstTable, TstTestNot, TstReplace, 
     TstOr, TstAssignment, TstParamList, TstJoin
 } from "../tsts";
 import { Component, CPass, CResult } from "../components";
@@ -40,8 +38,6 @@ import { Component, CPass, CResult } from "../components";
                     return this.handleOp(t);
                 case ReplaceOp:
                     return this.handleReplace(t);
-                case ReplaceTapeOp:
-                    return this.handleReplaceTape(t);
                 case OrOp:
                     return this.handleOr(t);
                 case JoinOp:
@@ -69,13 +65,8 @@ import { Component, CPass, CResult } from "../components";
     }
     
     public handleReplace(t: TstOp): CResult {
-        return new TstReplace(t.cell, t.sibling, 
-                    t.child as TstParamList).msg();
-    }
-
-    public handleReplaceTape(t: TstOp): CResult {
-        const tapeName = (t.op as ReplaceTapeOp).child.text;
-        return new TstReplaceTape(t.cell, tapeName, 
+        const tapeName = (t.op as ReplaceOp).child.text;
+        return new TstReplace(t.cell, tapeName, 
                     t.sibling, t.child as TstParamList).msg();
     }
     
