@@ -63,9 +63,6 @@ export type ParseClass = "plaintext" | "regex" | "symbol" | "ruleContext" | "non
 
 export class EmbedHeader extends Header {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return new EmbedHeader().msg();
-    }
 }
 
 /**
@@ -79,9 +76,6 @@ export class EmbedHeader extends Header {
  */
 export class HideHeader extends Header {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return new HideHeader().msg();
-    }
 }
 
 /**
@@ -95,10 +89,6 @@ export class TapeNameHeader extends Header {
         super();
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return new TapeNameHeader(this.tapeName).msg();
-    }
-
 }
 
 /**
@@ -107,9 +97,6 @@ export class TapeNameHeader extends Header {
  */
 export class CommentHeader extends Header { 
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return new CommentHeader().msg();
-    }
 }
 
 /**
@@ -127,23 +114,14 @@ export abstract class UnaryHeader extends Header {
 
 export class FromHeader extends Header {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return this.msg();
-    }
 }
 
 export class ToHeader extends Header {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return this.msg();
-    }
 }
 
 export class RuleContextHeader extends Header {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return this.msg();
-    }
 }
 
 export class UniqueHeader extends UnaryHeader {
@@ -153,11 +131,6 @@ export class UniqueHeader extends UnaryHeader {
     ) {
         super(child);
     }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new UniqueHeader(c as Header));
-    }
 }
 
 /**
@@ -165,10 +138,6 @@ export class UniqueHeader extends UnaryHeader {
  */
 export class OptionalHeader extends UnaryHeader {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new OptionalHeader(c as Header));
-    }
 }
 
 /**
@@ -176,10 +145,6 @@ export class OptionalHeader extends UnaryHeader {
  */
 export class RenameHeader extends UnaryHeader {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new RenameHeader(c as Header));
-    }
 }
 
 /**
@@ -189,10 +154,6 @@ export class RenameHeader extends UnaryHeader {
  */
 export class EqualsHeader extends UnaryHeader {
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new EqualsHeader(c as Header));
-    }
 }
 
 /**
@@ -201,10 +162,6 @@ export class EqualsHeader extends UnaryHeader {
  */
 export class StartsHeader extends UnaryHeader {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new StartsHeader(c as Header));
-    }
 }
 
 /**
@@ -213,10 +170,6 @@ export class StartsHeader extends UnaryHeader {
  */
 export class EndsHeader extends UnaryHeader {
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new EndsHeader(c as Header));
-    }
 }
 
 /**
@@ -225,10 +178,6 @@ export class EndsHeader extends UnaryHeader {
  */
 export class ContainsHeader extends UnaryHeader {
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new ContainsHeader(c as Header));
-    }
 }
 
 export class SlashHeader extends Header {
@@ -240,11 +189,6 @@ export class SlashHeader extends Header {
         super();
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList([this.child1, this.child2])
-                .map(c => f.transform(c, env))
-                .bind(([c1,c2]) => new SlashHeader(c1 as Header,c2 as Header));
-    }
 }
 
 export class ErrorHeader extends Header {
@@ -255,9 +199,6 @@ export class ErrorHeader extends Header {
         super();
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return new ErrorHeader(this.text).msg();
-    }
 }
 
 /**

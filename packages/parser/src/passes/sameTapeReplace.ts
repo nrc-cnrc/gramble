@@ -78,15 +78,20 @@ export class SameTapeReplacePass extends GrammarPass {
 
     public handleReplace(g: ReplaceGrammar, env: PassEnv): GrammarResult {
         g.calculateTapes(new CounterStack(2), env);
-        let replaceTapeName = g.fromTapeName;
-        for (const toTapeName of g.toTapeNames) {
-            if (g.fromTapeName == toTapeName)
+
+        if (g._fromTapeName == undefined || g._toTapeNames == undefined) {
+            throw new Error("getting vocab copy edges without tapes");
+        }
+
+        let replaceTapeName = g._fromTapeName;
+        for (const toTapeName of g._toTapeNames) {
+            if (g._fromTapeName == toTapeName)
                 replaceTapeName = g.hiddenTapeName;
         }
 
-        const renamedFrom = renameGrammar(g.fromGrammar, g.fromTapeName, replaceTapeName);
-        const renamedPre = renameGrammar(g.preContext, g.fromTapeName, replaceTapeName);
-        const renamedPost = renameGrammar(g.postContext, g.fromTapeName, replaceTapeName);
+        const renamedFrom = renameGrammar(g.fromGrammar, g._fromTapeName, replaceTapeName);
+        const renamedPre = renameGrammar(g.preContext, g._fromTapeName, replaceTapeName);
+        const renamedPost = renameGrammar(g.postContext, g._fromTapeName, replaceTapeName);
 
         return new ReplaceGrammar(renamedFrom, g.toGrammar, 
                                   renamedPre, renamedPost, g.otherContext,

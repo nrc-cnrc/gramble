@@ -54,10 +54,6 @@ export class TstHeader extends TstCellComponent {
         super(cell);
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return new TstHeader(this.cell, this.header).msg();
-    }
-
 }
 
 export class TstContent extends TstCellComponent {
@@ -105,14 +101,6 @@ export abstract class TstEnclosure extends TstCellComponent {
     ) {
         super(cell, sibling)
     }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        const [sib, sibMsgs] = f.transform(this.sibling, env).destructure();
-        const [rows, rowMsgs] = resultList(this.rows)
-                                    .map(c => f.transform(c, env))
-                                    .destructure() as [TstRow[], Msgs];
-        return new TstGrid(this.cell, sib, rows).msg(sibMsgs).msg(rowMsgs);
-    }
     
     public setChild(newChild: TstEnclosure): ResultVoid {
         throw new Error("TstTables cannot have children");
@@ -140,12 +128,6 @@ export class TstRow extends TstCellComponent {
         super(cell)
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList(this.content)
-                .map(c => f.transform(c, env))
-                .bind(cs => new TstRow(this.cell, cs as TstContent[]));
-    }
-    
     public addContent(cell: Cell): ResultVoid {
         const content = new TstContent(cell);
         this.content.push(content);
@@ -169,19 +151,6 @@ export class TstHeadedGrid extends TstGrid {
         return this.headers.some(h => 
                     param == getParamName(h.header));
     }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        const [sib, sibMsgs] = f.transform(this.sibling, env).destructure();
-        const [rows, rowMsgs] = resultList(this.rows)
-                            .map(c => f.transform(c, env))
-                            .destructure() as [TstRow[], Msgs];
-        const [headers, headerMsgs] = resultList(this.headers)
-                            .map(c => f.transform(c, env))
-                            .destructure() as [TstHeader[], Msgs];
-        return new TstHeadedGrid(this.cell, sib, rows, headers)
-                        .msg(sibMsgs).msg(rowMsgs).msg(headerMsgs);
-
-    }
 }
 
 export class TstHeaderContentPair extends TstCellComponent {
@@ -191,10 +160,6 @@ export class TstHeaderContentPair extends TstCellComponent {
         content: Cell
     ) { 
         super(content);
-    }
-    
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return this.msg();
     }
 
 }
@@ -209,10 +174,6 @@ export class TstRename extends TstCellComponent {
         super(content);
     }
     
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return this.msg();
-    }
-    
 }
 
 export class TstHide extends TstCellComponent {
@@ -222,10 +183,6 @@ export class TstHide extends TstCellComponent {
         content: Cell
     ) { 
         super(content);
-    }
-    
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return this.msg();
     }
     
 }
@@ -239,18 +196,10 @@ export class TstFilter extends TstCellComponent {
     ) { 
         super(content);
     }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return this.msg();
-    }
     
 }
 
 export class TstEmpty extends Component {
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return this.msg();
-    }
 
 }
 
@@ -349,30 +298,15 @@ export class TstTable extends TstCellComponent {
         super(cell);
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-                .bind(c => new TstTable(this.cell, c as TstParamList));
-    }
-
 }
 
 export class TstOr extends TstBinary {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList([this.sibling, this.child])
-            .map(c => f.transform(c, env))
-            .bind(([s,c]) => new TstOr(this.cell, s, c));
-    }
 }
 
 
 export class TstJoin extends TstBinary {
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList([this.sibling, this.child])
-            .map(c => f.transform(c, env))
-            .bind(([s,c]) => new TstJoin(this.cell, s, c));
-    }
 }
 
 export class TstReplaceTape extends TstCellComponent {
@@ -384,13 +318,6 @@ export class TstReplaceTape extends TstCellComponent {
         public child: TstParamList
     ) { 
         super(cell);
-    }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList([this.sibling, this.child])
-            .map(c => f.transform(c, env))
-            .bind(([s,c]) => new TstReplaceTape(this.cell, this.tape, 
-                s, c as TstParamList));
     }
 
 }
@@ -405,12 +332,6 @@ export class TstReplace extends TstCellComponent {
         super(cell);
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList([this.sibling, this.child])
-                .map(c => f.transform(c, env))
-                .bind(([s,c]) => new TstReplace(this.cell, 
-                        s, c as TstParamList));
-    }
 }
 
 /**
@@ -428,13 +349,6 @@ export class TstTest extends TstCellComponent {
         super(cell);
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList([this.sibling, this.child])
-                .map(c => f.transform(c, env))
-                .bind(([s,c]) => new TstTest(this.cell, s, c as TstParamList));
-    }
-
-
 }
 
 /**
@@ -443,12 +357,6 @@ export class TstTest extends TstCellComponent {
  * has no output when filtering the table above.
  */
 export class TstTestNot extends TstTest {
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList([this.sibling, this.child])
-            .map(c => f.transform(c, env))
-            .bind(([s,c]) => new TstTestNot(this.cell, s, c as TstParamList));
-    }
 
 }
 
@@ -463,12 +371,6 @@ export class TstParamList extends TstCellComponent {
     ) {
         super(cell);
     }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList(this.rows)
-                    .map(r => f.transform(r, env))
-                    .bind(rs => new TstParamList(this.cell, rs as TstParams[]));
-    }
 }
 
 export class TstSequence extends TstCellComponent {
@@ -478,12 +380,6 @@ export class TstSequence extends TstCellComponent {
         public children: Component[] = []
     ) { 
         super(cell);
-    }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList(this.children)
-                   .map(c => f.transform(c, env))
-                   .bind((cs) => new TstSequence(this.cell, cs));
     }
 
 }
@@ -500,12 +396,6 @@ export class TstParams extends TstCellComponent {
         public params: {[s: string]: Component} = {}
     ) {
         super(cell);
-    }
-    
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultDict(this.params)
-                .map(c => f.transform(c, env))
-                .bind(cs => new TstParams(this.cell, cs));
     }
 
     public getParam(name: string): Component {
@@ -526,11 +416,6 @@ export class TstAssignment extends TstCellComponent {
         super(cell);
     }
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return f.transform(this.child, env)
-            .bind(c => new TstAssignment(this.cell, this.name, c));
-    }
-
 }
 
 export class TstCollection extends TstCellComponent {
@@ -545,12 +430,6 @@ export class TstCollection extends TstCellComponent {
     public addChild(child: Component): ResultVoid {
         this.children.push(child);
         return unit;
-    }
-
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return resultList(this.children)
-                .map(c => f.transform(c, env) as Result<TstEnclosure>)
-                .bind(cs => new TstCollection(this.cell, cs));
     }
 
 }

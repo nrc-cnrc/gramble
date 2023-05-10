@@ -88,7 +88,7 @@ export class AdjustConditions extends GrammarPass {
 
         if (g.child instanceof LocatorGrammar) {
             const newCond = new StartsGrammar(g.child.child, g.tapes);
-            const newLocation = new LocatorGrammar(g.child._pos, newCond);
+            const newLocation = new LocatorGrammar(g.child.position, newCond);
             return newLocation.mapChildren(this, env);
         }
 
@@ -147,7 +147,7 @@ export class AdjustConditions extends GrammarPass {
         
         if (g.child instanceof LocatorGrammar) {
             const newCond = new EndsGrammar(g.child.child, g.tapes);
-            const newLocation = new LocatorGrammar(g.child._pos, newCond);
+            const newLocation = new LocatorGrammar(g.child.position, newCond);
             return newLocation.mapChildren(this, env);
         }
         
@@ -208,7 +208,7 @@ export class AdjustConditions extends GrammarPass {
 
         if (g.child instanceof LocatorGrammar) {
             const newCond = new ContainsGrammar(g.child.child, g.tapes);
-            const newLocation = new LocatorGrammar(g.child._pos, newCond);
+            const newLocation = new LocatorGrammar(g.child.position, newCond);
             return newLocation.mapChildren(this, env);
         }
         

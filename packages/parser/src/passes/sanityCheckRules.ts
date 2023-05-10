@@ -60,12 +60,19 @@ export class SanityCheckRules extends GrammarPass {
         // ceased to exist in handleReplace, and/or when no rules
         // are left
 
-        if (g.rules.length == 0) {
+        const isReplace = (r: Grammar): r is ReplaceGrammar => 
+                                r instanceof ReplaceGrammar;
+        // it's possible for rule transformation to result in a non
+        // rule (due to errors), so we filter those out
+        const validRules = g.rules.filter(isReplace);
+
+        if (validRules.length == 0) {
             return result(g)
                     .warn("This replace has no valid rules")
                     .bind(g => g.child);
         }
 
+        g.rules = validRules;
         return g.msg();
     }
 
