@@ -9,7 +9,7 @@ import {
 import { Component, CPass, CResult } from "../components";
 import { PassEnv } from "../passes";
 import { ContentMsg, Msgs, Warn } from "../msgs";
-import { getBackgroundColor, getFontColor, getParamName } from "../headers";
+import { backgroundColor, fontColor, paramName } from "../headers";
 
 /**
  * Before this, headers and their associated content cells aren't
@@ -47,26 +47,26 @@ export class AssociateHeaders extends CPass {
                     }
                     const newCell = new TstHeaderContentPair(header, content.cell);
                     new ContentMsg(
-                        getBackgroundColor(header.header),
-                        getFontColor(header.header)
+                        backgroundColor(header.header),
+                        fontColor(header.header)
                     ).localize(content.pos).msgTo(msgs);
 
-                    const paramName = getParamName(header.header);
+                    const param = paramName(header.header);
 
-                    if (paramName != "__" && paramName != "unique") {
-                        if (paramName in newRow.params) {
+                    if (param != "__" && param != "unique") {
+                        if (param in newRow.params) {
                             Warn("Named parameters can only occur once; " +
                                 "this cell will be ignored.",
                                 content.pos).msgTo(msgs);
                         }
-                        newRow.params[paramName] = newCell;
+                        newRow.params[param] = newCell;
                         continue;
                     }
 
-                    if (!(paramName in newRow.params)) {
-                        newRow.params[paramName] = new TstSequence(row.cell);
+                    if (!(param in newRow.params)) {
+                        newRow.params[param] = new TstSequence(row.cell);
                     }
-                    const paramSeq = newRow.params[paramName] as TstSequence;
+                    const paramSeq = newRow.params[param] as TstSequence;
                     paramSeq.children.push(newCell);
                 }
                 newRows.push(newRow);

@@ -4,7 +4,7 @@ import {
 } from "../tsts";
 import { PassEnv } from "../passes";
 import { Err, Msgs, Result, result, Warn } from "../msgs";
-import { UniqueHeader, getParamName } from "../headers";
+import { UniqueHeader, paramName } from "../headers";
 import { BLANK_PARAM } from "../ops";
 import { Component, CPass, CResult } from "../components";
 
@@ -117,12 +117,12 @@ export class CheckNamedParams extends CPass {
     public handleHeader(t: TstHeader, env: PassEnv): CResult {
         const mapped = t.mapChildren(this, env) as Result<TstHeader>;
         return mapped.bind(h => {
-            const tag = getParamName(h.header);
+            const tag = paramName(h.header);
             if (this.permissibleParams.has(tag)) {
                 return h; // we're good
             }
             // it's an unexpected header
-            const paramName = (tag == "__") ?
+            const param = (tag == "__") ?
                               "an unnamed parameter" :
                               `a parameter named ${tag}`;
 
@@ -130,13 +130,13 @@ export class CheckNamedParams extends CPass {
                 // if we can easily remove the tag, try that
                 const newHeader = new TstHeader(h.cell, h.header.child);
                 return result(h).err("Invalid parameter",
-                        `The operator to the left does not expect ${paramName}`)
+                        `The operator to the left does not expect ${param}`)
                         .bind(_ => newHeader);
             }
 
             // otherwise return empty
             return result(h).err("Invalid parameter",
-                `The operator to the left does not expect ${paramName}`)
+                `The operator to the left does not expect ${param}`)
                 .bind(_ => new TstEmpty());
         });
     }

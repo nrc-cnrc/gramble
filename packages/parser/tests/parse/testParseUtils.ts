@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { cellID, parseCell } from "../../src/cell";
-import { ParseClass, getHeaderID, parseHeaderCell } from "../../src/headers";
+import { ParseClass, headerID, parseHeaderCell } from "../../src/headers";
 import { parseOp } from "../../src/ops";
 import { PassEnv } from "../../src/passes";
 import { CombineLiterals } from "../../src/passes/combineLiterals";
@@ -16,7 +16,7 @@ export function testHeaderID(
         testPrefix += ' ';
     }
     it(`${testPrefix}"${text}" should parse as "${expectedID}"`, function() {
-        expect(getHeaderID(result)).to.equal(expectedID);
+        expect(headerID(result)).to.equal(expectedID);
     });
 }
 

@@ -8,7 +8,7 @@
 import { Cell, CellPos } from "./util";
 import {
     Header,
-    getParamName,
+    paramName,
 } from "./headers";
 import { 
     Msgs, resultList, Warn, 
@@ -144,7 +144,7 @@ export class TstHeadedGrid extends TstGrid {
     
     public providesParam(param: string): boolean {
         return this.headers.some(h => 
-                    param == getParamName(h.header));
+                    param == paramName(h.header));
     }
 }
 

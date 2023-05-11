@@ -5,7 +5,7 @@ import {
 } from "../tsts";
 import { PassEnv } from "../passes";
 import { HeaderMsg, Msgs } from "../msgs";
-import { DEFAULT_VALUE, ErrorHeader, getBackgroundColor, parseHeaderCell } from "../headers";
+import { DEFAULT_VALUE, ErrorHeader, backgroundColor, parseHeaderCell } from "../headers";
 import { Component, CPass, CResult } from "../components";
 
 /**
@@ -34,7 +34,7 @@ export class CreateHeaders extends CPass {
             for (const c of t.rows[0].content) {
                 const h = parseHeaderCell(c.text).msgTo(msgs, c.pos);
                 new HeaderMsg( 
-                    getBackgroundColor(h, 0.14, DEFAULT_VALUE)
+                    backgroundColor(h, 0.14, DEFAULT_VALUE)
                 ).msgTo(msgs, c.cell.pos);
                 if (h instanceof ErrorHeader) {
                     continue;

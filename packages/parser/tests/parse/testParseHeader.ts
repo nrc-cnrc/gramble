@@ -2,118 +2,144 @@ import { testHeaderID } from "./testParseUtils";
 
 describe(`Parse header`, function() {
 
-    testHeaderID("1", "text", "text");
-    testHeaderID("2", "text ", "text");
-    testHeaderID("3", " text", "text");
-    testHeaderID("4", "\\text", "text");
-    testHeaderID("5", "te\\xt", "text");
-    testHeaderID("6", "embed", "embed");
-    testHeaderID("7", "EMBED", "embed");
-    testHeaderID("8", "hide", "hide");
-    testHeaderID("9", "%text", "%");
-    testHeaderID("10", "% text", "%");
-    testHeaderID("11", "%", "%");
-    testHeaderID("12", "(text)", "text");
-    testHeaderID("13", "(text", "ERR");
-    testHeaderID("14", "text)", "ERR");
-    testHeaderID("15", "text/gloss", "slash[text,gloss]");
-    testHeaderID("16", "(text/gloss)", "slash[text,gloss]");
-    testHeaderID("17", "(text)/(gloss)", "slash[text,gloss]");
-    testHeaderID("18", "text/", "ERR");
-    testHeaderID("19", "/text", "ERR");
-    testHeaderID("20", "optional text", "optional[text]");
-    testHeaderID("21", "optional", "ERR");
-    testHeaderID("22", "text optional", "ERR");
-    testHeaderID("23", "optional/text", "ERR");
-    testHeaderID("24", "optional(text)", "optional[text]");
-    testHeaderID("25", "(optional text)", "optional[text]");
-    testHeaderID("26", "optionaltext", "optionaltext");
-    testHeaderID("27", "pre text", "ERR");
-    testHeaderID("28", "post text", "ERR");
-    testHeaderID("29", "from text", "ERR");
-    testHeaderID("30", "to text", "ERR");
-    testHeaderID("31", "pre", "pre"); // this is just a header now, it's not reserved
-    testHeaderID("32", "post", "post"); // this is just a header now, it's not reserved
-    testHeaderID("33", "from", "from");
-    testHeaderID("34", "to", "to");
-    testHeaderID("35", "context", "context");
-    testHeaderID("35", "pre(text)", "ERR");
-    testHeaderID("36", "(pre text)", "ERR");
-    testHeaderID("37", "pre text/gloss", "ERR");
-    testHeaderID("38", "pre embed", "ERR");
-    testHeaderID("39", "blarg text", "ERR");
-    testHeaderID("40", "equals text", "equals[text]");
-    testHeaderID("41", "equals(text)", "equals[text]");
-    testHeaderID("42", "starts text", "starts[text]");
-    testHeaderID("43", "ends text", "ends[text]");
-    testHeaderID("44", "contains text", "contains[text]");
-    testHeaderID("45", "equals text/gloss", "ERR");
-    testHeaderID("46", "equals embed", "ERR");
-    testHeaderID("47", "text/gloss/root", "slash[text,slash[gloss,root]]");
-    testHeaderID("48", "(text/gloss)/root", "slash[slash[text,gloss],root]");
+    // tape name headers
+    testHeaderID("1a", "text", "text");
+    testHeaderID("1b", "text ", "text");
+    testHeaderID("1c", " text", "text");
+    testHeaderID("1d", "\\text", "text");
+    testHeaderID("1e", "te\\xt", "text");
+
+    // pre and post aren't reserved anymore, they're just tape names
+    testHeaderID("2a", "pre", "pre"); 
+    testHeaderID("2b", "post", "post");
+
+    // parens
+    testHeaderID("3a", "(text)", "text");
+    testHeaderID("3b", "(text", "error");
+    testHeaderID("3c", "text)", "error");
+
+    // atomic headers
+    testHeaderID("4a", "embed", "embed");
+    testHeaderID("4b", "EMBED", "embed");
+    testHeaderID("4c", "hide", "hide");
+    testHeaderID("4d", "%text", "comment");
+    testHeaderID("4e", "% text", "comment");
+    testHeaderID("4f", "comment", "comment");
+    testHeaderID("4g", "from", "from");
+    testHeaderID("4h", "to", "to");
+    testHeaderID("4i", "context", "context");
+
+    // using atomics as if they're unary
+    testHeaderID("5a", "pre text", "error");
+    testHeaderID("5b", "post text", "error");
+    testHeaderID("5c", "from text", "error");
+    testHeaderID("5d", "to text", "error");
+    testHeaderID("5e", "pre(text)", "error");
+    testHeaderID("5f", "(pre text)", "error");
+    testHeaderID("5g", "blarg text", "error");
+
+    // header that happens to contain a reserved word inside
+    testHeaderID("6a", "optionaltext", "optionaltext");
+    testHeaderID("6b", "textoptional", "textoptional");
+    testHeaderID("6c", "textoptionaltext", "textoptionaltext");
+
+    // unary headers
+    testHeaderID("7a", "optional text", "optional[text]");
+    testHeaderID("7b", "optional", "error");
+    testHeaderID("7c", "text optional", "error");
+    testHeaderID("7d", "optional(text)", "optional[text]");
+    testHeaderID("7e", "(optional text)", "optional[text]");
+    testHeaderID("7f", "equals text", "equals[text]");
+    testHeaderID("7g", "equals(text)", "equals[text]");
+    testHeaderID("7h", "starts text", "starts[text]");
+    testHeaderID("7i", "ends text", "ends[text]");
+    testHeaderID("7j", "contains text", "contains[text]");
+    testHeaderID("7k", "equals text/gloss", "error");
+    testHeaderID("7l", "equals embed", "error");
+    testHeaderID("7m", ">text", "rename[text]");
+    testHeaderID("7m", "> text", "rename[text]");
+    testHeaderID("7n", "\\>text", "error");
+    testHeaderID("7o", ">text/gloss", "error");
+    testHeaderID("7p", ">(text/gloss)", "error");
+    testHeaderID("7q", ">optional text", "error");
+    testHeaderID("7r", ">(optional text)", "error");
+    testHeaderID("7s", "unique text", "unique[text]");
+    testHeaderID("7t", "unique(text)", "unique[text]");
+    testHeaderID("7u", "unique text/gloss", "unique[slash[text,gloss]]");
+
+
+    // slash headers
+    testHeaderID("8a", "text/gloss", "slash[text,gloss]");
+    testHeaderID("8b", "(text/gloss)", "slash[text,gloss]");
+    testHeaderID("8c", "(text)/(gloss)", "slash[text,gloss]");
+    testHeaderID("8d", "text/", "error");
+    testHeaderID("8e", "/text", "error");
+    testHeaderID("8f", "optional/text", "error");
+    testHeaderID("8g", "text/gloss/root", "slash[text,slash[gloss,root]]");
+    testHeaderID("8h", "(text/gloss)/root", "slash[slash[text,gloss],root]");
 
     // empty header is invalid
-    testHeaderID("49", "", "ERR");
+    testHeaderID("9", "", "error");
 
     // invalid because they contain symbols not used in headers nor in valid identifiers
-    testHeaderID("50", "text,text", "ERR");
-    testHeaderID("51", "text, text", "ERR");
-    testHeaderID("52", "text,", "ERR");
-    testHeaderID("53", "text\\,", "ERR");
-    testHeaderID("54", "text\\", "ERR");
-    testHeaderID("55", "text\\\\text", "ERR");
-    testHeaderID("56", ",text", "ERR");
-    testHeaderID("57", ".text", "ERR");
-    testHeaderID("58", "text.text", "ERR");
-    testHeaderID("59", "text;text", "ERR");
-    testHeaderID("60", "text\\ text", "ERR");
-    testHeaderID("61", "text:", "ERR");
-    testHeaderID("62", "text:text", "ERR");     
-    testHeaderID("63", "text%text", "ERR");
-    testHeaderID("64", "[text]", "ERR");
-    testHeaderID("65", "<text", "ERR");
+    testHeaderID("10a", "text,text", "error");
+    testHeaderID("10b", "text, text", "error");
+    testHeaderID("10c", "text,", "error");
+    testHeaderID("10d", "text\\,", "error");
+    testHeaderID("10e", "text\\", "error");
+    testHeaderID("10f", "text\\\\text", "error");
+    testHeaderID("10g", ",text", "error");
+    testHeaderID("10h", ".text", "error");
+    testHeaderID("10i", "text.text", "error");
+    testHeaderID("10j", "text;text", "error");
+    testHeaderID("10k", "text\\ text", "error");
+    testHeaderID("10l", "text:", "error");
+    testHeaderID("10m", "text:text", "error");     
+    testHeaderID("10n", "text%text", "error");
+    testHeaderID("10o", "[text]", "error");
+    testHeaderID("10p", "<text", "error");
 
     // valid tape names start with letters or underscore
-    testHeaderID("66", "_text", "_text");
-    testHeaderID("67", "text_text", "text_text");
-    testHeaderID("68", "123", "ERR");
-    testHeaderID("69", "123text", "ERR");
+    testHeaderID("11a", "_text", "_text");
+    testHeaderID("11b", "text_text", "text_text");
+    testHeaderID("11c", "123", "error");
+    testHeaderID("11d", "123text", "error");
 
     // tape names are allowed to contain $ @ # & ' " , but not at the beginning
-    testHeaderID("70", "text$", "text$");
-    testHeaderID("71", "$text", "ERR");
-    testHeaderID("72", "text@", "text@");
-    testHeaderID("73", "@text", "ERR");
-    testHeaderID("74", "text#", "text#");
-    testHeaderID("75", "#text", "ERR");
-    testHeaderID("76", "text&", "text&");
-    testHeaderID("77", "&text", "ERR");
-    testHeaderID("78", "text'", "text'");
-    testHeaderID("79", "'text", "ERR");  
-    testHeaderID("80", 'text"', 'text"');
-    testHeaderID("81", '"text', "ERR"); 
+    testHeaderID("12a", "text$", "text$");
+    testHeaderID("12b", "$text", "error");
+    testHeaderID("12c", "text@", "text@");
+    testHeaderID("12d", "@text", "error");
+    testHeaderID("12e", "text#", "text#");
+    testHeaderID("12f", "#text", "error");
+    testHeaderID("12g", "text&", "text&");
+    testHeaderID("12h", "&text", "error");
+    testHeaderID("12i", "text'", "text'");
+    testHeaderID("12j", "'text", "error");  
+    testHeaderID("12k", 'text"', 'text"');
+    testHeaderID("12l", '"text', "error"); 
 
     // tape names cannot contain ? = * +
-    testHeaderID("82", "text?", "ERR");
-    testHeaderID("83", "?text", "ERR");
-    testHeaderID("84", "text=", "ERR");
-    testHeaderID("85", "=text", "ERR"); 
-    testHeaderID("86", "text+", "ERR");
-    testHeaderID("87", "+text", "ERR");
-    testHeaderID("88", "text*", "ERR");
-    testHeaderID("89", "*text", "ERR"); 
+    testHeaderID("13a", "text?", "error");
+    testHeaderID("13b", "?text", "error");
+    testHeaderID("13c", "text=", "error");
+    testHeaderID("13d", "=text", "error"); 
+    testHeaderID("13e", "text+", "error");
+    testHeaderID("13f", "+text", "error");
+    testHeaderID("13g", "text*", "error");
+    testHeaderID("13h", "*text", "error"); 
 
     // tape names may contain Unicode letters anywhere
-    testHeaderID("90", "textε", "textε");
-    testHeaderID("91", "εtext", "εtext");
-    testHeaderID("92", "नमस्ते", "नमस्ते");
-    testHeaderID("93", "Привет", "Привет");
-    testHeaderID("94", "ᓄᓇᕕᒃ", "ᓄᓇᕕᒃ");
-    testHeaderID("95", "οἶκος", "οἶκος");
-    testHeaderID("96", "あの人", "あの人");
-    testHeaderID("97", "恭喜发财", "恭喜发财");
-    testHeaderID("98", "ﺷﻜﺮﺍﹰ", "ﺷﻜﺮﺍﹰ");
+    testHeaderID("14a", "textε", "textε");
+    testHeaderID("14b", "εtext", "εtext");
+    testHeaderID("14c", "नमस्ते", "नमस्ते");
+    testHeaderID("14d", "Привет", "Привет");
+    testHeaderID("14e", "ᓄᓇᕕᒃ", "ᓄᓇᕕᒃ");
+    testHeaderID("14f", "οἶκος", "οἶκος");
+    testHeaderID("14g", "あの人", "あの人");
+    testHeaderID("14h", "恭喜发财", "恭喜发财");
+    testHeaderID("14i", "ﺷﻜﺮﺍﹰ", "ﺷﻜﺮﺍﹰ");
 
     // but only in certain classes; e.g. zero-width non-joiners are invalid
-    testHeaderID("99", "کتاب‌ها", "ERR"); // contains a zero-width non-joiner
+    testHeaderID("15", "کتاب‌ها", "error"); // contains a zero-width non-joiner
 });

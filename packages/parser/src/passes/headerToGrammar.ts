@@ -15,7 +15,7 @@ import {
     EqualsHeader, ErrorHeader, 
     Header, OptionalHeader,
     SlashHeader, StartsHeader, 
-    UniqueHeader, TapeNameHeader, UnaryHeader, FromHeader, ToHeader, RuleContextHeader 
+    UniqueHeader, TapeHeader, UnaryHeader, FromHeader, ToHeader, RuleContextHeader, exhaustive 
 } from "../headers";
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
 
@@ -33,38 +33,24 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
     }
 
     public transform(h: Header, env: PassEnv): GrammarResult {
-        
-        switch(h.constructor) {
-            case EmbedHeader:
-                return this.handleEmbed(h as EmbedHeader, env);
-            case TapeNameHeader:
-                return this.handleTapeName(h as TapeNameHeader, env);
-            case CommentHeader:
-                return this.handleComment(h as CommentHeader, env);
-            case FromHeader:
-                return this.handleFrom(h as FromHeader, env);
-            case ToHeader:
-                return this.handleTo(h as ToHeader, env);  
-            case RuleContextHeader:
-                return this.handleRuleContext(h as RuleContextHeader, env);
-            case UniqueHeader:
-                return this.handleUnique(h as UniqueHeader, env);
-            case OptionalHeader:
-                return this.handleOptional(h as OptionalHeader, env);
-            case EqualsHeader:
-                return this.handleEquals(h as EqualsHeader, env);
-            case StartsHeader:
-                return this.handleStarts(h as StartsHeader, env);
-            case EndsHeader:
-                return this.handleEnds(h as EndsHeader, env);
-            case ContainsHeader:
-                return this.handleContains(h as ContainsHeader, env);
-            case SlashHeader:
-                return this.handleSlash(h as SlashHeader, env);
-            case ErrorHeader:
-                return this.handleError(h as ErrorHeader, env);
-            default:
-                throw new Error("unhandled header");
+        switch(h.tag) {
+            case "embed":    return this.handleEmbed(h, env);
+            case "tape":     return this.handleTapeName(h, env);
+            case "comment":  return this.handleComment(h, env);
+            case "from":     return this.handleFrom(h, env);
+            case "to":       return this.handleTo(h, env);  
+            case "context":  return this.handleRuleContext(h, env);
+            case "unique":   return this.handleUnique(h, env);
+            case "optional": return this.handleOptional(h, env);
+            case "equals":   return this.handleEquals(h, env);
+            case "starts":   return this.handleStarts(h, env);
+            case "ends":     return this.handleEnds(h, env);
+            case "contains": return this.handleContains(h, env);
+            case "slash":    return this.handleSlash(h, env);
+            case "error":    return this.handleError(h, env);
+            case "rename":   throw new Error("shouldn't have renames here");
+            case "hide":     throw new Error("shouldn't have hides here");
+            default: exhaustive(h);
         }
     }
 
@@ -72,7 +58,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
         return this.cellGrammar.msg();
     }
 
-    public handleTapeName(h: TapeNameHeader, env: PassEnv): GrammarResult {
+    public handleTapeName(h: TapeHeader, env: PassEnv): GrammarResult {
         const tapeName = h.tapeName;
         return this.cellGrammar.msg()
                     .bind(g => new SingleTapeGrammar(tapeName, g))
@@ -111,7 +97,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
     }
 
     public handleRegex(h: UnaryHeader, env: PassEnv): GrammarResult {
-        if (!(h.child instanceof TapeNameHeader)) {
+        if (!(h.child instanceof TapeHeader)) {
             // shouldn't happen, should already be taken care of, more for linting
             return new EpsilonGrammar().err("Invalid header",
                 'This header can only take a plain tape name (e.g. "text").');

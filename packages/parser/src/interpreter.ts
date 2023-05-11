@@ -18,7 +18,7 @@ import {
     DEFAULT_SYMBOL_NAME
 } from "./util";
 import { Worksheet, Workbook } from "./sheets";
-import { getBackgroundColor, parseHeaderCell } from "./headers";
+import { backgroundColor, parseHeaderCell } from "./headers";
 import { TapeNamespace } from "./tapes";
 import { Expr, ExprNamespace, CollectionExpr } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
@@ -200,7 +200,7 @@ export class Interpreter {
     ): string {
         if (!(tapeName in this.tapeColors)) {
             const [header, msgs] = parseHeaderCell(tapeName).destructure();
-            this.tapeColors[tapeName] = getBackgroundColor(header, saturation, value);
+            this.tapeColors[tapeName] = backgroundColor(header, saturation, value);
         }
         return this.tapeColors[tapeName];
     }

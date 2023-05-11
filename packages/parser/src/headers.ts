@@ -44,44 +44,66 @@ export type ParseClass = "plaintext" | "regex" | "symbol" | "ruleContext" | "non
  * 
  * Headers are parsed using the "miniParser" engine, a simple parser/combinator engine.
  */
- export abstract class Header extends Component {
+
+export type Header = EmbedHeader
+            | HideHeader 
+            | TapeHeader 
+            | CommentHeader
+            | FromHeader
+            | ToHeader
+            | RuleContextHeader
+            | UniqueHeader
+            | FromHeader
+            | ToHeader
+            | RuleContextHeader
+            | UniqueHeader
+            | OptionalHeader
+            | RenameHeader
+            | EqualsHeader
+            | StartsHeader
+            | EndsHeader
+            | ContainsHeader
+            | SlashHeader
+            | ErrorHeader;
+
+
+
+            
+export abstract class AbstractHeader extends Component {
 
     public msg(m: Msg | Msgs | ResultVoid = []): Result<Header> {
-        return result(this).msg(m);
+        return super.msg(m) as Result<Header>;
     }
-
+    
     public err(shortMsg: string, longMsg: string, pos?: CellPos): Result<Header> {
         const e = Err(shortMsg, longMsg);
-        return this.msg(e).localize(pos).localize(this.pos);
+        return this.msg(e).localize(pos);
     }
     
     public warn(longMsg: string, pos?: CellPos): Result<Header> {
         const e = Warn(longMsg);
-        return this.msg(e).localize(pos).localize(this.pos);
+        return this.msg(e).localize(pos);
     }
 }
 
-export class EmbedHeader extends Header {
-
+export class EmbedHeader extends AbstractHeader { 
+    public readonly tag = "embed";
 }
 
 /**
  * HideHeader is an atomic header "hide:T" that takes the grammar
- * to the left and mangles the name of tape T outside of that grammar,
- * so that the field cannot be referenced outside of it.  This allows
- * programmers to use additional fields without necessarily overwhelming
- * the "public" interface to the grammar with fields that are only 
- * internally-relevant, and avoid unexpected behavior when joining two classes
- * that define same-named fields internally for different purposes.  
+ * to the left and mangles its name (or otherwise hides it, depending
+ * on implementation)
  */
-export class HideHeader extends Header {
-
+export class HideHeader extends AbstractHeader { 
+    public readonly tag = "hide";
 }
 
 /**
  * TapeNameHeaders are references to a particular tape name (e.g. "text")
  */
-export class TapeNameHeader extends Header {
+export class TapeHeader extends AbstractHeader {
+    public readonly tag = "tape";
 
     constructor(
         public tapeName: string
@@ -95,15 +117,15 @@ export class TapeNameHeader extends Header {
  * Commented-out headers also comment out any cells below them; the cells just act as
  * Empty() states.
  */
-export class CommentHeader extends Header { 
-    
+export class CommentHeader extends AbstractHeader { 
+    public readonly tag = "comment";
 }
 
 /**
  * The ancestor class of unary header operators like "optional", 
  * "not", and ">" (the rename operator)
  */
-export abstract class UnaryHeader extends Header {
+export abstract class UnaryHeader extends AbstractHeader {
 
     public constructor(
         public child: Header
@@ -112,20 +134,20 @@ export abstract class UnaryHeader extends Header {
     }
 }
 
-export class FromHeader extends Header {
-
+export class FromHeader extends AbstractHeader {
+    public readonly tag = "from";
 }
 
-export class ToHeader extends Header {
-
+export class ToHeader extends AbstractHeader {
+    public readonly tag = "to";
 }
 
-export class RuleContextHeader extends Header {
-
+export class RuleContextHeader extends AbstractHeader {
+    public readonly tag = "context";
 }
 
 export class UniqueHeader extends UnaryHeader {
-
+    public readonly tag = "unique";
     constructor(
         child: Header
     ) {
@@ -137,14 +159,14 @@ export class UniqueHeader extends UnaryHeader {
  * Header that constructs optional parsers, e.g. "optional text"
  */
 export class OptionalHeader extends UnaryHeader {
-
+    public readonly tag = "optional";
 }
 
 /**
  * Header that constructs renames
  */
 export class RenameHeader extends UnaryHeader {
-
+    public readonly tag = "rename";
 }
 
 /**
@@ -153,7 +175,7 @@ export class RenameHeader extends UnaryHeader {
  * superset of X.
  */
 export class EqualsHeader extends UnaryHeader {
-    
+    public readonly tag = "equals";
 }
 
 /**
@@ -161,7 +183,7 @@ export class EqualsHeader extends UnaryHeader {
  * start with X (that is, Equals(N, X.*))
  */
 export class StartsHeader extends UnaryHeader {
-
+    public readonly tag = "starts";
 }
 
 /**
@@ -169,7 +191,7 @@ export class StartsHeader extends UnaryHeader {
  * end with X (that is, Equals(N, .*X))
  */
 export class EndsHeader extends UnaryHeader {
-    
+    public readonly tag = "ends";
 }
 
 /**
@@ -177,11 +199,11 @@ export class EndsHeader extends UnaryHeader {
  * contain X (that is, Equals(N, .*X.*))
  */
 export class ContainsHeader extends UnaryHeader {
-    
+    public readonly tag = "contains";
 }
 
-export class SlashHeader extends Header {
-
+export class SlashHeader extends AbstractHeader {
+    public readonly tag = "slash";
     public constructor(
         public child1: Header,
         public child2: Header
@@ -191,8 +213,8 @@ export class SlashHeader extends Header {
 
 }
 
-export class ErrorHeader extends Header {
-
+export class ErrorHeader extends AbstractHeader {
+    public readonly tag = "error";
     public constructor(
         public text: string
     ) {
@@ -233,7 +255,7 @@ const HP_COMMENT = MPComment<Header>(
 const HP_UNRESERVED = MPUnreserved<Header>(
     (s) => {
         if (isValidSymbolName(s)) {
-            return new TapeNameHeader(s).msg()
+            return new TapeHeader(s).msg()
         } else {
             return new ErrorHeader(s).msg().err(
                 `Invalid tape name`, 
@@ -299,7 +321,7 @@ const HP_PARENS = MPSequence<Header>(
 const HP_EQUALS = MPSequence<Header>(
     ["equals", HP_NON_COMMENT_EXPR],
     (child) => child.bind(c => {
-        if (!(c instanceof TapeNameHeader)) {
+        if (!(c instanceof TapeHeader)) {
             return new ErrorHeader("Invalid header")
                 .err(`Equals requires tape name`, 
                     `Equals can only apply to tape names (e.g. "equals text")`);
@@ -311,7 +333,7 @@ const HP_EQUALS = MPSequence<Header>(
 const HP_STARTS = MPSequence<Header>(
     ["starts", HP_NON_COMMENT_EXPR],
     (child) => child.bind(c => {
-        if (!(c instanceof TapeNameHeader)) {
+        if (!(c instanceof TapeHeader)) {
             return new ErrorHeader("Invalid header")
                 .err(`Equals requires tape name`, 
                     `Equals can only apply to tape names (e.g. "equals text")`);
@@ -323,7 +345,7 @@ const HP_STARTS = MPSequence<Header>(
 const HP_ENDS = MPSequence<Header>(
     ["ends", HP_NON_COMMENT_EXPR],
     (child) => child.bind(c => {
-        if (!(c instanceof TapeNameHeader)) {
+        if (!(c instanceof TapeHeader)) {
             return new ErrorHeader("Invalid header")
                  .err(`Equals requires tape name`, 
                     `Equals can only apply to tape names (e.g. "equals text")`);
@@ -335,7 +357,7 @@ const HP_ENDS = MPSequence<Header>(
 const HP_CONTAINS = MPSequence<Header>(
     ["contains", HP_NON_COMMENT_EXPR],
     (child) => child.bind(c => {
-        if (!(c instanceof TapeNameHeader)) {
+        if (!(c instanceof TapeHeader)) {
             return new ErrorHeader("Invalid header")
               .err(`Equals requires tape name`, 
                     `Equals can only apply to tape names (e.g. "equals text")`);
@@ -365,42 +387,47 @@ export function parseHeaderCell(text: string): Result<Header> {
     return results[0];
 }
 
-export function getParseClass(h: Header): ParseClass {
-    switch (h.constructor) {
-        case EmbedHeader: return "symbol";
-        case TapeNameHeader: return "plaintext";
-        case CommentHeader: return "none";
-        case OptionalHeader: return getParseClass((h as OptionalHeader).child);
-        case EqualsHeader: return "regex";
-        case StartsHeader: return "regex";
-        case EndsHeader: return "regex";
-        case ContainsHeader: return "regex";
-        case SlashHeader: return "plaintext";
-        case HideHeader: return "none";
-        case RenameHeader: return "none";
-        case ErrorHeader: return "none";
-        case FromHeader: return "regex";
-        case ToHeader: return "plaintext";
-        case RuleContextHeader: return "ruleContext";
-        case UniqueHeader: return "plaintext";
-        default:
-            throw new Error(`unhandled header: ${h.constructor.name}`);
+export function exhaustive(h: never): never { return h };
+
+export function parseClass(h: Header): ParseClass {
+    switch (h.tag) {
+        case "embed":    return "symbol";
+        case "tape":     return "plaintext";
+        case "comment":  return "none";
+        case "optional": return parseClass(h.child);
+        case "equals":   return "regex";
+        case "starts":   return "regex";
+        case "ends":     return "regex";
+        case "contains": return "regex";
+        case "slash":    return "plaintext";
+        case "hide":     return "none";
+        case "rename":   return "none";
+        case "error":    return "none";
+        case "from":     return "regex";
+        case "to":       return "plaintext";
+        case "context":  return "ruleContext";
+        case "unique":   return "plaintext";
+        default: exhaustive(h)
     }
 }
 
-export function getFontColor(h: Header): string {
-    const parseClass = getParseClass(h);
-    switch (parseClass) {
-        case "comment": return "#669944";
-        case "none": return "#000000";
-        case "plaintext": return "#064a3f";
-        case "regex": return "#bd1128";
+export function fontColor(h: Header): string {
+    const pc = parseClass(h);
+    switch (pc) {
+        case "comment":     return "#669944";
+        case "none":        return "#000000";
+        case "plaintext":   return "#064a3f";
+        case "regex":       return "#bd1128";
         case "ruleContext": return "#bd1128";
-        case "symbol": return "#333333"; 
+        case "symbol":      return "#333333"; 
     }
 }
 
-function hueFromText(text: string): number {
+function colorFromText(
+    text: string, 
+    saturation: number = DEFAULT_SATURATION, 
+    value: number = DEFAULT_VALUE
+): string { 
     const str = text + "abcde" // otherwise short strings are boring colors
     let hash = 0; 
 
@@ -409,100 +436,85 @@ function hueFromText(text: string): number {
         hash = hash & hash; 
     } 
     
-    return (hash & 0xFF) / 255;
+    const hue = (hash & 0xFF) / 255;
+    return RGBtoString(...HSVtoRGB(hue, saturation, value));
 }
 
-function colorFromText(
-    text: string, 
-    saturation: number = DEFAULT_SATURATION, 
-    value: number = DEFAULT_VALUE
-): string { 
-    return RGBtoString(...HSVtoRGB(hueFromText(text), saturation, value));
-}
-
-export function getBackgroundColor(
+export function backgroundColor(
     h: Header,
     s: number = DEFAULT_SATURATION,
     v: number = DEFAULT_VALUE    
 ): string {
-    switch (h.constructor) {
+    const color = (text: string) => colorFromText(text, s, v);
+    const getColor = (h: Header) => backgroundColor(h, s, v);
+    switch (h.tag) {
         // fixed colors
-        case CommentHeader: return "FFFFFF";
-        case ErrorHeader: return "FFFFFF";
+        case "comment":  return "FFFFFF";
+        case "error":    return "FFFFFF";
         // atomic commands get their colors from their command
-        case EmbedHeader: return colorFromText("embed", s, v);
-        case HideHeader: return colorFromText("hide", s, v);
-        case FromHeader: return colorFromText("from", s, v);
-        case ToHeader: return colorFromText("to", s, v);
-        case RuleContextHeader: return colorFromText("context", s, v);
+        case "embed":    return color("embed");
+        case "hide":     return color("hide");
+        case "from":     return color("from");
+        case "to":       return color("to");
+        case "context":  return color("context");
         // tapes get their colors from the tape name
-        case TapeNameHeader: return colorFromText((h as TapeNameHeader).tapeName, s, v);
+        case "tape":     return color(h.tapeName);
         // unary headers get their colors from their child
-        case OptionalHeader: return getBackgroundColor((h as OptionalHeader).child, s, v);
-        case EqualsHeader: return getBackgroundColor((h as EqualsHeader).child, s, v);
-        case StartsHeader: return getBackgroundColor((h as StartsHeader).child, s, v);
-        case EndsHeader: return getBackgroundColor((h as EndsHeader).child, s, v);
-        case ContainsHeader: return getBackgroundColor((h as ContainsHeader).child, s, v);
-        case RenameHeader: return getBackgroundColor((h as RenameHeader).child, s, v);
+        case "optional": return getColor(h.child);
+        case "equals":   return getColor(h.child);
+        case "starts":   return getColor(h.child);
+        case "ends":     return getColor(h.child);
+        case "contains": return getColor(h.child);
+        case "rename":   return getColor(h.child);
+        case "unique":   return getColor(h.child);
         // slashes get their colors from their first child only
-        case SlashHeader: return getBackgroundColor((h as SlashHeader).child1, s, v);
-        // param names it depends on the param
-        case UniqueHeader: return getBackgroundColor((h as UniqueHeader).child, s, v);
-        default:
-            throw new Error(`unhandled header: ${h.constructor.name}`);
+        case "slash":    return getColor(h.child1);
     }
 }
 
-export function getHeaderID(h: Header): string {
-    switch (h.constructor) {
-        case EmbedHeader: return "embed";
-        case TapeNameHeader: return (h as TapeNameHeader).tapeName;
-        case CommentHeader: return "%";
-        case OptionalHeader: 
-            return "optional[" + getHeaderID((h as OptionalHeader).child) + "]";
-        case EqualsHeader: 
-            return "equals[" + getHeaderID((h as EqualsHeader).child) + "]";
-        case StartsHeader: 
-            return "starts[" + getHeaderID((h as StartsHeader).child) + "]";
-        case EndsHeader: 
-            return "ends[" + getHeaderID((h as StartsHeader).child) + "]";
-        case ContainsHeader: 
-            return "contains[" + getHeaderID((h as ContainsHeader).child) + "]";
-        case SlashHeader:
-            const s = h as SlashHeader;
-            return `slash[${getHeaderID(s.child1)},${getHeaderID(s.child2)}]`;
-        case HideHeader: return "hide";
-        case RenameHeader: 
-            return "contains[" + getHeaderID((h as RenameHeader).child) + "]";
-        case ErrorHeader: return "ERR";
-        case FromHeader: return "from";
-        case ToHeader: return "to";
-        case RuleContextHeader: return "context";
-        case UniqueHeader: return "unique";
-        default:
-            throw new Error(`unhandled header: ${h.constructor.name}`);
+export function headerID(h: Header): string {
+    switch (h.tag) {
+        // atomic headers are their tags;
+        case "embed":
+        case "from": 
+        case "to":
+        case "context":
+        case "hide": 
+        case "error": 
+        case "comment": return h.tag;
+        // tape headers are their tapes
+        case "tape": return h.tapeName;
+        // unary headers are tag[childID]
+        case "unique":
+        case "optional": 
+        case "equals": 
+        case "starts": 
+        case "ends": 
+        case "contains": 
+        case "rename": return h.tag + "[" + headerID(h.child) + "]";
+        case "slash":  return `slash[${headerID(h.child1)},${headerID(h.child2)}]`;
+        default: exhaustive(h);
     }
 }
 
-export function getParamName(h: Header): string {
-    switch (h.constructor) {
-        case EmbedHeader: return "__";
-        case TapeNameHeader: return "__";
-        case CommentHeader: return "__";
-        case OptionalHeader: return getParamName((h as OptionalHeader).child);
-        case EqualsHeader: return "__";
-        case StartsHeader: return "__";
-        case EndsHeader: return "__";
-        case ContainsHeader: return "__";
-        case SlashHeader: return "__";
-        case HideHeader: return "__";
-        case RenameHeader: return "__";
-        case ErrorHeader: return "__";
-        case FromHeader: return "from";
-        case ToHeader: return "to";
-        case RuleContextHeader: return "context";
-        case UniqueHeader: return "unique";
-        default:
-            throw new Error(`unhandled header: ${h.constructor.name}`);
+export function paramName(h: Header): string {
+    switch (h.tag) {
+        case "embed":    return "__";
+        case "tape":     return "__";
+        case "comment":  return "__";
+        case "optional": return paramName(h.child);
+        case "equals":   return "__";
+        case "starts":   return "__";
+        case "ends":     return "__";
+        case "contains": return "__";
+        case "slash":    return "__";
+        case "hide":     return "__";
+        case "rename":   return "__";
+        case "error":    return "__";
+        case "from":     return "from";
+        case "to":       return "to";
+        case "context":  return "context";
+        case "unique":   return "unique";
+        default: exhaustive(h);
     }
 }

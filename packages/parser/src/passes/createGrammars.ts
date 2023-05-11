@@ -23,7 +23,7 @@ import {
     JoinGrammar,
     RuleContextGrammar
 } from "../grammars";
-import { getParseClass, TapeNameHeader } from "../headers";
+import { parseClass, TapeHeader } from "../headers";
 import { Err, Msgs, resultList } from "../msgs";
 import { BLANK_PARAM } from "../ops";
 import { HeaderToGrammar } from "./headerToGrammar";
@@ -81,8 +81,8 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     }
 
     public handleHeaderContentPair(t: TstHeaderContentPair, env: PassEnv): GrammarResult {
-        const parseClass = getParseClass(t.header.header);
-        return parseCell(parseClass, t.cell.text)
+        const pc = parseClass(t.header.header);
+        return parseCell(pc, t.cell.text)
                 .bind(g => new HeaderToGrammar(g))
                 .bind(h => h.transform(t.header.header, env))
                 .localize(t.cell.pos)
@@ -90,7 +90,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     }
     
     public handleRename(t: TstRename, env: PassEnv): GrammarResult {
-        if (!(t.header.header instanceof TapeNameHeader)) {
+        if (!(t.header.header instanceof TapeHeader)) {
             // TODO: This doesn't seem right
             return new EpsilonGrammar().msg()
                 .err("Renaming error",
@@ -115,8 +115,8 @@ export class CreateGrammars extends Pass<Component,Grammar> {
         const [prevGrammar, prevMsgs] = this.transform(t.prev, env)
                                             .destructure();
 
-        const parseClass = getParseClass(t.header.header);
-        const [grammar, msgs] = parseCell(parseClass, t.cell.text)
+        const pc = parseClass(t.header.header);
+        const [grammar, msgs] = parseCell(pc, t.cell.text)
                 .bind(g => new HeaderToGrammar(g))
                 .bind(h => h.transform(t.header.header, env))
                 .localize(t.cell.pos)
