@@ -4,29 +4,23 @@ import {
     GrammarResult,
     CollectionGrammar,
     AlternationGrammar,
-    EpsilonGrammar,
     LocatorGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { ALL_SYMBOL_NAME, DEFAULT_SYMBOL_NAME } from "../util";
+import { ALL_SYMBOL_NAME } from "../util";
+import { PostGrammarPass } from "./ancestorPasses";
 
 /**
  * Goes through collections and, if a symbol Default isn't present,
  * assigns that to an alternation of the symbols under the collection.
  */
-export class AssignDefaults extends Pass<Grammar,Grammar> {
+export class AssignDefaults extends PostGrammarPass {
 
-    public transform(g: Grammar, env: PassEnv): GrammarResult {
-        
-        const mapped = g.mapChildren(this, env);
-        return mapped.bind(g => {
-            switch(g.constructor) {
-                case CollectionGrammar:
-                    return this.handleCollection(g as CollectionGrammar, env);
-                default: 
-                    return g;
-            }
-        });
+    public postTransform(g: Grammar, env: PassEnv): Grammar {
+        switch(g.tag) {
+            case "collection": return this.handleCollection(g as CollectionGrammar, env);
+            default:           return g;
+        }
     }
     
     public get desc(): string {

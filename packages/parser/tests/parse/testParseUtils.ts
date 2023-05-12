@@ -5,6 +5,8 @@ import { parseOp } from "../../src/ops";
 import { PassEnv } from "../../src/passes";
 import { CombineLiterals } from "../../src/passes/combineLiterals";
 import { tokenizeUnicode } from "../../src/util";
+import { Grammar } from "../../src/grammars";
+import { Msgs } from "../../src/msgs";
 
 export function testHeaderID(
     testPrefix: string,
@@ -81,7 +83,7 @@ function testCellID(
     const env = new PassEnv();
     const [result, msgs] = new CombineLiterals()
                                 .go(parseResult, env)
-                                .destructure();
+                                .destructure() as [Grammar, Msgs];
     if (testPrefix != "") {
         testPrefix += '. ';
     }

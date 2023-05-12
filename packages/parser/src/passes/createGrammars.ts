@@ -167,8 +167,8 @@ export class CreateGrammars extends Pass<Component,Grammar> {
         for (const params of t.child.rows) {
             const fromArg = this.transform(params.getParam("from"), env).msgTo(newMsgs);
             const toArg = this.transform(params.getParam("to"), env).msgTo(newMsgs);
-            let preArg = new EpsilonGrammar();
-            let postArg = new EpsilonGrammar();
+            let preArg: Grammar = new EpsilonGrammar();
+            let postArg: Grammar = new EpsilonGrammar();
             let contextArg = this.transform(params.getParam("context"), env).msgTo(newMsgs);
             let begins = false;
             let ends = false;

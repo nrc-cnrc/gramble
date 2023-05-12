@@ -133,8 +133,8 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
     }
 
     public handleError(h: ErrorHeader, env: PassEnv): GrammarResult {
-        if (!(this.cellGrammar instanceof EpsilonGrammar) || 
-            (this.cellGrammar instanceof LiteralGrammar && this.cellGrammar.text.length > 0)) {
+        if (!(this.cellGrammar instanceof EpsilonGrammar || 
+            (this.cellGrammar instanceof LiteralGrammar && this.cellGrammar.text.length > 0))) {
             return new EpsilonGrammar().msg()
                 .warn("This content is associated with an invalid header above, ignoring");
         }

@@ -26,13 +26,10 @@ export class SameTapeReplacePass extends GrammarPass {
     public transform(g: Grammar, env: PassEnv): GrammarResult {
         const result = g.mapChildren(this, env);
         return result.bind(g => {
-            switch (g.constructor) {
-                case JoinReplaceGrammar:
-                    return this.handleJoinReplace(g as JoinReplaceGrammar, env);
-                case ReplaceGrammar:
-                    return this.handleReplace(g as ReplaceGrammar, env);
-                default:
-                    return g;
+            switch (g.tag) {
+                case "joinreplace": return this.handleJoinReplace(g, env);
+                case "replace":     return this.handleReplace(g, env);
+                default:            return g;
             }
         });
     }

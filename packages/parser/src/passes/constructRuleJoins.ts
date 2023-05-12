@@ -11,13 +11,14 @@ import {
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
 import { result } from "../msgs";
 import { PassEnv } from "../passes";
+import { GrammarError, PostGrammarPass } from "./ancestorPasses";
 
 /**
  * This pass handles the construction of implicit-tape replacement rules
  * (where you just say "from"/"to" rather than "from text"/"to text") and
  * cascades of them.
  */
-export class ConstructRuleJoins extends GrammarPass {
+export class ConstructRuleJoins extends PostGrammarPass {
 
     public replaceIndex: number = 0;
 
@@ -25,30 +26,25 @@ export class ConstructRuleJoins extends GrammarPass {
         return "Joining rules to grammars";
     }
     
-    public transform(g: Grammar, env: PassEnv): GrammarResult {
-        const result = g.mapChildren(this, env);
-        
-        return result.bind(g => {
-            switch (g.constructor) {
-                case JoinRuleGrammar:
-                    return this.handleJoinRule(g as JoinRuleGrammar, env);
-                default:
-                    return g;
-            }
-        });
+    public postTransform(g: Grammar, env: PassEnv): Grammar {
+        switch (g.tag) {
+            case "joinrule": return this.handleJoinRule(g, env);
+            default:         return g;
+        }
     }
 
-    public handleJoinRule(g: JoinRuleGrammar, env: PassEnv): GrammarResult {
+    public handleJoinRule(g: JoinRuleGrammar, env: PassEnv): Grammar {
 
         g.child.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar
             // leads to infinite generation.  This is correct but not what anyone
             // actually wants, so mark an error
-            return result(g).err(`Replacing on non-existent tape'`,
+
+            throw GrammarError("Replacing non-existent tape -- " +
                             `The grammar above does not have a tape ` +
-                            `${g.inputTape} to replace on`)
-                        .bind(r => r.child);
+                            `${g.inputTape} to replace on`,
+                            g.child);
         }
         
         let relevantTape = g.inputTape;
@@ -66,8 +62,7 @@ export class ConstructRuleJoins extends GrammarPass {
             newG = new PreTapeGrammar(rule.hiddenTapeName, REPLACE_OUTPUT_TAPE, newG);
         }
 
-        newG = new RenameGrammar(newG, REPLACE_OUTPUT_TAPE, g.inputTape);
-        return newG.msg();
+        return new RenameGrammar(newG, REPLACE_OUTPUT_TAPE, g.inputTape);
     }
 
 }

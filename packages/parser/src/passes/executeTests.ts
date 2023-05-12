@@ -7,7 +7,8 @@ import {
     GrammarResult, TestNotGrammar, 
     PriorityGrammar, 
     TestGrammar, 
-    infinityProtection
+    infinityProtection,
+    AbstractTestGrammar
 } from "../grammars";
 import { TapeNamespace} from "../tapes";
 import { generate } from "../generator";
@@ -29,13 +30,10 @@ export class ExecuteTests extends GrammarPass {
     public transform(g: Grammar, env: PassEnv): GrammarResult {
         const result = g.mapChildren(this, env);
         return result.bind(g => {
-            switch (g.constructor) {
-                case TestGrammar:
-                    return this.handleTest(g as TestGrammar, env);
-                case TestNotGrammar:
-                    return this.handleNegativeTest(g as TestNotGrammar, env);
-                default:
-                    return g;
+            switch (g.tag) {
+                case "test":    return this.handleTest(g, env);
+                case "testnot": return this.handleNegativeTest(g, env);
+                default:        return g;
             }
         });
 
@@ -83,7 +81,7 @@ export class ExecuteTests extends GrammarPass {
             "The grammar above correctly has no outputs compatible with these inputs."));
     }
     
-    public executeTest(test: TestGrammar, env: PassEnv): StringDict[] {
+    public executeTest(test: AbstractTestGrammar, env: PassEnv): StringDict[] {
 
         const opt = new GenOptions();
 

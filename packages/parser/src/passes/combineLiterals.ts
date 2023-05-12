@@ -6,6 +6,7 @@ import {
     EpsilonGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
+import { PostGrammarPass } from "./ancestorPasses";
 
 /**
  * Plaintext/regex parsing results in a lot of single-character
@@ -15,26 +16,20 @@ import { Pass, PassEnv } from "../passes";
  * of literals is two), and also allows further optimizations like
  * atomicity.
  */
-export class CombineLiterals extends Pass<Grammar,Grammar> {
+export class CombineLiterals extends PostGrammarPass {
 
     public get desc(): string {
         return "Combining literals";
     }
 
-    public transform(g: Grammar, env: PassEnv): GrammarResult {
-        
-        const mapped = g.mapChildren(this, env);
-        return mapped.bind(g => {
-            switch(g.constructor) {
-                case SequenceGrammar:
-                    return this.handleSequence(g as SequenceGrammar, env);
-                default: 
-                    return g;
-            }
-        });
+    public postTransform(g: Grammar, env: PassEnv): Grammar {
+        switch(g.tag) {
+            case "seq": return this.handleSequence(g, env);
+            default:    return g;
+        }
     }
 
-    handleSequence(g: SequenceGrammar, env: PassEnv): GrammarResult {
+    handleSequence(g: SequenceGrammar, env: PassEnv): Grammar {
         const results: Grammar[] = [];
         for (const child of g.children) {
 
@@ -56,8 +51,8 @@ export class CombineLiterals extends Pass<Grammar,Grammar> {
             results.push(child);
         }
 
-        if (results.length == 0) return new EpsilonGrammar().msg();
-        if (results.length == 1) return results[0].msg();
-        return new SequenceGrammar(results).msg();
+        if (results.length == 0) return new EpsilonGrammar();
+        if (results.length == 1) return results[0];
+        return new SequenceGrammar(results);
     }
 }

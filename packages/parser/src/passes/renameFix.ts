@@ -29,13 +29,10 @@ export class RenameFix extends PostGrammarPass {
     }
 
     public postTransform(g: Grammar, env: PassEnv): Grammar {
-        switch (g.constructor) {
-            case HideGrammar:
-                return this.handleHide(g as HideGrammar, env);
-            case RenameGrammar:
-                return this.handleRename(g as RenameGrammar, env);
-            default:
-                return g;
+        switch (g.tag) {
+            case "hide":   return this.handleHide(g, env);
+            case "rename": return this.handleRename(g, env);
+            default:       return g;
         }
     }
 

@@ -37,7 +37,6 @@ import {
     DUMMY_TAPE,
     flatten,
     HIDDEN_TAPE_PREFIX,
-    isSubset,
     listDifference,
     listIntersection,
     listUnique,
@@ -48,8 +47,7 @@ import {
     ValueSet
 } from "./util";
 
-import { GenOptions } from "./util";
-import { Component, CPass, CResult, mapAny } from "./components";
+import { Component } from "./components";
 
 export { CounterStack, Expr };
 
@@ -77,6 +75,41 @@ export type LengthRange = {
     max: number
 }
 
+export type Grammar = EpsilonGrammar
+             | NullGrammar
+             | CharSetGrammar
+             | EpsilonLiteralGrammar
+             | LiteralGrammar
+             | DotGrammar
+             | ParallelGrammar
+             | SequenceGrammar
+             | AlternationGrammar
+             | ShortGrammar
+             | IntersectionGrammar
+             | JoinGrammar
+             | FilterGrammar
+             | CountGrammar
+             | PriorityGrammar
+             | StartsGrammar
+             | EndsGrammar
+             | ContainsGrammar
+             | SingleTapeGrammar
+             | RenameGrammar
+             | RepeatGrammar
+             | NegationGrammar
+             | PreTapeGrammar
+             | HideGrammar
+             | MatchFromGrammar
+             | MatchGrammar
+             | CollectionGrammar
+             | EmbedGrammar
+             | LocatorGrammar
+             | TestGrammar
+             | TestNotGrammar
+             | JoinReplaceGrammar
+             | JoinRuleGrammar
+             | ReplaceGrammar
+             | RuleContextGrammar;
 /**
  * Grammar components represent the linguistic grammar that the
  * programmer is expressing (in terms of sequences, alternations, joins,
@@ -123,14 +156,14 @@ export type LengthRange = {
  *     component.
  */
 
-export abstract class Grammar extends Component {
+export abstract class AbstractGrammar extends Component {
 
     public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
         return super.mapChildren(f as GrammarPass, env) as GrammarResult;
     }
 
     public msg(m: Msg | Msgs | ResultVoid = []): GrammarResult {
-        return new GrammarResult(this).msg(m);
+        return super.msg(m) as GrammarResult;
     }
     
     public err(shortMsg: string, longMsg: string, pos?: CellPos): GrammarResult {
@@ -326,14 +359,15 @@ export abstract class Grammar extends Component {
     }
 }
 
-abstract class AtomicGrammar extends Grammar {
+abstract class AtomicGrammar extends AbstractGrammar {
 
     public getChildren(): Grammar[] { return []; }
 
 }
 
 export class EpsilonGrammar extends AtomicGrammar {
-
+    public readonly tag = "epsilon";
+    
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
         return { null: false, min: 0, max: 0 };
     }
@@ -364,6 +398,7 @@ export class EpsilonGrammar extends AtomicGrammar {
 }
 
 export class NullGrammar extends AtomicGrammar {
+    public readonly tag = "null";
 
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
         return { null: true, min: 0, max: 0 };
@@ -391,6 +426,7 @@ export class NullGrammar extends AtomicGrammar {
 }
 
 export class CharSetGrammar extends AtomicGrammar {
+    public readonly tag = "charset";
 
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
         if (tapeName != this.tapeName) return { null: false, min: 0, max: 0 };
@@ -444,6 +480,7 @@ export class CharSetGrammar extends AtomicGrammar {
 }
 
 export class EpsilonLiteralGrammar extends AtomicGrammar {
+    public readonly tag = "epsilonlit";
 
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
         return { null: false, min: 0, max: 0 };
@@ -479,7 +516,8 @@ export class EpsilonLiteralGrammar extends AtomicGrammar {
 }
 
 export class LiteralGrammar extends AtomicGrammar {
-
+    public readonly tag = "lit";
+    
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
         if (tapeName != this.tapeName) return { null: false, min: 0, max: 0 };
         return { null: false, min: this.text.length, max: this.text.length };
@@ -544,6 +582,7 @@ export class LiteralGrammar extends AtomicGrammar {
 }
 
 export class DotGrammar extends AtomicGrammar {
+    public readonly tag = "dot";
 
     constructor(
         public tapeName: string
@@ -594,7 +633,7 @@ export class DotGrammar extends AtomicGrammar {
     }
 }
 
-abstract class NAryGrammar extends Grammar {
+abstract class NAryGrammar extends AbstractGrammar {
 
     constructor(
         public children: Grammar[]
@@ -609,6 +648,7 @@ abstract class NAryGrammar extends Grammar {
 }
 
 export class ParallelGrammar extends NAryGrammar {
+    public readonly tag = "parallel";
 
     public get id(): string {
         const cs = this.children.map(c => c.id).join(",");
@@ -649,6 +689,7 @@ export class ParallelGrammar extends NAryGrammar {
 }
 
 export class SequenceGrammar extends NAryGrammar {
+    public readonly tag = "seq";
 
     public get id(): string {
         return this.children.map(c => c.id).join("+");
@@ -715,7 +756,8 @@ export class SequenceGrammar extends NAryGrammar {
 }
 
 export class AlternationGrammar extends NAryGrammar {
-    
+    public readonly tag = "alt";
+
     public get id(): string {
         return this.children.map(c => c.id).join("|");
     }
@@ -744,7 +786,7 @@ export class AlternationGrammar extends NAryGrammar {
     }
 }
 
-export abstract class UnaryGrammar extends Grammar {
+export abstract class UnaryGrammar extends AbstractGrammar {
 
     constructor(
         public child: Grammar
@@ -764,7 +806,7 @@ export abstract class UnaryGrammar extends Grammar {
     }
 }
 
-abstract class BinaryGrammar extends Grammar {
+abstract class BinaryGrammar extends AbstractGrammar {
 
     constructor(
         public child1: Grammar,
@@ -789,6 +831,7 @@ abstract class BinaryGrammar extends Grammar {
 }
 
 export class ShortGrammar extends UnaryGrammar {
+    public readonly tag = "short";
 
     public get id(): string {
         return `Pref(${this.child.id})`;
@@ -820,7 +863,8 @@ export class ShortGrammar extends UnaryGrammar {
 }
 
 export class IntersectionGrammar extends BinaryGrammar {
-    
+    public readonly tag = "intersect";
+
     public get id(): string {
         return `Intersect(${this.child1.id},${this.child2.id})`;
     }
@@ -871,6 +915,7 @@ function fillOutWithDotStar(state: Expr, tapes: string[]) {
 } */
 
 export class JoinGrammar extends BinaryGrammar {
+    public readonly tag = "join";
 
     public get id(): string {
         return `Join(${this.child1.id},${this.child2.id})`;
@@ -926,6 +971,7 @@ export class JoinGrammar extends BinaryGrammar {
 }
 
 export class FilterGrammar extends BinaryGrammar {
+    public readonly tag = "filter";
 
     public get id(): string {
         return `Filter(${this.child1.id},${this.child2.id})`;
@@ -980,6 +1026,7 @@ export class FilterGrammar extends BinaryGrammar {
 }
 
 export class CountGrammar extends UnaryGrammar {
+    public readonly tag = "count";
 
     constructor(
         child: Grammar,
@@ -1013,7 +1060,8 @@ export class CountGrammar extends UnaryGrammar {
 }
 
 export class PriorityGrammar extends UnaryGrammar {
-
+    public readonly tag = "priority";
+    
     constructor(
         child: Grammar,
         public tapePriority: string[]
@@ -1059,6 +1107,7 @@ abstract class ConditionGrammar extends UnaryGrammar {
 }
 
 export class StartsGrammar extends ConditionGrammar {
+    public readonly tag = "starts";
 
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
         const childLength = this.child.estimateLength(tapeName, stack, env);
@@ -1075,7 +1124,8 @@ export class StartsGrammar extends ConditionGrammar {
 }
 
 export class EndsGrammar extends ConditionGrammar {
-    
+    public readonly tag = "ends";
+
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
         const childLength = this.child.estimateLength(tapeName, stack, env);
         return {
@@ -1091,6 +1141,7 @@ export class EndsGrammar extends ConditionGrammar {
 }
 
 export class ContainsGrammar extends ConditionGrammar {
+    public readonly tag = "contains";
 
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
         const childLength = this.child.estimateLength(tapeName, stack, env);
@@ -1123,6 +1174,7 @@ export class ContainsGrammar extends ConditionGrammar {
  * 
  */
 export class SingleTapeGrammar extends UnaryGrammar {
+    public readonly tag = "singletape";
 
     constructor(
         public tapeName: string,
@@ -1178,6 +1230,7 @@ function update<T>(orig: T, update: any): T {
 }
 
 export class RenameGrammar extends UnaryGrammar {
+    public readonly tag = "rename";
 
     constructor(
         child: Grammar,
@@ -1287,6 +1340,7 @@ export class RenameGrammar extends UnaryGrammar {
 }
 
 export class RepeatGrammar extends UnaryGrammar {
+    public readonly tag = "repeat";
 
     constructor(
         child: Grammar,
@@ -1335,7 +1389,8 @@ export class RepeatGrammar extends UnaryGrammar {
 }
 
 export class NegationGrammar extends UnaryGrammar {
-    
+    public readonly tag = "not";
+
     public get id(): string {
         return `Not(${this.child.id})`;
     }
@@ -1370,6 +1425,7 @@ export class NegationGrammar extends UnaryGrammar {
 }
 
 export class PreTapeGrammar extends UnaryGrammar {
+    public readonly tag = "pretape";
 
     constructor(
         public fromTape: string,
@@ -1408,6 +1464,7 @@ export class PreTapeGrammar extends UnaryGrammar {
 
 let HIDE_INDEX = 0; 
 export class HideGrammar extends UnaryGrammar {
+    public readonly tag = "hide";
 
     constructor(
         child: Grammar,
@@ -1506,6 +1563,7 @@ export class HideGrammar extends UnaryGrammar {
 }
 
 export class MatchFromGrammar extends UnaryGrammar {
+    public readonly tag = "matchfrom";
 
     constructor(
         child: Grammar,
@@ -1600,7 +1658,8 @@ export class MatchFromGrammar extends UnaryGrammar {
 }
 
 export class MatchGrammar extends UnaryGrammar {
-
+    public readonly tag = "match";
+    
     constructor(
         child: Grammar,
         public relevantTapes: StringSet
@@ -1697,7 +1756,8 @@ export class TapeNsGrammar extends UnaryGrammar {
 }
 */
 
-export class CollectionGrammar extends Grammar {
+export class CollectionGrammar extends AbstractGrammar {
+    public readonly tag = "collection";
 
     constructor(
         public symbols: Dict<Grammar> = {},
@@ -1824,6 +1884,7 @@ export class CollectionGrammar extends Grammar {
 }
 
 export class EmbedGrammar extends AtomicGrammar {
+    public readonly tag = "embed";
 
     constructor(
         public name: string
@@ -1857,6 +1918,9 @@ export class EmbedGrammar extends AtomicGrammar {
                 const newStack = stack.add(this.name);
                 let referent = env.symbolNS.get(this.name);
                 this._tapes = referent.calculateTapes(newStack, env);
+                if (this._tapes == undefined) {
+                    throw new Error(`undefined tapes in referent ${this.name}`);
+                }
             }
         }
         return this._tapes;
@@ -1933,6 +1997,7 @@ export class EmbedGrammar extends AtomicGrammar {
  * associates a grammar with some location in a sheet
  */
 export class LocatorGrammar extends UnaryGrammar {
+    public readonly tag = "locator";
 
     constructor(
         public position: CellPos,
@@ -1969,7 +2034,7 @@ export class LocatorGrammar extends UnaryGrammar {
 
 }
 
-export class TestGrammar extends UnaryGrammar {
+export abstract class AbstractTestGrammar extends UnaryGrammar {
 
     constructor(
         child: Grammar,
@@ -2006,9 +2071,12 @@ export class TestGrammar extends UnaryGrammar {
     }
 }
 
+export class TestGrammar extends AbstractTestGrammar {
+    public readonly tag = "test";
+}
 
-export class TestNotGrammar extends TestGrammar {
-
+export class TestNotGrammar extends AbstractTestGrammar {
+    public readonly tag = "testnot";
 }
 
 export function Seq(...children: Grammar[]): SequenceGrammar {
@@ -2253,7 +2321,8 @@ export function JoinReplace(
  * JoinReplace is a special kind of join that understands how
  * tape renaming has to work in the case of replace rules
  */
-export class JoinReplaceGrammar extends Grammar {
+export class JoinReplaceGrammar extends AbstractGrammar {
+    public readonly tag = "joinreplace";
 
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
         return this.child.estimateLength(tapeName, stack, env);
@@ -2337,7 +2406,8 @@ export function JoinRule(
  * With this restriction, we don't have to try to infer what the tape names
  * are.
  */
-export class JoinRuleGrammar extends Grammar {
+export class JoinRuleGrammar extends AbstractGrammar {
+    public readonly tag = "joinrule";
 
     constructor(
         public inputTape: string,
@@ -2356,22 +2426,6 @@ export class JoinRuleGrammar extends Grammar {
         return `JoinRule(${this.child.id},${cs})`;
     }
     
-    /*
-    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
-        const [child, childMsgs] = f.transform(this.child, env).destructure();
-        const isReplace = (r: Grammar): r is ReplaceGrammar => 
-                                r instanceof ReplaceGrammar;
-        // it's possible for rule transformation to result in a non
-        // rule (due to errors), so we filter those out
-        const [rules, ruleMsgs] = resultList(this.rules)
-                                    .map(c => f.transform(c, env))
-                                    .bind(cs => cs.filter(isReplace))
-                                    .destructure();
-        return new JoinRuleGrammar(this.inputTape, child, rules)
-                            .msg(childMsgs)
-                            .msg(ruleMsgs);
-    } */
-
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = this.child.calculateTapes(stack, env);
@@ -2398,7 +2452,8 @@ export class JoinRuleGrammar extends Grammar {
 } 
 
 let REPLACE_INDEX = 0;
-export class ReplaceGrammar extends Grammar {
+export class ReplaceGrammar extends AbstractGrammar {
+    public readonly tag = "replace";
 
     public get id(): string {
         return `Replace(${this.fromGrammar.id}->${this.toGrammar.id}|${this.preContext.id}_${this.postContext.id})`;
@@ -2677,7 +2732,8 @@ export function infinityProtection(
 
 }
 
-export class RuleContextGrammar extends Grammar {
+export class RuleContextGrammar extends AbstractGrammar {
+    public readonly tag = "context";
 
     constructor(
         public preContext: Grammar,
@@ -2700,8 +2756,5 @@ export class RuleContextGrammar extends Grammar {
     public constructExpr(tapeNS: TapeNamespace, symbols: ExprNamespace): Expr {
         throw new Error("Method not implemented.");
     }
-
-
-
 
 }

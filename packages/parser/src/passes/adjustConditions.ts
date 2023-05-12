@@ -112,7 +112,7 @@ export class AdjustConditions extends GrammarPass {
         });
     }
     
-    public transformEnds(g: StartsGrammar, env: PassEnv): GrammarResult {
+    public transformEnds(g: EndsGrammar, env: PassEnv): GrammarResult {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))

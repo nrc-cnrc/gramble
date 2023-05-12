@@ -18,11 +18,17 @@ import { PassEnv } from "./passes";
 import { Op } from "./ops";
 import { Component, CPass, CResult } from "./components";
 
+abstract class AbstractComponent extends Component {
+
+    public getDefaultRepair(): Component {
+        return new TstEmpty();
+    }
+}
 /**
  * A TstCellComponent is just any TstComponent that has a
  * cell.
  */
-export abstract class TstCellComponent extends Component {
+export abstract class TstCellComponent extends AbstractComponent {
 
     constructor(
         public cell: Cell
@@ -57,10 +63,6 @@ export class TstContent extends TstCellComponent {
         cell: Cell,
     ) {
         super(cell);
-    }
-    
-    public mapChildren(f: CPass, env: PassEnv): CResult {
-        return new TstContent(this.cell).msg();
     }
 
 }
@@ -194,7 +196,7 @@ export class TstFilter extends TstCellComponent {
     
 }
 
-export class TstEmpty extends Component {
+export class TstEmpty extends AbstractComponent {
 
 }
 
@@ -278,7 +280,7 @@ export class TstOp extends TstBinary {
         
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
-                .map(c => f.transform(c, env))
+                .map(c => f.transform(c as this, env))
                 .bind(([s,c]) => new TstOp(this.cell, this.op, s, c));
     }
 

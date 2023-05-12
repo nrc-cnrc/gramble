@@ -38,18 +38,12 @@ export class HandleSingleTapes extends GrammarPass {
 
     public transform(g: Grammar, env: PassEnv): GrammarResult {
 
-        switch (g.constructor) {
-
-            case SingleTapeGrammar:
-                return this.handleSingleTape(g as SingleTapeGrammar, env);
-            case LiteralGrammar:
-                return this.handleLiteral(g as LiteralGrammar, env);
-            case DotGrammar:
-                return this.handleDot(g as DotGrammar, env);
-            case EmbedGrammar:
-                return this.handleEmbed(g as EmbedGrammar, env);
-            default:
-                return g.mapChildren(this, env);
+        switch (g.tag) {
+            case "singletape": return this.handleSingleTape(g, env);
+            case "lit":        return this.handleLiteral(g, env);
+            case "dot":        return this.handleDot(g, env);
+            case "embed":      return this.handleEmbed(g, env);
+            default:           return g.mapChildren(this, env);
         }
     }
 

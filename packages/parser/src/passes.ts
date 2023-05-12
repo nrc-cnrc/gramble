@@ -111,29 +111,3 @@ export class PassError<T> {
         public msgs: Msg | Msgs
     ) { }
 }
-
-export abstract class PostPass<T extends Component> extends Pass<T,T> {
-
-    public transform(g: T, env: PassEnv): Result<T> {
-        const newG = g.mapChildren(this, env) as Result<T>;
-        return newG.bind(g => {
-            try {
-                return result(this.postTransform(g, env));
-            } catch (e) {
-                if (typeof e === "string") {
-                    const m = stringToMsg(e).localize(g.pos);
-                    return this.getDefaultRepair().msg(m);
-                }
-                if (!(e instanceof PassError)) throw e;
-                return e.repair.msg(e.msgs).localize(g.pos);
-            }
-        });
-    }
-
-    public abstract getDefaultRepair(): T;
-
-    public postTransform(g: T, env: PassEnv): T {
-        return g;
-    }
-
-}

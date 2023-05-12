@@ -36,13 +36,10 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
     }
 
     public transform(g: Grammar, env: PassEnv): GrammarResult {
-        switch(g.constructor) {
-            case CollectionGrammar:
-                return this.transformCollection(g as CollectionGrammar, env);
-            case EmbedGrammar:
-                return this.transformEmbed(g as EmbedGrammar, env);
-            default: 
-                return g.mapChildren(this, env);
+        switch(g.tag) {
+            case "collection": return this.transformCollection(g, env);
+            case "embed":      return this.transformEmbed(g, env);
+            default:           return g.mapChildren(this, env) as GrammarResult;
         }
     }
     

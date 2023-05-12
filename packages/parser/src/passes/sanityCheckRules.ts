@@ -35,11 +35,9 @@ export class SanityCheckRules extends PostGrammarPass {
     }
     
     public postTransform(g: Grammar, env: PassEnv): Grammar {
-        switch (g.constructor) {
-            case ReplaceGrammar:
-                return this.handleReplace(g as ReplaceGrammar, env);
-            case JoinRuleGrammar:
-                return this.handleJoinRule(g as JoinRuleGrammar, env);
+        switch (g.tag) {
+            case "replace":  return this.handleReplace(g, env);
+            case "joinrule": return this.handleJoinRule(g, env);
             default:
                 return g;
         }
