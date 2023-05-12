@@ -479,48 +479,6 @@ class DotExpr extends Expr {
     }
 }
 
-class CharSetExpr extends Expr {
-    
-    constructor(
-        public tapeName: string,
-        public chars: string[]
-    ) {
-        super();
-    }
-    
-    public get id(): string {
-        return `${this.tapeName}:{${this.chars.join("|")}}`;
-    }
-
-    public delta(
-        tapeName: string,
-        env: DerivEnv
-    ): Expr {
-        if (tapeName != this.tapeName) {
-            return this;
-        }
-        return NULL;
-    }
-
-    public *deriv(
-        tapeName: string,
-        target: string, 
-        env: DerivEnv
-    ): DerivResults {
-        if (tapeName != this.tapeName) {
-            return;
-        }
-
-        const tape = env.getTape(tapeName);
-        for (const c of tape.expandStrings(target)) {
-            if (this.chars.indexOf(c) == -1) {
-                continue;
-            }
-            yield [c, EPSILON];
-        }
-    }
-}
-
 class DotStarExpr extends Expr {
     
     constructor(
@@ -2308,10 +2266,6 @@ export function constructLiteral(
 
 export function constructEpsilonLiteral(tape: string): EpsilonLiteralExpr {
     return new EpsilonLiteralExpr(tape);
-}
-
-export function constructCharSet(tape: string, chars: string[]): CharSetExpr {
-    return new CharSetExpr(tape, chars);
 }
 
 export function constructDot(tape: string): Expr {

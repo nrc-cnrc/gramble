@@ -5,7 +5,7 @@ import {
     constructRename, constructNegation, NULL,
     constructMatch, 
     constructFilter, constructJoin,
-    constructLiteral, constructMatchFrom, constructCharSet,
+    constructLiteral, constructMatchFrom,
     constructPriority, EpsilonExpr, constructShort,
     constructEpsilonLiteral, 
     constructPrecede, constructPreTape,
@@ -17,9 +17,7 @@ import {
     CollectionExpr
 } from "./exprs";
 import { 
-    Msg, Msgs, 
-    Err, Warn,
-    Result, ResultVoid, 
+    Result,
 } from "./msgs";
 
 import {
@@ -77,7 +75,6 @@ export type LengthRange = {
 
 export type Grammar = EpsilonGrammar
              | NullGrammar
-             | CharSetGrammar
              | EpsilonLiteralGrammar
              | LiteralGrammar
              | DotGrammar
@@ -408,60 +405,6 @@ export class NullGrammar extends AtomicGrammar {
         symbols: ExprNamespace
     ): Expr {
         return NULL;
-    }
-}
-
-export class CharSetGrammar extends AtomicGrammar {
-    public readonly tag = "charset";
-
-    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
-        if (tapeName != this.tapeName) return { null: false, min: 0, max: 0 };
-        return { null: false, min: 1, max: 1 };
-    }
-
-    constructor(
-        public tapeName: string,
-        public chars: string[]
-    ) {
-        super();
-    }
-
-    public get id(): string {
-        return `CharSet(${this.chars.join(",")})`
-    }
-    
-    public getTapePriority(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): number {
-        return (tapeName == this.tapeName) ? 1 : 0;
-    }
-
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = [this.tapeName];
-        }
-        return this._tapes;
-    }
-    
-    public collectVocab(
-        tapeName: string,
-        atomic: boolean,
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): StringSet { 
-        if (tapeName != this.tapeName) {
-            return new Set();
-        }
-        return new Set(this.chars);
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace,
-        symbols: ExprNamespace
-    ): Expr {
-        return constructCharSet(this.tapeName, this.chars);
     }
 }
 
@@ -2081,8 +2024,8 @@ export function Optional(child: Grammar): AlternationGrammar {
     return Uni(child, Epsilon());
 }
 
-export function CharSet(tape: string, chars: string[]): CharSetGrammar {
-    return new CharSetGrammar(tape, chars);
+export function CharSet(tape: string, chars: string[]): Grammar {
+    return new AlternationGrammar(chars.map(c => Lit(tape, c)));
 }
 
 export function Lit(tape: string, text: string): LiteralGrammar {
