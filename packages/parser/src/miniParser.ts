@@ -1,4 +1,4 @@
-import { Result } from "./msgs";
+import { Msgs, Result, result, resultList } from "./msgs";
 import { Gen } from "./util";
 
 /**
@@ -121,11 +121,28 @@ export function MPDelay<T>(child: () => MPParser<T>): MPParser<T> {
     }
 }
 
+function tryConstr<T1,T2>(
+    constr: (args: T1) => T2,
+    args: T1,
+    remainder: string[],
+    msgs: Msgs = []
+): [Result<T2>, string[]] { 
+    try {
+        return [result(constr(args)).msg(msgs), remainder];
+    } catch (e) {
+        if (!(e instanceof Result)) {
+            console.log(`non-result thrown: ${JSON.stringify(e)}`);
+            throw e;
+        }
+        return [e.msg(msgs), remainder];
+    }
+}
+
 export function MPEmpty<T>(
-    constr: () => Result<T>
+    constr: () => T
 ): MPParser<T> {
     return function*(input: string[], env: MiniParseEnv) {
-        yield [constr(), input];
+        yield tryConstr(constr, void 0, input);
     }
 }
 
@@ -142,19 +159,20 @@ export function MPEnv<T>(
  * Recognizes any word in the "reserved" string set.
  */
 export function MPReserved<T>(
-    constr: (s: string) => Result<T>,
+    constr: (s: string) => T,
     caseSensitive: boolean = false    
 ): MPParser<T> {
     return function*(input: string[], env: MiniParseEnv) {
         if (input.length == 0) {
             return;
         }
-        const firstToken = caseSensitive ? input[0] 
+        const firstTokenLower = caseSensitive ? input[0] 
                                          : input[0].toLowerCase();
-        if (!env.reserved.has(firstToken)) {
+        if (!env.reserved.has(firstTokenLower)) {
             return;
         }
-        yield [constr(input[0]), input.slice(1)];
+
+        yield tryConstr(constr, input[0], input.slice(1));
     }
 }
 
@@ -162,7 +180,7 @@ export function MPReserved<T>(
  * Recognizes any word that is NOT in the "reserved" string set.
  */
 export function MPUnreserved<T>(
-    constr: (s: string) => Result<T>,
+    constr: (s: string) => T,
     caseSensitive: boolean = false    
 ): MPParser<T> {
     return function*(input: string[], env: MiniParseEnv) {
@@ -175,7 +193,8 @@ export function MPUnreserved<T>(
             return;
         }
         const result = unescape(input[0]);
-        yield [constr(result), input.slice(1)];
+
+        yield tryConstr(constr, result, input.slice(1));
     }
 }
 
@@ -183,7 +202,7 @@ export function MPUnreserved<T>(
  * Recognizes any single char that isn't in the reserved set
  */
 export function MPUnreservedChar<T>(
-    constr: (s: string) => Result<T>,
+    constr: (s: string) => T,
     caseSensitive: boolean = false    
 ): MPParser<T> {
     return function*(input: string[], env: MiniParseEnv) {
@@ -212,7 +231,7 @@ export function MPUnreservedChar<T>(
 
 
         const result = unescape(firstChar);
-        yield [constr(result), remainder ];
+        yield tryConstr(constr, result, remainder);
     }
 }
 
@@ -221,13 +240,13 @@ export function MPUnreservedChar<T>(
  */
 export function MPComment<T>(
     commentStarter: string, 
-    constr: (s: string) => Result<T>
+    constr: () => T
 ): MPParser<T> {
     return function*(input: string[]) {
         if (input.length == 0 || input[0] != commentStarter) {
             return;
         }
-        yield [constr(input[0]), []];
+        yield tryConstr(constr, void 0, []);
     }
 }
 
@@ -238,7 +257,7 @@ export function MPComment<T>(
  */
 export function MPSequence<T>(
     children: (string | MPParser<T>)[], 
-    constr: (...children: Result<T>[]) => Result<T>,
+    constr: (children: T[]) => T,
     caseSensitive: boolean = false    
 ): MPParser<T> {
     return function*(input: string[], env: MiniParseEnv) {
@@ -270,15 +289,17 @@ export function MPSequence<T>(
             }
             results = newResults;
         }  
-        for (const [output, remnant] of results) {
-            yield [constr(...output), remnant];
+
+        for (const [outputResult, remainder] of results) {
+            const [output, outputMsgs] = resultList(outputResult).destructure();
+            yield tryConstr(constr, output, remainder, outputMsgs);
         }
     }
 }
 
 export function MPRepetition<T>(
     child: MPParser<T>,
-    constr: (...children: Result<T>[]) => Result<T>,
+    constr: (children: T[]) => T,
     minReps: number = 0,
     maxReps: number = Infinity
 ): MPParser<T> {
@@ -286,12 +307,13 @@ export function MPRepetition<T>(
         let results: [Result<T>[], string[]][] = [[[], input]];
         for (let reps = 0; reps <= maxReps && results.length > 0; reps++) {
             let newResults: [Result<T>[], string[]][] = [];
-            for (const [existingOutputs, existingRemnant] of results) {
+            for (const [existingResults, existingRemnant] of results) {
                 if (reps >= minReps) {
-                    yield [constr(...existingOutputs), existingRemnant];
+                    const [outputs, msgs] = resultList(existingResults).destructure();
+                    yield tryConstr(constr, outputs, existingRemnant, msgs);
                 }
                 for (const [output2, remnant2] of child(existingRemnant, env)) {
-                    const newOutput: Result<T>[] = [...existingOutputs, output2];
+                    const newOutput: Result<T>[] = [...existingResults, output2];
                     newResults.push([newOutput, remnant2]);
                 }
             }

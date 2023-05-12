@@ -5,8 +5,12 @@ import {
     MPSequence, MPUnreserved 
 } from "./miniParser";
 import { Err, Msg, Msgs, result, Result, ResultVoid, Warn } from "./msgs";
-import { REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, ALL_RESERVED, RESERVED_SYMBOLS, TEST_PARAMS, isValidSymbolName } from "./reserved";
-import { PLAIN_PARAM, CellPos } from "./util";
+import { 
+    REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, 
+    ALL_RESERVED, RESERVED_SYMBOLS, 
+    isValidSymbolName, BLANK_PARAM_SET, TEST_PARAM_SET 
+} from "./reserved";
+import { CellPos } from "./util";
 
 export type Requirement = "required" | "forbidden";
 
@@ -92,40 +96,34 @@ export class SymbolOp extends AbstractOp {
 
 export class ErrorOp extends AbstractOp {
     public readonly tag = "error";
-
-    constructor(
-        public message: string
-    ) { 
-        super();
-    }
 }
 
 const OP_TABLE = MPSequence<Op>(
     ["table"],
-    () => new TableOp().msg()
+    () => new TableOp()
 );
 
 const OP_COLLECTION = MPSequence<Op>(
     ["collection"],
-    () => new CollectionOp().msg()
+    () => new CollectionOp()
 );
 
 const OP_TEST = MPSequence<Op>(
     ["test"],
-    () => new TestOp().msg()
+    () => new TestOp()
 );
 
 const OP_TESTNOT = MPSequence<Op>(
     ["testnot"],
-    () => new TestNotOp().msg()
+    () => new TestNotOp()
 );
 
 const OP_UNRESERVED = MPUnreserved<Op>(
     (s) => {
         if (isValidSymbolName(s)) {
-            return new SymbolOp(s).msg()
+            return new SymbolOp(s)
         } else {
-            return new ErrorOp(s).err( 
+            throw new ErrorOp().err( 
                 `Invalid identifier`, 
                 `${s} looks like it should be an identifier, but it contains an invalid symbol.`
             );
@@ -135,17 +133,17 @@ const OP_UNRESERVED = MPUnreserved<Op>(
 
 const OP_REPLACE = MPSequence<Op>(
     ["replace", OP_UNRESERVED], 
-    (child) => child.bind(c => new ReplaceOp(c as SymbolOp))
+    ([child]) => new ReplaceOp(child as SymbolOp)
 );
 
 const OP_OR = MPSequence<Op>(
     ["or"], 
-    () => new OrOp().msg()
+    () => new OrOp()
 );
 
 const OP_JOIN = MPSequence<Op>(
     ["join"], 
-    () => new JoinOp().msg()
+    () => new JoinOp()
 );
 
 const OP_SUBEXPR: MPParser<Op> = MPAlt(
@@ -157,12 +155,12 @@ const OP_SUBEXPR: MPParser<Op> = MPAlt(
 
 const OP_SUBEXPR_WITH_COLON: MPParser<Op> = MPSequence(
     [OP_SUBEXPR, ":"],
-    (child) => child
+    ([child]) => child
 )
 
 const OP_ASSIGNMENT = MPSequence(
     [OP_UNRESERVED, "="],
-    (child) => child
+    ([child]) => child
 );
 
 const OP_EXPR = MPAlt(
@@ -177,7 +175,7 @@ export function parseOp(text: string): Result<Op> {
     const results = miniParse(env, OP_EXPR, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorOp(text).err("Invalid operator",
+        return new ErrorOp().err("Invalid operator",
                 "This ends in a colon so it looks like an operator, but it cannot be parsed.");
     }
     
@@ -225,9 +223,6 @@ export function childMustBeGrid(op: Op): Requirement {
         default: exhaustive(op);
     }
 }
-
-const BLANK_PARAM_SET = new Set([PLAIN_PARAM]);
-const TEST_PARAM_SET = new Set([PLAIN_PARAM, ...TEST_PARAMS]);
 
 export function allowedParams(op: Op): Set<string> {
     switch (op.tag) {

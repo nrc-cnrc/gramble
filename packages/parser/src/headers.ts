@@ -9,13 +9,12 @@ import {
 } from "./util";
 
 import {
-     Msgs, resultList, Result, 
-     Err, Warn, Msg, result, ResultVoid 
+     Msgs, Result, 
+     Err, Warn, Msg, ResultVoid 
 } from "./msgs";
 
 import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./reserved";
-import { Component, CPass, CResult, exhaustive } from "./components";
-import { PassEnv } from "./passes";
+import { Component, exhaustive } from "./components";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
@@ -215,12 +214,6 @@ export class SlashHeader extends AbstractHeader {
 
 export class ErrorHeader extends AbstractHeader {
     public readonly tag = "error";
-    public constructor(
-        public message: string
-    ) {
-        super();
-    }
-    
 }
 
 /**
@@ -249,15 +242,15 @@ const HP_SUBEXPR: MPParser<Header> = MPDelay(() =>
 
 const HP_COMMENT = MPComment<Header>(
     '%',
-    (s) => new CommentHeader().msg()
+    () => new CommentHeader()
 );
 
 const HP_UNRESERVED = MPUnreserved<Header>(
     (s) => {
         if (isValidSymbolName(s)) {
-            return new TapeHeader(s).msg()
+            return new TapeHeader(s)
         } else {
-            return new ErrorHeader(s).msg().err(
+            throw new ErrorHeader().err(
                 `Invalid tape name`, 
                 `${s} looks like it should be a tape name, but tape names should start with letters or _`);
         }
@@ -266,104 +259,100 @@ const HP_UNRESERVED = MPUnreserved<Header>(
 
 const HP_EMBED = MPSequence<Header>(
     ["embed"],
-    () => new EmbedHeader().msg()
+    () => new EmbedHeader()
 );
 
 const HP_HIDE = MPSequence<Header>(
     ["hide"],
-    () => new HideHeader().msg()
+    () => new HideHeader()
 );
 
 const HP_OPTIONAL = MPSequence<Header>(
     ["optional", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => new OptionalHeader(c))
+    ([c]) => new OptionalHeader(c)
 );
 
 const HP_FROM = MPSequence<Header>(
     ["from"],
-    () => new FromHeader().msg()
+    () => new FromHeader()
 );
 
 const HP_TO = MPSequence<Header>(
     ["to"],
-    () => new ToHeader().msg()
+    () => new ToHeader()
 );
 
 const HP_RULE_CONTEXT = MPSequence<Header>(
     ["context"],
-    () => new RuleContextHeader().msg()
+    () => new RuleContextHeader()
 );
 
 const HP_UNIQUE = MPSequence<Header>(
     ["unique", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => new UniqueHeader(c))
+    ([c]) => new UniqueHeader(c)
 );
 
 const HP_SLASH = MPSequence<Header>(
     [HP_SUBEXPR, "/", HP_NON_COMMENT_EXPR],
-    (child1,child2) => {
-        const [c1,m1] = child1.destructure();
-        const [c2,m2] = child2.destructure();
-        return new SlashHeader(c1,c2).msg(m1).msg(m2)
-    }
+    ([c1,c2]) => new SlashHeader(c1,c2)
 );
 
 const HP_RENAME = MPSequence<Header>(
     [">", HP_UNRESERVED],
-    (child) => child.bind(c => new RenameHeader(c))
+    ([c]) => new RenameHeader(c)
 );
 
 const HP_PARENS = MPSequence<Header>(
     ["(", HP_NON_COMMENT_EXPR, ")"],
-    (child) => child 
+    ([c]) => c 
 );
 
 const HP_EQUALS = MPSequence<Header>(
     ["equals", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => {
+    ([c]) => {
         if (!(c instanceof TapeHeader)) {
-            return new ErrorHeader("Invalid header")
+            throw new ErrorHeader()
                 .err(`Equals requires tape name`, 
                     `Equals can only apply to tape names (e.g. "equals text")`);
         }
-        return new EqualsHeader(c).msg();
-    })
+        return new EqualsHeader(c);
+    }
 );
 
 const HP_STARTS = MPSequence<Header>(
     ["starts", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => {
+    ([c]) => {
         if (!(c instanceof TapeHeader)) {
-            return new ErrorHeader("Invalid header")
+            throw new ErrorHeader()
                 .err(`Equals requires tape name`, 
                     `Equals can only apply to tape names (e.g. "equals text")`);
         }
-        return new StartsHeader(c).msg();
-    })
+        return new StartsHeader(c)
+    }
 );
 
 const HP_ENDS = MPSequence<Header>(
     ["ends", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => {
+    ([c]) => {
         if (!(c instanceof TapeHeader)) {
-            return new ErrorHeader("Invalid header")
+            throw new ErrorHeader()
                  .err(`Equals requires tape name`, 
                     `Equals can only apply to tape names (e.g. "equals text")`);
         }
-        return new EndsHeader(c).msg();
-    })
+        return new EndsHeader(c);
+    }
 );
 
 const HP_CONTAINS = MPSequence<Header>(
     ["contains", HP_NON_COMMENT_EXPR],
-    (child) => child.bind(c => {
+    ([c]) => {
         if (!(c instanceof TapeHeader)) {
-            return new ErrorHeader("Invalid header")
+            throw new ErrorHeader()
               .err(`Equals requires tape name`, 
                     `Equals can only apply to tape names (e.g. "equals text")`);
         }
-        return new ContainsHeader(c).msg();
-    })
+        return new ContainsHeader(c);
+    }
 );
 
 const HP_EXPR: MPParser<Header> = MPAlt(HP_COMMENT, HP_NON_COMMENT_EXPR);
@@ -374,7 +363,7 @@ export function parseHeaderCell(text: string): Result<Header> {
     const results = miniParse(env, HP_EXPR, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorHeader(text).msg().err(
+        return new ErrorHeader().msg().err(
             "Invalid header",
             "Cannot parse this header"
         );
