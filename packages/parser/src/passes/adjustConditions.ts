@@ -8,7 +8,7 @@ import {
     SequenceGrammar, StartsGrammar, 
     RenameGrammar
 } from "../grammars";
-import { HIDDEN_TAPE_PREFIX } from "../util";
+import { HIDDEN_PREFIX } from "../util";
 
 /**
  * There's a semantic gotcha in starts/ends/contains that could throw programmers for a 
@@ -103,7 +103,7 @@ export class AdjustConditions extends GrammarPass {
         return newG.bind(c => {
             const dotStars: Grammar[] = [];
             for (const tape of g.tapes) {
-                if (tape.startsWith(HIDDEN_TAPE_PREFIX)) continue;
+                if (tape.startsWith(HIDDEN_PREFIX)) continue;
                 const dot = new DotGrammar(tape);
                 const dotStar = new RepeatGrammar(dot);
                 dotStars.push(dotStar);
@@ -162,7 +162,7 @@ export class AdjustConditions extends GrammarPass {
         return newG.bind(c => {
             const dotStars: Grammar[] = [];
             for (const tape of g.tapes) {
-                if (tape.startsWith(HIDDEN_TAPE_PREFIX)) continue;
+                if (tape.startsWith(HIDDEN_PREFIX)) continue;
                 const dot = new DotGrammar(tape);
                 const dotStar = new RepeatGrammar(dot);
                 dotStars.push(dotStar);
@@ -223,7 +223,7 @@ export class AdjustConditions extends GrammarPass {
         return newG.bind(c => {
             const dotStars: Grammar[] = [];
             for (const tape of g.tapes) {
-                if (tape.startsWith(HIDDEN_TAPE_PREFIX)) continue;
+                if (tape.startsWith(HIDDEN_PREFIX)) continue;
                 const dot = new DotGrammar(tape);
                 const dotStar = new RepeatGrammar(dot);
                 dotStars.push(dotStar);

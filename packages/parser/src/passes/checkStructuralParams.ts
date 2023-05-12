@@ -1,6 +1,8 @@
 import { 
     ErrorOp,
     SymbolOp,
+    childMustBeGrid,
+    siblingRequired,
 } from "../ops";
 import { Err, Msgs, result, Result, Warn } from "../msgs";
 import { PassEnv } from "../passes";
@@ -84,8 +86,8 @@ export class CheckStructuralParams extends CPass {
                     t.sibling.pos).msgTo(msgs);
         }
 
-        // all operators need something in their .child param.  if
-        // it's empty, issue a warning, and return the sibling as the new value.
+        // assignment needs something in its .child param.  if
+        // it's empty, issue a warning.
         if (t.child instanceof TstEmpty) {
             return result(t).warn("This symbol will not contain any content.").msg(msgs);
         }
@@ -95,7 +97,6 @@ export class CheckStructuralParams extends CPass {
     }
 
     public handleError(t: TstOp): CResult {
-        //const op = t.op as ErrorOp;
         const replacement = !(t.sibling instanceof TstEmpty) ?
                             t.sibling :
                             t.child
@@ -106,17 +107,17 @@ export class CheckStructuralParams extends CPass {
 
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.
-        if (t.op.childGridReq == "required" && 
+        if (childMustBeGrid(t.op) == "required" && 
             !(t.child instanceof TstGrid)) {
-            return result(t).err(`'${t.cell.text}' requires grid`,
-                    "This operator requires a grid to the right, " +
+            return result(t).err(`'${t.op.tag}' requires grid`,
+                    `This ${t.op.tag} operator requires a grid to the right, ` +
                     "but has another operator instead.")
                     .bind(r => r.sibling);
         }
 
         // if the op must have a sibling, but has neither a sibling
         // nor a child, issue an error, and return empty.
-        if (t.op.siblingReq == "required" 
+        if (siblingRequired(t.op) == "required" 
                 && t.sibling instanceof TstEmpty
                 && t.child instanceof TstEmpty) {
             return result(t).err(`Missing args to '${t.cell.text}'`,
@@ -127,7 +128,7 @@ export class CheckStructuralParams extends CPass {
 
         // if the op must have a sibling and doesn't, issue an error,
         // and return empty
-        if (t.op.siblingReq == "required" && t.sibling instanceof TstEmpty) {
+        if (siblingRequired(t.op) == "required" && t.sibling instanceof TstEmpty) {
             return result(t).err(`Missing argument to ${t.cell.text}`,
                             "This operator requires content above it, but it's empty or erroneous.")
                         .bind(r => new TstEmpty());
@@ -142,7 +143,7 @@ export class CheckStructuralParams extends CPass {
 
         // if there's something in the sibling, but it's forbidden,
         // warn about it.
-        if (t.op.siblingReq == "forbidden" &&
+        if (siblingRequired(t.op) == "forbidden" &&
                 !(t.sibling instanceof TstEmpty)) {
             return t.warn("This content does not get " +
                 "assigned to anything and will be ignored.",

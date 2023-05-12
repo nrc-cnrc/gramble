@@ -5,8 +5,13 @@ import {
 import { PassEnv } from "../passes";
 import { Err, Msgs, Result, result, Warn } from "../msgs";
 import { UniqueHeader, paramName } from "../headers";
-import { BLANK_PARAM } from "../ops";
+import {
+    allowedParams, 
+    paramsMustBePerfect, 
+    requiredParams 
+} from "../ops";
 import { Component, CPass, CResult } from "../components";
+import { PLAIN_PARAM } from "../util";
 
 /**
  * This pass checks whether named parameters in headers
@@ -21,7 +26,7 @@ import { Component, CPass, CResult } from "../components";
 export class CheckNamedParams extends CPass {
 
     constructor(
-        public permissibleParams: Set<string> = new Set(["__"])
+        public permissibleParams: Set<string> = new Set([PLAIN_PARAM])
     ) { 
         super();
     }
@@ -55,12 +60,12 @@ export class CheckNamedParams extends CPass {
 
     public handleOp(t: TstOp, env: PassEnv): CResult {
         const [sib, sibMsgs] = this.transform(t.sibling, env).destructure();
-        const newPass = new CheckNamedParams(t.op.allowedNamedParams);
+        const newPass = new CheckNamedParams(allowedParams(t.op));
         const [child, childMsgs] = newPass.transform(t.child, env).destructure();
         
         // if there are any problems with params and we require
         // perfection, warn and return the sibling
-        if (t.op.requirePerfectParams && childMsgs.length > 0) {
+        if (paramsMustBePerfect(t.op) && childMsgs.length > 0) {
             Warn("This op has erroneous parameters and will not execute.",
                 t.cell.pos).msgTo(childMsgs);
             return sib.msg(sibMsgs).msg(childMsgs);
@@ -80,9 +85,9 @@ export class CheckNamedParams extends CPass {
         // child is a TstGrid, we have to check more closely.  if the
         // child isn't a TstGrid, then  
         if (t.child instanceof TstHeadedGrid) {
-            for (const param of t.op.requiredNamedParams) {
+            for (const param of requiredParams(t.op)) {
                 if (t.child.headers.length > 0 && !t.child.providesParam(param)) {
-                    const paramDesc = param == BLANK_PARAM 
+                    const paramDesc = param == PLAIN_PARAM 
                                     ? "a plain header (e.g. not 'from', not 'to', not 'unique')"
                                     : `a ${param} header`;
                     Err("Missing named param",
@@ -95,8 +100,8 @@ export class CheckNamedParams extends CPass {
             // if the child isn't a TstGrid, it can only provide
             // the unnamed parameter `__`, so loop through the required
             // params and complain if they're not `__`.
-            for (const param of t.op.requiredNamedParams) {
-                if (param != BLANK_PARAM) {
+            for (const param of requiredParams(t.op)) {
+                if (param != PLAIN_PARAM) {
                     Err("Missing named param",
                         `This operator requires a ${param} header, but ` +
                         "the content to the right doesn't have one.",
@@ -107,7 +112,7 @@ export class CheckNamedParams extends CPass {
 
         // if the op requires perfect params and we've encountered
         // any problem, then give up and return the sibling.
-        if (t.op.requirePerfectParams && msgs.length > 0) {
+        if (paramsMustBePerfect(t.op) && msgs.length > 0) {
             return t.sibling.msg(msgs);   
         }
 
@@ -122,11 +127,11 @@ export class CheckNamedParams extends CPass {
                 return h; // we're good
             }
             // it's an unexpected header
-            const param = (tag == "__") ?
+            const param = (tag == PLAIN_PARAM) ?
                               "an unnamed parameter" :
                               `a parameter named ${tag}`;
 
-            if (h.header instanceof UniqueHeader && this.permissibleParams.has("__")) {
+            if (h.header instanceof UniqueHeader && this.permissibleParams.has(PLAIN_PARAM)) {
                 // if we can easily remove the tag, try that
                 const newHeader = new TstHeader(h.cell, h.header.child);
                 return result(h).err("Invalid parameter",

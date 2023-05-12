@@ -5,20 +5,22 @@ import { getCategory } from 'unicode-properties';
 
 // CONSTANTS
 
-export const HIDDEN_TAPE_PREFIX = ".";
-export const INTERNAL_TAPE_PREFIX = "$";
-export const REPLACE_INPUT_TAPE = INTERNAL_TAPE_PREFIX + "i";
-export const REPLACE_OUTPUT_TAPE = INTERNAL_TAPE_PREFIX + "o";
-export const DUMMY_REGEX_TAPE = INTERNAL_TAPE_PREFIX + "T";
-export const DUMMY_TAPE = HIDDEN_TAPE_PREFIX + "END";
+export const HIDDEN_PREFIX = ".";
+export const INTERNAL_PREFIX = "$";
+export const REPLACE_INPUT_TAPE = INTERNAL_PREFIX + "i";
+export const REPLACE_OUTPUT_TAPE = INTERNAL_PREFIX + "o";
+export const DUMMY_REGEX_TAPE = INTERNAL_PREFIX + "T";
+export const DUMMY_TAPE = HIDDEN_PREFIX + "END";
 
 export const ANY_CHAR_STR = "__ANY_CHAR__";
-export const NO_CHAR_STR = "__ANY_CHAR__";
+export const NO_CHAR_STR = "__NO_CHAR__";
+
+export const PLAIN_PARAM: string = INTERNAL_PREFIX + "plain";
 
 export const DEFAULT_PROJECT_NAME = "";
 export const DEFAULT_SYMBOL_NAME = "Default";
 export const ALL_SYMBOL_NAME = "All"
-export const AUTO_SYMBOL_NAME = INTERNAL_TAPE_PREFIX + "Auto"
+export const AUTO_SYMBOL_NAME = INTERNAL_PREFIX + "Auto"
 
 export const DEFAULT_MAX_CHARS = 100;
 
@@ -173,7 +175,7 @@ export class CellPos {
         public readonly col: number = -1
     ) { }
 
-    public toString() {
+    public toString(): string {
         return `${this.sheet}:${this.row}:${this.col}`;
     }
 }
@@ -410,7 +412,7 @@ export function* stripHiddenTapes(gen: Gen<StringDict>): Gen<StringDict> {
     for (const sd of gen) {
         const result: StringDict = {};
         for (const tapeName in sd) {
-            if (tapeName.startsWith(HIDDEN_TAPE_PREFIX)) {
+            if (tapeName.startsWith(HIDDEN_PREFIX)) {
                 continue;
             }
             result[tapeName] = sd[tapeName];

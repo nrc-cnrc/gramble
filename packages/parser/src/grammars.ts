@@ -36,7 +36,7 @@ import {
     DUMMY_REGEX_TAPE,
     DUMMY_TAPE,
     flatten,
-    HIDDEN_TAPE_PREFIX,
+    HIDDEN_PREFIX,
     listDifference,
     listIntersection,
     listUnique,
@@ -1473,9 +1473,9 @@ export class HideGrammar extends UnaryGrammar {
     ) {
         super(child);
         if (toTape == "") {
-            this.toTape = `${HIDDEN_TAPE_PREFIX}H${HIDE_INDEX++}_${tapeName}`;
-        } else if (!toTape.startsWith(HIDDEN_TAPE_PREFIX)) {
-            this.toTape = `${HIDDEN_TAPE_PREFIX}${toTape}`;
+            this.toTape = `${HIDDEN_PREFIX}H${HIDE_INDEX++}_${tapeName}`;
+        } else if (!toTape.startsWith(HIDDEN_PREFIX)) {
+            this.toTape = `${HIDDEN_PREFIX}${toTape}`;
         }
     }
     
@@ -2481,9 +2481,9 @@ export class ReplaceGrammar extends AbstractGrammar {
     ) {
         super();
         if (this.hiddenTapeName.length == 0) {
-            this.hiddenTapeName = `${HIDDEN_TAPE_PREFIX}R${REPLACE_INDEX++}`;
-        } else if (!this.hiddenTapeName.startsWith(HIDDEN_TAPE_PREFIX)) {
-            this.hiddenTapeName = HIDDEN_TAPE_PREFIX + this.hiddenTapeName;
+            this.hiddenTapeName = `${HIDDEN_PREFIX}R${REPLACE_INDEX++}`;
+        } else if (!this.hiddenTapeName.startsWith(HIDDEN_PREFIX)) {
+            this.hiddenTapeName = HIDDEN_PREFIX + this.hiddenTapeName;
         }
     }
 

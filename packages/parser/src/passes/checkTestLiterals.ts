@@ -6,6 +6,7 @@ import { PassEnv } from "../passes";
 import { Err, Msgs } from "../msgs";
 import { Header, UniqueHeader, TapeHeader } from "../headers";
 import { Component, CPass, CResult } from "../components";
+import { paramsMustBeLiteral } from "../ops";
 
 /**
  * This pass checks whether named parameters in headers
@@ -38,7 +39,7 @@ export class CheckTestLiterals extends CPass {
     public handleOp(t: TstOp): CResult {
 
         const msgs: Msgs = [];
-        if (t.op.requireLiteralParams && t.child instanceof TstHeadedGrid) {
+        if (paramsMustBeLiteral(t.op) && t.child instanceof TstHeadedGrid) {
             const newHeaders: TstHeader[] = []
             for (const header of t.child.headers) {
                 if (!this.isLiteral(header.header)) {

@@ -1,4 +1,4 @@
-import { DUMMY_TAPE, HIDDEN_TAPE_PREFIX } from "../util";
+import { DUMMY_TAPE, HIDDEN_PREFIX } from "../util";
 import { 
     CounterStack, 
     Grammar,
@@ -62,7 +62,7 @@ export class RenameFix extends PostGrammarPass {
         }
 
         if (g.fromTape != g.toTape && g.child.tapes.indexOf(g.toTape) != -1) {
-            const errTapeName = `${HIDDEN_TAPE_PREFIX}ERR${g.toTape}`;
+            const errTapeName = `${HIDDEN_PREFIX}ERR${g.toTape}`;
             let repair = new RenameGrammar(g.child, g.toTape, errTapeName);
             repair = new RenameGrammar(repair, g.fromTape, g.toTape)
             throw GrammarError("Destination tape already exists -- " +

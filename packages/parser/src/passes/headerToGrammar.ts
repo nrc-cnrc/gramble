@@ -15,9 +15,12 @@ import {
     EqualsHeader, ErrorHeader, 
     Header, OptionalHeader,
     SlashHeader, StartsHeader, 
-    UniqueHeader, TapeHeader, UnaryHeader, FromHeader, ToHeader, RuleContextHeader, exhaustive 
+    UniqueHeader, TapeHeader, 
+    UnaryHeader, FromHeader, 
+    ToHeader, RuleContextHeader 
 } from "../headers";
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { exhaustive } from "../components";
 
 
 export class HeaderToGrammar extends Pass<Header, Grammar> {
@@ -59,9 +62,8 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
     }
 
     public handleTapeName(h: TapeHeader, env: PassEnv): GrammarResult {
-        const tapeName = h.tapeName;
         return this.cellGrammar.msg()
-                    .bind(g => new SingleTapeGrammar(tapeName, g))
+                    .bind(g => new SingleTapeGrammar(h.text, g))
     }
 
     public handleComment(h: CommentHeader, env: PassEnv): GrammarResult {
@@ -102,7 +104,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
             return new EpsilonGrammar().err("Invalid header",
                 'This header can only take a plain tape name (e.g. "text").');
         }
-        const tapeName = h.child.tapeName;
+        const tapeName = h.child.text;
         return this.cellGrammar.msg()
                     .bind(g => new SingleTapeGrammar(tapeName, g))
     }
@@ -133,12 +135,16 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
     }
 
     public handleError(h: ErrorHeader, env: PassEnv): GrammarResult {
-        if (!(this.cellGrammar instanceof EpsilonGrammar || 
-            (this.cellGrammar instanceof LiteralGrammar && this.cellGrammar.text.length > 0))) {
-            return new EpsilonGrammar().msg()
-                .warn("This content is associated with an invalid header above, ignoring");
+        if (this.cellGrammar instanceof EpsilonGrammar) {
+            return new EpsilonGrammar().msg();
         }
-        return new EpsilonGrammar().msg();
+
+        if (this.cellGrammar instanceof LiteralGrammar && this.cellGrammar.text.length > 0) {
+            return new EpsilonGrammar().msg();
+        }
+
+        return new EpsilonGrammar().msg()
+            .warn("This content is associated with an invalid header above, ignoring");
     }
 
 }

@@ -3,7 +3,7 @@ import { assert, expect } from "chai";
 import { Grammar, Lit } from "../src/grammars";
 import { Interpreter } from "../src/interpreter";
 import {
-    HIDDEN_TAPE_PREFIX, StringDict,
+    HIDDEN_PREFIX, StringDict,
     SILENT, VERBOSE_DEBUG, logDebug
 } from "../src/util";
 import { dirname, basename } from "path";
@@ -92,7 +92,7 @@ export function removeHiddenFields(outputs: StringDict[]): StringDict[] {
     for (const output of outputs) {
         const result: StringDict = {};
         for (const [key, value] of Object.entries(output)) {
-            if (key.startsWith(HIDDEN_TAPE_PREFIX)) {
+            if (key.startsWith(HIDDEN_PREFIX)) {
                 continue;
             }
             result[key] = value;
@@ -266,7 +266,7 @@ export function testHasTapes(
         if (stripHidden) {
             // for the purpose of this comparison, leave out any internal-only
             // tapes, like those created by a Hide().
-            tapes = referent.tapes.filter(t => !t.startsWith(HIDDEN_TAPE_PREFIX));
+            tapes = referent.tapes.filter(t => !t.startsWith(HIDDEN_PREFIX));
         }
         try {
             expect(tapes.length).to.equal(bSet.size);

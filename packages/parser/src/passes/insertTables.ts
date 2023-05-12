@@ -1,5 +1,5 @@
 import { 
-    TableOp, 
+    TableOp, childMustBeGrid, 
 } from "../ops";
 import { PassEnv } from "../passes";
 import { 
@@ -58,7 +58,7 @@ export class InsertTables extends PostComponentPass {
         // if the op forbids a grid to the right (e.g. it needs another
         // operator), but there's a grid, that's fine, just insert an implicit
         // table op between the op and its child.
-        if (t.op.childGridReq == "forbidden" && t.child instanceof TstGrid) {
+        if (childMustBeGrid(t.op) == "forbidden" && t.child instanceof TstGrid) {
             t.child = new TstOp(t.child.cell, new TableOp(), 
                                 new TstEmpty(), t.child);
         }

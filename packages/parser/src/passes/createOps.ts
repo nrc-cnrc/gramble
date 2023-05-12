@@ -13,7 +13,7 @@ import {
     TstTable, TstTestNot, TstReplace, 
     TstOr, TstAssignment, TstParamList, TstJoin
 } from "../tsts";
-import { Component, CResult } from "../components";
+import { Component, exhaustive } from "../components";
 import { PostComponentPass, TstError } from "./ancestorPasses";
 
  export class CreateOps extends PostComponentPass {
@@ -26,23 +26,17 @@ import { PostComponentPass, TstError } from "./ancestorPasses";
 
         if (!(t instanceof TstOp)) return t;
 
-        switch(t.op.constructor) {
-            case TestOp:
-                return this.handleTest(t);
-            case TestNotOp:
-                return this.handleTestNot(t);
-            case TableOp:
-                return this.handleOp(t);
-            case ReplaceOp:
-                return this.handleReplace(t);
-            case OrOp:
-                return this.handleOr(t);
-            case JoinOp:
-                return this.handleJoin(t);
-            case SymbolOp:
-                return this.handleAssignment(t);
-            default: 
-                throw new Error(`didn't handle ${t.op.constructor.name} op`);
+        switch(t.op.tag) {
+            case "test":       return this.handleTest(t);
+            case "testnot":    return this.handleTestNot(t);
+            case "table":      return this.handleOp(t);
+            case "replace":    return this.handleReplace(t);
+            case "or":         return this.handleOr(t);
+            case "join":       return this.handleJoin(t);
+            case "symbol":     return this.handleAssignment(t);
+            case "error":      throw new Error("Erroneous op");
+            case "collection": throw new Error("Cannot handle collection op here");
+            default: exhaustive(t.op);
         }
     }
 
@@ -83,10 +77,12 @@ import { PostComponentPass, TstError } from "./ancestorPasses";
                                  assignment.child);
         }
 
+        /*
         if (assignment.child instanceof TstEmpty) {
-            throw TstError("Warning -- This symbol will not contain any content.",
+            console.log(`throwing a content warning`);
+            throw TstError("Warning -- This symbol won't contain any content.",
                                 assignment);
-        }
+        } */
 
         return assignment;
     }

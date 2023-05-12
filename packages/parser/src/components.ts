@@ -10,11 +10,13 @@ import { CellPos, Dict } from "./util";
 export class CResult extends Result<Component> { }
 export abstract class CPass extends Pass<Component,Component> {}
 
+export function exhaustive(h: never): never { return h };
+
 export abstract class Component {
 
     public get pos(): CellPos | undefined {
         return undefined;
-    }   
+    } 
 
     public mapChildren(f: CPass, env: PassEnv): CResult {
         const clone = Object.create(Object.getPrototypeOf(this));
@@ -50,7 +52,7 @@ export function mapAny<T extends Component>(x: any, f: Pass<T,T>, env: PassEnv):
     } else if (x instanceof Set) {
         return mapSet(x, f, env);
     } else if (x instanceof Object) {
-        return mapDict(x, f, env);
+        return mapObj(x, f, env);
     } else {
         return result(x);
     }
@@ -76,10 +78,11 @@ export function mapArray<T extends Component>(xs: any[], f: Pass<T,T>, env: Pass
     return result(results).msg(msgs);
 }
 
-export function mapDict<T extends Component>(xmap: Dict<any>, f: Pass<T,T>, env: PassEnv): Result<Dict<any>> {
-    const results: Dict<any> = {};
+export function mapObj<T extends Component>(x: any, f: Pass<T,T>, env: PassEnv): Result<Dict<any>> {
+    const results: Dict<any> = Object.create(Object.getPrototypeOf(x));
     const msgs: Msgs = [];
-    for (const [k, v] of Object.entries(xmap)) {
+    for (const [k, v] of Object.entries(x)) {
+        if (!x.hasOwnProperty(k)) continue;
         const newX = mapAny(v, f, env).msgTo(msgs);
         results[k] = newX;
     }

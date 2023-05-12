@@ -1,12 +1,13 @@
 import { expect } from "chai";
 import { cellID, parseCell } from "../../src/cell";
 import { ParseClass, headerID, parseHeaderCell } from "../../src/headers";
-import { parseOp } from "../../src/ops";
+import { parseOp, autoID as opID } from "../../src/ops";
 import { PassEnv } from "../../src/passes";
 import { CombineLiterals } from "../../src/passes/combineLiterals";
 import { tokenizeUnicode } from "../../src/util";
 import { Grammar } from "../../src/grammars";
 import { Msgs } from "../../src/msgs";
+//import { autoID } from "../../src/components";
 
 export function testHeaderID(
     testPrefix: string,
@@ -32,7 +33,7 @@ export function testOpID(
         testPrefix += ' ';
     }
     it(`${testPrefix}"${text}" should parse as "${expectedID}"`, function() {
-        expect(result.id).to.equal(expectedID);
+        expect(opID(result)).to.equal(expectedID);
     });
 }
 

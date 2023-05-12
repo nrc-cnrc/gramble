@@ -25,9 +25,9 @@ import {
 } from "../grammars";
 import { parseClass, TapeHeader } from "../headers";
 import { Err, Msgs, resultList } from "../msgs";
-import { BLANK_PARAM } from "../ops";
 import { HeaderToGrammar } from "./headerToGrammar";
 import { parseCell } from "../cell";
+import { PLAIN_PARAM } from "../util";
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -97,7 +97,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                     "Rename (>) needs to have a tape name after it");
         }
         const fromTape = t.cell.text;
-        const toTape = t.header.header.tapeName;
+        const toTape = t.header.header.text;
         return this.transform(t.prev, env)
                     .bind(c => new RenameGrammar(c, fromTape, toTape))
                     .bind(c => new LocatorGrammar(t.cell.pos, c));
@@ -134,7 +134,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
 
     public handleTable(t: TstTable, env: PassEnv): GrammarResult {
         return resultList(t.child.rows)
-                  .map(r => r.getParam(BLANK_PARAM))
+                  .map(r => r.getParam(PLAIN_PARAM))
                   .map(r => this.transform(r, env))
                   .bind(cs => new AlternationGrammar(cs))
                   .bind(c => new LocatorGrammar(t.cell.pos, c))
@@ -212,7 +212,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
 
         const msgs: Msgs = [];
         for (const params of t.child.rows) {
-            const testInputs = this.transform(params.getParam(BLANK_PARAM), env).msgTo(msgs);
+            const testInputs = this.transform(params.getParam(PLAIN_PARAM), env).msgTo(msgs);
             const unique = this.transform(params.getParam("unique"), env).msgTo(msgs);
             const uniqueLiterals = unique.getLiterals();
             result = result.bind(c => new TestGrammar(c, testInputs, uniqueLiterals))
@@ -228,7 +228,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
 
         const msgs: Msgs = [];
         for (const params of t.child.rows) {
-            const testInputs = this.transform(params.getParam(BLANK_PARAM), env).msgTo(msgs);
+            const testInputs = this.transform(params.getParam(PLAIN_PARAM), env).msgTo(msgs);
             result = result.bind(c => new TestNotGrammar(c, testInputs))
                            .bind(c => new LocatorGrammar(params.pos, c));
         }
@@ -254,6 +254,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
         for (const child of t.children) {
 
             const grammar = this.transform(child, env).msgTo(msgs);
+            
             if (!(child instanceof TstAssignment)) {
                 // at this point, all non-assignment children
                 // of collections should have been wrapped in assignments
@@ -268,6 +269,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                     child.pos).msgTo(msgs);
                 continue;
             }     
+            
             newColl.symbols[child.name] = grammar;
         }
 

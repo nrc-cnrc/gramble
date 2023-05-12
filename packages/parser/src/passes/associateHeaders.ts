@@ -10,6 +10,7 @@ import { Component, CPass, CResult } from "../components";
 import { PassEnv } from "../passes";
 import { ContentMsg, Msgs, Warn } from "../msgs";
 import { backgroundColor, fontColor, paramName } from "../headers";
+import { PLAIN_PARAM } from "../util";
 
 /**
  * Before this, headers and their associated content cells aren't
@@ -52,8 +53,7 @@ export class AssociateHeaders extends CPass {
                     ).localize(content.pos).msgTo(msgs);
 
                     const param = paramName(header.header);
-
-                    if (param != "__" && param != "unique") {
+                    if (param != PLAIN_PARAM && param != "unique") {
                         if (param in newRow.params) {
                             Warn("Named parameters can only occur once; " +
                                 "this cell will be ignored.",

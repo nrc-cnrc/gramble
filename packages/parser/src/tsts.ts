@@ -20,9 +20,6 @@ import { Component, CPass, CResult } from "./components";
 
 abstract class AbstractComponent extends Component {
 
-    public getDefaultRepair(): Component {
-        return new TstEmpty();
-    }
 }
 /**
  * A TstCellComponent is just any TstComponent that has a
@@ -278,11 +275,12 @@ export class TstOp extends TstBinary {
         super(cell, sibling, child);
     }
         
+    /*
     public mapChildren(f: CPass, env: PassEnv): CResult {
         return resultList([this.sibling, this.child])
                 .map(c => f.transform(c as this, env))
                 .bind(([s,c]) => new TstOp(this.cell, this.op, s, c));
-    }
+    } */
 
 }
 
@@ -388,6 +386,10 @@ export class TstParams extends TstCellComponent {
             return this.params[name];
         }
         return new TstEmpty();
+    }
+
+    public mapChildren(f: CPass, env: PassEnv): CResult {
+        return super.mapChildren(f, env);
     }
 }
 

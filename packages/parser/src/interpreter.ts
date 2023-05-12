@@ -14,7 +14,7 @@ import {
     logTime,
     logGrammar,
     Dict,
-    HIDDEN_TAPE_PREFIX,
+    HIDDEN_PREFIX,
     DEFAULT_SYMBOL_NAME
 } from "./util";
 import { Worksheet, Workbook } from "./sheets";
@@ -188,7 +188,7 @@ export class Interpreter {
                     ` does not exist`);
         }
         if (stripHidden) {
-            return referent.tapes.filter(t => !t.startsWith(HIDDEN_TAPE_PREFIX));
+            return referent.tapes.filter(t => !t.startsWith(HIDDEN_PREFIX));
         }
         return referent.tapes;
     }

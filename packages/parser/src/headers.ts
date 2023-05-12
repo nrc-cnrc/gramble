@@ -5,7 +5,7 @@ import {
 } from "./miniParser";
 
 import { 
-    HSVtoRGB, RGBtoString, CellPos
+    HSVtoRGB, RGBtoString, CellPos, PLAIN_PARAM
 } from "./util";
 
 import {
@@ -14,7 +14,7 @@ import {
 } from "./msgs";
 
 import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./reserved";
-import { Component, CPass, CResult } from "./components";
+import { Component, CPass, CResult, exhaustive } from "./components";
 import { PassEnv } from "./passes";
 
 export const DEFAULT_SATURATION = 0.05;
@@ -106,7 +106,7 @@ export class TapeHeader extends AbstractHeader {
     public readonly tag = "tape";
 
     constructor(
-        public tapeName: string
+        public text: string
     ) {
         super();
     }
@@ -216,7 +216,7 @@ export class SlashHeader extends AbstractHeader {
 export class ErrorHeader extends AbstractHeader {
     public readonly tag = "error";
     public constructor(
-        public text: string
+        public message: string
     ) {
         super();
     }
@@ -380,14 +380,11 @@ export function parseHeaderCell(text: string): Result<Header> {
         );
     }
     if (results.length > 1) {
-        console.log(results);
         // if this happens, it's an error on our part
         throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
     }
     return results[0];
 }
-
-export function exhaustive(h: never): never { return h };
 
 export function parseClass(h: Header): ParseClass {
     switch (h.tag) {
@@ -458,7 +455,7 @@ export function backgroundColor(
         case "to":       return color("to");
         case "context":  return color("context");
         // tapes get their colors from the tape name
-        case "tape":     return color(h.tapeName);
+        case "tape":     return color(h.text);
         // unary headers get their colors from their child
         case "optional": return getColor(h.child);
         case "equals":   return getColor(h.child);
@@ -472,49 +469,37 @@ export function backgroundColor(
     }
 }
 
-export function headerID(h: Header): string {
-    switch (h.tag) {
-        // atomic headers are their tags;
-        case "embed":
-        case "from": 
-        case "to":
-        case "context":
-        case "hide": 
-        case "error": 
-        case "comment": return h.tag;
-        // tape headers are their tapes
-        case "tape": return h.tapeName;
-        // unary headers are tag[childID]
-        case "unique":
-        case "optional": 
-        case "equals": 
-        case "starts": 
-        case "ends": 
-        case "contains": 
-        case "rename": return h.tag + "[" + headerID(h.child) + "]";
-        case "slash":  return `slash[${headerID(h.child1)},${headerID(h.child2)}]`;
-        default: exhaustive(h);
-    }
+export function headerID(x: Header): string {
+    const elements = [ x.tag,
+                      ("text" in x) ? x.text as string : "",
+                      ("child" in x) ? headerID(x.child as Header) : "",
+                      ("child1" in x) ? headerID(x.child1 as Header) : "",
+                      ("child2" in x) ? headerID(x.child2 as Header) : "" ]
+    const str = elements.filter(s => s.length > 0).join(" ");
+    return "(" + str + ")";
 }
 
 export function paramName(h: Header): string {
     switch (h.tag) {
-        case "embed":    return "__";
-        case "tape":     return "__";
-        case "comment":  return "__";
+        // most params just contribute normal content
+        case "tape":
+        case "comment":
+        case "equals":
+        case "starts":
+        case "ends":
+        case "contains":
+        case "slash":  
+        case "hide":  
+        case "rename":  
+        case "error":   
+        case "embed":    return PLAIN_PARAM;
+        // optional depends on its child
         case "optional": return paramName(h.child);
-        case "equals":   return "__";
-        case "starts":   return "__";
-        case "ends":     return "__";
-        case "contains": return "__";
-        case "slash":    return "__";
-        case "hide":     return "__";
-        case "rename":   return "__";
-        case "error":    return "__";
-        case "from":     return "from";
-        case "to":       return "to";
-        case "context":  return "context";
-        case "unique":   return "unique";
+        // from/to/context/unique contribute their tag
+        case "from":
+        case "to":   
+        case "context":
+        case "unique":   return h.tag;
         default: exhaustive(h);
     }
 }

@@ -1,54 +1,30 @@
+import { exhaustive } from "./components";
 import { 
     miniParse, MiniParseEnv, 
     MPAlt, MPParser, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
-import { Err, Msg, Msgs, Result, ResultVoid, Warn } from "./msgs";
+import { Err, Msg, Msgs, result, Result, ResultVoid, Warn } from "./msgs";
 import { REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, ALL_RESERVED, RESERVED_SYMBOLS, TEST_PARAMS, isValidSymbolName } from "./reserved";
-import { CellPos } from "./util";
-
-export const BLANK_PARAM: string = "__";
+import { PLAIN_PARAM, CellPos } from "./util";
 
 export type Requirement = "required" | "forbidden";
 
-export abstract class Op {
+export type Op = TableOp
+               | CollectionOp
+               | TestOp
+               | TestNotOp
+               | ReplaceOp
+               | OrOp
+               | JoinOp
+               | SymbolOp
+               | ErrorOp;
 
-    public abstract get id(): string;
-
-    public get siblingReq(): Requirement {
-        return "forbidden";
-    }
-
-    public get childGridReq(): Requirement {
-        return "forbidden";
-    }
-
-    public get allowedNamedParams(): Set<string> {
-        return new Set([BLANK_PARAM]);
-    }
-    
-    public get requiredNamedParams(): Set<string> {
-        return new Set([BLANK_PARAM]);
-    }
-
-    /**
-     * This is for operators that require a perfect parameterization
-     * to execute at all, lest there be unanticipated effects.
-     */
-    public get requirePerfectParams(): boolean {
-        return false;
-    }
-
-    /**
-     * This is for Test and TestNot, which require every parameter
-     * in their child to be a literal
-     */
-    public get requireLiteralParams(): boolean {
-        return false;
-    }
+export abstract class AbstractOp {
+    public abstract get tag(): string;
 
     public msg(m: Msg | Msgs | ResultVoid = []): Result<Op> {
-        return new Result(this).msg(m);
+        return result(this).msg(m) as Result<Op>;
     }
     
     public err(shortMsg: string, longMsg: string, pos?: CellPos): Result<Op> {
@@ -63,112 +39,38 @@ export abstract class Op {
 
 }
 
-export class TableOp extends Op { 
-
-    public get id(): string {
-        return "table";
-    }
-
-    public get childGridReq(): Requirement {
-        return "required";
-    }
+export class TableOp extends AbstractOp { 
+    public readonly tag = "table";
 }
 
-export class CollectionOp extends Op { 
-
-    public get id(): string {
-        return "collection";
-    }
+export class CollectionOp extends AbstractOp { 
+    public readonly tag = "collection";
 }
 
-export abstract class SpecialOp extends Op {
-
-    public get siblingReq(): Requirement {
-        return "required";
-    }
-
-    public get childGridReq(): Requirement {
-        return "required";
-    }
-
-    public get requirePerfectParams(): boolean {
-        return true;
-    }
-
+export class TestOp extends AbstractOp { 
+    public readonly tag = "test";
 }
 
-export class TestOp extends SpecialOp { 
-
-    public get id(): string {
-        return "test";
-    }
-
-    public get allowedNamedParams(): Set<string> {
-        return new Set([BLANK_PARAM, ...TEST_PARAMS]);
-    }
-    
-    public get requireLiteralParams(): boolean {
-        return true;
-    }
-
+export class TestNotOp extends AbstractOp { 
+    public readonly tag = "testnot";
 }
 
-export class TestNotOp extends SpecialOp { 
-
-    public get id(): string {
-        return "testnot";
-    }
-
-    public get allowedNamedParams(): Set<string> {
-        return new Set([BLANK_PARAM, ...TEST_PARAMS]);
-    }
-    
-    public get requireLiteralParams(): boolean {
-        return true;
-    }
-}
-
-export class ReplaceOp extends SpecialOp {
+export class ReplaceOp extends AbstractOp {
+    public readonly tag = "replace";
 
     constructor(
         public child: SymbolOp
     ) { 
         super();
     }
-
-    public get id(): string {
-        return `replace[${this.child.id}]`;
-    }
-
-    public get requiredNamedParams(): Set<string> {
-        return REQUIRED_REPLACE_PARAMS;
-    }
-
-    public get allowedNamedParams(): Set<string> {
-        return REPLACE_PARAMS;
-    }
-
 }
 
-abstract class BinaryOp extends Op {
-    public get siblingReq(): Requirement {
-        return "required";
-    }
+export class OrOp extends AbstractOp { 
+    public readonly tag = "or";
 }
 
-export class OrOp extends BinaryOp { 
-
-    public get id(): string {
-        return "or";
-    }
-
-}
-export class JoinOp extends BinaryOp { 
-
-    public get id(): string {
-        return "join";
-    }
-
+export class JoinOp extends AbstractOp { 
+    public readonly tag = "join";
 }
 
 /**
@@ -178,33 +80,24 @@ export class JoinOp extends BinaryOp {
  * arbitrary symbols are handled for operators that allow these like 
  * "replace <tapename>:"
  */
-export class SymbolOp extends Op {
+export class SymbolOp extends AbstractOp {
+    public readonly tag = "symbol";
 
     constructor(
         public text: string
     ) { 
         super();
     }
-
-    public get id(): string {
-        return this.text;
-    }
-
 }
 
-export class ErrorOp extends Op {
+export class ErrorOp extends AbstractOp {
+    public readonly tag = "error";
 
     constructor(
-        public text: string
+        public message: string
     ) { 
         super();
     }
-
-    public get id(): string {
-        return "ERR";
-    }
-
-    
 }
 
 const OP_TABLE = MPSequence<Op>(
@@ -293,4 +186,141 @@ export function parseOp(text: string): Result<Op> {
         throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
     }
     return results[0];
+}
+
+export function siblingRequired(op: Op): Requirement {
+    switch (op.tag) {
+
+        // if something is above one of these, it's an error
+        case "table": 
+        case "collection":
+        case "symbol": 
+        case "error":      return "forbidden";
+
+        // each of these requires something above, to apply to
+        case "test":
+        case "testnot":
+        case "replace":
+        case "or": 
+        case "join":       return "required";
+        default: exhaustive(op);
+    }
+}
+
+export function childMustBeGrid(op: Op): Requirement {
+    switch (op.tag) {
+        // these have to have a grid child, not another op
+        case "table":
+        case "test":
+        case "testnot": 
+        case "replace":    return "required";
+
+        // if the child is a grid, we automatically wrap
+        // a table op around it
+        case "collection":
+        case "or": 
+        case "join":  
+        case "symbol":  
+        case "error":      return "forbidden";
+        default: exhaustive(op);
+    }
+}
+
+const BLANK_PARAM_SET = new Set([PLAIN_PARAM]);
+const TEST_PARAM_SET = new Set([PLAIN_PARAM, ...TEST_PARAMS]);
+
+export function allowedParams(op: Op): Set<string> {
+    switch (op.tag) {
+        // most ops only allow the __ param
+        case "table": 
+        case "collection":
+        case "or":  
+        case "join": 
+        case "symbol": 
+        case "error":      return BLANK_PARAM_SET;
+
+        // test allows "unique" and __
+        case "test":
+        case "testnot":    return TEST_PARAM_SET;
+
+        // replace only allows from/to/context
+        case "replace":    return REPLACE_PARAMS;
+        default: exhaustive(op);
+    }
+}
+
+export function requiredParams(op: Op): Set<string> {
+    switch (op.tag) {
+
+        // most operators only require __
+        case "table": 
+        case "collection": 
+        case "test":  
+        case "testnot":  
+        case "or": 
+        case "join":  
+        case "symbol":  
+        case "error":      return BLANK_PARAM_SET;
+        
+        // replace requires from/to/context
+        case "replace":    return REQUIRED_REPLACE_PARAMS;
+
+        default: exhaustive(op);
+    }
+}
+
+
+/**
+ * This is for operators that require a perfect parameterization
+ * to execute at all, lest there be unanticipated effects.
+ */
+export function paramsMustBePerfect(op: Op): boolean {
+    switch (op.tag) {
+        // if a param is imperfect, ignore that column, but don't
+        // throw everything else out
+        case "table": 
+        case "collection": 
+        case "or": 
+        case "join": 
+        case "symbol": 
+        case "error":      return false;
+        
+        // things can go wrong if not everything is perfect
+        case "test": 
+        case "testnot": 
+        case "replace":    return true;
+
+        default: exhaustive(op);
+    }
+}
+
+/**
+ * This is for Test and TestNot, which require every parameter
+ * in their child to be a literal
+ */
+export function paramsMustBeLiteral(op: Op): boolean {
+    switch (op.tag) {
+        // most ops allow anything
+        case "table":   
+        case "collection": 
+        case "replace": 
+        case "or":  
+        case "join":  
+        case "symbol":   
+        case "error":      return false;
+
+        // tests don't allow fancy params alternations,
+        // it's literals or it's failure
+        case "test": 
+        case "testnot":    return true;
+        default: exhaustive(op);
+    }
+}
+
+export function autoID(x: Op): string {
+    const elements = [ x.tag,
+                      ("text" in x) ? x.text as string : "",
+                      ("child" in x) ? autoID(x.child as Op) : "" ]
+    const str = elements.filter(s => s.length > 0).join(" ");
+    return "(" + str + ")";
 }

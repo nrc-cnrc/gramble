@@ -86,7 +86,7 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
 
-    describe('5a. Empty "table:" op', test({
+    describe('5. Empty "table:" op', test({
         id: "5",
         results: [
             {text:"baz", gloss:"-2SG"},
@@ -94,7 +94,7 @@ describe(`Sheets ${DIR}`, function() {
         ],
         errors: [ Warning(1, 0), Warning(1, 1) ]
     }));
-
+    
     describe('6a. "optional text" header', test({
         id: "6a",
         results: [

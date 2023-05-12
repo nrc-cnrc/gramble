@@ -5,7 +5,7 @@ import {
     TstOp, TstEmpty, 
     TstEnclosure
 } from "../tsts";
-import { CollectionOp, SymbolOp } from "../ops";
+import { CollectionOp, SymbolOp, siblingRequired } from "../ops";
 import { Component, CPass, CResult } from "../components";
 import { AUTO_SYMBOL_NAME, DEFAULT_SYMBOL_NAME } from "../util";
 
@@ -81,7 +81,7 @@ export class CreateCollections extends CPass {
         const newChildren: TstEnclosure[] = [];
         for (const child of children) {
 
-            if (!(child instanceof TstOp) || child.op.siblingReq != "required") {
+            if (!(child instanceof TstOp) || siblingRequired(child.op) != "required") {
                 // not a child that participates in this 
                 // scope change
                 newChildren.push(child);
