@@ -6,11 +6,12 @@ import {
     TstAssignment
 } from "../tsts";
 import { Component, CPass, CResult } from "../components";
+import { CatchingPass } from "./ancestorPasses";
 
 /**
  * Make sure that collections are reasonably placed
  */
-export class CheckCollections extends CPass {
+export class CheckCollections extends CatchingPass<Component,Component> {
 
     constructor(
         public parent?: Component
@@ -22,7 +23,7 @@ export class CheckCollections extends CPass {
         return "Creating collections";
     }
 
-    public transform(t: Component, env: PassEnv): CResult {
+    public transformAux(t: Component, env: PassEnv): CResult {
         const newThis = new CheckCollections(t);
         return t.mapChildren(newThis, env).bind(t => {
             switch(t.constructor) {
@@ -34,14 +35,14 @@ export class CheckCollections extends CPass {
         });
     }
 
-    public handleCollection(t: TstCollection, env: PassEnv): CResult {
+    public handleCollection(t: TstCollection, env: PassEnv): Component {
         if (this.parent == undefined || this.parent instanceof TstAssignment) {
             // good, collections can occur here
-            return t.msg();
+            return t;
         }
 
         // it's just a weird collection hanging out on its own
-        return result(t).err("Wayward collection",
+        throw result(t).err("Wayward collection",
                 "A collection cannot occur here; it needs " +
                 "to be assigned to something in the cell to the left.")
                 .bind(_ => new TstEmpty());

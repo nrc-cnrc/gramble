@@ -32,7 +32,9 @@ export class CreateHeaders extends CPass {
             const msgs: Msgs = [];
             const headers: TstHeader[] = [];
             for (const c of t.rows[0].content) {
-                const h = parseHeaderCell(c.text).msgTo(msgs, c.pos);
+                const h = parseHeaderCell(c.text)
+                                .localize(c.pos)
+                                .msgTo(msgs);
                 new HeaderMsg( 
                     backgroundColor(h, 0.14, DEFAULT_VALUE)
                 ).msgTo(msgs, c.cell.pos);

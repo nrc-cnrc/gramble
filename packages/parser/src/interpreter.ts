@@ -23,7 +23,7 @@ import { TapeNamespace } from "./tapes";
 import { Expr, ExprNamespace, CollectionExpr } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
-import { MissingSymbolError, Msg, Msgs } from "./msgs";
+import { MissingSymbolError, Msg, Msgs, result } from "./msgs";
 import { PassEnv } from "./passes";
 import { 
     NAME_PASSES, 
@@ -78,7 +78,7 @@ export class Interpreter {
         const env = new PassEnv();
         env.verbose = verbose;
 
-        const nameGrammar = g.msg()
+        const nameGrammar = result(g)
                             .bind(g => PRE_NAME_PASSES.go(g, env))
                             .msgTo(m => sendMsg(this.devEnv, m));
 
@@ -91,7 +91,7 @@ export class Interpreter {
             throw new Error("name grammar is not a collection!");
         }
 
-        this.grammar = nameGrammar.msg() // lift to result
+        this.grammar = result(nameGrammar) // lift to result
                         .bind(g => NAME_PASSES.go(g, env))
                         .bind(g => POST_NAME_PASSES.go(g, env))
                         .msgTo(m => sendMsg(this.devEnv, m)) as CollectionGrammar

@@ -530,7 +530,7 @@ describe(`Sheets ${DIR}`, function() {
     
     describe('25b. Replace with a test: op nested underneath', test({
         id: "25b",
-        errors: [ Error(12,2), Error(12,1) ],
+        errors: [ Error(12,1) ],
         results: [
             {text: "foo", "gloss":"run.3SG"},
             {text: "foobaz", "gloss":"run-2SG"},

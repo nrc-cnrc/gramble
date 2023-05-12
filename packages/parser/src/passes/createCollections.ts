@@ -136,8 +136,8 @@ export class CreateCollections extends CPass {
             const newName = `${AUTO_SYMBOL_NAME}${c.pos.row+1}`;
             Warn("When there are multiple items in a " +
                 "sheet/collection, each of them should be named. " +
-                `We've temporarily named this ${newName}.`, 
-                c.pos).msgTo(msgs);
+                `We've temporarily named this ${newName}.`)
+                .localize(c.pos).msgTo(msgs);
             const op = new SymbolOp(newName);
             return new TstOp(c.cell, op, new TstEmpty(), c);
         });

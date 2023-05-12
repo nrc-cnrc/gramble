@@ -41,8 +41,8 @@ export class AssociateHeaders extends CPass {
                     if (header == undefined) {
                         if (content.text.length != 0) {
                             Warn("Cannot associate this cell with " +
-                                    "any valid header above; ignoring.",
-                                content.pos).msgTo(msgs);
+                                    "any valid header above; ignoring.")
+                                .localize(content.pos).msgTo(msgs);
                         }
                         continue;
                     }
@@ -56,8 +56,8 @@ export class AssociateHeaders extends CPass {
                     if (param != PLAIN_PARAM && param != "unique") {
                         if (param in newRow.params) {
                             Warn("Named parameters can only occur once; " +
-                                "this cell will be ignored.",
-                                content.pos).msgTo(msgs);
+                                "this cell will be ignored.")
+                                .localize(content.pos).msgTo(msgs);
                         }
                         newRow.params[param] = newCell;
                         continue;

@@ -48,8 +48,8 @@ export class ParseSheets extends Pass<PassInput,Component> {
             
             if (RESERVED_WORDS.has(sheetName.toLowerCase())) {
                 msgs.push(Err("Reserved sheet name",
-                    `${sheetName} is a reserved word; you cannot name a sheet this.`,
-                    new CellPos(sheetName, 0, 0)))
+                    `${sheetName} is a reserved word; you cannot name a sheet this.`)
+                    .localize(new CellPos(sheetName, 0, 0)))
                 continue;
             }
             const tstSheet = this.transform(sheet, env).msgTo(msgs) as TstAssignment;
@@ -156,7 +156,7 @@ export class ParseSheets extends Pass<PassInput,Component> {
                 // of the topmost op.  NB: This is the only kind of operation we'll do on 
                 // empty cells, so that, if appropriate, we can mark them for syntax highlighting.
                 if (top.tst instanceof TstGrid && colIndex > top.col && rowIndex > top.row) {
-                    top.tst.addContent(cell).msgTo(msgs, cellPos);
+                    top.tst.addContent(cell).localize(cellPos).msgTo(msgs);
                     continue;
                 }
     
@@ -168,7 +168,7 @@ export class ParseSheets extends Pass<PassInput,Component> {
                 // either we're still in the spec row, or there's no spec row yet
                 if (cellText.endsWith(":") || cellText.endsWith("=")) {
                     // it's an operation, which starts a new enclosures
-                    const op = parseOp(cellText).msgTo(msgs, cellPos);
+                    const op = parseOp(cellText).localize(cellPos).msgTo(msgs);
                     const newEnclosure = new TstOp(cell, op);
                     new CommandMsg().msgTo(msgs, cellPos);
 
@@ -193,13 +193,14 @@ export class ParseSheets extends Pass<PassInput,Component> {
                 // if the top isn't a TstGrid, make it so
                 if (!(top.tst instanceof TstGrid)) {
                     const newGrid = new TstGrid(cell);
-                    top.tst.setChild(newGrid).msgTo(msgs, cellPos);
+                    top.tst.setChild(newGrid).localize(cellPos).msgTo(msgs);
                     top = { tst: newGrid, row: rowIndex, col: colIndex-1 };
                     stack.push(top);
                 }
 
                 (top.tst as TstGrid).addContent(cell)
-                                       .msgTo(msgs, cellPos);
+                                       .localize(cellPos)
+                                       .msgTo(msgs);
 
             }
         }

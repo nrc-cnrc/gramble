@@ -45,8 +45,7 @@ export class CheckTestLiterals extends CPass {
                 if (!this.isLiteral(header.header)) {
                     Err("Non-literal test content",
                         "Tests can only contain plain literal content " +
-                        "(e.g. no embeds, no special headers, etc.)",
-                        header.pos).msgTo(msgs);
+                        "(e.g. no embeds, no special headers, etc.)").localize(header.pos).msgTo(msgs);
                 } else {
                     newHeaders.push(header);
                 }

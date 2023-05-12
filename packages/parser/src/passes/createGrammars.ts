@@ -264,8 +264,8 @@ export class CreateGrammars extends Pass<Component,Grammar> {
             if (existingReferent != undefined) {
                 // we're reassigning an existing symbol!
                 Err('Reassigning existing symbol', 
-                    `The symbol ${child.name} already refers to another grammar above.`,
-                    child.pos).msgTo(msgs);
+                    `The symbol ${child.name} already refers to another grammar above.`)
+                    .localize(child.pos).msgTo(msgs);
                 continue;
             }     
             

@@ -248,8 +248,8 @@ export abstract class TstBinary extends TstEnclosure {
                 this.child.pos.col != child.pos.col) {
             Warn("This operator is in an unexpected column.  Did you " +
                 `mean for it to be in column ${this.child.pos.col}, ` + 
-                `so that it's under the operator in cell ${this.child.pos}?`,
-                child.pos).msgTo(msgs);
+                `so that it's under the operator in cell ${this.child.pos}?`)
+                .localize(child.pos).msgTo(msgs);
         }
 
         if (child instanceof TstBinary || child instanceof TstGrid) {

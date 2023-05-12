@@ -8,7 +8,7 @@ import {
     RuleContextGrammar, 
     SequenceGrammar, SingleTapeGrammar, StartsGrammar 
 } from "../grammars";
-import { resultList } from "../msgs";
+import { result, resultList } from "../msgs";
 import { 
     CommentHeader, ContainsHeader, 
     EmbedHeader, EndsHeader, 
@@ -62,7 +62,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
     }
 
     public handleTapeName(h: TapeHeader, env: PassEnv): GrammarResult {
-        return this.cellGrammar.msg()
+        return result(this.cellGrammar)
                     .bind(g => new SingleTapeGrammar(h.text, g))
     }
 
@@ -105,7 +105,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
                 'This header can only take a plain tape name (e.g. "text").');
         }
         const tapeName = h.child.text;
-        return this.cellGrammar.msg()
+        return result(this.cellGrammar)
                     .bind(g => new SingleTapeGrammar(tapeName, g))
     }
 

@@ -103,16 +103,16 @@ export class HeaderMsg extends Msg  {
     }
 }
 
-export function Err(shortMsg: string, longMsg: string, pos?: CellPos): Msg {
-    return new Msg("error", shortMsg, longMsg, pos);
+export function Err(shortMsg: string, longMsg: string): Msg {
+    return new Msg("error", shortMsg, longMsg);
 }
 
-export function Warn(longMsg: string, pos?: CellPos): Msg {
-    return new Msg("warning", "warning", longMsg, pos);
+export function Warn(longMsg: string): Msg {
+    return new Msg("warning", "warning", longMsg);
 }
 
-export function Success(longMsg: string, pos?: CellPos): Msg {
-    return new Msg("info", "success", longMsg, pos);
+export function Success(longMsg: string): Msg {
+    return new Msg("info", "success", longMsg);
 }
 
 export function err<T>(x: T, shortMsg: string, longMsg: string): Result<T> {
@@ -154,17 +154,17 @@ export class Result<T> {
 
     public err(shortMsg: string, longMsg: string): Result<T> {
         const e = Err(shortMsg, longMsg);
-        if (isPositioned(this.item)) {
-            return this.msg(e.localize(this.item.pos));
-        }
+        //if (isPositioned(this.item)) {
+        //    return this.msg(e.localize(this.item.pos));
+        //}
         return this.msg(e);
     }
     
     public warn(longMsg: string): Result<T> {
         const e = Warn(longMsg);
-        if (isPositioned(this.item)) {
-            return this.msg(e.localize(this.item.pos));
-        }
+        //if (isPositioned(this.item)) {
+        //    return this.msg(e.localize(this.item.pos));
+        //}
         return this.msg(e);
     }
 
@@ -186,14 +186,13 @@ export class Result<T> {
      * and only consider the item, by providing a callback that
      * handles them as a side effect.
      */
-    public msgTo(f: Msgs | MsgCallback, pos?: CellPos): T {
-        const msgs = this.msgs.map(m => m.localize(pos));
+    public msgTo(f: Msgs | MsgCallback): T {
         if (Array.isArray(f)) {
-            f.push(...msgs);
+            f.push(...this.msgs);
             return this.item;
         }
 
-        for (const m of msgs) {
+        for (const m of this.msgs) {
             f(m);
         }
         return this.item;

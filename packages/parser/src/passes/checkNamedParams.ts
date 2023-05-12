@@ -61,13 +61,15 @@ export class CheckNamedParams extends CPass {
     public handleOp(t: TstOp, env: PassEnv): CResult {
         const [sib, sibMsgs] = this.transform(t.sibling, env).destructure();
         const newPass = new CheckNamedParams(allowedParams(t.op));
-        const [child, childMsgs] = newPass.transform(t.child, env).destructure();
+        const [child, childMsgs] = newPass.transform(t.child, env)
+                                          .localize(t.pos)
+                                          .destructure();
         
         // if there are any problems with params and we require
         // perfection, warn and return the sibling
         if (paramsMustBePerfect(t.op) && childMsgs.length > 0) {
-            Warn("This op has erroneous parameters and will not execute.",
-                t.cell.pos).msgTo(childMsgs);
+            Warn("This op has erroneous parameters and will not execute.")
+                .localize(t.cell.pos).msgTo(childMsgs);
             return sib.msg(sibMsgs).msg(childMsgs);
         }
 
@@ -92,8 +94,8 @@ export class CheckNamedParams extends CPass {
                                     : `a ${param} header`;
                     Err("Missing named param",
                         `This operator requires ${paramDesc}, but ` +
-                        "the content to the right doesn't have one.",
-                        t.cell.pos).msgTo(msgs);
+                        "the content to the right doesn't have one.")
+                        .localize(t.cell.pos).msgTo(msgs);
                 }
             }
         } else {
@@ -104,8 +106,8 @@ export class CheckNamedParams extends CPass {
                 if (param != PLAIN_PARAM) {
                     Err("Missing named param",
                         `This operator requires a ${param} header, but ` +
-                        "the content to the right doesn't have one.",
-                        t.cell.pos).msgTo(msgs);
+                        "the content to the right doesn't have one.")
+                        .localize(t.cell.pos).msgTo(msgs);
                 }
             }
         }
@@ -136,12 +138,14 @@ export class CheckNamedParams extends CPass {
                 const newHeader = new TstHeader(h.cell, h.header.child);
                 return result(h).err("Invalid parameter",
                         `The operator to the left does not expect ${param}`)
+                        .localize(h.pos)
                         .bind(_ => newHeader);
             }
 
             // otherwise return empty
             return result(h).err("Invalid parameter",
                 `The operator to the left does not expect ${param}`)
+                .localize(h.pos)
                 .bind(_ => new TstEmpty());
         });
     }

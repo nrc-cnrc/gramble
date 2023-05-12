@@ -162,20 +162,6 @@ export abstract class AbstractGrammar extends Component {
         return super.mapChildren(f as GrammarPass, env) as GrammarResult;
     }
 
-    public msg(m: Msg | Msgs | ResultVoid = []): GrammarResult {
-        return super.msg(m) as GrammarResult;
-    }
-    
-    public err(shortMsg: string, longMsg: string, pos?: CellPos): GrammarResult {
-        const e = Err(shortMsg, longMsg);
-        return this.msg(e).localize(pos).localize(this.pos);
-    }
-    
-    public warn(longMsg: string, pos?: CellPos): GrammarResult {
-        const e = Warn(longMsg);
-        return this.msg(e).localize(pos).localize(this.pos);
-    }
-    
     public _tapes: string[] | undefined = undefined;
 
     public get tapes(): string[] {

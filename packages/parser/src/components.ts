@@ -29,18 +29,18 @@ export abstract class Component {
         return clone.msg(msgs);
     }
 
-    public msg(m: Msg | Msgs | ResultVoid = []): CResult {
+    public msg(m: Msg | Msgs | ResultVoid = []): Result<this> {
         return result(this).msg(m);
     }
 
-    public err(shortMsg: string, longMsg: string, pos?: CellPos): CResult {
+    public err(shortMsg: string, longMsg: string): Result<this> {
         const e = Err(shortMsg, longMsg);
-        return this.msg(e).localize(pos).localize(this.pos);
+        return result(this).msg(e);
     }
     
-    public warn(longMsg: string, pos?: CellPos): CResult {
+    public warn(longMsg: string): Result<this> {
         const e = Warn(longMsg);
-        return this.msg(e).localize(pos).localize(this.pos);
+        return result(this).msg(e);
     }
 }
 

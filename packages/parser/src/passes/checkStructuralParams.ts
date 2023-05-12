@@ -12,6 +12,7 @@ import {
     TstGrid
 } from "../tsts";
 import { Component, CPass, CResult } from "../components";
+import { CatchingPass } from "./ancestorPasses";
 
 /**
  * This pass goes through and make sure that TstOps have 
@@ -22,13 +23,13 @@ import { Component, CPass, CResult } from "../components";
  * assignments, etc.)
  */
 
-export class CheckStructuralParams extends CPass {
+export class CheckStructuralParams extends CatchingPass<Component,Component> {
 
     public get desc(): string {
         return "Checking structural params";
     }
 
-    public transform(t: Component, env: PassEnv): CResult {
+    public transformAux(t: Component, env: PassEnv): CResult {
         
         if (!(t instanceof TstOp)) {
             return t.mapChildren(this, env);
@@ -46,8 +47,8 @@ export class CheckStructuralParams extends CPass {
                  && t.sibling.op instanceof SymbolOp) {
                 Err("Wayward assignment",
                     "This looks like an assignment, but isn't in an " +
-                    " appropriate position for one and will be ignored.",
-                    t.sibling.pos).msgTo(msgs);
+                    " appropriate position for one and will be ignored.")
+                    .localize(t.sibling.pos).msgTo(msgs);
                 t.sibling = t.sibling.child;
             }
         
@@ -55,8 +56,8 @@ export class CheckStructuralParams extends CPass {
                 t.child.op instanceof SymbolOp) {
                 Err("Wayward assignment",
                     "This looks like an assignment, but isn't in an " +
-                    " appropriate position for one and will be ignored.",
-                    t.child.pos).msgTo(msgs);
+                    " appropriate position for one and will be ignored.")
+                    .localize(t.child.pos).msgTo(msgs);
                 t.child = t.child.child;
             }
 
@@ -82,8 +83,8 @@ export class CheckStructuralParams extends CPass {
         // siblings of assignments don't get assigned to anything
         if (!(t.sibling instanceof TstEmpty)) {
                 Warn("This content does not get " +
-                    "assigned to anything and will be ignored.",
-                    t.sibling.pos).msgTo(msgs);
+                    "assigned to anything and will be ignored.")
+                    .localize(t.sibling.pos).msgTo(msgs);
         }
 
         // assignment needs something in its .child param.  if
@@ -103,13 +104,13 @@ export class CheckStructuralParams extends CPass {
         return result(t).bind(_ => replacement);      
     }
 
-    public handleOp(t: TstOp): CResult {
+    public handleOp(t: TstOp): Component {
 
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.
         if (childMustBeGrid(t.op) == "required" && 
             !(t.child instanceof TstGrid)) {
-            return result(t).err(`'${t.op.tag}' requires grid`,
+            throw result(t).err(`'${t.op.tag}' requires grid`,
                     `This ${t.op.tag} operator requires a grid to the right, ` +
                     "but has another operator instead.")
                     .bind(r => r.sibling);
@@ -120,24 +121,27 @@ export class CheckStructuralParams extends CPass {
         if (siblingRequired(t.op) == "required" 
                 && t.sibling instanceof TstEmpty
                 && t.child instanceof TstEmpty) {
-            return result(t).err(`Missing args to '${t.cell.text}'`,
+            throw result(t).err(`Missing args to '${t.cell.text}'`,
                             "This operator requires content above it and to the right, " +
                             "but both are empty or erroneous.")
+                        .localize(t.pos)
                         .bind(r => new TstEmpty());
         }
 
         // if the op must have a sibling and doesn't, issue an error,
         // and return empty
         if (siblingRequired(t.op) == "required" && t.sibling instanceof TstEmpty) {
-            return result(t).err(`Missing argument to ${t.cell.text}`,
+            throw result(t).err(`Missing argument to ${t.cell.text}`,
                             "This operator requires content above it, but it's empty or erroneous.")
+                        .localize(t.pos)
                         .bind(r => new TstEmpty());
         }
 
         // all operators need something in their .child param.  if
         // it's empty, issue a warning, and return the sibling as the new value.
         if (t.child instanceof TstEmpty) {
-            return result(t).warn("This will not contain any content.")
+            throw result(t).warn("This will not contain any content.")
+                            .localize(t.pos)
                             .bind(r => r.sibling);
         }
 
@@ -145,11 +149,11 @@ export class CheckStructuralParams extends CPass {
         // warn about it.
         if (siblingRequired(t.op) == "forbidden" &&
                 !(t.sibling instanceof TstEmpty)) {
-            return t.warn("This content does not get " +
-                "assigned to anything and will be ignored.",
-                t.sibling.pos);
+            throw t.warn("This content does not get " +
+                "assigned to anything and will be ignored.")
+                .localize(t.sibling.pos);
         }
 
-        return t.msg();
+        return t;
     }
 }
