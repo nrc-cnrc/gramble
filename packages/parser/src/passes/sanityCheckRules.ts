@@ -1,5 +1,6 @@
 import { 
     CounterStack,
+    EpsilonGrammar,
     Grammar,
     JoinRuleGrammar, 
     ReplaceGrammar,
@@ -8,7 +9,8 @@ import {
 
 import { DUMMY_TAPE } from "../util";
 import { PassEnv } from "../passes";
-import { PostGrammarPass, GrammarError } from "./ancestorPasses";
+import { PostPass } from "./ancestorPasses";
+import { err, warn } from "../msgs";
 
 /**
  * There are a few sanity checks we want to do for replacement rules.
@@ -28,7 +30,7 @@ import { PostGrammarPass, GrammarError } from "./ancestorPasses";
  * rather than an error.
  */
 
-export class SanityCheckRules extends PostGrammarPass {
+export class SanityCheckRules extends PostPass<Grammar> {
 
     public get desc(): string {
         return "Sanity-checking rules";
@@ -55,8 +57,7 @@ export class SanityCheckRules extends PostGrammarPass {
         const validRules = g.rules.filter(isReplace);
 
         if (validRules.length == 0) {
-            throw GrammarError("Warning -- This replace has no valid rules", 
-                                g.child);
+            throw warn(g.child, "This replace has no valid rules");
         }
 
         g.rules = validRules;
@@ -75,15 +76,19 @@ export class SanityCheckRules extends PostGrammarPass {
         if (nonDummyFromTapes.length != 1) {
             // I don't think this is actually possible with 
             // new-style rules, but just in case
-            throw "Multitape rule -- This rule has the wrong number of tapes " +
-                                ` in "pre/from/post": ${nonDummyFromTapes}`;
+            throw err(new EpsilonGrammar(), 
+                        "Multitape rule", 
+                        "This rule has the wrong number of tapes " +
+                            ` in "pre/from/post": ${nonDummyFromTapes}`);
         }
         const fromTape = nonDummyFromTapes[0];
         const fromLength = fromMaterial.estimateLength(fromTape, stack, env);
         if (fromLength.null == false && fromLength.min == 0 && 
                     !g.optional && !g.beginsWith && !g.endsWith) {
-            throw "Unconditional insertion -- This rule can execute " +
-                                "unconditionally (i.e. can trigger on an empty input).";
+            throw err(new EpsilonGrammar(),
+                        "Unconditional insertion",
+                        "This rule can execute unconditionally " +
+                        "(i.e. can trigger on an empty input).");
         }
 
         // then handle the "to" material
@@ -91,15 +96,19 @@ export class SanityCheckRules extends PostGrammarPass {
         if (nonDummyToTapes.length != 1) {
             // I don't think this is actually possible with 
             // new-style rules, but just in case
-            throw "Multitape rule -- This rule has the wrong number of tapes " + 
-                                    `in "to": ${g.toGrammar.tapes}`;
+            throw err(new EpsilonGrammar(),
+                            "Multitape rule",
+                            "This rule has the wrong number of tapes " + 
+                                    `in "to": ${g.toGrammar.tapes}`);
         }
         const toTape = nonDummyToTapes[0];
         const toLength = g.toGrammar.estimateLength(toTape, stack, env);
         if (toLength.null == false && toLength.max == Infinity) {
             // this shouldn't be syntactically possible to express in sheets, but if
             // it does happen, it's bad news because it's infinite generation.
-            throw "Infinite 'to' -- This rule will generate infinitely.";
+            throw err(new EpsilonGrammar(),
+                        "Infinite 'to'",
+                        "This rule will generate infinitely.");
         }
         return g;
     }

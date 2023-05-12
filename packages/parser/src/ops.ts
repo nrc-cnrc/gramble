@@ -1,16 +1,15 @@
-import { exhaustive } from "./components";
+import { Component, exhaustive } from "./components";
 import { 
     miniParse, MiniParseEnv, 
     MPAlt, MPParser, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
-import { Err, Msg, Msgs, result, Result, ResultVoid, Warn } from "./msgs";
+import { err, Result } from "./msgs";
 import { 
     REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, 
     ALL_RESERVED, RESERVED_SYMBOLS, 
     isValidSymbolName, BLANK_PARAM_SET, TEST_PARAM_SET 
 } from "./reserved";
-import { CellPos } from "./util";
 
 export type Requirement = "required" | "forbidden";
 
@@ -24,42 +23,23 @@ export type Op = TableOp
                | SymbolOp
                | ErrorOp;
 
-export abstract class AbstractOp {
-    public abstract get tag(): string;
-
-    public msg(m: Msg | Msgs | ResultVoid = []): Result<Op> {
-        return result(this).msg(m) as Result<Op>;
-    }
-    
-    public err(shortMsg: string, longMsg: string, pos?: CellPos): Result<Op> {
-        const e = Err(shortMsg, longMsg);
-        return this.msg(e).localize(pos);
-    }
-    
-    public warn(longMsg: string, pos?: CellPos): Result<Op> {
-        const e = Warn(longMsg);
-        return this.msg(e).localize(pos);
-    }
-
-}
-
-export class TableOp extends AbstractOp { 
+export class TableOp extends Component { 
     public readonly tag = "table";
 }
 
-export class CollectionOp extends AbstractOp { 
+export class CollectionOp extends Component { 
     public readonly tag = "collection";
 }
 
-export class TestOp extends AbstractOp { 
+export class TestOp extends Component { 
     public readonly tag = "test";
 }
 
-export class TestNotOp extends AbstractOp { 
+export class TestNotOp extends Component { 
     public readonly tag = "testnot";
 }
 
-export class ReplaceOp extends AbstractOp {
+export class ReplaceOp extends Component {
     public readonly tag = "replace";
 
     constructor(
@@ -69,11 +49,11 @@ export class ReplaceOp extends AbstractOp {
     }
 }
 
-export class OrOp extends AbstractOp { 
+export class OrOp extends Component { 
     public readonly tag = "or";
 }
 
-export class JoinOp extends AbstractOp { 
+export class JoinOp extends Component { 
     public readonly tag = "join";
 }
 
@@ -84,7 +64,7 @@ export class JoinOp extends AbstractOp {
  * arbitrary symbols are handled for operators that allow these like 
  * "replace <tapename>:"
  */
-export class SymbolOp extends AbstractOp {
+export class SymbolOp extends Component {
     public readonly tag = "symbol";
 
     constructor(
@@ -94,7 +74,7 @@ export class SymbolOp extends AbstractOp {
     }
 }
 
-export class ErrorOp extends AbstractOp {
+export class ErrorOp extends Component {
     public readonly tag = "error";
 }
 
@@ -123,7 +103,7 @@ const OP_UNRESERVED = MPUnreserved<Op>(
         if (isValidSymbolName(s)) {
             return new SymbolOp(s)
         } else {
-            throw new ErrorOp().err( 
+            throw err(new ErrorOp(),
                 `Invalid identifier`, 
                 `${s} looks like it should be an identifier, but it contains an invalid symbol.`
             );
@@ -175,7 +155,7 @@ export function parseOp(text: string): Result<Op> {
     const results = miniParse(env, OP_EXPR, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorOp().err("Invalid operator",
+        return err(new ErrorOp, "Invalid operator",
                 "This ends in a colon so it looks like an operator, but it cannot be parsed.");
     }
     

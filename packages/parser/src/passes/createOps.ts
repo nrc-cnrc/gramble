@@ -1,22 +1,19 @@
 import { 
-    ReplaceOp, TableOp, 
-    TestNotOp, TestOp, 
+    ReplaceOp,
     SymbolOp, 
-    OrOp,
-    JoinOp
 } from "../ops";
-import { result, Result } from "../msgs";
+import { warn } from "../msgs";
 import { PassEnv } from "../passes";
 import { 
     TstOp, 
-    TstEmpty, TstTest, 
+    TstTest, 
     TstTable, TstTestNot, TstReplace, 
     TstOr, TstAssignment, TstParamList, TstJoin
 } from "../tsts";
 import { Component, exhaustive } from "../components";
-import { PostComponentPass, TstError } from "./ancestorPasses";
+import { PostPass } from "./ancestorPasses";
 
- export class CreateOps extends PostComponentPass {
+ export class CreateOps extends PostPass<Component> {
 
     public get desc(): string {
         return "Creating ops";
@@ -73,8 +70,8 @@ import { PostComponentPass, TstError } from "./ancestorPasses";
         const assignment = new TstAssignment(t.cell, op.text, t.child);
 
         if (op.text.indexOf(".") != -1) {
-            throw TstError("Warning -- You can't assign to a name that contains a period.",
-                                 assignment.child);
+            throw warn(assignment.child, 
+                    "You can't assign to a name that contains a period.");
         }
 
         /*

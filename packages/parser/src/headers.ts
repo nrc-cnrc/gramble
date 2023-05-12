@@ -10,7 +10,7 @@ import {
 
 import {
      Msgs, Result, 
-     Err, Warn, Msg, ResultVoid 
+     Err, Warn, Msg, ResultVoid, err 
 } from "./msgs";
 
 import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./reserved";
@@ -65,27 +65,7 @@ export type Header = EmbedHeader
             | SlashHeader
             | ErrorHeader;
 
-
-
-            
-export abstract class AbstractHeader extends Component {
-
-    public msg(m: Msg | Msgs | ResultVoid = []): Result<Header> {
-        return super.msg(m) as Result<Header>;
-    }
-    
-    public err(shortMsg: string, longMsg: string, pos?: CellPos): Result<Header> {
-        const e = Err(shortMsg, longMsg);
-        return this.msg(e).localize(pos);
-    }
-    
-    public warn(longMsg: string, pos?: CellPos): Result<Header> {
-        const e = Warn(longMsg);
-        return this.msg(e).localize(pos);
-    }
-}
-
-export class EmbedHeader extends AbstractHeader { 
+export class EmbedHeader extends Component { 
     public readonly tag = "embed";
 }
 
@@ -94,14 +74,14 @@ export class EmbedHeader extends AbstractHeader {
  * to the left and mangles its name (or otherwise hides it, depending
  * on implementation)
  */
-export class HideHeader extends AbstractHeader { 
+export class HideHeader extends Component { 
     public readonly tag = "hide";
 }
 
 /**
  * TapeNameHeaders are references to a particular tape name (e.g. "text")
  */
-export class TapeHeader extends AbstractHeader {
+export class TapeHeader extends Component {
     public readonly tag = "tape";
 
     constructor(
@@ -116,7 +96,7 @@ export class TapeHeader extends AbstractHeader {
  * Commented-out headers also comment out any cells below them; the cells just act as
  * Empty() states.
  */
-export class CommentHeader extends AbstractHeader { 
+export class CommentHeader extends Component { 
     public readonly tag = "comment";
 }
 
@@ -124,7 +104,7 @@ export class CommentHeader extends AbstractHeader {
  * The ancestor class of unary header operators like "optional", 
  * "not", and ">" (the rename operator)
  */
-export abstract class UnaryHeader extends AbstractHeader {
+export abstract class UnaryHeader extends Component {
 
     public constructor(
         public child: Header
@@ -133,15 +113,15 @@ export abstract class UnaryHeader extends AbstractHeader {
     }
 }
 
-export class FromHeader extends AbstractHeader {
+export class FromHeader extends Component {
     public readonly tag = "from";
 }
 
-export class ToHeader extends AbstractHeader {
+export class ToHeader extends Component {
     public readonly tag = "to";
 }
 
-export class RuleContextHeader extends AbstractHeader {
+export class RuleContextHeader extends Component {
     public readonly tag = "context";
 }
 
@@ -201,7 +181,7 @@ export class ContainsHeader extends UnaryHeader {
     public readonly tag = "contains";
 }
 
-export class SlashHeader extends AbstractHeader {
+export class SlashHeader extends Component {
     public readonly tag = "slash";
     public constructor(
         public child1: Header,
@@ -212,7 +192,7 @@ export class SlashHeader extends AbstractHeader {
 
 }
 
-export class ErrorHeader extends AbstractHeader {
+export class ErrorHeader extends Component {
     public readonly tag = "error";
 }
 
@@ -250,7 +230,7 @@ const HP_UNRESERVED = MPUnreserved<Header>(
         if (isValidSymbolName(s)) {
             return new TapeHeader(s)
         } else {
-            throw new ErrorHeader().err(
+            throw err(new ErrorHeader(),
                 `Invalid tape name`, 
                 `${s} looks like it should be a tape name, but tape names should start with letters or _`);
         }
@@ -311,8 +291,8 @@ const HP_EQUALS = MPSequence<Header>(
     ["equals", HP_NON_COMMENT_EXPR],
     ([c]) => {
         if (!(c instanceof TapeHeader)) {
-            throw new ErrorHeader()
-                .err(`Equals requires tape name`, 
+            throw err(new ErrorHeader(), 
+                    `Equals requires tape name`, 
                     `Equals can only apply to tape names (e.g. "equals text")`);
         }
         return new EqualsHeader(c);
@@ -323,9 +303,9 @@ const HP_STARTS = MPSequence<Header>(
     ["starts", HP_NON_COMMENT_EXPR],
     ([c]) => {
         if (!(c instanceof TapeHeader)) {
-            throw new ErrorHeader()
-                .err(`Equals requires tape name`, 
-                    `Equals can only apply to tape names (e.g. "equals text")`);
+            throw err(new ErrorHeader(), 
+                    `Starts requires tape name`, 
+                    `Starts can only apply to tape names (e.g. "equals text")`);
         }
         return new StartsHeader(c)
     }
@@ -335,9 +315,9 @@ const HP_ENDS = MPSequence<Header>(
     ["ends", HP_NON_COMMENT_EXPR],
     ([c]) => {
         if (!(c instanceof TapeHeader)) {
-            throw new ErrorHeader()
-                 .err(`Equals requires tape name`, 
-                    `Equals can only apply to tape names (e.g. "equals text")`);
+            throw err(new ErrorHeader(), 
+                    `Ends requires tape name`, 
+                    `Ends can only apply to tape names (e.g. "equals text")`);
         }
         return new EndsHeader(c);
     }
@@ -347,9 +327,9 @@ const HP_CONTAINS = MPSequence<Header>(
     ["contains", HP_NON_COMMENT_EXPR],
     ([c]) => {
         if (!(c instanceof TapeHeader)) {
-            throw new ErrorHeader()
-              .err(`Equals requires tape name`, 
-                    `Equals can only apply to tape names (e.g. "equals text")`);
+            throw err(new ErrorHeader(), 
+                    `Contains requires tape name`, 
+                    `Contains can only apply to tape names (e.g. "equals text")`);
         }
         return new ContainsHeader(c);
     }
@@ -363,7 +343,7 @@ export function parseHeaderCell(text: string): Result<Header> {
     const results = miniParse(env, HP_EXPR, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorHeader().msg().err(
+        return err(new ErrorHeader(),
             "Invalid header",
             "Cannot parse this header"
         );

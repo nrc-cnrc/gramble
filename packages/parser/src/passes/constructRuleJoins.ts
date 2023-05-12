@@ -1,24 +1,22 @@
 import { 
     CounterStack,
     PreTapeGrammar,
-    Grammar,
-    GrammarPass,
-    GrammarResult, HideGrammar,
+    Grammar, HideGrammar,
     JoinGrammar, JoinRuleGrammar, 
     RenameGrammar,
 } from "../grammars";
 
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
-import { result } from "../msgs";
+import { err } from "../msgs";
 import { PassEnv } from "../passes";
-import { GrammarError, PostGrammarPass } from "./ancestorPasses";
+import { PostPass } from "./ancestorPasses";
 
 /**
  * This pass handles the construction of implicit-tape replacement rules
  * (where you just say "from"/"to" rather than "from text"/"to text") and
  * cascades of them.
  */
-export class ConstructRuleJoins extends PostGrammarPass {
+export class ConstructRuleJoins extends PostPass<Grammar> {
 
     public replaceIndex: number = 0;
 
@@ -41,10 +39,9 @@ export class ConstructRuleJoins extends PostGrammarPass {
             // leads to infinite generation.  This is correct but not what anyone
             // actually wants, so mark an error
 
-            throw GrammarError("Replacing non-existent tape -- " +
-                            `The grammar above does not have a tape ` +
-                            `${g.inputTape} to replace on`,
-                            g.child);
+            throw err(g.child, "Replacing non-existent tape",
+                        `The grammar above does not have a tape ` +
+                        `${g.inputTape} to replace on`);
         }
         
         let relevantTape = g.inputTape;

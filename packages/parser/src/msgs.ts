@@ -115,6 +115,13 @@ export function Success(longMsg: string, pos?: CellPos): Msg {
     return new Msg("info", "success", longMsg, pos);
 }
 
+export function err<T>(x: T, shortMsg: string, longMsg: string): Result<T> {
+    return result(x).msg(Err(shortMsg, longMsg));
+}
+
+export function warn<T>(x: T, msg: string): Result<T> {
+    return result(x).msg(Warn(msg));
+}
 
 type MsgCallback = (m: Msg) => void; 
 type Func<T1,T2> = (input: T1) => (T2|Result<T2>);
@@ -250,7 +257,12 @@ export class ResultVoid extends Result<void> {
     }
 }
 
-export function result<T>(item: T): Result<T> {
+export function result<T>(
+    item: T|Result<T>
+): Result<T> {
+    if (item instanceof Result) {
+        return item;
+    }
     return new Result(item);
 }
 

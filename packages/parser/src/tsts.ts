@@ -11,21 +11,18 @@ import {
     paramName,
 } from "./headers";
 import { 
-    Msgs, resultList, Warn, 
+    Msgs, Warn, 
     ResultVoid, unit
 } from "./msgs";
 import { PassEnv } from "./passes";
 import { Op } from "./ops";
 import { Component, CPass, CResult } from "./components";
 
-abstract class AbstractComponent extends Component {
-
-}
 /**
  * A TstCellComponent is just any TstComponent that has a
  * cell.
  */
-export abstract class TstCellComponent extends AbstractComponent {
+export abstract class TstCellComponent extends Component {
 
     constructor(
         public cell: Cell
@@ -193,7 +190,7 @@ export class TstFilter extends TstCellComponent {
     
 }
 
-export class TstEmpty extends AbstractComponent {
+export class TstEmpty extends Component {
 
 }
 

@@ -6,7 +6,8 @@ import {
     RenameGrammar, 
 } from "../grammars";
 import { PassEnv } from "../passes";
-import { PostGrammarPass, GrammarError } from "./ancestorPasses";
+import { PostPass } from "./ancestorPasses";
+import { err } from "../msgs";
 
 /**
  * This pass finds erroneous renames/hides and fixes them.
@@ -22,7 +23,7 @@ import { PostGrammarPass, GrammarError } from "./ancestorPasses";
  * is well-formed again and does not lead to exceptions to otherwise invariant 
  * properties of the algorithm.
  */
-export class RenameFix extends PostGrammarPass {
+export class RenameFix extends PostPass<Grammar> {
 
     public get desc(): string {
         return "Validating tape-rename structure";
@@ -39,10 +40,9 @@ export class RenameFix extends PostGrammarPass {
     public handleHide(g: HideGrammar, env: PassEnv): Grammar {
         g.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.tapeName) == -1) { 
-            throw GrammarError("Hiding missing tape -- " + 
-                            `The grammar being hidden does not contain the tape ${g.tapeName}. ` +
-                            ` Available tapes: [${[...g.child.tapes]}]`,
-                            g.child);
+            throw err(g.child, "Hiding missing tape",
+                        `The grammar being hidden does not contain the tape ${g.tapeName}. ` +
+                        ` Available tapes: [${[...g.child.tapes]}]`);
         }
         return g;
     }
@@ -55,20 +55,18 @@ export class RenameFix extends PostGrammarPass {
                 return g.child;
             }
 
-            throw GrammarError("Renaming missing tape -- " +
-                            `The ${g.child.constructor.name} to undergo renaming does not contain the tape ${g.fromTape}. ` +
-                            `Available tapes: [${[...g.child.tapes]}]`,
-                            g.child);
+            throw err(g.child, "Renaming missing tape",
+                        `The ${g.child.constructor.name} to undergo renaming does not contain the tape ${g.fromTape}. ` +
+                        `Available tapes: [${[...g.child.tapes]}]`);
         }
 
         if (g.fromTape != g.toTape && g.child.tapes.indexOf(g.toTape) != -1) {
             const errTapeName = `${HIDDEN_PREFIX}ERR${g.toTape}`;
             let repair = new RenameGrammar(g.child, g.toTape, errTapeName);
             repair = new RenameGrammar(repair, g.fromTape, g.toTape)
-            throw GrammarError("Destination tape already exists -- " +
-                            `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
-                            `to the left already contains the tape ${g.toTape}. `,
-                            repair)
+            throw err(repair, "Destination tape already exists",
+                        `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
+                        `to the left already contains the tape ${g.toTape}. `)
         }
 
         return g;

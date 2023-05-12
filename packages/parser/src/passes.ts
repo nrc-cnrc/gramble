@@ -1,7 +1,5 @@
-import { Component } from "./components";
-import { EpsilonGrammar, Grammar } from "./grammars";
-import { Err, Msg, Msgs, Result, Warn, result } from "./msgs";
-import { TstEmpty } from "./tsts";
+import { Grammar } from "./grammars";
+import { Msgs, Result } from "./msgs";
 import { 
     Dict, Namespace, 
     SILENT, timeIt, 
@@ -83,31 +81,4 @@ export class ComposedPass<T1,T2,T3> extends Pass<T1,T3> {
         throw new Error("calling transform on a composed pass");
     }
 
-}
-
-export function stringToMsg(msg: string): Msg {
-
-    const pieces = msg.split("--");
-    if (pieces.length == 1) {
-        const shortMsg = msg.slice(0, 20).trim() + "...";
-        const longMsg = msg;
-        return Err(shortMsg, longMsg);
-    }
-
-    const shortMsg = pieces[0].trim();
-    const longMsg = pieces.slice(1).join("--").trim();
-    
-    if (shortMsg.toLowerCase() == "warning") {
-        return Warn(longMsg);
-    }
-
-    return Err(shortMsg, longMsg);
-}
-
-export class PassError<T> {
-
-    constructor(
-        public repair: T,
-        public msgs: Msg | Msgs
-    ) { }
 }

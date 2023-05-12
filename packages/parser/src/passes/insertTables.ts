@@ -9,7 +9,7 @@ import {
     TstCollection
 } from "../tsts";
 import { Component } from "../components";
-import { PostComponentPass } from "./ancestorPasses";
+import { PostPass } from "./ancestorPasses";
 
 /**
  * This pass goes through and make sure that TstOps have 
@@ -20,7 +20,7 @@ import { PostComponentPass } from "./ancestorPasses";
  * assignments, etc.)
  */
 
-export class InsertTables extends PostComponentPass {
+export class InsertTables extends PostPass<Component> {
 
     public get desc(): string {
         return "Inserting tables";
