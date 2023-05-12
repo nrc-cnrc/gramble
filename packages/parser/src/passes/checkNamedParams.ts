@@ -136,17 +136,15 @@ export class CheckNamedParams extends CPass {
             if (h.header instanceof UniqueHeader && this.permissibleParams.has(PLAIN_PARAM)) {
                 // if we can easily remove the tag, try that
                 const newHeader = new TstHeader(h.cell, h.header.child);
-                return result(h).err("Invalid parameter",
+                return newHeader.err("Invalid parameter",
                         `The operator to the left does not expect ${param}`)
-                        .localize(h.pos)
-                        .bind(_ => newHeader);
+                        .localize(h.pos);
             }
 
             // otherwise return empty
-            return result(h).err("Invalid parameter",
+            return new TstEmpty().err("Invalid parameter",
                 `The operator to the left does not expect ${param}`)
-                .localize(h.pos)
-                .bind(_ => new TstEmpty());
+                .localize(h.pos);
         });
     }
 }

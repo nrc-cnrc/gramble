@@ -8,10 +8,7 @@ import {
     HSVtoRGB, RGBtoString, CellPos, PLAIN_PARAM
 } from "./util";
 
-import {
-     Msgs, Result, 
-     Err, Warn, Msg, ResultVoid, err 
-} from "./msgs";
+import { Result } from "./msgs";
 
 import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./reserved";
 import { Component, exhaustive } from "./components";
@@ -230,7 +227,7 @@ const HP_UNRESERVED = MPUnreserved<Header>(
         if (isValidSymbolName(s)) {
             return new TapeHeader(s)
         } else {
-            throw err(new ErrorHeader(),
+            throw new ErrorHeader().err(
                 `Invalid tape name`, 
                 `${s} looks like it should be a tape name, but tape names should start with letters or _`);
         }
@@ -291,7 +288,7 @@ const HP_EQUALS = MPSequence<Header>(
     ["equals", HP_NON_COMMENT_EXPR],
     ([c]) => {
         if (!(c instanceof TapeHeader)) {
-            throw err(new ErrorHeader(), 
+            throw new ErrorHeader().err( 
                     `Equals requires tape name`, 
                     `Equals can only apply to tape names (e.g. "equals text")`);
         }
@@ -303,7 +300,7 @@ const HP_STARTS = MPSequence<Header>(
     ["starts", HP_NON_COMMENT_EXPR],
     ([c]) => {
         if (!(c instanceof TapeHeader)) {
-            throw err(new ErrorHeader(), 
+            throw new ErrorHeader().err(
                     `Starts requires tape name`, 
                     `Starts can only apply to tape names (e.g. "equals text")`);
         }
@@ -315,7 +312,7 @@ const HP_ENDS = MPSequence<Header>(
     ["ends", HP_NON_COMMENT_EXPR],
     ([c]) => {
         if (!(c instanceof TapeHeader)) {
-            throw err(new ErrorHeader(), 
+            throw new ErrorHeader().err(
                     `Ends requires tape name`, 
                     `Ends can only apply to tape names (e.g. "equals text")`);
         }
@@ -327,7 +324,7 @@ const HP_CONTAINS = MPSequence<Header>(
     ["contains", HP_NON_COMMENT_EXPR],
     ([c]) => {
         if (!(c instanceof TapeHeader)) {
-            throw err(new ErrorHeader(), 
+            throw new ErrorHeader().err(
                     `Contains requires tape name`, 
                     `Contains can only apply to tape names (e.g. "equals text")`);
         }
@@ -343,7 +340,7 @@ export function parseHeaderCell(text: string): Result<Header> {
     const results = miniParse(env, HP_EXPR, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return err(new ErrorHeader(),
+        return new ErrorHeader().err(
             "Invalid header",
             "Cannot parse this header"
         );

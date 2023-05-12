@@ -143,7 +143,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
             return new EpsilonGrammar().msg();
         }
 
-        return new EpsilonGrammar().msg()
+        return new EpsilonGrammar()
             .warn("This content is associated with an invalid header above, ignoring");
     }
 

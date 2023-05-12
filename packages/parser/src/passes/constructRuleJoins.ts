@@ -7,7 +7,6 @@ import {
 } from "../grammars";
 
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
-import { err } from "../msgs";
 import { PassEnv } from "../passes";
 import { PostPass } from "./ancestorPasses";
 
@@ -39,7 +38,7 @@ export class ConstructRuleJoins extends PostPass<Grammar> {
             // leads to infinite generation.  This is correct but not what anyone
             // actually wants, so mark an error
 
-            throw err(g.child, "Replacing non-existent tape",
+            throw g.child.err("Replacing non-existent tape",
                         `The grammar above does not have a tape ` +
                         `${g.inputTape} to replace on`);
         }

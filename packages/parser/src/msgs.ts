@@ -115,16 +115,8 @@ export function Success(longMsg: string): Msg {
     return new Msg("info", "success", longMsg);
 }
 
-export function err<T>(x: T, shortMsg: string, longMsg: string): Result<T> {
-    return result(x).msg(Err(shortMsg, longMsg));
-}
-
-export function warn<T>(x: T, msg: string): Result<T> {
-    return result(x).msg(Warn(msg));
-}
-
 type MsgCallback = (m: Msg) => void; 
-type Func<T1,T2> = (input: T1) => (T2|Result<T2>);
+export type Func<T1,T2> = (input: T1) => (T2|Result<T2>);
 
 export class Result<T> {
 

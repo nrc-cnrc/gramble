@@ -24,7 +24,7 @@ import {
     RuleContextGrammar
 } from "../grammars";
 import { parseClass, TapeHeader } from "../headers";
-import { Err, Msgs, err, resultList } from "../msgs";
+import { Err, Msgs, resultList } from "../msgs";
 import { HeaderToGrammar } from "./headerToGrammar";
 import { parseCell } from "../cell";
 import { PLAIN_PARAM } from "../util";
@@ -92,7 +92,7 @@ export class CreateGrammars extends Pass<Component,Grammar> {
     public handleRename(t: TstRename, env: PassEnv): GrammarResult {
         if (!(t.header.header instanceof TapeHeader)) {
             // TODO: This doesn't seem right
-            return err(new EpsilonGrammar(), "Renaming error",
+            return new EpsilonGrammar().err( "Renaming error",
                     "Rename (>) needs to have a tape name after it");
         }
         const fromTape = t.cell.text;

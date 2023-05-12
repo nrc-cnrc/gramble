@@ -2,7 +2,6 @@ import {
     ReplaceOp,
     SymbolOp, 
 } from "../ops";
-import { warn } from "../msgs";
 import { PassEnv } from "../passes";
 import { 
     TstOp, 
@@ -70,7 +69,7 @@ import { PostPass } from "./ancestorPasses";
         const assignment = new TstAssignment(t.cell, op.text, t.child);
 
         if (op.text.indexOf(".") != -1) {
-            throw warn(assignment.child, 
+            throw assignment.child.warn(
                     "You can't assign to a name that contains a period.");
         }
 

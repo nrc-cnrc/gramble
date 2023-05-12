@@ -9,13 +9,14 @@ import {
 
 import { result } from "../msgs";
 import { Pass, PassEnv } from "../passes";
+import { PostPass } from "./ancestorPasses";
 
 /**
  * This pass handles the behind-the-scenes renaming necessary when the programmer
  * expresses a "from T1 to T1" replacement rule.  This can't literally be true (no output
  * has two different strings on the same tape), so one of those two tapes has to be renamed.
  */
-export class SameTapeReplacePass extends GrammarPass {
+export class SameTapeReplacePass extends PostPass<Grammar> {
 
     public replaceIndex: number = 0;
 
@@ -23,18 +24,15 @@ export class SameTapeReplacePass extends GrammarPass {
         return "Adjusted tape names in same-tape replace rules";
     }
 
-    public transform(g: Grammar, env: PassEnv): GrammarResult {
-        const result = g.mapChildren(this, env);
-        return result.bind(g => {
-            switch (g.tag) {
-                case "joinreplace": return this.handleJoinReplace(g, env);
-                case "replace":     return this.handleReplace(g, env);
-                default:            return g;
-            }
-        });
+    public postTransform(g: Grammar, env: PassEnv): Grammar {
+        switch (g.tag) {
+            case "joinreplace": return this.handleJoinReplace(g, env);
+            case "replace":     return this.handleReplace(g, env);
+            default:            return g;
+        }
     }
 
-    public handleJoinReplace(g: JoinReplaceGrammar, env: PassEnv): GrammarResult {
+    public handleJoinReplace(g: JoinReplaceGrammar, env: PassEnv): Grammar {
 
         g.calculateTapes(new CounterStack(2), env);
         
@@ -58,9 +56,8 @@ export class SameTapeReplacePass extends GrammarPass {
         if (fromTape != undefined && replaceTape != undefined) {
             
             if (g.child.tapes.indexOf(fromTape) == -1) {
-                return result(g).err(`Replacing on non-existent tape'`,
-                                     `The grammar above does not have a tape ${fromTape} to replace on`)
-                                  .bind(r => r.child);
+                throw g.child.err(`Replacing on non-existent tape'`,
+                                     `The grammar above does not have a tape ${fromTape} to replace on`);
                 // if replace is replacing a tape not relevant to the child,
                 // then we generate infinitely -- which is correct but not what
                 // anyone wants.  so ignore the replacement entirely.
@@ -70,10 +67,10 @@ export class SameTapeReplacePass extends GrammarPass {
         }
 
         const child2 = new AlternationGrammar(g.rules);
-        return new JoinGrammar(newG, child2).msg();
+        return new JoinGrammar(newG, child2);
     }
 
-    public handleReplace(g: ReplaceGrammar, env: PassEnv): GrammarResult {
+    public handleReplace(g: ReplaceGrammar, env: PassEnv): Grammar {
         g.calculateTapes(new CounterStack(2), env);
 
         if (g._fromTapeName == undefined || g._toTapeNames == undefined) {
@@ -93,7 +90,7 @@ export class SameTapeReplacePass extends GrammarPass {
         return new ReplaceGrammar(renamedFrom, g.toGrammar, 
                                   renamedPre, renamedPost, g.otherContext,
                                   g.beginsWith, g.endsWith,
-                                  g.minReps, g.maxReps, g.hiddenTapeName, g.optional).msg();
+                                  g.minReps, g.maxReps, g.hiddenTapeName, g.optional);
     }
 
 }

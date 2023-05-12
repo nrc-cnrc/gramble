@@ -1,11 +1,10 @@
 import { PassEnv } from "../passes";
-import { Msgs, result } from "../msgs";
 import { 
     TstCollection, 
     TstEmpty, 
     TstAssignment
 } from "../tsts";
-import { Component, CPass, CResult } from "../components";
+import { Component, CResult } from "../components";
 import { CatchingPass } from "./ancestorPasses";
 
 /**
@@ -42,10 +41,9 @@ export class CheckCollections extends CatchingPass<Component,Component> {
         }
 
         // it's just a weird collection hanging out on its own
-        throw result(t).err("Wayward collection",
+        throw new TstEmpty().err("Wayward collection",
                 "A collection cannot occur here; it needs " +
-                "to be assigned to something in the cell to the left.")
-                .bind(_ => new TstEmpty());
+                "to be assigned to something in the cell to the left.");
 
     }
 

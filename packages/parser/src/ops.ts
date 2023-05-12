@@ -4,7 +4,7 @@ import {
     MPAlt, MPParser, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
-import { err, Result } from "./msgs";
+import { Result } from "./msgs";
 import { 
     REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, 
     ALL_RESERVED, RESERVED_SYMBOLS, 
@@ -103,7 +103,7 @@ const OP_UNRESERVED = MPUnreserved<Op>(
         if (isValidSymbolName(s)) {
             return new SymbolOp(s)
         } else {
-            throw err(new ErrorOp(),
+            throw new ErrorOp().err(
                 `Invalid identifier`, 
                 `${s} looks like it should be an identifier, but it contains an invalid symbol.`
             );
@@ -155,7 +155,7 @@ export function parseOp(text: string): Result<Op> {
     const results = miniParse(env, OP_EXPR, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return err(new ErrorOp, "Invalid operator",
+        return new ErrorOp().err("Invalid operator",
                 "This ends in a colon so it looks like an operator, but it cannot be parsed.");
     }
     

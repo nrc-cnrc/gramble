@@ -73,11 +73,11 @@ export class ExecuteTests extends GrammarPass {
     public handleNegativeTest(g: TestNotGrammar, env: PassEnv): GrammarResult {
         const results = this.executeTest(g, env);
         if (results.length > 0) {
-            return result(g).err("Failed unit test",
+            return g.err("Failed unit test",
                 "The grammar above incorrectly has outputs compatible with these inputs.");
         } 
 
-        return result(g).msg(Success(
+        return g.msg(Success(
             "The grammar above correctly has no outputs compatible with these inputs."));
     }
     

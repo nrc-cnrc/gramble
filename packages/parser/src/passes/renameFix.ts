@@ -7,7 +7,6 @@ import {
 } from "../grammars";
 import { PassEnv } from "../passes";
 import { PostPass } from "./ancestorPasses";
-import { err } from "../msgs";
 
 /**
  * This pass finds erroneous renames/hides and fixes them.
@@ -40,7 +39,7 @@ export class RenameFix extends PostPass<Grammar> {
     public handleHide(g: HideGrammar, env: PassEnv): Grammar {
         g.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.tapeName) == -1) { 
-            throw err(g.child, "Hiding missing tape",
+            throw g.child.err("Hiding missing tape",
                         `The grammar being hidden does not contain the tape ${g.tapeName}. ` +
                         ` Available tapes: [${[...g.child.tapes]}]`);
         }
@@ -55,7 +54,7 @@ export class RenameFix extends PostPass<Grammar> {
                 return g.child;
             }
 
-            throw err(g.child, "Renaming missing tape",
+            throw g.child.err("Renaming missing tape",
                         `The ${g.child.constructor.name} to undergo renaming does not contain the tape ${g.fromTape}. ` +
                         `Available tapes: [${[...g.child.tapes]}]`);
         }
@@ -64,7 +63,7 @@ export class RenameFix extends PostPass<Grammar> {
             const errTapeName = `${HIDDEN_PREFIX}ERR${g.toTape}`;
             let repair = new RenameGrammar(g.child, g.toTape, errTapeName);
             repair = new RenameGrammar(repair, g.fromTape, g.toTape)
-            throw err(repair, "Destination tape already exists",
+            throw repair.err("Destination tape already exists",
                         `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
                         `to the left already contains the tape ${g.toTape}. `)
         }

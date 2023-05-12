@@ -2,7 +2,7 @@ import {
     Err, Warn, 
     Msg, Msgs, 
     result, Result, 
-    ResultVoid 
+    ResultVoid, Func,
 } from "./msgs";
 import { Pass, PassEnv } from "./passes";
 import { CellPos, Dict } from "./util";
@@ -35,12 +35,12 @@ export abstract class Component {
 
     public err(shortMsg: string, longMsg: string): Result<this> {
         const e = Err(shortMsg, longMsg);
-        return result(this).msg(e);
+        return this.msg(e);
     }
     
     public warn(longMsg: string): Result<this> {
         const e = Warn(longMsg);
-        return result(this).msg(e);
+        return this.msg(e);
     }
 }
 

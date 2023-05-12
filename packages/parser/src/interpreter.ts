@@ -91,7 +91,7 @@ export class Interpreter {
             throw new Error("name grammar is not a collection!");
         }
 
-        this.grammar = result(nameGrammar) // lift to result
+        this.grammar = result(nameGrammar)
                         .bind(g => NAME_PASSES.go(g, env))
                         .bind(g => POST_NAME_PASSES.go(g, env))
                         .msgTo(m => sendMsg(this.devEnv, m)) as CollectionGrammar

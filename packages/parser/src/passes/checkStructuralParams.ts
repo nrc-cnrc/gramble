@@ -4,14 +4,14 @@ import {
     childMustBeGrid,
     siblingRequired,
 } from "../ops";
-import { Err, Msgs, result, Result, Warn } from "../msgs";
+import { Err, Msgs, Result, Warn } from "../msgs";
 import { PassEnv } from "../passes";
 import { 
     TstOp, 
     TstEmpty,
     TstGrid
 } from "../tsts";
-import { Component, CPass, CResult } from "../components";
+import { Component, CResult } from "../components";
 import { CatchingPass } from "./ancestorPasses";
 
 /**
@@ -90,18 +90,17 @@ export class CheckStructuralParams extends CatchingPass<Component,Component> {
         // assignment needs something in its .child param.  if
         // it's empty, issue a warning.
         if (t.child instanceof TstEmpty) {
-            return result(t).warn("This symbol will not contain any content.").msg(msgs);
+            return t.warn("This symbol will not contain any content.").msg(msgs);
         }
 
         return t.msg(msgs);
 
     }
 
-    public handleError(t: TstOp): CResult {
-        const replacement = !(t.sibling instanceof TstEmpty) ?
-                            t.sibling :
-                            t.child
-        return result(t).bind(_ => replacement);      
+    public handleError(t: TstOp): Component {
+        return (t.sibling instanceof TstEmpty) 
+                        ? t.child
+                        : t.sibling   
     }
 
     public handleOp(t: TstOp): Component {
@@ -110,10 +109,9 @@ export class CheckStructuralParams extends CatchingPass<Component,Component> {
         // issue an error, and return the sibling as the new value.
         if (childMustBeGrid(t.op) == "required" && 
             !(t.child instanceof TstGrid)) {
-            throw result(t).err(`'${t.op.tag}' requires grid`,
+            throw t.sibling.err(`'${t.op.tag}' requires grid`,
                     `This ${t.op.tag} operator requires a grid to the right, ` +
-                    "but has another operator instead.")
-                    .bind(r => r.sibling);
+                    "but has another operator instead.");
         }
 
         // if the op must have a sibling, but has neither a sibling
@@ -121,28 +119,23 @@ export class CheckStructuralParams extends CatchingPass<Component,Component> {
         if (siblingRequired(t.op) == "required" 
                 && t.sibling instanceof TstEmpty
                 && t.child instanceof TstEmpty) {
-            throw result(t).err(`Missing args to '${t.cell.text}'`,
+            throw new TstEmpty().err(`Missing args to '${t.cell.text}'`,
                             "This operator requires content above it and to the right, " +
                             "but both are empty or erroneous.")
-                        .localize(t.pos)
-                        .bind(r => new TstEmpty());
         }
 
         // if the op must have a sibling and doesn't, issue an error,
         // and return empty
         if (siblingRequired(t.op) == "required" && t.sibling instanceof TstEmpty) {
-            throw result(t).err(`Missing argument to ${t.cell.text}`,
-                            "This operator requires content above it, but it's empty or erroneous.")
-                        .localize(t.pos)
-                        .bind(r => new TstEmpty());
+            throw new TstEmpty().err(`Missing argument to ${t.cell.text}`,
+                            "This operator requires content above it, but it's empty or erroneous.");
         }
 
         // all operators need something in their .child param.  if
         // it's empty, issue a warning, and return the sibling as the new value.
         if (t.child instanceof TstEmpty) {
-            throw result(t).warn("This will not contain any content.")
-                            .localize(t.pos)
-                            .bind(r => r.sibling);
+            throw t.sibling.warn("This will not contain any content.")
+                            .localize(t.pos);
         }
 
         // if there's something in the sibling, but it's forbidden,
