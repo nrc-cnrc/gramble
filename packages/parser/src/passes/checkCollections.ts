@@ -2,15 +2,17 @@ import { PassEnv } from "../passes";
 import { 
     TstCollection, 
     TstEmpty, 
-    TstAssignment
+    TstAssignment,
+    TST
 } from "../tsts";
-import { Component, CResult } from "../components";
+import { Component } from "../components";
 import { CatchingPass } from "./ancestorPasses";
+import { Result } from "../msgs";
 
 /**
  * Make sure that collections are reasonably placed
  */
-export class CheckCollections extends CatchingPass<Component,Component> {
+export class CheckCollections extends CatchingPass<TST,TST> {
 
     constructor(
         public parent?: Component
@@ -22,19 +24,17 @@ export class CheckCollections extends CatchingPass<Component,Component> {
         return "Creating collections";
     }
 
-    public transformAux(t: Component, env: PassEnv): CResult {
+    public transformAux(t: TST, env: PassEnv): Result<TST> {
         const newThis = new CheckCollections(t);
         return t.mapChildren(newThis, env).bind(t => {
-            switch(t.constructor) {
-                case TstCollection:
-                    return this.handleCollection(t as TstCollection, env);
-                default: 
-                    return t;
+            switch(t.tag) {
+                case "collection": return this.handleCollection(t, env);
+                default:           return t;
             }
         });
     }
 
-    public handleCollection(t: TstCollection, env: PassEnv): Component {
+    public handleCollection(t: TstCollection, env: PassEnv): TST {
         if (this.parent == undefined || this.parent instanceof TstAssignment) {
             // good, collections can occur here
             return t;

@@ -2,23 +2,21 @@ import {
     Err, Warn, 
     Msg, Msgs, 
     result, Result, 
-    ResultVoid, Func,
+    ResultVoid
 } from "./msgs";
 import { Pass, PassEnv } from "./passes";
 import { CellPos, Dict } from "./util";
 
-export class CResult extends Result<Component> { }
-export abstract class CPass extends Pass<Component,Component> {}
-
 export function exhaustive(h: never): never { return h };
 
 export abstract class Component {
+    public abstract readonly tag: string;
 
     public get pos(): CellPos | undefined {
         return undefined;
     } 
 
-    public mapChildren(f: CPass, env: PassEnv): CResult {
+    public mapChildren(f: Pass<Component,Component>, env: PassEnv): Result<Component> {
         const clone = Object.create(Object.getPrototypeOf(this));
         const msgs: Msgs = [];
         for (const [k, v] of Object.entries(this)) {

@@ -1,5 +1,5 @@
 import { Grammar } from "./grammars";
-import { Msgs, Result } from "./msgs";
+import { Msgs, Result, result } from "./msgs";
 import { 
     Dict, Namespace, 
     SILENT, timeIt, 
@@ -55,6 +55,25 @@ export abstract class Pass<T1,T2> {
 
     public compose<T3>(other: Pass<T2,T3>): Pass<T1,T3> {
         return new ComposedPass(this, other);
+    }
+
+    /**
+     * A convenience method for descendant classes, that catches
+     * thrown results and handles re-integrating them into the 
+     * messaging/localization system.
+     */
+    public tryTransform(
+        transform: (c: T1, env: PassEnv) => T2|Result<T2>,
+        c: T1,
+        env: PassEnv
+    ): Result<T2> {
+        try {
+            const t = transform.bind(this);
+            return result(t(c, env));
+        } catch (e) {
+            if (!(e instanceof Result)) throw e;
+            return e;
+        }
     }
 }
 

@@ -6,9 +6,9 @@ import {
     TstOp, 
     TstEmpty,
     TstGrid,
-    TstCollection
+    TstCollection,
+    TST
 } from "../tsts";
-import { Component } from "../components";
 import { PostPass } from "./ancestorPasses";
 
 /**
@@ -20,23 +20,21 @@ import { PostPass } from "./ancestorPasses";
  * assignments, etc.)
  */
 
-export class InsertTables extends PostPass<Component> {
+export class InsertTables extends PostPass<TST> {
 
     public get desc(): string {
         return "Inserting tables";
     }
 
-    public postTransform(t: Component, env: PassEnv): Component {
-        switch (t.constructor) {
-            case TstOp: 
-                return this.handleOp(t as TstOp);
-            case TstCollection: 
-                return this.handleCollection(t as TstCollection);
-            default: return t;
+    public postTransform(t: TST, env: PassEnv): TST {
+        switch (t.tag) {
+            case "op":         return this.handleOp(t);
+            case "collection": return this.handleCollection(t);
+            default:           return t;
         }
     }
 
-    public handleCollection(t: TstCollection): Component {
+    public handleCollection(t: TstCollection): TST {
         const newChildren = t.children.map(c => {
             if (c instanceof TstGrid) {
                 return new TstOp(c.cell, new TableOp(), 
@@ -47,7 +45,7 @@ export class InsertTables extends PostPass<Component> {
         return new TstCollection(t.cell, newChildren);
     }
 
-    public handleOp(t: TstOp): TstOp {
+    public handleOp(t: TstOp): TST {
 
         // TstGrid siblings are always interpreted as tables
         if (t.sibling instanceof TstGrid) {

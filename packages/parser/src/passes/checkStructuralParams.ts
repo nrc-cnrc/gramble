@@ -9,9 +9,9 @@ import { PassEnv } from "../passes";
 import { 
     TstOp, 
     TstEmpty,
-    TstGrid
+    TstGrid,
+    TST
 } from "../tsts";
-import { Component, CResult } from "../components";
 import { CatchingPass } from "./ancestorPasses";
 
 /**
@@ -23,13 +23,13 @@ import { CatchingPass } from "./ancestorPasses";
  * assignments, etc.)
  */
 
-export class CheckStructuralParams extends CatchingPass<Component,Component> {
+export class CheckStructuralParams extends CatchingPass<TST,TST> {
 
     public get desc(): string {
         return "Checking structural params";
     }
 
-    public transformAux(t: Component, env: PassEnv): CResult {
+    public transformAux(t: TST, env: PassEnv): Result<TST> {
         
         if (!(t instanceof TstOp)) {
             return t.mapChildren(this, env);
@@ -76,7 +76,7 @@ export class CheckStructuralParams extends CatchingPass<Component,Component> {
         });
     }
 
-    public handleAssignment(t: TstOp): CResult {
+    public handleAssignment(t: TstOp): Result<TST> {
         
         const msgs: Msgs = [];
 
@@ -97,13 +97,13 @@ export class CheckStructuralParams extends CatchingPass<Component,Component> {
 
     }
 
-    public handleError(t: TstOp): Component {
+    public handleError(t: TstOp): TST {
         return (t.sibling instanceof TstEmpty) 
                         ? t.child
                         : t.sibling   
     }
 
-    public handleOp(t: TstOp): Component {
+    public handleOp(t: TstOp): TST {
 
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.

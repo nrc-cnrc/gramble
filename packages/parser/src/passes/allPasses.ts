@@ -6,7 +6,7 @@ import { AdjustConditions } from "./adjustConditions";
 import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
 import { CreateOps } from "./createOps";
-import { ParseSheets } from "./parseSheets";
+import { ParseSheets } from "./parseSource";
 import { CheckStructuralParams } from "./checkStructuralParams";
 import { CheckTestLiterals } from "./checkTestLiterals";
 import { CreateHeaders } from "./createHeaders";

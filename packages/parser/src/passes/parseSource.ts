@@ -1,50 +1,47 @@
 import { PassEnv, Pass } from "../passes";
-import { CommandMsg, CommentMsg, Err, Msgs } from "../msgs";
+import { CommandMsg, CommentMsg, Err, Msgs, Result } from "../msgs";
 import { 
     TstAssignment,
     TstEnclosure, 
     TstCollection, 
     TstOp, 
-    TstGrid
+    TstGrid,
+    TST
 } from "../tsts";
-import { Component, CResult } from "../components";
-import { Worksheet, Workbook } from "../sheets";
+import { exhaustive } from "../components";
+import { Worksheet, Workbook, Source } from "../sources";
 import { Cell, CellPos } from "../util";
 import { CollectionOp, parseOp } from "../ops";
 import { RESERVED_WORDS } from "../reserved";
 
-type PassInput = Workbook | Worksheet;
 
 /**
  * This takes grids of cells (Worksheets) and collections of them
  * (Workbooks) and turns them into the basic syntactic objects
  * (TstCollections, TstOps, TstGrids, and TstContent).
  */
-export class ParseSheets extends Pass<PassInput,Component> {
+export class ParseSheets extends Pass<Source,TST> {
 
     public get desc(): string {
         return "Creating TST";
     }
 
-    public transform(t: PassInput, env: PassEnv): CResult {
+    public transform(s: Source, env: PassEnv): Result<TST> {
 
-        switch(t.constructor) {
-            case Workbook:
-                return this.handleWorkbook(t as Workbook, env);
-            case Worksheet:
-                return this.handleWorksheet(t as Worksheet, env);
-            default: 
-                throw new Error(`unhandled ${t.constructor.name}`);
+        switch(s.tag) {
+            case "workbook":  return this.handleWorkbook(s as Workbook, env);
+            case "worksheet": return this.handleWorksheet(s as Worksheet, env);
+            default: exhaustive(s);
         }
     }
 
-    public handleWorkbook(t: Workbook, env: PassEnv): CResult {
+    public handleWorkbook(s: Workbook, env: PassEnv): Result<TST> {
 
         const projectCell = new Cell("", new CellPos("", -1, -1));
         const project = new TstCollection(projectCell);
         const msgs: Msgs = [];
 
-        for (const [sheetName, sheet] of Object.entries(t.sheets)) {
+        for (const [sheetName, sheet] of Object.entries(s.sheets)) {
             
             if (RESERVED_WORDS.has(sheetName.toLowerCase())) {
                 msgs.push(Err("Reserved sheet name",
@@ -95,12 +92,12 @@ export class ParseSheets extends Pass<PassInput,Component> {
      * felt that was information not relevant to the object itself.  It's only relevant to this algorithm,
      * so it should just stay here.
      */
-    public handleWorksheet(t: Worksheet, env: PassEnv): CResult {
+    public handleWorksheet(s: Worksheet, env: PassEnv): Result<TST> {
 
         const msgs: Msgs = [];
 
         // sheets are treated as having an invisible cell containing their names at 0, -1
-        const startCell = new Cell(t.name, new CellPos(t.name, 0, 0));
+        const startCell = new Cell(s.name, new CellPos(s.name, 0, 0));
 
         const root = new TstOp(startCell, new CollectionOp());
 
@@ -113,27 +110,27 @@ export class ParseSheets extends Pass<PassInput,Component> {
                                 // at the end of a line
     
         // Now iterate through the cells, left-to-right top-to-bottom
-        for (let rowIndex = 0; rowIndex < t.cells.length; rowIndex++) {
+        for (let rowIndex = 0; rowIndex < s.cells.length; rowIndex++) {
     
-            if (isLineEmpty(t.cells[rowIndex])) {
+            if (isLineEmpty(s.cells[rowIndex])) {
                 continue;
             }
     
-            const rowIsComment = t.cells[rowIndex][0].trim().startsWith('%%');
+            const rowIsComment = s.cells[rowIndex][0].trim().startsWith('%%');
             
             // this loop shouldn't just go to the end of the line-as-written, because there
             // may be semantically meaningful blank cells beyond it. but there will never be
             // a meaningful blank cell beyond the max column number found so far.
-            const colWidth = t.cells[rowIndex].length;
+            const colWidth = s.cells[rowIndex].length;
             maxCol = Math.max(maxCol, colWidth);
 
             for (let colIndex = 0; colIndex < maxCol; colIndex++) {
     
                 const cellText = (colIndex < colWidth)
-                               ? t.cells[rowIndex][colIndex].trim().normalize("NFD")
+                               ? s.cells[rowIndex][colIndex].trim().normalize("NFD")
                                : "";
                 
-                const cellPos = new CellPos(t.name, rowIndex, colIndex);
+                const cellPos = new CellPos(s.name, rowIndex, colIndex);
                 const cell = new Cell(cellText, cellPos);
                 let top = stack[stack.length-1];
 
@@ -205,7 +202,7 @@ export class ParseSheets extends Pass<PassInput,Component> {
             }
         }
     
-        return new TstAssignment(startCell, t.name, root).msg(msgs);
+        return new TstAssignment(startCell, s.name, root).msg(msgs);
     }
 }
 

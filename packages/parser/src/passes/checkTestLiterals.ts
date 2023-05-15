@@ -1,12 +1,12 @@
 import { 
     TstHeader, 
-    TstOp, TstHeadedGrid 
+    TstOp, TstHeadedGrid, TST 
 } from "../tsts";
-import { PassEnv } from "../passes";
-import { Err, Msgs } from "../msgs";
+import { Pass, PassEnv } from "../passes";
+import { Err, Msgs, Result } from "../msgs";
 import { Header, UniqueHeader, TapeHeader } from "../headers";
-import { Component, CPass, CResult } from "../components";
 import { paramsMustBeLiteral } from "../ops";
+import { PostPass } from "./ancestorPasses";
 
 /**
  * This pass checks whether named parameters in headers
@@ -18,25 +18,20 @@ import { paramsMustBeLiteral } from "../ops";
  * allows unnamed params, then the fix is to remove that TagHeader in favor 
  * of its child.  Otherwise, the fix is to remove the header entirely.
  */
-export class CheckTestLiterals extends CPass {
+export class CheckTestLiterals extends PostPass<TST> {
 
     public get desc(): string {
         return "Checking that all test content is literal";
     }
 
-    public transform(t: Component, env: PassEnv): CResult {
-
-        return t.mapChildren(this, env).bind(t => {
-            switch(t.constructor) {
-                case TstOp:
-                    return this.handleOp(t as TstOp);
-                default:  // everything else is default
-                    return t;
-            }
-        });
+    public postTransform(t: TST, env: PassEnv): TST {
+        switch(t.tag) {
+            case "op": return this.handleOp(t);
+            default:   return t;
+        }
     }
 
-    public handleOp(t: TstOp): CResult {
+    public handleOp(t: TstOp): TST {
 
         const msgs: Msgs = [];
         if (paramsMustBeLiteral(t.op) && t.child instanceof TstHeadedGrid) {
@@ -45,14 +40,16 @@ export class CheckTestLiterals extends CPass {
                 if (!this.isLiteral(header.header)) {
                     Err("Non-literal test content",
                         "Tests can only contain plain literal content " +
-                        "(e.g. no embeds, no special headers, etc.)").localize(header.pos).msgTo(msgs);
+                        "(e.g. no embeds, no special headers, etc.)")
+                        .localize(header.pos).msgTo(msgs);
                 } else {
                     newHeaders.push(header);
                 }
             }
             t.child.headers = newHeaders;
         }
-        return t.msg(msgs);
+        if (msgs) throw t.msg(msgs);
+        return t;
     }
 
     public isLiteral(t: Header): boolean {

@@ -7,18 +7,18 @@ import {
     TstOp, 
     TstTest, 
     TstTable, TstTestNot, TstReplace, 
-    TstOr, TstAssignment, TstParamList, TstJoin
+    TstOr, TstAssignment, TstParamList, TstJoin, TST
 } from "../tsts";
 import { Component, exhaustive } from "../components";
 import { PostPass } from "./ancestorPasses";
 
- export class CreateOps extends PostPass<Component> {
+ export class CreateOps extends PostPass<TST> {
 
     public get desc(): string {
         return "Creating ops";
     }
 
-    public postTransform(t: Component, env: PassEnv): Component {
+    public postTransform(t: TST, env: PassEnv): TST {
 
         if (!(t instanceof TstOp)) return t;
 
@@ -36,35 +36,35 @@ import { PostPass } from "./ancestorPasses";
         }
     }
 
-    public handleOp(t: TstOp): Component {
+    public handleOp(t: TstOp): TST {
         return new TstTable(t.cell, t.child as TstParamList);
     }
 
-    public handleTest(t: TstOp): Component {
+    public handleTest(t: TstOp): TST {
         return new TstTest(t.cell, t.sibling, 
                     t.child as TstParamList);  
     }
 
-    public handleTestNot(t: TstOp): Component {
+    public handleTestNot(t: TstOp): TST {
         return new TstTestNot(t.cell, t.sibling, 
                     t.child as TstParamList);
     }
     
-    public handleReplace(t: TstOp): Component {
+    public handleReplace(t: TstOp): TST {
         const tapeName = (t.op as ReplaceOp).child.text;
         return new TstReplace(t.cell, tapeName, 
                     t.sibling, t.child as TstParamList);
     }
     
-    public handleOr(t: TstOp): Component {
+    public handleOr(t: TstOp): TST {
         return new TstOr(t.cell, t.sibling, t.child);
     }
     
-    public handleJoin(t: TstOp): Component {
+    public handleJoin(t: TstOp): TST {
         return new TstJoin(t.cell, t.sibling, t.child);
     }
 
-    public handleAssignment(t: TstOp): Component {
+    public handleAssignment(t: TstOp): TST {
         const op = t.op as SymbolOp;
         const assignment = new TstAssignment(t.cell, op.text, t.child);
 

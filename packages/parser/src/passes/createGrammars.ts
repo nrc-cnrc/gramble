@@ -2,13 +2,13 @@ import {
     TstAssignment,
     TstOr,
     TstEmpty, 
-    TstFilter, TstHeaderContentPair, 
+    TstFilter, TstHeaderPair, 
     TstHide, TstCollection, 
     TstTestNot, TstRename,
     TstReplace, TstSequence, 
-    TstTable, TstTest, TstJoin 
+    TstTable, TstTest, TstJoin, TST 
 } from "../tsts";
-import { Component } from "../components";
+import { Component, exhaustive } from "../components";
 import { Pass, PassEnv } from "../passes";
 import { 
     AlternationGrammar,
@@ -36,51 +36,35 @@ import { PLAIN_PARAM } from "../util";
  * grammars, which describe the language being generated (in terms
  * of sequences, alternations, filters, joins, renames, etc.)
  */
-export class CreateGrammars extends Pass<Component,Grammar> {
+export class CreateGrammars extends Pass<TST,Grammar> {
 
     public get desc(): string {
         return "Creating grammar objects";
     }
 
-    public transform(t: Component, env: PassEnv): GrammarResult {
+    public transform(t: TST, env: PassEnv): GrammarResult {
 
-        switch(t.constructor) {
-            case TstHeaderContentPair:
-                return this.handleHeaderContentPair(t as TstHeaderContentPair, env);
-            case TstRename:
-                return this.handleRename(t as TstRename, env);
-            case TstHide:
-                return this.handleHide(t as TstRename, env);
-            case TstFilter:
-                return this.handleFilter(t as TstFilter, env);
-            case TstEmpty:
-                return this.handleEmpty(t as TstEmpty, env);
-            case TstTable:
-                return this.handleTable(t as TstTable, env);
-            case TstOr:
-                return this.handleOr(t as TstOr, env);
-            case TstJoin:
-                return this.handleJoin(t as TstJoin, env);
-            case RuleContextGrammar:
-                return this.handleRuleContext(t as RuleContextGrammar, env);
-            case TstReplace:
-                return this.handleReplace(t as TstReplace, env);
-            case TstTest:
-                return this.handleTest(t as TstTest, env);
-            case TstTestNot:
-                return this.handleNegativeTest(t as TstTestNot, env);
-            case TstSequence:
-                return this.handleSequence(t as TstSequence, env);
-            case TstAssignment:
-                return this.handleAssignment(t as TstAssignment, env);
-            case TstCollection:
-                return this.handleCollection(t as TstCollection, env);
+        switch(t.tag) {
+            case "headerpair": return this.handleHeaderPair(t, env);
+            case "rename":     return this.handleRename(t, env);
+            case "hide":       return this.handleHide(t, env);
+            case "filter":     return this.handleFilter(t, env);
+            case "empty":      return this.handleEmpty(t, env);
+            case "table":      return this.handleTable(t, env);
+            case "or":         return this.handleOr(t, env);
+            case "join":       return this.handleJoin(t, env);
+            case "replace":    return this.handleReplace(t, env);
+            case "test":       return this.handleTest(t, env);
+            case "testnot":    return this.handleNegativeTest(t, env);
+            case "seq":        return this.handleSequence(t, env);
+            case "assign":     return this.handleAssignment(t, env);
+            case "collection": return this.handleCollection(t, env);
             default: 
                 throw new Error(`unhandled ${t.constructor.name}`);
         }
     }
 
-    public handleHeaderContentPair(t: TstHeaderContentPair, env: PassEnv): GrammarResult {
+    public handleHeaderPair(t: TstHeaderPair, env: PassEnv): GrammarResult {
         const pc = parseClass(t.header.header);
         return parseCell(pc, t.cell.text)
                 .bind(g => new HeaderToGrammar(g))
@@ -151,10 +135,6 @@ export class CreateGrammars extends Pass<Component,Grammar> {
                     .map(c => this.transform(c, env))
                     .bind(([c,s]) => new JoinGrammar(c, s))
                     .bind(c => new LocatorGrammar(t.cell.pos, c));
-    }
-    
-    public handleRuleContext(t: RuleContextGrammar, env: PassEnv): GrammarResult {
-        return t.mapChildren(this, env);
     }
 
     public handleReplace(t: TstReplace, env: PassEnv): GrammarResult {

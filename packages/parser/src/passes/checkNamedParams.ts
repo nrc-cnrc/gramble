@@ -1,16 +1,15 @@
 import { 
     TstEmpty, TstHeader, 
-    TstOp, TstHeadedGrid 
+    TstOp, TstHeadedGrid, TST 
 } from "../tsts";
-import { PassEnv } from "../passes";
-import { Err, Msgs, Result, result, Warn } from "../msgs";
+import { Pass, PassEnv } from "../passes";
+import { Err, Func, Msgs, Result, Warn } from "../msgs";
 import { UniqueHeader, paramName } from "../headers";
 import {
     allowedParams, 
     paramsMustBePerfect, 
     requiredParams 
 } from "../ops";
-import { Component, CPass, CResult } from "../components";
 import { PLAIN_PARAM } from "../util";
 
 /**
@@ -23,7 +22,7 @@ import { PLAIN_PARAM } from "../util";
  * allows unnamed params, then the fix is to remove that TagHeader in favor 
  * of its child.  Otherwise, the fix is to remove the header entirely.
  */
-export class CheckNamedParams extends CPass {
+export class CheckNamedParams extends Pass<TST,TST> {
 
     constructor(
         public permissibleParams: Set<string> = new Set([PLAIN_PARAM])
@@ -35,22 +34,19 @@ export class CheckNamedParams extends CPass {
         return "Checking named params";
     }
 
-    public transform(t: Component, env: PassEnv): CResult {
+    public transform(t: TST, env: PassEnv): Result<TST> {
 
-        switch(t.constructor) {
-            case TstOp:
-                return this.handleOp(t as TstOp, env);
-            case TstHeader:
-                return this.handleHeader(t as TstHeader, env);
-            case TstHeadedGrid: // tables are transparent
-                return this.handleHeadedGrid(t as TstHeadedGrid, env);
-            default:  // everything else is default
+        switch(t.tag) {
+            case "op":          return this.handleOp(t, env);
+            case "header":      return this.handleHeader(t, env);
+            case "headedgrid":  return this.handleHeadedGrid(t, env);
+            default: 
                 const defaultThis = new CheckNamedParams();
                 return t.mapChildren(defaultThis, env);
         }
     }
 
-    public handleHeadedGrid(t: TstHeadedGrid, env: PassEnv): CResult {
+    public handleHeadedGrid(t: TstHeadedGrid, env: PassEnv): Result<TST> {
         const result = t.mapChildren(this, env) as Result<TstHeadedGrid>;
         return result.bind(t => {
             t.headers = t.headers.filter(h => h instanceof TstHeader);
@@ -58,7 +54,7 @@ export class CheckNamedParams extends CPass {
         });
     }
 
-    public handleOp(t: TstOp, env: PassEnv): CResult {
+    public handleOp(t: TstOp, env: PassEnv): Result<TST> {
         const [sib, sibMsgs] = this.transform(t.sibling, env).destructure();
         const newPass = new CheckNamedParams(allowedParams(t.op));
         const [child, childMsgs] = newPass.transform(t.child, env)
@@ -79,7 +75,7 @@ export class CheckNamedParams extends CPass {
                    .msg(sibMsgs).msg(childMsgs);
     }
 
-    public checkRequiredParams(t: TstOp): CResult {
+    public checkRequiredParams(t: TstOp): Result<TST> {
 
         const msgs: Msgs = [];
         
@@ -121,12 +117,12 @@ export class CheckNamedParams extends CPass {
         return t.msg(msgs);
     }
     
-    public handleHeader(t: TstHeader, env: PassEnv): CResult {
+    public handleHeader(t: TstHeader, env: PassEnv): Result<TST> {
         const mapped = t.mapChildren(this, env) as Result<TstHeader>;
-        return mapped.bind(h => {
+        return mapped.bind((h => {
             const tag = paramName(h.header);
             if (this.permissibleParams.has(tag)) {
-                return h; // we're good
+                return h.msg(); // we're good
             }
             // it's an unexpected header
             const param = (tag == PLAIN_PARAM) ?
@@ -145,6 +141,6 @@ export class CheckNamedParams extends CPass {
             return new TstEmpty().err("Invalid parameter",
                 `The operator to the left does not expect ${param}`)
                 .localize(h.pos);
-        });
+        }) as Func<TstHeader,TST>);
     }
 }

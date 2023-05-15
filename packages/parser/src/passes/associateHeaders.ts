@@ -3,12 +3,12 @@ import {
     TstHeadedGrid, 
     TstHeader, 
     TstParams, 
-    TstHeaderContentPair,
-    TstSequence, 
+    TstHeaderPair,
+    TstSequence,
+    TST, 
 } from "../tsts";
-import { Component, CPass, CResult } from "../components";
-import { PassEnv } from "../passes";
-import { ContentMsg, Msgs, Warn } from "../msgs";
+import { Pass, PassEnv } from "../passes";
+import { ContentMsg, Msgs, Result, Warn } from "../msgs";
 import { backgroundColor, fontColor, paramName } from "../headers";
 import { PLAIN_PARAM } from "../util";
 
@@ -16,15 +16,15 @@ import { PLAIN_PARAM } from "../util";
  * Before this, headers and their associated content cells aren't
  * yet associated, they're both just children/grandchildren of a 
  * [TstHeadedGrid].  This pass uses their column numbers to pair them
- * up into [TstHeaderContentPair]s.
+ * up into [TstHeaderPair]s.
  */
-export class AssociateHeaders extends CPass {
+export class AssociateHeaders extends Pass<TST,TST> {
 
     public get desc(): string {
         return "Parsing headers";
     }
 
-    public transform(t: Component, env: PassEnv): CResult {
+    public transform(t: TST, env: PassEnv): Result<TST> {
 
         return t.mapChildren(this, env).bind(t => {
             
@@ -46,7 +46,7 @@ export class AssociateHeaders extends CPass {
                         }
                         continue;
                     }
-                    const newCell = new TstHeaderContentPair(header, content.cell);
+                    const newCell = new TstHeaderPair(header, content.cell);
                     new ContentMsg(
                         backgroundColor(header.header),
                         fontColor(header.header)

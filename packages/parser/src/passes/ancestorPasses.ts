@@ -5,20 +5,6 @@ import { Result, result } from "../msgs";
 export abstract class CatchingPass<T1 extends Component, 
                 T2 extends Component> extends Pass<T1,T2> {
 
-    public tryTransform(
-        transform: (c: T1, env: PassEnv) => T2|Result<T2>,
-        c: T1,
-        env: PassEnv
-    ): Result<T2> {
-        try {
-            const t = transform.bind(this);
-            return result(t(c, env));
-        } catch (e) {
-            if (!(e instanceof Result)) throw e;
-            return e;
-        }
-    }
-
     public transform(c: T1, env: PassEnv): Result<T2> {
         return this.tryTransform(this.transformAux, c, env)
                    .localize(c.pos);

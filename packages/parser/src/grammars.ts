@@ -156,7 +156,7 @@ export type Grammar = EpsilonGrammar
 export abstract class AbstractGrammar extends Component {
 
     public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
-        return super.mapChildren(f as GrammarPass, env) as GrammarResult;
+        return super.mapChildren(f, env) as GrammarResult;
     }
 
     public _tapes: string[] | undefined = undefined;
@@ -2676,12 +2676,15 @@ export class RuleContextGrammar extends AbstractGrammar {
     public get id(): string {
         throw new Error("Method not implemented.");
     }
+
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
         throw new Error("Method not implemented.");
     }
+
     public getChildren(): Grammar[] {
         throw new Error("Method not implemented.");
     }
+
     public constructExpr(tapeNS: TapeNamespace, symbols: ExprNamespace): Expr {
         throw new Error("Method not implemented.");
     }

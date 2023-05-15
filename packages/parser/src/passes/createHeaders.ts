@@ -1,23 +1,25 @@
 import { 
     TstEmpty, 
     TstHeadedGrid, 
-    TstHeader, TstGrid
+    TstHeader, TstGrid, TST
 } from "../tsts";
-import { PassEnv } from "../passes";
-import { HeaderMsg, Msgs } from "../msgs";
-import { DEFAULT_VALUE, ErrorHeader, backgroundColor, parseHeaderCell } from "../headers";
-import { Component, CPass, CResult } from "../components";
+import { Pass, PassEnv } from "../passes";
+import { HeaderMsg, Msgs, Result } from "../msgs";
+import { 
+    DEFAULT_VALUE, ErrorHeader, 
+    backgroundColor, parseHeaderCell 
+} from "../headers";
 
 /**
  * 
  */
-export class CreateHeaders extends CPass {
+export class CreateHeaders extends Pass<TST,TST> {
 
     public get desc(): string {
         return "Parsing headers";
     }
 
-    public transform(t: Component, env: PassEnv): CResult {
+    public transform(t: TST, env: PassEnv): Result<TST> {
 
         return t.mapChildren(this, env).bind(t => {
             

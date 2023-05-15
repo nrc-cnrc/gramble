@@ -294,32 +294,30 @@ export function parseCell(
 
 export function cellID(g: Grammar): string {
 
-    switch (g.constructor) {
-        case LiteralGrammar: 
-            return (g as LiteralGrammar).text;
-        case EmbedGrammar: 
-            return (g as EmbedGrammar).name;
-        case DotGrammar:
+    switch (g.tag) {
+        case "lit": 
+            return g.text;
+        case "embed": 
+            return g.name;
+        case "dot":
             return "DOT";
-        case SequenceGrammar: 
-            return "[" + (g as SequenceGrammar).children.map(c => cellID(c)).join(",") + "]";
-        case AlternationGrammar: 
-            return "OR[" + (g as AlternationGrammar).children.map(c => cellID(c)).join(",") + "]";
-        case RepeatGrammar: 
-            const rep = g as RepeatGrammar;
-            if (rep.minReps == 0 && rep.maxReps == 1) return `QUES[${cellID(rep.child)}]`;
-            if (rep.minReps == 1 && rep.maxReps == Infinity) return `PLUS[${cellID(rep.child)}]`;
-            if (rep.minReps == 0 && rep.maxReps == Infinity) return `STAR[${cellID((g as RepeatGrammar).child)}]`;
+        case "seq": 
+            return "[" + g.children.map(c => cellID(c)).join(",") + "]";
+        case "alt": 
+            return "OR[" + g.children.map(c => cellID(c)).join(",") + "]";
+        case "repeat": 
+            if (g.minReps == 0 && g.maxReps == 1) return `QUES[${cellID(g.child)}]`;
+            if (g.minReps == 1 && g.maxReps == Infinity) return `PLUS[${cellID(g.child)}]`;
+            if (g.minReps == 0 && g.maxReps == Infinity) return `STAR[${cellID(g.child)}]`;
             return "???"; // other options don't correspond to any possible cell
-        case NegationGrammar:
-            return "NOT[" + cellID((g as NegationGrammar).child) + "]";
-        case EpsilonGrammar:
+        case "not":
+            return "NOT[" + cellID(g.child) + "]";
+        case "epsilon":
             return "ε";
-        case RuleContextGrammar:
-            const rule = g as RuleContextGrammar;
-            const begins = rule.begins ? '#,' : '';
-            const ends = rule.ends ? ',#': '';
-            return `CONTEXT[${begins}${cellID(rule.preContext)},${cellID(rule.postContext)}${ends}]`
+        case "context":
+            const begins = g.begins ? '#,' : '';
+            const ends = g.ends ? ',#': '';
+            return `CONTEXT[${begins}${cellID(g.preContext)},${cellID(g.postContext)}${ends}]`
         default: 
             return "???";
     }

@@ -1,12 +1,19 @@
+import { Component } from "./components";
 import { DEFAULT_SYMBOL_NAME } from "./util";
 
-export class Workbook {
+export type Source = Workbook
+                   | Worksheet
+
+export class Workbook extends Component {
+    public readonly tag = "workbook";
 
     public sheets: {[name: string]: Worksheet} = {};
 
     constructor(
         public mainSheetName: string
-    ) { }
+    ) { 
+        super();
+    }
 
     public hasSheet(name: string): boolean {
         return name in this.sheets;
@@ -29,6 +36,7 @@ export class Workbook {
 }
 
 export class Worksheet {
+    public readonly tag = "worksheet";
 
     constructor(
         public name: string,

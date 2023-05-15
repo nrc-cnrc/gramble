@@ -1,12 +1,11 @@
-import { PassEnv } from "../passes";
-import { Msgs, Warn } from "../msgs";
+import { Pass, PassEnv } from "../passes";
+import { Msgs, Result, Warn } from "../msgs";
 import { 
     TstCollection, 
-    TstOp, TstEmpty, 
-    TstEnclosure
+    TstOp, TstEmpty,
+    TST
 } from "../tsts";
 import { CollectionOp, SymbolOp, siblingRequired } from "../ops";
-import { Component, CPass, CResult } from "../components";
 import { AUTO_SYMBOL_NAME, DEFAULT_SYMBOL_NAME } from "../util";
 
 /**
@@ -40,23 +39,21 @@ import { AUTO_SYMBOL_NAME, DEFAULT_SYMBOL_NAME } from "../util";
  * We also add a default symbol when one isn't defined, to
  * refer to the alternation of all defined symbols in the collection.
  */
-export class CreateCollections extends CPass {
+export class CreateCollections extends Pass<TST,TST> {
 
     public get desc(): string {
         return "Creating collections";
     }
 
-    public transform(t: Component, env: PassEnv): CResult {
+    public transform(t: TST, env: PassEnv): Result<TST> {
 
-        switch(t.constructor) {
-            case TstOp:
-                return this.handleOp(t as TstOp, env);
-            default: 
-                return t.mapChildren(this, env);
+        switch(t.tag) {
+            case "op": return this.handleOp(t, env);
+            default:   return t.mapChildren(this, env);
         }
     }
 
-    public handleOp(t: TstOp, env: PassEnv): CResult {
+    public handleOp(t: TstOp, env: PassEnv): Result<TST> {
 
         const msgs: Msgs = [];
 
@@ -64,11 +61,11 @@ export class CreateCollections extends CPass {
             return t.mapChildren(this, env);
         }
 
-        const children: TstEnclosure[] = [];
+        const children: (TST & {sibling: TST})[] = [];
 
         // flatten and reverse the results
         let child = t.child;
-        while (child instanceof TstEnclosure) {
+        while ("sibling" in child) {
             children.push(child);
             const next = child.sibling;
             child.sibling = new TstEmpty();
@@ -78,7 +75,7 @@ export class CreateCollections extends CPass {
 
         // now rescope bare binary ops that immediately 
         // follow assignments
-        const newChildren: TstEnclosure[] = [];
+        const newChildren: TST[] = [];
         for (const child of children) {
 
             if (!(child instanceof TstOp) || siblingRequired(child.op) != "required") {
@@ -123,6 +120,8 @@ export class CreateCollections extends CPass {
                 return c;
             }
 
+            if (c instanceof TstEmpty) return c; // it's empty, ignore
+
             if (newChildren.length < 2) {
                 // it's not an assignment, but there aren't multiple
                 // children, so go ahead and name this to the default symbol
@@ -143,7 +142,7 @@ export class CreateCollections extends CPass {
         });
 
         const newCollection = new TstCollection(t.cell, evenMoreChildren);
-        return newCollection.mapChildren(this, env).msg(msgs);
+        return newCollection.mapChildren(this, env).msg(msgs) as Result<TST>;
     }
 
 }

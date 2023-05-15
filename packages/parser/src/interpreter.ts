@@ -17,7 +17,7 @@ import {
     HIDDEN_PREFIX,
     DEFAULT_SYMBOL_NAME
 } from "./util";
-import { Worksheet, Workbook } from "./sheets";
+import { Worksheet, Workbook } from "./sources";
 import { backgroundColor, parseHeaderCell } from "./headers";
 import { TapeNamespace } from "./tapes";
 import { Expr, ExprNamespace, CollectionExpr } from "./exprs";
