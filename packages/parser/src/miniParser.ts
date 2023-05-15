@@ -8,7 +8,7 @@ import { Gen } from "./util";
  * A parser is a function from a tokenized string (e.g. ["optional", "subj", "/", "gloss"])
  * to a generator of result tuples, where that tuple represents an output of type <T> and
  * the unparsed remnant left over after parsing that.  For example, if we had a parser that
- * looked for the token "subj" specficially, and gave it ["subj", "/", "gloss"], it would
+ * looked for the token "subj" specifically, and gave it ["subj", "/", "gloss"], it would
  * yield some sort of result of type <T> (maybe some sort of Literal object) and a remnant of
  * ["/", "gloss"].
  * 

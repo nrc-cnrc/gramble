@@ -101,7 +101,7 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
     
-    describe('8d. Cascading an embedded casecade', test({
+    describe('8d. Cascading an embedded cascade', test({
         id: "8d",
         results: [
             {text: "ABCD"}

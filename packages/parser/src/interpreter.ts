@@ -44,7 +44,7 @@ import { resolveName } from "./passes/qualifyNames";
  */
 export class Interpreter {
 
-    // if the grammar came from an actual gramble source project (as opposed to, e.g.,
+    // if the grammar came from an actual Gramble source project (as opposed to, e.g.,
     // a test case constructed in code), the project object is stored here.  right now
     // we only need this for constructing single-source projects in the GSuite interface.
     public workbook: Workbook | undefined = undefined;
