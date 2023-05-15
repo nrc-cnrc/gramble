@@ -3,11 +3,9 @@ import {
     constructRepeat, constructSequence, constructAlternation,
     constructIntersection, constructDot, constructEmbed,
     constructRename, constructNegation, NULL,
-    constructMatch, 
     constructFilter, constructJoin,
     constructLiteral, constructMatchFrom,
     constructPriority, EpsilonExpr, constructShort,
-    constructEpsilonLiteral, 
     constructPrecede, constructPreTape,
     constructNotContains, constructParallel, 
     ExprNamespace, constructCollection, 
@@ -75,7 +73,6 @@ export type LengthRange = {
 
 export type Grammar = EpsilonGrammar
              | NullGrammar
-             | EpsilonLiteralGrammar
              | LiteralGrammar
              | DotGrammar
              | ParallelGrammar
@@ -97,7 +94,7 @@ export type Grammar = EpsilonGrammar
              | PreTapeGrammar
              | HideGrammar
              | MatchFromGrammar
-             | MatchGrammar
+//             | MatchGrammar
              | CollectionGrammar
              | EmbedGrammar
              | LocatorGrammar
@@ -405,42 +402,6 @@ export class NullGrammar extends AtomicGrammar {
         symbols: ExprNamespace
     ): Expr {
         return NULL;
-    }
-}
-
-export class EpsilonLiteralGrammar extends AtomicGrammar {
-    public readonly tag = "epsilonlit";
-
-    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
-        return { null: false, min: 0, max: 0 };
-    }
-
-    constructor(
-        public tapeName: string,
-    ) {
-        super();
-    }
-
-    public get id(): string {
-        return `${this.tapeName}:ε`;
-    }
-
-    public getLiterals(): LiteralGrammar[] {
-        return [];
-    }
-
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = [this.tapeName];
-        }
-        return this._tapes;
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace,
-        symbols: ExprNamespace
-    ): Expr {
-        return constructEpsilonLiteral(this.tapeName);
     }
 }
 
@@ -1586,6 +1547,7 @@ export class MatchFromGrammar extends UnaryGrammar {
     }
 }
 
+/*
 export class MatchGrammar extends UnaryGrammar {
     public readonly tag = "match";
     
@@ -1623,6 +1585,7 @@ export class MatchGrammar extends UnaryGrammar {
         return constructMatch(childExpr, this.relevantTapes);
     }
 }
+*/
 
 /**
  * A TapeNsGrammar encapsulates amd memoizes the results 
@@ -2079,10 +2042,6 @@ export function Epsilon(): EpsilonGrammar {
     return new EpsilonGrammar();
 }
 
-export function EpsilonLit(tape: string): EpsilonLiteralGrammar {
-    return new EpsilonLiteralGrammar(tape);
-}
-
 export function Null(): NullGrammar {
     return new NullGrammar();
 }
@@ -2091,14 +2050,17 @@ export function Embed(name: string): EmbedGrammar {
     return new EmbedGrammar(name);
 }
 
+/*
 export function Match(child: Grammar, ...tapes: string[]): MatchGrammar {
     return new MatchGrammar(child, new Set(tapes));
 }
+*/
 
 export function Dot(...tapes: string[]): SequenceGrammar {
     return Seq(...tapes.map(t => Any(t)));
 }
 
+/*
 export function MatchDot(...tapes: string[]): MatchGrammar {
     return Match(Dot(...tapes), ...tapes);
 }
@@ -2118,6 +2080,7 @@ export function MatchDotStar(...tapes: string[]): MatchGrammar {
 export function MatchDotStar2(...tapes: string[]): MatchGrammar {
     return MatchDotRep2(0, Infinity, ...tapes)
 }
+*/
 
 export function MatchFrom(state:Grammar, fromTape: string, ...toTapes: string[]): Grammar {
     let result = state;

@@ -3,12 +3,14 @@ import {
     CounterStack, DerivEnv, 
     EpsilonExpr, Expr, ExprNamespace, 
     NullExpr, PriorityExpr, CollectionExpr, 
-    DerivStats, EPSILON, Output, addOutput 
+    DerivStats, EPSILON, Output, 
+    addOutput, constructToken, TokenExpr
 } from "./exprs";
-import { TapeNamespace, Token, EpsilonToken } from "./tapes";
+import { TapeNamespace } from "./tapes";
 import { 
+    ANY_CHAR_STR,
     Gen, GenOptions,
-    msToTime, shuffleArray, StringDict
+    msToTime, OPEN_TAPE, shuffleArray, StringDict
 } from "./util";
 
 /**
@@ -91,17 +93,18 @@ export function* generate(
             // as its prefix
             // Note: we delay pushing the delta until we know whether
             // we need to merge it with a nulled tape output from deriv.
-            const delta = prevExpr.openDelta(env);
+            const delta = prevExpr.delta(OPEN_TAPE, env);
             let deltaPushed: boolean = false;
 
             // next see where we can go on that tape, along any char
             // transition.
-            for (const [cTape, cTarget, cNext] of prevExpr.openDeriv(env)) {
+            const query = constructToken(OPEN_TAPE, ANY_CHAR_STR);
+            for (const [cTarget, cNext] of prevExpr.deriv(query, env)) {
                 if (!(cNext instanceof NullExpr)) {
                     let nextExpr: Expr = cNext;
                     let nextOutput: Output;
-                    if (! (cTarget instanceof EpsilonToken)) {
-                        nextOutput = addOutput(prevOutput, cTape, cTarget);
+                    if (cTarget instanceof TokenExpr) {
+                        nextOutput = addOutput(prevOutput, cTarget);
                     } else {
                         nextOutput = prevOutput;
                         if (!(delta instanceof NullExpr)) {

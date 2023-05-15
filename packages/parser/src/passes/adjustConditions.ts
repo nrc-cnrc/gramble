@@ -2,7 +2,6 @@ import { PassEnv } from "../passes";
 import { 
     AlternationGrammar, ContainsGrammar, 
     DotGrammar, EndsGrammar, Grammar,
-    GrammarPass, GrammarResult,
     IntersectionGrammar, LocatorGrammar, 
     NegationGrammar, RepeatGrammar, 
     SequenceGrammar, StartsGrammar, 
@@ -11,7 +10,6 @@ import {
 } from "../grammars";
 import { HIDDEN_PREFIX } from "../util";
 import { PostPass } from "./ancestorPasses";
-import { result } from "../msgs";
 
 /**
  * There's a semantic gotcha in starts/ends/contains that could throw programmers for a 

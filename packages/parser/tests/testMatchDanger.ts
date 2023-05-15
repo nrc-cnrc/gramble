@@ -1,3 +1,4 @@
+/*
 import { 
     Dot,
     Join,
@@ -109,3 +110,4 @@ describe(`${testSuiteName(module)}`, function() {
     }); 
 
 });
+*/

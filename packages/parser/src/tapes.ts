@@ -3,10 +3,6 @@ import {
     Namespace
 } from "./util";
 
-export type Token = string;
-export class EpsilonToken { }
-export const EPSILON_TOKEN: EpsilonToken = new EpsilonToken();
-
 /**
  * Tape
  * 

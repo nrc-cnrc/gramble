@@ -45,7 +45,6 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, [{t1: 'foo'}]);
     });
 
-
     describe('2. Join t1:hello ⨝ ~t1:hello', function() {
         const grammar = Join(t1("hello"), Not(t1("hello")));
         testGrammar(grammar, []);

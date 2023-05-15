@@ -12,6 +12,8 @@ export const REPLACE_OUTPUT_TAPE = INTERNAL_PREFIX + "o";
 export const DUMMY_REGEX_TAPE = INTERNAL_PREFIX + "T";
 export const DUMMY_TAPE = HIDDEN_PREFIX + "END";
 
+export const OPEN_TAPE = INTERNAL_PREFIX + "OPEN";
+
 export const ANY_CHAR_STR = "__ANY_CHAR__";
 export const NO_CHAR_STR = "__NO_CHAR__";
 

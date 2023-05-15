@@ -1,3 +1,4 @@
+/*
 import { 
     Grammar, 
     Epsilon, 
@@ -154,6 +155,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
     */
 
+    /*
     describe('5. Match t1>t2, ((t1:hello+t1:,) + t1:world) + ' +
              '(Rename t1>t2, (t1:hello+t1:,) + t1:world)', function() {
         const grammar1: Grammar = Seq(Seq(t1("hello"), t1(", ")), t1("world"));
@@ -286,6 +288,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
     */
 
+    /*
     describe('9. Match t1>t2, ((t1:hello|t1:goodbye) + (t1:world|t1:kitty)) + ' +
              '(Rename t1>t2, (t1:hello|t1:goodbye) + (t1:world|t1:kitty))', function() {
         const grammar1: Grammar = Seq(Uni(t1("hello"), t1("goodbye")),
@@ -492,7 +495,7 @@ describe(`${testSuiteName(module)}`, function() {
         });
     });
     */
-
+/*
     describe('15. Match t1>t2, t1:o{0,1} + (Rename t1>t2, t1:o{0,1})', function() {
         const grammar1: Grammar = Rep(t1("o"), 0, 1);
         const grammar2: Grammar = Rename(grammar1, "t1", "t2");
@@ -564,7 +567,7 @@ describe(`${testSuiteName(module)}`, function() {
         });
     });
     */
-
+   /*
     describe('17. Match t1>t2, t1:na{1,4} + (Rename t1>t2, t1:na{1,4})', function() {
         const grammar1: Grammar = Rep(t1("na"), 1, 4);
         const grammar2: Grammar = Rename(grammar1, "t1", "t2");
@@ -699,3 +702,4 @@ describe(`${testSuiteName(module)}`, function() {
     });
     
 });
+*/
