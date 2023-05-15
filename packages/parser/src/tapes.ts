@@ -1,5 +1,4 @@
 import { 
-    ANY_CHAR_STR,
     Namespace
 } from "./util";
 
@@ -20,7 +19,8 @@ export class Tape {
         public vocab: Set<string> = new Set()
     ) { }
 
-    public expandStrings(token: string): Set<string> {
+    /*
+    public expandStrings(token: TokenExpr | DotExpr): Set<string> {
         if (token == ANY_CHAR_STR) {
             return this.vocab;
         }
@@ -30,7 +30,7 @@ export class Tape {
             return new Set();
         }
         return new Set([token]);
-    }
+    } */
 
     public registerTokens(chars: string[]): void {
         for (const char of chars) {

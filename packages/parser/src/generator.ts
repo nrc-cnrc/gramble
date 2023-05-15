@@ -8,7 +8,6 @@ import {
 } from "./exprs";
 import { TapeNamespace } from "./tapes";
 import { 
-    ANY_CHAR_STR,
     Gen, GenOptions,
     msToTime, OPEN_TAPE, shuffleArray, StringDict
 } from "./util";
@@ -98,7 +97,7 @@ export function* generate(
 
             // next see where we can go on that tape, along any char
             // transition.
-            const query = constructToken(OPEN_TAPE, ANY_CHAR_STR);
+            const query = constructToken(OPEN_TAPE, ""); // the text of an open query is irrelevant
             for (const [cTarget, cNext] of prevExpr.deriv(query, env)) {
                 if (!(cNext instanceof NullExpr)) {
                     let nextExpr: Expr = cNext;

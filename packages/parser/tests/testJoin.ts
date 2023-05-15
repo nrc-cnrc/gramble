@@ -415,4 +415,11 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     }); 
 
+    describe('58. t1:__ANY_CHAR__ ⨝ t1:h', function() {
+        const grammar = Join(t1("__ANY_CHAR__"), t1("h"));
+        const expectedResults: StringDict[] = [];
+        testGrammar(grammar, expectedResults);
+
+    });
+
 });

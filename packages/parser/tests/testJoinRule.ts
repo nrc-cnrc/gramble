@@ -17,8 +17,6 @@ import {
     testSuiteName, logTestSuite,
     VERBOSE_TEST_L2, verbose,
     t1,
-    testHasTapes,
-    testHasVocab,
     testGrammar,
 } from './testUtil';
 

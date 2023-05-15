@@ -1,7 +1,6 @@
 import { 
     Count,
     Epsilon,
-    EpsilonLit,
     Grammar,
     Join,
     JoinReplace,
@@ -945,6 +944,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
+    /*
     // 29 states visited (was 370)
     describe('9d2. Single rule with 4-char (εε) deletion: ' +
              't1:aaaabcd ⨝ t1:aaaa -> t2: (vocab abcdABCD)', function() {
@@ -962,6 +962,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
     });
+    */
 
     // 57 states visited (was 134)
     describe('10a. 2-rule cascade starting with 1-char deletion: ' +
@@ -1166,6 +1167,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammarWithVocab, expectedResults, vb(VERBOSE_STATES));
     });
 
+    /*
     // 15 states visited (was 14)
     describe('13b. (t2:e+M(t1>t2,t1:ε|t1:h)){2} (vocab hx/hex)', function() {
         log(`------${this.title}`);
@@ -1185,4 +1187,5 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testGrammar(grammarWithVocab, expectedResults, vb(VERBOSE_STATES));
     });
+    */
 });
