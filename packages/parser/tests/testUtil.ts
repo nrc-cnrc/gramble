@@ -75,8 +75,8 @@ export function testNumOutputs(
             expect(outputs.length).to.equal(expectedNum);
         } catch (e) {
             console.log("");
-            console.log(`[${this.test?.fullTitle()}] ` +
-                        `${outputs.length} outputs: ${JSON.stringify(outputs)}`);
+            console.log(`[${this.test?.fullTitle()}]`);
+            console.log(`${outputs.length} outputs: ${JSON.stringify(outputs)}`);
             if (warningOnly && outputs.length > expectedNum) {
                 console.log(`Warning: should have ${expectedNum} result(s), ` +
                             `but found ${outputs.length}.`)
@@ -152,8 +152,8 @@ export function testMatchOutputs(
                 expect(expected_outputs).to.deep.include.members(outputs.slice(start, end_outputs));
             } catch (e) {
                 console.log("");
-                console.log(`[${this.test?.fullTitle()}] ` +
-                            `${outputs.length} outputs: ${JSON.stringify(outputs)}`);
+                console.log(`[${this.test?.fullTitle()}]`);
+                console.log(`${outputs.length} outputs: ${JSON.stringify(outputs)}`);
                 throw e;
             }
         });
@@ -275,7 +275,8 @@ export function testHasTapes(
             }
         } catch (e) {
             console.log("");
-            console.log(`[${this.test?.fullTitle()}] ${tapes.length} tapes [${tapes}]`);
+            console.log(`[${this.test?.fullTitle()}]`);
+            console.log(`${tapes.length} tapes [${tapes}]`);
             throw e;
         }
     });
@@ -345,6 +346,7 @@ export function testErrors(interpreter: Interpreter, expectedErrors: [string, nu
         try {
             expect(devEnv.numErrors("any")).to.equal(expectedErrors.length);
         } catch (e) {
+            console.log(`[${this.test?.fullTitle()}]`);
             console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
             throw e;
         }
@@ -356,6 +358,7 @@ export function testErrors(interpreter: Interpreter, expectedErrors: [string, nu
             try {
                 expect(devEnv.getErrors(sheet, row, col).length).to.be.greaterThan(0);
             } catch (e) {
+                console.log(`[${this.test?.fullTitle()}]`);
                 console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
                 throw e;
             }
