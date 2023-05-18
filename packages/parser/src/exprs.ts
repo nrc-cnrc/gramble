@@ -367,6 +367,10 @@ export abstract class Expr {
     public toDenotation(): StringDict {
         throw new Error("not implemented");
     }
+
+    public simplify(): Expr {
+        return this;
+    }
 }
 
 export function addOutput(
@@ -509,7 +513,6 @@ class DotStarExpr extends Expr {
             yield [constructToken(query.tapeName, c), this];
         }
     }
-   
 }
 
 /**
@@ -617,6 +620,12 @@ class LiteralExpr extends Expr {
         }
     }
 
+    public simplify(): Expr {
+        if (this.index >= this.tokens.length) {
+            return EPSILON;
+        }
+        return this;
+    }
 }
 
 class RTLLiteralExpr extends LiteralExpr {
@@ -675,6 +684,13 @@ class RTLLiteralExpr extends LiteralExpr {
             const nextExpr = constructLiteral(this.tapeName, this.text, this.tokens, this.index-1);
             yield [constructToken(this.tapeName, this.tokens[this.index]), nextExpr];
         }
+    }
+
+    public simplify(): Expr {
+        if (this.index < 0) {
+            return EPSILON;
+        }
+        return this;
     }
 
 }
@@ -853,6 +869,22 @@ class ConcatExpr extends BinaryExpr {
         return result;
     }
 
+    public simplify(): Expr {
+        if (this.child1 instanceof EpsilonExpr) {
+            return this.child2;
+        }
+        if (this.child2 instanceof EpsilonExpr) {
+            return this.child1;
+        }
+        if (this.child1 instanceof NullExpr) {
+            return this.child1;
+        }
+        if (this.child2 instanceof NullExpr) {
+            return this.child2;
+        }
+        return this;
+    }
+
 }
 
 export class UnionExpr extends Expr {
@@ -884,7 +916,23 @@ export class UnionExpr extends Expr {
             yield* child.deriv(query, env);
         }
     }
+    
+    public simplify(): Expr {
+        const newChildren: Expr[] = [];
+        let foundEpsilon: boolean = false;
+        for (const child of this.children) {
+            if (child instanceof NullExpr) continue;
+            if (child instanceof EpsilonExpr) {
+                if (foundEpsilon) continue;
+                foundEpsilon = true;
+            }
+            newChildren.push(child);
+        }
 
+        if (newChildren.length == 0) return NULL;
+        if (newChildren.length == 1) return newChildren[0];
+        return new UnionExpr(newChildren);
+    }
 }
 
 class IntersectExpr extends BinaryExpr {
@@ -924,6 +972,19 @@ class IntersectExpr extends BinaryExpr {
         }
     } 
 
+    public simplify(): Expr {
+        if (this.child1 instanceof NullExpr) return this.child1;
+        if (this.child2 instanceof NullExpr) return this.child2;
+        if (this.child1 instanceof EpsilonExpr && this.child2 instanceof EpsilonExpr) {
+            return this.child1;
+        }
+        if (this.child1 instanceof IntersectExpr) {
+            const head = this.child1.child1;
+            const tail = constructIntersection(this.child1.child2, this.child2);
+            return constructIntersection(head, tail);
+        }
+        return this;
+    }
 }
 
 class FilterExpr extends BinaryExpr {
@@ -980,6 +1041,15 @@ class FilterExpr extends BinaryExpr {
             }
         }
     } 
+
+    public simplify(): Expr {
+        if (this.child1 instanceof NullExpr) return this.child1
+        if (this.child2 instanceof NullExpr) return this.child2;
+        if (this.child1 instanceof EpsilonExpr && this.child2 instanceof EpsilonExpr) {
+            return this.child1;
+        }
+        return this;
+    }
 
 }
 
@@ -1047,6 +1117,15 @@ class JoinExpr extends BinaryExpr {
             }
         }
     } 
+
+    public simplify(): Expr {
+        if (this.child1 instanceof NullExpr) return this.child1;
+        if (this.child2 instanceof NullExpr) return this.child2;
+        if (this.child1 instanceof EpsilonExpr && this.child2 instanceof EpsilonExpr) {
+            return this.child1;
+        }
+        return this;
+    }
 
 }
 
@@ -1251,6 +1330,12 @@ export class CountExpr extends UnaryExpr {
             yield [cResult, successor];
         }
     }
+
+    public simplify(): Expr {
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) return this.child;
+        return this;
+    }
 }
 
 export class HideExpr extends UnaryExpr {
@@ -1304,13 +1389,16 @@ export class HideExpr extends UnaryExpr {
             }
         }
     }
+
+    public simplify(): Expr {
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) return this.child;
+        return this;
+    }
 }
 
 export function constructHide(tapeName: string, child: Expr): Expr {
-    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
-        return child;
-    }
-    return new HideExpr(tapeName, child);
+    return new HideExpr(tapeName, child).simplify();
 }
 
 export class PreTapeExpr extends UnaryExpr {
@@ -1393,13 +1481,16 @@ export class PreTapeExpr extends UnaryExpr {
         }
 
     }
+
+    public simplify(): Expr {
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) return this.child;
+        return this;
+    }
 }
 
 export function constructPreTape(fromTape: string, toTape: string, child: Expr): Expr {
-    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
-        return child;
-    }
-    return new PreTapeExpr(fromTape, toTape, child);
+    return new PreTapeExpr(fromTape, toTape, child).simplify();
 }
 
 export class PriorityExpr extends UnaryExpr {
@@ -1462,6 +1553,19 @@ export class PriorityExpr extends UnaryExpr {
             }
         }
     }
+
+    public simplify(): Expr {
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) return this.child;
+        if (this.tapes.length == 0) {
+            throw new Error(`warning, nontrivial expr at end: ${this.child.id}`);
+        }
+        return this;
+    }
+}
+
+export function constructPriority(tapes: string[], child: Expr): Expr {
+    return new PriorityExpr(tapes, child).simplify();
 }
 
 class NoEpsExpr extends UnaryExpr {
@@ -1614,6 +1718,18 @@ class RepeatExpr extends UnaryExpr {
             yield [EPSILON, constructPrecede(deltad, oneLess)];
         } 
     }
+
+    public simplify(): Expr {
+        if (this.maxReps < 0) return NULL;
+        if (this.minReps > this.maxReps) return NULL;
+        if (this.maxReps == 0) return EPSILON;
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) {
+            if (this.minReps <= 0) return EPSILON;
+            return this.child;
+        }
+        return this;
+    }
 }
 
 class TapeNsExpr extends UnaryExpr {
@@ -1699,6 +1815,18 @@ class RenameExpr extends UnaryExpr {
             yield [cResult, constructRename(cNext, this.fromTape, this.toTape)];
         }
     }
+
+    public simplify(): Expr {
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) return this.child;
+        if (this.child instanceof LiteralExpr && this.child.tapeName == this.fromTape) {
+            return constructLiteral(this.toTape, this.child.text, this.child.tokens, this.child.index);
+        }
+        if (this.child instanceof DotExpr && this.child.tapeName == this.fromTape) {
+            return constructDot(this.toTape);
+        }
+        return this;
+    }
     
 }
 
@@ -1763,6 +1891,13 @@ class NegationExpr extends UnaryExpr {
         for (const c of remainder) {
             yield [constructToken(query.tapeName, c), constructUniverse(this.tapes)];
         }
+    }
+
+    public simplify(): Expr {
+        if (this.child instanceof NullExpr) return constructUniverse(this.tapes);
+        if (this.child instanceof NegationExpr) return this.child.child;
+        if (this.child instanceof DotStarExpr) return NULL;
+        return this;
     }
 }
 
@@ -1930,6 +2065,18 @@ export class MatchFromExpr extends UnaryExpr {
             }
         }
     }
+
+    public simplify(): Expr {
+        
+        if (this.child instanceof EpsilonExpr) {
+            return this.child;
+        }
+        if (this.child instanceof NullExpr) {
+            return this.child;
+        }
+        return this;
+    }
+
 }
 
 /*
@@ -2022,28 +2169,17 @@ export class MatchExpr extends UnaryExpr {
 /* CONVENIENCE FUNCTIONS */
 export const EPSILON = new EpsilonExpr();
 export const NULL = new NullExpr();
-//export const UNIVERSE = new UniverseExpr();
 
 export function constructLiteral(
     tape: string, 
     text: string,
-    tokens: string[] | undefined = undefined,
-    index: number | undefined = undefined
+    tokens: string[],
+    index?: number
 ): Expr {
-
-    if (tokens === undefined) tokens = [text];
     if (DIRECTION_LTR) {
-        if (index == undefined) { index = 0; }
-        if (index >= tokens.length) {
-            return EPSILON;
-        }
-        return new LiteralExpr(tape, text, tokens, index);
+        return new LiteralExpr(tape, text, tokens, index).simplify();
     }
-    if (index == undefined) { index = tokens.length -1; }
-    if (index < 0) {
-        return EPSILON;
-    }
-    return new RTLLiteralExpr(tape, text, tokens, index);
+    return new RTLLiteralExpr(tape, text, tokens, index).simplify();
 
 }
 
@@ -2062,28 +2198,15 @@ export function constructDot(tape: string): DotExpr {
  * "A is to the left of B", but 'precedes' say "A comes before B".)
  */
 export function constructPrecede(firstChild: Expr, secondChild: Expr) {
-
     if (DIRECTION_LTR) {
-        return constructConcat(firstChild, secondChild);
+        return constructConcat(firstChild, secondChild).simplify();
     }
-    return constructConcat(secondChild, firstChild);
+    return constructConcat(secondChild, firstChild).simplify();
 
 }
 
 export function constructConcat(c1: Expr, c2: Expr): Expr {
-    if (c1 instanceof EpsilonExpr) {
-        return c2;
-    }
-    if (c2 instanceof EpsilonExpr) {
-        return c1;
-    }
-    if (c1 instanceof NullExpr) {
-        return c1;
-    }
-    if (c2 instanceof NullExpr) {
-        return c2;
-    }
-    return new ConcatExpr(c1, c2);
+    return new ConcatExpr(c1, c2).simplify();
 }
 
 export function constructSequence(...children: Expr[]): Expr {
@@ -2100,50 +2223,15 @@ export function constructSequence(...children: Expr[]): Expr {
 }
 
 export function constructAlternation(...children: Expr[]): Expr {
-    const newChildren: Expr[] = [];
-    let foundEpsilon: boolean = false;
-    for (const child of children) {
-        if (child instanceof NullExpr) {
-            continue;
-        }
-        if (child instanceof EpsilonExpr) {
-            if (foundEpsilon) {
-                continue;
-            }
-            foundEpsilon = true;
-        }
-        newChildren.push(child);
-    }
-
-    if (newChildren.length == 0) {
-        return NULL;
-    }
-    if (newChildren.length == 1) {
-        return newChildren[0];
-    }
-    return new UnionExpr(newChildren);
+    return new UnionExpr(children).simplify();
 }
 
 export function constructIntersection(c1: Expr, c2: Expr): Expr {
-    if (c1 instanceof NullExpr) {
-        return c1;
-    }
-    if (c2 instanceof NullExpr) {
-        return c2;
-    }
-    if (c1 instanceof EpsilonExpr && c2 instanceof EpsilonExpr) {
-        return c1;
-    }
-    if (c1 instanceof IntersectExpr) {
-        const head = c1.child1;
-        const tail = constructIntersection(c1.child2, c2);
-        return constructIntersection(head, tail);
-    }
-    return new IntersectExpr(c1, c2);
+    return new IntersectExpr(c1, c2).simplify();
 }
 
 export function constructMaybe(child: Expr): Expr {
-    return constructAlternation(child, EPSILON);
+    return constructAlternation(child, EPSILON).simplify();
 }
 
 export function constructCount(
@@ -2151,39 +2239,19 @@ export function constructCount(
     tapeName: string, 
     maxChars: number
 ): Expr {
-    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
-        return child;
-    }
-    return new CountExpr(child, tapeName, maxChars);
+    return new CountExpr(child, tapeName, maxChars).simplify();
 }
 
 export function constructNegation(
     child: Expr, 
     tapes: Set<string>,
 ): Expr {
-    if (child instanceof NullExpr) {
-        return constructUniverse(tapes);
-    }
-    if (child instanceof NegationExpr) {
-        return child.child;
-    }
-    if (child instanceof DotStarExpr) {
-        return NULL;
-    }
-    return new NegationExpr(child, tapes);
+    return new NegationExpr(child, tapes).simplify();
 }
 
 export function constructDotStar(tape: string): Expr {
     return new DotStarExpr(tape);
 }
-
-export function constructDotRep(tape: string, maxReps: number = Infinity): Expr {
-    if (maxReps == Infinity) {
-        return constructDotStar(tape);
-    }
-    return constructRepeat(constructDot(tape), 0, maxReps);
-}
-
 
 /**
  * Creates A{min,max} from A.
@@ -2193,69 +2261,29 @@ export function constructDotRep(tape: string, maxReps: number = Infinity): Expr 
     minReps: number = 0, 
     maxReps: number = Infinity
 ): Expr {
-    if (maxReps < 0 || minReps > maxReps) {
-        return NULL;
-    }
-
-    if (maxReps == 0) {
-        return EPSILON;
-    }
-
-    if (child instanceof EpsilonExpr) {
-        return child;
-    }
-
-    if (child instanceof NullExpr) {
-        if (minReps <= 0) {
-            return EPSILON;
-        }
-        return child;
-    }
-
     if (child instanceof DotExpr && minReps <= 0 && maxReps == Infinity) {
         return new DotStarExpr(child.tapeName);
     }
-
-    return new RepeatExpr(child, minReps, maxReps);
+    return new RepeatExpr(child, minReps, maxReps).simplify();
 }
 
 export function constructUniverse(
     tapes: Set<string>, 
 ): Expr {
     return constructSequence(...[...tapes]
-                .map(t => constructDotRep(t)));
+                .map(t => constructDotStar(t)));
 }
-
-/*
-export function constructMatch(
-    child: Expr,
-    tapes: Set<string>
-): Expr {
-    if (child instanceof EpsilonExpr) {
-        return child;
-    }
-    if (child instanceof NullExpr) {
-        return child;
-    }
-    return new MatchExpr(child, tapes);
-} */
 
 export function constructMatchFrom(
     child: Expr,
     fromTape: string,
     ...toTapes: string[]
 ): Expr {
-    if (child instanceof EpsilonExpr) {
-        return child;
-    }
-    if (child instanceof NullExpr) {
-        return child;
-    }
     let result = child;
     for (const tape of toTapes) {
         result = new MatchFromExpr(result, fromTape, tape);
     }
-    return result;
+    return result.simplify();
 }
 
 export function constructRename(
@@ -2263,61 +2291,15 @@ export function constructRename(
     fromTape: string, 
     toTape: string
 ): Expr {
-    if (child instanceof EpsilonExpr) {
-        return child;
-    }
-    if (child instanceof NullExpr) {
-        return child;
-    }
-    if (child instanceof LiteralExpr && child.tapeName == fromTape) {
-        return constructLiteral(toTape, child.text, child.tokens, child.index);
-    }
-    if (child instanceof DotExpr && child.tapeName == fromTape) {
-        return constructDot(toTape);
-    }
-    return new RenameExpr(child, fromTape, toTape);
+    return new RenameExpr(child, fromTape, toTape).simplify();
 }
 
 export function constructFilter(c1: Expr, c2: Expr, tapes: Set<string>): Expr {
-    if (c1 instanceof NullExpr) {
-        return c1;
-    }
-    if (c2 instanceof NullExpr) {
-        return c2;
-    }
-    if (c1 instanceof EpsilonExpr && c2 instanceof EpsilonExpr) {
-        return c1;
-    }
-    return new FilterExpr(c1, c2, tapes);
+    return new FilterExpr(c1, c2, tapes).simplify();
 }
 
 export function constructJoin(c1: Expr, c2: Expr, tapes1: Set<string>, tapes2: Set<string>): Expr {
-    if (c1 instanceof NullExpr) {
-        return c1;
-    }
-    if (c2 instanceof NullExpr) {
-        return c2;
-    }
-    if (c1 instanceof EpsilonExpr && c2 instanceof EpsilonExpr) {
-        return c1;
-    }
-    return new JoinExpr(c1, c2, tapes1, tapes2);
-}
-
-export function constructPriority(tapes: string[], child: Expr): Expr {
-
-    if (tapes.length == 0) {
-        if (!(child instanceof NullExpr || child instanceof EpsilonExpr)) {            
-            throw new Error(`warning, nontrivial expr at end: ${child.id}`);
-        }
-        return child;
-    }
-
-    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
-        return child;
-    }
-
-    return new PriorityExpr(tapes, child);
+    return new JoinExpr(c1, c2, tapes1, tapes2).simplify();
 }
 
 export function constructNotContains(
@@ -2327,7 +2309,7 @@ export function constructNotContains(
     begin: boolean,
     end: boolean
 ): Expr {
-    const dotStar: Expr = constructDotRep(fromTapeName);
+    const dotStar: Expr = constructDotStar(fromTapeName);
     let seq: Expr;
     if (begin && end) {
         seq = constructShort(constructSequence(...children));

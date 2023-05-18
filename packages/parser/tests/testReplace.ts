@@ -4447,7 +4447,7 @@ describe(`${testSuiteName(module)}`, function() {
     // any value of maxCopyChars), and were moved here from testJoinReplace
     // where they were used to track down issues with ReplaceGrammar and
     // DotStarExpr. Until recently, only ReplaceGrammar was using DotStarExpr
-    // (via constructDotRep), but now StartsWithGrammar, EndsWithGrammar, and
+    // but now StartsWithGrammar, EndsWithGrammar, and
     // ContainsGrammar do too, so other unit tests may test DotStarExpr as well. 
     describe('2-35a. Replace i by o/oo with vocab hi: t1:i -> t2:o t4:oo {0,3} with maxCopyChars=Infinity', function() {
         let grammar: Grammar = Seq(Vocab('t1', 'hi'), Vocab('t2', 'hio'), Vocab('t4', 'hio'),

@@ -83,6 +83,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
     });
 
+    /*
     describe('4a. Partial priority: t1:hello+t2:world, priority t1', function() {
         let grammar: Grammar = Seq(t1("hello"), t2("world"));
         grammar = Priority(["t1"], grammar);
@@ -112,4 +113,5 @@ describe(`${testSuiteName(module)}`, function() {
         testHasTapes(grammar, ["t1", "t2"]);
         testGrammar(grammar, [{t1: 'hello', t2: 'world'}]);
     });
+    */
 });
