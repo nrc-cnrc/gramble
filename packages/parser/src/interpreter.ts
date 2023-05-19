@@ -3,7 +3,8 @@ import {
     CollectionGrammar, 
     PriorityGrammar, Query, 
     infinityProtection,
-    LocatorGrammar
+    LocatorGrammar,
+    Cursor
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
@@ -308,22 +309,11 @@ export class Interpreter {
             targetGrammar.collectAllVocab(this.tapeNS, env);
         }
         
-        let tapePriority = this.grammar.getAllTapePriority(this.tapeNS, env);
-
+        let tapePriority = targetGrammar.getAllTapePriority(this.tapeNS, env);
         targetGrammar = infinityProtection(targetGrammar, tapePriority, symbolName, opt.maxChars, env);
+        targetGrammar = Cursor(tapePriority, targetGrammar);
 
-        let is_priority_grammar = targetGrammar instanceof PriorityGrammar;
-        if (targetGrammar instanceof CollectionGrammar) {
-            if (targetGrammar.getSymbol(qualifiedName) instanceof PriorityGrammar)
-                is_priority_grammar = true;
-        }
-        if (!is_priority_grammar) {
-            targetGrammar = new PriorityGrammar(targetGrammar, tapePriority);
-            //logTime(this.verbose, `priority = ${(targetGrammar as PriorityGrammar).tapePriority}`)
-        }
-
-        const expr = targetGrammar.constructExpr(this.tapeNS, symbols);
-        return expr;    
+        return targetGrammar.constructExpr(this.tapeNS, symbols);  
     }
 
     public runTests(): void {

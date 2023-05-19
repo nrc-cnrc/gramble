@@ -99,9 +99,10 @@ export function* generate(
             // and move on
             continue;
         } else {
-            console.log(`calling forward on ${prevExpr.id}`);
-            for (const cNext of prevExpr.forward(env)) {
-                console.log(`received ${cNext.id}`);
+            for (const [cHandled, cNext] of prevExpr.forward(env)) {
+                if (!cHandled) {
+                    throw new Error(`Unhandled forward: ${cNext.id}`);
+                }
                 if (cNext instanceof NullExpr) continue;
                 nexts.push(cNext);
             }

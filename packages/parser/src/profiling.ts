@@ -1,4 +1,4 @@
-import { Epsilon, Grammar, Join, JoinReplace, Lit, Priority, Replace, ReplaceGrammar, Uni } from "./grammars";
+import { Epsilon, Grammar, Join, JoinReplace, Lit, Cursor, Replace, ReplaceGrammar, Uni } from "./grammars";
 import { Interpreter } from "./interpreter";
 import { shuffleArray, StringDict, VERBOSE_STATES, VERBOSE_TIME } from "./util";
 
@@ -99,12 +99,12 @@ generateAndLog({
 
 console.log();
 t = Join(Join(Join(Join(r4,r3),r2),r1),g);
-t = Priority(["t1","t2","t3","t4","t5"], t);
+t = Cursor(["t1","t2","t3","t4","t5"], t);
 generateAndLog({name:"((((R4,R3),R2),R1),G), numerical priority", g:t});
 
 console.log();
 t = Join(Join(Join(Join(r4,r3),r2),r1),g);
-t = Priority(["t5","t4","t3","t2","t1"], t)
+t = Cursor(["t5","t4","t3","t2","t1"], t)
 generateAndLog({name:"((((R4,R3),R2),R1),G), opposite priority", g:t});
 
 console.log();
@@ -116,12 +116,12 @@ generateAndLog({
 
 console.log();
 t = Join(Join(Join(Join(g,r1),r2),r3),r4);
-t = Priority(["t1","t2","t3","t4","t5"], t)
+t = Cursor(["t1","t2","t3","t4","t5"], t)
 generateAndLog({name:"((((G,R1),R2),R3),R4), numerical priority", g:t});
 
 console.log();
 t = Join(Join(Join(Join(g,r1),r2),r3),r4);
-t = Priority(["t5","t4","t3","t2","t1"], t)
+t = Cursor(["t5","t4","t3","t2","t1"], t)
 generateAndLog({name:"((((G,R1),R2),R3),R4), opposite priority", g:t});
 
 
@@ -134,10 +134,10 @@ generateAndLog({
 
 console.log();
 t = Join(g, Join(r1, Join(r2, Join(r3, r4))));
-t = Priority(["t1","t2","t3","t4","t5"], t)
+t = Cursor(["t1","t2","t3","t4","t5"], t)
 generateAndLog({name:"(G,(R1,(R2,(R3,R4)))), numerical priority", g:t});
 
 console.log();
 t = Join(g, Join(r1, Join(r2, Join(r3, r4))));
-t = Priority(["t5","t4","t3","t2","t1"], t)
+t = Cursor(["t5","t4","t3","t2","t1"], t)
 generateAndLog({name:"(G,(R1,(R2,(R3,R4)))), opposite priority", g:t});

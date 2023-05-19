@@ -13,7 +13,7 @@ import {
     constructDotStar,
     constructCount,
     CollectionExpr,
-    constructTape
+    constructCursor
 } from "./exprs";
 import { 
     Result,
@@ -93,7 +93,7 @@ export type Grammar = EpsilonGrammar
              | RepeatGrammar
              | NegationGrammar
              | PreTapeGrammar
-             | TapeGrammar
+             | CursorGrammar
              | HideGrammar
              | MatchFromGrammar
 //             | MatchGrammar
@@ -1321,8 +1321,8 @@ export class NegationGrammar extends UnaryGrammar {
     }
 }
 
-export class TapeGrammar extends UnaryGrammar {
-    public readonly tag = "tape";
+export class CursorGrammar extends UnaryGrammar {
+    public readonly tag = "cursor";
 
     constructor(
         public tape: string,
@@ -1352,13 +1352,13 @@ export class TapeGrammar extends UnaryGrammar {
 
     public constructExpr(tapeNS: TapeNamespace, symbols: ExprNamespace): Expr {
         const childExpr = this.child.constructExpr(tapeNS, symbols);
-        return constructTape(this.tape, childExpr);
+        return constructCursor(this.tape, childExpr);
     }
 
 }
 
-export function Taper(tape: string, child: Grammar): TapeGrammar {
-    return new TapeGrammar(tape, child);
+export function Taper(tape: string, child: Grammar): CursorGrammar {
+    return new CursorGrammar(tape, child);
 }
 
 
@@ -2184,8 +2184,13 @@ export function Count(maxChars: Dict<number>, child: Grammar): Grammar {
     return result;
 }
 
-export function Priority(tapes: string[], child: Grammar): Grammar {
-    return new PriorityGrammar(child, tapes);
+export function Cursor(tape: string | string[], child: Grammar): Grammar {
+    let result = child;
+    if (!Array.isArray(tape)) tape = [tape];
+    for (const t of tape) {
+        result = new CursorGrammar(t, result);   
+    }
+    return result;
 }
 
 /**
