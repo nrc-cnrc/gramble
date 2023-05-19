@@ -15,14 +15,17 @@ import {
 } from "./tapes";
 
 export type Query = TokenExpr | DotExpr;
-export type Output = ConcatExpr | EpsilonExpr;
+export interface Output extends Expr {
+    toDenotation(): StringDict;
+    addOutput(newOutput: Output): Output;
+}
 
 export class DerivStats {
     public statesVisited: number = 0;
 }
 
-export type DerivResult = [TokenExpr | EpsilonExpr, Expr];
-export type DerivResults = Gen<DerivResult>;
+export type Deriv = [TokenExpr | EpsilonExpr, Expr];
+export type Derivs = Gen<Deriv>;
 
 export class ExprNamespace extends Namespace<Expr> {}
 
@@ -316,7 +319,7 @@ export abstract class Expr {
      public abstract deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults;
+    ): Derivs;
 
     /** 
      * Calculates the derivative so that the results are deterministic (or more accurately, so that all returned 
@@ -334,50 +337,25 @@ export abstract class Expr {
     public *disjointDeriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
-        const results: {[c: string]: Expr[]} = {};
+    ): Derivs {
+        const results: {[c: string]: [TokenExpr|EpsilonExpr, Expr[]]} = {};
         for (const [cResult, cNext] of this.deriv(query, env)) {
-            const cString: string = (cResult instanceof TokenExpr) 
-                                            ? cResult.text 
-                                            : "";
+            const cString = cResult.id;
             if (!(cString in results)) {
-                results[cString] = [];
+                results[cString] = [cResult, []];
             }
-            results[cString].push(cNext);
+            results[cString][1].push(cNext);
         }
 
-        for (const c in results) {
-            const nextExprs = results[c];
-            const nextExpr = constructAlternation(...nextExprs);
-            const cToken: TokenExpr | EpsilonExpr = (c == "") ? EPSILON : constructToken(query.tapeName, c);
-            yield [cToken, nextExpr];
+        for (const [cResult, cNexts] of Object.values(results)) {
+            const wrapped = constructAlternation(...cNexts);
+            yield [cResult, wrapped];
         }
-    }
-
-    /**
-     * toDenotation converts SOME (but not all) expressions to the 
-     * list of dicts of strings that they denote, in a non-recursive way
-     * (so as not to blow the stack for what can be some very long outputs).
-     * 
-     * In order to do this without recursing, the expression must be either 
-     * a LiteralExpr, an EpsilonExpr, or a ConcatExpr where the first (if RTL)
-     * or second (if LTR) child is a LiteralExpr|EpsilonExpr.  Luckily for 
-     * us, that's exactly what we build when we build outputs.
-     */
-    public toDenotation(): StringDict {
-        throw new Error("not implemented");
     }
 
     public simplify(): Expr {
         return this;
     }
-}
-
-export function addOutput(
-    prev: Output, 
-    token: TokenExpr
-): Output {
-    return constructPrecede(prev, token);
 }
 
 /**
@@ -399,10 +377,18 @@ export class EpsilonExpr extends Expr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults { }
+    ): Derivs { }
 
     public toDenotation(): StringDict {
         return {};
+    }
+    
+    public addOutput(newOutput: Output): Output {
+        return new OutputExpr(this, newOutput);
+    }
+
+    public rename(tapeName: string) {
+        return this;
     }
 
 }
@@ -426,7 +412,7 @@ export class NullExpr extends Expr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults { }
+    ): Derivs { }
 }
 
 
@@ -468,7 +454,7 @@ class DotExpr extends Expr {
     public *deriv(
         query: Query, 
         env: DerivEnv
-    ): DerivResults { 
+    ): Derivs { 
         if (query.tapeName != this.tapeName) {
             return;
         }
@@ -504,7 +490,7 @@ class DotStarExpr extends Expr {
     public *deriv(
         query: Query, 
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
         if (query.tapeName != this.tapeName) {
             return;
         }
@@ -536,6 +522,10 @@ export class TokenExpr extends Expr {
         return { [this.tapeName] : this.text };
     }
 
+    public addOutput(newOutput: Output): Output {
+        return new OutputExpr(this, newOutput);
+    }
+
     public expandStrings(env: DerivEnv): Set<string> {
         return new Set([this.text]);
     }
@@ -548,16 +538,14 @@ export class TokenExpr extends Expr {
         tapeName: string,
         env: DerivEnv
     ): Expr {
-        if (tapeName != this.tapeName) {
-            return this;
-        }
+        if (tapeName != this.tapeName) return this;
         return NULL;
     }
 
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
         if (query.tapeName != this.tapeName) return;
         if (!(query instanceof DotExpr) && query.text != this.text) return;
         yield [this, EPSILON];
@@ -584,46 +572,36 @@ class LiteralExpr extends Expr {
         tapeName: string,
         env: DerivEnv
     ): Expr {
-        if (tapeName != this.tapeName) {
-            return this;
-        }
-        if (this.index >= this.tokens.length) {
-            return EPSILON;
-        }
+        if (tapeName != this.tapeName) return this;
+        if (this.index >= this.tokens.length) return EPSILON;
         return NULL;
     }
 
     public *deriv(
         query: Query, 
         env: DerivEnv
-    ): DerivResults {
-
-        if (this.index >= this.tokens.length) {
-            return;
-        }
-
-        if (query.tapeName != this.tapeName) {
-            return;
-        }
+    ): Derivs {
+        if (this.index >= this.tokens.length) return;
+        if (query.tapeName != this.tapeName) return;
 
         const tape = env.getTape(query.tapeName);
         if (tape.atomic) {
             if (query instanceof DotExpr || query.text == this.text) {
-                yield [constructToken(this.tapeName, this.text), EPSILON];
+                const resultToken = constructToken(this.tapeName, this.text)
+                yield [resultToken, EPSILON];
             }
             return;
         }
 
         if (query instanceof DotExpr || query.text == this.tokens[this.index]) {
-            const nextExpr = constructLiteral(this.tapeName, this.text, this.tokens, this.index+1);
-            yield [constructToken(this.tapeName, this.tokens[this.index]), nextExpr];
+            const resultToken = constructToken(this.tapeName, this.tokens[this.index]);
+            const wrapped = constructLiteral(this.tapeName, this.text, this.tokens, this.index+1);
+            yield [resultToken, wrapped];
         }
     }
 
     public simplify(): Expr {
-        if (this.index >= this.tokens.length) {
-            return EPSILON;
-        }
+        if (this.index >= this.tokens.length) return EPSILON;
         return this;
     }
 }
@@ -648,41 +626,31 @@ class RTLLiteralExpr extends LiteralExpr {
         tapeName: string,
         env: DerivEnv
     ): Expr {
-        if (tapeName != this.tapeName) {
-            return this;
-        }
-
-        if (this.index < 0) {
-            return EPSILON;
-        }
-
+        if (tapeName != this.tapeName) return this;
+        if (this.index < 0) return EPSILON;
         return NULL;
     }
 
     public *deriv(
         query: Query, 
         env: DerivEnv
-    ): DerivResults {
-
-        if (this.index < 0) {
-            return;
-        }
-
-        if (query.tapeName != this.tapeName) {
-            return;
-        }
+    ): Derivs {
+        if (this.index < 0) return;
+        if (query.tapeName != this.tapeName) return;
 
         const tape = env.getTape(query.tapeName);
         if (tape.atomic) {
             if (query instanceof DotExpr || query.text == this.text) {
-                yield [constructToken(this.tapeName, this.text), EPSILON];
+                const resultToken = constructToken(this.tapeName, this.text);
+                yield [resultToken, EPSILON];
             }
             return;
         }
 
         if (query instanceof DotExpr || query.text == this.tokens[this.index]) {
-            const nextExpr = constructLiteral(this.tapeName, this.text, this.tokens, this.index-1);
-            yield [constructToken(this.tapeName, this.tokens[this.index]), nextExpr];
+            const resultToken = constructToken(this.tapeName, this.tokens[this.index]);
+            const wrapped = constructLiteral(this.tapeName, this.text, this.tokens, this.index-1);
+            yield [resultToken, wrapped];
         }
     }
 
@@ -716,14 +684,14 @@ export class ParallelExpr extends Expr {
             return this;
         }
         
-        const delta = this.children[tapeName].delta(tapeName, env);
-        return updateParallel(this.children, tapeName, delta);
+        const cNext = this.children[tapeName].delta(tapeName, env);
+        return updateParallel(this.children, tapeName, cNext);
     }
 
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
 
         if (!(query.tapeName in this.children)) {
             return;
@@ -731,8 +699,8 @@ export class ParallelExpr extends Expr {
 
         const cResults = this.children[query.tapeName].disjointDeriv(query, env);
         for (const [cResult, cNext] of cResults) {
-            const successor = updateParallel(this.children, query.tapeName, cNext);
-            yield [cResult, successor];
+            const wrapped = updateParallel(this.children, query.tapeName, cNext);
+            yield [cResult, wrapped];
         }
     }
 }
@@ -826,7 +794,7 @@ class ConcatExpr extends BinaryExpr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
 
         const [c1, c2] = (DIRECTION_LTR) ?
                         [this.child1, this.child2] :
@@ -842,31 +810,6 @@ class ConcatExpr extends BinaryExpr {
                 c2.deriv(query, env)) {
             yield [c2result, constructPrecede(c1next, c2next)];
         }
-    }
-
-    public toDenotation(): StringDict {
-        let result: StringDict = {};
-        let current: Output = this;
-        while (current instanceof ConcatExpr) {
-            if (DIRECTION_LTR) {
-                const unitDenotation = current.child2.toDenotation();
-                result = concatStringDict(unitDenotation, result);
-                current = current.child1;
-                continue;
-            }
-
-            const unitDenotation = current.child1.toDenotation();
-            result = concatStringDict(result, unitDenotation);
-            current = current.child2;
-        }
-
-        // now we're at the last current, and it's not a ConcatExpr, get its
-        // denotation, add it on, and we're done
-        const unitDenotation = current.toDenotation();
-        result = DIRECTION_LTR ?
-                 concatStringDict(unitDenotation, result) :
-                 concatStringDict(result, unitDenotation);
-        return result;
     }
 
     public simplify(): Expr {
@@ -904,14 +847,13 @@ export class UnionExpr extends Expr {
         env: DerivEnv
     ): Expr {
         const newChildren = this.children.map(c => c.delta(tapeName, env));
-        const result = constructAlternation(...newChildren);
-        return result;
+        return constructAlternation(...newChildren);
     }
 
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
         for (const child of this.children) {
             yield* child.deriv(query, env);
         }
@@ -953,21 +895,21 @@ class IntersectExpr extends BinaryExpr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
         for (const [c1result, c1next] of 
                 this.child1.disjointDeriv(query, env)) {
 
             if (c1result instanceof EpsilonExpr) {
-                const successor = constructIntersection(c1next, this.child2);
-                yield [c1result, successor];
+                const wrapped = constructIntersection(c1next, this.child2);
+                yield [c1result, wrapped];
                 continue;
             }
     
             for (const [c2result, c2next] of 
                     this.child2.disjointDeriv(c1result, env)) {
                 const c1nxt = (c2result instanceof EpsilonExpr) ? this.child1 : c1next;
-                const successor = constructIntersection(c1nxt, c2next);
-                yield [c2result, successor];
+                const wrapped = constructIntersection(c1nxt, c2next);
+                yield [c2result, wrapped];
             }
         }
     } 
@@ -1013,13 +955,13 @@ class FilterExpr extends BinaryExpr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
 
         if (!this.tapes.has(query.tapeName)) {
             for (const [c1result, c1next] of 
                     this.child1.disjointDeriv(query, env)) {
-                const successor = constructFilter(c1next, this.child2, this.tapes);
-                yield [c1result, successor];
+                const wrapped = constructFilter(c1next, this.child2, this.tapes);
+                yield [c1result, wrapped];
             }
             return;
         }
@@ -1028,16 +970,16 @@ class FilterExpr extends BinaryExpr {
                 this.child2.disjointDeriv(query, env)) {
 
             if (c2result instanceof EpsilonExpr) {
-                const successor = constructFilter(this.child1, c2next, this.tapes);
-                yield [c2result, successor];
+                const wrapped = constructFilter(this.child1, c2next, this.tapes);
+                yield [c2result, wrapped];
                 continue;
             }
     
             for (const [c1result, c1next] of 
                     this.child1.disjointDeriv(c2result, env)) {
                 const c2nxt = (c1result instanceof EpsilonExpr) ? this.child2 : c2next;
-                const successor = constructFilter(c1next, c2nxt, this.tapes);
-                yield [c1result, successor];
+                const wrapped = constructFilter(c1next, c2nxt, this.tapes);
+                yield [c1result, wrapped];
             }
         }
     } 
@@ -1080,13 +1022,13 @@ class JoinExpr extends BinaryExpr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
 
         if (!this.tapes2.has(query.tapeName)) {
             for (const [leftResult, leftNext] of 
                     this.child1.disjointDeriv(query, env)) {
-                const successor = constructJoin(leftNext, this.child2, this.tapes1, this.tapes2);
-                yield [leftResult, successor];
+                const wrapped = constructJoin(leftNext, this.child2, this.tapes1, this.tapes2);
+                yield [leftResult, wrapped];
             }
             return;
         }
@@ -1094,8 +1036,8 @@ class JoinExpr extends BinaryExpr {
         if (!this.tapes1.has(query.tapeName)) {
             for (const [rightResult, rightNext] of 
                     this.child2.disjointDeriv(query, env)) {
-                const successor = constructJoin(this.child1, rightNext, this.tapes1, this.tapes2);
-                yield [rightResult, successor];
+                const wrapped = constructJoin(this.child1, rightNext, this.tapes1, this.tapes2);
+                yield [rightResult, wrapped];
             }
             return;
         }
@@ -1104,16 +1046,16 @@ class JoinExpr extends BinaryExpr {
                 this.child1.disjointDeriv(query, env)) {
 
             if (leftResult instanceof EpsilonExpr) {
-                const successor = constructJoin(leftNext, this.child2, this.tapes1, this.tapes2);
-                yield [leftResult, successor];
+                const wrapped = constructJoin(leftNext, this.child2, this.tapes1, this.tapes2);
+                yield [leftResult, wrapped];
                 continue;
             }
 
             for (const [rightResult, rightNext] of 
                     this.child2.disjointDeriv(leftResult, env)) {
                 const lnext = (rightResult instanceof EpsilonExpr) ? this.child1 : leftNext;
-                const successor = constructJoin(lnext, rightNext, this.tapes1, this.tapes2);
-                yield [rightResult, successor];
+                const wrapped = constructJoin(lnext, rightNext, this.tapes1, this.tapes2);
+                yield [rightResult, wrapped];
             }
         }
     } 
@@ -1183,7 +1125,7 @@ class JoinExpr extends BinaryExpr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
 
         if (env.stack.exceedsMax(this.symbolName)) {
             return;
@@ -1194,8 +1136,8 @@ class JoinExpr extends BinaryExpr {
 
         for (const [cResult, cNext] of 
                         child.deriv(query, newEnv)) {
-            const successor = constructEmbed(this.symbolName, cNext, env.symbolNS);
-            yield [cResult, successor];
+            const wrapped = constructEmbed(this.symbolName, cNext, env.symbolNS);
+            yield [cResult, wrapped];
         }
     }
 }
@@ -1267,20 +1209,25 @@ export class CollectionExpr extends UnaryExpr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
         const newEnv = env.pushSymbols(this.symbols);
         for (const [cResult, cNext] of 
                 this.child.deriv(query, newEnv)) {
             yield [cResult, constructCollection(cNext, this.symbols)];
         }
     }
+
+    public simplify(): Expr {
+        console.log(`simplifying ${this.id}`);
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) return this.child;
+        if (this.child instanceof OutputExpr) return this.child;
+        return this;
+    }
 }
 
 export function constructCollection(child: Expr, symbols: Dict<Expr>): Expr {
-    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
-        return child;
-    }
-    return new CollectionExpr(child, symbols);
+    return new CollectionExpr(child, symbols).simplify();
 }
 
 export class CountExpr extends UnaryExpr {
@@ -1312,22 +1259,22 @@ export class CountExpr extends UnaryExpr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
 
         for (const [cResult, cNext] of this.child.deriv(query, env)) {
             
             if (query.tapeName != this.tapeName || cResult instanceof EpsilonExpr) {
                 // not relevant to us, just move on
-                const successor = constructCount(cNext, this.tapeName, this.maxChars);
-                yield [cResult, successor];
+                const wrapped = constructCount(cNext, this.tapeName, this.maxChars);
+                yield [cResult, wrapped];
                 continue;
             }
             
             if (this.maxChars < cResult.text.length) continue; 
             
             const newMax = this.maxChars - cResult.text.length;
-            const successor = constructCount(cNext, this.tapeName, newMax);
-            yield [cResult, successor];
+            const wrapped = constructCount(cNext, this.tapeName, newMax);
+            yield [cResult, wrapped];
         }
     }
 
@@ -1361,15 +1308,15 @@ export class HideExpr extends UnaryExpr {
             return EPSILON; 
         }
 
-        const fromDelta = this.child.delta(this.tapeName, env);
-        const toDelta = fromDelta.delta(tapeName, env);
-        return constructHide(this.tapeName, toDelta);
+        const fromNext = this.child.delta(this.tapeName, env);
+        const toNext = fromNext.delta(tapeName, env);
+        return constructHide(this.tapeName, toNext);
     }
 
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
         if (query.tapeName == this.tapeName) {
             // this isn't really our tape, our tape is hidden.  it's just
             // some unrelated tape with the same name.
@@ -1401,96 +1348,165 @@ export function constructHide(tapeName: string, child: Expr): Expr {
     return new HideExpr(tapeName, child).simplify();
 }
 
+/**
+ * OutputExpr is a holder for outputs.  For the purpose of delta/deriv
+ * it acts like an epsilon -- it's all material that's "finished".
+ */
+export class OutputExpr extends Expr implements Output {
+
+    constructor(
+        public child1: Output,
+        public child2: Output
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        return `OUT`;
+    }
+
+    public delta(tapeName: string, env: DerivEnv): Expr {
+        return this;
+    }
+
+    public *deriv(query: Query, env: DerivEnv): Derivs {
+        return;
+    }
+
+    public addOutput(newOutput: Output): OutputExpr {
+        return new OutputExpr(this, newOutput);
+    }
+
+    public toDenotation(): StringDict {
+        let result: StringDict = {};
+        let current: Output = this;
+        while (current instanceof OutputExpr) {
+            //if (DIRECTION_LTR) {
+                const unitDenotation = current.child2.toDenotation();
+                result = concatStringDict(unitDenotation, result);
+                current = current.child1;
+                continue;
+            //}
+
+            //const unitDenotation = current.child1.toDenotation();
+            //result = concatStringDict(result, unitDenotation);
+            //current = current.child2;
+        }
+
+        // now we're at the last current, and it's not a ConcatExpr, get its
+        // denotation, add it on, and we're done
+        const unitDenotation = current.toDenotation();
+        result = //DIRECTION_LTR ?
+                 concatStringDict(unitDenotation, result) 
+                 //: concatStringDict(result, unitDenotation);
+        return result;
+    }
+}
+
 export class PreTapeExpr extends UnaryExpr {
 
     constructor(
-        public fromTape: string,
-        public toTape: string,
-        child: Expr
+        public tape1: string,
+        public tape2: string,
+        child: Expr,
+        public output: Output = EPSILON
     ) {
         super(child);
     }
 
     public get id(): string {
-        return `Pre_${this.fromTape}>${this.toTape}(${this.child.id})`;
+        return `Pre_${this.tape1}>${this.tape2}(${this.output.id},${this.child.id})`;
     }
 
     public delta(
         tapeName: string,
         env: DerivEnv
     ): Expr {
-        if (tapeName == this.fromTape) {
+        console.log(`calculating d_${tapeName} for ${this.id}`);
+        if (tapeName == this.tape1) {
             throw new Error(`something's gone wrong, querying on ` +
-                `a PreTapeExpr fromTape ${this.fromTape}`);
+                `a PreTapeExpr tape1 ${this.tape1}`);
         }
 
-        if (tapeName == this.toTape) {
-            const fromDelta = this.child.delta(this.fromTape, env);
-            const toDelta = fromDelta.delta(this.toTape, env);
-            return constructPreTape(this.fromTape, this.toTape, toDelta);
+        if (tapeName == this.tape2) {
+            const t1next = this.child.delta(this.tape1, env);
+            console.log(`t1next is ${t1next.id}`)
+            const t2next = t1next.delta(this.tape2, env);
+            console.log(`t2next is ${t2next.id}`);
+            return constructPreTape(this.tape1, this.tape2, t2next, this.output);
         }
 
-        const delta = this.child.delta(tapeName, env);
-        return constructPreTape(this.fromTape, this.toTape, delta);
+        const cNext = this.child.delta(tapeName, env);
+        return constructPreTape(this.tape1, this.tape2, cNext, this.output);
     }
     
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
-        if (query.tapeName == this.fromTape) {
+    ): Derivs {
+        if (query.tapeName == this.tape1) {
             throw new Error(`something's gone wrong, querying on ` +
-                `a PreTapeExpr fromTape ${this.fromTape}`);
+                `a PreTapeExpr tape1 ${this.tape1}`);
         }
 
-        if (query.tapeName == this.toTape) {
+        if (query.tapeName == this.tape2) {
             
             // if the child is nullable on the fromTape, we can stop 
             // querying on fromTape -- that is, stop being a PreTapeExpr
-            const childDelta = this.child.delta(this.fromTape, env);
+            const childDelta = this.child.delta(this.tape1, env);
             if (!(childDelta instanceof NullExpr)) {
                 yield* childDelta.deriv(query, env);
             }
 
-            const globalTapeName = env.getTape(this.fromTape).globalName;
-            const fromQuery = query.rename(this.fromTape);
-            for (const [fromResult, fromNext] of this.child.deriv(fromQuery, env)) {
-                if (fromNext instanceof NullExpr) {
+            //const globalTapeName = env.getTape(this.fromTape).globalName;
+            const t1query = query.rename(this.tape1);
+            for (const [t1result, t1next] of this.child.deriv(t1query, env)) {
+                if (t1next instanceof NullExpr) {
                     continue;
                 }
                 env.incrStates();
-                const fromResultStr = (fromResult instanceof EpsilonExpr) ? 'ε' : 
-                                        fromResult;
-                env.logDebug(`D^${globalTapeName}_${fromResultStr} = ${fromNext.id}`);
-                if (fromResult instanceof EpsilonExpr) {
-                    const wrapped = constructPreTape(this.fromTape, this.toTape, fromNext);
-                    yield [fromResult, wrapped];
+                env.logDebug(`D_Pre(${t1result.id}) = ${t1next.id}`);
+                if (t1result instanceof EpsilonExpr) {
+                    // if we didn't go anywhere on tape1, don't query on
+                    // tape2, just treat it as going nowhere on tape2
+                    const t2result = t1result.rename(this.tape2);
+                    const wrapped = constructPreTape(this.tape1, this.tape2, t1next, this.output);
+                    yield [t2result, wrapped];
                     continue;
                 }
-                for (const [toResult, toNext] of fromNext.deriv(query, env)) {
-                    const wrapped = constructPreTape(this.fromTape, this.toTape, toNext);
-                    yield [toResult, wrapped];
+                
+                const newOutput = this.output.addOutput(t1result);
+                for (const [t2result, t2next] of t1next.deriv(query, env)) {
+                    env.logDebug(`D_Post(${t2result.id}) = ${t2next.id}`);
+                    const wrapped = constructPreTape(this.tape1, this.tape2, t2next, newOutput);
+                    yield [t2result, wrapped];
                 }
             }
             return;
         }
 
-        for (const [toResult, toNext] of this.child.deriv(query, env)) {
-            const wrapped = constructPreTape(this.fromTape, this.toTape, toNext);
-            yield [toResult, wrapped];
+        for (const [cResult, cNext] of this.child.deriv(query, env)) {
+            const wrapped = constructPreTape(this.tape1, this.tape2, cNext, this.output);
+            yield [cResult, wrapped];
         }
 
     }
 
     public simplify(): Expr {
-        if (this.child instanceof EpsilonExpr) return this.child;
+        console.log(`simplifying ${this.id}`);
+        if (this.child instanceof EpsilonExpr) return this.output;
         if (this.child instanceof NullExpr) return this.child;
         return this;
     }
 }
 
-export function constructPreTape(fromTape: string, toTape: string, child: Expr): Expr {
-    return new PreTapeExpr(fromTape, toTape, child).simplify();
+export function constructPreTape(
+    fromTape: string, 
+    toTape: string, 
+    child: Expr,
+    output?: Output,
+): Expr {
+    return new PreTapeExpr(fromTape, toTape, child, output).simplify();
 }
 
 export class PriorityExpr extends UnaryExpr {
@@ -1516,22 +1532,22 @@ export class PriorityExpr extends UnaryExpr {
             remainingTapes = this.tapes.slice(1);
         } 
 
-        const delta = this.child.delta(tapeName, env);
-        if (tapeName == OPEN_TAPE) env.logDebug(`d^${tapeName} is ${delta.id}`);
-        if (remainingTapes.length == 0 && (!(delta instanceof NullExpr || delta instanceof EpsilonExpr))) {
-            if (delta instanceof EmbedExpr) {
-                const referent = delta.child;
-                throw new Error(`warning, nontrivial embed at end: ${delta.symbolName}:${referent?.id}`);
+        const cNext = this.child.delta(tapeName, env);
+        if (tapeName == OPEN_TAPE) env.logDebug(`d^${tapeName} is ${cNext.id}`);
+        if (remainingTapes.length == 0 && (!(cNext instanceof NullExpr || cNext instanceof EpsilonExpr))) {
+            if (cNext instanceof EmbedExpr) {
+                const referent = cNext.child;
+                throw new Error(`warning, nontrivial embed at end: ${cNext.symbolName}:${referent?.id}`);
             }
-            throw new Error(`warning, nontrivial expr at end: ${delta.id}`);
+            throw new Error(`warning, nontrivial expr at end: ${cNext.id}`);
         }
-        return constructPriority(remainingTapes, delta);
+        return constructPriority(remainingTapes, cNext);
     }
 
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
         let tapes = this.tapes;
         if (query.tapeName == OPEN_TAPE) {
             const tapeToTry = this.tapes[0];
@@ -1548,8 +1564,8 @@ export class PriorityExpr extends UnaryExpr {
                     const cResultStr = (cResult instanceof TokenExpr) ? cResult.text : "";
                     env.logDebug(`D^${query.tapeName}_${cResultStr} is ${cNext.id}`);
                 }
-                const successor = constructPriority(tapes, cNext);
-                yield [cResult, successor];
+                const wrapped = constructPriority(tapes, cNext);
+                yield [cResult, wrapped];
             }
         }
     }
@@ -1557,6 +1573,7 @@ export class PriorityExpr extends UnaryExpr {
     public simplify(): Expr {
         if (this.child instanceof EpsilonExpr) return this.child;
         if (this.child instanceof NullExpr) return this.child;
+        if (this.child instanceof OutputExpr) return this.child;
         if (this.tapes.length == 0) {
             throw new Error(`warning, nontrivial expr at end: ${this.child.id}`);
         }
@@ -1590,14 +1607,14 @@ class NoEpsExpr extends UnaryExpr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
         for (const [cResult, cNext] of this.child.deriv(query, env)) {
             if (query.tapeName == this.tapeName && cResult instanceof EpsilonExpr) {
                 continue;
             }
 
-            const successor = constructNoEps(cNext, this.tapeName);
-            yield [cResult, successor];
+            const wrapped = constructNoEps(cNext, this.tapeName);
+            yield [cResult, wrapped];
         }
     }
 }
@@ -1639,9 +1656,9 @@ class ShortExpr extends UnaryExpr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
-        const delta = this.delta(query.tapeName, env);
-        if (!(delta instanceof NullExpr)) {
+    ): Derivs {
+        const deltaNext = this.delta(query.tapeName, env);
+        if (!(deltaNext instanceof NullExpr)) {
             // if our current tape is nullable, then we have 
             // no derivatives on that tape.
             return;
@@ -1657,8 +1674,8 @@ class ShortExpr extends UnaryExpr {
                 continue;
             }
             
-            const successor = constructShort(cNext);
-            yield [cResult, successor];
+            const wrapped = constructShort(cNext);
+            yield [cResult, wrapped];
         }
     }
 }
@@ -1701,7 +1718,7 @@ class RepeatExpr extends UnaryExpr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
         const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
         const deltad = this.child.delta(query.tapeName, env);
 
@@ -1753,7 +1770,7 @@ class TapeNsExpr extends UnaryExpr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
         const newEnv = env.addTapes(this.tapes);
         for (const [cResult, cNext] of 
                 this.child.deriv(query, newEnv)) {
@@ -1801,7 +1818,7 @@ class RenameExpr extends UnaryExpr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
 
         if (query.tapeName != this.toTape && query.tapeName == this.fromTape) {
             return;
@@ -1812,7 +1829,9 @@ class RenameExpr extends UnaryExpr {
         const newQuery = query.rename(newTapeName);
         for (const [cResult, cNext] of 
                 this.child.deriv(newQuery, newEnv)) {
-            yield [cResult, constructRename(cNext, this.fromTape, this.toTape)];
+            const unRenamedResult = cResult.rename(query.tapeName);
+            const wrapped = constructRename(cNext, this.fromTape, this.toTape);
+            yield [unRenamedResult, wrapped];
         }
     }
 
@@ -1847,28 +1866,21 @@ class NegationExpr extends UnaryExpr {
         tapeName: string,
         env: DerivEnv
     ): Expr {
-        const childDelta = this.child.delta(tapeName, env);
+        const cNext = this.child.delta(tapeName, env);
         const remainingTapes = setDifference(this.tapes, new Set([tapeName]));
         
         let result: Expr;
         
-        if (childDelta instanceof NullExpr) {
-            result = constructNegation(childDelta, remainingTapes);
-            return result;
-        }
-        if (remainingTapes.size == 0) {
-            result = NULL;
-            return result;
-        }
+        if (cNext instanceof NullExpr) return constructNegation(cNext, remainingTapes);
+        if (remainingTapes.size == 0) return NULL;
         
-        result = constructNegation(childDelta, remainingTapes);
-        return result;
+        return constructNegation(cNext, remainingTapes);
     }
     
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
 
         if (!this.tapes.has(query.tapeName)) {
             return;
@@ -1880,8 +1892,8 @@ class NegationExpr extends UnaryExpr {
             if (!(cResult instanceof EpsilonExpr)) {
                 remainder.delete(cResult.text);  
             }
-            const successor = constructNegation(cNext, this.tapes);
-            yield [cResult, successor];
+            const wrapped = constructNegation(cNext, this.tapes);
+            yield [cResult, wrapped];
         }
 
         // any chars not yet consumed by the above represent
@@ -1920,8 +1932,8 @@ export class CorrespondExpr extends Expr {
 
     public delta(tapeName: string, env: DerivEnv): Expr {
         if (tapeName == this.fromTape) {
-            const childDelta = this.child.delta(tapeName, env);
-            return constructCorrespond(childDelta, this.fromTape, this.fromCount,
+            const cNext = this.child.delta(tapeName, env);
+            return constructCorrespond(cNext, this.fromTape, this.fromCount,
                                             this.toTape, this.toCount);
         }
 
@@ -1929,8 +1941,8 @@ export class CorrespondExpr extends Expr {
             if (this.toCount < this.fromCount) {
                 return NULL;
             }
-            const childDelta = this.child.delta(tapeName, env);
-            return constructCorrespond(childDelta, this.fromTape, this.fromCount,
+            const cNext = this.child.delta(tapeName, env);
+            return constructCorrespond(cNext, this.fromTape, this.fromCount,
                 this.toTape, this.toCount);
         }
 
@@ -1941,33 +1953,33 @@ export class CorrespondExpr extends Expr {
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
         if (query.tapeName == this.toTape) {
             for (const [cResult, cNext] of this.child.deriv(query, env)) {
-                const successor = constructCorrespond(cNext, 
+                const wrapped = constructCorrespond(cNext, 
                                             this.fromTape, this.fromCount,
                                             this.toTape, this.toCount+1);
-                yield [cResult, successor];
+                yield [cResult, wrapped];
             }
 
             // toTape is special, if it's nullable but has emitted fewer tokens than
             // fromTape has, it can emit an epsilon
-            const childDelta = this.child.delta(query.tapeName, env);
-            if (!(childDelta instanceof NullExpr) && this.toCount < this.fromCount) {
-                const successor = constructCorrespond(this.child, 
+            const cNext = this.child.delta(query.tapeName, env);
+            if (!(cNext instanceof NullExpr) && this.toCount < this.fromCount) {
+                const wrapped = constructCorrespond(this.child, 
                     this.fromTape, this.fromCount,
                     this.toTape, this.toCount+1);
-                yield [EPSILON, successor];
+                yield [EPSILON, wrapped];
             }
             return;
         }
 
         if (query.tapeName == this.fromTape) {
             for (const [cResult, cNext] of this.child.deriv(query, env)) {
-                const successor = constructCorrespond(cNext, 
+                const wrapped = constructCorrespond(cNext, 
                                             this.fromTape, this.fromCount+1,
                                             this.toTape, this.toCount);
-                yield [cResult, successor];
+                yield [cResult, wrapped];
             }
             return;
         }
@@ -2013,23 +2025,23 @@ export class MatchFromExpr extends UnaryExpr {
         if (tapeName == this.toTape) {
             const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
             const newEnv = env.renameTape(this.toTape, this.fromTape);
-            const nextExpr = this.child.delta(newTapeName, newEnv);
-            return constructMatchFrom(nextExpr, this.fromTape, this.toTape);  
+            const cNext = this.child.delta(newTapeName, newEnv);
+            return constructMatchFrom(cNext, this.fromTape, this.toTape);  
         }
-        const nextExpr = this.child.delta(tapeName, env);
-        return constructMatchFrom(nextExpr, this.fromTape, this.toTape);
+        const cNext = this.child.delta(tapeName, env);
+        return constructMatchFrom(cNext, this.fromTape, this.toTape);
     }
     
     public *deriv(
         query: Query,
         env: DerivEnv
-    ): DerivResults {
+    ): Derivs {
         
         // if it's a tape that isn't our to/from, just forward and wrap 
         if (query.tapeName != this.fromTape && query.tapeName != this.toTape) {
             for (const [cResult, cNext] of this.child.deriv(query, env)) {
-                const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
-                yield [cResult, successor];
+                const wrapped = constructMatchFrom(cNext, this.fromTape, this.toTape);
+                yield [cResult, wrapped];
             }
             return;
         }
@@ -2049,10 +2061,10 @@ export class MatchFromExpr extends UnaryExpr {
 
         for (const [cResult, cNext] of 
                 this.child.deriv(fromQuery, newEnv)) {
-            const successor = constructMatchFrom(cNext, this.fromTape, this.toTape);
+            const wrapped = constructMatchFrom(cNext, this.fromTape, this.toTape);
             if (cResult instanceof EpsilonExpr) {
                 env.logDebug("========= EpsilonToken ==========");
-                yield [cResult, successor];
+                yield [cResult, wrapped];
             } else {
                 for (const c of cResult.expandStrings(env)) {
                     if (!oppositeTape.vocab.has(c)) {
@@ -2060,7 +2072,7 @@ export class MatchFromExpr extends UnaryExpr {
                     }
                     
                     const lit = constructToken(oppositeTapeName, c);
-                    yield [constructToken(query.tapeName, c), constructPrecede(lit, successor)];
+                    yield [constructToken(query.tapeName, c), constructPrecede(lit, wrapped)];
                 }
             }
         }

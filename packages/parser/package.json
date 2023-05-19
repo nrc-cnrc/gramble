@@ -53,6 +53,8 @@
     "testNotReplace": "mocha -r ts-node/register tests/testNotReplace.ts",
     "testRepeat": "mocha -r ts-node/register tests/testRepeat.ts",
     "testParallel": "mocha -r ts-node/register tests/testParallel.ts",
+    "testPreTape": "mocha -r ts-node/register tests/testPreTape.ts",
+    "testPriority": "mocha -r ts-node/register tests/testPriority.ts",
     "testRecursion": "mocha -r ts-node/register tests/testRecursion.ts",
     "testRename": "mocha -r ts-node/register tests/testRename.ts",
     "testReplace": "mocha -r ts-node/register tests/testReplace.ts",

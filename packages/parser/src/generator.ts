@@ -4,7 +4,7 @@ import {
     EpsilonExpr, Expr, ExprNamespace, 
     NullExpr, PriorityExpr, CollectionExpr, 
     DerivStats, EPSILON, Output, 
-    addOutput, constructToken, TokenExpr
+    constructToken, TokenExpr, OutputExpr
 } from "./exprs";
 import { TapeNamespace } from "./tapes";
 import { 
@@ -81,6 +81,20 @@ export function* generate(
             // if we're not random, yield the result immediately.
             yield prevOutput.toDenotation();
             continue;
+        } else if (prevExpr instanceof OutputExpr) {
+            prevOutput = prevOutput.addOutput(prevExpr);
+            env.logDebugOutput("YIELD", prevOutput);
+
+            // if we're random, don't yield immediately, wait
+            if (opt.random) {
+                candidates.push(prevOutput);
+                continue;
+            }
+
+            // if we're not random, yield the result immediately.
+            yield prevOutput.toDenotation();
+            continue;
+            
         } else if (prevExpr instanceof NullExpr) {
             // the search has failed here (there are no valid results
             // that have prevOutput as a prefix), so abandon this node 
@@ -103,7 +117,7 @@ export function* generate(
                     let nextExpr: Expr = cNext;
                     let nextOutput: Output;
                     if (cTarget instanceof TokenExpr) {
-                        nextOutput = addOutput(prevOutput, cTarget);
+                        nextOutput = prevOutput.addOutput(cTarget);
                     } else {
                         nextOutput = prevOutput;
                         if (!(delta instanceof NullExpr)) {

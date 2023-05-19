@@ -1326,7 +1326,7 @@ export class PreTapeGrammar extends UnaryGrammar {
     }
 
     public get id(): string {
-        return `EHIDE(${this.child.id})`;
+        return `Pre(${this.child.id})`;
     }
 
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
@@ -2583,6 +2583,14 @@ export function Query(
         return new LiteralGrammar(key, value);
     });
     return new SequenceGrammar(queryLiterals);
+}
+
+export function PreTape(
+    fromTape: string, 
+    toTape: string, 
+    child: Grammar
+): Grammar {
+    return new PreTapeGrammar(fromTape, toTape, child);
 }
 
 export function infinityProtection(
