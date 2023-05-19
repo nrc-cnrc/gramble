@@ -1,15 +1,14 @@
 import { 
-    constructAlternation, constructPriority,
     CounterStack, DerivEnv, 
     EpsilonExpr, Expr, ExprNamespace, 
-    NullExpr, PriorityExpr, CollectionExpr, 
-    DerivStats, EPSILON, Output, 
-    constructToken, TokenExpr, OutputExpr
+    NullExpr, 
+    DerivStats,  Output, 
+    OutputExpr
 } from "./exprs";
 import { TapeNamespace } from "./tapes";
 import { 
     Gen, GenOptions,
-    msToTime, OPEN_TAPE, shuffleArray, StringDict
+    msToTime, shuffleArray, StringDict
 } from "./util";
 
 /**
@@ -40,8 +39,8 @@ export function* generate(
 
     const startingTime = Date.now();
 
-    let states: [Output, Expr][] = [[EPSILON, expr]];
-    let prev: [Output, Expr] | undefined = undefined;
+    let states: Expr[] = [expr];
+    let prev: Expr | undefined = undefined;
     
     // if we're generating randomly, we store candidates rather than output them immediately
     const candidates: Output[] = [];
@@ -58,11 +57,11 @@ export function* generate(
             break;
         }
 
-        let nexts: [Output, Expr][] = [];
-        let [prevOutput, prevExpr] = prev;
+        let nexts: Expr[] = [];
+        let prevExpr = prev;
 
         env.logDebug("");
-        env.logDebugOutput("prevOutput is", prevOutput);
+        env.logDebugOutput("prevOutput is", prevExpr);
         env.logDebugId("prevExpr is", prevExpr);
 
 
@@ -70,29 +69,28 @@ export function* generate(
             // we found a valid output and there's nothing left
             // we can do on this branch
 
-            env.logDebugOutput("YIELD", prevOutput);
+            env.logDebugOutput("YIELD", prevExpr);
                 
             // if we're random, don't yield immediately, wait
             if (opt.random) {
-                candidates.push(prevOutput);
+                candidates.push(prevExpr);
                 continue;
             }
 
             // if we're not random, yield the result immediately.
-            yield prevOutput.toDenotation();
+            yield prevExpr.toDenotation();
             continue;
         } else if (prevExpr instanceof OutputExpr) {
-            prevOutput = prevOutput.addOutput(prevExpr);
-            env.logDebugOutput("YIELD", prevOutput);
+            env.logDebugOutput("YIELD", prevExpr);
 
             // if we're random, don't yield immediately, wait
             if (opt.random) {
-                candidates.push(prevOutput);
+                candidates.push(prevExpr);
                 continue;
             }
 
             // if we're not random, yield the result immediately.
-            yield prevOutput.toDenotation();
+            yield prevExpr.toDenotation();
             continue;
             
         } else if (prevExpr instanceof NullExpr) {
@@ -100,7 +98,15 @@ export function* generate(
             // that have prevOutput as a prefix), so abandon this node 
             // and move on
             continue;
-        } else if (prevExpr instanceof PriorityExpr || prevExpr instanceof CollectionExpr) {
+        } else {
+            console.log(`calling forward on ${prevExpr.id}`);
+            for (const cNext of prevExpr.forward(env)) {
+                console.log(`received ${cNext.id}`);
+                if (cNext instanceof NullExpr) continue;
+                nexts.push(cNext);
+            }
+
+            /*
             // we've neither found a valid output nor failed; there is 
             // still a possibility of finding an output with prevOutput
             // as its prefix
@@ -137,8 +143,7 @@ export function* generate(
             if (!deltaPushed && !(delta instanceof NullExpr)) {    
                 nexts.push([prevOutput, delta]);
             }
-        } else {
-            throw new Error("Encountered a non-eps, non-null, non-prioritizer as root");
+            */
         }
 
         // if random, shuffle the possibilities to search through next

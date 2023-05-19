@@ -12,7 +12,8 @@ import {
     constructCorrespond, constructNoEps, 
     constructDotStar,
     constructCount,
-    CollectionExpr
+    CollectionExpr,
+    constructTape
 } from "./exprs";
 import { 
     Result,
@@ -92,6 +93,7 @@ export type Grammar = EpsilonGrammar
              | RepeatGrammar
              | NegationGrammar
              | PreTapeGrammar
+             | TapeGrammar
              | HideGrammar
              | MatchFromGrammar
 //             | MatchGrammar
@@ -207,12 +209,13 @@ export abstract class AbstractGrammar extends Component {
         const priorities: [string, number][] = tapeNames.map(t => {
             const joinWeight = this.getTapePriority(t, new StringPairSet(), env);
             const tape = tapeNS.get(t);
-            const priority = joinWeight * tape.vocab.size;
+            const priority = joinWeight * Math.max(tape.vocab.size, 1);
             return [t, priority];
         });
-        return priorities.filter(([t, priority]) => priority >= 0)
+        const result = priorities.filter(([t, priority]) => priority >= 0)
                          .sort((a, b) => b[1] - a[1])
                          .map(([a,_]) => a);
+        return result;
     }
     
     public getTapePriority(
@@ -971,7 +974,11 @@ export class PriorityGrammar extends UnaryGrammar {
         tapeNS: TapeNamespace,
         symbols: ExprNamespace
     ): Expr {
+        console.log(`Constructing priority with tapes ${this.tapePriority}`);
         const childExpr = this.child.constructExpr(tapeNS, symbols);
+        if (this.tapePriority.length == 0) {
+            return childExpr;
+        }
         return constructPriority(this.tapePriority, childExpr);
     }
 }
@@ -1313,6 +1320,47 @@ export class NegationGrammar extends UnaryGrammar {
         return constructNegation(childExpr, new Set(this.child.tapes));
     }
 }
+
+export class TapeGrammar extends UnaryGrammar {
+    public readonly tag = "tape";
+
+    constructor(
+        public tape: string,
+        child: Grammar
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `Pre(${this.child.id})`;
+    }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        return this.child.estimateLength(tapeName, stack, env);
+    }
+
+    public getTapePriority(
+        tapeName: string,
+        symbolsVisited: StringPairSet,
+        env: PassEnv
+    ): number {
+        if (tapeName == this.tape) {
+            return -1;
+        }
+        return super.getTapePriority(tapeName, symbolsVisited, env);
+    }
+
+    public constructExpr(tapeNS: TapeNamespace, symbols: ExprNamespace): Expr {
+        const childExpr = this.child.constructExpr(tapeNS, symbols);
+        return constructTape(this.tape, childExpr);
+    }
+
+}
+
+export function Taper(tape: string, child: Grammar): TapeGrammar {
+    return new TapeGrammar(tape, child);
+}
+
 
 export class PreTapeGrammar extends UnaryGrammar {
     public readonly tag = "pretape";

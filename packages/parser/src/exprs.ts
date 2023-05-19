@@ -15,6 +15,7 @@ import {
 } from "./tapes";
 
 export type Query = TokenExpr | DotExpr;
+
 export interface Output extends Expr {
     toDenotation(): StringDict;
     addOutput(newOutput: Output): Output;
@@ -87,7 +88,7 @@ export class DerivEnv {
         }
     }
 
-    public logDebugOutput(msg: string, output: Output): void {
+    public logDebugOutput(msg: string, output: Expr): void {
         if ((this.opt.verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
             console.log(`${msg} ${JSON.stringify(output.toDenotation())}`);
         }
@@ -321,6 +322,12 @@ export abstract class Expr {
         env: DerivEnv
     ): Derivs;
 
+    public *forward(
+        env: DerivEnv
+    ): Gen<Expr> {
+        yield this;
+    }
+
     /** 
      * Calculates the derivative so that the results are deterministic (or more accurately, so that all returned 
      * transitions are disjoint).
@@ -356,6 +363,10 @@ export abstract class Expr {
     public simplify(): Expr {
         return this;
     }
+
+    public toDenotation(): StringDict {
+        return {};
+    }
 }
 
 /**
@@ -378,13 +389,9 @@ export class EpsilonExpr extends Expr {
         query: Query,
         env: DerivEnv
     ): Derivs { }
-
-    public toDenotation(): StringDict {
-        return {};
-    }
     
     public addOutput(newOutput: Output): Output {
-        return new OutputExpr(this, newOutput);
+        return new OutputExpr(this, newOutput).simplify();
     }
 
     public rename(tapeName: string) {
@@ -523,7 +530,7 @@ export class TokenExpr extends Expr {
     }
 
     public addOutput(newOutput: Output): Output {
-        return new OutputExpr(this, newOutput);
+        return new OutputExpr(this, newOutput).simplify();
     }
 
     public expandStrings(env: DerivEnv): Set<string> {
@@ -1182,6 +1189,10 @@ export abstract class UnaryExpr extends Expr {
     public get id(): string {
         return `${this.constructor.name}(${this.child.id})`;
     }
+
+    public toDenotation(): StringDict {
+        return this.child.toDenotation();
+    }
 }
 
 export class CollectionExpr extends UnaryExpr {
@@ -1217,8 +1228,15 @@ export class CollectionExpr extends UnaryExpr {
         }
     }
 
+    public *forward(env: DerivEnv): Gen<Expr> {
+        console.log(`calling forward on ${this.id}`);
+        const newEnv = env.pushSymbols(this.symbols);
+        for (const cNext of this.child.forward(newEnv)) {
+            yield constructCollection(cNext, this.symbols);
+        }
+    }
+
     public simplify(): Expr {
-        console.log(`simplifying ${this.id}`);
         if (this.child instanceof EpsilonExpr) return this.child;
         if (this.child instanceof NullExpr) return this.child;
         if (this.child instanceof OutputExpr) return this.child;
@@ -1285,69 +1303,6 @@ export class CountExpr extends UnaryExpr {
     }
 }
 
-export class HideExpr extends UnaryExpr {
-
-    constructor(
-        public tapeName: string,
-        child: Expr
-    ) {
-        super(child);
-    }
-
-    public get id(): string {
-        return `Hide_${this.tapeName}(${this.child.id})`;
-    }
-    
-    public delta(
-        tapeName: string,
-        env: DerivEnv
-    ): Expr {
-        if (tapeName == this.tapeName) {
-            // this isn't really our tape, our tape is hidden.  it's just
-            // some unrelated tape with the same name.
-            return EPSILON; 
-        }
-
-        const fromNext = this.child.delta(this.tapeName, env);
-        const toNext = fromNext.delta(tapeName, env);
-        return constructHide(this.tapeName, toNext);
-    }
-
-    public *deriv(
-        query: Query,
-        env: DerivEnv
-    ): Derivs {
-        if (query.tapeName == this.tapeName) {
-            // this isn't really our tape, our tape is hidden.  it's just
-            // some unrelated tape with the same name.
-            return;
-        }
-
-        const globalTapeName = env.getTape(this.tapeName).globalName;
-        for (const [fromResult, fromNext] of this.child.deriv(query, env)) {
-            if (fromNext instanceof NullExpr) {
-                continue;
-            }
-            env.incrStates();
-            env.logDebug(`D^${globalTapeName}_${fromResult} = ${fromNext.id}`);
-            for (const [toResult, toNext] of fromNext.deriv(query, env)) {
-                const wrapped = constructHide(this.tapeName, toNext);
-                yield [toResult, wrapped];
-            }
-        }
-    }
-
-    public simplify(): Expr {
-        if (this.child instanceof EpsilonExpr) return this.child;
-        if (this.child instanceof NullExpr) return this.child;
-        return this;
-    }
-}
-
-export function constructHide(tapeName: string, child: Expr): Expr {
-    return new HideExpr(tapeName, child).simplify();
-}
-
 /**
  * OutputExpr is a holder for outputs.  For the purpose of delta/deriv
  * it acts like an epsilon -- it's all material that's "finished".
@@ -1362,7 +1317,12 @@ export class OutputExpr extends Expr implements Output {
     }
 
     public get id(): string {
-        return `OUT`;
+        let results = [];
+        const denotation = this.toDenotation();
+        for (const [k, v] of Object.entries(denotation)) {
+            results.push(`${k}:${v}`)
+        }
+        return "O[" + results.join("+") + "]";
     }
 
     public delta(tapeName: string, env: DerivEnv): Expr {
@@ -1373,8 +1333,8 @@ export class OutputExpr extends Expr implements Output {
         return;
     }
 
-    public addOutput(newOutput: Output): OutputExpr {
-        return new OutputExpr(this, newOutput);
+    public addOutput(newOutput: Output): Output {
+        return new OutputExpr(this, newOutput).simplify();
     }
 
     public toDenotation(): StringDict {
@@ -1401,6 +1361,83 @@ export class OutputExpr extends Expr implements Output {
                  //: concatStringDict(result, unitDenotation);
         return result;
     }
+
+    public simplify(): Output {
+        if (this.child2 instanceof EpsilonExpr) return this.child1;
+        if (this.child2 instanceof TokenExpr &&
+            this.child2.text == "") return this.child1;
+        return this;
+    }
+}
+
+export class TapeExpr extends UnaryExpr {
+
+    constructor(
+        public tape: string,
+        child: Expr,
+        public output: Output = EPSILON
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `T_${this.tape}(${this.child.id})`;
+    }
+
+    public delta(tapeName: string, env: DerivEnv): Expr {
+        const cNext = this.child.delta(tapeName, env);
+        return constructTape(this.tape, cNext, this.output);
+    }
+
+    public *deriv(query: Query, env: DerivEnv): Derivs {
+        for (const [cResult, cNext] of this.child.deriv(query, env)) {
+            const wrapped = constructTape(this.tape, cNext, this.output);
+            yield [cResult, wrapped];
+        }
+    }
+
+    public *forward(env: DerivEnv): Gen<Expr> {
+
+        env.logDebug(`Calling forward on ${this.id}`);
+        const cResults: [Output, Expr][] = [];
+        
+        // do a delta
+        const deltaResult = constructToken(this.tape, "");
+        const deltaNext = this.child.delta(this.tape, env);
+        cResults.push([deltaResult, deltaNext]);
+
+        // do a deriv
+        const query = constructDot(this.tape);
+        cResults.push(...this.child.deriv(query, env));
+
+        env.logDebug(`\nD_${this.tape}`);
+        // for each of those results, add the output to this.output,
+        // call .forward() on each next, wrap and yield
+        for (const [cResult, cNext] of cResults) {
+            env.incrStates();
+            
+            const newOutput = this.output.addOutput(cResult);
+            env.logDebug(`  D_${cResult.id} = ${cNext.id}, ${newOutput.id}`);
+                
+            for (const nNext of cNext.forward(env)) {
+                yield constructTape(this.tape, nNext, newOutput);
+            }
+        }
+    }
+
+    public simplify(): Expr {
+        if (this.child instanceof OutputExpr) {
+            return this.child.addOutput(this.output);
+        }
+        if (this.child instanceof EpsilonExpr) return this.output;
+        if (this.child instanceof NullExpr) return this.child;
+        return this;
+    }
+
+}
+
+export function constructTape(tape: string, child: Expr, output?: Output): Expr {
+    return new TapeExpr(tape, child, output).simplify();
 }
 
 export class PreTapeExpr extends UnaryExpr {
@@ -1493,7 +1530,6 @@ export class PreTapeExpr extends UnaryExpr {
     }
 
     public simplify(): Expr {
-        console.log(`simplifying ${this.id}`);
         if (this.child instanceof EpsilonExpr) return this.output;
         if (this.child instanceof NullExpr) return this.child;
         return this;
@@ -1519,7 +1555,7 @@ export class PriorityExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `${this.tapes}:${this.child.id}`;
+        return `P_${this.tapes}:${this.child.id}`;
     }
 
     public delta(
