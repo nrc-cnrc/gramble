@@ -17,12 +17,13 @@ import {
 export type Query = TokenExpr | DotExpr;
 
 export interface Output extends Expr {
-    toDenotation(): StringDict;
+    getOutputs(): StringDict;
     addOutput(newOutput: Output): Output;
 }
 
 export class DerivStats {
     public statesVisited: number = 0;
+    public indentation: number = 0;
 }
 
 export type Deriv = [TokenExpr | EpsilonExpr, Expr];
@@ -78,6 +79,27 @@ export class DerivEnv {
         this.stats.statesVisited++;
     }
 
+    public indentLog(indent: number): void {
+        this.stats.indentation += indent;
+    }
+
+    public logIndent(msg: string): void {
+        const indent = "  ".repeat(this.stats.indentation);
+        this.logDebug(indent + msg);
+    }
+
+    public logDelta(tapeName: string, next: Expr): void {
+        if ((this.opt.verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+            this.logIndent(`└ d_${tapeName} = ${next.id}`);
+        }
+    }
+    
+    public logDeriv(result: Expr, next: Expr): void {
+        if ((this.opt.verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+            this.logIndent(`└ D_${result.id} = ${next.id}`);
+        }
+    }
+
     public logDebug(msg: string): void {
         logDebug(this.opt.verbose, msg);
     }
@@ -90,7 +112,7 @@ export class DerivEnv {
 
     public logDebugOutput(msg: string, output: Expr): void {
         if ((this.opt.verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
-            console.log(`${msg} ${JSON.stringify(output.toDenotation())}`);
+            console.log(`${msg} ${JSON.stringify(output.getOutputs())}`);
         }
     }
 
@@ -348,7 +370,7 @@ export abstract class Expr {
         return this;
     }
 
-    public toDenotation(): StringDict {
+    public getOutputs(): StringDict {
         return {};
     }
 }
@@ -509,7 +531,7 @@ export class TokenExpr extends Expr {
         return `${this.tapeName}:${this.text}`;
     }
 
-    public toDenotation(): StringDict {
+    public getOutputs(): StringDict {
         return { [this.tapeName] : this.text };
     }
 
@@ -1172,8 +1194,8 @@ export abstract class UnaryExpr extends Expr {
         return `${this.constructor.name}(${this.child.id})`;
     }
 
-    public toDenotation(): StringDict {
-        return this.child.toDenotation();
+    public getOutputs(): StringDict {
+        return this.child.getOutputs();
     }
 }
 
@@ -1300,7 +1322,7 @@ export class OutputExpr extends Expr implements Output {
 
     public get id(): string {
         let results = [];
-        const denotation = this.toDenotation();
+        const denotation = this.getOutputs();
         for (const [k, v] of Object.entries(denotation)) {
             results.push(`${k}:${v}`)
         }
@@ -1319,25 +1341,25 @@ export class OutputExpr extends Expr implements Output {
         return new OutputExpr(this, newOutput).simplify();
     }
 
-    public toDenotation(): StringDict {
+    public getOutputs(): StringDict {
         let result: StringDict = {};
         let current: Output = this;
         while (current instanceof OutputExpr) {
             //if (DIRECTION_LTR) {
-                const unitDenotation = current.child2.toDenotation();
+                const unitDenotation = current.child2.getOutputs();
                 result = concatStringDict(unitDenotation, result);
                 current = current.child1;
                 continue;
             //}
 
-            //const unitDenotation = current.child1.toDenotation();
+            //const unitDenotation = current.child1.getOutputs();
             //result = concatStringDict(result, unitDenotation);
             //current = current.child2;
         }
 
         // now we're at the last current, and it's not a ConcatExpr, get its
         // denotation, add it on, and we're done
-        const unitDenotation = current.toDenotation();
+        const unitDenotation = current.getOutputs();
         result = //DIRECTION_LTR ?
                  concatStringDict(unitDenotation, result) 
                  //: concatStringDict(result, unitDenotation);
@@ -1391,19 +1413,24 @@ export class CursorExpr extends UnaryExpr {
         const query = constructDot(this.tape);
         cResults.push(...this.child.deriv(query, env));
 
-        env.logDebug(`\nD_${this.tape}`);
         // for each of those results, add the output to this.output,
         // call .forward() on each next, wrap and yield
         for (const [cResult, cNext] of disjoin(cResults)) {
             env.incrStates();
             
             const newOutput = this.output.addOutput(cResult);
-            env.logDebug(`  D_${cResult.id} = ${cNext.id}, ${newOutput.id}`);
+            if (cResult instanceof TokenExpr && cResult.text == "") {
+                env.logDelta(cResult.tapeName, cNext);
+            } else {
+                env.logDeriv(cResult, cNext);
+            }
                 
+            env.indentLog(1);
             for (const [nForward, nNext] of cNext.forward(env)) {
                 const wrapped = constructCursor(this.tape, nNext, newOutput);
                 yield [true, wrapped];
             }
+            env.indentLog(-1);
         }
     }
 
@@ -1414,6 +1441,12 @@ export class CursorExpr extends UnaryExpr {
         if (this.child instanceof EpsilonExpr) return this.output;
         if (this.child instanceof NullExpr) return this.child;
         return this;
+    }
+
+    public getOutputs(): StringDict {
+        const myOutput = this.output.getOutputs();
+        const childOutput = this.child.getOutputs();
+        return concatStringDict(myOutput, childOutput);
     }
 
 }
@@ -1484,7 +1517,7 @@ export class PreTapeExpr extends UnaryExpr {
                     continue;
                 }
                 env.incrStates();
-                env.logDebug(`D_Pre(${t1result.id}) = ${t1next.id}`);
+                env.logDeriv(t1result, t1next);
                 if (t1result instanceof EpsilonExpr) {
                     // if we didn't go anywhere on tape1, don't query on
                     // tape2, just treat it as going nowhere on tape2
@@ -1496,7 +1529,7 @@ export class PreTapeExpr extends UnaryExpr {
                 
                 const newOutput = this.output.addOutput(t1result);
                 for (const [t2result, t2next] of t1next.deriv(query, env)) {
-                    env.logDebug(`D_Post(${t2result.id}) = ${t2next.id}`);
+                    env.logDeriv(t2result, t2next);
                     const wrapped = constructPreTape(this.tape1, this.tape2, t2next, newOutput);
                     yield [t2result, wrapped];
                 }
@@ -1551,7 +1584,7 @@ export class PriorityExpr extends UnaryExpr {
         } 
 
         const cNext = this.child.delta(tapeName, env);
-        if (tapeName == OPEN_TAPE) env.logDebug(`d^${tapeName} is ${cNext.id}`);
+        if (tapeName == OPEN_TAPE) env.logDelta(tapeName, cNext);
         if (remainingTapes.length == 0 && (!(cNext instanceof NullExpr || cNext instanceof EpsilonExpr))) {
             if (cNext instanceof EmbedExpr) {
                 const referent = cNext.child;
@@ -1579,8 +1612,7 @@ export class PriorityExpr extends UnaryExpr {
             if (!(cNext instanceof NullExpr)) {
                 if (query.tapeName == OPEN_TAPE) {
                     env.incrStates();
-                    const cResultStr = (cResult instanceof TokenExpr) ? cResult.text : "";
-                    env.logDebug(`D^${query.tapeName}_${cResultStr} is ${cNext.id}`);
+                    env.logDeriv(cResult, cNext);
                 }
                 const wrapped = constructPriority(tapes, cNext);
                 yield [cResult, wrapped];

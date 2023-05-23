@@ -316,4 +316,23 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testGrammar(grammar, expectedResults);
     }); 
+    
+    describe('41. t1:a|A + t2:b|B + t3:c|C', function() {
+        const grammar = Seq(Uni(t1("a"), t1("A")), 
+                            Uni(t2("b"), t2("B")), 
+                            Uni(t3("c"), t3("C")));
+        testHasTapes(grammar, ["t1", "t2", "t3"]);
+        const expectedResults: StringDict[] = [
+            {t1: "A", t2: "B", t3: "C"},
+            {t1: "a", t2: "B", t3: "C"},
+            {t1: "A", t2: "b", t3: "C"},
+            {t1: "a", t2: "b", t3: "C"},
+            {t1: "A", t2: "B", t3: "c"},
+            {t1: "a", t2: "B", t3: "c"},
+            {t1: "A", t2: "b", t3: "c"},
+            {t1: "a", t2: "b", t3: "c"}
+        ];
+        testGrammar(grammar, expectedResults);
+    });
+
 });

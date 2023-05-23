@@ -366,7 +366,7 @@ export class EpsilonGrammar extends AtomicGrammar {
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = [ 
-                DUMMY_TAPE
+                //DUMMY_TAPE
             ];
         }
         return this._tapes;
@@ -394,7 +394,7 @@ export class NullGrammar extends AtomicGrammar {
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = [ 
-                DUMMY_TAPE
+                //DUMMY_TAPE
             ];
         }
         return this._tapes;

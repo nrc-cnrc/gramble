@@ -78,7 +78,7 @@ export function* generate(
             }
 
             // if we're not random, yield the result immediately.
-            yield prevExpr.toDenotation();
+            yield prevExpr.getOutputs();
             continue;
         } else if (prevExpr instanceof OutputExpr) {
             env.logDebugOutput("YIELD", prevExpr);
@@ -90,7 +90,7 @@ export function* generate(
             }
 
             // if we're not random, yield the result immediately.
-            yield prevExpr.toDenotation();
+            yield prevExpr.getOutputs();
             continue;
             
         } else if (prevExpr instanceof NullExpr) {
@@ -104,6 +104,7 @@ export function* generate(
                     throw new Error(`Unhandled forward: ${cNext.id}`);
                 }
                 if (cNext instanceof NullExpr) continue;
+                env.logDebugOutput("->", cNext);
                 nexts.push(cNext);
             }
 
@@ -172,5 +173,5 @@ export function* generate(
 
     const candidateIndex = Math.floor(Math.random()*candidates.length);
     const candidateOutput = candidates[candidateIndex];
-    yield candidateOutput.toDenotation();
+    yield candidateOutput.getOutputs();
 } 
