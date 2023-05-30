@@ -100,10 +100,12 @@ export function* generate(
             continue;
         } else {
             for (const [cHandled, cNext] of prevExpr.forward(env)) {
-                if (!cHandled) {
+                
+                if (cNext instanceof NullExpr) continue;
+                if (!(cNext instanceof EpsilonExpr || cNext instanceof OutputExpr) &&
+                        !cHandled) {
                     throw new Error(`Unhandled forward: ${cNext.id}`);
                 }
-                if (cNext instanceof NullExpr) continue;
                 env.logDebugOutput("->", cNext);
                 nexts.push(cNext);
             }

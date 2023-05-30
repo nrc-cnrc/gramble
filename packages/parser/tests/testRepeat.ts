@@ -33,7 +33,6 @@ describe(`${testSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    /*
     describe('1. Repeat 0-1 Os: t1:o{0,1}', function() {
         const grammar = Rep(t1("o"), 0, 1);
         testHasTapes(grammar, ["t1"]);
@@ -368,10 +367,11 @@ describe(`${testSuiteName(module)}`, function() {
             {t2: 'i'},           {t2: 'ii'},           {t2: 'iii'},
         ];
         testGrammar(grammar, expectedResults,
-                    DEFAULT, DEFAULT, DEFAULT, DEFAULT,
+                    VERBOSE_DEBUG, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
+    /*
     describe('31a. (t1:h | t2:i)*', function() {
         let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
         grammar = Count({t1:1,t2:1}, grammar);
@@ -965,7 +965,6 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammarWithVocab, expectedResults);
     });
 
-    */
     describe('60. (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x (vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
         const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
@@ -983,7 +982,6 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammarWithVocab, expectedResults, VERBOSE_DEBUG);
     });
 
-    /*
     describe('60a-1. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ⨝ t1:x + t2:ee ' +
              '(vocab hx/hex)', function() {
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));

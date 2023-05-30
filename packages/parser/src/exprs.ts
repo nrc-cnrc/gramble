@@ -1417,18 +1417,20 @@ export class CursorExpr extends UnaryExpr {
         // call .forward() on each next, wrap and yield
         for (const [cResult, cNext] of disjoin(cResults)) {
             env.incrStates();
-            
             const newOutput = this.output.addOutput(cResult);
             if (cResult instanceof TokenExpr && cResult.text == "") {
                 env.logDelta(cResult.tapeName, cNext);
             } else {
                 env.logDeriv(cResult, cNext);
             }
+
+            const cHandled = cResult instanceof TokenExpr && cResult.text != '';
                 
             env.indentLog(1);
-            for (const [nForward, nNext] of cNext.forward(env)) {
+            for (const [nHandled, nNext] of cNext.forward(env)) {
+                
                 const wrapped = constructCursor(this.tape, nNext, newOutput);
-                yield [true, wrapped];
+                yield [cHandled || nHandled, wrapped];
             }
             env.indentLog(-1);
         }
@@ -1742,6 +1744,66 @@ export function constructShort(child: Expr): Expr {
         return child;
     }
     return new ShortExpr(child);
+}
+
+class NewRepeatExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr,
+        public minReps: number = 0,
+        public maxReps: number = Infinity
+    ) { 
+        super(child);
+    }
+
+    public get id(): string {
+        if (this.minReps <= 0 && this.maxReps == Infinity) {
+            return `(${this.child.id})*`;
+        }
+        if (this.maxReps == Infinity) {
+            return `(${this.child.id}){${this.minReps}+}`;
+        }
+        return `(${this.child.id}){${this.minReps},${this.maxReps}}`;
+    }
+
+    
+    public delta(
+        tapeName: string,
+        env: DerivEnv
+    ): Expr {
+        const newChild = this.child.delta(tapeName, env);
+        return constructRepeat(newChild, this.minReps, this.maxReps);
+    }
+
+    public *deriv(
+        query: Query,
+        env: DerivEnv
+    ): Derivs {
+        const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
+        const deltaNext = this.child.delta(query.tapeName, env);
+        const oneLessDelta = constructRepeat(deltaNext, this.minReps-1, this.maxReps-1);
+
+        let yielded: boolean = false;
+
+        for (const [cResult, cNext] of this.child.deriv(query, env)) {
+            const wrapped = constructPrecede(oneLessDelta, 
+                            constructPrecede(cNext, oneLess));
+            yield [cResult, wrapped];
+        }
+    }
+
+    public simplify(): Expr {
+        if (this.maxReps < 0) return NULL;
+        if (this.minReps > this.maxReps) return NULL;
+        if (this.maxReps == 0) return EPSILON;
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) {
+            if (this.minReps <= 0) return EPSILON;
+            return this.child;
+        }
+        return this;
+    }
+
 }
 
 class RepeatExpr extends UnaryExpr {
@@ -2333,7 +2395,7 @@ export function constructDotStar(tape: string): Expr {
     if (child instanceof DotExpr && minReps <= 0 && maxReps == Infinity) {
         return new DotStarExpr(child.tapeName);
     }
-    return new RepeatExpr(child, minReps, maxReps).simplify();
+    return new NewRepeatExpr(child, minReps, maxReps).simplify();
 }
 
 export function constructUniverse(
