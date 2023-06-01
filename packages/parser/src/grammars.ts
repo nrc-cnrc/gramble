@@ -13,7 +13,8 @@ import {
     constructDotStar,
     constructCount,
     CollectionExpr,
-    constructCursor
+    constructCursor,
+    constructStar
 } from "./exprs";
 import { 
     Result,
@@ -1281,6 +1282,9 @@ export class RepeatGrammar extends UnaryGrammar {
         symbols: ExprNamespace
     ): Expr {
         const childExpr = this.child.constructExpr(tapeNS, symbols);
+        if (this.minReps == 0 && this.maxReps == Infinity) {
+            return constructStar(childExpr);
+        }
         return constructRepeat(childExpr, this.minReps, this.maxReps);
     }
 }

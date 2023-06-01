@@ -355,23 +355,6 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, expectedResults);
     });
 
-    describe('31. (t1:h | t2:i)*', function() {
-        let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
-        grammar = Count({t1:3,t2:3}, grammar);
-        const expectedResults: StringDict[] = [
-            {},
-            {t1: 'h'},           {t1: 'hh'},           {t1: 'hhh'},
-            {t1: 'h', t2:'i'},   {t1: 'h', t2:'ii'},   {t1: 'h', t2:'iii'},
-            {t1: 'hh', t2:'i'},  {t1: 'hh', t2:'ii'},  {t1: 'hh', t2:'iii'},
-            {t1: 'hhh', t2:'i'}, {t1: 'hhh', t2:'ii'}, {t1: 'hhh', t2:'iii'},
-            {t2: 'i'},           {t2: 'ii'},           {t2: 'iii'},
-        ];
-        testGrammar(grammar, expectedResults,
-                    VERBOSE_DEBUG, DEFAULT, DEFAULT, DEFAULT,
-                    WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
-    });
-
-    /*
     describe('31a. (t1:h | t2:i)*', function() {
         let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
         grammar = Count({t1:1,t2:1}, grammar);
@@ -383,6 +366,37 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testGrammar(grammar, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
+                    WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
+    });
+
+    describe('31b. (t1:h | t2:i)* (count 2)', function() {
+        let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
+        grammar = Count({t1:2,t2:2}, grammar);
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: 'h'},           {t1: 'hh'},           
+            {t1: 'h', t2:'i'},   {t1: 'h', t2:'ii'},   
+            {t1: 'hh', t2:'i'},  {t1: 'hh', t2:'ii'},  
+            {t2: 'i'},           {t2: 'ii'},         
+        ];
+        testGrammar(grammar, expectedResults,
+                    VERBOSE_DEBUG, DEFAULT, DEFAULT, DEFAULT,
+                    WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
+    });
+    
+    describe('31c. (t1:h | t2:i)* (count 3)', function() {
+        let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
+        grammar = Count({t1:3,t2:3}, grammar);
+        const expectedResults: StringDict[] = [
+            {},
+            {t1: 'h'},           {t1: 'hh'},           {t1: 'hhh'},
+            {t1: 'h', t2:'i'},   {t1: 'h', t2:'ii'},   {t1: 'h', t2:'iii'},
+            {t1: 'hh', t2:'i'},  {t1: 'hh', t2:'ii'},  {t1: 'hh', t2:'iii'},
+            {t1: 'hhh', t2:'i'}, {t1: 'hhh', t2:'ii'}, {t1: 'hhh', t2:'iii'},
+            {t2: 'i'},           {t2: 'ii'},           {t2: 'iii'},
+        ];
+        testGrammar(grammar, expectedResults,
+                    SILENT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
@@ -465,7 +479,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'bababababa'},
             {t1: 'babababababa'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
     });
 
     describe('39. (t1:h+t2:h){2}', function() {
@@ -3244,6 +3258,4 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
     });
-
-    */
 });

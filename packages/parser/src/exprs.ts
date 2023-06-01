@@ -865,9 +865,23 @@ export class UnionExpr extends Expr {
         query: Query,
         env: DerivEnv
     ): Derivs {
+        const results: Deriv[] = [];
         for (const child of this.children) {
-            yield* child.deriv(query, env);
+            results.push(...child.deriv(query, env));
         }
+        yield* disjoin(results);
+    }
+
+    public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
+        let handled: boolean = false;
+        let results: Expr[] = [];
+        for (const child of this.children) {
+            for (const [cHandled, cNext] of child.forward(env)) {
+                handled ||= cHandled;
+                results.push(cNext);
+            }
+        }
+        yield [handled, constructAlternation(...results)];
     }
     
     public simplify(): Expr {
@@ -1746,24 +1760,16 @@ export function constructShort(child: Expr): Expr {
     return new ShortExpr(child);
 }
 
-class NewRepeatExpr extends UnaryExpr {
+class StarExpr extends UnaryExpr {
 
     constructor(
-        child: Expr,
-        public minReps: number = 0,
-        public maxReps: number = Infinity
+        child: Expr
     ) { 
         super(child);
     }
 
     public get id(): string {
-        if (this.minReps <= 0 && this.maxReps == Infinity) {
-            return `(${this.child.id})*`;
-        }
-        if (this.maxReps == Infinity) {
-            return `(${this.child.id}){${this.minReps}+}`;
-        }
-        return `(${this.child.id}){${this.minReps},${this.maxReps}}`;
+         return `(${this.child.id})*`;
     }
 
     
@@ -1772,19 +1778,16 @@ class NewRepeatExpr extends UnaryExpr {
         env: DerivEnv
     ): Expr {
         const newChild = this.child.delta(tapeName, env);
-        return constructRepeat(newChild, this.minReps, this.maxReps);
+        return constructStar(newChild);
     }
 
     public *deriv(
         query: Query,
         env: DerivEnv
     ): Derivs {
-        const oneLess = constructRepeat(this.child, this.minReps-1, this.maxReps-1);
+        const oneLess = constructStar(this.child);
         const deltaNext = this.child.delta(query.tapeName, env);
-        const oneLessDelta = constructRepeat(deltaNext, this.minReps-1, this.maxReps-1);
-
-        let yielded: boolean = false;
-
+        const oneLessDelta = constructStar(deltaNext);
         for (const [cResult, cNext] of this.child.deriv(query, env)) {
             const wrapped = constructPrecede(oneLessDelta, 
                             constructPrecede(cNext, oneLess));
@@ -1793,17 +1796,15 @@ class NewRepeatExpr extends UnaryExpr {
     }
 
     public simplify(): Expr {
-        if (this.maxReps < 0) return NULL;
-        if (this.minReps > this.maxReps) return NULL;
-        if (this.maxReps == 0) return EPSILON;
         if (this.child instanceof EpsilonExpr) return this.child;
-        if (this.child instanceof NullExpr) {
-            if (this.minReps <= 0) return EPSILON;
-            return this.child;
-        }
+        if (this.child instanceof NullExpr) return EPSILON;
         return this;
     }
 
+}
+
+export function constructStar(child: Expr): Expr {
+    return new StarExpr(child).simplify();
 }
 
 class RepeatExpr extends UnaryExpr {
@@ -1866,6 +1867,21 @@ class RepeatExpr extends UnaryExpr {
         }
         return this;
     }
+}
+
+
+/**
+ * Creates A{min,max} from A.
+ */
+export function constructRepeat(
+    child: Expr, 
+    minReps: number = 0, 
+    maxReps: number = Infinity
+): Expr {
+    if (child instanceof DotExpr && minReps <= 0 && maxReps == Infinity) {
+        return new DotStarExpr(child.tapeName);
+    }
+    return new RepeatExpr(child, minReps, maxReps).simplify();
 }
 
 class TapeNsExpr extends UnaryExpr {
@@ -2382,20 +2398,6 @@ export function constructNegation(
 
 export function constructDotStar(tape: string): Expr {
     return new DotStarExpr(tape);
-}
-
-/**
- * Creates A{min,max} from A.
- */
- export function constructRepeat(
-    child: Expr, 
-    minReps: number = 0, 
-    maxReps: number = Infinity
-): Expr {
-    if (child instanceof DotExpr && minReps <= 0 && maxReps == Infinity) {
-        return new DotStarExpr(child.tapeName);
-    }
-    return new NewRepeatExpr(child, minReps, maxReps).simplify();
 }
 
 export function constructUniverse(
