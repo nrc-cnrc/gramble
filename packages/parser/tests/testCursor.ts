@@ -1,6 +1,6 @@
 
 import {
-    Epsilon, Grammar, Cursor, Seq,
+    Epsilon, Grammar, Cursor, Seq, Collection, Embed,
 } from "../src/grammars";
 
 import {
@@ -10,6 +10,7 @@ import {
 } from "./testUtil";
 
 import {
+    SILENT,
     VERBOSE_DEBUG
 } from "../src/util";
 
@@ -129,6 +130,24 @@ describe(`${testSuiteName(module)}`, function() {
         grammar = Cursor(["t3", "t2", "t1"], grammar);
         testHasTapes(grammar, ["t1", "t2", "t3"]);
         testGrammar(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
+    });
+
+    describe('7a. Cursor inside an embed', function() {
+        let grammar: Grammar = Collection({
+            "a": Cursor("t1", t1("hello")),
+            "b": Embed("a")
+        });
+        testHasTapes(grammar, ["t1"], "b");
+        testGrammar(grammar, [{t1: 'hello'}], SILENT, "b");
+    });
+
+    describe('7b. Cursor inside an embed, used in multi-tape context', function() {
+        let grammar: Grammar = Collection({
+            "a": Cursor("t1", t1("hello")),
+            "b": Cursor("t2", Seq(Embed("a"), t2("world")))
+        });
+        testHasTapes(grammar, ["t1", "t2"], "b");
+        testGrammar(grammar, [{t1: 'hello', t2: 'world'}], SILENT, "b");
     });
 
 });

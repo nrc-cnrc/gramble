@@ -293,7 +293,6 @@ export class Interpreter {
         opt: GenOptions
     ): Expr {
         const env = new PassEnv().pushSymbols(this.grammar.symbols);
-        const symbols = new ExprNamespace();
         const qualifiedName = this.resolveName(symbolName);
         
         let targetGrammar: Grammar = this.grammar.selectSymbol(qualifiedName);
@@ -313,12 +312,11 @@ export class Interpreter {
         targetGrammar = infinityProtection(targetGrammar, tapePriority, symbolName, opt.maxChars, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);
 
-        return targetGrammar.constructExpr(this.tapeNS, symbols);  
+        return targetGrammar.constructExpr(this.tapeNS);  
     }
 
     public runTests(): void {
-        const exprNS = new ExprNamespace();
-        const expr = this.grammar.constructExpr(this.tapeNS, exprNS);
+        const expr = this.grammar.constructExpr(this.tapeNS);
         const symbols = expr instanceof CollectionExpr
                       ? expr.symbols
                       : {};

@@ -100,8 +100,7 @@ export class ExecuteTests extends GrammarPass {
             targetGrammar = new PriorityGrammar(targetGrammar, tapePriority);
         }
 
-        const symbols = new ExprNamespace(this.symbolTable);
-        let expr = targetGrammar.constructExpr(this.tapeNS, symbols);
+        let expr = targetGrammar.constructExpr(this.tapeNS);
         expr = constructCollection(expr, this.symbolTable);
         return [...generate(expr, this.tapeNS, opt)];
 

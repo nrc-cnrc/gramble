@@ -1135,6 +1135,20 @@ class JoinExpr extends BinaryExpr {
         return this.child;
     }
 
+    public *forward(env: DerivEnv): Gen<[boolean,Expr]> {
+        if (env.stack.exceedsMax(this.symbolName)) {
+            return;
+        }
+
+        const newEnv = env.addSymbol(this.symbolName);
+        let child = this.getChild(env);
+
+        for (const [cHandled, cNext] of child.forward(newEnv)) {
+            const wrapped = constructEmbed(this.symbolName, cNext);
+            yield [cHandled, wrapped];
+        }
+    }
+
     public delta(
         tapeName: string,
         env: DerivEnv
@@ -1144,7 +1158,7 @@ class JoinExpr extends BinaryExpr {
         }
         const newEnv = env.addSymbol(this.symbolName);
         const cNext = this.getChild(env).delta(tapeName, newEnv);
-        return constructEmbed(this.symbolName, cNext, env.symbolNS);
+        return constructEmbed(this.symbolName, cNext);
     }
 
     public *deriv(
@@ -1161,27 +1175,25 @@ class JoinExpr extends BinaryExpr {
 
         for (const [cResult, cNext] of 
                         child.deriv(query, newEnv)) {
-            const wrapped = constructEmbed(this.symbolName, cNext, env.symbolNS);
+            const wrapped = constructEmbed(this.symbolName, cNext);
             yield [cResult, wrapped];
         }
+    }
+    
+    public simplify(): Expr {
+        if (this.child === undefined) return this;
+        if (this.child instanceof NullExpr) return this.child;
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof OutputExpr) return this.child;
+        return this;
     }
 }
 
 export function constructEmbed(
     symbolName: string, 
-    child: Expr | undefined = undefined,
-    symbolNS: ExprNamespace,
+    child: Expr | undefined = undefined
 ): Expr {
-    const symbol = symbolNS.attemptGet(symbolName);
-    if (symbol != undefined && 
-            (symbol instanceof EpsilonExpr || symbol instanceof NullExpr)) {
-        return symbol;
-    }
-    if (child != undefined && 
-        (child instanceof EpsilonExpr || child instanceof NullExpr)) {
-        return child;
-    }
-    return new EmbedExpr(symbolName, child);
+    return new EmbedExpr(symbolName, child).simplify();
 }
 
 /**
@@ -1636,10 +1648,10 @@ export class PriorityExpr extends UnaryExpr {
         }
     }
 
-    public *next(env: DerivEnv): Gen<[boolean,Expr]> {
+    public *forward(env: DerivEnv): Gen<[boolean,Expr]> {
         for (const [cHandled, cNext] of this.child.forward(env)) {
             const wrapped = constructPriority(this.tapes, cNext);
-            yield [cHandled, cNext];
+            yield [cHandled, wrapped];
         }
     }
 
