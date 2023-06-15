@@ -7,7 +7,9 @@ import {
     Namespace,
     StringDict,
     concatStringDict,
-    OPEN_TAPE
+    OPEN_TAPE,
+    outputProduct,
+    flatten
 } from "./util";
 import { 
     Tape, TapeNamespace, 
@@ -15,11 +17,6 @@ import {
 } from "./tapes";
 
 export type Query = TokenExpr | DotExpr;
-
-export interface Output extends Expr {
-    getOutputs(): StringDict;
-    addOutput(newOutput: Output): Output;
-}
 
 export class DerivStats {
     public statesVisited: number = 0;
@@ -370,8 +367,8 @@ export abstract class Expr {
         return this;
     }
 
-    public getOutputs(): StringDict {
-        return {};
+    public getOutputs(): StringDict[] {
+        return [{}];
     }
 }
 
@@ -396,9 +393,10 @@ export class EpsilonExpr extends Expr {
         env: DerivEnv
     ): Derivs { }
     
+    /*
     public addOutput(newOutput: Output): Output {
         return new OutputExpr(this, newOutput).simplify();
-    }
+    } */
 
     public rename(tapeName: string) {
         return this;
@@ -531,13 +529,14 @@ export class TokenExpr extends Expr {
         return `${this.tapeName}:${this.text}`;
     }
 
-    public getOutputs(): StringDict {
-        return { [this.tapeName] : this.text };
+    public getOutputs(): StringDict[] {
+        return [{ [this.tapeName] : this.text }];
     }
 
+    /*
     public addOutput(newOutput: Output): Output {
         return new OutputExpr(this, newOutput).simplify();
-    }
+    } */
 
     public expandStrings(env: DerivEnv): Set<string> {
         return new Set([this.text]);
@@ -839,6 +838,22 @@ class ConcatExpr extends BinaryExpr {
         return this;
     }
 
+    public getOutputs(): StringDict[] {
+        let results: StringDict[] = [{}];
+        let current: Expr = this;
+        while (current instanceof ConcatExpr) {
+            const unitDenotation = current.child2.getOutputs();
+            results = outputProduct(unitDenotation, results);
+            current = current.child1;
+        }
+
+        // now we're at the last current, and it's not a ConcatExpr, get its
+        // denotation, add it on, and we're done
+        const unitDenotation = current.getOutputs();
+        results = outputProduct(unitDenotation, results) 
+        return results;
+    }
+
 }
 
 export class UnionExpr extends Expr {
@@ -887,18 +902,32 @@ export class UnionExpr extends Expr {
     public simplify(): Expr {
         const newChildren: Expr[] = [];
         let foundEpsilon: boolean = false;
+        const newOutputs: Expr[] = [];
         for (const child of this.children) {
             if (child instanceof NullExpr) continue;
             if (child instanceof EpsilonExpr) {
                 if (foundEpsilon) continue;
                 foundEpsilon = true;
             }
+            if (child instanceof OutputExpr) {
+                newOutputs.push(child.child);
+                continue;
+            }
             newChildren.push(child);
+        }
+
+        if (newOutputs.length > 0) {
+            const alt = constructAlternation(...newOutputs);
+            newChildren.push(new OutputExpr(alt));
         }
 
         if (newChildren.length == 0) return NULL;
         if (newChildren.length == 1) return newChildren[0];
         return new UnionExpr(newChildren);
+    }
+
+    public getOutputs(): StringDict[] {
+        return flatten(this.children.map(c => c.getOutputs()));
     }
 }
 
@@ -1220,7 +1249,7 @@ export abstract class UnaryExpr extends Expr {
         return `${this.constructor.name}(${this.child.id})`;
     }
 
-    public getOutputs(): StringDict {
+    public getOutputs(): StringDict[] {
         return this.child.getOutputs();
     }
 }
@@ -1337,13 +1366,12 @@ export class CountExpr extends UnaryExpr {
  * OutputExpr is a holder for outputs.  For the purpose of delta/deriv
  * it acts like an epsilon -- it's all material that's "finished".
  */
-export class OutputExpr extends Expr implements Output {
+export class OutputExpr extends UnaryExpr {
 
     constructor(
-        public child1: Output,
-        public child2: Output
+        child: Expr
     ) {
-        super();
+        super(child);
     }
 
     public get id(): string {
@@ -1363,39 +1391,19 @@ export class OutputExpr extends Expr implements Output {
         return;
     }
 
-    public addOutput(newOutput: Output): Output {
-        return new OutputExpr(this, newOutput).simplify();
-    }
-
-    public getOutputs(): StringDict {
-        let result: StringDict = {};
-        let current: Output = this;
-        while (current instanceof OutputExpr) {
-            //if (DIRECTION_LTR) {
-                const unitDenotation = current.child2.getOutputs();
-                result = concatStringDict(unitDenotation, result);
-                current = current.child1;
-                continue;
-            //}
-
-            //const unitDenotation = current.child1.getOutputs();
-            //result = concatStringDict(result, unitDenotation);
-            //current = current.child2;
+    public addOutput(newOutput: Expr): OutputExpr {
+        if (newOutput instanceof TokenExpr && newOutput.text == "") {
+            return this;
         }
-
-        // now we're at the last current, and it's not a ConcatExpr, get its
-        // denotation, add it on, and we're done
-        const unitDenotation = current.getOutputs();
-        result = //DIRECTION_LTR ?
-                 concatStringDict(unitDenotation, result) 
-                 //: concatStringDict(result, unitDenotation);
-        return result;
+        if (newOutput instanceof OutputExpr) {
+            return this.addOutput(newOutput.child);
+        }
+        const concat = constructConcat(this.child, newOutput);
+        return new OutputExpr(concat);
     }
 
-    public simplify(): Output {
-        if (this.child2 instanceof EpsilonExpr) return this.child1;
-        if (this.child2 instanceof TokenExpr &&
-            this.child2.text == "") return this.child1;
+    public simplify(): Expr {
+        if (this.child instanceof EpsilonExpr) return this.child;
         return this;
     }
 }
@@ -1405,7 +1413,7 @@ export class CursorExpr extends UnaryExpr {
     constructor(
         public tape: string,
         child: Expr,
-        public output: Output = EPSILON
+        public output: OutputExpr = new OutputExpr(EPSILON)
     ) {
         super(child);
     }
@@ -1471,15 +1479,15 @@ export class CursorExpr extends UnaryExpr {
         return this;
     }
 
-    public getOutputs(): StringDict {
+    public getOutputs(): StringDict[] {
         const myOutput = this.output.getOutputs();
         const childOutput = this.child.getOutputs();
-        return concatStringDict(myOutput, childOutput);
+        return outputProduct(myOutput, childOutput);
     }
 
 }
 
-export function constructCursor(tape: string, child: Expr, output?: Output): Expr {
+export function constructCursor(tape: string, child: Expr, output?: OutputExpr): Expr {
     return new CursorExpr(tape, child, output).simplify();
 }
 
@@ -1489,7 +1497,7 @@ export class PreTapeExpr extends UnaryExpr {
         public tape1: string,
         public tape2: string,
         child: Expr,
-        public output: Output = EPSILON
+        public output: OutputExpr = new OutputExpr(EPSILON)
     ) {
         super(child);
     }
@@ -1583,7 +1591,7 @@ export function constructPreTape(
     fromTape: string, 
     toTape: string, 
     child: Expr,
-    output?: Output,
+    output?: OutputExpr,
 ): Expr {
     return new PreTapeExpr(fromTape, toTape, child, output).simplify();
 }

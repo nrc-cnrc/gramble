@@ -496,6 +496,16 @@ export function concatStringDict(d1: StringDict, d2: StringDict): StringDict {
     return result;
 }
 
+export function outputProduct(ds1: StringDict[], ds2: StringDict[]): StringDict[] {
+    const results: StringDict[] = [];
+    for (const d1 of ds1) {
+        for (const d2 of ds2) {
+            results.push(concatStringDict(d1, d2));
+        }
+    }
+    return results;
+}
+
 export function foldLeft<T>(
     arr: T[], 
     f: (t1: T, t2: T) => T

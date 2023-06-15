@@ -2,7 +2,7 @@ import {
     CounterStack, DerivEnv, 
     EpsilonExpr, Expr, ExprNamespace, 
     NullExpr, 
-    DerivStats,  Output, 
+    DerivStats,
     OutputExpr
 } from "./exprs";
 import { TapeNamespace } from "./tapes";
@@ -43,7 +43,7 @@ export function* generate(
     let prev: Expr | undefined = undefined;
     
     // if we're generating randomly, we store candidates rather than output them immediately
-    const candidates: Output[] = [];
+    const candidates: Expr[] = [];
 
     env.logDebug("");
     env.logDebugId("*** Generating for expr", expr);
@@ -78,7 +78,7 @@ export function* generate(
             }
 
             // if we're not random, yield the result immediately.
-            yield prevExpr.getOutputs();
+            yield* prevExpr.getOutputs();
             continue;
         } else if (prevExpr instanceof OutputExpr) {
             env.logDebugOutput("YIELD", prevExpr);
@@ -90,7 +90,7 @@ export function* generate(
             }
 
             // if we're not random, yield the result immediately.
-            yield prevExpr.getOutputs();
+            yield* prevExpr.getOutputs();
             continue;
             
         } else if (prevExpr instanceof NullExpr) {
@@ -109,45 +109,6 @@ export function* generate(
                 env.logDebugOutput("->", cNext);
                 nexts.push(cNext);
             }
-
-            /*
-            // we've neither found a valid output nor failed; there is 
-            // still a possibility of finding an output with prevOutput
-            // as its prefix
-            // Note: we delay pushing the delta until we know whether
-            // we need to merge it with a nulled tape output from deriv.
-            const delta = prevExpr.delta(OPEN_TAPE, env);
-            let deltaPushed: boolean = false;
-
-            // next see where we can go on that tape, along any char
-            // transition.
-            const query = constructToken(OPEN_TAPE, ""); // the text of an open query is irrelevant
-            for (const [cTarget, cNext] of prevExpr.deriv(query, env)) {
-                if (!(cNext instanceof NullExpr)) {
-                    let nextExpr: Expr = cNext;
-                    let nextOutput: Output;
-                    if (cTarget instanceof TokenExpr) {
-                        nextOutput = prevOutput.addOutput(cTarget);
-                    } else {
-                        nextOutput = prevOutput;
-                        if (!(delta instanceof NullExpr)) {
-                            let tapes: string[] = [];
-                            if (cNext instanceof PriorityExpr) {
-                                tapes = cNext.tapes
-                            } else if (cNext instanceof CollectionExpr && cNext.child instanceof PriorityExpr) {
-                                tapes = cNext.child.tapes;
-                            }
-                            nextExpr = constructPriority(tapes, constructAlternation(delta, cNext));
-                            deltaPushed = true;
-                        }
-                    }
-                    nexts.push([nextOutput, nextExpr]);
-                }
-            }
-            if (!deltaPushed && !(delta instanceof NullExpr)) {    
-                nexts.push([prevOutput, delta]);
-            }
-            */
         }
 
         // if random, shuffle the possibilities to search through next
@@ -175,5 +136,5 @@ export function* generate(
 
     const candidateIndex = Math.floor(Math.random()*candidates.length);
     const candidateOutput = candidates[candidateIndex];
-    yield candidateOutput.getOutputs();
+    yield* candidateOutput.getOutputs();
 } 

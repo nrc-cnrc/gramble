@@ -1,6 +1,6 @@
 
 import {
-    Epsilon, Grammar, Cursor, Seq, Collection, Embed,
+    Epsilon, Grammar, Cursor, Seq, Collection, Embed, Uni,
 } from "../src/grammars";
 
 import {
@@ -62,7 +62,6 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Seq(t1("hello"), t2(""));
         grammar = Cursor("t1", grammar);
         grammar = Cursor("t2", grammar);
-        console.log(grammar.id);
         testHasTapes(grammar, ["t1", "t2"]);
         testGrammar(grammar, [{t1: "hello"}]);
     }); 
@@ -149,5 +148,30 @@ describe(`${testSuiteName(module)}`, function() {
         testHasTapes(grammar, ["t1", "t2"], "b");
         testGrammar(grammar, [{t1: 'hello', t2: 'world'}], SILENT, "b");
     });
+
+    describe('8a. Cursors around alternations', function() {
+        let grammar: Grammar = Seq(Uni(t1("hello"), t1("goodbye")), 
+                                   Uni(t2("world"), t2("kitty")));
+        grammar = Cursor("t1", grammar);
+        grammar = Cursor("t2", grammar);
+        testHasTapes(grammar, ["t1", "t2"]);
+        testGrammar(grammar, [
+            {t1: 'hello', t2: 'world'},
+            {t1: 'goodbye', t2: 'world'},
+            {t1: 'hello', t2: 'kitty'},
+            {t1: 'goodbye', t2: 'kitty'}
+        ]);
+    });
+
+    describe('8b. Cursors inside alternations', function() {
+        let grammar: Grammar = Uni(Cursor("t1", t1("hello")), 
+                                   Cursor("t2", t2("world")));
+        testHasTapes(grammar, ["t1", "t2"]);
+        testGrammar(grammar, [
+            {t1: 'hello'}, 
+            {t2: 'world'},
+        ]);
+    });
+
 
 });
