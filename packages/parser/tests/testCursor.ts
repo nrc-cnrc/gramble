@@ -215,6 +215,6 @@ describe(`${testSuiteName(module)}`, function() {
         testHasTapes(grammar, ["t1", "t2"]);
         testGrammar(grammar, [
             {t1: 'hello', t2: 'world'}, 
-        ], VERBOSE_DEBUG);
+        ]);
     });
 });

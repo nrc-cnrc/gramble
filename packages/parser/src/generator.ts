@@ -104,7 +104,7 @@ export function* generate(
                 if (cNext instanceof NullExpr) continue;
                 if (!(cNext instanceof EpsilonExpr || cNext instanceof OutputExpr) &&
                         !cHandled) {
-                    throw new Error(`Unhandled forward: ${cNext.id}`);
+                    throw new Error(`Unhandled forward: prev = ${prevExpr.id}, next = ${cNext.id}`);
                 }
                 env.logDebugOutput("->", cNext);
                 nexts.push(cNext);

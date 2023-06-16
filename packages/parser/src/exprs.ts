@@ -1460,13 +1460,14 @@ export class CursorExpr extends UnaryExpr {
         for (const [cResult, cNext] of disjoin(cResults)) {
             env.incrStates();
             const newOutput = this.output.addOutput(cResult);
+
             if (cResult instanceof TokenExpr && cResult.text == "") {
                 env.logDelta(cResult.tapeName, cNext);
             } else {
                 env.logDeriv(cResult, cNext);
             }
 
-            const cHandled = cResult instanceof TokenExpr && cResult.text != '';
+            const cHandled = !(cResult instanceof TokenExpr) || cResult.text != '';
                 
             env.indentLog(1);
             for (const [nHandled, nNext] of cNext.forward(env)) {
