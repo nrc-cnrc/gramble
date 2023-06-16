@@ -149,7 +149,7 @@ describe(`${testSuiteName(module)}`, function() {
         testGrammar(grammar, [{t1: 'hello', t2: 'world'}], SILENT, "b");
     });
 
-    describe('8a. Cursors around alternations', function() {
+    describe('8. Cursors around alternations', function() {
         let grammar: Grammar = Seq(Uni(t1("hello"), t1("goodbye")), 
                                    Uni(t2("world"), t2("kitty")));
         grammar = Cursor("t1", grammar);
@@ -163,7 +163,7 @@ describe(`${testSuiteName(module)}`, function() {
         ]);
     });
 
-    describe('8b. Cursors inside alternations', function() {
+    describe('9a. Cursors inside alternations', function() {
         let grammar: Grammar = Uni(Cursor("t1", t1("hello")), 
                                    Cursor("t2", t2("world")));
         testHasTapes(grammar, ["t1", "t2"]);
@@ -173,5 +173,48 @@ describe(`${testSuiteName(module)}`, function() {
         ]);
     });
 
+    describe('9b. Cursors inside alternations', function() {
+        let grammar: Grammar = Uni(Cursor("t1", t1("hello")), 
+                                   Cursor("t2", t2("world")));
+        testHasTapes(grammar, ["t1", "t2"]);
+        testGrammar(grammar, [
+            {t1: 'hello'}, 
+            {t2: 'world'},
+        ]);
+    });
 
+    describe('10. Irrelevant cursor', function() {
+        let grammar: Grammar = Cursor("t2", (Cursor("t1", t1("hello"))));
+        testHasTapes(grammar, ["t1"]);
+        testGrammar(grammar, [
+            {t1: 'hello'}, 
+        ]);
+    });
+
+    describe('11a. Repeated cursor', function() {
+        let grammar: Grammar = Cursor("t1", (Cursor("t1", t1("hello"))));
+        testHasTapes(grammar, ["t1"]);
+        testGrammar(grammar, [
+            {t1: 'hello'}, 
+        ]);
+    });
+    
+    describe('11b. Repeated cursor, complex', function() {
+        // there's a potential bug about nested cursors operating on 
+        // sequences, but drawing it out is tricky because of how 
+        // optimizations turn simple sequences into literals where 
+        // possible and then treat them atomically.  here i'm stymieing 
+        // those optimizations by interleaving two tapes, but that's 
+        // all t2 is doing here, the test is really just for t1.  if both
+        // Cursors attempt to operate on the sequence, the result will be 
+        // t1:elhlo rather than t1:hello.
+        let grammar: Grammar = Seq(t1("h"), t2("w"), t1("e"), t2("o"), t1("l"), 
+                                    t2("r"), t1("l"), t2("l"), t1("o"), t2("d"));
+        grammar = Cursor("t1", grammar);
+        grammar = Cursor("t1", grammar);
+        testHasTapes(grammar, ["t1", "t2"]);
+        testGrammar(grammar, [
+            {t1: 'hello', t2: 'world'}, 
+        ], VERBOSE_DEBUG);
+    });
 });

@@ -1423,11 +1423,19 @@ export class CursorExpr extends UnaryExpr {
     }
 
     public delta(tapeName: string, env: DerivEnv): Expr {
+        if (tapeName == this.tape) return this; 
+                // a tape name "X" is considered to refer to different 
+                // tapes inside and outside Cursor("X", child)
+
         const cNext = this.child.delta(tapeName, env);
         return constructCursor(this.tape, cNext, this.output);
     }
 
     public *deriv(query: Query, env: DerivEnv): Derivs {
+        if (query.tapeName == this.tape) return; 
+                // a tape name "X" is considered to refer to different 
+                // tapes inside and outside Cursor("X", child)
+
         for (const [cResult, cNext] of this.child.deriv(query, env)) {
             const wrapped = constructCursor(this.tape, cNext, this.output);
             yield [cResult, wrapped];
