@@ -1375,12 +1375,15 @@ export class OutputExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        let results = [];
-        const denotation = this.getOutputs();
-        for (const [k, v] of Object.entries(denotation)) {
-            results.push(`${k}:${v}`)
+        let results: string[] = [];
+        for (const alternative of this.getOutputs()) {
+            const subresults: string[] = []
+            for (const [k, v] of Object.entries(alternative)) {
+                subresults.push(`${k}:${v}`)
+            }
+            results.push(subresults.join("+"))
         }
-        return "O[" + results.join("+") + "]";
+        return "O[" + results.join("|") + "]";
     }
 
     public delta(tapeName: string, env: DerivEnv): Expr {
@@ -1519,7 +1522,6 @@ export class PreTapeExpr extends UnaryExpr {
         tapeName: string,
         env: DerivEnv
     ): Expr {
-        console.log(`calculating d_${tapeName} for ${this.id}`);
         if (tapeName == this.tape1) {
             throw new Error(`something's gone wrong, querying on ` +
                 `a PreTapeExpr tape1 ${this.tape1}`);
@@ -1527,9 +1529,7 @@ export class PreTapeExpr extends UnaryExpr {
 
         if (tapeName == this.tape2) {
             const t1next = this.child.delta(this.tape1, env);
-            console.log(`t1next is ${t1next.id}`)
             const t2next = t1next.delta(this.tape2, env);
-            console.log(`t2next is ${t2next.id}`);
             return constructPreTape(this.tape1, this.tape2, t2next, this.output);
         }
 
