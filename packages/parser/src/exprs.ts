@@ -1961,6 +1961,27 @@ class RenameExpr extends UnaryExpr {
         super(child);
     }
 
+    public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
+        const newEnv = env.renameTape(this.toTape, this.fromTape);
+        for (const [cHandled, cNext] of this.child.forward(newEnv)) {
+            const wrapped = constructRename(cNext, this.fromTape, this.toTape);
+            yield [cHandled, wrapped];
+        }
+    }
+
+    public getOutputs(): StringDict[] {
+        const results: StringDict[] = [];
+        for (const output of this.child.getOutputs()) {
+            const newOutput: StringDict = {};
+            for (const [k, v] of Object.entries(output)) {
+                const newTape = (k == this.fromTape) ? this.toTape : k;
+                newOutput[newTape] = v;
+            }
+            results.push(newOutput);
+        }
+        return results;
+    }
+
     public delta(
         tapeName: string,
         env: DerivEnv
@@ -2000,6 +2021,10 @@ class RenameExpr extends UnaryExpr {
     }
 
     public simplify(): Expr {
+        if (this.child instanceof OutputExpr) {
+            const wrapped = constructRename(this.child.child, this.fromTape, this.toTape);
+            return new OutputExpr(wrapped);
+        }
         if (this.child instanceof EpsilonExpr) return this.child;
         if (this.child instanceof NullExpr) return this.child;
         if (this.child instanceof LiteralExpr && this.child.tapeName == this.fromTape) {

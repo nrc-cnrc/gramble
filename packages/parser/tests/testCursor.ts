@@ -1,6 +1,6 @@
 
 import {
-    Epsilon, Grammar, Cursor, Seq, Collection, Embed, Uni,
+    Epsilon, Grammar, Cursor, Seq, Collection, Embed, Uni, Rename,
 } from "../src/grammars";
 
 import {
@@ -215,6 +215,42 @@ describe(`${testSuiteName(module)}`, function() {
         testHasTapes(grammar, ["t1", "t2"]);
         testGrammar(grammar, [
             {t1: 'hello', t2: 'world'}, 
+        ]);
+    });
+
+    describe('12a. Cursor inside a rename', function() {
+        let grammar: Grammar = Rename(Cursor("t1", t1("hello")), "t1", "t2")
+        testHasTapes(grammar, ["t2"]);
+        testGrammar(grammar, [
+            {t2: 'hello'}, 
+        ]);
+    });
+
+    describe('12b. Cursor inside a rename', function() {
+        let grammar: Grammar = Rename(Cursor("t1", t1("hello")), "t2", "t3")
+        testHasTapes(grammar, ["t1"]);
+        testGrammar(grammar, [
+            {t1: 'hello'}, 
+        ]);
+    });
+    
+    describe('12c. Two cursors inside a rename, one irrelevant', function() {
+        let grammar: Grammar = Seq(t1("hello"), t3("world"))
+        grammar = Cursor(["t1", "t3"], grammar);
+        grammar = Rename(grammar, "t1", "t2");
+        testHasTapes(grammar, ["t2", "t3"]);
+        testGrammar(grammar, [
+            {t2: 'hello', t3: "world"}, 
+        ]);
+    });
+
+    describe('12d. Cursor inside a rename with two tapes', function() {
+        let grammar: Grammar = Seq(t1("hello"), t3("world"))
+        grammar = Cursor("t1", grammar);
+        grammar = Rename(grammar, "t1", "t2");
+        testHasTapes(grammar, ["t2", "t3"]);
+        testGrammar(grammar, [
+            {t2: 'hello', t3: "world"}, 
         ]);
     });
 });
