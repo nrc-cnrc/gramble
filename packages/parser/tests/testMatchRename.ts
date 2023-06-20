@@ -15,7 +15,7 @@ import {
     VERBOSE_TEST_L2,
     t1,
     testHasTapes,  
-    testGrammar
+    testGenerate
 } from './testUtil';
 
 import {
@@ -40,7 +40,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {t1: 'hello'}
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -49,7 +49,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {t2: 'hello'}
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         });
 
         describe("grammar", function() {
@@ -58,7 +58,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {t1: 'hello', t2: 'hello'}
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
 
@@ -72,7 +72,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {}
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -80,7 +80,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {}
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         }); 
 
         describe("grammar", function() {
@@ -90,7 +90,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {}
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
 
@@ -106,7 +106,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {t1: 'helloworld'}
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -115,7 +115,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {t2: 'helloworld'}
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         });
 
         describe("grammar", function() {
@@ -124,7 +124,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {t1: 'helloworld', t2: 'helloworld'}
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
 
@@ -166,7 +166,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {t1: 'hello, world'}
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -175,7 +175,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {t2: 'hello, world'}
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         });
 
         describe("grammar", function() {
@@ -184,7 +184,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {t1: 'hello, world', t2: 'hello, world'}
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
 
@@ -201,7 +201,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'hello'},
                 {t1: 'goodbye'},
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -211,7 +211,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t2: 'hello'},
                 {t2: 'goodbye'},
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         });
 
         describe("grammar", function() {
@@ -221,7 +221,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'hello', t2: 'hello'},
                 {t1: 'goodbye', t2: 'goodbye'},
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
 
@@ -302,7 +302,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'hellokitty'},
                 {t1: 'goodbyekitty'},
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -314,7 +314,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t2: 'hellokitty'},
                 {t2: 'goodbyekitty'},
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         });
 
         describe("grammar", function() {
@@ -326,7 +326,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'hellokitty', t2: 'hellokitty'},
                 {t1: 'goodbyekitty', t2: 'goodbyekitty'},
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
 
@@ -344,7 +344,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'hellokitty'},
                 {t1: 'goodbyeworld'},
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -354,7 +354,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t2: 'hellokitty'},
                 {t2: 'goodbyeworld'},
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         });
 
         describe("grammar", function() {
@@ -364,7 +364,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'hellokitty', t2: 'hellokitty'},
                 {t1: 'goodbyeworld', t2: 'goodbyeworld'},
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
 
@@ -381,7 +381,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'hih'},
                 {t1: 'hii'},
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -391,7 +391,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t2: 'hih'},
                 {t2: 'hii'},
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         });
 
         describe("grammar", function() {
@@ -401,7 +401,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'hih', t2: 'hih'},
                 {t1: 'hii', t2: 'hii'},
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
 
@@ -417,7 +417,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {t1: 'hello'}
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -426,7 +426,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {t2: 'hello'}
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         });
 
         describe("grammar", function() {
@@ -435,7 +435,7 @@ describe(`${testSuiteName(module)}`, function() {
             const expectedResults: StringDict[] = [
                 {t1: 'hello', t2: 'hello'}
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
 
@@ -505,7 +505,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {},
                 {t1: 'o'},
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -515,7 +515,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {},
                 {t2: 'o'},
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         });
 
         describe("grammar", function() {
@@ -525,7 +525,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {},
                 {t1: 'o', t2: 'o'},
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
 
@@ -579,7 +579,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'nanana'},
                 {t1: 'nananana'},
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -591,7 +591,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t2: 'nanana'},
                 {t2: 'nananana'},
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         });
 
         describe("grammar", function() {
@@ -603,7 +603,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'nanana', t2: 'nanana'},
                 {t1: 'nananana', t2: 'nananana'},
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
 
@@ -622,7 +622,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'iihi'}, {t1: 'hihi'},
                 {t1: 'hhhi'}, {t1: 'ihhi'},
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -634,7 +634,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t2: 'iihi'}, {t2: 'hihi'},
                 {t2: 'hhhi'}, {t2: 'ihhi'},
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         });
 
         describe("grammar", function() {
@@ -646,7 +646,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'iihi', t2: 'iihi'}, {t1: 'hihi', t2: 'hihi'},
                 {t1: 'hhhi', t2: 'hhhi'}, {t1: 'ihhi', t2: 'ihhi'},
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
 
@@ -668,7 +668,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'hhih'}, {t1: 'hhii'},
                 {t1: 'ihih'}, {t1: 'ihii'},
             ];
-            testGrammar(grammar1, expectedResults);
+            testGenerate(grammar1, expectedResults);
         });
 
         describe("grammar2", function() {
@@ -681,7 +681,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t2: 'hhih'}, {t2: 'hhii'},
                 {t2: 'ihih'}, {t2: 'ihii'},
             ];
-            testGrammar(grammar2, expectedResults);
+            testGenerate(grammar2, expectedResults);
         });
 
         describe("grammar", function() {
@@ -694,7 +694,7 @@ describe(`${testSuiteName(module)}`, function() {
                 {t1: 'hhih', t2: 'hhih'}, {t1: 'hhii', t2: 'hhii'},
                 {t1: 'ihih', t2: 'ihih'}, {t1: 'ihii', t2: 'ihii'},
             ];
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     });
     

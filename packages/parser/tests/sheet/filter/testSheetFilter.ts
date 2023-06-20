@@ -517,7 +517,7 @@ describe(`Sheets ${DIR}`, function() {
     function() {
         const project = sheetFromFile(`${DIR}/highVowel1.csv`);
         testErrors(project, []);
-        testGrammar(project, [
+        testGenerate(project, [
             {"gloss":"[3SG]sing","text":"umurf"},
             {"gloss":"[3SG]climb","text":"umirf"},
             {"gloss":"[2PL]sing","text":"omurf"},
@@ -540,7 +540,7 @@ describe(`Sheets ${DIR}`, function() {
     function() {
         const project = sheetFromFile(`${DIR}/highVowel2.csv`);
         testErrors(project, []);
-        testGrammar(project, [
+        testGenerate(project, [
             {"gloss":"[3SG]sing","text":"umurf"},
             {"gloss":"[3SG]climb","text":"umirf"},
             {"gloss":"[2SG]sing","text":"imurf"},
@@ -557,7 +557,7 @@ describe(`Sheets ${DIR}`, function() {
     function() {
         const project = sheetFromFile(`${DIR}/highVowel2b.csv`);
         testErrors(project, []);
-        testGrammar(project, [
+        testGenerate(project, [
             {"gloss":"[3SG]sing","text":"umurf"},
             {"gloss":"[3SG]climb","text":"umirf"},
             {"gloss":"[2SG]sing","text":"imurf"},
@@ -574,7 +574,7 @@ describe(`Sheets ${DIR}`, function() {
     function() {
         const project = sheetFromFile(`${DIR}/highVowel3.csv`);
         testErrors(project, []);
-        testGrammar(project, [
+        testGenerate(project, [
             {"gloss":"[2PL]sing","text":"omurf"},
             {"gloss":"[2PL]climb","text":"omirf"},
             {"gloss":"[1PL]sing","text":"emurf"},
@@ -593,7 +593,7 @@ describe(`Sheets ${DIR}`, function() {
     function() {
         const project = sheetFromFile(`${DIR}/highVowel3b.csv`);
         testErrors(project, []);
-        testGrammar(project, [
+        testGenerate(project, [
             {"gloss":"[2PL]sing","text":"omurf"},
             {"gloss":"[2PL]climb","text":"omirf"},
             {"gloss":"[1PL]sing","text":"emurf"},
@@ -612,7 +612,7 @@ describe(`Sheets ${DIR}`, function() {
     function() {
         const project = sheetFromFile(`${DIR}/highVowel4.csv`, VERBOSE_DEBUG);
         testErrors(project, []);
-        testGrammar(project, [
+        testGenerate(project, [
             {"gloss":"[2PL]sing","text":"omurf"},
             {"gloss":"[2PL]climb","text":"omirf"},
             {"gloss":"[1PL]sing","text":"emurf"},
@@ -631,7 +631,7 @@ describe(`Sheets ${DIR}`, function() {
     function() {
         const project = sheetFromFile(`${DIR}/highVowel4b.csv`);
         testErrors(project, []);
-        testGrammar(project, [
+        testGenerate(project, [
             {"gloss":"[2PL]sing","text":"omurf"},
             {"gloss":"[2PL]climb","text":"omirf"},
             {"gloss":"[1PL]sing","text":"emurf"},
@@ -651,7 +651,7 @@ describe(`Sheets ${DIR}`, function() {
     function() {
         const project = sheetFromFile(`${DIR}/containsNot.csv`);
         testErrors(project, []);
-        testGrammar(project, [
+        testGenerate(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
@@ -671,7 +671,7 @@ describe(`Sheets ${DIR}`, function() {
 
         const project = sheetFromFile(`${DIR}/containsNegatedEmbed.csv`);
         testErrors(project, []);
-        testGrammar(project, [
+        testGenerate(project, [
             { text: "foobar", gloss: "run[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
             { text: "moobar", gloss: "jump[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
         ]);

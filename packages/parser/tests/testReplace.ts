@@ -20,7 +20,7 @@ import {
     t1, t2, t3, t4,
     testHasTapes, 
     testHasVocab,
-    testGrammar,
+    testGenerate,
     testParseMultiple,
     WARN_ONLY_FOR_TOO_MANY_OUTPUTS,
 } from './testUtil';
@@ -80,7 +80,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hallo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2. Replace e by a in hello: e -> t2:a {1+} || h_llo#', function() {
@@ -102,7 +102,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'oehello', t2: 'oehallo'}, {t1: 'ohhello', t2: 'ohhallo'},
             {t1: 'olhello', t2: 'olhallo'}, {t1: 'oohello', t2: 'oohallo'},
         ];
-        testGrammar(grammar, expectedResults); 
+        testGenerate(grammar, expectedResults); 
     });
 
     describe('3. Replace e by a in hel: t1:e -> t2:a {0+} || h_l#', function() {
@@ -158,7 +158,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hellooh', t2: 'hallooh'}, {t1: 'hellool', t2: 'hallool'},
             {t1: 'hellooo', t2: 'hallooo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('5. Replace e by a in hel: t1:e -> t2:a {0+} || #h_l', function() {
@@ -232,7 +232,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ohhello', t2: 'ohhallo'}, {t1: 'olhello', t2: 'olhallo'},
             {t1: 'oohello', t2: 'oohallo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('7a. Replace e by a in hel: t1:e -> t2:a {1+} || h_l', function() {
@@ -260,7 +260,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hlhel', t2: 'hlhal'}, {t1: 'lehel', t2: 'lehal'},
             {t1: 'lhhel', t2: 'lhhal'}, {t1: 'llhel', t2: 'llhal'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('7. Replace e by a in hel: t1:e -> t2:a {1+} || h_l', function() {
@@ -376,7 +376,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hlhel', t2: 'hlhal'}, {t1: 'lehel', t2: 'lehal'},
             {t1: 'lhhel', t2: 'lhhal'}, {t1: 'llhel', t2: 'llhal'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('9. Replace e by a in hel: t1:e -> t2:a {1} || h_l', function() {
@@ -487,7 +487,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'eeeh', t2: 'eeeh'}, {t1: 'eehh', t2: 'eehh'},
             {t1: 'ehhh', t2: 'ehhh'}, {t1: 'hhhh', t2: 'hhhh'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('11. Replace e by a in he: t1:e -> t2:a {0,2} || h_', function() {
@@ -633,7 +633,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'leee', t2: 'leee'}, {t1: 'llle', t2: 'llle'},
             {t1: 'llll', t2: 'llll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('13. Replace e by a in el: t1:e -> t2:a {0,2} || ε_l', function() {
@@ -726,7 +726,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhh', t2: 'lhh'}, {t1: 'lhl', t2: 'lhl'},
             {t1: 'llh', t2: 'llh'}, {t1: 'lll', t2: 'lll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('15. Replace e by a: t1:e -> t2:a {0,3} (vocab t1:ehl)', function() {
@@ -873,7 +873,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hellel', t2: 'heellel'}, {t1: 'helllh', t2: 'heelllh'},
             {t1: 'hellle', t2: 'heellle'}, {t1: 'hellll', t2: 'heellll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('18. Replace e by ee in hel: t1:e -> t2:ee {0+} || #h_l', function() {
@@ -939,7 +939,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lelhel', t2: 'lelheel'}, {t1: 'llhhel', t2: 'llhheel'},
             {t1: 'llehel', t2: 'lleheel'}, {t1: 'lllhel', t2: 'lllheel'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('20. Replace e by ee in hel: t1:e -> t2:ee {0+} || h_l#', function() {
@@ -1004,7 +1004,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'eeeh', t2: 'eeeh'}, {t1: 'eehh', t2: 'eehh'},
             {t1: 'ehhh', t2: 'ehhh'}, {t1: 'hhhh', t2: 'hhhh'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('21. Replace e by ee in he: t1:e -> t2:ee {0,2} || h_', function() {
@@ -1082,7 +1082,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'leee', t2: 'leee'}, {t1: 'llee', t2: 'llee'},
             {t1: 'llle', t2: 'llle'}, {t1: 'llll', t2: 'llll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('22. Replace e by ee in el: t1:e -> t2:ee {0,2} || _l', function() {
@@ -1161,7 +1161,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhh', t2: 'lhh'}, {t1: 'lhl', t2: 'lhl'},
             {t1: 'llh', t2: 'llh'}, {t1: 'lll', t2: 'lll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('24. Replace ee by e in heel: t1:ee -> t2:e {0,2} || h_l', function() {
@@ -1253,7 +1253,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hheh', t2: 'hheh'}, {t1: 'hhhe', t2: 'hhhe'},
             {t1: 'hhhh', t2: 'hhhh'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('25. Replace ee by e in hee: t1:ee -> t2:e {0,2} || h_', function() {
@@ -1337,7 +1337,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'llel', t2: 'llel'}, {t1: 'llle', t2: 'llle'},
             {t1: 'llll', t2: 'llll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('26. Replace ee by e in eel: t1:ee -> t2:e {0,2} || _l', function() {
@@ -1440,7 +1440,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lle', t2: 'lle'}, {t1: 'llh', t2: 'llh'},
             {t1: 'lll', t2: 'lll'},
         ];
-        testGrammar(grammar, expectedResults,
+        testGenerate(grammar, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -1471,7 +1471,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhhh', t2: 'lhhh'}, {t1: 'llhh', t2: 'llhh'},
             {t1: 'lllh', t2: 'lllh'}, {t1: 'llll', t2: 'llll'},
     ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('28. Insert a in h_l: t1:0 -> t2:a {0,2} || h_l', function() {
@@ -1541,7 +1541,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhl', t2: 'lhl'}, {t1: 'lle', t2: 'lle'},
             {t1: 'llh', t2: 'llh'}, {t1: 'lll', t2: 'lll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('29. Delete e in hel: t1:e -> t2:0 {0,2} || h_l', function() {
@@ -1801,7 +1801,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhl', t2: 'lhl'}, {t1: 'lle', t2: 'lle'},
             {t1: 'llh', t2: 'llh'}, {t1: 'lll', t2: 'lll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('30f. Replace e by a or o in hel: ' +
@@ -1940,7 +1940,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('33b. Replace ∅ by e: t1:∅ -> t2:e {1} || _# ' +
@@ -1956,7 +1956,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('33c. Replace ∅ by e: t1:∅ -> t2:e {1} || #_# ' +
@@ -1972,7 +1972,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('33d. Replace ∅ by e: t1:∅ -> t2:e {1} (vocab t2:ehl)', function() {
@@ -1986,7 +1986,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('33e. Replace ∅ by e: t1:∅ -> t2:e {1} || #_ ' +
@@ -2009,7 +2009,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "llh", t2: "ellh"}, {t1: "lll", t2: "elll"},
             {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('33f. Replace ∅ by e: t1:∅ -> t2:e {1} || _# ' +
@@ -2032,7 +2032,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "llh", t2: "llhe"}, {t1: "lll", t2: "llle"},
             {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('33g. Replace ∅ by e: t1:∅ -> t2:e {1} || #_# ' +
@@ -2048,7 +2048,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('33h. Replace ∅ by e: t1:∅ -> t2:e {1} (vocab t1:hl)', function() {
@@ -2085,7 +2085,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "lll", t2: "llel"}, {t1: "lll", t2: "llle"},
             {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('33i. Replace ∅ by e: t1:∅ -> t2:e {0,2} (vocab t2:ehl)', function() {
@@ -2101,7 +2101,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t2: 'e'},  // equivalent to {t1: '', t2: 'e'}
             {t2: 'ee'}, // equivalent to {t1: '', t2: 'ee'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('33j. Replace ∅ by e: t1:∅ -> t2:e {0,2} (vocab t1:hl)', function() {
@@ -2176,7 +2176,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'llhh', t2: 'llhh'}, {t1: 'llhl', t2: 'llhl'},
             {t1: 'lllh', t2: 'lllh'}, {t1: 'llll', t2: 'llll'},
         ];
-        testGrammar(grammar, expectedResults,
+        testGenerate(grammar, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2195,7 +2195,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'eeh'},
             {t1: 'h', t2: 'hee'},
         ];
-        testGrammar(grammar, expectedResults,
+        testGenerate(grammar, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2220,7 +2220,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hh', t2: 'hehe'},
             {t1: 'hh', t2: 'hhee'},
         ];
-        testGrammar(grammar, expectedResults,
+        testGenerate(grammar, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2287,7 +2287,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "llhh", t2: "lleh"}, {t1: "llhh", t2: "llhe"},
             {t1: "llhl", t2: "llel"}, {t1: "lllh", t2: "llle"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('33m. Replace ∅|h by e: t1:∅|t1:h -> t2:e {1} ' +
@@ -2348,7 +2348,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "eehh", t2: "eeeh"}, {t1: "eehh", t2: "eehe"},
             {t1: "eehe", t2: "eeee"}, {t1: "eeeh", t2: "eeee"},
         ];
-        testGrammar(grammar, expectedResults,
+        testGenerate(grammar, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2387,7 +2387,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'elle', t2: 'lle'}, {t1: 'ellh', t2: 'llh'},
             {t1: 'elll', t2: 'lll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('34b. Replace e by ∅: t1:e -> t2:∅ {1} || _# ' +
@@ -2424,7 +2424,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'llee', t2: 'lle'}, {t1: 'llhe', t2: 'llh'},
             {t1: 'llle', t2: 'lll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('34c. Replace e by ∅: t1:e -> t2:∅ {1} || #_# ' +
@@ -2440,7 +2440,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'e'},  // equivalent to {t1: 'e', t2: ''}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('34d. Replace e by ∅: t1:e -> t2:∅ {1} (vocab t1:ehl)', function() {
@@ -2479,7 +2479,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lleh', t2: 'llh'}, {t1: 'llel', t2: 'lll'},
             {t1: 'llhe', t2: 'llh'}, {t1: 'llle', t2: 'lll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('34e. Replace e by ∅: t1:e -> t2:∅ {0,2} (vocab t1:ehl)', function() {
@@ -2514,7 +2514,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhl', t2: 'lhl'}, {t1: 'lle', t2: 'll'},
             {t1: 'llh', t2: 'llh'}, {t1: 'lll', t2: 'lll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('34e-alt. Replace e by ∅: t1:e -> t2:∅ {0,2} (vocab t1:ehl)', function() {
@@ -2547,7 +2547,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhl', t2: 'lhl'}, {t1: 'lle', t2: 'll'},
             {t1: 'llh', t2: 'llh'}, {t1: 'lll', t2: 'lll'},
     ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('34f. Replace e by ∅: t1:e -> t2:∅ {2} (vocab t1:eh)', function() {
@@ -2565,7 +2565,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'eeh', t2: 'h'},
             {t1: 'hee', t2: 'h'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     // Tests to isolate an expression simplification issue in CorrespondExpr.
@@ -2581,7 +2581,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aba', t2: 'X'},
         ];
-         testGrammar(grammar, expectedResults, vb(VERBOSE_DEBUG));
+         testGenerate(grammar, expectedResults, vb(VERBOSE_DEBUG));
     });
 
     describe('35a. Replace aba by X: t1:aba -> t2:X {1} ' +
@@ -2598,7 +2598,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aba', t2: 'X'},
         ];
-         testGrammar(grammar, expectedResults, vb(VERBOSE_DEBUG));
+         testGenerate(grammar, expectedResults, vb(VERBOSE_DEBUG));
     });
 
     describe('35b. Replace aba by X: t1:aba -> t2:X {1} ' +
@@ -2615,7 +2615,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aba', t2: 'X'},
         ];
-         testGrammar(grammar, expectedResults, vb(VERBOSE_DEBUG));
+         testGenerate(grammar, expectedResults, vb(VERBOSE_DEBUG));
     });
 
     // Tests exploring the ways for replacements to yield multiple
@@ -2644,7 +2644,7 @@ describe(`${testSuiteName(module)}`, function() {
                                         // (ee)e(ee)e -> (e)e(e)e
                                         // e(ee)(ee)e -> e(e)(e)e
         ];
-        testGrammar(grammar, expectedResults, SILENT,
+        testGenerate(grammar, expectedResults, SILENT,
                     DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
@@ -2682,7 +2682,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ih', t2: 'eh'},
             {t1: 'ii', t2: 'ei'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('37b. Replace i -> e | _# (vocab t1:hi)', function() {
@@ -2703,7 +2703,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ih', t2: 'ih'},
             {t1: 'ii', t2: 'ie'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('37c. Replace i -> e | #_# (vocab t1:hi)', function() {
@@ -2724,7 +2724,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ih', t2: 'ih'},
             {t1: 'ii', t2: 'ii'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     /*
@@ -2747,7 +2747,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hallo', t4: 'haallo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-2. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {1+} || h_llo', function() {
@@ -2771,7 +2771,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'olhello', t2: 'olhallo', t4: 'olhaallo'},
             {t1: 'oohello', t2: 'oohallo', t4: 'oohaallo'},
         ];
-        testGrammar(grammar, expectedResults); 
+        testGenerate(grammar, expectedResults); 
     });
     
     describe('2-3. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {0+} || h_llo$', function() {
@@ -2808,7 +2808,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'olhello', t2: 'olhallo', t4: 'olhaallo'},
             {t1: 'oohello', t2: 'oohallo', t4: 'oohaallo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('2-4. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {1+} || ^h_llo', function() {
@@ -2832,7 +2832,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hellool', t2: 'hallool', t4: 'haallool'},
             {t1: 'hellooo', t2: 'hallooo', t4: 'haallooo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-5. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {0+} || ^h_llo', function() {
@@ -2869,7 +2869,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hellool', t2: 'hallool', t4: 'haallool'},
             {t1: 'hellooo', t2: 'hallooo', t4: 'haallooo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-6. Replace e by a/aa in hello: t1:e -> t2:a t4:aa {1,5} || h_llo', function() {
@@ -2915,7 +2915,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'olhello', t2: 'olhallo', t4: 'olhaallo'},
             {t1: 'oohello', t2: 'oohallo', t4: 'oohaallo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-7. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {1+} || h_l', function() {
@@ -2964,7 +2964,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhellhelh', t2: 'lhallhalh', t4: 'lhaallhaalh'},
             {t1: 'lhellhell', t2: 'lhallhall', t4: 'lhaallhaall'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-8. Replace e by a/aa in hel: t1:e -> t2:a t4:aa {0,2} || h_l', function() {
@@ -3015,7 +3015,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhellhelh', t2: 'lhallhalh', t4: 'lhaallhaalh'},
             {t1: 'lhellhell', t2: 'lhallhall', t4: 'lhaallhaall'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
 
@@ -3109,7 +3109,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhhehhheh', t2: 'hhhahhhah', t4: 'hhhaahhhaah'},
             {t1: 'hhhehhhehh', t2: 'hhhahhhahh', t4: 'hhhaahhhaahh'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-12. Replace e by a/aa in he: t1:e -> t2:a t4:aa {0,2} || h_', function() {
@@ -3159,7 +3159,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhhehhheh', t2: 'hhhahhhah', t4: 'hhhaahhhaah'},
             {t1: 'hhhehhhehh', t2: 'hhhahhhahh', t4: 'hhhaahhhaahh'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-13. Replace e by a/aa in he: t1:e -> t2:a t4:aa {0,2} || _l', function() {
@@ -3209,7 +3209,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'llelllell', t2: 'llalllall', t4: 'llaalllaall'},
             {t1: 'llelllelll', t2: 'llalllalll', t4: 'llaalllaalll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-14. Replace e by a/aa: t1:e -> t2:a t4:aa {0,2} (vocab hel/hal)', function() {
@@ -3260,7 +3260,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'leleh', t2: 'lalah', t4: 'laalaah'},
             {t1: 'lelel', t2: 'lalal', t4: 'laalaal'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-15. Replace e by a/aa: t1:e -> t2:a t4:aa {0,3} (vocab hel/hal)', function() {
@@ -3400,7 +3400,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhellhele', t2: 'lheellheele', t4: 'lheeellheeele'},
             {t1: 'lhellhell', t2: 'lheellheell', t4: 'lheeellheeell'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
     
     describe('2-17. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {1+} || ^h_l', function() {
@@ -3451,7 +3451,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hellle', t2: 'heellle', t4: 'heeellle'},
             {t1: 'hellll', t2: 'heellll', t4: 'heeellll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-18. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {0+} || ^h_l', function() {
@@ -3553,7 +3553,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'llehel', t2: 'lleheel', t4: 'lleheeel'},
             {t1: 'lllhel', t2: 'lllheel', t4: 'lllheeel'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-20. Replace e by ee/eee in hel: t1:e -> t2:ee t4:eee {0+} || h_l$', function() {
@@ -3656,7 +3656,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'eheeheh', t2: 'eheeeheeh', t4: 'eheeeeheeeh'},
             {t1: 'eheehee', t2: 'eheeeheee', t4: 'eheeeeheeee'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-22. Replace e by ee/eee in el: t1:e -> t2:ee t4:eee {0,2} || _l', function() {
@@ -3706,7 +3706,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lellele', t2: 'leelleele', t4: 'leeelleeele'},
             {t1: 'lellell', t2: 'leelleell', t4: 'leeelleeell'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-23. Replace e by ee/eee: t1:e -> t2:ee t4:eee {0,2} (vocab hel/hel)', function() {
@@ -3757,7 +3757,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'leleh', t2: 'leeleeh', t4: 'leeeleeeh'},
             {t1: 'lelel', t2: 'leeleel', t4: 'leeeleeel'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-24. Replace ee by e/e in heel: t1:ee -> t2:e t4:e {0,2} || h_l', function() {
@@ -3852,7 +3852,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lheellheele', t2: 'lhellhele', t4: 'lhellhele'},
             {t1: 'lheellheell', t2: 'lhellhell', t4: 'lhellhell'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-25. Replace ee by e/e in hee: t1:ee -> t2:e t4:e {0,2} || h_', function() {
@@ -3902,7 +3902,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'eheeeheeh', t2: 'eheeheh', t4: 'eheeheh'},
             {t1: 'eheeeheee', t2: 'eheehee', t4: 'eheehee'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-26. Replace ee by e in eel: t1:ee -> t2:e t4:e {0,2} || _l', function() {
@@ -3952,7 +3952,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'leelleele', t2: 'lellele', t4: 'lellele'},
             {t1: 'leelleell', t2: 'lellell', t4: 'lellell'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-27. Replace ee by e/e: t1:ee -> t2:e t4:e {0,2} (vocab hel/hel)', function() {
@@ -4039,7 +4039,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'leeleeh', t2: 'leleh', t4: 'leleh'},
             {t1: 'leeleel', t2: 'lelel', t4: 'lelel'},
         ];
-        testGrammar(grammar, expectedResults,
+        testGenerate(grammar, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT, WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
@@ -4090,7 +4090,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhllhlh', t2: 'lhallhalh', t4: 'lhellhelh'},
             {t1: 'lhllhll', t2: 'lhallhall', t4: 'lhellhell'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-29. Delete e in hel: t1:e -> t2:0 t4:0 {0,2} || h_l', function() {
@@ -4140,7 +4140,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhellhelh', t2: 'lhllhlh', t4: 'lhllhlh'},
             {t1: 'lhellhell', t2: 'lhllhll', t4: 'lhllhll'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-30a. Replace e by a/aa in hel and hey: t1:e -> t2:a t4:aa {0,2} || h_l|y', function() {
@@ -4311,7 +4311,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhelh', t2: 'lholh', t4: 'lholh'},
             {t1: 'lhelh', t2: 'lhalh', t4: 'lhilh'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     // Here, we tell Replace to treat the vocabs as if the fromTape vocab is a
@@ -4481,7 +4481,7 @@ describe(`${testSuiteName(module)}`, function() {
             // {t1: 'hii', t2: 'hii', t4: 'hii'},
             // {t1: 'hhi', t2: 'hhi', t4: 'hhi'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-35b. Replace i by o/oo with vocab hi: t1:i -> t2:o t4:oo {0,3} with maxCopyChars=6', function() {
@@ -4516,7 +4516,7 @@ describe(`${testSuiteName(module)}`, function() {
             // {t1: 'hii', t2: 'hii', t4: 'hii'},
             // {t1: 'hhi', t2: 'hhi', t4: 'hhi'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-35c. Replace i by o/oo with vocab hi: t1:i -> t2:o t4:oo {0,3}, with maxCopyChars=2500', function() {
@@ -4551,7 +4551,7 @@ describe(`${testSuiteName(module)}`, function() {
             // {t1: 'hii', t2: 'hii', t4: 'hii'},
             // {t1: 'hhi', t2: 'hhi', t4: 'hhi'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     */
 });

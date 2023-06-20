@@ -19,7 +19,7 @@ import {
     t1, t2, 
     testHasTapes, 
     testHasVocab,
-    testGrammar,
+    testGenerate,
     DEFAULT_MAX_RECURSION,
 } from './testUtil';
 
@@ -61,7 +61,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'i', t2: 'a'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('1b. Negation of results of 1a', function() {
@@ -83,7 +83,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t2: 'ia'}, {t2: 'ii'},
             {},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('1c. Negation of grammar of 1a', function() {
@@ -99,7 +99,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
 
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     /*
@@ -111,7 +111,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2b. Negation of results of 2a', function() {
@@ -127,7 +127,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     // This result isn't correct for the kind of negation we've implemented 
@@ -149,7 +149,7 @@ describe(`${testSuiteName(module)}`, function() {
             {"t1":"aa"},
             {}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     */
 
@@ -162,7 +162,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {'.R_HIDDEN': 'i', t1: 'a'},
         ];
-        testGrammar(grammar, expectedResults,
+        testGenerate(grammar, expectedResults,
                     SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
@@ -186,7 +186,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ia'}, {t1: 'ii'},
             {},
         ];
-        testGrammar(grammar, expectedResults,
+        testGenerate(grammar, expectedResults,
                     SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
@@ -201,10 +201,10 @@ describe(`${testSuiteName(module)}`, function() {
                                           Not(Seq(Lit(".R_HIDDEN", "i"), t1("a"))));
         resultsGrammar = Count({t1:2,".R_HIDDEN":2}, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar,
-                                       DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
-        testGrammar(grammar, expectedResults,
-                    SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
+            generateOutputsFromGrammar(resultsGrammar, SILENT, DUMMY_SYMBOL, 
+                                       DEFAULT_MAX_RECURSION, false);
+        testGenerate(grammar, expectedResults, SILENT, DUMMY_SYMBOL,
+                    DEFAULT_MAX_RECURSION, false);
     });
 
     describe('3a. Replace i by a: i -> a', function() {
@@ -218,7 +218,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ii', t2: 'aa'},
             {},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('3b. Negation of outputs of 3a', function() {
@@ -241,7 +241,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t2: 'ai'}, {t2: 'i'},
             {t2: 'ia'}, {t2: 'ii'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('3c. Negation of grammar of 3a', function() {
@@ -257,7 +257,7 @@ describe(`${testSuiteName(module)}`, function() {
         resultsGrammar = Count({t1:2,t2:2}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('4a. Replace i by a: i -> a', function() {
@@ -270,7 +270,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'i', t2: 'a'},
             {},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('4b. Negation of results of 4a', function() {
@@ -287,7 +287,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t2: "a"},
             {t2: "i"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('4c. Negation of grammar of 4a', function() {
@@ -302,7 +302,7 @@ describe(`${testSuiteName(module)}`, function() {
         resultsGrammar = Count({t1:1,t2:1}, resultsGrammar);
         const expectedResults: StringDict[] =
             generateOutputsFromGrammar(resultsGrammar);
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     /*
@@ -316,7 +316,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('5b. Negation of results of 5a', function() {
@@ -331,7 +331,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     // See note to 2c.
@@ -352,7 +352,7 @@ describe(`${testSuiteName(module)}`, function() {
             // {t1: "a"},
             // {t1: "aa"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     */
 
@@ -368,7 +368,7 @@ describe(`${testSuiteName(module)}`, function() {
             {'.R_HIDDEN': 'ii', t1: 'aa'},
             {},
         ];
-        testGrammar(grammar, expectedResults,
+        testGenerate(grammar, expectedResults,
                     SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
@@ -394,7 +394,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ia'}, {t1: 'ii'},
         ];
 
-        testGrammar(grammar, expectedResults,
+        testGenerate(grammar, expectedResults,
                     SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
     });
 
@@ -412,11 +412,11 @@ describe(`${testSuiteName(module)}`, function() {
                                         Seq(Lit(".R_HIDDEN", "ii"), t1("aa")))));
         resultsGrammar = Count({t1:2,".R_HIDDEN":2}, resultsGrammar);
         const expectedResults: StringDict[] =
-            generateOutputsFromGrammar(resultsGrammar,
-                                       DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
+            generateOutputsFromGrammar(resultsGrammar, SILENT, DUMMY_SYMBOL,
+                                       DEFAULT_MAX_RECURSION, false);
 
-        testGrammar(grammar, expectedResults,
-                    SILENT, DUMMY_SYMBOL, DEFAULT_MAX_RECURSION, false);
+        testGenerate(grammar, expectedResults, SILENT, DUMMY_SYMBOL,
+                    DEFAULT_MAX_RECURSION, false);
     });
 
 });

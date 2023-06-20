@@ -10,7 +10,7 @@ import {
     t1, t2, t3,
     testHasTapes, 
     testHasVocab, 
-    testGrammar, 
+    testGenerate, 
 } from './testUtil';
 
 import {
@@ -31,7 +31,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hello"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('2. Par t1:""', function() {
@@ -41,7 +41,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('3. Empty par', function() {
@@ -50,7 +50,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('4. Par t1:hi, t2:yo', function() {
@@ -60,7 +60,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hi", t2: "yo"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('5. Par t1:hi, t2:yo, t3:hey', function() {
@@ -70,7 +70,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hi", t2: "yo", t3: "hey"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('6. Alt of pars: ' +
@@ -81,7 +81,7 @@ describe(`${testSuiteName(module)}`, function() {
             { t1: "hello", t2: "kitty" },
             { t1: "goodbye", t2: "world" },
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('7. Par of alts: ' +
@@ -94,7 +94,7 @@ describe(`${testSuiteName(module)}`, function() {
             { t1: "goodbye", t2: "world" },
             { t1: "goodbye", t2: "kitty" },
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
 });

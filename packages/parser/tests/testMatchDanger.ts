@@ -14,7 +14,7 @@ import {
     t1, t2, 
     testHasTapes, 
     testHasVocab,
-    testGrammar,
+    testGenerate,
 } from './testUtil';
 
 import {
@@ -35,7 +35,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             { t1: 'hihi', t2: 'hihi' },
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
     describe('1b. t2:hi + t1:hi + Match(t1:hi + t2:.*)', function() {
@@ -45,7 +45,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             { t1: 'hihi', t2: 'hihi' },
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
     // can't succeed -- "a" isn't in the t2 vocab
@@ -53,7 +53,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar =  Seq(t1("ha"), t2("hi"),
                              Match(Seq(t1("ha"), Rep(Dot("t2"))), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, []);
+        testGenerate(grammar, []);
     }); 
 
     // can't succeed -- "a" isn't in the t2 vocab -- 
@@ -62,7 +62,7 @@ describe(`${testSuiteName(module)}`, function() {
         const grammar =  Seq(t2("hi"), t1("ha"),
                              Match(Seq(t1("ha"), Rep(Dot("t2"))), "t1", "t2"));
         testHasTapes(grammar, ['t1', 't2']);
-        testGrammar(grammar, []);
+        testGenerate(grammar, []);
     }); 
 
     describe('2a. Join a literal to matching .* on t1 and t2: ' +
@@ -78,7 +78,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hiphip', t2: 'hip'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
     describe('2b. Join a literal to matching .* on t1 and t2: ' +
@@ -92,7 +92,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hip', t2: 'hiphip'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
     describe('3. Replace i by o in hip: ' +
@@ -105,7 +105,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hip', t2: 'hop'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
 });

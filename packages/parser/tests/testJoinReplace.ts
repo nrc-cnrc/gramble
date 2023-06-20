@@ -20,7 +20,7 @@ import {
     t1, t2, t3, t4, t5,
     testHasTapes,
     testHasVocab,
-    testGrammar,
+    testGenerate,
 } from './testUtil';
 
 import {
@@ -52,7 +52,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'i', t2: 'o'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('0a2. Replace i by o in i|o|a: ' +
@@ -66,7 +66,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'o', t2: 'o'},
             {t1: 'a', t2: 'a'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('0b. Replace i by o in hi: ' +
@@ -78,7 +78,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'ho'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('0c. Replace i by o in ip: ' +
@@ -90,7 +90,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'ip', t2: 'op'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('0d. Replace i by o in hip: ' +
@@ -102,7 +102,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hip', t2: 'hop'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('1a. Replace e by a in hello: t1:hello ⨝ t1:e -> t2:a', function() {
@@ -113,7 +113,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hallo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('1b. Replace e by a (same tape) in hello: ' +
@@ -125,7 +125,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hallo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2a. Replace e by a, then a by u, in hello: ' +
@@ -139,7 +139,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hallo', t3: "hullo"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2a2. Replace e by a, then a by u, then u by i, in hello: ' +
@@ -155,7 +155,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hallo', t3: "hullo", t4: "hillo"},
         ];
-        testGrammar(grammar2, expectedResults);
+        testGenerate(grammar2, expectedResults);
     });
 
     describe('2b. Replace e by a (same tape), then a by u (same tape), in hello: ' +
@@ -169,7 +169,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hullo"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2c. Replace e by a (same tape), then a by u (diff tape), in hello: ' +
@@ -183,7 +183,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hallo", t2: "hullo"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2d. Replace e by a (diff tape), then a by u (same tape), in hello: ' +
@@ -197,7 +197,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hello", t2: "hullo"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('3a. Replace e by a, then l by w, in hello: ' +
@@ -211,7 +211,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hallo', t3: "hawwo"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('3b. Replace e by a (diff tape), then l by w (same tape), in hello: ' +
@@ -225,7 +225,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hello", t2: "hawwo"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('3c. Replace e by a (same tape), then l by w (diff tape), in hello: ' +
@@ -239,7 +239,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hallo", t2: "hawwo"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('3d. Replace e by a (same tape), then l by w (same tape), in hello: ' +
@@ -253,7 +253,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hawwo"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('3e. Replace l by w (same tape), then e by a (same tape), in hello: ' +
@@ -267,7 +267,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hawwo"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('3f. Replace b by v (same tape), then a by e (same tape), in ab: ' +
@@ -281,7 +281,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "ev"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('4a. Replace e by e in hello: t1:hello ⨝ t1:e -> t2:e', function() {
@@ -292,7 +292,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hello'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('4b. Replace e by e (same tape) in hello: ' +
@@ -304,7 +304,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('5a. Replace i by o in i|o|a: t1:i|t1:o|t1:a ⨝ t1:i -> t2:o, ' +
@@ -318,7 +318,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'o', t2: 'o'},
             {t1: 'a', t2: 'a'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('5b. Replace i by o in hi: t1:hi ⨝ t1:i -> t2:o, ' +
@@ -330,7 +330,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hi', t2: 'ho'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('5c. Replace e by a, then l by w, in hello: ' +
@@ -342,7 +342,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hallo', t3: "hawwo"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('5d. Replace e by a, then l by w, in hello: ' +
@@ -355,7 +355,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello', t2: 'hallo', t3: "hawwo"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     // Exploring rule cascades with first 'to' empty - garden path
@@ -374,7 +374,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'Abcd', t3: 'ABcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 57 states visited (was 134)
@@ -391,7 +391,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'bcd', t3: 'Bcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 16 states visited (was 31)
@@ -410,7 +410,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'Abcd', t3: 'ABcd', t4: 'ABCd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 85 states visited (was 226)
@@ -429,7 +429,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'bcd', t3: 'Bcd', t4: 'BCd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 20 states visited (was 43)
@@ -450,7 +450,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'Abcd', t3: 'ABcd', t4: 'ABCd', t5: 'ABCD'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 113 states visited (was 344)
@@ -470,7 +470,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'bcd', t3: 'Bcd', t4: 'BCd', t5: 'BCD'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 20 states visited (was 43)
@@ -491,7 +491,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'Abcd', t3: 'ABcd', t4: 'ABCd', t5: 'ABCD'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 233 states visited (was 616)
@@ -512,7 +512,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'bcd', t3: 'Bcd', t4: 'BCd', t5: 'BCD'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // Exploring rule cascades varying the input length
@@ -532,7 +532,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'CCCCCabcdCCCCC', t2: 'CCCCCAbcdCCCCC', t3: 'CCCCCABcdCCCCC'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 72 states visited (was 80)
@@ -551,7 +551,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'BBBBBCCCCCabcdCCCCCBBBBB', t2: 'BBBBBCCCCCAbcdCCCCCBBBBB',
              t3: 'BBBBBCCCCCABcdCCCCCBBBBB'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 70 states visited (was 92)
@@ -574,7 +574,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'CCCCCabcdCCCCC', t2: 'CCCCCAbcdCCCCC', t3: 'CCCCCABcdCCCCC',
              t4: 'CCCCCABCdCCCCC', t5: 'CCCCCABCDCCCCC'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 288 states visited (was 698)
@@ -597,7 +597,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'CCCCCabcdCCCCC', t2: 'CCCCCbcdCCCCC', t3: 'CCCCCBcdCCCCC',
              t4: 'CCCCCBCdCCCCC', t5: 'CCCCCBCDCCCCC'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 463 states visited (was 1073)
@@ -622,7 +622,7 @@ describe(`${testSuiteName(module)}`, function() {
              t3: 'BBBBBCCCCCBcdCCCCCBBBBB', t4: 'BBBBBCCCCCBCdCCCCCBBBBB',
              t5: 'BBBBBCCCCCBCDCCCCCBBBBB'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // Exploring rule cascades with 'from' being longer than 'to' - garden path
@@ -641,7 +641,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'Abcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 13 states visited (was 49)
@@ -658,7 +658,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aabcd', t2: 'Abcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 20 states visited (was 356)
@@ -675,7 +675,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaabcd', t2: 'Abcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 29 states visited (was 2803)
@@ -692,7 +692,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaaabcd', t2: 'Abcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 40 states visited (was 22371)
@@ -709,7 +709,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaaaabcd', t2: 'Abcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 12 states visited (was 21)
@@ -726,7 +726,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'Abcd', t3: 'ABcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 65 states visited (was 93)
@@ -743,7 +743,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aabcd', t2: 'Abcd', t3: 'ABcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 438 states visited (was 706)
@@ -760,7 +760,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 3032 states visited (was 5595)
@@ -777,7 +777,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaaabcd', t2: 'Abcd', t3: 'ABcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // // 21175 states visited (was 44696)
@@ -794,7 +794,7 @@ describe(`${testSuiteName(module)}`, function() {
     //     const expectedResults: StringDict[] = [
     //         {t1: 'aaaaabcd', t2: 'Abcd', t3: 'ABcd'},
     //     ];
-    //     testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+    //     testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     // });
 
     // 20 states visited (was 43)
@@ -815,7 +815,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'Abcd', t3: 'ABcd', t4: 'ABCd', t5: 'ABCD'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 127 states visited (was 223)
@@ -836,7 +836,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aabcd', t2: 'Abcd', t3: 'ABcd', t4: 'ABCd', t5: 'ABCD'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 868 states visited (was 1620)
@@ -857,7 +857,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaabcd', t2: 'Abcd', t3: 'ABcd', t4: 'ABCd', t5: 'ABCD'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 6028 states visited (was 12956)
@@ -878,7 +878,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaaabcd', t2: 'Abcd', t3: 'ABcd', t4: 'ABCd', t5: 'ABCD'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 8 states visited (was 51)
@@ -894,7 +894,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'bcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 13 states visited (was 381)
@@ -910,7 +910,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aabcd', t2: 'bcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 20 states visited (was 3351)
@@ -926,7 +926,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaabcd', t2: 'bcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 29 states visited (was 30081)
@@ -942,7 +942,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaaabcd', t2: 'bcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 29 states visited (was 370)
@@ -960,7 +960,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaaabcd', t2: 'bcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 57 states visited (was 134)
@@ -977,7 +977,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'bcd', t3: 'Bcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 427 states visited (was 1600)
@@ -994,7 +994,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aabcd', t2: 'bcd', t3: 'Bcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 3018 states visited (was 22616)
@@ -1011,7 +1011,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aaabcd', t2: 'bcd', t3: 'Bcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // // 21158 states visited (was 330273)
@@ -1028,7 +1028,7 @@ describe(`${testSuiteName(module)}`, function() {
     //     const expectedResults: StringDict[] = [
     //         {t1: 'aaaabcd', t2: 'bcd', t3: 'Bcd'},
     //     ];
-    //     testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+    //     testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     // });
 
     // 113 states visited (was 344)
@@ -1049,7 +1049,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'bcd', t3: 'Bcd', t4: 'BCd', t5: 'BCD'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 849 states visited (was 4498)
@@ -1070,7 +1070,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aabcd', t2: 'bcd', t3: 'Bcd', t4: 'BCd', t5: 'BCD'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // // 6004 states visited (was 66575)
@@ -1091,7 +1091,7 @@ describe(`${testSuiteName(module)}`, function() {
     //     const expectedResults: StringDict[] = [
     //         {t1: 'aaabcd', t2: 'bcd', t3: 'Bcd', t4: 'BCd', t5: 'BCD'},
     //     ];
-    //     testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+    //     testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     // });
 
     // Exploring rule cascades with 'from' being shorter than 'to' - NO garden path
@@ -1109,7 +1109,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'AAAAAbcd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 12 states visited (was 16)
@@ -1125,7 +1125,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'abCCCCCd'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 12 states visited (was 16)
@@ -1141,7 +1141,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'abcd', t2: 'abcDDDDD'},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // Exploring using EpsilonLit in nullable Matches
@@ -1163,7 +1163,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammarWithVocab, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 15 states visited (was 14)
@@ -1183,6 +1183,6 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammarWithVocab, expectedResults, vb(VERBOSE_STATES));
     });
 });
