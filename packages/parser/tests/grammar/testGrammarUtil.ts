@@ -62,6 +62,7 @@ export interface GrammarTestAux {
     maxRecursion: number,
     stripHidden: boolean,
     allowDuplicateOutputs: boolean,
+    skipGeneration: boolean,
 }
 
 export function testGrammarAux({
@@ -74,9 +75,10 @@ export function testGrammarAux({
     maxRecursion = DEFAULT_MAX_RECURSION,
     stripHidden = true,
     allowDuplicateOutputs = false,
+    skipGeneration = false,
 }: Partial<GrammarTestAux>): void {
     if (grammar === undefined){
-        it(`grammar must be defined`, function() {
+        it("grammar must be defined", function() {
             expect(grammar).to.not.be.undefined;
         });
         return;
@@ -87,9 +89,14 @@ export function testGrammarAux({
     if (vocab !== undefined) {
         testHasVocab(grammar, vocab);
     }
-    if (results !== undefined) {
+    if (!skipGeneration && results !== undefined) {
         testGenerate(grammar, results, verbose, symbol, maxRecursion,
-                     stripHidden, allowDuplicateOutputs);
+            stripHidden, allowDuplicateOutputs);
+    } else {
+        it("skipping generation", function() {
+            expect(skipGeneration).to.be.true;
+            expect(results).to.not.be.undefined;
+        });
     }
 }
 
@@ -128,6 +135,7 @@ export function testGrammar({
     maxRecursion,
     stripHidden,
     allowDuplicateOutputs,
+    skipGeneration,
 }: Partial<GrammarTest>): void {
     if (desc === undefined){
         it(`desc must be defined`, function() {
@@ -148,5 +156,6 @@ export function testGrammar({
         maxRecursion: maxRecursion,
         stripHidden: stripHidden,
         allowDuplicateOutputs: allowDuplicateOutputs,
+        skipGeneration: skipGeneration,
     }));
 }
