@@ -960,7 +960,9 @@ export class CountGrammar extends UnaryGrammar {
     constructor(
         child: Grammar,
         public tapeName: string,
-        public maxChars: number
+        public maxChars: number,
+        public countEpsilon: boolean,
+        public errorOnCountExceeded: boolean,
     ) {
         super(child);
     }
@@ -984,7 +986,8 @@ export class CountGrammar extends UnaryGrammar {
         symbols: ExprNamespace
     ): Expr {
         let childExpr = this.child.constructExpr(tapeNS, symbols);
-        return constructCount(childExpr, this.tapeName, this.maxChars);
+        return constructCount(childExpr, this.tapeName, this.maxChars,
+                              this.countEpsilon, this.errorOnCountExceeded);
     }
 }
 
@@ -2165,10 +2168,16 @@ export function Vocab(arg1: string | StringDict, arg2: string = ""): Grammar {
     }
 }
 
-export function Count(maxChars: Dict<number>, child: Grammar): Grammar {
+export function Count(
+    maxChars: Dict<number>,
+    child: Grammar,
+    countEpsilon: boolean = false,
+    errorOnCountExceeded: boolean = false
+): Grammar {
     let result = child;
     for (const [tapeName, max] of Object.entries(maxChars)) {
-        result = new CountGrammar(result, tapeName, max);
+        result = new CountGrammar(result, tapeName, max,
+                                  countEpsilon, errorOnCountExceeded);
     }
     return result;
 }
