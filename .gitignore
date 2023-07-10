@@ -111,6 +111,9 @@ dist
 .settings
 .pydevproject
 
+# VSCodeCounter
+.VSCodeCounter/
+
 # GSuite deployments
 deployments/
 

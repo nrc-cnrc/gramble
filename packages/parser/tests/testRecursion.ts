@@ -8,7 +8,7 @@ import {
     testSuiteName, logTestSuite,
     VERBOSE_TEST_L2,
     t1,
-    testGrammar,
+    testGenerate,
 } from './testUtil';
 
 import {
@@ -32,7 +32,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hiworld"}
         ];
-        testGrammar(coll, expectedResults);
+        testGenerate(coll, expectedResults);
     });
     
     describe('2. Join right-recursive (t1:hi)+ + t1:world ⨝ t1:hiworld', function() {
@@ -45,7 +45,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hiworld"}
         ];
-        testGrammar(coll, expectedResults);
+        testGenerate(coll, expectedResults);
     });
 
     describe('3. Join t1:hihiworld ⨝ right-recursive (t1:hi)+ + t1:world', function() {
@@ -58,7 +58,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hihiworld"}
         ];
-        testGrammar(coll, expectedResults);
+        testGenerate(coll, expectedResults);
     });
 
     describe('4. Join right-recursive (t1:hi)+ + t1:world ⨝ t1:hihiworld', function() {
@@ -71,7 +71,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hihiworld"}
         ];
-        testGrammar(coll, expectedResults);
+        testGenerate(coll, expectedResults);
     });
 
     describe('5. Join t1:hiworld ⨝ left-recursive (t1:hi)+ + t1:world', function() {
@@ -84,7 +84,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hiworld"}
         ];
-        testGrammar(coll, expectedResults);
+        testGenerate(coll, expectedResults);
     });
 
     describe('6. Join t1:hihiworld ⨝ left-recursive (t1:hi)+ + t1:world', function() {
@@ -97,7 +97,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hihiworld"}
         ];
-        testGrammar(coll, expectedResults);
+        testGenerate(coll, expectedResults);
     });
 
     describe('7. Join left-recursive (t1:hi)+ + t1:world ⨝ t1:hiworld', function() {
@@ -110,7 +110,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hiworld"}
         ];
-        testGrammar(coll, expectedResults);
+        testGenerate(coll, expectedResults);
     });
     
     describe('8. Join left-recursive (t1:hi)+ + t1:world ⨝ t1:hihiworld', function() {
@@ -123,7 +123,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hihiworld"}
         ];
-        testGrammar(coll, expectedResults);
+        testGenerate(coll, expectedResults);
     });
 
     describe('9. Emit from right-recursive (t1:hi)+ + t1:world ' +
@@ -141,7 +141,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "hihihihiworld"},
             {t1: "hihihihihiworld"},
         ];
-        testGrammar(coll, expectedResults);
+        testGenerate(coll, expectedResults);
     });
 
     describe('10. Emit from right-recursive (t1:hi)+ + t1:world ' +
@@ -157,7 +157,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "hihiworld"},
             {t1: "hihihiworld"},
         ];
-        testGrammar(coll, expectedResults, SILENT, "", 2);
+        testGenerate(coll, expectedResults, SILENT, "", 2);
     });
     
     describe('11. Emit from center-recursive (t1:hi)+ + t1:world ' +
@@ -173,7 +173,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "hihiworldhihi"},
             {t1: "hihihiworldhihihi"},
         ];
-        testGrammar(coll, expectedResults, SILENT, "", 2);
+        testGenerate(coll, expectedResults, SILENT, "", 2);
     });
 
     describe('12. Emit from right-recursive (t1:hi)+ + t1:world ' +
@@ -187,7 +187,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hiworld"}
         ];
-        testGrammar(coll, expectedResults, SILENT, "", 0);
+        testGenerate(coll, expectedResults, SILENT, "", 0);
     });
 
     describe('13. Emit from left-recursive (t1:hi)+ + t1:world ' +
@@ -205,7 +205,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "hihihihiworld"},
             {t1: "hihihihihiworld"},
         ];
-        testGrammar(coll, expectedResults);
+        testGenerate(coll, expectedResults);
     });
 
     describe('14. Emit from left-recursive (t1:hi)+ + t1:world ' +
@@ -221,7 +221,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "hihiworld"},
             {t1: "hihihiworld"},
         ];
-        testGrammar(coll, expectedResults, SILENT, "", 2);
+        testGenerate(coll, expectedResults, SILENT, "", 2);
     });
 
     describe('15. Emit from left-recursive (t1:hi)+ + t1:world ' +
@@ -235,6 +235,6 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hiworld"}
         ];
-        testGrammar(coll, expectedResults, SILENT, "", 0);
+        testGenerate(coll, expectedResults, SILENT, "", 0);
     }); 
 });

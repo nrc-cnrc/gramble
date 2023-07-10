@@ -1312,7 +1312,9 @@ export class CountExpr extends UnaryExpr {
     constructor(
         child: Expr,
         public tapeName: string,
-        public maxChars: number
+        public maxChars: number,
+        public countEpsilon: boolean,
+        public errorOnCountExceeded: boolean,
     ) {
         super(child);
     }
@@ -1330,7 +1332,8 @@ export class CountExpr extends UnaryExpr {
             // tape's done, we can delete this node
             return newChild;
         }
-        return constructCount(newChild, this.tapeName, this.maxChars);
+        return constructCount(newChild, this.tapeName, this.maxChars,
+                              this.countEpsilon, this.errorOnCountExceeded);
     }
 
     public *deriv(
@@ -1338,20 +1341,32 @@ export class CountExpr extends UnaryExpr {
         env: DerivEnv
     ): Derivs {
 
-        for (const [cResult, cNext] of this.child.deriv(query, env)) {
+        for (const [cTarget, cNext] of this.child.deriv(query, env)) {
             
-            if (query.tapeName != this.tapeName || cResult instanceof EpsilonExpr) {
+            if (query.tapeName != this.tapeName ||
+                    (cTarget instanceof EpsilonExpr && !this.countEpsilon)) {
                 // not relevant to us, just move on
-                const wrapped = constructCount(cNext, this.tapeName, this.maxChars);
-                yield [cResult, wrapped];
+                const successor = constructCount(cNext, this.tapeName,
+                                                 this.maxChars,
+                                                 this.countEpsilon,
+                                                 this.errorOnCountExceeded);
+                yield [cTarget, successor];
+                continue;
+            }
+
+            const length = cTarget instanceof EpsilonExpr ? 1 : cTarget.text.length;
+            if (this.maxChars < length) {
+                if (this.errorOnCountExceeded)
+                    throw new Error(`Count exceeded on ${this.tapeName}`);
                 continue;
             }
             
-            if (this.maxChars < cResult.text.length) continue; 
-            
-            const newMax = this.maxChars - cResult.text.length;
-            const wrapped = constructCount(cNext, this.tapeName, newMax);
-            yield [cResult, wrapped];
+            const newMax = this.maxChars - length;
+            const successor = constructCount(cNext, this.tapeName,
+                                             newMax,
+                                             this.countEpsilon,
+                                             this.errorOnCountExceeded);
+            yield [cTarget, successor];
         }
     }
 
@@ -2438,9 +2453,12 @@ export function constructMaybe(child: Expr): Expr {
 export function constructCount(
     child: Expr, 
     tapeName: string, 
-    maxChars: number
+    maxChars: number,
+    countEpsilon: boolean,
+    errorOnCountExceeded: boolean
 ): Expr {
-    return new CountExpr(child, tapeName, maxChars).simplify();
+    return new CountExpr(child, tapeName, maxChars,
+                         countEpsilon, errorOnCountExceeded).simplify();
 }
 
 export function constructNegation(

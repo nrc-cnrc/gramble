@@ -17,7 +17,7 @@ import {
     VERBOSE_TEST_L2,
     t1, t2, t3, t4, t5,
     testHasTapes,
-    testGrammar
+    testGenerate
 } from "./testUtil";
 
 import {
@@ -39,7 +39,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: "hello"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2. t1:hello + (Rename t1>t2, t1:world)', function() {
@@ -50,7 +50,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hello", t2: "world"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
 
@@ -62,7 +62,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hello"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('4. Rename t1>t2, ε', function() {
@@ -71,7 +71,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
     describe('5. Rename t1>t2, ∅', function() {
@@ -79,7 +79,7 @@ describe(`${testSuiteName(module)}`, function() {
         testHasTapes(grammar, []);
         const expectedResults: StringDict[] = [
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
     describe('6. Rename t1>t2, t1:', function() {
@@ -88,7 +88,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
     describe('7. Rename t1>t2, t1:hi + t2:wo', function() {
@@ -97,7 +97,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: "hi"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
     describe('8. Rename t3>t4, t1:hello + t2:foo', function() {
@@ -106,7 +106,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hello", t2: "foo"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
         
     describe('9. Rename t1>t2, t1:hello + t5:foo', function() {
@@ -117,7 +117,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: "hello", t5: "foo"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('10. (Rename t1>t2, t1:hello + t5:foo) | ' +
@@ -131,7 +131,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t2: "hello", t5: "foo"},
             {t3: "hello", t5: "foo"},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('11. Intersect t2:hello & Rename t1>t2, t1:hello', function() {
@@ -140,7 +140,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: "hello"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('12. Intersect t2:hello & Rename t2>t1, t2:hello', function() {
@@ -148,7 +148,7 @@ describe(`${testSuiteName(module)}`, function() {
                                   Rename(t2("hello"), "t2", "t1"));
         const expectedResults: StringDict[] = [
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('13. Intersect (Rename t1>t2, t1:hello) & t2:hello', function() {
@@ -157,7 +157,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: "hello"}
         ];  
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('14. Intersect (Rename t2>t1, t2:hello) & t2:hello', function() {
@@ -165,7 +165,7 @@ describe(`${testSuiteName(module)}`, function() {
                                   t2("hello"));
         const expectedResults: StringDict[] = [
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('15. Intersect (t2:hello + t1:.*) & Rename t2>t1, t2:hello', function() {
@@ -173,7 +173,7 @@ describe(`${testSuiteName(module)}`, function() {
                                   Rename(t2("hello"), "t2", "t1"));
         const expectedResults: StringDict[] = [
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('16. Join t2:hello ⨝ Rename t1>t2, t1:hello', function() {
@@ -182,7 +182,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: "hello"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('17. Join (Rename t1>t2, t1:hello) ⨝ t2:hello', function() {
@@ -191,7 +191,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: "hello"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('18. Join (Rename t1>t2, t1:hello + t3:foo) ⨝ t2:hello', function() {
@@ -200,7 +200,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: "hello", t3: "foo"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('19. Join t2:hello ⨝ (Rename t1>t2, t1:hello + t3:foo)', function() {
@@ -209,7 +209,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: "hello", t3: "foo"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('20. Join t3:foo ⨝ (Rename t1>t2 of t1:hello + t3:foo)', function() {
@@ -218,7 +218,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: "hello", t3: "foo"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('21. Join (Rename t1>t2, t1:hello + t3:foo) ⨝ ' +
@@ -227,7 +227,7 @@ describe(`${testSuiteName(module)}`, function() {
                              Seq(t2("hello"), t3("bar")));
         const expectedResults: StringDict[] = [
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('22. Join (t2:hello + t3:bar) ⨝ ' +
@@ -236,7 +236,7 @@ describe(`${testSuiteName(module)}`, function() {
                              Rename(Seq(t1("hello"), t3("foo")), "t1", "t2"));
         const expectedResults: StringDict[] = [
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     /*
@@ -247,7 +247,7 @@ describe(`${testSuiteName(module)}`, function() {
                                Rename(Seq(t1("hi"), t2("wo")), "t1", "t2"));
         testHasTapes(grammar, ["t2"]);
         //testHasVocab(grammar, {t2: 4});
-        testGrammar(grammar, []);
+        testGenerate(grammar, []);
     }); 
     */
    
@@ -260,7 +260,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hi", t3: "world"}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     /*

@@ -17,7 +17,7 @@ import {
     t1,
     testHasTapes, 
     testHasVocab, 
-    testGrammar,
+    testGenerate,
 } from './testUtil';
 
 import {
@@ -38,7 +38,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('1b. Short(t1:h|t1:hh)', function() {
@@ -48,7 +48,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     describe('3a. Short(t1:h*)', function() {
         const grammar = Short(Rep(t1("h")));
@@ -57,7 +57,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('3b. Short(t1:h+)', function() {
@@ -67,7 +67,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('4. Short(t1:h{2,})', function() {
@@ -77,7 +77,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('4. Short(t1:.+) (vocab t1:hi)', function() {
@@ -89,7 +89,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1']);
         testHasVocab(grammar, {t1: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     if (DIRECTION_LTR) {
@@ -108,7 +108,7 @@ describe(`${testSuiteName(module)}`, function() {
             ];
             testHasTapes(grammar, ['t1']);
             testHasVocab(grammar, {t1: 10});
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
         
         describe('5. Short(t1:.*i) (vocab t1:hi)', function() {
@@ -123,7 +123,7 @@ describe(`${testSuiteName(module)}`, function() {
             ];
             testHasTapes(grammar, ['t1']);
             testHasVocab(grammar, {t1: 2});
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
 
         describe('6. Contains at least one i: Short(t1:.*i) + t1.* ' +
@@ -150,7 +150,7 @@ describe(`${testSuiteName(module)}`, function() {
             ];
             testHasTapes(grammar, ['t1']);
             testHasVocab(grammar, {t1: 2});
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
 
         describe('7. Does not contain any i: ~(Short(t1:.*i) + t1:.*) ' +
@@ -169,7 +169,7 @@ describe(`${testSuiteName(module)}`, function() {
             ];
             testHasTapes(grammar, ['t1']);
             testHasVocab(grammar, {t1: 2});
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
 
         describe('8a. t1:abcdef ⨝ not-contain(t1:i): ' +
@@ -184,7 +184,7 @@ describe(`${testSuiteName(module)}`, function() {
             ];
             testHasTapes(grammar, ['t1']);
             testHasVocab(grammar, {t1: 8});
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
         
         describe('8b. not-contain(t1:i) ⨝ t1:abcdef: ' +
@@ -199,7 +199,7 @@ describe(`${testSuiteName(module)}`, function() {
             ];
             testHasTapes(grammar, ['t1']);
             testHasVocab(grammar, {t1: 8});
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
         
         describe('9a. t1:abcdef ⨝ not-contain(t1:b): ' +
@@ -212,7 +212,7 @@ describe(`${testSuiteName(module)}`, function() {
             ];
             testHasTapes(grammar, ['t1']);
             testHasVocab(grammar, {t1: 6});
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
         
         describe('9b. not-contain(t1:b) ⨝ t1:abcdef: ' +
@@ -225,7 +225,7 @@ describe(`${testSuiteName(module)}`, function() {
             ];
             testHasTapes(grammar, ['t1']);
             testHasVocab(grammar, {t1: 6});
-            testGrammar(grammar, expectedResults);
+            testGenerate(grammar, expectedResults);
         });
     }
 

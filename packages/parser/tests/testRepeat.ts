@@ -8,7 +8,7 @@ import {
     testSuiteName, logTestSuite,
     VERBOSE_TEST_L2, verbose,
     t1, t2,
-    testHasTapes, testGrammar, testHasVocab,
+    testHasTapes, testGenerate, testHasVocab,
     WARN_ONLY_FOR_TOO_MANY_OUTPUTS
 } from './testUtil';
 
@@ -40,7 +40,7 @@ describe(`${testSuiteName(module)}`, function() {
             {},
             {t1: 'o'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2. Repeat 1-4 Os: t1:o{1,4}', function() {
@@ -51,7 +51,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ooo'},
             {t1: 'oooo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('3. Repeat 1-4 empty strings: t1:{1,4}', function() {
@@ -59,7 +59,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('4. t1:o{1,4} + t2:foo', function() {
@@ -70,7 +70,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ooo', t2: 'foo'},
             {t1: 'oooo', t2: 'foo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('5. t2:foo + t1:o{1,4}', function() {
@@ -82,7 +82,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ooo', t2: 'foo'},
             {t1: 'oooo', t2: 'foo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('6. Hello with 1-4 Os: t1:hell+t1:o{1,4}', function() {
@@ -93,7 +93,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hellooo'},
             {t1: 'helloooo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('7. Hello with 0-1 Os: t1:hell+t1:o{0,1}', function() {
@@ -102,7 +102,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hell'},
             {t1: 'hello'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('8. Hello with 1-4 Hs: t1:h{1,4}+t1:ello', function() {
@@ -113,7 +113,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhhello'},
             {t1: 'hhhhello'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('9. Hello with 0-1 Hs: t1:h{0,1}+t1:ello', function() {
@@ -122,7 +122,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ello'},
             {t1: 'hello'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('10. Join t1:hhello ⨝ t1:h{1,4}+t1:ello', function() {
@@ -130,7 +130,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hhello'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('11. Join t1:h{1,4}+t1:ello ⨝ hhello', function() {
@@ -138,7 +138,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hhello'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('12. Join t1:h{1,4}+t1:ello ⨝ the same', function() {
@@ -150,7 +150,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhhello'},
             {t1: 'hhhhello'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('13. Join t1:h{1,4} + t2:world ⨝ the same', function() {
@@ -162,7 +162,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhh', t2: 'world'},
             {t1: 'hhhh', t2: 'world'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('14. Join t1:h{1,4}+t1:ello + t2:world ⨝ the same', function() {
@@ -174,7 +174,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhhello', t2: 'world'},
             {t1: 'hhhhello', t2: 'world'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('15. Join t1:h{1,4} + t2:world + t1:ello ⨝ the same', function() {
@@ -186,7 +186,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhhello', t2: 'world'},
             {t1: 'hhhhello', t2: 'world'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('16. Filter t1:na{0,2} [ε]', function() {
@@ -196,7 +196,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'na'},
             {t1: 'nana'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     
@@ -205,7 +205,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     
@@ -216,7 +216,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'na'},
             {t1: 'nana'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('19. Join ε ⨝ t1:na{0,2}', function() {
@@ -226,7 +226,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'na'},
             {t1: 'nana'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('20. t1:na{1,4}', function() {
@@ -237,7 +237,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'nanana'},
             {t1: 'nananana'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('21. t1:na{0,2}', function() {
@@ -247,7 +247,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'na'},
             {t1: 'nana'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('22. t1:na{0}', function() {
@@ -255,14 +255,14 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('23. Repeat with min > max: t1:na{4,3}', function() {
         const grammar = Rep(t1("na"), 4, 3);
         const expectedResults: StringDict[] = [
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('24. Repeat with negative min: t1:na{-3,2}', function() {
@@ -272,7 +272,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'na'},
             {t1: 'nana'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('25. Repeat with 1-unlimited Os: t1:o+', function() {
@@ -285,7 +285,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'oooo'},
             {t1: 'ooooo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('26. Repeat with unlimited Os: t1:o*', function() {
@@ -299,7 +299,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'oooo'},
             {t1: 'ooooo'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('27. t1:h* + t1:i', function() {
@@ -313,7 +313,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhhhi'},
             {t1: 'hhhhhi'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('28. t1:h + t1:i*', function() {
@@ -327,7 +327,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hiiii'},
             {t1: 'hiiiii'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('29. (t1:h + t1:i)*', function() {
@@ -339,7 +339,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hihi'},
             {t1: 'hihihi'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     
@@ -352,7 +352,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hh', t2: 'ii'},
             {t1: 'hhh', t2: 'iii'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('31a. (t1:h | t2:i)*', function() {
@@ -364,7 +364,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2:'i'},
             {t2: 'i'},
         ];
-        testGrammar(grammar, expectedResults,
+        testGenerate(grammar, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -379,24 +379,8 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hh', t2:'i'},  {t1: 'hh', t2:'ii'},  
             {t2: 'i'},           {t2: 'ii'},         
         ];
-        testGrammar(grammar, expectedResults,
-                    VERBOSE_DEBUG, DEFAULT, DEFAULT, DEFAULT,
-                    WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
-    });
-    
-    describe('31c. (t1:h | t2:i)* (count 3)', function() {
-        let grammar: Grammar = Rep(Uni(t1("h"), t2("i")));
-        grammar = Count({t1:3,t2:3}, grammar);
-        const expectedResults: StringDict[] = [
-            {},
-            {t1: 'h'},           {t1: 'hh'},           {t1: 'hhh'},
-            {t1: 'h', t2:'i'},   {t1: 'h', t2:'ii'},   {t1: 'h', t2:'iii'},
-            {t1: 'hh', t2:'i'},  {t1: 'hh', t2:'ii'},  {t1: 'hh', t2:'iii'},
-            {t1: 'hhh', t2:'i'}, {t1: 'hhh', t2:'ii'}, {t1: 'hhh', t2:'iii'},
-            {t2: 'i'},           {t2: 'ii'},           {t2: 'iii'},
-        ];
-        testGrammar(grammar, expectedResults,
-                    SILENT, DEFAULT, DEFAULT, DEFAULT,
+        testGenerate(grammar, expectedResults,
+                    DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
 
@@ -413,7 +397,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ba', t2: 'ba'},
             {t1: 'bb', t2: 'bb'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('33. Filter t1:h [t2:h*]', function() {
@@ -422,7 +406,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('34. Filter t1:h [(t1:h|t2:h)*]', function() {
@@ -432,7 +416,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('35. t1:h + ε*', function() {
@@ -441,7 +425,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('36. (t1:h + t2:""){0,4}', function() {
@@ -454,7 +438,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhh'},
             {t1: 'hhhh'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('37. (t2:"" + t1:h){0,4}', function() {
@@ -467,7 +451,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhh'},
             {t1: 'hhhh'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('38. Nested repetition: (t1:ba{1,2}){2,3}', function() {
@@ -479,7 +463,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'bababababa'},
             {t1: 'babababababa'},
         ];
-        testGrammar(grammar, expectedResults, VERBOSE_DEBUG);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('39. (t1:h+t2:h){2}', function() {
@@ -487,7 +471,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'hh'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('40. Filter (t1:h+t2:h){2} [t1:hh+t2:hh]', function() {
@@ -496,7 +480,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'hh'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('41. Filter t1:hh+t2:hh [(t1:h+t2:h){2}]', function() {
@@ -505,7 +489,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'hh'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     
@@ -515,7 +499,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'hh'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('43. Filter t1:hh+t2:hh [(t1:h+t2:h)*]', function() {
@@ -524,7 +508,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'hh'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('44. Rep(Any): t1:hi + t1:.{0,3}', function() {
@@ -539,7 +523,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hiihh'}, {t1: 'hiihi'},
             {t1: 'hiiih'}, {t1: 'hiiii'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('45. Rep(Any): t1:.{0,3} + t1:hi', function() {
@@ -554,7 +538,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'ihhhi'}, {t1: 'ihihi'},
             {t1: 'iihhi'}, {t1: 'iiihi'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('46. Rep(Any): t1:.{0,1} + t1:hi + t1:.{0,1}', function() {
@@ -568,7 +552,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhih'}, {t1: 'hhii'},
             {t1: 'ihih'}, {t1: 'ihii'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('47. Join t1:hi ⨝ t1:.{0,1}', function() {
@@ -576,7 +560,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('48. Filter t1:.{0,2} [ε]', function() {
@@ -584,7 +568,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('49. Filter ε [t1:.{0,2}]', function() {
@@ -592,7 +576,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('50. Join t1:.{0,2} ⨝ ε', function() {
@@ -600,7 +584,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('51. Join ε ⨝ t1:.{0,2}', function() {
@@ -608,7 +592,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('52. Filter t1:hello [t1:he+t1:.*]', function() {
@@ -616,7 +600,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('53. Filter t1:hello [t1:.*+t1:lo]', function() {
@@ -624,7 +608,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('54. Filter t1:hello [t1:.*+t1:e+t1:.*]', function() {
@@ -633,7 +617,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('55. Filter t1:hello [t1:.*+t1:l+t1:.*]', function() {
@@ -642,7 +626,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('56. Filter t1:hello with [t1:.*+t1:h+t1:.*]', function() {
@@ -651,7 +635,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('57. Filter t1:hello with [t1:.*+t1:o+t1:.*]', function() {
@@ -660,7 +644,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hello'}
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     // More joining of repeats
@@ -672,7 +656,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'a', t2: 'bbb'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
     describe('58b. Join t1:a + t2:bbb ⨝ (t1:"" + t2:b){0,4} + t1:a', function() {
@@ -682,7 +666,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'a', t2: 'bbb'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
     describe('58c. Join (t1:"" + t2:b){3} + t1:a ⨝ t1:a + t2:bbb', function() {
@@ -692,7 +676,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'a', t2: 'bbb'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
     describe('58d. Join (t1:"" + t2:b){0,4} + t1:a ⨝ t1:a + t2:bbb', function() {
@@ -702,7 +686,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'a', t2: 'bbb'},
         ];
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     }); 
 
     // Repeats of Nullable Matches
@@ -721,7 +705,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59a-1. Join (t2:e+M(t1>t2,ε|t1:h)){2} ⨝ t2:ee ' +
@@ -738,7 +722,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'ee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59a-2. Join (t2:e+M(t1>t2,ε|t1:h)){2} ⨝ t1:h + t2:eeh ' +
@@ -755,7 +739,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59a-3. Join (t2:e+M(t1>t2,ε|t1:h)){2} ⨝ t1:h + t2:ehe ' +
@@ -772,7 +756,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'ehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59b-1. Join t2:ee ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} ' +
@@ -789,7 +773,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'ee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59b-2. Join t1:h + t2:eeh ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} ' +
@@ -806,7 +790,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59b-3. Join t1:h + t2:ehe ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} ' +
@@ -823,7 +807,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'ehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59c-1. Filter (t2:e+M(t1>t2,ε|t1:h)){2} [t2:ee] ' +
@@ -840,7 +824,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'ee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59c-2. Filter (t2:e+M(t1>t2,ε|t1:h)){2} [t1:h + t2:eeh] ' +
@@ -857,7 +841,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59c-3. Filter (t2:e+M(t1>t2,ε|t1:h)){2} [t1:h + t2:ehe] ' +
@@ -874,7 +858,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'ehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59d-1. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} & t2:ee ' +
@@ -891,7 +875,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'ee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59d-2. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} & t1:h + t2:eeh ' +
@@ -908,7 +892,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59d-3. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} & t1:h + t2:ehe ' +
@@ -925,7 +909,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'ehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59e-1. Intersect t2:ee & (t2:e+M(t1>t2,ε|t1:h)){2} ' +
@@ -942,7 +926,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'ee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59e-2. Intersect t1:h + t2:eeh & (t2:e+M(t1>t2,ε|t1:h)){2} ' +
@@ -959,7 +943,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('59e-3. Intersect t1:h + t2:ehe & (t2:e+M(t1>t2,ε|t1:h)){2} ' +
@@ -976,7 +960,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'ehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60. (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x (vocab hx/hex)', function() {
@@ -993,7 +977,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hx', t2: 'ehe'},
             {t1: 'hx', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults, VERBOSE_DEBUG);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60a-1. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ⨝ t1:x + t2:ee ' +
@@ -1011,7 +995,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'x', t2: 'ee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -1031,7 +1015,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hx', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60a-3. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ⨝ t1:hx + t2:ehe ' +
@@ -1049,7 +1033,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hx', t2: 'ehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60b-1. Join t1:x + t2:ee ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ' +
@@ -1067,7 +1051,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'x', t2: 'ee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60b-2. Join t1:hx + t2:eeh ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ' +
@@ -1085,7 +1069,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hx', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60b-3. Join t1:hx + t2:ehe ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ' +
@@ -1103,7 +1087,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hx', t2: 'ehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60c-1. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x [t1:x + t2:ee] ' +
@@ -1121,7 +1105,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'x', t2: 'ee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60c-2. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x [t1:hx + t2:eeh] ' +
@@ -1139,7 +1123,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hx', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60c-3. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x [t1:hx + t2:ehe] ' +
@@ -1157,7 +1141,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hx', t2: 'ehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60d-1. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x & t1:x + t2:ee ' +
@@ -1175,7 +1159,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'x', t2: 'ee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -1195,7 +1179,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hx', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60d-3. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x & t1:hx + t2:ehe ' +
@@ -1213,7 +1197,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hx', t2: 'ehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60e-1. Intersect t1:x + t2:ee & (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ' +
@@ -1231,7 +1215,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'x', t2: 'ee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60e-2. Intersect t1:hx + t2:eeh & (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ' +
@@ -1249,7 +1233,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hx', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('60e-3. Intersect t1:hx + t2:ehe & (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ' +
@@ -1267,7 +1251,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hx', t2: 'ehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61. (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x (vocab hx/hex)', function() {
@@ -1284,7 +1268,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehex'},
             {t1: 'h', t2: 'eehx'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61a-1. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ⨝ t2:eex ' +
@@ -1302,7 +1286,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eex'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61a-2. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ⨝ t1:h + t2:eehx ' +
@@ -1320,7 +1304,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'eehx'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61a-3. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ⨝ t1:h + t2:ehex ' +
@@ -1338,7 +1322,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'ehex'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61b-1. Join t2:eex ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ' +
@@ -1356,7 +1340,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eex'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61b-2. Join t1:h + t2:eehx ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ' +
@@ -1374,7 +1358,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'eehx'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61b-3. Join t1:h + t2:ehex ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ' +
@@ -1392,7 +1376,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'ehex'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61c-1. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x [t2:eex] ' +
@@ -1410,7 +1394,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eex'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61c-2. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x [t1:h + t2:eehx] ' +
@@ -1428,7 +1412,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'eehx'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61c-3. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x [t1:h + t2:ehex] ' +
@@ -1446,7 +1430,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'ehex'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61d-1. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x & t2:eex ' +
@@ -1464,7 +1448,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eex'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61d-2. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x & t1:h + t2:eehx ' +
@@ -1482,7 +1466,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'eehx'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61d-3. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x & t1:h + t2:ehex ' +
@@ -1500,7 +1484,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'ehex'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61e-1. Intersect t2:eex & (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ' + 
@@ -1518,7 +1502,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eex'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61e-2. Intersect t1:h + t2:eehx & (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ' +
@@ -1536,7 +1520,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'eehx'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('61e-3. Intersect t1:h + t2:ehex & (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ' +
@@ -1554,7 +1538,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'h', t2: 'ehex'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62. (t2:e+M(t1>t2,ε|t1:h)){2} + same (vocab hx/hex)', function() {
@@ -1575,7 +1559,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hh', t2: 'eehehe'}, {t1: 'hh', t2: 'eheeeh'},
             {t1: 'hh', t2: 'eheehe'}, {t1: 'hh', t2: 'ehehee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -1595,7 +1579,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62a-2. Join (t2:e+M(t1>t2,ε|t1:h)){2} + same ⨝ t1:hh + t2:eeheeh ' + 
@@ -1613,7 +1597,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62a-3. Join (t2:e+M(t1>t2,ε|t1:h)){2} + same ⨝ t1:hh + t2:eheehe ' +
@@ -1631,7 +1615,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62a-4. Join (t2:e+M(t1>t2,ε|t1:h)){2} + same ⨝ (t2:ee)* ' +
@@ -1649,7 +1633,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62a-5. Join (t2:e+M(t1>t2,ε|t1:h)){2} + same ⨝ (t1:h+t2:eeh)* ' +
@@ -1667,7 +1651,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62a-6. Join (t2:e+M(t1>t2,ε|t1:h)){2} + same ⨝ (t1:h+t2:ehe)* ' + 
@@ -1685,7 +1669,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62b-1. Join t2:eeee ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + same ' + 
@@ -1703,7 +1687,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62b-2. Join t1:hh + t2:eeheeh ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + same ' + 
@@ -1721,7 +1705,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62b-3. Join t1:hh + t2:eheehe ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
@@ -1739,7 +1723,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62b-4. Join (t2:ee)* ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + same ' + 
@@ -1757,7 +1741,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62b-5. Join (t1:h+t2:eeh)* ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
@@ -1775,7 +1759,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62b-6. Join (t1:h+t2:ehe)* ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
@@ -1793,7 +1777,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62c-1. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + same [t2:eeee] ' +
@@ -1811,7 +1795,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62c-2. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + same [t1:hh + t2:eeheeh] ' +
@@ -1830,7 +1814,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62c-3. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + same [t1:hh + t2:eheehe] ' +
@@ -1849,7 +1833,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62c-4. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + same [(t2:ee)*] ' +
@@ -1867,7 +1851,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62c-5. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + same [(t1:h+t2:eeh)*] ' +
@@ -1886,7 +1870,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62c-6. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + same [(t1:h+t2:ehe)*] ' +
@@ -1905,7 +1889,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62d-1. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + same & t2:eeee ' +
@@ -1923,7 +1907,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62d-2. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + same & t1:hh + t2:eeheeh ' +
@@ -1942,7 +1926,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62d-3. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + same & t1:hh + t2:eheehe ' +
@@ -1961,7 +1945,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62d-4. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + same & (t2:ee)* ' +
@@ -1979,7 +1963,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62d-5. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + same & (t1:h+t2:eeh)* ' +
@@ -1998,7 +1982,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62d-6. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + same & (t1:h+t2:ehe)* ' +
@@ -2017,7 +2001,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62e-1. Intersect t2:eeee & (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
@@ -2035,7 +2019,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62e-2. Intersect t1:hh + t2:eeheeh & (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
@@ -2054,7 +2038,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62e-3. Intersect t1:hh + t2:eheehe & (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
@@ -2073,7 +2057,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62e-4. Intersect (t2:ee)* & (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
@@ -2091,7 +2075,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62e-5. Intersect (t1:h+t2:eeh)* & (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
@@ -2110,7 +2094,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('62e-6. Intersect (t1:h+t2:ehe)* & (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
@@ -2129,7 +2113,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63. ((t2:e+M(t1>t2,ε|t1:h)){2}){2} (vocab hx/hex)', function() {
@@ -2150,7 +2134,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hh', t2: 'eehehe'}, {t1: 'hh', t2: 'eheeeh'},
             {t1: 'hh', t2: 'eheehe'}, {t1: 'hh', t2: 'ehehee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2170,7 +2154,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63a-2. Join ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ⨝ (t1:h+t2:eeh)* ' +
@@ -2188,7 +2172,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63a-3. Join ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ⨝ (t1:h+t2:ehe)* ' +
@@ -2206,7 +2190,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63b-1. Join (t2:ee)* ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ' +
@@ -2224,7 +2208,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63b-2. Join (t1:h+t2:eeh)* ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ' +
@@ -2243,7 +2227,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63b-3. Join (t1:h+t2:ehe)* ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ' +
@@ -2262,7 +2246,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63c-1. Filter ((t2:e+M(t1>t2,ε|t1:h)){2}){2} [(t2:ee)*] ' +
@@ -2280,7 +2264,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63c-2. Filter ((t2:e+M(t1>t2,ε|t1:h)){2}){2} [(t1:h+t2:eeh)*] ' +
@@ -2299,7 +2283,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63c-3. Filter ((t2:e+M(t1>t2,ε|t1:h)){2}){2} [(t1:h+t2:ehe)*] ' +
@@ -2318,7 +2302,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63d-1. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2}){2} & (t2:ee)* ' +
@@ -2336,7 +2320,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63d-2. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2}){2} & (t1:h+t2:eeh)* ' +
@@ -2355,7 +2339,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63d-3. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2}){2} & (t1:h+t2:ehe)* ' +
@@ -2374,7 +2358,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63e-1. Intersect (t2:ee)* & ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ' +
@@ -2392,7 +2376,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63e-2. Intersect (t1:h+t2:eeh)* & ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ' +
@@ -2411,7 +2395,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('63e-3. Intersect (t1:h+t2:ehe)* & ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ' +
@@ -2430,7 +2414,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64. ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)', function() {
@@ -2456,7 +2440,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hh', t2: 'eheeeh'}, {t1: 'hh', t2: 'eheehe'},
             {t1: 'hh', t2: 'ehehee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2476,7 +2460,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64a-2. Join ((t2:e+M(t1>t2,ε|t1:h)){2})* ⨝ (t1:h+t2:eeh){2} ' +
@@ -2495,7 +2479,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64a-3. Join ((t2:e+M(t1>t2,ε|t1:h)){2})* ⨝ (t1:h+t2:ehe){2} ' +
@@ -2514,7 +2498,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64b-1. Join (t2:ee){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2})* ' +
@@ -2532,7 +2516,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64b-2. Join (t1:h+t2:eeh){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2})* ' +
@@ -2551,7 +2535,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64b-3. Join (t1:h+t2:ehe){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2})* ' +
@@ -2570,7 +2554,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64c-1. Filter ((t2:e+M(t1>t2,ε|t1:h)){2})* [(t2:ee){2}] ' +
@@ -2588,7 +2572,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64c-2. Filter ((t2:e+M(t1>t2,ε|t1:h)){2})* [(t1:h+t2:eeh){2}] ' +
@@ -2607,7 +2591,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64c-3. Filter ((t2:e+M(t1>t2,ε|t1:h)){2})* [(t1:h+t2:ehe){2}] ' +
@@ -2626,7 +2610,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64d-1. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2})* & (t2:ee){2} ' +
@@ -2644,7 +2628,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64d-2. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2})* & (t1:h+t2:eeh){2} ' +
@@ -2663,7 +2647,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64d-3. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2})* & (t1:h+t2:ehe){2} ' +
@@ -2682,7 +2666,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64e-1. Intersect (t2:ee){2} & ((t2:e+M(t1>t2,ε|t1:h)){2})* ' +
@@ -2700,7 +2684,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64e-2. Intersect (t1:h+t2:eeh){2} & ((t2:e+M(t1>t2,ε|t1:h)){2})* ' +
@@ -2719,7 +2703,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('64e-3. Intersect (t1:h+t2:ehe){2} & ((t2:e+M(t1>t2,ε|t1:h)){2})* ' +
@@ -2738,7 +2722,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('65. ((t2:e+M(t1>t2,ε|t1:h))*){2} (vocab hx/hex)', function() {
@@ -2769,7 +2753,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hh', t2: 'eheeeh'}, {t1: 'hh', t2: 'eheehe'},
             {t1: 'hh', t2: 'ehehee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2789,7 +2773,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2810,7 +2794,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2831,7 +2815,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2851,7 +2835,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2872,7 +2856,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2893,7 +2877,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2913,7 +2897,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2934,7 +2918,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2955,7 +2939,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2975,7 +2959,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -2996,7 +2980,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -3017,7 +3001,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -3037,7 +3021,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t2: 'eeee'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -3058,7 +3042,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eeheeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -3079,7 +3063,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'hh', t2: 'eheehe'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -3106,7 +3090,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhh', t2: 'eheheeh'}, {t1: 'hhh', t2: 'ehehehe'},
             {t1: 'hhhh', t2: 'eheheheh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('66b. (t2:e+M(t1>t2,ε|t1:h)){2} + (t2:e+M(t1>t2,ε|t1:h)){2} ' +
@@ -3131,7 +3115,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhh', t2: 'eheheeh'}, {t1: 'hhh', t2: 'ehehehe'},
             {t1: 'hhhh', t2: 'eheheheh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -3159,7 +3143,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'hhh', t2: 'ehehxxh'}, {t1: 'hhh', t2: 'ehehxhx'},
             {t1: 'hhhh', t2: 'ehehxhxh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults,
+        testGenerate(grammarWithVocab, expectedResults,
                     DEFAULT, DEFAULT, DEFAULT, DEFAULT,
                     WARN_ONLY_FOR_TOO_MANY_OUTPUTS);
     });
@@ -3176,7 +3160,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "o".repeat(3), t2: "hi".repeat(3)},
             {t1: "o".repeat(4), t2: "hi".repeat(4)},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 10 states
@@ -3186,7 +3170,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(5), t2: "hi,".repeat(5)},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 10 states
@@ -3196,7 +3180,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(5), t2: "hello,".repeat(5)},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 20 states
@@ -3206,7 +3190,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(10), t2: "hello,".repeat(10)},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 20 states
@@ -3216,7 +3200,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(10), t2: "hello,".repeat(10)},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 20 states
@@ -3226,7 +3210,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(10), t2: "hello,".repeat(10)},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 50 states
@@ -3236,7 +3220,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(25), t2: "hello,".repeat(25)},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 50 states
@@ -3246,7 +3230,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "no".repeat(25), t2: "hello,".repeat(25)},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 
     // 50 states
@@ -3256,6 +3240,6 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hello,".repeat(25), t2: "no".repeat(25)},
         ];
-        testGrammar(grammar, expectedResults, vb(VERBOSE_STATES));
+        testGenerate(grammar, expectedResults, vb(VERBOSE_STATES));
     });
 });

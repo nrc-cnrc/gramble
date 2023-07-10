@@ -1,21 +1,18 @@
-
+import { basename } from "path";
 import { assert, expect } from "chai";
+
 import { Grammar, Lit } from "../src/grammars";
 import { Interpreter } from "../src/interpreter";
+import { Tape } from "../src/tapes";
 import {
     HIDDEN_PREFIX, StringDict,
     SILENT, VERBOSE_DEBUG, logDebug
 } from "../src/util";
-import { dirname, basename } from "path";
-import { existsSync } from "fs";
-import { TextDevEnvironment } from "../src/textInterface";
-import { Tape } from "../src/tapes";
 
 export const DEFAULT_MAX_RECURSION = 4;
 
 // DEBUG_MAX_RECURSION is a forced upper bound for maxRecursion.
 const DEBUG_MAX_RECURSION: number = 4;      // 4
-//const DEBUG_MAX_CHARS: number = 100;        // 100
 
 // Some tests ultimately call testNumOutputs with warnOnly set to 
 // WARN_ONLY_FOR_TOO_MANY_OUTPUTS.
@@ -31,7 +28,7 @@ export const WARN_ONLY_FOR_TOO_MANY_OUTPUTS: boolean = true;
 export const VERBOSE_TEST_L1: boolean = true;
 export const VERBOSE_TEST_L2: boolean = false;
 
-export function verbose(vb: boolean, ...msgs: string[]) {
+export function verbose(vb: boolean | number, ...msgs: string[]) {
     if (!vb)
         return;
     logDebug(vb ? VERBOSE_DEBUG : SILENT, ...msgs);
@@ -75,8 +72,8 @@ export function testNumOutputs(
             expect(outputs.length).to.equal(expectedNum);
         } catch (e) {
             console.log("");
-            console.log(`[${this.test?.fullTitle()}] ` +
-                        `${outputs.length} outputs: ${JSON.stringify(outputs)}`);
+            console.log(`[${this.test?.fullTitle()}]`);
+            console.log(`${outputs.length} outputs: ${JSON.stringify(outputs)}`);
             if (warningOnly && outputs.length > expectedNum) {
                 console.log(`Warning: should have ${expectedNum} result(s), ` +
                             `but found ${outputs.length}.`)
@@ -152,8 +149,8 @@ export function testMatchOutputs(
                 expect(expected_outputs).to.deep.include.members(outputs.slice(start, end_outputs));
             } catch (e) {
                 console.log("");
-                console.log(`[${this.test?.fullTitle()}] ` +
-                            `${outputs.length} outputs: ${JSON.stringify(outputs)}`);
+                console.log(`[${this.test?.fullTitle()}]`);
+                console.log(`${outputs.length} outputs: ${JSON.stringify(outputs)}`);
                 throw e;
             }
         });
@@ -161,21 +158,39 @@ export function testMatchOutputs(
 }
 
 export function generateOutputsFromGrammar(
-    grammar: Grammar,
+    grammar: Grammar | Interpreter,
+    verbose: number = SILENT,
     symbolName: string = "",
     maxRecursion: number = DEFAULT_MAX_RECURSION,
     stripHidden: boolean = true
 ): StringDict[] {
+    const interpreter = (grammar instanceof Interpreter) ?
+                        grammar :
+                        Interpreter.fromGrammar(grammar, verbose);
+    
+    // In case there are any tests, we want to run them so their errors accumulate
+    interpreter.runTests();
+                          
     let outputs: StringDict[] = [];
 
-    const interpreter = Interpreter.fromGrammar(grammar);
+    try {
+        interpreter.resolveName(symbolName);
+    } catch(e) {
+        it(`symbol "${symbolName} should exist`, function() {
+            console.log("");
+            console.log(`[${this.test?.fullTitle()}]`);
+            console.log(e);
+            assert.fail(e);
+        });
+    }
 
     maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
-    //maxChars = Math.min(maxChars, DEBUG_MAX_CHARS);
 
     try {
-        outputs = [...interpreter.generate(symbolName, {}, Infinity, maxRecursion,
-                                           undefined, stripHidden)];
+        outputs = [
+            ...interpreter.generate(symbolName, {}, Infinity,
+                                    maxRecursion, undefined, stripHidden)
+        ];
     } catch (e) {
         it("Unexpected Exception", function() {
             console.log("");
@@ -187,49 +202,20 @@ export function generateOutputsFromGrammar(
     return outputs;
 }
 
-export function testGrammar(
+export function testGenerate(
     grammar: Grammar | Interpreter,
     expectedResults: StringDict[],
     verbose: number = SILENT,
     symbolName: string = "",
     maxRecursion: number = DEFAULT_MAX_RECURSION,
     stripHidden: boolean = true,
-    warnOnlyForTooManyOutputs: boolean = false
+    allowDuplicateOutputs: boolean = false
 ): void {
-    const interpreter = (grammar instanceof Interpreter) ?
-                        grammar :
-                        Interpreter.fromGrammar(grammar, verbose);
-    
-    interpreter.runTests(); // in case there are any tests, 
-                        // we want to run them so their errors
-                        // accumulate
-                          
-    let outputs: StringDict[] = [];
-
-    try {
-        interpreter.resolveName(symbolName);
-    } catch(e) {
-        it(`symbol "${symbolName} should exist`, function() {
-            assert.fail(e);
-        });
-        return;
-    }
-
-    maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
-    //maxChars = Math.min(maxChars, DEBUG_MAX_CHARS);
-
-    try {
-        outputs = [...interpreter.generate(symbolName, {}, Infinity, maxRecursion,
-                                           undefined, stripHidden)];
-    } catch (e) {
-        it("Unexpected Exception", function() {
-            console.log("");
-            console.log(`[${this.test?.fullTitle()}]`);
-            console.log(e);
-            assert.fail(e);
-        });
-    }
-    testNumOutputs(outputs, expectedResults.length, warnOnlyForTooManyOutputs, symbolName);
+    const outputs: StringDict[] =
+        generateOutputsFromGrammar(grammar, verbose, symbolName,
+                                   maxRecursion, stripHidden);
+    testNumOutputs(outputs, expectedResults.length,
+                   allowDuplicateOutputs, symbolName);
     testMatchOutputs(outputs, expectedResults, symbolName);
 }
 
@@ -275,7 +261,8 @@ export function testHasTapes(
             }
         } catch (e) {
             console.log("");
-            console.log(`[${this.test?.fullTitle()}] ${tapes.length} tapes [${tapes}]`);
+            console.log(`[${this.test?.fullTitle()}]`);
+            console.log(`${tapes.length} tapes: ${tapes}`);
             throw e;
         }
     });
@@ -330,14 +317,17 @@ export function testDoesNotHaveSymbols(
 ): void {
     const interpreter = Interpreter.fromGrammar(grammar);
     const symbols = interpreter.allSymbols();
-    it(`should have symbols [${expectedSymbols}]`, function() {
+    it(`should not have symbols [${expectedSymbols}]`, function() {
         for (const s of expectedSymbols) {
             expect(symbols).to.not.include(s);
         }
     });
 }
 
-export function testErrors(interpreter: Interpreter, expectedErrors: [string, number, number, string][]) {
+export function testErrors(
+    interpreter: Interpreter,
+    expectedErrors: [string, number, number, string][]
+) {
 
     //interpreter.runChecks();
     const devEnv = interpreter.devEnv;
@@ -345,6 +335,7 @@ export function testErrors(interpreter: Interpreter, expectedErrors: [string, nu
         try {
             expect(devEnv.numErrors("any")).to.equal(expectedErrors.length);
         } catch (e) {
+            console.log(`[${this.test?.fullTitle()}]`);
             console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
             throw e;
         }
@@ -356,26 +347,13 @@ export function testErrors(interpreter: Interpreter, expectedErrors: [string, nu
             try {
                 expect(devEnv.getErrors(sheet, row, col).length).to.be.greaterThan(0);
             } catch (e) {
+                console.log(`[${this.test?.fullTitle()}]`);
                 console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
                 throw e;
             }
         });
     }
 }
-
-export function sheetFromFile(
-    path: string,
-    verbose: number = SILENT
-): Interpreter {
-    if (!existsSync(path)) {
-        throw new Error(`Cannot find file ${path}`);
-    }
-    const dir = dirname(path);
-    const sheetName = basename(path, ".csv");
-    const devEnv = new TextDevEnvironment(dir);
-    return Interpreter.fromSheet(devEnv, sheetName, verbose);
-}
-
 
 export type InputResultsPair = [StringDict, StringDict[]];
 
@@ -387,7 +365,6 @@ export function testParseMultiple(
 ): void {
 
     maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
-    //maxChars = Math.min(maxChars, DEBUG_MAX_CHARS);
                                     
     for (const [inputs, expectedResults] of inputResultsPairs) {
         describe(`testing parse ${JSON.stringify(inputs)} ` + 

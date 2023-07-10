@@ -19,7 +19,7 @@ import {
     VERBOSE_TEST_L2,
     t1, t2, t3, t4,
     testHasTapes,
-    testGrammar,
+    testGenerate,
     testHasVocab
 } from "./testUtil";
 
@@ -44,7 +44,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2. MatchFrom t1>t2, ε', function() {
@@ -55,7 +55,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 0, t2: 0})
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('3. MatchFrom t1>t2, 0', function() {
@@ -65,7 +65,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 0, t2: 0})
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('4. MatchFrom t1>t2, t1:hello + t1:world', function() {
@@ -76,7 +76,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 7, t2: 7});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('5. MatchFrom t1>t2, t1:hello + t4:goodbye', function() {
@@ -87,7 +87,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('6. MatchFrom t1>t2, t4:goodbye + t1:hello', function() {
@@ -98,7 +98,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('7. MatchFrom t1>t2, Nested sequence ' +
@@ -111,7 +111,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 9, t2: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('8. MatchFrom t1>t2, t1:hello | t1:goodbye', function() {
@@ -123,7 +123,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 8, t2: 8});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('9. MatchFrom t1>t2, t1:hello | t4:goodbye', function() {
@@ -135,7 +135,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('10. MatchFrom t1>t2, t4:goodbye | t1:hello', function() {
@@ -147,7 +147,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t4: 6});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('11. MatchFrom t1>t2, ' +
@@ -163,7 +163,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 13, t2: 13});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
    
@@ -178,7 +178,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 13, t2: 13});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('13. MatchFrom t1>t2, t1:. (vocab t1:hi)', function() {
@@ -190,7 +190,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('14. MatchFrom t1>t2, t1:hi+t1:.', function() {
@@ -202,7 +202,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('15. MatchFrom t1>t2, Join t1:hello ⨝ t1:.ello', function() {
@@ -214,7 +214,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('16. MatchFrom t1>t2, Join t1:hello ⨝ t4:world', function() {
@@ -225,7 +225,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('17. MatchFrom t1>t2, Join t4:world ⨝ t1:hello', function() {
@@ -236,7 +236,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('18. MatchFrom t2>t3, Join t1:hello+t1:kitty ⨝ ' +
@@ -250,7 +250,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 8, t2: 9, t3: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('19. MatchFrom t2>t3, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ ' +
@@ -265,7 +265,7 @@ describe(`${testSuiteName(module)}`, function() {
         
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 8, t2: 9, t3: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('20. MatchFrom t1>t3, Join t1:hello+t1:kitty ⨝ ' +
@@ -279,7 +279,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('21. MatchFrom t1>t3, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ ' +
@@ -293,7 +293,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('22. MatchFrom t1>t3, Join t1:hello+t1:kitty ⨝ ' +
@@ -307,7 +307,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('23. MatchFrom t1>t3, Join t1:hello+t1:kitty ⨝ ' +
@@ -321,7 +321,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t2: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('24. MatchFrom t1>t2, t1:o{0,1}', function() {
@@ -333,7 +333,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('25. MatchFrom t1>t2, ' +
@@ -349,7 +349,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t4: 5});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('26. MatchFrom t1>t2, ' +
@@ -365,7 +365,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t4: 5});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('27. MatchFrom t1>t2, t1:na{1,4}', function() {
@@ -379,7 +379,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('28. MatchFrom t1>t2, t1:.{0,2} + t1:hi', function() {
@@ -393,7 +393,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('29. MatchFrom t1>t2, t1:.{0,1} + t1:hi + t1:.{0,1}', function() {
@@ -410,7 +410,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('30. MatchFrom t1>t2, t1:.* (vocab hi/XhiZ)', function() {
@@ -430,7 +430,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 4});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('30a. Effectively insert e twice: (t2:e+M(t1>t2,.*)){2} (vocab h/he)', function() {
@@ -448,7 +448,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},     // missing for DIRECTION_LTR = false
             {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('30a-alt. Effectively insert e twice: (t2:e+M(t1>t2,.*)){2} (vocab h/he)', function() {
@@ -466,7 +466,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},     // missing for DIRECTION_LTR = false
             {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('30b. Effectively insert e twice: (t2:e+M(t1>t2,h*)){2} (vocab h/he)', function() {
@@ -484,7 +484,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},     // missing for DIRECTION_LTR = false
             {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('30b-alt. Effectively insert e twice: (t2:e+M(t1>t2,h*)){2} (vocab h/he)', function() {
@@ -502,7 +502,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},     // missing for DIRECTION_LTR = false
             {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('30c. Effectively insert e twice: (t2:e+M(t1>t2,h{0,1})){2} (vocab h/he)', function() {
@@ -520,7 +520,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},     // missing for DIRECTION_LTR = false
             {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('30c-alt. Effectively insert e twice: (t2:e+M(t1>t2,h{0,1})){2} (vocab h/he)', function() {
@@ -538,7 +538,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},     // missing for DIRECTION_LTR = false
             {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('30d. Effectively insert e twice: (t2:e+M(t1>t2,ε|t1:h)){2} (vocab h/he)', function() {
@@ -556,7 +556,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},     // missing for DIRECTION_LTR = false
             {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('30d-alt. Effectively insert e twice: (t2:e+M(t1>t2,ε|t1:h)){2} (vocab h/he)', function() {
@@ -574,7 +574,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},     // missing for DIRECTION_LTR = false
             {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('30e-alt. Effectively insert e 2 or more times: (t2:e+M(t1>t2,ε|t1:h)){2,100} (vocab h/he)', function() {
@@ -597,7 +597,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'eehe'},
             {t1: 'h', t2: 'eeeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('30e-alt-2. Effectively insert e 2 or more times: (t2:e+M(t1>t2,ε|t1:h)){2,Inf} (vocab h/he)', function() {
@@ -620,7 +620,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'eehe'},
             {t1: 'h', t2: 'eeeh'},    // missing
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('30f-alt. Effectively insert e 2 or more times: (t2:e+M(t1>t2,ε|t1:h)){2,6} (vocab h/he)', function() {
@@ -654,7 +654,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'eeeehe'},
             {t1: 'h', t2: 'eeeeeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('30f-alt-2. Effectively insert e 2 or more times: (t2:e+M(t1>t2,ε|t1:h)){2,Inf} (vocab h/he)', function() {
@@ -688,7 +688,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'eeeehe'},  // missing
             {t1: 'h', t2: 'eeeeeh'},  // missing
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
 
@@ -702,7 +702,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 4, t2: 4, t3: 4});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-2. MatchFrom t1>t2,t3, ε', function() {
@@ -713,7 +713,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ["t1", "t2", "t3"]);
         testHasVocab(grammar, {t1: 0, t2: 0, t3: 0});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-3. MatchFrom t1>t2,t3, 0', function() {
@@ -723,7 +723,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 0, t2: 0, t3: 0})
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     
     describe('2-4. MatchFrom t1>t2,t3, t1:hello + t1:world', function() {
@@ -734,7 +734,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 7, t2: 7, t3: 7});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-5. MatchFrom t1>t2,t3, t1:hello + t4:goodbye', function() {
@@ -746,7 +746,7 @@ describe(`${testSuiteName(module)}`, function() {
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-6. MatchFrom t1>t2,t3, t4:goodbye + t1:hello', function() {
@@ -758,7 +758,7 @@ describe(`${testSuiteName(module)}`, function() {
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-7. MatchFrom t1>t2,t3, Nested sequence ' +
@@ -771,7 +771,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 9, t2: 9, t3: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-8. MatchFrom t1>t2,t3, t1:hello | t1:goodbye', function() {
@@ -783,7 +783,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 8, t2: 8, t3: 8});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-9. MatchFrom t1>t2,t3, t1:hello | t4:goodbye', function() {
@@ -795,7 +795,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-10. MatchFrom t1>t2,t3, t4:goodbye | t1:hello', function() {
@@ -808,7 +808,7 @@ describe(`${testSuiteName(module)}`, function() {
         
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 6});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-11. MatchFrom t1>t2,t3, ' +
@@ -824,7 +824,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 13, t2: 13, t3: 13});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-12. MatchFrom t1>t2,t3, ' +
@@ -838,7 +838,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 13, t2: 13, t3: 13});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-13. MatchFrom t1>t2,t3, t1:. (vocab t1:hi)', function() {
@@ -850,7 +850,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-14. MatchFrom t1>t2,t3, t1:hi+t1:.', function() {
@@ -862,7 +862,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-15. MatchFrom t1>t2,t3, Join t1:hello ⨝ t1:.ello', function() {
@@ -874,7 +874,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 4, t2: 4, t3: 4});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-16. MatchFrom t1>t2,t3 Join t1:hello ⨝ t4:world', function() {
@@ -885,7 +885,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-17. MatchFrom t1>t2,t3 Join t4:world ⨝ t1:hello', function() {
@@ -896,7 +896,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         testHasVocab(grammar, {t1: 4, t2: 4});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-18. MatchFrom t2>t3,t4, Join t1:hello+t1:kitty ⨝ ' +
@@ -910,7 +910,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         testHasVocab(grammar, {t1: 8, t2: 9, t3: 9, t4: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-19. MatchFrom t2>t3,t4, Join t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ ' +
@@ -924,7 +924,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         testHasVocab(grammar, {t1: 8, t2: 9, t3: 9, t4: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-20. MatchFrom t1>t3,t4, Join t1:hello+t1:kitty ⨝ ' +
@@ -938,7 +938,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-21. MatchFrom t1>t3,t4, Join (t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ ' +
@@ -952,7 +952,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-22. MatchFrom t1>t3,t4, Join t1:hello+t1:kitty ⨝ ' +
@@ -966,7 +966,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-23. MatchFrom t1>t3,t4, Join (t2:goodbye+t1:hello+t2:world)+t1:kitty ⨝ ' +
@@ -980,7 +980,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 8, t3: 8, t4: 8, t2: 9});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-24. MatchFrom t1>t2,t3, t1:o{0,1}', function() {
@@ -992,7 +992,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 1, t2: 1, t3: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-25. MatchFrom t1>t2,t3, ' +
@@ -1008,7 +1008,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 5});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-26. MatchFrom t1>t2,t3, ' +
@@ -1024,7 +1024,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3', 't4']);
         //testHasVocab(grammar, {t1: 4, t2: 4, t3: 4, t4: 5});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-27. MatchFrom t1>t2,t3, t1:na{1,4}', function() {
@@ -1038,7 +1038,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-28. MatchFrom t1>t2,t3, t1:.{0,2} + t1:hi', function() {
@@ -1055,7 +1055,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-29. MatchFrom t1>t2,t3, t1:.{0,1} + t1:hi + t1:.{0,1}', function() {
@@ -1076,7 +1076,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 2, t2: 2, t3: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2-30. MatchFrom t1>t2,t3, t1:.* (vocab hi/XhiZ/ZXhi)', function() {
@@ -1103,7 +1103,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2', 't3']);
         testHasVocab(grammar, {t1: 2, t2: 4, t3: 4});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     // Joins of Matches
@@ -1117,7 +1117,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 2});
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
     
     describe('J-2. MatchFrom(t1>t2, t1:.*) ⨝ t1:h (vocab hi)', function() {
@@ -1129,7 +1129,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 2});
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('J-3. t1:hi ⨝ MatchFrom(t1>t2, t1:.*) (vocab t2:hi)', function() {
@@ -1141,7 +1141,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 2});
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
     
     describe('J-4. t2:hello ⨝ MatchFrom(t1>t2, t1:.*) (vocab t1:hello)', function() {
@@ -1153,7 +1153,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 4, t2: 4});
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
     
     describe('J-5. t1:hello+t2:hello ⨝ MatchFrom(t1>t2, t1:.*)', function() {
@@ -1164,7 +1164,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar3, ['t1', 't2']);
         testHasVocab(grammar3, {t1: 4, t2: 4});
-        testGrammar(grammar3, expectedResults);
+        testGenerate(grammar3, expectedResults);
     });
     
     describe('J-6. Join output of two matchFroms: ' +
@@ -1179,7 +1179,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(g4, ['t1', 't2', 't3']);
         testHasVocab(g4, {t1: 2, t2: 3, t3: 2});
-        testGrammar(g4, expectedResults);
+        testGenerate(g4, expectedResults);
     });
     
     describe('J-7. Join output of one matchFrom with input of another: ' +
@@ -1194,7 +1194,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(g4, ['t1', 't2', 't3']);
         testHasVocab(g4, {t1: 2, t2: 3, t3: 3});
-        testGrammar(g4, expectedResults);
+        testGenerate(g4, expectedResults);
     });
     
     describe('J-8. Join output of one matchFrom with input of another, other direction: ' + 
@@ -1209,7 +1209,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(g4, ['t1', 't2', 't3']);
         testHasVocab(g4, {t1: 2, t2: 3, t3: 3});
-        testGrammar(g4, expectedResults);
+        testGenerate(g4, expectedResults);
     });
 
     // Repetitions involving nullable matches.
@@ -1229,7 +1229,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('R-1b. Effectively insert e twice: ' +
@@ -1247,7 +1247,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('R-2a. Effectively insert e twice: ' +
@@ -1265,7 +1265,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('R-2b. Effectively insert e twice: ' +
@@ -1283,7 +1283,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('R-3a. Effectively insert e twice: ' +
@@ -1301,7 +1301,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('R-3b. Effectively insert e twice: ' +
@@ -1319,7 +1319,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('R-4a. Effectively insert e twice: ' +
@@ -1337,7 +1337,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},
             {t1: 'h', t2: 'eeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('R-4b. Effectively insert e twice: ' +
@@ -1355,7 +1355,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehe'},     // missing for DIRECTION_LTR = false
             {t1: 'h', t2: 'eeh'},     // missing for DIRECTION_LTR = true
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('R-5. Effectively insert e 2 or more times: ' +
@@ -1376,7 +1376,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehee'}, {t1: 'h', t2: 'eehe'},
             {t1: 'h', t2: 'eeeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('R-6. Effectively insert e 2 or more times: ' +
@@ -1397,7 +1397,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehee'}, {t1: 'h', t2: 'eehe'},
             {t1: 'h', t2: 'eeeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('R-7. Effectively insert e 2 or more times: ' +
@@ -1424,7 +1424,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'eeheee'}, {t1: 'h', t2: 'eeehee'},
             {t1: 'h', t2: 'eeeehe'}, {t1: 'h', t2: 'eeeeeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
     describe('R-8. Effectively insert e 2 or more times: ' +
@@ -1451,7 +1451,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'h', t2: 'eeheee'}, {t1: 'h', t2: 'eeehee'},
             {t1: 'h', t2: 'eeeehe'}, {t1: 'h', t2: 'eeeeeh'},
         ];
-        testGrammar(grammarWithVocab, expectedResults);
+        testGenerate(grammarWithVocab, expectedResults);
     });
 
 });

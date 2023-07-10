@@ -6,7 +6,7 @@ import {
 import {
     testSuiteName, logTestSuite, VERBOSE_TEST_L2,
     t1, t2, t3,
-    testHasTapes, testGrammar,
+    testHasTapes, testGenerate,
 } from "./testUtil";
 
 import {
@@ -25,21 +25,21 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = t1("hello");
         grammar = Cursor("t1", grammar);
         testHasTapes(grammar, ["t1"]);
-        testGrammar(grammar, [{t1: "hello"}]);
+        testGenerate(grammar, [{t1: "hello"}]);
     }); 
 
     describe('2a. Empty string: T_t1(t1:"")', function() {
         let grammar: Grammar = t1("");
         grammar = Cursor("t1", grammar);
         testHasTapes(grammar, ["t1"]);
-        testGrammar(grammar, [{}]);
+        testGenerate(grammar, [{}]);
     }); 
     
     describe('2b. Epsilon alone', function() {
         let grammar: Grammar = Epsilon();
         //grammar = Priority("t1", grammar);
         //testHasTapes(grammar, ["t1"]);
-        testGrammar(grammar, [{}]);
+        testGenerate(grammar, [{}]);
     }); 
     
     describe('3a. T_t1(T_t2(t1:hello+t2:world))', function() {
@@ -47,7 +47,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar = Cursor("t2", grammar);
         grammar = Cursor("t1", grammar);
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [{t1: "hello", t2: "world"}]);
+        testGenerate(grammar, [{t1: "hello", t2: "world"}]);
     }); 
     
     describe('3b. T_t2(T_t1(t1:hello+t2:world))', function() {
@@ -55,7 +55,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar = Cursor("t1", grammar);
         grammar = Cursor("t2", grammar);
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [{t1: "hello", t2: "world"}]);
+        testGenerate(grammar, [{t1: "hello", t2: "world"}]);
     }); 
 
     describe('4a. T_t2(T_t1(t1:hello+t2:""))', function() {
@@ -63,7 +63,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar = Cursor("t1", grammar);
         grammar = Cursor("t2", grammar);
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [{t1: "hello"}]);
+        testGenerate(grammar, [{t1: "hello"}]);
     }); 
 
     describe('4b. T_t1(T_t2(t1:hello+t2:world))', function() {
@@ -71,7 +71,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar = Cursor("t2", grammar);
         grammar = Cursor("t1", grammar);
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [{t1: "hello", t2: "world"}]);
+        testGenerate(grammar, [{t1: "hello", t2: "world"}]);
     }); 
 
     describe('5a. T_t1(t1:hello+t2:""))', function() {
@@ -79,56 +79,56 @@ describe(`${testSuiteName(module)}`, function() {
         grammar = Cursor("t1", grammar);
         console.log(grammar.id);
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [{t1: "hello"}]);
+        testGenerate(grammar, [{t1: "hello"}]);
     }); 
 
     describe('5b. T_t2(t1:hello+t2:world))', function() {
         let grammar: Grammar = Seq(t1("hello"), t2("world"));
         grammar = Cursor("t2", grammar);
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [{t1: "hello", t2: "world"}]);
+        testGenerate(grammar, [{t1: "hello", t2: "world"}]);
     }); 
 
     describe('6a. t1:hello+t2:world+t3:!, priority t1>t2>t3', function() {
         let grammar: Grammar = Seq(t1("hello"), t2("world"), t3("!"));
         grammar = Cursor(["t1", "t2", "t3"], grammar);
         testHasTapes(grammar, ["t1", "t2", "t3"]);
-        testGrammar(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
+        testGenerate(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
     });
     
     describe('6b. t1:hello+t2:world+t3:!, priority t1>t3>t2', function() {
         let grammar: Grammar = Seq(t1("hello"), t2("world"), t3("!"));
         grammar = Cursor(["t1", "t3", "t2"], grammar);
         testHasTapes(grammar, ["t1", "t2", "t3"]);
-        testGrammar(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
+        testGenerate(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
     });
     
     describe('6c. t1:hello+t2:world+t3:!, priority t2>t1>t3', function() {
         let grammar: Grammar = Seq(t1("hello"), t2("world"), t3("!"));
         grammar = Cursor(["t2", "t1", "t3"], grammar);
         testHasTapes(grammar, ["t1", "t2", "t3"]);
-        testGrammar(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
+        testGenerate(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
     });
     
     describe('6d. t1:hello+t2:world+t3:!, priority t2>t3>t1', function() {
         let grammar: Grammar = Seq(t1("hello"), t2("world"), t3("!"));
         grammar = Cursor(["t2", "t3", "t1"], grammar);
         testHasTapes(grammar, ["t1", "t2", "t3"]);
-        testGrammar(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
+        testGenerate(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
     });
     
     describe('6e. t1:hello+t2:world+t3:!, priority t3>t1>t2', function() {
         let grammar: Grammar = Seq(t1("hello"), t2("world"), t3("!"));
         grammar = Cursor(["t3", "t1", "t2"], grammar);
         testHasTapes(grammar, ["t1", "t2", "t3"]);
-        testGrammar(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
+        testGenerate(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
     });
     
     describe('6f. t1:hello+t2:world+t3:!, priority t3>t2>t1', function() {
         let grammar: Grammar = Seq(t1("hello"), t2("world"), t3("!"));
         grammar = Cursor(["t3", "t2", "t1"], grammar);
         testHasTapes(grammar, ["t1", "t2", "t3"]);
-        testGrammar(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
+        testGenerate(grammar, [{t1: 'hello', t2: 'world', t3: "!"}]);
     });
 
     describe('7a. Cursor inside an embed', function() {
@@ -137,7 +137,7 @@ describe(`${testSuiteName(module)}`, function() {
             "b": Embed("a")
         });
         testHasTapes(grammar, ["t1"], "b");
-        testGrammar(grammar, [{t1: 'hello'}], SILENT, "b");
+        testGenerate(grammar, [{t1: 'hello'}], SILENT, "b");
     });
 
     describe('7b. Cursor inside an embed, used in multi-tape context', function() {
@@ -146,7 +146,7 @@ describe(`${testSuiteName(module)}`, function() {
             "b": Cursor("t2", Seq(Embed("a"), t2("world")))
         });
         testHasTapes(grammar, ["t1", "t2"], "b");
-        testGrammar(grammar, [{t1: 'hello', t2: 'world'}], SILENT, "b");
+        testGenerate(grammar, [{t1: 'hello', t2: 'world'}], SILENT, "b");
     });
 
     describe('8. Cursors around alternations', function() {
@@ -155,7 +155,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar = Cursor("t1", grammar);
         grammar = Cursor("t2", grammar);
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [
+        testGenerate(grammar, [
             {t1: 'hello', t2: 'world'},
             {t1: 'goodbye', t2: 'world'},
             {t1: 'hello', t2: 'kitty'},
@@ -167,7 +167,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Uni(Cursor("t1", t1("hello")), 
                                    Cursor("t2", t2("world")));
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [
+        testGenerate(grammar, [
             {t1: 'hello'}, 
             {t2: 'world'},
         ]);
@@ -177,7 +177,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar: Grammar = Uni(Cursor("t1", t1("hello")), 
                                    Cursor("t2", t2("world")));
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [
+        testGenerate(grammar, [
             {t1: 'hello'}, 
             {t2: 'world'},
         ]);
@@ -186,7 +186,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('10. Irrelevant cursor', function() {
         let grammar: Grammar = Cursor("t2", (Cursor("t1", t1("hello"))));
         testHasTapes(grammar, ["t1"]);
-        testGrammar(grammar, [
+        testGenerate(grammar, [
             {t1: 'hello'}, 
         ]);
     });
@@ -194,7 +194,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('11a. Repeated cursor', function() {
         let grammar: Grammar = Cursor("t1", (Cursor("t1", t1("hello"))));
         testHasTapes(grammar, ["t1"]);
-        testGrammar(grammar, [
+        testGenerate(grammar, [
             {t1: 'hello'}, 
         ]);
     });
@@ -213,7 +213,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar = Cursor("t1", grammar);
         grammar = Cursor("t1", grammar);
         testHasTapes(grammar, ["t1", "t2"]);
-        testGrammar(grammar, [
+        testGenerate(grammar, [
             {t1: 'hello', t2: 'world'}, 
         ]);
     });
@@ -221,7 +221,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('12a. Cursor inside a rename', function() {
         let grammar: Grammar = Rename(Cursor("t1", t1("hello")), "t1", "t2")
         testHasTapes(grammar, ["t2"]);
-        testGrammar(grammar, [
+        testGenerate(grammar, [
             {t2: 'hello'}, 
         ]);
     });
@@ -229,7 +229,7 @@ describe(`${testSuiteName(module)}`, function() {
     describe('12b. Cursor inside a rename', function() {
         let grammar: Grammar = Rename(Cursor("t1", t1("hello")), "t2", "t3")
         testHasTapes(grammar, ["t1"]);
-        testGrammar(grammar, [
+        testGenerate(grammar, [
             {t1: 'hello'}, 
         ]);
     });
@@ -239,7 +239,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar = Cursor(["t1", "t3"], grammar);
         grammar = Rename(grammar, "t1", "t2");
         testHasTapes(grammar, ["t2", "t3"]);
-        testGrammar(grammar, [
+        testGenerate(grammar, [
             {t2: 'hello', t3: "world"}, 
         ]);
     });
@@ -249,7 +249,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar = Cursor("t1", grammar);
         grammar = Rename(grammar, "t1", "t2");
         testHasTapes(grammar, ["t2", "t3"]);
-        testGrammar(grammar, [
+        testGenerate(grammar, [
             {t2: 'hello', t3: "world"}, 
         ]);
     });

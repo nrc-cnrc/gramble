@@ -16,7 +16,7 @@ export function testHeaderID(
 ): void {
     const result = parseHeaderCell(text).msgTo([]);
     if (testPrefix != "") {
-        testPrefix += ' ';
+        testPrefix += '. ';
     }
     it(`${testPrefix}"${text}" should parse as "${expectedID}"`, function() {
         expect(headerID(result)).to.equal(expectedID);
@@ -30,7 +30,7 @@ export function testOpID(
 ): void {
     const result = parseOp(text).msgTo([]);
     if (testPrefix != "") {
-        testPrefix += ' ';
+        testPrefix += '. ';
     }
     it(`${testPrefix}"${text}" should parse as "${expectedID}"`, function() {
         expect(opID(result)).to.equal(expectedID);

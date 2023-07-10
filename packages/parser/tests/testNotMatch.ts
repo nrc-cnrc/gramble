@@ -19,7 +19,7 @@ import {
     testHasTapes, 
     testHasVocab, 
     //testHasNoVocab,  
-    testGrammar,
+    testGenerate,
     generateOutputsFromGrammar,
 } from './testUtil';
 
@@ -45,7 +45,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('1. ~(MatchFrom t1>t2, t1:hi)', function() {
@@ -60,7 +60,7 @@ describe(`${testSuiteName(module)}`, function() {
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     /*
@@ -74,7 +74,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe.skip('2b. Negation of 2a results: ~() (vocab hi)', function() {
@@ -85,7 +85,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('2. ~(MatchFrom t1>t2, ε) (vocab hi)', function() {
@@ -97,7 +97,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
     */
 
@@ -113,7 +113,7 @@ describe(`${testSuiteName(module)}`, function() {
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('4. ~(MatchFrom t1>t2, t1:hi + t4:g)', function() {
@@ -129,7 +129,7 @@ describe(`${testSuiteName(module)}`, function() {
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('5. ~(MatchFrom t1>t2, t4:g + t1:hi)', function() {
@@ -145,7 +145,7 @@ describe(`${testSuiteName(module)}`, function() {
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     // Checking the results for this test takes a long time.
@@ -161,7 +161,7 @@ describe(`${testSuiteName(module)}`, function() {
         
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 3, t2: 3});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe.skip('7a. MatchFrom t1>t2, t1:hi | t1:hh', function() {
@@ -174,7 +174,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe.skip('7b. Negation of 7a results: ' +
@@ -210,7 +210,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         // testHasTapes(grammar, ['t1', 't2']);
         // testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('7. ~(MatchFrom t1>t2, t1:hi | t1:hh)', function() {
@@ -226,7 +226,7 @@ describe(`${testSuiteName(module)}`, function() {
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe.skip('8a. MatchFrom t1>t2, t1:hi | t4:g', function() {
@@ -239,7 +239,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         // testHasTapes(grammar, ['t1', 't2', 't4']);
         // testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe.skip('8b. Negation of 8a results: ' +
@@ -286,7 +286,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         // testHasTapes(grammar, ['t1', 't2', 't4']);
         // testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('8. ~(MatchFrom t1>t2, t1:hi | t4:g)', function() {
@@ -303,7 +303,7 @@ describe(`${testSuiteName(module)}`, function() {
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('9. ~(MatchFrom t1>t2 t4:g | t1:hi)', function() {
@@ -319,7 +319,7 @@ describe(`${testSuiteName(module)}`, function() {
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('10. ~(MatchFrom t1>t2, (t1:h|t1:g) + (t1:k|t1:w))', function() {
@@ -338,7 +338,7 @@ describe(`${testSuiteName(module)}`, function() {
         
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('11. ~(MatchFrom t1>t2, (t1:h+t1:k) | (t1:g+t1:w))', function() {
@@ -355,7 +355,7 @@ describe(`${testSuiteName(module)}`, function() {
         
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 4, t2: 4});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('12. ~(MatchFrom t1>t2, t1:hi + t1:.)', function() {
@@ -371,7 +371,7 @@ describe(`${testSuiteName(module)}`, function() {
         
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('13. ~(MatchFrom t1>t2, t1:o{0,1})', function() {
@@ -387,7 +387,7 @@ describe(`${testSuiteName(module)}`, function() {
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 1, t2: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('14. ~(MatchFrom t1>t2, (t1:h{1,2} + t4:g + t1:i) ⨝ <same>)', function() {
@@ -405,7 +405,7 @@ describe(`${testSuiteName(module)}`, function() {
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('15. ~(MatchFrom t1>t2 (t4:g + t1:h{1,2} + t1:i) ⨝ <same>)', function() {
@@ -423,7 +423,7 @@ describe(`${testSuiteName(module)}`, function() {
         // We care about all tapes, even those not participating in the match.
         testHasTapes(grammar, ['t1', 't2', 't4']);
         testHasVocab(grammar, {t1: 2, t2: 2, t4: 1});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('16. ~(MatchFrom t1>t2, t1:na{1,2})', function() {
@@ -439,7 +439,7 @@ describe(`${testSuiteName(module)}`, function() {
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe.skip('17a. MatchFrom t1>t2, t1:.{0} (vocab hi)', function() {
@@ -452,7 +452,7 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('17. ~(MatchFrom t1>t2, t1:.{0}) (vocab hi)', function() {
@@ -468,7 +468,7 @@ describe(`${testSuiteName(module)}`, function() {
 
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('18. ~(MatchFrom t1>t2, t1:.{0,2} + t1:hi)', function() {
@@ -487,7 +487,7 @@ describe(`${testSuiteName(module)}`, function() {
             generateOutputsFromGrammar(resultsGrammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
     describe('19. ~(MatchFrom t1>t2, t1:.{0,1} + t1:hi + t1:.{0,1})', function() {
@@ -510,7 +510,7 @@ describe(`${testSuiteName(module)}`, function() {
             generateOutputsFromGrammar(resultsGrammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 2});
-        testGrammar(grammar, expectedResults);
+        testGenerate(grammar, expectedResults);
     });
 
 });
