@@ -5,7 +5,7 @@ import {
     Join,
     JoinReplace,
     MatchFrom,
-    Priority,
+    Cursor,
     Rep,
     Replace,
     Seq,
@@ -1156,7 +1156,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammarWithVocab: Grammar = Seq(grammar,
                                             Vocab({t1: "hx", t2: "hex"}));
         grammarWithVocab = Count({t1: 3, t2: 3}, grammarWithVocab);
-        grammarWithVocab = Priority(["t1", "t2"], grammarWithVocab);
+        grammarWithVocab = Cursor(["t1", "t2"], grammarWithVocab);
         testHasTapes(grammarWithVocab, ['t1', 't2']);
         testHasVocab(grammarWithVocab, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [

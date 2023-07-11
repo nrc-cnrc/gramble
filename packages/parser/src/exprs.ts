@@ -1117,8 +1117,12 @@ class JoinExpr extends BinaryExpr {
     public simplify(): Expr {
         if (this.child1 instanceof NullExpr) return this.child1;
         if (this.child2 instanceof NullExpr) return this.child2;
-        if (this.child1 instanceof EpsilonExpr && this.child2 instanceof EpsilonExpr) {
+        if ((this.child1 instanceof EpsilonExpr || this.child1 instanceof OutputExpr) &&
+            this.child2 instanceof EpsilonExpr) {
             return this.child1;
+        }
+        if (this.child1 instanceof EpsilonExpr && this.child2 instanceof OutputExpr) {
+            return this.child2;
         }
         return this;
     }
@@ -1607,6 +1611,7 @@ export class PreTapeExpr extends UnaryExpr {
     public simplify(): Expr {
         if (this.child instanceof EpsilonExpr) return this.output;
         if (this.child instanceof NullExpr) return this.child;
+        if (this.child instanceof OutputExpr) return this.child;
         return this;
     }
 }
@@ -1734,16 +1739,20 @@ class NoEpsExpr extends UnaryExpr {
             yield [cResult, wrapped];
         }
     }
+
+    public simplify(): Expr {
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) return this.child;
+        if (this.child instanceof OutputExpr) return this.child;
+        return this;
+    }
 }
 
 export function constructNoEps(
     child: Expr, 
     tapeName: string,
 ): Expr {
-    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
-        return child;
-    }
-    return new NoEpsExpr(child, tapeName);
+    return new NoEpsExpr(child, tapeName).simplify();
 }
 
 /**
@@ -1795,13 +1804,17 @@ class ShortExpr extends UnaryExpr {
             yield [cResult, wrapped];
         }
     }
+
+    public simplify(): Expr {
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) return this.child;
+        if (this.child instanceof OutputExpr) return this.child;
+        return this;
+    }
 }
 
 export function constructShort(child: Expr): Expr {
-    if (child instanceof EpsilonExpr || child instanceof NullExpr) {
-        return child;
-    }
-    return new ShortExpr(child);
+    return new ShortExpr(child).simplify();
 }
 
 class StarExpr extends UnaryExpr {
