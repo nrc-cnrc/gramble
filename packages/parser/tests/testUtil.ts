@@ -162,7 +162,8 @@ export function generateOutputsFromGrammar(
     verbose: number = SILENT,
     symbolName: string = "",
     maxRecursion: number = DEFAULT_MAX_RECURSION,
-    stripHidden: boolean = true
+    stripHidden: boolean = true,
+    throwError: boolean = false // in case a test wants to catch errors itself
 ): StringDict[] {
     const interpreter = (grammar instanceof Interpreter) ?
                         grammar :
@@ -176,6 +177,7 @@ export function generateOutputsFromGrammar(
     try {
         interpreter.resolveName(symbolName);
     } catch(e) {
+        if (throwError) throw e;
         it(`symbol "${symbolName} should exist`, function() {
             console.log("");
             console.log(`[${this.test?.fullTitle()}]`);
@@ -192,6 +194,7 @@ export function generateOutputsFromGrammar(
                                     maxRecursion, undefined, stripHidden)
         ];
     } catch (e) {
+        if (throwError) throw e;
         it("Unexpected Exception", function() {
             console.log("");
             console.log(`[${this.test?.fullTitle()}]`);
