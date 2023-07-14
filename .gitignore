@@ -116,3 +116,6 @@ deployments/
 
 # Private sample projects
 private/
+
+# VSCodeCounter
+.VSCodeCounter/
