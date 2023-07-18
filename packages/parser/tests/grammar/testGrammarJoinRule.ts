@@ -14,21 +14,17 @@ import {
 
 import {
     grammarTestSuiteName,
-    testGrammarAux, GrammarTestAux,
-    testGrammar, GrammarTest,
+    testGrammar,
     t1,
 } from "./testGrammarUtil";
 
 import { 
-    logTestSuite, VERBOSE_TEST_L2, verbose,
-    testHasTapes,
-    testHasVocab,
-    testGenerate,
+    logTestSuite, VERBOSE_TEST_L2,
 } from '../testUtil';
 
 import {
     REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, 
-    StringDict, SILENT, VERBOSE_DEBUG, VERBOSE_STATES
+    SILENT, VERBOSE_DEBUG, VERBOSE_STATES
 } from "../../src/util";
 
 function IOReplace(
