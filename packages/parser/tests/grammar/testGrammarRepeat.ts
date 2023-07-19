@@ -514,6 +514,22 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
+		desc: '31c-3. Count_t1:100ε Count_t1:5 (ε|t1:h)+',
+        grammar: Count({t1:100},
+                       Count({t1:5},
+                             Rep(Uni(Epsilon(), t1("h")), 1)),
+                       true, true),    
+        results: [
+            {},
+            {t1: 'h'},
+            {t1: 'hh'},
+            {t1: 'hhh'},
+            {t1: 'hhhh'},
+            {t1: 'hhhhh'},
+        ],
+    });
+
+    testGrammar({
         desc: '32*. Count_t1:2 (t1:a+t2:a | t1:b+t2:b)*',
         grammar: Count({t1:2}, 
                        Rep(Uni(Seq(t1("a"), t2("a")), 
@@ -871,7 +887,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'aaa', t2: 'bb'},
             {t2: 'b'},
             {t2: 'bb'},
-            {t2: 'bbb'},
         ],
     });
 
@@ -894,7 +909,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'aaa', t2: 'bb'},
             {t2: 'b'},
             {t2: 'bb'},
-            {t2: 'bbb'},
         ],
     });
 
@@ -921,6 +935,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                     Count({t1: 3, t2: 2},
                  	      Rep(Seq(Rep(t1("a"), 1), Rep(t2("b"), 1))))),
         results: [
+            {},
             {t1: 'a', t2: 'b'},
             {t1: 'aa', t2: 'b'},
             {t1: 'aaa', t2: 'b'},
@@ -949,7 +964,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'aaa', t2: 'bb'},
             {t2: 'b'},
             {t2: 'bb'},
-            {t2: 'bbb'},
         ],
     });
 
