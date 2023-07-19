@@ -1,8 +1,7 @@
-
 import { expect } from "chai";
 
 import {
-    Count, Epsilon, Hide, Rep, Seq, Uni,
+    Count, Epsilon, EpsilonLit, Hide, Rep, Seq, Uni,
 } from "../../src/grammars";
 
 import {
@@ -15,7 +14,7 @@ import {
     logTestSuite, VERBOSE_TEST_L2,
     generateOutputsFromGrammar,
 } from '../testUtil';
-import { SILENT } from "../../src/util";
+import { SILENT, VERBOSE_DEBUG } from "../../src/util";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -299,6 +298,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
+    // Test errorOnCountExceeded option
+ 
     testGrammar({
 		desc: '10a. Count_t1:5Err (ε|t1:h){0,5}',
         grammar: Count({t1:5},
@@ -338,6 +339,36 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                 () => generateOutputsFromGrammar(grammar, SILENT, "", undefined, true, true)
             ).to.throw(Error, "Count exceeded on t1");
         });
+    });
+
+    // Test countEpsilon option.
+
+    testGrammar({
+		desc: '11a. Count_t1:5ε (t2:ε+t1:h){0,5}',
+        grammar: Count({t2:5},
+                       Rep(Seq(EpsilonLit("t2"), t1("h")), 0, 5),
+                       true, false),            
+        results: [
+            {},
+            {t1: 'h'},
+            {t1: 'hh'},
+            {t1: 'hhh'},
+            {t1: 'hhhh'},
+            {t1: 'hhhhh'},
+        ],
+    });
+
+    testGrammar({
+		desc: '11b. Count_t1:3ε (t2:ε+t1:h){0,5}',
+        grammar: Count({t2:3},
+                       Rep(Seq(EpsilonLit("t2"), t1("h")), 0, 5),
+                       true, false),            
+        results: [
+            {},
+            {t1: 'h'},
+            {t1: 'hh'},
+            {t1: 'hhh'},
+        ],
     });
 
 });
