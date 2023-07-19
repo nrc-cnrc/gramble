@@ -61,7 +61,7 @@
     "testGrammarJoin": "mocha -r ts-node/register tests/grammar/testGrammarJoin.ts",
     "testGrammarJoinRule": "mocha -r ts-node/register tests/grammar/testGrammarJoinRule.ts",
     "testGrammarRepeat": "mocha -r ts-node/register tests/grammar/testGrammarRepeat.ts",
-
+    
     "testParse": "mocha -r ts-node/register tests/parse/*.ts",
     "testParseHeader": "mocha -r ts-node/register tests/parse/testParseHeader.ts",
     "testParseOp": "mocha -r ts-node/register tests/parse/testParseOp.ts",

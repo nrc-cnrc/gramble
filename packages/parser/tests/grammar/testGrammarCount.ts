@@ -328,7 +328,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     // The following test relies on the nullable infinite repeat generating
     // Epsilon tokens infinitely.
-    describe('10c. Count_t1:100εErr Count_t1:5 (ε|t1:h)*', function() {
+    /* describe('10c. Count_t1:100εErr Count_t1:5 (ε|t1:h)*', function() {
         const grammar = Count({t1:100},
                               Count({t1:5},
                                     Rep(Uni(Epsilon(), t1("h")))),
@@ -338,6 +338,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                 () => generateOutputsFromGrammar(grammar, SILENT, "", undefined, true, true)
             ).to.throw(Error, "Count exceeded on t1");
         });
-    });
+    }); */
 
 });

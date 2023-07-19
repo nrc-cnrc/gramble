@@ -157,7 +157,7 @@ describe(`${testSuiteName(module)}`, function() {
         let grammar = JoinReplace(t1("i"),
                         [HiddenTapeNameReplace("R_HIDDEN", t1("i"), t1("a"))]);
 
-        testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
+        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
         const expectedResults: StringDict[] = [
             {'.R_HIDDEN': 'i', t1: 'a'},
@@ -195,7 +195,7 @@ describe(`${testSuiteName(module)}`, function() {
                         [HiddenTapeNameReplace("R_HIDDEN", t1("i"), t1("a"))]));
         grammar = Count({t1:2,".R_HIDDEN":2}, grammar);
 
-        testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
+        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
         let resultsGrammar: Grammar = Seq(Vocab({t1: "ai"}),
                                           Not(Seq(Lit(".R_HIDDEN", "i"), t1("a"))));
@@ -361,7 +361,7 @@ describe(`${testSuiteName(module)}`, function() {
                                                      t1("i"), t1("a"));
         grammar = Count({t1:2,".R_HIDDEN":2}, grammar);
 
-        testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
+        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
         const expectedResults: StringDict[] = [
             {'.R_HIDDEN': 'i', t1: 'a'},
@@ -379,7 +379,7 @@ describe(`${testSuiteName(module)}`, function() {
                                 Seq(Lit(".R_HIDDEN", "ii"), t1("aa")))));
         grammar = Count({t1:2,".R_HIDDEN":2}, grammar);
 
-        testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
+        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
         const expectedResults: StringDict[] = [
             {'.R_HIDDEN': 'i', t1: 'aa'}, {'.R_HIDDEN': 'i', t1: 'ai'},
@@ -403,7 +403,7 @@ describe(`${testSuiteName(module)}`, function() {
                                                          t1("i"), t1("a")));
         grammar = Count({t1:2,".R_HIDDEN":2}, grammar);
 
-        testHasTapes(grammar, ['.R_HIDDEN', 't1', '.END'], DUMMY_SYMBOL, false);
+        testHasTapes(grammar, ['.R_HIDDEN', 't1'], DUMMY_SYMBOL, false);
         testHasVocab(grammar, {'.R_HIDDEN': 1, t1: 2});
 
         let resultsGrammar: Grammar = Seq(Vocab({t1: "ai"}),
