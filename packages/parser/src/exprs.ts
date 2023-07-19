@@ -1690,6 +1690,55 @@ class RepeatExpr extends UnaryExpr {
     }
 }
 
+
+class StarExpr extends UnaryExpr {
+
+    constructor(
+        child: Expr
+    ) { 
+        super(child);
+    }
+
+    public get id(): string {
+         return `(${this.child.id})*`;
+    }
+
+    
+    public delta(
+        tapeName: string,
+        env: DerivEnv
+    ): Expr {
+        const newChild = this.child.delta(tapeName, env);
+        return constructStar(newChild);
+    }
+
+    public *deriv(
+        tapeName: string, 
+        target: Token,
+        env: DerivEnv
+    ): DerivResults {
+        const oneLess = constructStar(this.child);
+        const deltaNext = this.child.delta(tapeName, env);
+        const oneLessDelta = constructStar(deltaNext);
+        for (const [cResult, cNext] of this.child.deriv(tapeName, target, env)) {
+            const wrapped = constructPrecede(oneLessDelta, 
+                            constructPrecede(cNext, oneLess));
+            yield [cResult, wrapped];
+        }
+    }
+
+    public simplify(): Expr {
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) return EPSILON;
+        return this;
+    }
+
+}
+
+export function constructStar(child: Expr): Expr {
+    return new StarExpr(child).simplify();
+}
+
 class TapeNsExpr extends UnaryExpr {
 
     constructor(
