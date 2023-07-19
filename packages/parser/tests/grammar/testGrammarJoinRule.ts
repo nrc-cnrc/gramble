@@ -27,6 +27,13 @@ import {
     SILENT, VERBOSE_DEBUG, VERBOSE_STATES
 } from "../../src/util";
 
+// File level control over verbose output
+const VERBOSE = VERBOSE_TEST_L2;
+
+function vb(verbosity: number): number {
+    return VERBOSE ? verbosity : SILENT;
+}
+
 function IOReplace(
     fromStr: string, 
     toStr: string, 
@@ -63,13 +70,6 @@ function IOJoin(
 
 function withVocab(voc: string, grammar: Grammar) {
     return Seq(Vocab({t1:voc}), grammar);
-}
-
-// File level control over verbose output
-const VERBOSE = VERBOSE_TEST_L2;
-
-function vb(verbosity: number): number {
-    return VERBOSE ? verbosity : SILENT;
 }
 
 describe(`${grammarTestSuiteName(module)}`, function() {
