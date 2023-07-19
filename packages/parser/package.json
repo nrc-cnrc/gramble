@@ -44,7 +44,6 @@
     "testNegation": "mocha -r ts-node/register tests/testNegation.ts",
     "testNotMatch": "mocha -r ts-node/register tests/testNotMatch.ts",
     "testNotReplace": "mocha -r ts-node/register tests/testNotReplace.ts",
-    "testRepeat": "mocha -r ts-node/register tests/testRepeat.ts",
     "testParallel": "mocha -r ts-node/register tests/testParallel.ts",
     "testRecursion": "mocha -r ts-node/register tests/testRecursion.ts",
     "testRename": "mocha -r ts-node/register tests/testRename.ts",
@@ -59,6 +58,7 @@
     "testGrammarIntersection": "mocha -r ts-node/register tests/grammar/testGrammarIntersection.ts",
     "testGrammarJoin": "mocha -r ts-node/register tests/grammar/testGrammarJoin.ts",
     "testGrammarJoinRule": "mocha -r ts-node/register tests/grammar/testGrammarJoinRule.ts",
+    "testGrammarRepeat": "mocha -r ts-node/register tests/grammar/testGrammarRepeat.ts",
 
     "testParse": "mocha -r ts-node/register tests/parse/*.ts",
     "testParseHeader": "mocha -r ts-node/register tests/parse/testParseHeader.ts",
