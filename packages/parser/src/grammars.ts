@@ -1270,6 +1270,11 @@ export class RepeatGrammar extends UnaryGrammar {
         if (this.minReps == 0 && this.maxReps == Infinity) {
             return constructStar(childExpr);
         }
+        if (this.maxReps == Infinity) {
+            const firstPart = constructRepeat(childExpr, this.minReps, this.minReps);
+            const secondPart = constructStar(childExpr);
+            return constructPrecede(firstPart, secondPart);
+        }
         return constructRepeat(childExpr, this.minReps, this.maxReps);
     }
 }

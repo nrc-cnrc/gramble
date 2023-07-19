@@ -1,4 +1,3 @@
-
 import { expect } from "chai";
 
 import {
@@ -15,7 +14,7 @@ import {
     logTestSuite, VERBOSE_TEST_L2,
     generateOutputsFromGrammar,
 } from '../testUtil';
-import { SILENT } from "../../src/util";
+import { SILENT, VERBOSE_DEBUG } from "../../src/util";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -299,6 +298,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
+    // Test errorOnCountExceeded option
+ 
     testGrammar({
 		desc: '10a. Count_t1:5Err (ε|t1:h){0,5}',
         grammar: Count({t1:5},
@@ -328,6 +329,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     // The following test relies on the nullable infinite repeat generating
     // Epsilon tokens infinitely.
+    /* describe('10c. Count_t1:100εErr Count_t1:5 (ε|t1:h)*', function() {
     /* describe('10c. Count_t1:100εErr Count_t1:5 (ε|t1:h)*', function() {
         const grammar = Count({t1:100},
                               Count({t1:5},
