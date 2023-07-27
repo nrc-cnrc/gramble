@@ -213,6 +213,7 @@ describe(`Sheets ${DIR}`, function() {
     describe('13c. Replace with an alternation in from', test({
         id: "13c",
         results: [
+            {text: "ava"},
             {text: "ava"}
         ]
     }));
@@ -448,6 +449,7 @@ describe(`Sheets ${DIR}`, function() {
     describe('23a. Replace with a symbol in regex in from', test({
         id: "23a",
         results: [
+            {text: "ava"},
             {text: "ava"}
         ]
     }));
@@ -455,6 +457,7 @@ describe(`Sheets ${DIR}`, function() {
     describe('23b. Replace with a symbol in regex in from, but the symbol is defined after', test({
         id: "23b",
         results: [
+            {text: "ava"},
             {text: "ava"}
         ]
     }));
