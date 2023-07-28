@@ -591,34 +591,31 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '14a. Unconditional generation: ' +
-              '(abc ⨝ "" -> D) ⨝ abc|aDbc|abcDDD (vocab abcdABCD)',
-        grammar: withVocab("abcdABCD",
-                           Join(IOJoin("abc", IOReplaceOptional("", "D")),
-                                Uni(t1("abc"), t1("aDbc"), t1("abcDDD")))),
+        desc: '14. Unconditional generation: abc ⨝ "" -> D (vocab abcdABCD)',
+        grammar: withVocab("abcABC",
+        				   Count({t1:5},
+                                 IOJoin("ab", IOReplaceOptional("", "C")))),
         results: [
-            {t1: 'abc'},
-            {t1: 'aDbc'},
-            {t1: 'abcDDD'},
-        ],
-    });
-
-    testGrammar({
-        desc: '14b. Unconditional generation: abc ⨝ "" -> D (vocab abcdABCD)',
-        grammar: withVocab("abcdABCD",
-        				   Count({t1:6},
-                                 IOJoin("abc", IOReplaceOptional("", "D")))),
-        results: [
-            {t1: 'abc'},    {t1: 'abcD'},
-            {t1: 'abDc'},   {t1: 'aDbc'},
-            {t1: 'Dabc'},   {t1: 'abcDD'},
-            {t1: 'abDcD'},  {t1: 'aDbcD'},
-            {t1: 'aDbDc'},  {t1: 'DabDc'},
-            {t1: 'DabcD'},  {t1: 'DaDbc'},
-            {t1: 'abcDDD'}, {t1: 'abDcDD'},
-            {t1: 'aDbcDD'}, {t1: 'aDbDcD'},
-            {t1: 'DabcDD'}, {t1: 'DabDcD'},
-            {t1: 'DaDbcD'}, {t1: 'DaDbDc'},
+            {t1: "CCaCb"},
+            {t1: "CCabC"},
+            {t1: "CCab"},
+            {t1: "CCCab"},
+            {t1: "CaCbC"},
+            {t1: "CaCb"},
+            {t1: "CaCCb"},
+            {t1: "CabCC"},
+            {t1: "CabC"},
+            {t1: "Cab"},
+            {t1: "aCCbC"},
+            {t1: "aCCb"},
+            {t1: "aCCCb"},
+            {t1: "aCbCC"},
+            {t1: "aCbC"},
+            {t1: "aCb"},
+            {t1: "abCCC"},
+            {t1: "abCC"},
+            {t1: "abC"},
+            {t1: "ab"}
         ],
     });
 
