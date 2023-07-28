@@ -30,7 +30,7 @@
     "build": "tsc",
     "prepare": "npm run build",
 
-    "test": "mocha -r ts-node/register tests/*.ts tests/parse/*.ts tests/sheet/*/*.ts",
+    "test": "mocha -r ts-node/register tests/*.ts tests/parse/*.ts tests/sheet/*/*.ts tests/grammar/*.ts",
     "testGenerate": "mocha -r ts-node/register tests/*.ts",
     "testProperty": "mocha -r ts-node/register tests/property/testProperty.ts",
     

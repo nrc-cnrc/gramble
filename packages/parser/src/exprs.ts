@@ -1707,54 +1707,6 @@ export function constructPriority(tapes: string[], child: Expr): Expr {
     return new PriorityExpr(tapes, child).simplify();
 }
 
-class NoEpsExpr extends UnaryExpr {
-
-    constructor(
-        child: Expr,
-        public tapeName: string,
-        public maxCount: number = 1
-    ) {
-        super(child);
-    }
-
-    public get id(): string {
-        return `NEps_${this.tapeName}:${this.maxCount}(${this.child.id})`;
-    }
-
-    public delta(tapeName: string, env: DerivEnv): Expr {
-        const childDelta = this.child.delta(tapeName, env);
-        return constructNoEps(childDelta, this.tapeName);
-    }
-
-    public *deriv(
-        query: Query,
-        env: DerivEnv
-    ): Derivs {
-        for (const [cResult, cNext] of this.child.deriv(query, env)) {
-            if (query.tapeName == this.tapeName && cResult instanceof EpsilonExpr) {
-                continue;
-            }
-
-            const wrapped = constructNoEps(cNext, this.tapeName);
-            yield [cResult, wrapped];
-        }
-    }
-
-    public simplify(): Expr {
-        if (this.child instanceof EpsilonExpr) return this.child;
-        if (this.child instanceof NullExpr) return this.child;
-        if (this.child instanceof OutputExpr) return this.child;
-        return this;
-    }
-}
-
-export function constructNoEps(
-    child: Expr, 
-    tapeName: string,
-): Expr {
-    return new NoEpsExpr(child, tapeName).simplify();
-}
-
 /**
  * ShortExprs "short-circuit" as soon as any of their children
  * are nullable -- that is, it has no derivatives if it has any

@@ -9,7 +9,7 @@ import {
     constructPrecede, constructPreTape,
     constructNotContains, constructParallel, 
     ExprNamespace, constructCollection, 
-    constructCorrespond, constructNoEps, 
+    constructCorrespond, 
     constructDotStar,
     constructCount,
     CollectionExpr,
@@ -2587,7 +2587,6 @@ export class ReplaceGrammar extends AbstractGrammar {
         else
             states = [matchAnythingElse(), replaceMultiple, otherContextExpr];
         let replaceExpr: Expr = constructSequence(...states);
-        replaceExpr = constructNoEps(replaceExpr, this._fromTapeName);
                 
         if (this.minReps > 0) {
             return replaceExpr;
