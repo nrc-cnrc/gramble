@@ -8,7 +8,8 @@ import {
     PriorityGrammar, 
     TestGrammar, 
     infinityProtection,
-    AbstractTestGrammar
+    AbstractTestGrammar,
+    Cursor
 } from "../grammars";
 import { TapeNamespace} from "../tapes";
 import { generate } from "../generator";
@@ -95,10 +96,7 @@ export class ExecuteTests extends GrammarPass {
         const tapePriority = targetGrammar.getAllTapePriority(this.tapeNS, env);
         
         targetGrammar = infinityProtection(targetGrammar, tapePriority, "", opt.maxChars, env);
-
-        if (!(targetGrammar instanceof PriorityGrammar)) {
-            targetGrammar = new PriorityGrammar(targetGrammar, tapePriority);
-        }
+        targetGrammar = Cursor(tapePriority, targetGrammar);
 
         let expr = targetGrammar.constructExpr(this.tapeNS);
         expr = constructCollection(expr, this.symbolTable);

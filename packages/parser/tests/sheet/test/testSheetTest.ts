@@ -13,7 +13,6 @@ function test(params: Partial<ProjectTest>): () => void {
 
 describe(`Sheets ${DIR}`, function() {
 
-    /*
     describe('1. Simple grammar with unit tests', test({
         id: "1",
         results: [
@@ -298,7 +297,7 @@ describe(`Sheets ${DIR}`, function() {
             { text: "foobar", gloss: "run-1SG" }
         ]
     }));
-    */
+    
 });
 
 
