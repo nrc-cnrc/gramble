@@ -34,7 +34,6 @@
     "testGenerate": "mocha -r ts-node/register tests/*.ts",
     "testProperty": "mocha -r ts-node/register tests/property/testProperty.ts",
     
-    "testCursor": "mocha -r ts-node/register tests/testCursor.ts",
     "testFilter": "mocha -r ts-node/register tests/testFilter.ts",
     "testInfinite": "mocha -r ts-node/register tests/testInfinite.ts",
     "testJoinReplace": "mocha -r ts-node/register tests/testJoinReplace.ts",
@@ -53,6 +52,7 @@
     "testGrammar": "mocha -r ts-node/register tests/grammar/*.ts",
     "testGrammarBasic": "mocha -r ts-node/register tests/grammar/testGrammarBasic.ts",
     "testGrammarCount": "mocha -r ts-node/register tests/grammar/testGrammarCount.ts",
+    "testGrammarCursor": "mocha -r ts-node/register tests/grammar/testGrammarCursor.ts",
     "testGrammarDot": "mocha -r ts-node/register tests/grammar/testGrammarDot.ts",
     "testGrammarEmbed": "mocha -r ts-node/register tests/grammar/testGrammarEmbed.ts",
     "testGrammarHide": "mocha -r ts-node/register tests/grammar/testGrammarHide.ts",

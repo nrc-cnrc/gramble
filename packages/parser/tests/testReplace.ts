@@ -2592,7 +2592,7 @@ describe(`${testSuiteName(module)}`, function() {
                                        EMPTY_CONTEXT,
                                        false, false, 1, 1);
         grammar = Count({t1:3}, grammar);
-        grammar = Cursor(["t1", "t2", ".END"], grammar);
+        grammar = Cursor(["t1", "t2"], grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
@@ -2609,7 +2609,7 @@ describe(`${testSuiteName(module)}`, function() {
                                        EMPTY_CONTEXT,
                                        false, false, 1, 1);
         grammar = Count({t1:3}, grammar);
-        grammar = Cursor(["t2", "t1", ".END"], grammar);
+        grammar = Cursor(["t2", "t1"], grammar);
         testHasTapes(grammar, ['t1', 't2']);
         testHasVocab(grammar, {t1: 2, t2: 3});
         const expectedResults: StringDict[] = [
