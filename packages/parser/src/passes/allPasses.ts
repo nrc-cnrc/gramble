@@ -18,6 +18,7 @@ import { AssignDefaults } from "./assignDefaults";
 import { HandleSingleTapes } from "./handleSingleTapes";
 import { SanityCheckRules } from "./sanityCheckRules";
 import { CombineLiterals } from "./combineLiterals";
+import { ProcessFilters } from "./processFilters";
 
 export const SHEET_PASSES = 
 
@@ -95,6 +96,8 @@ export const POST_NAME_PASSES =
     // handles some local tape renaming for plaintext/regex
     new HandleSingleTapes().compose(
 
+    new ProcessFilters().compose(
+
     // if the programmer has specified an invalid renaming/hiding
     // structure that would cause problems during evaluation, fix
     // it so it doesn't
@@ -110,7 +113,7 @@ export const POST_NAME_PASSES =
     // some conditions (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    new AdjustConditions())))));
+    new AdjustConditions()))))));
 
 export const GRAMMAR_PASSES = 
 

@@ -983,72 +983,6 @@ class IntersectExpr extends BinaryExpr {
     }
 }
 
-class FilterExpr extends BinaryExpr {
-
-    constructor(
-        child1: Expr,
-        child2: Expr,
-        public tapes: Set<string>
-    ) {
-        super(child1, child2);
-    }
-    
-    public get id(): string {
-        return `${this.child1.id}[${this.child2.id}]`;
-    }
-
-    public delta(
-        tapeName: string,
-        env: DerivEnv
-    ): Expr {
-        const newChild1 = this.child1.delta(tapeName, env);
-        const newChild2 = this.child2.delta(tapeName, env);
-        return constructFilter(newChild1, newChild2, this.tapes);
-    }
-
-    public *deriv(
-        query: Query,
-        env: DerivEnv
-    ): Derivs {
-
-        if (!this.tapes.has(query.tapeName)) {
-            for (const [c1result, c1next] of 
-                    disjoin(this.child1.deriv(query, env))) {
-                const wrapped = constructFilter(c1next, this.child2, this.tapes);
-                yield [c1result, wrapped];
-            }
-            return;
-        }
-        
-        for (const [c2result, c2next] of 
-                disjoin(this.child2.deriv(query, env))) {
-
-            if (c2result instanceof EpsilonExpr) {
-                const wrapped = constructFilter(this.child1, c2next, this.tapes);
-                yield [c2result, wrapped];
-                continue;
-            }
-    
-            for (const [c1result, c1next] of 
-                    disjoin(this.child1.deriv(c2result, env))) {
-                const c2nxt = (c1result instanceof EpsilonExpr) ? this.child2 : c2next;
-                const wrapped = constructFilter(c1next, c2nxt, this.tapes);
-                yield [c1result, wrapped];
-            }
-        }
-    } 
-
-    public simplify(): Expr {
-        if (this.child1 instanceof NullExpr) return this.child1
-        if (this.child2 instanceof NullExpr) return this.child2;
-        if (this.child1 instanceof EpsilonExpr && this.child2 instanceof EpsilonExpr) {
-            return this.child1;
-        }
-        return this;
-    }
-
-}
-
 class JoinExpr extends BinaryExpr {
 
     constructor(
@@ -2251,10 +2185,6 @@ export function constructRename(
     toTape: string
 ): Expr {
     return new RenameExpr(child, fromTape, toTape).simplify();
-}
-
-export function constructFilter(c1: Expr, c2: Expr, tapes: Set<string>): Expr {
-    return new FilterExpr(c1, c2, tapes).simplify();
 }
 
 export function constructJoin(c1: Expr, c2: Expr, tapes1: Set<string>, tapes2: Set<string>): Expr {

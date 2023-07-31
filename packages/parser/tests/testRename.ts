@@ -238,18 +238,6 @@ describe(`${testSuiteName(module)}`, function() {
         ];
         testGenerate(grammar, expectedResults);
     });
-
-    /*
-    // this next one is iffy, and we've kept going back and forth on
-    // whether the result is null or t2:hiwo.
-    describe('Filter t2:hiwo [Rename t1>t2, t1:hi + t2:wo]', function() {
-        const grammar = Filter(t2("hiwo"),
-                               Rename(Seq(t1("hi"), t2("wo")), "t1", "t2"));
-        testHasTapes(grammar, ["t2"]);
-        //testHasVocab(grammar, {t2: 4});
-        testGenerate(grammar, []);
-    }); 
-    */
    
     describe('23. Rename t2>t3 of symbol t1:hi+t2:world)', function() {
         const grammar = Collection({ 

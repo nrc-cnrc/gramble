@@ -3,7 +3,7 @@ import {
     constructRepeat, constructSequence, constructAlternation,
     constructIntersection, constructDot, constructEmbed,
     constructRename, constructNegation, NULL,
-    constructFilter, constructJoin,
+    constructJoin,
     constructLiteral, constructMatchFrom,
     EpsilonExpr, constructShort,
     constructPrecede, constructPreTape,
@@ -80,11 +80,11 @@ export type Grammar = EpsilonGrammar
              | ShortGrammar
              | IntersectionGrammar
              | JoinGrammar
-             | FilterGrammar
              | CountGrammar
              | StartsGrammar
              | EndsGrammar
              | ContainsGrammar
+             | FilterGrammar
              | SingleTapeGrammar
              | RenameGrammar
              | RepeatGrammar
@@ -842,60 +842,6 @@ export class JoinGrammar extends BinaryGrammar {
 
 }
 
-export class FilterGrammar extends BinaryGrammar {
-    public readonly tag = "filter";
-
-    public get id(): string {
-        return `Filter(${this.child1.id},${this.child2.id})`;
-    }
-    
-
-    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
-        const child1Length = this.child1.estimateLength(tapeName, stack, env);
-        const child2Length = this.child2.estimateLength(tapeName, stack, env);
-        if (child1Length.null == true || child2Length.null == true) {
-            return { null: true, min: 0, max: 0 };
-        }
-        return { 
-            null: false,
-            min: Math.max(child1Length.min, child2Length.min),
-            max: Math.min(child1Length.max, child2Length.max)
-        }
-    }
-    
-
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        const result = super.getTapeClass(tapeName, symbolsVisited, env);
-        const child1Tapes = this.child1.tapes;
-        const child2Tapes = this.child2.tapes;
-        const intersection = new Set(listIntersection(child1Tapes, child2Tapes));
-        result.joinable ||= intersection.has(tapeName);
-        return result;
-    }
-
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            const child1Tapes = this.child1.calculateTapes(stack, env);
-            const child2Tapes = this.child2.calculateTapes(stack, env);
-            this._tapes = listUnique([...child2Tapes, ...child1Tapes]);
-        }
-        return this._tapes;
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        const expr1 = this.child1.constructExpr(tapeNS);
-        const expr2 = this.child2.constructExpr(tapeNS);
-        const tapes = new Set(listIntersection(this.child1.tapes, this.child2.tapes));
-        return constructFilter(expr1, expr2, tapes);   
-    }
-}
-
 export class CountGrammar extends UnaryGrammar {
     public readonly tag = "count";
 
@@ -930,6 +876,27 @@ export class CountGrammar extends UnaryGrammar {
         return constructCount(childExpr, this.tapeName, this.maxChars,
                               this.countEpsilon, this.errorOnCountExceeded);
     }
+}
+
+export class FilterGrammar extends BinaryGrammar {
+    public readonly tag = "filter";
+
+    public constructExpr(
+        tapeNS: TapeNamespace
+    ): Expr {
+        // All descendants of Condition should have been replaced by
+        // other grammars by the time exprs are constructed.
+        throw new Error("not implemented");
+    }
+
+    public get id(): string {
+        return `Filter(${this.child1.id},${this.child2.id})`;
+    }
+
+    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+        throw new Error("Method not implemented.");
+    }
+
 }
 
 abstract class ConditionGrammar extends UnaryGrammar {
@@ -1066,6 +1033,7 @@ export class SingleTapeGrammar extends UnaryGrammar {
     }
 
 }
+
 function update<T>(orig: T, update: any): T {
     let clone = Object.create(Object.getPrototypeOf(orig));
     Object.assign(clone, orig);
@@ -1826,6 +1794,15 @@ export abstract class AbstractTestGrammar extends UnaryGrammar {
     public get id(): string {
         return this.child.id;
     }
+
+    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
+        if (this._tapes == undefined) {
+            const childTapes = this.child.calculateTapes(stack, env);
+            const testTapes = this.test.calculateTapes(stack, env);
+            this._tapes = listUnique([...childTapes, ...testTapes]);
+        }
+        return this._tapes;
+    }
     
     public collectVocab(
         tapeName: string,
@@ -1883,10 +1860,6 @@ export function Any(tape: string): DotGrammar {
 
 export function Intersect(child1: Grammar, child2: Grammar): IntersectionGrammar {
     return new IntersectionGrammar(child1, child2);
-}
-
-export function Filter(child1: Grammar, child2: Grammar): FilterGrammar {
-    return new FilterGrammar(child1, child2);
 }
 
 export function Join(child1: Grammar, child2: Grammar): JoinGrammar {

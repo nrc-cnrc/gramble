@@ -1,5 +1,5 @@
 import {
-    Any, Epsilon, Filter, Join, Seq, Uni, Vocab,
+    Any, Epsilon, Join, Seq, Uni, Vocab,
 } from "../../src/grammars";
 
 import {
@@ -171,16 +171,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-		desc: '19. Filter t1:hi [t1:.+t1:.]',
-        grammar: Filter(t1("hi"), Seq(Any("t1"), Any("t1"))),
+		desc: '19. t1:hi ⨝ [t1:.+t1:.]',
+        grammar: Join(t1("hi"), Seq(Any("t1"), Any("t1"))),
         results: [
             {t1: 'hi'},
         ],
     });
 
     testGrammar({
-		desc: '20. Filter t1:hi+t2:hi [t1:.+t1:.+t2:.+t2.]',
-        grammar: Filter(Seq(t1("hi"), t2("hi")),
+		desc: '20. t1:hi+t2:hi ⨝ t1:.+t1:.+t2:.+t2.',
+        grammar: Join(Seq(t1("hi"), t2("hi")),
                         Seq(Any("t1"), Any("t1"), Any("t2"), Any("t2"))),
         results: [
             {t1: 'hi', t2: 'hi'},
@@ -188,8 +188,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-		desc: '21. Filter t1:hi+t2:hi [t1:.+t2:.+t1:.+t2.]',
-        grammar: Filter(Seq(t1("hi"), t2("hi")),
+		desc: '21. t1:hi+t2:hi ⨝ t1:.+t2:.+t1:.+t2.',
+        grammar: Join(Seq(t1("hi"), t2("hi")),
                         Seq(Any("t1"), Any("t2"), Any("t1"), Any("t2"))),
         results: [
             {t1: 'hi', t2: 'hi'},
@@ -197,8 +197,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-		desc: '22. Filter t1:hi+t2:hi [(t1:.+t2:.)+(t1:.+t2.)]',
-        grammar: Filter(Seq(t1("hi"), t2("hi")),
+		desc: '22. t1:hi+t2:hi ⨝ (t1:.+t2:.)+(t1:.+t2.)',
+        grammar: Join(Seq(t1("hi"), t2("hi")),
                         Seq(Seq(Any("t1"), Any("t2")),
                             Seq(Any("t1"), Any("t2")))),
         results: [

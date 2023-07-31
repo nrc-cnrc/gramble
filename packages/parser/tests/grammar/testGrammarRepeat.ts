@@ -1,7 +1,7 @@
 import { 
     Count, Grammar,
     Rep, Seq, Epsilon, Uni, Any,
-    Join, Filter, Intersect,
+    Join, Intersect,
     MatchFrom, Cursor, Vocab,
 } from "../../src/grammars";
 
@@ -238,8 +238,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '16. Filter t1:na{0,2} [ε]',
-        grammar: Filter(Rep(t1("na"), 0, 2), Epsilon()),
+        desc: '16. t1:na{0,2} ⨝ ε ',
+        grammar: Join(Rep(t1("na"), 0, 2), Epsilon()),
         results: [
             {},
             {t1: 'na'},
@@ -248,9 +248,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '16*. Count_t1:4 Filter t1:na* [ε]',
+        desc: '16*. Count_t1:4 t1:na* ⨝ ε',
         grammar: Count({t1: 4},
-                 	   Filter(Rep(t1("na")), Epsilon())),
+                 	   Join(Rep(t1("na")), Epsilon())),
         results: [
             {},
             {t1: 'na'},
@@ -259,19 +259,23 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '17. Filter ε [t1:na{0,2}]',
-        grammar: Filter(Epsilon(), Rep(t1("na"), 0, 2)),
+        desc: '17. ε ⨝ t1:na{0,2}',
+        grammar: Join(Epsilon(), Rep(t1("na"), 0, 2)),
         results: [
-            {}
+            {},
+            {t1: 'na'},
+            {t1: 'nana'},
         ],
     });
 
     testGrammar({
-        desc: '17*. Count_t1:4 Filter ε [t1:na*]',
+        desc: '17*. Count_t1:4 ε ⨝ t1:na*',
         grammar: Count({t1: 4},
-                 	   Filter(Epsilon(), Rep(t1("na")))),
+                 	   Join(Epsilon(), Rep(t1("na")))),
         results: [
-            {}
+            {},
+            {t1: 'na'},
+            {t1: 'nana'},
         ],
     });
 
@@ -542,24 +546,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'ab', t2: 'ab'},
             {t1: 'ba', t2: 'ba'},
             {t1: 'bb', t2: 'bb'},
-        ],
-    });
-
-    testGrammar({
-        desc: '33*. Filter t1:h [t2:h*]',
-        grammar: Filter(t1("h"), Rep(t2("h"))),
-        results: [
-            {t1: 'h'},
-        ],
-    });
-
-    testGrammar({
-        desc: '34*. Filter t1:h [(t1:h|t2:h)*]',
-        grammar: Filter(t1("h"),
-                        Rep(Uni(t1("h"), t2("h")))),
-        tapes: ['t1', 't2'],
-        results: [
-            {t1: 'h'},
         ],
     });
 
@@ -979,8 +965,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '40. Filter (t1:h+t2:h){2} [t1:hh+t2:hh]',
-        grammar: Filter(Rep(Seq(t1("h"), t2("h")), 2, 2),
+        desc: '40. (t1:h+t2:h){2} ⨝ t1:hh+t2:hh',
+        grammar: Join(Rep(Seq(t1("h"), t2("h")), 2, 2),
                         Seq(t1("hh"), t2("hh"))),
         results: [
             {t1: 'hh', t2: 'hh'},
@@ -988,8 +974,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '41. Filter t1:hh+t2:hh [(t1:h+t2:h){2}]',
-        grammar: Filter(Seq(t1("hh"), t2("hh")),
+        desc: '41. t1:hh+t2:hh ⨝ (t1:h+t2:h){2}',
+        grammar: Join(Seq(t1("hh"), t2("hh")),
                         Rep(Seq(t1("h"), t2("h")), 2, 2)),
         results: [
             {t1: 'hh', t2: 'hh'},
@@ -997,8 +983,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '42*. Filter (t1:h+t2:h)* [t1:hh+t2:hh]',
-        grammar: Filter(Rep(Seq(t1("h"), t2("h"))),
+        desc: '42*. (t1:h+t2:h)* ⨝ t1:hh+t2:hh',
+        grammar: Join(Rep(Seq(t1("h"), t2("h"))),
                         Seq(t1("hh"), t2("hh"))),
         results: [
             {t1: 'hh', t2: 'hh'},
@@ -1006,8 +992,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '43*. Filter t1:hh+t2:hh [(t1:h+t2:h)*]',
-        grammar: Filter(Seq(t1("hh"), t2("hh")),
+        desc: '43*. t1:hh+t2:hh ⨝ (t1:h+t2:h)*',
+        grammar: Join(Seq(t1("hh"), t2("hh")),
                         Rep(Seq(t1("h"), t2("h")))),
         results: [
             {t1: 'hh', t2: 'hh'},
@@ -1179,38 +1165,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '48. Filter t1:.{0,2} [ε]',
-        grammar: Filter(Rep(Any("t1"), 0, 2), Epsilon()),
-        results: [
-            {}
-        ],
-    });
-
-    testGrammar({
-        desc: '48*. Filter t1:.* [ε]',
-        grammar: Filter(Rep(Any("t1")), Epsilon()),
-        results: [
-            {}
-        ],
-    });
-
-    testGrammar({
-        desc: '49. Filter ε [t1:.{0,2}]',
-        grammar: Filter(Epsilon(), Rep(Any("t1"), 0, 2)),
-        results: [
-            {}
-        ],
-    });
-
-    testGrammar({
-        desc: '49*. Filter ε [t1:.{0,2}]',
-        grammar: Filter(Epsilon(), Rep(Any("t1"))),
-        results: [
-            {}
-        ],
-    });
-
-    testGrammar({
         desc: '50. Join t1:.{0,2} ⨝ ε',
         grammar: Join(Rep(Any("t1"), 0, 2), Epsilon()),
         results: [
@@ -1243,24 +1197,24 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '52*. Filter t1:hello [t1:he+t1:.*]',
-        grammar: Filter(t1("hello"), Seq(t1("he"), Rep(Any("t1")))),
+        desc: '52*. t1:hello ⨝ t1:he+t1:.*',
+        grammar: Join(t1("hello"), Seq(t1("he"), Rep(Any("t1")))),
         results: [
             {t1: 'hello'},
         ],
     });
 
     testGrammar({
-        desc: '53*. Filter t1:hello [t1:.*+t1:lo]',
-        grammar: Filter(t1("hello"), Seq(Rep(Any("t1")), t1("lo"))),
+        desc: '53*. t1:hello ⨝ t1:.*+t1:lo',
+        grammar: Join(t1("hello"), Seq(Rep(Any("t1")), t1("lo"))),
         results: [
             {t1: 'hello'},
         ],
     });
 
     testGrammar({
-        desc: '54*. Filter t1:hello [t1:.*+t1:e+t1:.*]',
-        grammar: Filter(t1("hello"),
+        desc: '54*. t1:hello ⨝ t1:.*+t1:e+t1:.*',
+        grammar: Join(t1("hello"),
                         Seq(Rep(Any("t1")), t1("e"), Rep(Any("t1")))),
         results: [
             {t1: 'hello'},
@@ -1268,8 +1222,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '55*. Filter t1:hello [t1:.*+t1:l+t1:.*]',
-        grammar: Filter(t1("hello"),
+        desc: '55*. t1:hello ⨝ t1:.*+t1:l+t1:.*',
+        grammar: Join(t1("hello"),
                         Seq(Rep(Any("t1")), t1("l"), Rep(Any("t1")))),
         results: [
             {t1: 'hello'},
@@ -1277,8 +1231,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '56*. Filter t1:hello with [t1:.*+t1:h+t1:.*]',
-        grammar: Filter(t1("hello"),
+        desc: '56*. t1:hello ⨝ t1:.*+t1:h+t1:.*',
+        grammar: Join(t1("hello"),
                         Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1")))),
         results: [
             {t1: 'hello'},
@@ -1286,8 +1240,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '57*. Filter t1:hello with [t1:.*+t1:o+t1:.*]',
-        grammar: Filter(t1("hello"),
+        desc: '57*. t1:hello ⨝ t1:.*+t1:o+t1:.*',
+        grammar: Join(t1("hello"),
                         Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1")))),
         results: [
             {t1: 'hello'},
@@ -1606,45 +1560,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     // skip
     testGrammar({
-        desc: '63c-1. Filter (t2:e+M(t1>t2,ε|t1:h)){2} [t2:ee] (vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(repeat2_t2eNullableMatchGrammar(),
-                               t2("ee")))),
-        results: [
-            {t2: 'ee'},
-        ],
-        skipGeneration: true,
-    });
-
-    // skip
-    testGrammar({
-        desc: '63c-2. Filter (t2:e+M(t1>t2,ε|t1:h)){2} [t1:h + t2:eeh] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(repeat2_t2eNullableMatchGrammar(),
-                               Seq(t1("h"), t2("eeh"))))),
-        results: [
-            {t1: 'h', t2: 'eeh'},
-        ],
-        skipGeneration: true,
-    });
-
-    testGrammar({
-        desc: '63c-3. Filter (t2:e+M(t1>t2,ε|t1:h)){2} [t1:h + t2:ehe] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(repeat2_t2eNullableMatchGrammar(),
-                               Seq(t1("h"), t2("ehe"))))),
-        results: [
-            {t1: 'h', t2: 'ehe'},
-        ],
-    });
-
-    // skip
-    testGrammar({
         desc: '63d-1. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} & t2:ee (vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
                     withVocab2("hx", "hex",
@@ -1814,46 +1729,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hx', t2: 'ehe'},
         ],
-    });
-
-    testGrammar({
-        desc: '64c-1. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x [t1:x + t2:ee] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(Seq(repeat2_t2eNullableMatchGrammar(), t1("x")),
-                               Seq(t1("x"), t2("ee"))))),
-        results: [
-            {t1: 'x', t2: 'ee'},
-        ],
-    });
-
-    // skip
-    testGrammar({
-        desc: '64c-2. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x [t1:hx + t2:eeh] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(Seq(repeat2_t2eNullableMatchGrammar(), t1("x")),
-                               Seq(t1("hx"), t2("eeh"))))),
-        results: [
-            {t1: 'hx', t2: 'eeh'},
-        ],
-        skipGeneration: true,
-    });
-
-    // skip
-    testGrammar({
-        desc: '64c-3. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x [t1:hx + t2:ehe] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(Seq(repeat2_t2eNullableMatchGrammar(), t1("x")),
-                               Seq(t1("hx"), t2("ehe"))))),
-        results: [
-            {t1: 'hx', t2: 'ehe'},
-        ],
-        skipGeneration: true,
     });
 
     // skip
@@ -2028,46 +1903,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehex'},
         ],
         skipGeneration: true,
-    });
-
-    // skip
-    testGrammar({
-        desc: '65c-1. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x [t2:eex] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(Seq(repeat2_t2eNullableMatchGrammar(), t2("x")),
-                               t2("eex")))),
-        results: [
-            {t2: 'eex'},
-        ],
-        skipGeneration: true,
-    });
-
-    // skip
-    testGrammar({
-        desc: '65c-2. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x [t1:h + t2:eehx] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(Seq(repeat2_t2eNullableMatchGrammar(), t2("x")),
-                               Seq(t1("h"), t2("eehx"))))),
-        results: [
-            {t1: 'h', t2: 'eehx'},
-        ],
-        skipGeneration: true,
-    });
-
-    testGrammar({
-        desc: '65c-3. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x [t1:h + t2:ehex] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(Seq(repeat2_t2eNullableMatchGrammar(), t2("x")),
-                               Seq(t1("h"), t2("ehex"))))),
-        results: [
-            {t1: 'h', t2: 'ehex'},
-        ],
     });
 
     testGrammar({
@@ -2337,92 +2172,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hh', t2: 'eheehe'},
         ],
         skipGeneration: true,
-    });
-
-    // skip
-    testGrammar({
-        desc: '66c-1. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + same [t2:eeee] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(Seq(repeat2_t2eNullableMatchGrammar(),
-                                   repeat2_t2eNullableMatchGrammar()),
-                               t2("eeee")))),
-        results: [
-            {t2: 'eeee'},
-        ],
-        skipGeneration: true,
-    });
-
-    testGrammar({
-        desc: '66c-2. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + same [t1:hh + t2:eeheeh] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(Seq(repeat2_t2eNullableMatchGrammar(),
-                                   repeat2_t2eNullableMatchGrammar()),
-                               Seq(t1("hh"), t2("eeheeh"))))),
-        results: [
-            {t1: 'hh', t2: 'eeheeh'},
-        ],
-    });
-
-    // skip
-    testGrammar({
-        desc: '66c-3. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + same [t1:hh + t2:eheehe] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(Seq(repeat2_t2eNullableMatchGrammar(),
-                                   repeat2_t2eNullableMatchGrammar()),
-                               Seq(t1("hh"), t2("eheehe"))))),
-        results: [
-            {t1: 'hh', t2: 'eheehe'},
-        ],
-        skipGeneration: true,
-    });
-
-    // skip
-    testGrammar({
-        desc: '66c-4*. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + same [(t2:ee)*] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(Seq(repeat2_t2eNullableMatchGrammar(),
-                                   repeat2_t2eNullableMatchGrammar()),
-                               Rep(t2("ee"))))),
-        results: [
-            {t2: 'eeee'},
-        ],
-        skipGeneration: true,
-    });
-
-    // skip
-    testGrammar({
-        desc: '66c-5*. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + same [(t1:h+t2:eeh)*] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(Seq(repeat2_t2eNullableMatchGrammar(),
-                                   repeat2_t2eNullableMatchGrammar()),
-                               Rep(Seq(t1("h"), t2("eeh")))))),
-        results: [
-            {t1: 'hh', t2: 'eeheeh'},
-        ],
-        skipGeneration: true,
-    });
-
-    testGrammar({
-        desc: '66c-6*. Filter (t2:e+M(t1>t2,ε|t1:h)){2} + same [(t1:h+t2:ehe)*] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(Seq(repeat2_t2eNullableMatchGrammar(),
-                                   repeat2_t2eNullableMatchGrammar()),
-                               Rep(Seq(t1("h"), t2("ehe")))))),
-        results: [
-            {t1: 'hh', t2: 'eheehe'},
-        ],
     });
 
     testGrammar({
@@ -2698,46 +2447,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    testGrammar({
-        desc: '67c-1*. Filter ((t2:e+M(t1>t2,ε|t1:h)){2}){2} [(t2:ee)*] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(repeat2_2_t2eNullableMatchGrammar(),
-                               Rep(t2("ee"))))),
-        results: [
-            {t2: 'eeee'},
-        ],
-    });
-
-    // skip
-    testGrammar({
-        desc: '67c-2*. Filter ((t2:e+M(t1>t2,ε|t1:h)){2}){2} [(t1:h+t2:eeh)*] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(repeat2_2_t2eNullableMatchGrammar(),
-                               Rep(Seq(t1("h"), t2("eeh")))))),
-        results: [
-            {t1: 'hh', t2: 'eeheeh'},
-        ],
-        skipGeneration: true,
-    });
-
-    // skip
-    testGrammar({
-        desc: '67c-3*. Filter ((t2:e+M(t1>t2,ε|t1:h)){2}){2} [(t1:h+t2:ehe)*] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(repeat2_2_t2eNullableMatchGrammar(),
-                               Rep(Seq(t1("h"), t2("ehe")))))),
-        results: [
-            {t1: 'hh', t2: 'eheehe'},
-        ],
-        skipGeneration: true,
-    });
-
     // skip
     testGrammar({
         desc: '67d-1*. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2}){2} & (t2:ee)* ' +
@@ -2922,46 +2631,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hh', t2: 'eheehe'},
         ],
         skipGeneration: true,
-    });
-
-    // skip
-    testGrammar({
-        desc: '68c-1*. Filter ((t2:e+M(t1>t2,ε|t1:h)){2})* [(t2:ee){2}] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(repeat2Star_t2eNullableMatchGrammar(),
-                               Rep(t2("ee"), 2, 2)))),
-        results: [
-            {t2: 'eeee'},
-        ],
-        skipGeneration: true,
-    });
-
-    // skip
-    testGrammar({
-        desc: '68c-2*. Filter ((t2:e+M(t1>t2,ε|t1:h)){2})* [(t1:h+t2:eeh){2}] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(repeat2Star_t2eNullableMatchGrammar(),
-                               Rep(Seq(t1("h"), t2("eeh")), 2, 2)))),
-        results: [
-            {t1: 'hh', t2: 'eeheeh'},
-        ],
-        skipGeneration: true,
-    });
-
-    testGrammar({
-        desc: '68c-3*. Filter ((t2:e+M(t1>t2,ε|t1:h)){2})* [(t1:h+t2:ehe){2}] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(repeat2Star_t2eNullableMatchGrammar(),
-                               Rep(Seq(t1("h"), t2("ehe")), 2, 2)))),
-        results: [
-            {t1: 'hh', t2: 'eheehe'},
-        ],
     });
 
     testGrammar({
@@ -3155,49 +2824,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                     withVocab2("hx", "hex",
                         Join(Rep(Seq(t1("h"), t2("ehe")), 2, 2),
                              repeatStar2_t2eNullableMatchGrammar()))),
-        results: [
-            {t1: 'hh', t2: 'eheehe'},
-        ],
-        allowDuplicateOutputs: true,
-        skipGeneration: true,
-    });
-
-    // skip
-    testGrammar({
-        desc: '69c-1. Filter ((t2:e+M(t1>t2,ε|t1:h))*){2} [(t2:ee){2}] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(repeatStar2_t2eNullableMatchGrammar(),
-                               Rep(t2("ee"), 2, 2)))),
-        results: [
-            {t2: 'eeee'},
-        ],
-        allowDuplicateOutputs: true,
-        skipGeneration: true,
-    });
-
-    testGrammar({
-        desc: '69c-2*. Filter ((t2:e+M(t1>t2,ε|t1:h))*){2} [(t1:h+t2:eeh){2}] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(repeatStar2_t2eNullableMatchGrammar(),
-                               Rep(Seq(t1("h"), t2("eeh")), 2, 2)))),
-        results: [
-            {t1: 'hh', t2: 'eeheeh'},
-        ],
-        allowDuplicateOutputs: true,
-    });
-
-    // skip
-    testGrammar({
-        desc: '69c-3*. Filter ((t2:e+M(t1>t2,ε|t1:h))*){2} [(t1:h+t2:ehe){2}] ' +
-              '(vocab hx/hex)',
-        grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
-                        Filter(repeatStar2_t2eNullableMatchGrammar(),
-                               Rep(Seq(t1("h"), t2("ehe")), 2, 2)))),
         results: [
             {t1: 'hh', t2: 'eheehe'},
         ],

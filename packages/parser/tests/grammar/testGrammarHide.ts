@@ -1,6 +1,6 @@
 import { 
     Seq, Join, Hide, 
-    Rename, Filter, 
+    Rename, 
     Collection, Embed, Lit 
 } from "../../src/grammars";
 
@@ -248,9 +248,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
-    describe('13a. Filter using a field and then hide it: ' +
-             'hide(t2, t1:hello+t2:foo [t2:foo])', test({
-        grammar: Hide(Filter(Seq(t1("hello"), t2("foo")),
+    describe('13a. Join using a field and then hide it: ' +
+             'hide(t2, t1:hello+t2:foo ⨝ t2:foo)', test({
+        grammar: Hide(Join(Seq(t1("hello"), t2("foo")),
                              t2("foo")), "t2"),
         tapes: ["t1"],
         results: [
@@ -258,9 +258,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
-    describe('13b. Filter using a field and then hide it: ' +
-             'hide(t2, t1:hello+t2:foo [t2:foo])', test({
-        grammar: Hide(Filter(Seq(t1("hello"), t2("foo")),
+    describe('13b. Join using a field and then hide it: ' +
+             'hide(t2, t1:hello+t2:foo ⨝ t2:foo)', test({
+        grammar: Hide(Join(Seq(t1("hello"), t2("foo")),
                              t2("foo")), "t2", "HIDDEN"),
         stripHidden: false,
         tapes: ["t1", ".HIDDEN"],
@@ -269,10 +269,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
     
-    describe('13c. Filter using a field, embed it, and then hide it: ' +
-             'hide(t2, symbol (t1:hello+t2:foo)[t2:foo])', test({
+    describe('13c. Join using a field, embed it, and then hide it: ' +
+             'hide(t2, symbol (t1:hello+t2:foo) ⨝ t2:foo)', test({
         grammar: Collection({
-            a: Filter(Seq(t1("hello"), t2("foo")), t2("foo")),
+            a: Join(Seq(t1("hello"), t2("foo")), t2("foo")),
             default: Hide(Embed("a"), "t2", "HIDDEN")
         }),
         stripHidden: false,
@@ -283,8 +283,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
 
     describe('14a. Hide-filter-hide: ' +
-             'hide(t2, hide(t3, t1:hello+t2:foo+t3:goo) [t2:foo])', test({
-        grammar: Hide(Filter(Hide(Seq(t1("hello"), t2("foo"), t3("goo")),
+             'hide(t2, hide(t3, t1:hello+t2:foo+t3:goo) ⨝ t2:foo)', test({
+        grammar: Hide(Join(Hide(Seq(t1("hello"), t2("foo"), t3("goo")),
                                   "t3"), t2("foo")), "t2"),
         tapes: ["t1"],
         results: [
@@ -293,8 +293,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
     
     describe('14b. Hide-filter-hide: ' +
-             'hide(t2, hide(t3, t1:hello+t2:foo+t3:goo) [t2:foo])', test({
-        grammar: Hide(Filter(Hide(Seq(t1("hello"), t2("foo"), t3("goo")),
+             'hide(t2, hide(t3, t1:hello+t2:foo+t3:goo) ⨝ t2:foo)', test({
+        grammar: Hide(Join(Hide(Seq(t1("hello"), t2("foo"), t3("goo")),
                                   "t3", "HIDDEN_t3"), t2("foo")),
                       "t2", "HIDDEN_t2"),
         stripHidden: false,

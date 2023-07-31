@@ -54,6 +54,9 @@ describe(`Sheets ${DIR}`, function() {
 
     describe('5. Negative tests', test({
         id: "5",
+        errors: [
+            Error(13,2)
+        ],
         results: [
             { text: "foobar", gloss: "run-1SG" },
             { text: "moobar", gloss: "jump-1SG" },
@@ -77,6 +80,7 @@ describe(`Sheets ${DIR}`, function() {
     describe('7. Failing unit tests', test({
         id: "7",
         errors: [
+            Error(13,2),
             Error(14,2),
             Error(15,2),
             Error(16,2)

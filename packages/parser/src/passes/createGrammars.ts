@@ -21,9 +21,10 @@ import {
     RenameGrammar, ReplaceGrammar, 
     SequenceGrammar, TestGrammar, 
     JoinGrammar,
-    RuleContextGrammar
+    RuleContextGrammar,
+    FilterGrammar
 } from "../grammars";
-import { parseClass, TapeHeader } from "../headers";
+import { Header, parseClass, TapeHeader } from "../headers";
 import { Err, Msgs, resultList } from "../msgs";
 import { HeaderToGrammar } from "./headerToGrammar";
 import { parseCell } from "../cell";
@@ -106,7 +107,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
                 .bind(g => new LocatorGrammar(t.cell.pos, g))
                 .destructure();
 
-        const result = new JoinGrammar(prevGrammar, grammar);
+        const result = new FilterGrammar(prevGrammar, grammar);
         const locatedResult = new LocatorGrammar(t.cell.pos, result);
         return locatedResult.msg(prevMsgs).msg(msgs);
     }
@@ -254,5 +255,16 @@ export class CreateGrammars extends Pass<TST,Grammar> {
 
         return newColl.msg(msgs)
                       .bind(c => new LocatorGrammar(t.pos, c));
+    }
+}
+
+function getFilterTape(h: Header): string | undefined {
+    switch (h.tag) {
+        case "tape": return h.text;
+        case "equals":
+        case "starts":
+        case "ends":
+        case "contains": return getFilterTape(h.child);
+        default: return undefined;
     }
 }

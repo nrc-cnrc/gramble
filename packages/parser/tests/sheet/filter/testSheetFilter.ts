@@ -29,16 +29,6 @@ describe(`Sheets ${DIR}`, function() {
         ]
     }));
 
-    describe('3. Equals with an ill-formed filter', test({
-        id: "3",
-        errors: [ Error(7,3) ],
-        results: [
-            { text:"goo", pos:"v"},
-            { text:"moo", pos:"n"},
-            { text:"foo", pos:"v"}
-        ]
-    }));
-
     describe('4. Equals to the left of a sequence', test({
         id: "4",
         results: [
@@ -678,6 +668,67 @@ describe(`Sheets ${DIR}`, function() {
     });
 
     */
+
+    
+    describe('E1. Equals with an ill-formed filter', test({
+        id: "E1",
+        errors: [ Error(7,3) ],
+        results: [
+            { text:"goo", pos:"v"},
+            { text:"moo", pos:"n"},
+            { text:"foo", pos:"v"}
+        ]
+    }));
+    
+    describe('E2. Equals where the filter references a non-existent tape', test({
+        id: "E2",
+        errors: [ Error(7,3) ],
+        results: [
+            { text:"goo"},
+            { text:"moo"},
+            { text:"foo"}
+        ]
+    }));
+    
+    describe('E3. Starts with an ill-formed filter', test({
+        id: "E3",
+        errors: [ Error(7,3) ],
+        results: [
+            { text:"goo", pos:"verb"},
+            { text:"moo", pos:"noun"},
+            { text:"foo", pos:"verb"}
+        ]
+    }));
+    
+    describe('E4. Starts where the filter references a non-existent tape', test({
+        id: "E4",
+        errors: [ Error(7,3) ],
+        results: [
+            { text:"goo"},
+            { text:"moo"},
+            { text:"foo"}
+        ]
+    }));
+
+    describe('E5. Ends with an ill-formed filter', test({
+        id: "E5",
+        errors: [ Error(7,3) ],
+        results: [
+            { text:"goo", pos:"verb"},
+            { text:"moo", pos:"noun"},
+            { text:"foo", pos:"verb"}
+        ]
+    }));
+    
+    describe('E6. Ends where the filter references a non-existent tape', test({
+        id: "E6",
+        errors: [ Error(7,3) ],
+        results: [
+            { text:"goo"},
+            { text:"moo"},
+            { text:"foo"}
+        ]
+    }));
 });
 
 

@@ -63,7 +63,6 @@ function calculateTapes(g: Grammar): string[] {
         case "count": return getChildTapes(g);
         case "locator": return getChildTapes(g);
         case "matchfrom": return listUnique([...getChildTapes(g), g.fromTape, g.toTape]);
-        case "filter": return getChildTapes(g);
         //case "rename": 
         //default: exhaustive(g.tag);
     }

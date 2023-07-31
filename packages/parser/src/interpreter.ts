@@ -1,9 +1,10 @@
 import { 
-    FilterGrammar, Grammar, 
+    Grammar, 
     CollectionGrammar, Query, 
     infinityProtection,
     LocatorGrammar,
-    Cursor
+    Cursor,
+    JoinGrammar
 } from "./grammars";
 import { 
     DevEnvironment, Gen, iterTake, 
@@ -302,7 +303,7 @@ export class Interpreter {
 
         if (Object.keys(query).length > 0) {
             const querySeq = Query(query);
-            targetGrammar = new FilterGrammar(targetGrammar, querySeq);
+            targetGrammar = new JoinGrammar(targetGrammar, querySeq);
             // there might be new chars in the query
             targetGrammar.collectAllVocab(this.tapeNS, env);
         }

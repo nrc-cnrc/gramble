@@ -1,14 +1,14 @@
 import { Dict, GenOptions, StringDict } from "../util";
-import { constructCollection, Expr, ExprNamespace } from "../exprs";
-import { Msgs, Err, Success, result } from "../msgs";
+import { constructCollection, CounterStack, Expr } from "../exprs";
+import { Msgs, Err, Success } from "../msgs";
 import { 
-    FilterGrammar, 
     Grammar, GrammarPass, 
     GrammarResult, TestNotGrammar, 
     TestGrammar, 
     infinityProtection,
     AbstractTestGrammar,
-    Cursor
+    Cursor,
+    JoinGrammar
 } from "../grammars";
 import { TapeNamespace} from "../tapes";
 import { generate } from "../generator";
@@ -40,8 +40,21 @@ export class ExecuteTests extends GrammarPass {
     }
 
     public handleTest(g: TestGrammar, env: PassEnv): GrammarResult {
-        const results = this.executeTest(g, env);
         const msgs: Msgs = [];
+
+        g.calculateTapes(new CounterStack(2), env);
+
+        const childTapes = new Set(g.child.tapes);
+        for (const testTape of g.test.tapes) {
+            if (childTapes.has(testTape)) continue;
+            Err("Ill-formed unit test", 
+                `This expects a tape called ${testTape} but none exists in the grammar being tested.` + 
+                "Some tests may not execute.").msgTo(msgs);
+        }
+
+        if (msgs.length > 0) return g.msg(msgs);
+
+        const results = this.executeTest(g, env);
         if (results.length == 0) {
             Err("Failed unit test",
                 "The grammar above has no outputs compatible with these inputs.").msgTo(msgs);
@@ -71,6 +84,20 @@ export class ExecuteTests extends GrammarPass {
     }
 
     public handleNegativeTest(g: TestNotGrammar, env: PassEnv): GrammarResult {
+        const msgs: Msgs = [];
+
+        g.calculateTapes(new CounterStack(2), env);
+
+        const childTapes = new Set(g.child.tapes);
+        for (const testTape of g.test.tapes) {
+            if (childTapes.has(testTape)) continue;
+            Err("Ill-formed unit test", 
+                `This expects a tape called ${testTape} but none exists in the grammar being tested.` + 
+                "Some tests may not execute.").msgTo(msgs);
+        }
+
+        if (msgs.length > 0) return g.msg(msgs);
+
         const results = this.executeTest(g, env);
         if (results.length > 0) {
             return g.err("Failed unit test",
@@ -86,7 +113,7 @@ export class ExecuteTests extends GrammarPass {
         const opt = new GenOptions();
 
         // create a filter for each test
-        let targetGrammar: Grammar = new FilterGrammar(test.child, test.test);
+        let targetGrammar: Grammar = new JoinGrammar(test.child, test.test);
 
         // there won't be any new vocabulary here, but it's possible (indeed, frequent)
         // that the Equals we made above has a different join/concat tape structure

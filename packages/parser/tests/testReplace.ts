@@ -2581,7 +2581,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aba', t2: 'X'},
         ];
-         testGenerate(grammar, expectedResults, vb(VERBOSE_DEBUG));
+         testGenerate(grammar, expectedResults);
     });
 
     describe('35a. Replace aba by X: t1:aba -> t2:X {1} ' +
@@ -2598,7 +2598,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: 'aba', t2: 'X'},
         ];
-         testGenerate(grammar, expectedResults, vb(VERBOSE_DEBUG));
+         testGenerate(grammar, expectedResults);
     });
 
     describe('35b. Replace aba by X: t1:aba -> t2:X {1} ' +
