@@ -1,7 +1,6 @@
 import { 
     FilterGrammar, Grammar, 
-    CollectionGrammar, 
-    PriorityGrammar, Query, 
+    CollectionGrammar, Query, 
     infinityProtection,
     LocatorGrammar,
     Cursor
@@ -309,7 +308,7 @@ export class Interpreter {
         }
         
         let tapePriority = targetGrammar.getAllTapePriority(this.tapeNS, env);
-        targetGrammar = infinityProtection(targetGrammar, tapePriority, symbolName, opt.maxChars, env);
+        targetGrammar = infinityProtection(targetGrammar, tapePriority, opt.maxChars, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);
 
         return targetGrammar.constructExpr(this.tapeNS);  

@@ -1,4 +1,4 @@
-import { DUMMY_TAPE, HIDDEN_PREFIX } from "../util";
+import { HIDDEN_PREFIX } from "../util";
 import { 
     CounterStack, 
     Grammar,
@@ -49,10 +49,6 @@ export class RenameFix extends PostPass<Grammar> {
     public handleRename(g: RenameGrammar, env: PassEnv): Grammar {
         g.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.fromTape) == -1) { 
-
-            if (g.child.tapes.length == 1 && g.child.tapes[0] == DUMMY_TAPE) {
-                return g.child;
-            }
 
             throw g.child.err("Renaming missing tape",
                         `The ${g.child.constructor.name} to undergo renaming does not contain the tape ${g.fromTape}. ` +

@@ -7,7 +7,6 @@ import {
     SequenceGrammar,
 } from "../grammars";
 
-import { DUMMY_TAPE } from "../util";
 import { PassEnv } from "../passes";
 import { PostPass } from "./ancestorPasses";
 
@@ -71,16 +70,15 @@ export class SanityCheckRules extends PostPass<Grammar> {
         // first handle the "from" material (i.e. pre/from/post)
         const fromMaterial = new SequenceGrammar([g.preContext, g.fromGrammar, g.postContext]);
         fromMaterial.calculateTapes(stack, env);
-        const nonDummyFromTapes = fromMaterial.tapes.filter(t => t != DUMMY_TAPE);
-        if (nonDummyFromTapes.length != 1) {
+        if (fromMaterial.tapes.length != 1) {
             // I don't think this is actually possible with 
             // new-style rules, but just in case
             throw new EpsilonGrammar().err( 
                         "Multitape rule", 
                         "This rule has the wrong number of tapes " +
-                            ` in "pre/from/post": ${nonDummyFromTapes}`);
+                            ` in "pre/from/post": ${fromMaterial.tapes}`);
         }
-        const fromTape = nonDummyFromTapes[0];
+        const fromTape = fromMaterial.tapes[0];
         const fromLength = fromMaterial.estimateLength(fromTape, stack, env);
         if (fromLength.null == false && fromLength.min == 0 && 
                     !g.optional && !g.beginsWith && !g.endsWith) {
@@ -91,8 +89,7 @@ export class SanityCheckRules extends PostPass<Grammar> {
         }
 
         // then handle the "to" material
-        const nonDummyToTapes = g.toGrammar.tapes.filter(t => t != DUMMY_TAPE);
-        if (nonDummyToTapes.length != 1) {
+        if (g.toGrammar.tapes.length != 1) {
             // I don't think this is actually possible with 
             // new-style rules, but just in case
             throw new EpsilonGrammar().err(
@@ -100,7 +97,7 @@ export class SanityCheckRules extends PostPass<Grammar> {
                             "This rule has the wrong number of tapes " + 
                                     `in "to": ${g.toGrammar.tapes}`);
         }
-        const toTape = nonDummyToTapes[0];
+        const toTape = g.toGrammar.tapes[0];
         const toLength = g.toGrammar.estimateLength(toTape, stack, env);
         if (toLength.null == false && toLength.max == Infinity) {
             // this shouldn't be syntactically possible to express in sheets, but if

@@ -108,14 +108,10 @@ export const POST_NAME_PASSES =
     // structures
     new ConstructRuleJoins().compose(
 
-    // take old-style replacement rules and (when the from/to tapes
-    // are the same) insert renaming so that there's no conflict
-    new SameTapeReplacePass().compose(
-
     // some conditions (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    new AdjustConditions()))))));
+    new AdjustConditions())))));
 
 export const GRAMMAR_PASSES = 
 

@@ -5,7 +5,6 @@ import {
     FilterGrammar, 
     Grammar, GrammarPass, 
     GrammarResult, TestNotGrammar, 
-    PriorityGrammar, 
     TestGrammar, 
     infinityProtection,
     AbstractTestGrammar,
@@ -95,7 +94,7 @@ export class ExecuteTests extends GrammarPass {
         targetGrammar.collectAllVocab(this.tapeNS, env);        
         const tapePriority = targetGrammar.getAllTapePriority(this.tapeNS, env);
         
-        targetGrammar = infinityProtection(targetGrammar, tapePriority, "", opt.maxChars, env);
+        targetGrammar = infinityProtection(targetGrammar, tapePriority, opt.maxChars, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);
 
         let expr = targetGrammar.constructExpr(this.tapeNS);

@@ -8,13 +8,12 @@ import {
     constructPriority, EpsilonExpr, constructShort,
     constructPrecede, constructPreTape,
     constructNotContains, constructParallel, 
-    ExprNamespace, constructCollection, 
+    constructCollection, 
     constructCorrespond, 
     constructDotStar,
     constructCount,
     CollectionExpr,
     constructCursor,
-    constructStar
 } from "./exprs";
 import { 
     Result,
@@ -32,7 +31,6 @@ import {
     DEFAULT_SYMBOL_NAME,
     Dict,
     DUMMY_REGEX_TAPE,
-    DUMMY_TAPE,
     flatten,
     HIDDEN_PREFIX,
     listDifference,
@@ -45,7 +43,7 @@ import {
     ValueSet
 } from "./util";
 
-import { Component } from "./components";
+import { Component, exhaustive } from "./components";
 
 export { CounterStack, Expr };
 
@@ -85,7 +83,6 @@ export type Grammar = EpsilonGrammar
              | JoinGrammar
              | FilterGrammar
              | CountGrammar
-             | PriorityGrammar
              | StartsGrammar
              | EndsGrammar
              | ContainsGrammar
@@ -365,9 +362,7 @@ export class EpsilonGrammar extends AtomicGrammar {
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
-            this._tapes = [ 
-                //DUMMY_TAPE
-            ];
+            this._tapes = [];
         }
         return this._tapes;
     }
@@ -392,9 +387,7 @@ export class NullGrammar extends AtomicGrammar {
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
-            this._tapes = [ 
-                //DUMMY_TAPE
-            ];
+            this._tapes = [];
         }
         return this._tapes;
     }
@@ -942,36 +935,6 @@ export class CountGrammar extends UnaryGrammar {
     }
 }
 
-export class PriorityGrammar extends UnaryGrammar {
-    public readonly tag = "priority";
-    
-    constructor(
-        child: Grammar,
-        public tapePriority: string[]
-    ) {
-        super(child);
-    }
-
-    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
-        return this.child.estimateLength(tapeName, stack, env);
-    }
-
-    public get id(): string {
-        return `Priority(${this.tapePriority},${this.child.id})`;
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        console.log(`Constructing priority with tapes ${this.tapePriority}`);
-        const childExpr = this.child.constructExpr(tapeNS);
-        if (this.tapePriority.length == 0) {
-            return childExpr;
-        }
-        return constructPriority(this.tapePriority, childExpr);
-    }
-}
-
 abstract class ConditionGrammar extends UnaryGrammar {
 
     constructor(
@@ -1317,7 +1280,7 @@ export class CursorGrammar extends UnaryGrammar {
     }
 
     public get id(): string {
-        return `Pre(${this.child.id})`;
+        return `Cursor_${this.tape}(${this.child.id})`;
     }
 
     public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
@@ -1341,11 +1304,6 @@ export class CursorGrammar extends UnaryGrammar {
     }
 
 }
-
-export function Taper(tape: string, child: Grammar): CursorGrammar {
-    return new CursorGrammar(tape, child);
-}
-
 
 export class PreTapeGrammar extends UnaryGrammar {
     public readonly tag = "pretape";
@@ -1577,107 +1535,6 @@ export class MatchFromGrammar extends UnaryGrammar {
         return constructMatchFrom(childExpr, this.fromTape, this.toTape);
     }
 }
-
-/*
-export class MatchGrammar extends UnaryGrammar {
-    public readonly tag = "match";
-    
-    constructor(
-        child: Grammar,
-        public relevantTapes: StringSet
-    ) {
-        super(child);
-    }
-
-    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
-        return this.child.estimateLength(tapeName, stack, env);
-    }
-
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        if (this.relevantTapes.has(tapeName)) {
-            return { joinable: true, concatenable: true };
-        }
-        return super.getTapeClass(tapeName, symbolsVisited, env);
-    }
-
-    public get id(): string {
-        return `Match(${this.child.id},${[...this.relevantTapes]})`;
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace,
-        symbols: ExprNamespace
-    ): Expr {
-        const childExpr = this.child.constructExpr(tapeNS, symbols);
-        return constructMatch(childExpr, this.relevantTapes);
-    }
-}
-*/
-
-/**
- * A TapeNsGrammar encapsulates amd memoizes the results 
- * of vocab collection: it stores a common vocab for all the 
- * tapes, a namespace for holding the tapes, and vocab-bypass 
- * relationships between the tapes.
- */
-/*
-export class TapeNsGrammar extends UnaryGrammar {
-
-    constructor(
-        child: Grammar,
-        public tapeDict: Dict<Tape> = {},
-        public vocabEdges: StringPairSet = new StringPairSet()
-    ) {
-        super(child);
-    }
-
-    public get id(): string {
-        return `<tapes>${this.child.id}`;
-    }
-
-    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
-        return result(this.child)
-                    .bind(c => f.transform(c, env))
-                    .bind(c => new TapeNsGrammar(c, 
-                        this.tapeDict, this.vocabEdges))
-    }
-
-    public getChildren(): Grammar[] { 
-        return [this.child]; 
-    }
-    
-    public collectVocab(
-        tapeName: string,
-        atomic: boolean,
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): StringSet { 
-        return new Set();
-    }
-    
-    public getVocabCopyEdges(
-        tapeName: string,
-        tapeNS: TapeNamespace, 
-        symbolsVisited: StringPairSet, 
-        env: PassEnv
-    ): StringPairSet {
-        return this.vocabEdges;
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace,
-        symbols: ExprNamespace
-    ): Expr {
-        const newTapeNS = new TapeNamespace(this.tapeDict, tapeNS);
-        return this.child.constructExpr(newTapeNS, symbols);
-    }
-
-}
-*/
 
 export class CollectionGrammar extends AbstractGrammar {
     public readonly tag = "collection";
@@ -2631,7 +2488,6 @@ export function PreTape(
 export function infinityProtection(
     grammar: Grammar,
     tapes: string[],
-    symbolName: string,
     maxChars: number,
     env: PassEnv
 ): Grammar {
@@ -2649,22 +2505,7 @@ export function infinityProtection(
     }
 
     if (!foundInfinite) return grammar;
-
-    if (grammar instanceof CollectionGrammar) {
-        const symGrammar = grammar.getSymbol(symbolName);
-        if (symGrammar instanceof PriorityGrammar) {
-            symGrammar.child = Count(maxCharsDict, symGrammar.child);
-        } else {
-            grammar = Count(maxCharsDict, grammar);
-        }
-    } else if (grammar instanceof PriorityGrammar) {
-        grammar.child = Count(maxCharsDict, grammar.child);
-    } else {
-        grammar = Count(maxCharsDict, grammar);
-    }
-
-    return grammar;
-
+    return Count(maxCharsDict, grammar);
 }
 
 export class RuleContextGrammar extends AbstractGrammar {
