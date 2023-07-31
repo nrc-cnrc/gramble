@@ -1,7 +1,6 @@
 import { CreateCollections } from "./createCollections";
 import { QualifyNames } from "./qualifyNames";
 import { RenameFix } from "./renameFix";
-import { SameTapeReplacePass } from "./sameTapeReplace";
 import { AdjustConditions } from "./adjustConditions";
 import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
@@ -14,7 +13,7 @@ import { AssociateHeaders } from "./associateHeaders";
 import { InsertTables } from "./insertTables";
 import { CreateGrammars } from "./createGrammars";
 import { CheckCollections } from "./checkCollections";
-import { ConstructRuleJoins } from "./constructRuleJoins";
+import { ConstructReplaceBlocks } from "./constructReplaceBlocks";
 import { AssignDefaults } from "./assignDefaults";
 import { HandleSingleTapes } from "./handleSingleTapes";
 import { SanityCheckRules } from "./sanityCheckRules";
@@ -104,9 +103,9 @@ export const POST_NAME_PASSES =
     // do some sanity checking of rules
     new SanityCheckRules().compose(
     
-    // turn new-style replacement cascades into the appropriate
+    // turn replacement blocks into the appropriate
     // structures
-    new ConstructRuleJoins().compose(
+    new ConstructReplaceBlocks().compose(
 
     // some conditions (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 

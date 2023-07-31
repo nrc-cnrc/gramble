@@ -1625,88 +1625,6 @@ export function constructPreTape(
     return new PreTapeExpr(fromTape, toTape, child, output).simplify();
 }
 
-export class PriorityExpr extends UnaryExpr {
-
-    constructor(
-        public tapes: string[],
-        child: Expr
-    ) { 
-        super(child)
-    }
-
-    public get id(): string {
-        return `P_${this.tapes}:${this.child.id}`;
-    }
-
-    public delta(
-        tapeName: string, 
-        env: DerivEnv
-    ): Expr {
-        let remainingTapes: string[] = this.tapes;
-        if (tapeName == OPEN_TAPE) {
-            tapeName = this.tapes[0];
-            remainingTapes = this.tapes.slice(1);
-        } 
-
-        const cNext = this.child.delta(tapeName, env);
-        if (tapeName == OPEN_TAPE) env.logDelta(tapeName, cNext);
-        if (remainingTapes.length == 0 && (!(cNext instanceof NullExpr || cNext instanceof EpsilonExpr))) {
-            if (cNext instanceof EmbedExpr) {
-                const referent = cNext.child;
-                throw new Error(`warning, nontrivial embed at end: ${cNext.symbolName}:${referent?.id}`);
-            }
-            throw new Error(`warning, nontrivial expr at end: ${cNext.id}`);
-        }
-        return constructPriority(remainingTapes, cNext);
-    }
-
-    public *deriv(
-        query: Query,
-        env: DerivEnv
-    ): Derivs {
-        let tapes = this.tapes;
-        if (query.tapeName == OPEN_TAPE) {
-            const tapeToTry = this.tapes[0];
-            tapes = [... this.tapes.slice(1), tapeToTry];
-            query = constructDot(tapeToTry);
-        }
-
-        for (const [cResult, cNext] of 
-                disjoin(this.child.deriv(query, env))) {
-
-            if (!(cNext instanceof NullExpr)) {
-                if (query.tapeName == OPEN_TAPE) {
-                    env.incrStates();
-                    env.logDeriv(cResult, cNext);
-                }
-                const wrapped = constructPriority(tapes, cNext);
-                yield [cResult, wrapped];
-            }
-        }
-    }
-
-    public *forward(env: DerivEnv): Gen<[boolean,Expr]> {
-        for (const [cHandled, cNext] of this.child.forward(env)) {
-            const wrapped = constructPriority(this.tapes, cNext);
-            yield [cHandled, wrapped];
-        }
-    }
-
-    public simplify(): Expr {
-        if (this.child instanceof EpsilonExpr) return this.child;
-        if (this.child instanceof NullExpr) return this.child;
-        if (this.child instanceof OutputExpr) return this.child;
-        if (this.tapes.length == 0) {
-            throw new Error(`warning, nontrivial expr at end: ${this.child.id}`);
-        }
-        return this;
-    }
-}
-
-export function constructPriority(tapes: string[], child: Expr): Expr {
-    return new PriorityExpr(tapes, child).simplify();
-}
-
 /**
  * ShortExprs "short-circuit" as soon as any of their children
  * are nullable -- that is, it has no derivatives if it has any
@@ -2218,92 +2136,17 @@ export class MatchFromExpr extends UnaryExpr {
 
 }
 
-/*
-export class MatchExpr extends UnaryExpr {
-
-    constructor(
-        child: Expr,
-        public tapes: Set<string>
-    ) {
-        super(child);
+export function constructMatchFrom(
+    child: Expr,
+    fromTape: string,
+    ...toTapes: string[]
+): Expr {
+    let result = child;
+    for (const tape of toTapes) {
+        result = new MatchFromExpr(result, fromTape, tape).simplify();
     }
-
-    public get id(): string {
-        return `M_${JSON.stringify(this.tapes)}(${this.child.id})`;
-    }
-
-    public delta(
-        tapeName: string,
-        env: DerivEnv
-    ): Expr {
-
-        if (!this.tapes.has(tapeName)) {
-            // it's not a tape we're matching
-            const nextExpr = this.child.delta(tapeName, env);
-            return constructMatch(nextExpr, this.tapes);
-        }
-
-        let result: Expr = this.child;
-        for (const t of this.tapes) {
-            result = result.delta(t, env);
-        }
-        return result;
-    }
-
-    public *deriv(
-        query: Query,
-        env: DerivEnv
-    ): DerivResults {
-        env.logDebug(`matching ${query.id}`)
-        if (!this.tapes.has(query.tapeName)) {
-            // it's not a tape we're matching
-            for (const [cTarget, cNext] of this.child.deriv(query, env)) {
-                yield [cTarget, constructMatch(cNext, this.tapes)];
-            }
-            return;
-        }
-
-        let results: DerivResult[] = [[query.text, this.child]];
-        for (const t of this.tapes) {
-            const nextResults: DerivResult[] = [];
-            for (const [prevTarget, prevExpr] of results) {
-                if (prevTarget instanceof EpsilonToken) {
-                    continue;
-                }
-                const newQuery = new TokenExpr(t, prevTarget.text)
-                for (const [cTarget, cNext] of prevExpr.deriv(newQuery, env)) {
-                    const tObj = env.getTape(t);
-                    env.logDebug(`${t} atomic? ${tObj.atomic}`)
-                    env.logDebug(`found ${t}:${cTarget}`)
-                    nextResults.push([cTarget, cNext]);
-                }
-            }
-            results = nextResults;    
-        }
-
-        const tape = env.getTape(query.tapeName);
-
-        for (const [nextTarget, nextExpr] of results) {
-            if (nextTarget instanceof EpsilonToken) {
-                continue;
-            }
-            const cs = tape.expandStrings(nextTarget.text);
-
-            for (const c of cs) {
-                let bufferedNext: Expr = constructMatch(nextExpr, this.tapes);
-                for (const matchTape of this.tapes) {
-                    if (matchTape == query.tapeName) {
-                        continue;
-                    }
-                    const lit = constructLiteral(matchTape, c, [c]);
-                    bufferedNext = constructPrecede(lit, bufferedNext);
-                }
-                yield [constructToken(query.tapeName, c), bufferedNext];
-            }
-        }
-    }
+    return result;
 }
-*/
 
 /* CONVENIENCE FUNCTIONS */
 export const EPSILON = new EpsilonExpr();
@@ -2400,18 +2243,6 @@ export function constructUniverse(
 ): Expr {
     return constructSequence(...[...tapes]
                 .map(t => constructDotStar(t)));
-}
-
-export function constructMatchFrom(
-    child: Expr,
-    fromTape: string,
-    ...toTapes: string[]
-): Expr {
-    let result = child;
-    for (const tape of toTapes) {
-        result = new MatchFromExpr(result, fromTape, tape);
-    }
-    return result.simplify();
 }
 
 export function constructRename(

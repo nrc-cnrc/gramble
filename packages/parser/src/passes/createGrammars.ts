@@ -15,7 +15,7 @@ import {
     EpsilonGrammar, 
     Grammar, GrammarResult, 
     HideGrammar,  
-    JoinRuleGrammar, LocatorGrammar, 
+    ReplaceBlockGrammar, LocatorGrammar, 
     TestNotGrammar, 
     CollectionGrammar, 
     RenameGrammar, ReplaceGrammar, 
@@ -181,7 +181,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             return sibling.msg(sibMsgs).msg(newMsgs);  // in case every rule fails, at least generate something
         }
 
-        let result: Grammar = new JoinRuleGrammar(t.tape, sibling, replaceRules);
+        let result: Grammar = new ReplaceBlockGrammar(t.tape, sibling, replaceRules);
         result = new LocatorGrammar(t.cell.pos, result);
         return result.msg(sibMsgs).msg(newMsgs);
     }

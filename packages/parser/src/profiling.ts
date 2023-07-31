@@ -1,4 +1,4 @@
-import { Epsilon, Grammar, Join, JoinReplace, Lit, Cursor, Replace, ReplaceGrammar, Uni } from "./grammars";
+import { Epsilon, Grammar, Join, Lit, Cursor, Replace, ReplaceGrammar, Uni } from "./grammars";
 import { Interpreter } from "./interpreter";
 import { shuffleArray, StringDict, VERBOSE_STATES, VERBOSE_TIME } from "./util";
 

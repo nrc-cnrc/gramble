@@ -5,7 +5,7 @@ import {
     constructRename, constructNegation, NULL,
     constructFilter, constructJoin,
     constructLiteral, constructMatchFrom,
-    constructPriority, EpsilonExpr, constructShort,
+    EpsilonExpr, constructShort,
     constructPrecede, constructPreTape,
     constructNotContains, constructParallel, 
     constructCollection, 
@@ -33,7 +33,6 @@ import {
     DUMMY_REGEX_TAPE,
     flatten,
     HIDDEN_PREFIX,
-    listDifference,
     listIntersection,
     listUnique,
     setUnion,
@@ -94,14 +93,12 @@ export type Grammar = EpsilonGrammar
              | CursorGrammar
              | HideGrammar
              | MatchFromGrammar
-//             | MatchGrammar
              | CollectionGrammar
              | EmbedGrammar
              | LocatorGrammar
              | TestGrammar
              | TestNotGrammar
-             | JoinReplaceGrammar
-             | JoinRuleGrammar
+             | ReplaceBlockGrammar
              | ReplaceGrammar
              | RuleContextGrammar;
 /**
@@ -2098,103 +2095,16 @@ export function OptionalReplace(
         minReps, maxReps, hiddenTapeName, true);
 }
 
-export function JoinReplace(
-    child: Grammar,
-    rules: ReplaceGrammar[],
-): JoinReplaceGrammar {
-    return new JoinReplaceGrammar(child, rules);
-}
-
-/**
- * JoinReplace is a special kind of join that understands how
- * tape renaming has to work in the case of replace rules
- */
-export class JoinReplaceGrammar extends AbstractGrammar {
-    public readonly tag = "joinreplace";
-
-    public estimateLength(tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
-        return this.child.estimateLength(tapeName, stack, env);
-    }
-
-    public get id(): string {
-        const cs = this.rules.map(r => r.id).join(",");
-        return `JoinReplace(${this.child.id},${cs})`;
-    }
-
-    //public renameTapeName: string | undefined = undefined;
-    //public fromTapeName: string | undefined = undefined;
-    //public renamedChild: GrammarComponent | undefined = undefined;
-    protected ruleTapes: string[] = [];
-
-    constructor(
-        public child: Grammar,
-        public rules: (ReplaceGrammar|EpsilonGrammar)[]
-    ) {
-        super();
-    }
-
-    public getChildren(): Grammar[] {
-        return [ this.child, ...this.rules ];
-    }
-    
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-
-            for (const rule of this.rules) {
-
-                if (rule instanceof EpsilonGrammar) continue;
-
-                // iterate through the rules to see what tape needs to be renamed, and to what
-                this.ruleTapes.push(...rule.calculateTapes(stack, env));
-
-                let fromTapeName: string | undefined = undefined;
-                if (rule._fromTapeName != undefined) {
-                    if (fromTapeName != undefined && fromTapeName != rule._fromTapeName) {
-                        continue;
-                    }
-                    fromTapeName = rule._fromTapeName;
-                }
-
-                let toTapeNames: string[] = [];
-                if (rule._toTapeNames !== undefined 
-                            && rule._toTapeNames.length) {
-                    if (toTapeNames.length && listDifference(toTapeNames, rule._toTapeNames).length) {
-                        continue;
-                    }
-                    toTapeNames = rule._toTapeNames;
-                }
-            }
-
-            const childTapes = this.child.calculateTapes(stack, env);
-            this._tapes = listUnique([...childTapes, ...this.ruleTapes]);
-        }
-        return this._tapes;
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        throw new Error("Not implemented");
-    }
-}
-
-export function JoinRule(
+export function ReplaceBlock(
     inputTape: string,
     child: Grammar,
     rules: ReplaceGrammar[]
-): JoinRuleGrammar {
-    return new JoinRuleGrammar(inputTape, child, rules);
+): ReplaceBlockGrammar {
+    return new ReplaceBlockGrammar(inputTape, child, rules);
 }
 
-/**
- * JoinRule is a special case of JoinReplace, where the joiner assumes
- * that all rules are from a tape named "$i" to a tape named "$o".
- * 
- * With this restriction, we don't have to try to infer what the tape names
- * are.
- */
-export class JoinRuleGrammar extends AbstractGrammar {
-    public readonly tag = "joinrule";
+export class ReplaceBlockGrammar extends AbstractGrammar {
+    public readonly tag = "replaceblock";
 
     constructor(
         public inputTape: string,
@@ -2210,7 +2120,7 @@ export class JoinRuleGrammar extends AbstractGrammar {
 
     public get id(): string {
         const cs = this.rules.map(r => r.id).join(",");
-        return `JoinRule(${this.child.id},${cs})`;
+        return `ReplaceBlock(${this.child.id},${cs})`;
     }
     
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
@@ -2250,7 +2160,7 @@ export class ReplaceGrammar extends AbstractGrammar {
     }
     
     public _fromTapeName: string | undefined = undefined;
-    public _toTapeNames: string[] | undefined = undefined;
+    public _toTapeName: string | undefined = undefined;
 
     constructor(
         public fromGrammar: Grammar,
@@ -2292,27 +2202,12 @@ export class ReplaceGrammar extends AbstractGrammar {
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = super.calculateTapes(stack, env);
-            if (this.toGrammar.tapes.length == 0) {
-                //this.message({
-                //    type: "error", 
-                //    shortMsg: "At least 1 tape-'to' required", 
-                //    longMsg: `The 'to' argument of a replacement must reference at least 1 tape; this references zero.`
-                //});
-            } else {
-                if (this._toTapeNames === undefined) {
-                    this._toTapeNames = [];
-                }
-                this._toTapeNames.push(...this.toGrammar.tapes);
-            }
-            if (this.fromGrammar.tapes.length != 1) {
-                //this.message({
-                //    type: "error", 
-                //    shortMsg: "Only 1-tape 'from' allowed", 
-                //    longMsg: `The 'from' argument of a replacement can only reference 1 tape; this references ${this.fromGrammar.tapes?.length}.`
-                //});
-            } else {
+            if (this.toGrammar.tapes.length == 1) {
+                this._toTapeName = this.toGrammar.tapes[0];
+            } 
+            if (this.fromGrammar.tapes.length == 1) {
                 this._fromTapeName = this.fromGrammar.tapes[0];
-            }
+            } 
         }
         return this._tapes;
     }
@@ -2325,14 +2220,12 @@ export class ReplaceGrammar extends AbstractGrammar {
     ): StringPairSet {
         const results = super.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env);
         
-        if (this._fromTapeName === undefined || this._toTapeNames === undefined) {
+        if (this._fromTapeName === undefined || this._toTapeName === undefined) {
             throw new Error("getting vocab copy edges without tapes");
         }
         const fromTapeGlobalName = tapeNS.get(this._fromTapeName).globalName;
-        for (const toTapeName of this._toTapeNames) {
-            const toTapeGlobalName = tapeNS.get(toTapeName).globalName;
-            results.add([fromTapeGlobalName, toTapeGlobalName]);
-        }
+        const toTapeGlobalName = tapeNS.get(this._toTapeName).globalName;
+        results.add([fromTapeGlobalName, toTapeGlobalName]);
         return results;
     }
 
@@ -2345,21 +2238,17 @@ export class ReplaceGrammar extends AbstractGrammar {
         // first, collect vocabulary as normal
         let vocab = super.collectVocab(tapeName, atomic, symbolsVisited, env);
 
-        if (this._fromTapeName == undefined || this._toTapeNames == undefined) {
+        if (this._fromTapeName == undefined || this._toTapeName == undefined) {
             throw new Error("getting vocab copy edges without tapes");
         }
 
         // however, we also need to collect vocab from the contexts as if it were on a toTape
-        for (const toTapeName of this._toTapeNames) {
-            if (tapeName != toTapeName && tapeName == this._fromTapeName) {
-                continue;
-            }
-            let newTapeName = renameTape(tapeName, toTapeName, this._fromTapeName);
-            vocab = setUnion(vocab, this.fromGrammar.collectVocab(newTapeName, atomic, symbolsVisited, env));
-            vocab = setUnion(vocab, this.preContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
-            vocab = setUnion(vocab, this.postContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
-            vocab = setUnion(vocab, this.otherContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
-        }
+        let newTapeName = renameTape(tapeName, this._toTapeName, this._fromTapeName);
+        vocab = setUnion(vocab, this.fromGrammar.collectVocab(newTapeName, atomic, symbolsVisited, env));
+        vocab = setUnion(vocab, this.preContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
+        vocab = setUnion(vocab, this.postContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
+        vocab = setUnion(vocab, this.otherContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
+        
         return vocab;
     }
 
@@ -2367,7 +2256,7 @@ export class ReplaceGrammar extends AbstractGrammar {
         tapeNS: TapeNamespace
     ): Expr {
         
-        if (this._fromTapeName === undefined || this._toTapeNames === undefined) {
+        if (this._fromTapeName === undefined || this._toTapeName === undefined) {
             throw new Error("getting vocab copy edges without tapes");
         }
 
@@ -2391,9 +2280,9 @@ export class ReplaceGrammar extends AbstractGrammar {
         const preContextExpr: Expr = this.preContext.constructExpr(tapeNS);
         const postContextExpr: Expr = this.postContext.constructExpr(tapeNS);
         let states: Expr[] = [
-            constructMatchFrom(preContextExpr, this._fromTapeName, ...this._toTapeNames),
+            constructMatchFrom(preContextExpr, this._fromTapeName, this._toTapeName),
             constructCorrespond(constructPrecede(fromExpr, toExpr), fromTape, 0, toTape, 0),
-            constructMatchFrom(postContextExpr, this._fromTapeName, ...this._toTapeNames)
+            constructMatchFrom(postContextExpr, this._fromTapeName, this._toTapeName)
         ];
 
         const that = this;
@@ -2406,7 +2295,7 @@ export class ReplaceGrammar extends AbstractGrammar {
             //    occurs elsewhere is no problem, it's not actually a match.  So we just 
             //    need to match .*
             
-            if (that._fromTapeName == undefined || that._toTapeNames == undefined) {
+            if (that._fromTapeName == undefined || that._toTapeName == undefined) {
                 throw new Error("getting vocab copy edges without tapes");
             }
 
@@ -2414,7 +2303,7 @@ export class ReplaceGrammar extends AbstractGrammar {
                     (that.beginsWith && !replaceNone) ||
                     (that.endsWith && !replaceNone)) {
                 return constructMatchFrom(constructDotStar(that._fromTapeName),
-                                          that._fromTapeName, ...that._toTapeNames)
+                                          that._fromTapeName, that._toTapeName)
             }
             const fromInstance: Expr[] = [preContextExpr, fromExpr, postContextExpr];
 
@@ -2426,7 +2315,7 @@ export class ReplaceGrammar extends AbstractGrammar {
 
             let notExpr: Expr = constructNotContains(that._fromTapeName, fromInstance,
                 negatedTapes, that.beginsWith && replaceNone, that.endsWith && replaceNone);
-            return constructMatchFrom(notExpr, that._fromTapeName, ...that._toTapeNames);
+            return constructMatchFrom(notExpr, that._fromTapeName, that._toTapeName);
         }
         
         if (!this.endsWith)
@@ -2456,7 +2345,7 @@ export class ReplaceGrammar extends AbstractGrammar {
                     constructNegation(otherContextExpr, new Set(negatedTapes));
                 const matchDotStar: Expr =
                     constructMatchFrom(constructDotStar(this._fromTapeName),
-                                       this._fromTapeName, ...this._toTapeNames)
+                                       this._fromTapeName, this._toTapeName)
                 copyExpr = constructAlternation(constructSequence(matchAnythingElse(true), otherContextExpr),
                                                 constructSequence(matchDotStar, negatedOtherContext));
             }

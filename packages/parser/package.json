@@ -36,13 +36,11 @@
     
     "testFilter": "mocha -r ts-node/register tests/testFilter.ts",
     "testInfinite": "mocha -r ts-node/register tests/testInfinite.ts",
-    "testJoinReplace": "mocha -r ts-node/register tests/testJoinReplace.ts",
     "testMatch": "mocha -r ts-node/register tests/testMatch.ts",
     "testMatchDanger": "mocha -r ts-node/register tests/testMatchDanger.ts",
     "testMatchRename": "mocha -r ts-node/register tests/testMatchRename.ts",
     "testNegation": "mocha -r ts-node/register tests/testNegation.ts",
     "testNotMatch": "mocha -r ts-node/register tests/testNotMatch.ts",
-    "testNotReplace": "mocha -r ts-node/register tests/testNotReplace.ts",
     "testParallel": "mocha -r ts-node/register tests/testParallel.ts",
     "testRecursion": "mocha -r ts-node/register tests/testRecursion.ts",
     "testRename": "mocha -r ts-node/register tests/testRename.ts",
@@ -58,7 +56,7 @@
     "testGrammarHide": "mocha -r ts-node/register tests/grammar/testGrammarHide.ts",
     "testGrammarIntersection": "mocha -r ts-node/register tests/grammar/testGrammarIntersection.ts",
     "testGrammarJoin": "mocha -r ts-node/register tests/grammar/testGrammarJoin.ts",
-    "testGrammarJoinRule": "mocha -r ts-node/register tests/grammar/testGrammarJoinRule.ts",
+    "testGrammarReplaceBlock": "mocha -r ts-node/register tests/grammar/testGrammarReplaceBlock.ts",
     "testGrammarMatchFrom": "mocha -r ts-node/register tests/grammar/testGrammarMatchFrom.ts",
     "testGrammarRepeat": "mocha -r ts-node/register tests/grammar/testGrammarRepeat.ts",
     

@@ -2,7 +2,7 @@ import {
     CounterStack,
     EpsilonGrammar,
     Grammar,
-    JoinRuleGrammar, 
+    ReplaceBlockGrammar, 
     ReplaceGrammar,
     SequenceGrammar,
 } from "../grammars";
@@ -37,14 +37,14 @@ export class SanityCheckRules extends PostPass<Grammar> {
     public postTransform(g: Grammar, env: PassEnv): Grammar {
         switch (g.tag) {
             case "replace":  return this.handleReplace(g, env);
-            case "joinrule": return this.handleJoinRule(g, env);
+            case "replaceblock": return this.handleReplaceBlock(g, env);
             default:
                 return g;
         }
     }
 
-    public handleJoinRule(g: JoinRuleGrammar, env: PassEnv): Grammar {
-        // clean up JoinRules for situations where a rule has
+    public handleReplaceBlock(g: ReplaceBlockGrammar, env: PassEnv): Grammar {
+        // clean up ReplaceBlocks for situations where a rule has
         // ceased to exist in handleReplace, and/or when no rules
         // are left
 

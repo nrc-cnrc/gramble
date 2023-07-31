@@ -2,7 +2,7 @@ import {
     CounterStack,
     PreTapeGrammar,
     Grammar, HideGrammar,
-    JoinGrammar, JoinRuleGrammar, 
+    JoinGrammar, ReplaceBlockGrammar, 
     RenameGrammar,
 } from "../grammars";
 
@@ -11,26 +11,25 @@ import { PassEnv } from "../passes";
 import { PostPass } from "./ancestorPasses";
 
 /**
- * This pass handles the construction of implicit-tape replacement rules
- * (where you just say "from"/"to" rather than "from text"/"to text") and
- * cascades of them.
+ * This pass handles the transformation of replacement rule blocks 
+ * into the appropriate sequence of joins/renames/etc.
  */
-export class ConstructRuleJoins extends PostPass<Grammar> {
+export class ConstructReplaceBlocks extends PostPass<Grammar> {
 
     public replaceIndex: number = 0;
 
     public get desc(): string {
-        return "Joining rules to grammars";
+        return "Transforming replace blocks";
     }
     
     public postTransform(g: Grammar, env: PassEnv): Grammar {
         switch (g.tag) {
-            case "joinrule": return this.handleJoinRule(g, env);
+            case "replaceblock": return this.handleReplaceBlock(g, env);
             default:         return g;
         }
     }
 
-    public handleJoinRule(g: JoinRuleGrammar, env: PassEnv): Grammar {
+    public handleReplaceBlock(g: ReplaceBlockGrammar, env: PassEnv): Grammar {
 
         g.child.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.inputTape) == -1) {

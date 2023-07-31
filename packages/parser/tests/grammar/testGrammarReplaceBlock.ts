@@ -1,14 +1,12 @@
 import { 
     Count,
     Grammar,
-    Join,
-    JoinRule,
+    ReplaceBlock,
     Lit,
     OptionalReplace,
     Replace,
     ReplaceGrammar,
     Seq,
-    Uni,
     Vocab,
 } from "../../src/grammars";
 
@@ -65,7 +63,7 @@ function IOJoin(
     ...rules: ReplaceGrammar[]
 ): Grammar {
     const inputGrammar = Lit("t1", inputStr);
-    return JoinRule("t1", inputGrammar, rules);
+    return ReplaceBlock("t1", inputGrammar, rules);
 }
 
 function withVocab(voc: string, grammar: Grammar) {
