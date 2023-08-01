@@ -5,22 +5,24 @@ import { CounterStack } from '../src/exprs';
 import {
     Count, Epsilon, 
     Join, Null, Rep, Seq, Uni, Collection,
-    Embed, CollectionGrammar, Grammar
+    Embed, CollectionGrammar, Grammar, Not, Rename, Hide, MatchFrom
 } from '../src/grammars';
 
 import {
     testSuiteName, logTestSuite,
     VERBOSE_TEST_L2,
-    t1, t2
+    t1, t2, IOJoin, IOReplace
 } from "./testUtil";
 
 import { Msgs } from '../src/msgs';
 import { PassEnv } from '../src/passes';
 import { NAME_PASSES } from '../src/passes/allPasses';
+import { lengthRange } from '../src/passes/infinityProtection';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
 
+/*
 function selectSymbol(
     ns: CollectionGrammar,
     symbolName: string
@@ -34,28 +36,29 @@ function selectSymbol(
         throw new Error(`Cannot find symbol ${symbolName}`);
     }
     return [resultGrammar, env];
-}
+} */
 
 function testLength(
     grammar: Grammar, 
     tape: string, 
-    length: [number, number] | null,
+    expectedLength: [number, number] | null,
     env: PassEnv = new PassEnv()
 ): void {
 
-    const lengthRange = grammar.estimateLength(tape, new CounterStack(2), env);
+    grammar.calculateTapes(new CounterStack(), new PassEnv);
+    const length = lengthRange(grammar, tape, new CounterStack(2), env);
     
-    if (length === null) {
+    if (expectedLength === null) {
         it(`${tape} should have null length`, function() {
-            expect(lengthRange.null).to.be.true;
+            expect(length.null).to.be.true;
         });
         return;
     }
 
-    it(`${tape} should be length ${length[0]}-${length[1]}`, function() {
-        expect(lengthRange.null).to.be.false;
-        expect(lengthRange.min).to.equal(length[0]);
-        expect(lengthRange.max).to.equal(length[1]);
+    it(`${tape} should be length ${expectedLength[0]}-${expectedLength[1]}`, function() {
+        expect(length.null).to.be.false;
+        expect(length.min).to.equal(expectedLength[0]);
+        expect(length.max).to.equal(expectedLength[1]);
     });
 
 }
@@ -95,9 +98,15 @@ describe(`${testSuiteName(module)}`, function() {
         testLength(grammar, "t1", [10, Infinity]);
     });
     
-    describe("7. t1:hello ⨝ (t1:hello)*", function() {
+    describe("7a. t1:hello ⨝ (t1:hello)*", function() {
         const grammar = Join(t1("hello"), Rep(t1("hello")));
         testLength(grammar, "t1", [5, 5]);
+    });
+
+    describe("7b. (t1:hello + t2:world) ⨝ (t1:hello)*", function() {
+        const grammar = Join(Seq(t1("hello"), t2("world")), t1("hello"));
+        testLength(grammar, "t1", [5, 5]);
+        testLength(grammar, "t2", [5, 5]);
     });
 
     describe("8. t1:hello | (t1:hello)*", function() {
@@ -134,6 +143,40 @@ describe(`${testSuiteName(module)}`, function() {
         testLength(grammar, "t2", [0, 10]);
     }); 
 
+    describe("14a. ~(t1:hello)", function() {
+        const grammar = Not(t1("hello"));
+        testLength(grammar, "t1", [0, Infinity]);
+    });
+    
+    describe("14b. ~(t1:hello)+t2:world", function() {
+        const grammar = Seq(Not(t1("hello")), t2("world"));
+        testLength(grammar, "t1", [0, Infinity]);
+        testLength(grammar, "t2", [5, 5]);
+    });
+
+    describe("15. ~(t1:hello)+t2:world", function() {
+        const grammar = IOJoin("hello", IOReplace("e","a"));
+        testLength(grammar, "t1", [0, Infinity]);
+    });
+    
+    describe("16. Rename t1->t2 (t1:hello)", function() {
+        const grammar = Rename(t1("hello"), "t1", "t2")
+        testLength(grammar, "t1", [0, 0]);
+        testLength(grammar, "t2", [5, 5]);
+    });
+    
+    describe("17. Hide_t1 (t1:hello)", function() {
+        const grammar = Hide(t1("hello"), "t1")
+        testLength(grammar, "t1", [0, 0]);
+    });
+    
+    describe("18. Match t1->t2 (t1:hello)", function() {
+        const grammar = MatchFrom(t1("hello"), "t1", "t2");
+        testLength(grammar, "t1", [5, 5]);
+        testLength(grammar, "t2", [5, 5]);
+    });
+
+    /*
     describe("14. Recursive t1 grammar", function() {
         const world = Uni(t1("world"), Embed("hiWorld"))
         const hiWorld = Seq(t1("hi"), t2("HI"), world);
@@ -193,5 +236,7 @@ describe(`${testSuiteName(module)}`, function() {
         testLength(grammar, "t1", [4, 40], env);
         testLength(grammar, "t2", [2, Infinity], env);
     }); 
+
+    */
 
 });

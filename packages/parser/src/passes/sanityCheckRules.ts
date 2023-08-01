@@ -9,6 +9,7 @@ import {
 
 import { PassEnv } from "../passes";
 import { PostPass } from "./ancestorPasses";
+import { lengthRange } from "./infinityProtection";
 
 /**
  * There are a few sanity checks we want to do for replacement rules.
@@ -79,7 +80,7 @@ export class SanityCheckRules extends PostPass<Grammar> {
                             ` in "pre/from/post": ${fromMaterial.tapes}`);
         }
         const fromTape = fromMaterial.tapes[0];
-        const fromLength = fromMaterial.estimateLength(fromTape, stack, env);
+        const fromLength = lengthRange(fromMaterial, fromTape, stack, env);
         if (fromLength.null == false && fromLength.min == 0 && 
                     !g.optional && !g.beginsWith && !g.endsWith) {
             throw new EpsilonGrammar().err(
@@ -98,7 +99,7 @@ export class SanityCheckRules extends PostPass<Grammar> {
                                     `in "to": ${g.toGrammar.tapes}`);
         }
         const toTape = g.toGrammar.tapes[0];
-        const toLength = g.toGrammar.estimateLength(toTape, stack, env);
+        const toLength = lengthRange(g.toGrammar, toTape, stack, env);
         if (toLength.null == false && toLength.max == Infinity) {
             // this shouldn't be syntactically possible to express in sheets, but if
             // it does happen, it's bad news because it's infinite generation.

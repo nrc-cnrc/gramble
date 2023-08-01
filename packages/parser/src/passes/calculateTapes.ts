@@ -49,7 +49,6 @@ function calculateTapes(g: Grammar): string[] {
         case "null": return [];
         case "lit": return [g.tapeName];
         case "dot": return [g.tapeName];
-        case "parallel": return getChildTapes(g);
         case "seq": return getChildTapes(g);
         case "alt": return getChildTapes(g);
         case "intersect": return getChildTapes(g);
@@ -63,7 +62,10 @@ function calculateTapes(g: Grammar): string[] {
         case "count": return getChildTapes(g);
         case "locator": return getChildTapes(g);
         case "matchfrom": return listUnique([...getChildTapes(g), g.fromTape, g.toTape]);
-        //case "rename": 
+        case "rename": 
+            return getChildTapes(g).map(t => 
+                t === g.fromTape ? g.toTape : t)
+        
         //default: exhaustive(g.tag);
     }
 

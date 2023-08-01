@@ -5,7 +5,6 @@ import {
     Grammar, GrammarPass, 
     GrammarResult, TestNotGrammar, 
     TestGrammar, 
-    infinityProtection,
     AbstractTestGrammar,
     Cursor,
     JoinGrammar
@@ -13,6 +12,7 @@ import {
 import { TapeNamespace} from "../tapes";
 import { generate } from "../generator";
 import { PassEnv } from "../passes";
+import { infinityProtection } from "./infinityProtection";
 
 export class ExecuteTests extends GrammarPass {
 

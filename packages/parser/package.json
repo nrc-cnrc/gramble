@@ -41,7 +41,6 @@
     "testMatchRename": "mocha -r ts-node/register tests/testMatchRename.ts",
     "testNegation": "mocha -r ts-node/register tests/testNegation.ts",
     "testNotMatch": "mocha -r ts-node/register tests/testNotMatch.ts",
-    "testParallel": "mocha -r ts-node/register tests/testParallel.ts",
     "testRecursion": "mocha -r ts-node/register tests/testRecursion.ts",
     "testRename": "mocha -r ts-node/register tests/testRename.ts",
     "testReplace": "mocha -r ts-node/register tests/testReplace.ts",

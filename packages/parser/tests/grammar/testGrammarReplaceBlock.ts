@@ -17,6 +17,9 @@ import {
 } from "./testGrammarUtil";
 
 import { 
+    IOJoin,
+    IOReplace,
+    IOReplaceOptional,
     logTestSuite, VERBOSE_TEST_L2,
 } from '../testUtil';
 
@@ -30,40 +33,6 @@ const VERBOSE = VERBOSE_TEST_L2;
 
 function vb(verbosity: number): number {
     return VERBOSE ? verbosity : SILENT;
-}
-
-function IOReplace(
-    fromStr: string, 
-    toStr: string, 
-    preStr: string = "",
-    postStr: string = "",
-): ReplaceGrammar {
-    const fromGrammar = Lit(REPLACE_INPUT_TAPE, fromStr);
-    const toGrammar = Lit(REPLACE_OUTPUT_TAPE, toStr);
-    const preGrammar = Lit(REPLACE_INPUT_TAPE, preStr);
-    const postGrammar = Lit(REPLACE_INPUT_TAPE, postStr);
-    return Replace(fromGrammar, toGrammar, preGrammar, postGrammar);
-}
-
-function IOReplaceOptional(
-    fromStr: string, 
-    toStr: string, 
-    preStr: string = "",
-    postStr: string = "",
-): ReplaceGrammar {
-    const fromGrammar = Lit(REPLACE_INPUT_TAPE, fromStr);
-    const toGrammar = Lit(REPLACE_OUTPUT_TAPE, toStr);
-    const preGrammar = Lit(REPLACE_INPUT_TAPE, preStr);
-    const postGrammar = Lit(REPLACE_INPUT_TAPE, postStr);
-    return OptionalReplace(fromGrammar, toGrammar, preGrammar, postGrammar);
-}
-
-function IOJoin(
-    inputStr: string,
-    ...rules: ReplaceGrammar[]
-): Grammar {
-    const inputGrammar = Lit("t1", inputStr);
-    return ReplaceBlock("t1", inputGrammar, rules);
 }
 
 function withVocab(voc: string, grammar: Grammar) {

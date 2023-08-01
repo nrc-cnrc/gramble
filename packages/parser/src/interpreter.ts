@@ -1,7 +1,6 @@
 import { 
     Grammar, 
     CollectionGrammar, Query, 
-    infinityProtection,
     LocatorGrammar,
     Cursor,
     JoinGrammar
@@ -34,6 +33,7 @@ import {
 } from "./passes/allPasses";
 import { ExecuteTests } from "./passes/executeTests";
 import { resolveName } from "./passes/qualifyNames";
+import { infinityProtection } from "./passes/infinityProtection";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
