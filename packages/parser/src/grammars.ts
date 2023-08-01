@@ -189,9 +189,12 @@ export abstract class AbstractGrammar extends Component {
             const priority = joinWeight * Math.max(tape.vocab.size, 1);
             return [t, priority];
         });
+
         const result = priorities.filter(([t, priority]) => priority >= 0)
-                         .sort((a, b) => b[1] - a[1])
+                         .sort((a, b) => a[1] - b[1])
                          .map(([a,_]) => a);
+
+        
         return result;
     }
     
@@ -687,6 +690,21 @@ export class JoinGrammar extends BinaryGrammar {
         const intersection = new Set(listIntersection(child1Tapes, child2Tapes));
         result.joinable ||= intersection.has(tapeName);
         return result;
+    }
+
+    public getTapePriority(
+        tapeName: string, 
+        symbolsVisited: StringPairSet,
+        env: PassEnv
+    ): number {
+        const c1tapes = new Set(this.child1.tapes);
+        const c2tapes = new Set(this.child2.tapes);
+        const c1priority = this.child1.getTapePriority(tapeName, symbolsVisited, env);
+        const c2priority = this.child2.getTapePriority(tapeName, symbolsVisited, env);
+        if (c1tapes.has(tapeName) && c2tapes.has(tapeName)) {
+            return c1priority + c2priority * 10;
+        }
+        return (c1priority + c2priority);
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
