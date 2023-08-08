@@ -2630,14 +2630,24 @@ export class ReplaceGrammar extends AbstractGrammar {
 }
 
 export function Query(
-    query: StringDict = {},
+    query: StringDict[] | StringDict = {},
 ): Grammar {
-    const queryLiterals = Object.entries(query).map(([key, value]) => {
-        key = key.normalize("NFD"); 
-        value = value.normalize("NFD");
-        return new LiteralGrammar(key, value);
-    });
-    return new SequenceGrammar(queryLiterals);
+    if (! Array.isArray(query)) {
+        query = [query];
+    }
+    let queries: SequenceGrammar[] = [];
+    for (let q of query) {
+        const queryLiterals = Object.entries(q).map(([key, value]) => {
+            key = key.normalize("NFD"); 
+            value = value.normalize("NFD");
+            return new LiteralGrammar(key, value);
+        });
+        queries.push(new SequenceGrammar(queryLiterals));
+    }
+    if (queries.length == 1) {
+        return queries[0];
+    }
+    return new AlternationGrammar(queries);
 }
 
 export function infinityProtection(

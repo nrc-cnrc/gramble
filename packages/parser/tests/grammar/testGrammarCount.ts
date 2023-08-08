@@ -322,24 +322,28 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                               false, true);
         it('Caught "Count exceeded" Error', function() {
             expect(
-                () => generateOutputsFromGrammar(grammar, SILENT, "", undefined, false, true)
+                () => generateOutputsFromGrammar(grammar, SILENT, "", {},
+                                                 undefined, false, true)
             ).to.throw(Error, "Count exceeded on t1");
         });
     });
 
     // The following test relies on the nullable infinite repeat generating
     // Epsilon tokens infinitely.
-    /* describe('10c. Count_t1:100εErr Count_t1:5 (ε|t1:h)*', function() {
+    /*
+    describe('10c. Count_t1:100εErr Count_t1:5 (ε|t1:h)*', function() {
         const grammar = Count({t1:100},
                               Count({t1:5},
                                     Rep(Uni(Epsilon(), t1("h")))),
                               true, true);
         it('Caught "Count exceeded" Error', function() {
             expect(
-                () => generateOutputsFromGrammar(grammar, SILENT, "", undefined, true, true)
+                () => generateOutputsFromGrammar(grammar, SILENT, "", {},
+                                                 undefined, true, true)
             ).to.throw(Error, "Count exceeded on t1");
         });
-    }); */
+    });
+    */
 
     // Test countEpsilon option.
 

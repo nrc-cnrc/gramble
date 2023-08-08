@@ -30,7 +30,7 @@
     "build": "tsc",
     "prepare": "npm run build",
 
-    "test": "mocha -r ts-node/register tests/*.ts tests/parse/*.ts tests/sheet/*/*.ts",
+    "test": "mocha -r ts-node/register tests/*.ts tests/grammar/*.ts tests/parse/*.ts tests/sheet/*/*.ts",
     "testGenerate": "mocha -r ts-node/register tests/*.ts",
     "testProperty": "mocha -r ts-node/register tests/property/testProperty.ts",
     "testFilter": "mocha -r ts-node/register tests/testFilter.ts",
@@ -45,7 +45,6 @@
     "testParallel": "mocha -r ts-node/register tests/testParallel.ts",
     "testRecursion": "mocha -r ts-node/register tests/testRecursion.ts",
     "testRename": "mocha -r ts-node/register tests/testRename.ts",
-    "testReplace": "mocha -r ts-node/register tests/testReplace.ts",
     "testShort": "mocha -r ts-node/register tests/testShort.ts",
 
     "testGrammar": "mocha -r ts-node/register tests/grammar/*.ts",
@@ -59,6 +58,7 @@
     "testGrammarJoinRule": "mocha -r ts-node/register tests/grammar/testGrammarJoinRule.ts",
     "testGrammarMatchFrom": "mocha -r ts-node/register tests/grammar/testGrammarMatchFrom.ts",
     "testGrammarRepeat": "mocha -r ts-node/register tests/grammar/testGrammarRepeat.ts",
+    "testGrammarReplace": "mocha -r ts-node/register tests/grammar/testGrammarReplace.ts",
 
     "testParse": "mocha -r ts-node/register tests/parse/*.ts",
     "testParseHeader": "mocha -r ts-node/register tests/parse/testParseHeader.ts",

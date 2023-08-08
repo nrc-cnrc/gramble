@@ -7,15 +7,14 @@ import {
     OptionalReplace,
     Replace,
     ReplaceGrammar,
-    Seq,
     Uni,
-    Vocab,
 } from "../../src/grammars";
 
 import {
     grammarTestSuiteName,
     testGrammar,
     t1,
+    withVocab,
 } from "./testGrammarUtil";
 
 import { 
@@ -66,10 +65,6 @@ function IOJoin(
 ): Grammar {
     const inputGrammar = Lit("t1", inputStr);
     return JoinRule("t1", inputGrammar, rules);
-}
-
-function withVocab(voc: string, grammar: Grammar) {
-    return Seq(Vocab({t1:voc}), grammar);
 }
 
 describe(`${grammarTestSuiteName(module)}`, function() {
