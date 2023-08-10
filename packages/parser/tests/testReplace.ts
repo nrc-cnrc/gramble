@@ -2514,7 +2514,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: 'lhl', t2: 'lhl'}, {t1: 'lle', t2: 'll'},
             {t1: 'llh', t2: 'llh'}, {t1: 'lll', t2: 'lll'},
         ];
-        testGenerate(grammar, expectedResults);
+        testGenerate(grammar, expectedResults, VERBOSE_DEBUG);
     });
 
     describe('34e-alt. Replace e by ∅: t1:e -> t2:∅ {0,2} (vocab t1:ehl)', function() {

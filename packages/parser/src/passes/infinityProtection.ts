@@ -93,6 +93,7 @@ export function lengthRange(
         case "locator": 
         case "cursor":
         case "singletape":
+        case "correspond":
             return lengthRange(g.child, tapeName, stack, env);
 
         // ones where it's based on the child(ren) but complicated

@@ -9,11 +9,11 @@ import {
     constructPrecede, constructPreTape,
     constructNotContains,
     constructCollection, 
-    constructCorrespond, 
     constructDotStar,
     constructCount,
     CollectionExpr,
     constructCursor,
+    constructCorrespond,
 } from "./exprs";
 import { 
     Result,
@@ -101,6 +101,7 @@ export type Grammar = EpsilonGrammar
              | TestNotGrammar
              | ReplaceBlockGrammar
              | ReplaceGrammar
+             | CorrespondGrammar
              | RuleContextGrammar;
 /**
  * Grammar components represent the linguistic grammar that the
@@ -1876,6 +1877,50 @@ export class ReplaceBlockGrammar extends AbstractGrammar {
 
 } 
 
+export class CorrespondGrammar extends UnaryGrammar {
+    public readonly tag = "correspond";
+
+    public get id(): string {
+        return `Cor_${this.tape1}>${this.tape2}(${this.child.id})`;
+    }
+    
+    constructor(
+        child: Grammar,
+        public tape1: string,
+        public tape2: string
+    ) {
+        super(child);
+    }
+    
+    public getTapeClass(
+        tapeName: string, 
+        symbolsVisited: StringPairSet,
+        env: PassEnv
+    ): TapeClass {
+        const ts = new Set(this.tapes);
+        if (tapeName == this.tape1 || tapeName == this.tape2) {
+            return { joinable: true, concatenable: true };
+        }
+        return super.getTapeClass(tapeName, symbolsVisited, env);
+    }
+
+    public constructExpr(
+        tapeNS: TapeNamespace
+    ): Expr {
+        const childExpr = this.child.constructExpr(tapeNS);
+        return constructCorrespond(childExpr, this.tape1, this.tape2);
+    }
+
+}
+
+export function Correspond(
+    tape1: string,
+    tape2: string,
+    child: Grammar
+): CorrespondGrammar {
+    return new CorrespondGrammar(child, tape1, tape2);
+}
+
 let REPLACE_INDEX = 0;
 export class ReplaceGrammar extends AbstractGrammar {
     public readonly tag = "replace";
@@ -2006,7 +2051,7 @@ export class ReplaceGrammar extends AbstractGrammar {
         const postContextExpr: Expr = this.postContext.constructExpr(tapeNS);
         let states: Expr[] = [
             constructMatchFrom(preContextExpr, this._fromTapeName, this._toTapeName),
-            constructCorrespond(constructPrecede(fromExpr, toExpr), fromTape, 0, toTape, 0),
+            constructCorrespond(constructPrecede(fromExpr, toExpr), fromTape, toTape),
             constructMatchFrom(postContextExpr, this._fromTapeName, this._toTapeName)
         ];
 

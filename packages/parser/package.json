@@ -48,6 +48,7 @@
 
     "testGrammar": "mocha -r ts-node/register tests/grammar/*.ts",
     "testGrammarBasic": "mocha -r ts-node/register tests/grammar/testGrammarBasic.ts",
+    "testGrammarCorrespond": "mocha -r ts-node/register tests/grammar/testGrammarCorrespond.ts",
     "testGrammarCount": "mocha -r ts-node/register tests/grammar/testGrammarCount.ts",
     "testGrammarCursor": "mocha -r ts-node/register tests/grammar/testGrammarCursor.ts",
     "testGrammarDot": "mocha -r ts-node/register tests/grammar/testGrammarDot.ts",

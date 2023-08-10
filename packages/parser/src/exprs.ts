@@ -1283,12 +1283,16 @@ export class CursorExpr extends UnaryExpr {
     constructor(
         public tape: string,
         child: Expr,
-        public output: OutputExpr = new OutputExpr(EPSILON)
+        public output: OutputExpr = new OutputExpr(EPSILON),
+        public finished: boolean = false
     ) {
         super(child);
     }
 
     public get id(): string {
+        if (this.finished) {
+            return `O_${this.tape}(${this.child.id})`;
+        }
         return `T_${this.tape}(${this.child.id})`;
     }
 
@@ -1298,7 +1302,7 @@ export class CursorExpr extends UnaryExpr {
                 // tapes inside and outside Cursor("X", child)
 
         const cNext = this.child.delta(tapeName, env);
-        return constructCursor(this.tape, cNext, this.output);
+        return constructCursor(this.tape, cNext, this.output, this.finished);
     }
 
     public *deriv(query: Query, env: DerivEnv): Derivs {
@@ -1307,43 +1311,43 @@ export class CursorExpr extends UnaryExpr {
                 // tapes inside and outside Cursor("X", child)
 
         for (const [cResult, cNext] of this.child.deriv(query, env)) {
-            const wrapped = constructCursor(this.tape, cNext, this.output);
+            const wrapped = constructCursor(this.tape, cNext, this.output, this.finished);
             yield [cResult, wrapped];
         }
     }
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
 
-        const cResults: Deriv[] = [];
-        
+        if (this.finished) {
+            for (const [cHandled, cNext] of this.child.forward(env)) {
+                const wrapped = constructCursor(this.tape, cNext, this.output, true);
+                yield [cHandled, wrapped];
+            }
+            return;
+        }
+
         // do a delta
-        const deltaResult = constructToken(this.tape, "");
         const deltaNext = this.child.delta(this.tape, env);
-        cResults.push([deltaResult, deltaNext]);
+        if (!(deltaNext instanceof NullExpr)) {
+            env.incrStates();
+            env.logDelta(this.tape, deltaNext);
+            env.indentLog(1);
+            for (const [handled, nNext] of deltaNext.forward(env)) {
+                const wrapped = constructCursor(this.tape, nNext, this.output, true);
+                yield [true, wrapped];
+            }
+            env.indentLog(-1);
+        }
 
-        // do a deriv
         const query = constructDot(this.tape);
-        cResults.push(...this.child.deriv(query, env));
-
-        // for each of those results, add the output to this.output,
-        // call .forward() on each next, wrap and yield
-        for (const [cResult, cNext] of disjoin(cResults)) {
+        for (const [cResult, cNext] of disjoin(this.child.deriv(query, env))) {
             env.incrStates();
             const newOutput = this.output.addOutput(cResult);
-
-            if (cResult instanceof TokenExpr && cResult.text == "") {
-                env.logDelta(cResult.tapeName, cNext);
-            } else {
-                env.logDeriv(cResult, cNext);
-            }
-
-            const cHandled = !(cResult instanceof TokenExpr) || cResult.text != '';
-                
+            env.logDeriv(cResult, cNext);
             env.indentLog(1);
-            for (const [nHandled, nNext] of cNext.forward(env)) {
-                
-                const wrapped = constructCursor(this.tape, nNext, newOutput);
-                yield [cHandled || nHandled, wrapped];
+            for (const [_, nNext] of cNext.forward(env)) {
+                const wrapped = constructCursor(this.tape, nNext, newOutput, this.finished);
+                yield [true, wrapped];
             }
             env.indentLog(-1);
         }
@@ -1366,8 +1370,13 @@ export class CursorExpr extends UnaryExpr {
 
 }
 
-export function constructCursor(tape: string, child: Expr, output?: OutputExpr): Expr {
-    return new CursorExpr(tape, child, output).simplify();
+export function constructCursor(
+    tape: string, 
+    child: Expr, 
+    output?: OutputExpr,
+    finished: boolean = false
+): Expr {
+    return new CursorExpr(tape, child, output, finished).simplify();
 }
 
 export class PreTapeExpr extends UnaryExpr {
@@ -1424,6 +1433,7 @@ export class PreTapeExpr extends UnaryExpr {
 
             //const globalTapeName = env.getTape(this.fromTape).globalName;
             const t1query = query.rename(this.tape1);
+            
             for (const [t1result, t1next] of this.child.deriv(t1query, env)) {
                 if (t1next instanceof NullExpr) {
                     continue;
@@ -1438,13 +1448,14 @@ export class PreTapeExpr extends UnaryExpr {
                     yield [t2result, wrapped];
                     continue;
                 }
-                
+                env.indentLog(1);
                 const newOutput = this.output.addOutput(t1result);
                 for (const [t2result, t2next] of t1next.deriv(query, env)) {
                     env.logDeriv(t2result, t2next);
                     const wrapped = constructPreTape(this.tape1, this.tape2, t2next, newOutput);
                     yield [t2result, wrapped];
                 }
+                env.indentLog(-1);
             }
             return;
         }
@@ -1806,95 +1817,84 @@ class NegationExpr extends UnaryExpr {
     }
 }
 
-export class CorrespondExpr extends Expr {
+export class CorrespondExpr extends UnaryExpr {
 
     constructor(
         public child: Expr,
         public fromTape: string,
-        public fromCount: number,
-        public toTape: string,
-        public toCount: number
+        public toTape: string
     ) {
-        super();
-    }
-
+        super(child);
+    }   
+    
     public get id(): string {
         // return this.child.id;
-        return `Cor_${this.fromTape}:${this.fromCount}>${this.toTape}:${this.toCount}(${this.child.id})`;
+        return `NCor_${this.fromTape}>${this.toTape}(${this.child.id})`;
     }
 
+    
     public delta(tapeName: string, env: DerivEnv): Expr {
         if (tapeName == this.fromTape) {
-            const cNext = this.child.delta(tapeName, env);
-            return constructCorrespond(cNext, this.fromTape, this.fromCount,
-                                            this.toTape, this.toCount);
+            // if we can delta on the fromTape, we're done being a Correspond
+            return this.child.delta(tapeName, env);
         }
 
         if (tapeName == this.toTape) {
-            if (this.toCount < this.fromCount) {
-                return NULL;
-            }
-            const cNext = this.child.delta(tapeName, env);
-            return constructCorrespond(cNext, this.fromTape, this.fromCount,
-                this.toTape, this.toCount);
+            // we can't delta out on the toTape, the only escape
+            // is deltaing out on the fromTape
+            return NULL;
         }
-
-        // it's neither tape we care about
-        return this;
+        
+        return this; // it's neither tape we care about
     }
 
-    public *deriv(
-        query: Query,
-        env: DerivEnv
-    ): Derivs {
+    public *deriv(query: Query, env: DerivEnv): Derivs {
+
+        if (query.tapeName == this.fromTape) {
+            for (const [cResult, cNext] of this.child.deriv(query, env)) {
+                const wrapped = constructCorrespond(cNext, 
+                        this.fromTape, this.toTape);
+                yield [cResult, wrapped];
+            }
+            return;
+        }
+
         if (query.tapeName == this.toTape) {
             for (const [cResult, cNext] of this.child.deriv(query, env)) {
                 const wrapped = constructCorrespond(cNext, 
-                                            this.fromTape, this.fromCount,
-                                            this.toTape, this.toCount+1);
+                                            this.fromTape,
+                                            this.toTape);
                 yield [cResult, wrapped];
             }
 
             // toTape is special, if it's nullable but has emitted fewer tokens than
             // fromTape has, it can emit an epsilon
             const cNext = this.child.delta(query.tapeName, env);
-            if (!(cNext instanceof NullExpr) && this.toCount < this.fromCount) {
-                const wrapped = constructCorrespond(this.child, 
-                    this.fromTape, this.fromCount,
-                    this.toTape, this.toCount+1);
-                yield [EPSILON, wrapped];
-            }
-            return;
-        }
-
-        if (query.tapeName == this.fromTape) {
-            for (const [cResult, cNext] of this.child.deriv(query, env)) {
+            if (!(cNext instanceof NullExpr)) {
                 const wrapped = constructCorrespond(cNext, 
-                                            this.fromTape, this.fromCount+1,
-                                            this.toTape, this.toCount);
-                yield [cResult, wrapped];
+                    this.fromTape, this.toTape);
+                yield [EPSILON, wrapped];
             }
             return;
         }
 
         // if it's neither tape, nothing can happen here
     }
+
 }
 
 export function constructCorrespond(
     child: Expr,
     fromTape: string,
-    fromCount: number,
-    toTape: string,
-    toCount: number
+    toTape: string
 ): Expr {
     if (child instanceof NullExpr) {
         return child;
     }
-    if (child instanceof EpsilonExpr && fromCount <= toCount) {
-        return child;
-    }
-    return new CorrespondExpr(child, fromTape, fromCount, toTape, toCount);
+    //if (child instanceof EpsilonExpr) {
+    //    return child;
+    //}
+    return new CorrespondExpr(child, fromTape, toTape);
 }
 
 export class MatchFromExpr extends UnaryExpr {
