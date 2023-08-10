@@ -28,7 +28,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    describe('1a. Cor(t1:hello, t2:bye), default priority', test({
+    describe('1a. t2 shorter than t1: Cor(t1:hello, t2:bye), default priority', test({
         grammar: Correspond("t1", "t2", Seq(t1("hello"), t2("bye"))),
         tapes: ["t1", "t2"],
         // vocab: {t1: 4},
@@ -37,7 +37,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
-    describe('1b. Cor(t1:hello, t2:bye), priority t1<t2', test({
+    describe('1b. t2 shorter than t1: Cor(t1:hello, t2:bye), priority t1<t2', test({
         grammar: Cursor(["t1", "t2"], Correspond("t1", "t2", Seq(t1("hello"), t2("bye")))),
         tapes: ["t1", "t2"],
         // vocab: {t1: 4},
@@ -46,7 +46,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
     
-    describe('1c. Cor(t1:hello, t2:bye), priority t1>t2', test({
+    describe('1c. t2 shorter than t1: Cor(t1:hello, t2:bye), priority t1>t2', test({
         grammar: Cursor(["t2", "t1"], Correspond("t1", "t2", Seq(t1("hello"), t2("bye")))),
         tapes: ["t1", "t2"],
         // vocab: {t1: 4},
@@ -55,8 +55,43 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
+    describe('2a. t2 equal length to t1: Cor(t1:hello, t2:world), priority t1<t2', test({
+        grammar: Cursor(["t1", "t2"], Correspond("t1", "t2", Seq(t1("hello"), t2("world")))),
+        tapes: ["t1", "t2"],
+        // vocab: {t1: 4},
+        results: [
+            {t1: 'hello', t2: 'world'},
+        ],
+    }));
     
-    describe('2a. Cor(t1:hello|t1:help, t2:bye), priority t1<t2', test({
+    describe('2b. t2 equal length to t1: Cor(t1:hello, t2:bye), priority t1>t2', test({
+        grammar: Cursor(["t2", "t1"], Correspond("t1", "t2", Seq(t1("hello"), t2("world")))),
+        tapes: ["t1", "t2"],
+        // vocab: {t1: 4},
+        results: [
+            {t1: 'hello', t2: 'world'},
+        ],
+    }));
+    
+    describe('3a. t2 longer than t1: Cor(t1:hello, t2:sayonara), priority t1<t2', test({
+        grammar: Cursor(["t1", "t2"], Correspond("t1", "t2", Seq(t1("hello"), t2("sayonara")))),
+        tapes: ["t1", "t2"],
+        // vocab: {t1: 4},
+        results: [
+            {t1: 'hello', t2: 'sayonara'},
+        ],
+    }));
+    
+    describe('3b. t2 longer than t1: Cor(t1:hello, t2:sayonara), priority t1>t2', test({
+        grammar: Cursor(["t2", "t1"], Correspond("t1", "t2", Seq(t1("hello"), t2("sayonara")))),
+        tapes: ["t1", "t2"],
+        // vocab: {t1: 4},
+        results: [
+            {t1: 'hello', t2: 'sayonara'},
+        ],
+    }));
+    
+    describe('4a. Cor(t1:hello|t1:help, t2:bye), priority t1<t2', test({
         grammar: Cursor(["t1", "t2"], Correspond("t1", "t2", Seq(Uni(t1("hello"), t1("help")), t2("bye")))),
         tapes: ["t1", "t2"],
         // vocab: {t1: 4},
@@ -66,7 +101,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
     
-    describe('2b. Cor(t1:hello|t1:help, t2:bye), priority t1>t2', test({
+    describe('4b. Cor(t1:hello|t1:help, t2:bye), priority t1>t2', test({
         grammar: Cursor(["t2", "t1"], Correspond("t1", "t2", Seq(Uni(t1("hello"), t1("help")), t2("bye")))),
         tapes: ["t1", "t2"],
         // vocab: {t1: 4},
@@ -76,7 +111,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
-    describe('3a. Cor(t1:hello|t1:hi, t2:bye), priority t1<t2', test({
+    describe('5a. Cor(t1:hello|t1:hi, t2:bye), priority t1<t2', test({
         grammar: Cursor(["t1", "t2"], Correspond("t1", "t2", Seq(Uni(t1("hello"), t1("hi")), t2("bye")))),
         tapes: ["t1", "t2"],
         // vocab: {t1: 4},
@@ -86,7 +121,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
     
-    describe('3b. Cor(t1:hello|t1:hi, t2:bye), priority t1>t2', test({
+    describe('5b. Cor(t1:hello|t1:hi, t2:bye), priority t1>t2', test({
         grammar: Cursor(["t2", "t1"], Correspond("t1", "t2", Seq(Uni(t1("hello"), t1("hi")), t2("bye")))),
         tapes: ["t1", "t2"],
         // vocab: {t1: 4},
@@ -96,7 +131,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
-    describe('4a. Cor(t1:hello, t2:bye|t2:ta), priority t1<t2', test({
+    describe('6a. Cor(t1:hello, t2:bye|t2:ta), priority t1<t2', test({
         grammar: Cursor(["t1", "t2"], Correspond("t1", "t2", Seq(t1("hello"), Uni(t2("bye"), t2("ta"))))),
         tapes: ["t1", "t2"],
         // vocab: {t1: 4},
@@ -106,7 +141,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
     
-    describe('4b. Cor(t1:hello, t2:bye|t2:ta), priority t1>t2', test({
+    describe('6b. Cor(t1:hello, t2:bye|t2:ta), priority t1>t2', test({
         grammar: Cursor(["t2", "t1"], Correspond("t1", "t2", Seq(t1("hello"), Uni(t2("bye"), t2("ta"))))),
         tapes: ["t1", "t2"],
         // vocab: {t1: 4},
@@ -117,7 +152,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
 
     
-    describe('4a. Cor(t1:hello, t2:bye|t2:sayonara), priority t1<t2', test({
+    describe('7a. Cor(t1:hello, t2:bye|t2:sayonara), priority t1<t2', test({
         grammar: Cursor(["t1", "t2"], Correspond("t1", "t2", Seq(t1("hello"), Uni(t2("bye"), t2("sayonara"))))),
         tapes: ["t1", "t2"],
         // vocab: {t1: 4},
@@ -127,7 +162,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
     
-    describe('4b. Cor(t1:hello, t2:bye|t2:sayonara), priority t1>t2', test({
+    describe('7b. Cor(t1:hello, t2:bye|t2:sayonara), priority t1>t2', test({
         grammar: Cursor(["t2", "t1"], Correspond("t1", "t2", Seq(t1("hello"), Uni(t2("bye"), t2("sayonara"))))),
         tapes: ["t1", "t2"],
         // vocab: {t1: 4},

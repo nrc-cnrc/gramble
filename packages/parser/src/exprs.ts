@@ -1881,6 +1881,11 @@ export class CorrespondExpr extends UnaryExpr {
         // if it's neither tape, nothing can happen here
     }
 
+    public simplify(): Expr {
+        if (this.child instanceof NullExpr) return this.child;
+        return this;
+    }
+
 }
 
 export function constructCorrespond(
@@ -1888,13 +1893,7 @@ export function constructCorrespond(
     fromTape: string,
     toTape: string
 ): Expr {
-    if (child instanceof NullExpr) {
-        return child;
-    }
-    //if (child instanceof EpsilonExpr) {
-    //    return child;
-    //}
-    return new CorrespondExpr(child, fromTape, toTape);
+    return new CorrespondExpr(child, fromTape, toTape).simplify();
 }
 
 export class MatchFromExpr extends UnaryExpr {
