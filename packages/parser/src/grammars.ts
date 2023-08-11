@@ -192,7 +192,7 @@ export abstract class AbstractGrammar extends Component {
         });
 
         const result = priorities.filter(([t, priority]) => priority >= 0)
-                         .sort((a, b) => a[1] - b[1])
+                         .sort((a, b) => b[1] - a[1])
                          .map(([a,_]) => a);
 
         
@@ -1761,8 +1761,8 @@ export function Count(
 export function Cursor(tape: string | string[], child: Grammar): Grammar {
     let result = child;
     if (!Array.isArray(tape)) tape = [tape];
-    for (const t of tape) {
-        result = new CursorGrammar(t, result);   
+    for (let i = tape.length-1; i >= 0; i--) {
+        result = new CursorGrammar(tape[i], result);   
     }
     return result;
 }
