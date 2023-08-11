@@ -82,7 +82,9 @@
     "testSheetCell": "mocha -r ts-node/register tests/sheet/cell/*.ts",
     "testSheetRename": "mocha -r ts-node/register tests/sheet/rename/*.ts",
     "testSheetRule": "mocha -r ts-node/register tests/sheet/rule/*.ts",
-    "testSheetTest": "mocha -r ts-node/register tests/sheet/test/*.ts"
+    "testSheetTest": "mocha -r ts-node/register tests/sheet/test/*.ts",
+
+    "testSampling": "mocha -r ts-node/register tests/sampling/testSampling.ts"
   },
   "bugs": {
     "url": "https://github.com/littell/gramble_ts/issues"

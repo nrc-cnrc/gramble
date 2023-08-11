@@ -1971,13 +1971,8 @@ export class MatchFromExpr extends UnaryExpr {
     }
 
     public simplify(): Expr {
-        
-        if (this.child instanceof EpsilonExpr) {
-            return this.child;
-        }
-        if (this.child instanceof NullExpr) {
-            return this.child;
-        }
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) return this.child;
         return this;
     }
 
@@ -2009,7 +2004,6 @@ export function constructLiteral(
         return new LiteralExpr(tape, text, tokens, index).simplify();
     }
     return new RTLLiteralExpr(tape, text, tokens, index).simplify();
-
 }
 
 export function constructDot(tape: string): DotExpr {

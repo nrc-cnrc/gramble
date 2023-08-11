@@ -41,21 +41,11 @@ export function* generate(
 
     let states: Expr[] = [expr];
     let prev: Expr | undefined = undefined;
-    
-    // if we're generating randomly, we store candidates rather than output them immediately
-    const candidates: Expr[] = [];
 
     env.logDebug("");
     env.logDebugId("*** Generating for expr", expr);
 
     while (prev = states.pop()) {
-
-        // first, if we're random, see if it's time to stop and 
-        // randomly emit a result.  candidates will only be length > 0
-        // if we're random.
-        if (candidates.length > 0 && Math.random()) {
-            break;
-        }
 
         let nexts: Expr[] = [];
         let prevExpr = prev;
@@ -65,50 +55,31 @@ export function* generate(
         env.logDebugId("prevExpr is", prevExpr);
 
 
-        if (prevExpr instanceof EpsilonExpr) {
-            // we found a valid output and there's nothing left
-            // we can do on this branch
-
+        if (prevExpr instanceof EpsilonExpr || prevExpr instanceof OutputExpr) {
             env.logDebugOutput("YIELD", prevExpr);
-                
-            // if we're random, don't yield immediately, wait
-            if (opt.random) {
-                candidates.push(prevExpr);
-                continue;
-            }
-
-            // if we're not random, yield the result immediately.
-            yield* prevExpr.getOutputs();
-            continue;
-        } else if (prevExpr instanceof OutputExpr) {
-            env.logDebugOutput("YIELD", prevExpr);
-
-            // if we're random, don't yield immediately, wait
-            if (opt.random) {
-                candidates.push(prevExpr);
-                continue;
-            }
 
             // if we're not random, yield the result immediately.
             yield* prevExpr.getOutputs();
             continue;
             
-        } else if (prevExpr instanceof NullExpr) {
+        }
+        
+        if (prevExpr instanceof NullExpr) {
             // the search has failed here (there are no valid results
             // that have prevOutput as a prefix), so abandon this node 
             // and move on
             continue;
-        } else {
-            for (const [cHandled, cNext] of prevExpr.forward(env)) {
-                
-                if (cNext instanceof NullExpr) continue;
-                if (!(cNext instanceof EpsilonExpr || cNext instanceof OutputExpr) &&
-                        !cHandled) {
-                    throw new Error(`Unhandled forward: prev = ${prevExpr.id}, next = ${cNext.id}`);
-                }
-                env.logDebugOutput("->", cNext);
-                nexts.push(cNext);
+        }
+        
+        for (const [cHandled, cNext] of prevExpr.forward(env)) {
+            
+            if (cNext instanceof NullExpr) continue;
+            if (!(cNext instanceof EpsilonExpr || cNext instanceof OutputExpr) &&
+                    !cHandled) {
+                throw new Error(`Unhandled forward: prev = ${prevExpr.id}, next = ${cNext.id}`);
             }
+            env.logDebugOutput("->", cNext);
+            nexts.push(cNext);
         }
 
         // if random, shuffle the possibilities to search through next
@@ -125,16 +96,4 @@ export function* generate(
     env.logStates(`States visited: ${env.stats.statesVisited}`);
     const elapsedTime = msToTime(Date.now() - startingTime);
     env.logTime(`Generation time: ${elapsedTime}`);
-
-    // if we get here, we've exhausted the search.  usually we'd be done,
-    // but with randomness, it's possible to have cached all outputs but not
-    // actually yielded any.  The following does so.
-
-    if (candidates.length == 0) {
-        return;
-    }
-
-    const candidateIndex = Math.floor(Math.random()*candidates.length);
-    const candidateOutput = candidates[candidateIndex];
-    yield* candidateOutput.getOutputs();
 } 
