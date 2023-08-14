@@ -389,14 +389,18 @@ export function shuffleArray<T>(array: T[]): void {
 }
 
 export function iterTake<T>(gen: Gen<T>, n: number): [T[], Gen<T>] {
-    let i = 1;
     const results = [];
 
+    if (n === 0) return [[], gen];
+
     var curr = gen.next();
-    for (let i = 0; i < n && !curr.done; i++) {
+    for (let i = 0; i < n - 1 && !curr.done; i++) {
         results.push(curr.value);
         curr = gen.next();
     }
+
+    // don't forget that last curr
+    if (!curr.done) results.push(curr.value);
 
     return [results, gen];
 }

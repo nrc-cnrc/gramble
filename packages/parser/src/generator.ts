@@ -76,7 +76,7 @@ export function* generate(
         const AMOUNT_TO_TAKE = 50;
         const generator = prevExpr.forward(env);
         const [partialResults, remainingGenerator] = iterTake(generator, AMOUNT_TO_TAKE);
-        if (partialResults.length !== 0) {
+        if (partialResults.length == AMOUNT_TO_TAKE) {
             nexts.push(new GenExpr(remainingGenerator));
         }
 
