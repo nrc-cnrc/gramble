@@ -39,6 +39,7 @@ export function* generate(
     const stats = new DerivStats();
     const env = new DerivEnv(tapeNS, symbolNS, stack, opt, stats);
 
+    const NEXTS_TO_TAKE = opt.random ? 1 : Infinity;
     const startingTime = Date.now();
 
     let states: Expr[] = [expr];
@@ -49,35 +50,26 @@ export function* generate(
 
     while (prev = states.pop()) {
 
-        let nexts: Expr[] = [];
-        let prevExpr = prev;
-
         env.logDebug("");
-        env.logDebugOutput("prevOutput is", prevExpr);
-        env.logDebugId("prevExpr is", prevExpr);
+        env.logDebugOutput("prevOutput is", prev);
+        env.logDebugId("prevExpr is", prev);
 
-        if (prevExpr instanceof EpsilonExpr || prevExpr instanceof OutputExpr) {
-            env.logDebugOutput("YIELD", prevExpr);
-
-            // if we're not random, yield the result immediately.
-            const outputs = prevExpr.getOutputs()
+        if (prev instanceof EpsilonExpr || prev instanceof OutputExpr) {
+            env.logDebugOutput("YIELD", prev);
+            const outputs = prev.getOutputs()
             yield* outputs;
             continue;
             
         }
         
-        if (prevExpr instanceof NullExpr) {
-            // the search has failed here (there are no valid results
-            // that have prevOutput as a prefix), so abandon this node 
-            // and move on
+        if (prev instanceof NullExpr) {
             continue;
         }
         
-        const AMOUNT_TO_TAKE = 50;
-        const generator = prevExpr.forward(env);
-        const [partialResults, remainingGenerator] = iterTake(generator, AMOUNT_TO_TAKE);
-        if (partialResults.length == AMOUNT_TO_TAKE) {
-            nexts.push(new GenExpr(remainingGenerator));
+        const forwardGen = prev.forward(env);
+        const [partialResults, remainder] = iterTake(forwardGen, NEXTS_TO_TAKE);
+        if (partialResults.length == NEXTS_TO_TAKE) {
+            states.push(new GenExpr(remainder));
         }
 
         for (const [cHandled, cNext] of partialResults) {
@@ -85,19 +77,11 @@ export function* generate(
             if (cNext instanceof NullExpr) continue;
             if (!(cNext instanceof EpsilonExpr || cNext instanceof OutputExpr) &&
                     !cHandled) {
-                throw new Error(`Unhandled forward: prev = ${prevExpr.id}, next = ${cNext.id}`);
+                throw new Error(`Unhandled forward: prev = ${prev.id}, next = ${cNext.id}`);
             }
             env.logDebugOutput("->", cNext);
-            nexts.push(cNext);
+            states.push(cNext);
         }
-
-        // if random, shuffle the possibilities to search through next
-        if (opt.random) {
-            shuffleArray(nexts);
-        }
-
-        // add the new ones to the stack
-        states.push(...nexts);
     }
 
     env.logDebug("");

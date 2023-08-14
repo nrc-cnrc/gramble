@@ -6,10 +6,9 @@ import {
     Dict,
     Namespace,
     StringDict,
-    concatStringDict,
-    OPEN_TAPE,
     outputProduct,
-    flatten
+    flatten,
+    shuffleArray
 } from "./util";
 import { 
     Tape, TapeNamespace, 
@@ -90,9 +89,13 @@ export class DerivEnv {
             this.logIndent(`└ d_${tapeName} = ${next.id}`);
         }
     }
-    
+
     public logDeriv(result: Expr, next: Expr): void {
         if ((this.opt.verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+            if (result instanceof TokenExpr && result.text == "") {
+                this.logIndent(`└ d_${result.tapeName} = ${next.id}`);
+                return;
+            }
             this.logIndent(`└ D_${result.id} = ${next.id}`);
         }
     }
@@ -1343,35 +1346,26 @@ export class CursorExpr extends UnaryExpr {
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
 
-        if (this.finished) {
-            for (const [cHandled, cNext] of this.child.forward(env)) {
-                const wrapped = constructCursor(this.tape, cNext, this.output, true);
-                yield [cHandled, wrapped];
-            }
-            return;
-        }
-
-        // do a delta
+        const deltaToken = new TokenExpr(this.tape, '');
         const deltaNext = this.child.delta(this.tape, env);
-        if (!(deltaNext instanceof NullExpr)) {
-            env.incrStates();
-            env.logDelta(this.tape, deltaNext);
-            env.indentLog(1);
-            for (const [handled, nNext] of deltaNext.forward(env)) {
-                const wrapped = constructCursor(this.tape, nNext, this.output, true);
-                yield [true, wrapped];
-            }
-            env.indentLog(-1);
+        const deltaResult = [deltaToken, deltaNext];
+        const derivQuery = constructDot(this.tape);
+        const derivResults = disjoin(this.child.deriv(derivQuery, env));
+        const allResults = [deltaResult, ...derivResults]
+
+        if (env.opt.random) {
+            shuffleArray(allResults);
         }
 
-        const query = constructDot(this.tape);
-        for (const [cResult, cNext] of disjoin(this.child.deriv(query, env))) {
+        for (const [cResult, cNext] of allResults) {
             env.incrStates();
             const newOutput = this.output.addOutput(cResult);
             env.logDeriv(cResult, cNext);
             env.indentLog(1);
             for (const [_, nNext] of cNext.forward(env)) {
-                const wrapped = constructCursor(this.tape, nNext, newOutput, this.finished);
+                const finished = (cResult instanceof TokenExpr && cResult.text == "");
+                const wrapped = constructCursor(this.tape, nNext, 
+                                newOutput, finished);
                 yield [true, wrapped];
             }
             env.indentLog(-1);

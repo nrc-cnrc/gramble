@@ -11,8 +11,6 @@ export const REPLACE_INPUT_TAPE = INTERNAL_PREFIX + "i";
 export const REPLACE_OUTPUT_TAPE = INTERNAL_PREFIX + "o";
 export const DUMMY_REGEX_TAPE = INTERNAL_PREFIX + "T";
 
-export const OPEN_TAPE = INTERNAL_PREFIX + "OPEN";
-
 export const PLAIN_PARAM: string = INTERNAL_PREFIX + "plain";
 
 export const DEFAULT_PROJECT_NAME = "";

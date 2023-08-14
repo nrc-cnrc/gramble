@@ -220,37 +220,6 @@ export function generateOutputsFromGrammar(
     return outputs;
 }
 
-export function sampleOutputsFromGrammar(
-    grammar: Grammar | Interpreter,
-    verbose: number = SILENT,
-    symbolName: string = "",
-    maxRecursion: number = DEFAULT_MAX_RECURSION,
-    stripHidden: boolean = true,
-    throwError: boolean = false // in case a test wants to catch errors itself
-): StringDict[] {
-    const interpreter = prepareInterpreter(grammar, verbose, symbolName, throwError);
-                          
-    let outputs: StringDict[] = [];
-
-    maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
-
-    try {
-        outputs = [
-            ...interpreter.sample(symbolName, 100, {},
-                        maxRecursion, undefined, stripHidden)
-        ];
-    } catch (e) {
-        if (throwError) throw e;
-        it("Unexpected Exception", function() {
-            console.log("");
-            console.log(`[${this.test?.fullTitle()}]`);
-            console.log(e);
-            assert.fail(e);
-        });
-    }
-    return outputs;
-}
-
 export function testGenerate(
     grammar: Grammar | Interpreter,
     expectedResults: StringDict[],
