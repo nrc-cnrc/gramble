@@ -57,9 +57,9 @@ export function* generate(
         if (prev instanceof EpsilonExpr || prev instanceof OutputExpr) {
             env.logDebugOutput("YIELD", prev);
             const outputs = prev.getOutputs()
+            shuffleArray(outputs);
             yield* outputs;
             continue;
-            
         }
         
         if (prev instanceof NullExpr) {

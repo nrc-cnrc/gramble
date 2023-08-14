@@ -1,5 +1,5 @@
-import { CharSet, Count, Rep, Seq, Uni } from "../../src/grammars";
-import { t1 } from "../testUtil";
+import { CharSet, Count, Cursor, Rep, Seq, Uni } from "../../src/grammars";
+import { t1, t2 } from "../testUtil";
 import { testSample } from "./testSamplingUtil";
 
 function splitUni(tapeName: string, text: string) {
@@ -29,6 +29,12 @@ describe(`Sampling tests`, function() {
     testSample({
         desc: "3. Repetition",
         grammar: Count({t1: 10}, Rep(t1("foo")))
+    });
+
+    testSample({
+        desc: '4. Cursors inside alternations',
+        grammar: Uni(Cursor("t1", t1("hello")), 
+                        Cursor("t2", t2("world"))),
     });
 
 });
