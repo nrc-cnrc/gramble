@@ -388,23 +388,19 @@ export function shuffleArray<T>(array: T[]): void {
     }
 }
 
-export function iterTake<T>(gen: Gen<T>, n: number) {
+export function iterTake<T>(gen: Gen<T>, n: number): [T[], Gen<T>] {
     let i = 1;
     const results = [];
 
-    if (n <= 0) {
-        throw new Error("Invalid index");
+    var curr = gen.next();
+    for (let i = 0; i < n && !curr.done; i++) {
+        results.push(curr.value);
+        curr = gen.next();
     }
 
-    for (const value of gen) {
-        results.push(value);
-        if (i++ == n) {
-            break;
-        }
-    }
-
-    return results;
+    return [results, gen];
 }
+
 
 export function* stripHiddenTapes(gen: Gen<StringDict>): Gen<StringDict> {
     for (const sd of gen) {

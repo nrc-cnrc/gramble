@@ -3,11 +3,13 @@ import {
     EpsilonExpr, Expr, ExprNamespace, 
     NullExpr, 
     DerivStats,
-    OutputExpr
+    OutputExpr,
+    GenExpr
 } from "./exprs";
 import { TapeNamespace } from "./tapes";
 import { 
     Gen, GenOptions,
+    iterTake,
     msToTime, shuffleArray, StringDict
 } from "./util";
 
@@ -54,12 +56,12 @@ export function* generate(
         env.logDebugOutput("prevOutput is", prevExpr);
         env.logDebugId("prevExpr is", prevExpr);
 
-
         if (prevExpr instanceof EpsilonExpr || prevExpr instanceof OutputExpr) {
             env.logDebugOutput("YIELD", prevExpr);
 
             // if we're not random, yield the result immediately.
-            yield* prevExpr.getOutputs();
+            const outputs = prevExpr.getOutputs()
+            yield* outputs;
             continue;
             
         }
@@ -71,7 +73,14 @@ export function* generate(
             continue;
         }
         
-        for (const [cHandled, cNext] of prevExpr.forward(env)) {
+        const AMOUNT_TO_TAKE = 50;
+        const generator = prevExpr.forward(env);
+        const [partialResults, remainingGenerator] = iterTake(generator, AMOUNT_TO_TAKE);
+        if (partialResults.length !== 0) {
+            nexts.push(new GenExpr(remainingGenerator));
+        }
+
+        for (const [cHandled, cNext] of partialResults) {
             
             if (cNext instanceof NullExpr) continue;
             if (!(cNext instanceof EpsilonExpr || cNext instanceof OutputExpr) &&

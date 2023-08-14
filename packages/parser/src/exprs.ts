@@ -1278,6 +1278,31 @@ export class OutputExpr extends UnaryExpr {
     }
 }
 
+export class GenExpr extends Expr {
+
+    constructor(
+        public gen: Gen<[boolean, Expr]>
+    ) { 
+        super();
+    }
+
+    public get id(): string {
+        return `GEN`;
+    }
+
+    public delta(tapeName: string, env: DerivEnv): Expr {
+        throw new Error("Method not implemented.");
+    }
+    public deriv(query: Query, env: DerivEnv): Derivs {
+        throw new Error("Method not implemented.");
+    }
+    
+    public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
+        yield *this.gen;
+    }
+
+}
+
 export class CursorExpr extends UnaryExpr {
 
     constructor(

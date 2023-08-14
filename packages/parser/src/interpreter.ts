@@ -216,7 +216,8 @@ export class Interpreter {
     ): StringDict[] {
         const gen = this.generateStream(symbolName, 
             restriction, maxRecursion, maxChars, stripHidden);
-        return iterTake(gen, maxResults);
+        const [results, _] = iterTake(gen, maxResults);
+        return results;
     }
     
     public *generateStream(
@@ -275,7 +276,8 @@ export class Interpreter {
             if (stripHidden) {
                 gen = stripHiddenTapes(gen);
             }
-            yield* iterTake(gen, 1);
+            const [results, _] = iterTake(gen, 1);
+            yield* results;
         }
     } 
 
