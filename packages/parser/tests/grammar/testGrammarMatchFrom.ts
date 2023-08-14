@@ -11,13 +11,13 @@ import {
     Rep, 
     Seq, 
     Uni,
-    Vocab,
 } from "../../src/grammars";
 
 import {
     grammarTestSuiteName,
     testGrammar,
     t1, t2, t4,
+    withVocab,
 } from "./testGrammarUtil";
 
 import { 
@@ -30,11 +30,6 @@ import {
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
-
-function withVocab(voc: StringDict | string, grammar: Grammar) {
-    if (typeof voc == "string") voc = {t1: voc};
-    return Seq(Vocab(voc), grammar);
-}
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 

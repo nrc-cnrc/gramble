@@ -14,6 +14,7 @@ import {
     grammarTestSuiteName,
     testGrammar,
     t1,
+    withVocab,
 } from "./testGrammarUtil";
 
 import { 
@@ -33,10 +34,6 @@ const VERBOSE = VERBOSE_TEST_L2;
 
 function vb(verbosity: number): number {
     return VERBOSE ? verbosity : SILENT;
-}
-
-function withVocab(voc: string, grammar: Grammar) {
-    return Seq(Vocab({t1:voc}), grammar);
 }
 
 describe(`${grammarTestSuiteName(module)}`, function() {

@@ -39,7 +39,7 @@ export function testSample({
 }: SampleTest): void {
     describe(desc, function() {
         const generatedOutputs: StringDict[] =
-            generateOutputsFromGrammar(grammar, verbose, symbolName,
+            generateOutputsFromGrammar(grammar, verbose, symbolName, {},
                                     maxRecursion, stripHidden);
         const samples: StringDict[] =
             sampleOutputsFromGrammar(grammar, verbose, numSamples, 

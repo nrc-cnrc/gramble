@@ -157,7 +157,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "hihiworld"},
             {t1: "hihihiworld"},
         ];
-        testGenerate(coll, expectedResults, SILENT, "", 2);
+        testGenerate(coll, expectedResults, SILENT, "", {}, 2);
     });
     
     describe('11. Emit from center-recursive (t1:hi)+ + t1:world ' +
@@ -173,7 +173,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "hihiworldhihi"},
             {t1: "hihihiworldhihihi"},
         ];
-        testGenerate(coll, expectedResults, SILENT, "", 2);
+        testGenerate(coll, expectedResults, SILENT, "", {}, 2);
     });
 
     describe('12. Emit from right-recursive (t1:hi)+ + t1:world ' +
@@ -187,7 +187,7 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hiworld"}
         ];
-        testGenerate(coll, expectedResults, SILENT, "", 0);
+        testGenerate(coll, expectedResults, SILENT, "", {}, 0);
     });
 
     describe('13. Emit from left-recursive (t1:hi)+ + t1:world ' +
@@ -221,7 +221,7 @@ describe(`${testSuiteName(module)}`, function() {
             {t1: "hihiworld"},
             {t1: "hihihiworld"},
         ];
-        testGenerate(coll, expectedResults, SILENT, "", 2);
+        testGenerate(coll, expectedResults, SILENT, "", {}, 2);
     });
 
     describe('15. Emit from left-recursive (t1:hi)+ + t1:world ' +
@@ -235,6 +235,6 @@ describe(`${testSuiteName(module)}`, function() {
         const expectedResults: StringDict[] = [
             {t1: "hiworld"}
         ];
-        testGenerate(coll, expectedResults, SILENT, "", 0);
+        testGenerate(coll, expectedResults, SILENT, "", {}, 0);
     }); 
 });

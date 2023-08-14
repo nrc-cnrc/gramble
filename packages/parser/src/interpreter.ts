@@ -208,7 +208,7 @@ export class Interpreter {
 
     public generate(
         symbolName: string = "",
-        restriction: StringDict = {},
+        restriction: StringDict[] | StringDict = {},
         maxResults: number = Infinity,
         maxRecursion: number = 2, 
         maxChars: number = 100,
@@ -222,7 +222,7 @@ export class Interpreter {
     
     public *generateStream(
         symbolName: string = "",
-        restriction: StringDict = {},
+        restriction: StringDict[] | StringDict = {},
         maxRecursion: number = 2, 
         maxChars: number = 100,
         stripHidden: boolean = true
@@ -291,7 +291,7 @@ export class Interpreter {
     
     public prepareExpr(
         symbolName: string = "",
-        query: StringDict = {},
+        query: StringDict[] | StringDict = {},
         opt: GenOptions
     ): Expr {
         const env = new PassEnv().pushSymbols(this.grammar.symbols);

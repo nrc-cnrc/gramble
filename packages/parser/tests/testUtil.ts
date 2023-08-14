@@ -6,7 +6,7 @@ import { Interpreter } from "../src/interpreter";
 import { Tape } from "../src/tapes";
 import {
     HIDDEN_PREFIX, StringDict,
-    SILENT, VERBOSE_DEBUG, logDebug, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE
+    SILENT, VERBOSE_DEBUG, logDebug, timeIt, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE
 } from "../src/util";
 
 export const DEFAULT_MAX_RECURSION = 4;
@@ -193,6 +193,7 @@ export function generateOutputsFromGrammar(
     grammar: Grammar | Interpreter,
     verbose: number = SILENT,
     symbolName: string = "",
+    restriction: StringDict[] | StringDict = {},
     maxRecursion: number = DEFAULT_MAX_RECURSION,
     stripHidden: boolean = true,
     throwError: boolean = false // in case a test wants to catch errors itself
@@ -205,7 +206,7 @@ export function generateOutputsFromGrammar(
 
     try {
         outputs = [
-            ...interpreter.generate(symbolName, {}, Infinity,
+            ...interpreter.generate(symbolName, restriction, Infinity,
                                     maxRecursion, undefined, stripHidden)
         ];
     } catch (e) {
@@ -225,16 +226,20 @@ export function testGenerate(
     expectedResults: StringDict[],
     verbose: number = SILENT,
     symbolName: string = "",
+    restriction: StringDict[] | StringDict = {},
     maxRecursion: number = DEFAULT_MAX_RECURSION,
     stripHidden: boolean = true,
-    allowDuplicateOutputs: boolean = false
+    allowDuplicateOutputs: boolean = false,
+    shortDesc: string = ""
 ): void {
-    const outputs: StringDict[] =
-        generateOutputsFromGrammar(grammar, verbose, symbolName,
-                                   maxRecursion, stripHidden);
-    testNumOutputs(outputs, expectedResults.length,
-                   allowDuplicateOutputs, symbolName);
-    testMatchOutputs(outputs, expectedResults, symbolName);
+    timeIt(() => {
+        const outputs: StringDict[] =
+            generateOutputsFromGrammar(grammar, verbose, symbolName,
+                                restriction, maxRecursion, stripHidden);
+        testNumOutputs(outputs, expectedResults.length,
+                       allowDuplicateOutputs, symbolName);
+        testMatchOutputs(outputs, expectedResults, symbolName);
+    }, VERBOSE_TEST_L2, `${shortDesc} testGenerate`);
 }
 
 export function testHasTapes(
@@ -243,7 +248,6 @@ export function testHasTapes(
     symbolName: string = "",
     stripHidden: boolean = true
 ): void {
-    
     const interpreter = (grammar instanceof Interpreter) ?
                         grammar :
                         Interpreter.fromGrammar(grammar);
@@ -290,7 +294,6 @@ export function testHasVocab(
     grammar: Grammar | Interpreter,
     expectedVocab: {[tape: string]: number}
 ): void {
-
     const interpreter = (grammar instanceof Interpreter) ?
                         grammar :
                         Interpreter.fromGrammar(grammar);
@@ -346,7 +349,6 @@ export function testErrors(
     interpreter: Interpreter,
     expectedErrors: [string, number, number, string][]
 ) {
-
     //interpreter.runChecks();
     const devEnv = interpreter.devEnv;
     it(`should have ${expectedErrors.length} errors/warnings`, function() {
@@ -381,32 +383,32 @@ export function testParseMultiple(
     verbose: number = SILENT,
     maxRecursion: number = 4
 ): void {
-
     maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
-                                    
-    for (const [inputs, expectedResults] of inputResultsPairs) {
-        describe(`testing parse ${JSON.stringify(inputs)} ` + 
-                 `against ${JSON.stringify(expectedResults)}.`, function() {
-            let outputs: StringDict[] = [];
-            try {    
-                //grammar = grammar.compile(2, maxRecursion);
-                const interpreter = Interpreter.fromGrammar(grammar, verbose);
-                if (Object.keys(inputs).length == 0) {
-                    throw new Error(`no input in pair ${JSON.stringify(inputs)}, ${JSON.stringify(expectedResults)}`);
+    timeIt(() => {
+        for (const [inputs, expectedResults] of inputResultsPairs) {
+            describe(`testing parse ${JSON.stringify(inputs)} ` + 
+                     `against ${JSON.stringify(expectedResults)}.`, function() {
+                let outputs: StringDict[] = [];
+                try {    
+                    //grammar = grammar.compile(2, maxRecursion);
+                    const interpreter = Interpreter.fromGrammar(grammar, verbose);
+                    if (Object.keys(inputs).length == 0) {
+                        throw new Error(`no input in pair ${JSON.stringify(inputs)}, ${JSON.stringify(expectedResults)}`);
+                    }
+                    outputs = [...interpreter.generate("", inputs, Infinity, maxRecursion)];
+                } catch (e) {
+                    it("Unexpected Exception", function() {
+                        console.log("");
+                        console.log(`[${this.test?.fullTitle()}]`);
+                        console.log(e);
+                        assert.fail(e);
+                    });
                 }
-                outputs = [...interpreter.generate("", inputs, Infinity, maxRecursion)];
-            } catch (e) {
-                it("Unexpected Exception", function() {
-                    console.log("");
-                    console.log(`[${this.test?.fullTitle()}]`);
-                    console.log(e);
-                    assert.fail(e);
-                });
-            }
-            testNumOutputs(outputs, expectedResults.length);
-            testMatchOutputs(outputs, expectedResults);    
-        });
-    }
+                testNumOutputs(outputs, expectedResults.length);
+                testMatchOutputs(outputs, expectedResults);    
+            });
+        }
+    }, VERBOSE_TEST_L2, `testParseMultiple ${inputResultsPairs.length}`);
 }
 
 export function IOReplace(

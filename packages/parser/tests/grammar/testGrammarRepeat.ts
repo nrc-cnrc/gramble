@@ -2,13 +2,14 @@ import {
     Count, Grammar,
     Rep, Seq, Epsilon, Uni, Any,
     Join, Intersect,
-    MatchFrom, Cursor, Vocab,
+    MatchFrom, Cursor,
 } from "../../src/grammars";
 
 import {
     grammarTestSuiteName,
     testGrammar,
     t1, t2,
+    withVocab,
 } from "./testGrammarUtil";
 
 import {
@@ -18,14 +19,6 @@ import {
 import {
     SILENT, VERBOSE_DEBUG, VERBOSE_STATES
 } from "../../src/util";
-
-function withVocab1(t1_voc: string, grammar: Grammar) {
-    return Seq(Vocab({t1: t1_voc}), grammar);
-}
-
-function withVocab2(t1_voc: string, t2_voc: string, grammar: Grammar) {
-    return Seq(Vocab({t1: t1_voc, t2: t2_voc}), grammar);
-}
 
 function withCountGuard1(maxChars: number, grammar: Grammar) {
     return Count({t1: maxChars}, grammar, true, true);
@@ -234,48 +227,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hhello', t2: 'world'},
             {t1: 'hhhello', t2: 'world'},
             {t1: 'hhhhello', t2: 'world'},
-        ],
-    });
-
-    testGrammar({
-        desc: '16. t1:na{0,2} ⨝ ε ',
-        grammar: Join(Rep(t1("na"), 0, 2), Epsilon()),
-        results: [
-            {},
-            {t1: 'na'},
-            {t1: 'nana'},
-        ],
-    });
-
-    testGrammar({
-        desc: '16*. Count_t1:4 t1:na* ⨝ ε',
-        grammar: Count({t1: 4},
-                 	   Join(Rep(t1("na")), Epsilon())),
-        results: [
-            {},
-            {t1: 'na'},
-            {t1: 'nana'},
-        ],
-    });
-
-    testGrammar({
-        desc: '17. ε ⨝ t1:na{0,2}',
-        grammar: Join(Epsilon(), Rep(t1("na"), 0, 2)),
-        results: [
-            {},
-            {t1: 'na'},
-            {t1: 'nana'},
-        ],
-    });
-
-    testGrammar({
-        desc: '17*. Count_t1:4 ε ⨝ t1:na*',
-        grammar: Count({t1: 4},
-                 	   Join(Epsilon(), Rep(t1("na")))),
-        results: [
-            {},
-            {t1: 'na'},
-            {t1: 'nana'},
         ],
     });
 
@@ -965,42 +916,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '40. (t1:h+t2:h){2} ⨝ t1:hh+t2:hh',
-        grammar: Join(Rep(Seq(t1("h"), t2("h")), 2, 2),
-                        Seq(t1("hh"), t2("hh"))),
-        results: [
-            {t1: 'hh', t2: 'hh'},
-        ],
-    });
-
-    testGrammar({
-        desc: '41. t1:hh+t2:hh ⨝ (t1:h+t2:h){2}',
-        grammar: Join(Seq(t1("hh"), t2("hh")),
-                        Rep(Seq(t1("h"), t2("h")), 2, 2)),
-        results: [
-            {t1: 'hh', t2: 'hh'},
-        ],
-    });
-
-    testGrammar({
-        desc: '42*. (t1:h+t2:h)* ⨝ t1:hh+t2:hh',
-        grammar: Join(Rep(Seq(t1("h"), t2("h"))),
-                        Seq(t1("hh"), t2("hh"))),
-        results: [
-            {t1: 'hh', t2: 'hh'},
-        ],
-    });
-
-    testGrammar({
-        desc: '43*. t1:hh+t2:hh ⨝ (t1:h+t2:h)*',
-        grammar: Join(Seq(t1("hh"), t2("hh")),
-                        Rep(Seq(t1("h"), t2("h")))),
-        results: [
-            {t1: 'hh', t2: 'hh'},
-        ],
-    });
-
-    testGrammar({
         desc: '44. Rep(Any): t1:hi + t1:.{0,3}',
         grammar: Seq(t1("hi"), Rep(Any("t1"), 0, 3)),
         results: [
@@ -1109,7 +1024,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '46-3. Rep(Any): Count_t1:2 t1:.{0,1} + t1:.{0,1} (vocab hi)',
-        grammar: withVocab1("hi",
+        grammar: withVocab({t1: "hi"},
         			        Seq(Rep(Any("t1"), 0, 1),
                                 Rep(Any("t1"), 0, 1))),
         results: [
@@ -1122,7 +1037,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '46-4*. Rep(Any): Count_t1:2 (t1:.* + t1:.{0,1}) (vocab hi)',
-        grammar: withVocab1("hi",
+        grammar: withVocab({t1: "hi"},
                             Count({t1: 2},
         				          Seq(Rep(Any("t1")),
                                       Rep(Any("t1"), 0, 1)))),
@@ -1136,7 +1051,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '46-5*. Rep(Any): Count_t1:2 (t1:.{0,1} + t1:.*) (vocab hi)',
-        grammar: withVocab1("hi",
+        grammar: withVocab({t1: "hi"},
                             Count({t1: 2},
         				          Seq(Rep(Any("t1"), 0, 1),
                                       Rep(Any("t1"))))),
@@ -1193,58 +1108,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Join(Epsilon(), Rep(Any("t1"))),
         results: [
             {}
-        ],
-    });
-
-    testGrammar({
-        desc: '52*. t1:hello ⨝ t1:he+t1:.*',
-        grammar: Join(t1("hello"), Seq(t1("he"), Rep(Any("t1")))),
-        results: [
-            {t1: 'hello'},
-        ],
-    });
-
-    testGrammar({
-        desc: '53*. t1:hello ⨝ t1:.*+t1:lo',
-        grammar: Join(t1("hello"), Seq(Rep(Any("t1")), t1("lo"))),
-        results: [
-            {t1: 'hello'},
-        ],
-    });
-
-    testGrammar({
-        desc: '54*. t1:hello ⨝ t1:.*+t1:e+t1:.*',
-        grammar: Join(t1("hello"),
-                        Seq(Rep(Any("t1")), t1("e"), Rep(Any("t1")))),
-        results: [
-            {t1: 'hello'},
-        ],
-    });
-
-    testGrammar({
-        desc: '55*. t1:hello ⨝ t1:.*+t1:l+t1:.*',
-        grammar: Join(t1("hello"),
-                        Seq(Rep(Any("t1")), t1("l"), Rep(Any("t1")))),
-        results: [
-            {t1: 'hello'},
-        ],
-    });
-
-    testGrammar({
-        desc: '56*. t1:hello ⨝ t1:.*+t1:h+t1:.*',
-        grammar: Join(t1("hello"),
-                        Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1")))),
-        results: [
-            {t1: 'hello'},
-        ],
-    });
-
-    testGrammar({
-        desc: '57*. t1:hello ⨝ t1:.*+t1:o+t1:.*',
-        grammar: Join(t1("hello"),
-                        Seq(Rep(Any("t1")), t1("h"), Rep(Any("t1")))),
-        results: [
-            {t1: 'hello'},
         ],
     });
 
@@ -1469,7 +1332,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '63. Count_t1:3_t2:3 (t2:e+M(t1>t2,ε|t1:h)){2} (vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
                     Count({t1: 3, t2: 3},
-                        withVocab2("hx", "hex",
+                        withVocab({t1: "hx", t2: "hex"},
                             repeat2_t2eNullableMatchGrammar()))),
         tapes: ['t1', 't2'],
         vocab: {t1: 2, t2: 3},
@@ -1483,7 +1346,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '63a-1. Join (t2:e+M(t1>t2,ε|t1:h)){2} ⨝ t2:ee (vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(repeat2_t2eNullableMatchGrammar(),
                              t2("ee")))),
         results: [
@@ -1496,7 +1359,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '63a-2. Join (t2:e+M(t1>t2,ε|t1:h)){2} ⨝ t1:h + t2:eeh ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(repeat2_t2eNullableMatchGrammar(),
                              Seq(t1("h"), t2("eeh"))))),
         results: [
@@ -1510,7 +1373,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '63a-3. Join (t2:e+M(t1>t2,ε|t1:h)){2} ⨝ t1:h + t2:ehe ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(repeat2_t2eNullableMatchGrammar(),
                              Seq(t1("h"), t2("ehe"))))),
         results: [
@@ -1523,7 +1386,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '63b-1. Join t2:ee ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} (vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(t2("ee"),
                              repeat2_t2eNullableMatchGrammar()))),
         results: [
@@ -1536,7 +1399,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '63b-2. Join t1:h + t2:eeh ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(t1("h"), t2("eeh")),
                              repeat2_t2eNullableMatchGrammar()))),
         results: [
@@ -1549,7 +1412,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '63b-3. Join t1:h + t2:ehe ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(t1("h"), t2("ehe")),
                              repeat2_t2eNullableMatchGrammar()))),
         results: [
@@ -1562,7 +1425,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '63d-1. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} & t2:ee (vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(repeat2_t2eNullableMatchGrammar(),
                                   t2("ee")))),
         results: [
@@ -1575,7 +1438,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '63d-2. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} & t1:h + t2:eeh ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(repeat2_t2eNullableMatchGrammar(),
                                   Seq(t1("h"), t2("eeh"))))),
         results: [
@@ -1588,7 +1451,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '63d-3. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} & t1:h + t2:ehe ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(repeat2_t2eNullableMatchGrammar(),
                                   Seq(t1("h"), t2("ehe"))))),
         results: [
@@ -1601,7 +1464,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '63e-1. Intersect t2:ee & (t2:e+M(t1>t2,ε|t1:h)){2} (vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(t2("ee"),
                                   repeat2_t2eNullableMatchGrammar()))),
         results: [
@@ -1615,7 +1478,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '63e-2. Intersect t1:h + t2:eeh & (t2:e+M(t1>t2,ε|t1:h)){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(t1("h"), t2("eeh")),
                                   repeat2_t2eNullableMatchGrammar()))),
         results: [
@@ -1628,7 +1491,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '63e-3. Intersect t1:h + t2:ehe & (t2:e+M(t1>t2,ε|t1:h)){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(t1("h"), t2("ehe")),
                                   repeat2_t2eNullableMatchGrammar()))),
         results: [
@@ -1640,7 +1503,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64. Count_t1:3_t2:3 (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x (vocab hx/hex)',
         grammar: Cursor(["t2", "t1"],
                     Count({t1: 3, t2: 3},
-                        withVocab2("hx", "hex",
+                        withVocab({t1: "hx", t2: "hex"},
                             Seq(repeat2_t2eNullableMatchGrammar(), t1("x"))))),
         results: [
             {t1: 'x', t2: 'ee'},
@@ -1655,7 +1518,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64a-1. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ⨝ t1:x + t2:ee ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(repeat2_t2eNullableMatchGrammar(), t1("x")),
                              Seq(t1("x"), t2("ee"))))),
         results: [
@@ -1669,7 +1532,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64a-2. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ⨝ t1:hx + t2:eeh ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(repeat2_t2eNullableMatchGrammar(), t1("x")),
                              Seq(t1("hx"), t2("eeh"))))),
         results: [
@@ -1682,7 +1545,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64a-3. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ⨝ t1:hx + t2:ehe ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(repeat2_t2eNullableMatchGrammar(), t1("x")),
                              Seq(t1("hx"), t2("ehe"))))),
         results: [
@@ -1696,7 +1559,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64b-1. Join t1:x + t2:ee ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(t1("x"), t2("ee")),
                              Seq(repeat2_t2eNullableMatchGrammar(), t1("x"))))),
         results: [
@@ -1710,7 +1573,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64b-2. Join t1:hx + t2:eeh ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(t1("hx"), t2("eeh")),
                              Seq(repeat2_t2eNullableMatchGrammar(), t1("x"))))),
         results: [
@@ -1723,7 +1586,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64b-3. Join t1:hx + t2:ehe ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(t1("hx"), t2("ehe")),
                              Seq(repeat2_t2eNullableMatchGrammar(), t1("x"))))),
         results: [
@@ -1736,7 +1599,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64d-1. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x & t1:x + t2:ee ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(repeat2_t2eNullableMatchGrammar(), t1("x")),
                                   Seq(t1("x"), t2("ee"))))),
         results: [
@@ -1750,7 +1613,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64d-2. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x & t1:hx + t2:eeh ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(repeat2_t2eNullableMatchGrammar(), t1("x")),
                                   Seq(t1("hx"), t2("eeh"))))),
         results: [
@@ -1763,7 +1626,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64d-3. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x & t1:hx + t2:ehe ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(repeat2_t2eNullableMatchGrammar(), t1("x")),
                                   Seq(t1("hx"), t2("ehe"))))),
         results: [
@@ -1777,7 +1640,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64e-1. Intersect t1:x + t2:ee & (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(t1("x"), t2("ee")),
                                   Seq(repeat2_t2eNullableMatchGrammar(), t1("x"))))),
         results: [
@@ -1791,7 +1654,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64e-2. Intersect t1:hx + t2:eeh & (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(t1("hx"), t2("eeh")),
                                   Seq(repeat2_t2eNullableMatchGrammar(), t1("x"))))),
         results: [
@@ -1804,7 +1667,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '64e-3. Intersect t1:hx + t2:ehe & (t2:e+M(t1>t2,ε|t1:h)){2} + t1:x ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(t1("hx"), t2("ehe")),
                                   Seq(repeat2_t2eNullableMatchGrammar(), t1("x"))))),
         results: [
@@ -1816,7 +1679,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65. Count_t1:4_t2:4 (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x (vocab hx/hex)',
         grammar: Cursor(["t2", "t1"],
                     Count({t1: 4, t2: 4},
-                        withVocab2("hx", "hex",
+                        withVocab({t1: "hx", t2: "hex"},
                             Seq(repeat2_t2eNullableMatchGrammar(), t2("x"))))),
         results: [
             {t2: 'eex'},
@@ -1830,7 +1693,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65a-1. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ⨝ t2:eex ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(repeat2_t2eNullableMatchGrammar(), t2("x")),
                              t2("eex")))),
         results: [
@@ -1843,7 +1706,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65a-2. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ⨝ t1:h + t2:eehx ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(repeat2_t2eNullableMatchGrammar(), t2("x")),
                              Seq(t1("h"), t2("eehx"))))),
         results: [
@@ -1856,7 +1719,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65a-3. Join (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ⨝ t1:h + t2:ehex ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(repeat2_t2eNullableMatchGrammar(), t2("x")),
                              Seq(t1("h"), t2("ehex"))))),
         results: [
@@ -1869,7 +1732,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65b-1. Join t2:eex ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(t2("eex"),
                              Seq(repeat2_t2eNullableMatchGrammar(), t2("x"))))),
         results: [
@@ -1882,7 +1745,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65b-2. Join t1:h + t2:eehx ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(t1("h"), t2("eehx")),
                              Seq(repeat2_t2eNullableMatchGrammar(), t2("x"))))),
         results: [
@@ -1896,7 +1759,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65b-3. Join t1:h + t2:ehex ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ' +
              '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(t1("h"), t2("ehex")),
                              Seq(repeat2_t2eNullableMatchGrammar(), t2("x"))))),
         results: [
@@ -1909,7 +1772,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65d-1. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x & t2:eex ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(repeat2_t2eNullableMatchGrammar(), t2("x")),
                                   t2("eex")))),
         results: [
@@ -1922,7 +1785,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65d-2. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x & t1:h + t2:eehx ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(repeat2_t2eNullableMatchGrammar(), t2("x")),
                                   Seq(t1("h"), t2("eehx"))))),
         results: [
@@ -1936,7 +1799,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65d-3. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x & t1:h + t2:ehex ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(repeat2_t2eNullableMatchGrammar(), t2("x")),
                                   Seq(t1("h"), t2("ehex"))))),
         results: [
@@ -1950,7 +1813,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65e-1. Intersect t2:eex & (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ' + 
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(t2("eex"),
                                   Seq(repeat2_t2eNullableMatchGrammar(), t2("x"))))),
         results: [
@@ -1963,7 +1826,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65e-2. Intersect t1:h + t2:eehx & (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(t1("h"), t2("eehx")),
                                   Seq(repeat2_t2eNullableMatchGrammar(), t2("x"))))),
         results: [
@@ -1976,7 +1839,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '65e-3. Intersect t1:h + t2:ehex & (t2:e+M(t1>t2,ε|t1:h)){2} + t2:x ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(t1("h"), t2("ehex")),
                                   Seq(repeat2_t2eNullableMatchGrammar(), t2("x"))))),
         results: [
@@ -1989,7 +1852,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66. Count_t1:2_t2:6 (t2:e+M(t1>t2,ε|t1:h)){2} + same (vocab hx/hex)',
         grammar: Cursor(["t2", "t1"],
                     Count({t1: 2, t2: 6},
-                        withVocab2("hx", "hex",
+                        withVocab({t1: "hx", t2: "hex"},
                             Seq(repeat2_t2eNullableMatchGrammar(),
                                 repeat2_t2eNullableMatchGrammar())))),
         results: [
@@ -2007,7 +1870,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66a-1. Join (t2:e+M(t1>t2,ε|t1:h)){2} + same ⨝ t2:eeee ' + 
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(repeat2_t2eNullableMatchGrammar(),
                                  repeat2_t2eNullableMatchGrammar()),
                              t2("eeee")))),
@@ -2022,7 +1885,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66a-2. Join (t2:e+M(t1>t2,ε|t1:h)){2} + same ⨝ t1:hh + t2:eeheeh ' + 
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(repeat2_t2eNullableMatchGrammar(),
                                  repeat2_t2eNullableMatchGrammar()),
                              Seq(t1("hh"), t2("eeheeh"))))),
@@ -2036,7 +1899,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66a-3. Join (t2:e+M(t1>t2,ε|t1:h)){2} + same ⨝ t1:hh + t2:eheehe ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(repeat2_t2eNullableMatchGrammar(),
                                  repeat2_t2eNullableMatchGrammar()),
                              Seq(t1("hh"), t2("eheehe"))))),
@@ -2049,7 +1912,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66a-4*. Join (t2:e+M(t1>t2,ε|t1:h)){2} + same ⨝ (t2:ee)* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(repeat2_t2eNullableMatchGrammar(),
                                  repeat2_t2eNullableMatchGrammar()),
                              Rep(t2("ee"))))),
@@ -2063,7 +1926,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66a-5*. Join (t2:e+M(t1>t2,ε|t1:h)){2} + same ⨝ (t1:h+t2:eeh)* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(repeat2_t2eNullableMatchGrammar(),
                                  repeat2_t2eNullableMatchGrammar()),
                              Rep(Seq(t1("h"), t2("eeh")))))),
@@ -2078,7 +1941,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66a-6*. Join (t2:e+M(t1>t2,ε|t1:h)){2} + same ⨝ (t1:h+t2:ehe)* ' + 
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(repeat2_t2eNullableMatchGrammar(),
                                  repeat2_t2eNullableMatchGrammar()),
                              Rep(Seq(t1("h"), t2("ehe")))))),
@@ -2092,7 +1955,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66b-1. Join t2:eeee ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + same ' + 
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(t2("eeee"),
                              Seq(repeat2_t2eNullableMatchGrammar(),
                                  repeat2_t2eNullableMatchGrammar())))),
@@ -2106,7 +1969,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66b-2. Join t1:hh + t2:eeheeh ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + same ' + 
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(t1("hh"), t2("eeheeh")),
                              Seq(repeat2_t2eNullableMatchGrammar(),
                                  repeat2_t2eNullableMatchGrammar())))),
@@ -2121,7 +1984,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66b-3. Join t1:hh + t2:eheehe ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Seq(t1("hh"), t2("eheehe")),
                              Seq(repeat2_t2eNullableMatchGrammar(),
                                  repeat2_t2eNullableMatchGrammar())))),
@@ -2136,7 +1999,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66b-4*. Join (t2:ee)* ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + same ' + 
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Rep(t2("ee")),
                              Seq(repeat2_t2eNullableMatchGrammar(),
                                  repeat2_t2eNullableMatchGrammar())))),
@@ -2150,7 +2013,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66b-5*. Join (t1:h+t2:eeh)* ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Rep(Seq(t1("h"), t2("eeh"))),
                              Seq(repeat2_t2eNullableMatchGrammar(),
                                  repeat2_t2eNullableMatchGrammar())))),
@@ -2164,7 +2027,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66b-6*. Join (t1:h+t2:ehe)* ⨝ (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Rep(Seq(t1("h"), t2("ehe"))),
                              Seq(repeat2_t2eNullableMatchGrammar(),
                                  repeat2_t2eNullableMatchGrammar())))),
@@ -2178,7 +2041,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66d-1. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + same & t2:eeee ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(repeat2_t2eNullableMatchGrammar(),
                                       repeat2_t2eNullableMatchGrammar()),
                                   t2("eeee")))),
@@ -2192,7 +2055,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66d-2. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + same & t1:hh + t2:eeheeh ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(repeat2_t2eNullableMatchGrammar(),
                                       repeat2_t2eNullableMatchGrammar()),
                                   Seq(t1("hh"), t2("eeheeh"))))),
@@ -2207,7 +2070,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66d-3. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + same & t1:hh + t2:eheehe ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(repeat2_t2eNullableMatchGrammar(),
                                       repeat2_t2eNullableMatchGrammar()),
                                   Seq(t1("hh"), t2("eheehe"))))),
@@ -2222,7 +2085,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66d-4*. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + same & (t2:ee)* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(repeat2_t2eNullableMatchGrammar(),
                                       repeat2_t2eNullableMatchGrammar()),
                                   Rep(t2("ee"))))),
@@ -2236,7 +2099,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66d-5*. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + same & (t1:h+t2:eeh)* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(repeat2_t2eNullableMatchGrammar(),
                                       repeat2_t2eNullableMatchGrammar()),
                                   Rep(Seq(t1("h"), t2("eeh")))))),
@@ -2250,7 +2113,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66d-6*. Intersect (t2:e+M(t1>t2,ε|t1:h)){2} + same & (t1:h+t2:ehe)* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(repeat2_t2eNullableMatchGrammar(),
                                       repeat2_t2eNullableMatchGrammar()),
                                   Rep(Seq(t1("h"), t2("ehe")))))),
@@ -2265,7 +2128,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66e-1. Intersect t2:eeee & (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(t2("eeee"),
                                   Seq(repeat2_t2eNullableMatchGrammar(),
                                       repeat2_t2eNullableMatchGrammar())))),
@@ -2279,7 +2142,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66e-2. Intersect t1:hh + t2:eeheeh & (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(t1("hh"), t2("eeheeh")),
                                   Seq(repeat2_t2eNullableMatchGrammar(),
                                       repeat2_t2eNullableMatchGrammar())))),
@@ -2293,7 +2156,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66e-3. Intersect t1:hh + t2:eheehe & (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Seq(t1("hh"), t2("eheehe")),
                                   Seq(repeat2_t2eNullableMatchGrammar(),
                                       repeat2_t2eNullableMatchGrammar())))),
@@ -2308,7 +2171,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66e-4*. Intersect (t2:ee)* & (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Rep(t2("ee")),
                                   Seq(repeat2_t2eNullableMatchGrammar(),
                                       repeat2_t2eNullableMatchGrammar())))),
@@ -2323,7 +2186,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66e-5*. Intersect (t1:h+t2:eeh)* & (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Rep(Seq(t1("h"), t2("eeh"))),
                                   Seq(repeat2_t2eNullableMatchGrammar(),
                                       repeat2_t2eNullableMatchGrammar())))),
@@ -2337,7 +2200,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '66e-6*. Intersect (t1:h+t2:ehe)* & (t2:e+M(t1>t2,ε|t1:h)){2} + same ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Rep(Seq(t1("h"), t2("ehe"))),
                                   Seq(repeat2_t2eNullableMatchGrammar(),
                                       repeat2_t2eNullableMatchGrammar())))),
@@ -2355,7 +2218,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67. Count_t1:2_t2:6 ((t2:e+M(t1>t2,ε|t1:h)){2}){2} (vocab hx/hex)',
         grammar: Cursor(["t2", "t1"],
                     Count({t1: 2, t2: 6},
-                        withVocab2("hx", "hex",
+                        withVocab({t1: "hx", t2: "hex"},
                             repeat2_2_t2eNullableMatchGrammar()))),
         results: [
             {t2: 'eeee'},
@@ -2372,7 +2235,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67a-1*. Join ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ⨝ (t2:ee)* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(repeat2_2_t2eNullableMatchGrammar(),
                              Rep(t2("ee"))))),
         results: [
@@ -2385,7 +2248,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67a-2*. Join ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ⨝ (t1:h+t2:eeh)* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(repeat2_2_t2eNullableMatchGrammar(),
                              Rep(Seq(t1("h"), t2("eeh")))))),
         results: [
@@ -2398,7 +2261,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67a-3*. Join ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ⨝ (t1:h+t2:ehe)* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(repeat2_2_t2eNullableMatchGrammar(),
                              Rep(Seq(t1("h"), t2("ehe")))))),
         results: [
@@ -2412,7 +2275,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67b-1*. Join (t2:ee)* ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Rep(t2("ee")),
                              repeat2_2_t2eNullableMatchGrammar()))),
         results: [
@@ -2426,7 +2289,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67b-2*. Join (t1:h+t2:eeh)* ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Rep(Seq(t1("h"), t2("eeh"))),
                              repeat2_2_t2eNullableMatchGrammar()))),
         results: [
@@ -2439,7 +2302,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67b-3*. Join (t1:h+t2:ehe)* ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Rep(Seq(t1("h"), t2("ehe"))),
                              repeat2_2_t2eNullableMatchGrammar()))),
         results: [
@@ -2452,7 +2315,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67d-1*. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2}){2} & (t2:ee)* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(repeat2_2_t2eNullableMatchGrammar(),
                                   Rep(t2("ee"))))),
         results: [
@@ -2465,7 +2328,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67d-2*. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2}){2} & (t1:h+t2:eeh)* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(repeat2_2_t2eNullableMatchGrammar(),
                                   Rep(Seq(t1("h"), t2("eeh")))))),
         results: [
@@ -2478,7 +2341,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67d-3*. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2}){2} & (t1:h+t2:ehe)* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(repeat2_2_t2eNullableMatchGrammar(),
                                   Rep(Seq(t1("h"), t2("ehe")))))),
         results: [
@@ -2492,7 +2355,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67e-1*. Intersect (t2:ee)* & ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Rep(t2("ee")),
                                   repeat2_2_t2eNullableMatchGrammar()))),
         results: [
@@ -2506,7 +2369,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67e-2*. Intersect (t1:h+t2:eeh)* & ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Rep(Seq(t1("h"), t2("eeh"))),
                                   repeat2_2_t2eNullableMatchGrammar()))),
         results: [
@@ -2519,7 +2382,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '67e-3*. Intersect (t1:h+t2:ehe)* & ((t2:e+M(t1>t2,ε|t1:h)){2}){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Rep(Seq(t1("h"), t2("ehe"))),
                                   repeat2_2_t2eNullableMatchGrammar()))),
         results: [
@@ -2536,7 +2399,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68*. ((t2:e+M(t1>t2,ε|t1:h)){2})* (vocab hx/hex)',
         grammar: Cursor(["t2", "t1"],
                     Count({t1: 2, t2: 6},
-                        withVocab2("hx", "hex",
+                        withVocab({t1: "hx", t2: "hex"},
                             repeat2Star_t2eNullableMatchGrammar()))),
         results: [
             {},
@@ -2557,7 +2420,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68a-1*. Join ((t2:e+M(t1>t2,ε|t1:h)){2})* ⨝ (t2:ee){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(repeat2Star_t2eNullableMatchGrammar(),
                              Rep(t2("ee"), 2, 2)))),
         results: [
@@ -2570,7 +2433,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68a-2*. Join ((t2:e+M(t1>t2,ε|t1:h)){2})* ⨝ (t1:h+t2:eeh){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(repeat2Star_t2eNullableMatchGrammar(),
                              Rep(Seq(t1("h"), t2("eeh")), 2, 2)))),
         results: [
@@ -2584,7 +2447,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68a-3*. Join ((t2:e+M(t1>t2,ε|t1:h)){2})* ⨝ (t1:h+t2:ehe){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(repeat2Star_t2eNullableMatchGrammar(),
                              Rep(Seq(t1("h"), t2("ehe")), 2, 2)))),
         results: [
@@ -2598,7 +2461,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68b-1*. Join (t2:ee){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2})* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Rep(t2("ee"), 2, 2),
                              repeat2Star_t2eNullableMatchGrammar()))),
         results: [
@@ -2611,7 +2474,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68b-2*. Join (t1:h+t2:eeh){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2})* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Rep(Seq(t1("h"), t2("eeh")), 2, 2),
                              repeat2Star_t2eNullableMatchGrammar()))),
         results: [
@@ -2624,7 +2487,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68b-3*. Join (t1:h+t2:ehe){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h)){2})* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Rep(Seq(t1("h"), t2("ehe")), 2, 2),
                              repeat2Star_t2eNullableMatchGrammar()))),
         results: [
@@ -2637,7 +2500,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68d-1*. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2})* & (t2:ee){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(repeat2Star_t2eNullableMatchGrammar(),
                                   Rep(t2("ee"), 2, 2)))),
         results: [
@@ -2650,7 +2513,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68d-2*. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2})* & (t1:h+t2:eeh){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(repeat2Star_t2eNullableMatchGrammar(),
                                   Rep(Seq(t1("h"), t2("eeh")), 2, 2)))),
         results: [
@@ -2664,7 +2527,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68d-3*. Intersect ((t2:e+M(t1>t2,ε|t1:h)){2})* & (t1:h+t2:ehe){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(repeat2Star_t2eNullableMatchGrammar(),
                                   Rep(Seq(t1("h"), t2("ehe")), 2, 2)))),
         results: [
@@ -2678,7 +2541,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68e-1*. Intersect (t2:ee){2} & ((t2:e+M(t1>t2,ε|t1:h)){2})* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Rep(t2("ee"), 2, 2),
                                   repeat2Star_t2eNullableMatchGrammar()))),
         results: [
@@ -2692,7 +2555,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68e-2*. Intersect (t1:h+t2:eeh){2} & ((t2:e+M(t1>t2,ε|t1:h)){2})* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Rep(Seq(t1("h"), t2("eeh")), 2, 2),
                                   repeat2Star_t2eNullableMatchGrammar()))),
         results: [
@@ -2705,7 +2568,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '68e-3*. Intersect (t1:h+t2:ehe){2} & ((t2:e+M(t1>t2,ε|t1:h)){2})* ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Rep(Seq(t1("h"), t2("ehe")), 2, 2),
                                   repeat2Star_t2eNullableMatchGrammar()))),
         results: [
@@ -2722,7 +2585,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69*. ((t2:e+M(t1>t2,ε|t1:h))*){2} (vocab hx/hex)',
         grammar: Cursor(["t2", "t1"],
                     Count({t1: 2, t2: 6},
-                        withVocab2("hx", "hex",
+                        withVocab({t1: "hx", t2: "hex"},
                             repeatStar2_t2eNullableMatchGrammar()))),
         results: [
             {},
@@ -2750,7 +2613,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69a-1*. Join ((t2:e+M(t1>t2,ε|t1:h))*){2} ⨝ (t2:ee){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(repeatStar2_t2eNullableMatchGrammar(),
                              Rep(t2("ee"), 2, 2)))),
         results: [
@@ -2765,7 +2628,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69a-2*. Join ((t2:e+M(t1>t2,ε|t1:h))*){2} ⨝ (t1:h+t2:eeh){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(repeatStar2_t2eNullableMatchGrammar(),
                              Rep(Seq(t1("h"), t2("eeh")), 2, 2)))),
         results: [
@@ -2779,7 +2642,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69a-3*. Join ((t2:e+M(t1>t2,ε|t1:h))*){2} ⨝ (t1:h+t2:ehe){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(repeatStar2_t2eNullableMatchGrammar(),
                              Rep(Seq(t1("h"), t2("ehe")), 2, 2)))),
         results: [
@@ -2792,7 +2655,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69b-1*. Join (t2:ee){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h))*){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Rep(t2("ee"), 2, 2),
                              repeatStar2_t2eNullableMatchGrammar()))),
         results: [
@@ -2806,7 +2669,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69b-2*. Join (t1:h+t2:eeh){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h))*){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Rep(Seq(t1("h"), t2("eeh")), 2, 2),
                              repeatStar2_t2eNullableMatchGrammar()))),
         results: [
@@ -2821,7 +2684,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69b-3*. Join (t1:h+t2:ehe){2} ⨝ ((t2:e+M(t1>t2,ε|t1:h))*){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Join(Rep(Seq(t1("h"), t2("ehe")), 2, 2),
                              repeatStar2_t2eNullableMatchGrammar()))),
         results: [
@@ -2836,7 +2699,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69d-1*. Intersect ((t2:e+M(t1>t2,ε|t1:h))*){2} & (t2:ee){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(repeatStar2_t2eNullableMatchGrammar(),
                                   Rep(t2("ee"), 2, 2)))),
         results: [
@@ -2851,7 +2714,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69d-2*. Intersect ((t2:e+M(t1>t2,ε|t1:h))*){2} & (t1:h+t2:eeh){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(repeatStar2_t2eNullableMatchGrammar(),
                                   Rep(Seq(t1("h"), t2("eeh")), 2, 2)))),
         results: [
@@ -2865,7 +2728,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69d-3*. Intersect ((t2:e+M(t1>t2,ε|t1:h))*){2} & (t1:h+t2:ehe){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(repeatStar2_t2eNullableMatchGrammar(),
                                   Rep(Seq(t1("h"), t2("ehe")), 2, 2)))),
         results: [
@@ -2878,7 +2741,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69e-1*. Intersect (t2:ee){2} & ((t2:e+M(t1>t2,ε|t1:h))*){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Rep(t2("ee"), 2, 2),
                                   repeatStar2_t2eNullableMatchGrammar()))),
         results: [
@@ -2892,7 +2755,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69e-2*. Intersect (t1:h+t2:eeh){2} & ((t2:e+M(t1>t2,ε|t1:h))*){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Rep(Seq(t1("h"), t2("eeh")), 2, 2),
                                   repeatStar2_t2eNullableMatchGrammar()))),
         results: [
@@ -2907,7 +2770,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '69e-3*. Intersect (t1:h+t2:ehe){2} & ((t2:e+M(t1>t2,ε|t1:h))*){2} ' +
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
-                    withVocab2("hx", "hex",
+                    withVocab({t1: "hx", t2: "hex"},
                         Intersect(Rep(Seq(t1("h"), t2("ehe")), 2, 2),
                                   repeatStar2_t2eNullableMatchGrammar()))),
         results: [
@@ -2923,7 +2786,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '70a. (t2:e+M(t1>t2,ε|t1:h)){4} (vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
                     Count({t1: 10, t2: 10},
-                        withVocab2("hx", "hex",
+                        withVocab({t1: "hx", t2: "hex"},
                             Rep(t2eNullableMatchGrammar(), 4, 4)))),
         results: [
             {t2: 'eeee'},
@@ -2943,7 +2806,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
                     Count({t1: 10, t2: 10},
-                        withVocab2("hx", "hex",
+                        withVocab({t1: "hx", t2: "hex"},
                             Seq(Rep(t2eNullableMatchGrammar(), 2, 2),
                                 Rep(t2eNullableMatchGrammar(), 2, 2))))),
         results: [
@@ -2970,7 +2833,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               '(vocab hx/hex)',
         grammar: Cursor(["t1", "t2"],
                     Count({t1: 10, t2: 10},
-                        withVocab2("hx", "hex",
+                        withVocab({t1: "hx", t2: "hex"},
                             Seq(Rep(t2eNullableMatchGrammar(), 2, 2),
                                 Rep(t2xNullableMatchGrammar(), 2, 2))))),
         results: [

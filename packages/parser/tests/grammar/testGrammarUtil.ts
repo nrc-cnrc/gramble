@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { basename } from "path";
 
 import {
-    Grammar, Lit
+    Grammar, Lit, Seq, Vocab,
 } from "../../src/grammars";
 import {
     // VERBOSE_TEST_L1,
@@ -52,6 +52,11 @@ export const t3 = (s: string) => Lit("t3", s);
 export const t4 = (s: string) => Lit("t4", s);
 export const t5 = (s: string) => Lit("t5", s);
 
+export function withVocab(voc: StringDict | string, grammar: Grammar) {
+    if (typeof voc == "string") voc = {t1: voc};
+    return Seq(Vocab(voc), grammar);
+}
+
 export interface GrammarTestAux {
     grammar: Grammar,
     tapes: string[],
@@ -59,10 +64,12 @@ export interface GrammarTestAux {
     results: StringDict[],
     verbose: number,
     symbol: string,
+    restriction: StringDict[] | StringDict,
     maxRecursion: number,
     stripHidden: boolean,
     allowDuplicateOutputs: boolean,
     skipGeneration: boolean,
+    shortDesc: string,
 }
 
 export function testGrammarAux({
@@ -72,10 +79,12 @@ export function testGrammarAux({
     results,
     verbose = SILENT,
     symbol = "",
+    restriction = {},
     maxRecursion = DEFAULT_MAX_RECURSION,
     stripHidden = true,
     allowDuplicateOutputs = false,
     skipGeneration = false,
+    shortDesc = "",
 }: Partial<GrammarTestAux>): void {
     if (grammar === undefined){
         it("grammar must be defined", function() {
@@ -90,8 +99,8 @@ export function testGrammarAux({
         testHasVocab(grammar, vocab);
     }
     if (!skipGeneration && results !== undefined) {
-        testGenerate(grammar, results, verbose, symbol, maxRecursion,
-            stripHidden, allowDuplicateOutputs);
+        testGenerate(grammar, results, verbose, symbol, restriction,
+            maxRecursion, stripHidden, allowDuplicateOutputs, shortDesc);
     } else {
         it("skipping generation", function() {
             expect(skipGeneration).to.be.true;
@@ -117,8 +126,14 @@ function testDefault(params: Partial<GrammarTest>): () => void {
     }
     if (msg !== undefined && params["verbose"] !== undefined)
         verbose(params["verbose"], msg);
+    const shortDesc = (params["desc"] !== undefined) ?
+                      params["desc"].split(" ")[0] : "";
+
     return function() {
-        return testGrammarAux({...params});
+        if (params["shortDesc"] !== undefined)
+            return testGrammarAux({...params});
+        else
+            return testGrammarAux({...params, shortDesc: shortDesc});
     };
 }
 
@@ -132,10 +147,12 @@ export function testGrammar({
     results,
     verbose,
     symbol,
+    restriction,
     maxRecursion,
     stripHidden,
     allowDuplicateOutputs,
     skipGeneration,
+    shortDesc,
 }: Partial<GrammarTest>): void {
     if (desc === undefined){
         it(`desc must be defined`, function() {
@@ -153,9 +170,11 @@ export function testGrammar({
         msg: msg,
         verbose: verbose,
         symbol: symbol,
+        restriction: restriction,
         maxRecursion: maxRecursion,
         stripHidden: stripHidden,
         allowDuplicateOutputs: allowDuplicateOutputs,
         skipGeneration: skipGeneration,
+        shortDesc: shortDesc,
     }));
 }
