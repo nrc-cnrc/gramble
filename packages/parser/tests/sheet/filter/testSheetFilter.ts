@@ -630,45 +630,25 @@ describe(`Sheets ${DIR}`, function() {
             {"gloss":"[1SG]climb","text":"amirf"}
         ]);
     }); 
+*/
 
-    /*
-    describe('Contains with not value', test({
-        id: "11",
+    describe('56. Contains with not value', test({
+        id: "56",
         results: [
-            
-        ]
-    }));
-    function() {
-        const project = sheetFromFile(`${DIR}/containsNot.csv`);
-        testErrors(project, []);
-        testGenerate(project, [
             { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
             { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
             { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
-        ]);
-    }); 
-    */
-
-    /*
-    describe('Contains with negated embed', test({
-        id: "11",
-        results: [
-            
         ]
     }));
-    function() {
 
-        const project = sheetFromFile(`${DIR}/containsNegatedEmbed.csv`);
-        testErrors(project, []);
-        testGenerate(project, [
+    describe('57. Contains with not embed', test({
+        id: "57",
+        results: [
             { text: "foobar", gloss: "run[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
             { text: "moobar", gloss: "jump[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
-        ]);
-    });
-
-    */
-
+        ]
+    }));
     
     describe('E1. Equals with an ill-formed filter', test({
         id: "E1",
