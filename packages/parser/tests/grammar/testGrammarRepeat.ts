@@ -2,7 +2,7 @@ import {
     Count, Grammar,
     Rep, Seq, Epsilon, Uni, Any,
     Join, Intersect,
-    MatchFrom, Cursor,
+    Match, Cursor,
 } from "../../src/grammars";
 
 import {
@@ -1314,7 +1314,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     function nullableMatchGrammar(): Grammar {
         // returns M(t1>t2,ε|t1:h)
         const fromGrammar: Grammar = Uni(Epsilon(), t1("h"));
-        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
+        const matchGrammar: Grammar = Match(fromGrammar, "t1", "t2");
         return matchGrammar;
     }
 

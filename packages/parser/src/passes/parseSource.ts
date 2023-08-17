@@ -20,10 +20,10 @@ import { RESERVED_WORDS } from "../reserved";
  * (Workbooks) and turns them into the basic syntactic objects
  * (TstCollections, TstOps, TstGrids, and TstContent).
  */
-export class ParseSheets extends Pass<Source,TST> {
+export class ParseSource extends Pass<Source,TST> {
 
     public get desc(): string {
-        return "Creating TST";
+        return "Transforming source to TSTs";
     }
 
     public transform(s: Source, env: PassEnv): Result<TST> {

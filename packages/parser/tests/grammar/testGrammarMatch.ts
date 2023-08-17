@@ -5,7 +5,7 @@ import {
     Epsilon,
     Grammar,
     Join, 
-    MatchFrom,
+    Match,
     Null,
     Cursor,
     Rep, 
@@ -31,11 +31,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    // MatchFrom tests with one to-tape.
+    // Match tests with one to-tape.
 
     testGrammar({
-        desc: '1. MatchFrom t1>t2, t1:hello',
-        grammar: MatchFrom(
+        desc: '1. Match t1>t2, t1:hello',
+        grammar: Match(
                      t1("hello"),
                      "t1", "t2"
                  ),
@@ -47,8 +47,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2. MatchFrom t1>t2, ε',
-        grammar: MatchFrom(
+        desc: '2. Match t1>t2, ε',
+        grammar: Match(
                      Epsilon(),
                      "t1", "t2"
                  ),
@@ -60,8 +60,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '3. MatchFrom t1>t2, ∅',
-        grammar: MatchFrom(
+        desc: '3. Match t1>t2, ∅',
+        grammar: Match(
                      Null(),
                      "t1", "t2"
                  ),
@@ -72,8 +72,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '4. MatchFrom t1>t2, t1:hello + t1:world',
-        grammar: MatchFrom(
+        desc: '4. Match t1>t2, t1:hello + t1:world',
+        grammar: Match(
                      Seq(t1("hello"), t1("world")),
                      "t1", "t2"
                  ),
@@ -85,8 +85,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '5. MatchFrom t1>t2, t1:hello + t4:goodbye',
-        grammar: MatchFrom(
+        desc: '5. Match t1>t2, t1:hello + t4:goodbye',
+        grammar: Match(
                      Seq(t1("hello"), t4("goodbye")),
                      "t1", "t2"
                  ),
@@ -98,8 +98,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '6. MatchFrom t1>t2, t4:goodbye + t1:hello',
-        grammar: MatchFrom(
+        desc: '6. Match t1>t2, t4:goodbye + t1:hello',
+        grammar: Match(
                      Seq(t4("goodbye"), t1("hello")),
                      "t1", "t2"
                  ),
@@ -111,9 +111,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '7. MatchFrom t1>t2, Nested sequence ' +
+        desc: '7. Match t1>t2, Nested sequence ' +
               '(t1:hello+t1:,) + t1:world',
-        grammar: MatchFrom(
+        grammar: Match(
                      Seq(Seq(t1("hello"), t1(", ")), t1("world")),
                      "t1", "t2"
                  ),
@@ -125,8 +125,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '8. MatchFrom t1>t2, t1:hello | t1:goodbye',
-        grammar: MatchFrom(
+        desc: '8. Match t1>t2, t1:hello | t1:goodbye',
+        grammar: Match(
                      Uni(t1("hello"), t1("goodbye")),
                      "t1", "t2"
                  ),
@@ -139,8 +139,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '9. MatchFrom t1>t2, t1:hello | t4:goodbye',
-        grammar: MatchFrom(
+        desc: '9. Match t1>t2, t1:hello | t4:goodbye',
+        grammar: Match(
                      Uni(t1("hello"), t4("goodbye")),
                      "t1", "t2"
                  ),
@@ -153,8 +153,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '10. MatchFrom t1>t2, t4:goodbye | t1:hello',
-        grammar: MatchFrom(
+        desc: '10. Match t1>t2, t4:goodbye | t1:hello',
+        grammar: Match(
                      Uni(t4("goodbye"), t1("hello")),
                      "t1", "t2"
                  ),
@@ -167,9 +167,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '11. MatchFrom t1>t2, ' +
+        desc: '11. Match t1>t2, ' +
               '(t1:hello|t1:goodbye) + (t1:world|t1:kitty)',
-        grammar: MatchFrom(
+        grammar: Match(
                      Seq(Uni(t1("hello"), t1("goodbye")),
                          Uni(t1("world"), t1("kitty"))),
                      "t1", "t2"
@@ -185,9 +185,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '12. MatchFrom t1>t2, ' +
+        desc: '12. Match t1>t2, ' +
               '(t1:hello+t1:kitty) | (t1:goodbye+t1:world)',
-        grammar: MatchFrom(
+        grammar: Match(
                      Uni(Seq(t1("hello"), t1("kitty")),
                          Seq(t1("goodbye"), t1("world"))),
                      "t1", "t2"
@@ -201,8 +201,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '13. MatchFrom t1>t2, t1:. (vocab t1:hi)',
-        grammar: MatchFrom(
+        desc: '13. Match t1>t2, t1:. (vocab t1:hi)',
+        grammar: Match(
                      withVocab({t1: "hi"}, Any("t1")),
                      "t1", "t2"
                  ),
@@ -215,8 +215,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '14. MatchFrom t1>t2, t1:hi+t1:.',
-        grammar: MatchFrom(
+        desc: '14. Match t1>t2, t1:hi+t1:.',
+        grammar: Match(
                      Seq(t1("hi"), Any("t1")),
                      "t1", "t2"
                  ),
@@ -229,8 +229,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '15. MatchFrom t1>t2, Join t1:hello ⨝ t1:.ello',
-        grammar: MatchFrom(
+        desc: '15. Match t1>t2, Join t1:hello ⨝ t1:.ello',
+        grammar: Match(
                      Join(t1("hello"),
                           Seq(Any("t1"), t1('ello'))),
                      "t1", "t2"
@@ -243,8 +243,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '16. MatchFrom t1>t2, Join t1:hello ⨝ t4:world',
-        grammar: MatchFrom(
+        desc: '16. Match t1>t2, Join t1:hello ⨝ t4:world',
+        grammar: Match(
                      Join(t1("hello"), t4('world')),
                      "t1", "t2"
                  ),
@@ -256,8 +256,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '17. MatchFrom t1>t2, Join t4:world ⨝ t1:hello',
-        grammar: MatchFrom(
+        desc: '17. Match t1>t2, Join t4:world ⨝ t1:hello',
+        grammar: Match(
                      Join(t4('world'), t1("hello")),
                      "t1", "t2"
                  ),
@@ -269,9 +269,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '18. MatchFrom t2>t3, Join ' +
+        desc: '18. Match t2>t3, Join ' +
               't1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye+t1:kitty)+t2:world',
-        grammar: MatchFrom(
+        grammar: Match(
                      Join(Seq(t1("hello"), t1("kitty")),
                           Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                               t2("world"))),
@@ -285,9 +285,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '19. MatchFrom t2>t3, Join ' +
+        desc: '19. Match t2>t3, Join ' +
               '(t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ t1:hello+t1:kitty',
-        grammar: MatchFrom(
+        grammar: Match(
                      Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                               t2("world")),
                           Seq(t1("hello"), t1("kitty"))),
@@ -301,9 +301,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '20. MatchFrom t1>t3, Join ' +
+        desc: '20. Match t1>t3, Join ' +
               't1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye+t1:kitty)+t2:world',
-        grammar: MatchFrom(
+        grammar: Match(
                      Join(Seq(t1("hello"), t1("kitty")),
                           Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                               t2("world"))),
@@ -317,9 +317,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '21. MatchFrom t1>t3, Join ' +
+        desc: '21. Match t1>t3, Join ' +
               '(t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ t1:hello+t1:kitty',
-        grammar: MatchFrom(
+        grammar: Match(
                      Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                               t2("world")),
                           Seq(t1("hello"), t1("kitty"))),
@@ -333,9 +333,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '22. MatchFrom t1>t3, Join ' +
+        desc: '22. Match t1>t3, Join ' +
               't1:hello+t1:kitty ⨝ (t2:goodbye+t1:hello+t2:world)+t1:kitty',
-        grammar: MatchFrom(
+        grammar: Match(
                      Join(Seq(t1("hello"), t1("kitty")),
                           Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
                               t1("kitty"))),
@@ -349,9 +349,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '23. MatchFrom t1>t3, Join ' +
+        desc: '23. Match t1>t3, Join ' +
               't1:hello+t1:kitty ⨝ (t2:goodbye+t1:hello+t2:world)+t1:kitty',
-        grammar: MatchFrom(
+        grammar: Match(
                      Join(Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
                               t1("kitty")),
                           Seq(t1("hello"), t1("kitty"))),
@@ -365,8 +365,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '24. MatchFrom t1>t2, t1:o{0,1}',
-        grammar: MatchFrom(
+        desc: '24. Match t1>t2, t1:o{0,1}',
+        grammar: Match(
                      Rep(t1("o"), 0, 1),
                      "t1", "t2"
                  ),
@@ -379,9 +379,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '25. MatchFrom t1>t2, Join ' +
+        desc: '25. Match t1>t2, Join ' +
               't1:h{1,4} + t4:world + t1:ello ⨝ the same',
-        grammar: MatchFrom(
+        grammar: Match(
                      Join(Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")),
                           Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello"))),
                      "t1", "t2"
@@ -397,9 +397,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '26. MatchFrom t1>t2, Join ' +
+        desc: '26. Match t1>t2, Join ' +
               't4:world + t1:h{1,4} + t1:ello ⨝ the same',
-        grammar: MatchFrom(
+        grammar: Match(
                      Join(Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")),
                           Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello"))),
                      "t1", "t2"
@@ -415,8 +415,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '27. MatchFrom t1>t2, t1:na{1,4}',
-        grammar: MatchFrom(
+        desc: '27. Match t1>t2, t1:na{1,4}',
+        grammar: Match(
                      Rep(t1("na"), 1, 4),
                      "t1", "t2"
                  ),
@@ -431,8 +431,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '28. MatchFrom t1>t2, t1:.{0,2} + t1:hi',
-        grammar: MatchFrom(
+        desc: '28. Match t1>t2, t1:.{0,2} + t1:hi',
+        grammar: Match(
                      Seq(Rep(Any("t1"), 0, 2), t1("hi")),
                      "t1", "t2"
                  ),
@@ -447,8 +447,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '29. MatchFrom t1>t2, t1:.{0,1} + t1:hi + t1:.{0,1}',
-        grammar: MatchFrom(
+        desc: '29. Match t1>t2, t1:.{0,1} + t1:hi + t1:.{0,1}',
+        grammar: Match(
                      Seq(Rep(Any("t1"), 0, 1),
                          t1("hi"),
                          Rep(Any("t1"), 0, 1)),
@@ -466,10 +466,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '30. MatchFrom t1>t2, t1:.* (vocab hi/XhiZ)',
+        desc: '30. Match t1>t2, t1:.* (vocab hi/XhiZ)',
         grammar: Count({t1:3},
                     withVocab({t1: "hi", t2: "XhiZ"},
-                        MatchFrom(
+                        Match(
                             Rep(Any("t1")),
                             "t1", "t2"
                         ))),
@@ -487,11 +487,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    // MatchFrom tests with two to-tapes.
+    // Match tests with two to-tapes.
 
     testGrammar({
-        desc: '2-1. MatchFrom t1>t2,t3, t1:hello',
-        grammar: MatchFrom(
+        desc: '2-1. Match t1>t2,t3, t1:hello',
+        grammar: Match(
         		 	 t1("hello"),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -503,8 +503,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-2. MatchFrom t1>t2,t3, ε',
-        grammar: MatchFrom(
+        desc: '2-2. Match t1>t2,t3, ε',
+        grammar: Match(
         		 	 Epsilon(),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -516,8 +516,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
     
     testGrammar({
-        desc: '2-3. MatchFrom t1>t2,t3, ∅',
-        grammar: MatchFrom(
+        desc: '2-3. Match t1>t2,t3, ∅',
+        grammar: Match(
         		 	 Null(),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -528,8 +528,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-4. MatchFrom t1>t2,t3, t1:hello + t1:world',
-        grammar: MatchFrom(
+        desc: '2-4. Match t1>t2,t3, t1:hello + t1:world',
+        grammar: Match(
         		 	 Seq(t1("hello"), t1("world")),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -541,8 +541,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-5. MatchFrom t1>t2,t3, t1:hello + t4:goodbye',
-        grammar: MatchFrom(
+        desc: '2-5. Match t1>t2,t3, t1:hello + t4:goodbye',
+        grammar: Match(
         		 	 Seq(t1("hello"), t4("goodbye")),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -554,8 +554,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-6. MatchFrom t1>t2,t3, t4:goodbye + t1:hello',
-        grammar: MatchFrom(
+        desc: '2-6. Match t1>t2,t3, t4:goodbye + t1:hello',
+        grammar: Match(
         		 	 Seq(t4("goodbye"), t1("hello")),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -567,9 +567,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-7. MatchFrom t1>t2,t3, Nested sequence ' +
+        desc: '2-7. Match t1>t2,t3, Nested sequence ' +
               '(t1:hello+t1:,) + t1:world',
-        grammar: MatchFrom(
+        grammar: Match(
         		 	 Seq(Seq(t1("hello"), t1(", ")),
                          t1("world")),
         		 	 "t1", "t2", "t3"
@@ -582,8 +582,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-8. MatchFrom t1>t2,t3, t1:hello | t1:goodbye',
-        grammar: MatchFrom(
+        desc: '2-8. Match t1>t2,t3, t1:hello | t1:goodbye',
+        grammar: Match(
         		 	 Uni(t1("hello"), t1("goodbye")),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -596,8 +596,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-9. MatchFrom t1>t2,t3, t1:hello | t4:goodbye',
-        grammar: MatchFrom(
+        desc: '2-9. Match t1>t2,t3, t1:hello | t4:goodbye',
+        grammar: Match(
         		 	 Uni(t1("hello"), t4("goodbye")),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -610,8 +610,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-10. MatchFrom t1>t2,t3, t4:goodbye | t1:hello',
-        grammar: MatchFrom(
+        desc: '2-10. Match t1>t2,t3, t4:goodbye | t1:hello',
+        grammar: Match(
         		 	 Uni(t4("goodbye"), t1("hello")),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -624,9 +624,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-11. MatchFrom t1>t2,t3, ' +
+        desc: '2-11. Match t1>t2,t3, ' +
               '(t1:hello|t1:goodbye) + (t1:world|t1:kitty)',
-        grammar: MatchFrom(
+        grammar: Match(
         		 	 Seq(Uni(t1("hello"), t1("goodbye")),
                          Uni(t1("world"), t1("kitty"))),
         		 	 "t1", "t2", "t3"
@@ -642,9 +642,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-12. MatchFrom t1>t2,t3, ' +
+        desc: '2-12. Match t1>t2,t3, ' +
               '(t1:hello+t1:kitty) | (t1:goodbye+t1:world)',
-        grammar: MatchFrom(
+        grammar: Match(
         		 	 Uni(Seq(t1("hello"), t1("kitty")),
                          Seq(t1("goodbye"), t1("world"))),
         		 	 "t1", "t2", "t3"
@@ -658,8 +658,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-13. MatchFrom t1>t2,t3, t1:. (vocab t1:hi)',
-        grammar: MatchFrom(
+        desc: '2-13. Match t1>t2,t3, t1:. (vocab t1:hi)',
+        grammar: Match(
         		 	 withVocab({t1: "hi"}, Any("t1")),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -672,8 +672,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-14. MatchFrom t1>t2,t3, t1:hi+t1:.',
-        grammar: MatchFrom(
+        desc: '2-14. Match t1>t2,t3, t1:hi+t1:.',
+        grammar: Match(
         		 	 Seq(t1("hi"), Any("t1")),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -686,8 +686,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-15. MatchFrom t1>t2,t3, Join t1:hello ⨝ t1:.ello',
-        grammar: MatchFrom(
+        desc: '2-15. Match t1>t2,t3, Join t1:hello ⨝ t1:.ello',
+        grammar: Match(
         		 	 Join(t1("hello"),
                           Seq(Any("t1"), t1('ello'))),
         		 	 "t1", "t2", "t3"
@@ -700,8 +700,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-16. MatchFrom t1>t2,t3 Join t1:hello ⨝ t4:world',
-        grammar: MatchFrom(
+        desc: '2-16. Match t1>t2,t3 Join t1:hello ⨝ t4:world',
+        grammar: Match(
         		 	 Join(t1("hello"), t4('world')),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -713,8 +713,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-17. MatchFrom t1>t2,t3 Join t4:world ⨝ t1:hello',
-        grammar: MatchFrom(
+        desc: '2-17. Match t1>t2,t3 Join t4:world ⨝ t1:hello',
+        grammar: Match(
         		 	 Join(t4('world'), t1("hello")),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -726,9 +726,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-18. MatchFrom t2>t3,t4, Join ' +
+        desc: '2-18. Match t2>t3,t4, Join ' +
               't1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye+t1:kitty)+t2:world',
-        grammar: MatchFrom(
+        grammar: Match(
         		 	 Join(Seq(t1("hello"), t1("kitty")),
                           Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                               t2("world"))),
@@ -742,9 +742,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-19. MatchFrom t2>t3,t4, Join ' +
+        desc: '2-19. Match t2>t3,t4, Join ' +
               't1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ t1:hello+t1:kitty',
-        grammar: MatchFrom(
+        grammar: Match(
         		 	 Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                               t2("world")),
                           Seq(t1("hello"), t1("kitty"))),
@@ -758,9 +758,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-20. MatchFrom t1>t3,t4, Join ' +
+        desc: '2-20. Match t1>t3,t4, Join ' +
         't1:hello+t1:kitty ⨝ (t1:hello+t2:goodbye+t1:kitty)+t2:world',
-        grammar: MatchFrom(
+        grammar: Match(
         		 	 Join(Seq(t1("hello"), t1("kitty")),
                           Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                               t2("world"))),
@@ -774,9 +774,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-21. MatchFrom t1>t3,t4, Join ' +
+        desc: '2-21. Match t1>t3,t4, Join ' +
               '(t1:hello+t2:goodbye+t1:kitty)+t2:world ⨝ t1:hello+t1:kitty',
-        grammar: MatchFrom(
+        grammar: Match(
         		 	 Join(Seq(Seq(t1("hello"), t2("goodbye"), t1("kitty")),
                               t2("world")),
                           Seq(t1("hello"), t1("kitty"))),
@@ -790,9 +790,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-22. MatchFrom t1>t3,t4, Join ' +
+        desc: '2-22. Match t1>t3,t4, Join ' +
               't1:hello+t1:kitty ⨝ (t2:goodbye+t1:hello+t2:world)+t1:kitty',
-        grammar: MatchFrom(
+        grammar: Match(
         		 	 Join(Seq(t1("hello"), t1("kitty")),
                           Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
                               t1("kitty"))),
@@ -806,9 +806,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-23. MatchFrom t1>t3,t4, Join ' +
+        desc: '2-23. Match t1>t3,t4, Join ' +
               '(t2:goodbye+t1:hello+t2:world)+t1:kitty ⨝ t1:hello+t1:kitty',
-        grammar: MatchFrom(
+        grammar: Match(
         		 	 Join(Seq(Seq(t2("goodbye"), t1("hello"), t2("world")),
                               t1("kitty")),
                           Seq(t1("hello"), t1("kitty"))),
@@ -822,8 +822,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-24. MatchFrom t1>t2,t3, t1:o{0,1}',
-        grammar: MatchFrom(
+        desc: '2-24. Match t1>t2,t3, t1:o{0,1}',
+        grammar: Match(
         		 	 Rep(t1("o"), 0, 1),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -836,9 +836,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-25. MatchFrom t1>t2,t3, Join ' +
+        desc: '2-25. Match t1>t2,t3, Join ' +
               't1:h{1,4} + t4:world + t1:ello ⨝ the same',
-        grammar: MatchFrom(
+        grammar: Match(
         		 	 Join(Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")),
                           Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello"))),
         		 	 "t1", "t2", "t3"
@@ -854,9 +854,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-26. MatchFrom t1>t2,t3, Join ' +
+        desc: '2-26. Match t1>t2,t3, Join ' +
               't4:world+t1:h{1,4}+t1:ello ⨝ the same',
-        grammar: MatchFrom(
+        grammar: Match(
         		 	 Join(Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")),
                           Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello"))),
         		 	 "t1", "t2", "t3"
@@ -872,8 +872,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-27. MatchFrom t1>t2,t3, t1:na{1,4}',
-        grammar: MatchFrom(
+        desc: '2-27. Match t1>t2,t3, t1:na{1,4}',
+        grammar: Match(
         		 	 Rep(t1("na"), 1, 4),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -888,8 +888,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-28. MatchFrom t1>t2,t3, t1:.{0,2} + t1:hi',
-        grammar: MatchFrom(
+        desc: '2-28. Match t1>t2,t3, t1:.{0,2} + t1:hi',
+        grammar: Match(
         		 	 Seq(Rep(Any("t1"), 0, 2), t1("hi")),
         		 	 "t1", "t2", "t3"
         		 ),
@@ -907,8 +907,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-29. MatchFrom t1>t2,t3, t1:.{0,1} + t1:hi + t1:.{0,1}',
-        grammar: MatchFrom(
+        desc: '2-29. Match t1>t2,t3, t1:.{0,1} + t1:hi + t1:.{0,1}',
+        grammar: Match(
         		 	 Seq(Rep(Any("t1"), 0, 1),
                          t1("hi"),
                          Rep(Any("t1"), 0, 1)),
@@ -930,10 +930,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-30. MatchFrom t1>t2,t3, t1:.* (vocab hi/XhiZ/ZXhi)',
+        desc: '2-30. Match t1>t2,t3, t1:.* (vocab hi/XhiZ/ZXhi)',
         grammar: Count({t1:3},
                     withVocab({t1: "hi", t2: "XhiZ", t3: "ZXhi"},
-                        MatchFrom(
+                        Match(
                             Rep(Any("t1")),
                             "t1", "t2", "t3"
                         ))),
@@ -961,10 +961,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     // Joins of Matches
 
     testGrammar({
-        desc: 'J-1. t1:h ⨝ MatchFrom(t1>t2, t1:.) (vocab hi)',
+        desc: 'J-1. t1:h ⨝ Match(t1>t2, t1:.) (vocab hi)',
         grammar: withVocab({t1: "hi", t2:"hi"},
         		 	 Join(t1("h"),
-        		 	 	  MatchFrom(Any("t1"), "t1", "t2"))),
+        		 	 	  Match(Any("t1"), "t1", "t2"))),
         tapes: ['t1', 't2'],
         vocab: {t1: 2, t2: 2},
         results: [
@@ -973,9 +973,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: 'J-2. MatchFrom(t1>t2, t1:.) ⨝ t1:h (vocab hi)',
+        desc: 'J-2. Match(t1>t2, t1:.) ⨝ t1:h (vocab hi)',
         grammar: withVocab({t1: "hi", t2:"hi"},
-        		 	 Join(MatchFrom(Any("t1"), "t1", "t2"),
+        		 	 Join(Match(Any("t1"), "t1", "t2"),
                           t1("h"))),
         tapes: ['t1', 't2'],
         vocab: {t1: 2, t2: 2},
@@ -985,10 +985,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: 'J-3. t1:hi ⨝ MatchFrom(t1>t2, t1:.*) (vocab t2:hi)',
+        desc: 'J-3. t1:hi ⨝ Match(t1>t2, t1:.*) (vocab t2:hi)',
         grammar: withVocab({t2: "hi"},
         		 	 Join(t1("hi"),
-        		 	 	  MatchFrom(Rep(Any("t1")), "t1", "t2"))),
+        		 	 	  Match(Rep(Any("t1")), "t1", "t2"))),
         tapes: ['t1', 't2'],
         vocab: {t1: 2, t2: 2},
         results: [
@@ -997,10 +997,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: 'J-4. t2:hello ⨝ MatchFrom(t1>t2, t1:.*) (vocab t1:hello)',
+        desc: 'J-4. t2:hello ⨝ Match(t1>t2, t1:.*) (vocab t1:hello)',
         grammar: withVocab({t1: "hello"},
         		 	 Join(t2("hello"),
-        		 	 	  MatchFrom(Rep(Any("t1")), "t1", "t2"))),
+        		 	 	  Match(Rep(Any("t1")), "t1", "t2"))),
         tapes: ['t1', 't2'],
         vocab: {t1: 4, t2: 4},
         results: [
@@ -1009,9 +1009,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: 'J-5. t1:hello+t2:hello ⨝ MatchFrom(t1>t2, t1:.*)',
+        desc: 'J-5. t1:hello+t2:hello ⨝ Match(t1>t2, t1:.*)',
         grammar: Join(Seq(t1("hello"), t2("hello")),
-        		 	  MatchFrom(Rep(Any("t1")), "t1", "t2")),
+        		 	  Match(Rep(Any("t1")), "t1", "t2")),
         tapes: ['t1', 't2'],
         vocab: {t1: 4, t2: 4},
         results: [
@@ -1020,12 +1020,12 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: 'J-6. Join output of two matchFroms: ' +
-              'MatchFrom(t1>t2, t1:[hi]) ⨝ MatchFrom(t3>t2, t3:[ij]) ' +
+        desc: 'J-6. Join output of two matches: ' +
+              'Match(t1>t2, t1:[hi]) ⨝ Match(t3>t2, t3:[ij]) ' +
               '(vocab t2:hij)',
         grammar: withVocab({t2: "hij"},
-        		 	 Join(MatchFrom(CharSet("t1", ["h","i"]), "t1", "t2"),
-        		 	 	  MatchFrom(CharSet("t3", ["i","j"]), "t3", "t2"))),
+        		 	 Join(Match(CharSet("t1", ["h","i"]), "t1", "t2"),
+        		 	 	  Match(CharSet("t3", ["i","j"]), "t3", "t2"))),
         tapes: ['t1', 't2', 't3'],
         vocab: {t1: 2, t2: 3, t3: 2},
         results: [
@@ -1034,12 +1034,12 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: 'J-7. Join output of one matchFrom with input of another: ' +
-              'MatchFrom(t1>t2, t1:[hi]) ⨝ MatchFrom(t2>t3, t2:[ij]) ' + 
+        desc: 'J-7. Join output of one match with input of another: ' +
+              'Match(t1>t2, t1:[hi]) ⨝ Match(t2>t3, t2:[ij]) ' + 
               '(vocab t2:hij,t3:hij)',
         grammar: withVocab({t2: "hij", t3:"hij"},
-        		 	 Join(MatchFrom(CharSet("t1", ["h","i"]), "t1", "t2"),
-        		 	 	  MatchFrom(CharSet("t2", ["i","j"]), "t2", "t3"))),
+        		 	 Join(Match(CharSet("t1", ["h","i"]), "t1", "t2"),
+        		 	 	  Match(CharSet("t2", ["i","j"]), "t2", "t3"))),
         tapes: ['t1', 't2', 't3'],
         vocab: {t1: 2, t2: 3, t3: 3},
         results: [
@@ -1048,12 +1048,12 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: 'J-8. Join output of one matchFrom with input of another, other direction: ' + 
-              'MatchFrom(t2>t3, t2:[ij]) ⨝ MatchFrom(t1>t2, t1:[hi]) ' + 
+        desc: 'J-8. Join output of one match with input of another, other direction: ' + 
+              'Match(t2>t3, t2:[ij]) ⨝ Match(t1>t2, t1:[hi]) ' + 
               '(vocab t2:hij,t3:hij)',
         grammar: withVocab({t2: "hij", t3:"hij"},
-        		 	 Join(MatchFrom(CharSet("t2", ["i","j"]), "t2", "t3"),
-        		 	 	  MatchFrom(CharSet("t1", ["h","i"]), "t1", "t2"))),
+        		 	 Join(Match(CharSet("t2", ["i","j"]), "t2", "t3"),
+        		 	 	  Match(CharSet("t1", ["h","i"]), "t1", "t2"))),
         tapes: ['t1', 't2', 't3'],
         vocab: {t1: 2, t2: 3, t3: 3},
         results: [
@@ -1067,7 +1067,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     function repMatchGrammar(min: number, max: number, fromGrammar: Grammar): Grammar {
         // returns (t2:e+M(t1>t2,fromGrammar){min,max}
-        const matchGrammar: Grammar = MatchFrom(fromGrammar, "t1", "t2");
+        const matchGrammar: Grammar = Match(fromGrammar, "t1", "t2");
         const repGrammar: Grammar = Rep(Seq(t2("e"), matchGrammar), min, max);
         return repGrammar;
     }

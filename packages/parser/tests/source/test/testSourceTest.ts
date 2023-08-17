@@ -1,7 +1,7 @@
 import { 
     testProject, ProjectTest, 
     Error, Warning 
-} from "../testSheetUtil";
+} from "../testSourceUtil";
 
 const DIR = "test";
 
@@ -11,7 +11,7 @@ function test(params: Partial<ProjectTest>): () => void {
     };
 }
 
-describe(`Sheets ${DIR}`, function() {
+describe(`Source ${DIR}`, function() {
 
     describe('1. Simple grammar with unit tests', test({
         id: "1",

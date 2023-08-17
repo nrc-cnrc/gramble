@@ -1915,7 +1915,7 @@ export function constructCorrespond(
     return new CorrespondExpr(child, fromTape, toTape).simplify();
 }
 
-export class MatchFromExpr extends UnaryExpr {
+export class MatchExpr extends UnaryExpr {
 
     constructor(
         child: Expr,
@@ -1937,10 +1937,10 @@ export class MatchFromExpr extends UnaryExpr {
             const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
             const newEnv = env.renameTape(this.toTape, this.fromTape);
             const cNext = this.child.delta(newTapeName, newEnv);
-            return constructMatchFrom(cNext, this.fromTape, this.toTape);  
+            return constructMatch(cNext, this.fromTape, this.toTape);  
         }
         const cNext = this.child.delta(tapeName, env);
-        return constructMatchFrom(cNext, this.fromTape, this.toTape);
+        return constructMatch(cNext, this.fromTape, this.toTape);
     }
     
     public *deriv(
@@ -1951,7 +1951,7 @@ export class MatchFromExpr extends UnaryExpr {
         // if it's a tape that isn't our to/from, just forward and wrap 
         if (query.tapeName != this.fromTape && query.tapeName != this.toTape) {
             for (const [cResult, cNext] of this.child.deriv(query, env)) {
-                const wrapped = constructMatchFrom(cNext, this.fromTape, this.toTape);
+                const wrapped = constructMatch(cNext, this.fromTape, this.toTape);
                 yield [cResult, wrapped];
             }
             return;
@@ -1972,7 +1972,7 @@ export class MatchFromExpr extends UnaryExpr {
 
         for (const [cResult, cNext] of 
                 this.child.deriv(fromQuery, newEnv)) {
-            const wrapped = constructMatchFrom(cNext, this.fromTape, this.toTape);
+            const wrapped = constructMatch(cNext, this.fromTape, this.toTape);
             if (cResult instanceof EpsilonExpr) {
                 env.logDebug("========= EpsilonToken ==========");
                 yield [cResult, wrapped];
@@ -1997,14 +1997,14 @@ export class MatchFromExpr extends UnaryExpr {
 
 }
 
-export function constructMatchFrom(
+export function constructMatch(
     child: Expr,
     fromTape: string,
     ...toTapes: string[]
 ): Expr {
     let result = child;
     for (const tape of toTapes) {
-        result = new MatchFromExpr(result, fromTape, tape).simplify();
+        result = new MatchExpr(result, fromTape, tape).simplify();
     }
     return result;
 }

@@ -5,7 +5,7 @@ import { CounterStack } from '../src/exprs';
 import {
     Count, Epsilon, 
     Join, Null, Rep, Seq, Uni, Collection,
-    Embed, CollectionGrammar, Grammar, Not, Rename, Hide, MatchFrom
+    Embed, CollectionGrammar, Grammar, Not, Rename, Hide, Match
 } from '../src/grammars';
 
 import {
@@ -171,7 +171,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
     
     describe("18. Match t1->t2 (t1:hello)", function() {
-        const grammar = MatchFrom(t1("hello"), "t1", "t2");
+        const grammar = Match(t1("hello"), "t1", "t2");
         testLength(grammar, "t1", [5, 5]);
         testLength(grammar, "t2", [5, 5]);
     });

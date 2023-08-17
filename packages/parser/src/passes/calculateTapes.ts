@@ -61,7 +61,7 @@ function calculateTapes(g: Grammar): string[] {
         case "singletape": return [g.tapeName];
         case "count": return getChildTapes(g);
         case "locator": return getChildTapes(g);
-        case "matchfrom": return listUnique([...getChildTapes(g), g.fromTape, g.toTape]);
+        case "match": return listUnique([...getChildTapes(g), g.fromTape, g.toTape]);
         case "rename": 
             return getChildTapes(g).map(t => 
                 t === g.fromTape ? g.toTape : t)

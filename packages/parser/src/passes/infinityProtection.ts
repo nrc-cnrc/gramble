@@ -5,7 +5,7 @@ import { AlternationGrammar, Count, CountGrammar, CounterStack,
     IntersectionGrammar, 
     JoinGrammar, 
     LengthRange, 
-    MatchFromGrammar,
+    MatchGrammar,
     NegationGrammar,
     RenameGrammar,
     RepeatGrammar,
@@ -102,7 +102,7 @@ export function lengthRange(
         case "alt": return lengthAlt(g, tapeName, stack, env);
         case "join": return lengthJoin(g, tapeName, stack, env);
         case "intersect": return lengthIntersect(g, tapeName, stack, env);
-        case "matchfrom": return lengthMatch(g, tapeName, stack, env);
+        case "match": return lengthMatch(g, tapeName, stack, env);
         case "count": return lengthCount(g, tapeName, stack, env);
         case "rename": return lengthRename(g, tapeName, stack, env);
         case "hide": return lengthHide(g, tapeName, stack, env);
@@ -189,7 +189,7 @@ function lengthIntersect(g: IntersectionGrammar, tapeName: string, stack: Counte
     }
 }
 
-function lengthMatch(g: MatchFromGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+function lengthMatch(g: MatchGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
     if (tapeName === g.toTape) {
         // also collect as a rename
         let newTapeName = renameTape(tapeName, g.toTape, g.fromTape);

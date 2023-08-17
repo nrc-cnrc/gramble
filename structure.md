@@ -7,7 +7,7 @@ Interpreters (interpreter.ts) serve as an Facade (https://en.wikipedia.org/wiki/
 
 Interpreter shepherds the sheets through four levels of representation:
 
-(1) Sheets (in sheets.ts): raw grids of cells, as written by the programmer.  A stack-based parsing algorithm steps through these sheets cell-by-cell and creates:
+(1) Source: raw grids of cells, as written by the programmer.  A stack-based parsing algorithm steps through these sheets cell-by-cell and creates:
 
 (2) TSTs (Tabular syntax trees; tsts.ts), which represent the basic syntactic units of the program (operations, blocks, headers/content, etc.).  These are not all in a one-to-one relationship with linguistic structure yet (e.g., some horizontal rows will later be interpreted as sequences of morphemes, and others as filters).  
 
@@ -23,9 +23,8 @@ Finally, these grammars are recursively transformed into:
 
 (4) Exprs (exprs.ts), formulae of low-level atomic units on which we run Brzozowski's algorithm.  They're a little more lightweight than Grammars (e.g. they aren't associated with any particular cells in the grammar, don't know their "tapes" unless they have to, etc.).
 
-There are four basic pieces to our implementation of Brzozowski's algorithm.
+There are three basic pieces to our implementation of Brzozowski's algorithm.
 
 (4a) The formula itself, expressed as a tree of Exprs.
-(4b) A generator (generator.ts), which performs a depth-first search through a space of "derivatives" of the formula.  Every time we find a derivative with a certain property, that corresponds to one or more output records, so we yield that.  Sampling is searching at random until you find one, generation is doing an exhaustic search.
+(4b) A generator (generator.ts), which performs a depth-first search through a space of "derivatives" of the formula.  Every time we find a derivative with a certain property, that corresponds to one or more output records, so we yield that.  Sampling is searching at random until you find one, generation is doing an exhaustive search.
 (4b) A namespace of information about "tapes" (abstract buffers to which exprs can write), in tapes.ts.  You can think of tapes like database fields.  The main thing this namespace does is keep track of the "global" name of each tape, and the local name at any given point during the calculation.  This isn't where we actually write outputs to, though.
-(4c) An OutputTrie (also in tapes.ts), which actually contains the outputs of the algorithm.  Since the algorithm is a depth-first search, a trie is the natural structure to represent its outputs without unnecessarily duplicating data.

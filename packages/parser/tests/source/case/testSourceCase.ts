@@ -1,7 +1,6 @@
 import { 
-    testProject, ProjectTest, 
-    Error, Warning 
-} from "../testSheetUtil";
+    testProject, ProjectTest
+} from "../testSourceUtil";
 
 const DIR = "case";
 
@@ -11,7 +10,7 @@ function test(params: Partial<ProjectTest>): () => void {
     };
 }
 
-describe(`Sheets ${DIR}`, function() {
+describe(`Source ${DIR}`, function() {
 
     describe('1a. Uppercase table ops', test({
         id: "1a",

@@ -1,7 +1,7 @@
 
 import {
     Any, Contains, Count, Ends, Epsilon,
-    Intersect, MatchFrom, Not, Null,
+    Intersect, Match, Not, Null,
     Rep, Seq, Short, Starts, Uni,
 } from "../../src/grammars";
 

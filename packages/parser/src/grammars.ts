@@ -4,7 +4,7 @@ import {
     constructIntersection, constructDot, constructEmbed,
     constructRename, constructNegation, NULL,
     constructJoin,
-    constructLiteral, constructMatchFrom,
+    constructLiteral, constructMatch,
     EpsilonExpr, constructShort,
     constructPrecede, constructPreTape,
     constructNotContains,
@@ -93,7 +93,7 @@ export type Grammar = EpsilonGrammar
              | PreTapeGrammar
              | CursorGrammar
              | HideGrammar
-             | MatchFromGrammar
+             | MatchGrammar
              | CollectionGrammar
              | EmbedGrammar
              | LocatorGrammar
@@ -1208,8 +1208,8 @@ export class HideGrammar extends UnaryGrammar {
     
 }
 
-export class MatchFromGrammar extends UnaryGrammar {
-    public readonly tag = "matchfrom";
+export class MatchGrammar extends UnaryGrammar {
+    public readonly tag = "match";
 
     constructor(
         child: Grammar,
@@ -1288,7 +1288,7 @@ export class MatchFromGrammar extends UnaryGrammar {
         tapeNS: TapeNamespace
     ): Expr {
         const childExpr = this.child.constructExpr(tapeNS);
-        return constructMatchFrom(childExpr, this.fromTape, this.toTape);
+        return constructMatch(childExpr, this.fromTape, this.toTape);
     }
 }
 
@@ -1676,38 +1676,12 @@ export function Dot(...tapes: string[]): SequenceGrammar {
     return Seq(...tapes.map(t => Any(t)));
 }
 
-/*
-export function MatchDot(...tapes: string[]): MatchGrammar {
-    return Match(Dot(...tapes), ...tapes);
-}
-
-export function MatchDotRep(minReps: number = 0, maxReps: number = Infinity, ...tapes: string[]): MatchGrammar {
-    return Match(Rep(Dot(...tapes), minReps, maxReps), ...tapes)
-}
-
-export function MatchDotRep2(minReps: number = 0, maxReps: number = Infinity, ...tapes: string[]): MatchGrammar {
-    return Match(Seq(...tapes.map((t: string) => Rep(Any(t), minReps, maxReps))), ...tapes);
-}
-
-export function MatchDotStar(...tapes: string[]): MatchGrammar {
-    return MatchDotRep(0, Infinity, ...tapes)
-}
-
-export function MatchDotStar2(...tapes: string[]): MatchGrammar {
-    return MatchDotRep2(0, Infinity, ...tapes)
-}
-*/
-
-export function MatchFrom(state:Grammar, fromTape: string, ...toTapes: string[]): Grammar {
+export function Match(state:Grammar, fromTape: string, ...toTapes: string[]): Grammar {
     let result = state;
     for (const tape of toTapes) {
-        result = new MatchFromGrammar(result, fromTape, tape);
+        result = new MatchGrammar(result, fromTape, tape);
     }
     return result;
-
-    // Construct a Match for multiple tapes given a grammar for the first tape. 
-    //return Match(Seq(state, ...otherTapes.map((t: string) => Rename(state, firstTape, t))),
-    //             firstTape, ...otherTapes);
 }
 
 export function Rename(child: Grammar, fromTape: string, toTape: string): RenameGrammar {
@@ -2050,9 +2024,9 @@ export class ReplaceGrammar extends AbstractGrammar {
         const preContextExpr: Expr = this.preContext.constructExpr(tapeNS);
         const postContextExpr: Expr = this.postContext.constructExpr(tapeNS);
         let states: Expr[] = [
-            constructMatchFrom(preContextExpr, this._fromTapeName, this._toTapeName),
+            constructMatch(preContextExpr, this._fromTapeName, this._toTapeName),
             constructCorrespond(constructPrecede(fromExpr, toExpr), fromTape, toTape),
-            constructMatchFrom(postContextExpr, this._fromTapeName, this._toTapeName)
+            constructMatch(postContextExpr, this._fromTapeName, this._toTapeName)
         ];
 
         const that = this;
@@ -2072,7 +2046,7 @@ export class ReplaceGrammar extends AbstractGrammar {
             if( that.optional ||
                     (that.beginsWith && !replaceNone) ||
                     (that.endsWith && !replaceNone)) {
-                return constructMatchFrom(constructDotStar(that._fromTapeName),
+                return constructMatch(constructDotStar(that._fromTapeName),
                                           that._fromTapeName, that._toTapeName)
             }
             const fromInstance: Expr[] = [preContextExpr, fromExpr, postContextExpr];
@@ -2085,7 +2059,7 @@ export class ReplaceGrammar extends AbstractGrammar {
 
             let notExpr: Expr = constructNotContains(that._fromTapeName, fromInstance,
                 negatedTapes, that.beginsWith && replaceNone, that.endsWith && replaceNone);
-            return constructMatchFrom(notExpr, that._fromTapeName, that._toTapeName);
+            return constructMatch(notExpr, that._fromTapeName, that._toTapeName);
         }
         
         if (!this.endsWith)
@@ -2114,7 +2088,7 @@ export class ReplaceGrammar extends AbstractGrammar {
                 let negatedOtherContext: Expr = 
                     constructNegation(otherContextExpr, new Set(negatedTapes));
                 const matchDotStar: Expr =
-                    constructMatchFrom(constructDotStar(this._fromTapeName),
+                    constructMatch(constructDotStar(this._fromTapeName),
                                        this._fromTapeName, this._toTapeName)
                 copyExpr = constructAlternation(constructSequence(matchAnythingElse(true), otherContextExpr),
                                                 constructSequence(matchDotStar, negatedOtherContext));

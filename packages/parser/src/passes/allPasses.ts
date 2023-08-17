@@ -5,7 +5,7 @@ import { AdjustConditions } from "./adjustConditions";
 import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
 import { CreateOps } from "./createOps";
-import { ParseSheets } from "./parseSource";
+import { ParseSource } from "./parseSource";
 import { CheckStructuralParams } from "./checkStructuralParams";
 import { CheckTestLiterals } from "./checkTestLiterals";
 import { CreateHeaders } from "./createHeaders";
@@ -25,7 +25,7 @@ export const SHEET_PASSES =
     // parse the sheet into an initial TST, mostly consisting of
     // placeholder TstOps and TstGrids without any particular 
     // semantics
-    new ParseSheets().compose(
+    new ParseSource().compose(
 
     // turn ops that represent collections into actual collections, 
     // rescope their children as necessary, and define default symbols

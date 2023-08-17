@@ -1,4 +1,4 @@
-import { testProject, ProjectTest, Error, Warning } from "../testSheetUtil";
+import { testProject, ProjectTest, Error, Warning } from "../testSourceUtil";
 
 const DIR = "basic";
 
@@ -8,7 +8,7 @@ function test(params: Partial<ProjectTest>): () => void {
     };
 }
 
-describe(`Sheets ${DIR}`, function() {
+describe(`Source ${DIR}`, function() {
 
     describe('1a. Minimal grammar', test({
         id: "1a",
