@@ -8,7 +8,9 @@ import {
     StringDict,
     outputProduct,
     flatten,
-    shuffleArray
+    shuffleArray,
+    iterUnit,
+    iterConcat
 } from "./util";
 import { 
     Tape, TapeNamespace, 
@@ -236,6 +238,17 @@ export class DerivEnv {
  * have to take an extra step to do so.
  */
 
+function *wrapDerivs<T extends Expr>(
+    ds: Derivs,
+    f: (e: Expr) => Expr
+): Derivs {
+    for (const [result, next] of ds) {
+        const wrapped = f(next);
+        yield [result, wrapped];
+    }
+}
+
+
 export class CounterStack {
 
     constructor(
@@ -267,7 +280,16 @@ export class CounterStack {
     }
 }
 
-function *disjoin(ds: Iterable<Deriv>): Derivs {
+function *disjoin(
+    ds: Iterable<Deriv>,
+    env: DerivEnv,
+    obligatory: boolean = false
+): Derivs {
+    if (!obligatory && env.opt.random) {
+        yield* ds;
+        return;
+    }
+
     const results: {[c: string]: [TokenExpr|EpsilonExpr, Expr[]]} = {};
     for (const [cResult, cNext] of ds) {
         const cString = cResult.id;
@@ -722,36 +744,25 @@ class ConcatExpr extends BinaryExpr {
         query: Query,
         env: DerivEnv
     ): Derivs {
-
         const [c1, c2] = (DIRECTION_LTR) ?
                         [this.child1, this.child2] :
                         [this.child2, this.child1];
 
-        for (const [c1result, c1next] of
-                c1.deriv(query, env)) {
-            yield [c1result, constructPrecede(c1next, c2)];
-        }
-
+        const c1derivs = c1.deriv(query, env);
+        const c1wrapped = wrapDerivs(c1derivs, e => constructPrecede(e, c2));
+        yield *c1wrapped;
+        
         const c1next = c1.delta(query.tapeName, env);
-        for (const [c2result, c2next] of
-                c2.deriv(query, env)) {
-            yield [c2result, constructPrecede(c1next, c2next)];
-        }
+        const c2derivs = c2.deriv(query, env);
+        const c2wrapped = wrapDerivs(c2derivs, e => constructPrecede(c1next, e));
+        yield *c2wrapped;
     }
 
     public simplify(): Expr {
-        if (this.child1 instanceof EpsilonExpr) {
-            return this.child2;
-        }
-        if (this.child2 instanceof EpsilonExpr) {
-            return this.child1;
-        }
-        if (this.child1 instanceof NullExpr) {
-            return this.child1;
-        }
-        if (this.child2 instanceof NullExpr) {
-            return this.child2;
-        }
+        if (this.child1 instanceof EpsilonExpr) return this.child2;
+        if (this.child2 instanceof EpsilonExpr) return this.child1;
+        if (this.child1 instanceof NullExpr) return this.child1;
+        if (this.child2 instanceof NullExpr) return this.child2;
         return this;
     }
 
@@ -797,14 +808,28 @@ export class UnionExpr extends Expr {
         query: Query,
         env: DerivEnv
     ): Derivs {
+        if (env.opt.random) {
+            for (const child of this.children) {
+                yield* child.deriv(query, env);
+            }
+            return;
+        }
+
         const results: Deriv[] = [];
         for (const child of this.children) {
             results.push(...child.deriv(query, env));
         }
-        yield* disjoin(results);
+        yield* disjoin(results, env);
     }
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
+        if (env.opt.random) {
+            for (const child of this.children) {
+                yield* child.forward(env);
+            }
+            return;
+        }
+
         let handled: boolean = false;
         let results: Expr[] = [];
         for (const child of this.children) {
@@ -867,17 +892,16 @@ class IntersectExpr extends BinaryExpr {
         query: Query,
         env: DerivEnv
     ): Derivs {
-        for (const [c1result, c1next] of 
-                disjoin(this.child1.deriv(query, env))) {
-
+        const c1derivs = this.child1.deriv(query, env);
+        for (const [c1result, c1next] of disjoin(c1derivs, env)) {
             if (c1result instanceof EpsilonExpr) {
                 const wrapped = constructIntersection(c1next, this.child2);
                 yield [c1result, wrapped];
                 continue;
             }
     
-            for (const [c2result, c2next] of 
-                    disjoin(this.child2.deriv(c1result, env))) {
+            const c2derivs = this.child2.deriv(c1result, env);
+            for (const [c2result, c2next] of disjoin(c2derivs, env)) {
                 const c1nxt = (c2result instanceof EpsilonExpr) ? this.child1 : c1next;
                 const wrapped = constructIntersection(c1nxt, c2next);
                 yield [c2result, wrapped];
@@ -930,35 +954,35 @@ class JoinExpr extends BinaryExpr {
     ): Derivs {
 
         if (!this.tapes2.has(query.tapeName)) {
-            for (const [leftResult, leftNext] of 
-                    disjoin(this.child1.deriv(query, env))) {
-                const wrapped = constructJoin(leftNext, this.child2, this.tapes1, this.tapes2);
-                yield [leftResult, wrapped];
+            const c1derivs = this.child1.deriv(query, env);
+            for (const [c1Result, c1Next] of disjoin(c1derivs, env)) {
+                const wrapped = constructJoin(c1Next, this.child2, this.tapes1, this.tapes2);
+                yield [c1Result, wrapped];
             }
             return;
         }
         
         if (!this.tapes1.has(query.tapeName)) {
-            for (const [rightResult, rightNext] of 
-                    disjoin(this.child2.deriv(query, env))) {
-                const wrapped = constructJoin(this.child1, rightNext, this.tapes1, this.tapes2);
-                yield [rightResult, wrapped];
+            const c2derivs = this.child2.deriv(query, env);
+            for (const [c1Result, c1Next] of disjoin(c2derivs, env)) {
+                const wrapped = constructJoin(this.child1, c1Next, this.tapes1, this.tapes2);
+                yield [c1Result, wrapped];
             }
             return;
         }
         
-        for (const [leftResult, leftNext] of 
-                disjoin(this.child1.deriv(query, env))) {
+        const c1derivs = this.child1.deriv(query, env);
+        for (const [c1Result, c1Next] of disjoin(c1derivs, env)) {
 
-            if (leftResult instanceof EpsilonExpr) {
-                const wrapped = constructJoin(leftNext, this.child2, this.tapes1, this.tapes2);
-                yield [leftResult, wrapped];
+            if (c1Result instanceof EpsilonExpr) {
+                const wrapped = constructJoin(c1Next, this.child2, this.tapes1, this.tapes2);
+                yield [c1Result, wrapped];
                 continue;
             }
 
-            for (const [rightResult, rightNext] of 
-                    disjoin(this.child2.deriv(leftResult, env))) {
-                const lnext = (rightResult instanceof EpsilonExpr) ? this.child1 : leftNext;
+            const c2derivs = this.child2.deriv(c1Result, env)
+            for (const [rightResult, rightNext] of disjoin(c2derivs, env)) {
+                const lnext = (rightResult instanceof EpsilonExpr) ? this.child1 : c1Next;
                 const wrapped = constructJoin(lnext, rightNext, this.tapes1, this.tapes2);
                 yield [rightResult, wrapped];
             }
@@ -1346,16 +1370,26 @@ export class CursorExpr extends UnaryExpr {
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
 
+        if (this.finished) {
+            for (const [cHandled, cNext] of this.child.forward(env)) {
+                const wrapped = constructCursor(this.tape, cNext, 
+                    this.output, true);
+                yield [cHandled, wrapped];
+            }
+            return;
+        }
+
         const deltaToken = new TokenExpr(this.tape, '');
         const deltaNext = this.child.delta(this.tape, env);
-        const deltaResult = [deltaToken, deltaNext];
+        const deltaGenerator = iterUnit([deltaToken, deltaNext]);
         const derivQuery = constructDot(this.tape);
-        const derivResults = disjoin(this.child.deriv(derivQuery, env));
-        const allResults = [deltaResult, ...derivResults]
+        const derivResults = disjoin(this.child.deriv(derivQuery, env), env);
+        const allResults = iterConcat([deltaGenerator, derivResults]);
 
+        /*
         if (env.opt.random) {
             shuffleArray(allResults);
-        }
+        } */
 
         for (const [cResult, cNext] of allResults) {
             env.incrStates();
@@ -1540,7 +1574,8 @@ class ShortExpr extends UnaryExpr {
 
         // Important: the deriv here MUST be disjoint, just like 
         // under negation.
-        for (const [cResult, cNext] of disjoin(this.child.deriv(query, env))) {
+        const cDerivs = this.child.deriv(query, env);
+        for (const [cResult, cNext] of disjoin(cDerivs, env, true)) {
             
             const cNextDelta = cNext.delta(query.tapeName, env);
             if (!(cNextDelta instanceof NullExpr)) {
@@ -1791,12 +1826,8 @@ class NegationExpr extends UnaryExpr {
     ): Expr {
         const cNext = this.child.delta(tapeName, env);
         const remainingTapes = setDifference(this.tapes, new Set([tapeName]));
-        
-        let result: Expr;
-        
         if (cNext instanceof NullExpr) return constructNegation(cNext, remainingTapes);
         if (remainingTapes.size == 0) return NULL;
-        
         return constructNegation(cNext, remainingTapes);
     }
     
@@ -1811,7 +1842,8 @@ class NegationExpr extends UnaryExpr {
 
         let remainder: Set<string> = new Set(query.expandStrings(env));
 
-        for (const [cResult, cNext] of disjoin(this.child.deriv(query, env))) {
+        const cDerivs = this.child.deriv(query, env);
+        for (const [cResult, cNext] of disjoin(cDerivs, env, true)) {
             if (!(cResult instanceof EpsilonExpr)) {
                 remainder.delete(cResult.text);  
             }
