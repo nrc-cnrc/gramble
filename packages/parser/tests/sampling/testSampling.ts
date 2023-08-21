@@ -32,7 +32,19 @@ describe(`Sampling tests`, function() {
     });
 
     testSample({
-        desc: '4. Cursors inside alternations',
+        desc: "4a. Concatenation",
+        grammar: Seq(Uni(t1("blue"), t1("boysen")),
+                    Uni(t1("berry"), t1("bird")))
+    });
+
+    testSample({
+        desc: "4b. Concatenation with nullable first child",
+        grammar: Seq(Uni(t1("blue"), t1("boysen"), t1("")),
+                    Uni(t1("berry"), t1("bird")))
+    });
+
+    testSample({
+        desc: '5. Cursors inside alternations',
         grammar: Uni(Cursor("t1", t1("hello")), 
                         Cursor("t2", t2("world"))),
     });

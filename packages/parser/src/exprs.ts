@@ -8,9 +8,9 @@ import {
     StringDict,
     outputProduct,
     flatten,
-    shuffleArray,
     iterUnit,
-    iterConcat
+    iterConcat,
+    iterRandom
 } from "./util";
 import { 
     Tape, TapeNamespace, 
@@ -238,7 +238,7 @@ export class DerivEnv {
  * have to take an extra step to do so.
  */
 
-function *wrapDerivs<T extends Expr>(
+function *wrap(
     ds: Derivs,
     f: (e: Expr) => Expr
 ): Derivs {
@@ -749,13 +749,13 @@ class ConcatExpr extends BinaryExpr {
                         [this.child2, this.child1];
 
         const c1derivs = c1.deriv(query, env);
-        const c1wrapped = wrapDerivs(c1derivs, e => constructPrecede(e, c2));
-        yield *c1wrapped;
+        const c1wrapped = wrap(c1derivs, e => constructPrecede(e, c2));
         
         const c1next = c1.delta(query.tapeName, env);
         const c2derivs = c2.deriv(query, env);
-        const c2wrapped = wrapDerivs(c2derivs, e => constructPrecede(c1next, e));
-        yield *c2wrapped;
+        const c2wrapped = wrap(c2derivs, e => constructPrecede(c1next, e));
+
+        yield* iterRandom([c1wrapped, c2wrapped]);
     }
 
     public simplify(): Expr {
@@ -809,9 +809,9 @@ export class UnionExpr extends Expr {
         env: DerivEnv
     ): Derivs {
         if (env.opt.random) {
-            for (const child of this.children) {
-                yield* child.deriv(query, env);
-            }
+            const childDerivs = this.children.map(c => 
+                                    c.deriv(query, env));
+            yield* iterRandom(childDerivs);
             return;
         }
 
@@ -824,9 +824,9 @@ export class UnionExpr extends Expr {
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
         if (env.opt.random) {
-            for (const child of this.children) {
-                yield* child.forward(env);
-            }
+            const childForwards = this.children.map(c => 
+                c.forward(env));
+            yield* iterRandom(childForwards);
             return;
         }
 
@@ -1384,7 +1384,7 @@ export class CursorExpr extends UnaryExpr {
         const deltaGenerator = iterUnit([deltaToken, deltaNext]);
         const derivQuery = constructDot(this.tape);
         const derivResults = disjoin(this.child.deriv(derivQuery, env), env);
-        const allResults = iterConcat([deltaGenerator, derivResults]);
+        const allResults = iterRandom([deltaGenerator, derivResults]);
 
         /*
         if (env.opt.random) {

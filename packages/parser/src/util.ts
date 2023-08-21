@@ -386,12 +386,18 @@ export function shuffleArray<T>(array: T[]): void {
     }
 }
 
-
 export function *iterUnit<T>(item: T): Gen<T> {
     yield item;
 }
 
 export function *iterConcat<T>(gs: Gen<T>[]): Gen<T> {
+    for (const g of gs) {
+        yield *g;
+    }
+}
+
+export function *iterRandom<T>(gs: Gen<T>[]): Gen<T> {
+    shuffleArray(gs);
     for (const g of gs) {
         yield *g;
     }
