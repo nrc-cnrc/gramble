@@ -1,6 +1,7 @@
-import { CharSet, Count, Cursor, Rep, Seq, Uni } from "../../src/grammars";
+import { CharSet, Count, Cursor, Dot, Not, Rep, Seq, Uni } from "../../src/grammars";
+import { VERBOSE_DEBUG } from "../../src/util";
 import { t1, t2 } from "../testUtil";
-import { testSample } from "./testSamplingUtil";
+import { testSample, withVocab } from "./testSamplingUtil";
 
 function splitUni(tapeName: string, text: string) {
     return CharSet(tapeName, text.split(""))
@@ -47,6 +48,21 @@ describe(`Sampling tests`, function() {
         desc: '5. Cursors inside alternations',
         grammar: Uni(Cursor("t1", t1("hello")), 
                         Cursor("t2", t2("world"))),
+    });
+    
+    testSample({
+        desc: '6. Dot',
+        grammar: withVocab("abc", Dot("t1"))
+    });
+
+    testSample({
+        desc: '6. Dot star',
+        grammar: Count({t1: 3}, Seq(t1("ab"), Rep(Dot("t1")))),
+    });
+    
+    testSample({
+        desc: '7. Negation',
+        grammar: Count({t1: 2}, withVocab("ab", Not(t1("bb")))),
     });
 
 });
