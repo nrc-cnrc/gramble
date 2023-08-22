@@ -6,13 +6,13 @@ import {
     Count, Epsilon, 
     Join, Null, Rep, 
     Seq, Uni, Not, 
-    Rename, Hide, Match
+    Rename, Hide, Match, ReplaceBlock, Replace
 } from '../src/grammarConvenience';
 
 import {
     testSuiteName, logTestSuite,
     VERBOSE_TEST_L2,
-    t1, t2, IOJoin, IOReplace
+    t1, t2
 } from "./testUtil";
 
 import { Msgs } from '../src/msgs';
@@ -156,8 +156,8 @@ describe(`${testSuiteName(module)}`, function() {
         testLength(grammar, "t2", [5, 5]);
     });
 
-    describe("15. ~(t1:hello)+t2:world", function() {
-        const grammar = IOJoin("hello", IOReplace("e","a"));
+    describe("15. t1:hello ⨝ e -> a", function() {
+        const grammar = ReplaceBlock("t1", "hello", Replace("e","a"));
         testLength(grammar, "t1", [0, Infinity]);
     });
     

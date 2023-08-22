@@ -2,10 +2,12 @@ import {
     CharSet, Count, 
     Cursor, Dot, 
     Not, Rep, 
+    Replace, 
+    ReplaceBlock, 
     Seq, Uni 
 } from "../../src/grammarConvenience";
 
-import { VERBOSE_DEBUG } from "../../src/util";
+import { DUMMY_REGEX_TAPE, VERBOSE_DEBUG } from "../../src/util";
 import { t1, t2 } from "../testUtil";
 import { testSample, withVocab } from "./testSamplingUtil";
 
@@ -17,7 +19,7 @@ describe(`Sampling tests`, function() {
 
     testSample({
         desc: "1. Alternation",
-        grammar: Uni(t1("hello"), t1("hell"), t1("world"), t1(""))
+        grammar: Uni("hello", "hell", "world", "")
     });
 
     testSample({
@@ -40,14 +42,14 @@ describe(`Sampling tests`, function() {
 
     testSample({
         desc: "4a. Concatenation",
-        grammar: Seq(Uni(t1("blue"), t1("boysen")),
-                    Uni(t1("berry"), t1("bird")))
+        grammar: Seq(Uni("blue", "boysen"),
+                    Uni("berry", "bird"))
     });
 
     testSample({
         desc: "4b. Concatenation with nullable first child",
-        grammar: Seq(Uni(t1("blue"), t1("boysen"), t1("")),
-                    Uni(t1("berry"), t1("bird")))
+        grammar: Seq(Uni("blue", "boysen", "",
+                    Uni("berry", "bird")))
     });
 
     testSample({
@@ -69,6 +71,29 @@ describe(`Sampling tests`, function() {
     testSample({
         desc: '7. Negation',
         grammar: Count({t1: 2}, withVocab("ab", Not(t1("bb")))),
+    });
+
+    testSample({
+        desc: '8. Replacement: hello ⨝ e -> a',
+        grammar: ReplaceBlock("t1", "hello", Replace("e","a")),
+    });
+
+    testSample({
+        desc: '8a. Replacement: hello ⨝ e -> a',
+        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+                    "hello", Replace("e","a")),
+    });
+
+    testSample({
+        desc: '8b. Replacement: hello|hell ⨝ e -> a',
+        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+                    Uni("hello","hell"), Replace("e","a")),
+    });
+
+    testSample({
+        desc: '8c. Replacement: h|hi ⨝ e -> a',
+        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+                    Uni("h","hi"), Replace("e","a")),
     });
 
 });

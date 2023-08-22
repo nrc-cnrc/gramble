@@ -12,7 +12,7 @@ import {
     SequenceGrammar, ShortGrammar, 
     StartsGrammar 
 } from "./grammars";
-import { Dict, StringDict } from "./util";
+import { DUMMY_REGEX_TAPE, Dict, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, StringDict } from "./util";
 
 /**
   * Replace implements general phonological replacement rules.
@@ -33,48 +33,61 @@ import { Dict, StringDict } from "./util";
   * maxReps: maximum number of times the replace rule is applied
 */
 export function Replace(
-    fromGrammar: Grammar, 
-    toGrammar: Grammar,
-    preContext: Grammar = Epsilon(),
-    postContext: Grammar = Epsilon(),
-    otherContext: Grammar = Epsilon(),
-    beginsWith: boolean = false, endsWith: boolean = false,
-    minReps: number = 0, maxReps: number = Infinity,
-    hiddenTapeName: string = ""
+    fromGrammar: Grammar | string, 
+    toGrammar: Grammar | string,
+    preContext: Grammar | string = Epsilon(),
+    postContext: Grammar | string = Epsilon(),
+    otherContext: Grammar | string = Epsilon(),
+    beginsWith: boolean = false, 
+    endsWith: boolean = false,
+    minReps: number = 0, 
+    maxReps: number = Infinity,
+    hiddenTapeName: string = "",
+    optional: boolean = false
 ): ReplaceGrammar {
+    fromGrammar = makeGrammar(fromGrammar, REPLACE_INPUT_TAPE);
+    toGrammar = makeGrammar(toGrammar, REPLACE_OUTPUT_TAPE);
+    preContext = makeGrammar(preContext, REPLACE_INPUT_TAPE);
+    postContext = makeGrammar(postContext, REPLACE_INPUT_TAPE);
+    otherContext = makeGrammar(otherContext);
     return new ReplaceGrammar(fromGrammar, toGrammar, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
-        minReps, maxReps, hiddenTapeName, false);
+        minReps, maxReps, hiddenTapeName, optional);
 }
 
 export function OptionalReplace(
-    fromGrammar: Grammar, 
-    toGrammar: Grammar,
-    preContext: Grammar = Epsilon(), 
-    postContext: Grammar = Epsilon(),
-    otherContext: Grammar = Epsilon(),
-    beginsWith: boolean = false, endsWith: boolean = false,
-    minReps: number = 0, maxReps: number = Infinity,
+    fromGrammar: Grammar | string, 
+    toGrammar: Grammar | string,
+    preContext: Grammar | string = Epsilon(), 
+    postContext: Grammar | string = Epsilon(),
+    otherContext: Grammar | string = Epsilon(),
+    beginsWith: boolean = false, 
+    endsWith: boolean = false,
+    minReps: number = 0, 
+    maxReps: number = Infinity,
     hiddenTapeName: string = ""
 ): ReplaceGrammar {
-    return new ReplaceGrammar(fromGrammar, toGrammar, 
+    return Replace(fromGrammar, toGrammar, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
         minReps, maxReps, hiddenTapeName, true);
 }
 
 export function ReplaceBlock(
     inputTape: string,
-    child: Grammar,
-    rules: ReplaceGrammar[]
+    child: Grammar | string,
+    ...rules: ReplaceGrammar[]
 ): ReplaceBlockGrammar {
+    child = makeGrammar(child, inputTape);
+    if (rules instanceof ReplaceGrammar) rules = [rules];
     return new ReplaceBlockGrammar(inputTape, child, rules);
 }
 
 export function Correspond(
     tape1: string,
     tape2: string,
-    child: Grammar
+    child: Grammar | string
 ): CorrespondGrammar {
+    child = makeGrammar(child);
     return new CorrespondGrammar(child, tape1, tape2);
 }
 
@@ -102,8 +115,9 @@ export function Query(
 export function PreTape(
     fromTape: string, 
     toTape: string, 
-    child: Grammar
+    child: Grammar | string
 ): Grammar {
+    child = makeGrammar(child);
     return new PreTapeGrammar(fromTape, toTape, child);
 }
 
@@ -111,15 +125,20 @@ export function Epsilon(): EpsilonGrammar {
     return new EpsilonGrammar();
 }
 
-export function Seq(...children: Grammar[]): SequenceGrammar {
-    return new SequenceGrammar(children);
+export function Seq(...children: (Grammar|string)[]): SequenceGrammar {
+    children = children.map(c => makeGrammar(c));
+    return new SequenceGrammar(children as Grammar[]);
 }
 
-export function Uni(...children: Grammar[]): AlternationGrammar {
-    return new AlternationGrammar(children);
+export function Uni(...children: (Grammar|string)[]): AlternationGrammar {
+    children = children.map(c => makeGrammar(c));
+    return new AlternationGrammar(children as Grammar[]);
 }
 
-export function Optional(child: Grammar): AlternationGrammar {
+export function Optional(
+    child: Grammar | string
+): AlternationGrammar {
+    child = makeGrammar(child);
     return Uni(child, Epsilon());
 }
 
@@ -135,38 +154,67 @@ export function Any(tape: string): DotGrammar {
     return new DotGrammar(tape);
 }
 
-export function Intersect(child1: Grammar, child2: Grammar): IntersectionGrammar {
+export function Intersect(
+    child1: Grammar | string, 
+    child2: Grammar | string
+): IntersectionGrammar {
+    child1 = makeGrammar(child1);
+    child2 = makeGrammar(child2);
     return new IntersectionGrammar(child1, child2);
 }
 
-export function Join(child1: Grammar, child2: Grammar): JoinGrammar {
+export function Join(
+    child1: Grammar | string, 
+    child2: Grammar | string
+): JoinGrammar {
+    child1 = makeGrammar(child1);
+    child2 = makeGrammar(child2);
     return new JoinGrammar(child1, child2);
 }
 
-export function Short(child: Grammar): ShortGrammar {
+export function Short(
+    child: Grammar | string
+): ShortGrammar {
+    child = makeGrammar(child);
     return new ShortGrammar(child);
 }
 
-export function Starts(child1: Grammar, child2: Grammar): JoinGrammar {
+export function Starts(
+    child1: Grammar | string, 
+    child2: Grammar | string
+): JoinGrammar {
+    child1 = makeGrammar(child1);
+    child2 = makeGrammar(child2);
     const filter = new StartsGrammar(child2);
     return new JoinGrammar(child1, filter);
 }
 
-export function Ends(child1: Grammar, child2: Grammar): JoinGrammar {
+export function Ends(
+    child1: Grammar | string, 
+    child2: Grammar | string
+): JoinGrammar {
+    child1 = makeGrammar(child1);
+    child2 = makeGrammar(child2);
     const filter = new EndsGrammar(child2);
     return new JoinGrammar(child1, filter);
 }
 
-export function Contains(child1: Grammar, child2: Grammar): JoinGrammar {
+export function Contains(
+    child1: Grammar | string, 
+    child2: Grammar | string
+): JoinGrammar {
+    child1 = makeGrammar(child1);
+    child2 = makeGrammar(child2);
     const filter = new ContainsGrammar(child2);
     return new JoinGrammar(child1, filter);
 }
 
 export function Rep(
-    child: Grammar, 
+    child: Grammar | string, 
     minReps: number = 0, 
     maxReps: number = Infinity
 ) {
+    child = makeGrammar(child);
     return new RepeatGrammar(child, minReps, maxReps);
 }
 
@@ -182,19 +230,30 @@ export function Dot(...tapes: string[]): SequenceGrammar {
     return Seq(...tapes.map(t => Any(t)));
 }
 
-export function Match(state:Grammar, fromTape: string, ...toTapes: string[]): Grammar {
-    let result = state;
+export function Match(
+    child: Grammar | string, 
+    fromTape: string, 
+    ...toTapes: string[]
+): Grammar {
+    child = makeGrammar(child);
+    let result = child;
     for (const tape of toTapes) {
         result = new MatchGrammar(result, fromTape, tape);
     }
     return result;
 }
 
-export function Rename(child: Grammar, fromTape: string, toTape: string): RenameGrammar {
+export function Rename(
+    child: Grammar | string, 
+    fromTape: string, 
+    toTape: string
+): RenameGrammar {
+    child = makeGrammar(child);
     return new RenameGrammar(child, fromTape, toTape);
 }
 
-export function Not(child: Grammar): NegationGrammar {
+export function Not(child: Grammar | string): NegationGrammar {
+    child = makeGrammar(child);
     return new NegationGrammar(child);
 }
 
@@ -208,7 +267,12 @@ export function Collection(
     return result;
 }
 
-export function Hide(child: Grammar, tape: string, toTape: string = ""): HideGrammar {
+export function Hide(
+    child: Grammar | string, 
+    tape: string, 
+    toTape: string = ""
+): HideGrammar {
+    child = makeGrammar(child);
     return new HideGrammar(child, tape, toTape);
 }
 
@@ -226,10 +290,11 @@ export function Vocab(arg1: string | StringDict, arg2: string = ""): Grammar {
 
 export function Count(
     maxChars: Dict<number>,
-    child: Grammar,
+    child: Grammar | string,
     countEpsilon: boolean = false,
     errorOnCountExceeded: boolean = false
 ): Grammar {
+    child = makeGrammar(child);
     let result = child;
     for (const [tapeName, max] of Object.entries(maxChars)) {
         result = new CountGrammar(result, tapeName, max,
@@ -238,11 +303,24 @@ export function Count(
     return result;
 }
 
-export function Cursor(tape: string | string[], child: Grammar): Grammar {
+export function Cursor(
+    tape: string | string[], 
+    child: Grammar | string
+): Grammar {
+    child = makeGrammar(child);
     let result = child;
     if (!Array.isArray(tape)) tape = [tape];
     for (let i = tape.length-1; i >= 0; i--) {
         result = new CursorGrammar(tape[i], result);   
     }
     return result;
+}
+
+function makeGrammar(
+    g: Grammar | string, 
+    tapeName: string = DUMMY_REGEX_TAPE
+): Grammar {
+    if (typeof(g) === 'string')
+        return Lit(tapeName, g);
+    return g;
 }
