@@ -52,7 +52,12 @@ The TypeScript code must be compiled:
 
     npx lerna add <package> path/to/subpackage
 
+Copyright
+---------
+
+All files in this repository are **Copyright (C) 2020 National Research Council Canada.**
+
 License
 -------
 
-2020 © National Research Council of Canada. MIT Licensed. See LICENSE for details.
+All files in this repository are released under the MIT licence. See the [LICENSE](LICENSE) file for details.
