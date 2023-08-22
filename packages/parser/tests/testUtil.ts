@@ -1,13 +1,19 @@
 import { basename } from "path";
 import { assert, expect } from "chai";
 
-import { Grammar, Lit, OptionalReplace, Replace, ReplaceBlock, ReplaceGrammar } from "../src/grammars";
+import { 
+    Lit, 
+    OptionalReplace, Replace, 
+    ReplaceBlock 
+} from "../src/grammarConvenience";
+
 import { Interpreter } from "../src/interpreter";
 import { Tape } from "../src/tapes";
 import {
     HIDDEN_PREFIX, StringDict,
     SILENT, VERBOSE_DEBUG, logDebug, timeIt, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE
 } from "../src/util";
+import { Grammar, ReplaceGrammar } from "../src/grammars";
 
 export const DEFAULT_MAX_RECURSION = 4;
 

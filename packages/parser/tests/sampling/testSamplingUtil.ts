@@ -1,7 +1,12 @@
 import { assert } from "chai";
 import {
-    Grammar, Seq, Vocab
+    Grammar
 } from "../../src/grammars";
+
+import {
+    Seq, Vocab
+} from "../../src/grammarConvenience";
+
 import { Interpreter } from "../../src/interpreter";
 import { SILENT, StringDict } from "../../src/util";
 

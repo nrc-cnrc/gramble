@@ -1,8 +1,8 @@
 import { 
     Seq, Join, Hide, 
-    Rename, 
-    Collection, Embed, Lit 
-} from "../../src/grammars";
+    Rename, Collection, 
+    Embed, Lit 
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,

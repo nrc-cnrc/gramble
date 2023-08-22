@@ -1,14 +1,6 @@
 import { 
-    Count,
-    Grammar,
-    ReplaceBlock,
-    Lit,
-    OptionalReplace,
-    Replace,
-    ReplaceGrammar,
-    Seq,
-    Vocab,
-} from "../../src/grammars";
+    Count
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,

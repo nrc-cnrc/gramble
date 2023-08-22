@@ -10,7 +10,7 @@ import {
     Any,
     Epsilon,
     Null
-} from "../../src/grammars";
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,

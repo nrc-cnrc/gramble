@@ -4,9 +4,10 @@ import { CounterStack } from '../src/exprs';
 
 import {
     Count, Epsilon, 
-    Join, Null, Rep, Seq, Uni, Collection,
-    Embed, CollectionGrammar, Grammar, Not, Rename, Hide, Match
-} from '../src/grammars';
+    Join, Null, Rep, 
+    Seq, Uni, Not, 
+    Rename, Hide, Match
+} from '../src/grammarConvenience';
 
 import {
     testSuiteName, logTestSuite,
@@ -18,6 +19,7 @@ import { Msgs } from '../src/msgs';
 import { PassEnv } from '../src/passes';
 import { NAME_PASSES } from '../src/passes/allPasses';
 import { lengthRange } from '../src/passes/infinityProtection';
+import { Grammar } from '../src/grammars';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;

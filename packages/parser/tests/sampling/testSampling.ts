@@ -1,4 +1,10 @@
-import { CharSet, Count, Cursor, Dot, Not, Rep, Seq, Uni } from "../../src/grammars";
+import { 
+    CharSet, Count, 
+    Cursor, Dot, 
+    Not, Rep, 
+    Seq, Uni 
+} from "../../src/grammarConvenience";
+
 import { VERBOSE_DEBUG } from "../../src/util";
 import { t1, t2 } from "../testUtil";
 import { testSample, withVocab } from "./testSamplingUtil";

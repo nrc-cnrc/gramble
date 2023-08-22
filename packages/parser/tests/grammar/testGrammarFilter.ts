@@ -1,15 +1,14 @@
 
 import {
-    Any, Contains, Count, Ends, Epsilon,
-    Intersect, Match, Not, Null,
-    Rep, Seq, Short, Starts, Uni,
-} from "../../src/grammars";
+    Contains, Ends, Epsilon,
+    Intersect, Not, Null,
+    Seq, Starts, Uni,
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,
     testGrammar,
-    t1, t2, t3,
-    withVocab,
+    t1, t2
 } from "./testGrammarUtil";
 
 import {

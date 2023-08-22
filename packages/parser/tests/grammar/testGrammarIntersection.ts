@@ -1,6 +1,7 @@
 import {
-    Seq, Uni, Intersect, Epsilon, Grammar, Rep
-} from "../../src/grammars";
+    Seq, Uni, Intersect, 
+    Epsilon, Rep
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,

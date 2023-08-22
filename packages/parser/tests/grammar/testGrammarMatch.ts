@@ -3,7 +3,6 @@ import {
     CharSet,
     Count,
     Epsilon,
-    Grammar,
     Join, 
     Match,
     Null,
@@ -11,7 +10,7 @@ import {
     Rep, 
     Seq, 
     Uni,
-} from "../../src/grammars";
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,
@@ -23,6 +22,7 @@ import {
 import { 
     logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
+import { Grammar } from "../../src/grammars";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;

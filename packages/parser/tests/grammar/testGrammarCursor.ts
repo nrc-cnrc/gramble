@@ -6,7 +6,7 @@ import {
     Rename,
     Seq,
     Uni,
-} from "../../src/grammars";
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,

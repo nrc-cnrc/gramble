@@ -1,6 +1,8 @@
 import {
-    Any, Epsilon, Join, Seq, Uni, Vocab,
-} from "../../src/grammars";
+    Any, Epsilon, 
+    Join, Seq, 
+    Uni, Vocab,
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,
