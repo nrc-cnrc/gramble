@@ -83,7 +83,7 @@ export function sampleOutputsFromGrammar(
             console.log("");
             console.log(`[${this.test?.fullTitle()}]`);
             console.log(e);
-            assert.fail(e);
+            assert.fail(JSON.stringify(e));
         });
     }
     return outputs;

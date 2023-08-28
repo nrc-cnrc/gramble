@@ -4,7 +4,7 @@ import {
     NullExpr, 
     DerivStats,
     OutputExpr,
-    GenExpr
+    ForwardGen
 } from "./exprs";
 import { TapeNamespace } from "./tapes";
 import { 
@@ -42,8 +42,8 @@ export function* generate(
     const NEXTS_TO_TAKE = opt.random ? 1 : Infinity;
     const startingTime = Date.now();
 
-    let states: Expr[] = [expr];
-    let prev: Expr | undefined = undefined;
+    let states: (Expr|ForwardGen)[] = [expr];
+    let prev: Expr | ForwardGen | undefined = undefined;
 
     env.logDebug("");
     env.logDebugId("*** Generating for expr", expr);
@@ -51,8 +51,11 @@ export function* generate(
     while (prev = states.pop()) {
 
         env.logDebug("");
-        env.logDebugOutput("prevOutput is", prev);
-        env.logDebugId("prevExpr is", prev);
+
+        if (prev instanceof Expr) {
+            env.logDebugOutput("prevOutput is", prev);
+            env.logDebugId("prevExpr is", prev);
+        }
 
         if (prev instanceof EpsilonExpr || prev instanceof OutputExpr) {
             env.logDebugOutput("YIELD", prev);
@@ -65,19 +68,21 @@ export function* generate(
         if (prev instanceof NullExpr) {
             continue;
         }
-        
-        const forwardGen = prev.forward(env);
+
+        const forwardGen = prev instanceof Expr ?
+                                prev.forward(env) :
+                                prev;
         const [partialResults, remainder] = iterTake(forwardGen, NEXTS_TO_TAKE);
         if (partialResults.length == NEXTS_TO_TAKE) {
-            states.push(new GenExpr(remainder));
+            states.push(remainder);
         }
 
         for (const [cHandled, cNext] of partialResults) {
-            
             if (cNext instanceof NullExpr) continue;
             if (!(cNext instanceof EpsilonExpr || cNext instanceof OutputExpr) &&
                     !cHandled) {
-                throw new Error(`Unhandled forward: prev = ${prev.id}, next = ${cNext.id}`);
+                const prevID = prev instanceof Expr ? prev.id : "GEN";
+                throw new Error(`Unhandled forward: prev = ${prevID}, next = ${cNext.id}`);
             }
             env.logDebugOutput("->", cNext);
             states.push(cNext);

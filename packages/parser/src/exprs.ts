@@ -16,6 +16,7 @@ import {
     Tape, TapeNamespace, 
     renameTape
 } from "./tapes";
+import { Null } from "./grammarConvenience";
 
 export type Query = TokenExpr | DotExpr;
 
@@ -37,6 +38,8 @@ export class Deriv {
 }
 
 export type Derivs = Gen<Deriv>;
+
+export type ForwardGen = Gen<[boolean,Expr]>;
 
 export class ExprNamespace extends Namespace<Expr> {}
 
@@ -1310,31 +1313,6 @@ export class OutputExpr extends UnaryExpr {
         if (this.child instanceof EpsilonExpr) return this.child;
         return this;
     }
-}
-
-export class GenExpr extends Expr {
-
-    constructor(
-        public gen: Gen<[boolean, Expr]>
-    ) { 
-        super();
-    }
-
-    public get id(): string {
-        return `GEN`;
-    }
-
-    public delta(tapeName: string, env: DerivEnv): Expr {
-        throw new Error("Method not implemented.");
-    }
-    public deriv(query: Query, env: DerivEnv): Derivs {
-        throw new Error("Method not implemented.");
-    }
-    
-    public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
-        yield *this.gen;
-    }
-
 }
 
 export class CursorExpr extends UnaryExpr {

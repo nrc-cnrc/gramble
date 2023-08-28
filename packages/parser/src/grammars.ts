@@ -35,6 +35,7 @@ import {
     HIDDEN_PREFIX,
     listIntersection,
     listUnique,
+    logDebug,
     REPLACE_INPUT_TAPE,
     REPLACE_OUTPUT_TAPE,
     setUnion,
@@ -194,7 +195,6 @@ export abstract class AbstractGrammar extends Component {
         const result = priorities.filter(([t, priority]) => priority >= 0)
                          .sort((a, b) => b[1] - a[1])
                          .map(([a,_]) => a);
-
         
         return result;
     }

@@ -20,7 +20,7 @@ describe(`Sampling tests`, function() {
 
     testSample({
         desc: "1. Alternation",
-        grammar: Uni("hello", "hell", "world", "")
+        grammar: Uni("hello", "hell", "world", ""),
     });
 
     testSample({
