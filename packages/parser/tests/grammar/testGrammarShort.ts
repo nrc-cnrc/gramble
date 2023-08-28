@@ -7,7 +7,7 @@ import {
     Short,
     Uni,
     Count,
-} from "../../src/grammars";
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,

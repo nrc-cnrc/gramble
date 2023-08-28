@@ -1,13 +1,19 @@
 import { basename } from "path";
 import { assert, expect } from "chai";
 
-import { Grammar, Lit, OptionalReplace, Replace, ReplaceBlock, ReplaceGrammar } from "../src/grammars";
+import { 
+    Lit, 
+    OptionalReplace, Replace, 
+    ReplaceBlock 
+} from "../src/grammarConvenience";
+
 import { Interpreter } from "../src/interpreter";
 import { Tape } from "../src/tapes";
 import {
     HIDDEN_PREFIX, StringDict,
     SILENT, VERBOSE_DEBUG, logDebug, timeIt, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE
 } from "../src/util";
+import { Grammar, ReplaceGrammar } from "../src/grammars";
 
 export const DEFAULT_MAX_RECURSION = 4;
 
@@ -409,38 +415,4 @@ export function testParseMultiple(
             });
         }
     }, VERBOSE_TEST_L2, `testParseMultiple ${inputResultsPairs.length}`);
-}
-
-export function IOReplace(
-    fromStr: string, 
-    toStr: string, 
-    preStr: string = "",
-    postStr: string = "",
-): ReplaceGrammar {
-    const fromGrammar = Lit(REPLACE_INPUT_TAPE, fromStr);
-    const toGrammar = Lit(REPLACE_OUTPUT_TAPE, toStr);
-    const preGrammar = Lit(REPLACE_INPUT_TAPE, preStr);
-    const postGrammar = Lit(REPLACE_INPUT_TAPE, postStr);
-    return Replace(fromGrammar, toGrammar, preGrammar, postGrammar);
-}
-
-export function IOReplaceOptional(
-    fromStr: string, 
-    toStr: string, 
-    preStr: string = "",
-    postStr: string = "",
-): ReplaceGrammar {
-    const fromGrammar = Lit(REPLACE_INPUT_TAPE, fromStr);
-    const toGrammar = Lit(REPLACE_OUTPUT_TAPE, toStr);
-    const preGrammar = Lit(REPLACE_INPUT_TAPE, preStr);
-    const postGrammar = Lit(REPLACE_INPUT_TAPE, postStr);
-    return OptionalReplace(fromGrammar, toGrammar, preGrammar, postGrammar);
-}
-
-export function IOJoin(
-    inputStr: string,
-    ...rules: ReplaceGrammar[]
-): Grammar {
-    const inputGrammar = Lit("t1", inputStr);
-    return ReplaceBlock("t1", inputGrammar, rules);
 }

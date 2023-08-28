@@ -1,9 +1,10 @@
 import { 
-    Count, Grammar,
-    Rep, Seq, Epsilon, Uni, Any,
+    Count, Rep, 
+    Seq, Epsilon, 
+    Uni, Any,
     Join, Intersect,
     Match, Cursor,
-} from "../../src/grammars";
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,
@@ -19,6 +20,7 @@ import {
 import {
     SILENT, VERBOSE_DEBUG, VERBOSE_STATES
 } from "../../src/util";
+import { Grammar } from "../../src/grammars";
 
 function withCountGuard1(maxChars: number, grammar: Grammar) {
     return Count({t1: maxChars}, grammar, true, true);

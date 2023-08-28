@@ -1,6 +1,6 @@
 import {
     CharSet, Epsilon, Seq, Uni,
-} from "../../src/grammars";
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,

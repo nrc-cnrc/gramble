@@ -10,7 +10,7 @@ import {
     Seq,
     Uni,
     Vocab,
-} from "../../src/grammars";
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,

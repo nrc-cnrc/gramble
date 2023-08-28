@@ -2,6 +2,11 @@ import { assert } from "chai";
 import {
     Grammar
 } from "../../src/grammars";
+
+import {
+    Seq, Vocab
+} from "../../src/grammarConvenience";
+
 import { Interpreter } from "../../src/interpreter";
 import { SILENT, StringDict } from "../../src/util";
 
@@ -14,6 +19,10 @@ import {
 } from "../testUtil";
 
 
+export function withVocab(voc: StringDict | string, grammar: Grammar) {
+    if (typeof voc == "string") voc = {t1: voc};
+    return Seq(Vocab(voc), grammar);
+}
 
 export type SampleTest = {
     // required parameters

@@ -2,7 +2,7 @@ import {
     Any, Count, Dot,
     Join, Not, Rep,
     Seq, Short, Uni,
-} from "../../src/grammars";
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,

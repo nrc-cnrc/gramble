@@ -2,8 +2,13 @@ import { expect } from "chai";
 import { basename } from "path";
 
 import {
-    Grammar, Lit, Seq, Vocab,
+    Grammar
 } from "../../src/grammars";
+
+import {
+    Lit, Seq, Vocab,
+} from "../../src/grammarConvenience";
+
 import {
     // VERBOSE_TEST_L1,
     testSuiteName, verbose,

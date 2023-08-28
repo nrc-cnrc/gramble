@@ -2,7 +2,7 @@ import {
     Seq, Uni, 
     Join, Embed, 
     Collection 
-} from "../../src/grammars";
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,

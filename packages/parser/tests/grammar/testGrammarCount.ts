@@ -2,7 +2,7 @@ import { expect } from "chai";
 
 import {
     Count, Epsilon, Hide, Rep, Seq, Uni,
-} from "../../src/grammars";
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,
