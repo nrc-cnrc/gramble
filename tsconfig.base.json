@@ -8,8 +8,9 @@
     "composite": true,
     "baseUrl": "./packages",
     "paths": {
-      "@gramble/*": ["./*/src"]
+      "@gramble/*": [
+        "./*/src"
+      ]
     }
   }
 }
-

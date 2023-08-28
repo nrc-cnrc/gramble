@@ -4,17 +4,18 @@
   "description": "Typescript interpreter for the Gramble language",
   "private": true,
   "scripts": {
-    "build": "npm run bootstrap",
-    "bootstrap": "lerna bootstrap",
-    "bootstrap:hoist": "lerna bootstrap --hoist",
     "test": "lerna exec npm test"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "bin": {
     "gramble": "./packages/gramble-cli/run-locally"
   },
   "author": "Patrick Littell",
   "contributors": [
-    "Eddie Antonio Santos <Eddie.Santos@nrc-cnrc.gc.ca>"
+    "Patrick Littell <Patrick.Littell@nrc-cnrc.gc.ca>",
+    "Darlene Stewart <Darlene.Stewart@nrc-crnc.gc.ca>"
   ],
   "license": "MIT",
   "devDependencies": {
@@ -23,7 +24,7 @@
     "@types/mocha": "^10.0.0",
     "browserify": "^17.0.0",
     "chai": "^4.3.7",
-    "lerna": "^6.0.3",
+    "lerna": "^7.1.5",
     "mocha": "^10.1.0",
     "tinyify": "^3.1.0",
     "ts-node": "^10.9.1",

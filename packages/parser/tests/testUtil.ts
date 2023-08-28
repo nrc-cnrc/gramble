@@ -184,7 +184,7 @@ export function prepareInterpreter(
             console.log("");
             console.log(`[${this.test?.fullTitle()}]`);
             console.log(e);
-            assert.fail(e);
+            assert.fail(JSON.stringify(e));
         });
     }
     
@@ -221,7 +221,7 @@ export function generateOutputsFromGrammar(
             console.log("");
             console.log(`[${this.test?.fullTitle()}]`);
             console.log(e);
-            assert.fail(e);
+            assert.fail(JSON.stringify(e));
         });
     }
     return outputs;
@@ -262,7 +262,7 @@ export function testHasTapes(
         interpreter.resolveName(symbolName);
     } catch(e) {
         it(`symbol "${symbolName} should have tapes`, function() {
-            assert.fail(e);
+            assert.fail(JSON.stringify(e));
         });
         return;
     }
@@ -310,7 +310,7 @@ export function testHasVocab(
             tape = interpreter.tapeNS.get(tapeName);
         } catch (e) {
             it(`should have tape ${tapeName}`, function() {
-                assert.fail(e);
+                assert.fail(JSON.stringify(e));
             });
             continue;
         }
@@ -407,7 +407,7 @@ export function testParseMultiple(
                         console.log("");
                         console.log(`[${this.test?.fullTitle()}]`);
                         console.log(e);
-                        assert.fail(e);
+                        assert.fail(JSON.stringify(e));
                     });
                 }
                 testNumOutputs(outputs, expectedResults.length);
