@@ -1,5 +1,5 @@
 import { 
-    Count, OptionalReplace, Replace, ReplaceBlock
+    Count, Epsilon, OptionalReplace, Rep, Replace, ReplaceBlock, Uni
 } from "../../src/grammarConvenience";
 
 import {
@@ -14,9 +14,11 @@ import {
 } from '../testUtil';
 
 import {
+    DUMMY_REGEX_TAPE,
     REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, 
     SILENT, VERBOSE_DEBUG, VERBOSE_STATES
 } from "../../src/util";
+import { EpsilonGrammar } from "../../src/grammars";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -570,6 +572,86 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: "abC"},
             {t1: "ab"}
         ],
+    });
+
+    testGrammar({
+        desc: '15. Replacement of epsilon ⨝ e -> a',
+        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+                    Epsilon(), Replace("e","a")),
+        results: [
+            {}
+        ]
+    });
+
+    testGrammar({
+        desc: '16a. Replacement of alternation: hello|hell ⨝ e -> a',
+        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+                    Uni("hello","hell"), Replace("e","a")),
+        results: [
+            {"$T":"hall"},
+            {"$T":"hallo"}
+        ]
+    });
+    
+    testGrammar({
+        desc: '16b. Replacement of alternation: h|hi ⨝ e -> a',
+        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+                    Uni("h","hi"), Replace("e","a")),
+        results: [
+            {"$T":"h"},
+            {"$T":"hi"}
+        ]
+    });
+
+    testGrammar({
+        desc: '16c. Replacement of alternation: hello|hell|eps ⨝ e -> a',
+        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+                    Uni("hello","hell", Epsilon()), Replace("e","a")),
+        results: [
+            {"$T":"hall"},
+            {"$T":"hallo"},
+            {}
+        ]
+    });
+
+    testGrammar({
+        desc: '17a. Replacement of repetition: hello* ⨝ e -> a',
+        grammar: Count({[DUMMY_REGEX_TAPE]:10}, 
+                    ReplaceBlock(DUMMY_REGEX_TAPE, 
+                        Rep("hello"), Replace("e","a"))),
+        results: [
+            {},
+            {"$T":"hallo"},
+            {"$T":"hallohallo"}
+        ]
+    });
+
+    testGrammar({
+        desc: '17b. Replacement of repetition: (hello|hi)* ⨝ e -> a',
+        grammar: Count({[DUMMY_REGEX_TAPE]:6}, 
+                    ReplaceBlock(DUMMY_REGEX_TAPE, 
+                        Rep(Uni("hello", "hi")), Replace("e","a"))),
+        results: [
+            {},
+            {"$T":"hi"},
+            {"$T":"hihihi"},
+            {"$T":"hihi"},
+            {"$T":"hallo"}
+        ]
+    });
+    
+    testGrammar({
+        desc: '17c. Replacement of repetition: (hello|hi|eps)* ⨝ e -> a',
+        grammar: Count({[DUMMY_REGEX_TAPE]:6}, 
+                    ReplaceBlock(DUMMY_REGEX_TAPE, 
+                        Rep(Uni("hello", "hi", Epsilon())), Replace("e","a"))),
+        results: [
+            {},
+            {"$T":"hi"},
+            {"$T":"hihihi"},
+            {"$T":"hihi"},
+            {"$T":"hallo"}
+        ]
     });
 
 });

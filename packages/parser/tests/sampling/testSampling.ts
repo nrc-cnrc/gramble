@@ -1,6 +1,7 @@
 import { 
     CharSet, Count, 
     Cursor, Dot, 
+    Epsilon, 
     Not, Rep, 
     Replace, 
     ReplaceBlock, 
@@ -94,6 +95,51 @@ describe(`Sampling tests`, function() {
         desc: '8c. Replacement: h|hi ⨝ e -> a',
         grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
                     Uni("h","hi"), Replace("e","a")),
+    });
+    
+    testSample({
+        desc: '9. Replacement of epsilon ⨝ e -> a',
+        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+                    Epsilon(), Replace("e","a"))
+    });
+
+    testSample({
+        desc: '10a. Replacement of alternation: hello|hell ⨝ e -> a',
+        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+                    Uni("hello","hell"), Replace("e","a")),
+    });
+    
+    testSample({
+        desc: '10b. Replacement of alternation: h|hi ⨝ e -> a',
+        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+                    Uni("h","hi"), Replace("e","a")),
+    });
+
+    testSample({
+        desc: '10c. Replacement of alternation: hello|hell|eps ⨝ e -> a',
+        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+                    Uni("hello","hell", Epsilon()), Replace("e","a")),
+    });
+
+    testSample({
+        desc: '11a. Replacement of repetition: hello* ⨝ e -> a',
+        grammar: Count({[DUMMY_REGEX_TAPE]:10}, 
+                    ReplaceBlock(DUMMY_REGEX_TAPE, 
+                        Rep("hello"), Replace("e","a"))),
+    });
+
+    testSample({
+        desc: '11b. Replacement of repetition: (hello|hi)* ⨝ e -> a',
+        grammar: Count({[DUMMY_REGEX_TAPE]:6}, 
+                    ReplaceBlock(DUMMY_REGEX_TAPE, 
+                        Rep(Uni("hello", "hi")), Replace("e","a"))),
+    });
+    
+    testSample({
+        desc: '11c. Replacement of repetition: (hello|hi|eps)* ⨝ e -> a',
+        grammar: Count({[DUMMY_REGEX_TAPE]:6}, 
+                    ReplaceBlock(DUMMY_REGEX_TAPE, 
+                        Rep(Uni("hello", "hi", Epsilon())), Replace("e","a"))),
     });
 
 });
