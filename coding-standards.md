@@ -27,13 +27,11 @@ Other things to keep in mind:
 
     2. When constructing grammars for tests, there's a set of convenience functions Seq, Uni, Rep, etc. for that.  These let you not worry about how the grammars relate to cells and such.  But don't use these when constructing grammars from TSTs (precisely because that's when it's important to relate grammars to cells and such).
 
-    3. Try to express changes to the core as GrammarPasses, rather than (say) adding a new function to each Grammar/Expr.  Passes represent stateless tree-to-tree transformations of the grammar, and have proven easier to maintain and less buggy.  They use the Visitor pattern [https://en.wikipedia.org/wiki/Visitor_pattern].  
-    
-    It's easiest to inherit from IdentityTransform, which does a plain clone of the tree, and only implement transformations to the nodes you care about.  (See any of the other transforms for an example.)  Keep in mind that any internal state is lost every time you transform a tree -- particularly, _tapes.  (This is why most transforms run .calculateTapes() right before they run, it's to make sure the tree has the correct tape information that it needs to make whatever decisions it makes.)
+    3. Try to express changes to the core as GrammarPasses, rather than (say) adding a new function to each Grammar/Expr.  Passes represent stateless tree-to-tree transformations of the grammar, and have proven easier to maintain and less buggy.
 
 Things we don't have standards for... maybe we should, but currently we're all over the place.
 
--- We rather variably use interfaces, inheritance, union types, and generics, depending on the circumstance.  (Btw, Google Apps Script (GAS), the dialect of JavaScript used inside GSuite), does not seem to support inheritance between classes defined in different files.  So some places where you might be like "This would be easier with inheritance", that's probably the historical reason why we didn't.)
+-- We rather variably use interfaces, inheritance, union types, and generics, depending on the circumstance.  (Btw, Google Apps Script (GAS), the dialect of JavaScript used inside GSuite, does not seem to support inheritance between classes defined in different files.  So some places where you might be like "This would be easier with inheritance", that's probably the historical reason why we didn't.)
 
 -- We sometimes use objects (e.g. `{[key:string]: string}`) and sometimes maps (e.g. `Map<string, string>`).
 

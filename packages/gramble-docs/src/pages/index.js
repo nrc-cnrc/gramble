@@ -9,7 +9,7 @@ import styles from './styles.module.css';
 const features = [
   {
     title: <>Easy to read and write</>,
-    imageUrl: 'img/undraw_docusaurus_mountain.svg',
+    //imageUrl: 'img/undraw_docusaurus_mountain.svg',
     description: (
       <>
         Gramble lets non-programmers develop rule-based linguistic programs,
@@ -19,7 +19,7 @@ const features = [
   },
   {
     title: <>Get the whole team involved</>,
-    imageUrl: 'img/undraw_docusaurus_tree.svg',
+    //imageUrl: 'img/undraw_docusaurus_tree.svg',
     description: (
       <>
         Gramble + Google Sheets means easy online collaboration. Everyone can edit the same
@@ -29,7 +29,7 @@ const features = [
   },
   {
     title: <>Easy to embed in your site</>,
-    imageUrl: 'img/undraw_docusaurus_react.svg',
+    //imageUrl: 'img/undraw_docusaurus_react.svg',
     description: (
       <>
         Gramble is plain JavaScript, so it can easily embed in a webpage.  Node, React, and Apps Script

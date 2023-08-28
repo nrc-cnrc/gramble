@@ -1,6 +1,7 @@
 import {
-    Embed, Collection, Grammar, Seq, Uni, Join, Epsilon, Null,
-} from "../../src/grammars";
+    Embed, Collection, 
+    Seq, Uni, Join, Epsilon, Null,
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,
@@ -11,6 +12,7 @@ import {
 import { 
     logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
+import { Grammar } from "../../src/grammars";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;

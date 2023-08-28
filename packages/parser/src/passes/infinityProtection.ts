@@ -1,5 +1,6 @@
 import { PassEnv } from "../passes";
-import { AlternationGrammar, Count, CountGrammar, CounterStack, 
+import { AlternationGrammar, 
+    CountGrammar, CounterStack, 
     EmbedGrammar, 
     Grammar, HideGrammar, 
     IntersectionGrammar, 
@@ -13,6 +14,7 @@ import { AlternationGrammar, Count, CountGrammar, CounterStack,
 } from "../grammars";
 import { exhaustive } from "../components";
 import { renameTape } from "../tapes";
+import { Count } from "../grammarConvenience";
 
 export function infinityProtection(
     grammar: Grammar,

@@ -1,10 +1,15 @@
 import { 
     Grammar, 
-    CollectionGrammar, Query, 
+    CollectionGrammar,
     LocatorGrammar,
-    Cursor,
     JoinGrammar
 } from "./grammars";
+
+import { 
+    Query,
+    Cursor,
+} from "./grammarConvenience";
+
 import { 
     DevEnvironment, Gen, iterTake, 
     msToTime, StringDict, timeIt, 

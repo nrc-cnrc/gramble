@@ -1,5 +1,12 @@
 import { 
-    AlternationGrammar, DotGrammar, EmbedGrammar, EpsilonGrammar, Grammar, GrammarResult, Lit, LiteralGrammar, NegationGrammar, RepeatGrammar, RuleContextGrammar, SequenceGrammar } from "./grammars";
+    AlternationGrammar, DotGrammar, 
+    EmbedGrammar, EpsilonGrammar, 
+    Grammar, GrammarResult, 
+    LiteralGrammar, NegationGrammar, 
+    RepeatGrammar, RuleContextGrammar, 
+    SequenceGrammar 
+} from "./grammars";
+
 import { ParseClass } from "./headers";
 import { 
     MPDelay, 
@@ -13,7 +20,7 @@ import {
     MPEmpty,
     MPUnreservedChar
 } from "./miniParser";
-import { Err, Result, resultList } from "./msgs";
+
 import { 
     isValidSymbolName,
     RESERVED_FOR_CONTEXT, 

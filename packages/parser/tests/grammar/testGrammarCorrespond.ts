@@ -1,8 +1,10 @@
 
 
 import {
-    CharSet, Correspond, Cursor, Epsilon, Seq, Uni,
-} from "../../src/grammars";
+    Correspond, 
+    Cursor, 
+    Seq, Uni,
+} from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,
