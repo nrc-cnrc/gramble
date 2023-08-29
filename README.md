@@ -17,36 +17,19 @@ For maintainers
 ---------------
 
 This repo is managed using [Lerna]. We use Lerna to manage multiple,
-interdependent packages. The biggest change between using Lerna and
-using npm is **you can no longer run `npm install` within packages**.
-Instead, always run `npm run bootstrap` from the root directory of the
-repository.
+interdependent packages.
 
 [Lerna]: https://lerna.js.org/
 
-### Installing dependencies
+### Installing
 
-First, make sure Lerna is installed:
+First, make sure Lerna is installed, then:
 
     npm install
-
-Then,
-
-    npm run bootstrap
-
-### Building
-
-The TypeScript code must be compiled:
-
-    npm run build
 
 ### Testing
 
     npm test
-
-### Updating dependencies
-
-    npm run bootstrap
 
 ### Adding new dependencies
 
