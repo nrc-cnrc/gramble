@@ -4,6 +4,7 @@
   "description": "Typescript interpreter for the Gramble language",
   "private": true,
   "scripts": {
+    "build": "lerna run build",
     "test": "lerna exec npm test"
   },
   "workspaces": [

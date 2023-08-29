@@ -21,10 +21,15 @@ interdependent packages.
 
 [Lerna]: https://lerna.js.org/
 
-### Installing
+### Building and installing
 
-First, make sure Lerna is installed, then:
+First, make sure Lerna is installed:
 
+    npm install lerna -g
+
+Then:
+
+    npm run build
     npm install
 
 ### Testing
