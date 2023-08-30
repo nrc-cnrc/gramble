@@ -424,7 +424,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hhh', t2:'i'}, {t1: 'hhh', t2:'ii'}, {t1: 'hhh', t2:'iii'},
             {t2: 'i'},           {t2: 'ii'},           {t2: 'iii'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -436,7 +435,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'h', t2:'i'},
             {t2: 'i'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -451,7 +449,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hhhh'},
             {t1: 'hhhhh'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -606,7 +603,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'bababababa'},
             {t1: 'babababababa'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -621,7 +617,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'bababababa'},
             {t1: 'babababababa'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -670,7 +665,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'bababababa'},
             {t1: 'babababababa'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -755,7 +749,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'aa', t2: 'bb'},
             {t1: 'aaa', t2: 'bb'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -776,7 +769,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'aa', t2: 'bb'},
             {t1: 'aaa', t2: 'bb'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -865,7 +857,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'aa', t2: 'bb'},
             {t1: 'aaa', t2: 'bb'},
         ],
-        allowDuplicateOutputs: true
+        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -883,7 +875,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'aa', t2: 'bb'},
             {t1: 'aaa', t2: 'bb'},
         ],
-        allowDuplicateOutputs: true
+        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -906,7 +898,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t2: 'b'},
             {t2: 'bb'},
         ],
-        allowDuplicateOutputs: true
+        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -1512,7 +1504,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hx', t2: 'ehe'},
             {t1: 'hx', t2: 'eeh'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     // skip
@@ -1526,7 +1517,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'x', t2: 'ee'},
         ],
-        allowDuplicateOutputs: true,
         skipGeneration: true,
     });
 
@@ -1607,7 +1597,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'x', t2: 'ee'},
         ],
-        allowDuplicateOutputs: true,
         skipGeneration: true,
     });
 
@@ -2621,7 +2610,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: 'eeee'},
         ],
-        allowDuplicateOutputs: true,
         skipGeneration: true,
     });
 
@@ -2636,7 +2624,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eeheeh'},
         ],
-        allowDuplicateOutputs: true,
         skipGeneration: true,
     });
 
@@ -2650,7 +2637,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eheehe'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -2663,7 +2649,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: 'eeee'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     // skip
@@ -2677,7 +2662,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eeheeh'},
         ],
-        allowDuplicateOutputs: true,
         skipGeneration: true,
     });
 
@@ -2692,7 +2676,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eheehe'},
         ],
-        allowDuplicateOutputs: true,
         skipGeneration: true,
     });
 
@@ -2707,7 +2690,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: 'eeee'},
         ],
-        allowDuplicateOutputs: true,
         skipGeneration: true,
     });
 
@@ -2722,7 +2704,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eeheeh'},
         ],
-        allowDuplicateOutputs: true,
         skipGeneration: true,
     });
 
@@ -2736,7 +2717,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eheehe'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -2749,7 +2729,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: 'eeee'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     // skip
@@ -2763,7 +2742,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eeheeh'},
         ],
-        allowDuplicateOutputs: true,
         skipGeneration: true,
     });
 
@@ -2778,7 +2756,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eheehe'},
         ],
-        allowDuplicateOutputs: true,
         skipGeneration: true,
     });
 
@@ -2822,7 +2799,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hhh', t2: 'eheheeh'}, {t1: 'hhh', t2: 'ehehehe'},
             {t1: 'hhhh', t2: 'eheheheh'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     function t2xNullableMatchGrammar(): Grammar {
@@ -2849,7 +2825,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hhh', t2: 'ehehxxh'}, {t1: 'hhh', t2: 'ehehxhx'},
             {t1: 'hhhh', t2: 'ehehxhxh'},
         ],
-        allowDuplicateOutputs: true,
     });
 
 });
