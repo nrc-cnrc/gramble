@@ -396,13 +396,6 @@ export function *iterConcat<T>(gs: Gen<T>[]): Gen<T> {
     }
 }
 
-export function *iterRandom<T>(gs: Gen<T>[]): Gen<T> {
-    shuffleArray(gs);
-    for (const g of gs) {
-        yield *g;
-    }
-}
-
 export function iterTake<T>(gen: Gen<T>, n: number): [T[], Gen<T>] {
     const results = [];
 
