@@ -2442,7 +2442,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: "eehh", t2: "eeeh"}, {t1: "eehh", t2: "eehe"},
             {t1: "eehe", t2: "eeee"}, {t1: "eeeh", t2: "eeee"},
         ],
-        allowDuplicateOutputs: true
+        allowDuplicateOutputs: true,
     });
 
     testGrammar({

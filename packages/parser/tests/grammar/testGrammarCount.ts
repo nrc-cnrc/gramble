@@ -313,7 +313,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hhhh'},
             {t1: 'hhhhh'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     describe('10b. Count_t1:3Err (ε|t1:h){0,5}', function() {

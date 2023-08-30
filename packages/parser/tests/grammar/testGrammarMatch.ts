@@ -1256,7 +1256,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'h', t2: 'ehee'}, {t1: 'h', t2: 'eehe'},
             {t1: 'h', t2: 'eeeh'},
         ],
-        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -1311,7 +1310,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'h', t2: 'eeheee'}, {t1: 'h', t2: 'eeehee'},
             {t1: 'h', t2: 'eeeehe'}, {t1: 'h', t2: 'eeeeeh'},
         ],
-        allowDuplicateOutputs: true,
     });
 
 });

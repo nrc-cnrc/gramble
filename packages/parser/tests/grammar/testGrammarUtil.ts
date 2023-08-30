@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import { basename } from "path";
 
 import {
     Grammar
@@ -10,46 +9,18 @@ import {
 } from "../../src/grammarConvenience";
 
 import {
-    // VERBOSE_TEST_L1,
+    DEFAULT_MAX_RECURSION,
     testSuiteName, verbose,
     testHasTapes, testHasVocab, testGenerate
 } from '../testUtil';
+
 import {
-    StringDict, SILENT, VERBOSE_DEBUG, logDebug
+    StringDict, SILENT
 } from "../../src/util";
-
-export const DEFAULT_MAX_RECURSION = 4;
-
-// Some tests ultimately call testNumOutputs with warnOnly set to 
-// ALLOW_DUPLICATE_OUTPUTS.
-// Change the value here to 'false' to make those tests generate errors
-// for more than the expected number of outputs.
-export const ALLOW_DUPLICATE_OUTPUTS: boolean = true;
-
-// // Permit global control over verbose output in tests.
-// // To limit verbose output to a specific test file, set VERBOSE_TEST_L2
-// // to false here, then re-define VERBOSE in the test file.
-// // VERBOSE_TEST_L1 is used for verbose output of test filenames.
-// // VERBOSE_TEST_L2 is used for other verbose output in tests.
-// export const VERBOSE_TEST_L1: boolean = true;
-// export const VERBOSE_TEST_L2: boolean = false;
-
-// export function verbose(vb: boolean, ...msgs: string[]) {
-//     if (!vb)
-//         return;
-//     logDebug(vb ? VERBOSE_DEBUG : SILENT, ...msgs);
-// }
 
 export function grammarTestSuiteName(mod: NodeModule): string {
     return `Grammar ${testSuiteName(mod)}`
 }
-
-// export function logTestSuite(suiteName: string, vb: boolean = VERBOSE_TEST_L1): void {
-//     if (!vb)
-//         return;
-//     const date_str: string = (new Date()).toUTCString();
-//     verbose(vb, "", `--- ${suiteName} [${date_str}] ---`);
-// }
 
 export const t1 = (s: string) => Lit("t1", s);
 export const t2 = (s: string) => Lit("t2", s);
@@ -142,44 +113,17 @@ function testDefault(params: Partial<GrammarTest>): () => void {
     };
 }
 
-export function testGrammar({
-    desc,
-    test = testDefault,
-    msg,
-    grammar,
-    tapes,
-    vocab,
-    results,
-    verbose,
-    symbol,
-    restriction,
-    maxRecursion,
-    stripHidden,
-    allowDuplicateOutputs,
-    skipGeneration,
-    shortDesc,
-}: Partial<GrammarTest>): void {
-    if (desc === undefined){
+export function testGrammar(params: Partial<GrammarTest>): void {
+    if (params['desc'] === undefined){
         it(`desc must be defined`, function() {
-            expect(desc).to.not.be.undefined;
+            expect(params['desc']).to.not.be.undefined;
         });
         return;
     }
 
-    describe(desc, test({
-        desc: desc,
-        grammar: grammar,
-        tapes: tapes,
-        vocab: vocab,
-        results: results,
-        msg: msg,
-        verbose: verbose,
-        symbol: symbol,
-        restriction: restriction,
-        maxRecursion: maxRecursion,
-        stripHidden: stripHidden,
-        allowDuplicateOutputs: allowDuplicateOutputs,
-        skipGeneration: skipGeneration,
-        shortDesc: shortDesc,
-    }));
+    const test = params['test'] === undefined ?
+                 testDefault : params['test'];
+    params['test'] = undefined;
+
+    describe(params['desc'], test(params));
 }

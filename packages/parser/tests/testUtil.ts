@@ -1,30 +1,19 @@
 import { basename } from "path";
 import { assert, expect } from "chai";
 
-import { 
-    Lit, 
-    OptionalReplace, Replace, 
-    ReplaceBlock 
-} from "../src/grammarConvenience";
-
+import { Lit } from "../src/grammarConvenience";
 import { Interpreter } from "../src/interpreter";
+import { Grammar } from "../src/grammars";
 import { Tape } from "../src/tapes";
 import {
     HIDDEN_PREFIX, StringDict,
-    SILENT, VERBOSE_DEBUG, logDebug, timeIt, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE
+    SILENT, VERBOSE_DEBUG, logDebug, timeIt,
 } from "../src/util";
-import { Grammar, ReplaceGrammar } from "../src/grammars";
 
 export const DEFAULT_MAX_RECURSION = 4;
 
 // DEBUG_MAX_RECURSION is a forced upper bound for maxRecursion.
 export const DEBUG_MAX_RECURSION: number = 4;      // 4
-
-// Some tests ultimately call testNumOutputs with warnOnly set to 
-// WARN_ONLY_FOR_TOO_MANY_OUTPUTS.
-// Change the value here to 'false' to make those tests generate errors
-// for more than the expected number of outputs.
-export const WARN_ONLY_FOR_TOO_MANY_OUTPUTS: boolean = true;
 
 // Permit global control over verbose output in tests.
 // To limit verbose output to a specific test file, set VERBOSE_TEST_L2
@@ -70,7 +59,6 @@ export function testNumOutputs(
     warningOnly: boolean = false,
     symbolName: string = "",
 ): void {
-    const date_str: string = (new Date()).toUTCString();
     if (symbolName !== "") symbolName = symbolName + " ";
     const testName: string = `${symbolName}should have ${expectedNum} result(s)`;
     it(`${testName}`, function() {
@@ -125,7 +113,6 @@ export function testMatchOutputs(
 
     let incr: number = Math.max(expected_outputs.length, outputs.length, 1);
     if (incr > 2500) {
-        // incr = Math.ceil(62500 / incr) * 100;
         incr = 2500;
     }
 
@@ -140,11 +127,9 @@ export function testMatchOutputs(
         let end_outputs: number = end_expected;
         if (end_expected == expected_outputs.length)
             end_outputs = Math.min(outputs.length, start + incr);
-        let expected_outputs_str: string;
-        if (end_expected - start < 20)
-            expected_outputs_str = JSON.stringify(expected_outputs.slice(start, end_expected));
-        else
-            expected_outputs_str = JSON.stringify(expected_outputs.slice(start, start+20)) + "...";
+        const expected_outputs_str = 
+                    JSON.stringify(expected_outputs.slice(start, Math.min(end_expected, start+20))) + 
+                    (end_expected > start+20 ? "..." : "");
         if (symbolName !== "") symbolName = symbolName + " ";
         const testName = `${symbolName}should match items ${start}-${end_expected-1}: ` +
                          `${expected_outputs_str}`;
@@ -163,7 +148,6 @@ export function testMatchOutputs(
     });
 }
 
-
 export function prepareInterpreter(
     grammar: Grammar | Interpreter,
     verbose: number = SILENT,
@@ -176,6 +160,7 @@ export function prepareInterpreter(
     
     // In case there are any tests, we want to run them so their errors accumulate
     interpreter.runTests();
+
     try {
         interpreter.resolveName(symbolName);
     } catch(e) {
@@ -192,7 +177,6 @@ export function prepareInterpreter(
     interpreter.runTests();
 
     return interpreter;
-
 }
 
 export function generateOutputsFromGrammar(
@@ -399,7 +383,8 @@ export function testParseMultiple(
                     //grammar = grammar.compile(2, maxRecursion);
                     const interpreter = Interpreter.fromGrammar(grammar, verbose);
                     if (Object.keys(inputs).length == 0) {
-                        throw new Error(`no input in pair ${JSON.stringify(inputs)}, ${JSON.stringify(expectedResults)}`);
+                        throw new Error("no input in pair " +
+                            `${JSON.stringify(inputs)}, ${JSON.stringify(expectedResults)}`);
                     }
                     outputs = [...interpreter.generate("", inputs, Infinity, maxRecursion)];
                 } catch (e) {
