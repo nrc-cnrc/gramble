@@ -96,11 +96,11 @@ export function ReplaceBlock(
 }
 
 export function Correspond(
-    tape1: string,
-    tape2: string,
-    child: Grammar | string
+    child: Grammar | string,
+    tape1: string = REPLACE_INPUT_TAPE,
+    tape2: string = REPLACE_OUTPUT_TAPE,
 ): CorrespondGrammar {
-    child = makeGrammar(child);
+    child = makeGrammar(child, REPLACE_INPUT_TAPE);
     return new CorrespondGrammar(child, tape1, tape2);
 }
 

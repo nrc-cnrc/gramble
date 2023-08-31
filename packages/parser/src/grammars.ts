@@ -1638,8 +1638,8 @@ export class CorrespondGrammar extends UnaryGrammar {
     
     constructor(
         child: Grammar,
-        public tape1: string,
-        public tape2: string
+        public tape1: string = REPLACE_INPUT_TAPE,
+        public tape2: string = REPLACE_OUTPUT_TAPE
     ) {
         super(child);
     }
@@ -1763,9 +1763,9 @@ export class ReplaceGrammar extends AbstractGrammar {
         const preContextExpr: Expr = this.preContext.constructExpr(tapeNS);
         const postContextExpr: Expr = this.postContext.constructExpr(tapeNS);
         let states: Expr[] = [
-            constructMatch(preContextExpr, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE),
-            constructCorrespond(constructPrecede(fromExpr, toExpr), REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE),
-            constructMatch(postContextExpr, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE)
+            constructMatch(preContextExpr),
+            constructCorrespond(constructPrecede(fromExpr, toExpr)),
+            constructMatch(postContextExpr)
         ];
 
         const that = this;
@@ -1781,14 +1781,13 @@ export class ReplaceGrammar extends AbstractGrammar {
             if( that.optional ||
                     (that.beginsWith && !replaceNone) ||
                     (that.endsWith && !replaceNone)) {
-                return constructMatch(constructDotStar(REPLACE_INPUT_TAPE),
-                                    REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE)
+                return constructMatch(constructDotStar(REPLACE_INPUT_TAPE));
             }
             const fromInstance: Expr[] = [preContextExpr, fromExpr, postContextExpr];
 
             let notExpr: Expr = constructNotContains(REPLACE_INPUT_TAPE, fromInstance,
                 that.beginsWith && replaceNone, that.endsWith && replaceNone);
-            return constructMatch(notExpr, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE);
+            return constructMatch(notExpr);
         }
         
         if (!this.endsWith)
@@ -1815,8 +1814,7 @@ export class ReplaceGrammar extends AbstractGrammar {
                 let negatedOtherContext: Expr = 
                     constructNegation(otherContextExpr, new Set(this.otherContext.tapes));
                 const matchDotStar: Expr =
-                    constructMatch(constructDotStar(REPLACE_INPUT_TAPE),
-                                       REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE)
+                    constructMatch(constructDotStar(REPLACE_INPUT_TAPE));
                 copyExpr = constructAlternation(constructSequence(matchAnythingElse(true), otherContextExpr),
                                                 constructSequence(matchDotStar, negatedOtherContext));
             }
