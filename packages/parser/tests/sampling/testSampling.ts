@@ -5,12 +5,12 @@ import {
     Not, Rep, 
     Replace, 
     ReplaceBlock, 
-    Seq, Uni 
+    Seq, Uni, Vocab 
 } from "../../src/grammarConvenience";
 
 import { DUMMY_REGEX_TAPE, VERBOSE_DEBUG } from "../../src/util";
 import { t1, t2 } from "../testUtil";
-import { testSample, withVocab } from "./testSamplingUtil";
+import { testSample } from "./testSamplingUtil";
 
 function splitUni(tapeName: string, text: string) {
     return CharSet(tapeName, text.split(""))
@@ -61,7 +61,7 @@ describe(`Sampling tests`, function() {
     
     testSample({
         desc: '6. Dot',
-        grammar: withVocab("abc", Dot("t1"))
+        grammar: Vocab("abc", Dot("t1"))
     });
 
     testSample({
@@ -71,7 +71,7 @@ describe(`Sampling tests`, function() {
     
     testSample({
         desc: '7. Negation',
-        grammar: Count({t1: 2}, withVocab("ab", Not(t1("bb")))),
+        grammar: Count({t1: 2}, Vocab("ab", Not(t1("bb")))),
     });
 
     testSample({

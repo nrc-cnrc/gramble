@@ -5,7 +5,7 @@ import {
 } from "../../src/grammars";
 
 import {
-    Lit, Seq, Vocab,
+    Lit
 } from "../../src/grammarConvenience";
 
 import {
@@ -27,11 +27,6 @@ export const t2 = (s: string) => Lit("t2", s);
 export const t3 = (s: string) => Lit("t3", s);
 export const t4 = (s: string) => Lit("t4", s);
 export const t5 = (s: string) => Lit("t5", s);
-
-export function withVocab(voc: StringDict | string, grammar: Grammar) {
-    if (typeof voc == "string") voc = {t1: voc};
-    return Seq(Vocab(voc), grammar);
-}
 
 export interface GrammarTestAux {
     grammar: Grammar,

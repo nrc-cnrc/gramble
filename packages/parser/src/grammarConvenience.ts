@@ -291,7 +291,19 @@ export function Hide(
     return new HideGrammar(child, tape, toTape);
 }
 
-export function Vocab(arg1: string | StringDict, arg2: string = ""): Grammar {
+export function Vocab(
+    voc: StringDict | string, 
+    child: Grammar | string
+): Grammar {
+    child = makeGrammar(child);
+    if (typeof voc == "string") voc = {t1: voc};
+    return Seq(VocabAux(voc), child);
+}
+
+function VocabAux(
+    arg1: string | StringDict, 
+    arg2: string = ""
+): Grammar {
     if (typeof arg1 == 'string') {
         return Rep(Lit(arg1, arg2), 0, 0)
     } else {

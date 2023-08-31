@@ -7,13 +7,13 @@ import {
     Short,
     Uni,
     Count,
+    Vocab
 } from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,
     testGrammar,
     t1,
-    withVocab,
 } from "./testGrammarUtil";
 
 import { 
@@ -83,7 +83,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '6. Short(t1:.+) (vocab t1:hi)',
-        grammar: withVocab({t1:'hi'},
+        grammar: Vocab({t1:'hi'},
                      Short(Rep(Dot("t1"), 1, Infinity))),
         tapes: ['t1'],
         vocab: {t1:2},
@@ -115,7 +115,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         testGrammar({
             desc: '8. Short(t1:.*i) (vocab t1:hi)',
             grammar: Count({t1:4},
-        		         withVocab({t1:'hi'},
+        		         Vocab({t1:'hi'},
                  	         Short(Seq(Rep(Dot("t1")), t1("i"))))),
             tapes: ['t1'],
             vocab: {t1:2},
@@ -131,7 +131,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             desc: '9. Contains at least one i: ' +
                   'Short(t1:.*i) + t1.* (vocab t1:hi)',
             grammar: Count({t1:4},
-        		         withVocab({t1:'hi'},
+        		         Vocab({t1:'hi'},
                  	         Seq(Short(Seq(Rep(Dot("t1")), t1("i"))),
                                  Rep(Dot("t1"))))),
             tapes: ['t1'],
@@ -158,7 +158,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             desc: '10. Does not contain any i: ' +
                   '~(Short(t1:.*i) + t1:.*) (vocab t1:hi)',
             grammar: Count({t1:4},
-        		         withVocab({t1:'hi'},
+        		         Vocab({t1:'hi'},
                  	         Not(Seq(Short(Seq(Rep(Dot("t1")), t1("i"))),
                                      Rep(Dot("t1")))))),
             tapes: ['t1'],
@@ -175,7 +175,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         testGrammar({
             desc: '11a. t1:abcdef ⨝ not-contain(t1:i): ' +
                   't1:abcdef ⨝ ~(Short(t1:.*i) + t1:.*) (vocab t1:hi)',
-            grammar: withVocab({t1:'hi'},
+            grammar: Vocab({t1:'hi'},
                          Join(t1("abcdef"),
                               Not(Seq(Short(Seq(Rep(Dot("t1")), t1("i"))),
                                       Rep(Dot("t1")))))),
@@ -189,7 +189,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         testGrammar({
             desc: '11b. not-contain(t1:i) ⨝ t1:abcdef: ' +
                   '~(Short(t1:.*i) + t1:.*) ⨝ t1:abcdef (vocab t1:hi)',
-            grammar: withVocab({t1:'hi'},
+            grammar: Vocab({t1:'hi'},
                          Join(Not(Seq(Short(Seq(Rep(Dot("t1")), t1("i"))),
                                       Rep(Dot("t1")))),
                               t1("abcdef"))),
