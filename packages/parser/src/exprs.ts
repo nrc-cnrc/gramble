@@ -2120,7 +2120,6 @@ export function constructJoin(c1: Expr, c2: Expr, tapes1: Set<string>, tapes2: S
 export function constructNotContains(
     fromTapeName: string,
     children: Expr[], 
-    tapes: string[], 
     begin: boolean,
     end: boolean
 ): Expr {
@@ -2137,7 +2136,7 @@ export function constructNotContains(
               constructSequence(constructShort(constructSequence(dotStar, ...children)), dotStar) :
               constructSequence(dotStar, constructShort(constructSequence(...children, dotStar)));
     }
-    return constructNegation(seq, new Set(tapes));
+    return constructNegation(seq, new Set([fromTapeName]));
 }
 
 export function constructToken(
