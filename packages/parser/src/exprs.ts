@@ -9,13 +9,11 @@ import {
     outputProduct,
     flatten,
     iterUnit,
-    shuffleArray
 } from "./util";
 import { 
     Tape, TapeNamespace, 
     renameTape
 } from "./tapes";
-import { Null } from "./grammarConvenience";
 
 export type Query = TokenExpr | DotExpr;
 
@@ -260,10 +258,29 @@ function *wrap(
     }
 }
 
-export function *iterRandom<T>(gs: Gen<T>[], env: DerivEnv): Gen<T> {
-    if (env.opt.random) shuffleArray(gs);
-    for (const g of gs) {
-        yield *g;
+export function *randomCut<T>(
+    gs: T[], 
+    env: DerivEnv
+): Gen<T> {
+    const offset = env.opt.random 
+                     ? Math.floor(Math.random()*gs.length)
+                     : 0;
+    for (let i = 0; i < gs.length; i++) {
+        const mod_i = (i+offset) % gs.length;
+        yield gs[mod_i];
+    }
+}
+
+export function *randomCutIter<T>(
+    gs: Gen<T>[], 
+    env: DerivEnv
+): Gen<T> {
+    const offset = env.opt.random 
+                     ? Math.floor(Math.random()*gs.length)
+                     : 0;
+    for (let i = 0; i < gs.length; i++) {
+        const mod_i = (i+offset) % gs.length;
+        yield *gs[mod_i];
     }
 }
 
@@ -512,8 +529,8 @@ class DotExpr extends Expr {
     ): Derivs { 
         if (query.tapeName != this.tapeName) return;
         const cs = [... query.expandStrings(env)];
-        if (env.opt.random) shuffleArray(cs);
-        for (const c of cs) {
+        const csCut = randomCut(cs, env);
+        for (const c of csCut) {
             const token = constructToken(query.tapeName, c);
             yield new Deriv(token, EPSILON);
         }
@@ -551,8 +568,8 @@ class DotStarExpr extends Expr {
         }
         
         const cs = [... query.expandStrings(env)];
-        if (env.opt.random) shuffleArray(cs);
-        for (const c of cs) {
+        const csCut = randomCut(cs, env);
+        for (const c of csCut) {
             const token = constructToken(query.tapeName, c);
             yield new Deriv(token, this);
         }
@@ -777,7 +794,7 @@ class ConcatExpr extends BinaryExpr {
         const c2derivs = c2.deriv(query, env);
         const c2wrapped = wrap(c2derivs, e => constructPrecede(c1next, e));
 
-        yield* iterRandom([c1wrapped, c2wrapped], env);
+        yield* randomCutIter([c1wrapped, c2wrapped], env);
     }
 
     public simplify(): Expr {
@@ -833,7 +850,7 @@ export class UnionExpr extends Expr {
         if (env.opt.random) {
             const childDerivs = this.children.map(c => 
                                     c.deriv(query, env));
-            yield* iterRandom(childDerivs, env);
+            yield* randomCutIter(childDerivs, env);
             return;
         }
 
@@ -848,7 +865,7 @@ export class UnionExpr extends Expr {
         if (env.opt.random) {
             const childForwards = this.children.map(c => 
                 c.forward(env));
-            yield* iterRandom(childForwards, env);
+            yield* randomCutIter(childForwards, env);
             return;
         }
 
@@ -1374,7 +1391,7 @@ export class CursorExpr extends UnaryExpr {
         const deltaGenerator = iterUnit(new Deriv(deltaToken, deltaNext));
         const derivQuery = constructDot(this.tape);
         const derivResults = disjoin(this.child.deriv(derivQuery, env), env);
-        const allResults = iterRandom([deltaGenerator, derivResults], env);
+        const allResults = randomCutIter([deltaGenerator, derivResults], env);
 
         for (const d of allResults) {
             env.incrStates();
@@ -1810,8 +1827,7 @@ class NegationExpr extends UnaryExpr {
             results.push(remainderDeriv);
         }
 
-        if (env.opt.random) shuffleArray(results);
-        yield* results;
+        yield* randomCut(results, env);
     }
 
     public simplify(): Expr {

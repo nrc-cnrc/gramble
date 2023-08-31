@@ -4,13 +4,14 @@ import {
     NullExpr, 
     DerivStats,
     OutputExpr,
-    ForwardGen
+    ForwardGen,
+    randomCut
 } from "./exprs";
 import { TapeNamespace } from "./tapes";
 import { 
     Gen, GenOptions,
     iterTake,
-    msToTime, shuffleArray, StringDict
+    msToTime, StringDict
 } from "./util";
 
 /**
@@ -59,9 +60,8 @@ export function* generate(
 
         if (prev instanceof EpsilonExpr || prev instanceof OutputExpr) {
             env.logDebugOutput("YIELD", prev);
-            const outputs = prev.getOutputs()
-            shuffleArray(outputs);
-            yield* outputs;
+            const outputs = prev.getOutputs();
+            yield* randomCut(outputs, env);
             continue;
         }
         
