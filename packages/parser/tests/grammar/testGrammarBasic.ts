@@ -1,5 +1,5 @@
 import {
-    CharSet, Epsilon, Seq, Uni,
+    CharSet, Epsilon, Null, Seq, Uni,
 } from "../../src/grammarConvenience";
 
 import {
@@ -68,7 +68,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
-    describe('6. Sequence of one ε', test({
+    describe('6 Null', test({
+        grammar: Null(),
+        tapes: [],
+        results: [],     
+    }));
+
+    describe('7a. Sequence of one ε', test({
         grammar: Seq(Epsilon()),
         tapes: [],
         results: [
@@ -76,7 +82,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
-    describe('7. ε+ε', test({
+    describe('7b. ε+ε', test({
         grammar: Seq(Epsilon(), Epsilon()),
         tapes: [],
         results: [

@@ -863,7 +863,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '17. Replace e by ee in hel: Cnt_$i:6 e -> ee {1+} || #h_l',
+        desc: '17. Replace e by ee in hel: Cnt_i:6 e -> ee {1+} || #h_l',
         grammar: Count({$i:6},
                      Replace(
                          "e", "ee",
@@ -936,7 +936,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '19. Replace e by ee in hel: Cnt_$i:6 e -> ee {1+} || h_l#',
+        desc: '19. Replace e by ee in hel: Cnt_i:6 e -> ee {1+} || h_l#',
         grammar: Count({$i:6},
                      Replace(
                          "e", "ee",
@@ -1010,7 +1010,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '21a. Replace e by ee in he: Cnt_$i:4 e -> ee {0,2} || h_',
+        desc: '21a. Replace e by ee in he: Cnt_i:4 e -> ee {0,2} || h_',
         grammar: Count({$i:4},
                      Replace(
                          "e", "ee",
@@ -1091,7 +1091,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '22a. Replace e by ee in el: Cnt_$i:4 e -> ee {0,2} || _l',
+        desc: '22a. Replace e by ee in el: Cnt_i:4 e -> ee {0,2} || _l',
         grammar: Count({$i:4},
                      Replace(
                          "e", "ee",
@@ -1166,7 +1166,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '23. Replace e by ee: Cnt_$i:3 e -> ee {0,2} (vocab $i:ehl)',
+        desc: '23. Replace e by ee: Cnt_i:3 e -> ee {0,2} (vocab $i:ehl)',
         grammar: Count({$i:3},
         			 withVocab({$i:'ehl'},
                      	 Replace(
@@ -1255,7 +1255,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '25a. Replace ee by e in hee: Cnt_$o:4 ee -> e {0,2} || h_',
+        desc: '25a. Replace ee by e in hee: Cnt_o:4 ee -> e {0,2} || h_',
         grammar: Count({$o:4},
                      Replace(
                          "ee", "e",
@@ -1343,7 +1343,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '26a. Replace ee by e in eel: Cnt_$o:4 ee -> e {0,2} || _l',
+        desc: '26a. Replace ee by e in eel: Cnt_o:4 ee -> e {0,2} || _l',
         grammar: Count({$o:4},
                      Replace(
                          "ee", "e",
@@ -1431,7 +1431,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '27. Replace ee by e: Cnt_$o:3 ee -> e {0,2} (vocab $i:ehl)',
+        desc: '27. Replace ee by e: Cnt_o:3 ee -> e {0,2} (vocab $i:ehl)',
         grammar: Count({$o:3},
         			 withVocab({$i:'ehl'},
                      	 Replace(
@@ -1486,7 +1486,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '28a. Insert a in h_l: Cnt_$i:4 0 -> a {0,2} || h_l',
+        desc: '28a. Insert a in h_l: Cnt_i:4 0 -> a {0,2} || h_l',
         grammar: Count({$i:4},
                      Replace(
                          "", "a",
@@ -1550,7 +1550,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '29a. Delete e in hel:Cnt_$o:3 e -> 0 {0,2} || h_l',
+        desc: '29a. Delete e in hel:Cnt_o:3 e -> 0 {0,2} || h_l',
         grammar: Count({$o:3},
                      Replace(
                          "e", "",
@@ -1919,7 +1919,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33a. Replace ∅ by e: Cnt_4 ∅ -> e {1} || #_ ($o:ehl)',
+        desc: '33a. Replace ε by e: Cnt_4 ε -> e {1} || #_ ($o:ehl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$o:'ehl'},
                      	 Replace(
@@ -1934,7 +1934,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33b. Replace ∅ by e: Cnt_4 ∅ -> e {1} || _# (vocab $o:ehl)',
+        desc: '33b. Replace ε by e: Cnt_4 ε -> e {1} || _# (vocab $o:ehl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$o:'ehl'},
                      	 Replace(
@@ -1949,7 +1949,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33c. Replace ∅ by e: Cnt_4 ∅ -> e {1} || #_# (vocab $o:ehl)',
+        desc: '33c. Replace ε by e: Cnt_4 ε -> e {1} || #_# (vocab $o:ehl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$o:'ehl'},
                      	 Replace(
@@ -1964,7 +1964,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33d. Replace ∅ by e: Cnt_4 ∅ -> e {1} (vocab $o:ehl)',
+        desc: '33d. Replace ε by e: Cnt_4 ε -> e {1} (vocab $o:ehl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$o:'ehl'},
                      	 OptionalReplace(
@@ -1979,7 +1979,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33e. Replace ∅ by e: Cnt_4 ∅ -> e {1} || #_ (vocab $i:hl)',
+        desc: '33e. Replace ε by e: Cnt_4 ε -> e {1} || #_ (vocab $i:hl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$i:'hl'},
                      	 Replace(
@@ -2001,7 +2001,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33f. Replace ∅ by e: Cnt_4 ∅ -> e {1} || _# (vocab $i:hl)',
+        desc: '33f. Replace ε by e: Cnt_4 ε -> e {1} || _# (vocab $i:hl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$i:'hl'},
                      	 Replace(
@@ -2023,7 +2023,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33g. Replace ∅ by e: Cnt_4 ∅ -> e {1} || #_# (vocab $i:hl)',
+        desc: '33g. Replace ε by e: Cnt_4 ε -> e {1} || #_# (vocab $i:hl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$i:'hl'},
                      	 Replace(
@@ -2038,7 +2038,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33h. Replace ∅ by e: Cnt_4 ∅ -> e {1} (vocab $i:hl)',
+        desc: '33h. Replace ε by e: Cnt_4 ε -> e {1} (vocab $i:hl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$i:'hl'},
                      	 OptionalReplace(
@@ -2077,7 +2077,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33i. Replace ∅ by e: Cnt_4 ∅ -> e {0,2} (vocab $o:ehl)',
+        desc: '33i. Replace ε by e: Cnt_4 ε -> e {0,2} (vocab $o:ehl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$o:'ehl'},
                      	 OptionalReplace(
@@ -2094,7 +2094,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33j. Replace ∅ by e: Cnt_4 ∅ -> e {0,2} (vocab $i:hl)',
+        desc: '33j. Replace ε by e: Cnt_4 ε -> e {0,2} (vocab $i:hl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$i:'hl'},
                      	 OptionalReplace(
@@ -2170,7 +2170,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33k-1. Replace ∅ by e: Cnt_i:1 ∅ -> e {2} (vocab $i:h)',
+        desc: '33k-1. Replace ε by e: Cnt_i:1 ε -> e {2} (vocab $i:h)',
         grammar: Count({$i:1},
         			 withVocab({$i:'h'},
                      	 OptionalReplace(
@@ -2188,7 +2188,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33k-2. Replace ∅ by e: Cnt_i:2 ∅ -> e {2} (vocab $i:h)',
+        desc: '33k-2. Replace ε by e: Cnt_i:2 ε -> e {2} (vocab $i:h)',
         grammar: Count({$i:2},
         			 withVocab({$i:'h'},
                      	 OptionalReplace(
@@ -2212,7 +2212,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33l. Replace ∅|h by e: Cnt_4 ∅|$i:h -> e {1} (vocab $i:hl)',
+        desc: '33l. Replace ε|h by e: Cnt_4 ε|$i:h -> e {1} (vocab $i:hl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$i:'hl'},
                      	 OptionalReplace(
@@ -2278,7 +2278,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33m. Replace ∅|h by e: Cnt_4 ∅|$i:h -> e {1} (vocab $i:eh)',
+        desc: '33m. Replace ε|h by e: Cnt_4 ε|$i:h -> e {1} (vocab $i:eh)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$i:'eh'},
                      	 OptionalReplace(
@@ -2341,7 +2341,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '34a. Replace e by ∅: Cnt_4 e -> ∅ {1} || #_ (vocab $i:ehl)',
+        desc: '34a. Replace e by ε: Cnt_4 e -> ε {1} || #_ (vocab $i:ehl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$i:'ehl'},
                      	 Replace(
@@ -2377,7 +2377,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '34b. Replace e by ∅: Cnt_4 e -> ∅ {1} || _# (vocab $i:ehl)',
+        desc: '34b. Replace e by ε: Cnt_4 e -> ε {1} || _# (vocab $i:ehl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$i:'ehl'},
                      	 Replace(
@@ -2413,7 +2413,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '34c. Replace e by ∅: Cnt_4 e -> ∅ {1} || #_# (vocab $i:ehl)',
+        desc: '34c. Replace e by ε: Cnt_4 e -> ε {1} || #_# (vocab $i:ehl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$i:'ehl'},
                      	 Replace(
@@ -2428,7 +2428,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '34d. Replace e by ∅: Cnt_4 e -> ∅ {1} (vocab $i:ehl)',
+        desc: '34d. Replace e by ε: Cnt_4 e -> ε {1} (vocab $i:ehl)',
         grammar: Count({$i:4, $o:4},
         			 withVocab({$i:'ehl'},
                      	 Replace(
@@ -2467,7 +2467,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '34e. Replace e by ∅: Cnt_3 e -> ∅ {0,2} (vocab $i:ehl)',
+        desc: '34e. Replace e by ε: Cnt_3 e -> ε {0,2} (vocab $i:ehl)',
         grammar: Count({$i:3, $o:3},
         			 withVocab({$i:'ehl'},
                      	 Replace(
@@ -2502,7 +2502,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '34e-alt. Replace e by ∅: Cnt_3 e -> ∅ {0,2} (vocab $i:ehl)',
+        desc: '34e-alt. Replace e by ε: Cnt_3 e -> ε {0,2} (vocab $i:ehl)',
         grammar: Count({$i:3, $o:3},
                      Replace(
                         Seq(Vocab({$i: 'ehl'}), "e"), "",
@@ -2536,7 +2536,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '34f. Replace e by ∅: Cnt_$i:3 e -> ∅ {2} (vocab $i:eh)',
+        desc: '34f. Replace e by ε: Cnt_i:3 e -> ε {2} (vocab $i:eh)',
         grammar: Count({$i:3},
         			 withVocab({$i:'eh'},
                      	 Replace(
@@ -2556,7 +2556,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     // Tests to isolate an expression simplification issue in CorrespondExpr.
 
     testGrammar({
-        desc: '35a. Replace aba by X: Cnt_$i:3 aba -> X {1}',
+        desc: '35a. Replace aba by X: Cnt_i:3 aba -> X {1}',
         grammar: Count({$i:3},
                      Replace(
                          "aba", "X",
@@ -2571,7 +2571,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '35b. Replace aba by X: Cnt_$i:3 aba -> X {1} ' +
+        desc: '35b. Replace aba by X: Cnt_i:3 aba -> X {1} ' +
               '(priority: $i,$o)',
         grammar: Cursor(["$i", "$o"],
                      Count({$i:3},
@@ -2587,7 +2587,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '35c. Replace aba by X: Cnt_$i:3 aba -> X {1} ' +
+        desc: '35c. Replace aba by X: Cnt_i:3 aba -> X {1} ' +
               '(priority: $o,$i)',
         grammar: Cursor(["$o", "$i"],
                      Count({$i:3},
