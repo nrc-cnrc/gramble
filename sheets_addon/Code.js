@@ -378,6 +378,48 @@ function include(filename) {
         .getContent();
 }
 
+
+const SAMPLE_PAGE = [
+    [],
+    ["%% this is a comment"],
+    [],
+    ["Root =", "text", "gloss"],	
+    [""      , "kan",	"walk"],	
+    [""     , "pala",   "jump"],	
+    [""     , "ikar",	"climb"],	
+    [""     , "obo",    "play.the.oboe"],
+    [],			
+    ["Stem =",	"embed",	"text",	 "person/gloss"],
+    [""      , "Root",	    "ta",    "[1subj]"],
+    [""      , "Root",	    "sa",	 "[2subj]"],
+    [""      , "Root",		"",      "[3subj]"],
+    [],
+    ["replace text:",	"from",	"to",	"context"],
+    ["",	            "t",	"d",    "(r|n)_"],
+    [],			
+    ["test:",	"text",	"gloss"],	
+    ["",        "ikarda", "climb[1subj]"],
+    ["",        "ikarta", "climb[1subj]"]	
+];
+
+function makeSampleSheet() {
+
+    const sheetName = "Sample";
+    let activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    let newSheet = activeSpreadsheet.getSheetByName(sheetName);
+
+    if (newSheet == null) {
+        newSheet = activeSpreadsheet.insertSheet();
+        newSheet.setName(sheetName);
+    }
+
+    setDataInSheet(newSheet, 1, 1, SAMPLE_PAGE);
+
+    highlight();
+
+    return { "success": true };
+}
+
 function makeNewSheet(symbolName, sheetName, data) {
 
     let newSymbolName = sheetName + "_1";
@@ -503,6 +545,8 @@ function onOpen() {
         .addItem('Highlight', 'highlight')
         .addItem('Comment', 'GrambleComment')
         .addItem('Uncomment', 'GrambleUncomment')
+        .addSeparator()
+        .addItem('Create sample project', 'makeSampleSheet')
         .addToUi();
 
     if (autoEnabled_()) {
