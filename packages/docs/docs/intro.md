@@ -4,9 +4,9 @@ sidebar_position: 1
 
 # Gramble tutorial
 
-Gramble is a declarative, domain-specific programming language (DSL) for linguistic parsing and generation.  If you've heard of the XFST, LEXC, or TWOLC languages, it fits roughly into the same niche, but it's got a rather different syntax/semantics/philosophy.
+Gramble is a declarative, domain-specific programming language (DSL) for linguistic parsing and generation.  (For example, you could use it to turn Swahili `ninapenda` into `{root: pend, tense:present, subject:1SG}`, or vice-versa.)  
 
-Why not just use those languages?  We had two main reasons.  
+If you've heard of the XFST, LEXC, or TWOLC languages, it fits roughly into the same niche, but it's got a rather different syntax/semantics/philosophy.  Why not just use those languages?  We had two main reasons.  
 
 ## Reason 1:
 

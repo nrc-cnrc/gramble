@@ -1,12 +1,10 @@
 ---
-slug: first-blog-post
-title: First Blog Post
+slug: welcome-post
+title: Welcome to the Gramble blog
 authors:
-  name: Gao Wei
-  title: Docusaurus Core Team
-  url: https://github.com/wgao19
-  image_url: https://github.com/wgao19.png
+  name: Parick Littell
+  url: https://github.com/littell
 tags: [hola, docusaurus]
 ---
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet
+Welcome to the Gramble blog.  We'll use this space to occasionally discuss updates and changes to the language, new features, etc.
