@@ -1,22 +1,13 @@
 import {
-    Any,
-    Count,
-    Epsilon,
-    Intersect,
-    Not,
-    OptionalReplace,
-    Cursor,
-    Replace,
-    Seq,
-    Uni,
-    Vocab,
+    Any, Count, Cursor, Epsilon,
+    Intersect, Not, OptionalReplace,
+    Replace, Uni, Vocab,
 } from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,
     testGrammar,
     t1, t2, t3,
-    withVocab,
 } from "./testGrammarUtil";
 
 import { 
@@ -782,7 +773,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '14. Replace e by a: Cnt_3 t1:e -> t2:a {0,2} (vocab t1:ehl)',
         grammar: Count({t1:3, t2:3},
-                     withVocab({t1:'ehl'},
+                     Vocab({t1:'ehl'},
                          Replace(
                              t1("e"), t2("a"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -860,7 +851,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '15. Replace e by a: Spotchk_11 t1:e -> t2:a {0,3} (vocab t1:ehl)',
         grammar: Count({t1:11, t2:11},
-        			 withVocab({t1:'ehl'},
+        			 Vocab({t1:'ehl'},
                      	 Replace(
                              t1("e"), t2("a"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -1240,7 +1231,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '23. Replace e by ee: Cnt_t1:3 t1:e -> t2:ee {0,2} (vocab t1:ehl)',
         grammar: Count({t1:3},
-        			 withVocab({t1:'ehl'},
+        			 Vocab({t1:'ehl'},
                      	 Replace(
                              t1("e"), t2("ee"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -1511,7 +1502,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '27. Replace ee by e: Cnt_t2:3 t1:ee -> t2:e {0,2} (vocab t1:ehl)',
         grammar: Count({t2:3},
-        			 withVocab({t1:'ehl'},
+        			 Vocab({t1:'ehl'},
                      	 Replace(
                              t1("ee"), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -1792,7 +1783,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '30c. Replace e by a in hel, hey, hee: Spotchk_10 ' +
               't1:e -> t2:a {0,2} || h_(.&~h) (vocab t1:ehly)',
         grammar: Count({t1:10, t2:10},
-        			 withVocab({t1:'ehly'},
+        			 Vocab({t1:'ehly'},
                      	 Replace(
                          	 t1("e"), t2("a"),
                              t1("h"),
@@ -1829,7 +1820,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '30d. Replace e by a in hel, yel, eel: Spotchk_10 ' +
               't1:e -> t2:a {0,2} || (.&~l)_l (vocab t1:ehly)',
         grammar: Count({t1:10, t2:10},
-        			 withVocab({t1:'ehly'},
+        			 Vocab({t1:'ehly'},
                      	 Replace(
                              t1("e"), t2("a"),
                              Intersect(Any("t1"), Not(t1("l"))),
@@ -2012,7 +2003,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33a. Replace ∅ by e: Cnt_4 t1:∅ -> t2:e {1} || #_ (t2:ehl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t2:'ehl'},
+        			 Vocab({t2:'ehl'},
                      	 Replace(
                              t1(""), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2028,7 +2019,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33b. Replace ∅ by e: Cnt_4 t1:∅ -> t2:e {1} || _# (vocab t2:ehl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t2:'ehl'},
+        			 Vocab({t2:'ehl'},
                      	 Replace(
                              t1(""), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2044,7 +2035,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33c. Replace ∅ by e: Cnt_4 t1:∅ -> t2:e {1} || #_# (vocab t2:ehl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t2:'ehl'},
+        			 Vocab({t2:'ehl'},
                      	 Replace(
                              t1(""), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2060,7 +2051,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33d. Replace ∅ by e: Cnt_4 t1:∅ -> t2:e {1} (vocab t2:ehl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t2:'ehl'},
+        			 Vocab({t2:'ehl'},
                      	 OptionalReplace(
                              t1(""), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2076,7 +2067,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33e. Replace ∅ by e: Cnt_4 t1:∅ -> t2:e {1} || #_ (vocab t1:hl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t1:'hl'},
+        			 Vocab({t1:'hl'},
                      	 Replace(
                              t1(""), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2099,7 +2090,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33f. Replace ∅ by e: Cnt_4 t1:∅ -> t2:e {1} || _# (vocab t1:hl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t1:'hl'},
+        			 Vocab({t1:'hl'},
                      	 Replace(
                              t1(""), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2122,7 +2113,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33g. Replace ∅ by e: Cnt_4 t1:∅ -> t2:e {1} || #_# (vocab t1:hl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t1:'hl'},
+        			 Vocab({t1:'hl'},
                      	 Replace(
                              t1(""), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2138,7 +2129,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33h. Replace ∅ by e: Cnt_4 t1:∅ -> t2:e {1} (vocab t1:hl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t1:'hl'},
+        			 Vocab({t1:'hl'},
                      	 OptionalReplace(
                              t1(""), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2178,7 +2169,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33i. Replace ∅ by e: Cnt_4 t1:∅ -> t2:e {0,2} (vocab t2:ehl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t2:'ehl'},
+        			 Vocab({t2:'ehl'},
                      	 OptionalReplace(
                              t1(""), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2196,7 +2187,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33j. Replace ∅ by e: Cnt_4 t1:∅ -> t2:e {0,2} (vocab t1:hl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t1:'hl'},
+        			 Vocab({t1:'hl'},
                      	 OptionalReplace(
                              t1(""), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2273,7 +2264,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33k-1. Replace ∅ by e: Cnt_t1:1 t1:∅ -> t2:e {2} (vocab t1:h)',
         grammar: Count({t1:1},
-        			 withVocab({t1:'h'},
+        			 Vocab({t1:'h'},
                      	 OptionalReplace(
                              t1(""), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2292,7 +2283,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33k-2. Replace ∅ by e: Cnt_t1:2 t1:∅ -> t2:e {2} (vocab t1:h)',
         grammar: Count({t1:2},
-        			 withVocab({t1:'h'},
+        			 Vocab({t1:'h'},
                      	 OptionalReplace(
                              t1(""), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2317,7 +2308,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33l. Replace ∅|h by e: Cnt_4 t1:∅|t1:h -> t2:e {1} (vocab t1:hl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t1:'hl'},
+        			 Vocab({t1:'hl'},
                      	 OptionalReplace(
                              Uni(t1(""), t1("h")), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2384,7 +2375,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '33m. Replace ∅|h by e: Cnt_4 t1:∅|t1:h -> t2:e {1} (vocab t1:eh)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t1:'eh'},
+        			 Vocab({t1:'eh'},
                      	 OptionalReplace(
                              Uni(t1(""), t1("h")), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2448,7 +2439,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '34a. Replace e by ∅: Cnt_4 t1:e -> t2:∅ {1} || #_ (vocab t1:ehl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t1:'ehl'},
+        			 Vocab({t1:'ehl'},
                      	 Replace(
                              t1("e"), t2(""),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2485,7 +2476,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '34b. Replace e by ∅: Cnt_4 t1:e -> t2:∅ {1} || _# (vocab t1:ehl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t1:'ehl'},
+        			 Vocab({t1:'ehl'},
                      	 Replace(
                              t1("e"), t2(""),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2522,7 +2513,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '34c. Replace e by ∅: Cnt_4 t1:e -> t2:∅ {1} || #_# (vocab t1:ehl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t1:'ehl'},
+        			 Vocab({t1:'ehl'},
                      	 Replace(
                              t1("e"), t2(""),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2538,7 +2529,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '34d. Replace e by ∅: Cnt_4 t1:e -> t2:∅ {1} (vocab t1:ehl)',
         grammar: Count({t1:4, t2:4},
-        			 withVocab({t1:'ehl'},
+        			 Vocab({t1:'ehl'},
                      	 Replace(
                              t1("e"), t2(""),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2578,7 +2569,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '34e. Replace e by ∅: Cnt_3 t1:e -> t2:∅ {0,2} (vocab t1:ehl)',
         grammar: Count({t1:3, t2:3},
-        			 withVocab({t1:'ehl'},
+        			 Vocab({t1:'ehl'},
                      	 Replace(
                              t1("e"), t2(""),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2615,7 +2606,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '34e-alt. Replace e by ∅: Cnt_3 t1:e -> t2:∅ {0,2} (vocab t1:ehl)',
         grammar: Count({t1:3, t2:3},
                      Replace(
-                        Seq(Vocab({t1: 'ehl'}), t1("e")), t2(""),
+                        Vocab({t1: 'ehl'}, t1("e")), t2(""),
                         EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                         false, false, 0, 2
                      )),
@@ -2649,7 +2640,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '34f. Replace e by ∅: Cnt_t1:3 t1:e -> t2:∅ {2} (vocab t1:eh)',
         grammar: Count({t1:3},
-        			 withVocab({t1:'eh'},
+        			 Vocab({t1:'eh'},
                      	 Replace(
                              t1("e"), t2(""),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2771,7 +2762,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '37a. Replace i by e: Cnt_2 t1:i -> t2:e || #_ (vocab t1:hi)',
         grammar: Count({t1:2, t2:2},
-        			 withVocab({t1:'hi'},
+        			 Vocab({t1:'hi'},
                      	 Replace(
                              t1("i"), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2793,7 +2784,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '37b. Replace i by e: Cnt_2 t1:i -> t2:e || _# (vocab t1:hi)',
         grammar: Count({t1:2, t2:2},
-        			 withVocab({t1:'hi'},
+        			 Vocab({t1:'hi'},
                      	 Replace(
                              t1("i"), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
@@ -2815,7 +2806,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '37c. Replace i by e: Cnt_2 t1:i -> t2:e || #_# (vocab t1:hi)',
         grammar: Count({t1:2, t2:2},
-        			 withVocab({t1:'hi'},
+        			 Vocab({t1:'hi'},
                      	 Replace(
                              t1("i"), t2("e"),
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,

@@ -1,7 +1,6 @@
 import {
-    Any, Epsilon, 
-    Join, Seq, 
-    Uni, Vocab,
+    Any, Epsilon, Join,
+    Seq, Uni, Vocab,
 } from "../../src/grammarConvenience";
 
 import {
@@ -53,8 +52,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
 		desc: '4. Optional .: ε|t1:. (vocab t1:h)',
-        grammar: Seq(Vocab({t1: 'h'}),
-                     Uni(Epsilon(), Any("t1"))),
+        grammar: Vocab({t1: 'h'},
+                    Uni(Epsilon(), Any("t1"))),
         tapes: ["t1"],
         results: [
             {},
