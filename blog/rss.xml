@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>Gramble Blog</title>
+        <link>https://nrc-cnrc.github.io/gramble/blog</link>
+        <description>Gramble Blog</description>
+        <lastBuildDate>Tue, 28 May 2019 00:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <language>en</language>
+        <item>
+            <title><![CDATA[Welcome to the Gramble blog]]></title>
+            <link>https://nrc-cnrc.github.io/gramble/blog/welcome-post</link>
+            <guid>https://nrc-cnrc.github.io/gramble/blog/welcome-post</guid>
+            <pubDate>Tue, 28 May 2019 00:00:00 GMT</pubDate>
+            <description><![CDATA[Welcome to the Gramble blog.  We'll use this space to occasionally discuss updates and changes to the language, new features, etc.]]></description>
+            <content:encoded><![CDATA[<p>Welcome to the Gramble blog.  We'll use this space to occasionally discuss updates and changes to the language, new features, etc.</p>]]></content:encoded>
+            <category>hola</category>
+            <category>docusaurus</category>
+        </item>
+    </channel>
+</rss>
