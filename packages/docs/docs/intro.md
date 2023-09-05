@@ -22,6 +22,6 @@ Gramble is our attempt to make a linguistic DSL that's readable and even writabl
 
 The "one weird trick" of Gramble is that it's a *tabular* programming language.  The spreadsheet-looking thing below is the actual code: everything in Gramble is expressed as a grid of cells.  
 
-![Image of a gramble spreadsheet](../static/img/gramble3.png)
+![Image of a gramble spreadsheet](../static/img/gramble_sample.png)
 
 Why?  Well, for one, about 90% of these programs ends up being tabular in nature -- for a lot of kinds of data they're the most concise and readable expression -- and it's handy to be able to simply write your tables in an editor that knows about columns and such.  But also, spreadsheets are the lingua franca of knowledge work.  Few of our teacher/linguist collaborators happen to be programmers as well, but most knowledge workers are familiar with Excel or Google Sheets.
