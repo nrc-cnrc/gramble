@@ -1,22 +1,13 @@
 import { 
-    Any, 
-    CharSet,
-    Count,
-    Epsilon,
-    Join, 
-    Match,
-    Null,
-    Cursor,
-    Rep, 
-    Seq, 
-    Uni,
+    Any, CharSet, Count, Cursor,
+    Epsilon, Join, Match, Null,
+    Rep, Seq, Uni, Vocab,
 } from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,
     testGrammar,
     t1, t2, t4,
-    withVocab,
 } from "./testGrammarUtil";
 
 import { 
@@ -203,7 +194,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '13. Match t1>t2, t1:. (vocab t1:hi)',
         grammar: Match(
-                     withVocab({t1: "hi"}, Any("t1")),
+                     Vocab({t1: "hi"}, Any("t1")),
                      "t1", "t2"
                  ),
         tapes: ['t1', 't2'],
@@ -468,7 +459,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '30. Match t1>t2, t1:.* (vocab hi/XhiZ)',
         grammar: Count({t1:3},
-                    withVocab({t1: "hi", t2: "XhiZ"},
+                    Vocab({t1: "hi", t2: "XhiZ"},
                         Match(
                             Rep(Any("t1")),
                             "t1", "t2"
@@ -660,7 +651,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '2-13. Match t1>t2,t3, t1:. (vocab t1:hi)',
         grammar: Match(
-        		 	 withVocab({t1: "hi"}, Any("t1")),
+        		 	 Vocab({t1: "hi"}, Any("t1")),
         		 	 "t1", "t2", "t3"
         		 ),
         tapes: ['t1', 't2', 't3'],
@@ -932,7 +923,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '2-30. Match t1>t2,t3, t1:.* (vocab hi/XhiZ/ZXhi)',
         grammar: Count({t1:3},
-                    withVocab({t1: "hi", t2: "XhiZ", t3: "ZXhi"},
+                    Vocab({t1: "hi", t2: "XhiZ", t3: "ZXhi"},
                         Match(
                             Rep(Any("t1")),
                             "t1", "t2", "t3"
@@ -962,7 +953,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: 'J-1. t1:h ⨝ Match(t1>t2, t1:.) (vocab hi)',
-        grammar: withVocab({t1: "hi", t2:"hi"},
+        grammar: Vocab({t1: "hi", t2:"hi"},
         		 	 Join(t1("h"),
         		 	 	  Match(Any("t1"), "t1", "t2"))),
         tapes: ['t1', 't2'],
@@ -974,7 +965,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: 'J-2. Match(t1>t2, t1:.) ⨝ t1:h (vocab hi)',
-        grammar: withVocab({t1: "hi", t2:"hi"},
+        grammar: Vocab({t1: "hi", t2:"hi"},
         		 	 Join(Match(Any("t1"), "t1", "t2"),
                           t1("h"))),
         tapes: ['t1', 't2'],
@@ -986,7 +977,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: 'J-3. t1:hi ⨝ Match(t1>t2, t1:.*) (vocab t2:hi)',
-        grammar: withVocab({t2: "hi"},
+        grammar: Vocab({t2: "hi"},
         		 	 Join(t1("hi"),
         		 	 	  Match(Rep(Any("t1")), "t1", "t2"))),
         tapes: ['t1', 't2'],
@@ -998,7 +989,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: 'J-4. t2:hello ⨝ Match(t1>t2, t1:.*) (vocab t1:hello)',
-        grammar: withVocab({t1: "hello"},
+        grammar: Vocab({t1: "hello"},
         		 	 Join(t2("hello"),
         		 	 	  Match(Rep(Any("t1")), "t1", "t2"))),
         tapes: ['t1', 't2'],
@@ -1023,7 +1014,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'J-6. Join output of two matches: ' +
               'Match(t1>t2, t1:[hi]) ⨝ Match(t3>t2, t3:[ij]) ' +
               '(vocab t2:hij)',
-        grammar: withVocab({t2: "hij"},
+        grammar: Vocab({t2: "hij"},
         		 	 Join(Match(CharSet("t1", ["h","i"]), "t1", "t2"),
         		 	 	  Match(CharSet("t3", ["i","j"]), "t3", "t2"))),
         tapes: ['t1', 't2', 't3'],
@@ -1037,7 +1028,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'J-7. Join output of one match with input of another: ' +
               'Match(t1>t2, t1:[hi]) ⨝ Match(t2>t3, t2:[ij]) ' + 
               '(vocab t2:hij,t3:hij)',
-        grammar: withVocab({t2: "hij", t3:"hij"},
+        grammar: Vocab({t2: "hij", t3:"hij"},
         		 	 Join(Match(CharSet("t1", ["h","i"]), "t1", "t2"),
         		 	 	  Match(CharSet("t2", ["i","j"]), "t2", "t3"))),
         tapes: ['t1', 't2', 't3'],
@@ -1051,7 +1042,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'J-8. Join output of one match with input of another, other direction: ' + 
               'Match(t2>t3, t2:[ij]) ⨝ Match(t1>t2, t1:[hi]) ' + 
               '(vocab t2:hij,t3:hij)',
-        grammar: withVocab({t2: "hij", t3:"hij"},
+        grammar: Vocab({t2: "hij", t3:"hij"},
         		 	 Join(Match(CharSet("t2", ["i","j"]), "t2", "t3"),
         		 	 	  Match(CharSet("t1", ["h","i"]), "t1", "t2"))),
         tapes: ['t1', 't2', 't3'],
@@ -1077,7 +1068,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               't2,t1: (t2:e+M(t1>t2,.*)){2} (vocab h/he)',
         grammar: Cursor(["t2", "t1"],
         			Count({t1:1, t2:3},
-                    	withVocab({t1: "h", t2:"he"},
+                    	Vocab({t1: "h", t2:"he"},
                     		repMatchGrammar(2, 2,
                             	Rep(Any("t1"))
                         	)))),
@@ -1095,7 +1086,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               't1,t2: (t2:e+M(t1>t2,.*)){2} (vocab h/he)',
         grammar: Cursor(["t1", "t2"],
         			Count({t1:1, t2:3},
-                    	withVocab({t1: "h", t2:"he"},
+                    	Vocab({t1: "h", t2:"he"},
                     		repMatchGrammar(2, 2,
                             	Rep(Any("t1"))
                         	)))),
@@ -1113,7 +1104,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               't2,t1: (t2:e+M(t1>t2,h*)){2} (vocab h/he)',
         grammar: Cursor(["t2", "t1"],
         			Count({t1:1, t2:3},
-                    	withVocab({t1: "h", t2:"he"},
+                    	Vocab({t1: "h", t2:"he"},
                     		repMatchGrammar(2, 2,
                             	Rep(t1("h"))
                         	)))),
@@ -1131,7 +1122,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               't1,t2: (t2:e+M(t1>t2,h*)){2} (vocab h/he)',
         grammar: Cursor(["t1", "t2"],
         			Count({t1:1, t2:3},
-                    	withVocab({t1: "h", t2:"he"},
+                    	Vocab({t1: "h", t2:"he"},
                     		repMatchGrammar(2, 2,
                             	Rep(t1("h"))
                         	)))),
@@ -1149,7 +1140,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               't2,t1: (t2:e+M(t1>t2,h{0,1})){2} (vocab h/he)',
         grammar: Cursor(["t2", "t1"],
         			Count({t1:1, t2:3},
-                    	withVocab({t1: "h", t2:"he"},
+                    	Vocab({t1: "h", t2:"he"},
                     		repMatchGrammar(2, 2,
                             	Rep(t1("h"), 0, 1)
                         	)))),
@@ -1167,7 +1158,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               't1,t2: (t2:e+M(t1>t2,h{0,1})){2} (vocab h/he)',
         grammar: Cursor(["t1", "t2"],
         			Count({t1:1, t2:3},
-                    	withVocab({t1: "h", t2:"he"},
+                    	Vocab({t1: "h", t2:"he"},
                     		repMatchGrammar(2, 2,
                             	Rep(t1("h"), 0, 1)
                         	)))),
@@ -1185,7 +1176,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               't2,t1: (t2:e+M(t1>t2,ε|t1:h)){2} (vocab h/he)',
         grammar: Cursor(["t2", "t1"],
         			Count({t1:1, t2:3},
-                    	withVocab({t1: "h", t2:"he"},
+                    	Vocab({t1: "h", t2:"he"},
                     		repMatchGrammar(2, 2,
                             	Uni(Epsilon(), t1("h"))
                         	)))),
@@ -1203,7 +1194,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2} (vocab h/he)',
         grammar: Cursor(["t1", "t2"],
         			Count({t1:1, t2:3},
-                    	withVocab({t1: "h", t2:"he"},
+                    	Vocab({t1: "h", t2:"he"},
                     		repMatchGrammar(2, 2,
                             	Uni(Epsilon(), t1("h"))
                         	)))),
@@ -1221,7 +1212,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2,100} (vocab h/he)',
         grammar: Cursor(["t1", "t2"],
         			Count({t1:1, t2:4},
-                    	withVocab({t1: "h", t2:"he"},
+                    	Vocab({t1: "h", t2:"he"},
                     		repMatchGrammar(2, 100,
                             	Uni(Epsilon(), t1("h"))
                         	)))),
@@ -1242,7 +1233,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2+} (vocab h/he)',
         grammar: Cursor(["t1", "t2"],
         			Count({t1:1, t2:4},
-                    	withVocab({t1: "h", t2:"he"},
+                    	Vocab({t1: "h", t2:"he"},
                     		repMatchGrammar(2, Infinity,
                             	Uni(Epsilon(), t1("h"))
                         	)))),
@@ -1263,7 +1254,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2,6} (vocab h/he)',
         grammar: Cursor(["t1", "t2"],
         			Count({t1:1, t2:6},
-                    	withVocab({t1: "h", t2:"he"},
+                    	Vocab({t1: "h", t2:"he"},
                     		repMatchGrammar(2, 6,
                             	Uni(Epsilon(), t1("h"))
                         	)))),
@@ -1290,7 +1281,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2+} (vocab h/he)',
         grammar: Cursor(["t1", "t2"],
         			Count({t1:1, t2:6},
-                    	withVocab({t1: "h", t2:"he"},
+                    	Vocab({t1: "h", t2:"he"},
                     		repMatchGrammar(2, Infinity,
                             	Uni(Epsilon(), t1("h"))
                         	)))),

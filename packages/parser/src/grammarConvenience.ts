@@ -276,16 +276,17 @@ export function Hide(
     return new HideGrammar(child, tape, toTape);
 }
 
-export function Vocab(arg1: string | StringDict, arg2: string = ""): Grammar {
-    if (typeof arg1 == 'string') {
-        return Rep(Lit(arg1, arg2), 0, 0)
-    } else {
-        let vocabGrammars: LiteralGrammar[] = [];
-        for (const tape in arg1 as StringDict) {
-            vocabGrammars.push(Lit(tape, arg1[tape]));
-        }
-        return Rep(Seq(...vocabGrammars), 0, 0);
+export function Vocab(vocabs: StringDict, child: Grammar | string) {
+    child = makeGrammar(child);
+    return Seq(VocabAux(vocabs), child);
+}
+
+function VocabAux(vocabs: StringDict): Grammar {
+    let vocabGrammars: LiteralGrammar[] = [];
+    for (const tape in vocabs as StringDict) {
+        vocabGrammars.push(Lit(tape, vocabs[tape]));
     }
+    return Rep(Seq(...vocabGrammars), 0, 0);
 }
 
 export function Count(
