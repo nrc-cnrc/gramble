@@ -471,8 +471,9 @@ function getAllCells() {
  *                    Always returns false if ScriptApp.AuthMode.NONE.
  */
 function autoEnabled_(optSet) {
+    let autoState = undefined;
     try {
-      let autoState = PropertiesService.getUserProperties().getProperty('autoState');
+      autoState = PropertiesService.getUserProperties().getProperty('autoState');
     }
     catch (e) {
       // Called with ScriptApp.AuthMode.NONE
