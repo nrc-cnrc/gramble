@@ -7,7 +7,7 @@ Handwritten grammars like FSTs underlie a lot of our team's products, and since 
 
 The other twist of Gramble is that, unlike most other languages, it is a *tabular* programming language: its source code is a spreadsheet-like grid of cells, rather than a plaintext file:
 
-![Image of a gramble spreadsheet](packages/docs/static/img/gramble_sample.png)
+![Image of a gramble spreadsheet](docs/static/img/gramble_sample.png)
 
 Why?  Well, 99% of Gramble code/data ends up being tabular in nature: dictionaries of roots, conjugation tables, orthography charts, etc.  Rather than the programmer taking these tables and translating them into low-readability XFST code, these stay as tables.  The tables are the code itself, keeping the programmers and subject-matter experts on the same page.
 
