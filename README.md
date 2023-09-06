@@ -1,8 +1,6 @@
 Gramble
 =======
 
-[![Build Status](https://travis-ci.org/littell/gramble_ts.svg?branch=master)](https://travis-ci.org/littell/gramble_ts)
-
 Gramble is a domain-specific programming language (DSL) for linguistic grammars and transducers (e.g. verb conjugators and parsers).  It fits roughly into the same niche as XFST/LEXC, but generalizes input-output transductions to arbitrary database-like queries.  
 
 Handwritten grammars like FSTs underlie a lot of our team's products, and since switching to Gramble we've experienced huge productivity increases.  We estimate we write these about 10x faster (at least at in the early stages); we find that many new Gramble programmers have a working prototype of their system in 1-2 days rather than a few months.  Granted, we're biased!  But we really encourage you to give it a try.
@@ -20,17 +18,19 @@ Tutorials and documentation
 
 Tutorials and language documentation can be found [here](https://nrc-cnrc.github.io/gramble/)
 
-For maintainers
+To install from source
 ---------------
 
-This repo is managed using [Lerna]. We use Lerna to manage multiple,
-interdependent packages.
+Most users will not need to install from source unless you (a) want to run Gramble from the command line, (b) want to deploy your own Gramble add-on rather than use the one on Google Marketplace, or (c) if you are developing/maintaining Gramble itself.
 
+Gramble is written in TypeScript, because ultimately it's made to execute in the browser so it's necessary that it transpiles smoothly to JavaScript.  For the command-line interface and to develop/test, we use [Node].  To install the multiple, interdependent packages in this repo we use npm with [Lerna].
+
+[Node]: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
 [Lerna]: https://lerna.js.org/
 
 ### Building and installing
 
-First, make sure Lerna is installed:
+First make sure Node and npm are installed according to the instructions above.  Then, make sure Lerna is installed as well: 
 
     npm install lerna -g
 
