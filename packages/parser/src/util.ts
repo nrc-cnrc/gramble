@@ -391,7 +391,7 @@ export function iterTake<T>(gen: Gen<T>, n: number): [T[], Gen<T>] {
 
     if (n === 0) return [[], gen];
 
-    var curr = gen.next();
+    let curr = gen.next();
     for (let i = 0; i < n - 1 && !curr.done; i++) {
         results.push(curr.value);
         curr = gen.next();
