@@ -1,5 +1,5 @@
 import { 
-    Count, Epsilon, OptionalReplace, Rep,
+    Count, Epsilon, Null, OptionalReplace, Rep,
     Replace, ReplaceBlock, Uni, Vocab,
 } from "../../src/grammarConvenience";
 
