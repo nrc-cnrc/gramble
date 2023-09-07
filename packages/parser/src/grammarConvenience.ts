@@ -10,9 +10,18 @@ import {
     RenameGrammar, RepeatGrammar, 
     ReplaceBlockGrammar, ReplaceGrammar, 
     SequenceGrammar, ShortGrammar, 
+    SingleTapeGrammar, 
     StartsGrammar 
 } from "./grammars";
 import { DUMMY_REGEX_TAPE, Dict, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, StringDict } from "./util";
+
+export function SingleTape(
+    tapeName: string,
+    child: Grammar | string
+): Grammar {
+    child = makeGrammar(child);
+    return new SingleTapeGrammar(tapeName, child);
+}
 
 /**
   * Replace implements general phonological replacement rules.
@@ -45,10 +54,14 @@ export function Replace(
     hiddenTapeName: string = "",
     optional: boolean = false
 ): ReplaceGrammar {
-    fromGrammar = makeGrammar(fromGrammar, REPLACE_INPUT_TAPE);
-    toGrammar = makeGrammar(toGrammar, REPLACE_OUTPUT_TAPE);
-    preContext = makeGrammar(preContext, REPLACE_INPUT_TAPE);
-    postContext = makeGrammar(postContext, REPLACE_INPUT_TAPE);
+    if (typeof preContext === 'string' && preContext.startsWith("#"))
+        beginsWith = true;
+    if (typeof postContext === 'string' && postContext.endsWith("#"))
+        endsWith = true;
+    fromGrammar = SingleTape(REPLACE_INPUT_TAPE, fromGrammar);
+    toGrammar = SingleTape(REPLACE_OUTPUT_TAPE, toGrammar);
+    preContext = SingleTape(REPLACE_INPUT_TAPE, preContext);
+    postContext = SingleTape(REPLACE_INPUT_TAPE, postContext);
     otherContext = makeGrammar(otherContext);
     return new ReplaceGrammar(fromGrammar, toGrammar, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
@@ -83,11 +96,11 @@ export function ReplaceBlock(
 }
 
 export function Correspond(
-    tape1: string,
-    tape2: string,
-    child: Grammar | string
+    child: Grammar | string,
+    tape1: string = REPLACE_INPUT_TAPE,
+    tape2: string = REPLACE_OUTPUT_TAPE,
 ): CorrespondGrammar {
-    child = makeGrammar(child);
+    child = makeGrammar(child, REPLACE_INPUT_TAPE);
     return new CorrespondGrammar(child, tape1, tape2);
 }
 
@@ -150,7 +163,9 @@ export function Lit(tape: string, text: string): LiteralGrammar {
     return new LiteralGrammar(tape, text);
 }
 
-export function Any(tape: string): DotGrammar {
+export function Any(
+    tape: string = DUMMY_REGEX_TAPE
+): DotGrammar {
     return new DotGrammar(tape);
 }
 

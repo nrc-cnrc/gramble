@@ -9,6 +9,8 @@ import {
     outputProduct,
     flatten,
     iterUnit,
+    REPLACE_INPUT_TAPE,
+    REPLACE_OUTPUT_TAPE,
 } from "./util";
 import { 
     Tape, TapeNamespace, 
@@ -1909,8 +1911,8 @@ export class CorrespondExpr extends UnaryExpr {
 
 export function constructCorrespond(
     child: Expr,
-    fromTape: string,
-    toTape: string
+    fromTape: string = REPLACE_INPUT_TAPE,
+    toTape: string = REPLACE_OUTPUT_TAPE
 ): Expr {
     return new CorrespondExpr(child, fromTape, toTape).simplify();
 }
@@ -1999,14 +2001,10 @@ export class MatchExpr extends UnaryExpr {
 
 export function constructMatch(
     child: Expr,
-    fromTape: string,
-    ...toTapes: string[]
+    fromTape: string = REPLACE_INPUT_TAPE,
+    toTape: string = REPLACE_OUTPUT_TAPE
 ): Expr {
-    let result = child;
-    for (const tape of toTapes) {
-        result = new MatchExpr(result, fromTape, tape).simplify();
-    }
-    return result;
+    return new MatchExpr(child, fromTape, toTape).simplify();
 }
 
 /* CONVENIENCE FUNCTIONS */
@@ -2120,7 +2118,6 @@ export function constructJoin(c1: Expr, c2: Expr, tapes1: Set<string>, tapes2: S
 export function constructNotContains(
     fromTapeName: string,
     children: Expr[], 
-    tapes: string[], 
     begin: boolean,
     end: boolean
 ): Expr {
@@ -2137,7 +2134,7 @@ export function constructNotContains(
               constructSequence(constructShort(constructSequence(dotStar, ...children)), dotStar) :
               constructSequence(dotStar, constructShort(constructSequence(...children, dotStar)));
     }
-    return constructNegation(seq, new Set(tapes));
+    return constructNegation(seq, new Set([fromTapeName]));
 }
 
 export function constructToken(

@@ -17,7 +17,6 @@ import {
     DUMMY_REGEX_TAPE,
     SILENT, VERBOSE_DEBUG, VERBOSE_STATES
 } from "../../src/util";
-import { EpsilonGrammar } from "../../src/grammars";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -684,6 +683,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {"$T": 'hihi'},
             {"$T": 'hallo'},
         ]
+    });
+
+    testGrammar({
+        desc: '18. Replacement of null ⨝ e -> a',
+        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+                    Null(), Replace("e","a")),
+        results: []
     });
 
 });
