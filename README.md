@@ -39,6 +39,26 @@ Then:
     npm run build
     npm install
 
+### Running from the command line
+
+Try generating from a sample file:
+
+    gramble generate examples/helloworld.csv
+
+If you want to generate from a particular symbol in that file, you can specify this with `-s`.  By default, it generates from the symbol `<sourcefile>.all`.
+
+    gramble generate examples/helloworld.csv -s greeting
+
+If your grammar is large, generating can be correspondingly slow, so if you just want a few samples you can use the `sample` subcommand.  The following command generates 10 samples from the grammar:
+
+    gramble sample examples/helloworld -n 10
+
+Note: Users in a managed Windows environment may have trouble installing the `gramble` command because it requires a symbolic link.  If you run into this, run `npm install` as an adminstrator.
+
+If you do not have administrator privileges, you can get the same result by running:
+
+    node packages/gramble-cli/bin/index.js generate examples/helloworld.csv
+
 ### Testing
 
     npm test

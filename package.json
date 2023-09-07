@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "build": "lerna run build",
-    "test": "lerna exec npm test"
+    "test": "lerna exec npm test",
+    "postinstall": "node ./libexec/postinstall.js"
   },
   "workspaces": [
     "packages/*"

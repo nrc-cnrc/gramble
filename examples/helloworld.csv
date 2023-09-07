@@ -1,0 +1,13 @@
+greeting =, text
+          , hello
+          , goodbye
+
+recipient =, text
+           , world
+           , kitty
+
+main =, embed,    embed
+      , greeting, recipient
+
+all =, embed
+     , main

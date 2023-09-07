@@ -4,12 +4,8 @@ const { spawnSync } = require('child_process');
 const { join, resolve } = require('path');
 
 let [_node, _script, ...args] = process.argv;
-
-// ts-node-script needs to be accessible on the PATH:
-let binPath = resolve(join(__dirname, 'node_modules', '.bin'));
-process.env.PATH = `${binPath}:${process.env.PATH}`
-
-let exit = spawnSync(join(__dirname, 'src', 'commandLine.ts'), args, {
+let programPath = join(__dirname, 'bin', 'index.js');
+let exit = spawnSync(_node, [programPath, ...args], {
   stdio: 'inherit'
 });
 

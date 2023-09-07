@@ -9,7 +9,7 @@ import {
     VERBOSE_STATES
 } from "@gramble/parser";
 import { createWriteStream, existsSync } from "fs";
-import { basename, dirname } from "path";
+import { basename, dirname, parse } from "path";
 import { Writable } from "stream";
 import * as commandLineArgs from "command-line-args";
 import * as commandLineUsage from "command-line-usage";
@@ -147,6 +147,11 @@ const commands: { [name: string]: Command } = {
     run(options: commandLineArgs.CommandLineOptions) {
         fileExistsOrFail(options.source);
 
+        if (options.symbol.trim().length == 0) {
+            const filename = parse(options.source).name  
+            options.symbol = filename + ".All";
+        }
+
         const outputStream = getOutputStream(options.output);
         const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
         const interpreter = sheetFromFile(options.source, timeVerbose);
@@ -220,6 +225,11 @@ const commands: { [name: string]: Command } = {
     run(options: commandLineArgs.CommandLineOptions) {
         fileExistsOrFail(options.source);
 
+        if (options.symbol.trim().length == 0) {
+            const filename = parse(options.source).name  
+            options.symbol = filename + ".All";
+        }
+        
         const outputStream = getOutputStream(options.output);
         const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
         const interpreter = sheetFromFile(options.source, timeVerbose);
