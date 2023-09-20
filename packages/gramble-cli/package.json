@@ -1,6 +1,6 @@
 {
   "name": "@gramble/cli",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "Command line interface to Gramble",
   "keywords": [
     "gramble",
@@ -12,9 +12,10 @@
   ],
   "author": "Patrick Littell",
   "contributors": [
+    "Patrick Littell <Patrick.Littell@nrc-cnrc.gc.ca>",
     "Eddie Antonio Santos <Eddie.Santos@nrc-cnrc.gc.ca>"
   ],
-  "homepage": "https://github.com/littell/gramble_ts#readme",
+  "homepage": "https://github.com/nrc-cnrc/gramble#readme",
   "license": "MIT",
   "bin": {
     "gramble": "./bin/index.js"
@@ -31,7 +32,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/littell/gramble_ts.git"
+    "url": "git+https://github.com/nrc-cnrc/gramble.git"
   },
   "scripts": {
     "build": "tsc",
@@ -39,7 +40,7 @@
     "test": "./run-locally help"
   },
   "bugs": {
-    "url": "https://github.com/littell/gramble_ts/issues"
+    "url": "https://github.com/nrc-cnrc/gramble/issues"
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",
@@ -51,7 +52,7 @@
     "typescript": "^3.5.3"
   },
   "dependencies": {
-    "@gramble/parser": "^0.0.2",
+    "@gramble/parser": "^1.0.0",
     "command-line-args": "^5.1.1",
     "command-line-usage": "^6.1.0",
     "es6-promisify": "^6.1.1",

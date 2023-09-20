@@ -1,6 +1,6 @@
 {
   "name": "@gramble/parser",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "The parse library that underlies Gramble",
   "keywords": [
     "parse",
@@ -8,7 +8,11 @@
     "morphology"
   ],
   "author": "Patrick Littell <Patrick.Littell@nrc-cnrc.gc.ca>",
-  "homepage": "https://github.com/littell/gramble_ts#readme",
+  "contributors": [
+    "Patrick Littell <Patrick.Littell@nrc-cnrc.gc.ca>",
+    "Darlene Stewart <Darlene.Stewart@nrc-crnc.gc.ca>"
+  ],
+  "homepage": "https://github.com/nrc-cnrc/gramble#readme",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -24,7 +28,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/littell/gramble_ts.git"
+    "url": "git+https://github.com/nrc-cnrc/gramble.git"
   },
   "scripts": {
     "build": "tsc",
@@ -83,7 +87,7 @@
     "testSampling": "mocha -r ts-node/register tests/sampling/*.ts"
   },
   "bugs": {
-    "url": "https://github.com/littell/gramble_ts/issues"
+    "url": "https://github.com/nrc-cnrc/gramble/issues"
   },
   "dependencies": {
     "@types/chai": "^4.2.12",

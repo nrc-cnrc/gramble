@@ -1,6 +1,6 @@
 {
   "name": "gramble",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Typescript interpreter for the Gramble language",
   "private": true,
   "scripts": {
@@ -19,10 +19,18 @@
     "Patrick Littell <Patrick.Littell@nrc-cnrc.gc.ca>",
     "Darlene Stewart <Darlene.Stewart@nrc-crnc.gc.ca>"
   ],
+  "homepage": "https://github.com/nrc-cnrc/gramble#readme",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nrc-cnrc/gramble.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nrc-cnrc/gramble/issues"
+  },
   "devDependencies": {
     "@google/clasp": "^2.4.2",
-    "@types/chai": "^4.3.5",
+    "@types/chai": "^4.3.6",
     "@types/mocha": "^10.0.1",
     "browserify": "^17.0.0",
     "chai": "^4.3.8",
