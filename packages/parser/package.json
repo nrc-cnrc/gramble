@@ -90,8 +90,8 @@
     "url": "https://github.com/nrc-cnrc/gramble/issues"
   },
   "dependencies": {
-    "@types/chai": "^4.3.6",
-    "@types/mocha": "^10.0.1",
+    "@types/chai": "^4.3.7",
+    "@types/mocha": "^10.0.2",
     "unicode-properties": "^1.4.1"
   },
   "devDependencies": {
