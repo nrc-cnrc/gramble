@@ -60,7 +60,7 @@ const programName = "gramble";
 interface Command {
   run(options: commandLineArgs.CommandLineOptions): void;
   synopsis: string | string[];
-  options: commandLineArgs.OptionDefinition[] & commandLineUsage.OptionList;
+  options: (commandLineArgs.OptionDefinition & commandLineUsage.OptionDefinition)[];
 }
 
 const commands: { [name: string]: Command } = {
@@ -95,7 +95,8 @@ const commands: { [name: string]: Command } = {
   },
 
   generate: {
-    synopsis: `generate [--symbol|-s {underline name}] [--format|-f {underline csv|json}] [--max|-m {underline n}] [--output|-o {underline file}] {underline source}`,
+    synopsis: "generate [--symbol|-s {underline name}] [--format|-f {underline csv|json}] " + 
+              "[--max|-m {underline n}] [--output|-o {underline file}] {underline source}",
     options: [
         {
             name: "source",
@@ -174,7 +175,8 @@ const commands: { [name: string]: Command } = {
   },
 
   sample: {
-    synopsis: "sample [--symbol|-s {underline name}] [--format|-f {underline csv|json}] [--num|-n {underline n}] [--output|-o {underline file}] {underline source}`",
+    synopsis: "sample [--symbol|-s {underline name}] [--format|-f {underline csv|json}] " +
+              "[--num|-n {underline n}] [--output|-o {underline file}] {underline source}`",
     options: [
       {
         name: "source",

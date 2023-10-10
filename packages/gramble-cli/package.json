@@ -35,7 +35,7 @@
     "url": "git+https://github.com/nrc-cnrc/gramble.git"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build --verbose",
     "prepare": "npm run build",
     "test": "./run-locally help"
   },
@@ -47,9 +47,9 @@
     "@types/command-line-args": "^5.2.1",
     "@types/command-line-usage": "^5.0.2",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^14.18.62",
+    "@types/node": "^18.11.9",
     "@types/papaparse": "^5.3.8",
-    "typescript": "^3.5.3"
+    "typescript": "^5.2.2"
   },
   "dependencies": {
     "@gramble/parser": "^1.0.0",
@@ -57,6 +57,6 @@
     "command-line-usage": "^7.0.1",
     "es6-promisify": "^7.0.0",
     "papaparse": "^5.4.1",
-    "ts-node": "^8.10.2"
+    "ts-node": "^10.9.1"
   }
 }

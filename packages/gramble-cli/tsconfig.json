@@ -1,8 +1,22 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "strict": true, 
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "rootDir": "./src",
-    "outDir":"./dist",
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+        "*": [ "src/@types/*"]
+    },
+    "sourceMap": true,
     "tsBuildInfoFile": "../../.build-cache/gramble-cli.tsbuildinfo",
     "types": [
       "chai",
@@ -10,12 +24,18 @@
       "node",
       "command-line-args",
       "command-line-usage"
-    ]
+    ],
+    "target": "es6"
   },
   "include": [
     "src"
   ],
+  "lib": [
+    "es2017",
+    "dom",
+    "es6"
+  ],
   "references": [
-	{ "path": "../parser" }
+	  { "path": "../parser" }
   ]
 }

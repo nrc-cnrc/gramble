@@ -31,7 +31,7 @@
     "url": "git+https://github.com/nrc-cnrc/gramble.git"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build --verbose",
     "prepare": "npm run build",
 
     "test": "mocha -r ts-node/register tests/*.ts tests/grammar/*.ts tests/parse/*.ts tests/source/*/*.ts",
