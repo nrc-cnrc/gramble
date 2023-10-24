@@ -13,7 +13,7 @@ import {
 import { 
     DevEnvironment, Gen, iterTake, 
     msToTime, StringDict, timeIt, 
-    stripHiddenTapes, GenOptions,
+    stripHiddenTapes, Options,
     SILENT,
     VERBOSE_TIME,
     logTime,
@@ -64,6 +64,8 @@ export class Interpreter {
     // as compilation towards an Expr progresses.
     public grammar: CollectionGrammar;
 
+    public opt: Options = new Options();
+
     public tapeNS: TapeNamespace = new TapeNamespace();
 
     // for convenience, rather than parse it as a header every time
@@ -72,18 +74,18 @@ export class Interpreter {
     constructor(
         public devEnv: DevEnvironment,
         g: Grammar,
-        public verbose: number = SILENT
+        opt: Partial<Options> = {}
     ) { 
 
-        const timeVerbose = (verbose & VERBOSE_TIME) != 0;
+        Object.assign(this.opt, opt);
+        const timeVerbose = (this.opt.verbose & VERBOSE_TIME) != 0;
 
         // Next, we perform a variety of grammar-to-grammar passes in order
         // to get the grammar into an executable state: symbol references fully-qualified,
         // semantically impossible tape structures are massaged into well-formed ones, some 
         // scope problems adjusted, etc.
         
-        const env = new PassEnv();
-        env.verbose = verbose;
+        const env = new PassEnv(this.opt);
 
         const nameGrammar = result(g)
                             .bind(g => PRE_NAME_PASSES.go(g, env))
@@ -110,44 +112,46 @@ export class Interpreter {
             this.grammar.collectAllVocab(this.tapeNS, env);
         }, timeVerbose, "Collected vocab");
 
-        logGrammar(this.verbose, this.grammar.id)
+        logGrammar(this.opt.verbose, this.grammar.id)
     }
 
     public static fromCSV(
         csv: string,
-        verbose: number = SILENT
+        opt: Partial<Options> = {}
     ): Interpreter {
         const devEnv = new SimpleDevEnvironment();
         devEnv.addSourceAsText("", csv);
-        return Interpreter.fromSheet(devEnv, "", verbose);
+        return Interpreter.fromSheet(devEnv, "", opt);
     }
 
     public static fromSheet(
         devEnv: DevEnvironment, 
         mainSheetName: string,
-        verbose: number = SILENT
+        opt: Partial<Options> = {}
     ): Interpreter {
+
+        const passOpts = new Options();
+        Object.assign(passOpts, opt);
 
         // First, load all the sheets
         let startTime = Date.now();
         const workbook = new Workbook(mainSheetName);
-        addSheet(workbook, mainSheetName, devEnv);
+        addSheet(workbook, mainSheetName, devEnv, passOpts);
         let elapsedTime = msToTime(Date.now() - startTime);
-        logTime(verbose, `Sheets loaded; ${elapsedTime}`);
+        logTime(passOpts.verbose, `Sheets loaded; ${elapsedTime}`);
         
-        const env = new PassEnv();
-        env.verbose = verbose;
+        const env = new PassEnv(passOpts);
         const grammar = SHEET_PASSES.go(workbook, env)
                                   .msgTo(m => devEnv.message(m));
 
-        const result = new Interpreter(devEnv, grammar, verbose);
+        const result = new Interpreter(devEnv, grammar, passOpts);
         result.workbook = workbook;
         return result;
     }
 
     public static fromGrammar(
         grammar: Grammar, 
-        verbose: number = SILENT
+        opt: Partial<Options> = {}
     ): Interpreter {
         const devEnv = new SimpleDevEnvironment();
 
@@ -157,7 +161,7 @@ export class Interpreter {
             grammar = coll;
         }
 
-        return new Interpreter(devEnv, grammar, verbose);
+        return new Interpreter(devEnv, grammar, opt);
     }
 
     public allSymbols(): string[] {
@@ -216,12 +220,9 @@ export class Interpreter {
         symbolName: string = "",
         restriction: StringDict[] | StringDict = {},
         maxResults: number = Infinity,
-        maxRecursion: number = 2, 
-        maxChars: number = 100,
         stripHidden: boolean = true
     ): StringDict[] {
-        const gen = this.generateStream(symbolName, 
-            restriction, maxRecursion, maxChars, stripHidden);
+        const gen = this.generateStream(symbolName, restriction, stripHidden);
         const [results, _] = iterTake(gen, maxResults);
         return results;
     }
@@ -229,56 +230,38 @@ export class Interpreter {
     public *generateStream(
         symbolName: string = "",
         restriction: StringDict[] | StringDict = {},
-        maxRecursion: number = 2, 
-        maxChars: number = 100,
         stripHidden: boolean = true
     ): Gen<StringDict> {
-
-        const opt: GenOptions = {
-            random: false,
-            maxRecursion: maxRecursion,
-            maxChars: maxChars,
-            verbose: this.verbose
-        }
-        const expr = this.prepareExpr(symbolName, restriction, opt);
+        const expr = this.prepareExpr(symbolName, restriction);
 
         if (stripHidden) {
-            yield* stripHiddenTapes(generate(expr, this.tapeNS, opt));
+            yield* stripHiddenTapes(generate(expr, this.tapeNS, false, this.opt));
             return;
         }
 
-        yield* generate(expr, this.tapeNS, opt);
+        yield* generate(expr, this.tapeNS, false, this.opt);
     }
     
-    public sample(symbolName: string = "",
+    public sample(
+        symbolName: string = "",
         numSamples: number = 1,
         restriction: StringDict | undefined = undefined,
-        maxRecursion: number = 4, 
-        maxChars: number = 100,
         stripHidden: boolean = true
     ): StringDict[] {
         return [...this.sampleStream(symbolName, 
-            numSamples, restriction, maxRecursion, maxChars, stripHidden)];
+            numSamples, restriction, stripHidden)];
     } 
 
-    public *sampleStream(symbolName: string = "",
+    public *sampleStream(
+        symbolName: string = "",
         numSamples: number = 1,
         restriction: StringDict | undefined = undefined,
-        maxRecursion: number = 4, 
-        maxChars: number = 100,
         stripHidden: boolean = true
     ): Gen<StringDict> {
 
-        const opt: GenOptions = {
-            random: true,
-            maxRecursion: maxRecursion,
-            maxChars: maxChars,
-            verbose: this.verbose
-        }
-
-        const expr = this.prepareExpr(symbolName, restriction, opt);
+        const expr = this.prepareExpr(symbolName, restriction);
         for (let i = 0; i < numSamples; i++) {
-            let gen = generate(expr, this.tapeNS, opt);
+            let gen = generate(expr, this.tapeNS, true, this.opt);
             if (stripHidden) {
                 gen = stripHiddenTapes(gen);
             }
@@ -297,10 +280,9 @@ export class Interpreter {
     
     public prepareExpr(
         symbolName: string = "",
-        query: StringDict[] | StringDict = {},
-        opt: GenOptions
+        query: StringDict[] | StringDict = {}
     ): Expr {
-        const env = new PassEnv().pushSymbols(this.grammar.symbols);
+        const env = new PassEnv(this.opt).pushSymbols(this.grammar.symbols);
         const qualifiedName = this.resolveName(symbolName);
         
         let targetGrammar: Grammar = this.grammar.selectSymbol(qualifiedName);
@@ -317,7 +299,7 @@ export class Interpreter {
         }
         
         let tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
-        targetGrammar = infinityProtection(targetGrammar, tapePriority, opt.maxChars, env);
+        targetGrammar = infinityProtection(targetGrammar, tapePriority, this.opt.maxChars, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);
 
         return targetGrammar.constructExpr(this.tapeNS);  
@@ -329,7 +311,7 @@ export class Interpreter {
                       ? expr.symbols
                       : {};
         const pass = new ExecuteTests(this.tapeNS, symbols);
-        const env = new PassEnv();
+        const env = new PassEnv(this.opt);
         pass.transform(this.grammar, env)
             .msgTo(m => sendMsg(this.devEnv, m));
     }
@@ -346,7 +328,9 @@ function sendMsg(devEnv: DevEnvironment, msg: Msg): void {
 function addSheet(
     project: Workbook, 
     sheetName: string,
-    devEnv: DevEnvironment): void {
+    devEnv: DevEnvironment,
+    opt: Options
+): void {
 
     if (project.hasSheet(sheetName)) {
         // already loaded it, don't have to do anything
@@ -366,7 +350,7 @@ function addSheet(
 
     const sheet = new Worksheet(sheetName, cells);
     project.sheets[sheetName] = sheet;
-    const transEnv = new PassEnv();
+    const transEnv = new PassEnv(opt);
     const grammar = SHEET_PASSES.go(project, transEnv)
                                      .msgTo((_) => {});
     // check to see if any names didn't get resolved
@@ -383,7 +367,7 @@ function addSheet(
     }
 
     for (const possibleSheetName of unresolvedNames) {
-        addSheet(project, possibleSheetName, devEnv);
+        addSheet(project, possibleSheetName, devEnv, opt);
     } 
 
     return;

@@ -9,7 +9,7 @@ import {
 } from "./exprs";
 import { TapeNamespace } from "./tapes";
 import { 
-    Gen, GenOptions,
+    Gen, Options,
     iterTake,
     msToTime, StringDict
 } from "./util";
@@ -33,14 +33,15 @@ import {
 export function* generate(
     expr: Expr,
     tapeNS: TapeNamespace,
-    opt: GenOptions
+    random: boolean,
+    opt: Options
 ): Gen<StringDict> {
     const stack = new CounterStack(opt.maxRecursion);
     const symbolNS = new ExprNamespace();
     const stats = new DerivStats();
-    const env = new DerivEnv(tapeNS, symbolNS, stack, opt, stats);
+    const env = new DerivEnv(tapeNS, symbolNS, stack, random, opt, stats);
 
-    const NEXTS_TO_TAKE = opt.random ? 1 : Infinity;
+    const NEXTS_TO_TAKE = random ? 1 : Infinity;
     const startingTime = Date.now();
 
     let states: (Expr|ForwardGen)[] = [expr];

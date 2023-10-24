@@ -152,11 +152,12 @@ export function prepareInterpreter(
     grammar: Grammar | Interpreter,
     verbose: number = SILENT,
     symbolName: string = "",
+    maxRecursion: number = DEFAULT_MAX_RECURSION,
     throwError: boolean = false // in case a test wants to catch errors itself
 ): Interpreter {
     const interpreter = (grammar instanceof Interpreter) ?
                         grammar :
-                        Interpreter.fromGrammar(grammar, verbose);
+                        Interpreter.fromGrammar(grammar, {verbose: verbose, maxRecursion:maxRecursion});
     
     // In case there are any tests, we want to run them so their errors accumulate
     interpreter.runTests();
@@ -188,16 +189,15 @@ export function generateOutputsFromGrammar(
     stripHidden: boolean = true,
     throwError: boolean = false // in case a test wants to catch errors itself
 ): StringDict[] {
-    const interpreter = prepareInterpreter(grammar, verbose, symbolName, throwError);
+    maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
+    const interpreter = prepareInterpreter(grammar, verbose, symbolName, maxRecursion, throwError);
                           
     let outputs: StringDict[] = [];
 
-    maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
 
     try {
         outputs = [
-            ...interpreter.generate(symbolName, restriction, Infinity,
-                                    maxRecursion, undefined, stripHidden)
+            ...interpreter.generate(symbolName, restriction, Infinity, stripHidden)
         ];
     } catch (e) {
         if (throwError) throw e;
@@ -381,12 +381,12 @@ export function testParseMultiple(
                 let outputs: StringDict[] = [];
                 try {    
                     //grammar = grammar.compile(2, maxRecursion);
-                    const interpreter = Interpreter.fromGrammar(grammar, verbose);
+                    const interpreter = Interpreter.fromGrammar(grammar, {verbose: verbose});
                     if (Object.keys(inputs).length == 0) {
                         throw new Error("no input in pair " +
                             `${JSON.stringify(inputs)}, ${JSON.stringify(expectedResults)}`);
                     }
-                    outputs = [...interpreter.generate("", inputs, Infinity, maxRecursion)];
+                    outputs = [...interpreter.generate("", inputs, Infinity)];
                 } catch (e) {
                     it("Unexpected Exception", function() {
                         console.log("");

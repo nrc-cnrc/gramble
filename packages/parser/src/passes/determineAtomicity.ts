@@ -7,7 +7,7 @@ import {
     ReplaceGrammar, SequenceGrammar, ShortGrammar, 
     StringPairSet 
 } from "../grammars";
-import { OPTIMIZE_ATOMIC, ValueSet, listIntersection } from "../util";
+import { ValueSet, listIntersection } from "../util";
 import { renameTape } from "../tapes";
 
 type AtomicityClass = {
@@ -20,7 +20,7 @@ export function determineAtomicity(
     tape: string,
     env: PassEnv
 ): boolean {
-    if (!OPTIMIZE_ATOMIC) return false;
+    if (!env.opt.optimizeAtomicity) return false;  
     const tapeInfo = getAtomicityClass(g, tape, new ValueSet(), env);
     return !tapeInfo.joinable || !tapeInfo.concatenable;
 }

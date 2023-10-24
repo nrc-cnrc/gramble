@@ -28,7 +28,7 @@ export function sheetFromFile(
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
     const devEnv = new TextDevEnvironment(dir);
-    const project = Interpreter.fromSheet(devEnv, sheetName, verbose);
+    const project = Interpreter.fromSheet(devEnv, sheetName, {verbose:verbose});
     return project;
 }
 

@@ -1,23 +1,21 @@
 import { Grammar } from "./grammars";
 import { Msgs, Result, result } from "./msgs";
 import { 
-    Dict, Namespace, 
-    SILENT, timeIt, 
+    Dict, Options, 
+    Namespace, timeIt, 
     VERBOSE_TIME 
 } from "./util";
 
 export class PassEnv {
 
     constructor(
-        public verbose: number = SILENT,
-        public parallelize: boolean = false,
+        public opt: Options,
         public symbolNS: Namespace<Grammar> = new Namespace()
     ) { }
 
     public pushSymbols(d: Dict<Grammar>): PassEnv {
         const newSymbolNS = this.symbolNS.push(d);
-        return new PassEnv(this.verbose, this.parallelize, 
-                        newSymbolNS);
+        return new PassEnv(this.opt, newSymbolNS);
     }
 
 }
@@ -32,7 +30,7 @@ export abstract class Pass<T1,T2> {
             t = t.msgTo(msgs);     
         }
 
-        const verbose = (env.verbose & VERBOSE_TIME) != 0;
+        const verbose = (env.opt.verbose & VERBOSE_TIME) != 0;
         return timeIt(() => this.transformRoot(t as T1, env).msg(msgs), 
                verbose, this.desc);
     }

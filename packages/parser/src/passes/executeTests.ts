@@ -1,4 +1,4 @@
-import { Dict, GenOptions, StringDict } from "../util";
+import { Dict, Options, StringDict } from "../util";
 import { constructCollection, CounterStack, Expr } from "../exprs";
 import { Msgs, Err, Success } from "../msgs";
 import { 
@@ -112,7 +112,7 @@ export class ExecuteTests extends GrammarPass {
     
     public executeTest(test: AbstractTestGrammar, env: PassEnv): StringDict[] {
 
-        const opt = new GenOptions();
+        const opt = new Options();
 
         // create a filter for each test
         let targetGrammar: Grammar = new JoinGrammar(test.child, test.test);
@@ -128,7 +128,7 @@ export class ExecuteTests extends GrammarPass {
 
         let expr = targetGrammar.constructExpr(this.tapeNS);
         expr = constructCollection(expr, this.symbolTable);
-        return [...generate(expr, this.tapeNS, opt)];
+        return [...generate(expr, this.tapeNS, false, opt)];
 
     }
 }

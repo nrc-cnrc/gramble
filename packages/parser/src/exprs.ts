@@ -1,5 +1,5 @@
 import {
-    DIRECTION_LTR, Gen, GenOptions, 
+    DIRECTION_LTR, Gen, Options, 
     logDebug, logTime, logStates, 
     logGrammar, setDifference, foldRight, foldLeft,
     VERBOSE_DEBUG,
@@ -54,18 +54,19 @@ export class DerivEnv {
         public tapeNS: TapeNamespace,
         public symbolNS: Namespace<Expr>,
         public stack: CounterStack,
-        public opt: GenOptions,
+        public random: boolean,
+        public opt: Options,
         public stats: DerivStats
     ) { }
 
     public renameTape(fromKey: string, toKey: string): DerivEnv {
         const newTapeNS = this.tapeNS.rename(fromKey, toKey);
-        return new DerivEnv(newTapeNS, this.symbolNS, this.stack, this.opt, this.stats);
+        return new DerivEnv(newTapeNS, this.symbolNS, this.stack, this.random, this.opt, this.stats);
     }
 
     public addTapes(tapes: Dict<Tape>): DerivEnv {
         const newTapeNS = new TapeNamespace(tapes, this.tapeNS);
-        return new DerivEnv(newTapeNS, this.symbolNS, this.stack, this.opt, this.stats);
+        return new DerivEnv(newTapeNS, this.symbolNS, this.stack, this.random, this.opt, this.stats);
     }
 
     public getSymbol(symbolName: string): Expr {
@@ -74,7 +75,7 @@ export class DerivEnv {
     
     public pushSymbols(symbols: Dict<Expr>): DerivEnv {
         const newSymbolNS = new ExprNamespace(symbols, this.symbolNS);
-        return new DerivEnv(this.tapeNS, newSymbolNS, this.stack, this.opt, this.stats);
+        return new DerivEnv(this.tapeNS, newSymbolNS, this.stack, this.random, this.opt, this.stats);
     }
 
     public getTape(tapeName: string): Tape {
@@ -83,7 +84,7 @@ export class DerivEnv {
 
     public addSymbol(symbolName: string): DerivEnv {
         const newStack = this.stack.add(symbolName);
-        return new DerivEnv(this.tapeNS, this.symbolNS, newStack, this.opt, this.stats);
+        return new DerivEnv(this.tapeNS, this.symbolNS, newStack, this.random, this.opt, this.stats);
     }
 
     public incrStates(): void {
@@ -264,7 +265,7 @@ export function *randomCut<T>(
     gs: T[], 
     env: DerivEnv
 ): Gen<T> {
-    const offset = env.opt.random 
+    const offset = env.random 
                      ? Math.floor(Math.random()*gs.length)
                      : 0;
     for (let i = 0; i < gs.length; i++) {
@@ -277,7 +278,7 @@ export function *randomCutIter<T>(
     gs: Gen<T>[], 
     env: DerivEnv
 ): Gen<T> {
-    const offset = env.opt.random 
+    const offset = env.random 
                      ? Math.floor(Math.random()*gs.length)
                      : 0;
     for (let i = 0; i < gs.length; i++) {
@@ -323,7 +324,7 @@ function *disjoin(
     env: DerivEnv,
     obligatory: boolean = false
 ): Derivs {
-    if (!obligatory && env.opt.random) {
+    if (!obligatory && env.random) {
         yield* ds;
         return;
     }
@@ -849,7 +850,7 @@ export class UnionExpr extends Expr {
         query: Query,
         env: DerivEnv
     ): Derivs {
-        if (env.opt.random) {
+        if (env.random) {
             const childDerivs = this.children.map(c => 
                                     c.deriv(query, env));
             yield* randomCutIter(childDerivs, env);
@@ -864,7 +865,7 @@ export class UnionExpr extends Expr {
     }
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
-        if (env.opt.random) {
+        if (env.random) {
             const childForwards = this.children.map(c => 
                 c.forward(env));
             yield* randomCutIter(childForwards, env);

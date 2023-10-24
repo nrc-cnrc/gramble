@@ -21,7 +21,6 @@ export const AUTO_SYMBOL_NAME = INTERNAL_PREFIX + "Auto"
 export const DEFAULT_MAX_CHARS = 100;
 
 export const DIRECTION_LTR: boolean = true; // whether we parse/generate from the beginning or end of words
-export const OPTIMIZE_ATOMIC = true;
 
 export const SILENT = 0;
 export const VERBOSE_TIME = 1;
@@ -56,12 +55,11 @@ export function logGrammar(verbose: number, msg: string): void {
     }
 }
 
-
-export class GenOptions {
-    public random: boolean = false;
+export class Options {
     public maxRecursion: number = 2; 
     public maxChars: number = 100;
-    public verbose: number = SILENT
+    public verbose: number = SILENT;
+    public optimizeAtomicity: boolean = true;
 }
 
 export type Gen<T> = Generator<T, void, undefined>;
