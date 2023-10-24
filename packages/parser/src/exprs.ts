@@ -812,9 +812,11 @@ class ConcatExpr extends BinaryExpr {
         let results: StringDict[] = [{}];
         let current: Expr = this;
         while (current instanceof ConcatExpr) {
-            const unitDenotation = current.child2.getOutputs();
+            const recursingChild = DIRECTION_LTR ? current.child2 : current.child1;
+            const tailChild = DIRECTION_LTR ? current.child1 : current.child2;
+            const unitDenotation = recursingChild.getOutputs();
             results = outputProduct(unitDenotation, results);
-            current = current.child1;
+            current = tailChild;
         }
 
         // now we're at the last current, and it's not a ConcatExpr, get its
