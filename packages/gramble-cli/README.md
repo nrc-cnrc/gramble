@@ -12,9 +12,11 @@ Usage
 
 Gramble has a few subcommands:
 
- 1. generate
- 2. parse
+ 1. help
+ 2. generate
  3. sample
+
+### Help
 
 For general help, type
 
@@ -29,17 +31,28 @@ For help for a **specific command**, type
 
 Generate all words from your Gramble grammar:
 
-    gramble generate [--max=n][--otier=tier] [--output|-o file] <source>
+    gramble generate [--symbol|-s <name>] [--format|-f csv|json] [--max|-m <n>]
+                     [--output|-o <file>] <source>
 
-### Parse
-
-Parse or analyze forms using your Gramble grammar:
-
-    gramble parse --itier=tier [--otier=tier] [--random] [--max=n] <source>
-    gramble parse --tokenize --itier=tier --otier=tier [--random] <source>
+  | | |
+  ---|---
+  -s, --symbol \<name\> | symbol to start generation. Defaults to 'all', the default symbol
+  -o, --output \<file\> | write output to \<file\>
+  -f, --format csv\|json | write output in CSV or JSON formats
+  -m, --max \<n\> | generate at most \<n\> terms [default: unlimited]
+  -v, --verbose | log error and info messages
 
 ### Sample
 
 Sample a few words from your Gramble grammar:
 
-    gramble sample [--output|-o file] <source>
+    gramble sample [--symbol|-s <name>] [--format|-f csv|json] [--num|-n <n>]
+                   [--output|-o <file>] <source>
+
+  | | |
+  ---|---
+  -s, --symbol \<name\> | symbol to start generation. Defaults to 'all', the default symbol
+  -o, --output \<file\> | write output to \<file\>
+  -f, --format csv\|json | write output in CSV or JSON formats
+  -n, --num \<n\> | sample \<n\> terms [default: 5]
+  -v, --verbose | log error and info messages
