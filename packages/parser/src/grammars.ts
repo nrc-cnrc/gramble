@@ -169,41 +169,7 @@ export abstract class AbstractGrammar extends Component {
     }
 
     public abstract getChildren(): Grammar[];
-
-    public getAllTapePriority(
-        tapeNS: TapeNamespace,
-        env: PassEnv
-    ): string[] {
-        const tapeNames = this.calculateTapes(new CounterStack(2), env);
-        const priorities: [string, number][] = tapeNames.map(t => {
-            const joinWeight = this.getTapePriority(t, new StringPairSet(), env);
-            const tape = tapeNS.get(t);
-            const priority = joinWeight * Math.max(tape.vocab.size, 1);
-            return [t, priority];
-        });
-
-        const result = priorities.filter(([t, priority]) => priority >= 0)
-                         .sort((a, b) => b[1] - a[1])
-                         .map(([a,_]) => a);
-        
-        return result;
-    }
     
-    public getTapePriority(
-        tapeName: string,
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): number {
-        const priorities: number[] = [0];
-        for (const child of this.getChildren()) {
-            const childPriority = child.getTapePriority(tapeName, symbolsVisited, env);
-            if (childPriority < 0) {
-                return childPriority;
-            }
-            priorities.push(childPriority);
-        }
-        return Math.max(...priorities);
-    }
 
     /**
      * Collects all explicitly mentioned characters in the grammar for all tapes.
@@ -371,14 +337,6 @@ export class LiteralGrammar extends AtomicGrammar {
     public getLiterals(): LiteralGrammar[] {
         return [this];
     }
-
-    public getTapePriority(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): number {
-        return (tapeName == this.tapeName) ? 1 : 0;
-    }
     
     public collectVocab(
         tapeName: string,
@@ -422,14 +380,6 @@ export class DotGrammar extends AtomicGrammar {
 
     public get id(): string {
         return `Dot(${this.tapeName})`;
-    }
-    
-    public getTapePriority(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): number {
-        return (tapeName == this.tapeName) ? 1 : 0;
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
@@ -541,16 +491,6 @@ abstract class BinaryGrammar extends AbstractGrammar {
     public getChildren(): Grammar[] { 
         return [this.child1, this.child2];
     }
-    
-    public getTapePriority(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): number {
-        const c1priority = this.child1.getTapePriority(tapeName, symbolsVisited, env);
-        const c2priority = this.child2.getTapePriority(tapeName, symbolsVisited, env);
-        return (c1priority * 10 + c2priority);
-    }
 }
 
 export class ShortGrammar extends UnaryGrammar {
@@ -598,21 +538,6 @@ export class JoinGrammar extends BinaryGrammar {
 
     public get id(): string {
         return `Join(${this.child1.id},${this.child2.id})`;
-    }
-
-    public getTapePriority(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): number {
-        const c1tapes = new Set(this.child1.tapes);
-        const c2tapes = new Set(this.child2.tapes);
-        const c1priority = this.child1.getTapePriority(tapeName, symbolsVisited, env);
-        const c2priority = this.child2.getTapePriority(tapeName, symbolsVisited, env);
-        if (c1tapes.has(tapeName) && c2tapes.has(tapeName)) {
-            return c1priority + c2priority * 10;
-        }
-        return (c1priority + c2priority);
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
@@ -816,19 +741,6 @@ export class RenameGrammar extends UnaryGrammar {
                     });
     }
 
-    public getTapePriority(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): number {
-        if (tapeName != this.toTape && tapeName == this.fromTape) {
-            return 0;
-        }
-
-        const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
-        return this.child.getTapePriority(newTapeName, symbolsVisited, env);
-    }
-
     public collectVocab(
         tapeName: string,
         atomic: boolean,
@@ -933,16 +845,6 @@ export class CursorGrammar extends UnaryGrammar {
         return `Cursor_${this.tape}(${this.child.id})`;
     }
 
-    public getTapePriority(
-        tapeName: string,
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): number {
-        if (tapeName == this.tape) {
-            return -1;
-        }
-        return super.getTapePriority(tapeName, symbolsVisited, env);
-    }
 
     public constructExpr(tapeNS: TapeNamespace): Expr {
         const childExpr = this.child.constructExpr(tapeNS);
@@ -964,17 +866,6 @@ export class PreTapeGrammar extends UnaryGrammar {
 
     public get id(): string {
         return `Pre(${this.child.id})`;
-    }
-
-    public getTapePriority(
-        tapeName: string,
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): number {
-        if (tapeName == this.fromTape) {
-            return -1;
-        }
-        return super.getTapePriority(tapeName, symbolsVisited, env);
     }
 
     public constructExpr(tapeNS: TapeNamespace): Expr {
@@ -1006,18 +897,6 @@ export class HideGrammar extends UnaryGrammar {
         return `Hide(${this.child.id},${this.tapeName})`;
     }
     
-    public getTapePriority(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): number {
-        if (tapeName != this.toTape && tapeName == this.tapeName) {
-            return 0;
-        }
-        const newTapeName = renameTape(tapeName, this.toTape, this.tapeName);
-        return this.child.getTapePriority(newTapeName, symbolsVisited, env);
-    }
-
     public collectVocab(
         tapeName: string,
         atomic: boolean,
@@ -1278,19 +1157,6 @@ export class EmbedGrammar extends AtomicGrammar {
             }
         }
         return this._tapes;
-    }
-    
-    public getTapePriority(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): number {
-        if (symbolsVisited.has([this.name, tapeName])) { 
-            return 0;
-        }
-        symbolsVisited.add([this.name, tapeName]);
-        const referent = env.symbolNS.get(this.name);
-        return referent.getTapePriority(tapeName, symbolsVisited, env);
     }
 
     public collectVocab(

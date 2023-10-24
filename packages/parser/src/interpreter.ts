@@ -39,6 +39,7 @@ import {
 import { ExecuteTests } from "./passes/executeTests";
 import { resolveName } from "./passes/qualifyNames";
 import { infinityProtection } from "./passes/infinityProtection";
+import { prioritizeTapes } from "./passes/prioritizeTapes";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -315,7 +316,7 @@ export class Interpreter {
             targetGrammar.collectAllVocab(this.tapeNS, env);
         }
         
-        let tapePriority = targetGrammar.getAllTapePriority(this.tapeNS, env);
+        let tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
         targetGrammar = infinityProtection(targetGrammar, tapePriority, opt.maxChars, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);
 

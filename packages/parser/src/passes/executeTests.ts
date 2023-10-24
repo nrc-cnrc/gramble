@@ -14,6 +14,7 @@ import { generate } from "../generator";
 import { PassEnv } from "../passes";
 import { infinityProtection } from "./infinityProtection";
 import { Cursor } from "../grammarConvenience";
+import { prioritizeTapes } from "./prioritizeTapes";
 
 export class ExecuteTests extends GrammarPass {
 
@@ -120,7 +121,7 @@ export class ExecuteTests extends GrammarPass {
         // that the Equals we made above has a different join/concat tape structure
         // than the original grammar, so we have to check
         targetGrammar.collectAllVocab(this.tapeNS, env);        
-        const tapePriority = targetGrammar.getAllTapePriority(this.tapeNS, env);
+        const tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
         
         targetGrammar = infinityProtection(targetGrammar, tapePriority, opt.maxChars, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);

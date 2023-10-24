@@ -91,11 +91,11 @@ export function getAtomicityClassDefault(
 
 function getAtomicityClassDot(
     g: DotGrammar,
-    tapeName: string,
+    tape: string,
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    if (tapeName == g.tapeName) {
+    if (tape == g.tapeName) {
         return { joinable: true, concatenable: true };
     }
     return { joinable: false, concatenable: false };
@@ -103,17 +103,17 @@ function getAtomicityClassDot(
 
 function getAtomicityClassSeq(
     g: SequenceGrammar,
-    tapeName: string,
+    tape: string,
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    const result = getAtomicityClassDefault(g, tapeName, symbolsVisited, env);
+    const result = getAtomicityClassDefault(g, tape, symbolsVisited, env);
     if (result.concatenable) return result; // nothing is going to change if
                                             // it's already concatenable
     let alreadyFound = false;
     for (const child of g.children) {
         const ts = new Set(child.tapes);
-        if (!(ts.has(tapeName))) {
+        if (!(ts.has(tape))) {
             continue;
         }
         if (alreadyFound) {
@@ -127,133 +127,133 @@ function getAtomicityClassSeq(
 
 function getAtomicityClassCorrespond(
     g: CorrespondGrammar,
-    tapeName: string,
+    tape: string,
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    if (tapeName == g.tape1 || tapeName == g.tape2) {
+    if (tape == g.tape1 || tape == g.tape2) {
         return { joinable: true, concatenable: true };
     }
-    return getAtomicityClassDefault(g, tapeName, symbolsVisited, env);
+    return getAtomicityClassDefault(g, tape, symbolsVisited, env);
 }
 
 function getAtomicityClassReplace(
     g: ReplaceGrammar,
-    tapeName: string,
+    tape: string,
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
     const ts = new Set(g.tapes);
-    if (ts.has(tapeName)) {
+    if (ts.has(tape)) {
         return { joinable: true, concatenable: true };
     }
-    return getAtomicityClassDefault(g, tapeName, symbolsVisited, env);
+    return getAtomicityClassDefault(g, tape, symbolsVisited, env);
 }
 
 
 function getAtomicityClassShort(
     g: ShortGrammar,
-    tapeName: string,
+    tape: string,
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
     const ts = new Set(g.tapes);
-    if (ts.has(tapeName)) {
+    if (ts.has(tape)) {
         return { joinable: true, concatenable: true };
     }
-    return getAtomicityClassDefault(g, tapeName, symbolsVisited, env);
+    return getAtomicityClassDefault(g, tape, symbolsVisited, env);
 }
 
 function getAtomicityClassIntersect(
     g: IntersectionGrammar,
-    tapeName: string,
+    tape: string,
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    const result = getAtomicityClassDefault(g, tapeName, symbolsVisited, env);
+    const result = getAtomicityClassDefault(g, tape, symbolsVisited, env);
     const child1Tapes = g.child1.tapes;
     const child2Tapes = g.child2.tapes;
     const intersection = new Set(listIntersection(child1Tapes, child2Tapes));
-    result.joinable ||= intersection.has(tapeName);
+    result.joinable ||= intersection.has(tape);
     return result;
 }
 
 function getAtomicityClassEmbed(
     g: EmbedGrammar,
-    tapeName: string,
+    tape: string,
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    if (symbolsVisited.has([g.name, tapeName])) { 
+    if (symbolsVisited.has([g.name, tape])) { 
         // we're recursing to a symbol we've already visited.  
         // these might be true or false, but we can just return 
         // false here because if it's true in other contexts 
         // it'll end up true in the end
         return { joinable: false, concatenable: false };
     }
-    symbolsVisited.add([g.name, tapeName]);
+    symbolsVisited.add([g.name, tape]);
     const referent = env.symbolNS.get(g.name);
-    return getAtomicityClass(referent, tapeName, symbolsVisited, env);
+    return getAtomicityClass(referent, tape, symbolsVisited, env);
 }
 
 function getAtomicityClassCollection(
     g: CollectionGrammar,
-    tapeName: string,
+    tape: string,
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
     const newEnv = env.pushSymbols(g.symbols);
-    return getAtomicityClassDefault(g, tapeName, symbolsVisited, newEnv);
+    return getAtomicityClassDefault(g, tape, symbolsVisited, newEnv);
 }
 
 function getAtomicityClassMatch(
     g: MatchGrammar,
-    tapeName: string,
+    tape: string,
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    if (tapeName == g.fromTape || tapeName == g.toTape) {
+    if (tape == g.fromTape || tape == g.toTape) {
         return { joinable: true, concatenable: true };
     }
-    return getAtomicityClassDefault(g, tapeName, symbolsVisited, env);
+    return getAtomicityClassDefault(g, tape, symbolsVisited, env);
 }
 
 
 function getAtomicityClassHide(
     g: HideGrammar,
-    tapeName: string,
+    tape: string,
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    if (tapeName != g.toTape && tapeName == g.tapeName) {
+    if (tape != g.toTape && tape == g.tapeName) {
         return {joinable: false, concatenable: false};
     }
-    const newTapeName = renameTape(tapeName, g.toTape, g.tapeName);
+    const newTapeName = renameTape(tape, g.toTape, g.tapeName);
     return getAtomicityClass(g.child, newTapeName, symbolsVisited, env);
 }
 
 function getAtomicityClassNegation(
     g: NegationGrammar,
-    tapeName: string, 
+    tape: string, 
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
     const ts = new Set(g.tapes);
-    if (ts.has(tapeName)) {
+    if (ts.has(tape)) {
         return { joinable: true, concatenable: true };
     }
-    return getAtomicityClassDefault(g, tapeName, symbolsVisited, env);
+    return getAtomicityClassDefault(g, tape, symbolsVisited, env);
 }
 
 function getAtomicityClassRepeat(
     g: RepeatGrammar,
-    tapeName: string, 
+    tape: string, 
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    const result = getAtomicityClass(g.child, tapeName, symbolsVisited, env);
+    const result = getAtomicityClass(g.child, tape, symbolsVisited, env);
     const ts = new Set(g.tapes);
-    if (ts.has(tapeName)) {
+    if (ts.has(tape)) {
         result.concatenable = true;
     }
     return result;
@@ -261,27 +261,27 @@ function getAtomicityClassRepeat(
 
 function getAtomicityClassRename(
     g: RenameGrammar,
-    tapeName: string, 
+    tape: string, 
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    if (tapeName != g.toTape && tapeName == g.fromTape) {
+    if (tape != g.toTape && tape == g.fromTape) {
         return {joinable: false, concatenable: false};
     }
-    const newTapeName = renameTape(tapeName, g.toTape, g.fromTape);
+    const newTapeName = renameTape(tape, g.toTape, g.fromTape);
     return getAtomicityClass(g.child, newTapeName, symbolsVisited, env);
 }
 
 function getAtomicityClassJoin(
     g: JoinGrammar,
-    tapeName: string, 
+    tape: string, 
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    const result = getAtomicityClassDefault(g, tapeName, symbolsVisited, env);
+    const result = getAtomicityClassDefault(g, tape, symbolsVisited, env);
     const child1Tapes = g.child1.tapes;
     const child2Tapes = g.child2.tapes;
     const intersection = new Set(listIntersection(child1Tapes, child2Tapes));
-    result.joinable ||= intersection.has(tapeName);
+    result.joinable ||= intersection.has(tape);
     return result;
 }
