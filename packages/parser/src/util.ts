@@ -21,12 +21,14 @@ export const AUTO_SYMBOL_NAME = INTERNAL_PREFIX + "Auto"
 export const DEFAULT_MAX_CHARS = 100;
 
 export const DIRECTION_LTR: boolean = true; // whether we parse/generate from the beginning or end of words
+export const OPTIMIZE_ATOMIC = true;
 
 export const SILENT = 0;
 export const VERBOSE_TIME = 1;
 export const VERBOSE_DEBUG = 1 << 1;
 export const VERBOSE_STATES = 1 << 2;
 export const VERBOSE_GRAMMAR = 1 << 3;
+
 
 export function logDebug(verbose: number, ...msgs: string[]): void {
     if ((verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {

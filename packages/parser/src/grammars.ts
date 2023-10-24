@@ -35,27 +35,21 @@ import {
     HIDDEN_PREFIX,
     listIntersection,
     listUnique,
-    logDebug,
     REPLACE_INPUT_TAPE,
     REPLACE_OUTPUT_TAPE,
     setUnion,
-    StringDict,
     StringSet,
     tokenizeUnicode,
     ValueSet
 } from "./util";
 
-import { Component, exhaustive } from "./components";
+import { Component } from "./components";
+import { determineAtomicity } from "./passes/determineAtomicity";
 
 export { CounterStack, Expr };
 
-type TapeClass = {
-    joinable: boolean,
-    concatenable: boolean
-};
-
-type StringPair = [string, string];
-class StringPairSet extends ValueSet<StringPair> { }
+export type StringPair = [string, string];
+export class StringPairSet extends ValueSet<StringPair> { }
 
 export class GrammarResult extends Result<Grammar> { }
 
@@ -220,8 +214,7 @@ export abstract class AbstractGrammar extends Component {
     ): void {
         const tapeNames = this.calculateTapes(new CounterStack(2), env);
         for (const tapeName of tapeNames) {
-            const tapeInfo = this.getTapeClass(tapeName, new ValueSet(), env);
-            const atomic = !tapeInfo.joinable || !tapeInfo.concatenable;
+            const atomic = determineAtomicity(this as Grammar, tapeName, env);
             let tape = tapeNS.attemptGet(tapeName);
             if (tape == undefined) {
                 // make a new one if it doesn't exist
@@ -255,20 +248,6 @@ export abstract class AbstractGrammar extends Component {
                 }
             }
         }
-    }
-    
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        let result: TapeClass = { joinable: false, concatenable: false };
-        for (const child of this.getChildren()) {
-            const childTapeClass = child.getTapeClass(tapeName, symbolsVisited, env);
-            result.joinable ||= childTapeClass.joinable;
-            result.concatenable ||= childTapeClass.concatenable;
-        }
-        return result;
     }
 
     public collectVocab(
@@ -452,17 +431,6 @@ export class DotGrammar extends AtomicGrammar {
     ): number {
         return (tapeName == this.tapeName) ? 1 : 0;
     }
-    
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        if (tapeName == this.tapeName) {
-            return { joinable: true, concatenable: true };
-        }
-        return super.getTapeClass(tapeName, symbolsVisited, env);
-    }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
@@ -501,27 +469,6 @@ export class SequenceGrammar extends NAryGrammar {
 
     public getLiterals(): LiteralGrammar[] {
         return flatten(this.children.map(c => c.getLiterals()));
-    }
-
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet, 
-        env: PassEnv
-    ): TapeClass {
-        const result = super.getTapeClass(tapeName, symbolsVisited, env);
-        let alreadyFound = false;
-        for (const child of this.children) {
-            const ts = new Set(child.tapes);
-            if (!(ts.has(tapeName))) {
-                continue;
-            }
-            if (alreadyFound) {
-                result.concatenable = true;
-                return result;
-            }
-            alreadyFound = true;
-        }
-        return result;
     }
 
     public constructExpr(
@@ -612,18 +559,6 @@ export class ShortGrammar extends UnaryGrammar {
     public get id(): string {
         return `Pref(${this.child.id})`;
     }
-    
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        const ts = new Set(this.tapes);
-        if (ts.has(tapeName)) {
-            return { joinable: true, concatenable: true };
-        }
-        return super.getTapeClass(tapeName, symbolsVisited, env);
-    }
 
     public constructExpr(
         tapeNS: TapeNamespace
@@ -638,19 +573,6 @@ export class IntersectionGrammar extends BinaryGrammar {
 
     public get id(): string {
         return `Intersect(${this.child1.id},${this.child2.id})`;
-    }
-    
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        const result = super.getTapeClass(tapeName, symbolsVisited, env);
-        const child1Tapes = this.child1.tapes;
-        const child2Tapes = this.child2.tapes;
-        const intersection = new Set(listIntersection(child1Tapes, child2Tapes));
-        result.joinable ||= intersection.has(tapeName);
-        return result;
     }
 
     public constructExpr(
@@ -676,19 +598,6 @@ export class JoinGrammar extends BinaryGrammar {
 
     public get id(): string {
         return `Join(${this.child1.id},${this.child2.id})`;
-    }
-
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        const result = super.getTapeClass(tapeName, symbolsVisited, env);
-        const child1Tapes = this.child1.tapes;
-        const child2Tapes = this.child2.tapes;
-        const intersection = new Set(listIntersection(child1Tapes, child2Tapes));
-        result.joinable ||= intersection.has(tapeName);
-        return result;
     }
 
     public getTapePriority(
@@ -919,19 +828,6 @@ export class RenameGrammar extends UnaryGrammar {
         const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
         return this.child.getTapePriority(newTapeName, symbolsVisited, env);
     }
-    
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        if (tapeName != this.toTape && tapeName == this.fromTape) {
-            return {joinable: false, concatenable: false};
-        }
-
-        const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
-        return this.child.getTapeClass(newTapeName, symbolsVisited, env);
-    }
 
     public collectVocab(
         tapeName: string,
@@ -1000,19 +896,6 @@ export class RepeatGrammar extends UnaryGrammar {
         return `Repeat(${this.child.id},${this.minReps},${this.maxReps})`;
     }
 
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        const result = this.child.getTapeClass(tapeName, symbolsVisited, env);
-        const ts = new Set(this.tapes);
-        if (ts.has(tapeName)) {
-            result.concatenable = true;
-        }
-        return result;
-    }
-
     public constructExpr(
         tapeNS: TapeNamespace
     ): Expr {
@@ -1026,18 +909,6 @@ export class NegationGrammar extends UnaryGrammar {
 
     public get id(): string {
         return `Not(${this.child.id})`;
-    }
-
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        const ts = new Set(this.tapes);
-        if (ts.has(tapeName)) {
-            return { joinable: true, concatenable: true };
-        }
-        return super.getTapeClass(tapeName, symbolsVisited, env);
     }
 
     public constructExpr(
@@ -1147,18 +1018,6 @@ export class HideGrammar extends UnaryGrammar {
         return this.child.getTapePriority(newTapeName, symbolsVisited, env);
     }
 
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        if (tapeName != this.toTape && tapeName == this.tapeName) {
-            return {joinable: false, concatenable: false};
-        }
-        const newTapeName = renameTape(tapeName, this.toTape, this.tapeName);
-        return this.child.getTapeClass(newTapeName, symbolsVisited, env);
-    }
-
     public collectVocab(
         tapeName: string,
         atomic: boolean,
@@ -1220,17 +1079,6 @@ export class MatchGrammar extends UnaryGrammar {
 
     public get id(): string {
         return `Match(${this.fromTape}->${this.toTape}:${this.child.id})`;
-    }
-
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        if (tapeName == this.fromTape || tapeName == this.toTape) {
-            return { joinable: true, concatenable: true };
-        }
-        return super.getTapeClass(tapeName, symbolsVisited, env);
     }
 
     /**
@@ -1370,15 +1218,6 @@ export class CollectionGrammar extends AbstractGrammar {
         }
         return vocab;
     }
-
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet, 
-        env: PassEnv
-    ): TapeClass {
-        const newEnv = env.pushSymbols(this.symbols);
-        return super.getTapeClass(tapeName, symbolsVisited, newEnv);
-    }
     
     public getVocabCopyEdges(
         tapeName: string,
@@ -1452,22 +1291,6 @@ export class EmbedGrammar extends AtomicGrammar {
         symbolsVisited.add([this.name, tapeName]);
         const referent = env.symbolNS.get(this.name);
         return referent.getTapePriority(tapeName, symbolsVisited, env);
-    }
-
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        if (symbolsVisited.has([this.name, tapeName])) { 
-            // we already visited.  these might be true or false,
-            // but we can just return false here because if it's 
-            // true in other contexts it'll end up true in the end
-            return { joinable: false, concatenable: false };
-        }
-        symbolsVisited.add([this.name, tapeName]);
-        const referent = env.symbolNS.get(this.name);
-        return referent.getTapeClass(tapeName, symbolsVisited, env);
     }
 
     public collectVocab(
@@ -1643,18 +1466,6 @@ export class CorrespondGrammar extends UnaryGrammar {
     ) {
         super(child);
     }
-    
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        const ts = new Set(this.tapes);
-        if (tapeName == this.tape1 || tapeName == this.tape2) {
-            return { joinable: true, concatenable: true };
-        }
-        return super.getTapeClass(tapeName, symbolsVisited, env);
-    }
 
     public constructExpr(
         tapeNS: TapeNamespace
@@ -1692,18 +1503,6 @@ export class ReplaceGrammar extends AbstractGrammar {
         } else if (!this.hiddenTapeName.startsWith(HIDDEN_PREFIX)) {
             this.hiddenTapeName = HIDDEN_PREFIX + this.hiddenTapeName;
         }
-    }
-
-    public getTapeClass(
-        tapeName: string, 
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): TapeClass {
-        const ts = new Set(this.tapes);
-        if (ts.has(tapeName)) {
-            return { joinable: true, concatenable: true };
-        }
-        return super.getTapeClass(tapeName, symbolsVisited, env);
     }
 
     public getChildren(): Grammar[] { 
