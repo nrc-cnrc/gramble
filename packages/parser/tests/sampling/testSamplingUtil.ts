@@ -56,7 +56,7 @@ export function sampleOutputsFromGrammar(
     stripHidden: boolean = true,
     throwError: boolean = false // in case a test wants to catch errors itself
 ): StringDict[] {
-    const interpreter = prepareInterpreter(grammar, verbose, symbolName, throwError);
+    const interpreter = prepareInterpreter(grammar, verbose, symbolName, maxRecursion, throwError);
                           
     let outputs: StringDict[] = [];
 
@@ -64,8 +64,7 @@ export function sampleOutputsFromGrammar(
 
     try {
         outputs = [
-            ...interpreter.sample(symbolName, numSamples, {},
-                        maxRecursion, undefined, stripHidden)
+            ...interpreter.sample(symbolName, numSamples, {}, stripHidden)
         ];
     } catch (e) {
         if (throwError) throw e;

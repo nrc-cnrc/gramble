@@ -1,4 +1,4 @@
-import { Dict, GenOptions, StringDict } from "../util";
+import { Dict, StringDict } from "../util";
 import { constructCollection, CounterStack, Expr } from "../exprs";
 import { Msgs, Err, Success } from "../msgs";
 import { 
@@ -14,6 +14,8 @@ import { generate } from "../generator";
 import { PassEnv } from "../passes";
 import { infinityProtection } from "./infinityProtection";
 import { Cursor } from "../grammarConvenience";
+import { prioritizeTapes } from "./prioritizeTapes";
+import { constructExpr } from "./constructExpr";
 
 export class ExecuteTests extends GrammarPass {
 
@@ -109,9 +111,10 @@ export class ExecuteTests extends GrammarPass {
             "The grammar above correctly has no outputs compatible with these inputs."));
     }
     
-    public executeTest(test: AbstractTestGrammar, env: PassEnv): StringDict[] {
-
-        const opt = new GenOptions();
+    public executeTest(
+        test: AbstractTestGrammar, 
+        env: PassEnv
+    ): StringDict[] {
 
         // create a filter for each test
         let targetGrammar: Grammar = new JoinGrammar(test.child, test.test);
@@ -120,14 +123,14 @@ export class ExecuteTests extends GrammarPass {
         // that the Equals we made above has a different join/concat tape structure
         // than the original grammar, so we have to check
         targetGrammar.collectAllVocab(this.tapeNS, env);        
-        const tapePriority = targetGrammar.getAllTapePriority(this.tapeNS, env);
+        const tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
         
-        targetGrammar = infinityProtection(targetGrammar, tapePriority, opt.maxChars, env);
+        targetGrammar = infinityProtection(targetGrammar, tapePriority, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);
 
-        let expr = targetGrammar.constructExpr(this.tapeNS);
-        expr = constructCollection(expr, this.symbolTable);
-        return [...generate(expr, this.tapeNS, opt)];
+        let expr = constructExpr(env, targetGrammar);
+        expr = constructCollection(env, expr, this.symbolTable);
+        return [...generate(expr, this.tapeNS, false, env.opt)];
 
     }
 }

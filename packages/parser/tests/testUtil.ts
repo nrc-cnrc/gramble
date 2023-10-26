@@ -7,10 +7,8 @@ import { Grammar } from "../src/grammars";
 import { Tape } from "../src/tapes";
 import {
     HIDDEN_PREFIX, StringDict,
-    SILENT, VERBOSE_DEBUG, logDebug, timeIt,
+    SILENT, VERBOSE_DEBUG, logDebug, timeIt, Options,
 } from "../src/util";
-
-export const DEFAULT_MAX_RECURSION = 4;
 
 // DEBUG_MAX_RECURSION is a forced upper bound for maxRecursion.
 export const DEBUG_MAX_RECURSION: number = 4;      // 4
@@ -150,13 +148,14 @@ export function testMatchOutputs(
 
 export function prepareInterpreter(
     grammar: Grammar | Interpreter,
-    verbose: number = SILENT,
+    opt: Options,
     symbolName: string = "",
-    throwError: boolean = false // in case a test wants to catch errors itself
+    throwError: boolean = false, // in case a test wants to catch errors itself
 ): Interpreter {
+
     const interpreter = (grammar instanceof Interpreter) ?
                         grammar :
-                        Interpreter.fromGrammar(grammar, verbose);
+                        Interpreter.fromGrammar(grammar, opt);
     
     // In case there are any tests, we want to run them so their errors accumulate
     interpreter.runTests();
@@ -181,23 +180,25 @@ export function prepareInterpreter(
 
 export function generateOutputsFromGrammar(
     grammar: Grammar | Interpreter,
-    verbose: number = SILENT,
+    opt: Partial<Options> = {},
     symbolName: string = "",
     restriction: StringDict[] | StringDict = {},
-    maxRecursion: number = DEFAULT_MAX_RECURSION,
     stripHidden: boolean = true,
-    throwError: boolean = false // in case a test wants to catch errors itself
+    throwError: boolean = false, // in case a test wants to catch errors itself
 ): StringDict[] {
-    const interpreter = prepareInterpreter(grammar, verbose, symbolName, throwError);
+    
+    const opts = Options(opt);
+
+    opts.maxRecursion = Math.min(opts.maxRecursion, DEBUG_MAX_RECURSION);
+    const interpreter = prepareInterpreter(grammar, opts, 
+        symbolName, throwError);
                           
     let outputs: StringDict[] = [];
 
-    maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
 
     try {
         outputs = [
-            ...interpreter.generate(symbolName, restriction, Infinity,
-                                    maxRecursion, undefined, stripHidden)
+            ...interpreter.generate(symbolName, restriction, Infinity, stripHidden)
         ];
     } catch (e) {
         if (throwError) throw e;
@@ -214,18 +215,17 @@ export function generateOutputsFromGrammar(
 export function testGenerate(
     grammar: Grammar | Interpreter,
     expectedResults: StringDict[],
-    verbose: number = SILENT,
+    opt: Options,
     symbolName: string = "",
     restriction: StringDict[] | StringDict = {},
-    maxRecursion: number = DEFAULT_MAX_RECURSION,
     stripHidden: boolean = true,
     allowDuplicateOutputs: boolean = false,
     shortDesc: string = ""
 ): void {
     timeIt(() => {
         const outputs: StringDict[] =
-            generateOutputsFromGrammar(grammar, verbose, symbolName,
-                                restriction, maxRecursion, stripHidden);
+            generateOutputsFromGrammar(grammar, opt, symbolName,
+                                restriction, stripHidden, false);
         testNumOutputs(outputs, expectedResults.length,
                        allowDuplicateOutputs, symbolName);
         testMatchOutputs(outputs, expectedResults, symbolName);
@@ -381,12 +381,12 @@ export function testParseMultiple(
                 let outputs: StringDict[] = [];
                 try {    
                     //grammar = grammar.compile(2, maxRecursion);
-                    const interpreter = Interpreter.fromGrammar(grammar, verbose);
+                    const interpreter = Interpreter.fromGrammar(grammar, {verbose: verbose});
                     if (Object.keys(inputs).length == 0) {
                         throw new Error("no input in pair " +
                             `${JSON.stringify(inputs)}, ${JSON.stringify(expectedResults)}`);
                     }
-                    outputs = [...interpreter.generate("", inputs, Infinity, maxRecursion)];
+                    outputs = [...interpreter.generate("", inputs, Infinity)];
                 } catch (e) {
                     it("Unexpected Exception", function() {
                         console.log("");

@@ -44,10 +44,10 @@ function testLength(
     grammar: Grammar, 
     tape: string, 
     expectedLength: [number, number] | null,
-    env: PassEnv = new PassEnv()
 ): void {
+    const env: PassEnv = new PassEnv();
 
-    grammar.calculateTapes(new CounterStack(), new PassEnv);
+    grammar.calculateTapes(new CounterStack(), env);
     const length = lengthRange(grammar, tape, new CounterStack(2), env);
     
     if (expectedLength === null) {

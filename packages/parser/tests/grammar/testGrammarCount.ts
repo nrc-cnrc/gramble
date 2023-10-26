@@ -14,7 +14,7 @@ import {
     logTestSuite, VERBOSE_TEST_L2,
     generateOutputsFromGrammar,
 } from '../testUtil';
-import { SILENT, VERBOSE_DEBUG } from "../../src/util";
+import { Options, SILENT, VERBOSE_DEBUG } from "../../src/util";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -321,8 +321,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                               false, true);
         it('Caught "Count exceeded" Error', function() {
             expect(
-                () => generateOutputsFromGrammar(grammar, SILENT, "", {},
-                                                 undefined, false, true)
+                () => generateOutputsFromGrammar(grammar, Options(), "", {},
+                                                 false, true)
             ).to.throw(Error, "Count exceeded on t1");
         });
     });

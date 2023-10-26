@@ -19,14 +19,14 @@ export const ALL_SYMBOL_NAME = "All"
 export const AUTO_SYMBOL_NAME = INTERNAL_PREFIX + "Auto"
 
 export const DEFAULT_MAX_CHARS = 100;
-
-export const DIRECTION_LTR: boolean = true; // whether we parse/generate from the beginning or end of words
+export const DEFAULT_MAX_RECURSION = 4;
 
 export const SILENT = 0;
 export const VERBOSE_TIME = 1;
 export const VERBOSE_DEBUG = 1 << 1;
 export const VERBOSE_STATES = 1 << 2;
 export const VERBOSE_GRAMMAR = 1 << 3;
+
 
 export function logDebug(verbose: number, ...msgs: string[]): void {
     if ((verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
@@ -54,12 +54,44 @@ export function logGrammar(verbose: number, msg: string): void {
     }
 }
 
+export interface Options {
+    maxRecursion: number,
+    maxChars: number,
+    verbose: number,
+    optimizeAtomicity: boolean,
+    directionLTR: boolean
+}
 
-export class GenOptions {
-    public random: boolean = false;
-    public maxRecursion: number = 2; 
-    public maxChars: number = 100;
-    public verbose: number = SILENT
+export const DEFAULT_OPTIONS: Options = {
+    maxRecursion: DEFAULT_MAX_RECURSION, 
+    maxChars: DEFAULT_MAX_CHARS,
+    verbose: SILENT,
+    optimizeAtomicity: true,
+    directionLTR: true
+}
+
+export function Options(opt: Partial<Options> = {}): Options {
+    return {...DEFAULT_OPTIONS, ...opt};
+}
+
+export class Env {
+
+    public opt: Options;
+
+    constructor(
+        opt: Partial<Options> = {}
+    ) { 
+        this.opt = Options(opt);
+    }
+
+}
+
+export function update<T>(orig: T, update: any): T {
+    let clone = Object.create(Object.getPrototypeOf(orig));
+    Object.assign(clone, orig);
+    Object.assign(clone, update);
+    clone._tapes = undefined;
+    return clone as T;
 }
 
 export type Gen<T> = Generator<T, void, undefined>;

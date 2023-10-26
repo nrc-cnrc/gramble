@@ -19,7 +19,6 @@ import { Count } from "../grammarConvenience";
 export function infinityProtection(
     grammar: Grammar,
     tapes: string[],
-    maxChars: number,
     env: PassEnv
 ): Grammar {
 
@@ -32,8 +31,8 @@ export function infinityProtection(
     for (const tape of tapes) {
         const len = lengthRange(grammar, tape, stack, env);
         if (len.null == true) continue;
-        if (len.max == Infinity && maxChars != Infinity) {
-            maxCharsDict[tape] = maxChars-1;
+        if (len.max == Infinity && env.opt.maxChars != Infinity) {
+            maxCharsDict[tape] = env.opt.maxChars-1;
             foundInfinite = true;
         }
     }

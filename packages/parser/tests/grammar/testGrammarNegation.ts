@@ -13,6 +13,7 @@ import {
 import { 
     logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
+import { Options } from "../../src/util";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -529,15 +530,29 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '42. Does not contain a: ' +
-              '~(Short(t1:.*a) + t1:.*) (vocab ab)',
+        desc: '42-ltr. Does not contain a: ' +
+            '~(Short(t1:.*a) + t1:.*) (vocab ab)',
         grammar: Count({t1:3},
-        		     Vocab({t1:'ab'},
-                 	     Not(Seq(Short(Seq(Rep(Any("t1")), t1("a"))),
-                                 Rep(Any("t1")))))),
+                    Vocab({t1:'ab'},
+                        Not(Seq(Short(Seq(Rep(Any("t1")), t1("a"))),
+                                Rep(Any("t1")))))),
         results: [
             {}, {t1: 'b'}, {t1: 'bb'}, {t1: 'bbb'},
         ],
+        directionLTR: true
+    });
+
+    testGrammar({
+        desc: '42-rtl. Does not contain a: ' +
+            '~(t1:.* + Short(t1:a.*)) (vocab ab)',
+        grammar: Count({t1:3},
+                    Vocab({t1:'ab'},
+                        Not(Seq(Rep(Any("t1")), 
+                            Short(Seq(t1("a"), Rep(Any("t1")))))))),
+        results: [
+            {}, {t1: 'b'}, {t1: 'bb'}, {t1: 'bbb'},
+        ],
+        directionLTR: false
     });
 
 });
