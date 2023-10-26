@@ -13,13 +13,12 @@ import {
 import { 
     logTestSuite, VERBOSE_TEST_L2,
 } from '../testUtil';
-
-import {
-    DIRECTION_LTR, VERBOSE_DEBUG
-} from "../../src/util";
+import { Options } from "../../src/util";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
+
+const OPT = new Options(); // default options
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 
@@ -87,7 +86,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    if (DIRECTION_LTR) {
+    if (OPT.directionLTR) {
 
         // these are all expressed in a way only consistent with
         // LTR generation.  At some point we should go through and

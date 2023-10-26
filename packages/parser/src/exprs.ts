@@ -1,5 +1,5 @@
 import {
-    DIRECTION_LTR, Gen, Options, 
+    Gen, Options, 
     logDebug, logTime, logStates, 
     logGrammar, setDifference, foldRight, foldLeft,
     VERBOSE_DEBUG,
@@ -791,7 +791,7 @@ class ConcatExpr extends BinaryExpr {
         query: Query,
         env: DerivEnv
     ): Derivs {
-        const [c1, c2] = (DIRECTION_LTR) ?
+        const [c1, c2] = env.opt.directionLTR ?
                         [this.child1, this.child2] :
                         [this.child2, this.child1];
 
@@ -817,8 +817,8 @@ class ConcatExpr extends BinaryExpr {
         let results: StringDict[] = [{}];
         let current: Expr = this;
         while (current instanceof ConcatExpr) {
-            const recursingChild = DIRECTION_LTR ? current.child2 : current.child1;
-            const tailChild = DIRECTION_LTR ? current.child1 : current.child2;
+            const recursingChild = env.opt.directionLTR ? current.child2 : current.child1;
+            const tailChild = env.opt.directionLTR ? current.child1 : current.child2;
             const unitDenotation = recursingChild.getOutputs(env);
             results = outputProduct(unitDenotation, results);
             current = tailChild;
@@ -2023,7 +2023,7 @@ export function constructLiteral(
     tokens: string[],
     index?: number
 ): Expr {
-    if (DIRECTION_LTR) {
+    if (env.opt.directionLTR) {
         return new LiteralExpr(tape, text, tokens, index).simplify(env);
     }
     return new RTLLiteralExpr(tape, text, tokens, index).simplify(env);
@@ -2048,7 +2048,7 @@ export function constructPrecede(
     firstChild: Expr, 
     secondChild: Expr
 ): Expr {
-    if (DIRECTION_LTR) {
+    if (env.opt.directionLTR) {
         return constructConcat(env, firstChild, secondChild);
     }
     return constructConcat(env, secondChild, firstChild);
@@ -2070,7 +2070,7 @@ export function constructSequence(
     if (children.length == 0) return EPSILON;
     
     const folder = (c1:Expr,c2:Expr) => constructConcat(env, c1, c2);
-    if (DIRECTION_LTR) {
+    if (env.opt.directionLTR) {
         return foldRight(children, folder);
     } else {
         return foldLeft(children, folder);

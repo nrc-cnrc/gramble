@@ -7,7 +7,7 @@ import {
     NegationGrammar, PreTapeGrammar, RenameGrammar, RepeatGrammar,
     ReplaceGrammar, SequenceGrammar, ShortGrammar,
 } from "../grammars";
-import { DIRECTION_LTR, Dict, Env, REPLACE_INPUT_TAPE } from "../util";
+import { Dict, Env, REPLACE_INPUT_TAPE } from "../util";
 import { 
     CollectionExpr, EPSILON, EpsilonExpr, 
     NULL, constructAlternation, constructCollection, 
@@ -289,7 +289,7 @@ export function constructNotContains(
     } else if (end) {
         seq = constructSequence(env, dotStar, constructShort(env, constructSequence(env, ...children)));
     } else {
-        seq = DIRECTION_LTR ?
+        seq = env.opt.directionLTR ?
               constructSequence(env, constructShort(env, constructSequence(env, dotStar, ...children)), dotStar) :
               constructSequence(env, dotStar, constructShort(env, constructSequence(env, ...children, dotStar)));
     }
