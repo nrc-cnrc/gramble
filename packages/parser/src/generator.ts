@@ -61,7 +61,7 @@ export function* generate(
 
         if (prev instanceof EpsilonExpr || prev instanceof OutputExpr) {
             env.logDebugOutput("YIELD", prev);
-            const outputs = prev.getOutputs();
+            const outputs = prev.getOutputs(env);
             yield* randomCut(outputs, env);
             continue;
         }

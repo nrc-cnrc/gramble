@@ -7,7 +7,7 @@ import {
     NegationGrammar, PreTapeGrammar, RenameGrammar, RepeatGrammar,
     ReplaceGrammar, SequenceGrammar, ShortGrammar,
 } from "../grammars";
-import { DIRECTION_LTR, Dict, REPLACE_INPUT_TAPE } from "../util";
+import { DIRECTION_LTR, Dict, Env, REPLACE_INPUT_TAPE } from "../util";
 import { 
     CollectionExpr, EPSILON, EpsilonExpr, 
     NULL, constructAlternation, constructCollection, 
@@ -34,9 +34,9 @@ export function constructExpr(
         // in one line
         case "epsilon":    return EPSILON;
         case "null":       return NULL;
-        case "lit":        return constructLiteral(g.tapeName, g.text, g.tokens);
+        case "lit":        return constructLiteral(env, g.tapeName, g.text, g.tokens);
         case "dot":        return constructDot(g.tapeName);
-        case "embed":      return constructEmbed(g.name, undefined);
+        case "embed":      return constructEmbed(env, g.name, undefined);
     
         // everything else has children
         case "seq":        return constructExprSeq(env, g);
@@ -65,7 +65,7 @@ function constructExprSeq(
     g: SequenceGrammar
 ): Expr {
     const childExprs = g.children.map(c => constructExpr(env, c));
-    return constructSequence(...childExprs);
+    return constructSequence(env, ...childExprs);
 }
 
 function constructExprAlt(
@@ -73,7 +73,7 @@ function constructExprAlt(
     g: AlternationGrammar
 ): Expr {
     const childExprs = g.children.map(c => constructExpr(env, c));
-    return constructAlternation(...childExprs);
+    return constructAlternation(env, ...childExprs);
 }
 
 function constructExprShort(
@@ -81,7 +81,7 @@ function constructExprShort(
     g: ShortGrammar
 ): Expr {
     const child = constructExpr(env, g.child);
-    return constructShort(child);
+    return constructShort(env, child);
 }
 
 function constructExprIntersect(
@@ -90,14 +90,14 @@ function constructExprIntersect(
 ): Expr {
     const left = constructExpr(env, g.child1);
     const right = constructExpr(env, g.child2);
-    return constructIntersection(left, right);
+    return constructIntersection(env, left, right);
 }
 
 function constructExprJoin(
     env: PassEnv,
     g: JoinGrammar
 ): Expr {
-    return constructJoin(constructExpr(env, g.child1),
+    return constructJoin(env, constructExpr(env, g.child1),
         constructExpr(env, g.child2),
         new Set(g.child1.tapes),
         new Set(g.child2.tapes));
@@ -109,7 +109,7 @@ function constructExprCount(
     g: CountGrammar
 ): Expr {
     let childExpr = constructExpr(env, g.child);
-    return constructCount(childExpr, g.tapeName, g.maxChars,
+    return constructCount(env, childExpr, g.tapeName, g.maxChars,
         g.countEpsilon, g.errorOnCountExceeded);
 }
 
@@ -118,7 +118,7 @@ function constructExprRename(
     g: RenameGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructRename(childExpr, g.fromTape, g.toTape);
+    return constructRename(env, childExpr, g.fromTape, g.toTape);
 }
 
 function constructExprRepeat(
@@ -126,7 +126,7 @@ function constructExprRepeat(
     g: RepeatGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructRepeat(childExpr, g.minReps, g.maxReps);
+    return constructRepeat(env, childExpr, g.minReps, g.maxReps);
 }
 
 function constructExprNot(
@@ -134,7 +134,7 @@ function constructExprNot(
     g: NegationGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructNegation(childExpr, new Set(g.child.tapes));
+    return constructNegation(env, childExpr, new Set(g.child.tapes));
 }
 
 function constructExprCursor(
@@ -142,7 +142,7 @@ function constructExprCursor(
     g: CursorGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructCursor(g.tape, childExpr);
+    return constructCursor(env, g.tape, childExpr);
 }
 
 function constructExprPreTape(
@@ -150,7 +150,7 @@ function constructExprPreTape(
     g: PreTapeGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructPreTape(g.fromTape, g.toTape, childExpr);
+    return constructPreTape(env, g.fromTape, g.toTape, childExpr);
 }
 
 function constructExprHide(
@@ -158,7 +158,7 @@ function constructExprHide(
     g: HideGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructRename(childExpr, g.tapeName, g.toTape);
+    return constructRename(env, childExpr, g.tapeName, g.toTape);
 }
 
 function constructExprMatch(
@@ -166,7 +166,7 @@ function constructExprMatch(
     g: MatchGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructMatch(childExpr, g.fromTape, g.toTape);
+    return constructMatch(env, childExpr, g.fromTape, g.toTape);
 }
 
 function constructExprCollection(
@@ -186,7 +186,7 @@ function constructExprCollection(
         }
     }
     if (selectedFound) {
-        return constructCollection(selectedExpr, newSymbols);
+        return constructCollection(env, selectedExpr, newSymbols);
     }
     return new CollectionExpr(selectedExpr, newSymbols);
 }
@@ -197,7 +197,7 @@ function constructExprCorrespond(
     g: CorrespondGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructCorrespond(childExpr, g.tape1, g.tape2);
+    return constructCorrespond(env, childExpr, g.tape1, g.tape2);
 }
 
 function constructExprReplace(
@@ -214,9 +214,9 @@ function constructExprReplace(
     const preContextExpr: Expr = constructExpr(env, g.preContext);
     const postContextExpr: Expr = constructExpr(env, g.postContext);
     let states: Expr[] = [
-        constructMatch(preContextExpr),
-        constructCorrespond(constructPrecede(fromExpr, toExpr)),
-        constructMatch(postContextExpr)
+        constructMatch(env, preContextExpr),
+        constructCorrespond(env, constructPrecede(env, fromExpr, toExpr)),
+        constructMatch(env, postContextExpr)
     ];
 
     const that = g;
@@ -232,20 +232,20 @@ function constructExprReplace(
         if( that.optional ||
                 (that.beginsWith && !replaceNone) ||
                 (that.endsWith && !replaceNone)) {
-            return constructMatch(constructDotStar(REPLACE_INPUT_TAPE));
+            return constructMatch(env, constructDotStar(REPLACE_INPUT_TAPE));
         }
         const fromInstance: Expr[] = [preContextExpr, fromExpr, postContextExpr];
 
-        let notExpr: Expr = constructNotContains(REPLACE_INPUT_TAPE, fromInstance,
+        let notExpr: Expr = constructNotContains(env, REPLACE_INPUT_TAPE, fromInstance,
             that.beginsWith && replaceNone, that.endsWith && replaceNone);
-        return constructMatch(notExpr);
+        return constructMatch(env, notExpr);
     }
     
     if (!g.endsWith)
         states.push(matchAnythingElse());
 
-    const replaceOne: Expr = constructSequence(...states);
-    const replaceMultiple: Expr = constructRepeat(replaceOne, Math.max(1, g.minReps), g.maxReps);
+    const replaceOne: Expr = constructSequence(env, ...states);
+    const replaceMultiple: Expr = constructRepeat(env, replaceOne, Math.max(1, g.minReps), g.maxReps);
     
     // we need to match the context on other tapes too
     const otherContextExpr: Expr = constructExpr(env, g.otherContext);
@@ -255,7 +255,7 @@ function constructExprReplace(
         states = [matchAnythingElse(), replaceOne, otherContextExpr];
     else
         states = [matchAnythingElse(), replaceMultiple, otherContextExpr];
-    let replaceExpr: Expr = constructSequence(...states);
+    let replaceExpr: Expr = constructSequence(env, ...states);
             
     if (g.minReps > 0) {
         return replaceExpr;
@@ -263,17 +263,18 @@ function constructExprReplace(
         let copyExpr: Expr = matchAnythingElse(true);
         if (! (otherContextExpr instanceof EpsilonExpr)) {
             let negatedOtherContext: Expr = 
-                constructNegation(otherContextExpr, new Set(g.otherContext.tapes));
+                constructNegation(env, otherContextExpr, new Set(g.otherContext.tapes));
             const matchDotStar: Expr =
-                constructMatch(constructDotStar(REPLACE_INPUT_TAPE));
-            copyExpr = constructAlternation(constructSequence(matchAnythingElse(true), otherContextExpr),
-                                            constructSequence(matchDotStar, negatedOtherContext));
+                constructMatch(env, constructDotStar(REPLACE_INPUT_TAPE));
+            copyExpr = constructAlternation(env, constructSequence(env, matchAnythingElse(true), otherContextExpr),
+                                            constructSequence(env, matchDotStar, negatedOtherContext));
         }
-        return constructAlternation(copyExpr, replaceExpr);
+        return constructAlternation(env, copyExpr, replaceExpr);
     }
 }
 
 export function constructNotContains(
+    env: Env,
     fromTapeName: string,
     children: Expr[], 
     begin: boolean,
@@ -282,15 +283,15 @@ export function constructNotContains(
     const dotStar: Expr = constructDotStar(fromTapeName);
     let seq: Expr;
     if (begin && end) {
-        seq = constructShort(constructSequence(...children));
+        seq = constructShort(env, constructSequence(env, ...children));
     } else if (begin) {
-        seq = constructSequence(constructShort(constructSequence(...children)), dotStar);
+        seq = constructSequence(env, constructShort(env, constructSequence(env, ...children)), dotStar);
     } else if (end) {
-        seq = constructSequence(dotStar, constructShort(constructSequence(...children)));
+        seq = constructSequence(env, dotStar, constructShort(env, constructSequence(env, ...children)));
     } else {
         seq = DIRECTION_LTR ?
-              constructSequence(constructShort(constructSequence(dotStar, ...children)), dotStar) :
-              constructSequence(dotStar, constructShort(constructSequence(...children, dotStar)));
+              constructSequence(env, constructShort(env, constructSequence(env, dotStar, ...children)), dotStar) :
+              constructSequence(env, dotStar, constructShort(env, constructSequence(env, ...children, dotStar)));
     }
-    return constructNegation(seq, new Set([fromTapeName]));
+    return constructNegation(env, seq, new Set([fromTapeName]));
 }

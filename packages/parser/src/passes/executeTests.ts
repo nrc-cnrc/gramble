@@ -129,7 +129,7 @@ export class ExecuteTests extends GrammarPass {
         targetGrammar = Cursor(tapePriority, targetGrammar);
 
         let expr = constructExpr(env, targetGrammar);
-        expr = constructCollection(expr, this.symbolTable);
+        expr = constructCollection(env, expr, this.symbolTable);
         return [...generate(expr, this.tapeNS, false, env.opt)];
 
     }
