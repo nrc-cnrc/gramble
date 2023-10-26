@@ -254,10 +254,6 @@ export abstract class AbstractGrammar extends Component {
         return this._tapes;
     }
 
-    public abstract constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr;
-    
     public allSymbols(): string[] {
         return [];
     }
@@ -286,12 +282,6 @@ export class EpsilonGrammar extends AtomicGrammar {
         }
         return this._tapes;
     }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        return EPSILON;
-    }
 }
 
 const EPSILON_GRAMMAR = new EpsilonGrammar();
@@ -309,18 +299,12 @@ export class NullGrammar extends AtomicGrammar {
         }
         return this._tapes;
     }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        return NULL;
-    }
 }
 
 export class LiteralGrammar extends AtomicGrammar {
     public readonly tag = "lit";
 
-    protected tokens: string[] = [];
+    public tokens: string[] = [];
 
     constructor(
         public tapeName: string,
@@ -362,11 +346,6 @@ export class LiteralGrammar extends AtomicGrammar {
         return this._tapes;
     }
 
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        return constructLiteral(this.tapeName, this.text, this.tokens);
-    }
 }
 
 export class DotGrammar extends AtomicGrammar {
@@ -387,12 +366,6 @@ export class DotGrammar extends AtomicGrammar {
             this._tapes = [this.tapeName];
         }
         return this._tapes;
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        return constructDot(this.tapeName);
     }
 }
 
@@ -421,13 +394,6 @@ export class SequenceGrammar extends NAryGrammar {
         return flatten(this.children.map(c => c.getLiterals()));
     }
 
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        const childExprs = this.children.map(s => s.constructExpr(tapeNS));
-        return constructSequence(...childExprs);
-    }
-
     public finalChild(): Grammar {
         if (this.children.length == 0) {
             return new EpsilonGrammar();
@@ -450,14 +416,6 @@ export class AlternationGrammar extends NAryGrammar {
     public get id(): string {
         return this.children.map(c => c.id).join("|");
     }
-
-    public constructExpr(
-        tapeNS: TapeNamespace,
-    ): Expr {
-        const childExprs = this.children.map(s => s.constructExpr(tapeNS));
-        return constructAlternation(...childExprs);
-    }
-
 }
 
 export abstract class UnaryGrammar extends AbstractGrammar {
@@ -470,12 +428,6 @@ export abstract class UnaryGrammar extends AbstractGrammar {
 
     public getChildren(): Grammar[] { 
         return [this.child]; 
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace,
-    ): Expr {
-        return this.child.constructExpr(tapeNS);
     }
 }
 
@@ -499,13 +451,6 @@ export class ShortGrammar extends UnaryGrammar {
     public get id(): string {
         return `Pref(${this.child.id})`;
     }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        const child = this.child.constructExpr(tapeNS);
-        return constructShort(child);
-    }
 }
 
 export class IntersectionGrammar extends BinaryGrammar {
@@ -513,14 +458,6 @@ export class IntersectionGrammar extends BinaryGrammar {
 
     public get id(): string {
         return `Intersect(${this.child1.id},${this.child2.id})`;
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        const left = this.child1.constructExpr(tapeNS);
-        const right = this.child2.constructExpr(tapeNS);
-        return constructIntersection(left, right);
     }
 }
 
@@ -549,16 +486,6 @@ export class JoinGrammar extends BinaryGrammar {
         }
         return this._tapes;
     }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        return constructJoin(this.child1.constructExpr(tapeNS), 
-                                this.child2.constructExpr(tapeNS), 
-                                    new Set(this.child1.tapes),
-                                    new Set(this.child2.tapes));
-    }
-
 }
 
 export class CountGrammar extends UnaryGrammar {
@@ -577,26 +504,10 @@ export class CountGrammar extends UnaryGrammar {
     public get id(): string {
         return `Count_${this.tapeName}:${this.maxChars}(${this.child.id})`;
     }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        let childExpr = this.child.constructExpr(tapeNS);
-        return constructCount(childExpr, this.tapeName, this.maxChars,
-                              this.countEpsilon, this.errorOnCountExceeded);
-    }
 }
 
 export class FilterGrammar extends BinaryGrammar {
     public readonly tag = "filter";
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        // All descendants of Condition should have been replaced by
-        // other grammars by the time exprs are constructed.
-        throw new Error("not implemented");
-    }
 
     public get id(): string {
         return `Filter(${this.child1.id},${this.child2.id})`;
@@ -612,14 +523,6 @@ abstract class ConditionGrammar extends UnaryGrammar {
     ) {
         super(child);
         this._tapes = tapes;
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        // All descendants of Condition should have been replaced by
-        // other grammars by the time exprs are constructed.
-        throw new Error("not implemented");
     }
 }
 
@@ -780,14 +683,6 @@ export class RenameGrammar extends UnaryGrammar {
         }
         return this._tapes;
     }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
-        const childExpr = this.child.constructExpr(newTapeNS);
-        return constructRename(childExpr, this.fromTape, this.toTape);
-    }
 }
 
 export class RepeatGrammar extends UnaryGrammar {
@@ -807,13 +702,6 @@ export class RepeatGrammar extends UnaryGrammar {
         }
         return `Repeat(${this.child.id},${this.minReps},${this.maxReps})`;
     }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        const childExpr = this.child.constructExpr(tapeNS);
-        return constructRepeat(childExpr, this.minReps, this.maxReps);
-    }
 }
 
 export class NegationGrammar extends UnaryGrammar {
@@ -821,13 +709,6 @@ export class NegationGrammar extends UnaryGrammar {
 
     public get id(): string {
         return `Not(${this.child.id})`;
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        const childExpr = this.child.constructExpr(tapeNS);
-        return constructNegation(childExpr, new Set(this.child.tapes));
     }
 }
 
@@ -843,12 +724,6 @@ export class CursorGrammar extends UnaryGrammar {
 
     public get id(): string {
         return `Cursor_${this.tape}(${this.child.id})`;
-    }
-
-
-    public constructExpr(tapeNS: TapeNamespace): Expr {
-        const childExpr = this.child.constructExpr(tapeNS);
-        return constructCursor(this.tape, childExpr);
     }
 
 }
@@ -867,12 +742,6 @@ export class PreTapeGrammar extends UnaryGrammar {
     public get id(): string {
         return `Pre(${this.child.id})`;
     }
-
-    public constructExpr(tapeNS: TapeNamespace): Expr {
-        const childExpr = this.child.constructExpr(tapeNS);
-        return constructPreTape(this.fromTape, this.toTape, childExpr);
-    }
-
 }
 
 
@@ -933,15 +802,7 @@ export class HideGrammar extends UnaryGrammar {
             }
         }
         return this._tapes;
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        const childExpr = this.child.constructExpr(tapeNS);
-        return constructRename(childExpr, this.tapeName, this.toTape);
-    }
-    
+    }    
 }
 
 export class MatchGrammar extends UnaryGrammar {
@@ -1007,13 +868,6 @@ export class MatchGrammar extends UnaryGrammar {
             results.add([this.fromTape, this.toTape]);
         }
         return results;
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        const childExpr = this.child.constructExpr(tapeNS);
-        return constructMatch(childExpr, this.fromTape, this.toTape);
     }
 }
 
@@ -1107,27 +961,6 @@ export class CollectionGrammar extends AbstractGrammar {
         const newEnv = env.pushSymbols(this.symbols);
         return super.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, newEnv);    
     }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        let newSymbols: Dict<Expr> = {};
-        let selectedExpr: Expr = EPSILON;
-        let selectedFound = false;
-        //const newSymbolNS = symbols.push(newSymbols);
-        for (const [name, referent] of Object.entries(this.symbols)) {
-            let expr = referent.constructExpr(tapeNS);
-            newSymbols[name] = expr;
-            if (name.toLowerCase() == this.selectedSymbol.toLowerCase()) {
-                selectedExpr = expr;
-                selectedFound = true;
-            }
-        }
-        if (selectedFound) {
-            return constructCollection(selectedExpr, newSymbols);
-        }
-        return new CollectionExpr(selectedExpr, newSymbols);
-    }
 }
 
 export class EmbedGrammar extends AtomicGrammar {
@@ -1185,12 +1018,6 @@ export class EmbedGrammar extends AtomicGrammar {
         symbolsVisited.add([this.name, tapeName]);
         const referent = env.symbolNS.get(this.name);
         return referent.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env);
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        return constructEmbed(this.name, undefined);
     }
 
 }
@@ -1263,11 +1090,6 @@ export abstract class AbstractTestGrammar extends UnaryGrammar {
         return setUnion(childVocab, testVocab);
     }
 
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        return this.child.constructExpr(tapeNS);
-    }
 }
 
 export class TestGrammar extends AbstractTestGrammar {
@@ -1310,12 +1132,6 @@ export class ReplaceBlockGrammar extends AbstractGrammar {
         return [ this.child, ...this.rules ];
     }
 
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        throw new Error("Not implemented");
-    }    
-
 } 
 
 export class CorrespondGrammar extends UnaryGrammar {
@@ -1331,13 +1147,6 @@ export class CorrespondGrammar extends UnaryGrammar {
         public tape2: string = REPLACE_OUTPUT_TAPE
     ) {
         super(child);
-    }
-
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-        const childExpr = this.child.constructExpr(tapeNS);
-        return constructCorrespond(childExpr, this.tape1, this.tape2);
     }
 
 }
@@ -1414,79 +1223,6 @@ export class ReplaceGrammar extends AbstractGrammar {
         return vocab;
     }
 
-    public constructExpr(
-        tapeNS: TapeNamespace
-    ): Expr {
-
-        if (this.beginsWith || this.endsWith) {
-            this.maxReps = Math.max(1, this.maxReps);
-            this.minReps = Math.min(this.minReps, this.maxReps);
-        }
-
-        const fromExpr: Expr = this.fromGrammar.constructExpr(tapeNS);
-        const toExpr: Expr = this.toGrammar.constructExpr(tapeNS);
-        const preContextExpr: Expr = this.preContext.constructExpr(tapeNS);
-        const postContextExpr: Expr = this.postContext.constructExpr(tapeNS);
-        let states: Expr[] = [
-            constructMatch(preContextExpr),
-            constructCorrespond(constructPrecede(fromExpr, toExpr)),
-            constructMatch(postContextExpr)
-        ];
-
-        const that = this;
-
-        function matchAnythingElse(replaceNone: boolean = false): Expr {
-            // 1. If the rule is optional, we just need to match .*
-            // 2. If we are matching an instance at the start of text (beginsWith),
-            //    or end of text (endsWith), then merely matching the replacement pattern
-            //    isn't really matching.  That is, if we're matching "#b", the fact that b
-            //    occurs elsewhere is no problem, it's not actually a match.  So we just 
-            //    need to match .*
-
-            if( that.optional ||
-                    (that.beginsWith && !replaceNone) ||
-                    (that.endsWith && !replaceNone)) {
-                return constructMatch(constructDotStar(REPLACE_INPUT_TAPE));
-            }
-            const fromInstance: Expr[] = [preContextExpr, fromExpr, postContextExpr];
-
-            let notExpr: Expr = constructNotContains(REPLACE_INPUT_TAPE, fromInstance,
-                that.beginsWith && replaceNone, that.endsWith && replaceNone);
-            return constructMatch(notExpr);
-        }
-        
-        if (!this.endsWith)
-            states.push(matchAnythingElse());
-
-        const replaceOne: Expr = constructSequence(...states);
-        const replaceMultiple: Expr = constructRepeat(replaceOne, Math.max(1, this.minReps), this.maxReps);
-        
-        // we need to match the context on other tapes too
-        const otherContextExpr: Expr = this.otherContext.constructExpr(tapeNS);
-        if (this.beginsWith)
-            states = [replaceOne, otherContextExpr]
-        else if (this.endsWith)
-            states = [matchAnythingElse(), replaceOne, otherContextExpr];
-        else
-            states = [matchAnythingElse(), replaceMultiple, otherContextExpr];
-        let replaceExpr: Expr = constructSequence(...states);
-                
-        if (this.minReps > 0) {
-            return replaceExpr;
-        } else {
-            let copyExpr: Expr = matchAnythingElse(true);
-            if (! (otherContextExpr instanceof EpsilonExpr)) {
-                let negatedOtherContext: Expr = 
-                    constructNegation(otherContextExpr, new Set(this.otherContext.tapes));
-                const matchDotStar: Expr =
-                    constructMatch(constructDotStar(REPLACE_INPUT_TAPE));
-                copyExpr = constructAlternation(constructSequence(matchAnythingElse(true), otherContextExpr),
-                                                constructSequence(matchDotStar, negatedOtherContext));
-            }
-            return constructAlternation(copyExpr, replaceExpr);
-        }
-    }
-
 }
 
 export class RuleContextGrammar extends AbstractGrammar {
@@ -1506,10 +1242,6 @@ export class RuleContextGrammar extends AbstractGrammar {
     }
 
     public getChildren(): Grammar[] {
-        throw new Error("Method not implemented.");
-    }
-
-    public constructExpr(tapeNS: TapeNamespace): Expr {
         throw new Error("Method not implemented.");
     }
 

@@ -15,6 +15,7 @@ import { PassEnv } from "../passes";
 import { infinityProtection } from "./infinityProtection";
 import { Cursor } from "../grammarConvenience";
 import { prioritizeTapes } from "./prioritizeTapes";
+import { constructExpr } from "./constructExpr";
 
 export class ExecuteTests extends GrammarPass {
 
@@ -110,7 +111,10 @@ export class ExecuteTests extends GrammarPass {
             "The grammar above correctly has no outputs compatible with these inputs."));
     }
     
-    public executeTest(test: AbstractTestGrammar, env: PassEnv): StringDict[] {
+    public executeTest(
+        test: AbstractTestGrammar, 
+        env: PassEnv
+    ): StringDict[] {
 
         const opt = new Options();
 
@@ -126,7 +130,7 @@ export class ExecuteTests extends GrammarPass {
         targetGrammar = infinityProtection(targetGrammar, tapePriority, opt.maxChars, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);
 
-        let expr = targetGrammar.constructExpr(this.tapeNS);
+        let expr = constructExpr(env, targetGrammar, this.tapeNS);
         expr = constructCollection(expr, this.symbolTable);
         return [...generate(expr, this.tapeNS, false, opt)];
 

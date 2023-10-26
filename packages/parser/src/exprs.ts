@@ -1145,16 +1145,7 @@ export function constructEmbed(
 }
 
 /**
- * Abstract base class for expressions with only one child state.  Typically, UnaryExprs
- * handle derivatives by forwarding on the call to their child, and doing something special
- * before or after.  For example, [EmbedExprs] do a check a stack of symbol names to see
- * whether they've passed the allowable recursion limit, and [RenameExpr]s change what
- * the different tapes are named.
- * 
- * Note that [UnaryExpr.child] is a getter, rather than storing an actual child.  This is
- * because [EmbedExpr] doesn't actually store its child, it grabs it from a symbol table instead.
- * (If it tried to take it as a param, or construct it during its own construction, this wouldn't 
- * work, because the EmbedExpr's child can be that EmbedExpr itself.)
+ * Abstract base class for expressions with only one child state. 
  */
 export abstract class UnaryExpr extends Expr {
 

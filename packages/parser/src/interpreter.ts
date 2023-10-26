@@ -40,6 +40,7 @@ import { ExecuteTests } from "./passes/executeTests";
 import { resolveName } from "./passes/qualifyNames";
 import { infinityProtection } from "./passes/infinityProtection";
 import { prioritizeTapes } from "./passes/prioritizeTapes";
+import { constructExpr } from "./passes/constructExpr";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -301,17 +302,17 @@ export class Interpreter {
         let tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
         targetGrammar = infinityProtection(targetGrammar, tapePriority, this.opt.maxChars, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);
-
-        return targetGrammar.constructExpr(this.tapeNS);  
+        return constructExpr(env, targetGrammar, this.tapeNS);  
     }
 
     public runTests(): void {
-        const expr = this.grammar.constructExpr(this.tapeNS);
+        const env = new PassEnv(this.opt);
+        const expr = constructExpr(env, this.grammar, this.tapeNS);
         const symbols = expr instanceof CollectionExpr
                       ? expr.symbols
                       : {};
         const pass = new ExecuteTests(this.tapeNS, symbols);
-        const env = new PassEnv(this.opt);
+        
         pass.transform(this.grammar, env)
             .msgTo(m => sendMsg(this.devEnv, m));
     }
