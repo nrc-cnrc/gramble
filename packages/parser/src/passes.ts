@@ -3,15 +3,18 @@ import { Msgs, Result, result } from "./msgs";
 import { 
     Dict, Options, 
     Namespace, timeIt, 
-    VERBOSE_TIME 
+    VERBOSE_TIME, 
+    Env
 } from "./util";
 
-export class PassEnv {
+export class PassEnv extends Env {
 
     constructor(
-        public opt: Options,
+        opt: Options,
         public symbolNS: Namespace<Grammar> = new Namespace()
-    ) { }
+    ) { 
+        super(opt);
+    }
 
     public pushSymbols(d: Dict<Grammar>): PassEnv {
         const newSymbolNS = this.symbolNS.push(d);

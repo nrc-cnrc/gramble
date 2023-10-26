@@ -39,7 +39,7 @@ export function* generate(
     const stack = new CounterStack(opt.maxRecursion);
     const symbolNS = new ExprNamespace();
     const stats = new DerivStats();
-    const env = new DerivEnv(tapeNS, symbolNS, stack, random, opt, stats);
+    const env = new DerivEnv(opt, tapeNS, symbolNS, stack, random, stats);
 
     const NEXTS_TO_TAKE = random ? 1 : Infinity;
     const startingTime = Date.now();

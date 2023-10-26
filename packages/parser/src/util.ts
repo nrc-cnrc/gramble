@@ -62,6 +62,22 @@ export class Options {
     public optimizeAtomicity: boolean = true;
 }
 
+export class Env {
+
+    constructor(
+        public opt: Options
+    ) { }
+
+}
+
+export function update<T>(orig: T, update: any): T {
+    let clone = Object.create(Object.getPrototypeOf(orig));
+    Object.assign(clone, orig);
+    Object.assign(clone, update);
+    clone._tapes = undefined;
+    return clone as T;
+}
+
 export type Gen<T> = Generator<T, void, undefined>;
 
 export type Dict<T> = {[k:string]:T};

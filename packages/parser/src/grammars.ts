@@ -1,19 +1,5 @@
 import { 
-    CounterStack, Expr, EPSILON,
-    constructRepeat, constructSequence, constructAlternation,
-    constructIntersection, constructDot, constructEmbed,
-    constructRename, constructNegation, NULL,
-    constructJoin,
-    constructLiteral, constructMatch,
-    EpsilonExpr, constructShort,
-    constructPrecede, constructPreTape,
-    constructNotContains,
-    constructCollection, 
-    constructDotStar,
-    constructCount,
-    CollectionExpr,
-    constructCursor,
-    constructCorrespond,
+    CounterStack, Expr
 } from "./exprs";
 import { 
     Result,
@@ -609,14 +595,6 @@ export class SingleTapeGrammar extends UnaryGrammar {
                     });
     }
 
-}
-
-function update<T>(orig: T, update: any): T {
-    let clone = Object.create(Object.getPrototypeOf(orig));
-    Object.assign(clone, orig);
-    Object.assign(clone, update);
-    clone._tapes = undefined;
-    return clone as T;
 }
 
 export class RenameGrammar extends UnaryGrammar {

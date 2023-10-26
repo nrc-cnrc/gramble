@@ -11,6 +11,8 @@ import {
     iterUnit,
     REPLACE_INPUT_TAPE,
     REPLACE_OUTPUT_TAPE,
+    Env,
+    update,
 } from "./util";
 import { 
     Tape, TapeNamespace, 
@@ -42,31 +44,38 @@ export type ForwardGen = Gen<[boolean,Expr]>;
 
 export class ExprNamespace extends Namespace<Expr> {}
 
+
 /** 
  * An Env[ironment] encapsulates the execution environment for 
  * the core algorithm: the current state of the symbol stack, 
  * the tape namespace mapping local tape names to global tapes, 
  * and configuration options.
  */
-export class DerivEnv {
+export class DerivEnv extends Env {
 
     constructor(
+        opt: Options,
         public tapeNS: TapeNamespace,
         public symbolNS: Namespace<Expr>,
         public stack: CounterStack,
         public random: boolean,
-        public opt: Options,
         public stats: DerivStats
-    ) { }
+    ) { 
+        super(opt);
+    }
 
     public renameTape(fromKey: string, toKey: string): DerivEnv {
         const newTapeNS = this.tapeNS.rename(fromKey, toKey);
-        return new DerivEnv(newTapeNS, this.symbolNS, this.stack, this.random, this.opt, this.stats);
+        return update(this, { tapeNS: newTapeNS });
     }
 
     public addTapes(tapes: Dict<Tape>): DerivEnv {
         const newTapeNS = new TapeNamespace(tapes, this.tapeNS);
-        return new DerivEnv(newTapeNS, this.symbolNS, this.stack, this.random, this.opt, this.stats);
+        return update(this, { tapeNS: newTapeNS });
+    }
+
+    public getTape(tapeName: string): Tape {
+        return this.tapeNS.get(tapeName);
     }
 
     public getSymbol(symbolName: string): Expr {
@@ -75,16 +84,12 @@ export class DerivEnv {
     
     public pushSymbols(symbols: Dict<Expr>): DerivEnv {
         const newSymbolNS = new ExprNamespace(symbols, this.symbolNS);
-        return new DerivEnv(this.tapeNS, newSymbolNS, this.stack, this.random, this.opt, this.stats);
-    }
-
-    public getTape(tapeName: string): Tape {
-        return this.tapeNS.get(tapeName);
+        return new DerivEnv(this.opt, this.tapeNS, newSymbolNS, this.stack, this.random, this.stats);
     }
 
     public addSymbol(symbolName: string): DerivEnv {
         const newStack = this.stack.add(symbolName);
-        return new DerivEnv(this.tapeNS, this.symbolNS, newStack, this.random, this.opt, this.stats);
+        return new DerivEnv(this.opt, this.tapeNS, this.symbolNS, newStack, this.random, this.stats);
     }
 
     public incrStates(): void {
@@ -2064,10 +2069,6 @@ export function constructIntersection(c1: Expr, c2: Expr): Expr {
     return new IntersectExpr(c1, c2).simplify();
 }
 
-export function constructMaybe(child: Expr): Expr {
-    return constructAlternation(child, EPSILON).simplify();
-}
-
 export function constructCount(
     child: Expr, 
     tapeName: string, 
@@ -2107,28 +2108,6 @@ export function constructRename(
 
 export function constructJoin(c1: Expr, c2: Expr, tapes1: Set<string>, tapes2: Set<string>): Expr {
     return new JoinExpr(c1, c2, tapes1, tapes2).simplify();
-}
-
-export function constructNotContains(
-    fromTapeName: string,
-    children: Expr[], 
-    begin: boolean,
-    end: boolean
-): Expr {
-    const dotStar: Expr = constructDotStar(fromTapeName);
-    let seq: Expr;
-    if (begin && end) {
-        seq = constructShort(constructSequence(...children));
-    } else if (begin) {
-        seq = constructSequence(constructShort(constructSequence(...children)), dotStar);
-    } else if (end) {
-        seq = constructSequence(dotStar, constructShort(constructSequence(...children)));
-    } else {
-        seq = DIRECTION_LTR ?
-              constructSequence(constructShort(constructSequence(dotStar, ...children)), dotStar) :
-              constructSequence(dotStar, constructShort(constructSequence(...children, dotStar)));
-    }
-    return constructNegation(seq, new Set([fromTapeName]));
 }
 
 export function constructToken(

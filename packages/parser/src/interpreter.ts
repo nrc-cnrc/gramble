@@ -25,7 +25,7 @@ import {
 import { Worksheet, Workbook } from "./sources";
 import { backgroundColor, parseHeaderCell } from "./headers";
 import { TapeNamespace } from "./tapes";
-import { Expr, ExprNamespace, CollectionExpr } from "./exprs";
+import { Expr, CollectionExpr } from "./exprs";
 import { SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
 import { MissingSymbolError, Msg, Msgs, result } from "./msgs";
@@ -300,14 +300,15 @@ export class Interpreter {
         }
         
         let tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
-        targetGrammar = infinityProtection(targetGrammar, tapePriority, this.opt.maxChars, env);
+        targetGrammar = infinityProtection(targetGrammar, tapePriority, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);
-        return constructExpr(env, targetGrammar, this.tapeNS);  
+        
+        return constructExpr(env, targetGrammar);  
     }
 
     public runTests(): void {
         const env = new PassEnv(this.opt);
-        const expr = constructExpr(env, this.grammar, this.tapeNS);
+        const expr = constructExpr(env, this.grammar);
         const symbols = expr instanceof CollectionExpr
                       ? expr.symbols
                       : {};

@@ -7,21 +7,28 @@ import {
     NegationGrammar, PreTapeGrammar, RenameGrammar, RepeatGrammar,
     ReplaceGrammar, SequenceGrammar, ShortGrammar,
 } from "../grammars";
-import { Dict, REPLACE_INPUT_TAPE } from "../util";
-import { TapeNamespace } from "../tapes";
-import { CollectionExpr, EPSILON, EpsilonExpr, NULL, constructAlternation, constructCollection, constructCorrespond, constructCount, constructCursor, constructDot, constructDotStar, constructEmbed, constructIntersection, constructJoin, constructLiteral, constructMatch, constructNegation, constructNotContains, constructPreTape, constructPrecede, constructRename, constructRepeat, constructSequence, constructShort } from "../exprs";
+import { DIRECTION_LTR, Dict, REPLACE_INPUT_TAPE } from "../util";
+import { 
+    CollectionExpr, EPSILON, EpsilonExpr, 
+    NULL, constructAlternation, constructCollection, 
+    constructCorrespond, constructCount, constructCursor, 
+    constructDot, constructDotStar, constructEmbed, 
+    constructIntersection, constructJoin, constructLiteral, 
+    constructMatch, constructNegation, constructPreTape, 
+    constructPrecede, constructRename, constructRepeat, 
+    constructSequence, constructShort 
+} from "../exprs";
 
 export function constructExpr(
     env: PassEnv,
-    g: Grammar,
-    tapeNS: TapeNamespace
+    g: Grammar
 ): Expr {
     switch (g.tag) {
 
         // test and testnot play no role in the Expr tree
         case "test":
         case "testnot":
-        case "locator":    return constructExpr(env, g.child, tapeNS);
+        case "locator":    return constructExpr(env, g.child);
 
         // grammars with no children are pretty trivial, do them
         // in one line
@@ -32,22 +39,22 @@ export function constructExpr(
         case "embed":      return constructEmbed(g.name, undefined);
     
         // everything else has children
-        case "seq":        return constructExprSeq(env, g, tapeNS);
-        case "alt":        return constructExprAlt(env, g, tapeNS);
-        case "short":      return constructExprShort(env, g, tapeNS);
-        case "intersect":  return constructExprIntersect(env, g, tapeNS);
-        case "join":       return constructExprJoin(env, g, tapeNS);
-        case "count":      return constructExprCount(env, g, tapeNS);
-        case "rename":     return constructExprRename(env, g, tapeNS);
-        case "repeat":     return constructExprRepeat(env, g, tapeNS);
-        case "not":        return constructExprNot(env, g, tapeNS);
-        case "cursor":     return constructExprCursor(env, g, tapeNS);
-        case "pretape":    return constructExprPreTape(env, g, tapeNS);
-        case "hide":       return constructExprHide(env, g, tapeNS);
-        case "match":      return constructExprMatch(env, g, tapeNS);
-        case "collection": return constructExprCollection(env, g, tapeNS);
-        case "correspond": return constructExprCorrespond(env, g, tapeNS);
-        case "replace":    return constructExprReplace(env, g, tapeNS);
+        case "seq":        return constructExprSeq(env, g);
+        case "alt":        return constructExprAlt(env, g);
+        case "short":      return constructExprShort(env, g);
+        case "intersect":  return constructExprIntersect(env, g);
+        case "join":       return constructExprJoin(env, g);
+        case "count":      return constructExprCount(env, g);
+        case "rename":     return constructExprRename(env, g);
+        case "repeat":     return constructExprRepeat(env, g);
+        case "not":        return constructExprNot(env, g);
+        case "cursor":     return constructExprCursor(env, g);
+        case "pretape":    return constructExprPreTape(env, g);
+        case "hide":       return constructExprHide(env, g);
+        case "match":      return constructExprMatch(env, g);
+        case "collection": return constructExprCollection(env, g);
+        case "correspond": return constructExprCorrespond(env, g);
+        case "replace":    return constructExprReplace(env, g);
         
         default: throw new Error(`unhandled grammar in constructExpr: ${g.tag}`)
     }
@@ -55,48 +62,43 @@ export function constructExpr(
 
 function constructExprSeq(
     env: PassEnv,
-    g: SequenceGrammar,
-    tapeNS: TapeNamespace
+    g: SequenceGrammar
 ): Expr {
-    const childExprs = g.children.map(c => constructExpr(env, c, tapeNS));
+    const childExprs = g.children.map(c => constructExpr(env, c));
     return constructSequence(...childExprs);
 }
 
 function constructExprAlt(
     env: PassEnv,
-    g: AlternationGrammar,
-    tapeNS: TapeNamespace
+    g: AlternationGrammar
 ): Expr {
-    const childExprs = g.children.map(c => constructExpr(env, c, tapeNS));
+    const childExprs = g.children.map(c => constructExpr(env, c));
     return constructAlternation(...childExprs);
 }
 
 function constructExprShort(
     env: PassEnv,
-    g: ShortGrammar,
-    tapeNS: TapeNamespace
+    g: ShortGrammar
 ): Expr {
-    const child = constructExpr(env, g.child, tapeNS);
+    const child = constructExpr(env, g.child);
     return constructShort(child);
 }
 
 function constructExprIntersect(
     env: PassEnv,
-    g: IntersectionGrammar,
-    tapeNS: TapeNamespace
+    g: IntersectionGrammar
 ): Expr {
-    const left = constructExpr(env, g.child1, tapeNS);
-    const right = constructExpr(env, g.child2, tapeNS);
+    const left = constructExpr(env, g.child1);
+    const right = constructExpr(env, g.child2);
     return constructIntersection(left, right);
 }
 
 function constructExprJoin(
     env: PassEnv,
-    g: JoinGrammar,
-    tapeNS: TapeNamespace
+    g: JoinGrammar
 ): Expr {
-    return constructJoin(constructExpr(env, g.child1, tapeNS),
-        constructExpr(env, g.child2, tapeNS),
+    return constructJoin(constructExpr(env, g.child1),
+        constructExpr(env, g.child2),
         new Set(g.child1.tapes),
         new Set(g.child2.tapes));
 }
@@ -104,89 +106,79 @@ function constructExprJoin(
 
 function constructExprCount(
     env: PassEnv,
-    g: CountGrammar,
-    tapeNS: TapeNamespace
+    g: CountGrammar
 ): Expr {
-    let childExpr = constructExpr(env, g.child, tapeNS);
+    let childExpr = constructExpr(env, g.child);
     return constructCount(childExpr, g.tapeName, g.maxChars,
         g.countEpsilon, g.errorOnCountExceeded);
 }
 
 function constructExprRename(
     env: PassEnv,
-    g: RenameGrammar,
-    tapeNS: TapeNamespace
+    g: RenameGrammar
 ): Expr {
-    const newTapeNS = tapeNS.rename(g.toTape, g.fromTape);
-    const childExpr = constructExpr(env, g.child, newTapeNS);
+    const childExpr = constructExpr(env, g.child);
     return constructRename(childExpr, g.fromTape, g.toTape);
 }
 
 function constructExprRepeat(
     env: PassEnv,
-    g: RepeatGrammar,
-    tapeNS: TapeNamespace
+    g: RepeatGrammar
 ): Expr {
-    const childExpr = constructExpr(env, g.child, tapeNS);
+    const childExpr = constructExpr(env, g.child);
     return constructRepeat(childExpr, g.minReps, g.maxReps);
 }
 
 function constructExprNot(
     env: PassEnv,
-    g: NegationGrammar,
-    tapeNS: TapeNamespace
+    g: NegationGrammar
 ): Expr {
-    const childExpr = constructExpr(env, g.child, tapeNS);
+    const childExpr = constructExpr(env, g.child);
     return constructNegation(childExpr, new Set(g.child.tapes));
 }
 
 function constructExprCursor(
     env: PassEnv,
-    g: CursorGrammar,
-    tapeNS: TapeNamespace
+    g: CursorGrammar
 ): Expr {
-    const childExpr = constructExpr(env, g.child, tapeNS);
+    const childExpr = constructExpr(env, g.child);
     return constructCursor(g.tape, childExpr);
 }
 
 function constructExprPreTape(
     env: PassEnv,
-    g: PreTapeGrammar,
-    tapeNS: TapeNamespace
+    g: PreTapeGrammar
 ): Expr {
-    const childExpr = constructExpr(env, g.child, tapeNS);
+    const childExpr = constructExpr(env, g.child);
     return constructPreTape(g.fromTape, g.toTape, childExpr);
 }
 
 function constructExprHide(
     env: PassEnv,
-    g: HideGrammar,
-    tapeNS: TapeNamespace
+    g: HideGrammar
 ): Expr {
-    const childExpr = constructExpr(env, g.child, tapeNS);
+    const childExpr = constructExpr(env, g.child);
     return constructRename(childExpr, g.tapeName, g.toTape);
 }
 
 function constructExprMatch(
     env: PassEnv,
-    g: MatchGrammar,
-    tapeNS: TapeNamespace
+    g: MatchGrammar
 ): Expr {
-    const childExpr = constructExpr(env, g.child, tapeNS);
+    const childExpr = constructExpr(env, g.child);
     return constructMatch(childExpr, g.fromTape, g.toTape);
 }
 
 function constructExprCollection(
     env: PassEnv,
-    g: CollectionGrammar,
-    tapeNS: TapeNamespace
+    g: CollectionGrammar
 ): Expr {
     let newSymbols: Dict<Expr> = {};
     let selectedExpr: Expr = EPSILON;
     let selectedFound = false;
     //const newSymbolNS = symbols.push(newSymbols);
     for (const [name, referent] of Object.entries(g.symbols)) {
-        let expr = constructExpr(env, referent, tapeNS);
+        let expr = constructExpr(env, referent);
         newSymbols[name] = expr;
         if (name.toLowerCase() == g.selectedSymbol.toLowerCase()) {
             selectedExpr = expr;
@@ -202,27 +194,25 @@ function constructExprCollection(
 
 function constructExprCorrespond(
     env: PassEnv,
-    g: CorrespondGrammar,
-    tapeNS: TapeNamespace
+    g: CorrespondGrammar
 ): Expr {
-    const childExpr = constructExpr(env, g.child, tapeNS);
+    const childExpr = constructExpr(env, g.child);
     return constructCorrespond(childExpr, g.tape1, g.tape2);
 }
 
 function constructExprReplace(
     env: PassEnv,
-    g: ReplaceGrammar,
-    tapeNS: TapeNamespace
+    g: ReplaceGrammar
 ): Expr {
     if (g.beginsWith || g.endsWith) {
         g.maxReps = Math.max(1, g.maxReps);
         g.minReps = Math.min(g.minReps, g.maxReps);
     }
 
-    const fromExpr: Expr = constructExpr(env, g.fromGrammar, tapeNS);
-    const toExpr: Expr = constructExpr(env, g.toGrammar, tapeNS);
-    const preContextExpr: Expr = constructExpr(env, g.preContext, tapeNS);
-    const postContextExpr: Expr = constructExpr(env, g.postContext, tapeNS);
+    const fromExpr: Expr = constructExpr(env, g.fromGrammar);
+    const toExpr: Expr = constructExpr(env, g.toGrammar);
+    const preContextExpr: Expr = constructExpr(env, g.preContext);
+    const postContextExpr: Expr = constructExpr(env, g.postContext);
     let states: Expr[] = [
         constructMatch(preContextExpr),
         constructCorrespond(constructPrecede(fromExpr, toExpr)),
@@ -258,7 +248,7 @@ function constructExprReplace(
     const replaceMultiple: Expr = constructRepeat(replaceOne, Math.max(1, g.minReps), g.maxReps);
     
     // we need to match the context on other tapes too
-    const otherContextExpr: Expr = constructExpr(env, g.otherContext, tapeNS);
+    const otherContextExpr: Expr = constructExpr(env, g.otherContext);
     if (g.beginsWith)
         states = [replaceOne, otherContextExpr]
     else if (g.endsWith)
@@ -281,4 +271,26 @@ function constructExprReplace(
         }
         return constructAlternation(copyExpr, replaceExpr);
     }
+}
+
+export function constructNotContains(
+    fromTapeName: string,
+    children: Expr[], 
+    begin: boolean,
+    end: boolean
+): Expr {
+    const dotStar: Expr = constructDotStar(fromTapeName);
+    let seq: Expr;
+    if (begin && end) {
+        seq = constructShort(constructSequence(...children));
+    } else if (begin) {
+        seq = constructSequence(constructShort(constructSequence(...children)), dotStar);
+    } else if (end) {
+        seq = constructSequence(dotStar, constructShort(constructSequence(...children)));
+    } else {
+        seq = DIRECTION_LTR ?
+              constructSequence(constructShort(constructSequence(dotStar, ...children)), dotStar) :
+              constructSequence(dotStar, constructShort(constructSequence(...children, dotStar)));
+    }
+    return constructNegation(seq, new Set([fromTapeName]));
 }
